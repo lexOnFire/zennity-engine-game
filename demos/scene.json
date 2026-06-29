@@ -1,0 +1,32 @@
+{
+    "objects": [
+        {
+            "name": "Bloco_1",
+            "shape": "Cube",
+            "position": [
+                0.0,
+                0.0,
+                1.5
+            ],
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "color": [
+                0,
+                110,
+                220
+            ],
+            "is_static": false,
+            "use_physics": true,
+            "initial_velocity_y": 0.0,
+            "script_path": "scripts\\behavior_bloco_2.py"
+        }
+    ]
+}
