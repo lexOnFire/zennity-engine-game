@@ -288,10 +288,10 @@ class EditorScene(Scene):
         cam_obj = GameObject("EditorCamera")
         self.camera_comp = cam_obj.add_component(Camera3D(
             fov=60.0, near=0.1, far=100.0,
-            viewport_x=float(_VP_X),
-            viewport_y=float(_VP_Y),
-            viewport_width=float(_VP_W),
-            viewport_height=float(_VP_H),
+            viewport_x=230.0,
+            viewport_y=30.0,
+            viewport_width=940.0,
+            viewport_height=770.0,
         ))
         self.camera_controller = cam_obj.add_component(OrbitCameraController())
         self._add_go(cam_obj)
