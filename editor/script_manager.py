@@ -47,19 +47,26 @@ class ScriptManager:
 
     @staticmethod
     def unload(obj: "GameObject") -> None:
-        """Remove o módulo e atributos temporários do objeto."""
-        # FIX: _phys_vel is preserved so Stop→Play preserves initial_velocity_y correctly.
-        # It will be properly reset by PhysicsSim.attach_rigidbody on next Play.
+        """Remove o módulo e atributos temporários do objeto.
+
+        Atributos em PERSISTENT são mantidos intactos entre Play/Stop para que
+        o editor retome o estado correto. _phys_vel é REMOVIDO aqui (não
+        preservado) porque PhysicsSim.attach_rigidbody o recria com o valor
+        correto de initial_velocity_y a cada Play.
+        """
         PERSISTENT = {
             "name", "transform", "components", "scene",
             "mesh_type", "is_static", "use_physics",
             "initial_velocity_y", "script_path", "active",
             "parent", "children",
-            "_phys_vel",  # FIX: keep so PhysicsSim.attach_rigidbody can reset it cleanly
+            "tag",          # ← preservar tag definida no inspetor
         }
         for key in list(obj.__dict__.keys()):
             if key not in PERSISTENT:
-                delattr(obj, key)
+                try:
+                    delattr(obj, key)
+                except AttributeError:
+                    pass
 
     @staticmethod
     def create_template(obj: "GameObject") -> str:
