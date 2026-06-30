@@ -75,14 +75,26 @@ class ScriptManager:
         path = os.path.join(ScriptManager.SCRIPTS_DIR, f"behavior_{name}.py")
         if not os.path.exists(path):
             content = (
-                f"# Script de Comportamento: {obj.name}\n"
+                f"# Script de Comportamento para o objeto: {obj.name}\n"
+                "# Voce pode editar este arquivo para programar o comportamento em tempo de execucao.\n"
+                "import pygame\n"
                 "import numpy as np\n\n"
                 "def start(obj):\n"
+                "    # Executado uma unica vez ao iniciar a simulacao (PLAY)\n"
+                "    print(f'Iniciando comportamento de {obj.name}!')\n"
                 "    obj.script_time = 0.0\n\n"
                 "def update(obj, dt):\n"
-                "    obj.script_time = getattr(obj, 'script_time', 0.0) + dt\n"
-                "    # Exemplo: rotação suave no eixo Y\n"
-                "    obj.transform.rotation[1] = (obj.transform.rotation[1] + 45.0 * dt) % 360\n"
+                "    # Executado a cada frame durante a simulacao (PLAY)\n"
+                "    obj.script_time = getattr(obj, 'script_time', 0.0) + dt\n\n"
+                "    # Exemplo: Rotacao suave no eixo Y\n"
+                "    obj.transform.rotation[1] = (obj.transform.rotation[1] + 45.0 * dt) % 360\n\n"
+                "    # Exemplo de movimentacao:\n"
+                "    # velocidade = 5.0\n"
+                "    # teclas = pygame.key.get_pressed()\n"
+                "    # if teclas[pygame.K_LEFT]:\n"
+                "    #     obj.transform.position[0] -= velocidade * dt\n"
+                "    # if teclas[pygame.K_RIGHT]:\n"
+                "    #     obj.transform.position[0] += velocidade * dt\n"
             )
             with open(path, "w", encoding="utf-8") as f:
                 f.write(content)
