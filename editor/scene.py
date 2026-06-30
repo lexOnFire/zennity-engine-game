@@ -38,16 +38,8 @@ from .history import History
 _IDENTITY = np.eye(4, dtype=np.float32)
 
 _LEFT_W   = 230
-_RIGHT_X  = 1170
-_VP_X     = _LEFT_W
-_VP_W     = _RIGHT_X - _VP_X
-_VP_Y     = 0
-_VP_H     = 800
-
 _TREE_Y      = 228
-_TREE_H      = 220
 _TREE_ROW_H  = 24
-_TREE_MAX_VIS = _TREE_H // _TREE_ROW_H
 SNAP_SIZE    = 0.5
 
 _SHAPE_ICON = {
@@ -197,7 +189,11 @@ class EditorScene(Scene):
         self.history = History()
         self.snap_enabled: bool = False
         self._tag_index: int = 0
-        self._light_y = _TREE_Y + _TREE_H + 110
+        
+        self._tree_h = 220
+        self._tree_max_vis = 9
+        self._light_y = _TREE_Y + self._tree_h + 110
+        self._active_dropdown = None
 
     # -----------------------------------------------------------------------
     def start(self) -> None:
@@ -236,34 +232,40 @@ class EditorScene(Scene):
         self.btn_light_angle_inc = GuiButton(165, self._light_y, 40, 22, " > ", bg_color=(60,65,78), hover_color=(75,80,95))
 
         # --- Barra superior ---
-        self.btn_new_scene   = GuiButton(245, 15, 60,  26, "Novo",          bg_color=(80,80,80),   hover_color=(100,100,100))
-        self.btn_save        = GuiButton(315, 15, 70,  26, "Salvar",        bg_color=(100,70,40),  hover_color=(130,90,50))
-        self.btn_load        = GuiButton(395, 15, 70,  26, "Carregar",      bg_color=(100,70,40),  hover_color=(130,90,50))
-        self.btn_play_pause  = GuiButton(475, 15, 80,  26, "PLAY",          bg_color=(40,120,60),  hover_color=(50,150,80))
-        self.btn_camera_mode = GuiButton(565, 15, 100, 26, "Camera: Persp", bg_color=(40,70,120),  hover_color=(55,95,160))
-        self.btn_welcome     = GuiButton(675, 15, 50,  26, "Ajuda",       bg_color=(80,60,20),   hover_color=(110,85,30))
+        self.btn_menu_file   = GuiButton(10, 2, 50, 26, "File", bg_color=(28,30,38), hover_color=(55,60,72))
+        self.btn_menu_view   = GuiButton(65, 2, 50, 26, "View", bg_color=(28,30,38), hover_color=(55,60,72))
+        self.btn_menu_window = GuiButton(120, 2, 70, 26, "Window", bg_color=(28,30,38), hover_color=(55,60,72))
+
+        # Fictícios/Ações legadas para manter compatibilidade nos eventos
+        self.btn_new_scene   = GuiButton(-100, -100, 10, 10, "Novo")
+        self.btn_save        = GuiButton(-100, -100, 10, 10, "Salvar")
+        self.btn_load        = GuiButton(-100, -100, 10, 10, "Carregar")
+        self.btn_camera_mode = GuiButton(-100, -100, 10, 10, "Camera")
+        self.btn_welcome     = GuiButton(-100, -100, 10, 10, "Ajuda")
+
+        self.btn_play_pause  = GuiButton(600, 2, 80,  26, "PLAY",          bg_color=(40,120,60),  hover_color=(50,150,80))
 
         # --- Inspetor direito ---
-        self.btn_toggle_static  = GuiButton(_RIGHT_X + 15, 50,  20, 20, "", bg_color=(45,49,58), hover_color=(70,76,90))
-        self.btn_toggle_physics = GuiButton(_RIGHT_X + 15, 80,  20, 20, "", bg_color=(45,49,58), hover_color=(70,76,90))
-        self.btn_vel_dec        = GuiButton(_RIGHT_X + 15, 135, 40, 20, " - ", bg_color=(60,65,78), hover_color=(75,80,95))
-        self.btn_vel_inc        = GuiButton(_RIGHT_X + 145, 135, 40, 20, " + ", bg_color=(60,65,78), hover_color=(75,80,95))
+        self.btn_toggle_static  = GuiButton(1170 + 15, 50,  20, 20, "", bg_color=(45,49,58), hover_color=(70,76,90))
+        self.btn_toggle_physics = GuiButton(1170 + 15, 80,  20, 20, "", bg_color=(45,49,58), hover_color=(70,76,90))
+        self.btn_vel_dec        = GuiButton(1170 + 15, 135, 40, 20, " - ", bg_color=(60,65,78), hover_color=(75,80,95))
+        self.btn_vel_inc        = GuiButton(1170 + 145, 135, 40, 20, " + ", bg_color=(60,65,78), hover_color=(75,80,95))
 
-        self.btn_prev_script     = GuiButton(_RIGHT_X + 15, 190, 30, 22, " < ",              bg_color=(60,65,78),  hover_color=(75,80,95))
-        self.btn_next_script     = GuiButton(_RIGHT_X + 175, 190, 30, 22, " > ",              bg_color=(60,65,78),  hover_color=(75,80,95))
-        self.btn_new_script      = GuiButton(_RIGHT_X + 15, 215, 190,20, "+ Novo Script",    bg_color=(40,100,60), hover_color=(50,130,80))
-        self.btn_edit_script     = GuiButton(_RIGHT_X + 15, 238, 93, 20, "Editor Ext.",      bg_color=(0,100,160), hover_color=(0,130,200))
-        self.btn_internal_editor = GuiButton(_RIGHT_X + 112, 238, 93, 20, "Editor Int.",      bg_color=(0,100,160), hover_color=(0,130,200))
-        self.btn_script_help     = GuiButton(_RIGHT_X + 15, 261, 190,20, "Guia de Comandos", bg_color=(120,80,40), hover_color=(150,100,50))
-        self.btn_clone           = GuiButton(_RIGHT_X + 15, 352, 190,26, "Clonar Objeto",    bg_color=(80,60,120), hover_color=(100,75,150))
+        self.btn_prev_script     = GuiButton(1170 + 15, 190, 30, 22, " < ",              bg_color=(60,65,78),  hover_color=(75,80,95))
+        self.btn_next_script     = GuiButton(1170 + 175, 190, 30, 22, " > ",              bg_color=(60,65,78),  hover_color=(75,80,95))
+        self.btn_new_script      = GuiButton(1170 + 15, 215, 190,20, "+ Novo Script",    bg_color=(40,100,60), hover_color=(50,130,80))
+        self.btn_edit_script     = GuiButton(1170 + 15, 238, 93, 20, "Editor Ext.",      bg_color=(0,100,160), hover_color=(0,130,200))
+        self.btn_internal_editor = GuiButton(1170 + 112, 238, 93, 20, "Editor Int.",      bg_color=(0,100,160), hover_color=(0,130,200))
+        self.btn_script_help     = GuiButton(1170 + 15, 261, 190,20, "Guia de Comandos", bg_color=(120,80,40), hover_color=(150,100,50))
+        self.btn_clone           = GuiButton(1170 + 15, 352, 190,26, "Clonar Objeto",    bg_color=(80,60,120), hover_color=(100,75,150))
 
         # Parenting/Hierarquia no Inspetor
-        self.btn_prev_parent = GuiButton(_RIGHT_X + 15, 385, 30, 22, " < ", bg_color=(60,65,78), hover_color=(75,80,95))
-        self.btn_next_parent = GuiButton(_RIGHT_X + 175, 385, 30, 22, " > ", bg_color=(60,65,78), hover_color=(75,80,95))
+        self.btn_prev_parent = GuiButton(1170 + 15, 385, 30, 22, " < ", bg_color=(60,65,78), hover_color=(75,80,95))
+        self.btn_next_parent = GuiButton(1170 + 175, 385, 30, 22, " > ", bg_color=(60,65,78), hover_color=(75,80,95))
 
         # Tag
-        self.btn_prev_tag = GuiButton(_RIGHT_X + 15, 440, 30, 22, " < ", bg_color=(60,65,78), hover_color=(75,80,95))
-        self.btn_next_tag = GuiButton(_RIGHT_X + 175, 440, 30, 22, " > ", bg_color=(60,65,78), hover_color=(75,80,95))
+        self.btn_prev_tag = GuiButton(1170 + 15, 440, 30, 22, " < ", bg_color=(60,65,78), hover_color=(75,80,95))
+        self.btn_next_tag = GuiButton(1170 + 175, 440, 30, 22, " > ", bg_color=(60,65,78), hover_color=(75,80,95))
 
         self.btn_colors = [
             GuiButton(_RIGHT_X + 15 + i * 32, 312, 24, 24, "", bg_color=c, hover_color=c)
@@ -668,6 +670,56 @@ class EditorScene(Scene):
 
     # -----------------------------------------------------------------------
     def update(self, dt: float) -> None:
+        # Adaptação responsiva baseada no tamanho da janela
+        screen_surf = pygame.display.get_surface()
+        if screen_surf:
+            width, height = screen_surf.get_size()
+            
+            # viewport responsiva para o renderizador 3D (offset 30px no Y para a barra de menu)
+            left_w = 230
+            right_x = width - 230
+            vp_w = right_x - left_w
+            vp_h = height - 30
+            
+            self.camera_comp.viewport_x = float(left_w)
+            self.camera_comp.viewport_y = 30.0
+            self.camera_comp.viewport_width = float(vp_w)
+            self.camera_comp.viewport_height = float(vp_h)
+            
+            # Atualiza botões do painel direito
+            self.btn_toggle_static.x = right_x + 15
+            self.btn_toggle_physics.x = right_x + 15
+            self.btn_vel_dec.x = right_x + 15
+            self.btn_vel_inc.x = right_x + 145
+            self.btn_prev_script.x = right_x + 15
+            self.btn_next_script.x = right_x + 175
+            self.btn_new_script.x = right_x + 15
+            self.btn_edit_script.x = right_x + 15
+            self.btn_internal_editor.x = right_x + 112
+            self.btn_script_help.x = right_x + 15
+            self.btn_clone.x = right_x + 15
+            self.btn_prev_parent.x = right_x + 15
+            self.btn_next_parent.x = right_x + 175
+            self.btn_prev_tag.x = right_x + 15
+            self.btn_next_tag.x = right_x + 175
+            for i, btn in enumerate(self.btn_colors):
+                btn.x = right_x + 15 + i * 32
+                
+            self.btn_play_pause.x = width // 2 - 40
+            
+            # Altura útil da árvore
+            self._tree_h = max(100, height - _TREE_Y - 180)
+            self._tree_max_vis = self._tree_h // _TREE_ROW_H
+            
+            # Reposiciona botões da árvore
+            self.btn_tree_down.y = _TREE_Y + self._tree_h - 2
+            self.btn_undo.y = _TREE_Y + self._tree_h + 22
+            self.btn_redo.y = _TREE_Y + self._tree_h + 22
+            self.btn_delete.y = _TREE_Y + self._tree_h + 52
+            self._light_y = _TREE_Y + self._tree_h + 110
+            self.btn_light_angle_dec.y = self._light_y
+            self.btn_light_angle_inc.y = self._light_y
+
         if self.play_mode:
             for obj in self.editable_objects:
                 ScriptManager.update(obj, dt)
@@ -722,7 +774,14 @@ class EditorScene(Scene):
 
     # -----------------------------------------------------------------------
     def draw(self, screen: pygame.Surface) -> None:
-        pygame.draw.rect(screen, (255,255,255), (_VP_X, _VP_Y, _VP_W, _VP_H))
+        width, height = screen.get_size()
+        left_w = 230
+        right_x = width - 230
+        vp_w = right_x - left_w
+        vp_h = height - 30
+        
+        # Viewport 3D estilizada escura
+        pygame.draw.rect(screen, (30, 34, 42), (left_w, 30, vp_w, vp_h))
         self._draw_floor_grid(screen)
         for go in self.game_objects:
             go.draw(screen)
@@ -746,6 +805,8 @@ class EditorScene(Scene):
             self._draw_help_modal(screen)
         elif self.showing_welcome:
             self._draw_welcome_modal(screen)
+            
+        self._draw_dropdowns(screen)
 
     # -----------------------------------------------------------------------
     # Draw helpers
@@ -793,9 +854,10 @@ class EditorScene(Scene):
                 pygame.draw.circle(screen,(240,200,0),c,6)
 
     def _draw_left_panel(self, screen: pygame.Surface) -> None:
-        pygame.draw.rect(screen,(38,42,50),(0,0,_LEFT_W,_VP_H))
-        pygame.draw.line(screen,(55,60,72),(_LEFT_W,0),(_LEFT_W,_VP_H),2)
-        screen.blit(self.font_title.render("ADICIONAR FORMAS",True,(0,200,255)),(15,18))
+        height = screen.get_height()
+        pygame.draw.rect(screen,(38,42,50),(0,30,_LEFT_W,height - 30))
+        pygame.draw.line(screen,(55,60,72),(_LEFT_W,30),(_LEFT_W,height),2)
+        screen.blit(self.font_title.render("ADICIONAR FORMAS",True,(0,200,255)),(15,48))
         
         # Desenhar todos os 7 botões de formas
         for btn in [self.btn_add_cube, self.btn_add_pyramid, self.btn_add_sphere,
@@ -813,15 +875,15 @@ class EditorScene(Scene):
         
         # --- Tree/Outliner Hierárquico ---
         screen.blit(self.font_title.render("OBJETOS DA CENA",True,(0,200,255)),(15, _TREE_Y))
-        pygame.draw.rect(screen,(30,34,42),(15, _TREE_Y+18, 178, _TREE_H), border_radius=3)
-        pygame.draw.rect(screen,(55,60,72),(15, _TREE_Y+18, 178, _TREE_H), 1, border_radius=3)
+        pygame.draw.rect(screen,(30,34,42),(15, _TREE_Y+18, 178, self._tree_h), border_radius=3)
+        pygame.draw.rect(screen,(55,60,72),(15, _TREE_Y+18, 178, self._tree_h), 1, border_radius=3)
         
         flat_tree = self._build_flat_tree()
         total = len(flat_tree)
         max_s = self._max_scroll()
         self._tree_scroll = min(self._tree_scroll, max_s)
         
-        for slot_i in range(_TREE_MAX_VIS):
+        for slot_i in range(self._tree_max_vis):
             obj_i = self._tree_scroll + slot_i
             if obj_i >= total:
                 break
@@ -859,14 +921,14 @@ class EditorScene(Scene):
                 screen.blit(self.font_body.render(label, True,(255,255,255)),(38 + indent, ry+4))
                 
         # Scrollbar
-        if total > _TREE_MAX_VIS:
-            bar_h = max(16, _TREE_H * _TREE_MAX_VIS // max(total,1))
-            bar_y = _TREE_Y + 18 + (_TREE_H - bar_h) * self._tree_scroll // max(max_s, 1)
+        if total > self._tree_max_vis:
+            bar_h = max(16, self._tree_h * self._tree_max_vis // max(total,1))
+            bar_y = _TREE_Y + 18 + (self._tree_h - bar_h) * self._tree_scroll // max(max_s, 1)
             pygame.draw.rect(screen,(80,88,105),(194, bar_y, 4, bar_h), border_radius=2)
             self.btn_tree_up.draw(screen, self.font_btn)
             self.btn_tree_down.draw(screen, self.font_btn)
             
-        screen.blit(self.font_body.render(f"{len(self.editable_objects)} objeto(s)", True,(100,105,115)),(15, _TREE_Y + _TREE_H + 2))
+        screen.blit(self.font_body.render(f"{len(self.editable_objects)} objeto(s)", True,(100,105,115)),(15, _TREE_Y + self._tree_h + 2))
         
         self.btn_undo.bg_color = (60,80,110) if self.history.can_undo else (45,49,58)
         self.btn_redo.bg_color = (60,80,110) if self.history.can_redo else (45,49,58)
@@ -881,18 +943,63 @@ class EditorScene(Scene):
         self.btn_light_angle_inc.draw(screen,self.font_btn)
 
     def _draw_top_bar(self, screen: pygame.Surface) -> None:
+        width = screen.get_width()
+        # Fundo da barra de menus superior
+        pygame.draw.rect(screen, (28, 30, 38), (0, 0, width, 30))
+        pygame.draw.line(screen, (55, 60, 72), (0, 30), (width, 30), 2)
+        
+        # Desenha File, View, Window
+        self.btn_menu_file.draw(screen, self.font_btn)
+        self.btn_menu_view.draw(screen, self.font_btn)
+        self.btn_menu_window.draw(screen, self.font_btn)
+        
+        # PLAY / STOP
         self.btn_play_pause.bg_color    = (180,40,40) if self.play_mode else (40,120,60)
         self.btn_play_pause.hover_color = (220,50,50) if self.play_mode else (50,150,80)
         self.btn_play_pause.text        = "STOP" if self.play_mode else "PLAY"
+        self.btn_play_pause.draw(screen, self.font_btn)
         
-        # Desenhar todos os botões da barra superior
-        for btn in [self.btn_new_scene, self.btn_save, self.btn_load, self.btn_play_pause, self.btn_camera_mode, self.btn_welcome]:
-            btn.draw(screen, self.font_btn)
-            
+        # Undo / Redo display
         undo_col = (0,200,255) if self.history.can_undo else (80,85,95)
         redo_col = (0,200,255) if self.history.can_redo else (80,85,95)
-        screen.blit(self.font_btn.render(f"Undo: {len(self.history._undo)}",True,undo_col),(735,20))
-        screen.blit(self.font_btn.render(f"Redo: {len(self.history._redo)}",True,redo_col),(800,20))
+        screen.blit(self.font_btn.render(f"Undo: {len(self.history._undo)}",True,undo_col),(width - 160, 8))
+        screen.blit(self.font_btn.render(f"Redo: {len(self.history._redo)}",True,redo_col),(width - 90, 8))
+
+    def _draw_dropdowns(self, screen: pygame.Surface) -> None:
+        if not self._active_dropdown:
+            return
+            
+        mx, my = pygame.mouse.get_pos()
+        
+        if self._active_dropdown == "file":
+            opts = ["Novo Scene", "Salvar", "Carregar", "Sair"]
+            rx, ry = 10, 30
+            rw = 120
+        elif self._active_dropdown == "view":
+            grade_str = "Desativar Grade" if self.snap_enabled else "Ativar Grade"
+            opts = ["Camera: Persp", "Camera: Top", "Camera: Side", grade_str, "Templates"]
+            rx, ry = 65, 30
+            rw = 150
+        elif self._active_dropdown == "window":
+            fs_str = "Modo Janela" if getattr(self.engine, "is_fullscreen", False) else "Tela Cheia"
+            opts = [fs_str + " (F11)", "Guia de Ajuda"]
+            rx, ry = 120, 30
+            rw = 160
+        else:
+            return
+            
+        rh = len(opts) * 26
+        pygame.draw.rect(screen, (30, 34, 42), (rx, ry, rw, rh), border_radius=4)
+        pygame.draw.rect(screen, (55, 60, 72), (rx, ry, rw, rh), 1, border_radius=4)
+        
+        for i, opt in enumerate(opts):
+            row_rect = pygame.Rect(rx + 1, ry + i * 26 + 1, rw - 2, 24)
+            hover = row_rect.collidepoint(mx, my)
+            if hover:
+                pygame.draw.rect(screen, (0, 150, 220), row_rect, border_radius=3)
+            
+            color = (255, 255, 255)
+            screen.blit(self.font_body.render(opt, True, color), (rx + 8, ry + i * 26 + 5))
 
     def _draw_right_panel(self, screen: pygame.Surface) -> None:
         pygame.draw.rect(screen,(38,42,50),(_RIGHT_X,0,230,_VP_H))
@@ -1067,6 +1174,78 @@ class EditorScene(Scene):
     # handle_event
     # -----------------------------------------------------------------------
     def handle_event(self, event: pygame.event.Event) -> None:
+        # --- Cliques nos menus de topo ---
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            mx, my = event.pos
+            if self._active_dropdown:
+                # Obter opções e coordenadas do dropdown ativo para testar clique
+                if self._active_dropdown == "file":
+                    opts = ["Novo Scene", "Salvar", "Carregar", "Sair"]
+                    rx, ry = 10, 30
+                    rw = 120
+                elif self._active_dropdown == "view":
+                    grade_str = "Desativar Grade" if self.snap_enabled else "Ativar Grade"
+                    opts = ["Camera: Persp", "Camera: Top", "Camera: Side", grade_str, "Templates"]
+                    rx, ry = 65, 30
+                    rw = 150
+                elif self._active_dropdown == "window":
+                    fs_str = "Modo Janela" if getattr(self.engine, "is_fullscreen", False) else "Tela Cheia"
+                    opts = [fs_str + " (F11)", "Guia de Ajuda"]
+                    rx, ry = 120, 30
+                    rw = 160
+                
+                rh = len(opts) * 26
+                if rx <= mx <= rx + rw and ry <= my <= ry + rh:
+                    slot = (my - ry) // 26
+                    opt = opts[slot]
+                    self._active_dropdown = None
+                    
+                    if opt == "Novo Scene":
+                        # Limpa cena
+                        self.history.push(self)
+                        for obj in list(self.editable_objects): self._remove_go(obj); obj.destroy()
+                        self.editable_objects.clear()
+                        self.selected_index = -1
+                        self.cube_count = self.pyramid_count = self.sphere_count = self.plane_count = self.capsule_count = self.camera_count = self.light_count = 0
+                        self._tree_scroll = 0
+                        self._cancel_rename()
+                    elif opt == "Salvar":
+                        self.save_scene()
+                    elif opt == "Carregar":
+                        self.load_scene()
+                    elif opt == "Sair":
+                        pygame.event.post(pygame.event.Event(pygame.QUIT))
+                    elif opt == "Camera: Persp":
+                        self._set_camera_mode("Perspectiva")
+                        self.camera_mode_index = 0
+                    elif opt == "Camera: Top":
+                        self._set_camera_mode("Top-Down")
+                        self.camera_mode_index = 1
+                    elif opt == "Camera: Side":
+                        self._set_camera_mode("Side-Scroller")
+                        self.camera_mode_index = 2
+                    elif opt in ["Ativar Grade", "Desativar Grade"]:
+                        self.snap_enabled = not self.snap_enabled
+                    elif opt == "Templates":
+                        self.showing_templates = True
+                    elif "Tela Cheia" in opt or "Modo Janela" in opt:
+                        if hasattr(self.engine, "toggle_fullscreen"):
+                            self.engine.toggle_fullscreen()
+                    elif opt == "Guia de Ajuda":
+                        self.showing_welcome = True
+                        self.welcome_step = 0
+                    return
+                else:
+                    self._active_dropdown = None
+
+            # Clicar nos botões do menu superior para abrir dropdowns
+            if self.btn_menu_file.is_clicked(event):
+                self._active_dropdown = "file"; return
+            if self.btn_menu_view.is_clicked(event):
+                self._active_dropdown = "view"; return
+            if self.btn_menu_window.is_clicked(event):
+                self._active_dropdown = "window"; return
+
         # Boas-vindas modal
         if self.showing_welcome:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -1264,7 +1443,7 @@ class EditorScene(Scene):
                     mx,my=event.pos
                     # Seleção de objeto na lista/árvore hierárquica
                     if mx<_LEFT_W:
-                        tree_rect = pygame.Rect(15, _TREE_Y+18, 178, _TREE_H)
+                        tree_rect = pygame.Rect(15, _TREE_Y+18, 178, self._tree_h)
                         if tree_rect.collidepoint(mx, my):
                             slot_i = (my - (_TREE_Y+18)) // _TREE_ROW_H
                             obj_i  = self._tree_scroll + slot_i
@@ -1279,7 +1458,7 @@ class EditorScene(Scene):
                                     self.selected_index = real_idx
                                 self._last_click_index = real_idx
                                 self._last_click_time  = now
-                    elif mx<=_RIGHT_X:
+                    elif mx <= (pygame.display.get_surface().get_width() - 230):
                         self._select_at(mx,my)
                 self.click_start_pos=None
 

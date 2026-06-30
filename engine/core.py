@@ -28,11 +28,23 @@ class Engine:
         pygame.init()
         pygame.mixer.init()
 
+        # Obter resolução do monitor e adaptar para caber perfeitamente na tela do usuário
+        info = pygame.display.Info()
+        desktop_w = info.current_w
+        desktop_h = info.current_h
+        
+        if width >= desktop_w or height >= desktop_h:
+            width = int(desktop_w * 0.9)
+            height = int(desktop_h * 0.85)
+
         self.width  = width
         self.height = height
         self.fps    = fps
+        self.is_fullscreen = False
+        self.saved_w = width
+        self.saved_h = height
 
-        self.screen = pygame.display.set_mode((width, height))
+        self.screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
         pygame.display.set_caption(title)
 
         self.clock      = pygame.time.Clock()
@@ -40,6 +52,18 @@ class Engine:
 
         self.current_scene: Optional[Scene] = None
         self.next_scene:    Optional[Scene] = None
+
+    def toggle_fullscreen(self) -> None:
+        """Alterna entre modo janela ressoável e tela cheia."""
+        self.is_fullscreen = not self.is_fullscreen
+        if self.is_fullscreen:
+            self.saved_w, self.saved_h = self.width, self.height
+            info = pygame.display.Info()
+            self.width, self.height = info.current_w, info.current_h
+            self.screen = pygame.display.set_mode((self.width, self.height), pygame.FULLSCREEN)
+        else:
+            self.width, self.height = self.saved_w, self.saved_h
+            self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
 
     def change_scene(self, new_scene: Scene) -> None:
         """Schedules a scene transition for the end of the current frame."""
@@ -64,11 +88,18 @@ class Engine:
             Input.update()
             dt = min(self.clock.tick(self.fps) / 1000.0, 0.1)
 
-            # 1. Event Handling — FIX: wrapped in try/except so user script errors
-            #    don't kill the whole loop.
+            # 1. Event Handling
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.is_running = False
+
+                if event.type == pygame.VIDEORESIZE:
+                    if not self.is_fullscreen:
+                        self.width, self.height = event.w, event.h
+                        self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
+
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_F11:
+                    self.toggle_fullscreen()
 
                 if self.current_scene:
                     try:
