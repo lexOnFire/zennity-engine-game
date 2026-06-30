@@ -12,5 +12,5 @@ from engine.core import Engine
 from editor.scene import EditorScene
 
 if __name__ == "__main__":
-    engine = Engine(width=1000, height=600, title="Zennity Engine — Editor 3D")
+    engine = Engine(width=1400, height=800, title="Zennity Engine — Editor 3D")
     engine.run(EditorScene())
