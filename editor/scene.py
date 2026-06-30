@@ -202,15 +202,14 @@ class EditorScene(Scene):
         self._tag_index: int = 0
 
         # --- Tree/outliner state ---
-        self._tree_scroll: int = 0          # índice do primeiro item visível
-        self._rename_index: int = -1        # índice do objeto sendo renomeado (-1 = nenhum)
-        self._rename_text: str = ""         # texto temporário durante rename
-        self._rename_blink: float = 0.0     # timer de pisca do cursor
+        self._tree_scroll: int = 0
+        self._rename_index: int = -1
+        self._rename_text: str = ""
+        self._rename_blink: float = 0.0
         self._rename_cursor_on: bool = True
-        self._last_click_index: int = -1    # para detectar duplo-clique na tree
+        self._last_click_index: int = -1
         self._last_click_time: float = 0.0
 
-    # -----------------------------------------------------------------------
     def start(self) -> None:
         print("[EditorScene] Iniciando editor 3D...")
         self.font_title = Assets.get_font(None, 18)
@@ -220,7 +219,6 @@ class EditorScene(Scene):
 
         self.available_scripts = ScriptManager.list_scripts()
 
-        # --- Painel esquerdo — linha 1: formas ---
         self.btn_add_cube     = GuiButton(15,  45, 48, 26, "+ Cubo",  bg_color=(40,100,60),  hover_color=(50,130,80))
         self.btn_add_pyramid  = GuiButton(68,  45, 48, 26, "+ Pirâm", bg_color=(40,100,60),  hover_color=(50,130,80))
         self.btn_add_sphere   = GuiButton(121, 45, 48, 26, "+ Esf",   bg_color=(40,100,60),  hover_color=(50,130,80))
@@ -234,7 +232,6 @@ class EditorScene(Scene):
         self.btn_snap      = GuiButton(15, 140, 200, 22, "Grade: OFF", bg_color=(55,58,68), hover_color=(70,75,88))
         self.btn_templates = GuiButton(15, 164, 200, 22, "📂 Templates", bg_color=(60,40,100), hover_color=(80,55,130))
 
-        # Botões de scroll da tree
         self.btn_tree_up   = GuiButton(196, _TREE_Y + 18, 28, 20, "▲", bg_color=(55,58,68), hover_color=(70,75,88))
         self.btn_tree_down = GuiButton(196, _TREE_Y + _TREE_H - 6, 28, 20, "▼", bg_color=(55,58,68), hover_color=(70,75,88))
 
@@ -248,14 +245,12 @@ class EditorScene(Scene):
         self.btn_light_angle_inc = GuiButton(165, _LIGHT_Y, 40, 22, " > ", bg_color=(60,65,78), hover_color=(75,80,95))
         self._light_y = _LIGHT_Y
 
-        # --- Barra superior ---
         self.btn_play_pause  = GuiButton(245, 15, 80,  26, "PLAY",          bg_color=(40,120,60),  hover_color=(50,150,80))
         self.btn_save        = GuiButton(335, 15, 70,  26, "Salvar",        bg_color=(100,70,40),  hover_color=(130,90,50))
         self.btn_load        = GuiButton(415, 15, 70,  26, "Carregar",      bg_color=(100,70,40),  hover_color=(130,90,50))
         self.btn_camera_mode = GuiButton(495, 15, 100, 26, "Câmera: Persp", bg_color=(40,70,120),  hover_color=(55,95,160))
         self.btn_welcome     = GuiButton(605, 15, 50,  26, "❓ Ajuda",       bg_color=(80,60,20),   hover_color=(110,85,30))
 
-        # --- Inspetor direito ---
         self.btn_toggle_static  = GuiButton(785, 50,  20, 20, "", bg_color=(45,49,58), hover_color=(70,76,90))
         self.btn_toggle_physics = GuiButton(785, 80,  20, 20, "", bg_color=(45,49,58), hover_color=(70,76,90))
         self.btn_vel_dec        = GuiButton(785, 135, 40, 20, " - ", bg_color=(60,65,78), hover_color=(75,80,95))
@@ -277,7 +272,6 @@ class EditorScene(Scene):
             for i, c in enumerate(COLOR_PALETTE)
         ]
 
-        # Templates modal
         self.showing_templates = False
         self._template_list    = self._load_template_list()
         self.btn_template_items = []
@@ -289,7 +283,6 @@ class EditorScene(Scene):
             )
         self.btn_templates_close = GuiButton(660, 80, 80, 28, "Fechar", bg_color=(140,40,40), hover_color=(175,50,50))
 
-        # --- Câmera ---
         cam_obj = GameObject("EditorCamera")
         self.camera_comp = cam_obj.add_component(Camera3D(
             fov=60.0, near=0.1, far=100.0,
@@ -303,7 +296,6 @@ class EditorScene(Scene):
 
         self.spawn_object("Cube")
 
-    # -----------------------------------------------------------------------
     def _load_template_list(self) -> List[Dict]:
         templates = []
         demos_dir = os.path.join(os.path.dirname(__file__), "..", "demos")
@@ -344,7 +336,6 @@ class EditorScene(Scene):
         self.camera_controller.target_distance = preset["dist"]
         self.btn_camera_mode.text = f"Câmera: {mode_name[:5]}"
 
-    # -----------------------------------------------------------------------
     def _add_go(self, go: GameObject) -> None:
         go.scene = self
         self.game_objects.append(go)
@@ -359,11 +350,7 @@ class EditorScene(Scene):
             return np.round(v / SNAP_SIZE) * SNAP_SIZE
         return v
 
-    # -----------------------------------------------------------------------
-    # Serialização / Desserialização
-    # -----------------------------------------------------------------------
     def _make_mesh(self, shape: str, color: tuple):
-        """Cria e retorna um MeshRenderer3D para a forma dada."""
         if shape == "Cube":
             return MeshRenderer3D(Assets.create_cube_mesh(1.0), color=color)
         elif shape == "Pyramid":
@@ -391,7 +378,6 @@ class EditorScene(Scene):
         go.tag                = item.get("tag", "")
         color = tuple(item["color"])
         go.add_component(self._make_mesh(go.mesh_type, color))
-        # contadores
         if go.mesh_type == "Cube":    self.cube_count    += 1
         elif go.mesh_type == "Pyramid": self.pyramid_count += 1
         elif go.mesh_type == "Sphere":  self.sphere_count  += 1
@@ -399,7 +385,6 @@ class EditorScene(Scene):
         elif go.mesh_type == "Capsule": self.capsule_count += 1
         return go
 
-    # -----------------------------------------------------------------------
     def spawn_object(self, shape: str) -> None:
         self.history.push(self)
         go = GameObject()
@@ -441,7 +426,6 @@ class EditorScene(Scene):
         self._add_go(go)
         self.editable_objects.append(go)
         self.selected_index = len(self.editable_objects) - 1
-        # garante que o novo objeto fique visível na tree
         self._tree_scroll_to(self.selected_index)
 
     def delete_selected(self) -> None:
@@ -479,9 +463,6 @@ class EditorScene(Scene):
         self.selected_index = len(self.editable_objects) - 1
         self._tree_scroll_to(self.selected_index)
 
-    # -----------------------------------------------------------------------
-    # Rename inline
-    # -----------------------------------------------------------------------
     def _start_rename(self, idx: int) -> None:
         if not (0 <= idx < len(self.editable_objects)):
             return
@@ -500,11 +481,7 @@ class EditorScene(Scene):
         self._rename_index = -1
         self._rename_text  = ""
 
-    # -----------------------------------------------------------------------
-    # Tree scroll helpers
-    # -----------------------------------------------------------------------
     def _tree_scroll_to(self, idx: int) -> None:
-        """Garante que o índice idx fique visível na janela de scroll."""
         if idx < 0:
             return
         if idx < self._tree_scroll:
@@ -515,7 +492,6 @@ class EditorScene(Scene):
     def _max_scroll(self) -> int:
         return max(0, len(self.editable_objects) - _TREE_MAX_VIS)
 
-    # -----------------------------------------------------------------------
     def save_scene(self) -> None:
         data = {"objects": []}
         for obj in self.editable_objects:
@@ -567,7 +543,6 @@ class EditorScene(Scene):
             self.selected_index = len(self.editable_objects) - 1
         print("[EditorScene] Cena carregada.")
 
-    # -----------------------------------------------------------------------
     def _select_at(self, mx: int, my: int) -> None:
         best_idx, best_depth = -1, float("inf")
         for idx, obj in enumerate(self.editable_objects):
@@ -583,7 +558,6 @@ class EditorScene(Scene):
             self.selected_index = best_idx
             self._tree_scroll_to(self.selected_index)
 
-    # -----------------------------------------------------------------------
     def _draw_floor_grid(self, screen: pygame.Surface) -> None:
         verts = []
         for x in range(-5, 6): verts += [[x,-0.5,-5.0],[x,-0.5,5.0]]
@@ -603,9 +577,7 @@ class EditorScene(Scene):
                          (abs(verts[i][2])<0.01 and abs(verts[i][0]-verts[i+1][0])>0.01)
                 pygame.draw.line(screen, (170,175,185) if center else (220,222,226), p0, p1, 2 if center else 1)
 
-    # -----------------------------------------------------------------------
     def update(self, dt: float) -> None:
-        # Pisca cursor do rename
         if self._rename_index >= 0:
             self._rename_blink += dt
             if self._rename_blink >= 0.5:
@@ -664,7 +636,6 @@ class EditorScene(Scene):
         for go in self.game_objects:
             go.update(dt)
 
-    # -----------------------------------------------------------------------
     def draw(self, screen: pygame.Surface) -> None:
         pygame.draw.rect(screen, (255,255,255), (_VP_X, _VP_Y, _VP_W, _VP_H))
         self._draw_floor_grid(screen)
@@ -691,9 +662,6 @@ class EditorScene(Scene):
         elif self.showing_welcome:
             self._draw_welcome_modal(screen)
 
-    # -----------------------------------------------------------------------
-    # Draw helpers
-    # -----------------------------------------------------------------------
     def _draw_gizmo(self, screen: pygame.Surface) -> None:
         if self.selected_index < 0 or self.play_mode or not self.gizmo_mode:
             return
@@ -753,9 +721,7 @@ class EditorScene(Scene):
         self.btn_snap.draw(screen, self.font_btn)
         self.btn_templates.draw(screen, self.font_btn)
 
-        # --- Tree/outliner ---
         screen.blit(self.font_title.render("OBJETOS DA CENA",True,(0,200,255)),(15, _TREE_Y))
-        # fundo da área
         pygame.draw.rect(screen,(30,34,42),(15, _TREE_Y+18, 178, _TREE_H), border_radius=3)
         pygame.draw.rect(screen,(55,60,72),(15, _TREE_Y+18, 178, _TREE_H), 1, border_radius=3)
 
@@ -780,7 +746,6 @@ class EditorScene(Scene):
             icon = _SHAPE_ICON.get(getattr(obj, "mesh_type", "Cube"), "■")
             screen.blit(self.font_body.render(icon, True, (0,200,255) if sel else (120,130,145)), (22, ry+4))
 
-            # rename inline
             if self._rename_index == obj_i:
                 pygame.draw.rect(screen,(50,55,65),(38, ry+2, 148, _TREE_ROW_H-4), border_radius=2)
                 pygame.draw.rect(screen,(0,200,255),(38, ry+2, 148, _TREE_ROW_H-4), 1, border_radius=2)
@@ -794,7 +759,6 @@ class EditorScene(Scene):
                     label = label[:14] + ".."
                 screen.blit(self.font_body.render(label, True,(255,255,255)),(38, ry+4))
 
-        # scrollbar visual
         if total > _TREE_MAX_VIS:
             bar_h = max(16, _TREE_H * _TREE_MAX_VIS // max(total,1))
             bar_y = _TREE_Y + 18 + (_TREE_H - bar_h) * self._tree_scroll // max(max_s, 1)
@@ -802,10 +766,8 @@ class EditorScene(Scene):
             self.btn_tree_up.draw(screen, self.font_btn)
             self.btn_tree_down.draw(screen, self.font_btn)
 
-        # contagem
         screen.blit(self.font_body.render(f"{total} objeto(s)", True,(100,105,115)),(15, _TREE_Y + _TREE_H + 2))
 
-        # --- controles ---
         self.btn_undo.bg_color = (60,80,110) if self.history.can_undo else (45,49,58)
         self.btn_redo.bg_color = (60,80,110) if self.history.can_redo else (45,49,58)
         self.btn_undo.draw(screen, self.font_btn)
@@ -960,11 +922,7 @@ class EditorScene(Scene):
         pygame.draw.rect(screen,(120,40,40),(660,155,36,22),border_radius=5)
         screen.blit(self.font_btn.render("✕",True,(255,255,255)),(668,158))
 
-    # -----------------------------------------------------------------------
-    # handle_event
-    # -----------------------------------------------------------------------
     def handle_event(self, event: pygame.event.Event) -> None:
-        # --- Rename inline: captura teclado ---
         if self._rename_index >= 0:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
@@ -979,14 +937,11 @@ class EditorScene(Scene):
                         self._rename_text += ch
                     return
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                # clique fora da tree confirma rename
                 mx, my = event.pos
                 tree_rect = pygame.Rect(15, _TREE_Y+18, 178, _TREE_H)
                 if not tree_rect.collidepoint(mx, my):
                     self._commit_rename()
-                    # não retorna — deixa o clique ser processado normalmente
 
-        # Boas-vindas modal
         if self.showing_welcome:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mx, my = event.pos
@@ -1005,7 +960,6 @@ class EditorScene(Scene):
                 self.showing_welcome = False
             return
 
-        # Templates modal
         if self.showing_templates:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if self.btn_templates_close.is_clicked(event):
@@ -1070,7 +1024,6 @@ class EditorScene(Scene):
         if self.btn_save.is_clicked(event):       self.save_scene();   return
         if self.btn_load.is_clicked(event):       self.load_scene();   return
 
-        # Scroll da tree via botões
         if self.btn_tree_up.is_clicked(event):
             self._tree_scroll = max(0, self._tree_scroll - 1); return
         if self.btn_tree_down.is_clicked(event):
@@ -1089,7 +1042,6 @@ class EditorScene(Scene):
 
         if event.type == pygame.MOUSEWHEEL:
             mx, my = pygame.mouse.get_pos()
-            # scroll da tree se o mouse estiver sobre ela
             if pygame.Rect(15, _TREE_Y+18, 178, _TREE_H).collidepoint(mx, my):
                 self._tree_scroll = max(0, min(self._max_scroll(), self._tree_scroll - event.y))
                 return
@@ -1146,7 +1098,6 @@ class EditorScene(Scene):
                 dy=event.pos[1]-self.click_start_pos[1]
                 if np.hypot(dx,dy)<4.0:
                     mx,my=event.pos
-                    # clique na tree
                     if mx < _LEFT_W:
                         tree_rect = pygame.Rect(15, _TREE_Y+18, 178, _TREE_H)
                         if tree_rect.collidepoint(mx, my):
@@ -1155,7 +1106,6 @@ class EditorScene(Scene):
                             if 0 <= obj_i < len(self.editable_objects):
                                 now = pygame.time.get_ticks() / 1000.0
                                 if obj_i == self._last_click_index and (now - self._last_click_time) < 0.4:
-                                    # duplo-clique → rename
                                     self._start_rename(obj_i)
                                 else:
                                     self.selected_index = obj_i
@@ -1211,32 +1161,41 @@ class EditorScene(Scene):
                     if r: r.color=COLOR_PALETTE[i]
                     return
 
-    # -----------------------------------------------------------------------
-    # Play / Stop
-    # -----------------------------------------------------------------------
     def _toggle_play(self) -> None:
-        self._cancel_rename()
-        if not self.play_mode:
-            self.play_mode=True
-            self.saved_scene_state=[]
+        self.play_mode = not self.play_mode
+        if self.play_mode:
+            self.saved_scene_state = [self._serialize_object(o) for o in self.editable_objects]
             for obj in self.editable_objects:
-                self.saved_scene_state.append({
-                    "obj": obj,
-                    "pos": obj.transform.position.copy(),
-                    "rot": obj.transform.rotation.copy(),
-                    "sc":  obj.transform.scale.copy(),
-                })
-                PhysicsSim.attach_rigidbody(obj)
                 ScriptManager.load(obj)
         else:
-            self.play_mode=False
-            if self.saved_scene_state:
-                for state in self.saved_scene_state:
-                    o=state["obj"]
-                    o.transform.position=state["pos"]
-                    o.transform.rotation=state["rot"]
-                    o.transform.scale   =state["sc"]
-                    PhysicsSim.detach_rigidbody(o)
-                    ScriptManager.unload(o)
-            self.saved_scene_state=None
-            PhysicsSim.clear_registries()
+            for obj in self.editable_objects:
+                ScriptManager.unload(obj)
+            if self.saved_scene_state is not None:
+                for obj in list(self.editable_objects):
+                    self._remove_go(obj)
+                    obj.destroy()
+                self.editable_objects.clear()
+                self.cube_count = self.pyramid_count = self.sphere_count = 0
+                self.plane_count = self.capsule_count = 0
+                for item in self.saved_scene_state:
+                    go = self._deserialize_object(item)
+                    self._add_go(go)
+                    self.editable_objects.append(go)
+                self.selected_index = min(self.selected_index, len(self.editable_objects)-1)
+                self._tree_scroll_to(self.selected_index)
+
+    def _serialize_object(self, obj: GameObject) -> Dict[str, Any]:
+        r = obj.get_component(MeshRenderer3D)
+        return {
+            "name": obj.name,
+            "shape": getattr(obj, "mesh_type", "Cube"),
+            "position": obj.transform.position.tolist(),
+            "rotation": obj.transform.rotation.tolist(),
+            "scale": obj.transform.scale.tolist(),
+            "color": list(r.color) if r else [200, 200, 200],
+            "is_static": getattr(obj, "is_static", False),
+            "use_physics": getattr(obj, "use_physics", True),
+            "initial_velocity_y": getattr(obj, "initial_velocity_y", 0.0),
+            "script_path": getattr(obj, "script_path", ""),
+            "tag": getattr(obj, "tag", ""),
+        }
