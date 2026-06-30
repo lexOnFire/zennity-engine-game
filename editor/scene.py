@@ -268,7 +268,7 @@ class EditorScene(Scene):
         self.btn_next_tag = GuiButton(1170 + 175, 440, 30, 22, " > ", bg_color=(60,65,78), hover_color=(75,80,95))
 
         self.btn_colors = [
-            GuiButton(_RIGHT_X + 15 + i * 32, 312, 24, 24, "", bg_color=c, hover_color=c)
+            GuiButton(1170 + 15 + i * 32, 312, 24, 24, "", bg_color=c, hover_color=c)
             for i, c in enumerate(COLOR_PALETTE)
         ]
 
@@ -1002,51 +1002,53 @@ class EditorScene(Scene):
             screen.blit(self.font_body.render(opt, True, color), (rx + 8, ry + i * 26 + 5))
 
     def _draw_right_panel(self, screen: pygame.Surface) -> None:
-        pygame.draw.rect(screen,(38,42,50),(_RIGHT_X,0,230,_VP_H))
-        pygame.draw.line(screen,(55,60,72),(_RIGHT_X,0),(_RIGHT_X,_VP_H),2)
+        width, height = screen.get_size()
+        right_x = width - 230
+        pygame.draw.rect(screen,(38,42,50),(right_x,30,230,height - 30))
+        pygame.draw.line(screen,(55,60,72),(right_x,30),(right_x,height),2)
         if not (0 <= self.selected_index < len(self.editable_objects)):
-            screen.blit(self.font_body.render("Selecione um objeto",True,(140,145,155)),(_RIGHT_X + 15,50))
+            screen.blit(self.font_body.render("Selecione um objeto",True,(140,145,155)),(right_x + 15,60))
             return
         sel = self.editable_objects[self.selected_index]
         pos,rot,sc = sel.transform.position,sel.transform.rotation,sel.transform.scale
-        screen.blit(self.font_title.render("PROPRIEDADES 3D",True,(0,200,255)),(_RIGHT_X + 15,18))
+        screen.blit(self.font_title.render("PROPRIEDADES 3D",True,(0,200,255)),(right_x + 15,48))
         self.btn_toggle_static.draw(screen,self.font_btn)
-        if getattr(sel,"is_static",False): pygame.draw.rect(screen,(0,200,255),(_RIGHT_X + 19,54,12,12))
-        screen.blit(self.font_body.render("Estatico",True,(240,240,240)),(_RIGHT_X + 45,52))
+        if getattr(sel,"is_static",False): pygame.draw.rect(screen,(0,200,255),(right_x + 19,54,12,12))
+        screen.blit(self.font_body.render("Estatico",True,(240,240,240)),(right_x + 45,52))
         self.btn_toggle_physics.draw(screen,self.font_btn)
-        if getattr(sel,"use_physics",True): pygame.draw.rect(screen,(0,200,255),(_RIGHT_X + 19,84,12,12))
-        screen.blit(self.font_body.render("Simular Gravidade",True,(240,240,240)),(_RIGHT_X + 45,82))
-        screen.blit(self.font_body.render("Impulso Vertical:",True,(220,220,220)),(_RIGHT_X + 15,115))
+        if getattr(sel,"use_physics",True): pygame.draw.rect(screen,(0,200,255),(right_x + 19,84,12,12))
+        screen.blit(self.font_body.render("Simular Gravidade",True,(240,240,240)),(right_x + 45,82))
+        screen.blit(self.font_body.render("Impulso Vertical:",True,(220,220,220)),(right_x + 15,115))
         self.btn_vel_dec.draw(screen,self.font_btn)
-        screen.blit(self.font_body.render(f"{sel.initial_velocity_y:+.1f} m/s",True,(255,255,255)),(_RIGHT_X + 65,137))
+        screen.blit(self.font_body.render(f"{sel.initial_velocity_y:+.1f} m/s",True,(255,255,255)),(right_x + 65,137))
         self.btn_vel_inc.draw(screen,self.font_btn)
-        screen.blit(self.font_body.render("Comportamento (Script):",True,(220,220,220)),(_RIGHT_X + 15,170))
+        screen.blit(self.font_body.render("Comportamento (Script):",True,(220,220,220)),(right_x + 15,170))
         self.btn_prev_script.draw(screen,self.font_btn)
-        pygame.draw.rect(screen,(45,49,58),(_RIGHT_X + 50,190,120,22),border_radius=3)
+        pygame.draw.rect(screen,(45,49,58),(right_x + 50,190,120,22),border_radius=3)
         sn = os.path.basename(getattr(sel,"script_path","")) or "Nenhum"
         if len(sn)>13: sn=sn[:11]+".."
-        screen.blit(self.font_body.render(sn,True,(255,255,255)),(_RIGHT_X + 56,194))
+        screen.blit(self.font_body.render(sn,True,(255,255,255)),(right_x + 56,194))
         self.btn_next_script.draw(screen,self.font_btn)
         for btn in [self.btn_new_script,self.btn_edit_script,self.btn_internal_editor,self.btn_script_help]:
             btn.draw(screen,self.font_btn)
-        screen.blit(self.font_body.render("Cor do Objeto:",True,(220,220,220)),(_RIGHT_X + 15,292))
+        screen.blit(self.font_body.render("Cor do Objeto:",True,(220,220,220)),(right_x + 15,292))
         for btn in self.btn_colors: btn.draw(screen,self.font_btn)
         self.btn_clone.draw(screen,self.font_btn)
         # Parent / Hierarquia
-        screen.blit(self.font_body.render("Pai:",True,(220,220,220)),(_RIGHT_X + 15,368))
+        screen.blit(self.font_body.render("Pai:",True,(220,220,220)),(right_x + 15,368))
         self.btn_prev_parent.draw(screen,self.font_btn)
         p_name = sel.parent.name if sel.parent else "Nenhum"
         if len(p_name) > 13: p_name = p_name[:11] + ".."
-        pygame.draw.rect(screen,(45,49,58),(_RIGHT_X + 50,385,120,22),border_radius=3)
-        screen.blit(self.font_body.render(p_name,True,(255,255,255)),(_RIGHT_X + 56,389))
+        pygame.draw.rect(screen,(45,49,58),(right_x + 50,385,120,22),border_radius=3)
+        screen.blit(self.font_body.render(p_name,True,(255,255,255)),(right_x + 56,389))
         self.btn_next_parent.draw(screen,self.font_btn)
 
         # Tag
-        screen.blit(self.font_body.render("Tag:",True,(220,220,220)),(_RIGHT_X + 15,423))
+        screen.blit(self.font_body.render("Tag:",True,(220,220,220)),(right_x + 15,423))
         self.btn_prev_tag.draw(screen,self.font_btn)
         tag_val = getattr(sel,"tag","") or "Nenhuma"
-        pygame.draw.rect(screen,(45,49,58),(_RIGHT_X + 50,440,120,22),border_radius=3)
-        screen.blit(self.font_body.render(tag_val,True,(255,255,255)),(_RIGHT_X + 56,444))
+        pygame.draw.rect(screen,(45,49,58),(right_x + 50,440,120,22),border_radius=3)
+        screen.blit(self.font_body.render(tag_val,True,(255,255,255)),(right_x + 56,444))
         self.btn_next_tag.draw(screen,self.font_btn)
         # Status bar
         ov = pygame.Surface((480,42),pygame.SRCALPHA)
@@ -1422,8 +1424,8 @@ class EditorScene(Scene):
 
         if event.type==pygame.MOUSEBUTTONDOWN and event.button==1:
             self.click_start_pos=event.pos
-            mx,my=event.pos
-            if _VP_X<=mx<=_RIGHT_X and 0<=self.selected_index<len(self.editable_objects):
+            right_limit = pygame.display.get_surface().get_width() - 230
+            if 230 <= mx <= right_limit and 0<=self.selected_index<len(self.editable_objects):
                 r=self.editable_objects[self.selected_index].get_component(MeshRenderer3D)
                 if r and r.last_screen_coords is not None:
                     for face in r.mesh.faces:
