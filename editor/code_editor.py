@@ -52,6 +52,33 @@ class CodeEditor:
             print(f"[CodeEditor] Erro ao salvar: {e}")
 
     # ------------------------------------------------------------------
+    # Clipboard Helpers
+    # ------------------------------------------------------------------
+
+    def _get_clipboard(self) -> str:
+        try:
+            import tkinter as tk
+            root = tk.Tk()
+            root.withdraw()
+            text = root.clipboard_get()
+            root.destroy()
+            return text
+        except Exception:
+            return ""
+
+    def _set_clipboard(self, text: str) -> None:
+        try:
+            import tkinter as tk
+            root = tk.Tk()
+            root.withdraw()
+            root.clipboard_clear()
+            root.clipboard_append(text)
+            root.update()
+            root.destroy()
+        except Exception:
+            pass
+
+    # ------------------------------------------------------------------
     # Eventos
     # ------------------------------------------------------------------
 
@@ -70,6 +97,48 @@ class CodeEditor:
                 self.save(); return True
 
             row, col = self.cursor_row, self.cursor_col
+
+            # Copiar linha (Ctrl + C)
+            if k == pygame.K_c and mods & pygame.KMOD_CTRL:
+                self._set_clipboard(self.lines[row])
+                return True
+
+            # Recortar linha (Ctrl + X)
+            if k == pygame.K_x and mods & pygame.KMOD_CTRL:
+                self._set_clipboard(self.lines[row])
+                if len(self.lines) > 1:
+                    self.lines.pop(row)
+                    self.cursor_row = min(row, len(self.lines) - 1)
+                    self.cursor_col = min(col, len(self.lines[self.cursor_row]))
+                else:
+                    self.lines = [""]
+                    self.cursor_row = 0
+                    self.cursor_col = 0
+                self._clamp_scroll()
+                return True
+
+            # Colar texto (Ctrl + V)
+            if k == pygame.K_v and mods & pygame.KMOD_CTRL:
+                clip = self._get_clipboard()
+                if clip:
+                    clip_lines = clip.splitlines() or [""]
+                    curr_line = self.lines[row]
+                    if len(clip_lines) == 1:
+                        # Colar em uma única linha
+                        self.lines[row] = curr_line[:col] + clip_lines[0] + curr_line[col:]
+                        self.cursor_col += len(clip_lines[0])
+                    else:
+                        # Colar multilinha
+                        first = curr_line[:col] + clip_lines[0]
+                        last = clip_lines[-1] + curr_line[col:]
+                        self.lines[row] = first
+                        for idx, new_line in enumerate(clip_lines[1:-1]):
+                            self.lines.insert(row + 1 + idx, new_line)
+                        self.lines.insert(row + len(clip_lines) - 1, last)
+                        self.cursor_row += len(clip_lines) - 1
+                        self.cursor_col = len(clip_lines[-1])
+                        self._clamp_scroll()
+                return True
 
             if k == pygame.K_UP:
                 if row > 0:
@@ -109,10 +178,21 @@ class CodeEditor:
                     self._clamp_scroll()
             elif k == pygame.K_RETURN:
                 l = self.lines[row]
+                # Achar recuo (espaços à esquerda) da linha anterior
+                indent = ""
+                for char in l[:col]:
+                    if char == " ":
+                        indent += " "
+                    else:
+                        break
+                # Se a linha termina com ":", adicionar mais 4 espaços de indentação automática
+                if col > 0 and l[:col].rstrip().endswith(":"):
+                    indent += "    "
+                    
                 self.lines[row] = l[:col]
-                self.lines.insert(row + 1, l[col:])
+                self.lines.insert(row + 1, indent + l[col:])
                 self.cursor_row += 1
-                self.cursor_col = 0
+                self.cursor_col = len(indent)
                 self._clamp_scroll()
             elif k == pygame.K_TAB:
                 l = self.lines[row]
@@ -130,11 +210,93 @@ class CodeEditor:
     # Renderização
     # ------------------------------------------------------------------
 
+    def _draw_highlighted_line(self, screen: pygame.Surface, line: str, x_start: int, y: int) -> None:
+        n = len(line)
+        if n == 0:
+            return
+            
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            screen.blit(self._font.render(line, True, (110, 115, 125)), (x_start, y))
+            return
+            
+        colors = [(240, 240, 240)] * n
+        
+        # 1. Identificar string literals
+        in_string = False
+        string_char = None
+        i = 0
+        while i < n:
+            char = line[i]
+            if char == "#" and not in_string:
+                for j in range(i, n):
+                    colors[j] = (110, 115, 125)
+                break
+            elif char in ['"', "'"] and not in_string:
+                in_string = True
+                string_char = char
+                colors[i] = (230, 140, 80)
+            elif in_string:
+                colors[i] = (230, 140, 80)
+                if char == string_char:
+                    in_string = False
+            i += 1
+            
+        # 2. Palavras-chave
+        keywords = {
+            "def", "class", "import", "from", "return", "if", "elif", "else", 
+            "while", "for", "in", "and", "or", "not", "is", "pass", "try", "except", "print", "as"
+        }
+        engine_vars = {"self", "obj", "dt"}
+        
+        i = 0
+        while i < n:
+            if colors[i] == (240, 240, 240):
+                if line[i].isalnum() or line[i] == "_":
+                    start = i
+                    while i < n and (line[i].isalnum() or line[i] == "_"):
+                        i += 1
+                    word = line[start:i]
+                    if word in keywords:
+                        for j in range(start, i):
+                            colors[j] = (0, 200, 255)
+                    elif word in engine_vars:
+                        for j in range(start, i):
+                            colors[j] = (120, 220, 120)
+                    elif word.isdigit():
+                        for j in range(start, i):
+                            colors[j] = (220, 220, 100)
+                    continue
+            i += 1
+            
+        # Desenhar segmentos
+        i = 0
+        curr_x = x_start
+        while i < n:
+            color = colors[i]
+            start = i
+            while i < n and colors[i] == color:
+                i += 1
+            segment = line[start:i]
+            surf = self._font.render(segment, True, color)
+            screen.blit(surf, (curr_x, y))
+            curr_x += self._font.size(segment)[0]
+
     def draw(self, screen: pygame.Surface) -> None:
         if not self.is_open:
             return
         if self._font is None:
-            self._font = Assets.get_font(None, 15)
+            try:
+                self._font = pygame.font.SysFont("Consolas", 15)
+            except Exception:
+                pass
+            if self._font is None:
+                try:
+                    self._font = pygame.font.SysFont("Courier New", 15)
+                except Exception:
+                    pass
+            if self._font is None:
+                self._font = Assets.get_font(None, 15)
 
         # Overlay
         overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
@@ -152,7 +314,7 @@ class CodeEditor:
         fname = os.path.basename(self.path or "")
         title_font = Assets.get_font(None, 18)
         screen.blit(title_font.render(f"Zennity Code Editor — {fname}", True, (0, 200, 255)), (140, 48))
-        screen.blit(self._font.render("Ctrl+S: Salvar  |  Esc: Fechar  |  Setas: navegar", True, (150, 155, 165)), (140, 535))
+        screen.blit(self._font.render("Ctrl+S: Salvar  |  Esc: Fechar  |  Ctrl+C/V/X: Copiar/Colar/Cortar  |  Setas: navegar", True, (150, 155, 165)), (140, 535))
 
         text_bg = pygame.Rect(140, 90, 720, 430)
         pygame.draw.rect(screen, (22, 25, 30), text_bg, border_radius=4)
@@ -162,7 +324,7 @@ class CodeEditor:
         for i in range(self.scroll_y, min(len(self.lines), self.scroll_y + self.VISIBLE_LINES)):
             num_surf = self._font.render(f"{i+1:3d} |", True, (90, 95, 105))
             screen.blit(num_surf, (150, y_px))
-            screen.blit(self._font.render(self.lines[i], True, (240, 240, 240)), (200, y_px))
+            self._draw_highlighted_line(screen, self.lines[i], 200, y_px)
             if i == self.cursor_row:
                 cx = 200 + self._font.size(self.lines[i][:self.cursor_col])[0]
                 pygame.draw.line(screen, (0, 200, 255), (cx, y_px), (cx, y_px + 14), 2)
