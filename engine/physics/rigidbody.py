@@ -9,6 +9,8 @@ class RigidBody(Component):
     ao Transform do GameObject a cada frame.
     FIX: gravidade aplicada diretamente na velocidade (não via acceleration)
     para evitar vazamento quando forças externas e gravidade dividiam o mesmo array.
+
+    Adicionado: atributo `grounded` para integração com TilemapCollider.
     """
 
     def __init__(
@@ -29,6 +31,9 @@ class RigidBody(Component):
         self.velocity:     np.ndarray = np.zeros(2, dtype=np.float32)
         # acceleration stores only EXTERNAL forces (not gravity)
         self.acceleration: np.ndarray = np.zeros(2, dtype=np.float32)
+
+        # Flag definida pelo TilemapCollider a cada frame
+        self.grounded: bool = False
 
         self.GRAVITY: float = 980.0
 
@@ -57,6 +62,9 @@ class RigidBody(Component):
         if self.is_kinematic or self.game_object is None:
             return
 
+        # Reseta grounded a cada frame (TilemapCollider seta de volta se estiver no chão)
+        self.grounded = False
+
         # FIX: apply gravity directly to velocity, separate from external forces
         if self.use_gravity:
             self.velocity[1] += self.GRAVITY * self.gravity_scale * dt
@@ -71,5 +79,5 @@ class RigidBody(Component):
         transform.x += self.velocity[0] * dt
         transform.y += self.velocity[1] * dt
 
-        # Reset external forces (gravity is NOT here — it's in velocity directly)
+        # Reset external forces (gravity is NOT here — it’s in velocity directly)
         self.acceleration[:] = 0.0
