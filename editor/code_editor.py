@@ -303,30 +303,35 @@ class CodeEditor:
         overlay.fill((20, 24, 30, 230))
         screen.blit(overlay, (0, 0))
 
-        modal = pygame.Rect(120, 40, 760, 520)
+        screen_w, screen_h = screen.get_size()
+        mw, mh = 760, 520
+        mx = (screen_w - mw) // 2
+        my = (screen_h - mh) // 2
+
+        modal = pygame.Rect(mx, my, mw, mh)
         pygame.draw.rect(screen, (30, 34, 42), modal, border_radius=8)
         pygame.draw.rect(screen, (0, 200, 255), modal, 2, border_radius=8)
 
-        title_bar = pygame.Rect(120, 40, 760, 35)
+        title_bar = pygame.Rect(mx, my, mw, 35)
         pygame.draw.rect(screen, (42, 47, 57), title_bar, border_radius=8)
-        pygame.draw.line(screen, (55, 60, 72), (120, 75), (880, 75), 2)
+        pygame.draw.line(screen, (55, 60, 72), (mx, my + 35), (mx + mw, my + 35), 2)
 
         fname = os.path.basename(self.path or "")
         title_font = Assets.get_font(None, 18)
-        screen.blit(title_font.render(f"Zennity Code Editor — {fname}", True, (0, 200, 255)), (140, 48))
-        screen.blit(self._font.render("Ctrl+S: Salvar  |  Esc: Fechar  |  Ctrl+C/V/X: Copiar/Colar/Cortar  |  Setas: navegar", True, (150, 155, 165)), (140, 535))
+        screen.blit(title_font.render(f"Zennity Code Editor — {fname}", True, (0, 200, 255)), (mx + 20, my + 8))
+        screen.blit(self._font.render("Ctrl+S: Salvar  |  Esc: Fechar  |  Ctrl+C/V/X: Copiar/Colar/Cortar  |  Setas: navegar", True, (150, 155, 165)), (mx + 20, my + mh - 25))
 
-        text_bg = pygame.Rect(140, 90, 720, 430)
+        text_bg = pygame.Rect(mx + 20, my + 50, mw - 40, mh - 90)
         pygame.draw.rect(screen, (22, 25, 30), text_bg, border_radius=4)
         pygame.draw.rect(screen, (55, 60, 72), text_bg, 1, border_radius=4)
 
-        y_px = 100
+        y_px = my + 60
         for i in range(self.scroll_y, min(len(self.lines), self.scroll_y + self.VISIBLE_LINES)):
             num_surf = self._font.render(f"{i+1:3d} |", True, (90, 95, 105))
-            screen.blit(num_surf, (150, y_px))
-            self._draw_highlighted_line(screen, self.lines[i], 200, y_px)
+            screen.blit(num_surf, (mx + 30, y_px))
+            self._draw_highlighted_line(screen, self.lines[i], mx + 80, y_px)
             if i == self.cursor_row:
-                cx = 200 + self._font.size(self.lines[i][:self.cursor_col])[0]
+                cx = mx + 80 + self._font.size(self.lines[i][:self.cursor_col])[0]
                 pygame.draw.line(screen, (0, 200, 255), (cx, y_px), (cx, y_px + 14), 2)
             y_px += 20
 

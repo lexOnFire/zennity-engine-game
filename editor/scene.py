@@ -38,11 +38,11 @@ from .history import History
 _IDENTITY = np.eye(4, dtype=np.float32)
 
 _LEFT_W   = 230
-_RIGHT_X  = 770
+_RIGHT_X  = 1170
 _VP_X     = _LEFT_W
 _VP_W     = _RIGHT_X - _VP_X
 _VP_Y     = 0
-_VP_H     = 600
+_VP_H     = 800
 
 # Modos de câmera disponíveis
 CAMERA_MODES = ["Perspectiva", "Top-Down", "Side-Scroller"]
@@ -211,25 +211,25 @@ class EditorScene(Scene):
         self.btn_welcome     = GuiButton(605, 15, 50,  26, "Ajuda",       bg_color=(80,60,20),   hover_color=(110,85,30))
 
         # --- Inspetor direito ---
-        self.btn_toggle_static  = GuiButton(785, 50,  20, 20, "", bg_color=(45,49,58), hover_color=(70,76,90))
-        self.btn_toggle_physics = GuiButton(785, 80,  20, 20, "", bg_color=(45,49,58), hover_color=(70,76,90))
-        self.btn_vel_dec        = GuiButton(785, 135, 40, 20, " - ", bg_color=(60,65,78), hover_color=(75,80,95))
-        self.btn_vel_inc        = GuiButton(915, 135, 40, 20, " + ", bg_color=(60,65,78), hover_color=(75,80,95))
+        self.btn_toggle_static  = GuiButton(_RIGHT_X + 15, 50,  20, 20, "", bg_color=(45,49,58), hover_color=(70,76,90))
+        self.btn_toggle_physics = GuiButton(_RIGHT_X + 15, 80,  20, 20, "", bg_color=(45,49,58), hover_color=(70,76,90))
+        self.btn_vel_dec        = GuiButton(_RIGHT_X + 15, 135, 40, 20, " - ", bg_color=(60,65,78), hover_color=(75,80,95))
+        self.btn_vel_inc        = GuiButton(_RIGHT_X + 145, 135, 40, 20, " + ", bg_color=(60,65,78), hover_color=(75,80,95))
 
-        self.btn_prev_script     = GuiButton(785, 190, 30, 22, " < ",              bg_color=(60,65,78),  hover_color=(75,80,95))
-        self.btn_next_script     = GuiButton(945, 190, 30, 22, " > ",              bg_color=(60,65,78),  hover_color=(75,80,95))
-        self.btn_new_script      = GuiButton(785, 215, 190,20, "+ Novo Script",    bg_color=(40,100,60), hover_color=(50,130,80))
-        self.btn_edit_script     = GuiButton(785, 238, 93, 20, "Editor Ext.",      bg_color=(0,100,160), hover_color=(0,130,200))
-        self.btn_internal_editor = GuiButton(882, 238, 93, 20, "Editor Int.",      bg_color=(0,100,160), hover_color=(0,130,200))
-        self.btn_script_help     = GuiButton(785, 261, 190,20, "Guia de Comandos", bg_color=(120,80,40), hover_color=(150,100,50))
-        self.btn_clone           = GuiButton(785, 352, 190,26, "Clonar Objeto",    bg_color=(80,60,120), hover_color=(100,75,150))
+        self.btn_prev_script     = GuiButton(_RIGHT_X + 15, 190, 30, 22, " < ",              bg_color=(60,65,78),  hover_color=(75,80,95))
+        self.btn_next_script     = GuiButton(_RIGHT_X + 175, 190, 30, 22, " > ",              bg_color=(60,65,78),  hover_color=(75,80,95))
+        self.btn_new_script      = GuiButton(_RIGHT_X + 15, 215, 190,20, "+ Novo Script",    bg_color=(40,100,60), hover_color=(50,130,80))
+        self.btn_edit_script     = GuiButton(_RIGHT_X + 15, 238, 93, 20, "Editor Ext.",      bg_color=(0,100,160), hover_color=(0,130,200))
+        self.btn_internal_editor = GuiButton(_RIGHT_X + 112, 238, 93, 20, "Editor Int.",      bg_color=(0,100,160), hover_color=(0,130,200))
+        self.btn_script_help     = GuiButton(_RIGHT_X + 15, 261, 190,20, "Guia de Comandos", bg_color=(120,80,40), hover_color=(150,100,50))
+        self.btn_clone           = GuiButton(_RIGHT_X + 15, 352, 190,26, "Clonar Objeto",    bg_color=(80,60,120), hover_color=(100,75,150))
 
         # Tag
-        self.btn_prev_tag = GuiButton(785, 385, 30, 22, " < ", bg_color=(60,65,78), hover_color=(75,80,95))
-        self.btn_next_tag = GuiButton(945, 385, 30, 22, " > ", bg_color=(60,65,78), hover_color=(75,80,95))
+        self.btn_prev_tag = GuiButton(_RIGHT_X + 15, 385, 30, 22, " < ", bg_color=(60,65,78), hover_color=(75,80,95))
+        self.btn_next_tag = GuiButton(_RIGHT_X + 175, 385, 30, 22, " > ", bg_color=(60,65,78), hover_color=(75,80,95))
 
         self.btn_colors = [
-            GuiButton(785 + i * 32, 312, 24, 24, "", bg_color=c, hover_color=c)
+            GuiButton(_RIGHT_X + 15 + i * 32, 312, 24, 24, "", bg_color=c, hover_color=c)
             for i, c in enumerate(COLOR_PALETTE)
         ]
 
@@ -627,8 +627,8 @@ class EditorScene(Scene):
                 pygame.draw.circle(screen,(240,200,0),c,6)
 
     def _draw_left_panel(self, screen: pygame.Surface) -> None:
-        pygame.draw.rect(screen,(38,42,50),(0,0,_LEFT_W,600))
-        pygame.draw.line(screen,(55,60,72),(_LEFT_W,0),(_LEFT_W,600),2)
+        pygame.draw.rect(screen,(38,42,50),(0,0,_LEFT_W,_VP_H))
+        pygame.draw.line(screen,(55,60,72),(_LEFT_W,0),(_LEFT_W,_VP_H),2)
         screen.blit(self.font_title.render("ADICIONAR FORMAS",True,(0,200,255)),(15,18))
         for btn in [self.btn_add_cube,self.btn_add_pyramid,self.btn_add_sphere]:
             btn.draw(screen,self.font_btn)
@@ -672,42 +672,42 @@ class EditorScene(Scene):
         screen.blit(self.font_btn.render(f"Redo: {len(self.history._redo)}",True,redo_col),(700,20))
 
     def _draw_right_panel(self, screen: pygame.Surface) -> None:
-        pygame.draw.rect(screen,(38,42,50),(_RIGHT_X,0,230,600))
-        pygame.draw.line(screen,(55,60,72),(_RIGHT_X,0),(_RIGHT_X,600),2)
+        pygame.draw.rect(screen,(38,42,50),(_RIGHT_X,0,230,_VP_H))
+        pygame.draw.line(screen,(55,60,72),(_RIGHT_X,0),(_RIGHT_X,_VP_H),2)
         if not (0 <= self.selected_index < len(self.editable_objects)):
-            screen.blit(self.font_body.render("Selecione um objeto",True,(140,145,155)),(785,50))
+            screen.blit(self.font_body.render("Selecione um objeto",True,(140,145,155)),(_RIGHT_X + 15,50))
             return
         sel = self.editable_objects[self.selected_index]
         pos,rot,sc = sel.transform.position,sel.transform.rotation,sel.transform.scale
-        screen.blit(self.font_title.render("PROPRIEDADES 3D",True,(0,200,255)),(785,18))
+        screen.blit(self.font_title.render("PROPRIEDADES 3D",True,(0,200,255)),(_RIGHT_X + 15,18))
         self.btn_toggle_static.draw(screen,self.font_btn)
-        if getattr(sel,"is_static",False): pygame.draw.rect(screen,(0,200,255),(789,54,12,12))
-        screen.blit(self.font_body.render("Estatico",True,(240,240,240)),(815,52))
+        if getattr(sel,"is_static",False): pygame.draw.rect(screen,(0,200,255),(_RIGHT_X + 19,54,12,12))
+        screen.blit(self.font_body.render("Estatico",True,(240,240,240)),(_RIGHT_X + 45,52))
         self.btn_toggle_physics.draw(screen,self.font_btn)
-        if getattr(sel,"use_physics",True): pygame.draw.rect(screen,(0,200,255),(789,84,12,12))
-        screen.blit(self.font_body.render("Simular Gravidade",True,(240,240,240)),(815,82))
-        screen.blit(self.font_body.render("Impulso Vertical:",True,(220,220,220)),(785,115))
+        if getattr(sel,"use_physics",True): pygame.draw.rect(screen,(0,200,255),(_RIGHT_X + 19,84,12,12))
+        screen.blit(self.font_body.render("Simular Gravidade",True,(240,240,240)),(_RIGHT_X + 45,82))
+        screen.blit(self.font_body.render("Impulso Vertical:",True,(220,220,220)),(_RIGHT_X + 15,115))
         self.btn_vel_dec.draw(screen,self.font_btn)
-        screen.blit(self.font_body.render(f"{sel.initial_velocity_y:+.1f} m/s",True,(255,255,255)),(835,137))
+        screen.blit(self.font_body.render(f"{sel.initial_velocity_y:+.1f} m/s",True,(255,255,255)),(_RIGHT_X + 65,137))
         self.btn_vel_inc.draw(screen,self.font_btn)
-        screen.blit(self.font_body.render("Comportamento (Script):",True,(220,220,220)),(785,170))
+        screen.blit(self.font_body.render("Comportamento (Script):",True,(220,220,220)),(_RIGHT_X + 15,170))
         self.btn_prev_script.draw(screen,self.font_btn)
-        pygame.draw.rect(screen,(45,49,58),(820,190,120,22),border_radius=3)
+        pygame.draw.rect(screen,(45,49,58),(_RIGHT_X + 50,190,120,22),border_radius=3)
         sn = os.path.basename(getattr(sel,"script_path","")) or "Nenhum"
         if len(sn)>13: sn=sn[:11]+".."
-        screen.blit(self.font_body.render(sn,True,(255,255,255)),(826,194))
+        screen.blit(self.font_body.render(sn,True,(255,255,255)),(_RIGHT_X + 56,194))
         self.btn_next_script.draw(screen,self.font_btn)
         for btn in [self.btn_new_script,self.btn_edit_script,self.btn_internal_editor,self.btn_script_help]:
             btn.draw(screen,self.font_btn)
-        screen.blit(self.font_body.render("Cor do Objeto:",True,(220,220,220)),(785,292))
+        screen.blit(self.font_body.render("Cor do Objeto:",True,(220,220,220)),(_RIGHT_X + 15,292))
         for btn in self.btn_colors: btn.draw(screen,self.font_btn)
         self.btn_clone.draw(screen,self.font_btn)
         # Tag
-        screen.blit(self.font_body.render("Tag:",True,(220,220,220)),(785,368))
+        screen.blit(self.font_body.render("Tag:",True,(220,220,220)),(_RIGHT_X + 15,368))
         self.btn_prev_tag.draw(screen,self.font_btn)
         tag_val = getattr(sel,"tag","") or "Nenhuma"
-        pygame.draw.rect(screen,(45,49,58),(820,385,120,22),border_radius=3)
-        screen.blit(self.font_body.render(tag_val,True,(255,255,255)),(826,389))
+        pygame.draw.rect(screen,(45,49,58),(_RIGHT_X + 50,385,120,22),border_radius=3)
+        screen.blit(self.font_body.render(tag_val,True,(255,255,255)),(_RIGHT_X + 56,389))
         self.btn_next_tag.draw(screen,self.font_btn)
         # Status bar
         ov = pygame.Surface((480,42),pygame.SRCALPHA)
@@ -744,39 +744,64 @@ class EditorScene(Scene):
     def _draw_help_modal(self, screen: pygame.Surface) -> None:
         ov = pygame.Surface(screen.get_size(),pygame.SRCALPHA)
         ov.fill((20,24,30,230)); screen.blit(ov,(0,0))
-        modal=pygame.Rect(120,40,760,520)
+        
+        screen_w, screen_h = screen.get_size()
+        mw, mh = 760, 520
+        mx = (screen_w - mw) // 2
+        my = (screen_h - mh) // 2
+        
+        modal=pygame.Rect(mx,my,mw,mh)
         pygame.draw.rect(screen,(30,34,42),modal,border_radius=8)
         pygame.draw.rect(screen,(0,200,255),modal,2,border_radius=8)
-        pygame.draw.rect(screen,(42,47,57),pygame.Rect(120,40,760,35),border_radius=8)
-        screen.blit(self.font_title.render("Guia de Comandos — Zennity Engine",True,(0,200,255)),(140,48))
-        screen.blit(self.font_btn.render("[ESC] Fechar",True,(200,80,80)),(800,48))
-        y=105
+        pygame.draw.rect(screen,(42,47,57),pygame.Rect(mx,my,mw,35),border_radius=8)
+        screen.blit(self.font_title.render("Guia de Comandos — Zennity Engine",True,(0,200,255)),(mx + 20, my + 8))
+        screen.blit(self.font_btn.render("[ESC] Fechar",True,(200,80,80)),(mx + mw - 100, my + 8))
+        y = my + 65
         for line in HELP_LINES:
             col=(0,200,255) if line.startswith("  ") else (220,222,226)
-            screen.blit(self.font_body.render(line,True,col),(160,y)); y+=18
+            screen.blit(self.font_body.render(line,True,col),(mx + 40, y)); y+=18
 
     def _draw_templates_modal(self, screen: pygame.Surface) -> None:
         ov = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
         ov.fill((20,24,30,230)); screen.blit(ov,(0,0))
-        modal = pygame.Rect(260, 60, 480, 100 + len(self._template_list)*60 + 40)
+        
+        screen_w, screen_h = screen.get_size()
+        mw, mh = 480, 100 + len(self._template_list)*60 + 40
+        mx = (screen_w - mw) // 2
+        my = (screen_h - mh) // 2
+        
+        modal = pygame.Rect(mx, my, mw, mh)
         pygame.draw.rect(screen,(30,34,42),modal,border_radius=8)
         pygame.draw.rect(screen,(0,200,255),modal,2,border_radius=8)
-        screen.blit(self.font_title.render("Carregar Template",True,(0,200,255)),(280,75))
+        screen.blit(self.font_title.render("Carregar Template",True,(0,200,255)),(mx + 20, my + 15))
+        
+        self.btn_templates_close.x = mx + mw - 100
+        self.btn_templates_close.y = my + 15
         self.btn_templates_close.draw(screen, self.font_btn)
+        
         for i, (btn, tpl) in enumerate(zip(self.btn_template_items, self._template_list)):
+            btn.x = mx + 20
+            btn.y = my + 60 + i * 60
+            btn.width = mw - 40
             btn.draw(screen, self.font_btn)
             desc = tpl.get("_template_desc","")
             if desc:
-                screen.blit(self.font_body.render(desc[:55],True,(160,165,175)),(285, 120+i*60+26))
+                screen.blit(self.font_body.render(desc[:55],True,(160,165,175)),(mx + 25, my + 60 + i*60 + 26))
 
     def _draw_welcome_modal(self, screen: pygame.Surface) -> None:
         ov = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
         ov.fill((10,14,20,210)); screen.blit(ov,(0,0))
-        modal = pygame.Rect(200, 150, 600, 220)
+        
+        screen_w, screen_h = screen.get_size()
+        mw, mh = 600, 220
+        mx = (screen_w - mw) // 2
+        my = (screen_h - mh) // 2
+        
+        modal = pygame.Rect(mx, my, mw, mh)
         pygame.draw.rect(screen,(30,34,42),modal,border_radius=10)
         pygame.draw.rect(screen,(0,200,255),modal,2,border_radius=10)
         step = WELCOME_STEPS[self.welcome_step]
-        screen.blit(self.font_title.render(step[0], True,(0,200,255)),(220,168))
+        screen.blit(self.font_title.render(step[0], True,(0,200,255)),(mx + 20, my + 18))
         # word-wrap manual simples
         words = step[1].split()
         line_buf, lines_out = [], []
@@ -789,22 +814,22 @@ class EditorScene(Scene):
                 line_buf.append(w)
         if line_buf: lines_out.append(" ".join(line_buf))
         for i, ln in enumerate(lines_out):
-            screen.blit(self.font_body.render(ln,True,(220,222,226)),(220,200+i*20))
+            screen.blit(self.font_body.render(ln,True,(220,222,226)),(mx + 20, my + 50 + i*20))
         total = len(WELCOME_STEPS)
         prog = f"{self.welcome_step+1}/{total}"
-        screen.blit(self.font_btn.render(prog,True,(120,125,135)),(220,318))
+        screen.blit(self.font_btn.render(prog,True,(120,125,135)),(mx + 20, my + 168))
         # botões
         if self.welcome_step > 0:
-            pygame.draw.rect(screen,(60,65,78),(370,320,80,26),border_radius=5)
-            screen.blit(self.font_btn.render("< Anterior",True,(200,200,200)),(375,326))
+            pygame.draw.rect(screen,(60,65,78),(mx + 170, my + 170, 80, 26),border_radius=5)
+            screen.blit(self.font_btn.render("< Anterior",True,(200,200,200)),(mx + 175, my + 176))
         if self.welcome_step < total-1:
-            pygame.draw.rect(screen,(40,120,60),(460,320,80,26),border_radius=5)
-            screen.blit(self.font_btn.render("Proximo >",True,(255,255,255)),(465,326))
+            pygame.draw.rect(screen,(40,120,60),(mx + 260, my + 170, 80, 26),border_radius=5)
+            screen.blit(self.font_btn.render("Proximo >",True,(255,255,255)),(mx + 265, my + 176))
         else:
-            pygame.draw.rect(screen,(40,120,60),(460,320,80,26),border_radius=5)
-            screen.blit(self.font_btn.render("Comecar!",True,(255,255,255)),(465,326))
-        pygame.draw.rect(screen,(120,40,40),(660,155,36,22),border_radius=5)
-        screen.blit(self.font_btn.render("X",True,(255,255,255)),(668,158))
+            pygame.draw.rect(screen,(40,120,60),(mx + 260, my + 170, 80, 26),border_radius=5)
+            screen.blit(self.font_btn.render("Comecar!",True,(255,255,255)),(mx + 265, my + 176))
+        pygame.draw.rect(screen,(120,40,40),(mx + mw - 40, my + 15, 30, 22),border_radius=5)
+        screen.blit(self.font_btn.render("X",True,(255,255,255)),(mx + mw - 34, my + 18))
 
     # -----------------------------------------------------------------------
     # handle_event
@@ -814,15 +839,19 @@ class EditorScene(Scene):
         if self.showing_welcome:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mx, my = event.pos
+                screen_w, screen_h = pygame.display.get_surface().get_size()
+                mw, mh = 600, 220
+                w_mx = (screen_w - mw) // 2
+                w_my = (screen_h - mh) // 2
                 total = len(WELCOME_STEPS)
                 # fechar X
-                if pygame.Rect(660,155,36,22).collidepoint(mx,my):
+                if pygame.Rect(w_mx + mw - 40, w_my + 15, 30, 22).collidepoint(mx,my):
                     self.showing_welcome = False; return
                 # anterior
-                if self.welcome_step > 0 and pygame.Rect(370,320,80,26).collidepoint(mx,my):
+                if self.welcome_step > 0 and pygame.Rect(w_mx + 170, w_my + 170, 80, 26).collidepoint(mx,my):
                     self.welcome_step -= 1; return
                 # próximo / começar
-                if pygame.Rect(460,320,80,26).collidepoint(mx,my):
+                if pygame.Rect(w_mx + 260, w_my + 170, 80, 26).collidepoint(mx,my):
                     if self.welcome_step < total-1:
                         self.welcome_step += 1
                     else:
