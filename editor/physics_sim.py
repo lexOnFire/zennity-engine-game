@@ -9,6 +9,29 @@ if TYPE_CHECKING:
     from engine.game_object import GameObject
 
 
+def _half_extents(obj: "GameObject") -> np.ndarray:
+    """Retorna os semi-eixos (half-extents) AABB do objeto respeitando o scale real."""
+    return obj.transform.scale * 0.5
+
+
+def _aabb_overlap(pos_a, he_a, pos_b, he_b):
+    """
+    Retorna (overlapping, penetration_vector) para dois AABBs.
+    penetration_vector aponta de b para a, com magnitude da menor penetração.
+    """
+    diff = pos_a - pos_b
+    sum_he = he_a + he_b
+    # penetração em cada eixo
+    pen = sum_he - np.abs(diff)
+    if np.any(pen <= 0):
+        return False, None
+    # eixo de menor penetração
+    axis = int(np.argmin(pen))
+    normal = np.zeros(3, dtype=np.float32)
+    normal[axis] = np.sign(diff[axis]) if diff[axis] != 0 else 1.0
+    return True, (normal, pen[axis])
+
+
 class PhysicsSim:
     GRAVITY:     float = 9.8
     FLOOR_Y:     float = -0.5
@@ -29,7 +52,6 @@ class PhysicsSim:
         rb.velocity      = np.array([0.0, vy, 0.0], dtype=np.float32)
         rb.use_gravity   = getattr(obj, "use_physics", True)
         rb.is_kinematic  = getattr(obj, "is_static", False)
-        # FIX: also seed _phys_vel so fallback path starts with correct initial velocity
         obj._phys_vel    = np.array([0.0, vy, 0.0], dtype=np.float32)
 
     @staticmethod
@@ -38,12 +60,10 @@ class PhysicsSim:
         rb = obj.get_component(RigidBody3D)
         if rb is not None:
             obj.components.remove(rb)
-        # FIX: clear fallback state too
         obj._phys_vel = np.zeros(3, dtype=np.float32)
 
     @staticmethod
     def clear_registries() -> None:
-        """FIX: clears collider registries between Play sessions to avoid zombie entries."""
         try:
             from engine.physics.collider import BoxCollider, CircleCollider
             BoxCollider._registry.clear()
@@ -56,6 +76,7 @@ class PhysicsSim:
         from engine.physics.rigidbody3d import RigidBody3D
         dt = min(dt, 0.05)
 
+        # --- Integração de velocidade / gravidade ---
         for obj in objects:
             rb = obj.get_component(RigidBody3D)
             if rb:
@@ -63,21 +84,23 @@ class PhysicsSim:
             else:
                 if getattr(obj, "is_static", False):
                     continue
-                # FIX: ensure _phys_vel exists (attach_rigidbody seeds it, but guard here too)
                 if not hasattr(obj, "_phys_vel"):
                     vy = getattr(obj, "initial_velocity_y", 0.0)
                     obj._phys_vel = np.array([0.0, vy, 0.0], dtype=np.float32)
                 if getattr(obj, "use_physics", True):
                     obj._phys_vel[1] -= PhysicsSim.GRAVITY * dt
                 obj.transform.position += obj._phys_vel * dt
-                half = obj.transform.scale[1] * 0.5
-                if obj.transform.position[1] - half < PhysicsSim.FLOOR_Y:
-                    obj.transform.position[1] = PhysicsSim.FLOOR_Y + half
+                # chão — usa half_y real do objeto
+                half_y = obj.transform.scale[1] * 0.5
+                if obj.transform.position[1] - half_y < PhysicsSim.FLOOR_Y:
+                    obj.transform.position[1] = PhysicsSim.FLOOR_Y + half_y
                     obj._phys_vel[1]  = -obj._phys_vel[1] * PhysicsSim.RESTITUTION
                     obj._phys_vel[0] *= PhysicsSim.FRICTION
                     obj._phys_vel[2] *= PhysicsSim.FRICTION
 
-        # Colisões objeto-objeto (esferas aproximadas)
+        # --- Colisões objeto-objeto com AABB ---
+        # FIX: substituída a aproximação de esfera (np.mean(scale)*0.5) por AABB
+        # que respeita cada eixo do scale individualmente.
         n = len(objects)
         for i in range(n):
             for j in range(i + 1, n):
@@ -86,50 +109,47 @@ class PhysicsSim:
                 sb = getattr(b, "is_static", False)
                 if sa and sb:
                     continue
-                r_a  = np.mean(a.transform.scale) * 0.5
-                r_b  = np.mean(b.transform.scale) * 0.5
-                diff = a.transform.position - b.transform.position
-                dist = float(np.linalg.norm(diff))
-                if dist >= r_a + r_b:
+
+                he_a = _half_extents(a)
+                he_b = _half_extents(b)
+                overlapping, result = _aabb_overlap(
+                    a.transform.position, he_a,
+                    b.transform.position, he_b,
+                )
+                if not overlapping:
                     continue
-                normal  = diff / max(dist, 1e-5)
-                overlap = (r_a + r_b) - dist
+
+                normal, penetration = result
                 e = PhysicsSim.OBJ_E
 
                 rb_a = a.get_component(RigidBody3D)
                 rb_b = b.get_component(RigidBody3D)
 
-                # FIX: use direct attribute references so impulse is actually written back
-                if rb_a:
-                    v_a = rb_a.velocity
-                else:
-                    if not hasattr(a, "_phys_vel"):
-                        a._phys_vel = np.zeros(3, dtype=np.float32)
-                    v_a = a._phys_vel
-
-                if rb_b:
-                    v_b = rb_b.velocity
-                else:
-                    if not hasattr(b, "_phys_vel"):
-                        b._phys_vel = np.zeros(3, dtype=np.float32)
-                    v_b = b._phys_vel
+                v_a = rb_a.velocity if rb_a else (a._phys_vel if hasattr(a, "_phys_vel") else np.zeros(3, np.float32))
+                v_b = rb_b.velocity if rb_b else (b._phys_vel if hasattr(b, "_phys_vel") else np.zeros(3, np.float32))
 
                 if sa:
-                    b.transform.position -= normal * overlap
+                    b.transform.position -= normal * penetration
                     vbn = float(np.dot(v_b, normal))
                     if vbn > 0:
                         v_b -= normal * (1 + e) * vbn
                 elif sb:
-                    a.transform.position += normal * overlap
+                    a.transform.position += normal * penetration
                     van = float(np.dot(v_a, normal))
                     if van < 0:
                         v_a -= normal * (1 + e) * van
                 else:
-                    a.transform.position += normal * (overlap * 0.5)
-                    b.transform.position -= normal * (overlap * 0.5)
+                    a.transform.position += normal * (penetration * 0.5)
+                    b.transform.position -= normal * (penetration * 0.5)
                     rel = v_a - v_b
                     van = float(np.dot(rel, normal))
                     if van < 0:
                         imp = -(1 + e) * van / 2.0
                         v_a += normal * imp
                         v_b -= normal * imp
+
+                # escrever de volta se for fallback (_phys_vel)
+                if not rb_a and hasattr(a, "_phys_vel"):
+                    a._phys_vel[:] = v_a
+                if not rb_b and hasattr(b, "_phys_vel"):
+                    b._phys_vel[:] = v_b

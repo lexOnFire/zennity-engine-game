@@ -10,13 +10,14 @@ class RigidBody3D(Component):
     """
     Física 3D baseada em impulso.
     Aplica gravidade, drag e colisão com plano Y = floor_y.
+    A colisão com o chão usa a half-extent Y real do objeto (scale[1]*0.5)
+    para que um piso achatado pouse corretamente.
     """
 
     GRAVITY:     float = 9.8
     FLOOR_Y:     float = -0.5
     RESTITUTION: float = 0.4
     FRICTION:    float = 0.88
-    # Velocidade mínima após ricochete: abaixo disso o objeto “dorme” no chão
     SLEEP_VEL:   float = 0.5
 
     def __init__(
@@ -51,7 +52,6 @@ class RigidBody3D(Component):
     def update(self, dt: float) -> None:
         if self.is_kinematic or self.game_object is None:
             return
-        # Objeto "dormindo" (pousado no chão) — não simular até receber impulso/força
         if self._sleeping:
             return
 
@@ -64,7 +64,8 @@ class RigidBody3D(Component):
 
         self.game_object.transform.position += self.velocity * dt
 
-        # FIX: guard against scale[1] == 0 (flat objects stuck on floor forever)
+        # FIX: usa scale[1] real do objeto — um cubo achatado (piso) tem half_h pequeno,
+        # então pousa no chão na altura certa em vez de flutuar como se fosse um cubo 1x1x1.
         scale_y = self.game_object.transform.scale[1]
         if abs(scale_y) < 1e-4:
             return
@@ -73,12 +74,8 @@ class RigidBody3D(Component):
         if bottom < self.FLOOR_Y:
             self.game_object.transform.position[1] = self.FLOOR_Y + half_h
             bounce_vy = -self.velocity[1] * self.RESTITUTION
-            # FIX: se a velocidade pós-ricochete for menor que o threshold,
-            # zerar e "dormir" o objeto — isso elimina o flutuar infinito
             if abs(bounce_vy) < self.SLEEP_VEL:
-                self.velocity[1] = 0.0
-                self.velocity[0] = 0.0
-                self.velocity[2] = 0.0
+                self.velocity[:] = 0.0
                 self._sleeping   = True
             else:
                 self.velocity[1]  = bounce_vy
