@@ -31,6 +31,14 @@ from .history import History
 
 _IDENTITY = np.eye(4, dtype=np.float32)
 
+# Layout constants — single source of truth so viewport and panels stay in sync
+_LEFT_W   = 230   # width of the left panel
+_RIGHT_X  = 770   # x where the right panel starts
+_VP_X     = _LEFT_W          # 3D viewport starts right after the left panel
+_VP_W     = _RIGHT_X - _VP_X  # 540 px wide
+_VP_Y     = 0
+_VP_H     = 600
+
 # ---------------------------------------------------------------------------
 def _point_in_polygon(x: float, y: float, poly: List[Tuple[int, int]]) -> bool:
     n = len(poly)
@@ -175,11 +183,15 @@ class EditorScene(Scene):
         ]
 
         # --- Câmera ---
+        # FIX: viewport_x agora usa _VP_X (230) em vez de 250,
+        # eliminando a faixa de 20px que vazava sobre o painel esquerdo.
         cam_obj = GameObject("EditorCamera")
         self.camera_comp = cam_obj.add_component(Camera3D(
             fov=60.0, near=0.1, far=100.0,
-            viewport_x=230.0, viewport_y=0.0,
-            viewport_width=540.0, viewport_height=600.0,
+            viewport_x=float(_VP_X),
+            viewport_y=float(_VP_Y),
+            viewport_width=float(_VP_W),
+            viewport_height=float(_VP_H),
         ))
         self.camera_controller = cam_obj.add_component(OrbitCameraController())
         self._add_go(cam_obj)
@@ -435,7 +447,10 @@ class EditorScene(Scene):
     # Draw
     # -----------------------------------------------------------------------
     def draw(self, screen: pygame.Surface) -> None:
-        pygame.draw.rect(screen, (255,255,255), (250,0,550,600))
+        # FIX: background rect now matches viewport exactly (_VP_X, _VP_Y, _VP_W, _VP_H)
+        # Previously it started at x=250 while the camera viewport_x was 230,
+        # leaving a 20px gap on the left side that leaked over the left panel.
+        pygame.draw.rect(screen, (255,255,255), (_VP_X, _VP_Y, _VP_W, _VP_H))
         self._draw_floor_grid(screen)
         for go in self.game_objects:
             go.draw(screen)
@@ -502,8 +517,8 @@ class EditorScene(Scene):
                 pygame.draw.circle(screen,(240,200,0),c,6)
 
     def _draw_left_panel(self, screen: pygame.Surface) -> None:
-        pygame.draw.rect(screen,(38,42,50),(0,0,230,600))
-        pygame.draw.line(screen,(55,60,72),(230,0),(230,600),2)
+        pygame.draw.rect(screen,(38,42,50),(0,0,_LEFT_W,600))
+        pygame.draw.line(screen,(55,60,72),(_LEFT_W,0),(_LEFT_W,600),2)
         screen.blit(self.font_title.render("ADICIONAR FORMAS",True,(0,200,255)),(15,18))
         for btn in [self.btn_add_cube,self.btn_add_pyramid,self.btn_add_sphere]:
             btn.draw(screen,self.font_btn)
@@ -546,8 +561,8 @@ class EditorScene(Scene):
         screen.blit(self.font_btn.render(f"{len(self.history._redo)}↪",True,redo_col),(535,20))
 
     def _draw_right_panel(self, screen: pygame.Surface) -> None:
-        pygame.draw.rect(screen,(38,42,50),(770,0,230,600))
-        pygame.draw.line(screen,(55,60,72),(770,0),(770,600),2)
+        pygame.draw.rect(screen,(38,42,50),(_RIGHT_X,0,230,600))
+        pygame.draw.line(screen,(55,60,72),(_RIGHT_X,0),(_RIGHT_X,600),2)
         if not (0 <= self.selected_index < len(self.editable_objects)):
             screen.blit(self.font_body.render("Selecione um objeto",True,(140,145,155)),(785,50))
             return
@@ -710,7 +725,7 @@ class EditorScene(Scene):
         if event.type==pygame.MOUSEBUTTONDOWN and event.button==1:
             self.click_start_pos=event.pos
             mx,my=event.pos
-            if 230<=mx<=770 and 0<=self.selected_index<len(self.editable_objects):
+            if _VP_X<=mx<=_RIGHT_X and 0<=self.selected_index<len(self.editable_objects):
                 r=self.editable_objects[self.selected_index].get_component(MeshRenderer3D)
                 if r and r.last_screen_coords is not None:
                     for face in r.mesh.faces:
@@ -728,13 +743,13 @@ class EditorScene(Scene):
                 dy=event.pos[1]-self.click_start_pos[1]
                 if np.hypot(dx,dy)<4.0:
                     mx,my=event.pos
-                    if mx<230:
+                    if mx<_LEFT_W:
                         y=168
                         for obj in self.editable_objects[-5:]:
                             if pygame.Rect(15,y,200,22).collidepoint((mx,my)):
                                 self.selected_index=self.editable_objects.index(obj)
                             y+=26
-                    elif mx<=770:
+                    elif mx<=_RIGHT_X:
                         self._select_at(mx,my)
                 self.click_start_pos=None
 
@@ -804,3 +819,4 @@ class EditorScene(Scene):
                     PhysicsSim.detach_rigidbody(o)
                     ScriptManager.unload(o)
             self.saved_scene_state=None
+            PhysicsSim.clear_registries()
