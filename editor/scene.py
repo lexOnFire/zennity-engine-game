@@ -194,6 +194,8 @@ class EditorScene(Scene):
         self._tree_max_vis = 9
         self._light_y = _TREE_Y + self._tree_h + 110
         self._active_dropdown = None
+        self._is_dragging_tree = False
+        self._drag_tree_src = None
 
     # -----------------------------------------------------------------------
     def start(self) -> None:
@@ -807,6 +809,13 @@ class EditorScene(Scene):
             self._draw_welcome_modal(screen)
             
         self._draw_dropdowns(screen)
+        
+        # Tooltip visual para arrastar hierárquico
+        if self._is_dragging_tree and self._drag_tree_src:
+            mx, my = pygame.mouse.get_pos()
+            label = f"Mover {self._drag_tree_src.name} para..."
+            pygame.draw.rect(screen, (0, 150, 220), (mx + 15, my + 5, 200, 24), border_radius=4)
+            screen.blit(self.font_body.render(label, True, (255, 255, 255)), (mx + 22, my + 9))
 
     # -----------------------------------------------------------------------
     # Draw helpers
@@ -1050,20 +1059,25 @@ class EditorScene(Scene):
         pygame.draw.rect(screen,(45,49,58),(right_x + 50,440,120,22),border_radius=3)
         screen.blit(self.font_body.render(tag_val,True,(255,255,255)),(right_x + 56,444))
         self.btn_next_tag.draw(screen,self.font_btn)
-        # Status bar
+        # Status bar centralizada na parte inferior do viewport dinamicamente
+        viewport_center_x = left_w + (vp_w - 480) // 2
+        viewport_bottom_y = height - 55
+        
         ov = pygame.Surface((480,42),pygame.SRCALPHA)
-        ov.fill((30,34,42,200)); screen.blit(ov,(260,545))
-        pygame.draw.rect(screen,(0,200,255),(260,545,480,42),1,border_radius=4)
+        ov.fill((30,34,42,200)); screen.blit(ov,(viewport_center_x,viewport_bottom_y))
+        pygame.draw.rect(screen,(0,200,255),(viewport_center_x,viewport_bottom_y,480,42),1,border_radius=4)
         snap_tag = " [SNAP]" if self.snap_enabled else ""
-        screen.blit(self.font_xyz.render(f"OBJETO: {sel.name.upper()}{snap_tag}",True,(0,200,255)),(270,548))
+        screen.blit(self.font_xyz.render(f"OBJETO: {sel.name.upper()}{snap_tag}",True,(0,200,255)),(viewport_center_x + 10,viewport_bottom_y + 3))
         screen.blit(self.font_body.render(
             f"Pos: X:{pos[0]:.1f} Y:{pos[1]:.1f} Z:{pos[2]:.1f}  "
             f"Tam: X:{sc[0]:.1f} Y:{sc[1]:.1f} Z:{sc[2]:.1f}  "
             f"Rot: X:{int(rot[0])}° Y:{int(rot[1])}° Z:{int(rot[2])}°",
-            True,(240,240,240)),(270,566))
+            True,(240,240,240)),(viewport_center_x + 10,viewport_bottom_y + 21))
 
     def _draw_xyz_widget(self, screen: pygame.Surface) -> None:
-        C  = (710, 60)
+        width = screen.get_width()
+        right_x = width - 230
+        C  = (right_x - 60, 60)
         vr = self.camera_comp.view_matrix[:3,:3]
         ax = 35.0
         dirs = [
@@ -1424,6 +1438,17 @@ class EditorScene(Scene):
 
         if event.type==pygame.MOUSEBUTTONDOWN and event.button==1:
             self.click_start_pos=event.pos
+            mx,my=event.pos
+            if mx < _LEFT_W:
+                tree_rect = pygame.Rect(15, _TREE_Y+18, 178, self._tree_h)
+                if tree_rect.collidepoint(mx, my):
+                    slot_i = (my - (_TREE_Y+18)) // _TREE_ROW_H
+                    obj_i  = self._tree_scroll + slot_i
+                    flat_tree = self._build_flat_tree()
+                    if 0 <= obj_i < len(flat_tree):
+                        self._drag_tree_src = flat_tree[obj_i][0]
+                        self._is_dragging_tree = True
+                        return
             right_limit = pygame.display.get_surface().get_width() - 230
             if 230 <= mx <= right_limit and 0<=self.selected_index<len(self.editable_objects):
                 r=self.editable_objects[self.selected_index].get_component(MeshRenderer3D)
@@ -1438,6 +1463,42 @@ class EditorScene(Scene):
             self.is_dragging_object=False
             self.is_dragging_gizmo =False
             self.active_gizmo_axis =None
+            if self._is_dragging_tree:
+                self._is_dragging_tree = False
+                mx, my = event.pos
+                tree_rect = pygame.Rect(15, _TREE_Y+18, 178, self._tree_h)
+                if tree_rect.collidepoint(mx, my):
+                    slot_i = (my - (_TREE_Y+18)) // _TREE_ROW_H
+                    obj_i  = self._tree_scroll + slot_i
+                    flat_tree = self._build_flat_tree()
+                    if 0 <= obj_i < len(flat_tree):
+                        target_parent = flat_tree[obj_i][0]
+                        if target_parent != self._drag_tree_src:
+                            curr = target_parent
+                            loop = False
+                            while curr:
+                                if curr == self._drag_tree_src:
+                                    loop = True
+                                    break
+                                curr = curr.parent
+                            if not loop:
+                                self.history.push(self)
+                                self._drag_tree_src.parent = target_parent
+                    else:
+                        self.history.push(self)
+                        self._drag_tree_src.parent = None
+                else:
+                    self.history.push(self)
+                    self._drag_tree_src.parent = None
+                    
+                if self.click_start_pos:
+                    dx = event.pos[0] - self.click_start_pos[0]
+                    dy = event.pos[1] - self.click_start_pos[1]
+                    if np.hypot(dx, dy) < 4.0:
+                        real_idx = self.editable_objects.index(self._drag_tree_src)
+                        self.selected_index = real_idx
+                self.click_start_pos = None
+                return
             if self.click_start_pos:
                 dx=event.pos[0]-self.click_start_pos[0]
                 dy=event.pos[1]-self.click_start_pos[1]
