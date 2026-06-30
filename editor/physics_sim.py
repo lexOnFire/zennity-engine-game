@@ -1,4 +1,12 @@
-"""Simulação física simples usada pelo modo Play do editor."""
+"""
+PhysicsSim — Simulação física 3D para o modo Play do editor.
+
+Integra com RigidBody3D quando o objeto já tem o componente.
+Para objetos sem RigidBody3D, usa simulação fallback inline.
+Assim o editor é compatível tanto com objetos simples quanto
+com objetos que usam o sistema ECS da engine.
+"""
+from __future__ import annotations
 from typing import List, TYPE_CHECKING
 import numpy as np
 
@@ -7,81 +15,110 @@ if TYPE_CHECKING:
 
 
 class PhysicsSim:
-    """
-    Simulação de física standalone para o editor.
-    Independente do sistema engine/physics/ para não impactar o ECS.
-    Aplica gravidade, colisão com chão e colisão esfera-esfera aproximada.
-    """
-    GRAVITY: float = 9.8
-    FLOOR_Y: float = -0.5
-    RESTITUTION: float = 0.4   # elasticidade chão
-    FRICTION: float = 0.9      # fricção lateral
-    OBJ_RESTITUTION: float = 0.5  # elasticidade obj-obj
+    GRAVITY: float     = 9.8
+    FLOOR_Y: float     = -0.5
+    RESTITUTION: float = 0.4
+    FRICTION: float    = 0.88
+    OBJ_E: float       = 0.5
+
+    @staticmethod
+    def attach_rigidbody(obj: "GameObject") -> None:
+        """
+        Garante que o objeto tenha RigidBody3D antes do Play.
+        Se já tiver, só reseta a velocidade.
+        """
+        from engine.physics.rigidbody3d import RigidBody3D
+        rb = obj.get_component(RigidBody3D)
+        if rb is None:
+            rb = obj.add_component(RigidBody3D(
+                use_gravity=getattr(obj, "use_physics", True),
+                is_kinematic=getattr(obj, "is_static", False),
+            ))
+        vy = getattr(obj, "initial_velocity_y", 0.0)
+        rb.velocity = np.array([0.0, vy, 0.0], dtype=np.float32)
+        rb.use_gravity   = getattr(obj, "use_physics", True)
+        rb.is_kinematic  = getattr(obj, "is_static", False)
+
+    @staticmethod
+    def detach_rigidbody(obj: "GameObject") -> None:
+        """Remove o RigidBody3D ao sair do Play."""
+        from engine.physics.rigidbody3d import RigidBody3D
+        rb = obj.get_component(RigidBody3D)
+        if rb is not None:
+            obj.components.remove(rb)
 
     @staticmethod
     def step(objects: List["GameObject"], dt: float) -> None:
-        dt = min(0.05, dt)
+        """
+        Avança a simulação um passo.
+        Prioriza RigidBody3D; usa fallback para objetos sem o componente.
+        """
+        from engine.physics.rigidbody3d import RigidBody3D
+        dt = min(dt, 0.05)
 
-        # Integração
+        # Integração via RigidBody3D (delega para o componente)
         for obj in objects:
-            if getattr(obj, "is_static", False):
-                continue
-            if not hasattr(obj, "physics_velocity"):
-                obj.physics_velocity = np.zeros(3, dtype=np.float32)
-            if getattr(obj, "use_physics", True):
-                obj.physics_velocity[1] -= PhysicsSim.GRAVITY * dt
-            obj.transform.position += obj.physics_velocity * dt
+            rb = obj.get_component(RigidBody3D)
+            if rb:
+                rb.update(dt)
+            else:
+                # Fallback inline para objetos sem RigidBody3D
+                if getattr(obj, "is_static", False):
+                    continue
+                if not hasattr(obj, "_phys_vel"):
+                    obj._phys_vel = np.zeros(3, dtype=np.float32)
+                    obj._phys_vel[1] = getattr(obj, "initial_velocity_y", 0.0)
+                if getattr(obj, "use_physics", True):
+                    obj._phys_vel[1] -= PhysicsSim.GRAVITY * dt
+                obj.transform.position += obj._phys_vel * dt
+                half = obj.transform.scale[1] * 0.5
+                if obj.transform.position[1] - half < PhysicsSim.FLOOR_Y:
+                    obj.transform.position[1] = PhysicsSim.FLOOR_Y + half
+                    obj._phys_vel[1]  = -obj._phys_vel[1] * PhysicsSim.RESTITUTION
+                    obj._phys_vel[0] *= PhysicsSim.FRICTION
+                    obj._phys_vel[2] *= PhysicsSim.FRICTION
 
-        # Colisão com chão
-        for obj in objects:
-            if getattr(obj, "is_static", False):
-                continue
-            bottom = obj.transform.position[1] - obj.transform.scale[1] * 0.5
-            if bottom < PhysicsSim.FLOOR_Y:
-                obj.transform.position[1] = PhysicsSim.FLOOR_Y + obj.transform.scale[1] * 0.5
-                v = getattr(obj, "physics_velocity", None)
-                if v is not None:
-                    v[1] = -v[1] * PhysicsSim.RESTITUTION
-                    v[0] *= PhysicsSim.FRICTION
-                    v[2] *= PhysicsSim.FRICTION
-
-        # Colisão objeto-objeto (esferas aproximadas)
+        # Colisões objeto-objeto (esferas aproximadas)
         n = len(objects)
         for i in range(n):
             for j in range(i + 1, n):
                 a, b = objects[i], objects[j]
-                if getattr(a, "is_static", False) and getattr(b, "is_static", False):
+                sa = getattr(a, "is_static", False)
+                sb = getattr(b, "is_static", False)
+                if sa and sb:
                     continue
                 r_a = np.mean(a.transform.scale) * 0.5
                 r_b = np.mean(b.transform.scale) * 0.5
                 diff = a.transform.position - b.transform.position
-                dist = np.linalg.norm(diff)
-                min_dist = r_a + r_b
-                if dist >= min_dist:
+                dist = float(np.linalg.norm(diff))
+                if dist >= r_a + r_b:
                     continue
-                normal = diff / max(dist, 1e-5)
-                overlap = min_dist - dist
-                v_a = getattr(a, "physics_velocity", np.zeros(3, dtype=np.float32))
-                v_b = getattr(b, "physics_velocity", np.zeros(3, dtype=np.float32))
-                static_a = getattr(a, "is_static", False)
-                static_b = getattr(b, "is_static", False)
-                e = PhysicsSim.OBJ_RESTITUTION
-                if static_a:
+                normal  = diff / max(dist, 1e-5)
+                overlap = (r_a + r_b) - dist
+                e = PhysicsSim.OBJ_E
+
+                from engine.physics.rigidbody3d import RigidBody3D
+                rb_a = a.get_component(RigidBody3D)
+                rb_b = b.get_component(RigidBody3D)
+                v_a = rb_a.velocity if rb_a else getattr(a, "_phys_vel", np.zeros(3, np.float32))
+                v_b = rb_b.velocity if rb_b else getattr(b, "_phys_vel", np.zeros(3, np.float32))
+
+                if sa:
                     b.transform.position -= normal * overlap
-                    vbn = np.dot(v_b, normal)
+                    vbn = float(np.dot(v_b, normal))
                     if vbn > 0:
                         v_b -= normal * (1 + e) * vbn
-                elif static_b:
+                elif sb:
                     a.transform.position += normal * overlap
-                    van = np.dot(v_a, normal)
+                    van = float(np.dot(v_a, normal))
                     if van < 0:
                         v_a -= normal * (1 + e) * van
                 else:
                     a.transform.position += normal * (overlap * 0.5)
                     b.transform.position -= normal * (overlap * 0.5)
                     rel = v_a - v_b
-                    van = np.dot(rel, normal)
+                    van = float(np.dot(rel, normal))
                     if van < 0:
-                        impulse = -(1 + e) * van / 2.0
-                        v_a += normal * impulse
-                        v_b -= normal * impulse
+                        imp = -(1 + e) * van / 2.0
+                        v_a += normal * imp
+                        v_b -= normal * imp
