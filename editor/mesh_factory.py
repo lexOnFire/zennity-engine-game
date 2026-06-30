@@ -45,3 +45,72 @@ def create_sphere_mesh(radius: float = 0.5, rings: int = 12, sectors: int = 12) 
             p3 = (r + 1) * sectors + s
             faces.append([p0, p1, p2, p3])
     return Mesh(np.array(vertices, dtype=np.float32), faces)
+
+
+def create_plane_mesh(size: float = 2.0, subdivisions: int = 1) -> Mesh:
+    """Plano horizontal (XZ) centrado na origem, com subdivisoes opcionais."""
+    s = size / 2.0
+    step = size / max(subdivisions, 1)
+    vertices = []
+    for iz in range(subdivisions + 1):
+        for ix in range(subdivisions + 1):
+            x = -s + ix * step
+            z = -s + iz * step
+            vertices.append([x, 0.0, z])
+    faces = []
+    n = subdivisions + 1
+    for iz in range(subdivisions):
+        for ix in range(subdivisions):
+            p0 = iz * n + ix
+            p1 = iz * n + ix + 1
+            p2 = (iz + 1) * n + ix + 1
+            p3 = (iz + 1) * n + ix
+            faces.append([p0, p1, p2, p3])
+    return Mesh(np.array(vertices, dtype=np.float32), faces)
+
+
+def create_capsule_mesh(radius: float = 0.4, height: float = 1.0,
+                        rings: int = 8, sectors: int = 12) -> Mesh:
+    """Capsula (cilindro com semiesferas nas extremidades)."""
+    vertices = []
+    faces = []
+
+    half_h = height / 2.0
+
+    # --- semiesfera superior ---
+    for r in range(rings // 2 + 1):
+        theta = r * np.pi / rings  # 0 -> pi/2
+        sin_t, cos_t = np.sin(theta), np.cos(theta)
+        for s in range(sectors):
+            phi = s * 2 * np.pi / sectors
+            vertices.append([
+                radius * np.cos(phi) * sin_t,
+                half_h + radius * cos_t,
+                radius * np.sin(phi) * sin_t,
+            ])
+
+    top_rings = rings // 2 + 1
+
+    # --- semiesfera inferior ---
+    for r in range(rings // 2, rings + 1):
+        theta = r * np.pi / rings  # pi/2 -> pi
+        sin_t, cos_t = np.sin(theta), np.cos(theta)
+        for s in range(sectors):
+            phi = s * 2 * np.pi / sectors
+            vertices.append([
+                radius * np.cos(phi) * sin_t,
+                -half_h + radius * cos_t,
+                radius * np.sin(phi) * sin_t,
+            ])
+
+    total_rings = rings + 1  # top_rings + bot_rings - 1 (anel equatorial compartilhado)
+
+    for r in range(total_rings - 1):
+        for s in range(sectors):
+            p0 = r * sectors + s
+            p1 = r * sectors + (s + 1) % sectors
+            p2 = (r + 1) * sectors + (s + 1) % sectors
+            p3 = (r + 1) * sectors + s
+            faces.append([p0, p1, p2, p3])
+
+    return Mesh(np.array(vertices, dtype=np.float32), faces)
