@@ -1,0 +1,58 @@
+{
+    "_template_name": "Arremesso",
+    "_template_desc": "Lance bolas com fisica. Os cubos giram automaticamente.",
+    "objects": [
+        {
+            "name": "Piso",
+            "shape": "Cube",
+            "position": [0.0, -1.1, 1.5],
+            "rotation": [0.0, 0.0, 0.0],
+            "scale": [8.0, 0.2, 6.0],
+            "color": [80, 80, 80],
+            "is_static": true,
+            "use_physics": false,
+            "initial_velocity_y": 0.0,
+            "script_path": "",
+            "tag": ""
+        },
+        {
+            "name": "Alvo_1",
+            "shape": "Cube",
+            "position": [1.0, 0.0, 1.5],
+            "rotation": [0.0, 0.0, 0.0],
+            "scale": [0.5, 0.5, 0.5],
+            "color": [220, 60, 60],
+            "is_static": false,
+            "use_physics": true,
+            "initial_velocity_y": 0.0,
+            "script_path": "scripts/builtin_rotate.py",
+            "tag": "perigoso"
+        },
+        {
+            "name": "Alvo_2",
+            "shape": "Cube",
+            "position": [-1.0, 0.5, 1.5],
+            "rotation": [0.0, 45.0, 0.0],
+            "scale": [0.5, 0.5, 0.5],
+            "color": [240, 160, 0],
+            "is_static": false,
+            "use_physics": true,
+            "initial_velocity_y": 0.0,
+            "script_path": "scripts/builtin_rotate.py",
+            "tag": "perigoso"
+        },
+        {
+            "name": "Bola",
+            "shape": "Sphere",
+            "position": [0.0, 2.0, 1.5],
+            "rotation": [0.0, 0.0, 0.0],
+            "scale": [0.5, 0.5, 0.5],
+            "color": [80, 80, 220],
+            "is_static": false,
+            "use_physics": true,
+            "initial_velocity_y": -2.0,
+            "script_path": "",
+            "tag": ""
+        }
+    ]
+}

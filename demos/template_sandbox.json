@@ -1,0 +1,58 @@
+{
+    "_template_name": "Sandbox",
+    "_template_desc": "Cena livre com varios objetos. Experimente a fisica e os scripts.",
+    "objects": [
+        {
+            "name": "Piso_Grande",
+            "shape": "Cube",
+            "position": [0.0, -1.1, 1.5],
+            "rotation": [0.0, 0.0, 0.0],
+            "scale": [8.0, 0.2, 8.0],
+            "color": [70, 130, 70],
+            "is_static": true,
+            "use_physics": false,
+            "initial_velocity_y": 0.0,
+            "script_path": "",
+            "tag": ""
+        },
+        {
+            "name": "Cubo_Quicante",
+            "shape": "Cube",
+            "position": [-1.0, 1.5, 1.5],
+            "rotation": [0.0, 30.0, 0.0],
+            "scale": [0.7, 0.7, 0.7],
+            "color": [0, 110, 220],
+            "is_static": false,
+            "use_physics": true,
+            "initial_velocity_y": 0.0,
+            "script_path": "",
+            "tag": ""
+        },
+        {
+            "name": "Piramide_Girante",
+            "shape": "Pyramid",
+            "position": [0.0, 0.5, 1.5],
+            "rotation": [0.0, 0.0, 0.0],
+            "scale": [0.8, 0.8, 0.8],
+            "color": [220, 60, 20],
+            "is_static": false,
+            "use_physics": false,
+            "initial_velocity_y": 0.0,
+            "script_path": "scripts/builtin_rotate.py",
+            "tag": ""
+        },
+        {
+            "name": "Bolinha",
+            "shape": "Sphere",
+            "position": [1.0, 2.0, 1.5],
+            "rotation": [0.0, 0.0, 0.0],
+            "scale": [0.5, 0.5, 0.5],
+            "color": [180, 50, 180],
+            "is_static": false,
+            "use_physics": true,
+            "initial_velocity_y": 0.0,
+            "script_path": "",
+            "tag": ""
+        }
+    ]
+}
