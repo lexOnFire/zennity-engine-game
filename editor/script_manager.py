@@ -14,7 +14,6 @@ class ScriptManager:
 
     @staticmethod
     def list_scripts() -> List[str]:
-        """Retorna ["Nenhum"] + caminhos de scripts em scripts/."""
         result = ["Nenhum"]
         if os.path.exists(ScriptManager.SCRIPTS_DIR):
             for f in sorted(os.listdir(ScriptManager.SCRIPTS_DIR)):
@@ -24,12 +23,11 @@ class ScriptManager:
 
     @staticmethod
     def load(obj: "GameObject") -> None:
-        """Carrega e executa start() do script vinculado ao objeto."""
         path = getattr(obj, "script_path", "")
         if not path or not os.path.exists(path):
             return
         try:
-            spec = importlib.util.spec_from_file_location(f"_script_{id(obj)}", path)
+            spec   = importlib.util.spec_from_file_location(f"_script_{id(obj)}", path)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
             obj.script_module = module
@@ -40,7 +38,6 @@ class ScriptManager:
 
     @staticmethod
     def update(obj: "GameObject", dt: float) -> None:
-        """Chama update() do módulo vinculado ao objeto."""
         mod = getattr(obj, "script_module", None)
         if mod and hasattr(mod, "update"):
             try:
@@ -51,11 +48,14 @@ class ScriptManager:
     @staticmethod
     def unload(obj: "GameObject") -> None:
         """Remove o módulo e atributos temporários do objeto."""
+        # FIX: _phys_vel is preserved so Stop→Play preserves initial_velocity_y correctly.
+        # It will be properly reset by PhysicsSim.attach_rigidbody on next Play.
         PERSISTENT = {
             "name", "transform", "components", "scene",
             "mesh_type", "is_static", "use_physics",
             "initial_velocity_y", "script_path", "active",
             "parent", "children",
+            "_phys_vel",  # FIX: keep so PhysicsSim.attach_rigidbody can reset it cleanly
         }
         for key in list(obj.__dict__.keys()):
             if key not in PERSISTENT:
@@ -63,7 +63,6 @@ class ScriptManager:
 
     @staticmethod
     def create_template(obj: "GameObject") -> str:
-        """Cria um script template para o objeto e retorna o caminho."""
         os.makedirs(ScriptManager.SCRIPTS_DIR, exist_ok=True)
         name = obj.name.lower().replace(" ", "_")
         path = os.path.join(ScriptManager.SCRIPTS_DIR, f"behavior_{name}.py")

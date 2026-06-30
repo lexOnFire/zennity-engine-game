@@ -1,10 +1,5 @@
 """
 PhysicsSim — Simulação física 3D para o modo Play do editor.
-
-Integra com RigidBody3D quando o objeto já tem o componente.
-Para objetos sem RigidBody3D, usa simulação fallback inline.
-Assim o editor é compatível tanto com objetos simples quanto
-com objetos que usam o sistema ECS da engine.
 """
 from __future__ import annotations
 from typing import List, TYPE_CHECKING
@@ -15,18 +10,14 @@ if TYPE_CHECKING:
 
 
 class PhysicsSim:
-    GRAVITY: float     = 9.8
-    FLOOR_Y: float     = -0.5
+    GRAVITY:     float = 9.8
+    FLOOR_Y:     float = -0.5
     RESTITUTION: float = 0.4
-    FRICTION: float    = 0.88
-    OBJ_E: float       = 0.5
+    FRICTION:    float = 0.88
+    OBJ_E:       float = 0.5
 
     @staticmethod
     def attach_rigidbody(obj: "GameObject") -> None:
-        """
-        Garante que o objeto tenha RigidBody3D antes do Play.
-        Se já tiver, só reseta a velocidade.
-        """
         from engine.physics.rigidbody3d import RigidBody3D
         rb = obj.get_component(RigidBody3D)
         if rb is None:
@@ -35,39 +26,47 @@ class PhysicsSim:
                 is_kinematic=getattr(obj, "is_static", False),
             ))
         vy = getattr(obj, "initial_velocity_y", 0.0)
-        rb.velocity = np.array([0.0, vy, 0.0], dtype=np.float32)
+        rb.velocity      = np.array([0.0, vy, 0.0], dtype=np.float32)
         rb.use_gravity   = getattr(obj, "use_physics", True)
         rb.is_kinematic  = getattr(obj, "is_static", False)
+        # FIX: also seed _phys_vel so fallback path starts with correct initial velocity
+        obj._phys_vel    = np.array([0.0, vy, 0.0], dtype=np.float32)
 
     @staticmethod
     def detach_rigidbody(obj: "GameObject") -> None:
-        """Remove o RigidBody3D ao sair do Play."""
         from engine.physics.rigidbody3d import RigidBody3D
         rb = obj.get_component(RigidBody3D)
         if rb is not None:
             obj.components.remove(rb)
+        # FIX: clear fallback state too
+        obj._phys_vel = np.zeros(3, dtype=np.float32)
+
+    @staticmethod
+    def clear_registries() -> None:
+        """FIX: clears collider registries between Play sessions to avoid zombie entries."""
+        try:
+            from engine.physics.collider import BoxCollider, CircleCollider
+            BoxCollider._registry.clear()
+            CircleCollider._registry.clear()
+        except Exception:
+            pass
 
     @staticmethod
     def step(objects: List["GameObject"], dt: float) -> None:
-        """
-        Avança a simulação um passo.
-        Prioriza RigidBody3D; usa fallback para objetos sem o componente.
-        """
         from engine.physics.rigidbody3d import RigidBody3D
         dt = min(dt, 0.05)
 
-        # Integração via RigidBody3D (delega para o componente)
         for obj in objects:
             rb = obj.get_component(RigidBody3D)
             if rb:
                 rb.update(dt)
             else:
-                # Fallback inline para objetos sem RigidBody3D
                 if getattr(obj, "is_static", False):
                     continue
+                # FIX: ensure _phys_vel exists (attach_rigidbody seeds it, but guard here too)
                 if not hasattr(obj, "_phys_vel"):
-                    obj._phys_vel = np.zeros(3, dtype=np.float32)
-                    obj._phys_vel[1] = getattr(obj, "initial_velocity_y", 0.0)
+                    vy = getattr(obj, "initial_velocity_y", 0.0)
+                    obj._phys_vel = np.array([0.0, vy, 0.0], dtype=np.float32)
                 if getattr(obj, "use_physics", True):
                     obj._phys_vel[1] -= PhysicsSim.GRAVITY * dt
                 obj.transform.position += obj._phys_vel * dt
@@ -87,8 +86,8 @@ class PhysicsSim:
                 sb = getattr(b, "is_static", False)
                 if sa and sb:
                     continue
-                r_a = np.mean(a.transform.scale) * 0.5
-                r_b = np.mean(b.transform.scale) * 0.5
+                r_a  = np.mean(a.transform.scale) * 0.5
+                r_b  = np.mean(b.transform.scale) * 0.5
                 diff = a.transform.position - b.transform.position
                 dist = float(np.linalg.norm(diff))
                 if dist >= r_a + r_b:
@@ -97,11 +96,23 @@ class PhysicsSim:
                 overlap = (r_a + r_b) - dist
                 e = PhysicsSim.OBJ_E
 
-                from engine.physics.rigidbody3d import RigidBody3D
                 rb_a = a.get_component(RigidBody3D)
                 rb_b = b.get_component(RigidBody3D)
-                v_a = rb_a.velocity if rb_a else getattr(a, "_phys_vel", np.zeros(3, np.float32))
-                v_b = rb_b.velocity if rb_b else getattr(b, "_phys_vel", np.zeros(3, np.float32))
+
+                # FIX: use direct attribute references so impulse is actually written back
+                if rb_a:
+                    v_a = rb_a.velocity
+                else:
+                    if not hasattr(a, "_phys_vel"):
+                        a._phys_vel = np.zeros(3, dtype=np.float32)
+                    v_a = a._phys_vel
+
+                if rb_b:
+                    v_b = rb_b.velocity
+                else:
+                    if not hasattr(b, "_phys_vel"):
+                        b._phys_vel = np.zeros(3, dtype=np.float32)
+                    v_b = b._phys_vel
 
                 if sa:
                     b.transform.position -= normal * overlap
