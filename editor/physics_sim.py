@@ -21,11 +21,9 @@ def _aabb_overlap(pos_a, he_a, pos_b, he_b):
     """
     diff = pos_a - pos_b
     sum_he = he_a + he_b
-    # penetração em cada eixo
     pen = sum_he - np.abs(diff)
     if np.any(pen <= 0):
         return False, None
-    # eixo de menor penetração
     axis = int(np.argmin(pen))
     normal = np.zeros(3, dtype=np.float32)
     normal[axis] = np.sign(diff[axis]) if diff[axis] != 0 else 1.0
@@ -42,34 +40,57 @@ class PhysicsSim:
     @staticmethod
     def attach_rigidbody(obj: "GameObject") -> None:
         from engine.physics.rigidbody3d import RigidBody3D
-        rb = obj.get_component(RigidBody3D)
-        if rb is None:
-            rb = obj.add_component(RigidBody3D(
-                use_gravity=getattr(obj, "use_physics", True),
-                is_kinematic=getattr(obj, "is_static", False),
-            ))
-        vy = getattr(obj, "initial_velocity_y", 0.0)
-        rb.velocity      = np.array([0.0, vy, 0.0], dtype=np.float32)
-        rb.use_gravity   = getattr(obj, "use_physics", True)
-        rb.is_kinematic  = getattr(obj, "is_static", False)
-        obj._phys_vel    = np.array([0.0, vy, 0.0], dtype=np.float32)
+        # Remove RigidBody3D antigo se existir (evita duplicatas entre Play/Stop/Play)
+        old_rb = obj.get_component(RigidBody3D)
+        if old_rb is not None:
+            try:
+                obj.components.remove(old_rb)
+            except ValueError:
+                pass
+
+        vy = float(getattr(obj, "initial_velocity_y", 0.0))
+        rb = obj.add_component(RigidBody3D(
+            use_gravity=getattr(obj, "use_physics", True),
+            is_kinematic=getattr(obj, "is_static", False),
+        ))
+        rb.velocity     = np.array([0.0, vy, 0.0], dtype=np.float32)
+        rb.use_gravity  = getattr(obj, "use_physics", True)
+        rb.is_kinematic = getattr(obj, "is_static", False)
+        # _phys_vel: fallback caso RigidBody3D não esteja disponível no step
+        obj._phys_vel   = np.array([0.0, vy, 0.0], dtype=np.float32)
 
     @staticmethod
     def detach_rigidbody(obj: "GameObject") -> None:
         from engine.physics.rigidbody3d import RigidBody3D
         rb = obj.get_component(RigidBody3D)
         if rb is not None:
-            obj.components.remove(rb)
-        obj._phys_vel = np.zeros(3, dtype=np.float32)
+            try:
+                obj.components.remove(rb)
+            except ValueError:
+                pass
+        # Remove o atributo de vel fallback para não sujar o estado do editor
+        if hasattr(obj, "_phys_vel"):
+            try:
+                delattr(obj, "_phys_vel")
+            except AttributeError:
+                pass
 
     @staticmethod
     def clear_registries() -> None:
-        try:
-            from engine.physics.collider import BoxCollider, CircleCollider
-            BoxCollider._registry.clear()
-            CircleCollider._registry.clear()
-        except Exception:
-            pass
+        """Limpa registries de colliders (seguro mesmo se as classes não existirem)."""
+        for cls_path in (
+            ("engine.physics.collider", "BoxCollider"),
+            ("engine.physics.collider", "CircleCollider"),
+            ("engine.physics.collider", "SphereCollider"),
+        ):
+            try:
+                import importlib
+                mod = importlib.import_module(cls_path[0])
+                cls = getattr(mod, cls_path[1], None)
+                if cls and hasattr(cls, "_registry"):
+                    cls._registry.clear()
+            except Exception:
+                pass
 
     @staticmethod
     def step(objects: List["GameObject"], dt: float) -> None:
@@ -80,17 +101,19 @@ class PhysicsSim:
         for obj in objects:
             rb = obj.get_component(RigidBody3D)
             if rb:
-                rb.update(dt)
+                try:
+                    rb.update(dt)
+                except Exception as e:
+                    print(f"[PhysicsSim] rb.update erro em '{obj.name}': {e}")
             else:
                 if getattr(obj, "is_static", False):
                     continue
                 if not hasattr(obj, "_phys_vel"):
-                    vy = getattr(obj, "initial_velocity_y", 0.0)
+                    vy = float(getattr(obj, "initial_velocity_y", 0.0))
                     obj._phys_vel = np.array([0.0, vy, 0.0], dtype=np.float32)
                 if getattr(obj, "use_physics", True):
                     obj._phys_vel[1] -= PhysicsSim.GRAVITY * dt
                 obj.transform.position += obj._phys_vel * dt
-                # chão — usa half_y real do objeto
                 half_y = obj.transform.scale[1] * 0.5
                 if obj.transform.position[1] - half_y < PhysicsSim.FLOOR_Y:
                     obj.transform.position[1] = PhysicsSim.FLOOR_Y + half_y
@@ -99,8 +122,6 @@ class PhysicsSim:
                     obj._phys_vel[2] *= PhysicsSim.FRICTION
 
         # --- Colisões objeto-objeto com AABB ---
-        # FIX: substituída a aproximação de esfera (np.mean(scale)*0.5) por AABB
-        # que respeita cada eixo do scale individualmente.
         n = len(objects)
         for i in range(n):
             for j in range(i + 1, n):
@@ -125,8 +146,10 @@ class PhysicsSim:
                 rb_a = a.get_component(RigidBody3D)
                 rb_b = b.get_component(RigidBody3D)
 
-                v_a = rb_a.velocity if rb_a else (a._phys_vel if hasattr(a, "_phys_vel") else np.zeros(3, np.float32))
-                v_b = rb_b.velocity if rb_b else (b._phys_vel if hasattr(b, "_phys_vel") else np.zeros(3, np.float32))
+                v_a = (rb_a.velocity.copy() if rb_a else
+                       (a._phys_vel.copy() if hasattr(a, "_phys_vel") else np.zeros(3, np.float32)))
+                v_b = (rb_b.velocity.copy() if rb_b else
+                       (b._phys_vel.copy() if hasattr(b, "_phys_vel") else np.zeros(3, np.float32)))
 
                 if sa:
                     b.transform.position -= normal * penetration
@@ -148,8 +171,11 @@ class PhysicsSim:
                         v_a += normal * imp
                         v_b -= normal * imp
 
-                # escrever de volta se for fallback (_phys_vel)
-                if not rb_a and hasattr(a, "_phys_vel"):
+                if rb_a:
+                    rb_a.velocity[:] = v_a
+                elif hasattr(a, "_phys_vel"):
                     a._phys_vel[:] = v_a
-                if not rb_b and hasattr(b, "_phys_vel"):
+                if rb_b:
+                    rb_b.velocity[:] = v_b
+                elif hasattr(b, "_phys_vel"):
                     b._phys_vel[:] = v_b
