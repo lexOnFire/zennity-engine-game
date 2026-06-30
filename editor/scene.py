@@ -220,13 +220,13 @@ class EditorScene(Scene):
 
         self.btn_snap      = GuiButton(15, 169, 200, 22, "Grade: OFF", bg_color=(55,58,68), hover_color=(70,75,88))
         self.btn_templates = GuiButton(15, 197, 200, 22, "Templates", bg_color=(60,40,100), hover_color=(80,55,130))
-        self.btn_undo      = GuiButton(15, _TREE_Y + _TREE_H + 22, 95,  26, "Desfazer", bg_color=(60,65,78),  hover_color=(80,88,105))
-        self.btn_redo      = GuiButton(120, _TREE_Y + _TREE_H + 22, 95,  26, "Refazer",  bg_color=(60,65,78),  hover_color=(80,88,105))
-        self.btn_delete    = GuiButton(15, _TREE_Y + _TREE_H + 52, 200, 26, "Excluir Objeto", bg_color=(140,40,40), hover_color=(175,50,50))
+        self.btn_undo      = GuiButton(15, _TREE_Y + self._tree_h + 22, 95,  26, "Desfazer", bg_color=(60,65,78),  hover_color=(80,88,105))
+        self.btn_redo      = GuiButton(120, _TREE_Y + self._tree_h + 22, 95,  26, "Refazer",  bg_color=(60,65,78),  hover_color=(80,88,105))
+        self.btn_delete    = GuiButton(15, _TREE_Y + self._tree_h + 52, 200, 26, "Excluir Objeto", bg_color=(140,40,40), hover_color=(175,50,50))
 
         # Botões de scroll da tree
         self.btn_tree_up   = GuiButton(196, _TREE_Y + 18, 28, 20, "▲", bg_color=(55,58,68), hover_color=(70,75,88))
-        self.btn_tree_down = GuiButton(196, _TREE_Y + _TREE_H - 2, 28, 20, "▼", bg_color=(55,58,68), hover_color=(70,75,88))
+        self.btn_tree_down = GuiButton(196, _TREE_Y + self._tree_h - 2, 28, 20, "▼", bg_color=(55,58,68), hover_color=(70,75,88))
 
         self.btn_light_angle_dec = GuiButton(15,  self._light_y, 40, 22, " < ", bg_color=(60,65,78), hover_color=(75,80,95))
         self.btn_light_angle_inc = GuiButton(165, self._light_y, 40, 22, " > ", bg_color=(60,65,78), hover_color=(75,80,95))
@@ -1320,7 +1320,7 @@ class EditorScene(Scene):
                     return
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mx, my = event.pos
-                tree_rect = pygame.Rect(15, _TREE_Y+18, 178, _TREE_H)
+                tree_rect = pygame.Rect(15, _TREE_Y+18, 178, self._tree_h)
                 if not tree_rect.collidepoint(mx, my):
                     self._commit_rename()
 
