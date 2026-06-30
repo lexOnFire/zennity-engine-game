@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Optional, Callable, List, TYPE_CHECKING
 from dataclasses import dataclass, field
+import math
 import pygame
 from engine.component import Component
 
@@ -170,3 +171,136 @@ class BoxCollider(Component):
     def draw(self, screen: pygame.Surface) -> None:
         if self.debug_draw:
             pygame.draw.rect(screen, (0, 255, 0), self.rect, 1)
+
+
+class CircleCollider(Component):
+    """
+    Collider circular para detecção de colisão por distância.
+
+    Callbacks disponíveis:
+        on_collision_enter(other: CircleCollider) -> None
+        on_collision_exit(other: CircleCollider)  -> None
+    """
+
+    _registry: List["CircleCollider"] = []
+
+    def __init__(
+        self,
+        radius: float = 16.0,
+        offset_x: float = 0.0,
+        offset_y: float = 0.0,
+        is_trigger: bool = False,
+        debug_draw: bool = False,
+    ) -> None:
+        super().__init__()
+        self.radius = radius
+        self.offset_x = offset_x
+        self.offset_y = offset_y
+        self.is_trigger = is_trigger
+        self.debug_draw = debug_draw
+
+        self._colliding_with: set["CircleCollider"] = set()
+
+        self.on_collision_enter: Optional[Callable[["CircleCollider"], None]] = None
+        self.on_collision_exit: Optional[Callable[["CircleCollider"], None]] = None
+
+    # ------------------------------------------------------------------
+    # Ciclo de vida
+    # ------------------------------------------------------------------
+
+    def start(self) -> None:
+        CircleCollider._registry.append(self)
+
+    def destroy(self) -> None:
+        if self in CircleCollider._registry:
+            CircleCollider._registry.remove(self)
+
+    # ------------------------------------------------------------------
+    # Centro utilitário
+    # ------------------------------------------------------------------
+
+    @property
+    def center(self) -> tuple[float, float]:
+        """Retorna o centro do collider no espaço de mundo."""
+        if self.game_object is None:
+            return (self.offset_x, self.offset_y)
+        pos = self.game_object.transform.get_world_position()
+        return (float(pos[0]) + self.offset_x, float(pos[1]) + self.offset_y)
+
+    # ------------------------------------------------------------------
+    # Detecção círculo-círculo
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def check_all() -> None:
+        """Verifica colisões entre todos os CircleColliders registrados."""
+        registry = CircleCollider._registry
+        n = len(registry)
+
+        for i in range(n):
+            a = registry[i]
+            if a.game_object is None or not a.game_object.active:
+                continue
+            for j in range(i + 1, n):
+                b = registry[j]
+                if b.game_object is None or not b.game_object.active:
+                    continue
+
+                ax, ay = a.center
+                bx, by = b.center
+                dist = math.hypot(bx - ax, by - ay)
+                min_dist = a.radius + b.radius
+
+                if dist < min_dist:
+                    if not a.is_trigger and not b.is_trigger:
+                        CircleCollider._resolve(a, b, ax, ay, bx, by, dist, min_dist)
+
+                    if b not in a._colliding_with:
+                        a._colliding_with.add(b)
+                        b._colliding_with.add(a)
+                        if a.on_collision_enter:
+                            a.on_collision_enter(b)
+                        if b.on_collision_enter:
+                            b.on_collision_enter(a)
+                else:
+                    if b in a._colliding_with:
+                        a._colliding_with.discard(b)
+                        b._colliding_with.discard(a)
+                        if a.on_collision_exit:
+                            a.on_collision_exit(b)
+                        if b.on_collision_exit:
+                            b.on_collision_exit(a)
+
+    @staticmethod
+    def _resolve(
+        a: "CircleCollider", b: "CircleCollider",
+        ax: float, ay: float, bx: float, by: float,
+        dist: float, min_dist: float,
+    ) -> None:
+        """Empurra os dois círculos para fora da sobreposição."""
+        from engine.physics.rigidbody import RigidBody
+
+        if dist == 0:
+            nx, ny = 1.0, 0.0
+        else:
+            nx, ny = (bx - ax) / dist, (by - ay) / dist
+
+        overlap = (min_dist - dist) / 2
+        rb_a = a.game_object.get_component(RigidBody) if a.game_object else None
+        rb_b = b.game_object.get_component(RigidBody) if b.game_object else None
+
+        if rb_a and not rb_a.is_kinematic:
+            a.game_object.transform.x -= nx * overlap
+            a.game_object.transform.y -= ny * overlap
+        if rb_b and not rb_b.is_kinematic:
+            b.game_object.transform.x += nx * overlap
+            b.game_object.transform.y += ny * overlap
+
+    # ------------------------------------------------------------------
+    # Debug
+    # ------------------------------------------------------------------
+
+    def draw(self, screen: pygame.Surface) -> None:
+        if self.debug_draw:
+            cx, cy = self.center
+            pygame.draw.circle(screen, (0, 255, 128), (int(cx), int(cy)), int(self.radius), 1)
