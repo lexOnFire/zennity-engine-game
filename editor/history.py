@@ -28,6 +28,7 @@ def _snap_obj(obj: "GameObject") -> Dict[str, Any]:
         "use_physics":        getattr(obj, "use_physics", True),
         "initial_velocity_y": getattr(obj, "initial_velocity_y", 0.0),
         "script_path":        getattr(obj, "script_path", ""),
+        "tag":                getattr(obj, "tag", ""),
         "position":           obj.transform.position.copy(),
         "rotation":           obj.transform.rotation.copy(),
         "scale":              obj.transform.scale.copy(),
@@ -47,6 +48,7 @@ def _get_color(obj: "GameObject") -> tuple:
 def _snap_scene(scene: Any) -> Dict[str, Any]:
     return {
         "selected_index": scene.selected_index,
+        "light_angle":    getattr(scene, "light_angle", 45.0),
         "objects":        [_snap_obj(o) for o in scene.editable_objects],
     }
 
@@ -105,17 +107,23 @@ class History:
         """Reconstrói a cena a partir de um snapshot."""
         from engine.game_object import GameObject
         from engine.graphics.renderer3d import MeshRenderer3D
-        from editor.mesh_factory import create_pyramid_mesh, create_sphere_mesh
-        from engine.assets import Assets
 
         # Remove objetos atuais
         for obj in list(scene.editable_objects):
             scene._remove_go(obj)
             obj.destroy()
         scene.editable_objects.clear()
-        scene.cube_count = scene.pyramid_count = scene.sphere_count = 0
+        scene.cube_count    = 0
+        scene.pyramid_count = 0
+        scene.sphere_count  = 0
+        scene.plane_count   = 0
+        scene.capsule_count = 0
 
-        # Recria objetos do snapshot
+        # Restaura ângulo da luz
+        if "light_angle" in snapshot:
+            scene.light_angle = snapshot["light_angle"]
+
+        # Recria objetos do snapshot usando _make_mesh / _deserialize_object
         for s in snapshot["objects"]:
             go = GameObject()
             go.name               = s["name"]
@@ -124,23 +132,32 @@ class History:
             go.use_physics        = s["use_physics"]
             go.initial_velocity_y = s["initial_velocity_y"]
             go.script_path        = s["script_path"]
+            go.tag                = s.get("tag", "")
             go.transform.position = s["position"].copy()
             go.transform.rotation = s["rotation"].copy()
             go.transform.scale    = s["scale"].copy()
             color = s["color"]
-            if go.mesh_type == "Cube":
-                scene.cube_count += 1
-                go.add_component(MeshRenderer3D(Assets.create_cube_mesh(1.0), color=color))
-            elif go.mesh_type == "Pyramid":
-                scene.pyramid_count += 1
-                go.add_component(MeshRenderer3D(create_pyramid_mesh(1.0), color=color))
-            elif go.mesh_type == "Sphere":
-                scene.sphere_count += 1
-                go.add_component(MeshRenderer3D(create_sphere_mesh(0.6, 10, 10), color=color))
+
+            # usa _make_mesh da cena para suportar todos os tipos de forma
+            go.add_component(scene._make_mesh(go.mesh_type, color))
+
+            # atualiza contadores
+            attr_map = {
+                "Cube":    "cube_count",
+                "Pyramid": "pyramid_count",
+                "Sphere":  "sphere_count",
+                "Plane":   "plane_count",
+                "Capsule": "capsule_count",
+            }
+            attr = attr_map.get(go.mesh_type)
+            if attr:
+                setattr(scene, attr, getattr(scene, attr) + 1)
+
             scene._add_go(go)
             scene.editable_objects.append(go)
 
         scene.selected_index = min(
             snapshot["selected_index"],
-            len(scene.editable_objects) - 1
+            len(scene.editable_objects) - 1,
         )
+        scene._tree_scroll_to(scene.selected_index)
