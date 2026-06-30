@@ -20,6 +20,22 @@ class GuiButton:
         self.hover_color = hover_color
         self.text_color = text_color
 
+    @property
+    def x(self) -> int:
+        return self.rect.x
+
+    @x.setter
+    def x(self, val: int) -> None:
+        self.rect.x = val
+
+    @property
+    def y(self) -> int:
+        return self.rect.y
+
+    @y.setter
+    def y(self, val: int) -> None:
+        self.rect.y = val
+
     def draw(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
         mouse_pos = pygame.mouse.get_pos()
         color = self.hover_color if self.rect.collidepoint(mouse_pos) else self.bg_color
