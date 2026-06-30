@@ -29,6 +29,7 @@ from .script_manager import ScriptManager
 from .code_editor import CodeEditor
 from .history import History
 
+_IDENTITY = np.eye(4, dtype=np.float32)
 
 # ---------------------------------------------------------------------------
 def _point_in_polygon(x: float, y: float, poly: List[Tuple[int, int]]) -> bool:
@@ -360,7 +361,7 @@ class EditorScene(Scene):
         for x in range(-5, 6): verts += [[x,-0.5,-5.0],[x,-0.5,5.0]]
         for z in range(-5, 6): verts += [[-5.0,-0.5,z],[5.0,-0.5,z]]
         verts = np.array(verts, np.float32)
-        ndc, depths = project_vertices(verts, np.eye(4,np.float32), self.camera_comp.view_matrix, self.camera_comp.projection_matrix)
+        ndc, depths = project_vertices(verts, _IDENTITY, self.camera_comp.view_matrix, self.camera_comp.projection_matrix)
         vw, vh = self.camera_comp.viewport_width, self.camera_comp.viewport_height
         vx, vy = self.camera_comp.viewport_x, self.camera_comp.viewport_y
         sx = vx + (ndc[:,0]+1)*vw/2
@@ -468,7 +469,7 @@ class EditorScene(Scene):
         ey  = P + np.array([0.0, ext, 0.0], np.float32)
         ez  = P + np.array([0.0, 0.0, ext], np.float32)
         verts = np.array([P, ex, ey, ez], np.float32)
-        ndc, depths = project_vertices(verts, np.eye(4,np.float32), self.camera_comp.view_matrix, self.camera_comp.projection_matrix)
+        ndc, depths = project_vertices(verts, _IDENTITY, self.camera_comp.view_matrix, self.camera_comp.projection_matrix)
         near = self.camera_comp.near
         if not all(d > near for d in depths):
             return
@@ -485,7 +486,7 @@ class EditorScene(Scene):
                 (lambda t: P+np.array([0.8*np.cos(t),0.8*np.sin(t),0],np.float32), (50,100,220)),
             ]:
                 ring = np.array([pts_fn(t) for t in np.linspace(0,2*np.pi,20)], np.float32)
-                rn, rd = project_vertices(ring, np.eye(4,np.float32), self.camera_comp.view_matrix, self.camera_comp.projection_matrix)
+                rn, rd = project_vertices(ring, _IDENTITY, self.camera_comp.view_matrix, self.camera_comp.projection_matrix)
                 pts = [(int(vx+(rn[k,0]+1)*vw/2), int(vy+(-rn[k,1]+1)*vh/2)) for k in range(len(ring)) if rd[k]>near]
                 if len(pts)>1: pygame.draw.lines(screen, col, True, pts, 1)
         else:
@@ -509,7 +510,6 @@ class EditorScene(Scene):
         for btn,mode in [(self.btn_mode_translate,"translate"),(self.btn_mode_rotate,"rotate"),(self.btn_mode_scale,"scale")]:
             btn.bg_color = (0,150,220) if self.gizmo_mode==mode else (80,60,120)
             btn.draw(screen,self.font_btn)
-        # Botão Snap
         self.btn_snap.text     = f"Grade: {'ON (G)' if self.snap_enabled else 'OFF (G)'}"
         self.btn_snap.bg_color = (0,130,80) if self.snap_enabled else (55,58,68)
         self.btn_snap.draw(screen, self.font_btn)
@@ -523,7 +523,6 @@ class EditorScene(Scene):
             pygame.draw.rect(screen,(0,200,255) if sel else (70,76,90),slot,1,border_radius=3)
             screen.blit(self.font_body.render(obj.name,True,(255,255,255)),(25,y+4))
             y+=26
-        # Undo/Redo com indicador de disponibilidade
         self.btn_undo.bg_color = (60,80,110) if self.history.can_undo else (45,49,58)
         self.btn_redo.bg_color = (60,80,110) if self.history.can_redo else (45,49,58)
         self.btn_undo.draw(screen,self.font_btn)
@@ -541,7 +540,6 @@ class EditorScene(Scene):
         self.btn_play_pause.text        = "STOP" if self.play_mode else "PLAY"
         for btn in [self.btn_play_pause,self.btn_save,self.btn_load]:
             btn.draw(screen,self.font_btn)
-        # Indicadores Undo/Redo na barra
         undo_col = (0,200,255) if self.history.can_undo else (80,85,95)
         redo_col = (0,200,255) if self.history.can_redo else (80,85,95)
         screen.blit(self.font_btn.render(f"↩{len(self.history._undo)}",True,undo_col),(500,20))
@@ -578,7 +576,6 @@ class EditorScene(Scene):
         screen.blit(self.font_body.render("Cor do Objeto:",True,(220,220,220)),(785,292))
         for btn in self.btn_colors: btn.draw(screen,self.font_btn)
         self.btn_clone.draw(screen,self.font_btn)
-        # Status bar
         ov = pygame.Surface((480,42),pygame.SRCALPHA)
         ov.fill((30,34,42,200)); screen.blit(ov,(260,545))
         pygame.draw.rect(screen,(0,200,255),(260,545,480,42),1,border_radius=4)
@@ -635,7 +632,6 @@ class EditorScene(Scene):
                 self.showing_help_modal=False
             return
 
-        # --- Atalhos globais de teclado ---
         if event.type == pygame.KEYDOWN:
             mods = pygame.key.get_mods()
             if event.key == pygame.K_z and mods & pygame.KMOD_CTRL:
@@ -649,30 +645,24 @@ class EditorScene(Scene):
             if event.key == pygame.K_g:
                 self.snap_enabled = not self.snap_enabled; return
 
-        # Formas
         if self.btn_add_cube.is_clicked(event):    self.spawn_object("Cube");    return
         if self.btn_add_pyramid.is_clicked(event): self.spawn_object("Pyramid"); return
         if self.btn_add_sphere.is_clicked(event):  self.spawn_object("Sphere");  return
 
-        # Modos gizmo
         for btn,mode in [(self.btn_mode_translate,"translate"),(self.btn_mode_rotate,"rotate"),(self.btn_mode_scale,"scale")]:
             if btn.is_clicked(event):
                 self.gizmo_mode = None if self.gizmo_mode==mode else mode; return
 
-        # Snap
         if self.btn_snap.is_clicked(event):
             self.snap_enabled = not self.snap_enabled; return
 
-        # Undo/Redo botões
         if self.btn_undo.is_clicked(event): self.history.undo(self); return
         if self.btn_redo.is_clicked(event): self.history.redo(self); return
 
-        # Play/Save/Load
         if self.btn_play_pause.is_clicked(event): self._toggle_play(); return
         if self.btn_save.is_clicked(event):       self.save_scene();   return
         if self.btn_load.is_clicked(event):       self.load_scene();   return
 
-        # Luz
         if self.btn_light_angle_dec.is_clicked(event) or self.btn_light_angle_inc.is_clicked(event):
             d = -15.0 if self.btn_light_angle_dec.is_clicked(event) else 15.0
             self.light_angle = (self.light_angle+d)%360
@@ -684,7 +674,6 @@ class EditorScene(Scene):
                 if r: r.light_dir=ld
             return
 
-        # Scroll (zoom) — MOUSEWHEEL moderno + fallback botões 4/5
         if event.type == pygame.MOUSEWHEEL:
             self.camera_controller.target_distance = max(1.5, min(15.0, self.camera_controller.target_distance - event.y*0.3))
             return
@@ -692,7 +681,6 @@ class EditorScene(Scene):
             if event.button==4: self.camera_controller.target_distance = max(1.5,  self.camera_controller.target_distance-0.3)
             if event.button==5: self.camera_controller.target_distance = min(15.0, self.camera_controller.target_distance+0.3)
 
-        # Widget XYZ snap
         if event.type==pygame.MOUSEBUTTONDOWN and event.button==1:
             mx,my=event.pos
             for ep,yaw,pitch in [
@@ -705,7 +693,6 @@ class EditorScene(Scene):
                     self.camera_controller.target_pitch = pitch
                     return
 
-        # Gizmo handles
         if event.type==pygame.MOUSEBUTTONDOWN and event.button==1:
             mx,my=event.pos
             if self.selected_index>=0 and not self.play_mode and self.gizmo_mode and self.gizmo_screen_points:
@@ -720,7 +707,6 @@ class EditorScene(Scene):
                         self.is_dragging_gizmo=True; self.active_gizmo_axis=axis
                         self.gizmo_drag_last_mouse=event.pos; return
 
-        # Click/drag início
         if event.type==pygame.MOUSEBUTTONDOWN and event.button==1:
             self.click_start_pos=event.pos
             mx,my=event.pos
@@ -752,7 +738,6 @@ class EditorScene(Scene):
                         self._select_at(mx,my)
                 self.click_start_pos=None
 
-        # Inspetor
         if 0<=self.selected_index<len(self.editable_objects):
             sel=self.editable_objects[self.selected_index]
             if self.btn_delete.is_clicked(event):          self.delete_selected(); return
