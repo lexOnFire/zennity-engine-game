@@ -540,11 +540,11 @@ class EditorScene(Scene):
             return
         if idx < self._tree_scroll:
             self._tree_scroll = idx
-        elif idx >= self._tree_scroll + _TREE_MAX_VIS:
-            self._tree_scroll = idx - _TREE_MAX_VIS + 1
+        elif idx >= self._tree_scroll + self._tree_max_vis:
+            self._tree_scroll = idx - self._tree_max_vis + 1
 
     def _max_scroll(self) -> int:
-        return max(0, len(self.editable_objects) - _TREE_MAX_VIS)
+        return max(0, len(self.editable_objects) - self._tree_max_vis)
 
     # -----------------------------------------------------------------------
     def save_scene(self) -> None:
