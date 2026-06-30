@@ -1,0 +1,172 @@
+from __future__ import annotations
+from typing import Optional, Callable, List, TYPE_CHECKING
+from dataclasses import dataclass, field
+import pygame
+from engine.component import Component
+
+if TYPE_CHECKING:
+    from engine.game_object import GameObject
+
+
+@dataclass
+class CollisionInfo:
+    """Informações sobre uma colisão entre dois colliders."""
+    other: "BoxCollider"
+    overlap_x: float = 0.0
+    overlap_y: float = 0.0
+
+
+class BoxCollider(Component):
+    """
+    Collider retangular (AABB — Axis-Aligned Bounding Box).
+
+    Registra-se automaticamente no PhysicsWorld ao ser adicionado
+    a um GameObject que pertence a uma Scene.
+
+    Callbacks disponíveis:
+        on_collision_enter(info: CollisionInfo) -> None
+        on_collision_exit(other: BoxCollider)   -> None
+    """
+
+    # Registro global de todos colliders ativos (simples e funcional para 2D)
+    _registry: List["BoxCollider"] = []
+
+    def __init__(
+        self,
+        width: float = 32.0,
+        height: float = 32.0,
+        offset_x: float = 0.0,
+        offset_y: float = 0.0,
+        is_trigger: bool = False,
+        debug_draw: bool = False,
+    ) -> None:
+        super().__init__()
+        self.width = width
+        self.height = height
+        self.offset_x = offset_x
+        self.offset_y = offset_y
+        self.is_trigger = is_trigger   # trigger = detecta mas não resolve colisão
+        self.debug_draw = debug_draw
+
+        self._colliding_with: set["BoxCollider"] = set()
+
+        # Callbacks — atribua funções externas a estes
+        self.on_collision_enter: Optional[Callable[[CollisionInfo], None]] = None
+        self.on_collision_exit: Optional[Callable[["BoxCollider"], None]] = None
+
+    # ------------------------------------------------------------------
+    # Ciclo de vida
+    # ------------------------------------------------------------------
+
+    def start(self) -> None:
+        BoxCollider._registry.append(self)
+
+    def destroy(self) -> None:
+        if self in BoxCollider._registry:
+            BoxCollider._registry.remove(self)
+
+    # ------------------------------------------------------------------
+    # Rect utilitário
+    # ------------------------------------------------------------------
+
+    @property
+    def rect(self) -> pygame.Rect:
+        """Retorna o pygame.Rect atual no espaço de mundo."""
+        if self.game_object is None:
+            return pygame.Rect(0, 0, int(self.width), int(self.height))
+        pos = self.game_object.transform.get_world_position()
+        left = int(pos[0] + self.offset_x - self.width / 2)
+        top  = int(pos[1] + self.offset_y - self.height / 2)
+        return pygame.Rect(left, top, int(self.width), int(self.height))
+
+    # ------------------------------------------------------------------
+    # Detecção AABB
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def check_all() -> None:
+        """
+        Verifica colisões entre todos os BoxColliders registrados.
+        Deve ser chamado uma vez por frame (geralmente na Scene.update).
+        """
+        registry = BoxCollider._registry
+        n = len(registry)
+
+        for i in range(n):
+            a = registry[i]
+            if a.game_object is None or not a.game_object.active:
+                continue
+            for j in range(i + 1, n):
+                b = registry[j]
+                if b.game_object is None or not b.game_object.active:
+                    continue
+
+                rect_a = a.rect
+                rect_b = b.rect
+
+                if rect_a.colliderect(rect_b):
+                    # Calcula overlaps para resolução de colisão
+                    overlap_x = min(rect_a.right, rect_b.right) - max(rect_a.left, rect_b.left)
+                    overlap_y = min(rect_a.bottom, rect_b.bottom) - max(rect_a.top, rect_b.top)
+                    info_ab = CollisionInfo(other=b, overlap_x=overlap_x, overlap_y=overlap_y)
+                    info_ba = CollisionInfo(other=a, overlap_x=overlap_x, overlap_y=overlap_y)
+
+                    # Resolução física (só para não-triggers)
+                    if not a.is_trigger and not b.is_trigger:
+                        BoxCollider._resolve(a, b, overlap_x, overlap_y)
+
+                    # Callbacks de enter
+                    if b not in a._colliding_with:
+                        a._colliding_with.add(b)
+                        b._colliding_with.add(a)
+                        if a.on_collision_enter:
+                            a.on_collision_enter(info_ab)
+                        if b.on_collision_enter:
+                            b.on_collision_enter(info_ba)
+                else:
+                    # Callbacks de exit
+                    if b in a._colliding_with:
+                        a._colliding_with.discard(b)
+                        b._colliding_with.discard(a)
+                        if a.on_collision_exit:
+                            a.on_collision_exit(b)
+                        if b.on_collision_exit:
+                            b.on_collision_exit(a)
+
+    @staticmethod
+    def _resolve(a: "BoxCollider", b: "BoxCollider", overlap_x: float, overlap_y: float) -> None:
+        """Resolve penetração pelo eixo de menor sobreposição (MTV)."""
+        from engine.physics.rigidbody import RigidBody
+
+        rb_a = a.game_object.get_component(RigidBody) if a.game_object else None
+        rb_b = b.game_object.get_component(RigidBody) if b.game_object else None
+
+        # Determina qual eixo resolver (o de menor penetração)
+        if overlap_x < overlap_y:
+            # Separa no eixo X
+            direction = 1 if a.rect.centerx < b.rect.centerx else -1
+            correction = overlap_x / 2
+            if rb_a and not rb_a.is_kinematic:
+                a.game_object.transform.x -= direction * correction
+                rb_a.velocity[0] = 0
+            if rb_b and not rb_b.is_kinematic:
+                b.game_object.transform.x += direction * correction
+                rb_b.velocity[0] = 0
+        else:
+            # Separa no eixo Y
+            direction = 1 if a.rect.centery < b.rect.centery else -1
+            correction = overlap_y / 2
+            if rb_a and not rb_a.is_kinematic:
+                a.game_object.transform.y -= direction * correction
+                rb_a.velocity[1] = 0
+            if rb_b and not rb_b.is_kinematic:
+                b.game_object.transform.y += direction * correction
+                rb_b.velocity[1] = 0
+
+    # ------------------------------------------------------------------
+    # Debug
+    # ------------------------------------------------------------------
+
+    def draw(self, screen: pygame.Surface) -> None:
+        if self.debug_draw:
+            pygame.draw.rect(screen, (0, 255, 0), self.rect, 1)

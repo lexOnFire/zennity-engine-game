@@ -1,65 +1,85 @@
-from ..component import Component
-from .collision import BoxCollider2D
 import numpy as np
+from typing import Optional
+from engine.component import Component
 
-class Rigidbody2D(Component):
-    """Component that simulates simple gravity, velocity, and AABB collision resolution in 2D."""
-    def __init__(self, gravity: float = 980.0, use_gravity: bool = True) -> None:
+
+class RigidBody(Component):
+    """
+    Componente de física que aplica gravidade, velocidade e movimento
+    ao Transform do GameObject a cada frame.
+    """
+
+    def __init__(
+        self,
+        mass: float = 1.0,
+        gravity_scale: float = 1.0,
+        drag: float = 0.0,
+        use_gravity: bool = True,
+        is_kinematic: bool = False,
+    ) -> None:
         super().__init__()
-        self.velocity = np.array([0.0, 0.0], dtype=np.float32)  # [vx, vy]
-        self.gravity = gravity
-        self.use_gravity = use_gravity
-        self.is_grounded = False
-        
-        self._collider = None
+        self.mass: float = max(mass, 0.0001)  # evita divisão por zero
+        self.gravity_scale: float = gravity_scale
+        self.drag: float = drag          # amortecimento linear (0 = sem atrito)
+        self.use_gravity: bool = use_gravity
+        self.is_kinematic: bool = is_kinematic  # se True, não sofre forças externas
 
-    def start(self) -> None:
-        self._collider = self.game_object.get_component(BoxCollider2D)
+        # Vetores de estado
+        self.velocity: np.ndarray = np.zeros(2, dtype=np.float32)   # px/s
+        self.acceleration: np.ndarray = np.zeros(2, dtype=np.float32)
+
+        # Constante de gravidade (px/s²) — pode ser sobrescrita por cena
+        self.GRAVITY: float = 980.0
+
+    # ------------------------------------------------------------------
+    # Força e impulso
+    # ------------------------------------------------------------------
+
+    def add_force(self, fx: float, fy: float) -> None:
+        """Aplica uma força contínua (F = m*a, portanto a += F/m)."""
+        if self.is_kinematic:
+            return
+        self.acceleration += np.array([fx, fy], dtype=np.float32) / self.mass
+
+    def add_impulse(self, ix: float, iy: float) -> None:
+        """Aplica um impulso instantâneo diretamente na velocidade."""
+        if self.is_kinematic:
+            return
+        self.velocity += np.array([ix, iy], dtype=np.float32) / self.mass
+
+    def set_velocity(self, vx: float, vy: float) -> None:
+        """Define a velocidade diretamente (útil para movimento controlado)."""
+        self.velocity = np.array([vx, vy], dtype=np.float32)
+
+    def stop(self) -> None:
+        """Zera a velocidade e aceleração."""
+        self.velocity[:] = 0.0
+        self.acceleration[:] = 0.0
+
+    # ------------------------------------------------------------------
+    # Update
+    # ------------------------------------------------------------------
 
     def update(self, dt: float) -> None:
-        # Apply gravity
-        if self.use_gravity and not self.is_grounded:
-            self.velocity[1] += self.gravity * dt
+        if self.is_kinematic or self.game_object is None:
+            return
 
-        # Move X axis first and check collisions
-        self.transform.x += self.velocity[0] * dt
-        self._resolve_collisions_axis(axis=0)
+        # Gravidade
+        if self.use_gravity:
+            self.acceleration[1] += self.GRAVITY * self.gravity_scale
 
-        # Move Y axis and check collisions
-        self.is_grounded = False
-        self.transform.y += self.velocity[1] * dt
-        self._resolve_collisions_axis(axis=1)
+        # Integração de Euler semi-implícita
+        self.velocity += self.acceleration * dt
 
-    def _resolve_collisions_axis(self, axis: int) -> None:
-        """Resolves collisions on the specified axis (0 for X, 1 for Y)."""
-        if not self._collider:
-            self._collider = self.game_object.get_component(BoxCollider2D)
-            if not self._collider:
-                return
+        # Drag (amortecimento)
+        if self.drag > 0.0:
+            factor = max(0.0, 1.0 - self.drag * dt)
+            self.velocity *= factor
 
-        for other in BoxCollider2D.all_colliders:
-            # Skip self and triggers
-            if other == self._collider or other.is_trigger:
-                continue
-                
-            if self._collider.check_collision(other):
-                overlap_x, overlap_y = self._collider.get_overlap(other)
-                
-                if axis == 0:  # X axis resolution
-                    if abs(overlap_x) > 0:
-                        self.transform.x += overlap_x
-                        self.velocity[0] = 0.0
-                else:  # Y axis resolution
-                    if abs(overlap_y) > 0:
-                        self.transform.y += overlap_y
-                        
-                        # In Pygame screen space, Y increases downwards.
-                        # If overlap_y is negative, we were pushed up (hitting the ground).
-                        # If overlap_y is positive, we were pushed down (hitting the ceiling).
-                        if overlap_y < 0.0:
-                            self.is_grounded = True
-                            if self.velocity[1] > 0.0:
-                                self.velocity[1] = 0.0
-                        elif overlap_y > 0.0:
-                            if self.velocity[1] < 0.0:
-                                self.velocity[1] = 0.0
+        # Aplica movimento ao Transform
+        transform = self.game_object.transform
+        transform.x += self.velocity[0] * dt
+        transform.y += self.velocity[1] * dt
+
+        # Reseta aceleração (forças devem ser aplicadas todo frame)
+        self.acceleration[:] = 0.0
