@@ -34,6 +34,16 @@ class GuiButton:
     @y.setter
     def y(self, val: int) -> None: self.rect.y = val
 
+    @property
+    def w(self) -> int: return self.rect.width
+    @w.setter
+    def w(self, val: int) -> None: self.rect.width = val
+
+    @property
+    def h(self) -> int: return self.rect.height
+    @h.setter
+    def h(self, val: int) -> None: self.rect.height = val
+
     # ------------------------------------------------------------------
     def draw(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
         mouse_pos   = pygame.mouse.get_pos()
