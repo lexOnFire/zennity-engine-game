@@ -187,6 +187,7 @@ class EditorScene(Scene):
 
         self.cube_count = self.pyramid_count = self.sphere_count = self.plane_count = self.capsule_count = self.camera_count = self.light_count = 0
         self._tree_scroll: int = 0
+        self._inspector_scroll: int = 0
         self._rename_index: int = -1
         self._rename_text: str = ""
         self._rename_blink: float = 0.0
@@ -267,9 +268,9 @@ class EditorScene(Scene):
         self.btn_light_angle_inc = GuiButton(LEFT_PANEL_W - 50,   lay.light_section_y, 38, ROW_H_SMALL, ">", _S, _SH)
 
         # ── Barra superior ───────────────────────────────────────────────────
-        self.btn_menu_file   = GuiButton( 10, 2, 52, 26, "File",   T.BG, T.SURFACE)
-        self.btn_menu_view   = GuiButton( 66, 2, 52, 26, "View",   T.BG, T.SURFACE)
-        self.btn_menu_window = GuiButton(122, 2, 72, 26, "Window", T.BG, T.SURFACE)
+        self.btn_menu_file   = GuiButton(110, 2, 52, 26, "File",   T.BG, T.SURFACE)
+        self.btn_menu_view   = GuiButton(166, 2, 52, 26, "View",   T.BG, T.SURFACE)
+        self.btn_menu_window = GuiButton(222, 2, 72, 26, "Window", T.BG, T.SURFACE)
 
         # Botões legados fora de tela
         self.btn_new_scene   = GuiButton(-200, -200, 10, 10, "Novo")
@@ -1021,6 +1022,10 @@ class EditorScene(Scene):
         pygame.draw.rect(screen, T.PANEL, (0, 0, lay.screen_w, TOP_BAR_H))
         pygame.draw.line(screen, T.BORDER, (0, TOP_BAR_H - 1), (lay.screen_w, TOP_BAR_H - 1))
 
+        # Logo "Zennity"
+        logo_surf = self.font_xyz.render("ZENNITY", True, T.ACCENT)
+        screen.blit(logo_surf, (12, 4))
+
         # Menus
         for btn in [self.btn_menu_file, self.btn_menu_view, self.btn_menu_window]:
             btn.draw(screen, self.font_btn)
@@ -1040,7 +1045,7 @@ class EditorScene(Scene):
     def _draw_dropdowns(self, screen: pygame.Surface) -> None:
         if self._active_dropdown == "file":
             items = [("Novo",     None), ("Salvar", None), ("Carregar", None)]
-            rx_d, ry_d = 10, TOP_BAR_H
+            rx_d, ry_d = 110, TOP_BAR_H
             dw, dh = 120, len(items) * 26 + 4
             pygame.draw.rect(screen, T.SURFACE, (rx_d, ry_d, dw, dh), border_radius=4)
             pygame.draw.rect(screen, T.BORDER,  (rx_d, ry_d, dw, dh), 1, border_radius=4)
@@ -1071,90 +1076,116 @@ class EditorScene(Scene):
         rot = sel.transform.rotation
         sc  = sel.transform.scale
 
-        # Nome
+        # Nome (fixo no topo)
         name_surf = self.font_xyz.render(sel.name, True, T.TEXT_PRIMARY)
         screen.blit(name_surf, (rx, INSP_HEADER_Y))
 
-        Divider(rx, INSP_PHYSICS_Y - 20, INSPECTOR_W).draw(screen)
+        # Configura clipping da área rolável
+        inspect_clip = pygame.Rect(panel_x, TOP_BAR_H + 45, RIGHT_PANEL_W, lay.screen_h - TOP_BAR_H - STATUS_BAR_H - 50)
+        screen.set_clip(inspect_clip)
+
+        scroll = getattr(self, "_inspector_scroll", 0)
+        phys_y = INSP_PHYSICS_Y - scroll
+        script_y = INSP_SCRIPT_Y - scroll
+        color_y = INSP_COLOR_Y - scroll
+        clone_y = INSP_CLONE_Y - scroll
+        hier_y = INSP_HIER_Y - scroll
+        tag_y = INSP_TAG_Y - scroll
+        trans_y = INSP_TRANSFORM_Y - scroll
+
+        Divider(rx, phys_y - 20, INSPECTOR_W).draw(screen)
 
         # Física
-        SectionHeader(rx, INSP_PHYSICS_Y - 12, INSPECTOR_W, "Física").draw(screen, self.font_section)
+        SectionHeader(rx, phys_y - 12, INSPECTOR_W, "Física").draw(screen, self.font_section)
 
         is_static = getattr(sel, "is_static", False)
         self.btn_toggle_static.label = "☑" if is_static else "☐"
         self.btn_toggle_static.draw(screen, self.font_btn)
-        screen.blit(self.font_body.render("Estático", True, T.TEXT_PRIMARY), (rx + 24, INSP_PHYSICS_Y - 10))
+        screen.blit(self.font_body.render("Estático", True, T.TEXT_PRIMARY), (rx + 24, phys_y - 10))
 
         phys_on = getattr(sel, "physics_enabled", False)
         self.btn_toggle_physics.label = "☑" if phys_on else "☐"
         self.btn_toggle_physics.draw(screen, self.font_btn)
-        screen.blit(self.font_body.render("Física ativa", True, T.TEXT_PRIMARY), (rx + 24, INSP_PHYSICS_Y + 20))
+        screen.blit(self.font_body.render("Física ativa", True, T.TEXT_PRIMARY), (rx + 24, phys_y + 20))
 
         # Velocidade
         vel = getattr(sel, "_velocity", np.zeros(3))
         vel_surf = self.font_section.render(f"vel: {vel[0]:+.1f}, {vel[1]:+.1f}, {vel[2]:+.1f}", True, T.TEXT_MUTED)
-        screen.blit(vel_surf, (rx, INSP_PHYSICS_Y + 50))
+        screen.blit(vel_surf, (rx, phys_y + 50))
         self.btn_vel_dec.draw(screen, self.font_btn)
         self.btn_vel_inc.draw(screen, self.font_btn)
 
-        Divider(rx, INSP_SCRIPT_Y - 8, INSPECTOR_W).draw(screen)
+        Divider(rx, script_y - 8, INSPECTOR_W).draw(screen)
 
         # Script
-        SectionHeader(rx, INSP_SCRIPT_Y, INSPECTOR_W, "Script").draw(screen, self.font_section)
+        SectionHeader(rx, script_y, INSPECTOR_W, "Script").draw(screen, self.font_section)
         cur_script = getattr(sel, "_script_name", "Nenhum")
         script_surf = self.font_body.render(cur_script, True, T.ACCENT)
-        screen.blit(script_surf, (rx + 32, INSP_SCRIPT_Y + 4))
+        screen.blit(script_surf, (rx + 32, script_y + 4))
         for btn in [self.btn_prev_script, self.btn_next_script,
                     self.btn_new_script, self.btn_edit_script,
                     self.btn_internal_editor, self.btn_script_help]:
             btn.draw(screen, self.font_btn)
 
-        Divider(rx, INSP_COLOR_Y - 4, INSPECTOR_W).draw(screen)
+        Divider(rx, color_y - 4, INSPECTOR_W).draw(screen)
 
-        SectionHeader(rx, INSP_COLOR_Y + 4, INSPECTOR_W, "Cor").draw(screen, self.font_section)
-        for btn in self.btn_colors:
-            btn.draw(screen, self.font_btn)
+        # Cor
+        SectionHeader(rx, color_y + 4, INSPECTOR_W, "Cor").draw(screen, self.font_section)
         r_comp = sel.get_component(MeshRenderer3D)
+        for i, btn in enumerate(self.btn_colors):
+            btn.draw(screen, self.font_btn)
+            if r_comp and tuple(r_comp.color) == COLOR_PALETTE[i]:
+                # Indicador de cor ativa (borda branca com respiro)
+                border_rect = pygame.Rect(btn.rect.x - 2, btn.rect.y - 2, btn.rect.w + 4, btn.rect.h + 4)
+                pygame.draw.rect(screen, (255, 255, 255), border_rect, 2, border_radius=5)
+                
         if r_comp:
             cur_col = r_comp.color
-            pygame.draw.rect(screen, cur_col,   (rx, INSP_COLOR_Y + 56, INSPECTOR_W, 12), border_radius=3)
-            pygame.draw.rect(screen, T.BORDER,  (rx, INSP_COLOR_Y + 56, INSPECTOR_W, 12), 1, border_radius=3)
+            pygame.draw.rect(screen, cur_col,   (rx, color_y + 56, INSPECTOR_W, 12), border_radius=3)
+            pygame.draw.rect(screen, T.BORDER,  (rx, color_y + 56, INSPECTOR_W, 12), 1, border_radius=3)
 
-        Divider(rx, INSP_CLONE_Y - 8, INSPECTOR_W).draw(screen)
+        Divider(rx, clone_y - 8, INSPECTOR_W).draw(screen)
 
         self.btn_clone.draw(screen, self.font_btn)
 
-        Divider(rx, INSP_HIER_Y - 4, INSPECTOR_W).draw(screen)
+        Divider(rx, hier_y - 4, INSPECTOR_W).draw(screen)
 
-        SectionHeader(rx, INSP_HIER_Y, INSPECTOR_W, "Pai (Hierarquia)").draw(screen, self.font_section)
+        # Pai
+        SectionHeader(rx, hier_y, INSPECTOR_W, "Pai (Hierarquia)").draw(screen, self.font_section)
         self.btn_prev_parent.draw(screen, self.font_btn)
         self.btn_next_parent.draw(screen, self.font_btn)
         parent_name = sel.parent.name if getattr(sel, "parent", None) else "(raiz)"
         screen.blit(self.font_body.render(parent_name, True, T.TEXT_PRIMARY),
-                    (rx + 32, INSP_HIER_Y + 5))
+                    (rx + 32, hier_y + 5))
 
-        Divider(rx, INSP_TAG_Y - 4, INSPECTOR_W).draw(screen)
+        Divider(rx, tag_y - 4, INSPECTOR_W).draw(screen)
 
-        SectionHeader(rx, INSP_TAG_Y, INSPECTOR_W, "Tag").draw(screen, self.font_section)
+        # Tag
+        SectionHeader(rx, tag_y, INSPECTOR_W, "Tag").draw(screen, self.font_section)
         self.btn_prev_tag.draw(screen, self.font_btn)
         self.btn_next_tag.draw(screen, self.font_btn)
         tag_name = getattr(sel, "tag", "") or "(sem tag)"
         screen.blit(self.font_body.render(tag_name, True, T.TEXT_PRIMARY),
-                    (rx + 32, INSP_TAG_Y + 5))
+                    (rx + 32, tag_y + 5))
 
-        Divider(rx, INSP_TRANSFORM_Y - 4, INSPECTOR_W).draw(screen)
+        Divider(rx, trans_y - 4, INSPECTOR_W).draw(screen)
 
-        SectionHeader(rx, INSP_TRANSFORM_Y, INSPECTOR_W, "Transform").draw(screen, self.font_section)
+        # Transform
+        SectionHeader(rx, trans_y, INSPECTOR_W, "Transform").draw(screen, self.font_section)
         labels = [("X", T.GIZMO_X), ("Y", T.GIZMO_Y), ("Z", T.GIZMO_Z)]
-        for row_i, (label, col) in enumerate(labels):
-            y_base = INSP_TRANSFORM_Y + 16 + row_i * 44
-            screen.blit(self.font_section.render("POS", True, T.TEXT_MUTED), (rx, y_base))
-            screen.blit(self.font_section.render(label,  True, col),          (rx + 28, y_base))
-            screen.blit(self.font_xyz.render(f"{pos[row_i]:+.2f}", True, T.TEXT_PRIMARY), (rx + 42, y_base))
-            screen.blit(self.font_section.render("ESC", True, T.TEXT_MUTED), (rx + 90, y_base))
-            screen.blit(self.font_xyz.render(f"{rot[row_i]:+.1f}°", True, T.TEXT_PRIMARY), (rx + 114, y_base))
-            screen.blit(self.font_section.render("TAM", True, T.TEXT_MUTED), (rx, y_base + 20))
-            screen.blit(self.font_xyz.render(f"{sc[row_i]:+.2f}",  True, T.TEXT_PRIMARY), (rx + 28, y_base + 20))
+        for row_i, (label, col_c) in enumerate(labels):
+            y_base = trans_y + 16 + row_i * 68
+            # POS
+            screen.blit(self.font_section.render(f"POS {label}", True, col_c), (rx, y_base))
+            screen.blit(self.font_xyz.render(f"{pos[row_i]:+.2f}", True, T.TEXT_PRIMARY), (rx + 55, y_base))
+            # ROT
+            screen.blit(self.font_section.render(f"ROT {label}", True, col_c), (rx, y_base + 20))
+            screen.blit(self.font_xyz.render(f"{rot[row_i]:+.1f}°", True, T.TEXT_PRIMARY), (rx + 55, y_base + 20))
+            # SCL
+            screen.blit(self.font_section.render(f"SCL {label}", True, col_c), (rx, y_base + 40))
+            screen.blit(self.font_xyz.render(f"{sc[row_i]:+.2f}",  True, T.TEXT_PRIMARY), (rx + 55, y_base + 40))
+
+        screen.set_clip(None)
 
     def _draw_xyz_widget(self, screen: pygame.Surface) -> None:
         """Mini widget XYZ no canto superior direito da viewport."""
@@ -1311,14 +1342,20 @@ class EditorScene(Scene):
     def handle_event(self, event: pygame.event.Event) -> None:  # noqa: C901
         lay = self._lay
 
-        # ── Scroll do mouse — zoom da câmera ────────────────────────────────
+        # ── Scroll do mouse — zoom da câmera / scroll de painéis ──────────────
         if event.type == pygame.MOUSEWHEEL:
             if self.code_editor.is_open:
                 self.code_editor.handle_event(event)
             else:
-                self.camera_controller.target_distance = max(
-                    1.0, self.camera_controller.target_distance - event.y * 0.5
-                )
+                mx, my = pygame.mouse.get_pos()
+                panel_x = lay.screen_w - RIGHT_PANEL_W
+                if mx >= panel_x:
+                    self._inspector_scroll = max(0, min(500, self._inspector_scroll - event.y * 30))
+                    self._reposition_buttons()
+                else:
+                    self.camera_controller.target_distance = max(
+                        1.0, self.camera_controller.target_distance - event.y * 0.5
+                    )
             return
 
         # ── Teclado ──────────────────────────────────────────────────────────
@@ -1445,7 +1482,7 @@ class EditorScene(Scene):
             # Fecha dropdown ao clicar fora / processa clique nos itens
             if self._active_dropdown:
                 if self._active_dropdown == "file":
-                    rx_d, ry_d = 10, TOP_BAR_H
+                    rx_d, ry_d = 110, TOP_BAR_H
                     for i, (label, action) in enumerate([
                         ("Novo",     self._new_scene),
                         ("Salvar",   self.save_scene),

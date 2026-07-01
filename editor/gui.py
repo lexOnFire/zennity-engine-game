@@ -106,7 +106,7 @@ class Divider:
     def draw(self, screen: pygame.Surface) -> None:
         pygame.draw.line(screen, T.BORDER,
                          (self.x, self.y),
-                         (self.x + self.w, self.y), 1)
+                         (self.x + self.w, self.y), 2)
 
 
 class Badge:

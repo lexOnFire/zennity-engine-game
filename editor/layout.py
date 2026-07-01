@@ -49,25 +49,25 @@ ROW_GAP         = 4     # espaçamento entre linhas
 
 # Seção: Adicionar formas
 ADD_SECTION_Y   = 36    # Y do label da seção
-ADD_ROW1_Y      = 46    # primeira fileira de botões
-ADD_ROW2_Y      = 76    # segunda fileira
-ADD_ROW3_Y      = 106   # terceira fileira (luz)
+ADD_ROW1_Y      = 52    # primeira fileira de botões (mais espaçamento)
+ADD_ROW2_Y      = 88    # segunda fileira
+ADD_ROW3_Y      = 124   # terceira fileira (luz)
 BTN_W_THIRD     = 66    # largura de botão 1/3 da coluna
 BTN_X_COL1      = 12
 BTN_X_COL2      = 82
 BTN_X_COL3      = 152
 
 # Seção: Gizmo
-GIZMO_SECTION_Y = 128
-GIZMO_ROW_Y     = 140
+GIZMO_SECTION_Y = 168
+GIZMO_ROW_Y     = 184
 
 # Snap + Templates
-SNAP_Y          = 172
-TEMPLATES_Y     = 198
+SNAP_Y          = 228
+TEMPLATES_Y     = 258
 BTN_W_FULL      = 208   # botão largura total do painel
 
 # Outliner (Árvore de cena)
-TREE_Y          = 232   # Y fixo do topo da árvore
+TREE_Y          = 300   # Y fixo do topo da árvore
 TREE_ROW_H      = 26    # altura de cada linha da árvore
 TREE_MIN_H      = 100   # altura mínima da árvore
 TREE_MARGIN_BOT = 180   # espaço reservado abaixo da árvore
