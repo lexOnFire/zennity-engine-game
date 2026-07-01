@@ -37,7 +37,7 @@ class Editor2DScene(Scene):
         # Câmera do editor 2D
         self.cam_obj = GameObject("EditorCamera")
         self.camera = self.cam_obj.add_component(Camera2D(zoom=1.0))
-        self.cam_obj.transform.position = np.array([400.0, 300.0], dtype=np.float32)
+        self.cam_obj.transform.position = np.array([400.0, 300.0, 0.0], dtype=np.float32)
         self._add_go(self.cam_obj)
         Camera2D.main = self.camera
 
@@ -111,12 +111,12 @@ class Editor2DScene(Scene):
 
     def _vp_to_world(self, mx: float, my: float) -> np.ndarray:
         if Camera2D.main is None:
-            return np.array([mx, my], dtype=np.float32)
+            return np.array([mx, my, 0.0], dtype=np.float32)
         wx, wy = Camera2D.main.screen_to_world(
             (mx - self.vp_left, my - self.vp_top),
             self.vp_w, self.vp_h,
         )
-        return np.array([wx, wy], dtype=np.float32)
+        return np.array([wx, wy, 0.0], dtype=np.float32)
 
     def _in_viewport(self, mx: float, my: float) -> bool:
         return self.vp_left < mx < self.vp_right and self.vp_top < my < self.vp_bottom
@@ -127,16 +127,16 @@ class Editor2DScene(Scene):
 
     def spawn_default_scene(self) -> None:
         floor = GameObject("Chão")
-        floor.transform.position = np.array([400.0, 500.0], dtype=np.float32)
-        floor.transform.scale    = np.array([600.0,  32.0], dtype=np.float32)
+        floor.transform.position = np.array([400.0, 500.0, 0.0], dtype=np.float32)
+        floor.transform.scale    = np.array([600.0,  32.0, 1.0], dtype=np.float32)
         floor.add_component(BoxCollider(width=600, height=32))
         rb = floor.add_component(RigidBody()); rb.is_kinematic = True
         floor.mesh_type = "Plataforma"
         self._add_go(floor); self.editable_objects.append(floor)
 
         box = GameObject("Caixa")
-        box.transform.position = np.array([400.0, 200.0], dtype=np.float32)
-        box.transform.scale    = np.array([ 40.0,  40.0], dtype=np.float32)
+        box.transform.position = np.array([400.0, 200.0, 0.0], dtype=np.float32)
+        box.transform.scale    = np.array([ 40.0,  40.0, 1.0], dtype=np.float32)
         box.add_component(BoxCollider(width=40, height=40))
         box.add_component(RigidBody(mass=1.0, gravity_scale=1.0))
         box.mesh_type = "Quadrado"
@@ -163,17 +163,17 @@ class Editor2DScene(Scene):
         self._push2d()
         center = self._vp_to_world(self.vp_left + self.vp_w / 2, self.vp_top + self.vp_h / 2)
         go = GameObject(f"Obj_{shape}_{len(self.editable_objects)}")
-        go.transform.position = center.copy()
+        go.transform.position = center.copy() if len(center) == 3 else np.array([center[0], center[1], 0.0], dtype=np.float32)
         if shape == "Quadrado":
-            go.transform.scale = np.array([40.0, 40.0], dtype=np.float32)
+            go.transform.scale = np.array([40.0, 40.0, 1.0], dtype=np.float32)
             go.add_component(BoxCollider(width=40, height=40))
             go.add_component(RigidBody(mass=1.0))
         elif shape == "Círculo":
-            go.transform.scale = np.array([40.0, 40.0], dtype=np.float32)
+            go.transform.scale = np.array([40.0, 40.0, 1.0], dtype=np.float32)
             go.add_component(CircleCollider(radius=20))
             go.add_component(RigidBody(mass=1.0))
         elif shape == "Plataforma":
-            go.transform.scale = np.array([120.0, 24.0], dtype=np.float32)
+            go.transform.scale = np.array([120.0, 24.0, 1.0], dtype=np.float32)
             go.add_component(BoxCollider(width=120, height=24))
             rb = go.add_component(RigidBody()); rb.is_kinematic = True
         go.mesh_type = shape
@@ -218,8 +218,9 @@ class Editor2DScene(Scene):
 
     def _create_obj(self, name: str, shape: str, pos: np.ndarray, scale: np.ndarray) -> GameObject:
         go = GameObject(name)
-        go.transform.position = pos.copy()
-        go.transform.scale    = scale.copy()
+        # Garante que posição e escala sempre tenham 3 componentes
+        go.transform.position = np.array([pos[0], pos[1], 0.0], dtype=np.float32)
+        go.transform.scale    = np.array([scale[0], scale[1], 1.0], dtype=np.float32)
         if shape == "Quadrado":
             go.add_component(BoxCollider(width=int(scale[0]), height=int(scale[1])))
             go.add_component(RigidBody(mass=1.0))
