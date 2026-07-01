@@ -196,11 +196,16 @@ class BoxCollider(Component):
         """
         Resolve penetração pelo eixo de menor sobreposição (MTV).
 
-        Correções:
-        - correction_factor aplicado individualmente a cada corpo (não à sobreposição total),
-          evitando sub-correção quando apenas um objeto é dinâmico.
-        - Velocidade cancelada via dot product ao longo da normal de separação,
-          preservando a componente tangencial (ex: deslizar ao longo de uma parede).
+        A normal de separação aponta de A para B (nx > 0 quando B está à direita de A).
+
+        Regra de cancelamento de velocidade por dot product:
+          - Para A: cancela a componente na direção +nx quando a_vel dot n > 0
+            (A se movendo em direção a B → cancela)
+          - Para B: cancela a componente na direção -nx quando b_vel dot (-n) > 0,
+            equivalente a b_vel dot n < 0 (B se movendo em direção a A → cancela)
+
+        Isso preserva a componente tangencial (ex: deslizar ao longo de uma parede)
+        e evita sub-correção quando apenas um objeto é dinâmico (share=1.0 neste caso).
         """
         from engine.physics.rigidbody import RigidBody
 
@@ -219,30 +224,35 @@ class BoxCollider(Component):
 
         if overlap_x < overlap_y:
             # MTV aponta no eixo X: normal nx = ±1, ny = 0
+            # nx aponta de A para B: positivo quando B está à direita de A
             nx = 1.0 if a.rect.centerx < b.rect.centerx else -1.0
             correction = overlap_x * share
             if a_dyn:
                 a.game_object.transform.position[0] -= nx * correction
-                # Cancela apenas a componente de velocidade ao longo de nx
+                # Cancela velocidade de A na direção de B (+nx)
                 dot = rb_a.velocity[0] * nx
                 if dot > 0:
                     rb_a.velocity[0] -= nx * dot
             if b_dyn:
                 b.game_object.transform.position[0] += nx * correction
+                # Cancela velocidade de B na direção de A (-nx)
                 dot = rb_b.velocity[0] * nx
                 if dot < 0:
                     rb_b.velocity[0] -= nx * dot
         else:
             # MTV aponta no eixo Y: normal nx = 0, ny = ±1
+            # ny aponta de A para B: positivo quando B está abaixo de A
             ny = 1.0 if a.rect.centery < b.rect.centery else -1.0
             correction = overlap_y * share
             if a_dyn:
                 a.game_object.transform.position[1] -= ny * correction
+                # Cancela velocidade de A na direção de B (+ny)
                 dot = rb_a.velocity[1] * ny
                 if dot > 0:
                     rb_a.velocity[1] -= ny * dot
             if b_dyn:
                 b.game_object.transform.position[1] += ny * correction
+                # Cancela velocidade de B na direção de A (-ny)
                 dot = rb_b.velocity[1] * ny
                 if dot < 0:
                     rb_b.velocity[1] -= ny * dot
