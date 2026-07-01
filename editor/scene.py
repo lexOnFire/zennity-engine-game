@@ -557,6 +557,23 @@ class EditorScene(Scene):
             self.editable_objects.append(go)
         self._notify("Cena carregada", "success")
 
+    def _new_scene(self) -> None:
+        """Limpa a cena atual e inicia um novo projeto vazio."""
+        for obj in list(self.editable_objects):
+            self._remove_go(obj)
+            obj.destroy()
+        self.editable_objects.clear()
+        self.selected_index = -1
+        self.cube_count = 0
+        self.pyramid_count = 0
+        self.sphere_count = 0
+        self.plane_count = 0
+        self.capsule_count = 0
+        self.camera_count = 0
+        self.light_count = 0
+        self.history.push(self)
+        self._notify("Nova cena criada", "success")
+
     def _select_at(self, mx: int, my: int) -> None:
         best_idx, best_depth = -1, float("inf")
         for idx, obj in enumerate(self.editable_objects):
