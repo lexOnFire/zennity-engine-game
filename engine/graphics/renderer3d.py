@@ -132,7 +132,23 @@ class MeshRenderer3D(Component):
             if not self.draw_backfaces and dot_prod > 0.0:
                 continue
 
-            intensity = np.dot(world_normal, self.light_dir)
+            # Detecção dinâmica de luz pontual (Light GameObject) na cena
+            light_pos = None
+            if self.game_object and self.game_object.scene:
+                for go in self.game_object.scene.game_objects:
+                    if (getattr(go, "mesh_type", "") == "Light" or "light" in go.name.lower()) and go.active:
+                        light_pos = go.transform.position
+                        break
+            
+            if light_pos is not None:
+                l_dir = light_pos - v0_world
+                l_len = np.linalg.norm(l_dir)
+                if l_len > 0:
+                    l_dir = l_dir / l_len
+                intensity = np.dot(world_normal, l_dir)
+            else:
+                intensity = np.dot(world_normal, self.light_dir)
+
             intensity = 0.15 + 0.85 * max(0.0, intensity)
 
             shaded_color = (

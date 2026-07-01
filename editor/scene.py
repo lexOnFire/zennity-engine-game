@@ -771,6 +771,12 @@ class EditorScene(Scene):
                     sel.transform.position  = self._snap(sel.transform.position)
             elif not pygame.mouse.get_pressed()[0]:
                 self.is_dragging_object = False
+        # Override da câmera em modo Play se houver um Camera GameObject
+        spawned_cam = next((obj for obj in self.editable_objects if getattr(obj, "mesh_type", None) == "Camera"), None)
+        if self.play_mode and spawned_cam:
+            from engine.graphics.math3d import view_matrix
+            self.camera_comp.view_matrix = view_matrix(spawned_cam.transform.position, spawned_cam.transform.rotation)
+
         for go in self.game_objects:
             go.update(dt)
 
@@ -808,6 +814,7 @@ class EditorScene(Scene):
         elif self.showing_welcome:
             self._draw_welcome_modal(screen)
             
+        self._draw_camera_pip(screen)
         self._draw_dropdowns(screen)
         
         # Tooltip visual para arrastar hierárquico
@@ -840,6 +847,19 @@ class EditorScene(Scene):
         c, px, py, pz = ts(0), ts(1), ts(2), ts(3)
         self.gizmo_screen_points  = {'x': px, 'y': py, 'z': pz}
         self.gizmo_screen_center  = c
+        
+        def draw_triangle(surface, color, pt, center):
+            dx = pt[0] - center[0]
+            dy = pt[1] - center[1]
+            dist = np.hypot(dx, dy)
+            if dist > 0:
+                ux, uy = dx / dist, dy / dist
+                perp_x, perp_y = -uy, ux
+                p1 = (pt[0] + ux * 8, pt[1] + uy * 8)
+                p2 = (pt[0] - ux * 8 + perp_x * 6, pt[1] - uy * 8 + perp_y * 6)
+                p3 = (pt[0] - ux * 8 - perp_x * 6, pt[1] - uy * 8 - perp_y * 6)
+                pygame.draw.polygon(surface, color, [p1, p2, p3])
+
         if self.gizmo_mode == "rotate":
             for pts_fn, col in [
                 (lambda t: P+np.array([0.8*np.cos(t),0,0.8*np.sin(t)],np.float32), (50,170,50)),
@@ -850,6 +870,11 @@ class EditorScene(Scene):
                 rn, rd = project_vertices(ring, _IDENTITY, self.camera_comp.view_matrix, self.camera_comp.projection_matrix)
                 pts = [(int(vx+(rn[k,0]+1)*vw/2), int(vy+(-rn[k,1]+1)*vh/2)) for k in range(len(ring)) if rd[k]>near]
                 if len(pts)>1: pygame.draw.lines(screen, col, True, pts, 1)
+            
+            # Desenha triângulos de referência para cliques na rotação
+            draw_triangle(screen, (220,50,50), px, c)  # X
+            draw_triangle(screen, (50,170,50), py, c)  # Y
+            draw_triangle(screen, (50,100,220), pz, c) # Z
         else:
             pygame.draw.line(screen,(220,50,50), c,px,3)
             pygame.draw.line(screen,(50,170,50), c,py,3)
@@ -1144,6 +1169,54 @@ class EditorScene(Scene):
             desc = tpl.get("_template_desc","")
             if desc:
                 screen.blit(self.font_body.render(desc[:55],True,(160,165,175)),(mx + 25, my + 60 + i*60 + 26))
+
+    def _draw_camera_pip(self, screen: pygame.Surface) -> None:
+        spawned_cam = next((obj for obj in self.editable_objects if getattr(obj, "mesh_type", None) == "Camera"), None)
+        if not spawned_cam or self.play_mode:
+            return
+            
+        height = screen.get_height()
+        pip_x, pip_y = 235, height - 165
+        pip_w, pip_h = 200, 130
+        
+        # Desenha fundo do mini viewport
+        pygame.draw.rect(screen, (20, 22, 28), (pip_x, pip_y, pip_w, pip_h))
+        
+        # Salva estado atual da câmera do editor
+        old_vx = self.camera_comp.viewport_x
+        old_vy = self.camera_comp.viewport_y
+        old_vw = self.camera_comp.viewport_width
+        old_vh = self.camera_comp.viewport_height
+        old_view = self.camera_comp.view_matrix.copy()
+        old_proj = self.camera_comp.projection_matrix.copy()
+        
+        # Aplica parâmetros da câmera PiP
+        from engine.graphics.math3d import view_matrix, projection_matrix
+        self.camera_comp.viewport_x = float(pip_x)
+        self.camera_comp.viewport_y = float(pip_y)
+        self.camera_comp.viewport_width = float(pip_w)
+        self.camera_comp.viewport_height = float(pip_h)
+        self.camera_comp.view_matrix = view_matrix(spawned_cam.transform.position, spawned_cam.transform.rotation)
+        self.camera_comp.projection_matrix = projection_matrix(60.0, float(pip_w)/float(pip_h), 0.1, 100.0)
+        
+        # Desenha os objetos na mini-câmera
+        for go in self.game_objects:
+            if go.name == "EditorCamera" or go == spawned_cam:
+                continue
+            go.draw(screen)
+            
+        # Restaura estado original da câmera
+        self.camera_comp.viewport_x = old_vx
+        self.camera_comp.viewport_y = old_vy
+        self.camera_comp.viewport_width = old_vw
+        self.camera_comp.viewport_height = old_vh
+        self.camera_comp.view_matrix = old_view
+        self.camera_comp.projection_matrix = old_proj
+        
+        # Desenha borda e título do PiP
+        pygame.draw.rect(screen, (0, 200, 255), (pip_x, pip_y, pip_w, pip_h), 1)
+        pygame.draw.rect(screen, (0, 200, 255), (pip_x, pip_y, 80, 16))
+        screen.blit(self.font_btn.render("CAMERA PIP", True, (255,255,255)), (pip_x + 5, pip_y + 2))
 
     def _draw_welcome_modal(self, screen: pygame.Surface) -> None:
         ov = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
@@ -1498,7 +1571,13 @@ class EditorScene(Scene):
                     dy = event.pos[1] - self.click_start_pos[1]
                     if np.hypot(dx, dy) < 4.0:
                         real_idx = self.editable_objects.index(self._drag_tree_src)
-                        self.selected_index = real_idx
+                        now = pygame.time.get_ticks() / 1000.0
+                        if real_idx == self._last_click_index and (now - self._last_click_time) < 0.4:
+                            self._start_rename(real_idx)
+                        else:
+                            self.selected_index = real_idx
+                        self._last_click_index = real_idx
+                        self._last_click_time  = now
                 self.click_start_pos = None
                 return
             if self.click_start_pos:
