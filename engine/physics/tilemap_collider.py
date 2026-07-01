@@ -184,9 +184,9 @@ class TilemapCollider:
 
         import math
         col_start = max(0, rect.left  // tw)
-        col_end   = min(layer.width  - 1, math.ceil(rect.right / tw) - 1)
+        col_end   = min(layer.width  - 1, math.ceil(rect.right / tw))
         row_start = max(0, rect.top   // th)
-        row_end   = min(layer.height - 1, math.ceil(rect.bottom / th) - 1)
+        row_end   = min(layer.height - 1, math.ceil(rect.bottom / th))
 
         for row in range(row_start, row_end + 1):
             for col_idx in range(col_start, col_end + 1):
