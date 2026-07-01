@@ -8,6 +8,7 @@ class Scene:
     """Classe base para todas as cenas do jogo."""
     def __init__(self):
         self.engine: Optional['Engine'] = None
+        self.game_objects: list['GameObject'] = []
 
     def start(self) -> None:
         pass

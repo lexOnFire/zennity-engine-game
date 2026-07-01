@@ -400,6 +400,7 @@ class EditorScene(Scene):
 
     def _make_mesh(self, shape: str, color: tuple):
         go = GameObject(shape)
+        go.mesh_type = shape
         if shape == "Cube":
             mesh = Assets.create_cube_mesh(1.0)
         elif shape == "Pyramid":

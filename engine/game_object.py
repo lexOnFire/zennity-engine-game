@@ -21,7 +21,7 @@ class GameObject:
         from .component import Transform
         self.transform = Transform()
         self.add_component(self.transform)
-        self.mesh_type: str = "Cube"
+        self.mesh_type: Optional[str] = None
 
     @property
     def scene(self) -> Optional['Scene']:

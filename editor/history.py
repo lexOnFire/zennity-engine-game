@@ -23,7 +23,7 @@ def _snap_obj(obj: "GameObject") -> Dict[str, Any]:
     """Captura o estado transformável de um objeto."""
     return {
         "name":               obj.name,
-        "mesh_type":          getattr(obj, "mesh_type", "Cube"),
+        "mesh_type":          getattr(obj, "mesh_type", "Cube") or "Cube",
         "is_static":          getattr(obj, "is_static", False),
         "use_physics":        getattr(obj, "use_physics", True),
         "initial_velocity_y": getattr(obj, "initial_velocity_y", 0.0),

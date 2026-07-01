@@ -149,8 +149,6 @@ import numpy as np
 
 class TilemapDemoScene(Scene):
     def start(self):
-        self.game_objects: List[GameObject] = []
-
         self.tileset = _make_procedural_tileset()
         self.tilemap = _build_map(self.tileset)
 
