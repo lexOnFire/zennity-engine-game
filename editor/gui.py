@@ -21,6 +21,7 @@ class GuiButton:
         self.bg_color    = kwargs.get("bg", bg_color)
         self.hover_color = kwargs.get("hover", hover_color)
         self.text_color  = text_color
+        self._on_click   = kwargs.get("on_click", None)
         # estado interno
         self._hovered    = False
 
@@ -78,6 +79,11 @@ class GuiButton:
             and event.button == 1
             and self.rect.collidepoint(event.pos)
         )
+
+    def click(self) -> None:
+        """Executa o callback on_click se definido."""
+        if self._on_click is not None:
+            self._on_click()
 
 
 class SectionHeader:
