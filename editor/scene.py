@@ -266,8 +266,8 @@ class EditorScene(Scene):
                                     "✕ Excluir Objeto", T.BTN_DANGER, T.BTN_DANGER_HOVER)
 
         # ── Scrollbar da árvore ──────────────────────────────────────────────
-        self.btn_tree_up   = GuiButton(200, TREE_Y + 20,                 26, 20, "▲", _S, _SH)
-        self.btn_tree_down = GuiButton(200, TREE_Y + lay._tree_h - 2,   26, 20, "▼", _S, _SH)
+        self.btn_tree_up   = GuiButton(200, TREE_Y + 20,              26, 20, "▲", _S, _SH)
+        self.btn_tree_down = GuiButton(200, TREE_Y + lay.tree_h - 2,  26, 20, "▼", _S, _SH)
 
         # ── Ângulo de luz ────────────────────────────────────────────────────
         self.btn_light_angle_dec = GuiButton(LEFT_PADDING,        lay.light_section_y, 38, ROW_H_SMALL, "<", _S, _SH)
