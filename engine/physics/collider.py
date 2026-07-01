@@ -351,7 +351,11 @@ class CircleCollider(Component):
         ax: float, ay: float, bx: float, by: float,
         dist: float, min_dist: float,
     ) -> None:
-        """Empurra os dois círculos para fora da sobreposição e resolve velocidades ao longo da normal."""
+        """
+        Empurra os dois círculos para fora da sobreposição e resolve velocidades ao longo da normal.
+        Nota: Se dist == 0 (coordenadas idênticas), uma normal arbitrária (1.0, 0.0) é usada como fallback,
+        empurrando os objetos horizontalmente para a direita.
+        """
         from engine.physics.rigidbody import RigidBody
 
         if dist == 0:
