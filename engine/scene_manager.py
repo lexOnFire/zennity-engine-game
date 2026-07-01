@@ -26,6 +26,7 @@ Uso:
     sm.pop(transition=FadeTransition(duration_out=0.2))
 """
 
+import traceback
 import pygame
 from typing import Callable, List, Optional
 
@@ -142,9 +143,10 @@ class SceneManager:
         tr = self._transition
 
         if tr is None or tr.is_done:
-            # Comportamento normal
+            # Comportamento normal: update da cena + física integrada
             if self.current:
                 self.current.update(dt)
+                self._run_physics()
             return
 
         # Atualiza transição
@@ -158,6 +160,7 @@ class SceneManager:
         if tr.phase in (TransitionPhase.IN, TransitionPhase.DONE):
             if self.current:
                 self.current.update(dt)
+                self._run_physics()
 
         # Transição concluída
         if tr.is_done:
@@ -199,6 +202,21 @@ class SceneManager:
             self.current.handle_event(event)
 
     # ── Internos ──────────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _run_physics() -> None:
+        """
+        Chama os métodos check_all() de todos os colliders registrados.
+        Deve ser invocado após scene.update(dt) e antes de scene.draw(),
+        garantindo que a resolução de colisões aconteça com as posições
+        já atualizadas pelo RigidBody naquele frame.
+        """
+        try:
+            from engine.physics.collider import BoxCollider, CircleCollider
+            BoxCollider.check_all()
+            CircleCollider.check_all()
+        except Exception:
+            traceback.print_exc()
 
     def _start_transition(
         self,

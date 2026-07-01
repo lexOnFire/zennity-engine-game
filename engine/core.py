@@ -106,6 +106,21 @@ class Engine:
             self._current_scene.start()
             self._next_scene = None
 
+    @staticmethod
+    def _run_physics() -> None:
+        """
+        Chama os métodos check_all() de todos os colliders registrados.
+        Deve ser invocado após scene.update(dt) e antes de scene.draw(),
+        garantindo que a resolução de colisões aconteça com as posições
+        já atualizadas pelo RigidBody naquele frame.
+        """
+        try:
+            from engine.physics.collider import BoxCollider, CircleCollider
+            BoxCollider.check_all()
+            CircleCollider.check_all()
+        except Exception:
+            traceback.print_exc()
+
     # ── Fullscreen ───────────────────────────────────────────────────
 
     def toggle_fullscreen(self) -> None:
@@ -165,7 +180,7 @@ class Engine:
                 except Exception:
                     traceback.print_exc()
 
-            # ── Update ──
+            # ── Update + Physics ──
             try:
                 if sm:
                     sm.update(dt)
@@ -174,6 +189,10 @@ class Engine:
                         self._perform_scene_change()
                     if self._current_scene:
                         self._current_scene.update(dt)
+                        # Física integrada: roda após update da cena,
+                        # antes do draw, para que colisões usem posições
+                        # já atualizadas pelo RigidBody nesse frame.
+                        Engine._run_physics()
             except Exception:
                 traceback.print_exc()
 
