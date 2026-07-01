@@ -131,6 +131,8 @@ class History:
         scene.sphere_count  = 0
         scene.plane_count   = 0
         scene.capsule_count = 0
+        scene.camera_count  = 0
+        scene.light_count   = 0
 
         # Restaura ângulo da luz
         if "light_angle" in snapshot:
@@ -159,6 +161,8 @@ class History:
                 "Sphere":  "sphere_count",
                 "Plane":   "plane_count",
                 "Capsule": "capsule_count",
+                "Camera":  "camera_count",
+                "Light":   "light_count",
             }
             attr = attr_map.get(go.mesh_type)
             if attr:

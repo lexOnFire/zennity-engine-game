@@ -109,20 +109,19 @@ class BoxCollider(Component):
                 continue
 
             if scene not in scene_tilemaps:
-                tm_renderer = None
+                tm_collider = None
                 if hasattr(scene, "game_objects"):
                     from engine.tilemap.tilemap import TilemapRenderer
+                    from engine.physics.tilemap_collider import TilemapCollider
                     for go in scene.game_objects:
                         tm_comp = go.get_component(TilemapRenderer)
-                        if tm_comp is not None:
-                            tm_renderer = tm_comp
+                        if tm_comp is not None and tm_comp.tilemap is not None:
+                            tm_collider = TilemapCollider(tm_comp.tilemap, layer_name="collision")
                             break
-                scene_tilemaps[scene] = tm_renderer
+                scene_tilemaps[scene] = tm_collider
 
-            tm_renderer = scene_tilemaps[scene]
-            if tm_renderer is not None and tm_renderer.tilemap is not None:
-                from engine.physics.tilemap_collider import TilemapCollider
-                tm_collider = TilemapCollider(tm_renderer.tilemap, layer_name="collision")
+            tm_collider = scene_tilemaps[scene]
+            if tm_collider is not None:
                 tm_collider.resolve(a.game_object)
 
         for i in range(n):

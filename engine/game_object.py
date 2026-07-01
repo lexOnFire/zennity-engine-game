@@ -21,6 +21,7 @@ class GameObject:
         from .component import Transform
         self.transform = Transform()
         self.add_component(self.transform)
+        self.mesh_type: str = "Cube"
 
     @property
     def scene(self) -> Optional['Scene']:

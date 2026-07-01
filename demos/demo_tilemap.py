@@ -149,17 +149,22 @@ import numpy as np
 
 class TilemapDemoScene(Scene):
     def start(self):
+        self.game_objects: List[GameObject] = []
+
         self.tileset = _make_procedural_tileset()
         self.tilemap = _build_map(self.tileset)
 
         # Configura a árvore ECS para o mapa e câmera
         self.map_obj = GameObject("Map")
         self.map_renderer = self.map_obj.add_component(TilemapRenderer(self.tilemap))
-        self.map_obj.scene = self
+        self.add_game_object(self.map_obj)
 
         self.cam_obj = GameObject("Camera")
         self.camera2d = self.cam_obj.add_component(Camera2D())
-        self.cam_obj.scene = self
+        self.add_game_object(self.cam_obj)
+
+        # Configura a câmera 2D ativa
+        Camera2D.main = self.camera2d
 
         # Câmera local pos
         self.cam_x: float = 0.0
@@ -171,6 +176,11 @@ class TilemapDemoScene(Scene):
 
         # Fonte para HUD
         self.font = pygame.font.SysFont("monospace", 14)
+
+    def add_game_object(self, go: GameObject) -> None:
+        go.scene = self
+        self.game_objects.append(go)
+        go._propagate_scene(self)
 
     def update(self, dt: float):
         keys = pygame.key.get_pressed()
@@ -192,6 +202,10 @@ class TilemapDemoScene(Scene):
         # Atualiza a posição da Camera2D (centrada na tela)
         self.cam_obj.transform.position = np.array([self.cam_x + screen_w / 2.0, self.cam_y + screen_h / 2.0], np.float32)
 
+        # Atualiza todos os GameObjects
+        for go in self.game_objects:
+            go.update(dt)
+
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_F1:
@@ -200,8 +214,9 @@ class TilemapDemoScene(Scene):
     def draw(self, screen: pygame.Surface):
         screen.fill((20, 20, 30))
 
-        # Desenha o objeto do mapa (que invoca o TilemapRenderer)
-        self.map_obj.draw(screen)
+        # Desenha os GameObjects cadastrados
+        for go in self.game_objects:
+            go.draw(screen)
 
         if self.show_debug:
             self.tilemap.draw_debug(screen, self.cam_x, self.cam_y,
