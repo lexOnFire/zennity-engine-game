@@ -49,6 +49,7 @@ from engine.game_object    import GameObject
 from engine.transform      import Transform
 from engine.component      import Component
 from engine.physics        import RigidBody, BoxCollider, TilemapCollider
+from engine.graphics.camera2d import Camera2D
 from engine.tilemap        import TileMap, TileLayer, Tileset
 
 
@@ -375,6 +376,21 @@ class PlatformerScene(Scene):
 
         self.total_coins = len(self.coins)
 
+        # ── Câmera ────────────────────────────────────────────────────
+        map_w = self.tilemap.map_width * TILE_W
+        map_h = self.tilemap.map_height * TILE_H
+        self.cam_obj = GameObject("Camera")
+        self.camera = self.cam_obj.add_component(Camera2D(
+            target=self.player,
+            smoothness=0.125,
+            bounds=(0.0, 0.0, float(map_w - SCREEN_W), float(map_h - SCREEN_H)),
+            offset=(0.0, 0.0)
+        ))
+        self.cam_obj.scene = self
+        self.game_objects.append(self.cam_obj)
+        self.cam_obj.start()
+        Camera2D.main = self.camera
+
     # ─────────────────────────────────────────────────────────────────
     # update
     # ─────────────────────────────────────────────────────────────────
@@ -439,17 +455,10 @@ class PlatformerScene(Scene):
         if self.player.transform.y > self.death_y:
             self._respawn()
 
-        # ── Câmera (lerp suave) ───────────────────────────────────────
-        target_cx = self.player.transform.x - SCREEN_W / 2
-        target_cy = self.player.transform.y - SCREEN_H / 2
-        self.camera_x += (target_cx - self.camera_x) * min(1.0, dt * 8)
-        self.camera_y += (target_cy - self.camera_y) * min(1.0, dt * 8)
-
-        # Clamp da câmera para não sair do mapa
-        map_w = self.tilemap.map_width  * TILE_W
-        map_h = self.tilemap.map_height * TILE_H
-        self.camera_x = max(0, min(self.camera_x, map_w  - SCREEN_W))
-        self.camera_y = max(0, min(self.camera_y, map_h - SCREEN_H))
+        # ── Câmera (atualizada pelo componente Camera2D) ──────────────
+        self.cam_obj.update(dt)
+        self.camera_x = self.camera.transform.position[0]
+        self.camera_y = self.camera.transform.position[1]
 
     # ─────────────────────────────────────────────────────────────────
     # Eventos (pulo)
