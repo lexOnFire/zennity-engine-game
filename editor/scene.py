@@ -683,10 +683,10 @@ class EditorScene(Scene):
             vp_w = right_x - left_w
             vp_h = height - 30
             
-            # A câmera do editor renderiza na metade esquerda
+            # A câmera do editor renderiza na metade esquerda apenas em play_mode, senão tela cheia na viewport central
             self.camera_comp.viewport_x = float(left_w)
             self.camera_comp.viewport_y = 30.0
-            self.camera_comp.viewport_width = float(vp_w // 2)
+            self.camera_comp.viewport_width = float(vp_w // 2 if self.play_mode else vp_w)
             self.camera_comp.viewport_height = float(vp_h)
             
             # Atualiza botões do painel direito
@@ -785,34 +785,50 @@ class EditorScene(Scene):
         vp_w = right_x - left_w
         vp_h = height - 30
         
-        # Viewport da Esquerda (EDIT VIEW)
-        pygame.draw.rect(screen, (30, 34, 42), (left_w, 30, vp_w // 2, vp_h))
-        self._draw_floor_grid(screen)
-        for go in self.game_objects:
-            go.draw(screen)
-            if self.selected_index >= 0 and go == self.editable_objects[self.selected_index]:
-                r = go.get_component(MeshRenderer3D)
-                if r:
-                    ow,oc,olw = r.wireframe, r.color, r.line_width
-                    r.wireframe, r.color, r.line_width = True, (255,0,0), 3
-                    r.draw(screen)
-                    r.wireframe, r.color, r.line_width = ow, oc, olw
-        self._draw_gizmo(screen)
-        
-        # Viewport da Direita (GAME VIEW)
-        self._draw_game_view(screen, left_w, vp_w, vp_h, height)
-        
-        # Linha divisória vertical
-        pygame.draw.line(screen, (55, 60, 72), (left_w + vp_w // 2, 30), (left_w + vp_w // 2, height), 2)
-        
-        # Títulos dos viewports
-        pygame.draw.rect(screen, (40, 44, 52), (left_w + 5, 35, 80, 18), border_radius=3)
-        screen.blit(self.font_btn.render("EDIT MODE", True, (0, 200, 255)), (left_w + 10, 38))
-        
-        pygame.draw.rect(screen, (40, 44, 52), (left_w + vp_w // 2 + 5, 35, 120, 18), border_radius=3)
-        game_tag = "GAME VIEW (LIVE)" if not self.play_mode else "GAME VIEW (PLAY)"
-        game_col = (0, 255, 120) if self.play_mode else (200, 200, 200)
-        screen.blit(self.font_btn.render(game_tag, True, game_col), (left_w + vp_w // 2 + 10, 38))
+        if self.play_mode:
+            # Viewport da Esquerda (EDIT VIEW)
+            pygame.draw.rect(screen, (30, 34, 42), (left_w, 30, vp_w // 2, vp_h))
+            self._draw_floor_grid(screen)
+            for go in self.game_objects:
+                go.draw(screen)
+                if self.selected_index >= 0 and go == self.editable_objects[self.selected_index]:
+                    r = go.get_component(MeshRenderer3D)
+                    if r:
+                        ow,oc,olw = r.wireframe, r.color, r.line_width
+                        r.wireframe, r.color, r.line_width = True, (255,0,0), 3
+                        r.draw(screen)
+                        r.wireframe, r.color, r.line_width = ow, oc, olw
+            self._draw_gizmo(screen)
+            
+            # Viewport da Direita (GAME VIEW)
+            self._draw_game_view(screen, left_w, vp_w, vp_h, height)
+            
+            # Linha divisória vertical
+            pygame.draw.line(screen, (55, 60, 72), (left_w + vp_w // 2, 30), (left_w + vp_w // 2, height), 2)
+            
+            # Títulos dos viewports
+            pygame.draw.rect(screen, (40, 44, 52), (left_w + 5, 35, 80, 18), border_radius=3)
+            screen.blit(self.font_btn.render("EDIT MODE", True, (0, 200, 255)), (left_w + 10, 38))
+            
+            pygame.draw.rect(screen, (40, 44, 52), (left_w + vp_w // 2 + 5, 35, 120, 18), border_radius=3)
+            screen.blit(self.font_btn.render("GAME VIEW (PLAY)", True, (0, 255, 120)), (left_w + vp_w // 2 + 10, 38))
+        else:
+            # Modo edição tradicional em tela cheia na viewport central
+            pygame.draw.rect(screen, (30, 34, 42), (left_w, 30, vp_w, vp_h))
+            self._draw_floor_grid(screen)
+            for go in self.game_objects:
+                go.draw(screen)
+                if self.selected_index >= 0 and go == self.editable_objects[self.selected_index]:
+                    r = go.get_component(MeshRenderer3D)
+                    if r:
+                        ow,oc,olw = r.wireframe, r.color, r.line_width
+                        r.wireframe, r.color, r.line_width = True, (255,0,0), 3
+                        r.draw(screen)
+                        r.wireframe, r.color, r.line_width = ow, oc, olw
+            self._draw_gizmo(screen)
+            
+            pygame.draw.rect(screen, (40, 44, 52), (left_w + 5, 35, 80, 18), border_radius=3)
+            screen.blit(self.font_btn.render("EDIT MODE", True, (0, 200, 255)), (left_w + 10, 38))
 
         self._draw_left_panel(screen)
         self._draw_top_bar(screen)
@@ -1537,7 +1553,7 @@ class EditorScene(Scene):
                         self._is_dragging_tree = True
                         return
             width = pygame.display.get_surface().get_width()
-            right_limit = 230 + (width - 460) // 2
+            right_limit = 230 + (width - 460) // 2 if self.play_mode else width - 230
             if 230 <= mx <= right_limit and 0<=self.selected_index<len(self.editable_objects):
                 r=self.editable_objects[self.selected_index].get_component(MeshRenderer3D)
                 if r and r.last_screen_coords is not None:
