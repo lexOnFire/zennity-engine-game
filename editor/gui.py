@@ -45,6 +45,11 @@ class GuiButton:
     @h.setter
     def h(self, val: int) -> None: self.rect.height = val
 
+    @property
+    def label(self) -> str: return self.text
+    @label.setter
+    def label(self, val: str) -> None: self.text = val
+
     # ------------------------------------------------------------------
     def draw(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
         mouse_pos   = pygame.mouse.get_pos()
@@ -54,7 +59,7 @@ class GuiButton:
         # sombra sutil (1px deslocada)
         shadow = pygame.Rect(self.rect.x + 1, self.rect.y + 2,
                              self.rect.w,     self.rect.h)
-        pygame.draw.rect(screen, T.BG, shadow, border_radius=5)
+        pygame.draw.rect(screen, T.PANEL, shadow, border_radius=5)
 
         # corpo
         pygame.draw.rect(screen, fill, self.rect, border_radius=5)
@@ -83,17 +88,17 @@ class SectionHeader:
         self.text = text
 
     def draw(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
-        # linha horizontal esquerda
+        # linha horizontal esquerda (aumentada para 18px)
         pygame.draw.line(screen, T.BORDER,
                          (self.x, self.y + 7),
-                         (self.x + 8, self.y + 7), 1)
+                         (self.x + 18, self.y + 7), 1)
         # texto
         surf = font.render(self.text.upper(), True, T.TEXT_MUTED)
-        screen.blit(surf, (self.x + 12, self.y))
+        screen.blit(surf, (self.x + 22, self.y))
         # linha horizontal direita
         text_w = surf.get_width()
         pygame.draw.line(screen, T.BORDER,
-                         (self.x + 14 + text_w, self.y + 7),
+                         (self.x + 24 + text_w, self.y + 7),
                          (self.x + self.w - 4,  self.y + 7), 1)
 
 
@@ -104,9 +109,9 @@ class Divider:
         self.x, self.y, self.w = x, y, w
 
     def draw(self, screen: pygame.Surface) -> None:
-        pygame.draw.line(screen, T.BORDER,
+        pygame.draw.line(screen, T.SURFACE_2,
                          (self.x, self.y),
-                         (self.x + self.w, self.y), 2)
+                         (self.x + self.w, self.y), 1)
 
 
 class Badge:

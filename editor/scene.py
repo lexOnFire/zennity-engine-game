@@ -268,9 +268,9 @@ class EditorScene(Scene):
         self.btn_light_angle_inc = GuiButton(LEFT_PANEL_W - 50,   lay.light_section_y, 38, ROW_H_SMALL, ">", _S, _SH)
 
         # ── Barra superior ───────────────────────────────────────────────────
-        self.btn_menu_file   = GuiButton(110, 2, 52, 26, "File",   T.BG, T.SURFACE)
-        self.btn_menu_view   = GuiButton(166, 2, 52, 26, "View",   T.BG, T.SURFACE)
-        self.btn_menu_window = GuiButton(222, 2, 72, 26, "Window", T.BG, T.SURFACE)
+        self.btn_menu_file   = GuiButton(110, 2, 52, 26, "File",   T.SURFACE, T.SURFACE_2)
+        self.btn_menu_view   = GuiButton(166, 2, 52, 26, "View",   T.SURFACE, T.SURFACE_2)
+        self.btn_menu_window = GuiButton(222, 2, 72, 26, "Window", T.SURFACE, T.SURFACE_2)
 
         # Botões legados fora de tela
         self.btn_new_scene   = GuiButton(-200, -200, 10, 10, "Novo")
@@ -1033,10 +1033,10 @@ class EditorScene(Scene):
         # PLAY
         self.btn_play_pause.draw(screen, self.font_btn)
 
-        # Modo da câmera (texto)
+        # Modo da câmera (Badge)
         mode_name = CAMERA_MODES[self.camera_mode_index]
-        cam_surf  = self.font_section.render(f"Câmera: {mode_name}", True, T.TEXT_MUTED)
-        screen.blit(cam_surf, (lay.play_button_x + 96, 8))
+        from .gui import Badge
+        Badge(lay.play_button_x + 96, 4, f"Câmera: {mode_name}", T.TEXT_PRIMARY, T.SURFACE_2).draw(screen, self.font_section)
 
         # Dropdowns
         if self._active_dropdown:
@@ -1120,8 +1120,8 @@ class EditorScene(Scene):
         # Script
         SectionHeader(rx, script_y, INSPECTOR_W, "Script").draw(screen, self.font_section)
         cur_script = getattr(sel, "_script_name", "Nenhum")
-        script_surf = self.font_body.render(cur_script, True, T.ACCENT)
-        screen.blit(script_surf, (rx + 32, script_y + 4))
+        from .gui import Badge
+        Badge(rx + 32, script_y + 2, cur_script, T.ACCENT, T.ACCENT_BG).draw(screen, self.font_body)
         for btn in [self.btn_prev_script, self.btn_next_script,
                     self.btn_new_script, self.btn_edit_script,
                     self.btn_internal_editor, self.btn_script_help]:
@@ -1155,8 +1155,7 @@ class EditorScene(Scene):
         self.btn_prev_parent.draw(screen, self.font_btn)
         self.btn_next_parent.draw(screen, self.font_btn)
         parent_name = sel.parent.name if getattr(sel, "parent", None) else "(raiz)"
-        screen.blit(self.font_body.render(parent_name, True, T.TEXT_PRIMARY),
-                    (rx + 32, hier_y + 5))
+        Badge(rx + 32, hier_y + 3, parent_name, T.TEXT_PRIMARY, T.SURFACE_2).draw(screen, self.font_body)
 
         Divider(rx, tag_y - 4, INSPECTOR_W).draw(screen)
 
@@ -1165,8 +1164,7 @@ class EditorScene(Scene):
         self.btn_prev_tag.draw(screen, self.font_btn)
         self.btn_next_tag.draw(screen, self.font_btn)
         tag_name = getattr(sel, "tag", "") or "(sem tag)"
-        screen.blit(self.font_body.render(tag_name, True, T.TEXT_PRIMARY),
-                    (rx + 32, tag_y + 5))
+        Badge(rx + 32, tag_y + 3, tag_name, T.ACCENT, T.ACCENT_BG).draw(screen, self.font_body)
 
         Divider(rx, trans_y - 4, INSPECTOR_W).draw(screen)
 
