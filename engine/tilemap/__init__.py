@@ -1,12 +1,12 @@
 from .tileset import Tileset, TileData
 from .tilemap import TileMap, TileLayer, TilemapRenderer
-from .tilemap_loader import TilemapLoader
+from .tilemap_loader import TileMapLoader
 
 __all__ = [
     "Tileset",
     "TileData",
     "TileMap",
     "TileLayer",
-    "TilemapLoader",
+    "TileMapLoader",
     "TilemapRenderer",
 ]

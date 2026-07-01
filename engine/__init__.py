@@ -8,7 +8,7 @@ from .transitions   import (
     CrossfadeTransition,
 )
 from .tilemap.tilemap import TileMap, TilemapRenderer
-from .tilemap.tilemap_loader import TilemapLoader
+from .tilemap.tilemap_loader import TileMapLoader
 from .graphics.camera2d import Camera2D
 from .physics.rigidbody import RigidBody
 from .physics.collider import BoxCollider, CircleCollider, CollisionInfo
@@ -33,7 +33,7 @@ __all__ = [
     "CrossfadeTransition",
     "TileMap",
     "TilemapRenderer",
-    "TilemapLoader",
+    "TileMapLoader",
     "Camera2D",
     "RigidBody",
     "BoxCollider",
