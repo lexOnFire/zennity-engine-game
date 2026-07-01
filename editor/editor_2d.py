@@ -64,13 +64,13 @@ class Editor2DScene(Scene):
 
         # Botões do Painel Esquerdo (Adicionar Objetos 2D)
         self.buttons = []
-        self.buttons.append(GuiButton("Quadrado",  20, 240,  90, 30, on_click=lambda: self.spawn_object("Quadrado"),  bg=T.BTN_PRIMARY, hover=T.BTN_PRIMARY_HOVER))
-        self.buttons.append(GuiButton("Círculo",   120, 240, 90, 30, on_click=lambda: self.spawn_object("Círculo"),   bg=T.BTN_PRIMARY, hover=T.BTN_PRIMARY_HOVER))
-        self.buttons.append(GuiButton("Plataforma", 20, 280, 90, 30, on_click=lambda: self.spawn_object("Plataforma"), bg=T.BTN_PRIMARY, hover=T.BTN_PRIMARY_HOVER))
+        self.buttons.append(GuiButton(20, 240, 90, 30, "Quadrado", on_click=lambda: self.spawn_object("Quadrado"), bg=T.BTN_PRIMARY, hover=T.BTN_PRIMARY_HOVER))
+        self.buttons.append(GuiButton(120, 240, 90, 30, "Círculo", on_click=lambda: self.spawn_object("Círculo"), bg=T.BTN_PRIMARY, hover=T.BTN_PRIMARY_HOVER))
+        self.buttons.append(GuiButton(20, 280, 90, 30, "Plataforma", on_click=lambda: self.spawn_object("Plataforma"), bg=T.BTN_PRIMARY, hover=T.BTN_PRIMARY_HOVER))
 
         # Controle de Simulação
-        self.btn_play = GuiButton("PLAY",     20, 80, 90, 32, on_click=self.toggle_play, bg=T.BTN_SPECIAL,    hover=T.BTN_SPECIAL_HOVER)
-        self.btn_undo = GuiButton("Desfazer", 120, 80, 90, 32, on_click=self.undo,        bg=T.BTN_SECONDARY, hover=T.BTN_SECONDARY_HOVER)
+        self.btn_play = GuiButton(20, 80, 90, 32, "PLAY", on_click=self.toggle_play, bg=T.BTN_SPECIAL, hover=T.BTN_SPECIAL_HOVER)
+        self.btn_undo = GuiButton(120, 80, 90, 32, "Desfazer", on_click=self.undo, bg=T.BTN_SECONDARY, hover=T.BTN_SECONDARY_HOVER)
 
         self._dragging_target = None
         self._drag_offset = np.array([0.0, 0.0])
