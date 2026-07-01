@@ -172,6 +172,10 @@ def _build_tilemap() -> TileMap:
 
 
 # ─────────────────────────────────────────────
+from engine.graphics.camera2d import Camera2D
+from engine.tilemap import TilemapRenderer
+from typing import List
+
 class AnimatorDemoScene(Scene):
     def start(self):
         self.tilemap  = _build_tilemap()
@@ -200,21 +204,31 @@ class AnimatorDemoScene(Scene):
         clip_fall_r  = AnimationClip("fall_r",  fall_r,      fps=4, loop=True)
         clip_fall_l  = AnimationClip("fall_l",  fall_l,      fps=4, loop=True)
 
+        # ── Map GameObject holding TilemapRenderer
+        self.map_obj = GameObject("Map")
+        self.map_renderer = self.map_obj.add_component(TilemapRenderer(self.tilemap))
+        self.add_game_object(self.map_obj)
+
         # ── Player
         self.player  = GameObject(name="Player")
-        self.player.transform.x = SPAWN[0]
-        self.player.transform.y = SPAWN[1]
-        self.player.scene = self
-
+        self.player.transform.position = np.array([SPAWN[0], SPAWN[1]], np.float32)
+        
         self.rb   = self.player.add_component(RigidBody(gravity_scale=1.0))
-        self.col  = self.player.add_component(BoxCollider(width=PW, height=PH,
-                                                           debug_draw=False))
+        self.col  = self.player.add_component(BoxCollider(width=PW, height=PH, debug_draw=False))
         self.sr   = self.player.add_component(SpriteRenderer(idle_frames[0]))
         self.anim = self.player.add_component(Animator(default_clip="idle_r"))
 
         for clip in [clip_idle_r, clip_idle_l, clip_run_r, clip_run_l,
                      clip_jump_r, clip_jump_l, clip_fall_r, clip_fall_l]:
             self.anim.add_clip(clip)
+
+        self.add_game_object(self.player)
+
+        # ── Camera GameObject holding Camera2D
+        self.cam_obj = GameObject("Camera")
+        self.camera2d = self.cam_obj.add_component(Camera2D())
+        self.add_game_object(self.cam_obj)
+        Camera2D.main = self.camera2d
 
         # Direção atual do player
         self._facing_right = True
@@ -241,11 +255,16 @@ class AnimatorDemoScene(Scene):
             anim.add_transition(src, "fall_r", lambda: is_falling() and facing_r())
             anim.add_transition(src, "fall_l", lambda: is_falling() and facing_l())
 
-        # Câmera e HUD
+        # Posição local da câmera para suavização
         self.cam_x: float = 0.0
         self.cam_y: float = 0.0
         self.show_debug: bool = False
         self.font = pygame.font.SysFont("monospace", 14)
+
+    def add_game_object(self, go: GameObject) -> None:
+        go.scene = self
+        self.game_objects.append(go)
+        go._propagate_scene(self)
 
     # ------------------------------------------------------------------
     def update(self, dt: float):
@@ -259,16 +278,22 @@ class AnimatorDemoScene(Scene):
             self._facing_right = True
         self.rb.velocity[0] = vx
 
-        self.player.update(dt)
+        # Atualiza todos os GameObjects cadastrados
+        for go in self.game_objects:
+            go.update(dt)
+
         self.tm_col.resolve(self.player)
 
-        # Câmera suave
-        tx = self.player.transform.x - SW / 2
-        ty = self.player.transform.y - SH / 2
+        # Câmera suave seguindo o player
+        tx = self.player.transform.position[0] - SW / 2
+        ty = self.player.transform.position[1] - SH / 2
         tx = max(0.0, min(tx, float(self.tilemap.pixel_width  - SW)))
         ty = max(0.0, min(ty, float(self.tilemap.pixel_height - SH)))
         self.cam_x += (tx - self.cam_x) * 0.1
         self.cam_y += (ty - self.cam_y) * 0.1
+
+        # Centraliza a Camera2D
+        self.cam_obj.transform.position = np.array([self.cam_x + SW / 2.0, self.cam_y + SH / 2.0], np.float32)
 
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
@@ -278,22 +303,20 @@ class AnimatorDemoScene(Scene):
             if event.key == pygame.K_F1:
                 self.show_debug = not self.show_debug
             if event.key == pygame.K_r:
-                self.player.transform.x, self.player.transform.y = SPAWN
+                self.player.transform.position = np.array([SPAWN[0], SPAWN[1]], np.float32)
                 self.rb.stop()
 
     # ------------------------------------------------------------------
     def draw(self, screen: pygame.Surface):
         screen.fill((20, 20, 35))
-        self.tilemap.draw(screen, self.cam_x, self.cam_y)
+
+        # Desenha os GameObjects (incluindo o mapa e o player via SpriteRenderer)
+        for go in self.game_objects:
+            go.draw(screen)
+
         if self.show_debug:
             self.tilemap.draw_debug(screen, self.cam_x, self.cam_y,
                                     layer_name="collision")
-
-        # Desenha o sprite do player na posição de câmera
-        if self.sr.image:
-            px = self.player.transform.x - PW/2 - self.cam_x
-            py = self.player.transform.y - PH/2 - self.cam_y
-            screen.blit(self.sr.image, (int(px), int(py)))
 
         # HUD
         lines = [
