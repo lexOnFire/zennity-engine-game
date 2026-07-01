@@ -19,6 +19,7 @@ from .ui import (
     ProgressBar, Panel, UICanvas,
     UIManager,
 )
+from .graphics.particles import Particle, ParticleSystem
 
 __all__ = [
     "Engine",
@@ -49,4 +50,6 @@ __all__ = [
     "Panel",
     "UICanvas",
     "UIManager",
+    "Particle",
+    "ParticleSystem",
 ]
