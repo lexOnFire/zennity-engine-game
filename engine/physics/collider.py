@@ -32,6 +32,7 @@ class BoxCollider(Component):
     _registry: List["BoxCollider"] = []
     _scene_tilemaps: Dict[tuple, Any] = {}
     _scene_tilemap_components: Dict[int, Any] = {}
+    _checks_count: int = 0
 
     def __init__(
         self,
@@ -98,9 +99,13 @@ class BoxCollider(Component):
     def check_all() -> None:
         """
         Verifica colisões entre todos os BoxColliders registrados.
-        Purga órfãos e limita as colisões ao escopo da mesma cena ativa.
+        Purga órfãos periodicamente (1x a cada 60 frames) e limita as colisões ao escopo da mesma cena ativa.
         """
-        BoxCollider._registry = [c for c in BoxCollider._registry if c.game_object is not None and c.game_object.scene is not None]
+        BoxCollider._checks_count += 1
+        if BoxCollider._checks_count >= 60:
+            BoxCollider._checks_count = 0
+            BoxCollider._registry = [c for c in BoxCollider._registry if c.game_object is not None and c.game_object.scene is not None]
+        
         registry = list(BoxCollider._registry)
         n = len(registry)
 
@@ -248,6 +253,7 @@ class CircleCollider(Component):
     """
 
     _registry: List["CircleCollider"] = []
+    _checks_count: int = 0
 
     def __init__(
         self,
@@ -300,9 +306,13 @@ class CircleCollider(Component):
     def check_all() -> None:
         """
         Verifica colisões entre todos os CircleColliders registrados.
-        Purga órfãos e limita as colisões ao escopo da mesma cena ativa.
+        Purga órfãos periodicamente (1x a cada 60 frames) e limita as colisões ao escopo da mesma cena ativa.
         """
-        CircleCollider._registry = [c for c in CircleCollider._registry if c.game_object is not None and c.game_object.scene is not None]
+        CircleCollider._checks_count += 1
+        if CircleCollider._checks_count >= 60:
+            CircleCollider._checks_count = 0
+            CircleCollider._registry = [c for c in CircleCollider._registry if c.game_object is not None and c.game_object.scene is not None]
+        
         registry = list(CircleCollider._registry)
         n = len(registry)
 
