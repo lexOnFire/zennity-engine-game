@@ -154,20 +154,20 @@ class BoxCollider(Component):
             direction = 1 if a.rect.centerx < b.rect.centerx else -1
             correction = overlap_x / 2
             if rb_a and not rb_a.is_kinematic:
-                a.game_object.transform.x -= direction * correction
+                a.game_object.transform.position[0] -= direction * correction
                 rb_a.velocity[0] = 0
             if rb_b and not rb_b.is_kinematic:
-                b.game_object.transform.x += direction * correction
+                b.game_object.transform.position[0] += direction * correction
                 rb_b.velocity[0] = 0
         else:
             # Separa no eixo Y
             direction = 1 if a.rect.centery < b.rect.centery else -1
             correction = overlap_y / 2
             if rb_a and not rb_a.is_kinematic:
-                a.game_object.transform.y -= direction * correction
+                a.game_object.transform.position[1] -= direction * correction
                 rb_a.velocity[1] = 0
             if rb_b and not rb_b.is_kinematic:
-                b.game_object.transform.y += direction * correction
+                b.game_object.transform.position[1] += direction * correction
                 rb_b.velocity[1] = 0
 
     # ------------------------------------------------------------------
@@ -305,11 +305,11 @@ class CircleCollider(Component):
         rb_b = b.game_object.get_component(RigidBody) if b.game_object else None
 
         if rb_a and not rb_a.is_kinematic:
-            a.game_object.transform.x -= nx * overlap
-            a.game_object.transform.y -= ny * overlap
+            a.game_object.transform.position[0] -= nx * overlap
+            a.game_object.transform.position[1] -= ny * overlap
         if rb_b and not rb_b.is_kinematic:
-            b.game_object.transform.x += nx * overlap
-            b.game_object.transform.y += ny * overlap
+            b.game_object.transform.position[0] += nx * overlap
+            b.game_object.transform.position[1] += ny * overlap
 
     # ------------------------------------------------------------------
     # Debug
