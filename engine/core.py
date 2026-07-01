@@ -93,6 +93,8 @@ class Engine:
         if self._next_scene is not None:
             try:
                 from engine.physics.collider import BoxCollider, CircleCollider
+                if self._current_scene:
+                    BoxCollider.invalidate_tilemap_cache(self._current_scene)
                 BoxCollider._registry.clear()
                 CircleCollider._registry.clear()
             except Exception:

@@ -239,6 +239,7 @@ class SceneManager:
         self._stack.clear()
         try:
             from engine.physics.collider import BoxCollider, CircleCollider
+            BoxCollider._scene_tilemaps.clear()
             BoxCollider._registry.clear()
             CircleCollider._registry.clear()
         except Exception:

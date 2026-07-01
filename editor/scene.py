@@ -457,7 +457,7 @@ class EditorScene(Scene):
         if 0 <= self.selected_index < len(self.editable_objects):
             obj = self.editable_objects.pop(self.selected_index)
             self._remove_go(obj)
-            self.selected_index = min(self.selected_index, len(self.editable_objects) - 1)
+            self.selected_index = min(self.selected_index, len(self.editable_objects) - 1) if self.editable_objects else -1
             self._notify(f"{obj.name} removido", "info")
 
     def clone_selected(self) -> None:
