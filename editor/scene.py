@@ -806,8 +806,9 @@ class EditorScene(Scene):
 
     # -----------------------------------------------------------------------
     def _draw_viewport_badge(self, screen, x, y, text, color):
-        surf = self.font_section.render(text, True, color)
-        screen.blit(surf, (x, y))
+        from .gui import Badge
+        bg = T.alpha_blend(color, 0.15, T.BG)
+        Badge(x, y, text, color, bg).draw(screen, self.font_section)
 
     def _draw_game_view(self, screen: pygame.Surface) -> None:
         lay = self._lay
