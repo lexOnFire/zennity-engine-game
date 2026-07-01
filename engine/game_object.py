@@ -25,7 +25,7 @@ class GameObject:
 
     @property
     def scene(self) -> Optional['Scene']:
-        return self._scene
+        return getattr(self, "_scene", None)
 
     @scene.setter
     def scene(self, val: Optional['Scene']) -> None:
