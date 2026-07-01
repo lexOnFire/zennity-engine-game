@@ -31,6 +31,7 @@ class BoxCollider(Component):
 
     # Registro global de todos colliders ativos (simples e funcional para 2D)
     _registry: List["BoxCollider"] = []
+    _scene_tilemaps: Dict[tuple, Any] = {}
 
     def __init__(
         self,
@@ -94,8 +95,7 @@ class BoxCollider(Component):
         registry = list(BoxCollider._registry)
         n = len(registry)
 
-        # Resolução de colisões contra Tilemaps na mesma cena
-        scene_tilemaps = {}
+        # Resolução de colisões contra Tilemaps na mesma cena (usando cache estático por instância de mapa)
         for a in registry:
             if a.game_object is None or not a.game_object.active:
                 continue
@@ -108,20 +108,23 @@ class BoxCollider(Component):
             if rb is None or rb.is_kinematic:
                 continue
 
-            if scene not in scene_tilemaps:
-                tm_collider = None
-                if hasattr(scene, "game_objects"):
-                    from engine.tilemap.tilemap import TilemapRenderer
-                    from engine.physics.tilemap_collider import TilemapCollider
-                    for go in scene.game_objects:
-                        tm_comp = go.get_component(TilemapRenderer)
-                        if tm_comp is not None and tm_comp.tilemap is not None:
-                            tm_collider = TilemapCollider(tm_comp.tilemap, layer_name="collision")
-                            break
-                scene_tilemaps[scene] = tm_collider
+            # Busca por TilemapRenderer ativo na cena
+            tm_comp = None
+            if hasattr(scene, "game_objects"):
+                from engine.tilemap.tilemap import TilemapRenderer
+                for go in scene.game_objects:
+                    found = go.get_component(TilemapRenderer)
+                    if found is not None and found.tilemap is not None:
+                        tm_comp = found
+                        break
 
-            tm_collider = scene_tilemaps[scene]
-            if tm_collider is not None:
+            if tm_comp is not None:
+                cache_key = (id(scene), id(tm_comp.tilemap))
+                if cache_key not in BoxCollider._scene_tilemaps:
+                    from engine.physics.tilemap_collider import TilemapCollider
+                    BoxCollider._scene_tilemaps[cache_key] = TilemapCollider(tm_comp.tilemap, layer_name="collision")
+                
+                tm_collider = BoxCollider._scene_tilemaps[cache_key]
                 tm_collider.resolve(a.game_object)
 
         for i in range(n):
