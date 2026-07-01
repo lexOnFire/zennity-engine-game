@@ -1,5 +1,5 @@
 from .tileset import Tileset, TileData
-from .tilemap import TileMap, TileLayer
+from .tilemap import TileMap, TileLayer, TilemapRenderer
 from .tilemap_loader import TilemapLoader
 
 __all__ = [
@@ -8,4 +8,5 @@ __all__ = [
     "TileMap",
     "TileLayer",
     "TilemapLoader",
+    "TilemapRenderer",
 ]

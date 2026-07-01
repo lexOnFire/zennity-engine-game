@@ -94,6 +94,37 @@ class BoxCollider(Component):
         registry = list(BoxCollider._registry)
         n = len(registry)
 
+        # Resolução de colisões contra Tilemaps na mesma cena
+        scene_tilemaps = {}
+        for a in registry:
+            if a.game_object is None or not a.game_object.active:
+                continue
+            scene = a.game_object.scene
+            if scene is None:
+                continue
+            
+            from engine.physics.rigidbody import RigidBody
+            rb = a.game_object.get_component(RigidBody)
+            if rb is None or rb.is_kinematic:
+                continue
+
+            if scene not in scene_tilemaps:
+                tm_renderer = None
+                if hasattr(scene, "game_objects"):
+                    from engine.tilemap.tilemap import TilemapRenderer
+                    for go in scene.game_objects:
+                        tm_comp = go.get_component(TilemapRenderer)
+                        if tm_comp is not None:
+                            tm_renderer = tm_comp
+                            break
+                scene_tilemaps[scene] = tm_renderer
+
+            tm_renderer = scene_tilemaps[scene]
+            if tm_renderer is not None and tm_renderer.tilemap is not None:
+                from engine.physics.tilemap_collider import TilemapCollider
+                tm_collider = TilemapCollider(tm_renderer.tilemap, layer_name="collision")
+                tm_collider.resolve(a.game_object)
+
         for i in range(n):
             a = registry[i]
             if a.game_object is None or not a.game_object.active:

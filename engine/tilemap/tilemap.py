@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Tuple
 import pygame
 
 from .tileset import Tileset
+from engine.component import Component
 
 
 class TileLayer:
@@ -363,3 +364,21 @@ class TileMap:
             f"({self.pixel_width}x{self.pixel_height}px) "
             f"layers={len(self._layers)}>"
         )
+
+
+class TilemapRenderer(Component):
+    """Component to render a TileMap."""
+    def __init__(self, tilemap: TileMap) -> None:
+        super().__init__()
+        self.tilemap = tilemap
+
+    def draw(self, screen: pygame.Surface) -> None:
+        if self.tilemap and self.game_object:
+            from engine.graphics.camera2d import Camera2D
+            cam_x, cam_y = 0.0, 0.0
+            if Camera2D.main is not None:
+                cam_pos = Camera2D.main.game_object.transform.position
+                zoom = Camera2D.main.zoom
+                cam_x = cam_pos[0] - (screen.get_width() / 2.0) / zoom
+                cam_y = cam_pos[1] - (screen.get_height() / 2.0) / zoom
+            self.tilemap.draw(screen, cam_x, cam_y)

@@ -442,9 +442,10 @@ class EditorScene(Scene):
         go = self._make_mesh(shape, color)
         go.name = f"{shape}{n}"
 
-        # Posição levemente aleatória para não sobrepor
-        offset = (np.random.rand(3) - 0.5) * 0.4
-        go.transform.position = np.array([offset[0], 0.0, 2.0 + offset[2]], np.float32)
+        # Offset determinístico baseado no índice de spawn para evitar sobreposição
+        offset_x = (n % 5 - 2) * 0.4
+        offset_z = (n // 5) * 0.4
+        go.transform.position = np.array([offset_x, 0.0, 2.0 + offset_z], np.float32)
 
         self._add_go(go)
         self.editable_objects.append(go)
@@ -826,34 +827,35 @@ class EditorScene(Scene):
         
         old_main = Camera3D.main
         
-        if custom_cam:
-            # Configura a câmera customizada do jogo para a viewport do jogo
-            custom_cam.viewport_x = lay.viewport_game_rect.x
-            custom_cam.viewport_y = lay.viewport_game_rect.y
-            custom_cam.viewport_width = lay.viewport_game_rect.width
-            custom_cam.viewport_height = lay.viewport_game_rect.height
-            custom_cam.update(0.0)
-            Camera3D.main = custom_cam
-        else:
-            # Fallback: move a câmera do editor temporariamente para a viewport do jogo
-            self.camera_comp.viewport_x = lay.viewport_game_rect.x
-            self.camera_comp.viewport_y = lay.viewport_game_rect.y
-            self.camera_comp.viewport_width = lay.viewport_game_rect.width
-            self.camera_comp.viewport_height = lay.viewport_game_rect.height
-            self.camera_comp.update(0.0)
-            Camera3D.main = self.camera_comp
+        try:
+            if custom_cam:
+                # Configura a câmera customizada do jogo para a viewport do jogo
+                custom_cam.viewport_x = lay.viewport_game_rect.x
+                custom_cam.viewport_y = lay.viewport_game_rect.y
+                custom_cam.viewport_width = lay.viewport_game_rect.width
+                custom_cam.viewport_height = lay.viewport_game_rect.height
+                custom_cam.update(0.0)
+                Camera3D.main = custom_cam
+            else:
+                # Fallback: move a câmera do editor temporariamente para a viewport do jogo
+                self.camera_comp.viewport_x = lay.viewport_game_rect.x
+                self.camera_comp.viewport_y = lay.viewport_game_rect.y
+                self.camera_comp.viewport_width = lay.viewport_game_rect.width
+                self.camera_comp.viewport_height = lay.viewport_game_rect.height
+                self.camera_comp.update(0.0)
+                Camera3D.main = self.camera_comp
 
-        # Renderiza a game view
-        for go in self.game_objects:
-            go.draw(screen)
-            
-        # Restaura a câmera do editor
-        Camera3D.main = old_main
-        self.camera_comp.viewport_x = lay.viewport_edit_rect.x if self.play_mode else lay.viewport_rect.x
-        self.camera_comp.viewport_y = lay.viewport_edit_rect.y if self.play_mode else lay.viewport_rect.y
-        self.camera_comp.viewport_width = lay.viewport_edit_rect.width if self.play_mode else lay.viewport_rect.width
-        self.camera_comp.viewport_height = lay.viewport_edit_rect.height if self.play_mode else lay.viewport_rect.height
-        self.camera_comp.update(0.0)
+            # Renderiza a game view
+            for go in self.game_objects:
+                go.draw(screen)
+        finally:
+            # Restaura a câmera do editor
+            Camera3D.main = old_main
+            self.camera_comp.viewport_x = lay.viewport_edit_rect.x if self.play_mode else lay.viewport_rect.x
+            self.camera_comp.viewport_y = lay.viewport_edit_rect.y if self.play_mode else lay.viewport_rect.y
+            self.camera_comp.viewport_width = lay.viewport_edit_rect.width if self.play_mode else lay.viewport_rect.width
+            self.camera_comp.viewport_height = lay.viewport_edit_rect.height if self.play_mode else lay.viewport_rect.height
+            self.camera_comp.update(0.0)
 
     def _draw_status_bar(self, screen: pygame.Surface) -> None:
         lay = self._lay
@@ -1574,6 +1576,8 @@ class EditorScene(Scene):
 
         # ── Mouse button up ──────────────────────────────────────────────────
         elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            if self.is_dragging_gizmo or self.is_dragging_object:
+                self.history.push(self)
             self.is_dragging_object = False
             self.is_dragging_gizmo = False
             self.active_gizmo_axis = None

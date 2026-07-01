@@ -42,12 +42,18 @@ class TileMapLoader:
         if not os.path.isfile(path):
             raise FileNotFoundError(f"[TileMapLoader] File not found: {path}")
 
-        with open(path, "r", encoding="utf-8") as f:
-            data: Dict[str, Any] = json.load(f)
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data: Dict[str, Any] = json.load(f)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"[TileMapLoader] Malformed JSON in {path}: {e}")
 
-        if TileMapLoader._is_tiled(data):
-            return TileMapLoader._load_tiled(data, os.path.dirname(path))
-        return TileMapLoader._load_native(data, os.path.dirname(path))
+        try:
+            if TileMapLoader._is_tiled(data):
+                return TileMapLoader._load_tiled(data, os.path.dirname(path))
+            return TileMapLoader._load_native(data, os.path.dirname(path))
+        except (KeyError, IndexError, TypeError) as e:
+            raise ValueError(f"[TileMapLoader] Invalid map format in {path}: Missing or invalid key/index/type: {e}")
 
     # ------------------------------------------------------------------
     # Format detection
