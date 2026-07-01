@@ -201,20 +201,24 @@ class BoxCollider(Component):
             correction = overlap_x / 2
             if rb_a and not rb_a.is_kinematic:
                 a.game_object.transform.position[0] -= direction * correction
-                rb_a.velocity[0] = 0
+                if direction * rb_a.velocity[0] > 0:
+                    rb_a.velocity[0] = 0
             if rb_b and not rb_b.is_kinematic:
                 b.game_object.transform.position[0] += direction * correction
-                rb_b.velocity[0] = 0
+                if -direction * rb_b.velocity[0] > 0:
+                    rb_b.velocity[0] = 0
         else:
             # Separa no eixo Y
             direction = 1 if a.rect.centery < b.rect.centery else -1
             correction = overlap_y / 2
             if rb_a and not rb_a.is_kinematic:
                 a.game_object.transform.position[1] -= direction * correction
-                rb_a.velocity[1] = 0
+                if direction * rb_a.velocity[1] > 0:
+                    rb_a.velocity[1] = 0
             if rb_b and not rb_b.is_kinematic:
                 b.game_object.transform.position[1] += direction * correction
-                rb_b.velocity[1] = 0
+                if -direction * rb_b.velocity[1] > 0:
+                    rb_b.velocity[1] = 0
 
     # ------------------------------------------------------------------
     # Debug
