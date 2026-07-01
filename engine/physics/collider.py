@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Callable, List, TYPE_CHECKING
+from typing import Optional, Callable, List, Dict, Any, TYPE_CHECKING
 from dataclasses import dataclass, field
 import math
 import pygame
@@ -188,34 +188,43 @@ class BoxCollider(Component):
 
     @staticmethod
     def _resolve(a: "BoxCollider", b: "BoxCollider", overlap_x: float, overlap_y: float) -> None:
-        """Resolve penetração pelo eixo de menor sobreposição (MTV)."""
+        """Resolve penetração pelo eixo de menor sobreposição (MTV) distribuindo a correção com base em quem é dinâmico."""
         from engine.physics.rigidbody import RigidBody
 
         rb_a = a.game_object.get_component(RigidBody) if a.game_object else None
         rb_b = b.game_object.get_component(RigidBody) if b.game_object else None
 
+        a_dyn = rb_a and not rb_a.is_kinematic
+        b_dyn = rb_b and not rb_b.is_kinematic
+
+        if not a_dyn and not b_dyn:
+            return
+
+        # Se ambos forem dinâmicos, divide a correção. Se apenas um, aplica 100% no dinâmico.
+        correction_factor = 0.5 if (a_dyn and b_dyn) else 1.0
+
         # Determina qual eixo resolver (o de menor penetração)
         if overlap_x < overlap_y:
             # Separa no eixo X
             direction = 1 if a.rect.centerx < b.rect.centerx else -1
-            correction = overlap_x / 2
-            if rb_a and not rb_a.is_kinematic:
+            correction = overlap_x * correction_factor
+            if a_dyn:
                 a.game_object.transform.position[0] -= direction * correction
                 if direction * rb_a.velocity[0] > 0:
                     rb_a.velocity[0] = 0
-            if rb_b and not rb_b.is_kinematic:
+            if b_dyn:
                 b.game_object.transform.position[0] += direction * correction
                 if -direction * rb_b.velocity[0] > 0:
                     rb_b.velocity[0] = 0
         else:
             # Separa no eixo Y
             direction = 1 if a.rect.centery < b.rect.centery else -1
-            correction = overlap_y / 2
-            if rb_a and not rb_a.is_kinematic:
+            correction = overlap_y * correction_factor
+            if a_dyn:
                 a.game_object.transform.position[1] -= direction * correction
                 if direction * rb_a.velocity[1] > 0:
                     rb_a.velocity[1] = 0
-            if rb_b and not rb_b.is_kinematic:
+            if b_dyn:
                 b.game_object.transform.position[1] += direction * correction
                 if -direction * rb_b.velocity[1] > 0:
                     rb_b.velocity[1] = 0
@@ -342,7 +351,7 @@ class CircleCollider(Component):
         ax: float, ay: float, bx: float, by: float,
         dist: float, min_dist: float,
     ) -> None:
-        """Empurra os dois círculos para fora da sobreposição."""
+        """Empurra os dois círculos para fora da sobreposição e resolve velocidades ao longo da normal."""
         from engine.physics.rigidbody import RigidBody
 
         if dist == 0:
@@ -350,16 +359,35 @@ class CircleCollider(Component):
         else:
             nx, ny = (bx - ax) / dist, (by - ay) / dist
 
-        overlap = (min_dist - dist) / 2
         rb_a = a.game_object.get_component(RigidBody) if a.game_object else None
         rb_b = b.game_object.get_component(RigidBody) if b.game_object else None
 
-        if rb_a and not rb_a.is_kinematic:
+        a_dyn = rb_a and not rb_a.is_kinematic
+        b_dyn = rb_b and not rb_b.is_kinematic
+
+        if not a_dyn and not b_dyn:
+            return
+
+        # Se ambos forem dinâmicos, divide a correção. Se apenas um, aplica 100% no dinâmico.
+        correction_factor = 0.5 if (a_dyn and b_dyn) else 1.0
+        overlap = (min_dist - dist) * correction_factor
+
+        if a_dyn:
             a.game_object.transform.position[0] -= nx * overlap
             a.game_object.transform.position[1] -= ny * overlap
-        if rb_b and not rb_b.is_kinematic:
+            # Zera apenas a componente de velocidade normal se estiver se movendo em direção à colisão
+            dot_a = rb_a.velocity[0] * nx + rb_a.velocity[1] * ny
+            if dot_a > 0:
+                rb_a.velocity[0] -= nx * dot_a
+                rb_a.velocity[1] -= ny * dot_a
+
+        if b_dyn:
             b.game_object.transform.position[0] += nx * overlap
             b.game_object.transform.position[1] += ny * overlap
+            dot_b = rb_b.velocity[0] * nx + rb_b.velocity[1] * ny
+            if dot_b < 0:
+                rb_b.velocity[0] -= nx * dot_b
+                rb_b.velocity[1] -= ny * dot_b
 
     # ------------------------------------------------------------------
     # Debug
