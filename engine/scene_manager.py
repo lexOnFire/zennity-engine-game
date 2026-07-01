@@ -1,7 +1,7 @@
 from __future__ import annotations
 """
 engine/scene_manager.py
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 SceneManager — singleton que gerencia a pilha de cenas e transições.
 
@@ -46,7 +46,7 @@ class SceneManager:
         self.on_transition_start: Optional[Callable[[str], None]] = None
         self.on_transition_end:   Optional[Callable[[str], None]] = None
 
-    # ── Singleton ────────────────────────────────────────────────────
+    # ── Singleton ──────────────────────────────────────────────────────────────────
 
     @classmethod
     def instance(cls) -> "SceneManager":
@@ -58,7 +58,7 @@ class SceneManager:
     def reset(cls) -> None:
         cls._inst = None
 
-    # ── Bind ao Engine ───────────────────────────────────────────────
+    # ── Bind ao Engine ──────────────────────────────────────────────────────
 
     def bind(self, engine) -> None:
         """
@@ -70,7 +70,7 @@ class SceneManager:
         # Patch para retrocompatibilidade
         engine.change_scene = self.load
 
-    # ── API pública ──────────────────────────────────────────────────
+    # ── API pública ────────────────────────────────────────────────────────────────
 
     def load(
         self,
@@ -122,7 +122,7 @@ class SceneManager:
 
         self._start_transition(transition, prev_scene, pop=True)
 
-    # ── Propriedades ─────────────────────────────────────────────────
+    # ── Propriedades ─────────────────────────────────────────────────────────────
 
     @property
     def current(self):
@@ -136,7 +136,7 @@ class SceneManager:
     def is_transitioning(self) -> bool:
         return self._transition is not None and not self._transition.is_done
 
-    # ── Integração com Engine (chamado pelo loop) ─────────────────────
+    # ── Integração com Engine (chamado pelo loop) ───────────────────────
 
     def update(self, dt: float) -> None:
         tr = self._transition
@@ -198,7 +198,7 @@ class SceneManager:
         if self.current:
             self.current.handle_event(event)
 
-    # ── Internos ─────────────────────────────────────────────────────
+    # ── Internos ──────────────────────────────────────────────────────────────────
 
     def _start_transition(
         self,
@@ -234,7 +234,7 @@ class SceneManager:
         self._pending_push  = False
 
     def _do_swap_load(self, new_scene) -> None:
-        """Troca imediata — limpa pilha e inicia nova cena."""
+        """Troca imediata — limpa pilha, libera áudio e inicia nova cena."""
         UIManager.reset()
         self._stack.clear()
         try:
@@ -243,6 +243,12 @@ class SceneManager:
             BoxCollider._scene_tilemap_components.clear()
             BoxCollider._registry.clear()
             CircleCollider._registry.clear()
+        except Exception:
+            pass
+        try:
+            from engine.audio import AudioManager
+            AudioManager.stop_music()
+            AudioManager.unload_cache()
         except Exception:
             pass
         new_scene.engine = self._engine
