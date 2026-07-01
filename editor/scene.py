@@ -922,7 +922,7 @@ class EditorScene(Scene):
                 text   = self._rename_text + cursor
                 surf   = self.font_body.render(text, True, T.ACCENT)
             else:
-                col  = T.TEXT_PRIMARY if selected else T.TEXT_SECONDARY
+                col  = T.TEXT_PRIMARY if selected else T.TEXT_MUTED
                 surf = self.font_body.render(f"{icon} {obj.name}", True, col)
 
             screen.blit(surf, (indent, row_y + 2))
