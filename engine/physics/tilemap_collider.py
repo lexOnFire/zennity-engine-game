@@ -96,6 +96,8 @@ class TilemapCollider:
             return
 
         rb  = game_object.get_component(RigidBody)
+        if rb:
+            rb.grounded = False
         tr  = game_object.transform
 
         for _ in range(self.max_iter):
