@@ -136,9 +136,11 @@ class History:
         if "light_angle" in snapshot:
             scene.light_angle = snapshot["light_angle"]
 
-        # Recria objetos do snapshot usando _make_mesh / _deserialize_object
+        # Recria objetos do snapshot
         for s in snapshot["objects"]:
-            go = GameObject()
+            color = s["color"]
+            # usa _make_mesh da cena para obter o objeto com a malha configurada
+            go = scene._make_mesh(s["mesh_type"], color)
             go.name               = s["name"]
             go.mesh_type          = s["mesh_type"]
             go.is_static          = s["is_static"]
@@ -149,10 +151,6 @@ class History:
             go.transform.position = s["position"].copy()
             go.transform.rotation = s["rotation"].copy()
             go.transform.scale    = s["scale"].copy()
-            color = s["color"]
-
-            # usa _make_mesh da cena para suportar todos os tipos de forma
-            go.add_component(scene._make_mesh(go.mesh_type, color))
 
             # atualiza contadores
             attr_map = {

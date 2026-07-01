@@ -10,6 +10,9 @@ from .transitions   import (
 from .tilemap.tilemap import TileMap, TilemapRenderer
 from .tilemap.tilemap_loader import TilemapLoader
 from .graphics.camera2d import Camera2D
+from .physics.rigidbody import RigidBody
+from .physics.collider import BoxCollider, CircleCollider, CollisionInfo
+from .physics.tilemap_collider import TilemapCollider
 
 __all__ = [
     "Engine",
@@ -25,4 +28,9 @@ __all__ = [
     "TilemapRenderer",
     "TilemapLoader",
     "Camera2D",
+    "RigidBody",
+    "BoxCollider",
+    "CircleCollider",
+    "CollisionInfo",
+    "TilemapCollider",
 ]

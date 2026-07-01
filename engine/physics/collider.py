@@ -90,7 +90,7 @@ class BoxCollider(Component):
         Verifica colisões entre todos os BoxColliders registrados.
         Purga órfãos e limita as colisões ao escopo da mesma cena ativa.
         """
-        BoxCollider._registry = [c for c in BoxCollider._registry if c.game_object is not None]
+        BoxCollider._registry = [c for c in BoxCollider._registry if c.game_object is not None and c.game_object.scene is not None]
         registry = list(BoxCollider._registry)
         n = len(registry)
 
@@ -274,7 +274,7 @@ class CircleCollider(Component):
         Verifica colisões entre todos os CircleColliders registrados.
         Purga órfãos e limita as colisões ao escopo da mesma cena ativa.
         """
-        CircleCollider._registry = [c for c in CircleCollider._registry if c.game_object is not None]
+        CircleCollider._registry = [c for c in CircleCollider._registry if c.game_object is not None and c.game_object.scene is not None]
         registry = list(CircleCollider._registry)
         n = len(registry)
 

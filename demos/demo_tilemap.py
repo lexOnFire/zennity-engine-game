@@ -142,12 +142,26 @@ def _build_map(ts: Tileset) -> TileMap:
 # Cena demo
 # ───────────────────────────────────────────────
 
+from engine.game_object import GameObject
+from engine.graphics.camera2d import Camera2D
+from engine.tilemap import TilemapRenderer
+import numpy as np
+
 class TilemapDemoScene(Scene):
     def start(self):
         self.tileset = _make_procedural_tileset()
         self.tilemap = _build_map(self.tileset)
 
-        # Câmera
+        # Configura a árvore ECS para o mapa e câmera
+        self.map_obj = GameObject("Map")
+        self.map_renderer = self.map_obj.add_component(TilemapRenderer(self.tilemap))
+        self.map_obj.scene = self
+
+        self.cam_obj = GameObject("Camera")
+        self.camera2d = self.cam_obj.add_component(Camera2D())
+        self.cam_obj.scene = self
+
+        # Câmera local pos
         self.cam_x: float = 0.0
         self.cam_y: float = 0.0
         self.cam_speed: float = 200.0
@@ -165,8 +179,6 @@ class TilemapDemoScene(Scene):
         if keys[pygame.K_UP]    or keys[pygame.K_w]: self.cam_y -= self.cam_speed * dt
         if keys[pygame.K_DOWN]  or keys[pygame.K_s]: self.cam_y += self.cam_speed * dt
 
-        # BUG FIX: engine.width/height podem não existir dependendo da versão
-        # da Engine base. Use getattr com fallback para não crashar.
         eng_w = getattr(self, "engine", None)
         screen_w = getattr(eng_w, "width",  800) if eng_w else 800
         screen_h = getattr(eng_w, "height", 600) if eng_w else 600
@@ -177,6 +189,9 @@ class TilemapDemoScene(Scene):
         self.cam_x = max(0.0, min(self.cam_x, max_cam_x))
         self.cam_y = max(0.0, min(self.cam_y, max_cam_y))
 
+        # Atualiza a posição da Camera2D (centrada na tela)
+        self.cam_obj.transform.position = np.array([self.cam_x + screen_w / 2.0, self.cam_y + screen_h / 2.0], np.float32)
+
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_F1:
@@ -185,7 +200,8 @@ class TilemapDemoScene(Scene):
     def draw(self, screen: pygame.Surface):
         screen.fill((20, 20, 30))
 
-        self.tilemap.draw(screen, self.cam_x, self.cam_y)
+        # Desenha o objeto do mapa (que invoca o TilemapRenderer)
+        self.map_obj.draw(screen)
 
         if self.show_debug:
             self.tilemap.draw_debug(screen, self.cam_x, self.cam_y,
