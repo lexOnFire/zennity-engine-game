@@ -1,0 +1,44 @@
+"""
+editor/layout_constants.py
+==========================
+Re-exporta todas as constantes de layout para retrocompatibilidade.
+Importe diretamente de editor.layout para novos módulos.
+"""
+from editor.layout import (  # noqa: F401
+    TOP_BAR_H,
+    STATUS_BAR_H,
+    LEFT_PANEL_W,
+    RIGHT_PANEL_W,
+    LEFT_PADDING,
+    ROW_H,
+    ROW_H_SMALL,
+    ROW_GAP,
+    ADD_SECTION_Y,
+    ADD_ROW1_Y,
+    ADD_ROW2_Y,
+    ADD_ROW3_Y,
+    BTN_W_THIRD,
+    BTN_X_COL1,
+    BTN_X_COL2,
+    BTN_X_COL3,
+    GIZMO_SECTION_Y,
+    GIZMO_ROW_Y,
+    SNAP_Y,
+    TEMPLATES_Y,
+    BTN_W_FULL,
+    TREE_Y,
+    TREE_ROW_H,
+    TREE_MIN_H,
+    TREE_MARGIN_BOT,
+    INSPECTOR_PAD,
+    INSPECTOR_W,
+    INSP_HEADER_Y,
+    INSP_PHYSICS_Y,
+    INSP_SCRIPT_Y,
+    INSP_COLOR_Y,
+    INSP_CLONE_Y,
+    INSP_HIER_Y,
+    INSP_TAG_Y,
+    INSP_TRANSFORM_Y,
+    Layout,
+)
