@@ -29,9 +29,9 @@ class BoxCollider(Component):
         on_collision_exit(other: BoxCollider)   -> None
     """
 
-    # Registro global de todos colliders ativos (simples e funcional para 2D)
     _registry: List["BoxCollider"] = []
     _scene_tilemaps: Dict[tuple, Any] = {}
+    _scene_tilemap_components: Dict[int, Any] = {}
 
     def __init__(
         self,
@@ -84,7 +84,9 @@ class BoxCollider(Component):
     @classmethod
     def invalidate_tilemap_cache(cls, scene: Any) -> None:
         """Clear cached TilemapCollider instances for the specified scene."""
-        keys_to_remove = [k for k in cls._scene_tilemaps if k[0] == id(scene)]
+        scene_id = id(scene)
+        cls._scene_tilemap_components.pop(scene_id, None)
+        keys_to_remove = [k for k in cls._scene_tilemaps if k[0] == scene_id]
         for k in keys_to_remove:
             cls._scene_tilemaps.pop(k, None)
 
@@ -102,23 +104,6 @@ class BoxCollider(Component):
         registry = list(BoxCollider._registry)
         n = len(registry)
 
-        # Agrupa os TilemapRenderers ativos por cena para otimizar busca fora do loop
-        scene_tilemaps_found = {}
-        for c in registry:
-            if c.game_object is None:
-                continue
-            scene = c.game_object.scene
-            if scene is not None and scene not in scene_tilemaps_found:
-                tm_comp = None
-                if hasattr(scene, "game_objects"):
-                    from engine.tilemap.tilemap import TilemapRenderer
-                    for go in scene.game_objects:
-                        found = go.get_component(TilemapRenderer)
-                        if found is not None and found.tilemap is not None:
-                            tm_comp = found
-                            break
-                scene_tilemaps_found[scene] = tm_comp
-
         # Resolução de colisões contra Tilemaps na mesma cena (usando cache estático por instância de mapa)
         for a in registry:
             if a.game_object is None or not a.game_object.active:
@@ -132,9 +117,22 @@ class BoxCollider(Component):
             if rb is None or rb.is_kinematic:
                 continue
 
-            tm_comp = scene_tilemaps_found.get(scene)
+            # Busca por TilemapRenderer ativo na cena usando cache persistente
+            scene_id = id(scene)
+            if scene_id not in BoxCollider._scene_tilemap_components:
+                tm_comp = None
+                if hasattr(scene, "game_objects"):
+                    from engine.tilemap.tilemap import TilemapRenderer
+                    for go in scene.game_objects:
+                        found = go.get_component(TilemapRenderer)
+                        if found is not None and found.tilemap is not None:
+                            tm_comp = found
+                            break
+                BoxCollider._scene_tilemap_components[scene_id] = tm_comp
+
+            tm_comp = BoxCollider._scene_tilemap_components[scene_id]
             if tm_comp is not None:
-                cache_key = (id(scene), id(tm_comp.tilemap))
+                cache_key = (scene_id, id(tm_comp.tilemap))
                 if cache_key not in BoxCollider._scene_tilemaps:
                     from engine.physics.tilemap_collider import TilemapCollider
                     BoxCollider._scene_tilemaps[cache_key] = TilemapCollider(tm_comp.tilemap, layer_name="collision")

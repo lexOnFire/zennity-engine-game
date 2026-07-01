@@ -97,6 +97,8 @@ class Engine:
                     BoxCollider.invalidate_tilemap_cache(self._current_scene)
                 BoxCollider._registry.clear()
                 CircleCollider._registry.clear()
+                BoxCollider._scene_tilemap_components.clear()
+                BoxCollider._scene_tilemaps.clear()
             except Exception:
                 pass
             self._current_scene = self._next_scene

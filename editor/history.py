@@ -175,4 +175,5 @@ class History:
             snapshot["selected_index"],
             len(scene.editable_objects) - 1,
         ) if scene.editable_objects else -1
-        scene._tree_scroll_to(scene.selected_index)
+        if scene.selected_index >= 0:
+            scene._tree_scroll_to(scene.selected_index)

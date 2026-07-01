@@ -240,6 +240,7 @@ class SceneManager:
         try:
             from engine.physics.collider import BoxCollider, CircleCollider
             BoxCollider._scene_tilemaps.clear()
+            BoxCollider._scene_tilemap_components.clear()
             BoxCollider._registry.clear()
             CircleCollider._registry.clear()
         except Exception:
