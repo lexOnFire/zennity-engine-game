@@ -178,7 +178,6 @@ class TilemapDemoScene(Scene):
     def add_game_object(self, go: GameObject) -> None:
         go.scene = self
         self.game_objects.append(go)
-        go._propagate_scene(self)
 
     def update(self, dt: float):
         keys = pygame.key.get_pressed()

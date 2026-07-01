@@ -387,7 +387,6 @@ class EditorScene(Scene):
     def _add_go(self, go: GameObject) -> None:
         go.scene = self
         self.game_objects.append(go)
-        go._propagate_scene(self)
 
     def _remove_go(self, go: GameObject) -> None:
         if go in self.game_objects:
