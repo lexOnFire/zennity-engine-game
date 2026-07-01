@@ -193,46 +193,59 @@ class BoxCollider(Component):
 
     @staticmethod
     def _resolve(a: "BoxCollider", b: "BoxCollider", overlap_x: float, overlap_y: float) -> None:
-        """Resolve penetração pelo eixo de menor sobreposição (MTV) distribuindo a correção com base em quem é dinâmico."""
+        """
+        Resolve penetração pelo eixo de menor sobreposição (MTV).
+
+        Correções:
+        - correction_factor aplicado individualmente a cada corpo (não à sobreposição total),
+          evitando sub-correção quando apenas um objeto é dinâmico.
+        - Velocidade cancelada via dot product ao longo da normal de separação,
+          preservando a componente tangencial (ex: deslizar ao longo de uma parede).
+        """
         from engine.physics.rigidbody import RigidBody
 
         rb_a = a.game_object.get_component(RigidBody) if a.game_object else None
         rb_b = b.game_object.get_component(RigidBody) if b.game_object else None
 
-        a_dyn = rb_a and not rb_a.is_kinematic
-        b_dyn = rb_b and not rb_b.is_kinematic
+        a_dyn = rb_a is not None and not rb_a.is_kinematic
+        b_dyn = rb_b is not None and not rb_b.is_kinematic
 
         if not a_dyn and not b_dyn:
             return
 
-        # Se ambos forem dinâmicos, divide a correção. Se apenas um, aplica 100% no dinâmico.
-        correction_factor = 0.5 if (a_dyn and b_dyn) else 1.0
+        # Divide a penetração igualmente quando ambos são dinâmicos;
+        # aplica 100% ao único dinâmico caso contrário.
+        share = 0.5 if (a_dyn and b_dyn) else 1.0
 
-        # Determina qual eixo resolver (o de menor penetração)
         if overlap_x < overlap_y:
-            # Separa no eixo X
-            direction = 1 if a.rect.centerx < b.rect.centerx else -1
-            correction = overlap_x * correction_factor
+            # MTV aponta no eixo X: normal nx = ±1, ny = 0
+            nx = 1.0 if a.rect.centerx < b.rect.centerx else -1.0
+            correction = overlap_x * share
             if a_dyn:
-                a.game_object.transform.position[0] -= direction * correction
-                if direction * rb_a.velocity[0] > 0:
-                    rb_a.velocity[0] = 0
+                a.game_object.transform.position[0] -= nx * correction
+                # Cancela apenas a componente de velocidade ao longo de nx
+                dot = rb_a.velocity[0] * nx
+                if dot > 0:
+                    rb_a.velocity[0] -= nx * dot
             if b_dyn:
-                b.game_object.transform.position[0] += direction * correction
-                if -direction * rb_b.velocity[0] > 0:
-                    rb_b.velocity[0] = 0
+                b.game_object.transform.position[0] += nx * correction
+                dot = rb_b.velocity[0] * nx
+                if dot < 0:
+                    rb_b.velocity[0] -= nx * dot
         else:
-            # Separa no eixo Y
-            direction = 1 if a.rect.centery < b.rect.centery else -1
-            correction = overlap_y * correction_factor
+            # MTV aponta no eixo Y: normal nx = 0, ny = ±1
+            ny = 1.0 if a.rect.centery < b.rect.centery else -1.0
+            correction = overlap_y * share
             if a_dyn:
-                a.game_object.transform.position[1] -= direction * correction
-                if direction * rb_a.velocity[1] > 0:
-                    rb_a.velocity[1] = 0
+                a.game_object.transform.position[1] -= ny * correction
+                dot = rb_a.velocity[1] * ny
+                if dot > 0:
+                    rb_a.velocity[1] -= ny * dot
             if b_dyn:
-                b.game_object.transform.position[1] += direction * correction
-                if -direction * rb_b.velocity[1] > 0:
-                    rb_b.velocity[1] = 0
+                b.game_object.transform.position[1] += ny * correction
+                dot = rb_b.velocity[1] * ny
+                if dot < 0:
+                    rb_b.velocity[1] -= ny * dot
 
     # ------------------------------------------------------------------
     # Debug
