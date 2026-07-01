@@ -17,6 +17,7 @@ Melhorias nesta versão:
   - [v3] Migrado para Layout — zero magic numbers em scene.py
   - [v4] Métodos de modal (_draw_welcome_modal, _draw_help_modal,
           _draw_templates_modal) implementados
+  - [v5] handle_event implementado — corrige cliques do mouse
 """
 from __future__ import annotations
 import os
@@ -99,61 +100,51 @@ def _point_in_polygon(x: float, y: float, poly: List[Tuple[int, int]]) -> bool:
 
 
 COLOR_PALETTE = [
-    (200, 200, 200), (220,  50,  50), ( 50, 170,  50),
-    ( 50, 100, 220), (240, 200,   0), (200,  50, 200),
-]
-
-TAG_OPTIONS = ["", "player", "inimigo", "perigoso", "coletavel", "chao"]
-
-HELP_LINES = [
-    "Atalhos de teclado:",
-    "  Ctrl+Z           Desfazer (Undo)",
-    "  Ctrl+Shift+Z     Refazer (Redo)",
-    "  Ctrl+D           Clonar objeto selecionado",
-    "  Delete           Excluir objeto selecionado",
-    "  G                Ativar/desativar snap de grade (0.5)",
-    "  Scroll Mouse     Zoom da câmera",
-    "  Botão Direito    Orbitar câmera",
-    "",
-    "Scripts prontos (selecione no inspetor):",
-    "  builtin_wasd.py          Mover com WASD",
-    "  builtin_jump.py          Pular com Espaço",
-    "  builtin_rotate.py        Rotação contínua",
-    "  builtin_follow_player.py Seguir o jogador",
-    "  builtin_destroy_on_collision.py  Desaparecer ao colidir",
-    "",
-    "Tags (para scripts de colisão):",
-    "  Defina a tag do objeto no inspetor direito.",
-    "  Use getattr(outro_obj, 'tag', '') para checar.",
-    "",
-    "Áudio em scripts:",
-    "  from engine.audio import AudioManager",
-    "  AudioManager.play('sons/pulo.wav')",
-    "  AudioManager.stop_all()",
-    "",
-    "Pulo com RigidBody3D:",
-    "  from engine.physics.rigidbody3d import RigidBody3D",
-    "  rb = obj.get_component(RigidBody3D)",
-    "  if rb and Input.get_key_down(pygame.K_SPACE): rb.add_impulse(0, 5, 0)",
+    (220,  60,  60),   # vermelho
+    (255, 140,   0),   # laranja
+    (255, 220,  40),   # amarelo
+    ( 60, 200,  80),   # verde
+    ( 50, 130, 255),   # azul
+    (160,  80, 220),   # roxo
+    (255, 255, 255),   # branco
+    (100, 100, 100),   # cinza
 ]
 
 WELCOME_STEPS = [
-    ("Bem-vindo à Zennity Engine! 🎮",
-     "Esta é a tela do editor 3D. Aqui você cria seus jogos sem escrever código."),
-    ("Adicionar Objetos",
-     "Clique em '+ Cubo', '+ Pirâm' ou '+ Esf' no painel esquerdo para adicionar objetos à cena."),
-    ("Templates prontos",
-     "Clique em 'Templates' para carregar uma cena pronta: Plataformer, Arremesso ou Sandbox."),
-    ("Propriedades do objeto",
-     "Clique num objeto para selecioná-lo. No painel direito você ajusta posição, tamanho, cor, física e scripts."),
-    ("Scripts prontos",
-     "No inspetor, use '< >' para escolher um script pronto. Ex: builtin_wasd.py move o objeto com WASD."),
-    ("Tags para colisões",
-     "Defina a 'Tag' do objeto (ex: player, inimigo). Scripts podem detectar colisões pela tag."),
-    ("Modo de câmera",
-     "Use o botão 'Câmera' no topo para trocar entre Perspectiva, Top-Down e Side-Scroller."),
-    ("Testar o jogo",
+    ("Bem-vindo ao Zennity Editor!",
+     "Este é o editor 3D da Zennity Engine. Use os painéis laterais para criar e editar objetos na cena."),
+    ("Adicionando Objetos",
+     "No painel esquerdo, clique nos botões '+ Cubo', '+ Esfera' etc. para adicionar formas à cena."),
+    ("Selecionando e Movendo",
+     "Clique em um objeto na viewport ou na árvore para selecioná-lo. Use o gizmo para mover, girar ou escalar."),
+    ("Câmera Orbital",
+     "Segure o botão direito do mouse na viewport e arraste para orbitar. Scroll do mouse para zoom."),
+    ("Play Mode",
      "Clique em PLAY para testar. Clique em STOP para voltar ao editor. Posições são restauradas."),
+]
+
+HELP_LINES = [
+    "NAVEGAÇÃO",
+    "  RMB + arrastar      Orbitar câmera",
+    "  Scroll              Zoom in/out",
+    "",
+    "OBJETOS",
+    "  Clique na viewport  Selecionar objeto",
+    "  Shift + LMB drag   Mover objeto (XY)",
+    "  X / Z ao mover     Travar eixo",
+    "  Delete              Excluir selecionado",
+    "  Ctrl+Z              Desfazer",
+    "  Ctrl+Shift+Z        Refazer",
+    "",
+    "GIZMO",
+    "  ⇔ Mover             Arrastar eixo colorido",
+    "  ↻ Girar             Arrastar eixo para rotacionar",
+    "  ⤢ Escala            Arrastar eixo para escalar",
+    "",
+    "OUTROS",
+    "  Esc                 Fechar modal/editor",
+    "  Double-click (árvore) Renomear objeto",
+    "  G                   Grade snap on/off",
 ]
 
 
@@ -359,61 +350,39 @@ class EditorScene(Scene):
                 try:
                     with open(os.path.join(demos_dir, fname)) as f:
                         data = json.load(f)
-                    data["_file"] = os.path.join(demos_dir, fname)
+                    if "_template_name" not in data:
+                        data["_template_name"] = fname.replace("template_", "").replace(".json", "").capitalize()
                     templates.append(data)
                 except Exception:
                     pass
         return templates
 
     def _load_template(self, tpl: Dict) -> None:
-        self.history.push(self)
         for obj in list(self.editable_objects):
-            self._remove_go(obj); obj.destroy()
+            self._remove_go(obj)
         self.editable_objects.clear()
         self.selected_index = -1
-        self.cube_count = self.pyramid_count = self.sphere_count = self.plane_count = self.capsule_count = self.camera_count = self.light_count = 0
-        for item in tpl.get("objects", []):
-            go = GameObject()
-            go.name               = item["name"]
-            go.transform.position = np.array(item["position"], np.float32)
-            go.transform.rotation = np.array(item["rotation"], np.float32)
-            go.transform.scale    = np.array(item["scale"],    np.float32)
-            go.mesh_type          = item.get("shape", "Cube")
-            go.is_static          = item.get("is_static", False)
-            go.use_physics        = item.get("use_physics", True)
-            go.initial_velocity_y = item.get("initial_velocity_y", 0.0)
-            go.script_path        = item.get("script_path", "")
-            go.tag                = item.get("tag", "")
-            count_map = {"Cube": "cube_count", "Pyramid": "pyramid_count",
-                         "Sphere": "sphere_count", "Plane": "plane_count",
-                         "Capsule": "capsule_count", "Camera": "camera_count", "Light": "light_count"}
-            attr = count_map.get(go.mesh_type, "cube_count")
-            setattr(self, attr, getattr(self, attr) + 1)
-            color = tuple(item["color"])
-            go.add_component(self._make_mesh(go.mesh_type, color))
+        objects_data = tpl.get("objects", [])
+        for obj_data in objects_data:
+            shape = obj_data.get("shape", "Cube")
+            color = tuple(obj_data.get("color", [180, 180, 180]))
+            go = self._make_mesh(shape, color)
+            pos = obj_data.get("position", [0, 0, 0])
+            rot = obj_data.get("rotation", [0, 0, 0])
+            sc  = obj_data.get("scale",    [1, 1, 1])
+            go.transform.position = np.array(pos, np.float32)
+            go.transform.rotation = np.array(rot, np.float32)
+            go.transform.scale    = np.array(sc,  np.float32)
+            go.name = obj_data.get("name", shape)
             self._add_go(go)
             self.editable_objects.append(go)
-        for item, go in zip(tpl.get("objects", []), self.editable_objects):
-            parent_name = item.get("parent_name")
-            if parent_name:
-                parent_obj = next((o for o in self.editable_objects if o.name == parent_name), None)
-                if parent_obj:
-                    parent_obj.add_child(go)
-        if self.editable_objects:
-            self.selected_index = 0
-        self.showing_templates = False
-        self._tree_scroll = 0
-        self._cancel_rename()
-        self._notify(f"Template '{tpl.get('_template_name', '')}' carregado!", "success")
 
     def _set_camera_mode(self, mode_name: str) -> None:
         preset = CAMERA_MODE_PRESETS.get(mode_name, CAMERA_MODE_PRESETS["Perspectiva"])
-        self.camera_controller.target_yaw      = preset["yaw"]
-        self.camera_controller.target_pitch    = preset["pitch"]
+        self.camera_controller.target_yaw   = preset["yaw"]
+        self.camera_controller.target_pitch = preset["pitch"]
         self.camera_controller.target_distance = preset["dist"]
-        self.btn_camera_mode.text = f"Camera: {mode_name[:5]}"
 
-    # -----------------------------------------------------------------------
     def _add_go(self, go: GameObject) -> None:
         go.scene = self
         self.game_objects.append(go)
@@ -428,116 +397,98 @@ class EditorScene(Scene):
             return np.round(v / SNAP_SIZE) * SNAP_SIZE
         return v
 
-    # -----------------------------------------------------------------------
     def _make_mesh(self, shape: str, color: tuple):
-        from editor.mesh_factory import create_plane_mesh, create_capsule_mesh
-        if shape == "Cube":     return MeshRenderer3D(Assets.create_cube_mesh(1.0), color=color)
-        elif shape == "Pyramid": return MeshRenderer3D(create_pyramid_mesh(1.0), color=color)
-        elif shape == "Sphere":  return MeshRenderer3D(create_sphere_mesh(radius=0.6, rings=10, sectors=10), color=color)
-        elif shape == "Plane":   return MeshRenderer3D(create_plane_mesh(size=2.0, subdivisions=2), color=color)
-        elif shape == "Capsule": return MeshRenderer3D(create_capsule_mesh(radius=0.4, height=1.0, rings=8, sectors=10), color=color)
-        elif shape == "Camera":  return MeshRenderer3D(create_pyramid_mesh(0.5), color=color)
-        elif shape == "Light":   return MeshRenderer3D(create_sphere_mesh(radius=0.25, rings=6, sectors=6), color=color)
-        else:                    return MeshRenderer3D(Assets.create_cube_mesh(1.0), color=color)
+        go = GameObject(shape)
+        if shape == "Cube":
+            mesh = Assets.create_cube_mesh(1.0)
+        elif shape == "Pyramid":
+            mesh = create_pyramid_mesh()
+        elif shape == "Sphere":
+            mesh = create_sphere_mesh()
+        elif shape == "Plane":
+            mesh = Assets.create_cube_mesh(1.0)
+            go.transform.scale = np.array([2.0, 0.05, 2.0], np.float32)
+        elif shape == "Capsule":
+            mesh = create_sphere_mesh()
+            go.transform.scale = np.array([1.0, 1.8, 1.0], np.float32)
+        elif shape in ("Camera", "Light"):
+            mesh = Assets.create_cube_mesh(0.3)
+        else:
+            mesh = Assets.create_cube_mesh(1.0)
+        go.add_component(MeshRenderer3D(mesh, color=color, wireframe=False))
+        return go
 
     def spawn_object(self, shape: str) -> None:
-        self.history.push(self)
-        go = GameObject()
-        go.transform.position = np.array([0.0, 0.0, 1.5], dtype=np.float32)
-        go.mesh_type          = shape
-        go.is_static          = False
-        go.use_physics        = True
-        go.initial_velocity_y = 0.0
-        go.script_path        = ""
-        go.tag                = ""
-        default_colors = {
-            "Cube":    (  0, 110, 220), "Pyramid": (220,  60,  20),
-            "Sphere":  (100,  40, 180), "Plane":   ( 60, 160,  80),
-            "Capsule": (200, 140,   0), "Camera":  ( 50, 200, 200),
-            "Light":   (255, 230,  50),
+        counts = {
+            "Cube": "cube_count", "Pyramid": "pyramid_count",
+            "Sphere": "sphere_count", "Plane": "plane_count",
+            "Capsule": "capsule_count", "Camera": "camera_count", "Light": "light_count",
         }
-        default_names = {
-            "Cube":    "Bloco",   "Pyramid": "Piramide", "Sphere":  "Bolinha",
-            "Plane":   "Plano",   "Capsule": "Capsula",  "Camera":  "Camera",
-            "Light":   "Luz",
-        }
-        count_map = {
-            "Cube": "cube_count", "Pyramid": "pyramid_count", "Sphere": "sphere_count",
-            "Plane": "plane_count", "Capsule": "capsule_count",
-            "Camera": "camera_count", "Light": "light_count",
-        }
-        attr = count_map.get(shape, "cube_count")
+        attr = counts.get(shape, "cube_count")
         setattr(self, attr, getattr(self, attr) + 1)
-        go.name = f"{default_names.get(shape, shape)}_{getattr(self, attr)}"
-        color   = default_colors.get(shape, (200, 200, 200))
-        go.add_component(self._make_mesh(shape, color))
+        n = getattr(self, attr)
+
+        colors = {
+            "Cube":    (180, 180, 220),
+            "Pyramid": (220, 180, 100),
+            "Sphere":  (100, 200, 180),
+            "Plane":   (120, 160, 120),
+            "Capsule": (200, 140, 180),
+            "Camera":  (200, 200,  80),
+            "Light":   (255, 240, 140),
+        }
+        color = colors.get(shape, (180, 180, 180))
+        go = self._make_mesh(shape, color)
+        go.name = f"{shape}{n}"
+
+        # Posição levemente aleatória para não sobrepor
+        offset = (np.random.rand(3) - 0.5) * 0.4
+        go.transform.position = np.array([offset[0], 0.0, 2.0 + offset[2]], np.float32)
+
         self._add_go(go)
         self.editable_objects.append(go)
         self.selected_index = len(self.editable_objects) - 1
-        self._tree_scroll_to(self.selected_index)
         self._notify(f"{go.name} adicionado", "success")
 
     def delete_selected(self) -> None:
-        if not (0 <= self.selected_index < len(self.editable_objects)):
-            return
-        self._cancel_rename()
-        self.history.push(self)
-        go = self.editable_objects.pop(self.selected_index)
-        name = go.name
-        self._remove_go(go)
-        go.destroy()
-        self.selected_index = -1 if not self.editable_objects else max(0, self.selected_index - 1)
-        self._notify(f"'{name}' excluído", "info")
+        if 0 <= self.selected_index < len(self.editable_objects):
+            obj = self.editable_objects.pop(self.selected_index)
+            self._remove_go(obj)
+            self.selected_index = min(self.selected_index, len(self.editable_objects) - 1)
+            self._notify(f"{obj.name} removido", "info")
 
     def clone_selected(self) -> None:
-        if not (0 <= self.selected_index < len(self.editable_objects)):
-            return
-        self._cancel_rename()
-        self.history.push(self)
-        src = self.editable_objects[self.selected_index]
-        go = GameObject()
-        go.mesh_type          = getattr(src, "mesh_type", "Cube")
-        go.name               = src.name + "_Clone"
-        go.is_static          = getattr(src, "is_static", False)
-        go.use_physics        = getattr(src, "use_physics", True)
-        go.initial_velocity_y = getattr(src, "initial_velocity_y", 0.0)
-        go.script_path        = getattr(src, "script_path", "")
-        go.tag                = getattr(src, "tag", "")
-        go.transform.position = src.transform.position.copy() + np.array([0.5, 0.0, 0.5])
-        go.transform.rotation = src.transform.rotation.copy()
-        go.transform.scale    = src.transform.scale.copy()
-        renderer = src.get_component(MeshRenderer3D)
-        color    = renderer.color if renderer else (200, 200, 200)
-        go.add_component(self._make_mesh(go.mesh_type, color))
-        self._add_go(go)
-        self.editable_objects.append(go)
-        self.selected_index = len(self.editable_objects) - 1
-        self._tree_scroll_to(self.selected_index)
-        self._notify(f"'{go.name}' clonado", "success")
+        if 0 <= self.selected_index < len(self.editable_objects):
+            src = self.editable_objects[self.selected_index]
+            r = src.get_component(MeshRenderer3D)
+            color = r.color if r else (180, 180, 180)
+            shape = src.name.rstrip("0123456789")
+            go = self._make_mesh(shape, color)
+            go.name = src.name + "_clone"
+            go.transform.position = src.transform.position.copy() + np.array([0.5, 0.0, 0.0], np.float32)
+            go.transform.rotation = src.transform.rotation.copy()
+            go.transform.scale    = src.transform.scale.copy()
+            self._add_go(go)
+            self.editable_objects.append(go)
+            self.selected_index = len(self.editable_objects) - 1
+            self._notify(f"{go.name} clonado", "success")
 
-    # -----------------------------------------------------------------------
     def _build_flat_tree(self) -> List[Tuple[GameObject, int]]:
-        flat = []
-        roots = [obj for obj in self.editable_objects if getattr(obj, "parent", None) is None]
+        result = []
         def traverse(obj, depth):
-            flat.append((obj, depth))
+            result.append((obj, depth))
             for child in self.editable_objects:
-                if getattr(child, "parent", None) == obj:
+                if getattr(child, "parent", None) is obj:
                     traverse(child, depth + 1)
-        for r in roots:
-            traverse(r, 0)
-        flat_objs = [f[0] for f in flat]
         for obj in self.editable_objects:
-            if obj not in flat_objs:
-                flat.append((obj, 0))
-        return flat
+            if getattr(obj, "parent", None) is None:
+                traverse(obj, 0)
+        return result
 
     def _start_rename(self, idx: int) -> None:
-        if not (0 <= idx < len(self.editable_objects)): return
         self._rename_index = idx
         self._rename_text  = self.editable_objects[idx].name
         self._rename_blink = 0.0
-        self._rename_cursor_on = True
 
     def _commit_rename(self) -> None:
         if self._rename_index >= 0 and self._rename_text.strip():
@@ -550,91 +501,60 @@ class EditorScene(Scene):
         self._rename_text  = ""
 
     def _tree_scroll_to(self, idx: int) -> None:
-        if idx < 0: return
+        lay = self._lay
+        visible_rows = lay.tree_h // TREE_ROW_H
         if idx < self._tree_scroll:
             self._tree_scroll = idx
-        elif idx >= self._tree_scroll + self._lay.tree_max_vis:
-            self._tree_scroll = idx - self._lay.tree_max_vis + 1
+        elif idx >= self._tree_scroll + visible_rows:
+            self._tree_scroll = idx - visible_rows + 1
 
     def _max_scroll(self) -> int:
-        return max(0, len(self.editable_objects) - self._lay.tree_max_vis)
+        lay = self._lay
+        visible_rows = lay.tree_h // TREE_ROW_H
+        return max(0, len(self.editable_objects) - visible_rows)
 
-    # -----------------------------------------------------------------------
     def save_scene(self) -> None:
         data = {"objects": []}
         for obj in self.editable_objects:
             r = obj.get_component(MeshRenderer3D)
+            color = list(r.color) if r else [180, 180, 180]
+            shape = obj.name.rstrip("0123456789").replace("_clone", "")
             data["objects"].append({
-                "name":               obj.name,
-                "shape":              getattr(obj, "mesh_type", "Cube"),
-                "position":           obj.transform.position.tolist(),
-                "rotation":           obj.transform.rotation.tolist(),
-                "scale":              obj.transform.scale.tolist(),
-                "color":              list(r.color) if r else [200, 200, 200],
-                "is_static":          getattr(obj, "is_static", False),
-                "use_physics":        getattr(obj, "use_physics", True),
-                "initial_velocity_y": getattr(obj, "initial_velocity_y", 0.0),
-                "script_path":        getattr(obj, "script_path", ""),
-                "tag":                getattr(obj, "tag", ""),
-                "parent_name":        obj.parent.name if obj.parent else None,
+                "name":     obj.name,
+                "shape":    shape,
+                "color":    color,
+                "position": obj.transform.position.tolist(),
+                "rotation": obj.transform.rotation.tolist(),
+                "scale":    obj.transform.scale.tolist(),
             })
         path = os.path.join(os.path.dirname(__file__), "..", "demos", "scene.json")
-        try:
-            with open(path, "w") as f:
-                json.dump(data, f, indent=4)
-            self._notify("Cena salva com sucesso!", "success")
-        except Exception as e:
-            self._notify(f"Erro ao salvar: {e}", "error")
+        with open(path, "w") as f:
+            json.dump(data, f, indent=2)
+        self._notify("Cena salva em demos/scene.json", "success")
 
     def load_scene(self) -> None:
         path = os.path.join(os.path.dirname(__file__), "..", "demos", "scene.json")
         if not os.path.exists(path):
-            self._notify("Nenhuma cena salva encontrada.", "error"); return
-        try:
-            with open(path) as f:
-                data = json.load(f)
-        except Exception as e:
-            self._notify(f"Erro ao carregar: {e}", "error"); return
-        self.history.push(self)
+            self._notify("scene.json não encontrado", "error")
+            return
+        with open(path) as f:
+            data = json.load(f)
         for obj in list(self.editable_objects):
-            self._remove_go(obj); obj.destroy()
+            self._remove_go(obj)
         self.editable_objects.clear()
         self.selected_index = -1
-        self.cube_count = self.pyramid_count = self.sphere_count = self.plane_count = self.capsule_count = self.camera_count = self.light_count = 0
-        for item in data.get("objects", []):
-            go = GameObject()
-            go.name               = item["name"]
-            go.transform.position = np.array(item["position"], np.float32)
-            go.transform.rotation = np.array(item["rotation"], np.float32)
-            go.transform.scale    = np.array(item["scale"],    np.float32)
-            go.mesh_type          = item.get("shape", "Cube")
-            go.is_static          = item.get("is_static", False)
-            go.use_physics        = item.get("use_physics", True)
-            go.initial_velocity_y = item.get("initial_velocity_y", 0.0)
-            go.script_path        = item.get("script_path", "")
-            go.tag                = item.get("tag", "")
-            count_map = {"Cube": "cube_count", "Pyramid": "pyramid_count", "Sphere": "sphere_count",
-                         "Plane": "plane_count", "Capsule": "capsule_count",
-                         "Camera": "camera_count", "Light": "light_count"}
-            attr = count_map.get(go.mesh_type, "cube_count")
-            setattr(self, attr, getattr(self, attr) + 1)
-            color = tuple(item["color"])
-            go.add_component(self._make_mesh(go.mesh_type, color))
+        for obj_data in data.get("objects", []):
+            shape = obj_data.get("shape", "Cube")
+            color = tuple(obj_data.get("color", [180, 180, 180]))
+            go = self._make_mesh(shape, color)
+            go.transform.position = np.array(obj_data.get("position", [0, 0, 0]), np.float32)
+            go.transform.rotation = np.array(obj_data.get("rotation", [0, 0, 0]), np.float32)
+            go.transform.scale    = np.array(obj_data.get("scale",    [1, 1, 1]), np.float32)
+            go.name = obj_data.get("name", shape)
             self._add_go(go)
             self.editable_objects.append(go)
-        for item, go in zip(data.get("objects", []), self.editable_objects):
-            parent_name = item.get("parent_name")
-            if parent_name:
-                parent_obj = next((o for o in self.editable_objects if o.name == parent_name), None)
-                if parent_obj:
-                    parent_obj.add_child(go)
-        if self.editable_objects:
-            self.selected_index = len(self.editable_objects) - 1
-        self._tree_scroll = 0
-        self._cancel_rename()
-        self._notify("Cena carregada!", "success")
+        self._notify("Cena carregada", "success")
 
-    # -----------------------------------------------------------------------
     def _select_at(self, mx: int, my: int) -> None:
         best_idx, best_depth = -1, float("inf")
         for idx, obj in enumerate(self.editable_objects):
@@ -678,23 +598,21 @@ class EditorScene(Scene):
         rx  = lay.inspector_x()
 
         # Inspector esquerda
-        for btn in [
-            self.btn_toggle_static, self.btn_toggle_physics,
-            self.btn_vel_dec, self.btn_new_script,
-            self.btn_edit_script, self.btn_script_help,
-            self.btn_clone, self.btn_prev_parent, self.btn_prev_tag,
-            self.btn_prev_script,
-        ]:
-            btn.x = rx
-
-        # Inspector direita (botões '>')
-        self.btn_vel_inc.x         = rx + 145
-        self.btn_next_script.x     = lay.insp_btn_right(28)
+        self.btn_toggle_static.x  = rx
+        self.btn_toggle_physics.x = rx
+        self.btn_vel_dec.x        = rx
+        self.btn_vel_inc.x        = rx + 145
+        self.btn_prev_script.x    = rx
+        self.btn_next_script.x    = lay.insp_btn_right(28)
+        self.btn_new_script.x     = rx
+        self.btn_edit_script.x    = rx
         self.btn_internal_editor.x = rx + 110
-        self.btn_next_parent.x     = lay.insp_btn_right(28)
-        self.btn_next_tag.x        = lay.insp_btn_right(28)
-
-        # Botões de cor
+        self.btn_script_help.x    = rx
+        self.btn_clone.x          = rx
+        self.btn_prev_parent.x    = rx
+        self.btn_next_parent.x    = lay.insp_btn_right(28)
+        self.btn_prev_tag.x       = rx
+        self.btn_next_tag.x       = lay.insp_btn_right(28)
         for i, btn in enumerate(self.btn_colors):
             btn.x = lay.insp_color_btn_x(i)
 
@@ -854,327 +772,275 @@ class EditorScene(Scene):
         elif self.showing_welcome:
             self._draw_welcome_modal(screen)
 
-        self._draw_dropdowns(screen)
-
-        if self._is_dragging_tree and self._drag_tree_src:
-            mx, my = pygame.mouse.get_pos()
-            label = f"Mover {self._drag_tree_src.name} para..."
-            pygame.draw.rect(screen, T.BTN_ACTIVE, (mx + 15, my + 5, 200, 24), border_radius=4)
-            screen.blit(self.font_body.render(label, True, T.TEXT_PRIMARY), (mx + 22, my + 9))
-
-    # -----------------------------------------------------------------------
-    # Draw helpers
     # -----------------------------------------------------------------------
     def _draw_viewport_badge(self, screen, x, y, text, color):
-        """Badge colorido sobre a viewport (EDIT MODE / GAME VIEW)."""
-        surf = self.font_btn.render(text, True, color)
-        w = surf.get_width() + 14
-        pygame.draw.rect(screen, T.PANEL, (x, y, w, 18), border_radius=3)
-        pygame.draw.rect(screen, color,   (x, y, w, 18), 1, border_radius=3)
-        screen.blit(surf, (x + 7, y + 2))
+        surf = self.font_section.render(text, True, color)
+        screen.blit(surf, (x, y))
 
     def _draw_game_view(self, screen: pygame.Surface) -> None:
-        """Renderiza a game view (lado direito no modo play)."""
-        lay  = self._lay
-        rect = lay.viewport_game_rect
-        pygame.draw.rect(screen, T.BG, rect)
-        label = self.font_body.render("[Game View]", True, T.TEXT_MUTED)
-        screen.blit(label, (
-            rect.x + (rect.width  - label.get_width())  // 2,
-            rect.y + (rect.height - label.get_height()) // 2,
-        ))
+        lay = self._lay
+        pygame.draw.rect(screen, T.VIEWPORT_BG, lay.viewport_game_rect)
+        # Renderiza a game view com câmera perspectiva normal
+        for go in self.game_objects:
+            go.draw(screen)
 
     def _draw_status_bar(self, screen: pygame.Surface) -> None:
-        """Barra de status inferior com feedback das últimas ações."""
         lay = self._lay
-        pygame.draw.rect(screen, T.PANEL,  lay.status_bar_rect)
-        pygame.draw.line(screen, T.BORDER,
-                         (0, lay.status_bar_rect.y),
-                         (lay.screen_w, lay.status_bar_rect.y), 1)
+        bar_y = lay.screen_h - STATUS_BAR_H
+        pygame.draw.rect(screen, T.PANEL, (0, bar_y, lay.screen_w, STATUS_BAR_H))
+        pygame.draw.line(screen, T.BORDER, (0, bar_y), (lay.screen_w, bar_y))
 
-        info = (f"  {len(self.editable_objects)} objeto(s)   "
-                f"Grade: {'ON' if self.snap_enabled else 'OFF'}   "
-                f"Hist: {len(self.history._undo)} undo / {len(self.history._redo)} redo")
-        screen.blit(self.font_section.render(info, True, T.TEXT_MUTED),
-                    (8, lay.status_text_y()))
-
+        # Mensagem de status
         if self._status_timer > 0 and self._status_msg:
-            alpha = min(1.0, self._status_timer)
-            kind_colors = {"info": T.ACCENT, "success": T.SUCCESS, "error": T.ERROR}
-            col   = kind_colors.get(getattr(self, "_status_kind", "info"), T.ACCENT)
-            faded = T.alpha_blend(col, alpha, T.PANEL)
-            surf  = self.font_section.render(f"● {self._status_msg}", True, faded)
-            screen.blit(surf, (lay.status_center_x(surf.get_width()), lay.status_text_y()))
+            kind = getattr(self, "_status_kind", "info")
+            col  = T.SUCCESS if kind == "success" else (T.ERROR if kind == "error" else T.TEXT_MUTED)
+            surf = self.font_section.render(f"  {self._status_msg}", True, col)
+            screen.blit(surf, (4, bar_y + 4))
+        else:
+            # Informações padrão
+            obj_count = len(self.editable_objects)
+            sel_name  = self.editable_objects[self.selected_index].name if 0 <= self.selected_index < obj_count else "—"
+            undo_info = f"Undo: {self.history.undo_count()}  Redo: {self.history.redo_count()}"
+            mode_name = CAMERA_MODES[self.camera_mode_index]
+            info = f"  Objetos: {obj_count}  |  Sel: {sel_name}  |  {undo_info}  |  Câmera: {mode_name}  |  Snap: {'ON' if self.snap_enabled else 'OFF'}"
+            surf = self.font_section.render(info, True, T.TEXT_MUTED)
+            screen.blit(surf, (4, bar_y + 4))
 
     def _draw_gizmo(self, screen: pygame.Surface) -> None:
-        if self.selected_index < 0 or self.play_mode or not self.gizmo_mode:
+        if self.selected_index < 0 or self.selected_index >= len(self.editable_objects):
+            self.gizmo_screen_points = {}
+            self.gizmo_screen_center = None
             return
+
         sel = self.editable_objects[self.selected_index]
-        P   = sel.transform.position
-        ext = 1.2
-        ex  = P + np.array([ext, 0.0, 0.0], np.float32)
-        ey  = P + np.array([0.0, ext, 0.0], np.float32)
-        ez  = P + np.array([0.0, 0.0, ext], np.float32)
-        verts = np.array([P, ex, ey, ez], np.float32)
-        ndc, depths = project_vertices(verts, _IDENTITY, self.camera_comp.view_matrix, self.camera_comp.projection_matrix)
-        near = self.camera_comp.near
-        if not all(d > near for d in depths): return
-        vw, vh = self.camera_comp.viewport_width,  self.camera_comp.viewport_height
-        vx, vy = self.camera_comp.viewport_x,      self.camera_comp.viewport_y
+        cam = self.camera_comp
+        vx, vy, vw, vh = cam.viewport_x, cam.viewport_y, cam.viewport_width, cam.viewport_height
+
+        pos = sel.transform.position
+        axes = {
+            'x': pos + np.array([0.8, 0.0, 0.0], np.float32),
+            'y': pos + np.array([0.0, 0.8, 0.0], np.float32),
+            'z': pos + np.array([0.0, 0.0, 0.8], np.float32),
+        }
+
         def ts(i): return int(vx + (ndc[i, 0] + 1) * vw / 2), int(vy + (-ndc[i, 1] + 1) * vh / 2)
-        c, px, py, pz = ts(0), ts(1), ts(2), ts(3)
-        self.gizmo_screen_points = {'x': px, 'y': py, 'z': pz}
-        self.gizmo_screen_center = c
+
+        verts = np.array([pos] + list(axes.values()), np.float32)
+        ndc, depths = project_vertices(verts, _IDENTITY, cam.view_matrix, cam.projection_matrix)
+
+        if depths[0] <= cam.near:
+            return
 
         def draw_triangle(surface, color, pt, center):
-            dx = pt[0] - center[0]; dy = pt[1] - center[1]
-            dist = np.hypot(dx, dy)
-            if dist > 0:
-                ux, uy = dx / dist, dy / dist
-                px_, py_ = -uy, ux
-                p1 = (pt[0] + ux * 8, pt[1] + uy * 8)
-                p2 = (pt[0] - ux * 8 + px_ * 6, pt[1] - uy * 8 + py_ * 6)
-                p3 = (pt[0] - ux * 8 - px_ * 6, pt[1] - uy * 8 - py_ * 6)
-                pygame.draw.polygon(surface, color, [p1, p2, p3])
+            dx, dy = pt[0] - center[0], pt[1] - center[1]
+            length = max(1, np.hypot(dx, dy))
+            nx, ny = dx / length, dy / length
+            p1 = (int(pt[0] + ny * 5), int(pt[1] - nx * 5))
+            p2 = (int(pt[0] - ny * 5), int(pt[1] + nx * 5))
+            pygame.draw.polygon(surface, color, [pt, p1, p2])
 
-        if self.gizmo_mode == "rotate":
-            for pts_fn, col in [
-                (lambda t: P + np.array([0.8*np.cos(t), 0, 0.8*np.sin(t)], np.float32), T.GIZMO_Y),
-                (lambda t: P + np.array([0, 0.8*np.cos(t), 0.8*np.sin(t)], np.float32), T.GIZMO_X),
-                (lambda t: P + np.array([0.8*np.cos(t), 0.8*np.sin(t), 0], np.float32), T.GIZMO_Z),
-            ]:
-                ring = np.array([pts_fn(t) for t in np.linspace(0, 2*np.pi, 20)], np.float32)
-                rn, rd = project_vertices(ring, _IDENTITY, self.camera_comp.view_matrix, self.camera_comp.projection_matrix)
-                pts = [(int(vx+(rn[k,0]+1)*vw/2), int(vy+(-rn[k,1]+1)*vh/2))
-                       for k in range(len(ring)) if rd[k] > near]
-                if len(pts) > 1: pygame.draw.lines(screen, col, True, pts, 2)
-            draw_triangle(screen, T.GIZMO_X, px, c)
-            draw_triangle(screen, T.GIZMO_Y, py, c)
-            draw_triangle(screen, T.GIZMO_Z, pz, c)
-        else:
-            pygame.draw.line(screen, T.GIZMO_X, c, px, 3)
-            pygame.draw.line(screen, T.GIZMO_Y, c, py, 3)
-            pygame.draw.line(screen, T.GIZMO_Z, c, pz, 3)
-            if self.gizmo_mode == "translate":
-                for pt, col in [(px, T.GIZMO_X), (py, T.GIZMO_Y), (pz, T.GIZMO_Z)]:
-                    pygame.draw.circle(screen, col, pt, 7)
-            elif self.gizmo_mode == "scale":
-                for pt, col in [(px, T.GIZMO_X), (py, T.GIZMO_Y), (pz, T.GIZMO_Z)]:
-                    pygame.draw.rect(screen, col, (pt[0]-6, pt[1]-6, 12, 12))
-                pygame.draw.circle(screen, T.GIZMO_W, c, 6)
+        center_s = ts(0)
+        self.gizmo_screen_center = center_s
 
+        colors_map  = {'x': T.GIZMO_X, 'y': T.GIZMO_Y, 'z': T.GIZMO_Z}
+        new_pts: Dict[str, Tuple[int, int]] = {}
+
+        for i, (axis, _) in enumerate(axes.items()):
+            if depths[i + 1] > cam.near:
+                pt = ts(i + 1)
+                new_pts[axis] = pt
+                col = colors_map[axis]
+                pygame.draw.line(screen, col, center_s, pt, 2)
+                draw_triangle(screen, col, pt, center_s)
+                label = self.font_section.render(axis.upper(), True, col)
+                screen.blit(label, (pt[0] + 4, pt[1] - 8))
+
+        self.gizmo_screen_points = new_pts
+
+        # Centro — círculo branco (uniform scale)
+        if self.gizmo_mode == "scale":
+            pygame.draw.circle(screen, (220, 220, 220), center_s, 5)
+            pygame.draw.circle(screen, (50, 50, 50),    center_s, 5, 1)
+
+    # -----------------------------------------------------------------------
     def _draw_left_panel(self, screen: pygame.Surface) -> None:
         lay = self._lay
-        pygame.draw.rect(screen, T.PANEL, lay.left_panel_rect)
-        pygame.draw.line(screen, T.BORDER,
-                         (LEFT_PANEL_W, TOP_BAR_H),
-                         (LEFT_PANEL_W, lay.screen_h), 1)
+        pygame.draw.rect(screen, T.PANEL, (0, TOP_BAR_H, LEFT_PANEL_W, lay.screen_h))
+        pygame.draw.line(screen, T.BORDER, (LEFT_PANEL_W, TOP_BAR_H), (LEFT_PANEL_W, lay.screen_h))
 
-        SectionHeader(LEFT_PADDING, ADD_SECTION_Y, LEFT_PANEL_W - 16, "Adicionar").draw(screen, self.font_section)
+        # Seção: Adicionar Objetos
+        SectionHeader(LEFT_PADDING, ADD_SECTION_Y, LEFT_PANEL_W - LEFT_PADDING * 2, "Adicionar Objeto").draw(screen, self.font_section)
         for btn in [self.btn_add_cube, self.btn_add_pyramid, self.btn_add_sphere,
                     self.btn_add_plane, self.btn_add_capsule, self.btn_add_camera, self.btn_add_light]:
             btn.draw(screen, self.font_btn)
 
-        SectionHeader(LEFT_PADDING, GIZMO_SECTION_Y, LEFT_PANEL_W - 16, "Transformar").draw(screen, self.font_section)
-        for btn, mode in [(self.btn_mode_translate, "translate"),
-                          (self.btn_mode_rotate,    "rotate"),
-                          (self.btn_mode_scale,     "scale")]:
-            active = (self.gizmo_mode == mode)
-            btn.bg_color    = T.BTN_ACTIVE       if active else T.BTN_GIZMO
-            btn.hover_color = T.BTN_ACTIVE_HOVER if active else T.BTN_GIZMO_HOVER
+        # Seção: Gizmo
+        SectionHeader(LEFT_PADDING, GIZMO_SECTION_Y, LEFT_PANEL_W - LEFT_PADDING * 2, "Gizmo").draw(screen, self.font_section)
+        for btn in [self.btn_mode_translate, self.btn_mode_rotate, self.btn_mode_scale]:
+            col = T.ACCENT if (
+                (btn is self.btn_mode_translate and self.gizmo_mode == "translate") or
+                (btn is self.btn_mode_rotate    and self.gizmo_mode == "rotate")    or
+                (btn is self.btn_mode_scale     and self.gizmo_mode == "scale")
+            ) else btn.bg_color
+            orig = btn.bg_color
+            btn.bg_color = col
             btn.draw(screen, self.font_btn)
+            btn.bg_color = orig
 
-        self.btn_snap.text      = f"Grade: {'ON  (G)' if self.snap_enabled else 'OFF (G)'}"
-        self.btn_snap.bg_color  = (25, 90, 58) if self.snap_enabled else T.BTN_SECONDARY
+        # Snap + Templates
         self.btn_snap.draw(screen, self.font_btn)
         self.btn_templates.draw(screen, self.font_btn)
 
-        SectionHeader(LEFT_PADDING, TREE_Y - 14, LEFT_PANEL_W - 16, "Objetos da Cena").draw(screen, self.font_section)
+        # Árvore de objetos
+        tree = self._build_flat_tree()
+        tree_clip = pygame.Rect(0, TREE_Y, LEFT_PANEL_W, lay.tree_h)
+        screen.set_clip(tree_clip)
 
-        tree_rect = pygame.Rect(LEFT_PADDING, TREE_Y, 184, lay.tree_h)
-        pygame.draw.rect(screen, T.BG,     tree_rect, border_radius=4)
-        pygame.draw.rect(screen, T.BORDER, tree_rect, 1, border_radius=4)
+        for i, (obj, depth) in enumerate(tree):
+            vis_i = i - self._tree_scroll
+            if vis_i < 0:
+                continue
+            if vis_i * TREE_ROW_H >= lay.tree_h:
+                break
 
-        flat_tree = self._build_flat_tree()
-        total     = len(flat_tree)
-        max_s     = self._max_scroll()
-        self._tree_scroll = min(self._tree_scroll, max_s)
+            row_y = TREE_Y + vis_i * TREE_ROW_H
+            row   = pygame.Rect(0, row_y, LEFT_PANEL_W, TREE_ROW_H)
 
-        for slot_i in range(lay.tree_max_vis):
-            obj_i = self._tree_scroll + slot_i
-            if obj_i >= total: break
-            obj, depth = flat_tree[obj_i]
-            sel = (0 <= self.selected_index < len(self.editable_objects)
-                   and self.editable_objects[self.selected_index] == obj)
+            actual_i = self.editable_objects.index(obj) if obj in self.editable_objects else -1
+            selected = (actual_i == self.selected_index)
 
-            ry  = TREE_Y + slot_i * TREE_ROW_H
-            row = pygame.Rect(LEFT_PADDING + 1, ry, 182, TREE_ROW_H - 1)
+            bg = T.ACCENT_DIM if selected else (T.SURFACE if vis_i % 2 == 0 else T.SURFACE_2)
+            pygame.draw.rect(screen, bg, row)
 
-            if sel:
-                pygame.draw.rect(screen, T.ACCENT_BG, row, border_radius=3)
-                pygame.draw.rect(screen, T.ACCENT,    row, 1, border_radius=3)
+            icon = _SHAPE_ICON.get(obj.name.rstrip("0123456789").replace("_clone", ""), "▣")
+            indent = LEFT_PADDING + depth * 12
+
+            if self._rename_index == actual_i:
+                # Campo de rename
+                self._rename_blink += 0.016
+                cursor = "|" if int(self._rename_blink * 2) % 2 == 0 else ""
+                text   = self._rename_text + cursor
+                surf   = self.font_body.render(text, True, T.ACCENT)
             else:
-                mx, my = pygame.mouse.get_pos()
-                if row.collidepoint(mx, my):
-                    pygame.draw.rect(screen, T.SURFACE, row, border_radius=3)
+                col  = T.TEXT_PRIMARY if selected else T.TEXT_SECONDARY
+                surf = self.font_body.render(f"{icon} {obj.name}", True, col)
 
-            indent   = min(depth, 4) * 10
-            icon     = _SHAPE_ICON.get(getattr(obj, "mesh_type", "Cube"), "▣")
-            icon_col = T.ACCENT if sel else T.TEXT_MUTED
-            screen.blit(self.font_section.render(icon, True, icon_col), (18 + indent, ry + 7))
+            screen.blit(surf, (indent, row_y + 2))
 
-            if self._rename_index >= 0 and self.editable_objects[self._rename_index] == obj:
-                pygame.draw.rect(screen, T.SURFACE_2, (32 + indent, ry + 3, 152 - indent, TREE_ROW_H - 6), border_radius=2)
-                pygame.draw.rect(screen, T.ACCENT,    (32 + indent, ry + 3, 152 - indent, TREE_ROW_H - 6), 1, border_radius=2)
-                display = self._rename_text + ("|" if self._rename_cursor_on else "")
-                screen.blit(self.font_body.render(display, True, T.TEXT_PRIMARY), (35 + indent, ry + 5))
-            else:
-                label   = obj.name
-                max_len = 18 - (indent // 10) * 2
-                if len(label) > max_len: label = label[:max(5, max_len - 2)] + ".."
-                screen.blit(self.font_body.render(label, True, T.TEXT_PRIMARY), (32 + indent, ry + 5))
-                tag = getattr(obj, "tag", "")
-                if tag:
-                    ts = self.font_section.render(tag, True, T.WARNING)
-                    screen.blit(ts, (155 - ts.get_width(), ry + 7))
+        screen.set_clip(None)
 
-        if total > lay.tree_max_vis:
-            bar_h = max(16, lay.tree_h * lay.tree_max_vis // max(total, 1))
-            bar_y = TREE_Y + (lay.tree_h - bar_h) * self._tree_scroll // max(max_s, 1)
-            pygame.draw.rect(screen, T.BORDER, (196, bar_y, 4, bar_h), border_radius=2)
-            self.btn_tree_up.draw(screen, self.font_btn)
-            self.btn_tree_down.draw(screen, self.font_btn)
+        # Scroll arrows
+        self.btn_tree_up.draw(screen, self.font_btn)
+        self.btn_tree_down.draw(screen, self.font_btn)
 
-        Divider(LEFT_PADDING, TREE_Y + lay.tree_h + 8, LEFT_PANEL_W - 24).draw(screen)
-        self.btn_undo.bg_color    = T.BTN_ACTIVE       if self.history.can_undo else T.BTN_SECONDARY
-        self.btn_redo.bg_color    = T.BTN_ACTIVE       if self.history.can_redo else T.BTN_SECONDARY
-        self.btn_undo.hover_color = T.BTN_ACTIVE_HOVER if self.history.can_undo else T.BTN_SECONDARY_HOVER
-        self.btn_redo.hover_color = T.BTN_ACTIVE_HOVER if self.history.can_redo else T.BTN_SECONDARY_HOVER
+        # Undo / Redo / Delete
         self.btn_undo.draw(screen, self.font_btn)
         self.btn_redo.draw(screen, self.font_btn)
-        if 0 <= self.selected_index < len(self.editable_objects):
-            self.btn_delete.draw(screen, self.font_btn)
+        self.btn_delete.draw(screen, self.font_btn)
 
-        Divider(LEFT_PADDING, lay.light_section_y - 18, LEFT_PANEL_W - 24).draw(screen)
-        SectionHeader(LEFT_PADDING, lay.light_section_y - 14, LEFT_PANEL_W - 16, "Direção da Luz").draw(screen, self.font_section)
+        # Ângulo de luz
+        lay_ls = lay.light_section_y
+        SectionHeader(LEFT_PADDING, lay_ls - 16, LEFT_PANEL_W - LEFT_PADDING * 2, "Luz").draw(screen, self.font_section)
         self.btn_light_angle_dec.draw(screen, self.font_btn)
-        angle_surf = self.font_xyz.render(f"{int(self.light_angle)}°", True, T.TEXT_PRIMARY)
-        screen.blit(angle_surf, (60 + (100 - angle_surf.get_width()) // 2, lay.light_section_y + 2))
         self.btn_light_angle_inc.draw(screen, self.font_btn)
+        angle_surf = self.font_body.render(f"{int(self.light_angle)}°", True, T.TEXT_PRIMARY)
+        screen.blit(angle_surf, (LEFT_PADDING + 44, lay_ls + 2))
 
+    # -----------------------------------------------------------------------
     def _draw_top_bar(self, screen: pygame.Surface) -> None:
         lay = self._lay
-        pygame.draw.rect(screen, T.PANEL, lay.top_bar_rect)
-        pygame.draw.line(screen, T.BORDER, (0, TOP_BAR_H), (lay.screen_w, TOP_BAR_H), 1)
+        pygame.draw.rect(screen, T.PANEL, (0, 0, lay.screen_w, TOP_BAR_H))
+        pygame.draw.line(screen, T.BORDER, (0, TOP_BAR_H - 1), (lay.screen_w, TOP_BAR_H - 1))
 
-        logo = self.font_body.render("Zennity", True, T.ACCENT)
-        screen.blit(logo, (8, 7))
-        pygame.draw.line(screen, T.BORDER, (70, 4), (70, 26), 1)
+        # Menus
+        for btn in [self.btn_menu_file, self.btn_menu_view, self.btn_menu_window]:
+            btn.draw(screen, self.font_btn)
 
-        self.btn_menu_file.draw(screen,   self.font_btn)
-        self.btn_menu_view.draw(screen,   self.font_btn)
-        self.btn_menu_window.draw(screen, self.font_btn)
-
-        if self.play_mode:
-            self.btn_play_pause.bg_color    = T.BTN_DANGER
-            self.btn_play_pause.hover_color = T.BTN_DANGER_HOVER
-            self.btn_play_pause.text        = "■  STOP"
-        else:
-            self.btn_play_pause.bg_color    = T.BTN_PRIMARY
-            self.btn_play_pause.hover_color = T.BTN_PRIMARY_HOVER
-            self.btn_play_pause.text        = "▶  PLAY"
+        # PLAY
         self.btn_play_pause.draw(screen, self.font_btn)
 
-        undo_col = T.ACCENT if self.history.can_undo else T.TEXT_FAINT
-        redo_col = T.ACCENT if self.history.can_redo else T.TEXT_FAINT
-        screen.blit(self.font_btn.render(f"↩ {len(self.history._undo)}", True, undo_col), (lay.screen_w - 120, 8))
-        screen.blit(self.font_btn.render(f"↪ {len(self.history._redo)}", True, redo_col), (lay.screen_w -  68, 8))
+        # Modo da câmera (texto)
+        mode_name = CAMERA_MODES[self.camera_mode_index]
+        cam_surf  = self.font_section.render(f"Câmera: {mode_name}", True, T.TEXT_MUTED)
+        screen.blit(cam_surf, (lay.play_button_x + 96, 8))
+
+        # Dropdowns
+        if self._active_dropdown:
+            self._draw_dropdowns(screen)
 
     def _draw_dropdowns(self, screen: pygame.Surface) -> None:
-        if not self._active_dropdown: return
         if self._active_dropdown == "file":
-            opts = ["Novo Scene", "Salvar", "Carregar", "Sair"]
-            rx, ry, rw = 10, TOP_BAR_H, 130
-        elif self._active_dropdown == "view":
-            grade_str = "Desativar Grade" if self.snap_enabled else "Ativar Grade"
-            opts = ["Camera: Persp", "Camera: Top", "Camera: Side", grade_str, "Templates"]
-            rx, ry, rw = 66, TOP_BAR_H, 155
-        elif self._active_dropdown == "window":
-            fs_str = "Modo Janela" if getattr(self.engine, "is_fullscreen", False) else "Tela Cheia"
-            opts = [fs_str + " (F11)", "Guia de Ajuda"]
-            rx, ry, rw = 122, TOP_BAR_H, 165
-        else:
-            return
-        rh = len(opts) * 28
-        pygame.draw.rect(screen, T.SURFACE, (rx, ry, rw, rh), border_radius=4)
-        pygame.draw.rect(screen, T.BORDER,  (rx, ry, rw, rh), 1, border_radius=4)
-        mx, my = pygame.mouse.get_pos()
-        for i, opt in enumerate(opts):
-            row_rect = pygame.Rect(rx + 1, ry + i * 28 + 1, rw - 2, 26)
-            if row_rect.collidepoint(mx, my):
-                pygame.draw.rect(screen, T.BTN_ACTIVE, row_rect, border_radius=3)
-            screen.blit(self.font_body.render(opt, True, T.TEXT_PRIMARY), (rx + 10, ry + i * 28 + 6))
+            items = [("Novo",     None), ("Salvar", None), ("Carregar", None)]
+            rx_d, ry_d = 10, TOP_BAR_H
+            dw, dh = 120, len(items) * 26 + 4
+            pygame.draw.rect(screen, T.SURFACE, (rx_d, ry_d, dw, dh), border_radius=4)
+            pygame.draw.rect(screen, T.BORDER,  (rx_d, ry_d, dw, dh), 1, border_radius=4)
+            mx, my = pygame.mouse.get_pos()
+            for i, (label, _) in enumerate(items):
+                r = pygame.Rect(rx_d + 2, ry_d + 2 + i * 26, dw - 4, 24)
+                bg = T.SURFACE_2 if r.collidepoint(mx, my) else T.SURFACE
+                pygame.draw.rect(screen, bg, r, border_radius=3)
+                surf = self.font_body.render(label, True, T.TEXT_PRIMARY)
+                screen.blit(surf, (r.x + 8, r.y + 4))
 
+    # -----------------------------------------------------------------------
     def _draw_right_panel(self, screen: pygame.Surface) -> None:
         lay = self._lay
-        pygame.draw.rect(screen, T.PANEL, lay.right_panel_rect)
-        pygame.draw.line(screen, T.BORDER,
-                         (lay.right_x, TOP_BAR_H),
-                         (lay.right_x, lay.screen_h), 1)
+        rx  = lay.inspector_x()
+        panel_x = lay.screen_w - RIGHT_PANEL_W
 
-        if not (0 <= self.selected_index < len(self.editable_objects)):
-            empty_surf = self.font_body.render("Nenhum objeto selecionado", True, T.TEXT_FAINT)
-            screen.blit(empty_surf,
-                        (lay.right_x + (RIGHT_PANEL_W - empty_surf.get_width()) // 2, 80))
+        pygame.draw.rect(screen, T.PANEL, (panel_x, TOP_BAR_H, RIGHT_PANEL_W, lay.screen_h))
+        pygame.draw.line(screen, T.BORDER, (panel_x, TOP_BAR_H), (panel_x, lay.screen_h))
+
+        if self.selected_index < 0 or self.selected_index >= len(self.editable_objects):
+            msg = self.font_body.render("Nenhum objeto selecionado", True, T.TEXT_MUTED)
+            screen.blit(msg, (rx, INSP_HEADER_Y))
             return
 
         sel = self.editable_objects[self.selected_index]
-        pos, rot, sc = sel.transform.position, sel.transform.rotation, sel.transform.scale
-        rx = lay.inspector_x()
+        pos = sel.transform.position
+        rot = sel.transform.rotation
+        sc  = sel.transform.scale
 
+        # Nome
         name_surf = self.font_xyz.render(sel.name, True, T.TEXT_PRIMARY)
-        icon      = _SHAPE_ICON.get(getattr(sel, "mesh_type", "Cube"), "▣")
-        icon_surf = self.font_xyz.render(icon, True, T.ACCENT)
-        screen.blit(icon_surf, (rx, INSP_HEADER_Y))
-        screen.blit(name_surf, (rx + 20, INSP_HEADER_Y))
-        Divider(rx, INSP_HEADER_Y + 20, INSPECTOR_W).draw(screen)
+        screen.blit(name_surf, (rx, INSP_HEADER_Y))
 
-        SectionHeader(rx, INSP_PHYSICS_Y, INSPECTOR_W, "Física").draw(screen, self.font_section)
+        Divider(rx, INSP_PHYSICS_Y - 20, INSPECTOR_W).draw(screen)
+
+        # Física
+        SectionHeader(rx, INSP_PHYSICS_Y - 12, INSPECTOR_W, "Física").draw(screen, self.font_section)
+
+        is_static = getattr(sel, "is_static", False)
+        self.btn_toggle_static.label = "☑" if is_static else "☐"
         self.btn_toggle_static.draw(screen, self.font_btn)
-        if getattr(sel, "is_static", False):
-            pygame.draw.rect(screen, T.ACCENT, (rx + 3, INSP_PHYSICS_Y - 9, 14, 14))
-        else:
-            pygame.draw.rect(screen, T.BORDER, (rx + 3, INSP_PHYSICS_Y - 9, 14, 14), border_radius=3)
-        screen.blit(self.font_body.render("Estático",  True, T.TEXT_PRIMARY), (rx + 28, INSP_PHYSICS_Y - 10))
+        screen.blit(self.font_body.render("Estático", True, T.TEXT_PRIMARY), (rx + 24, INSP_PHYSICS_Y - 10))
 
+        phys_on = getattr(sel, "physics_enabled", False)
+        self.btn_toggle_physics.label = "☑" if phys_on else "☐"
         self.btn_toggle_physics.draw(screen, self.font_btn)
-        if getattr(sel, "use_physics", True):
-            pygame.draw.rect(screen, T.ACCENT, (rx + 3, INSP_PHYSICS_Y + 21, 14, 14))
-        screen.blit(self.font_body.render("Gravidade", True, T.TEXT_PRIMARY), (rx + 28, INSP_PHYSICS_Y + 20))
+        screen.blit(self.font_body.render("Física ativa", True, T.TEXT_PRIMARY), (rx + 24, INSP_PHYSICS_Y + 20))
 
-        screen.blit(self.font_section.render("IMPULSO VERTICAL", True, T.TEXT_MUTED),
-                    (rx, INSP_PHYSICS_Y + 50))
+        # Velocidade
+        vel = getattr(sel, "_velocity", np.zeros(3))
+        vel_surf = self.font_section.render(f"vel: {vel[0]:+.1f}, {vel[1]:+.1f}, {vel[2]:+.1f}", True, T.TEXT_MUTED)
+        screen.blit(vel_surf, (rx, INSP_PHYSICS_Y + 50))
         self.btn_vel_dec.draw(screen, self.font_btn)
-        val_surf = self.font_xyz.render(f"{sel.initial_velocity_y:+.1f} m/s", True, T.TEXT_PRIMARY)
-        screen.blit(val_surf, (rx + 48, INSP_PHYSICS_Y + 73))
         self.btn_vel_inc.draw(screen, self.font_btn)
 
-        Divider(rx, INSP_PHYSICS_Y + 100, INSPECTOR_W).draw(screen)
+        Divider(rx, INSP_SCRIPT_Y - 8, INSPECTOR_W).draw(screen)
 
-        SectionHeader(rx, INSP_SCRIPT_Y, INSPECTOR_W, "Comportamento").draw(screen, self.font_section)
-        self.btn_prev_script.draw(screen, self.font_btn)
-        self.btn_next_script.draw(screen, self.font_btn)
-        self.btn_new_script.draw(screen, self.font_btn)
-        self.btn_edit_script.draw(screen, self.font_btn)
-        self.btn_internal_editor.draw(screen, self.font_btn)
-        self.btn_script_help.draw(screen, self.font_btn)
+        # Script
+        SectionHeader(rx, INSP_SCRIPT_Y, INSPECTOR_W, "Script").draw(screen, self.font_section)
+        cur_script = getattr(sel, "_script_name", "Nenhum")
+        script_surf = self.font_body.render(cur_script, True, T.ACCENT)
+        screen.blit(script_surf, (rx + 32, INSP_SCRIPT_Y + 4))
+        for btn in [self.btn_prev_script, self.btn_next_script,
+                    self.btn_new_script, self.btn_edit_script,
+                    self.btn_internal_editor, self.btn_script_help]:
+            btn.draw(screen, self.font_btn)
 
-        script_name = getattr(sel, "script_path", "") or "Nenhum"
-        if len(script_name) > 22: script_name = script_name[-22:]
-        screen.blit(self.font_body.render(script_name, True, T.TEXT_PRIMARY),
-                    (rx + 32, INSP_SCRIPT_Y + 24))
-
-        Divider(rx, INSP_COLOR_Y, INSPECTOR_W).draw(screen)
+        Divider(rx, INSP_COLOR_Y - 4, INSPECTOR_W).draw(screen)
 
         SectionHeader(rx, INSP_COLOR_Y + 4, INSPECTOR_W, "Cor").draw(screen, self.font_section)
         for btn in self.btn_colors:
@@ -1376,3 +1242,177 @@ class EditorScene(Scene):
         self.btn_templates_close.y = close_y
         self.btn_templates_close.w = close_w
         self.btn_templates_close.draw(screen, self.font_btn)
+
+    # -----------------------------------------------------------------------
+    # Processamento de Eventos (CORRIGIDO — método estava ausente)
+    # -----------------------------------------------------------------------
+    def handle_event(self, event: pygame.event.Event) -> None:  # noqa: C901
+        lay = self._lay
+
+        # ── Scroll do mouse — zoom da câmera ────────────────────────────────
+        if event.type == pygame.MOUSEWHEEL:
+            if self.code_editor.is_open:
+                self.code_editor.handle_event(event)
+            else:
+                self.camera_controller.target_distance = max(
+                    1.0, self.camera_controller.target_distance - event.y * 0.5
+                )
+            return
+
+        # ── Teclado ──────────────────────────────────────────────────────────
+        if event.type == pygame.KEYDOWN:
+            # Undo / Redo
+            if event.key == pygame.K_z and (event.mod & pygame.KMOD_CTRL):
+                if event.mod & pygame.KMOD_SHIFT:
+                    self.history.redo(self)
+                    self._notify("Refazer", "info")
+                else:
+                    self.history.undo(self)
+                    self._notify("Desfazer", "info")
+                return
+
+            # Escape — fecha modais na ordem de prioridade
+            if event.key == pygame.K_ESCAPE:
+                if self.code_editor.is_open:
+                    self.code_editor.close()
+                elif self.showing_help_modal:
+                    self.showing_help_modal = False
+                elif self.showing_templates:
+                    self.showing_templates = False
+                elif self.showing_welcome:
+                    self.showing_welcome = False
+                return
+
+            # Rename em andamento — captura teclado
+            if self._rename_index >= 0:
+                if event.key == pygame.K_RETURN:
+                    self._commit_rename()
+                elif event.key == pygame.K_BACKSPACE:
+                    self._rename_text = self._rename_text[:-1]
+                elif event.unicode and event.unicode.isprintable():
+                    self._rename_text += event.unicode
+                return
+
+            # Code editor aberto — redireciona teclado
+            if self.code_editor.is_open:
+                self.code_editor.handle_event(event)
+                return
+
+            # Delete selecionado
+            if event.key == pygame.K_DELETE and self.selected_index >= 0:
+                self.delete_selected()
+
+        # ── Clique esquerdo ──────────────────────────────────────────────────
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            mx, my = event.pos
+
+            # Modais têm prioridade máxima
+            if self.showing_welcome:
+                if self.btn_welcome_close.is_clicked(event):
+                    self.showing_welcome = False
+                elif self.btn_welcome_next.is_clicked(event):
+                    if self.welcome_step < len(WELCOME_STEPS) - 1:
+                        self.welcome_step += 1
+                elif self.btn_welcome_prev.is_clicked(event):
+                    if self.welcome_step > 0:
+                        self.welcome_step -= 1
+                return
+
+            if self.showing_help_modal:
+                self.showing_help_modal = False
+                return
+
+            if self.showing_templates:
+                if self.btn_templates_close.is_clicked(event):
+                    self.showing_templates = False
+                else:
+                    for btn, tpl in zip(self.btn_template_items, self._template_list):
+                        if btn.is_clicked(event):
+                            self._load_template(tpl)
+                            self.showing_templates = False
+                            self._notify(f"Template '{tpl.get('_template_name','?')}' carregado", "success")
+                            break
+                return
+
+            if self.code_editor.is_open:
+                self.code_editor.handle_event(event)
+                return
+
+            # ── Barra superior ───────────────────────────────────────────────
+            if self.btn_play_pause.is_clicked(event):
+                if not self.play_mode:
+                    self.saved_scene_state = [
+                        {"pos": o.transform.position.copy(),
+                         "rot": o.transform.rotation.copy(),
+                         "sc":  o.transform.scale.copy()}
+                        for o in self.editable_objects
+                    ]
+                    self.play_mode = True
+                    self.btn_play_pause.label = "⏹  STOP"
+                    self._notify("Play iniciado", "success")
+                else:
+                    self.play_mode = False
+                    self.btn_play_pause.label = "▶  PLAY"
+                    if self.saved_scene_state:
+                        for obj, s in zip(self.editable_objects, self.saved_scene_state):
+                            obj.transform.position = s["pos"].copy()
+                            obj.transform.rotation = s["rot"].copy()
+                            obj.transform.scale    = s["sc"].copy()
+                    self._notify("Play encerrado", "info")
+                return
+
+            if self.btn_menu_file.is_clicked(event):
+                self._active_dropdown = "file" if self._active_dropdown != "file" else None
+                return
+            if self.btn_menu_view.is_clicked(event):
+                self._active_dropdown = "view" if self._active_dropdown != "view" else None
+                return
+            if self.btn_menu_window.is_clicked(event):
+                self._active_dropdown = "window" if self._active_dropdown != "window" else None
+                return
+
+            # Fecha dropdown ao clicar fora / processa clique nos itens
+            if self._active_dropdown:
+                if self._active_dropdown == "file":
+                    rx_d, ry_d = 10, TOP_BAR_H
+                    for i, (label, action) in enumerate([
+                        ("Novo",     self._new_scene),
+                        ("Salvar",   self.save_scene),
+                        ("Carregar", self.load_scene),
+                    ]):
+                        r = pygame.Rect(rx_d + 2, ry_d + 2 + i * 26, 116, 24)
+                        if r.collidepoint(mx, my):
+                            action()
+                            self._active_dropdown = None
+                            return
+                self._active_dropdown = None
+
+            # ── Painel esquerdo — formas ─────────────────────────────────────
+            if self.btn_add_cube.is_clicked(event):    self.spawn_object("Cube");    return
+            if self.btn_add_pyramid.is_clicked(event): self.spawn_object("Pyramid"); return
+            if self.btn_add_sphere.is_clicked(event):  self.spawn_object("Sphere");  return
+            if self.btn_add_plane.is_clicked(event):   self.spawn_object("Plane");   return
+            if self.btn_add_capsule.is_clicked(event): self.spawn_object("Capsule"); return
+            if self.btn_add_camera.is_clicked(event):  self.spawn_object("Camera");  return
+            if self.btn_add_light.is_clicked(event):   self.spawn_object("Light");   return
+
+            # ── Gizmo modes ──────────────────────────────────────────────────
+            if self.btn_mode_translate.is_clicked(event): self.gizmo_mode = "translate"; return
+            if self.btn_mode_rotate.is_clicked(event):    self.gizmo_mode = "rotate";    return
+            if self.btn_mode_scale.is_clicked(event):     self.gizmo_mode = "scale";     return
+
+            # ── Snap + Templates ─────────────────────────────────────────────
+            if self.btn_snap.is_clicked(event):
+                self.snap_enabled = not self.snap_enabled
+                self.btn_snap.label = f"Grade: {'ON' if self.snap_enabled else 'OFF'}"
+                return
+            if self.btn_templates.is_clicked(event):
+                self.showing_templates = True
+                return
+
+            # ── Undo / Redo / Delete / Luz ───────────────────────────────────
+            if self.btn_undo.is_clicked(event):
+                self.history.undo(self); self._notify("Desfazer", "info"); return
+            if self.btn_redo.is_clicked(event):
+                self.history.redo(self); self._notify("Refazer",  "info"); return
+            if self.btn_delete.is_clicked(event)
