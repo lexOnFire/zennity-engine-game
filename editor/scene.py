@@ -683,9 +683,10 @@ class EditorScene(Scene):
             vp_w = right_x - left_w
             vp_h = height - 30
             
+            # A câmera do editor renderiza na metade esquerda
             self.camera_comp.viewport_x = float(left_w)
             self.camera_comp.viewport_y = 30.0
-            self.camera_comp.viewport_width = float(vp_w)
+            self.camera_comp.viewport_width = float(vp_w // 2)
             self.camera_comp.viewport_height = float(vp_h)
             
             # Atualiza botões do painel direito
@@ -771,11 +772,7 @@ class EditorScene(Scene):
                     sel.transform.position  = self._snap(sel.transform.position)
             elif not pygame.mouse.get_pressed()[0]:
                 self.is_dragging_object = False
-        # Override da câmera em modo Play se houver um Camera GameObject
-        spawned_cam = next((obj for obj in self.editable_objects if getattr(obj, "mesh_type", None) == "Camera"), None)
-        if self.play_mode and spawned_cam:
-            from engine.graphics.math3d import view_matrix
-            self.camera_comp.view_matrix = view_matrix(spawned_cam.transform.position, spawned_cam.transform.rotation)
+        # Câmera edit-mode e game-mode agora rodam em paralelo no split-screen
 
         for go in self.game_objects:
             go.update(dt)
@@ -788,8 +785,8 @@ class EditorScene(Scene):
         vp_w = right_x - left_w
         vp_h = height - 30
         
-        # Viewport 3D estilizada escura
-        pygame.draw.rect(screen, (30, 34, 42), (left_w, 30, vp_w, vp_h))
+        # Viewport da Esquerda (EDIT VIEW)
+        pygame.draw.rect(screen, (30, 34, 42), (left_w, 30, vp_w // 2, vp_h))
         self._draw_floor_grid(screen)
         for go in self.game_objects:
             go.draw(screen)
@@ -801,6 +798,22 @@ class EditorScene(Scene):
                     r.draw(screen)
                     r.wireframe, r.color, r.line_width = ow, oc, olw
         self._draw_gizmo(screen)
+        
+        # Viewport da Direita (GAME VIEW)
+        self._draw_game_view(screen, left_w, vp_w, vp_h, height)
+        
+        # Linha divisória vertical
+        pygame.draw.line(screen, (55, 60, 72), (left_w + vp_w // 2, 30), (left_w + vp_w // 2, height), 2)
+        
+        # Títulos dos viewports
+        pygame.draw.rect(screen, (40, 44, 52), (left_w + 5, 35, 80, 18), border_radius=3)
+        screen.blit(self.font_btn.render("EDIT MODE", True, (0, 200, 255)), (left_w + 10, 38))
+        
+        pygame.draw.rect(screen, (40, 44, 52), (left_w + vp_w // 2 + 5, 35, 120, 18), border_radius=3)
+        game_tag = "GAME VIEW (LIVE)" if not self.play_mode else "GAME VIEW (PLAY)"
+        game_col = (0, 255, 120) if self.play_mode else (200, 200, 200)
+        screen.blit(self.font_btn.render(game_tag, True, game_col), (left_w + vp_w // 2 + 10, 38))
+
         self._draw_left_panel(screen)
         self._draw_top_bar(screen)
         self._draw_right_panel(screen)
@@ -814,7 +827,6 @@ class EditorScene(Scene):
         elif self.showing_welcome:
             self._draw_welcome_modal(screen)
             
-        self._draw_camera_pip(screen)
         self._draw_dropdowns(screen)
         
         # Tooltip visual para arrastar hierárquico
@@ -1170,19 +1182,17 @@ class EditorScene(Scene):
             if desc:
                 screen.blit(self.font_body.render(desc[:55],True,(160,165,175)),(mx + 25, my + 60 + i*60 + 26))
 
-    def _draw_camera_pip(self, screen: pygame.Surface) -> None:
+    def _draw_game_view(self, screen: pygame.Surface, left_w: int, vp_w: int, vp_h: int, height: int) -> None:
+        game_x = left_w + vp_w // 2
+        game_w = vp_w // 2
+        
+        # Fundo do viewport do jogo (tom ligeiramente mais escuro para distinguir)
+        pygame.draw.rect(screen, (22, 24, 30), (game_x, 30, game_w, vp_h))
+        
+        # Encontra a primeira câmera customizada criada pelo usuário
         spawned_cam = next((obj for obj in self.editable_objects if getattr(obj, "mesh_type", None) == "Camera"), None)
-        if not spawned_cam or self.play_mode:
-            return
-            
-        height = screen.get_height()
-        pip_x, pip_y = 235, height - 165
-        pip_w, pip_h = 200, 130
         
-        # Desenha fundo do mini viewport
-        pygame.draw.rect(screen, (20, 22, 28), (pip_x, pip_y, pip_w, pip_h))
-        
-        # Salva estado atual da câmera do editor
+        # Salva o estado atual da câmera do editor
         old_vx = self.camera_comp.viewport_x
         old_vy = self.camera_comp.viewport_y
         old_vw = self.camera_comp.viewport_width
@@ -1190,33 +1200,35 @@ class EditorScene(Scene):
         old_view = self.camera_comp.view_matrix.copy()
         old_proj = self.camera_comp.projection_matrix.copy()
         
-        # Aplica parâmetros da câmera PiP
+        # Carrega módulos de transformadas
         from engine.graphics.math3d import view_matrix, projection_matrix
-        self.camera_comp.viewport_x = float(pip_x)
-        self.camera_comp.viewport_y = float(pip_y)
-        self.camera_comp.viewport_width = float(pip_w)
-        self.camera_comp.viewport_height = float(pip_h)
-        self.camera_comp.view_matrix = view_matrix(spawned_cam.transform.position, spawned_cam.transform.rotation)
-        self.camera_comp.projection_matrix = projection_matrix(60.0, float(pip_w)/float(pip_h), 0.1, 100.0)
         
-        # Desenha os objetos na mini-câmera
+        self.camera_comp.viewport_x = float(game_x)
+        self.camera_comp.viewport_y = 30.0
+        self.camera_comp.viewport_width = float(game_w)
+        self.camera_comp.viewport_height = float(vp_h)
+        
+        if spawned_cam:
+            self.camera_comp.view_matrix = view_matrix(spawned_cam.transform.position, spawned_cam.transform.rotation)
+            self.camera_comp.projection_matrix = projection_matrix(60.0, float(game_w)/float(vp_h), 0.1, 100.0)
+        else:
+            # Sem câmera criada: usa uma câmera de visualização estática padrão do jogo
+            self.camera_comp.view_matrix = view_matrix(np.array([0.0, 3.0, -8.0], np.float32), np.array([15.0, 0.0, 0.0], np.float32))
+            self.camera_comp.projection_matrix = projection_matrix(60.0, float(game_w)/float(vp_h), 0.1, 100.0)
+            
+        # Renderiza a cena sem gizmos, grids ou ícones auxiliares
         for go in self.game_objects:
-            if go.name == "EditorCamera" or go == spawned_cam:
+            if go.name == "EditorCamera" or getattr(go, "mesh_type", "") in ["Camera", "Light"]:
                 continue
             go.draw(screen)
             
-        # Restaura estado original da câmera
+        # Restaura a câmera do editor
         self.camera_comp.viewport_x = old_vx
         self.camera_comp.viewport_y = old_vy
         self.camera_comp.viewport_width = old_vw
         self.camera_comp.viewport_height = old_vh
         self.camera_comp.view_matrix = old_view
         self.camera_comp.projection_matrix = old_proj
-        
-        # Desenha borda e título do PiP
-        pygame.draw.rect(screen, (0, 200, 255), (pip_x, pip_y, pip_w, pip_h), 1)
-        pygame.draw.rect(screen, (0, 200, 255), (pip_x, pip_y, 80, 16))
-        screen.blit(self.font_btn.render("CAMERA PIP", True, (255,255,255)), (pip_x + 5, pip_y + 2))
 
     def _draw_welcome_modal(self, screen: pygame.Surface) -> None:
         ov = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
@@ -1524,7 +1536,8 @@ class EditorScene(Scene):
                         self._drag_tree_src = flat_tree[obj_i][0]
                         self._is_dragging_tree = True
                         return
-            right_limit = pygame.display.get_surface().get_width() - 230
+            width = pygame.display.get_surface().get_width()
+            right_limit = 230 + (width - 460) // 2
             if 230 <= mx <= right_limit and 0<=self.selected_index<len(self.editable_objects):
                 r=self.editable_objects[self.selected_index].get_component(MeshRenderer3D)
                 if r and r.last_screen_coords is not None:
