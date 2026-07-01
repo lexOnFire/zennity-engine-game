@@ -38,12 +38,19 @@ class ScriptManager:
 
     @staticmethod
     def update(obj: "GameObject", dt: float) -> None:
+        """Atualiza o script de um único objeto."""
         mod = getattr(obj, "script_module", None)
         if mod and hasattr(mod, "update"):
             try:
                 mod.update(obj, dt)
             except Exception as e:
                 print(f"[ScriptManager] Erro no update de '{obj.name}': {e}")
+
+    @staticmethod
+    def update_all(objects: List["GameObject"], dt: float) -> None:
+        """Atualiza os scripts de todos os objetos de uma lista."""
+        for obj in objects:
+            ScriptManager.update(obj, dt)
 
     @staticmethod
     def unload(obj: "GameObject") -> None:
@@ -59,7 +66,7 @@ class ScriptManager:
             "mesh_type", "is_static", "use_physics",
             "initial_velocity_y", "script_path", "active",
             "parent", "children",
-            "tag",          # ← preservar tag definida no inspetor
+            "tag",
         }
         for key in list(obj.__dict__.keys()):
             if key not in PERSISTENT:

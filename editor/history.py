@@ -65,6 +65,7 @@ class History:
         ... realiza mudança ...
         history.undo(scene)        # restaura estado anterior
         history.redo(scene)        # refaz
+        history.clear()            # limpa todo o histórico
     """
 
     MAX_SIZE: int = 50
@@ -92,6 +93,12 @@ class History:
     def push(self, scene: Any) -> None:
         """Salva o estado atual antes de uma ação. Limpa o redo."""
         self._undo.append(_snap_scene(scene))
+        self._redo.clear()
+
+    # ------------------------------------------------------------------
+    def clear(self) -> None:
+        """Limpa completamente o histórico de undo e redo."""
+        self._undo.clear()
         self._redo.clear()
 
     # ------------------------------------------------------------------
