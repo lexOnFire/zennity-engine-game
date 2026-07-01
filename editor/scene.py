@@ -1060,6 +1060,8 @@ class EditorScene(Scene):
         screen.blit(self.font_body.render(tag_val,True,(255,255,255)),(right_x + 56,444))
         self.btn_next_tag.draw(screen,self.font_btn)
         # Status bar centralizada na parte inferior do viewport dinamicamente
+        left_w = 230
+        vp_w = width - 460
         viewport_center_x = left_w + (vp_w - 480) // 2
         viewport_bottom_y = height - 55
         
