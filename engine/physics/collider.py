@@ -88,18 +88,24 @@ class BoxCollider(Component):
     def check_all() -> None:
         """
         Verifica colisões entre todos os BoxColliders registrados.
-        Deve ser chamado uma vez por frame (geralmente na Scene.update).
+        Purga órfãos e limita as colisões ao escopo da mesma cena ativa.
         """
+        BoxCollider._registry = [c for c in BoxCollider._registry if c.game_object is not None]
         registry = BoxCollider._registry
         n = len(registry)
 
         for i in range(n):
             a = registry[i]
-            if a.game_object is None or not a.game_object.active:
+            if not a.game_object.active:
+                continue
+            scene_a = a.game_object.scene
+            if scene_a is None:
                 continue
             for j in range(i + 1, n):
                 b = registry[j]
-                if b.game_object is None or not b.game_object.active:
+                if not b.game_object.active:
+                    continue
+                if b.game_object.scene != scene_a:
                     continue
 
                 rect_a = a.rect
@@ -233,17 +239,26 @@ class CircleCollider(Component):
 
     @staticmethod
     def check_all() -> None:
-        """Verifica colisões entre todos os CircleColliders registrados."""
+        """
+        Verifica colisões entre todos os CircleColliders registrados.
+        Purga órfãos e limita as colisões ao escopo da mesma cena ativa.
+        """
+        CircleCollider._registry = [c for c in CircleCollider._registry if c.game_object is not None]
         registry = CircleCollider._registry
         n = len(registry)
 
         for i in range(n):
             a = registry[i]
-            if a.game_object is None or not a.game_object.active:
+            if not a.game_object.active:
+                continue
+            scene_a = a.game_object.scene
+            if scene_a is None:
                 continue
             for j in range(i + 1, n):
                 b = registry[j]
-                if b.game_object is None or not b.game_object.active:
+                if not b.game_object.active:
+                    continue
+                if b.game_object.scene != scene_a:
                     continue
 
                 ax, ay = a.center
