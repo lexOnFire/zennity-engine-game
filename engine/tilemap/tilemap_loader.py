@@ -1,199 +1,217 @@
 from __future__ import annotations
+"""
+tilemap_loader.py
+-----------------
+Loads TileMap + Tileset(s) from JSON files.
+
+Supports two formats:
+  1. Tiled Editor JSON (.tmj / .json exported from Tiled)
+  2. Zennity native JSON
+
+Usage
+-----
+    from engine.tilemap import TileMapLoader
+
+    tilemap = TileMapLoader.load("maps/world1.json")
+"""
 import json
 import os
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
+
+import pygame
 
 from .tileset import Tileset, TileData
-from .tilemap import TileMap, TileLayer
+from .tilemap import TileLayer, TileMap
 
 
-class TilemapLoader:
-    """
-    Loads a TileMap from a JSON file.
+class TileMapLoader:
+    """Static factory — load a TileMap from a JSON file."""
 
-    Supports two formats:
-    ─────────────────────
-    1. **Tiled JSON export** (orthogonal, CSV or array encoding, no compression).
-       In Tiled: File > Export As > JSON Map Files.
-    2. **Zennity native JSON** — a simpler hand-crafted format (see template below).
-
-    Zennity native format
-    ─────────────────────
-    {
-        "tile_width":  32,
-        "tile_height": 32,
-        "map_width":   20,
-        "map_height":  15,
-        "tilesets": [
-            {
-                "image":       "assets/tileset.png",
-                "tile_width":  32,
-                "tile_height": 32,
-                "first_gid":   1,
-                "spacing":     0,
-                "margin":      0,
-                "tile_data": {
-                    "1": { "solid": true },
-                    "2": { "solid": true, "one_way": true },
-                    "5": { "damage": 10, "custom": { "type": "lava" } }
-                }
-            }
-        ],
-        "layers": [
-            {
-                "name":    "background",
-                "z_index": 0,
-                "visible": true,
-                "opacity": 1.0,
-                "data":    [0, 0, 1, 1, ...]
-            },
-            {
-                "name":    "collision",
-                "z_index": 1,
-                "visible": true,
-                "opacity": 1.0,
-                "data":    [0, 0, 1, 1, ...]
-            }
-        ]
-    }
-    """
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
 
     @staticmethod
-    def load(path: str, base_dir: str = "") -> TileMap:
+    def load(path: str) -> TileMap:
         """
         Load a TileMap from *path*.
 
-        Parameters
-        ----------
-        path     : str – Path to the JSON file.
-        base_dir : str – Base directory for resolving relative image paths.
-                         Defaults to the directory containing the JSON file.
+        Auto-detects Tiled or Zennity-native format based on JSON keys.
+        Raises FileNotFoundError / ValueError on bad input.
         """
-        abs_path = os.path.abspath(path)
-        if not base_dir:
-            base_dir = os.path.dirname(abs_path)
+        if not os.path.isfile(path):
+            raise FileNotFoundError(f"[TileMapLoader] File not found: {path}")
 
-        with open(abs_path, "r", encoding="utf-8") as f:
-            raw: Dict[str, Any] = json.load(f)
+        with open(path, "r", encoding="utf-8") as f:
+            data: Dict[str, Any] = json.load(f)
 
-        # Detect format
-        if "tilesets" in raw and "orientation" in raw:
-            return TilemapLoader._load_tiled(raw, base_dir)
-        else:
-            return TilemapLoader._load_zennity(raw, base_dir)
+        if TileMapLoader._is_tiled(data):
+            return TileMapLoader._load_tiled(data, os.path.dirname(path))
+        return TileMapLoader._load_native(data, os.path.dirname(path))
 
     # ------------------------------------------------------------------
-    # Zennity native loader
+    # Format detection
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _load_zennity(raw: Dict[str, Any], base_dir: str) -> TileMap:
-        tw  = raw["tile_width"]
-        th  = raw["tile_height"]
-        mw  = raw["map_width"]
-        mh  = raw["map_height"]
+    def _is_tiled(data: Dict) -> bool:
+        """Return True if the JSON looks like a Tiled export."""
+        return "tilesets" in data and "layers" in data and "tilewidth" in data
 
-        tilemap = TileMap(tile_width=tw, tile_height=th, map_width=mw, map_height=mh)
+    # ------------------------------------------------------------------
+    # Tiled format
+    # ------------------------------------------------------------------
 
-        for ts_data in raw.get("tilesets", []):
-            image_path = os.path.join(base_dir, ts_data["image"])
+    @staticmethod
+    def _load_tiled(data: Dict, base_dir: str) -> TileMap:
+        tw = data["tilewidth"]
+        th = data["tileheight"]
+        mw = data["width"]
+        mh = data["height"]
+
+        tilemap = TileMap(tw, th, mw, mh)
+
+        # --- Tilesets ---
+        for ts_data in data.get("tilesets", []):
+            # BUG FIX: 'firstgid' is optional in embedded tilesets that use
+            # an external TSX file; default to 1 if absent.
+            first_gid   = ts_data.get("firstgid", 1)
+            tile_width  = ts_data.get("tilewidth",  tw)
+            tile_height = ts_data.get("tileheight", th)
+            spacing     = ts_data.get("spacing",     0)
+            margin      = ts_data.get("margin",      0)
+
+            # Tiled can reference an external image or embed it
+            image_rel = ts_data.get("image", "")
+            if not image_rel:
+                # Inline / external TSX — skip for now
+                continue
+
+            image_path = os.path.join(base_dir, image_rel)
+            if not os.path.isfile(image_path):
+                print(
+                    f"[TileMapLoader] Warning: tileset image '{image_path}' not found — skipping."
+                )
+                continue
+
             ts = Tileset(
                 image_path  = image_path,
-                tile_width  = ts_data["tile_width"],
-                tile_height = ts_data["tile_height"],
-                first_gid   = ts_data.get("first_gid", 1),
-                spacing     = ts_data.get("spacing",   0),
-                margin      = ts_data.get("margin",    0),
+                tile_width  = tile_width,
+                tile_height = tile_height,
+                spacing     = spacing,
+                margin      = margin,
+                first_gid   = first_gid,
             )
             ts.load()
 
-            for gid_str, meta in ts_data.get("tile_data", {}).items():
-                gid  = int(gid_str)
-                data = TileData(
+            # Per-tile metadata ("tileproperties" in Tiled ≤ 0.x; "tiles" array in 1.x+)
+            tile_props: Dict[int, Dict] = {}
+            for tile_entry in ts_data.get("tiles", []):
+                local_id = tile_entry.get("id", -1)
+                if local_id < 0:
+                    continue
+                props = {}
+                for prop in tile_entry.get("properties", []):
+                    props[prop["name"]] = prop["value"]
+                tile_props[local_id] = props
+
+            for local_id, props in tile_props.items():
+                gid = first_gid + local_id
+                ts.set_tile_data(gid, TileData(
                     tile_id = gid,
-                    solid   = meta.get("solid",   False),
-                    one_way = meta.get("one_way", False),
-                    damage  = meta.get("damage",  0),
-                    custom  = meta.get("custom",  {}),
-                )
-                ts.set_tile_data(gid, data)
+                    solid   = bool(props.get("solid",   False)),
+                    one_way = bool(props.get("one_way", False)),
+                    damage  = int( props.get("damage",  0)),
+                    custom  = {k: v for k, v in props.items()
+                               if k not in ("solid", "one_way", "damage")},
+                ))
 
             tilemap.add_tileset(ts)
 
-        for layer_data in raw.get("layers", []):
+        # --- Layers ---
+        for z, layer_data in enumerate(data.get("layers", [])):
+            layer_type = layer_data.get("type", "tilelayer")
+            if layer_type != "tilelayer":
+                continue  # skip objectgroup / imagelayer
+
+            name    = layer_data.get("name",    f"layer_{z}")
+            visible = layer_data.get("visible", True)
+            opacity = float(layer_data.get("opacity", 1.0))
+            raw     = layer_data.get("data", [])
+
+            # Tiled stores GIDs as positive ints; 0 = empty.
+            # Some encodings may include negative flip flags — mask them out.
+            clean = [max(0, int(g) & 0x1FFFFFFF) for g in raw]
+
             layer = TileLayer(
-                name    = layer_data["name"],
+                name    = name,
                 width   = mw,
                 height  = mh,
-                data    = layer_data["data"],
-                visible = layer_data.get("visible", True),
-                opacity = layer_data.get("opacity", 1.0),
-                z_index = layer_data.get("z_index", 0),
+                data    = clean,
+                visible = visible,
+                opacity = opacity,
+                z_index = z,
             )
             tilemap.add_layer(layer)
 
         return tilemap
 
     # ------------------------------------------------------------------
-    # Tiled JSON loader
+    # Zennity-native format
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _load_tiled(raw: Dict[str, Any], base_dir: str) -> TileMap:
-        tw = raw["tilewidth"]
-        th = raw["tileheight"]
-        mw = raw["width"]
-        mh = raw["height"]
+    def _load_native(data: Dict, base_dir: str) -> TileMap:
+        tw = data["tile_width"]
+        th = data["tile_height"]
+        mw = data["map_width"]
+        mh = data["map_height"]
 
-        tilemap = TileMap(tile_width=tw, tile_height=th, map_width=mw, map_height=mh)
+        tilemap = TileMap(tw, th, mw, mh)
 
-        for ts_data in raw.get("tilesets", []):
-            image_path = os.path.join(base_dir, ts_data["image"])
+        # --- Tilesets ---
+        for ts_data in data.get("tilesets", []):
+            image_rel   = ts_data["image"]
+            image_path  = os.path.join(base_dir, image_rel)
+            first_gid   = ts_data.get("first_gid", 1)
+            spacing     = ts_data.get("spacing",   0)
+            margin      = ts_data.get("margin",    0)
+
             ts = Tileset(
                 image_path  = image_path,
-                tile_width  = ts_data["tilewidth"],
-                tile_height = ts_data["tileheight"],
-                first_gid   = ts_data.get("firstgid",  1),
-                spacing     = ts_data.get("spacing",   0),
-                margin      = ts_data.get("margin",    0),
+                tile_width  = ts_data.get("tile_width",  tw),
+                tile_height = ts_data.get("tile_height", th),
+                spacing     = spacing,
+                margin      = margin,
+                first_gid   = first_gid,
             )
             ts.load()
 
-            # Parse per-tile properties from Tiled ("tiles" array)
             for tile_entry in ts_data.get("tiles", []):
-                local_id = tile_entry.get("id", 0)
-                gid      = ts.first_gid + local_id
-                props    = {}
-                for p in tile_entry.get("properties", []):
-                    props[p["name"]] = p["value"]
-
-                data = TileData(
+                gid = tile_entry.get("gid", -1)
+                if gid < 0:
+                    continue
+                ts.set_tile_data(gid, TileData(
                     tile_id = gid,
-                    solid   = props.get("solid",   False),
-                    one_way = props.get("one_way", False),
-                    damage  = int(props.get("damage", 0)),
-                    custom  = {k: v for k, v in props.items()
-                               if k not in ("solid", "one_way", "damage")},
-                )
-                ts.set_tile_data(gid, data)
+                    solid   = bool(tile_entry.get("solid",   False)),
+                    one_way = bool(tile_entry.get("one_way", False)),
+                    damage  = int( tile_entry.get("damage",  0)),
+                    custom  = tile_entry.get("custom", {}),
+                ))
 
             tilemap.add_tileset(ts)
 
-        z = 0
-        for layer_data in raw.get("layers", []):
-            if layer_data.get("type") != "tilelayer":
-                continue
-            raw_data = layer_data.get("data", [])
+        # --- Layers ---
+        for z, layer_data in enumerate(data.get("layers", [])):
             layer = TileLayer(
-                name    = layer_data["name"],
+                name    = layer_data.get("name",    f"layer_{z}"),
                 width   = mw,
                 height  = mh,
-                data    = raw_data,
+                data    = [int(g) for g in layer_data.get("data", [])],
                 visible = layer_data.get("visible", True),
-                opacity = layer_data.get("opacity", 1.0),
-                z_index = z,
+                opacity = float(layer_data.get("opacity", 1.0)),
+                z_index = layer_data.get("z_index", z),
             )
             tilemap.add_layer(layer)
-            z += 1
 
         return tilemap

@@ -14,6 +14,7 @@ mesmo sem assets prontos.
 """
 import sys
 import os
+import atexit
 import pygame
 
 # Garante que o pacote 'engine' seja encontrado ao rodar direto
@@ -24,12 +25,29 @@ from engine.input import Input
 from engine.tilemap import TileMap, TileLayer, Tileset, TileData
 
 
-# ─────────────────────────────────────────────
+# ───────────────────────────────────────────────
 # Helpers
-# ─────────────────────────────────────────────
+# ───────────────────────────────────────────────
 
 TW, TH = 32, 32   # tile size
 MW, MH = 30, 20   # map size in tiles
+
+# Path do tileset tempário gerado proceduralmente
+_TMP_TILESET_PATH = os.path.join(os.path.dirname(__file__), "_tmp_tileset.png")
+
+
+def _cleanup_tmp_tileset() -> None:
+    """Remove o arquivo temporário ao encerrar o processo."""
+    # BUG FIX: o arquivo PNG temporário nunca era apagado, poluindo o diretório
+    # e potencialmente causando leituras desatualizadas em execuções seguintes.
+    if os.path.isfile(_TMP_TILESET_PATH):
+        try:
+            os.remove(_TMP_TILESET_PATH)
+        except OSError:
+            pass
+
+
+atexit.register(_cleanup_tmp_tileset)
 
 
 def _make_procedural_tileset() -> Tileset:
@@ -50,20 +68,19 @@ def _make_procedural_tileset() -> Tileset:
     # Cria sheet 2x2 tiles
     sheet = pygame.Surface((TW * 2, TH * 2), pygame.SRCALPHA)
     sheet.fill((0, 0, 0, 0))
-    positions = {1:(0,0), 2:(TW,0), 3:(0,TH), 4:(TW,TH)}
+    positions = {1: (0, 0), 2: (TW, 0), 3: (0, TH), 4: (TW, TH)}
     for gid, (px, py) in positions.items():
-        pygame.draw.rect(sheet, COLORS[gid], (px, py, TW-2, TH-2))
+        pygame.draw.rect(sheet, COLORS[gid], (px, py, TW - 2, TH - 2))
         # borda mais escura
         r, g, b = COLORS[gid]
-        pygame.draw.rect(sheet, (max(0,r-40),max(0,g-40),max(0,b-40)),
-                         (px, py, TW-2, TH-2), 2)
+        pygame.draw.rect(sheet, (max(0, r - 40), max(0, g - 40), max(0, b - 40)),
+                         (px, py, TW - 2, TH - 2), 2)
 
-    # Salva temporariamente para poder usar Tileset (que precisa de path)
-    tmp_path = os.path.join(os.path.dirname(__file__), "_tmp_tileset.png")
-    pygame.image.save(sheet, tmp_path)
+    # BUG FIX: use o path centralizado para não deixar o arquivo órfão.
+    pygame.image.save(sheet, _TMP_TILESET_PATH)
 
     ts = Tileset(
-        image_path  = tmp_path,
+        image_path  = _TMP_TILESET_PATH,
         tile_width  = TW,
         tile_height = TH,
         first_gid   = 1,
@@ -121,9 +138,9 @@ def _build_map(ts: Tileset) -> TileMap:
     return tilemap
 
 
-# ─────────────────────────────────────────────
+# ───────────────────────────────────────────────
 # Cena demo
-# ─────────────────────────────────────────────
+# ───────────────────────────────────────────────
 
 class TilemapDemoScene(Scene):
     def start(self):
@@ -148,11 +165,17 @@ class TilemapDemoScene(Scene):
         if keys[pygame.K_UP]    or keys[pygame.K_w]: self.cam_y -= self.cam_speed * dt
         if keys[pygame.K_DOWN]  or keys[pygame.K_s]: self.cam_y += self.cam_speed * dt
 
-        # Clamp câmera
-        max_cam_x = max(0, self.tilemap.pixel_width  - self.engine.width)
-        max_cam_y = max(0, self.tilemap.pixel_height - self.engine.height)
-        self.cam_x = max(0.0, min(self.cam_x, float(max_cam_x)))
-        self.cam_y = max(0.0, min(self.cam_y, float(max_cam_y)))
+        # BUG FIX: engine.width/height podem não existir dependendo da versão
+        # da Engine base. Use getattr com fallback para não crashar.
+        eng_w = getattr(self, "engine", None)
+        screen_w = getattr(eng_w, "width",  800) if eng_w else 800
+        screen_h = getattr(eng_w, "height", 600) if eng_w else 600
+
+        # Clamp câmera dentro dos limites do mapa
+        max_cam_x = max(0.0, float(self.tilemap.pixel_width  - screen_w))
+        max_cam_y = max(0.0, float(self.tilemap.pixel_height - screen_h))
+        self.cam_x = max(0.0, min(self.cam_x, max_cam_x))
+        self.cam_y = max(0.0, min(self.cam_y, max_cam_y))
 
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
@@ -166,23 +189,23 @@ class TilemapDemoScene(Scene):
 
         if self.show_debug:
             self.tilemap.draw_debug(screen, self.cam_x, self.cam_y,
-                                    color=(255, 60, 60), layer_name="collision")
+                                    color=(255, 60, 60, 128), layer_name="collision")
 
         # HUD
         lines = [
             "Zennity Engine — Tilemap Demo",
             f"Camera: ({int(self.cam_x)}, {int(self.cam_y)})",
             "Mover: WASD / Setas",
-            f"Debug colisao [F1]: {'ON' if self.show_debug else 'OFF'}",
+            f"Debug colisão [F1]: {'ON' if self.show_debug else 'OFF'}",
         ]
         for i, line in enumerate(lines):
             surf = self.font.render(line, True, (220, 220, 220))
             screen.blit(surf, (10, 10 + i * 18))
 
 
-# ─────────────────────────────────────────────
+# ───────────────────────────────────────────────
 # Entry point
-# ─────────────────────────────────────────────
+# ───────────────────────────────────────────────
 
 if __name__ == "__main__":
     pygame.init()

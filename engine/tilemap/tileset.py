@@ -69,7 +69,15 @@ class Tileset:
         if self._loaded:
             return
 
-        self._sheet = pygame.image.load(self.image_path).convert_alpha()
+        raw = pygame.image.load(self.image_path)
+
+        # BUG FIX: convert_alpha() requires an active display surface.
+        # Fall back to a plain copy when no display has been created yet.
+        try:
+            self._sheet = raw.convert_alpha()
+        except pygame.error:
+            self._sheet = raw.copy()
+
         sheet_w, sheet_h = self._sheet.get_size()
         step_x = self.tile_width  + self.spacing
         step_y = self.tile_height + self.spacing
@@ -83,6 +91,22 @@ class Tileset:
                 x = self.margin + col * step_x
                 y = self.margin + row * step_y
                 rect = pygame.Rect(x, y, self.tile_width, self.tile_height)
+
+                # BUG FIX: validate that the rect fits inside the sheet before
+                # calling subsurface(), which raises ValueError when out of bounds.
+                if (
+                    rect.right  > sheet_w
+                    or rect.bottom > sheet_h
+                    or rect.width  <= 0
+                    or rect.height <= 0
+                ):
+                    print(
+                        f"[Tileset] Warning: tile GID {gid} rect {rect} is outside "
+                        f"sheet size {sheet_w}x{sheet_h} — skipping."
+                    )
+                    gid += 1
+                    continue
+
                 surf = self._sheet.subsurface(rect).copy()
                 self._tiles[gid] = surf
                 gid += 1
