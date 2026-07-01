@@ -15,6 +15,8 @@ Melhorias nesta versão:
   - [v2] Sistema visual coeso — theme.py, GuiButton reformulado,
           tipografia com hierarquia, paleta dark profissional
   - [v3] Migrado para Layout — zero magic numbers em scene.py
+  - [v4] Métodos de modal (_draw_welcome_modal, _draw_help_modal,
+          _draw_templates_modal) implementados
 """
 from __future__ import annotations
 import os
@@ -327,6 +329,14 @@ class EditorScene(Scene):
             )
         self.btn_templates_close = GuiButton(660, 80, 80, 28, "Fechar",
                                              T.BTN_DANGER, T.BTN_DANGER_HOVER)
+
+        # ── Botões do modal de boas-vindas ───────────────────────────────────
+        self.btn_welcome_next  = GuiButton(560, 340, 110, 30, "Próximo →",
+                                           T.BTN_PRIMARY, T.BTN_PRIMARY_HOVER)
+        self.btn_welcome_prev  = GuiButton(330, 340, 110, 30, "← Anterior",
+                                           T.BTN_SECONDARY, T.BTN_SECONDARY_HOVER)
+        self.btn_welcome_close = GuiButton(445, 340, 110, 30, "Fechar",
+                                           T.BTN_DANGER, T.BTN_DANGER_HOVER)
 
         # ── Câmera ───────────────────────────────────────────────────────────
         cam_obj = GameObject("EditorCamera")
@@ -700,6 +710,20 @@ class EditorScene(Scene):
         self.btn_light_angle_inc.y = lay.light_section_y
         self.btn_light_angle_inc.x = LEFT_PANEL_W - 50
 
+        # Reposiciona botões do modal de boas-vindas (centraliza na tela)
+        sw = lay.screen_w
+        sh = lay.screen_h
+        mw, mh = 500, 200
+        mx_ = (sw - mw) // 2
+        my_ = (sh - mh) // 2
+        btn_y = my_ + mh - 46
+        self.btn_welcome_prev.x  = mx_ + 10
+        self.btn_welcome_prev.y  = btn_y
+        self.btn_welcome_close.x = mx_ + (mw - 110) // 2
+        self.btn_welcome_close.y = btn_y
+        self.btn_welcome_next.x  = mx_ + mw - 120
+        self.btn_welcome_next.y  = btn_y
+
     # -----------------------------------------------------------------------
     def update(self, dt: float) -> None:
         # Status timer
@@ -854,7 +878,6 @@ class EditorScene(Scene):
         lay  = self._lay
         rect = lay.viewport_game_rect
         pygame.draw.rect(screen, T.BG, rect)
-        # Placeholder — em versão futura: renderização de câmera de jogo separada
         label = self.font_body.render("[Game View]", True, T.TEXT_MUTED)
         screen.blit(label, (
             rect.x + (rect.width  - label.get_width())  // 2,
@@ -947,13 +970,11 @@ class EditorScene(Scene):
                          (LEFT_PANEL_W, TOP_BAR_H),
                          (LEFT_PANEL_W, lay.screen_h), 1)
 
-        # ── Seção: Formas ──
         SectionHeader(LEFT_PADDING, ADD_SECTION_Y, LEFT_PANEL_W - 16, "Adicionar").draw(screen, self.font_section)
         for btn in [self.btn_add_cube, self.btn_add_pyramid, self.btn_add_sphere,
                     self.btn_add_plane, self.btn_add_capsule, self.btn_add_camera, self.btn_add_light]:
             btn.draw(screen, self.font_btn)
 
-        # ── Seção: Gizmo ──
         SectionHeader(LEFT_PADDING, GIZMO_SECTION_Y, LEFT_PANEL_W - 16, "Transformar").draw(screen, self.font_section)
         for btn, mode in [(self.btn_mode_translate, "translate"),
                           (self.btn_mode_rotate,    "rotate"),
@@ -963,13 +984,11 @@ class EditorScene(Scene):
             btn.hover_color = T.BTN_ACTIVE_HOVER if active else T.BTN_GIZMO_HOVER
             btn.draw(screen, self.font_btn)
 
-        # ── Snap + Templates ──
         self.btn_snap.text      = f"Grade: {'ON  (G)' if self.snap_enabled else 'OFF (G)'}"
         self.btn_snap.bg_color  = (25, 90, 58) if self.snap_enabled else T.BTN_SECONDARY
         self.btn_snap.draw(screen, self.font_btn)
         self.btn_templates.draw(screen, self.font_btn)
 
-        # ── Seção: Cena (Outliner) ──
         SectionHeader(LEFT_PADDING, TREE_Y - 14, LEFT_PANEL_W - 16, "Objetos da Cena").draw(screen, self.font_section)
 
         tree_rect = pygame.Rect(LEFT_PADDING, TREE_Y, 184, lay.tree_h)
@@ -1019,7 +1038,6 @@ class EditorScene(Scene):
                     ts = self.font_section.render(tag, True, T.WARNING)
                     screen.blit(ts, (155 - ts.get_width(), ry + 7))
 
-        # Scrollbar
         if total > lay.tree_max_vis:
             bar_h = max(16, lay.tree_h * lay.tree_max_vis // max(total, 1))
             bar_y = TREE_Y + (lay.tree_h - bar_h) * self._tree_scroll // max(max_s, 1)
@@ -1027,7 +1045,6 @@ class EditorScene(Scene):
             self.btn_tree_up.draw(screen, self.font_btn)
             self.btn_tree_down.draw(screen, self.font_btn)
 
-        # Undo / Redo / Delete
         Divider(LEFT_PADDING, TREE_Y + lay.tree_h + 8, LEFT_PANEL_W - 24).draw(screen)
         self.btn_undo.bg_color    = T.BTN_ACTIVE       if self.history.can_undo else T.BTN_SECONDARY
         self.btn_redo.bg_color    = T.BTN_ACTIVE       if self.history.can_redo else T.BTN_SECONDARY
@@ -1038,7 +1055,6 @@ class EditorScene(Scene):
         if 0 <= self.selected_index < len(self.editable_objects):
             self.btn_delete.draw(screen, self.font_btn)
 
-        # ── Seção: Luz ──
         Divider(LEFT_PADDING, lay.light_section_y - 18, LEFT_PANEL_W - 24).draw(screen)
         SectionHeader(LEFT_PADDING, lay.light_section_y - 14, LEFT_PANEL_W - 16, "Direção da Luz").draw(screen, self.font_section)
         self.btn_light_angle_dec.draw(screen, self.font_btn)
@@ -1116,7 +1132,6 @@ class EditorScene(Scene):
         pos, rot, sc = sel.transform.position, sel.transform.rotation, sel.transform.scale
         rx = lay.inspector_x()
 
-        # ── Cabeçalho ──
         name_surf = self.font_xyz.render(sel.name, True, T.TEXT_PRIMARY)
         icon      = _SHAPE_ICON.get(getattr(sel, "mesh_type", "Cube"), "▣")
         icon_surf = self.font_xyz.render(icon, True, T.ACCENT)
@@ -1124,7 +1139,6 @@ class EditorScene(Scene):
         screen.blit(name_surf, (rx + 20, INSP_HEADER_Y))
         Divider(rx, INSP_HEADER_Y + 20, INSPECTOR_W).draw(screen)
 
-        # ── Física ──
         SectionHeader(rx, INSP_PHYSICS_Y, INSPECTOR_W, "Física").draw(screen, self.font_section)
         self.btn_toggle_static.draw(screen, self.font_btn)
         if getattr(sel, "is_static", False):
@@ -1147,7 +1161,6 @@ class EditorScene(Scene):
 
         Divider(rx, INSP_PHYSICS_Y + 100, INSPECTOR_W).draw(screen)
 
-        # ── Scripts ──
         SectionHeader(rx, INSP_SCRIPT_Y, INSPECTOR_W, "Comportamento").draw(screen, self.font_section)
         self.btn_prev_script.draw(screen, self.font_btn)
         self.btn_next_script.draw(screen, self.font_btn)
@@ -1163,7 +1176,6 @@ class EditorScene(Scene):
 
         Divider(rx, INSP_COLOR_Y, INSPECTOR_W).draw(screen)
 
-        # ── Cores ──
         SectionHeader(rx, INSP_COLOR_Y + 4, INSPECTOR_W, "Cor").draw(screen, self.font_section)
         for btn in self.btn_colors:
             btn.draw(screen, self.font_btn)
@@ -1175,12 +1187,10 @@ class EditorScene(Scene):
 
         Divider(rx, INSP_CLONE_Y - 8, INSPECTOR_W).draw(screen)
 
-        # ── Clone ──
         self.btn_clone.draw(screen, self.font_btn)
 
         Divider(rx, INSP_HIER_Y - 4, INSPECTOR_W).draw(screen)
 
-        # ── Hierarquia ──
         SectionHeader(rx, INSP_HIER_Y, INSPECTOR_W, "Pai (Hierarquia)").draw(screen, self.font_section)
         self.btn_prev_parent.draw(screen, self.font_btn)
         self.btn_next_parent.draw(screen, self.font_btn)
@@ -1190,7 +1200,6 @@ class EditorScene(Scene):
 
         Divider(rx, INSP_TAG_Y - 4, INSPECTOR_W).draw(screen)
 
-        # ── Tag ──
         SectionHeader(rx, INSP_TAG_Y, INSPECTOR_W, "Tag").draw(screen, self.font_section)
         self.btn_prev_tag.draw(screen, self.font_btn)
         self.btn_next_tag.draw(screen, self.font_btn)
@@ -1200,7 +1209,6 @@ class EditorScene(Scene):
 
         Divider(rx, INSP_TRANSFORM_Y - 4, INSPECTOR_W).draw(screen)
 
-        # ── Transform ──
         SectionHeader(rx, INSP_TRANSFORM_Y, INSPECTOR_W, "Transform").draw(screen, self.font_section)
         labels = [("X", T.GIZMO_X), ("Y", T.GIZMO_Y), ("Z", T.GIZMO_Z)]
         for row_i, (label, col) in enumerate(labels):
@@ -1221,3 +1229,150 @@ class EditorScene(Scene):
         labels = [("X", T.GIZMO_X), ("Y", T.GIZMO_Y), ("Z", T.GIZMO_Z)]
         for i, (label, col) in enumerate(labels):
             screen.blit(self.font_section.render(label, True, col), (wx + i * 20, wy))
+
+    # -----------------------------------------------------------------------
+    # Modais
+    # -----------------------------------------------------------------------
+
+    def _modal_overlay(self, screen: pygame.Surface, w: int, h: int) -> pygame.Rect:
+        """Desenha o overlay escuro e retorna o rect do modal centralizado."""
+        sw, sh = self._lay.screen_w, self._lay.screen_h
+        overlay = pygame.Surface((sw, sh), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 160))
+        screen.blit(overlay, (0, 0))
+        mx = (sw - w) // 2
+        my = (sh - h) // 2
+        rect = pygame.Rect(mx, my, w, h)
+        pygame.draw.rect(screen, T.PANEL,   rect, border_radius=8)
+        pygame.draw.rect(screen, T.BORDER,  rect, 1, border_radius=8)
+        return rect
+
+    def _draw_welcome_modal(self, screen: pygame.Surface) -> None:
+        """Modal de boas-vindas passo-a-passo para novos usuários."""
+        total_steps = len(WELCOME_STEPS)
+        step = max(0, min(self.welcome_step, total_steps - 1))
+        title, body = WELCOME_STEPS[step]
+
+        mw, mh = 500, 200
+        rect = self._modal_overlay(screen, mw, mh)
+        mx, my = rect.x, rect.y
+
+        # Barra de progresso
+        prog_w = int((mw - 20) * (step + 1) / total_steps)
+        pygame.draw.rect(screen, T.SURFACE_2,  (mx + 10, my + 8,    mw - 20, 4), border_radius=2)
+        pygame.draw.rect(screen, T.ACCENT,     (mx + 10, my + 8,    prog_w,  4), border_radius=2)
+
+        # Contador
+        counter = self.font_section.render(f"{step + 1} / {total_steps}", True, T.TEXT_MUTED)
+        screen.blit(counter, (mx + mw - counter.get_width() - 12, my + 16))
+
+        # Título
+        title_surf = self.font_xyz.render(title, True, T.TEXT_PRIMARY)
+        screen.blit(title_surf, (mx + 20, my + 22))
+
+        # Separador
+        pygame.draw.line(screen, T.BORDER, (mx + 20, my + 46), (mx + mw - 20, my + 46), 1)
+
+        # Corpo — quebra de linha automática
+        words = body.split(" ")
+        lines, line = [], ""
+        for word in words:
+            test = (line + " " + word).strip()
+            if self.font_body.size(test)[0] > mw - 40:
+                if line:
+                    lines.append(line)
+                line = word
+            else:
+                line = test
+        if line:
+            lines.append(line)
+
+        for i, ln in enumerate(lines):
+            screen.blit(self.font_body.render(ln, True, T.TEXT_PRIMARY), (mx + 20, my + 54 + i * 20))
+
+        # Botões (posicionados pelo _reposition_buttons)
+        btn_y = my + mh - 46
+        if step > 0:
+            self.btn_welcome_prev.y = btn_y
+            self.btn_welcome_prev.draw(screen, self.font_btn)
+        self.btn_welcome_close.y = btn_y
+        self.btn_welcome_close.draw(screen, self.font_btn)
+        if step < total_steps - 1:
+            self.btn_welcome_next.y = btn_y
+            self.btn_welcome_next.draw(screen, self.font_btn)
+
+    def _draw_help_modal(self, screen: pygame.Surface) -> None:
+        """Modal de ajuda com todos os atalhos e comandos."""
+        mw, mh = 560, min(520, self._lay.screen_h - 60)
+        rect = self._modal_overlay(screen, mw, mh)
+        mx, my = rect.x, rect.y
+
+        # Cabeçalho
+        title_surf = self.font_xyz.render("Guia de Comandos", True, T.ACCENT)
+        screen.blit(title_surf, (mx + 20, my + 14))
+        pygame.draw.line(screen, T.BORDER, (mx + 20, my + 36), (mx + mw - 20, my + 36), 1)
+
+        # Linhas de conteúdo com scroll implícito (clip)
+        clip_rect = pygame.Rect(mx + 10, my + 40, mw - 20, mh - 80)
+        screen.set_clip(clip_rect)
+        for i, ln in enumerate(HELP_LINES):
+            y = my + 44 + i * 17
+            if y > my + mh - 50:
+                break
+            col = T.ACCENT if ln and not ln.startswith(" ") else T.TEXT_PRIMARY
+            screen.blit(self.font_section.render(ln, True, col), (mx + 16, y))
+        screen.set_clip(None)
+
+        # Botão fechar
+        close_w, close_h = 100, 26
+        close_x = mx + (mw - close_w) // 2
+        close_y = my + mh - close_h - 10
+        close_rect = pygame.Rect(close_x, close_y, close_w, close_h)
+        mpos = pygame.mouse.get_pos()
+        bg = T.BTN_DANGER_HOVER if close_rect.collidepoint(mpos) else T.BTN_DANGER
+        pygame.draw.rect(screen, bg, close_rect, border_radius=4)
+        lbl = self.font_btn.render("Fechar  [Esc]", True, T.TEXT_PRIMARY)
+        screen.blit(lbl, (close_x + (close_w - lbl.get_width()) // 2,
+                          close_y + (close_h - lbl.get_height()) // 2))
+
+    def _draw_templates_modal(self, screen: pygame.Surface) -> None:
+        """Modal de seleção de templates de cena."""
+        num = max(len(self._template_list), 1)
+        mw  = 500
+        mh  = min(120 + num * 60 + 50, self._lay.screen_h - 60)
+        rect = self._modal_overlay(screen, mw, mh)
+        mx, my = rect.x, rect.y
+
+        # Cabeçalho
+        title_surf = self.font_xyz.render("Carregar Template", True, T.ACCENT)
+        screen.blit(title_surf, (mx + 20, my + 14))
+        pygame.draw.line(screen, T.BORDER, (mx + 20, my + 36), (mx + mw - 20, my + 36), 1)
+
+        if not self._template_list:
+            msg = self.font_body.render(
+                "Nenhum template encontrado em demos/template_*.json",
+                True, T.TEXT_MUTED,
+            )
+            screen.blit(msg, (mx + 20, my + 50))
+        else:
+            # Reposiciona e desenha botões de template
+            for i, (btn, tpl) in enumerate(zip(self.btn_template_items, self._template_list)):
+                btn.x = mx + 20
+                btn.y = my + 46 + i * 60
+                btn.w = mw - 40
+                btn.draw(screen, self.font_btn)
+                # Subtítulo do template
+                desc = tpl.get("_template_desc", "")
+                if desc:
+                    ds = self.font_section.render(desc, True, T.TEXT_MUTED)
+                    screen.blit(ds, (btn.x + 10, btn.y + btn.h - 18))
+
+        # Botão fechar
+        close_w, close_h = 100, 26
+        close_x = mx + (mw - close_w) // 2
+        close_y = my + mh - close_h - 10
+        # Reposiciona o botão de fechar para o modal
+        self.btn_templates_close.x = close_x
+        self.btn_templates_close.y = close_y
+        self.btn_templates_close.w = close_w
+        self.btn_templates_close.draw(screen, self.font_btn)
