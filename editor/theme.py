@@ -74,8 +74,8 @@ GIZMO_W = (240, 195,  40)   # scale uniform handle
 # Viewport
 # ---------------------------------------------------------------------------
 VIEWPORT_BG    = ( 18,  20,  26)
-GRID_MAIN      = (160, 165, 178)   # eixos centrais
-GRID_MINOR     = (210, 213, 220)   # linhas secundárias
+GRID_MAIN      = (210, 213, 220)   # eixos centrais
+GRID_MINOR     = (160, 165, 178)   # linhas secundárias
 VIEWPORT_LABEL = (  0, 200, 255)   # badge EDIT MODE / GAME VIEW
 
 # ---------------------------------------------------------------------------

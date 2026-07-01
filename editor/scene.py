@@ -628,6 +628,10 @@ class EditorScene(Scene):
         self.btn_light_angle_inc.y = lay.light_section_y
         self.btn_light_angle_inc.x = LEFT_PANEL_W - 50
 
+        # Scroll da árvore
+        self.btn_tree_up.x         = LEFT_PANEL_W - 30
+        self.btn_tree_down.x       = LEFT_PANEL_W - 30
+
         # Reposiciona botões do modal de boas-vindas (centraliza na tela)
         sw = lay.screen_w
         sh = lay.screen_h
@@ -641,6 +645,15 @@ class EditorScene(Scene):
         self.btn_welcome_close.y = btn_y
         self.btn_welcome_next.x  = mx_ + mw - 120
         self.btn_welcome_next.y  = btn_y
+
+        # Reposiciona botões do modal de templates
+        mw_t, mh_t = 500, 360
+        mx_t = (sw - mw_t) // 2
+        my_t = (sh - mh_t) // 2
+        close_w, close_h = 100, 26
+        self.btn_templates_close.x = mx_t + (mw_t - close_w) // 2
+        self.btn_templates_close.y = my_t + mh_t - close_h - 10
+        self.btn_templates_close.w = close_w
 
     # -----------------------------------------------------------------------
     def update(self, dt: float) -> None:
@@ -721,6 +734,15 @@ class EditorScene(Scene):
         lay = self._lay
 
         if self.play_mode:
+            # Configura câmera do editor para o lado esquerdo (Edit View)
+            self.camera_comp.viewport_x = lay.viewport_edit_rect.x
+            self.camera_comp.viewport_y = lay.viewport_edit_rect.y
+            self.camera_comp.viewport_width = lay.viewport_edit_rect.width
+            self.camera_comp.viewport_height = lay.viewport_edit_rect.height
+            self.camera_comp.update(0.0)
+            from engine.graphics.renderer3d import Camera3D
+            Camera3D.main = self.camera_comp
+
             pygame.draw.rect(screen, T.VIEWPORT_BG, lay.viewport_edit_rect)
             self._draw_floor_grid(screen)
             for go in self.game_objects:
@@ -738,10 +760,19 @@ class EditorScene(Scene):
                              (lay.viewport_split_x(), TOP_BAR_H),
                              (lay.viewport_split_x(), lay.screen_h), 2)
             self._draw_viewport_badge(screen, lay.viewport_edit_rect.x + 8,  TOP_BAR_H + 8,
-                                      "EDIT MODE",       T.ACCENT)
+                                      "EDIT MODE",       T.VIEWPORT_LABEL)
             self._draw_viewport_badge(screen, lay.viewport_game_rect.x + 8,  TOP_BAR_H + 8,
                                       "GAME VIEW (PLAY)", T.SUCCESS)
         else:
+            # Configura câmera do editor para a tela cheia
+            self.camera_comp.viewport_x = lay.viewport_rect.x
+            self.camera_comp.viewport_y = lay.viewport_rect.y
+            self.camera_comp.viewport_width = lay.viewport_rect.width
+            self.camera_comp.viewport_height = lay.viewport_rect.height
+            self.camera_comp.update(0.0)
+            from engine.graphics.renderer3d import Camera3D
+            Camera3D.main = self.camera_comp
+
             pygame.draw.rect(screen, T.VIEWPORT_BG, lay.viewport_rect)
             self._draw_floor_grid(screen)
             for go in self.game_objects:
@@ -755,7 +786,7 @@ class EditorScene(Scene):
                         r.wireframe, r.color, r.line_width = ow, oc, olw
             self._draw_gizmo(screen)
             self._draw_viewport_badge(screen, lay.viewport_rect.x + 8, TOP_BAR_H + 8,
-                                      "EDIT MODE", T.ACCENT)
+                                      "EDIT MODE", T.VIEWPORT_LABEL)
 
         self._draw_left_panel(screen)
         self._draw_top_bar(screen)
@@ -780,9 +811,47 @@ class EditorScene(Scene):
     def _draw_game_view(self, screen: pygame.Surface) -> None:
         lay = self._lay
         pygame.draw.rect(screen, T.VIEWPORT_BG, lay.viewport_game_rect)
-        # Renderiza a game view com câmera perspectiva normal
+        
+        from engine.graphics.renderer3d import Camera3D
+        # Procura câmera customizada na cena
+        custom_cam = None
+        for obj in self.editable_objects:
+            if obj.active:
+                cam_comp = obj.get_component(Camera3D)
+                if cam_comp and cam_comp is not self.camera_comp:
+                    custom_cam = cam_comp
+                    break
+        
+        old_main = Camera3D.main
+        
+        if custom_cam:
+            # Configura a câmera customizada do jogo para a viewport do jogo
+            custom_cam.viewport_x = lay.viewport_game_rect.x
+            custom_cam.viewport_y = lay.viewport_game_rect.y
+            custom_cam.viewport_width = lay.viewport_game_rect.width
+            custom_cam.viewport_height = lay.viewport_game_rect.height
+            custom_cam.update(0.0)
+            Camera3D.main = custom_cam
+        else:
+            # Fallback: move a câmera do editor temporariamente para a viewport do jogo
+            self.camera_comp.viewport_x = lay.viewport_game_rect.x
+            self.camera_comp.viewport_y = lay.viewport_game_rect.y
+            self.camera_comp.viewport_width = lay.viewport_game_rect.width
+            self.camera_comp.viewport_height = lay.viewport_game_rect.height
+            self.camera_comp.update(0.0)
+            Camera3D.main = self.camera_comp
+
+        # Renderiza a game view
         for go in self.game_objects:
             go.draw(screen)
+            
+        # Restaura a câmera do editor
+        Camera3D.main = old_main
+        self.camera_comp.viewport_x = lay.viewport_edit_rect.x if self.play_mode else lay.viewport_rect.x
+        self.camera_comp.viewport_y = lay.viewport_edit_rect.y if self.play_mode else lay.viewport_rect.y
+        self.camera_comp.viewport_width = lay.viewport_edit_rect.width if self.play_mode else lay.viewport_rect.width
+        self.camera_comp.viewport_height = lay.viewport_edit_rect.height if self.play_mode else lay.viewport_rect.height
+        self.camera_comp.update(0.0)
 
     def _draw_status_bar(self, screen: pygame.Surface) -> None:
         lay = self._lay
@@ -909,7 +978,7 @@ class EditorScene(Scene):
             actual_i = self.editable_objects.index(obj) if obj in self.editable_objects else -1
             selected = (actual_i == self.selected_index)
 
-            bg = T.ACCENT_DIM if selected else (T.SURFACE if vis_i % 2 == 0 else T.SURFACE_2)
+            bg = T.ACCENT_BG if selected else (T.SURFACE if vis_i % 2 == 0 else T.SURFACE_2)
             pygame.draw.rect(screen, bg, row)
 
             icon = _SHAPE_ICON.get(obj.name.rstrip("0123456789").replace("_clone", ""), "▣")
@@ -1233,14 +1302,7 @@ class EditorScene(Scene):
                     ds = self.font_section.render(desc, True, T.TEXT_MUTED)
                     screen.blit(ds, (btn.x + 10, btn.y + btn.h - 18))
 
-        # Botão fechar
-        close_w, close_h = 100, 26
-        close_x = mx + (mw - close_w) // 2
-        close_y = my + mh - close_h - 10
-        # Reposiciona o botão de fechar para o modal
-        self.btn_templates_close.x = close_x
-        self.btn_templates_close.y = close_y
-        self.btn_templates_close.w = close_w
+        # Botão fechar (reposicionado pelo _reposition_buttons)
         self.btn_templates_close.draw(screen, self.font_btn)
 
     # -----------------------------------------------------------------------
