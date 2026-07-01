@@ -90,6 +90,12 @@ class Engine:
 
     def _perform_scene_change(self) -> None:
         if self._next_scene is not None:
+            try:
+                from engine.physics.collider import BoxCollider, CircleCollider
+                BoxCollider._registry.clear()
+                CircleCollider._registry.clear()
+            except Exception:
+                pass
             self._current_scene = self._next_scene
             self._current_scene.engine = self
             self._current_scene.start()

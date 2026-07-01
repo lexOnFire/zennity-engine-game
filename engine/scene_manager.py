@@ -176,8 +176,8 @@ class SceneManager:
         # Captura snapshots se necessário
         if tr.phase == TransitionPhase.OUT:
             if tr.snapshot_out is None and self.current:
-                # Renderiza cena atual em snapshot
-                snap = screen.copy()
+                # Renderiza cena atual em snapshot limpo
+                snap = pygame.Surface(screen.get_size())
                 self.current.draw(snap)
                 tr.snapshot_out = snap
             tr.draw(screen)
@@ -187,7 +187,7 @@ class SceneManager:
 
         elif tr.phase == TransitionPhase.IN:
             if tr.snapshot_in is None and self.current:
-                snap = screen.copy()
+                snap = pygame.Surface(screen.get_size())
                 self.current.draw(snap)
                 tr.snapshot_in = snap
             tr.draw(screen)
@@ -237,6 +237,12 @@ class SceneManager:
         """Troca imediata — limpa pilha e inicia nova cena."""
         UIManager.reset()
         self._stack.clear()
+        try:
+            from engine.physics.collider import BoxCollider, CircleCollider
+            BoxCollider._registry.clear()
+            CircleCollider._registry.clear()
+        except Exception:
+            pass
         new_scene.engine = self._engine
         new_scene.start()
         self._stack.append(new_scene)

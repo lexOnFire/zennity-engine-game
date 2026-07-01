@@ -16,11 +16,27 @@ class GameObject:
         self.parent: Optional['GameObject'] = None
         self.children: List['GameObject'] = []
         self.components: List['Component'] = []
-        self.scene: Optional['Scene'] = None
+        self._scene: Optional['Scene'] = None
 
         from .component import Transform
         self.transform = Transform()
         self.add_component(self.transform)
+
+    @property
+    def scene(self) -> Optional['Scene']:
+        return self._scene
+
+    @scene.setter
+    def scene(self, val: Optional['Scene']) -> None:
+        self._scene = val
+        # Propaga para os componentes atuais
+        for comp in self.components:
+            if val and not comp._started:
+                comp.start()
+                comp._started = True
+        # Propaga para os filhos
+        for child in self.children:
+            child.scene = val
 
     def add_component(self, component: 'Component') -> 'Component':
         component.game_object = self
@@ -49,26 +65,27 @@ class GameObject:
         if child.parent:
             child.parent.remove_child(child)
         child.parent = self
-        child.scene = self.scene
         self.children.append(child)
-        child._propagate_scene(self.scene)
+        child.scene = self.scene
         return child
 
     def remove_child(self, child: 'GameObject') -> None:
         if child in self.children:
             child.parent = None
-            child.scene = None
             self.children.remove(child)
-            child._propagate_scene(None)
+            child.scene = None
 
     def _propagate_scene(self, scene: Optional['Scene']) -> None:
         self.scene = scene
+
+    def start(self) -> None:
+        """Inicia todos os componentes do GameObject imediatamente se houver cena."""
         for comp in self.components:
-            if scene and not comp._started:
+            if not comp._started and self.scene:
                 comp.start()
                 comp._started = True
         for child in self.children:
-            child._propagate_scene(scene)
+            child.start()
 
     def update(self, dt: float) -> None:
         if not self.active:

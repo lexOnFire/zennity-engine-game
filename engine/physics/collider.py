@@ -91,19 +91,19 @@ class BoxCollider(Component):
         Purga órfãos e limita as colisões ao escopo da mesma cena ativa.
         """
         BoxCollider._registry = [c for c in BoxCollider._registry if c.game_object is not None]
-        registry = BoxCollider._registry
+        registry = list(BoxCollider._registry)
         n = len(registry)
 
         for i in range(n):
             a = registry[i]
-            if not a.game_object.active:
+            if a.game_object is None or not a.game_object.active:
                 continue
             scene_a = a.game_object.scene
             if scene_a is None:
                 continue
             for j in range(i + 1, n):
                 b = registry[j]
-                if not b.game_object.active:
+                if b.game_object is None or not b.game_object.active:
                     continue
                 if b.game_object.scene != scene_a:
                     continue
@@ -244,19 +244,19 @@ class CircleCollider(Component):
         Purga órfãos e limita as colisões ao escopo da mesma cena ativa.
         """
         CircleCollider._registry = [c for c in CircleCollider._registry if c.game_object is not None]
-        registry = CircleCollider._registry
+        registry = list(CircleCollider._registry)
         n = len(registry)
 
         for i in range(n):
             a = registry[i]
-            if not a.game_object.active:
+            if a.game_object is None or not a.game_object.active:
                 continue
             scene_a = a.game_object.scene
             if scene_a is None:
                 continue
             for j in range(i + 1, n):
                 b = registry[j]
-                if not b.game_object.active:
+                if b.game_object is None or not b.game_object.active:
                     continue
                 if b.game_object.scene != scene_a:
                     continue
