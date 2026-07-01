@@ -14,11 +14,12 @@ class GuiButton:
         bg_color:    Tuple[int, int, int] = T.BTN_SECONDARY,
         hover_color: Tuple[int, int, int] = T.BTN_SECONDARY_HOVER,
         text_color:  Tuple[int, int, int] = T.TEXT_PRIMARY,
+        **kwargs
     ) -> None:
         self.rect        = pygame.Rect(x, y, w, h)
         self.text        = text
-        self.bg_color    = bg_color
-        self.hover_color = hover_color
+        self.bg_color    = kwargs.get("bg", bg_color)
+        self.hover_color = kwargs.get("hover", hover_color)
         self.text_color  = text_color
         # estado interno
         self._hovered    = False

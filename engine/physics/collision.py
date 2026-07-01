@@ -1,27 +1,25 @@
+from engine.physics.collider import BoxCollider
 from ..component import Component
 from typing import Tuple, List, Optional
 import numpy as np
 
 
-class BoxCollider2D(Component):
-    """2D Axis-Aligned Bounding Box (AABB) Collider."""
+class BoxCollider2D(BoxCollider):
+    """2D Axis-Aligned Bounding Box (AABB) Collider (Subclasse de BoxCollider para compatibilidade)."""
     all_colliders: List['BoxCollider2D'] = []
 
     def __init__(self, width: float = 32.0, height: float = 32.0,
                  offset_x: float = 0.0, offset_y: float = 0.0,
                  is_trigger: bool = False) -> None:
-        super().__init__()
-        self.width = width
-        self.height = height
-        self.offset_x = offset_x
-        self.offset_y = offset_y
-        self.is_trigger = is_trigger
+        super().__init__(width, height, offset_x, offset_y, is_trigger)
 
     def start(self) -> None:
+        super().start()
         if self not in BoxCollider2D.all_colliders:
             BoxCollider2D.all_colliders.append(self)
 
     def destroy(self) -> None:
+        super().destroy()
         if self in BoxCollider2D.all_colliders:
             BoxCollider2D.all_colliders.remove(self)
 

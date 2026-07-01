@@ -50,12 +50,14 @@ class OrbitCameraController(Component):
         if rmb:
             if self._last_mouse is None:
                 # Só inicia arrasto dentro da metade esquerda (Edit View) da viewport
-                width = pygame.display.get_surface().get_width()
-                right_limit = 230 + (width - 460) // 2
-                if 230 <= mouse_pos[0] <= right_limit:
-                    self._last_mouse = mouse_pos
-                    self._drag_start = mouse_pos
-                    self._orbit_lock = None
+                surf = pygame.display.get_surface()
+                if surf:
+                    width = surf.get_width()
+                    right_limit = 230 + (width - 460) // 2
+                    if 230 <= mouse_pos[0] <= right_limit:
+                        self._last_mouse = mouse_pos
+                        self._drag_start = mouse_pos
+                        self._orbit_lock = None
             else:
                 # Detecta travamento de eixo
                 if self._orbit_lock is None and self._drag_start is not None:
