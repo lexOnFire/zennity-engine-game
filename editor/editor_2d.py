@@ -12,7 +12,8 @@ import pygame
 import numpy as np
 from typing import List, Optional, Any, Dict
 
-from engine.core import Scene, GameObject
+from engine.core import Scene
+from engine.game_object import GameObject
 from engine.physics.rigidbody import RigidBody
 from engine.physics.collider import BoxCollider, CircleCollider
 from engine.graphics.camera2d import Camera2D
