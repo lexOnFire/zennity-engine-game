@@ -209,11 +209,7 @@ class Editor2DScene(Scene):
             BoxCollider.check_all()
             CircleCollider.check_all()
 
-        mx, my = pygame.mouse.get_pos()
-        self.btn_play.update(mx, my)
-        self.btn_undo.update(mx, my)
-        for btn in self.buttons:
-            btn.update(mx, my)
+        # hover é calculado dentro de GuiButton.draw() — sem update() separado
 
     # ------------------------------------------------------------------
     # Eventos
@@ -354,10 +350,10 @@ class Editor2DScene(Scene):
         title_lbl = self.font_large.render("EDITOR 2D", True, T.ACCENT)
         screen.blit(title_lbl, (20, 20))
 
-        self.btn_play.draw(screen)
-        self.btn_undo.draw(screen)
+        self.btn_play.draw(screen, self.font)
+        self.btn_undo.draw(screen, self.font)
 
-        SectionHeader(20, 130, "Lista de Hierarquia").draw(screen)
+        SectionHeader(20, 130, 200, "Lista de Hierarquia").draw(screen, self.font)
         for i, obj in enumerate(self.editable_objects):
             y_pos = 160 + i * 22
             color = T.TEXT_PRIMARY if i == self.selected_index else T.TEXT_MUTED
@@ -366,16 +362,16 @@ class Editor2DScene(Scene):
             lbl = self.font.render(f"• {obj.name}", True, color)
             screen.blit(lbl, (25, y_pos))
 
-        SectionHeader(20, 210, "Adicionar Objeto").draw(screen)
+        SectionHeader(20, 210, 200, "Adicionar Objeto").draw(screen, self.font)
         for btn in self.buttons:
-            btn.draw(screen)
+            btn.draw(screen, self.font)
 
         # ── Painel Direito (Inspector) ───────────────────────────
         right_panel = pygame.Rect(1140, 0, 260, 800)
         pygame.draw.rect(screen, T.PANEL, right_panel)
         pygame.draw.line(screen, T.BORDER, (1140, 0), (1140, 800), 1)
 
-        SectionHeader(1160, 20, "Inspector (Propriedades)").draw(screen)
+        SectionHeader(1160, 20, 200, "Inspector (Propriedades)").draw(screen, self.font)
 
         if 0 <= self.selected_index < len(self.editable_objects):
             obj = self.editable_objects[self.selected_index]
