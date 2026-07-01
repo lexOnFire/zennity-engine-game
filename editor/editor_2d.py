@@ -2,14 +2,14 @@ from __future__ import annotations
 """
 editor/editor_2d.py
 ───────────────────
-Editor visual dedicado inteiramente para criação de jogos 2D.
+Editor visual dedicado para criação de jogos 2D.
 """
 
 import sys
 import math
-import random
 import pygame
 import numpy as np
+from collections import deque
 from typing import List, Optional, Any, Dict
 
 from engine.core import Scene
@@ -17,10 +17,8 @@ from engine.game_object import GameObject
 from engine.physics.rigidbody import RigidBody
 from engine.physics.collider import BoxCollider, CircleCollider
 from engine.graphics.camera2d import Camera2D
-from engine.graphics.renderer2d import SpriteRenderer
 import editor.theme as T
 from editor.gui import GuiButton, SectionHeader
-from editor.history import History
 from editor.layout_constants import *
 
 
@@ -37,8 +35,9 @@ class Editor2DScene(Scene):
         self.add_game_object(self.cam_obj)
         Camera2D.main = self.camera
 
-        # Histórico para desfazer/refazer
-        self.history = History()
+        # Histórico de undo/redo 2D (snapshots simples)
+        self._undo_stack: deque[list] = deque(maxlen=50)
+        self._redo_stack: deque[list] = deque(maxlen=50)
 
         # Configurações do Viewport 2D
         self.grid_size = 32
@@ -171,7 +170,65 @@ class Editor2DScene(Scene):
         self._add_go(go)
         self.editable_objects.append(go)
         self.selected_index = len(self.editable_objects) - 1
-        self.history.push(self)
+        self._push2d()
+
+    # ------------------------------------------------------------------
+    # Snapshot 2D simples (independente do History 3D)
+    # ------------------------------------------------------------------
+
+    def _snap2d(self) -> list:
+        """Tira um snapshot de todos os objetos editáveis da cena 2D."""
+        snap = []
+        for obj in self.editable_objects:
+            snap.append({
+                "name":      obj.name,
+                "mesh_type": obj.mesh_type,
+                "pos":       obj.transform.position.copy(),
+                "scale":     obj.transform.scale.copy(),
+            })
+        return snap
+
+    def _restore2d(self, snap: list) -> None:
+        """Reconstrói a cena 2D a partir de um snapshot."""
+        # Limpa objetos editáveis atuais
+        for obj in list(self.editable_objects):
+            self._remove_go(obj)
+        self.editable_objects.clear()
+        # Recria objetos a partir do snapshot
+        for s in snap:
+            self._create_obj(s["name"], s["mesh_type"], s["pos"], s["scale"])
+        self.selected_index = min(self.selected_index, len(self.editable_objects) - 1)
+
+    def _push2d(self) -> None:
+        """Salva o estado atual no stack de undo."""
+        self._undo_stack.append(self._snap2d())
+        self._redo_stack.clear()
+
+    def _undo2d(self) -> None:
+        if not self._undo_stack:
+            return
+        self._redo_stack.append(self._snap2d())
+        self._restore2d(self._undo_stack.pop())
+
+    def _create_obj(self, name: str, shape: str, pos: np.ndarray, scale: np.ndarray) -> GameObject:
+        """Cria e registra um GameObject 2D com base no tipo e valores dados."""
+        go = GameObject(name)
+        go.transform.position = pos.copy()
+        go.transform.scale    = scale.copy()
+        if shape == "Quadrado":
+            go.add_component(BoxCollider(width=int(scale[0]), height=int(scale[1])))
+            go.add_component(RigidBody(mass=1.0))
+        elif shape == "Círculo":
+            go.add_component(CircleCollider(radius=int(scale[0] / 2)))
+            go.add_component(RigidBody(mass=1.0))
+        elif shape == "Plataforma":
+            go.add_component(BoxCollider(width=int(scale[0]), height=int(scale[1])))
+            rb = go.add_component(RigidBody())
+            rb.is_kinematic = True
+        go.mesh_type = shape
+        self._add_go(go)
+        self.editable_objects.append(go)
+        return go
 
     # ------------------------------------------------------------------
     # Play / Undo
@@ -180,22 +237,25 @@ class Editor2DScene(Scene):
     def undo(self) -> None:
         if self.playing:
             return
-        self.history.undo(self)
+        self._undo2d()
 
     def toggle_play(self) -> None:
         if not self.playing:
-            self.play_snapshot = self.history._snap(self)
+            # Salva snapshot antes de simular
+            self.play_snapshot = self._snap2d()
             self.playing = True
-            self.btn_play.text  = "STOP"
-            self.btn_play.bg    = T.BTN_DANGER
-            self.btn_play.hover = T.BTN_DANGER_HOVER
+            self.btn_play.text         = "STOP"
+            self.btn_play.bg_color     = T.BTN_DANGER
+            self.btn_play.hover_color  = T.BTN_DANGER_HOVER
         else:
             self.playing = False
-            self.btn_play.text  = "PLAY"
-            self.btn_play.bg    = T.BTN_SPECIAL
-            self.btn_play.hover = T.BTN_SPECIAL_HOVER
-            if self.play_snapshot:
-                self.history._restore(self, self.play_snapshot)
+            self.btn_play.text         = "PLAY"
+            self.btn_play.bg_color     = T.BTN_SPECIAL
+            self.btn_play.hover_color  = T.BTN_SPECIAL_HOVER
+            # Restaura posições pré-simulação
+            if self.play_snapshot is not None:
+                self._restore2d(self.play_snapshot)
+                self.play_snapshot = None
 
     # ------------------------------------------------------------------
     # Update
