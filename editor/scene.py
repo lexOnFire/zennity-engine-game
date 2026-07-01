@@ -1422,6 +1422,34 @@ class EditorScene(Scene):
         # ── Clique esquerdo ──────────────────────────────────────────────────
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mx, my = event.pos
+            # Registra posição inicial do clique (para distinguir clique de arrastar)
+            self.click_start_pos = event.pos
+
+            # ── Hit-test nos handles do Gizmo (tem prioridade máxima no viewport) ──
+            if (not self.play_mode
+                    and not self.showing_welcome
+                    and not self.showing_templates
+                    and not self.code_editor.is_open
+                    and self.gizmo_screen_points
+                    and 0 <= self.selected_index < len(self.editable_objects)):
+                # Raio de clique nos eixos do gizmo
+                HIT_R = 14
+                for axis, pt in self.gizmo_screen_points.items():
+                    if abs(mx - pt[0]) <= HIT_R and abs(my - pt[1]) <= HIT_R:
+                        self.is_dragging_gizmo    = True
+                        self.active_gizmo_axis    = axis
+                        self.gizmo_drag_last_mouse = (mx, my)
+                        self.click_start_pos = None  # Não é um "clique" simples
+                        return
+                # Clique no centro do gizmo (scale uniforme)
+                if self.gizmo_mode == "scale" and self.gizmo_screen_center:
+                    cx, cy = self.gizmo_screen_center
+                    if abs(mx - cx) <= HIT_R and abs(my - cy) <= HIT_R:
+                        self.is_dragging_gizmo    = True
+                        self.active_gizmo_axis    = "center"
+                        self.gizmo_drag_last_mouse = (mx, my)
+                        self.click_start_pos = None
+                        return
 
             # Modais têm prioridade máxima
             if self.showing_welcome:
