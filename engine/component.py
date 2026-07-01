@@ -127,11 +127,38 @@ class Transform(Component):
         """Rotates the transform by the given degree amounts."""
         self._rotation += np.array([drx, dry, drz], dtype=np.float32)
 
-    def get_world_position(self) -> np.ndarray:
-        """Calculates the absolute position in world space, factoring in parents."""
+    def get_model_matrix(self) -> np.ndarray:
+        from engine.graphics.math3d import translation_matrix, rotation_matrix, scale_matrix
+        pos = self._position
+        rot = self._rotation
+        scale = self._scale
+        
+        local_matrix = (
+            translation_matrix(pos[0], pos[1], pos[2])
+            @ rotation_matrix(rot[0], rot[1], rot[2])
+            @ scale_matrix(scale[0], scale[1], scale[2])
+        )
+        
         if self.game_object and self.game_object.parent:
-            parent_pos = self.game_object.parent.transform.get_world_position()
-            # Simple translation cascading (note: ignores parent scaling and rotations for simplicity in 2D,
-            # but fully sufficient for our hierarchy design)
-            return parent_pos + self._position
-        return self._position
+            parent_transform = self.game_object.parent.get_component(Transform)
+            if parent_transform:
+                return parent_transform.get_model_matrix() @ local_matrix
+                
+        return local_matrix
+
+    @property
+    def world_position(self) -> np.ndarray:
+        mat = self.get_model_matrix()
+        return mat[:3, 3]
+
+    @property
+    def world_rotation(self) -> np.ndarray:
+        rot = self._rotation.copy()
+        if self.game_object and self.game_object.parent:
+            parent_transform = self.game_object.parent.get_component(Transform)
+            if parent_transform:
+                rot += parent_transform.world_rotation
+        return rot
+
+    def get_world_position(self) -> np.ndarray:
+        return self.world_position

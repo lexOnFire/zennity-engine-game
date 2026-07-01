@@ -82,6 +82,12 @@ class History:
     def can_redo(self) -> bool:
         return len(self._redo) > 0
 
+    def undo_count(self) -> int:
+        return len(self._undo)
+
+    def redo_count(self) -> int:
+        return len(self._redo)
+
     # ------------------------------------------------------------------
     def push(self, scene: Any) -> None:
         """Salva o estado atual antes de uma ação. Limpa o redo."""

@@ -43,8 +43,8 @@ class Camera3D(Component):
 
     def update(self, dt: float) -> None:
         if self.game_object:
-            pos = self.transform.position
-            rot = self.transform.rotation
+            pos = self.transform.world_position
+            rot = self.transform.world_rotation
             self.view_matrix = view_matrix(pos, rot)
 
             screen = pygame.display.get_surface()
@@ -78,15 +78,8 @@ class MeshRenderer3D(Component):
         if Camera3D.main.game_object is None:
             return
 
-        pos   = self.transform.position
-        rot   = self.transform.rotation
-        scale = self.transform.scale
-
-        m_matrix = (
-            translation_matrix(pos[0], pos[1], pos[2])
-            @ rotation_matrix(rot[0], rot[1], rot[2])
-            @ scale_matrix(scale[0], scale[1], scale[2])
-        )
+        m_matrix = self.transform.get_model_matrix()
+        world_rot = self.transform.world_rotation
 
         v_matrix = Camera3D.main.view_matrix
         p_matrix = Camera3D.main.projection_matrix
@@ -107,7 +100,7 @@ class MeshRenderer3D(Component):
         screen_coords[:, 1] = v_y + (-ndc_coords[:, 1] + 1.0) * h_half
         self.last_screen_coords = screen_coords
 
-        rot_m = rotation_matrix(rot[0], rot[1], rot[2])[:3, :3]
+        rot_m = rotation_matrix(world_rot[0], world_rot[1], world_rot[2])[:3, :3]
 
         faces_to_draw = []
         near_plane = Camera3D.main.near
@@ -122,7 +115,7 @@ class MeshRenderer3D(Component):
 
             v0_hom   = np.append(self.mesh.vertices[face[0]], 1.0)
             v0_world = (m_matrix @ v0_hom)[:3]
-            cam_to_face = v0_world - Camera3D.main.transform.position
+            cam_to_face = v0_world - Camera3D.main.transform.world_position
             norm_len = np.linalg.norm(cam_to_face)
             if norm_len > 0:
                 cam_to_face = cam_to_face / norm_len
@@ -137,7 +130,7 @@ class MeshRenderer3D(Component):
             if self.game_object and self.game_object.scene:
                 for go in self.game_object.scene.game_objects:
                     if (getattr(go, "mesh_type", "") == "Light" or "light" in go.name.lower()) and go.active:
-                        light_pos = go.transform.position
+                        light_pos = go.transform.world_position
                         break
             
             if light_pos is not None:

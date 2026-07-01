@@ -1341,23 +1341,32 @@ class EditorScene(Scene):
             # ── Barra superior ───────────────────────────────────────────────
             if self.btn_play_pause.is_clicked(event):
                 if not self.play_mode:
-                    self.saved_scene_state = [
-                        {"pos": o.transform.position.copy(),
-                         "rot": o.transform.rotation.copy(),
-                         "sc":  o.transform.scale.copy()}
-                        for o in self.editable_objects
-                    ]
                     self.play_mode = True
+                    self.saved_scene_state = []
+                    for obj in self.editable_objects:
+                        self.saved_scene_state.append({
+                            "obj": obj,
+                            "pos": obj.transform.position.copy(),
+                            "rot": obj.transform.rotation.copy(),
+                            "sc":  obj.transform.scale.copy(),
+                        })
+                        PhysicsSim.attach_rigidbody(obj)
+                        ScriptManager.load(obj)
                     self.btn_play_pause.label = "⏹  STOP"
                     self._notify("Play iniciado", "success")
                 else:
                     self.play_mode = False
-                    self.btn_play_pause.label = "▶  PLAY"
                     if self.saved_scene_state:
-                        for obj, s in zip(self.editable_objects, self.saved_scene_state):
-                            obj.transform.position = s["pos"].copy()
-                            obj.transform.rotation = s["rot"].copy()
-                            obj.transform.scale    = s["sc"].copy()
+                        for state in self.saved_scene_state:
+                            o = state["obj"]
+                            o.transform.position = state["pos"]
+                            o.transform.rotation = state["rot"]
+                            o.transform.scale    = state["sc"]
+                            PhysicsSim.detach_rigidbody(o)
+                            ScriptManager.unload(o)
+                    self.saved_scene_state = None
+                    PhysicsSim.clear_registries()
+                    self.btn_play_pause.label = "▶  PLAY"
                     self._notify("Play encerrado", "info")
                 return
 
@@ -1411,8 +1420,209 @@ class EditorScene(Scene):
                 return
 
             # ── Undo / Redo / Delete / Luz ───────────────────────────────────
+            # ── Undo / Redo / Delete / Luz ───────────────────────────────────
             if self.btn_undo.is_clicked(event):
                 self.history.undo(self); self._notify("Desfazer", "info"); return
             if self.btn_redo.is_clicked(event):
                 self.history.redo(self); self._notify("Refazer",  "info"); return
-            if self.btn_delete.is_clicked(event)
+
+            # Scrollbar do Outliner
+            if self.btn_tree_up.is_clicked(event):
+                self._tree_scroll = max(0, self._tree_scroll - 1)
+                return
+            if self.btn_tree_down.is_clicked(event):
+                self._tree_scroll = min(self._max_scroll(), self._tree_scroll + 1)
+                return
+
+            if self.btn_light_angle_dec.is_clicked(event) or self.btn_light_angle_inc.is_clicked(event):
+                delta = -15.0 if self.btn_light_angle_dec.is_clicked(event) else 15.0
+                self.light_angle = (self.light_angle + delta) % 360
+                rad = np.radians(self.light_angle)
+                ld = np.array([np.cos(rad), 1.0, np.sin(rad)], np.float32)
+                ld /= np.linalg.norm(ld)
+                for obj in self.editable_objects:
+                    r = obj.get_component(MeshRenderer3D)
+                    if r:
+                        r.light_dir = ld
+                return
+
+            # Clique para selecionar objeto na viewport ou na árvore
+            if self.click_start_pos:
+                dx = event.pos[0] - self.click_start_pos[0]
+                dy = event.pos[1] - self.click_start_pos[1]
+                if np.hypot(dx, dy) < 4.0:
+                    # Seleção de objeto na árvore
+                    if mx < LEFT_PANEL_W:
+                        tree_rect = pygame.Rect(0, TREE_Y, LEFT_PANEL_W, lay.tree_h)
+                        if tree_rect.collidepoint(mx, my):
+                            slot_i = (my - TREE_Y) // TREE_ROW_H
+                            obj_i = self._tree_scroll + slot_i
+                            flat_tree = self._build_flat_tree()
+                            if 0 <= obj_i < len(flat_tree):
+                                clicked_obj, depth = flat_tree[obj_i]
+                                real_idx = self.editable_objects.index(clicked_obj)
+                                now = pygame.time.get_ticks() / 1000.0
+                                if real_idx == self._last_click_index and (now - self._last_click_time) < 0.4:
+                                    self._start_rename(real_idx)
+                                else:
+                                    self.selected_index = real_idx
+                                self._last_click_index = real_idx
+                                self._last_click_time = now
+                    # Seleção de objeto na viewport 3D (apenas no lado do Edit View se split)
+                    elif mx <= (lay.viewport_edit_rect.right if self.play_mode else lay.viewport_rect.right):
+                        self._select_at(mx, my)
+                self.click_start_pos = None
+                return
+
+        # ── Mouse button up ──────────────────────────────────────────────────
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            self.is_dragging_object = False
+            self.is_dragging_gizmo = False
+            self.active_gizmo_axis = None
+            
+            if self._is_dragging_tree:
+                self._is_dragging_tree = False
+                mx, my = event.pos
+                tree_rect = pygame.Rect(0, TREE_Y, LEFT_PANEL_W, lay.tree_h)
+                if tree_rect.collidepoint(mx, my):
+                    slot_i = (my - TREE_Y) // TREE_ROW_H
+                    obj_i = self._tree_scroll + slot_i
+                    flat_tree = self._build_flat_tree()
+                    if 0 <= obj_i < len(flat_tree):
+                        target_parent = flat_tree[obj_i][0]
+                        if target_parent != self._drag_tree_src:
+                            # Evita dependência cíclica
+                            curr = target_parent
+                            loop = False
+                            while curr:
+                                if curr == self._drag_tree_src:
+                                    loop = True
+                                    break
+                                curr = curr.parent
+                            if not loop:
+                                self.history.push(self)
+                                self._drag_tree_src.parent = target_parent
+                    else:
+                        self.history.push(self)
+                        self._drag_tree_src.parent = None
+                else:
+                    self.history.push(self)
+                    self._drag_tree_src.parent = None
+
+                if self.click_start_pos:
+                    dx = event.pos[0] - self.click_start_pos[0]
+                    dy = event.pos[1] - self.click_start_pos[1]
+                    if np.hypot(dx, dy) < 4.0:
+                        real_idx = self.editable_objects.index(self._drag_tree_src)
+                        now = pygame.time.get_ticks() / 1000.0
+                        if real_idx == self._last_click_index and (now - self._last_click_time) < 0.4:
+                            self._start_rename(real_idx)
+                        else:
+                            self.selected_index = real_idx
+                        self._last_click_index = real_idx
+                        self._last_click_time = now
+                self.click_start_pos = None
+                return
+
+        # ── Eventos do Inspector (só funcionam se houver objeto selecionado) ────
+        if 0 <= self.selected_index < len(self.editable_objects):
+            sel = self.editable_objects[self.selected_index]
+            
+            if self.btn_delete.is_clicked(event):
+                self.delete_selected()
+                return
+            if self.btn_toggle_static.is_clicked(event):
+                self.history.push(self)
+                sel.is_static = not getattr(sel, "is_static", False)
+                return
+            if self.btn_toggle_physics.is_clicked(event):
+                self.history.push(self)
+                sel.physics_enabled = not getattr(sel, "physics_enabled", False)
+                return
+            if self.btn_vel_dec.is_clicked(event):
+                self.history.push(self)
+                sel.initial_velocity_y = getattr(sel, "initial_velocity_y", 0.0) - 1.0
+                if hasattr(sel, "_velocity"):
+                    sel._velocity[1] = sel.initial_velocity_y
+                return
+            if self.btn_vel_inc.is_clicked(event):
+                self.history.push(self)
+                sel.initial_velocity_y = getattr(sel, "initial_velocity_y", 0.0) + 1.0
+                if hasattr(sel, "_velocity"):
+                    sel._velocity[1] = sel.initial_velocity_y
+                return
+            if self.btn_clone.is_clicked(event):
+                self.clone_selected()
+                return
+            if self.btn_prev_script.is_clicked(event) or self.btn_next_script.is_clicked(event):
+                cur = getattr(sel, "script_path", "")
+                idx = self.available_scripts.index(cur) if cur in self.available_scripts else 0
+                delta = -1 if self.btn_prev_script.is_clicked(event) else 1
+                ni = (idx + delta) % len(self.available_scripts)
+                sel.script_path = self.available_scripts[ni] if ni > 0 else ""
+                return
+            if self.btn_new_script.is_clicked(event):
+                path = ScriptManager.create_template(sel)
+                self.available_scripts = ScriptManager.list_scripts()
+                sel.script_path = path
+                return
+            if self.btn_edit_script.is_clicked(event):
+                p = getattr(sel, "script_path", "")
+                if p and os.path.exists(p):
+                    try:
+                        os.startfile(p)
+                    except:
+                        import subprocess
+                        subprocess.Popen(["notepad.exe", p])
+                return
+            if self.btn_internal_editor.is_clicked(event):
+                p = getattr(sel, "script_path", "")
+                if p and os.path.exists(p):
+                    self.code_editor.open(p)
+                return
+            if self.btn_script_help.is_clicked(event):
+                self.showing_help_modal = True
+                return
+            
+            # Parenting cycling
+            if self.btn_prev_parent.is_clicked(event) or self.btn_next_parent.is_clicked(event):
+                def is_descendant(p, child):
+                    if p == child:
+                        return True
+                    if p.parent is None:
+                        return False
+                    return is_descendant(p.parent, child)
+                candidates = [None] + [o for o in self.editable_objects if o != sel and not is_descendant(o, sel)]
+                cur_parent = sel.parent
+                try:
+                    pi = candidates.index(cur_parent)
+                except:
+                    pi = 0
+                delta = -1 if self.btn_prev_parent.is_clicked(event) else 1
+                pi = (pi + delta) % len(candidates)
+                new_parent = candidates[pi]
+                self.history.push(self)
+                if cur_parent:
+                    cur_parent.remove_child(sel)
+                if new_parent:
+                    new_parent.add_child(sel)
+                return
+                
+            # Tag cycling
+            if self.btn_prev_tag.is_clicked(event) or self.btn_next_tag.is_clicked(event):
+                cur_tag = getattr(sel, "tag", "")
+                try:
+                    ti = TAG_OPTIONS.index(cur_tag)
+                except:
+                    ti = 0
+                delta = -1 if self.btn_prev_tag.is_clicked(event) else 1
+                ti = (ti + delta) % len(TAG_OPTIONS)
+                sel.tag = TAG_OPTIONS[ti]
+                return
+            for i, btn in enumerate(self.btn_colors):
+                if btn.is_clicked(event):
+                    self.history.push(self)
+                    r = sel.get_component(MeshRenderer3D)
+                    if r:
+                        r.color = COLOR_PALETTE[i]
+                    return
