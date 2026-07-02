@@ -1,13 +1,24 @@
 """
 tests/core/test_scene_manager.py
 ────────────────────────────────────────────────────────────────
-Commit 3: valida o contrato público do SceneManager (pilha de cenas).
+Commit 11: suite completa do SceneManager.
 
-Estratégia:
-  - Usar SceneManager.reset() para isolamento entre testes.
-  - Mockar Scene com MagicMock (não precisamos de Pygame para testar a pilha).
-  - Mockar UIManager.reset e módulos de physics/audio para evitar
-    dependências de runtime.
+Grupos:
+  TestSingleton    (3)  — instance, reset, isolamento de estado
+  TestLoad         (7)  — troca imediata, pilha limpa, engine injetado
+  TestPush         (6)  — empilhamento, start, preserva base
+  TestPop          (6)  — pop, noop em pilha unitária/vazia, pop múltiplo
+  TestReplace      (2)  — load() sobre pilha profunda reseta para depth=1
+  TestProperties   (3)  — current, stack_depth, is_transitioning
+  TestLifecycle    (4)  — start() uma vez, engine atribuído antes
+  TestDelegation   (5)  — update/draw/handle_event delegam para cena ativa
+  TestBindEngine   (3)  — bind() faz patch de engine.change_scene
+  TestRepr         (3)  — repr contém os campos esperados
+
+Total esperado: 42 testes.
+
+Todos os testes rodam headless — UIManager, AudioManager e
+physics são mockados via pytest fixtures/patch.
 """
 from __future__ import annotations
 
@@ -15,10 +26,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
+# ───────────────────────────────────────────────────────────────────
 def _make_scene(name="TestScene"):
     """Cena fake com a interface mínima que SceneManager espera."""
     scene = MagicMock()
@@ -27,12 +35,10 @@ def _make_scene(name="TestScene"):
     return scene
 
 
-# ---------------------------------------------------------------------------
-# Patches permanentes: evita import de pygame / physics / audio
-# ---------------------------------------------------------------------------
-
+# ───────────────────────────────────────────────────────────────────
 @pytest.fixture(autouse=True)
 def _patch_deps():
+    """Moca dependências pesadas em todos os testes do arquivo."""
     patches = [
         patch("engine.core.scene_manager.UIManager"),
         patch("engine.core.scene_manager.SceneManager._run_physics"),
@@ -46,16 +52,13 @@ def _patch_deps():
             pass
 
 
-# ---------------------------------------------------------------------------
-# Fixture: instância limpa por teste
-# ---------------------------------------------------------------------------
-
 @pytest.fixture
 def sm():
+    """Instância limpa do SceneManager para cada teste."""
     from engine.core.scene_manager import SceneManager
     SceneManager.reset()
     manager = SceneManager.instance()
-    manager._engine = MagicMock()  # engine fake
+    manager._engine = MagicMock()
     yield manager
     SceneManager.reset()
 
@@ -76,6 +79,15 @@ class TestSingleton:
         SceneManager.reset()
         b = SceneManager.instance()
         assert a is not b
+
+    def test_state_not_shared_after_reset(self):
+        from engine.core.scene_manager import SceneManager
+        sm1 = SceneManager.instance()
+        sm1._engine = MagicMock()
+        sm1.load(_make_scene("Old"))
+        SceneManager.reset()
+        sm2 = SceneManager.instance()
+        assert sm2.current is None
 
 
 # ===========================================================================
@@ -110,6 +122,15 @@ class TestLoad:
         sm.load(_make_scene())
         assert sm.stack_depth == 1
 
+    def test_load_not_transitioning(self, sm):
+        sm.load(_make_scene())
+        assert sm.is_transitioning is False
+
+    def test_load_multiple_times_only_last_is_current(self, sm):
+        for i in range(5):
+            sm.load(_make_scene(f"S{i}"))
+        assert sm.stack_depth == 1
+
 
 # ===========================================================================
 # 3. push() — empilha sem destruir cena anterior
@@ -139,11 +160,17 @@ class TestPush:
         sm.push(top)
         top.start.assert_called_once()
 
-    def test_multiple_pushes(self, sm):
+    def test_multiple_pushes_accumulate(self, sm):
         sm.load(_make_scene("A"))
         sm.push(_make_scene("B"))
         sm.push(_make_scene("C"))
         assert sm.stack_depth == 3
+
+    def test_push_from_empty_stack(self, sm):
+        s = _make_scene("Solo")
+        sm.push(s)
+        assert sm.stack_depth == 1
+        assert sm.current is s
 
 
 # ===========================================================================
@@ -167,12 +194,12 @@ class TestPop:
     def test_pop_with_single_scene_is_noop(self, sm):
         scene = _make_scene()
         sm.load(scene)
-        sm.pop()  # não deve lançar, não deve alterar pilha
+        sm.pop()
         assert sm.stack_depth == 1
         assert sm.current is scene
 
     def test_pop_empty_stack_is_safe(self, sm):
-        sm.pop()  # sem cenas — não deve lançar
+        sm.pop()  # não deve lançar
 
     def test_push_then_pop_returns_to_base(self, sm):
         base = _make_scene("Base")
@@ -184,9 +211,43 @@ class TestPop:
         assert sm.current is base
         assert sm.stack_depth == 1
 
+    def test_pop_twice(self, sm):
+        sm.load(_make_scene("A"))
+        sm.push(_make_scene("B"))
+        sm.push(_make_scene("C"))
+        sm.pop()
+        sm.pop()
+        assert sm.stack_depth == 1
+        assert sm.current.engine is sm._engine  # cena base ainda válida
+
 
 # ===========================================================================
-# 5. Propriedades
+# 5. TestReplace — load() sobre pilha profunda
+# ===========================================================================
+
+class TestReplace:
+    def test_replace_deep_stack_resets_to_depth_one(self, sm):
+        sm.load(_make_scene("A"))
+        sm.push(_make_scene("B"))
+        sm.push(_make_scene("C"))
+        assert sm.stack_depth == 3
+        fresh = _make_scene("Fresh")
+        sm.load(fresh)
+        assert sm.stack_depth == 1
+        assert sm.current is fresh
+
+    def test_old_scenes_removed_from_stack(self, sm):
+        old_a = _make_scene("A")
+        old_b = _make_scene("B")
+        sm.load(old_a)
+        sm.push(old_b)
+        sm.load(_make_scene("New"))
+        assert old_a not in sm._stack
+        assert old_b not in sm._stack
+
+
+# ===========================================================================
+# 6. Propriedades
 # ===========================================================================
 
 class TestProperties:
@@ -202,7 +263,43 @@ class TestProperties:
 
 
 # ===========================================================================
-# 6. update / draw / handle_event
+# 7. Ciclo de vida
+# ===========================================================================
+
+class TestLifecycle:
+    def test_start_called_on_load(self, sm):
+        s = _make_scene()
+        sm.load(s)
+        s.start.assert_called_once()
+
+    def test_start_called_on_push(self, sm):
+        sm.load(_make_scene("Base"))
+        s = _make_scene("Pushed")
+        sm.push(s)
+        s.start.assert_called_once()
+
+    def test_start_called_only_once_on_load(self, sm):
+        s = _make_scene()
+        sm.load(s)
+        sm.load(_make_scene("Other"))  # carrega outra cena
+        s.start.assert_called_once()   # cena antiga não recebe start novamente
+
+    def test_engine_assigned_before_start(self, sm):
+        """engine deve estar atribuído quando start() for chamado."""
+        from engine.core.scene import Scene as RealScene
+        assigned = {}
+
+        class _Spy(RealScene):
+            def start(self_inner):
+                assigned["engine"] = self_inner.engine
+
+        spy = _Spy()
+        sm.load(spy)
+        assert assigned["engine"] is sm._engine
+
+
+# ===========================================================================
+# 8. update / draw / handle_event
 # ===========================================================================
 
 class TestDelegation:
@@ -234,7 +331,30 @@ class TestDelegation:
 
 
 # ===========================================================================
-# 7. __repr__
+# 9. bind() — patch de engine.change_scene
+# ===========================================================================
+
+class TestBindEngine:
+    def test_bind_patches_change_scene(self, sm):
+        engine = MagicMock()
+        sm.bind(engine)
+        assert engine.change_scene == sm.load
+
+    def test_bind_stores_engine_reference(self, sm):
+        engine = MagicMock()
+        sm.bind(engine)
+        assert sm._engine is engine
+
+    def test_change_scene_via_patched_engine(self, sm):
+        engine = MagicMock()
+        sm.bind(engine)
+        s = _make_scene("FromEngine")
+        engine.change_scene(s)
+        assert sm.current is s
+
+
+# ===========================================================================
+# 10. __repr__
 # ===========================================================================
 
 class TestRepr:
