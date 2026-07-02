@@ -1,30 +1,89 @@
-import pygame
-import sys
-import traceback
-from typing import Optional
+"""
+engine/core.py
+────────────────────────────────────────────────────────────────
 
+Arquitetura:
+
+    Application              ← dona de tudo
+    └── Engine               ← executor de sistemas por frame
+           │
+           ├── UpdateSystems    (é chamado por SceneManager.update)
+           └── RenderSystems    (é chamado por SceneManager.draw)
+
+Responsabilidades da Engine:
+  ✅ Executar a lista de UpdateSystems em ordem
+  ✅ Executar a lista de RenderSystems em ordem
+  ❌ Janela  → Window
+  ❌ Clock   → Time
+  ❌ Eventos → Application
+  ❌ Cenas   → SceneManager
+
+Retrocompatibilidade:
+  Os atributos `screen`, `width`, `height`, `fps`, `is_running`,
+  `_scene_manager`, `_current_scene`, `_next_scene` e o método
+  `change_scene()` ainda existem para que demos antigas continuem
+  funcionando sem alteração. Eles serão preenchidos pela Application
+  após criar a Engine.
+"""
+from __future__ import annotations
+
+import traceback
+from typing import TYPE_CHECKING, Callable, List, Optional
+
+import pygame
+
+if TYPE_CHECKING:
+    from engine.application import Application
+
+
+# ============================================================== #
+#  Scene — base de todas as cenas                                #
+# ============================================================== #
 
 class Scene:
-    """Classe base para todas as cenas do jogo."""
-    def __init__(self):
-        self.engine: Optional['Engine'] = None
-        self.game_objects: list['GameObject'] = []
+    """Contrato mínimo de uma cena."""
 
-    def start(self) -> None:
-        pass
+    def __init__(self) -> None:
+        self.engine: Optional["Engine"] = None
+        self.game_objects: list = []
 
-    def update(self, dt: float) -> None:
-        pass
+    def start(self)        -> None: ...
+    def update(self, dt: float) -> None: ...
+    def draw(self, screen: pygame.Surface) -> None: ...
+    def handle_event(self, event: pygame.event.Event) -> None: ...
 
-    def draw(self, screen: pygame.Surface) -> None:
-        pass
 
-    def handle_event(self, event: pygame.event.Event) -> None:
-        pass
+# ============================================================== #
+#  Tipos de sistema                                              #
+# ============================================================== #
 
+UpdateSystem = Callable[["Scene", float], None]
+RenderSystem = Callable[["Scene", pygame.Surface], None]
+
+
+# ============================================================== #
+#  Engine                                                        #
+# ============================================================== #
 
 class Engine:
-    """Controlador principal do loop de jogo e gerenciamento de cenas."""
+    """
+    Executor de sistemas por frame.
+
+    A Engine não cria janela, não gerencia clock nem eventos.
+    Ela recebe uma cena ativa (via SceneManager) e aplica
+    os UpdateSystems e RenderSystems cadastrados.
+
+    Uso direto (sem Application — retrocompat):
+
+        engine = Engine(800, 600, "Meu Jogo")
+        engine.run(MenuScene())
+
+    Uso moderno (com Application):
+
+        app = Application(800, 600, "Meu Jogo")
+        app.engine.add_update_system(physics_system)
+        app.run(MenuScene())
+    """
 
     def __init__(
         self,
@@ -33,16 +92,19 @@ class Engine:
         title:  str = "Zennity Engine",
         fps:    int = 60,
     ) -> None:
+        # Apenas quando Engine é instanciada diretamente (sem Application)
+        import sys
         pygame.init()
         pygame.mixer.init()
 
         info = pygame.display.Info()
-        desktop_w = info.current_w
-        desktop_h = info.current_h
+        dw, dh = info.current_w, info.current_h
+        if width >= dw or height >= dh:
+            width  = int(dw * 0.9)
+            height = int(dh * 0.85)
 
-        if width >= desktop_w or height >= desktop_h:
-            width  = int(desktop_w * 0.9)
-            height = int(desktop_h * 0.85)
+        self.screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
+        pygame.display.set_caption(title)
 
         self.width  = width
         self.height = height
@@ -50,19 +112,80 @@ class Engine:
         self.is_fullscreen = False
         self.saved_w = width
         self.saved_h = height
-
-        self.screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
-        pygame.display.set_caption(title)
-
-        self.clock      = pygame.time.Clock()
+        self.clock   = pygame.time.Clock()
         self.is_running = False
 
-        # Retrocompatibilidade — SceneManager pode fazer patch aqui
-        self._scene_manager = None
+        # Retrocompat
+        self._scene_manager  = None
         self._current_scene: Optional[Scene] = None
         self._next_scene:    Optional[Scene] = None
 
-    # ── Propriedade pública (retrocompat) ────────────────────────────
+        # Referência fraca à Application dona (preenchida por Application)
+        self._app: Optional["Application"] = None
+
+        # Sistemas
+        self._update_systems: List[UpdateSystem] = [_builtin_physics_system]
+        self._render_systems: List[RenderSystem] = []
+
+    # ------------------------------------------------------------------ #
+    # Registro de sistemas                                               #
+    # ------------------------------------------------------------------ #
+
+    def add_update_system(self, system: UpdateSystem) -> None:
+        """
+        Adiciona um UpdateSystem ao final da fila.
+
+        Um UpdateSystem é qualquer callable com assinatura:
+            def my_system(scene: Scene, dt: float) -> None: ...
+        """
+        if system not in self._update_systems:
+            self._update_systems.append(system)
+
+    def remove_update_system(self, system: UpdateSystem) -> None:
+        try:
+            self._update_systems.remove(system)
+        except ValueError:
+            pass
+
+    def add_render_system(self, system: RenderSystem) -> None:
+        """
+        Adiciona um RenderSystem ao final da fila.
+
+        Um RenderSystem é qualquer callable com assinatura:
+            def my_system(scene: Scene, screen: pygame.Surface) -> None: ...
+        """
+        if system not in self._render_systems:
+            self._render_systems.append(system)
+
+    def remove_render_system(self, system: RenderSystem) -> None:
+        try:
+            self._render_systems.remove(system)
+        except ValueError:
+            pass
+
+    # ------------------------------------------------------------------ #
+    # Execução de sistemas (chamada pelo SceneManager)                   #
+    # ------------------------------------------------------------------ #
+
+    def run_update_systems(self, scene: Scene, dt: float) -> None:
+        """Executa todos os UpdateSystems cadastrados na ordem de registro."""
+        for system in list(self._update_systems):
+            try:
+                system(scene, dt)
+            except Exception:
+                traceback.print_exc()
+
+    def run_render_systems(self, scene: Scene, screen: pygame.Surface) -> None:
+        """Executa todos os RenderSystems cadastrados na ordem de registro."""
+        for system in list(self._render_systems):
+            try:
+                system(scene, screen)
+            except Exception:
+                traceback.print_exc()
+
+    # ------------------------------------------------------------------ #
+    # Retrocompat: API de cena direta (sem Application / SceneManager)   #
+    # ------------------------------------------------------------------ #
 
     @property
     def current_scene(self) -> Optional[Scene]:
@@ -70,20 +193,14 @@ class Engine:
             return self._scene_manager.current
         return self._current_scene
 
-    # ── SceneManager opt-in ──────────────────────────────────────────
-
-    def use_scene_manager(self) -> "SceneManager":  # type: ignore[name-defined]
-        """Ativa o SceneManager e retorna a instância."""
+    def use_scene_manager(self):
         from .scene_manager import SceneManager
         sm = SceneManager.instance()
         sm.bind(self)
         self._scene_manager = sm
         return sm
 
-    # ── API de cena (retrocompat sem SceneManager) ───────────────────
-
     def change_scene(self, new_scene: Scene) -> None:
-        """Troca de cena sem transição (retrocompatível)."""
         if self._scene_manager:
             self._scene_manager.load(new_scene)
         else:
@@ -106,23 +223,6 @@ class Engine:
             self._current_scene.start()
             self._next_scene = None
 
-    @staticmethod
-    def _run_physics() -> None:
-        """
-        Chama os métodos check_all() de todos os colliders registrados.
-        Deve ser invocado após scene.update(dt) e antes de scene.draw(),
-        garantindo que a resolução de colisões aconteça com as posições
-        já atualizadas pelo RigidBody naquele frame.
-        """
-        try:
-            from engine.physics.collider import BoxCollider, CircleCollider
-            BoxCollider.check_all()
-            CircleCollider.check_all()
-        except Exception:
-            traceback.print_exc()
-
-    # ── Fullscreen ───────────────────────────────────────────────────
-
     def toggle_fullscreen(self) -> None:
         self.is_fullscreen = not self.is_fullscreen
         if self.is_fullscreen:
@@ -138,10 +238,18 @@ class Engine:
                 (self.width, self.height), pygame.RESIZABLE
             )
 
-    # ── Loop principal ───────────────────────────────────────────────
+    # ------------------------------------------------------------------ #
+    # Loop standalone (retrocompat sem Application)                       #
+    # ------------------------------------------------------------------ #
 
     def run(self, initial_scene: Scene) -> None:
-        """Inicia e executa o loop principal."""
+        """
+        Loop principal standalone — mantido para retrocompatibilidade.
+        Quando usado com Application, este método não é chamado.
+        """
+        import sys
+        from .input import Input
+
         self.is_running = True
 
         if self._scene_manager:
@@ -150,28 +258,22 @@ class Engine:
             self.change_scene(initial_scene)
             self._perform_scene_change()
 
-        from .input import Input
-
         while self.is_running:
             Input.update()
             dt = min(self.clock.tick(self.fps) / 1000.0, 0.1)
 
             sm = self._scene_manager
 
-            # ── Eventos ──
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.is_running = False
-
                 if event.type == pygame.VIDEORESIZE and not self.is_fullscreen:
                     self.width, self.height = event.w, event.h
                     self.screen = pygame.display.set_mode(
                         (self.width, self.height), pygame.RESIZABLE
                     )
-
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_F11:
                     self.toggle_fullscreen()
-
                 try:
                     if sm:
                         sm.handle_event(event)
@@ -180,7 +282,6 @@ class Engine:
                 except Exception:
                     traceback.print_exc()
 
-            # ── Update + Physics ──
             try:
                 if sm:
                     sm.update(dt)
@@ -189,19 +290,16 @@ class Engine:
                         self._perform_scene_change()
                     if self._current_scene:
                         self._current_scene.update(dt)
-                        # Física integrada: roda após update da cena,
-                        # antes do draw, para que colisões usem posições
-                        # já atualizadas pelo RigidBody nesse frame.
-                        Engine._run_physics()
+                        self.run_update_systems(self._current_scene, dt)
             except Exception:
                 traceback.print_exc()
 
-            # ── Draw ──
             try:
                 if sm:
                     sm.draw(self.screen)
                 elif self._current_scene:
                     self._current_scene.draw(self.screen)
+                    self.run_render_systems(self._current_scene, self.screen)
             except Exception:
                 traceback.print_exc()
 
@@ -209,3 +307,23 @@ class Engine:
 
         pygame.quit()
         sys.exit()
+
+
+# ============================================================== #
+#  Sistemas builtin                                              #
+# ============================================================== #
+
+def _builtin_physics_system(scene: Scene, dt: float) -> None:
+    """
+    UpdateSystem builtin: roda BoxCollider.check_all() e
+    CircleCollider.check_all() após scene.update(dt).
+
+    Registrado automaticamente na Engine. Remova com:
+        engine.remove_update_system(_builtin_physics_system)
+    """
+    try:
+        from engine.physics.collider import BoxCollider, CircleCollider
+        BoxCollider.check_all()
+        CircleCollider.check_all()
+    except Exception:
+        traceback.print_exc()
