@@ -12,15 +12,20 @@ import pygame
 
 
 # ---------------------------------------------------------------------------
-# Helper: cria um wrapper de teclas fake
+# Helper: cria um array de teclas fake
 # ---------------------------------------------------------------------------
 
 def _make_keys(*pressed_keys):
-    """Retorna uma lista de 512 bools com as teclas indicadas ativas."""
-    keys = [False] * 512
+    """
+    Retorna uma lista com as teclas indicadas ativas.
+    Dimensiona automaticamente para acomodar scancodes altos
+    (ex.: pygame.K_LEFT ≈ 1073741904).
+    """
+    size = max(pressed_keys, default=0) + 1
+    size = max(size, 512)  # mínimo 512 para teclas comuns
+    keys = [False] * size
     for k in pressed_keys:
-        if 0 <= k < 512:
-            keys[k] = True
+        keys[k] = True
     return keys
 
 
@@ -57,8 +62,8 @@ class TestGetKey:
 class TestGetKeyDown:
     def test_key_down_only_on_first_frame(self):
         from engine.input import Input
-        Input._keys_previous = _make_keys()          # não estava pressionado
-        Input._keys_current  = _make_keys(pygame.K_a)  # agora está
+        Input._keys_previous = _make_keys()
+        Input._keys_current  = _make_keys(pygame.K_a)
         assert Input.get_key_down(pygame.K_a) is True
 
     def test_key_down_false_when_held(self):
@@ -89,7 +94,7 @@ class TestGetKeyUp:
     def test_key_up_on_release_frame(self):
         from engine.input import Input
         Input._keys_previous = _make_keys(pygame.K_SPACE)
-        Input._keys_current  = _make_keys()             # soltou
+        Input._keys_current  = _make_keys()
         assert Input.get_key_up(pygame.K_SPACE) is True
 
     def test_key_up_false_while_held(self):
