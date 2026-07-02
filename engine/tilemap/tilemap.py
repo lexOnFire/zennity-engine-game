@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Tuple
 import pygame
 
 from .tileset import Tileset
-from engine.component import Component
+from engine.core import Component
 
 
 class TileLayer:
@@ -177,10 +177,6 @@ class TileMap:
         """
         Return pygame.Rect list for all solid tiles overlapping the AABB
         defined by (x, y, w, h) in world space. Useful for physics resolution.
-
-        BUG FIX: use math.ceil for col_end/row_end so tiles that are only
-        partially covered by the right/bottom edge of the AABB are included.
-        Using int() (floor) was silently missing those tiles.
         """
         rects: List[pygame.Rect] = []
         layer = self.get_layer(layer_name)
@@ -217,16 +213,11 @@ class TileMap:
             (self.pixel_width, self.pixel_height),
             flags=pygame.SRCALPHA,
         )
-        # BUG FIX: bake draws the entire map at world origin (cam=0,0),
-        # so we pass cam_x=0, cam_y=0 explicitly to _draw_layer.
         for layer in self._layers:
             if not layer.visible:
                 continue
             self._draw_layer(surface, layer, cam_x=0.0, cam_y=0.0)
         self._baked = surface
-        # BUG FIX: reset _bake_dirty AFTER assigning _baked so that a race
-        # condition where draw() checks _bake_dirty before _baked is assigned
-        # cannot occur (both writes happen before the method returns).
         self._bake_dirty = False
 
     def invalidate_bake(self) -> None:
@@ -252,7 +243,6 @@ class TileMap:
         surf_w, surf_h = surface.get_size()
         tw, th = self.tile_width, self.tile_height
 
-        # Visible tile range
         col_start = max(0, int(cam_x // tw))
         col_end   = min(layer.width,  int((cam_x + surf_w) // tw) + 1)
         row_start = max(0, int(cam_y // th))
@@ -270,9 +260,6 @@ class TileMap:
                 screen_x = col * tw - int(cam_x)
                 screen_y = row * th - int(cam_y)
 
-                # BUG FIX: never mutate the cached tile surface directly.
-                # Always work on a copy when applying per-layer opacity,
-                # otherwise set_alpha() would tint every future blit of that tile.
                 if layer.opacity < 1.0:
                     tile_surf = tile_surf.copy()
                     tile_surf.set_alpha(int(layer.opacity * 255))
@@ -287,19 +274,10 @@ class TileMap:
     ) -> None:
         """
         Draw the tilemap to *screen*, offset by camera position (cam_x, cam_y).
-
-        Parameters
-        ----------
-        screen : pygame.Surface – Destination surface (the game window).
-        cam_x  : float          – Camera X position in world space.
-        cam_y  : float          – Camera Y position in world space.
         """
         if not self._bake_dirty and self._baked is not None:
-            # BUG FIX: use round() instead of int() so that sub-pixel camera
-            # movement does not accumulate a 1-pixel drift at negative offsets.
             screen.blit(self._baked, (-round(cam_x), -round(cam_y)))
         else:
-            # Dynamic path: draw each layer individually with camera culling.
             for layer in self._layers:
                 self._draw_layer(screen, layer, cam_x, cam_y)
 
@@ -315,12 +293,7 @@ class TileMap:
         color: Tuple = (255, 0, 0, 128),
         layer_name: str = "collision",
     ) -> None:
-        """
-        Draws semi-transparent overlays on solid tiles for debugging collisions.
-
-        BUG FIX: pygame.draw.rect ignores the alpha channel of the color tuple.
-        To draw transparent rectangles we must blit onto an SRCALPHA surface.
-        """
+        """Draws semi-transparent overlays on solid tiles for debugging collisions."""
         layer = self.get_layer(layer_name)
         if layer is None:
             return
@@ -332,11 +305,9 @@ class TileMap:
         row_start = max(0, int(cam_y // th))
         row_end   = min(layer.height, int((cam_y + surf_h) // th) + 1)
 
-        # Prepare an overlay surface that honours alpha.
         overlay = pygame.Surface((surf_w, surf_h), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 0))
 
-        # Determine outline and fill colours from the supplied color tuple.
         if len(color) == 4:
             fill_color   = (color[0], color[1], color[2], min(80, color[3]))
             border_color = color

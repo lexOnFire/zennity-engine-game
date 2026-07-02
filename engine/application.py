@@ -49,8 +49,7 @@ from .time          import Time
 from .event_bus     import EventBus
 from .input         import Input
 from .assets        import Assets
-from .core          import Scene, Engine
-from .scene_manager import SceneManager
+from .core          import Scene, Engine, SceneManager
 
 T = TypeVar("T")
 
