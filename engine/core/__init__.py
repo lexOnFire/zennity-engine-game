@@ -11,21 +11,22 @@ Imports recomendados (novos projetos):
 
     from engine.core import Application, Time, Logger
     from engine.core import System, SystemPriority, SystemRegistry
-    from engine.core import EventBus, GameObject
+    from engine.core import EventBus, GameObject, Scene, Engine
 
 Imports legados (ainda funcionam via shim):
 
-    from engine.application import Application   # shim → engine.core.application
-    from engine.system import System             # shim → engine.core.system
-    from engine.time import Time                 # shim → engine.core.time
-    from engine.logger import Logger             # shim → engine.core.logger
-    from engine.event_bus import EventBus        # shim → engine.core.event_bus
-    from engine.game_object import GameObject    # shim → engine.core.game_object
+    from engine.application import Application   # shim
+    from engine.system import System             # shim
+    from engine.time import Time                 # shim
+    from engine.logger import Logger             # shim
+    from engine.event_bus import EventBus        # shim
+    from engine.game_object import GameObject    # shim
+    from engine.core import Scene                # shim (engine/core.py legado)
+    from engine.core import Engine               # shim (engine/core.py legado)
 
 Mapa de migração pendente:
-    engine/core.py  (Scene, Engine legado)  →  engine/core/scene.py   [Sprint 1.2]
-    engine/component.py                     →  engine/core/component.py [Sprint 1.2]
-    engine/scene_manager.py                 →  engine/core/scene_manager.py [Sprint 1.2]
+    engine/component.py                     →  engine/core/component.py  [Sprint 1.3]
+    engine/scene_manager.py                 →  engine/core/scene_manager.py [Sprint 1.3]
 """
 from engine.application import Application          # noqa: F401
 from engine.system      import System               # noqa: F401
@@ -35,6 +36,13 @@ from engine.time        import Time                 # noqa: F401
 from engine.logger      import Logger               # noqa: F401
 from engine.event_bus   import EventBus             # noqa: F401
 from engine.game_object import GameObject           # noqa: F401
+from engine.core.scene  import Scene                # noqa: F401
+
+# Engine permanece no legado engine/core.py até extração completa do SceneManager
+try:
+    from engine.core_legacy import Engine           # noqa: F401
+except ImportError:
+    pass  # engine/core_legacy.py ainda não existe — ignorar
 
 __all__ = [
     "Application",
@@ -45,4 +53,6 @@ __all__ = [
     "Logger",
     "EventBus",
     "GameObject",
+    "Scene",
+    "Engine",
 ]
