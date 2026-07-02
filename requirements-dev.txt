@@ -1,0 +1,13 @@
+# Dependencias de desenvolvimento (nao necessarias para rodar o jogo)
+# Instale com: pip install -r requirements-dev.txt
+
+# Testes
+pytest>=7.4
+pytest-cov>=4.1
+pytest-env>=1.1          # suporte a [pytest] env = ... no pytest.ini
+
+# Lint e formatacao
+ruff>=0.4
+
+# Type checking (opcional)
+mypy>=1.8

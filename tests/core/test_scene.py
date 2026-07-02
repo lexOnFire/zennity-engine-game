@@ -1,11 +1,11 @@
 """
 tests/core/test_scene.py
-Testes de ciclo de vida da Scene e integração com GameObject.
-"""
-import os, sys
-os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
-os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
+Testes de ciclo de vida da Scene e integracao com GameObject.
 
+As variaveis SDL_VIDEODRIVER/SDL_AUDIODRIVER sao setadas pelo pytest.ini
+e pelo conftest.py — nao precisa fazer isso aqui.
+"""
+from __future__ import annotations
 import pytest
 
 
@@ -65,3 +65,11 @@ class TestScene:
         from engine.core import Scene
         scene = Scene(name="GameScene")
         assert "GameScene" in repr(scene)
+
+    def test_game_object_draw_does_not_crash(self, screen):
+        """Garante que draw() funciona com Surface real (headless)."""
+        from engine.core import Scene, GameObject
+        scene = Scene()
+        go = GameObject("Sprite")
+        scene.add_game_object(go)
+        scene.draw(screen)  # nao deve lancar excecao

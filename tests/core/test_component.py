@@ -1,13 +1,12 @@
 """
 tests/core/test_component.py
 Testes de Component, Transform e ciclo start/_started.
-"""
-import os
-os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
-os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
+As variaveis SDL_VIDEODRIVER/SDL_AUDIODRIVER sao setadas pelo pytest.ini
+e pelo conftest.py — nao precisa fazer isso aqui.
+"""
+from __future__ import annotations
 import pytest
-import numpy as np
 
 
 class TestComponent:
@@ -72,3 +71,24 @@ class TestGameObjectUUID:
         from engine.core import GameObject
         go = GameObject("T", tag="Player")
         assert go.tag == "Player"
+
+    def test_start_called_once_when_added_to_scene(self):
+        """Garante que start() e chamado exatamente uma vez."""
+        from engine.core import Component, GameObject, Scene
+
+        class Counter(Component):
+            def __init__(self):
+                super().__init__()
+                self.start_count = 0
+
+            def start(self):
+                self.start_count += 1
+
+        scene = Scene()
+        go = GameObject("Tester")
+        counter = go.add_component(Counter())
+        scene.add_game_object(go)
+
+        assert counter.start_count == 1, (
+            f"start() chamado {counter.start_count}x — esperado 1x"
+        )
