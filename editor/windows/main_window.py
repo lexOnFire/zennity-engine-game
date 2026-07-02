@@ -8,7 +8,11 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QAction, QKeySequence, QIcon, QCloseEvent
 from PySide6.QtCore import Qt, Slot, QSettings
 
-# Imports dos Docks
+# Modelos e ViewModels MVVM
+from editor.models.scene_model import SceneModel
+from editor.viewmodels.scene_viewmodel import SceneViewModel
+
+# Widgets do Editor
 from editor.widgets.hierarchy_dock import HierarchyDock
 from editor.widgets.asset_browser_dock import AssetBrowserDock
 from editor.widgets.console_dock import ConsoleDock
@@ -19,11 +23,11 @@ class MainWindow(QMainWindow):
     """
     Janela Principal do Zennity Editor construída sobre o PySide6.
     
-    Implementação da Semana 2:
-      - Sistema de QDockWidget acopláveis (Hierarchy, Inspector, Recursos, Console)
-      - Posições iniciais baseadas no layout Unreal Engine
-      - Persistência e restauração de layout (QSettings)
-      - Menu "Janela" dinâmico sincronizado com a visibilidade dos Docks
+    Implementação da Semana 3:
+      - Sistema de Hierarchy e Seleção de Entidades (MVVM)
+      - Menu "Criar" para novos GameObjects na cena
+      - Atalhos de duplicação, exclusão e criação integrados
+      - Sincronização dinâmica da barra de status com contagem de objetos
     """
     
     def __init__(self) -> None:
@@ -35,17 +39,27 @@ class MainWindow(QMainWindow):
         # Configura as opções de Docking
         self.setDockOptions(QMainWindow.AnimatedDocks | QMainWindow.AllowTabbedDocks)
         
+        # Inicializa o Model e o ViewModel do MVVM
+        self.scene_model = SceneModel()
+        self.scene_view_model = SceneViewModel(self.scene_model)
+        
         # Central widget temporário (Viewport)
         self.setup_central_widget()
         
         # Inicializa docks do editor
         self.create_docks()
         
+        # Conecta o ViewModel aos docks que necessitam
+        self.dock_hierarchy.set_viewmodel(self.scene_view_model)
+        
         # Inicializa ações e menus
         self.create_actions()
         self.create_menu_bar()
         self.create_tool_bar()
         self.create_status_bar()
+        
+        # Conecta sinal de atualização para atualizar estatísticas na barra de status
+        self.scene_view_model.hierarchy_updated.connect(self.update_object_count_status)
         
         # Tenta carregar o layout anterior, senão aplica o layout padrão (Unreal)
         self.settings = QSettings("Zennity", "EditorLayout")
@@ -84,7 +98,6 @@ class MainWindow(QMainWindow):
 
     def apply_default_layout(self) -> None:
         """Posiciona os docks na disposição padrão inspirada na Unreal Engine."""
-        # Limpa abas ou layouts cruzados
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_hierarchy)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_assets)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_console)
@@ -129,7 +142,7 @@ class MainWindow(QMainWindow):
         # ── Arquivo ──────────────────────────────────────────
         self.act_new = QAction("Novo", self)
         self.act_new.setShortcut(QKeySequence.New)
-        self.act_new.triggered.connect(lambda: self.log_action("Novo Projeto"))
+        self.act_new.triggered.connect(self.on_new_scene)
         
         self.act_open = QAction("Abrir...", self)
         self.act_open.setShortcut(QKeySequence.Open)
@@ -154,11 +167,11 @@ class MainWindow(QMainWindow):
         
         self.act_duplicate = QAction("Duplicar", self)
         self.act_duplicate.setShortcut(QKeySequence("Ctrl+D"))
-        self.act_duplicate.triggered.connect(lambda: self.log_action("Duplicar Entidade"))
+        self.act_duplicate.triggered.connect(self.scene_view_model.duplicate_selected)
         
         self.act_delete = QAction("Excluir", self)
         self.act_delete.setShortcut(QKeySequence.Delete)
-        self.act_delete.triggered.connect(lambda: self.log_action("Excluir Entidade"))
+        self.act_delete.triggered.connect(self.scene_view_model.delete_selected)
 
         # ── Ajuda ──────────────────────────────────────────
         self.act_commands = QAction("Guia de Comandos", self)
@@ -195,11 +208,19 @@ class MainWindow(QMainWindow):
         menu_window.addAction(self.act_reset_layout)
         menu_window.addSeparator()
         
-        # toggleViewAction() vincula dinamicamente a visibilidade do Dock ao checkbox do Menu
         menu_window.addAction(self.dock_hierarchy.toggleViewAction())
         menu_window.addAction(self.dock_inspector.toggleViewAction())
         menu_window.addAction(self.dock_assets.toggleViewAction())
         menu_window.addAction(self.dock_console.toggleViewAction())
+        
+        # Menu Criar (Create - novos GameObjects na cena)
+        menu_create = menubar.addMenu("Criar")
+        shapes = ["Quadrado", "Círculo", "Plataforma", "Player", "Inimigo", "Trigger", "Mola"]
+        for s in shapes:
+            act = QAction(s, self)
+            # Envia o tipo do objeto para o slot usando captura de variável
+            act.triggered.connect(lambda checked=False, shape_type=s: self.scene_view_model.create_object(shape_type))
+            menu_create.addAction(act)
         
         # Menu Ajuda
         menu_help = menubar.addMenu("Ajuda")
@@ -247,7 +268,6 @@ class MainWindow(QMainWindow):
         self.act_tool_scale = QAction("Scale", self, checkable=True)
         self.act_tool_scale.triggered.connect(lambda: self.on_transform_tool_changed("scale"))
         
-        # Agrupa as ações para que apenas uma fique selecionada por vez (estilo rádio)
         self.transform_actions = [self.act_tool_select, self.act_tool_move, 
                                   self.act_tool_rotate, self.act_tool_scale]
         
@@ -268,9 +288,8 @@ class MainWindow(QMainWindow):
         # Widgets permanentes à direita (estatísticas)
         self.lbl_fps = QLabel("FPS: 60  ")
         self.lbl_mem = QLabel("Memória: 12.4 MB  ")
-        self.lbl_obj = QLabel("Objetos: 2  ")
+        self.lbl_obj = QLabel("Objetos: 0  ")
         
-        # Aplica estilo muted sutil
         for lbl in (self.lbl_fps, self.lbl_mem, self.lbl_obj):
             lbl.setStyleSheet("color: #828a9b; font-family: monospace; font-size: 11px;")
             statusbar.addPermanentWidget(lbl)
@@ -283,6 +302,25 @@ class MainWindow(QMainWindow):
         """Imprime log informativo da ação no console do desenvolvedor."""
         print(f"[ACTION] Disparado: {action_name}")
         self.statusBar().showMessage(f"Executando: {action_name}", 3000)
+
+    @Slot()
+    def on_new_scene(self) -> None:
+        self.log_action("Novo Projeto/Cena")
+        self.scene_model.clear()
+        self.scene_view_model.selected_object = None
+
+    @Slot()
+    def update_object_count_status(self) -> None:
+        """Atualiza dinamicamente a contagem de objetos na barra de status."""
+        count = 0
+        def count_rec(objs):
+            nonlocal count
+            for o in objs:
+                count += 1
+                count_rec(o.children)
+                
+        count_rec(self.scene_view_model.get_root_objects())
+        self.lbl_obj.setText(f"Objetos: {count}  ")
 
     @Slot()
     def on_play_clicked(self) -> None:
