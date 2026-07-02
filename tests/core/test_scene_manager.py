@@ -1,21 +1,23 @@
 """
 tests/core/test_scene_manager.py
 ────────────────────────────────────────────────────────────────
-Commit 11: suite completa do SceneManager.
+Commit 17: suite completa do SceneManager.
 
 Grupos:
-  TestSingleton    (3)  — instance, reset, isolamento de estado
-  TestLoad         (7)  — troca imediata, pilha limpa, engine injetado
-  TestPush         (6)  — empilhamento, start, preserva base
-  TestPop          (6)  — pop, noop em pilha unitária/vazia, pop múltiplo
-  TestReplace      (2)  — load() sobre pilha profunda reseta para depth=1
-  TestProperties   (3)  — current, stack_depth, is_transitioning
-  TestLifecycle    (4)  — start() uma vez, engine atribuído antes
-  TestDelegation   (5)  — update/draw/handle_event delegam para cena ativa
-  TestBindEngine   (3)  — bind() faz patch de engine.change_scene
-  TestRepr         (3)  — repr contém os campos esperados
+  TestSingleton       (3)  — instance, reset, isolamento de estado
+  TestLoad            (7)  — troca imediata, pilha limpa, engine injetado
+  TestPush            (6)  — empilhamento, start, preserva base
+  TestPop             (6)  — pop, noop em pilha unitária/vazia, pop múltiplo
+  TestReplace         (2)  — load() sobre pilha profunda reseta para depth=1
+  TestProperties      (3)  — current, stack_depth, is_transitioning
+  TestLifecycle       (4)  — start() uma vez, engine atribuído antes
+  TestDelegation      (5)  — update/draw/handle_event delegam para cena ativa
+  TestBindEngine      (3)  — bind() faz patch de engine.change_scene
+  TestCallbacks       (4)  — on_transition_start/end, handle_event bloqueado
+  TestEdgeCases       (4)  — push vazio, pop vazio, re-load mesma cena, depth consistente
+  TestRepr            (3)  — repr contém os campos esperados
 
-Total esperado: 42 testes.
+Total esperado: 50 testes.
 
 Todos os testes rodam headless — UIManager, AudioManager e
 physics são mockados via pytest fixtures/patch.
@@ -218,7 +220,7 @@ class TestPop:
         sm.pop()
         sm.pop()
         assert sm.stack_depth == 1
-        assert sm.current.engine is sm._engine  # cena base ainda válida
+        assert sm.current.engine is sm._engine
 
 
 # ===========================================================================
@@ -281,8 +283,8 @@ class TestLifecycle:
     def test_start_called_only_once_on_load(self, sm):
         s = _make_scene()
         sm.load(s)
-        sm.load(_make_scene("Other"))  # carrega outra cena
-        s.start.assert_called_once()   # cena antiga não recebe start novamente
+        sm.load(_make_scene("Other"))
+        s.start.assert_called_once()
 
     def test_engine_assigned_before_start(self, sm):
         """engine deve estar atribuído quando start() for chamado."""
@@ -354,7 +356,79 @@ class TestBindEngine:
 
 
 # ===========================================================================
-# 10. __repr__
+# 10. Callbacks on_transition_start / on_transition_end
+# ===========================================================================
+
+class TestCallbacks:
+    def test_on_transition_start_called(self, sm):
+        """Callback deve ser chamado ao iniciar uma transição."""
+        cb = MagicMock()
+        sm.on_transition_start = cb
+        fake_tr = MagicMock()
+        fake_tr.is_done = False
+        fake_tr.should_swap = False
+        fake_tr.phase = "out"
+        sm._start_transition(fake_tr, _make_scene("Next"))
+        cb.assert_called_once()
+
+    def test_on_transition_start_receives_scene_name(self, sm):
+        cb = MagicMock()
+        sm.on_transition_start = cb
+        fake_tr = MagicMock()
+        fake_tr.is_done = False
+        fake_tr.should_swap = False
+        sm._start_transition(fake_tr, _make_scene("BossScene"))
+        cb.assert_called_once_with("BossScene")
+
+    def test_handle_event_blocked_during_transition(self, sm):
+        """handle_event não deve propagar quando is_transitioning=True."""
+        scene = _make_scene()
+        sm.load(scene)
+        fake_tr = MagicMock()
+        fake_tr.is_done = False
+        sm._transition = fake_tr
+        sm.handle_event(MagicMock())
+        scene.handle_event.assert_not_called()
+
+    def test_on_transition_end_none_by_default(self, sm):
+        assert sm.on_transition_end is None
+
+
+# ===========================================================================
+# 11. Edge cases
+# ===========================================================================
+
+class TestEdgeCases:
+    def test_reload_same_scene_replaces(self, sm):
+        """Carregar a mesma instância de cena duas vezes não duplica pilha."""
+        scene = _make_scene("Reused")
+        sm.load(scene)
+        sm.load(scene)
+        assert sm.stack_depth == 1
+
+    def test_depth_consistent_after_push_pop_cycles(self, sm):
+        sm.load(_make_scene("Base"))
+        for _ in range(5):
+            sm.push(_make_scene())
+        for _ in range(5):
+            sm.pop()
+        assert sm.stack_depth == 1
+
+    def test_current_none_after_manual_stack_clear(self, sm):
+        sm.load(_make_scene())
+        sm._stack.clear()
+        assert sm.current is None
+
+    def test_is_transitioning_false_after_transition_done(self, sm):
+        sm.load(_make_scene())
+        done_tr = MagicMock()
+        done_tr.is_done = True
+        sm._transition = done_tr
+        assert sm.is_transitioning is False
+
+
+# ===========================================================================
+# 12. __repr__
 # ===========================================================================
 
 class TestRepr:
