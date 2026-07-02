@@ -19,7 +19,12 @@ Arquivos legados (shims, ainda funcionam):
     engine/scene_manager.py  →  DeprecationWarning
     engine/core.py           →  re-exporta silenciosamente
 """
-from engine.application          import Application               # noqa: F401
+# ── Core types must be imported FIRST ────────────────────────────────────────
+# Application (engine/application.py) depends on Scene and Engine.
+# If Application is imported before these types are registered in sys.modules,
+# Python raises: ImportError: cannot import name 'Scene' from partially
+# initialized module 'engine.core' (circular import).
+# Rule: anything that imports FROM engine.core must come AFTER engine.core types.
 from engine.system               import System                    # noqa: F401
 from engine.system               import SystemPriority            # noqa: F401
 from engine.system               import SystemRegistry            # noqa: F401
@@ -34,6 +39,9 @@ from engine.core.scene_manager   import SceneManager              # noqa: F401
 from engine.core.engine          import Engine                    # noqa: F401
 from engine.core.engine          import UpdateSystem, RenderSystem  # noqa: F401
 from engine.core.engine          import _builtin_physics_system   # noqa: F401
+
+# ── Application LAST — it imports Scene and Engine from this very module ─────
+from engine.application          import Application               # noqa: F401
 
 __all__ = [
     # Application layer
