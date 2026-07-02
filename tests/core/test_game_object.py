@@ -1,12 +1,25 @@
 """
 tests/core/test_game_object.py
 ────────────────────────────────────────────────────────────────
-Commit 6: valida o contrato público de GameObject.
+Commit 14: suite completa do GameObject.
+
+Grupos:
+  TestIdentity      (8)  — id, short_id, name, tag, active
+  TestAutoTransform (2)  — Transform automático na criação
+  TestComponents   (10)  — add/get/get_all/remove, start ao adicionar com cena
+  TestHierarchy     (8)  — parent/children, reparent, herdar/limpar scene
+  TestActive        (3)  — update/draw bloqueados quando inactive
+  TestLifecycle     (6)  — update/draw propagam para filhos e components
+  TestSceneSetter   (3)  — scene.setter chama start nos components
+  TestDestroy       (6)  — active, components, children, parent, destroy cascata
+  TestRepr          (4)  — name, short_id, tag, omite Untagged
+
+Total esperado: 50 testes.
 """
 from __future__ import annotations
 
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 
 # ===========================================================================
@@ -91,7 +104,6 @@ class TestComponents:
 
     def test_get_component_returns_correct_type(self):
         from engine.core import Component, GameObject
-
         class Hp(Component): pass
         go = GameObject("A")
         hp = go.add_component(Hp())
@@ -99,21 +111,18 @@ class TestComponents:
 
     def test_get_component_returns_none_if_absent(self):
         from engine.core import Component, GameObject
-
         class Missing(Component): pass
         go = GameObject("A")
         assert go.get_component(Missing) is None
 
     def test_get_components_returns_all_of_type(self):
         from engine.core import Component, GameObject
-
         class Bullet(Component): pass
         go = GameObject("A")
         b1 = go.add_component(Bullet())
         b2 = go.add_component(Bullet())
         result = go.get_components(Bullet)
-        assert b1 in result and b2 in result
-        assert len(result) == 2
+        assert b1 in result and b2 in result and len(result) == 2
 
     def test_remove_component_detaches_game_object(self):
         from engine.core import Component, GameObject
@@ -124,14 +133,11 @@ class TestComponents:
 
     def test_remove_component_calls_destroy(self):
         from engine.core import Component, GameObject
-
         class Spy(Component):
             def __init__(self):
                 super().__init__()
                 self.destroyed = False
-            def destroy(self):
-                self.destroyed = True
-
+            def destroy(self): self.destroyed = True
         go = GameObject("A")
         spy = go.add_component(Spy())
         go.remove_component(spy)
@@ -147,8 +153,19 @@ class TestComponents:
     def test_remove_nonexistent_component_is_safe(self):
         from engine.core import Component, GameObject
         go = GameObject("A")
-        comp = Component()
-        go.remove_component(comp)  # nunca adicionado — não deve lançar
+        go.remove_component(Component())  # nunca adicionado
+
+    def test_add_component_calls_start_if_scene_set(self):
+        """Se o GO já tem cena, start() é chamado imediatamente ao adicionar."""
+        from engine.core import Component, GameObject, Scene
+        class Starter(Component):
+            def __init__(self): super().__init__(); self.started = False
+            def start(self): self.started = True
+        scene = Scene()
+        go = GameObject("A")
+        scene.add_game_object(go)
+        comp = go.add_component(Starter())
+        assert comp.started is True
 
 
 # ===========================================================================
@@ -158,63 +175,63 @@ class TestComponents:
 class TestHierarchy:
     def test_add_child_sets_parent(self):
         from engine.core import GameObject
-        parent = GameObject("P")
-        child  = GameObject("C")
+        parent, child = GameObject("P"), GameObject("C")
         parent.add_child(child)
         assert child.parent is parent
 
     def test_add_child_appears_in_children(self):
         from engine.core import GameObject
-        parent = GameObject("P")
-        child  = GameObject("C")
+        parent, child = GameObject("P"), GameObject("C")
         parent.add_child(child)
         assert child in parent.children
 
     def test_remove_child_clears_parent(self):
         from engine.core import GameObject
-        parent = GameObject("P")
-        child  = GameObject("C")
+        parent, child = GameObject("P"), GameObject("C")
         parent.add_child(child)
         parent.remove_child(child)
         assert child.parent is None
 
     def test_remove_child_removes_from_children(self):
         from engine.core import GameObject
-        parent = GameObject("P")
-        child  = GameObject("C")
+        parent, child = GameObject("P"), GameObject("C")
         parent.add_child(child)
         parent.remove_child(child)
         assert child not in parent.children
 
     def test_reparent_removes_from_old_parent(self):
         from engine.core import GameObject
-        p1 = GameObject("P1")
-        p2 = GameObject("P2")
-        child = GameObject("C")
+        p1, p2, child = GameObject("P1"), GameObject("P2"), GameObject("C")
         p1.add_child(child)
-        p2.add_child(child)  # reparent
+        p2.add_child(child)
         assert child not in p1.children
         assert child in p2.children
         assert child.parent is p2
 
     def test_child_inherits_scene_from_parent(self):
         from engine.core import GameObject, Scene
-        scene  = Scene()
-        parent = GameObject("P")
-        child  = GameObject("C")
+        scene = Scene()
+        parent, child = GameObject("P"), GameObject("C")
         scene.add_game_object(parent)
         parent.add_child(child)
         assert child.scene is scene
 
     def test_remove_child_clears_scene(self):
         from engine.core import GameObject, Scene
-        scene  = Scene()
-        parent = GameObject("P")
-        child  = GameObject("C")
+        scene = Scene()
+        parent, child = GameObject("P"), GameObject("C")
         scene.add_game_object(parent)
         parent.add_child(child)
         parent.remove_child(child)
         assert child.scene is None
+
+    def test_multiple_children(self):
+        from engine.core import GameObject
+        parent = GameObject("P")
+        c1, c2, c3 = GameObject("C1"), GameObject("C2"), GameObject("C3")
+        for c in (c1, c2, c3):
+            parent.add_child(c)
+        assert len(parent.children) == 3
 
 
 # ===========================================================================
@@ -224,13 +241,9 @@ class TestHierarchy:
 class TestActive:
     def test_inactive_go_skips_update(self):
         from engine.core import Component, GameObject
-
         class Ticker(Component):
-            def __init__(self):
-                super().__init__()
-                self.ticks = 0
+            def __init__(self): super().__init__(); self.ticks = 0
             def update(self, dt): self.ticks += 1
-
         go = GameObject("A")
         t = go.add_component(Ticker())
         go.active = False
@@ -239,22 +252,136 @@ class TestActive:
 
     def test_inactive_go_skips_draw(self):
         from engine.core import Component, GameObject
-
         class Drawer(Component):
-            def __init__(self):
-                super().__init__()
-                self.drawn = False
+            def __init__(self): super().__init__(); self.drawn = False
             def draw(self, screen): self.drawn = True
-
         go = GameObject("A")
         d = go.add_component(Drawer())
         go.active = False
         go.draw(MagicMock())
         assert d.drawn is False
 
+    def test_reactivate_resumes_update(self):
+        from engine.core import Component, GameObject
+        class Ticker(Component):
+            def __init__(self): super().__init__(); self.ticks = 0
+            def update(self, dt): self.ticks += 1
+        go = GameObject("A")
+        t = go.add_component(Ticker())
+        go.active = False
+        go.update(0.016)
+        go.active = True
+        go.update(0.016)
+        assert t.ticks == 1
+
 
 # ===========================================================================
-# 6. destroy
+# 6. Ciclo de vida (propagação)
+# ===========================================================================
+
+class TestLifecycle:
+    def test_update_propagates_to_components(self):
+        from engine.core import Component, GameObject
+        class Ticker(Component):
+            def __init__(self): super().__init__(); self.ticks = 0
+            def update(self, dt): self.ticks += 1
+        go = GameObject("A")
+        t = go.add_component(Ticker())
+        go.update(0.016)
+        assert t.ticks == 1
+
+    def test_update_propagates_to_children(self):
+        from engine.core import Component, GameObject
+        class Ticker(Component):
+            def __init__(self): super().__init__(); self.ticks = 0
+            def update(self, dt): self.ticks += 1
+        parent, child = GameObject("P"), GameObject("C")
+        parent.add_child(child)
+        t = child.add_component(Ticker())
+        parent.update(0.016)
+        assert t.ticks == 1
+
+    def test_draw_propagates_to_components(self):
+        from engine.core import Component, GameObject
+        class Drawer(Component):
+            def __init__(self): super().__init__(); self.drawn = False
+            def draw(self, screen): self.drawn = True
+        go = GameObject("A")
+        d = go.add_component(Drawer())
+        go.draw(MagicMock())
+        assert d.drawn is True
+
+    def test_draw_propagates_to_children(self):
+        from engine.core import Component, GameObject
+        class Drawer(Component):
+            def __init__(self): super().__init__(); self.drawn = False
+            def draw(self, screen): self.drawn = True
+        parent, child = GameObject("P"), GameObject("C")
+        parent.add_child(child)
+        d = child.add_component(Drawer())
+        parent.draw(MagicMock())
+        assert d.drawn is True
+
+    def test_update_skips_inactive_child(self):
+        from engine.core import Component, GameObject
+        class Ticker(Component):
+            def __init__(self): super().__init__(); self.ticks = 0
+            def update(self, dt): self.ticks += 1
+        parent, child = GameObject("P"), GameObject("C")
+        parent.add_child(child)
+        child.active = False
+        t = child.add_component(Ticker())
+        parent.update(0.016)
+        assert t.ticks == 0
+
+    def test_draw_skips_inactive_child(self):
+        from engine.core import Component, GameObject
+        class Drawer(Component):
+            def __init__(self): super().__init__(); self.drawn = False
+            def draw(self, screen): self.drawn = True
+        parent, child = GameObject("P"), GameObject("C")
+        parent.add_child(child)
+        child.active = False
+        d = child.add_component(Drawer())
+        parent.draw(MagicMock())
+        assert d.drawn is False
+
+
+# ===========================================================================
+# 7. scene.setter
+# ===========================================================================
+
+class TestSceneSetter:
+    def test_scene_setter_calls_start_on_components(self):
+        from engine.core import Component, GameObject, Scene
+        class Starter(Component):
+            def __init__(self): super().__init__(); self.started = False
+            def start(self): self.started = True
+        go = GameObject("A")
+        comp = go.add_component(Starter())
+        # define cena diretamente (sem Scene.add_game_object)
+        go.scene = Scene()
+        assert comp.started is True
+
+    def test_scene_setter_propagates_to_children(self):
+        from engine.core import GameObject, Scene
+        parent, child = GameObject("P"), GameObject("C")
+        parent.add_child(child)
+        scene = Scene()
+        parent.scene = scene
+        assert child.scene is scene
+
+    def test_scene_none_clears_children(self):
+        from engine.core import GameObject, Scene
+        parent, child = GameObject("P"), GameObject("C")
+        parent.add_child(child)
+        parent.scene = Scene()
+        parent.scene = None
+        assert child.scene is None
+
+
+# ===========================================================================
+# 8. destroy
 # ===========================================================================
 
 class TestDestroy:
@@ -280,29 +407,31 @@ class TestDestroy:
 
     def test_destroy_removes_from_parent(self):
         from engine.core import GameObject
-        parent = GameObject("P")
-        child  = GameObject("C")
+        parent, child = GameObject("P"), GameObject("C")
         parent.add_child(child)
         child.destroy()
         assert child not in parent.children
 
     def test_destroy_calls_component_destroy(self):
         from engine.core import Component, GameObject
-
         class Spy(Component):
-            def __init__(self):
-                super().__init__()
-                self.destroyed = False
+            def __init__(self): super().__init__(); self.destroyed = False
             def destroy(self): self.destroyed = True
-
         go = GameObject("A")
         spy = go.add_component(Spy())
         go.destroy()
         assert spy.destroyed is True
 
+    def test_destroy_cascades_to_children(self):
+        from engine.core import GameObject
+        parent, child = GameObject("P"), GameObject("C")
+        parent.add_child(child)
+        parent.destroy()
+        assert child.active is False
+
 
 # ===========================================================================
-# 7. __repr__
+# 9. __repr__
 # ===========================================================================
 
 class TestRepr:
