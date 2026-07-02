@@ -1,9 +1,22 @@
 """
 tests/core/test_event_bus.py
 ────────────────────────────────────────────────────────────────
-Commit 4: valida o contrato público do EventBus.
-EventBus usa estado de classe (útil no runtime), então cada teste
-chama EventBus.clear() para garantir isolamento.
+Commit 12: suite completa do EventBus.
+
+Grupos:
+  TestSubscribe       (6)  — subscribe, duplicata, listener_count, has_listeners
+  TestEmit            (6)  — despacho síncrono, kwargs, múltiplos, isolamento de exceção
+  TestUnsubscribe     (4)  — remove listener, sem efeito se ausente, só o alvo
+  TestOnce            (5)  — uma só chamada, auto-remove, coexistência, kwargs
+  TestDeferred        (6)  — emit_deferred, flush, FIFO, fila limpa, pending_count
+  TestClear           (5)  — clear(event), clear() total, limpa fila, safe em ausente
+  TestInspect         (5)  — listener_count, has_listeners, pending_count
+  TestPublishAlias    (3)  — retrocompat: publish(), has_subscribers(), subscribers_count()
+
+Total esperado: 40 testes.
+
+Nota: EventBus usa estado de CLASSE (classmethods). Cada teste
+isolado via autouse fixture que chama EventBus.clear().
 """
 from __future__ import annotations
 
@@ -11,18 +24,55 @@ import pytest
 from engine.event_bus import EventBus
 
 
+# ───────────────────────────────────────────────────────────────────
 @pytest.fixture(autouse=True)
 def clean_bus():
+    """Garante estado limpo antes e após cada teste."""
     EventBus.clear()
     yield
     EventBus.clear()
 
 
 # ===========================================================================
-# 1. subscribe / emit
+# 1. Subscribe
 # ===========================================================================
 
-class TestSubscribeEmit:
+class TestSubscribe:
+    def test_subscribe_adds_listener(self):
+        cb = lambda: None
+        EventBus.subscribe("evt", cb)
+        assert EventBus.listener_count("evt") == 1
+
+    def test_subscribe_ignores_duplicate(self):
+        cb = lambda: None
+        EventBus.subscribe("dup", cb)
+        EventBus.subscribe("dup", cb)
+        assert EventBus.listener_count("dup") == 1
+
+    def test_subscribe_multiple_distinct_callbacks(self):
+        EventBus.subscribe("evt", lambda: None)
+        EventBus.subscribe("evt", lambda: None)
+        assert EventBus.listener_count("evt") == 2
+
+    def test_has_listeners_true_after_subscribe(self):
+        EventBus.subscribe("evt", lambda: None)
+        assert EventBus.has_listeners("evt") is True
+
+    def test_has_listeners_false_when_empty(self):
+        assert EventBus.has_listeners("nonexistent") is False
+
+    def test_subscribe_independent_events(self):
+        EventBus.subscribe("a", lambda: None)
+        EventBus.subscribe("b", lambda: None)
+        assert EventBus.listener_count("a") == 1
+        assert EventBus.listener_count("b") == 1
+
+
+# ===========================================================================
+# 2. Emit (síncrono)
+# ===========================================================================
+
+class TestEmit:
     def test_listener_called_on_emit(self):
         received = []
         EventBus.subscribe("x", lambda v: received.append(v))
@@ -39,7 +89,7 @@ class TestSubscribeEmit:
     def test_no_listeners_emit_is_safe(self):
         EventBus.emit("no_such_event", value=99)  # não deve lançar
 
-    def test_duplicate_subscribe_ignored(self):
+    def test_duplicate_subscribe_fires_once(self):
         calls = []
         cb = lambda: calls.append(1)
         EventBus.subscribe("dup", cb)
@@ -60,12 +110,12 @@ class TestSubscribeEmit:
         def bad(): raise ValueError("boom")
         EventBus.subscribe("err", bad)
         EventBus.subscribe("err", lambda: results.append("ok"))
-        EventBus.emit("err")  # não deve lançar
+        EventBus.emit("err")  # não deve propagar ValueError
         assert results == ["ok"]
 
 
 # ===========================================================================
-# 2. unsubscribe
+# 3. Unsubscribe
 # ===========================================================================
 
 class TestUnsubscribe:
@@ -90,9 +140,15 @@ class TestUnsubscribe:
         EventBus.emit("t")
         assert calls == ["b"]
 
+    def test_unsubscribe_reduces_count(self):
+        cb = lambda: None
+        EventBus.subscribe("evt", cb)
+        EventBus.unsubscribe("evt", cb)
+        assert EventBus.listener_count("evt") == 0
+
 
 # ===========================================================================
-# 3. once
+# 4. Once
 # ===========================================================================
 
 class TestOnce:
@@ -124,9 +180,15 @@ class TestOnce:
         assert len(regular) == 2
         assert len(once_calls) == 1
 
+    def test_once_receives_kwargs(self):
+        received = {}
+        EventBus.once("evt", lambda v: received.update({"v": v}))
+        EventBus.emit("evt", v=42)
+        assert received == {"v": 42}
+
 
 # ===========================================================================
-# 4. emit_deferred / flush
+# 5. Emit Deferred + Flush
 # ===========================================================================
 
 class TestDeferred:
@@ -158,23 +220,30 @@ class TestDeferred:
         EventBus.flush()
         assert EventBus.pending_count() == 0
 
-    def test_pending_count_increases_with_deferred(self):
+    def test_pending_count_increments(self):
         EventBus.emit_deferred("a")
         EventBus.emit_deferred("b")
         assert EventBus.pending_count() == 2
 
+    def test_deferred_passes_kwargs(self):
+        received = {}
+        EventBus.subscribe("evt", lambda x: received.update({"x": x}))
+        EventBus.emit_deferred("evt", x=99)
+        EventBus.flush()
+        assert received == {"x": 99}
+
 
 # ===========================================================================
-# 5. clear
+# 6. Clear
 # ===========================================================================
 
 class TestClear:
-    def test_clear_event_removes_its_listeners(self):
+    def test_clear_event_removes_listeners(self):
         EventBus.subscribe("c", lambda: None)
         EventBus.clear("c")
         assert EventBus.listener_count("c") == 0
 
-    def test_clear_event_preserves_other_events(self):
+    def test_clear_event_preserves_others(self):
         calls = []
         EventBus.subscribe("keep", lambda: calls.append(1))
         EventBus.subscribe("remove", lambda: None)
@@ -182,28 +251,34 @@ class TestClear:
         EventBus.emit("keep")
         assert calls == [1]
 
-    def test_clear_all_removes_everything(self):
+    def test_clear_all_removes_all_events(self):
         EventBus.subscribe("a", lambda: None)
         EventBus.subscribe("b", lambda: None)
-        EventBus.emit_deferred("a")
         EventBus.clear()
         assert EventBus.listener_count("a") == 0
         assert EventBus.listener_count("b") == 0
+
+    def test_clear_all_empties_queue(self):
+        EventBus.emit_deferred("evt")
+        EventBus.clear()
         assert EventBus.pending_count() == 0
 
+    def test_clear_nonexistent_event_is_safe(self):
+        EventBus.clear("ghost.event")  # não deve lançar
+
 
 # ===========================================================================
-# 6. Inspecão
+# 7. Inspecão
 # ===========================================================================
 
-class TestInspection:
+class TestInspect:
     def test_listener_count_zero_initially(self):
-        assert EventBus.listener_count("new_event") == 0
+        assert EventBus.listener_count("evt") == 0
 
-    def test_listener_count_increments(self):
-        EventBus.subscribe("e", lambda: None)
-        EventBus.subscribe("e", lambda: None)
-        assert EventBus.listener_count("e") == 2
+    def test_listener_count_reflects_subscribes(self):
+        EventBus.subscribe("evt", lambda: None)
+        EventBus.subscribe("evt", lambda: None)
+        assert EventBus.listener_count("evt") == 2
 
     def test_has_listeners_false_when_empty(self):
         assert EventBus.has_listeners("ghost") is False
@@ -212,15 +287,29 @@ class TestInspection:
         EventBus.subscribe("h", lambda: None)
         assert EventBus.has_listeners("h") is True
 
+    def test_pending_count_zero_initially(self):
+        assert EventBus.pending_count() == 0
+
 
 # ===========================================================================
-# 7. Alias publish() (retrocompat)
+# 8. Aliases de instância (retrocompat)
 # ===========================================================================
 
 class TestPublishAlias:
     def test_publish_triggers_listener(self):
         calls = []
-        bus = EventBus()  # instância
+        bus = EventBus()
         EventBus.subscribe("p", lambda v: calls.append(v))
         bus.publish("p", v=7)
         assert calls == [7]
+
+    def test_has_subscribers_delegates_to_has_listeners(self):
+        EventBus.subscribe("evt", lambda: None)
+        bus = EventBus()
+        assert bus.has_subscribers("evt") is True
+
+    def test_subscribers_count_delegates_to_listener_count(self):
+        EventBus.subscribe("evt", lambda: None)
+        EventBus.subscribe("evt", lambda: None)
+        bus = EventBus()
+        assert bus.subscribers_count("evt") == 2
