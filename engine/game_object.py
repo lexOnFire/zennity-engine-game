@@ -1,4 +1,8 @@
+from __future__ import annotations
+
+import uuid
 from typing import List, Type, TypeVar, Optional, TYPE_CHECKING
+
 import pygame
 
 if TYPE_CHECKING:
@@ -9,9 +13,27 @@ T = TypeVar('T', bound='Component')
 
 
 class GameObject:
-    """A container for Components. Represents any entity in the game world."""
-    def __init__(self, name: str = "GameObject") -> None:
-        self.name: str = name
+    """
+    Container de Components. Representa qualquer entidade no mundo do jogo.
+
+    Identidade:
+        go.id    — UUID4 único e imutável, atribuído na criação
+        go.name  — nome legível para editor e debug (mutável)
+        go.tag   — agrupamento semântico ("Player", "Enemy", "Wall")
+
+    Exemplo:
+        player = GameObject("Player", tag="Player")
+        player.id    # '3f2a1c...' — UUID4 completo
+        player.name  # 'Player'
+        player.tag   # 'Player'
+    """
+
+    def __init__(self, name: str = "GameObject", tag: str = "Untagged") -> None:
+        # Identidade
+        self._id: str = str(uuid.uuid4())
+        self.name:   str  = name
+        self.tag:    str  = tag
+
         self.active: bool = True
         self.parent: Optional['GameObject'] = None
         self.children: List['GameObject'] = []
@@ -23,6 +45,24 @@ class GameObject:
         self.add_component(self.transform)
         self.mesh_type: Optional[str] = None
 
+    # ------------------------------------------------------------------ #
+    # Identidade                                                          #
+    # ------------------------------------------------------------------ #
+
+    @property
+    def id(self) -> str:
+        """UUID4 único e imutável atribuído na criação."""
+        return self._id
+
+    @property
+    def short_id(self) -> str:
+        """Primeiros 8 caracteres do UUID — útil para logs e debug."""
+        return self._id[:8]
+
+    # ------------------------------------------------------------------ #
+    # Cena                                                                #
+    # ------------------------------------------------------------------ #
+
     @property
     def scene(self) -> Optional['Scene']:
         return getattr(self, "_scene", None)
@@ -30,14 +70,16 @@ class GameObject:
     @scene.setter
     def scene(self, val: Optional['Scene']) -> None:
         self._scene = val
-        # Propaga para os componentes atuais
         for comp in self.components:
             if val and not comp._started:
                 comp.start()
                 comp._started = True
-        # Propaga para os filhos
         for child in self.children:
             child.scene = val
+
+    # ------------------------------------------------------------------ #
+    # Components                                                          #
+    # ------------------------------------------------------------------ #
 
     def add_component(self, component: 'Component') -> 'Component':
         component.game_object = self
@@ -62,6 +104,10 @@ class GameObject:
             component.game_object = None
             self.components.remove(component)
 
+    # ------------------------------------------------------------------ #
+    # Hierarquia                                                          #
+    # ------------------------------------------------------------------ #
+
     def add_child(self, child: 'GameObject') -> 'GameObject':
         if child.parent:
             child.parent.remove_child(child)
@@ -79,8 +125,11 @@ class GameObject:
     def _propagate_scene(self, scene: Optional['Scene']) -> None:
         self.scene = scene
 
+    # ------------------------------------------------------------------ #
+    # Ciclo de vida                                                       #
+    # ------------------------------------------------------------------ #
+
     def start(self) -> None:
-        """Inicia todos os componentes do GameObject imediatamente se houver cena."""
         for comp in self.components:
             if not comp._started and self.scene:
                 comp.start()
@@ -112,8 +161,6 @@ class GameObject:
         for comp in self.components:
             comp.destroy()
         self.components.clear()
-        # FIX: iterate over a copy so child.destroy() removing itself from
-        # self.children doesn't skip siblings
         for child in list(self.children):
             child.destroy()
         self.children.clear()
@@ -122,3 +169,11 @@ class GameObject:
                 self.parent.children.remove(self)
             self.parent = None
         self.scene = None
+
+    # ------------------------------------------------------------------ #
+    # repr                                                                #
+    # ------------------------------------------------------------------ #
+
+    def __repr__(self) -> str:
+        tag_str = f" tag={self.tag}" if self.tag != "Untagged" else ""
+        return f"<GameObject '{self.name}' id={self.short_id}{tag_str}>"
