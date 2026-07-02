@@ -1,21 +1,29 @@
 import sys
+import os
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QMenuBar, QMenu, QToolBar, QStatusBar,
-    QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox
+    QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox,
+    QDockWidget
 )
-from PySide6.QtGui import QAction, QKeySequence, QIcon
-from PySide6.QtCore import Qt, Slot
+from PySide6.QtGui import QAction, QKeySequence, QIcon, QCloseEvent
+from PySide6.QtCore import Qt, Slot, QSettings
+
+# Imports dos Docks
+from editor.widgets.hierarchy_dock import HierarchyDock
+from editor.widgets.asset_browser_dock import AssetBrowserDock
+from editor.widgets.console_dock import ConsoleDock
+from editor.widgets.inspector_dock import InspectorDock
 
 
 class MainWindow(QMainWindow):
     """
     Janela Principal do Zennity Editor construída sobre o PySide6.
     
-    Implementação da Semana 1:
-      - Estrutura base de janela
-      - Barra de menus (Menu Bar)
-      - Barra de ferramentas (Tool Bar) com controles de simulação e transformação
-      - Barra de status (Status Bar) com estatísticas da engine
+    Implementação da Semana 2:
+      - Sistema de QDockWidget acopláveis (Hierarchy, Inspector, Recursos, Console)
+      - Posições iniciais baseadas no layout Unreal Engine
+      - Persistência e restauração de layout (QSettings)
+      - Menu "Janela" dinâmico sincronizado com a visibilidade dos Docks
     """
     
     def __init__(self) -> None:
@@ -24,15 +32,26 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Zennity Engine Editor - NovoProjeto.zproj*")
         self.resize(1280, 800)
         
-        # Central widget temporário (espaço reservado para a Viewport na Semana 6)
+        # Configura as opções de Docking
+        self.setDockOptions(QMainWindow.AnimatedDocks | QMainWindow.AllowTabbedDocks)
+        
+        # Central widget temporário (Viewport)
         self.setup_central_widget()
         
-        # Inicializa componentes da interface
+        # Inicializa docks do editor
+        self.create_docks()
+        
+        # Inicializa ações e menus
         self.create_actions()
         self.create_menu_bar()
         self.create_tool_bar()
         self.create_status_bar()
         
+        # Tenta carregar o layout anterior, senão aplica o layout padrão (Unreal)
+        self.settings = QSettings("Zennity", "EditorLayout")
+        if not self.restore_layout_state():
+            self.apply_default_layout()
+            
         self.statusBar().showMessage("Zennity Editor pronto.", 5000)
 
     def setup_central_widget(self) -> None:
@@ -49,6 +68,61 @@ class MainWindow(QMainWindow):
         
         layout.addWidget(label)
         self.setCentralWidget(central)
+
+    def create_docks(self) -> None:
+        """Instancia os painéis acopláveis."""
+        self.dock_hierarchy = HierarchyDock(self)
+        self.dock_assets    = AssetBrowserDock(self)
+        self.dock_console   = ConsoleDock(self)
+        self.dock_inspector = InspectorDock(self)
+        
+        # Adiciona à janela principal
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_hierarchy)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_assets)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_console)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.dock_inspector)
+
+    def apply_default_layout(self) -> None:
+        """Posiciona os docks na disposição padrão inspirada na Unreal Engine."""
+        # Limpa abas ou layouts cruzados
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_hierarchy)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_assets)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_console)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.dock_inspector)
+        
+        # Empilha Hierarchy sobre AssetBrowser na esquerda
+        self.splitDockWidget(self.dock_hierarchy, self.dock_assets, Qt.Vertical)
+        
+        # Garante que todos estejam visíveis
+        self.dock_hierarchy.show()
+        self.dock_assets.show()
+        self.dock_console.show()
+        self.dock_inspector.show()
+        
+        self.log_action("Layout padrão da Unreal restaurado")
+
+    def save_layout_state(self) -> None:
+        """Salva a geometria e o estado dos painéis acopláveis."""
+        self.settings.setValue("geometry", self.saveGeometry())
+        self.settings.setValue("windowState", self.saveState())
+        self.log_action("Layout do editor salvo com sucesso")
+
+    def restore_layout_state(self) -> bool:
+        """Restaura o estado salvo dos painéis. Retorna True se restaurado."""
+        geom = self.settings.value("geometry")
+        state = self.settings.value("windowState")
+        
+        if geom is not None and state is not None:
+            self.restoreGeometry(geom)
+            self.restoreState(state)
+            self.log_action("Layout anterior restaurado")
+            return True
+        return False
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        """Evento de fechamento: salva automaticamente o layout antes de sair."""
+        self.save_layout_state()
+        event.accept()
 
     def create_actions(self) -> None:
         """Cria as ações reutilizáveis para menus e toolbars."""
@@ -114,17 +188,18 @@ class MainWindow(QMainWindow):
         menu_edit.addAction(self.act_duplicate)
         menu_edit.addAction(self.act_delete)
         
-        # Menu Janela
+        # Menu Janela (Dock Widgets Toggles)
         menu_window = menubar.addMenu("Janela")
         self.act_reset_layout = QAction("Restaurar Layout Padrão", self)
-        self.act_reset_layout.triggered.connect(lambda: self.log_action("Restaurar Layout"))
+        self.act_reset_layout.triggered.connect(self.apply_default_layout)
         menu_window.addAction(self.act_reset_layout)
         menu_window.addSeparator()
-        # Futuras docas (semana 2)
-        menu_window.addAction(QAction("Hierarchy", self, checkable=True, checked=True))
-        menu_window.addAction(QAction("Inspector", self, checkable=True, checked=True))
-        menu_window.addAction(QAction("Recursos (Asset Browser)", self, checkable=True, checked=True))
-        menu_window.addAction(QAction("Console", self, checkable=True, checked=True))
+        
+        # toggleViewAction() vincula dinamicamente a visibilidade do Dock ao checkbox do Menu
+        menu_window.addAction(self.dock_hierarchy.toggleViewAction())
+        menu_window.addAction(self.dock_inspector.toggleViewAction())
+        menu_window.addAction(self.dock_assets.toggleViewAction())
+        menu_window.addAction(self.dock_console.toggleViewAction())
         
         # Menu Ajuda
         menu_help = menubar.addMenu("Ajuda")
