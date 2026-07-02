@@ -1,7 +1,18 @@
 """
 tests/core/test_scene.py
 ────────────────────────────────────────────────────────────────
-Commit 7: cobertura completa de Scene.
+Commit 16: suite completa de Scene.
+
+Grupos:
+  TestAddGameObject   (8)  — append, set scene, idempotente, retorno, start, múltiplos
+  TestRemoveGameObject(5)  — remove, limpa scene, safe ausente, não destrói, re-add
+  TestFind            (9)  — find, find_by_tag, find_by_id, edge-cases
+  TestUpdateDraw      (6)  — propaga, pula inativo, pula removido, surface real
+  TestSubclassHooks   (5)  — start, on_exit, handle_event, update/draw override
+  TestSceneDefaults   (3)  — nome, lista vazia, engine=None
+  TestRepr            (3)  — nome, contagem, default
+
+Total esperado: 39 testes.
 """
 from __future__ import annotations
 
@@ -44,11 +55,9 @@ class TestAddGameObject:
 
     def test_add_triggers_component_start(self):
         from engine.core import Scene, GameObject, Component
-
         class Spy(Component):
             def __init__(self): super().__init__(); self.started = False
             def start(self): self.started = True
-
         go = GameObject("A")
         spy = go.add_component(Spy())
         Scene().add_game_object(go)
@@ -61,13 +70,26 @@ class TestAddGameObject:
             scene.add_game_object(GameObject(str(i)))
         assert len(scene.game_objects) == 5
 
-    def test_scene_starts_empty(self):
-        from engine.core import Scene
-        assert len(Scene("Test").game_objects) == 0
+    def test_re_add_after_remove(self):
+        """GO removido pode ser adicionado novamente sem duplicatas."""
+        from engine.core import Scene, GameObject
+        scene = Scene()
+        go = GameObject("A")
+        scene.add_game_object(go)
+        scene.remove_game_object(go)
+        scene.add_game_object(go)
+        assert scene.game_objects.count(go) == 1
+        assert go.scene is scene
 
-    def test_scene_name_set(self):
-        from engine.core import Scene
-        assert Scene("Test").name == "Test"
+    def test_add_sets_scene_on_children(self):
+        """Filhos já vinculados ao GO herdam a cena."""
+        from engine.core import Scene, GameObject
+        scene = Scene()
+        parent = GameObject("P")
+        child  = GameObject("C")
+        parent.add_child(child)
+        scene.add_game_object(parent)
+        assert child.scene is scene
 
 
 # ===========================================================================
@@ -100,6 +122,14 @@ class TestRemoveGameObject:
         scene.remove_game_object(go)
         assert go.active is True
 
+    def test_remove_decrements_count(self):
+        from engine.core import Scene, GameObject
+        scene = Scene()
+        go = scene.add_game_object(GameObject("A"))
+        scene.add_game_object(GameObject("B"))
+        scene.remove_game_object(go)
+        assert len(scene.game_objects) == 1
+
 
 # ===========================================================================
 # 3. find / find_by_tag / find_by_id
@@ -122,6 +152,12 @@ class TestFind:
         go1 = scene.add_game_object(GameObject("Twin"))
         scene.add_game_object(GameObject("Twin"))
         assert scene.find("Twin") is go1
+
+    def test_find_is_case_sensitive(self):
+        from engine.core import Scene, GameObject
+        scene = Scene()
+        scene.add_game_object(GameObject("Hero"))
+        assert scene.find("hero") is None
 
     def test_find_by_tag_returns_all(self):
         from engine.core import Scene, GameObject
@@ -160,11 +196,9 @@ class TestFind:
 class TestUpdateDraw:
     def test_update_delegates_to_all_gos(self):
         from engine.core import Scene, GameObject, Component
-
         class Ticker(Component):
             def __init__(self): super().__init__(); self.ticks = 0
             def update(self, dt): self.ticks += 1
-
         scene = Scene()
         tickers = []
         for i in range(3):
@@ -172,17 +206,14 @@ class TestUpdateDraw:
             t = go.add_component(Ticker())
             tickers.append(t)
             scene.add_game_object(go)
-
         scene.update(0.016)
         assert all(t.ticks == 1 for t in tickers)
 
     def test_draw_delegates_to_all_gos(self):
         from engine.core import Scene, GameObject, Component
-
         class Drawer(Component):
             def __init__(self): super().__init__(); self.drawn = False
             def draw(self, screen): self.drawn = True
-
         scene = Scene()
         drawers = []
         for i in range(3):
@@ -190,17 +221,14 @@ class TestUpdateDraw:
             d = go.add_component(Drawer())
             drawers.append(d)
             scene.add_game_object(go)
-
         scene.draw(MagicMock())
         assert all(d.drawn for d in drawers)
 
     def test_update_skips_removed_go(self):
         from engine.core import Scene, GameObject, Component
-
         class Ticker(Component):
             def __init__(self): super().__init__(); self.ticks = 0
             def update(self, dt): self.ticks += 1
-
         scene = Scene()
         go = GameObject("A")
         t = go.add_component(Ticker())
@@ -208,6 +236,32 @@ class TestUpdateDraw:
         scene.remove_game_object(go)
         scene.update(0.016)
         assert t.ticks == 0
+
+    def test_update_skips_inactive_go(self):
+        from engine.core import Scene, GameObject, Component
+        class Ticker(Component):
+            def __init__(self): super().__init__(); self.ticks = 0
+            def update(self, dt): self.ticks += 1
+        scene = Scene()
+        go = GameObject("A")
+        t = go.add_component(Ticker())
+        scene.add_game_object(go)
+        go.active = False
+        scene.update(0.016)
+        assert t.ticks == 0
+
+    def test_draw_skips_inactive_go(self):
+        from engine.core import Scene, GameObject, Component
+        class Drawer(Component):
+            def __init__(self): super().__init__(); self.drawn = False
+            def draw(self, screen): self.drawn = True
+        scene = Scene()
+        go = GameObject("A")
+        d = go.add_component(Drawer())
+        scene.add_game_object(go)
+        go.active = False
+        scene.draw(MagicMock())
+        assert d.drawn is False
 
     def test_draw_does_not_crash_with_real_surface(self, screen):
         from engine.core import Scene, GameObject
@@ -223,22 +277,18 @@ class TestUpdateDraw:
 class TestSubclassHooks:
     def test_start_hook(self):
         from engine.core import Scene
-
         class MyScene(Scene):
             def __init__(self): super().__init__(); self.started = False
             def start(self): self.started = True
-
         s = MyScene()
         s.start()
         assert s.started is True
 
     def test_on_exit_hook(self):
         from engine.core import Scene
-
         class MyScene(Scene):
             def __init__(self): super().__init__(); self.exited = False
             def on_exit(self): self.exited = True
-
         s = MyScene()
         s.on_exit()
         assert s.exited is True
@@ -247,9 +297,56 @@ class TestSubclassHooks:
         from engine.core import Scene
         Scene().handle_event(MagicMock())
 
+    def test_subclass_update_calls_super(self):
+        """super().update(dt) propaga para GOs mesmo em subclasse."""
+        from engine.core import Scene, GameObject, Component
+        class Ticker(Component):
+            def __init__(self): super().__init__(); self.ticks = 0
+            def update(self, dt): self.ticks += 1
+        class MyScene(Scene):
+            def update(self, dt): super().update(dt)
+        scene = MyScene()
+        go = GameObject("G")
+        t = go.add_component(Ticker())
+        scene.add_game_object(go)
+        scene.update(0.016)
+        assert t.ticks == 1
+
+    def test_subclass_draw_calls_super(self):
+        from engine.core import Scene, GameObject, Component
+        class Drawer(Component):
+            def __init__(self): super().__init__(); self.drawn = False
+            def draw(self, screen): self.drawn = True
+        class MyScene(Scene):
+            def draw(self, screen): super().draw(screen)
+        scene = MyScene()
+        go = GameObject("G")
+        d = go.add_component(Drawer())
+        scene.add_game_object(go)
+        scene.draw(MagicMock())
+        assert d.drawn is True
+
 
 # ===========================================================================
-# 6. __repr__
+# 6. Defaults
+# ===========================================================================
+
+class TestSceneDefaults:
+    def test_starts_empty(self):
+        from engine.core import Scene
+        assert len(Scene().game_objects) == 0
+
+    def test_name_set(self):
+        from engine.core import Scene
+        assert Scene("Main").name == "Main"
+
+    def test_engine_none_by_default(self):
+        from engine.core import Scene
+        assert Scene().engine is None
+
+
+# ===========================================================================
+# 7. __repr__
 # ===========================================================================
 
 class TestRepr:
