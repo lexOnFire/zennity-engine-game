@@ -1,7 +1,22 @@
 """
 tests/core/test_time.py
 ────────────────────────────────────────────────────────────────
-Commit 8: valida o contrato público de Time.
+Commit 13: suite completa do Time.
+
+Grupos:
+  TestDefaults    (6)  — estado inicial
+  TestTick        (7)  — frame, delta, raw_delta, retorno de tick()
+  TestDtCap       (3)  — capping de delta, raw_delta livre
+  TestScale       (5)  — scaled_delta com vários fatores, delta imune
+  TestPaused      (5)  — scaled=0, elapsed congela, delta normal, retomar
+  TestElapsed     (4)  — acumula, usa scale, não acumula pausado
+  TestSlowMo      (3)  — slow-motion (scale<1) e fast-forward (scale>1)
+  TestAliases     (3)  — fps, dt, fps_target
+  TestCurrent     (3)  — current(), RuntimeError sem init, registra na criação
+  TestRepr        (4)  — frame, scale, paused, elapsed no repr
+
+Total esperado: 43 testes.
+
 Todos os testes mockam pygame.time.Clock para rodar headless.
 """
 from __future__ import annotations
@@ -10,22 +25,19 @@ import pytest
 from unittest.mock import MagicMock, patch
 
 
-# ---------------------------------------------------------------------------
-# Fixture: cria Time com clock mockado
-# ---------------------------------------------------------------------------
-
+# ───────────────────────────────────────────────────────────────────
 @pytest.fixture
 def make_time():
-    """Retorna uma factory que cria Time com Clock mockado."""
+    """Factory que cria Time com Clock mockado."""
     def _factory(tick_ms: int = 16, target_fps: int = 60, dt_cap: float = 0.1):
-        from engine.core import Time
+        from engine.time import Time
         with patch("engine.time.pygame.time.Clock") as MockClock:
             clock_inst = MagicMock()
             clock_inst.tick.return_value = tick_ms
             clock_inst.get_fps.return_value = float(1000 / tick_ms)
             MockClock.return_value = clock_inst
             t = Time(target_fps=target_fps, dt_cap=dt_cap)
-            t._clock = clock_inst  # garante que o mock está em uso
+            t._clock = clock_inst
         return t
     return _factory
 
@@ -96,6 +108,11 @@ class TestTick:
         t.tick()
         assert t.scaled_delta == pytest.approx(0.016)  # scale=1.0
 
+    def test_tick_updates_fps_actual(self, make_time):
+        t = make_time(tick_ms=16)
+        t.tick()
+        assert t.fps_actual > 0
+
 
 # ===========================================================================
 # 3. dt_cap
@@ -103,19 +120,16 @@ class TestTick:
 
 class TestDtCap:
     def test_delta_capped(self, make_time):
-        """Frame muito lento (500ms): delta deve ser limitado ao dt_cap."""
         t = make_time(tick_ms=500, dt_cap=0.1)
         t.tick()
         assert t.delta == pytest.approx(0.1)
 
     def test_raw_delta_not_capped(self, make_time):
-        """raw_delta nunca é limitado pelo dt_cap."""
         t = make_time(tick_ms=500, dt_cap=0.1)
         t.tick()
         assert t.raw_delta == pytest.approx(0.5)
 
     def test_delta_within_cap_unchanged(self, make_time):
-        """Frame rápido: delta não deve ser alterado."""
         t = make_time(tick_ms=8, dt_cap=0.1)
         t.tick()
         assert t.delta == pytest.approx(0.008)
@@ -145,11 +159,18 @@ class TestScale:
         assert t.scaled_delta == pytest.approx(0.0)
 
     def test_delta_not_affected_by_scale(self, make_time):
-        """delta (sem scale) nunca é afetado por t.scale."""
         t = make_time(tick_ms=16)
         t.scale = 99.0
         t.tick()
         assert t.delta == pytest.approx(0.016)
+
+    def test_scale_change_mid_run(self, make_time):
+        """Mudar scale entre frames afeta apenas os frames seguintes."""
+        t = make_time(tick_ms=16)
+        t.tick()  # scale=1.0 → elapsed=0.016
+        t.scale = 2.0
+        t.tick()  # scale=2.0 → scaled_delta=0.032
+        assert t.elapsed == pytest.approx(0.016 + 0.032)
 
 
 # ===========================================================================
@@ -171,7 +192,6 @@ class TestPaused:
         assert t.elapsed == pytest.approx(0.0)
 
     def test_paused_does_not_affect_delta(self, make_time):
-        """delta continua sendo calculado mesmo pausado."""
         t = make_time(tick_ms=16)
         t.paused = True
         t.tick()
@@ -180,10 +200,18 @@ class TestPaused:
     def test_unpause_resumes_elapsed(self, make_time):
         t = make_time(tick_ms=16)
         t.paused = True
-        t.tick()  # não acumula
+        t.tick()          # não acumula
         t.paused = False
-        t.tick()  # acumula 0.016
+        t.tick()          # acumula 0.016
         assert t.elapsed == pytest.approx(0.016)
+
+    def test_paused_still_increments_frame(self, make_time):
+        """Frame counter não para quando pausado."""
+        t = make_time(tick_ms=16)
+        t.paused = True
+        t.tick()
+        t.tick()
+        assert t.frame == 2
 
 
 # ===========================================================================
@@ -203,9 +231,52 @@ class TestElapsed:
         t.tick()  # scaled_delta = 0.032
         assert t.elapsed == pytest.approx(0.032)
 
+    def test_elapsed_not_accumulated_when_paused(self, make_time):
+        t = make_time(tick_ms=16)
+        t.tick()          # +0.016
+        t.paused = True
+        t.tick()          # +0
+        assert t.elapsed == pytest.approx(0.016)
+
+    def test_elapsed_increases_monotonically(self, make_time):
+        t = make_time(tick_ms=16)
+        prev = 0.0
+        for _ in range(10):
+            t.tick()
+            assert t.elapsed >= prev
+            prev = t.elapsed
+
 
 # ===========================================================================
-# 7. Aliases
+# 7. Slow-mo / fast-forward
+# ===========================================================================
+
+class TestSlowMo:
+    def test_slow_motion_half_speed(self, make_time):
+        t = make_time(tick_ms=16)
+        t.scale = 0.5
+        for _ in range(4):
+            t.tick()
+        # 4 frames × 0.016 × 0.5 = 0.032
+        assert t.elapsed == pytest.approx(0.032)
+
+    def test_fast_forward_double_speed(self, make_time):
+        t = make_time(tick_ms=16)
+        t.scale = 2.0
+        for _ in range(4):
+            t.tick()
+        # 4 frames × 0.016 × 2.0 = 0.128
+        assert t.elapsed == pytest.approx(0.128)
+
+    def test_scale_ten_x(self, make_time):
+        t = make_time(tick_ms=16)
+        t.scale = 10.0
+        t.tick()
+        assert t.scaled_delta == pytest.approx(0.16)
+
+
+# ===========================================================================
+# 8. Aliases
 # ===========================================================================
 
 class TestAliases:
@@ -219,26 +290,37 @@ class TestAliases:
         t.tick()
         assert t.dt == t.delta
 
+    def test_fps_target_default(self, make_time):
+        t = make_time(target_fps=60)
+        assert t.fps_target == 60
+
 
 # ===========================================================================
-# 8. current()
+# 9. current()
 # ===========================================================================
 
 class TestCurrent:
     def test_current_returns_instance(self, make_time):
-        from engine.core import Time
+        from engine.time import Time
         t = make_time()
         assert Time.current() is t
 
     def test_current_raises_before_init(self):
-        from engine.core import Time
+        from engine.time import Time
         Time._current = None
         with pytest.raises(RuntimeError):
             Time.current()
 
+    def test_new_instance_replaces_current(self, make_time):
+        """A instância mais recente é sempre a ativa."""
+        from engine.time import Time
+        make_time()  # instância 1
+        t2 = make_time()  # instância 2
+        assert Time.current() is t2
+
 
 # ===========================================================================
-# 9. __repr__
+# 10. __repr__
 # ===========================================================================
 
 class TestRepr:
