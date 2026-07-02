@@ -1,86 +1,187 @@
 """
-EventBus — sistema de pub/sub desacoplado para comunicação interna.
+engine/event_bus.py
+────────────────────────────────────────────────────────────────
+Barramento central de eventos da Zennity Engine.
 
-Permite que sistemas da engine e scripts de jogo se comuniquem sem
-referências diretas uns aos outros.
+Conceito:
+  O EventBus é a espinha dorsal de comunicação entre sistemas.
+  Nenhum sistema precisa importar outro — eles apenas publicam e escutam
+  eventos nomeados.
 
-Uso:
-    bus = EventBus()
+Modos de despacho:
+  emit() / publish()  → síncrono: listeners chamados imediatamente.
+  emit_deferred()     → adiado: entra na fila, despachado em flush().
 
-    # Subscreve
-    bus.subscribe("player_died", my_callback)
+Uso básico:
 
-    # Publica
-    bus.publish("player_died", score=0)
+    from engine.event_bus import EventBus
 
-    # Remove subscrição
-    bus.unsubscribe("player_died", my_callback)
+    # Inscrição
+    def on_death(killer: str, victim: str):
+        print(f"{victim} morreu para {killer}")
 
-O método publish() chama todos os handlers registrados para o evento
-naquele instante (dispatch síncrono). Erros em handlers são isolados e
-logados sem derrubar os demais handlers.
+    EventBus.subscribe("player.death", on_death)
+
+    # Emissão síncrona
+    EventBus.emit("player.death", killer="spike", victim="player")
+
+    # Emissão adiada (despachada no flush())
+    EventBus.emit_deferred("enemy.spawn", pos=(100, 200), type="slime")
+
+    # Uma só vez
+    EventBus.once("game.start", lambda: print("Começou!"))
+
+    # Cancelar
+    EventBus.unsubscribe("player.death", on_death)
+
+    # Limpar um evento
+    EventBus.clear("player.death")
+
+    # Limpar tudo
+    EventBus.clear()
+
+Integração com Application:
+  Application.run() chama EventBus.flush() ao final de cada frame.
+
+    # publish() mantido como alias para retrocompatibilidade.
 """
 from __future__ import annotations
+
 import traceback
-from collections import defaultdict
-from typing import Any, Callable, DefaultDict
+from collections import defaultdict, deque
+from typing import Any, Callable, DefaultDict, Deque, Dict, List, Optional, Tuple
 
-
-Handler = Callable[..., None]
+_Callback = Callable[..., None]
+_Event    = str
 
 
 class EventBus:
-    """Barramento de eventos pub/sub gerenciado pela Application."""
+    """
+    Barramento global de eventos.
 
+    Todos os métodos são @classmethod — não instanciar.
+    (Instâncias pré-existentes continuam funcionando via alias publish().)
+    """
+
+    # ----- estado de classe (global) ----------------------------------- #
+    _listeners: DefaultDict[_Event, List[_Callback]] = defaultdict(list)
+    _once:      DefaultDict[_Event, List[_Callback]] = defaultdict(list)
+    _queue:     Deque[Tuple[_Event, Dict[str, Any]]] = deque()
+
+    # ----- estado de instância (retrocompat) --------------------------- #
     def __init__(self) -> None:
-        self._handlers: DefaultDict[str, list[Handler]] = defaultdict(list)
+        # Instâncias delegam para o estado global de classe.
+        pass
 
     # ------------------------------------------------------------------ #
-    # Subscrição
+    # Inscrição                                                           #
     # ------------------------------------------------------------------ #
 
-    def subscribe(self, event: str, handler: Handler) -> None:
-        """Registra `handler` para o evento `event`."""
-        if handler not in self._handlers[event]:
-            self._handlers[event].append(handler)
+    @classmethod
+    def subscribe(cls, event: _Event, callback: _Callback) -> None:
+        """Inscreve callback no evento. Ignora duplicatas."""
+        if callback not in cls._listeners[event]:
+            cls._listeners[event].append(callback)
 
-    def unsubscribe(self, event: str, handler: Handler) -> None:
-        """Remove `handler` do evento `event`. No-op se não existir."""
-        try:
-            self._handlers[event].remove(handler)
-        except ValueError:
-            pass
+    @classmethod
+    def once(cls, event: _Event, callback: _Callback) -> None:
+        """Inscreve callback que se auto-remove após a primeira chamada."""
+        cls._once[event].append(callback)
+        cls.subscribe(event, callback)
 
-    def unsubscribe_all(self, event: str) -> None:
-        """Remove todos os handlers de um evento."""
-        self._handlers.pop(event, None)
-
-    def clear(self) -> None:
-        """Remove todos os handlers de todos os eventos."""
-        self._handlers.clear()
+    @classmethod
+    def unsubscribe(cls, event: _Event, callback: _Callback) -> None:
+        """Remove callback do evento. Sem efeito se não estiver inscrito."""
+        listeners = cls._listeners.get(event)
+        if listeners and callback in listeners:
+            listeners.remove(callback)
+        once = cls._once.get(event)
+        if once and callback in once:
+            once.remove(callback)
 
     # ------------------------------------------------------------------ #
-    # Publicação
+    # Emissão                                                             #
     # ------------------------------------------------------------------ #
 
-    def publish(self, event: str, **kwargs: Any) -> None:
+    @classmethod
+    def emit(cls, event: _Event, **kwargs: Any) -> None:
         """
-        Dispara o evento `event` para todos os handlers registrados.
-        Cada handler recebe os kwargs como argumentos nomeados.
-        Erros em um handler não impedem a execução dos demais.
+        Despacha o evento imediatamente (síncrono).
+        Exceções em listeners são capturadas sem interromper os demais.
         """
-        for handler in list(self._handlers.get(event, [])):
+        for callback in list(cls._listeners.get(event, [])):
             try:
-                handler(**kwargs)
-            except Exception:  # noqa: BLE001
+                callback(**kwargs)
+            except Exception:
                 traceback.print_exc()
+        # Remove callbacks "once"
+        for cb in list(cls._once.get(event, [])):
+            cls.unsubscribe(event, cb)
+
+    @classmethod
+    def emit_deferred(cls, event: _Event, **kwargs: Any) -> None:
+        """Enfileira o evento para despacho no próximo flush()."""
+        cls._queue.append((event, kwargs))
+
+    @classmethod
+    def flush(cls) -> None:
+        """
+        Despacha todos os eventos adiados da fila.
+        Chamado por Application.run() ao final de cada frame.
+        """
+        while cls._queue:
+            event, kwargs = cls._queue.popleft()
+            cls.emit(event, **kwargs)
 
     # ------------------------------------------------------------------ #
-    # Utilitários
+    # Limpeza                                                             #
     # ------------------------------------------------------------------ #
 
-    def has_subscribers(self, event: str) -> bool:
-        return bool(self._handlers.get(event))
+    @classmethod
+    def clear(cls, event: Optional[_Event] = None) -> None:
+        """
+        clear("player.death") → remove listeners deste evento.
+        clear()               → remove tudo.
+        """
+        if event is not None:
+            cls._listeners.pop(event, None)
+            cls._once.pop(event, None)
+        else:
+            cls._listeners.clear()
+            cls._once.clear()
+            cls._queue.clear()
 
-    def subscribers_count(self, event: str) -> int:
-        return len(self._handlers.get(event, []))
+    # Alias retrocompat (instâncias pré-existentes)
+    def unsubscribe_all(self, event: _Event) -> None:
+        EventBus.clear(event)
+
+    # ------------------------------------------------------------------ #
+    # Inspecão                                                            #
+    # ------------------------------------------------------------------ #
+
+    @classmethod
+    def listener_count(cls, event: _Event) -> int:
+        return len(cls._listeners.get(event, []))
+
+    @classmethod
+    def has_listeners(cls, event: _Event) -> bool:
+        return cls.listener_count(event) > 0
+
+    @classmethod
+    def pending_count(cls) -> int:
+        """Número de eventos adiados aguardando flush()."""
+        return len(cls._queue)
+
+    # ------------------------------------------------------------------ #
+    # Alias retrocompat: publish() → emit()                              #
+    # ------------------------------------------------------------------ #
+
+    def publish(self, event: _Event, **kwargs: Any) -> None:
+        """Alias de emit() mantido para retrocompatibilidade."""
+        EventBus.emit(event, **kwargs)
+
+    def has_subscribers(self, event: _Event) -> bool:
+        return EventBus.has_listeners(event)
+
+    def subscribers_count(self, event: _Event) -> int:
+        return EventBus.listener_count(event)
