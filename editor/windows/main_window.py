@@ -11,6 +11,8 @@ from PySide6.QtCore import Qt, Slot, QSettings
 # Modelos e ViewModels MVVM
 from editor.models.scene_model import SceneModel
 from editor.viewmodels.scene_viewmodel import SceneViewModel
+from editor.models.asset_model import AssetModel
+from editor.viewmodels.asset_viewmodel import AssetViewModel
 
 # Widgets do Editor
 from editor.widgets.hierarchy_dock import HierarchyDock
@@ -23,11 +25,10 @@ class MainWindow(QMainWindow):
     """
     Janela Principal do Zennity Editor construída sobre o PySide6.
     
-    Implementação da Semana 3:
-      - Sistema de Hierarchy e Seleção de Entidades (MVVM)
-      - Menu "Criar" para novos GameObjects na cena
-      - Atalhos de duplicação, exclusão e criação integrados
-      - Sincronização dinâmica da barra de status com contagem de objetos
+    Implementação da Semana 4:
+      - Sistema de Asset Browser (MVVM) com navegação de diretórios e grid
+      - Sincronização e filtros de pesquisa de assets
+      - Integração com a barra de status ao selecionar recursos
     """
     
     def __init__(self) -> None:
@@ -39,9 +40,13 @@ class MainWindow(QMainWindow):
         # Configura as opções de Docking
         self.setDockOptions(QMainWindow.AnimatedDocks | QMainWindow.AllowTabbedDocks)
         
-        # Inicializa o Model e o ViewModel do MVVM
+        # Inicializa o Model e o ViewModel de Cena (Semana 3)
         self.scene_model = SceneModel()
         self.scene_view_model = SceneViewModel(self.scene_model)
+        
+        # Inicializa o Model e o ViewModel de Assets (Semana 4)
+        self.asset_model = AssetModel(self)
+        self.asset_view_model = AssetViewModel(self.asset_model)
         
         # Central widget temporário (Viewport)
         self.setup_central_widget()
@@ -49,17 +54,19 @@ class MainWindow(QMainWindow):
         # Inicializa docks do editor
         self.create_docks()
         
-        # Conecta o ViewModel aos docks que necessitam
+        # Conecta os ViewModels aos docks
         self.dock_hierarchy.set_viewmodel(self.scene_view_model)
+        self.dock_assets.set_models(self.asset_model, self.asset_view_model)
+        
+        # Conecta sinais
+        self.scene_view_model.hierarchy_updated.connect(self.update_object_count_status)
+        self.asset_view_model.asset_selected.connect(self.on_asset_selected)
         
         # Inicializa ações e menus
         self.create_actions()
         self.create_menu_bar()
         self.create_tool_bar()
         self.create_status_bar()
-        
-        # Conecta sinal de atualização para atualizar estatísticas na barra de status
-        self.scene_view_model.hierarchy_updated.connect(self.update_object_count_status)
         
         # Tenta carregar o layout anterior, senão aplica o layout padrão (Unreal)
         self.settings = QSettings("Zennity", "EditorLayout")
@@ -218,7 +225,6 @@ class MainWindow(QMainWindow):
         shapes = ["Quadrado", "Círculo", "Plataforma", "Player", "Inimigo", "Trigger", "Mola"]
         for s in shapes:
             act = QAction(s, self)
-            # Envia o tipo do objeto para o slot usando captura de variável
             act.triggered.connect(lambda checked=False, shape_type=s: self.scene_view_model.create_object(shape_type))
             menu_create.addAction(act)
         
@@ -321,6 +327,12 @@ class MainWindow(QMainWindow):
                 
         count_rec(self.scene_view_model.get_root_objects())
         self.lbl_obj.setText(f"Objetos: {count}  ")
+
+    @Slot(str)
+    def on_asset_selected(self, filepath: str) -> None:
+        """Chamado quando um recurso é selecionado no Asset Browser."""
+        self.statusBar().showMessage(f"Asset selecionado: {os.path.basename(filepath)}", 3000)
+        self.log_action(f"Recurso selecionado: {filepath}")
 
     @Slot()
     def on_play_clicked(self) -> None:
