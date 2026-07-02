@@ -10,12 +10,12 @@ Imports recomendados (novos projetos):
 
     from engine.core import Application, Time, Logger
     from engine.core import System, SystemPriority, SystemRegistry
-    from engine.core import EventBus, GameObject, Scene
-    from engine.core import Component, Transform
+    from engine.core import EventBus, GameObject
+    from engine.core import Scene, Component, Transform
+    from engine.core import SceneManager
 
 Mapa de migração pendente:
-    engine/scene_manager.py  →  engine/core/scene_manager.py  [Sprint 1.3b]
-    engine/core.py (Engine)  →  engine/core/engine.py (direto) [Sprint 1.4]
+    engine/core.py (Engine legado)  →  engine/core/engine.py direto  [Sprint 1.4]
 """
 from engine.application          import Application       # noqa: F401
 from engine.system               import System            # noqa: F401
@@ -28,6 +28,7 @@ from engine.game_object          import GameObject        # noqa: F401
 from engine.core.scene           import Scene             # noqa: F401
 from engine.core.component       import Component         # noqa: F401
 from engine.core.component       import Transform         # noqa: F401
+from engine.core.scene_manager   import SceneManager      # noqa: F401
 
 __all__ = [
     "Application",
@@ -39,4 +40,5 @@ __all__ = [
     "Scene",
     "Component",
     "Transform",
+    "SceneManager",
 ]
