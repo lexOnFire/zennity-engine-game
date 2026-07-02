@@ -3,16 +3,14 @@ tests/core/test_application.py
 ────────────────────────────────────────────────────────────────
 Commit 2: valida o contrato público de Application sem inicializar Pygame.
 
-Estratégia: mockar todos os subsistemas que tocam Pygame
-(Window, pygame.init, pygame.mixer.init, pygame.quit, sys.exit)
-para que os testes rodem em CI/headless sem display.
+Estratégia: mockar pygame.init, pygame.mixer.init, pygame.time.Clock e
+Window.__init__ (não a classe inteira) para preservar a referência
+original de Window como chave no service registry.
 """
 from __future__ import annotations
 
-import sys
-import types
 import pytest
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
 
 # ---------------------------------------------------------------------------
@@ -21,7 +19,6 @@ from unittest.mock import MagicMock, patch, PropertyMock
 
 @pytest.fixture(autouse=True)
 def reset_application():
-    """Garante isolamento: cada teste começa sem instância global."""
     from engine.application import Application
     Application._instance = None
     yield
@@ -34,29 +31,34 @@ def reset_application():
 
 def _make_app(**kwargs):
     """
-    Instancia Application com todos os subsistemas Pygame mockados.
-    Retorna (app, patches) para que os patches permaneçam ativos
-    durante o teste.
+    Instancia Application com Pygame mockado.
+
+    Não substitui a classe Window pelo caminho do módulo (isso trocaria
+    a referência usada como chave no registry). Em vez disso, mocka:
+      - pygame.init / pygame.mixer.init
+      - pygame.time.Clock (evita criar clock real)
+      - pygame.display.set_mode (evita janela gráfica)
+      - pygame.display.set_caption
+      - pygame.display.flip
+    Isso deixa Window ser instanciado normalmente, mantendo a classe
+    original como chave no _services dict.
     """
     from engine.application import Application
 
-    mock_screen = MagicMock()
-    mock_window = MagicMock()
-    mock_window.screen = mock_screen
-    mock_window.width  = kwargs.get("width",  800)
-    mock_window.height = kwargs.get("height", 600)
-    mock_window.is_fullscreen = False
-
-    mock_clock = MagicMock()
+    mock_surface = MagicMock()
+    mock_clock   = MagicMock()
 
     patches = [
         patch("pygame.init"),
         patch("pygame.mixer.init"),
-        patch("pygame.time.Clock", return_value=mock_clock),
-        patch("engine.application.Window", return_value=mock_window),
+        patch("pygame.time.Clock",          return_value=mock_clock),
+        patch("pygame.display.set_mode",    return_value=mock_surface),
+        patch("pygame.display.set_caption"),
+        patch("pygame.display.flip"),
     ]
 
-    started = [p.start() for p in patches]
+    for p in patches:
+        p.start()
 
     app = Application(
         width  = kwargs.get("width",  800),
@@ -121,12 +123,9 @@ class TestServiceLocator:
     def teardown_method(self):
         _stop_patches(self.patches)
 
-    # -- register / get por tipo exato --
-
     def test_register_and_get_by_exact_type(self):
         class FooService:
             pass
-
         svc = FooService()
         self.app.register(svc)
         assert self.app.get(FooService) is svc
@@ -134,47 +133,36 @@ class TestServiceLocator:
     def test_get_unknown_raises_key_error(self):
         class Unknown:
             pass
-
         with pytest.raises(KeyError, match="Unknown"):
             self.app.get(Unknown)
-
-    # -- register_as (interface / classe base) --
 
     def test_register_as_and_get_by_interface(self):
         class IPhysics:
             pass
-
         class Box2DPhysics(IPhysics):
             pass
-
         impl = Box2DPhysics()
         self.app.register_as(IPhysics, impl)
         assert self.app.get(IPhysics) is impl
 
     def test_register_as_overrides_existing(self):
-        class ISoundSystem:
+        class ISound:
             pass
-
-        svc_v1 = MagicMock(spec=ISoundSystem)
-        svc_v2 = MagicMock(spec=ISoundSystem)
-        self.app.register_as(ISoundSystem, svc_v1)
-        self.app.register_as(ISoundSystem, svc_v2)
-        assert self.app.get(ISoundSystem) is svc_v2
-
-    # -- has() --
+        v1, v2 = MagicMock(), MagicMock()
+        self.app.register_as(ISound, v1)
+        self.app.register_as(ISound, v2)
+        assert self.app.get(ISound) is v2
 
     def test_has_returns_true_for_registered(self):
-        class BarService:
+        class Bar:
             pass
-
-        self.app.register(BarService())
-        assert self.app.has(BarService) is True
+        self.app.register(Bar())
+        assert self.app.has(Bar) is True
 
     def test_has_returns_false_for_unregistered(self):
-        class BazService:
+        class Baz:
             pass
-
-        assert self.app.has(BazService) is False
+        assert self.app.has(Baz) is False
 
 
 # ===========================================================================
@@ -189,6 +177,7 @@ class TestBuiltins:
         _stop_patches(self.patches)
 
     def test_window_is_registered(self):
+        # Importar pelo mesmo caminho que _register_builtins usa
         from engine.window import Window
         assert self.app.has(Window)
 
@@ -214,13 +203,11 @@ class TestBuiltins:
 
     def test_get_time_returns_time_instance(self):
         from engine.time import Time
-        result = self.app.get(Time)
-        assert isinstance(result, Time)
+        assert isinstance(self.app.get(Time), Time)
 
     def test_get_event_bus_returns_event_bus_instance(self):
         from engine.event_bus import EventBus
-        result = self.app.get(EventBus)
-        assert isinstance(result, EventBus)
+        assert isinstance(self.app.get(EventBus), EventBus)
 
 
 # ===========================================================================
@@ -239,14 +226,12 @@ class TestRepr:
 
     def test_repr_contains_service_count(self):
         r = repr(self.app)
-        # "services=N" onde N >= número de built-ins (7)
         assert "services=" in r
-        count_str = r.split("services=")[1].rstrip(">")
-        assert int(count_str) >= 7
+        count = int(r.split("services=")[1].rstrip(">"))
+        assert count >= 7
 
     def test_repr_contains_scene_none_when_no_scene(self):
-        r = repr(self.app)
-        assert "scene=None" in r
+        assert "scene=None" in repr(self.app)
 
 
 # ===========================================================================
@@ -260,10 +245,8 @@ class TestConvenienceProperties:
     def teardown_method(self):
         _stop_patches(self.patches)
 
-    def test_screen_property_returns_pygame_surface(self):
-        # deve ser a Surface mockada que o Window retorna
-        screen = self.app.screen
-        assert screen is not None
+    def test_screen_property_is_not_none(self):
+        assert self.app.screen is not None
 
     def test_current_scene_is_none_before_run(self):
         assert self.app.current_scene is None
