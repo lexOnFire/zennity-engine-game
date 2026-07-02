@@ -1,20 +1,7 @@
-from .scene import EditorScene
-from .gui import GuiButton
-from .camera_controller import OrbitCameraController
-from .mesh_factory import create_pyramid_mesh, create_sphere_mesh
-from .physics_sim import PhysicsSim
-from .script_manager import ScriptManager
-from .code_editor import CodeEditor
-from .history import History
+"""
+Zennity Editor
+──────────────
+Editor visual moderno construído sobre PySide6 com arquitetura MVVM.
+"""
 
-__all__ = [
-    "EditorScene",
-    "GuiButton",
-    "OrbitCameraController",
-    "create_pyramid_mesh",
-    "create_sphere_mesh",
-    "PhysicsSim",
-    "ScriptManager",
-    "CodeEditor",
-    "History",
-]
+__version__ = "0.1.0"

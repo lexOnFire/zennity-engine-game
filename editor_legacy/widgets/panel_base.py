@@ -6,7 +6,7 @@ Recebe um Layout e sabe se desenhar dentro de seu rect.
 """
 from __future__ import annotations
 import pygame
-from editor.layout import Layout
+from editor_legacy.layout import Layout
 
 
 class PanelBase:

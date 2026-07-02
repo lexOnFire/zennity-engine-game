@@ -7,7 +7,7 @@ Centraliza todas as constantes, métricas e funções de cálculo de posição
 dos painéis do editor, eliminando magic numbers espalhados pelo código.
 
 Uso:
-    from editor.layout import Layout
+    from editor_legacy.layout import Layout
 
     lay = Layout(screen_width=1400, screen_height=800)
     lay.update(screen_width, screen_height)  # chame a cada resize

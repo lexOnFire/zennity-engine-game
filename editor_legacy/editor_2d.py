@@ -29,8 +29,8 @@ from engine.game_object import GameObject
 from engine.physics.rigidbody import RigidBody
 from engine.physics.collider import BoxCollider, CircleCollider
 from engine.graphics.camera2d import Camera2D
-import editor.theme as T
-from editor.gui import GuiButton, SectionHeader
+import editor_legacy.theme as T
+from editor_legacy.gui import GuiButton, SectionHeader
 
 
 # ── Paleta de cores por tipo ─────────────────────────────────────────────────
@@ -471,7 +471,7 @@ class Editor2DScene(Scene):
     def _do_back(self) -> None:
         if self.playing:
             self.toggle_play()
-        from editor.launcher import LauncherScene
+        from editor_legacy.launcher import LauncherScene
         if self.engine:
             self.engine.change_scene(LauncherScene())
 

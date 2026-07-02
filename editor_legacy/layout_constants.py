@@ -4,7 +4,7 @@ editor/layout_constants.py
 Re-exporta todas as constantes de layout para retrocompatibilidade.
 Importe diretamente de editor.layout para novos módulos.
 """
-from editor.layout import (  # noqa: F401
+from editor_legacy.layout import (  # noqa: F401
     TOP_BAR_H,
     STATUS_BAR_H,
     LEFT_PANEL_W,
