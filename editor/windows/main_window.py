@@ -3,7 +3,7 @@ import os
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QMenuBar, QMenu, QToolBar, QStatusBar,
     QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox,
-    QDockWidget
+    QDockWidget, QFileDialog
 )
 from PySide6.QtGui import QAction, QKeySequence, QIcon, QCloseEvent
 from PySide6.QtCore import Qt, Slot, QSettings
@@ -11,7 +11,7 @@ from PySide6.QtCore import Qt, Slot, QSettings
 # Barramento de Eventos do Editor
 from editor.core.event_bus import (
     EventBus, EVENT_PLAY_STATE_CHANGED, EVENT_SELECTION_CHANGED,
-    EVENT_HIERARCHY_UPDATED, EVENT_ASSET_SELECTED
+    EVENT_HIERARCHY_UPDATED, EVENT_ASSET_SELECTED, EVENT_PROPERTY_CHANGED
 )
 
 # Modelos e ViewModels MVVM
@@ -20,6 +20,9 @@ from editor.viewmodels.scene_viewmodel import SceneViewModel
 from editor.models.asset_model import AssetModel
 from editor.viewmodels.asset_viewmodel import AssetViewModel
 
+# Serialização
+from editor.core.serializer import save_scene_to_file, load_scene_from_file
+
 # Widgets do Editor
 from editor.widgets.hierarchy_dock import HierarchyDock
 from editor.widgets.asset_browser_dock import AssetBrowserDock
@@ -27,20 +30,23 @@ from editor.widgets.console_dock import ConsoleDock
 from editor.widgets.inspector_dock import InspectorDock
 from editor.widgets.viewport_widget import ViewportWidget
 
+# Diálogos
+from editor.windows.preferences_dialog import PreferencesDialog
+
 
 class MainWindow(QMainWindow):
     """
     Janela Principal do Zennity Editor construída sobre o PySide6.
     
-    Implementação da Semana 7:
-      - Desacoplamento de componentes via barramento de eventos (EventBus)
-      - Redução do acoplamento direto de conexões no inicializador
+    Implementação da Semana 11:
+      - Gerenciamento de projetos e cenas (.zscene JSON)
+      - Diálogo de preferências persistente com QSettings
     """
     
     def __init__(self) -> None:
         super().__init__()
         
-        self.setWindowTitle("Zennity Engine Editor - NovoProjeto.zproj*")
+        self.setWindowTitle("Zennity Engine Editor - NovoProjeto.zscene*")
         self.resize(1280, 800)
         
         # Configura as opções de Docking
@@ -69,6 +75,7 @@ class MainWindow(QMainWindow):
         # ── Inscrições no EventBus (Desacoplado) ──────────────────────────────
         EventBus.subscribe(EVENT_HIERARCHY_UPDATED, self.update_object_count_status)
         EventBus.subscribe(EVENT_ASSET_SELECTED, self.on_bus_asset_selected)
+        EventBus.subscribe(EVENT_PROPERTY_CHANGED, self.on_bus_property_changed)
         
         # Inicializa ações e menus
         self.create_actions()
@@ -79,9 +86,18 @@ class MainWindow(QMainWindow):
         # Sincroniza contagem inicial
         self.update_object_count_status()
         
-        # Tenta carregar o layout anterior, senão aplica o layout padrão (Unreal)
+        # Tenta carregar o layout anterior e preferências do usuário
         self.settings = QSettings("Zennity", "EditorLayout")
-        if not self.restore_layout_state():
+        self.prefs = QSettings("Zennity", "Preferences")
+        
+        # Aplica preferências iniciais do QSettings
+        self.apply_preferences_on_init()
+        
+        # Auto-restauração do Layout de Docks se ativado
+        if self.prefs.value("auto_layout", "true") == "true":
+            if not self.restore_layout_state():
+                self.apply_default_layout()
+        else:
             self.apply_default_layout()
             
         self.statusBar().showMessage("Zennity Editor pronto.", 5000)
@@ -140,9 +156,19 @@ class MainWindow(QMainWindow):
             return True
         return False
 
+    def apply_preferences_on_init(self) -> None:
+        """Aplica preferências salvas de grade e auto-layout."""
+        grid_on = self.prefs.value("grid_on_init", "true") == "true"
+        self.act_toggle_grid.setChecked(grid_on)
+        self.act_toggle_grid.setText("Grade: ON" if grid_on else "Grade: OFF")
+        
+        grid_size = int(self.prefs.value("grid_size", 32))
+        self.log_action(f"Preferências carregadas: Grade={grid_size}px (Ativa={grid_on})")
+
     def closeEvent(self, event: QCloseEvent) -> None:
-        """Evento de fechamento: salva automaticamente o layout antes de sair."""
-        self.save_layout_state()
+        """Evento de fechamento: salva layout se auto_layout estiver habilitado."""
+        if self.prefs.value("auto_layout", "true") == "true":
+            self.save_layout_state()
         event.accept()
 
     def create_actions(self) -> None:
@@ -152,13 +178,13 @@ class MainWindow(QMainWindow):
         self.act_new.setShortcut(QKeySequence.New)
         self.act_new.triggered.connect(self.on_new_scene)
         
-        self.act_open = QAction("Abrir...", self)
+        self.act_open = QAction("Abrir Cena...", self)
         self.act_open.setShortcut(QKeySequence.Open)
-        self.act_open.triggered.connect(lambda: self.log_action("Abrir Projeto"))
+        self.act_open.triggered.connect(self.on_open_scene)
         
         self.act_save = QAction("Salvar", self)
         self.act_save.setShortcut(QKeySequence.Save)
-        self.act_save.triggered.connect(lambda: self.log_action("Salvar Projeto"))
+        self.act_save.triggered.connect(self.on_save_scene)
         
         self.act_exit = QAction("Sair", self)
         self.act_exit.setShortcut(QKeySequence("Ctrl+Q"))
@@ -180,6 +206,9 @@ class MainWindow(QMainWindow):
         self.act_delete = QAction("Excluir", self)
         self.act_delete.setShortcut(QKeySequence.Delete)
         self.act_delete.triggered.connect(self.scene_view_model.delete_selected)
+        
+        self.act_preferences = QAction("Preferências...", self)
+        self.act_preferences.triggered.connect(self.show_preferences_dialog)
 
         # ── Ajuda ──────────────────────────────────────────
         self.act_commands = QAction("Guia de Comandos", self)
@@ -208,6 +237,8 @@ class MainWindow(QMainWindow):
         menu_edit.addSeparator()
         menu_edit.addAction(self.act_duplicate)
         menu_edit.addAction(self.act_delete)
+        menu_edit.addSeparator()
+        menu_edit.addAction(self.act_preferences)
         
         # Menu Janela (Dock Widgets Toggles)
         menu_window = menubar.addMenu("Janela")
@@ -315,6 +346,7 @@ class MainWindow(QMainWindow):
         self.log_action("Novo Projeto/Cena")
         self.scene_model.clear()
         self.scene_view_model.selected_object = None
+        self.setWindowTitle("Zennity Engine Editor - NovoProjeto.zscene*")
         
         if hasattr(self.viewport, "active_scene") and self.viewport.active_scene:
             if hasattr(self.viewport.active_scene, "editable_objects"):
@@ -327,6 +359,67 @@ class MainWindow(QMainWindow):
                     self.scene_model.add_object(obj)
                 if self.viewport.active_scene.selected_index >= 0:
                     self.scene_view_model.selected_object = self.viewport.active_scene.editable_objects[self.viewport.active_scene.selected_index]
+
+    @Slot()
+    def on_save_scene(self) -> None:
+        """Salva a cena física ativa e o outliner em um arquivo .zscene JSON."""
+        filepath, _ = QFileDialog.getSaveFileName(
+            self, "Salvar Cena Zennity", "", "Cena Zennity (*.zscene);;Todos os arquivos (*.*)"
+        )
+        if not filepath:
+            return
+            
+        try:
+            root_objs = self.scene_view_model.get_root_objects()
+            save_scene_to_file(filepath, root_objs)
+            self.setWindowTitle(f"Zennity Engine Editor - {os.path.basename(filepath)}")
+            self.statusBar().showMessage(f"Cena salva em: {os.path.basename(filepath)}", 4000)
+            self.log_action(f"Cena gravada em disco: {filepath}")
+        except Exception as e:
+            QMessageBox.critical(self, "Erro de Persistência", f"Falha ao salvar cena:\n{str(e)}")
+
+    @Slot()
+    def on_open_scene(self) -> None:
+        """Carrega e desserializa um arquivo .zscene JSON na viewport e outliner."""
+        filepath, _ = QFileDialog.getOpenFileName(
+            self, "Abrir Cena Zennity", "", "Cena Zennity (*.zscene);;Todos os arquivos (*.*)"
+        )
+        if not filepath:
+            return
+            
+        try:
+            loaded_objs = load_scene_from_file(filepath)
+            
+            # Limpa o estado atual
+            self.scene_model.clear()
+            self.scene_view_model.selected_object = None
+            
+            # Repopula a viewport
+            if hasattr(self.viewport, "active_scene") and self.viewport.active_scene:
+                self.viewport.active_scene.editable_objects.clear()
+                self.viewport.active_scene.game_objects.clear()
+                
+                for obj in loaded_objs:
+                    self.viewport.active_scene.add_game_object(obj)
+                    if hasattr(self.viewport.active_scene, "editable_objects"):
+                        self.viewport.active_scene.editable_objects.append(obj)
+                    self.scene_model.add_object(obj)
+                    
+                self.viewport.active_scene.selected_index = -1
+                self.scene_view_model.on_model_hierarchy_changed()
+                
+            self.setWindowTitle(f"Zennity Engine Editor - {os.path.basename(filepath)}")
+            self.statusBar().showMessage(f"Cena carregada: {os.path.basename(filepath)}", 4000)
+            self.log_action(f"Cena carregada do disco: {filepath}")
+        except Exception as e:
+            QMessageBox.critical(self, "Erro de Leitura", f"Falha ao carregar cena:\n{str(e)}")
+
+    @Slot()
+    def show_preferences_dialog(self) -> None:
+        """Abre a janela de preferências do usuário."""
+        dialog = PreferencesDialog(self)
+        if dialog.exec() == QDialog.Accepted:
+            self.log_action("Preferências salvas e aplicadas.")
 
     @Slot()
     def update_object_count_status(self) -> None:
@@ -347,6 +440,21 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Asset selecionado: {os.path.basename(filepath)}", 3000)
         self.log_action(f"Recurso selecionado via EventBus: {filepath}")
 
+    @Slot(str, str, object)
+    def on_bus_property_changed(self, component_name: str, property_name: str, value: object) -> None:
+        """Ouvinte do EventBus para mudanças nas preferências ou configurações."""
+        if component_name == "Editor":
+            if property_name == "grid_size" and value is not None:
+                # Se alterou o tamanho da grade nas preferências, atualiza a grade da cena se necessário
+                grid_sz = int(value)
+                if hasattr(self.viewport, "active_scene") and self.viewport.active_scene:
+                    if hasattr(self.viewport.active_scene, "grid_size"):
+                        self.viewport.active_scene.grid_size = grid_sz
+            elif property_name == "grid_state" and value is not None:
+                grid_on = bool(value)
+                self.act_toggle_grid.setChecked(grid_on)
+                self.act_toggle_grid.setText("Grade: ON" if grid_on else "Grade: OFF")
+
     @Slot()
     def on_play_clicked(self) -> None:
         self.log_action("PLAY - Iniciando simulação física")
@@ -355,7 +463,6 @@ class MainWindow(QMainWindow):
         self.btn_stop.setEnabled(True)
         self.statusBar().showMessage("Simulação em execução...")
         
-        # Publica o estado no EventBus global (Viewport escuta de forma desacoplada)
         EventBus.emit(EVENT_PLAY_STATE_CHANGED, state="play")
 
     @Slot()
@@ -398,6 +505,9 @@ class MainWindow(QMainWindow):
     def on_grid_toggled(self, enabled: bool) -> None:
         self.act_toggle_grid.setText("Grade: ON" if enabled else "Grade: OFF")
         self.log_action(f"Exibição da grade: {'Habilitada' if enabled else 'Desabilitada'}")
+        
+        # Se a grade foi ligada/desligada na barra, repassa para as preferências e o EventBus
+        EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="Editor", property_name="grid_state", value=enabled)
 
     @Slot()
     def show_commands_guide(self) -> None:
