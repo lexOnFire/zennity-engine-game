@@ -221,11 +221,11 @@ class MainWindow(QMainWindow):
         
         self.act_duplicate = QAction("Duplicar", self)
         self.act_duplicate.setShortcut(QKeySequence("Ctrl+D"))
-        self.act_duplicate.triggered.connect(self.scene_view_model.duplicate_selected)
+        self.act_duplicate.triggered.connect(self._on_duplicate_triggered)
         
         self.act_delete = QAction("Excluir", self)
         self.act_delete.setShortcut(QKeySequence.Delete)
-        self.act_delete.triggered.connect(self.scene_view_model.delete_selected)
+        self.act_delete.triggered.connect(self._on_delete_triggered)
         
         self.act_preferences = QAction("Preferências...", self)
         self.act_preferences.triggered.connect(self.show_preferences_dialog)
@@ -280,7 +280,8 @@ class MainWindow(QMainWindow):
         shapes = ["Quadrado", "Círculo", "Plataforma", "Player", "Inimigo", "Trigger", "Mola"]
         for s in shapes:
             act = QAction(s, self)
-            act.triggered.connect(lambda checked=False, shape_type=s: self.scene_view_model.create_object(shape_type))
+            # Usa a viewport como fonte de verdade — ela chama active_scene.spawn_object
+            act.triggered.connect(lambda checked=False, shape_type=s: self.viewport.create_object(shape_type))
             menu_create.addAction(act)
         
         # Menu Ajuda
@@ -567,32 +568,34 @@ class MainWindow(QMainWindow):
         )
 
     @Slot()
+    def _on_duplicate_triggered(self) -> None:
+        """Duplica o objeto selecionado via viewport (fonte de verdade)."""
+        self.viewport.duplicate_selected_object()
+        self.log_action("Ctrl+D — objeto duplicado")
+
+    @Slot()
+    def _on_delete_triggered(self) -> None:
+        """Deleta o objeto selecionado via viewport (fonte de verdade)."""
+        self.viewport.delete_selected_object()
+        self.log_action("Delete — objeto excluído")
+
+    @Slot()
     def on_undo_triggered(self) -> None:
         """Slot para o comando Undo global."""
-        if hasattr(self.viewport, "active_scene") and self.viewport.active_scene:
-            if hasattr(self.viewport.active_scene, "undo"):
-                self.viewport.active_scene.undo()
-                self.log_action("Undo executado")
-                
-                # Sincroniza a árvore de objetos do modelo após a reversão
-                self.scene_model.clear()
-                for obj in self.viewport.active_scene.editable_objects:
-                    self.scene_model.add_object(obj)
-                self.scene_view_model.on_model_hierarchy_changed()
+        scene = getattr(self.viewport, "active_scene", None)
+        if scene and hasattr(scene, "undo"):
+            scene.undo()
+            self.log_action("Undo executado")
+            self.viewport._sync_model_from_scene()
 
     @Slot()
     def on_redo_triggered(self) -> None:
         """Slot para o comando Redo global."""
-        if hasattr(self.viewport, "active_scene") and self.viewport.active_scene:
-            if hasattr(self.viewport.active_scene, "redo"):
-                self.viewport.active_scene.redo()
-                self.log_action("Redo executado")
-                
-                # Sincroniza a árvore de objetos do modelo após o redo
-                self.scene_model.clear()
-                for obj in self.viewport.active_scene.editable_objects:
-                    self.scene_model.add_object(obj)
-                self.scene_view_model.on_model_hierarchy_changed()
+        scene = getattr(self.viewport, "active_scene", None)
+        if scene and hasattr(scene, "redo"):
+            scene.redo()
+            self.log_action("Redo executado")
+            self.viewport._sync_model_from_scene()
 
     @Slot(str)
     def on_camera_mode_changed(self, text: str) -> None:

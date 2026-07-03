@@ -1,506 +1,541 @@
+"""
+editor/widgets/viewport_widget.py
+==================================
+Widget de Viewport gráfica PySide6/Pygame.
+
+Arquitetura:
+  - A viewport é a ÚNICA fonte de verdade para os objetos da cena física.
+  - O SceneModel/ViewModel apenas espelha o estado da cena para o Outliner.
+  - Qualquer criação/deleção de objeto passa pela cena ativa da viewport.
+  - Monkey-patches silenciam os painéis legados do Pygame (toolbar, painel esq/dir, statusbar).
+"""
+
 import time
 import pygame
 import numpy as np
-from typing import Optional, Dict, Tuple
+from typing import Optional, List
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
 from PySide6.QtWidgets import QWidget
-from PySide6.QtCore import Qt, QTimer, Slot, QPoint, QSize
-from PySide6.QtGui import QPainter, QImage, QPixmap, QMouseEvent, QKeyEvent, QWheelEvent
+from PySide6.QtCore import Qt, QTimer, Slot
+from PySide6.QtGui import QPainter, QImage, QMouseEvent, QKeyEvent, QWheelEvent
 
-# Barramento de Eventos do Editor
 from editor.core.event_bus import (
-    EventBus, EVENT_PLAY_STATE_CHANGED, EVENT_SELECTION_CHANGED, EVENT_PROPERTY_CHANGED,
-    EVENT_HIERARCHY_UPDATED
+    EventBus,
+    EVENT_PLAY_STATE_CHANGED,
+    EVENT_SELECTION_CHANGED,
+    EVENT_PROPERTY_CHANGED,
+    EVENT_HIERARCHY_UPDATED,
 )
-
-# Core da Engine
-from engine.core import Scene
 from editor.viewmodels.scene_viewmodel import SceneViewModel
 
 
 class ViewportWidget(QOpenGLWidget):
     """
-    Viewport gráfica baseada em QOpenGLWidget.
-    
-    Implementação da Semana 13 & Melhorias de Interação:
-      - Suporte à tecla 'F' para focar a câmera no objeto selecionado
-      - Alternância dinâmica entre visualização 2D (Ortográfica) e 3D (Perspectiva)
-      - Monkey-patch de layouts 2D/3D e mouse.get_pos para sincronização e hit-test de mouse perfeitos no Qt
+    Viewport gráfica embarcando o loop do Pygame dentro de um QOpenGLWidget.
+
+    Regras de sincronização:
+      1. A cena ativa (active_scene) é a fonte de verdade dos GameObjects.
+      2. O SceneModel é apenas um espelho para o Outliner — alimentado daqui.
+      3. Criar/deletar objetos: chamar sempre active_scene.spawn_object / delete_selected.
+      4. Os painéis legados do Pygame são silenciados via monkey-patch no draw.
     """
-    
+
     def __init__(self, parent: QWidget = None) -> None:
         super().__init__(parent)
         self.setObjectName("ViewportWidget")
         self.setFocusPolicy(Qt.StrongFocus)
         self.setMouseTracking(True)
-        
-        # Inicializa o Pygame localmente
+
+        # Pygame (display headless — janela real fica no Qt)
         pygame.init()
         pygame.font.init()
-        
+
         self.viewmodel: Optional[SceneViewModel] = None
-        self.active_scene: Optional[Scene] = None
-        self.editor_mode = "2D"  # '2D' ou '3D'
-        
-        # Monkey-patch para pygame.mouse.get_pos obter coordenadas locais da viewport do Qt
-        self.mouse_pos_qt = (0, 0)
-        pygame.mouse.get_pos = lambda: self.mouse_pos_qt
-        
-        # Framebuffer do Pygame
+        self.active_scene = None          # Editor2DScene ou EditorScene (3D)
+        self.editor_mode: str = "2D"
+
+        # Coordenada local do cursor dentro deste widget (substituição de pygame.mouse.get_pos)
+        self._qt_mouse_pos: tuple = (0, 0)
+        pygame.mouse.get_pos = lambda: self._qt_mouse_pos
+
+        # Surface de renderização Pygame (framebuffer)
         self.pg_surface: Optional[pygame.Surface] = None
-        self.width_pv, self.height_pv = 800, 600
-        
-        self.last_time = time.time()
-        
-        # Inscreve-se no EventBus para ouvir a simulação, ferramentas e modos
-        EventBus.subscribe(EVENT_PLAY_STATE_CHANGED, self.on_bus_play_state_changed)
-        EventBus.subscribe(EVENT_SELECTION_CHANGED, self.on_bus_selection_changed)
-        EventBus.subscribe(EVENT_PROPERTY_CHANGED, self.on_bus_property_changed)
-        EventBus.subscribe(EVENT_HIERARCHY_UPDATED, self.on_bus_hierarchy_updated)
-        
-        # Timer (60 FPS)
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.tick)
-        self.timer.start(16)
+        self._vp_w: int = 800
+        self._vp_h: int = 600
+
+        self._last_time: float = time.time()
+
+        # Assina eventos globais
+        EventBus.subscribe(EVENT_PLAY_STATE_CHANGED,  self._on_play_state_changed)
+        EventBus.subscribe(EVENT_SELECTION_CHANGED,   self._on_selection_changed)
+        EventBus.subscribe(EVENT_PROPERTY_CHANGED,    self._on_property_changed)
+
+        # Tick a 60 FPS
+        self._timer = QTimer(self)
+        self._timer.timeout.connect(self._tick)
+        self._timer.start(16)
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Inicialização
+    # ──────────────────────────────────────────────────────────────────────────
 
     def set_viewmodel(self, viewmodel: SceneViewModel) -> None:
-        """Conecta o ViewModel e extrai a cena inicial."""
+        """
+        Conecta o ViewModel e inicializa a cena 2D padrão.
+        Chamado pela MainWindow após criar os docks.
+        """
         self.viewmodel = viewmodel
-        
+
+        # Cria a cena 2D inicial
         from editor_legacy.editor_2d import Editor2DScene
         self.active_scene = Editor2DScene()
         self.active_scene.start()
-        
-        # Popula o modelo inicial a partir da cena
-        if self.viewmodel:
-            self.viewmodel._model.clear()
-            for obj in self.active_scene.editable_objects:
-                self.viewmodel._model.add_object(obj)
-            if self.active_scene.selected_index >= 0:
-                self.viewmodel.selected_object = self.active_scene.editable_objects[self.active_scene.selected_index]
-                
-        # Aplica patches iniciais de layout de tela cheia
+
+        # Aplica shims ANTES de sincronizar o modelo
         self._apply_qt_shims()
 
-    def change_editor_mode(self, mode: str) -> None:
-        """Alterna dinamicamente a cena da Viewport entre editor 2D e editor 3D."""
-        if not self.active_scene or self.editor_mode == mode:
+        # Espelha os objetos da cena no SceneModel (Outliner)
+        self._sync_model_from_scene()
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Sincronização Cena ↔ Modelo
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def _sync_model_from_scene(self) -> None:
+        """
+        Repopula o SceneModel com os objetos da cena ativa.
+        Deve ser chamado sempre que a lista de objetos mudar.
+        """
+        if not self.viewmodel or not self.active_scene:
             return
-            
-        # Salva referências dos objetos da cena atual
-        objs = list(self.active_scene.editable_objects) if hasattr(self.active_scene, "editable_objects") else []
-        selected_obj = self.viewmodel.selected_object if self.viewmodel else None
-        
+
+        model = self.viewmodel._model
+        model.clear()
+
+        for obj in self.active_scene.editable_objects:
+            model.add_object(obj)
+
+        # Sincroniza seleção
+        idx = getattr(self.active_scene, "selected_index", -1)
+        objs = self.active_scene.editable_objects
+        if 0 <= idx < len(objs):
+            self.viewmodel._selected_object = objs[idx]
+            # Emite sem loop: usa o atributo direto para não re-triggar selecão na cena
+        else:
+            self.viewmodel._selected_object = None
+
+        # Notifica Outliner e Inspector via sinal de hierarquia
+        self.viewmodel.on_model_hierarchy_changed()
+
+    def create_object(self, shape_type: str) -> None:
+        """
+        Ponto de entrada único para criação de objetos via menu Criar.
+        Delega para a cena ativa e depois sincroniza o modelo.
+        """
+        if not self.active_scene:
+            return
+
+        if hasattr(self.active_scene, "spawn_object"):
+            self.active_scene.spawn_object(shape_type)
+            self._sync_model_from_scene()
+        elif hasattr(self.active_scene, "spawn_object"):
+            # Fallback: cria via ViewModel (editor 3D sem spawn_object dedicado)
+            self.viewmodel.create_object(shape_type)
+
+    def delete_selected_object(self) -> None:
+        """Deleta o objeto selecionado na cena ativa."""
+        if not self.active_scene:
+            return
+        if hasattr(self.active_scene, "delete_selected"):
+            self.active_scene.delete_selected()
+            self._sync_model_from_scene()
+
+    def duplicate_selected_object(self) -> None:
+        """Duplica o objeto selecionado na cena ativa."""
+        if not self.active_scene:
+            return
+        if hasattr(self.active_scene, "duplicate_selected"):
+            self.active_scene.duplicate_selected()
+            self._sync_model_from_scene()
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Alternância de Modo 2D/3D
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def change_editor_mode(self, mode: str) -> None:
+        """Troca a cena ativa entre editor 2D e 3D preservando os objetos."""
+        if self.editor_mode == mode or not self.active_scene:
+            return
+
+        # Salva objetos e seleção atuais
+        objs = list(self.active_scene.editable_objects)
+        sel_obj = self.viewmodel.selected_object if self.viewmodel else None
+
         self.editor_mode = mode
-        
-        # Instancia a nova cena correspondente
+
         if mode == "2D":
             from editor_legacy.editor_2d import Editor2DScene
             self.active_scene = Editor2DScene()
-        elif mode == "3D":
+        else:
             from editor_legacy.scene import EditorScene
             self.active_scene = EditorScene()
-            
+
         self.active_scene.start()
-        
-        # Transfere os objetos salvos
-        if hasattr(self.active_scene, "editable_objects"):
-            self.active_scene.editable_objects.clear()
-            self.active_scene.game_objects.clear()
-            for obj in objs:
-                self.active_scene.add_game_object(obj)
-                self.active_scene.editable_objects.append(obj)
-                
-        # Sincroniza a seleção
-        if selected_obj in objs:
-            self.active_scene.selected_index = objs.index(selected_obj)
+
+        # Transfere objetos (limpa os objetos padrão da nova cena e reinsere os salvos)
+        self.active_scene.editable_objects.clear()
+        self.active_scene.game_objects.clear()
+        for obj in objs:
+            self.active_scene._add_go(obj) if hasattr(self.active_scene, "_add_go") else None
+            if obj not in self.active_scene.game_objects:
+                self.active_scene.game_objects.append(obj)
+            self.active_scene.editable_objects.append(obj)
+
+        # Sincroniza seleção
+        if sel_obj in objs:
+            self.active_scene.selected_index = objs.index(sel_obj)
         else:
             self.active_scene.selected_index = -1
-            
-        # Reaplica shims de tamanho e layout
+
         self._apply_qt_shims()
         self.resizeGL(self.width(), self.height())
+        self._sync_model_from_scene()
         self.update()
 
+    # ──────────────────────────────────────────────────────────────────────────
+    # Qt Shims — silencia painéis legados do Pygame
+    # ──────────────────────────────────────────────────────────────────────────
+
     def _apply_qt_shims(self) -> None:
-        """Aplica monkey-patches dinâmicos na cena ativa para fazê-la rodar perfeitamente no Qt sem painéis legados duplicados."""
+        """
+        Monkey-patch nas cenas legadas do Pygame para:
+          1. Fazer a viewport ocupar 100% da área do widget Qt.
+          2. Ocultar toolbar, painel esquerdo, painel direito e statusbar legados.
+          3. Corrigir coordenadas de hit-test de mouse.
+        Chamado após criar/trocar a cena e a cada resize.
+        """
         if not self.active_scene:
             return
-            
-        w, h = self.width_pv, self.height_pv
-        
-        # ── 1. Monkey-patch do Layout e render do Editor 2D ──────────────────
-        if hasattr(self.active_scene, "_layout"):
-            def qt_layout_2d():
+
+        w, h = self._vp_w, self._vp_h
+        scene = self.active_scene
+
+        # ── Editor 2D ────────────────────────────────────────────────────────
+        if hasattr(scene, "_layout") and not hasattr(scene, "_lay"):
+            # Substitui o cálculo de layout para ocupar 100% do widget
+            def _qt_layout_2d(self_scene=scene, _w=w, _h=h):
                 return {
-                    "sw": w, "sh": h,
-                    "vp_left": 0,
-                    "vp_top": 0,
-                    "vp_right": w,
-                    "vp_bottom": h,
-                    "vp_w": w,
-                    "vp_h": h,
-                    "panel_left_w": 0,
-                    "panel_right_x": w,
-                    "panel_right_w": 0,
-                    "status_y": h
+                    "sw": _w, "sh": _h,
+                    "vp_left":    0,
+                    "vp_top":     0,
+                    "vp_right":   _w,
+                    "vp_bottom":  _h,
+                    "vp_w":       _w,
+                    "vp_h":       _h,
+                    "panel_left_w":   0,
+                    "panel_right_x":  _w,
+                    "panel_right_w":  0,
+                    "status_y":   _h,
                 }
-            self.active_scene._layout = qt_layout_2d
-            
-            # Sobrescreve o draw para renderizar apenas a viewport
-            def qt_draw_2d(screen):
-                lay = self.active_scene._layout()
-                screen.fill((30, 31, 38))  # Fundo escuro do tema
-                self.active_scene._draw_viewport(screen, lay)
-            self.active_scene.draw = qt_draw_2d
-            
-        # ── 2. Monkey-patch do Layout e render do Editor 3D ──────────────────
-        if hasattr(self.active_scene, "_lay"):
-            lay = self.active_scene._lay
-            lay.left_panel_rect = pygame.Rect(0, 0, 0, 0)
-            lay.right_panel_rect = pygame.Rect(w, 0, 0, 0)
-            lay.top_bar_rect = pygame.Rect(0, 0, w, 0)
-            lay.status_bar_rect = pygame.Rect(0, h, w, 0)
-            lay.viewport_rect = pygame.Rect(0, 0, w, h)
-            lay.viewport_edit_rect = pygame.Rect(0, 0, w, h)
-            lay.viewport_game_rect = pygame.Rect(0, 0, w, h)
-            lay.right_x = w
-            lay.viewport_y = 0
-            lay.viewport_h = h
-            lay.viewport_w = w
-            
-            # Trava a atualização de layout
+            scene._layout = _qt_layout_2d
+
+            # Substitui o draw: só renderiza a viewport, sem painéis legados
+            def _qt_draw_2d(screen, _scene=scene):
+                lay = _scene._layout()
+                screen.fill((28, 29, 36))
+                _scene._draw_viewport(screen, lay)
+            scene.draw = _qt_draw_2d
+
+            # Silencia handle_event nos cliques fora da viewport (painel esq/dir legado)
+            # — os botões legados ficam em coords negativas graças ao layout corrigido,
+            #   então o hit-test deles nunca dispara. Nada mais a fazer.
+
+        # ── Editor 3D ────────────────────────────────────────────────────────
+        elif hasattr(scene, "_lay"):
+            lay = scene._lay
+            lay.left_panel_rect    = pygame.Rect(0,  0, 0, 0)
+            lay.right_panel_rect   = pygame.Rect(w,  0, 0, 0)
+            lay.top_bar_rect       = pygame.Rect(0,  0, w, 0)
+            lay.status_bar_rect    = pygame.Rect(0,  h, w, 0)
+            lay.viewport_rect      = pygame.Rect(0,  0, w, h)
+            lay.viewport_edit_rect = pygame.Rect(0,  0, w, h)
+            lay.viewport_game_rect = pygame.Rect(0,  0, w, h)
+            lay.right_x     = w
+            lay.viewport_y  = 0
+            lay.viewport_h  = h
+            lay.viewport_w  = w
+            # Congela o update de layout (evita reset no resize do Pygame)
             lay.update = lambda sw, sh: None
-            
-            # Sobrescreve o draw para ocultar modais legados e barras laterais no Qt
-            def qt_draw_3d(screen):
-                self.active_scene.showing_welcome = False
-                self.active_scene.showing_templates = False
-                self.active_scene.showing_help_modal = False
-                self.active_scene.code_editor.is_open = False
-                
-                # Sincroniza a câmera 3D com a viewport cheia do widget
-                self.active_scene.camera_comp.viewport_x = lay.viewport_rect.x
-                self.active_scene.camera_comp.viewport_y = lay.viewport_rect.y
-                self.active_scene.camera_comp.viewport_width = lay.viewport_rect.width
-                self.active_scene.camera_comp.viewport_height = lay.viewport_rect.height
-                self.active_scene.camera_comp.update(0.0)
-                
+
+            def _qt_draw_3d(screen, _scene=scene, _lay=lay):
+                # Suprime modais/painéis legados
+                _scene.showing_welcome    = False
+                _scene.showing_templates  = False
+                _scene.showing_help_modal = False
+                if hasattr(_scene, "code_editor"):
+                    _scene.code_editor.is_open = False
+
+                # Câmera 3D ocupa toda a viewport
+                cam = _scene.camera_comp
+                cam.viewport_x      = 0
+                cam.viewport_y      = 0
+                cam.viewport_width  = _lay.viewport_rect.width
+                cam.viewport_height = _lay.viewport_rect.height
+                cam.update(0.0)
+
                 from engine.graphics.renderer3d import Camera3D, MeshRenderer3D
-                Camera3D.main = self.active_scene.camera_comp
-                
-                pygame.draw.rect(screen, (30, 31, 38), lay.viewport_rect)
-                self.active_scene._draw_floor_grid(screen)
-                
-                # Renderiza e destaca objeto ativo
-                for go in self.active_scene.game_objects:
+                Camera3D.main = cam
+
+                screen.fill((28, 29, 36))
+                _scene._draw_floor_grid(screen)
+
+                for go in _scene.game_objects:
                     go.draw(screen)
-                    if self.active_scene.selected_index >= 0 and go == self.active_scene.editable_objects[self.active_scene.selected_index]:
+                    if (_scene.selected_index >= 0
+                            and go is _scene.editable_objects[_scene.selected_index]):
                         r = go.get_component(MeshRenderer3D)
                         if r:
                             ow, oc, olw = r.wireframe, r.color, r.line_width
-                            r.wireframe, r.color, r.line_width = True, (64, 156, 255), 3  # Azul Destaque
+                            r.wireframe, r.color, r.line_width = True, (80, 160, 255), 3
                             r.draw(screen)
                             r.wireframe, r.color, r.line_width = ow, oc, olw
-                self.active_scene._draw_gizmo(screen)
-                
-            self.active_scene.draw = qt_draw_3d
+
+                _scene._draw_gizmo(screen)
+
+            scene.draw = _qt_draw_3d
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Foco da câmera
+    # ──────────────────────────────────────────────────────────────────────────
 
     def focus_camera_on_selected(self) -> None:
-        """Foca suave ou instantaneamente a câmera no objeto selecionado na viewport."""
-        if not self.active_scene or not self.viewmodel or not self.viewmodel.selected_object:
+        """Tecla F — centraliza câmera no objeto selecionado."""
+        if not self.active_scene or not self.viewmodel:
             return
-            
         obj = self.viewmodel.selected_object
-        
-        # Modo 2D: centraliza câmera
-        if hasattr(self.active_scene, "cam_x"):
-            self.active_scene.cam_x = obj.transform.position[0]
-            self.active_scene.cam_y = obj.transform.position[1]
-            self.active_scene.zoom = 1.0  # Reseta o zoom para ver o objeto
-            
-        # Modo 3D: centraliza câmera orbital
-        elif hasattr(self.active_scene, "camera_controller") and self.active_scene.camera_controller:
-            ctrl = self.active_scene.camera_controller
-            ctrl.target = obj.transform.position.copy()
-            ctrl.distance = 5.0
-            
+        if not obj:
+            return
+
+        if hasattr(self.active_scene, "camera") and hasattr(self.active_scene, "cam_obj"):
+            # Editor 2D: centraliza câmera 2D
+            from engine.graphics.camera2d import Camera2D
+            if Camera2D.main:
+                Camera2D.main.transform.position[0] = obj.transform.position[0]
+                Camera2D.main.transform.position[1] = obj.transform.position[1]
+        elif hasattr(self.active_scene, "camera_comp"):
+            # Editor 3D: orbita em torno do objeto
+            ctrl = getattr(self.active_scene, "camera_controller", None)
+            if ctrl:
+                ctrl.target   = obj.transform.position.copy()
+                ctrl.distance = 5.0
+
         self.update()
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # GL + Render
+    # ──────────────────────────────────────────────────────────────────────────
 
     def initializeGL(self) -> None:
         pass
 
     def resizeGL(self, w: int, h: int) -> None:
-        self.width_pv = max(32, w)
-        self.height_pv = max(32, h)
-        self.pg_surface = pygame.Surface((self.width_pv, self.height_pv), pygame.SRCALPHA)
-        
-        # Reaplica o patch de layout no redimensionamento da janela do Qt
+        self._vp_w = max(32, w)
+        self._vp_h = max(32, h)
+        self.pg_surface = pygame.Surface((self._vp_w, self._vp_h), pygame.SRCALPHA)
         self._apply_qt_shims()
-        
-        if self.active_scene and hasattr(self.active_scene, "vp_w"):
-            self.active_scene.vp_left = 0
-            self.active_scene.vp_top = 0
-            self.active_scene.vp_right = self.width_pv
-            self.active_scene.vp_bottom = self.height_pv
-            self.active_scene.vp_w = self.width_pv
-            self.active_scene.vp_h = self.height_pv
 
     def paintGL(self) -> None:
-        if self.pg_surface is None or not self.active_scene:
+        if not self.pg_surface or not self.active_scene:
             return
-            
+
         self.active_scene.draw(self.pg_surface)
-        buffer = pygame.image.tostring(self.pg_surface, "RGBA")
-        
-        qimage = QImage(
-            buffer,
-            self.width_pv,
-            self.height_pv,
-            self.width_pv * 4,
-            QImage.Format_RGBA8888
-        )
-        
-        painter = QPainter(self)
-        painter.drawImage(0, 0, qimage)
-        painter.end()
+
+        raw = pygame.image.tostring(self.pg_surface, "RGBA")
+        img = QImage(raw, self._vp_w, self._vp_h,
+                     self._vp_w * 4, QImage.Format_RGBA8888)
+
+        p = QPainter(self)
+        p.drawImage(0, 0, img)
+        p.end()
 
     @Slot()
-    def tick(self) -> None:
+    def _tick(self) -> None:
         now = time.time()
-        dt = min(now - self.last_time, 0.1)
-        self.last_time = now
-        
+        dt  = min(now - self._last_time, 0.1)
+        self._last_time = now
+
         if self.active_scene:
             self.active_scene.update(dt)
-            
-            # Executa os scripts de comportamento no PLAY
-            if getattr(self.active_scene, "playing", False):
-                from editor_legacy.script_manager import ScriptManager
-                ScriptManager.update_all(self.active_scene.editable_objects, dt)
-            
-            # ── Binding Bidirecional: Sincronização do Arrasto com o Inspector ──
-            is_dragging = False
-            # Cena 3D: arrastando o gizmo
-            if getattr(self.active_scene, "is_dragging_gizmo", False):
-                is_dragging = True
-            # Cena 2D: arrastando o corpo do objeto ou arrastando os handles de escala
-            elif getattr(self.active_scene, "_dragging_target", None) is not None:
-                is_dragging = True
-            else:
-                scale_handle = getattr(self.active_scene, "_scale_handle_idx", -1)
-                if scale_handle is not None and scale_handle >= 0:
-                    is_dragging = True
-                
-            if is_dragging and self.viewmodel and self.viewmodel.selected_object:
-                # Dispara notificação genérica de mudança para forçar o redesenho dos spinboxes no Inspector
-                EventBus.emit(
-                    EVENT_PROPERTY_CHANGED,
-                    component_name="Transform",
-                    property_name="position",
-                    value=None
-                )
-            
+
+            # Sincroniza seleção da cena → ViewModel enquanto arrasta
+            self._sync_selection_to_model()
+
         self.update()
 
-    # ── Handlers do EventBus ──────────────────────────────────────────────────
+    def _sync_selection_to_model(self) -> None:
+        """Propaga a mudança de selected_index da cena para o ViewModel."""
+        if not self.viewmodel or not self.active_scene:
+            return
+        idx  = getattr(self.active_scene, "selected_index", -1)
+        objs = getattr(self.active_scene, "editable_objects", [])
+        sel  = objs[idx] if 0 <= idx < len(objs) else None
 
-    def on_bus_play_state_changed(self, state: str) -> None:
+        if sel != self.viewmodel._selected_object:
+            # Atualiza sem emitir selection_changed (para não re-triggar selecão na cena)
+            self.viewmodel._selected_object = sel
+            self.viewmodel.selection_changed.emit(sel)
+            EventBus.emit(EVENT_SELECTION_CHANGED, obj=sel)
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Handlers de Eventos do EventBus
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def _on_play_state_changed(self, state: str) -> None:
         if not self.active_scene or not hasattr(self.active_scene, "playing"):
             return
-            
-        from editor_legacy.script_manager import ScriptManager
-            
+
         if state == "play" and not self.active_scene.playing:
             self.active_scene.toggle_play()
-            
-            # Carrega e inicializa os scripts associados
-            for obj in self.active_scene.editable_objects:
-                if getattr(obj, "script_path", ""):
-                    ScriptManager.load(obj)
-        elif state == "stop" and self.active_scene.playing:
+        elif state in ("stop", "pause") and self.active_scene.playing:
             self.active_scene.toggle_play()
-            
-            # Remove referências temporárias dos scripts
-            for obj in self.active_scene.editable_objects:
-                ScriptManager.unload(obj)
 
-    def on_bus_selection_changed(self, obj: Optional[object]) -> None:
-        if not self.active_scene or not hasattr(self.active_scene, "editable_objects"):
+    def _on_selection_changed(self, obj) -> None:
+        """Propaga seleção vinda do Outliner → cena ativa."""
+        if not self.active_scene:
             return
-            
-        if obj in self.active_scene.editable_objects:
-            self.active_scene.selected_index = self.active_scene.editable_objects.index(obj)
+        objs = getattr(self.active_scene, "editable_objects", [])
+        if obj in objs:
+            self.active_scene.selected_index = objs.index(obj)
         else:
             self.active_scene.selected_index = -1
 
-    def on_bus_hierarchy_updated(self) -> None:
-        """Sincroniza os objetos da cena do Pygame com o modelo sempre que a hierarquia mudar."""
-        if not self.active_scene or not self.viewmodel:
+    def _on_property_changed(self, component_name: str, property_name: str, value) -> None:
+        if component_name != "Editor":
             return
-            
-        objs = self.viewmodel.get_root_objects()
-        
-        # Sincroniza as listas internas da cena ativa
-        if hasattr(self.active_scene, "editable_objects"):
-            self.active_scene.editable_objects.clear()
-            self.active_scene.game_objects.clear()
-            for obj in objs:
-                self.active_scene.add_game_object(obj)
-                self.active_scene.editable_objects.append(obj)
-                
-        # Sincroniza a seleção na cena ativa
-        selected_obj = self.viewmodel.selected_object
-        if selected_obj in objs:
-            self.active_scene.selected_index = objs.index(selected_obj)
-        else:
-            self.active_scene.selected_index = -1
-            
-        self.update()
-
-    def on_bus_property_changed(self, component_name: str, property_name: str, value: object) -> None:
-        if component_name == "Editor" and property_name == "tool_mode" and self.active_scene:
-            tool_name = str(value)
-            if tool_name == "select":
-                pass
-            elif tool_name == "move":
-                if hasattr(self.active_scene, "gizmo_mode"):
-                    self.active_scene.gizmo_mode = "translate"
-            elif tool_name == "rotate":
-                if hasattr(self.active_scene, "gizmo_mode"):
-                    self.active_scene.gizmo_mode = "rotate"
-            elif tool_name == "scale":
-                if hasattr(self.active_scene, "gizmo_mode"):
-                    self.active_scene.gizmo_mode = "scale"
-        elif component_name == "Editor" and property_name == "camera_mode":
+        if property_name == "tool_mode" and self.active_scene:
+            mode_map = {
+                "move":   "translate",
+                "rotate": "rotate",
+                "scale":  "scale",
+            }
+            gizmo = mode_map.get(str(value))
+            if gizmo and hasattr(self.active_scene, "gizmo_mode"):
+                self.active_scene.gizmo_mode = gizmo
+        elif property_name == "camera_mode":
             self.change_editor_mode(str(value))
+        elif property_name == "grid_state" and self.active_scene:
+            if hasattr(self.active_scene, "show_grid"):
+                self.active_scene.show_grid = bool(value)
 
-    # ── Mapeamento de Eventos ──────────────────────────────────────────────────
+    # ──────────────────────────────────────────────────────────────────────────
+    # Mapeamento de Eventos Qt → Pygame
+    # ──────────────────────────────────────────────────────────────────────────
 
-    def translate_mouse_button(self, qt_btn: Qt.MouseButton) -> int:
-        if qt_btn == Qt.LeftButton:   return 1
-        if qt_btn == Qt.MiddleButton: return 2
-        if qt_btn == Qt.RightButton:  return 3
+    def _qt_btn_to_pg(self, btn: Qt.MouseButton) -> int:
+        if btn == Qt.LeftButton:   return 1
+        if btn == Qt.MiddleButton: return 2
+        if btn == Qt.RightButton:  return 3
         return 0
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
-        if not self.active_scene:
-            return
-        self.mouse_pos_qt = (event.x(), event.y())
-        btn = self.translate_mouse_button(event.button())
-        pg_event = pygame.event.Event(
-            pygame.MOUSEBUTTONDOWN,
-            pos=self.mouse_pos_qt,
-            button=btn
-        )
-        self.active_scene.handle_event(pg_event)
+        self._qt_mouse_pos = (event.x(), event.y())
+        if self.active_scene:
+            pg_ev = pygame.event.Event(
+                pygame.MOUSEBUTTONDOWN,
+                pos=self._qt_mouse_pos,
+                button=self._qt_btn_to_pg(event.button()),
+            )
+            self.active_scene.handle_event(pg_ev)
+            # Sincroniza seleção imediatamente após o clique
+            self._sync_selection_to_model()
         event.accept()
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
-        if not self.active_scene:
-            return
-        self.mouse_pos_qt = (event.x(), event.y())
-        btn = self.translate_mouse_button(event.button())
-        pg_event = pygame.event.Event(
-            pygame.MOUSEBUTTONUP,
-            pos=self.mouse_pos_qt,
-            button=btn
-        )
-        self.active_scene.handle_event(pg_event)
+        self._qt_mouse_pos = (event.x(), event.y())
+        if self.active_scene:
+            pg_ev = pygame.event.Event(
+                pygame.MOUSEBUTTONUP,
+                pos=self._qt_mouse_pos,
+                button=self._qt_btn_to_pg(event.button()),
+            )
+            self.active_scene.handle_event(pg_ev)
+            self._sync_selection_to_model()
         event.accept()
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
-        if not self.active_scene:
-            return
-        self.mouse_pos_qt = (event.x(), event.y())
-        pg_event = pygame.event.Event(
-            pygame.MOUSEMOTION,
-            pos=self.mouse_pos_qt,
-            buttons=(
-                1 if event.buttons() & Qt.LeftButton else 0,
-                1 if event.buttons() & Qt.MiddleButton else 0,
-                1 if event.buttons() & Qt.RightButton else 0
-            ),
-            rel=(0, 0)
-        )
-        self.active_scene.handle_event(pg_event)
+        self._qt_mouse_pos = (event.x(), event.y())
+        if self.active_scene:
+            btns = event.buttons()
+            pg_ev = pygame.event.Event(
+                pygame.MOUSEMOTION,
+                pos=self._qt_mouse_pos,
+                buttons=(
+                    1 if btns & Qt.LeftButton   else 0,
+                    1 if btns & Qt.MiddleButton  else 0,
+                    1 if btns & Qt.RightButton   else 0,
+                ),
+                rel=(0, 0),
+            )
+            self.active_scene.handle_event(pg_ev)
         event.accept()
 
     def wheelEvent(self, event: QWheelEvent) -> None:
-        if not self.active_scene:
-            return
-        y_steps = event.angleDelta().y() // 120
-        pg_event = pygame.event.Event(
-            pygame.MOUSEWHEEL,
-            x=0,
-            y=y_steps,
-            flipped=False
-        )
-        self.active_scene.handle_event(pg_event)
+        if self.active_scene:
+            steps = event.angleDelta().y() // 120
+            pg_ev = pygame.event.Event(
+                pygame.MOUSEWHEEL,
+                x=0, y=steps, flipped=False,
+            )
+            self.active_scene.handle_event(pg_ev)
         event.accept()
 
-    def get_pygame_key(self, qt_key: Qt.Key) -> Optional[int]:
-        """Traduz dinamicamente códigos de teclas do Qt para códigos correspondentes do Pygame."""
-        key_map = {
-            Qt.Key_Escape: pygame.K_ESCAPE,
-            Qt.Key_Delete: pygame.K_DELETE,
+    def _qt_key_to_pg(self, qt_key: Qt.Key) -> Optional[int]:
+        """Converte tecla Qt → constante pygame.K_*"""
+        _map = {
+            Qt.Key_Escape:    pygame.K_ESCAPE,
+            Qt.Key_Delete:    pygame.K_DELETE,
             Qt.Key_Backspace: pygame.K_BACKSPACE,
-            Qt.Key_Left: pygame.K_LEFT,
-            Qt.Key_Right: pygame.K_RIGHT,
-            Qt.Key_Up: pygame.K_UP,
-            Qt.Key_Down: pygame.K_DOWN,
-            Qt.Key_Space: pygame.K_SPACE,
-            Qt.Key_Return: pygame.K_RETURN,
-            Qt.Key_Enter: pygame.K_KP_ENTER,
-            Qt.Key_Shift: pygame.K_LSHIFT,
-            Qt.Key_Control: pygame.K_LCTRL,
-            Qt.Key_Alt: pygame.K_LALT,
-            Qt.Key_Tab: pygame.K_TAB,
-            Qt.Key_F1: pygame.K_F1,
-            Qt.Key_F2: pygame.K_F2,
-            Qt.Key_F3: pygame.K_F3,
-            Qt.Key_F4: pygame.K_F4,
-            Qt.Key_F5: pygame.K_F5,
-            Qt.Key_F6: pygame.K_F6,
-            Qt.Key_F7: pygame.K_F7,
-            Qt.Key_F8: pygame.K_F8,
-            Qt.Key_F9: pygame.K_F9,
-            Qt.Key_F10: pygame.K_F10,
-            Qt.Key_F11: pygame.K_F11,
-            Qt.Key_F12: pygame.K_F12,
+            Qt.Key_Left:      pygame.K_LEFT,
+            Qt.Key_Right:     pygame.K_RIGHT,
+            Qt.Key_Up:        pygame.K_UP,
+            Qt.Key_Down:      pygame.K_DOWN,
+            Qt.Key_Space:     pygame.K_SPACE,
+            Qt.Key_Return:    pygame.K_RETURN,
+            Qt.Key_Enter:     pygame.K_KP_ENTER,
+            Qt.Key_Shift:     pygame.K_LSHIFT,
+            Qt.Key_Control:   pygame.K_LCTRL,
+            Qt.Key_Alt:       pygame.K_LALT,
+            Qt.Key_Tab:       pygame.K_TAB,
+            **{getattr(Qt, f"Key_F{i}"): getattr(pygame, f"K_F{i}") for i in range(1, 13)},
         }
-        
-        # Mapeia dinamicamente letras A-Z (Pygame K_a=97, Qt Key_A=65)
         if Qt.Key_A <= qt_key <= Qt.Key_Z:
-            return qt_key - Qt.Key_A + pygame.K_a
-        # Mapeia dinamicamente números 0-9
-        elif Qt.Key_0 <= qt_key <= Qt.Key_9:
-            return qt_key - Qt.Key_0 + pygame.K_0
-            
-        return key_map.get(qt_key)
+            return pygame.K_a + (qt_key - Qt.Key_A)
+        if Qt.Key_0 <= qt_key <= Qt.Key_9:
+            return pygame.K_0 + (qt_key - Qt.Key_0)
+        return _map.get(qt_key)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
-        # Atalho de Foco ('F')
         if event.key() == Qt.Key_F:
             self.focus_camera_on_selected()
             event.accept()
             return
-            
+
         if not self.active_scene:
             return
-            
-        pg_key = self.get_pygame_key(event.key())
+
+        pg_key = self._qt_key_to_pg(event.key())
         if pg_key is not None:
             mod = pygame.KMOD_NONE
             if event.modifiers() & Qt.ControlModifier:
                 mod |= pygame.KMOD_CTRL
-            pg_event = pygame.event.Event(
+            pg_ev = pygame.event.Event(
                 pygame.KEYDOWN,
-                key=pg_key,
-                mod=mod,
-                unicode=event.text()
+                key=pg_key, mod=mod, unicode=event.text(),
             )
-            self.active_scene.handle_event(pg_event)
+            self.active_scene.handle_event(pg_ev)
+            # Delete e Ctrl+D devem sincronizar o modelo
+            if pg_key == pygame.K_DELETE:
+                self._sync_model_from_scene()
             event.accept()
         else:
             super().keyPressEvent(event)
@@ -508,19 +543,16 @@ class ViewportWidget(QOpenGLWidget):
     def keyReleaseEvent(self, event: QKeyEvent) -> None:
         if not self.active_scene:
             return
-            
-        pg_key = self.get_pygame_key(event.key())
+        pg_key = self._qt_key_to_pg(event.key())
         if pg_key is not None:
             mod = pygame.KMOD_NONE
             if event.modifiers() & Qt.ControlModifier:
                 mod |= pygame.KMOD_CTRL
-            pg_event = pygame.event.Event(
+            pg_ev = pygame.event.Event(
                 pygame.KEYUP,
-                key=pg_key,
-                mod=mod,
-                unicode=""
+                key=pg_key, mod=mod, unicode="",
             )
-            self.active_scene.handle_event(pg_event)
+            self.active_scene.handle_event(pg_ev)
             event.accept()
         else:
             super().keyReleaseEvent(event)
