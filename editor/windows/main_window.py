@@ -3,7 +3,7 @@ import os
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QMenuBar, QMenu, QToolBar, QStatusBar,
     QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox,
-    QDockWidget, QFileDialog
+    QDockWidget, QFileDialog, QComboBox
 )
 from PySide6.QtGui import QAction, QKeySequence, QIcon, QCloseEvent
 from PySide6.QtCore import Qt, Slot, QSettings
@@ -324,6 +324,18 @@ class MainWindow(QMainWindow):
         self.act_toggle_grid = QAction("Grade: ON", self, checkable=True, checked=True)
         self.act_toggle_grid.triggered.connect(self.on_grid_toggled)
         toolbar.addAction(self.act_toggle_grid)
+        
+        toolbar.addSeparator()
+        
+        # ── Seletor de Câmera 2D/3D ──────────────────────────
+        self.cb_camera_mode = QComboBox()
+        self.cb_camera_mode.addItems(["Visualização 2D", "Visualização 3D"])
+        self.cb_camera_mode.setStyleSheet(
+            "background-color: #2b2e38; color: #e3e8f0; border: 1px solid #3c4050;"
+            "padding: 2px 6px; border-radius: 3px;"
+        )
+        self.cb_camera_mode.currentTextChanged.connect(self.on_camera_mode_changed)
+        toolbar.addWidget(self.cb_camera_mode)
 
     def create_status_bar(self) -> None:
         """Configura a barra de status inferior e seus widgets permanentes."""
@@ -564,3 +576,10 @@ class MainWindow(QMainWindow):
                 for obj in self.viewport.active_scene.editable_objects:
                     self.scene_model.add_object(obj)
                 self.scene_view_model.on_model_hierarchy_changed()
+
+    @Slot(str)
+    def on_camera_mode_changed(self, text: str) -> None:
+        """Slot chamado quando o modo da câmera é alternado entre 2D e 3D."""
+        mode = "2D" if "2D" in text else "3D"
+        self.log_action(f"Alterando modo de câmera para: {mode}")
+        EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="Editor", property_name="camera_mode", value=mode)

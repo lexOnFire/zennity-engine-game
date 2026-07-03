@@ -21,9 +21,9 @@ class ViewportWidget(QOpenGLWidget):
     """
     Viewport gráfica baseada em QOpenGLWidget.
     
-    Implementação da Semana 9:
-      - Sincronização dos Gizmos de Transformação (Mover, Rotacionar, Escalar)
-      - Propagação bidirecional de arrasto de gizmo/handles para o Inspector
+    Implementação da Semana 13:
+      - Suporte à tecla 'F' para focar a câmera no objeto selecionado
+      - Alternância dinâmica entre visualização 2D (Ortográfica) e 3D (Perspectiva)
     """
     
     def __init__(self, parent: QWidget = None) -> None:
@@ -38,6 +38,7 @@ class ViewportWidget(QOpenGLWidget):
         
         self.viewmodel: Optional[SceneViewModel] = None
         self.active_scene: Optional[Scene] = None
+        self.editor_mode = "2D"  # '2D' ou '3D'
         
         # Framebuffer do Pygame
         self.pg_surface: Optional[pygame.Surface] = None
@@ -45,7 +46,7 @@ class ViewportWidget(QOpenGLWidget):
         
         self.last_time = time.time()
         
-        # Inscreve-se no EventBus para ouvir a simulação e ferramentas
+        # Inscreve-se no EventBus para ouvir a simulação, ferramentas e modos
         EventBus.subscribe(EVENT_PLAY_STATE_CHANGED, self.on_bus_play_state_changed)
         EventBus.subscribe(EVENT_SELECTION_CHANGED, self.on_bus_selection_changed)
         EventBus.subscribe(EVENT_PROPERTY_CHANGED, self.on_bus_property_changed)
@@ -70,6 +71,66 @@ class ViewportWidget(QOpenGLWidget):
                 self.viewmodel._model.add_object(obj)
             if self.active_scene.selected_index >= 0:
                 self.viewmodel.selected_object = self.active_scene.editable_objects[self.active_scene.selected_index]
+
+    def change_editor_mode(self, mode: str) -> None:
+        """Alterna dinamicamente a cena da Viewport entre editor 2D e editor 3D."""
+        if not self.active_scene or self.editor_mode == mode:
+            return
+            
+        # Salva referências dos objetos da cena atual
+        objs = list(self.active_scene.editable_objects) if hasattr(self.active_scene, "editable_objects") else []
+        selected_obj = self.viewmodel.selected_object if self.viewmodel else None
+        
+        self.editor_mode = mode
+        
+        # Instancia a nova cena correspondente
+        if mode == "2D":
+            from editor_legacy.editor_2d import Editor2DScene
+            self.active_scene = Editor2DScene()
+        elif mode == "3D":
+            from editor_legacy.scene import EditorScene
+            self.active_scene = EditorScene()
+            
+        self.active_scene.start()
+        
+        # Transfere os objetos salvos
+        if hasattr(self.active_scene, "editable_objects"):
+            self.active_scene.editable_objects.clear()
+            self.active_scene.game_objects.clear()
+            for obj in objs:
+                self.active_scene.add_game_object(obj)
+                self.active_scene.editable_objects.append(obj)
+                
+        # Sincroniza a seleção
+        if selected_obj in objs:
+            self.active_scene.selected_index = objs.index(selected_obj)
+        else:
+            self.active_scene.selected_index = -1
+            
+        # Redimensiona a tela do Pygame na nova cena
+        self.resizeGL(self.width(), self.height())
+        self.update()
+
+    def focus_camera_on_selected(self) -> None:
+        """Foca suave ou instantaneamente a câmera no objeto selecionado na viewport."""
+        if not self.active_scene or not self.viewmodel or not self.viewmodel.selected_object:
+            return
+            
+        obj = self.viewmodel.selected_object
+        
+        # Modo 2D: centraliza câmera
+        if hasattr(self.active_scene, "cam_x"):
+            self.active_scene.cam_x = obj.transform.position[0]
+            self.active_scene.cam_y = obj.transform.position[1]
+            self.active_scene.zoom = 1.0  # Reseta o zoom para ver o objeto
+            
+        # Modo 3D: centraliza câmera orbital
+        elif hasattr(self.active_scene, "camera_controller") and self.active_scene.camera_controller:
+            ctrl = self.active_scene.camera_controller
+            ctrl.target = obj.transform.position.copy()
+            ctrl.distance = 5.0
+            
+        self.update()
 
     def initializeGL(self) -> None:
         pass
@@ -176,10 +237,8 @@ class ViewportWidget(QOpenGLWidget):
             self.active_scene.selected_index = -1
 
     def on_bus_property_changed(self, component_name: str, property_name: str, value: object) -> None:
-        """Ouve alterações de configurações e ferramentas na interface do editor."""
         if component_name == "Editor" and property_name == "tool_mode" and self.active_scene:
             tool_name = str(value)
-            # Sincroniza a ferramenta de transform ativa com os gizmos da cena Pygame
             if tool_name == "select":
                 pass
             elif tool_name == "move":
@@ -191,6 +250,8 @@ class ViewportWidget(QOpenGLWidget):
             elif tool_name == "scale":
                 if hasattr(self.active_scene, "gizmo_mode"):
                     self.active_scene.gizmo_mode = "scale"
+        elif component_name == "Editor" and property_name == "camera_mode":
+            self.change_editor_mode(str(value))
 
     # ── Mapeamento de Eventos ──────────────────────────────────────────────────
 
@@ -254,6 +315,12 @@ class ViewportWidget(QOpenGLWidget):
         event.accept()
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
+        # Atalho de Foco ('F')
+        if event.key() == Qt.Key_F:
+            self.focus_camera_on_selected()
+            event.accept()
+            return
+            
         if not self.active_scene:
             return
         key_map = {
