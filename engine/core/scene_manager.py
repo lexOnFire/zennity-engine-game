@@ -5,25 +5,6 @@ Fonte canônica do SceneManager.
 O arquivo engine/scene_manager.py é agora um shim que importa daqui.
 
 SceneManager — singleton que gerencia a pilha de cenas e transições.
-
-Funcionalidades:
-  - load(scene, transition?)  — troca de cena com transição visual
-  - push(scene, transition?)  — empilha cena (pausa a atual)
-  - pop(transition?)          — desempilha e volta à cena anterior
-  - Histórico de cenas (pilha)
-  - Callbacks: on_transition_start, on_transition_end
-  - Integração limpa com Engine via patch de change_scene()
-
-Uso:
-    from engine.core import SceneManager
-
-    sm = SceneManager.instance()
-    sm.bind(engine)
-
-    sm.load(GameScene(),
-            transition=FadeTransition(color=(0,0,0), duration_out=0.4))
-    sm.push(PauseScene())
-    sm.pop()
 """
 from __future__ import annotations
 
@@ -41,14 +22,14 @@ class SceneManager:
 
     def __init__(self) -> None:
         self._engine = None
-        self._stack:      List = []
+        self._stack: List = []
         self._transition: Optional[Transition] = None
         self._pending_scene = None
-        self._pending_pop:  bool = False
+        self._pending_pop: bool = False
         self._pending_push: bool = False
 
         self.on_transition_start: Optional[Callable[[str], None]] = None
-        self.on_transition_end:   Optional[Callable[[str], None]] = None
+        self.on_transition_end: Optional[Callable[[str], None]] = None
 
     # ------------------------------------------------------------------ #
     # Singleton                                                           #
@@ -74,7 +55,9 @@ class SceneManager:
         engine.change_scene → sm.load para retrocompatibilidade.
         """
         self._engine = engine
-        engine.change_scene = self.load
+        bound_load = self.load
+        self.load = bound_load
+        engine.change_scene = bound_load
 
     # ------------------------------------------------------------------ #
     # API pública                                                         #
@@ -231,13 +214,13 @@ class SceneManager:
         self,
         transition: Transition,
         target_scene,
-        pop:     bool = False,
+        pop: bool = False,
         is_push: bool = False,
     ) -> None:
-        self._transition    = transition
+        self._transition = transition
         self._pending_scene = target_scene
-        self._pending_pop   = pop
-        self._pending_push  = is_push
+        self._pending_pop = pop
+        self._pending_push = is_push
 
         if self.on_transition_start:
             self.on_transition_start(target_scene.__class__.__name__)
@@ -257,8 +240,8 @@ class SceneManager:
             self._do_swap_load(self._pending_scene)
 
         self._pending_scene = None
-        self._pending_pop   = False
-        self._pending_push  = False
+        self._pending_pop = False
+        self._pending_push = False
 
     def _do_swap_load(self, new_scene) -> None:
         """Troca imediata — limpa pilha, libera recursos e inicia nova cena."""
