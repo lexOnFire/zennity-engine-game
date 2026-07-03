@@ -3,10 +3,10 @@ import os
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QMenuBar, QMenu, QToolBar, QStatusBar,
     QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox,
-    QDockWidget, QFileDialog, QComboBox
+    QDockWidget, QFileDialog, QComboBox, QSizePolicy, QFrame, QDialog
 )
-from PySide6.QtGui import QAction, QKeySequence, QIcon, QCloseEvent
-from PySide6.QtCore import Qt, Slot, QSettings
+from PySide6.QtGui import QAction, QActionGroup, QKeySequence, QIcon, QCloseEvent
+from PySide6.QtCore import Qt, Slot, QSettings, QSize
 
 # Barramento de Eventos do Editor
 from editor.core.event_bus import (
@@ -48,11 +48,17 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         
-        self.setWindowTitle("Zennity Engine Editor - NovoProjeto.zscene*")
-        self.resize(1280, 800)
+        self.setWindowTitle("Zennity Editor - NovoProjeto.zscene*")
+        self.resize(1440, 900)
+        self.setMinimumSize(1120, 720)
+        self.setObjectName("ZennityMainWindow")
         
         # Configura as opções de Docking
-        self.setDockOptions(QMainWindow.AnimatedDocks | QMainWindow.AllowTabbedDocks)
+        self.setDockOptions(
+            QMainWindow.AnimatedDocks
+            | QMainWindow.AllowTabbedDocks
+            | QMainWindow.GroupedDragging
+        )
         
         # Inicializa o Model e o ViewModel de Cena (Semana 3)
         self.scene_model = SceneModel()
@@ -82,6 +88,7 @@ class MainWindow(QMainWindow):
         # Inicializa ações e menus
         self.create_actions()
         self.create_menu_bar()
+        self.menuBar().hide()
         self.create_tool_bar()
         self.create_status_bar()
         
@@ -176,7 +183,7 @@ class MainWindow(QMainWindow):
         """Aplica preferências salvas de grade e auto-layout."""
         grid_on = self.prefs.value("grid_on_init", "true") == "true"
         self.act_toggle_grid.setChecked(grid_on)
-        self.act_toggle_grid.setText("Grade: ON" if grid_on else "Grade: OFF")
+        self.act_toggle_grid.setText("Grid")
         
         grid_size = int(self.prefs.value("grid_size", 32))
         self.log_action(f"Preferências carregadas: Grade={grid_size}px (Ativa={grid_on})")
@@ -238,6 +245,22 @@ class MainWindow(QMainWindow):
         self.act_about = QAction("Sobre o Zennity Editor", self)
         self.act_about.triggered.connect(self.show_about_dialog)
 
+        for action in (
+            self.act_new,
+            self.act_open,
+            self.act_save,
+            self.act_export,
+            self.act_exit,
+            self.act_undo,
+            self.act_redo,
+            self.act_duplicate,
+            self.act_delete,
+            self.act_preferences,
+            self.act_commands,
+            self.act_about,
+        ):
+            self.addAction(action)
+
     def create_menu_bar(self) -> None:
         """Monta a barra de menus superior."""
         menubar = self.menuBar()
@@ -290,82 +313,138 @@ class MainWindow(QMainWindow):
         menu_help.addAction(self.act_about)
 
     def create_tool_bar(self) -> None:
-        """Cria e organiza a barra de ferramentas (Toolbar) principal."""
-        toolbar = self.addToolBar("Ferramentas")
-        toolbar.setObjectName("MainToolBar")
+        """Cria a command bar principal do editor."""
+        toolbar = self.addToolBar("Command Bar")
+        toolbar.setObjectName("CommandBar")
         toolbar.setMovable(False)
-        toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        
-        # ── Controles de Simulação ──────────────────────────
-        self.btn_play = QPushButton(" ▶  PLAY ")
-        self.btn_play.setStyleSheet("background-color: #2e7d32; border: 1px solid #1b5e20; color: white; padding: 4px 12px; border-radius: 6px; font-weight: bold;")
+        toolbar.setFloatable(False)
+        toolbar.setIconSize(QSize(18, 18))
+
+        shell = QWidget()
+        shell.setObjectName("CommandBarShell")
+        layout = QHBoxLayout(shell)
+        layout.setContentsMargins(12, 8, 12, 8)
+        layout.setSpacing(10)
+
+        brand = QLabel("Zennity")
+        brand.setObjectName("BrandLabel")
+        layout.addWidget(brand)
+
+        scene_label = QLabel("NovoProjeto.zscene")
+        scene_label.setObjectName("SceneLabel")
+        layout.addWidget(scene_label)
+        layout.addWidget(self._command_separator())
+
+        for text, action, primary in (
+            ("New", self.act_new, False),
+            ("Open", self.act_open, False),
+            ("Save", self.act_save, True),
+            ("Export", self.act_export, False),
+        ):
+            layout.addWidget(self._command_button(text, action, primary))
+
+        layout.addWidget(self._command_separator())
+
+        self.btn_play = self._command_button("Play")
+        self.btn_play.setObjectName("PlayButton")
         self.btn_play.clicked.connect(self.on_play_clicked)
-        
-        self.btn_pause = QPushButton(" ⏸  PAUSE ")
-        self.btn_pause.setStyleSheet("background-color: #37474f; border: 1px solid #263238; color: #cfd4de; padding: 4px 12px; border-radius: 6px; font-weight: bold;")
+
+        self.btn_pause = self._command_button("Pause")
         self.btn_pause.setEnabled(False)
         self.btn_pause.clicked.connect(self.on_pause_clicked)
-        
-        self.btn_stop = QPushButton(" ■  STOP ")
-        self.btn_stop.setStyleSheet("background-color: #c62828; border: 1px solid #b71c1c; color: white; padding: 4px 12px; border-radius: 6px; font-weight: bold;")
+
+        self.btn_stop = self._command_button("Stop")
         self.btn_stop.setEnabled(False)
         self.btn_stop.clicked.connect(self.on_stop_clicked)
-        
-        toolbar.addWidget(self.btn_play)
-        toolbar.addWidget(self.btn_pause)
-        toolbar.addWidget(self.btn_stop)
-        
-        toolbar.addSeparator()
-        
-        # ── Controles de Ferramentas (Transformação) ────────
+
+        for btn in (self.btn_play, self.btn_pause, self.btn_stop):
+            layout.addWidget(btn)
+
+        layout.addWidget(self._command_separator())
+
         self.act_tool_select = QAction("Select", self, checkable=True, checked=True)
         self.act_tool_select.triggered.connect(lambda: self.on_transform_tool_changed("select"))
-        
+
         self.act_tool_move = QAction("Move", self, checkable=True)
         self.act_tool_move.triggered.connect(lambda: self.on_transform_tool_changed("move"))
-        
+
         self.act_tool_rotate = QAction("Rotate", self, checkable=True)
         self.act_tool_rotate.triggered.connect(lambda: self.on_transform_tool_changed("rotate"))
-        
+
         self.act_tool_scale = QAction("Scale", self, checkable=True)
         self.act_tool_scale.triggered.connect(lambda: self.on_transform_tool_changed("scale"))
-        
-        self.transform_actions = [self.act_tool_select, self.act_tool_move, 
-                                  self.act_tool_rotate, self.act_tool_scale]
-        
+
+        self.transform_actions = [
+            self.act_tool_select,
+            self.act_tool_move,
+            self.act_tool_rotate,
+            self.act_tool_scale,
+        ]
+        self.transform_group = QActionGroup(self)
+        self.transform_group.setExclusive(True)
+
         for act in self.transform_actions:
-            toolbar.addAction(act)
-            
-        toolbar.addSeparator()
-        
-        # ── Toggle de Grade ────────────────────────────────
-        self.act_toggle_grid = QAction("Grade: ON", self, checkable=True, checked=True)
+            self.transform_group.addAction(act)
+            btn = self._command_button(act.text())
+            btn.setCheckable(True)
+            btn.setChecked(act.isChecked())
+            btn.clicked.connect(lambda checked=False, action=act: action.trigger())
+            act.toggled.connect(btn.setChecked)
+            layout.addWidget(btn)
+
+        layout.addWidget(self._command_separator())
+
+        self.act_toggle_grid = QAction("Grid", self, checkable=True, checked=True)
         self.act_toggle_grid.triggered.connect(self.on_grid_toggled)
-        toolbar.addAction(self.act_toggle_grid)
-        
-        toolbar.addSeparator()
-        
-        # ── Seletor de Câmera 2D/3D ──────────────────────────
+        self.btn_grid = self._command_button("Grid")
+        self.btn_grid.setCheckable(True)
+        self.btn_grid.setChecked(True)
+        self.btn_grid.clicked.connect(lambda checked=False: self.act_toggle_grid.trigger())
+        self.act_toggle_grid.toggled.connect(self.btn_grid.setChecked)
+        layout.addWidget(self.btn_grid)
+
         self.cb_camera_mode = QComboBox()
-        self.cb_camera_mode.addItems(["Visualização 2D", "Visualização 3D"])
-        self.cb_camera_mode.setStyleSheet(
-            "background-color: #2b2e38; color: #e3e8f0; border: 1px solid #3c4050;"
-            "padding: 2px 6px; border-radius: 3px;"
-        )
+        self.cb_camera_mode.setObjectName("ModeSwitch")
+        self.cb_camera_mode.addItems(["2D View", "3D View"])
+        self.cb_camera_mode.setFixedWidth(118)
         self.cb_camera_mode.currentTextChanged.connect(self.on_camera_mode_changed)
-        toolbar.addWidget(self.cb_camera_mode)
+        layout.addWidget(self.cb_camera_mode)
+
+        layout.addStretch(1)
+        layout.addWidget(self._command_button("Settings", self.act_preferences))
+
+        toolbar.addWidget(shell)
+
+    def _command_button(self, text: str, action: QAction | None = None, primary: bool = False) -> QPushButton:
+        """Cria um botão compacto para a command bar."""
+        btn = QPushButton(text)
+        btn.setObjectName("PrimaryCommandButton" if primary else "CommandButton")
+        btn.setCursor(Qt.PointingHandCursor)
+        btn.setMinimumHeight(30)
+        btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        if action:
+            btn.setToolTip(action.text())
+            btn.clicked.connect(lambda checked=False, target=action: target.trigger())
+        return btn
+
+    def _command_separator(self) -> QFrame:
+        line = QFrame()
+        line.setObjectName("CommandSeparator")
+        line.setFrameShape(QFrame.VLine)
+        line.setFixedHeight(24)
+        return line
 
     def create_status_bar(self) -> None:
         """Configura a barra de status inferior e seus widgets permanentes."""
         statusbar = self.statusBar()
         
         # Widgets permanentes à direita (estatísticas)
-        self.lbl_fps = QLabel("FPS: 60  ")
-        self.lbl_mem = QLabel("Memória: 12.4 MB  ")
-        self.lbl_obj = QLabel("Objetos: 0  ")
+        self.lbl_fps = QLabel("FPS 60")
+        self.lbl_mem = QLabel("Mem 12.4 MB")
+        self.lbl_obj = QLabel("Objects 0")
         
         for lbl in (self.lbl_fps, self.lbl_mem, self.lbl_obj):
-            lbl.setStyleSheet("color: #cfd4de; font-family: 'JetBrains Mono', 'Cascadia Code', monospace; font-size: 11px; font-weight: 600; margin-right: 10px;")
+            lbl.setObjectName("StatusMetric")
             statusbar.addPermanentWidget(lbl)
 
     # ──────────────────────────────────────────────────────────────────────────
@@ -375,14 +454,14 @@ class MainWindow(QMainWindow):
     def log_action(self, action_name: str) -> None:
         """Imprime log informativo da ação no console do desenvolvedor."""
         print(f"[ACTION] Disparado: {action_name}")
-        self.statusBar().showMessage(f"Executando: {action_name}", 3000)
+        self.statusBar().showMessage(action_name, 3000)
 
     @Slot()
     def on_new_scene(self) -> None:
         self.log_action("Novo Projeto/Cena")
         self.scene_model.clear()
         self.scene_view_model.selected_object = None
-        self.setWindowTitle("Zennity Engine Editor - NovoProjeto.zscene*")
+        self.setWindowTitle("Zennity Editor - NovoProjeto.zscene*")
         
         if hasattr(self.viewport, "active_scene") and self.viewport.active_scene:
             if hasattr(self.viewport.active_scene, "editable_objects"):
@@ -408,7 +487,7 @@ class MainWindow(QMainWindow):
         try:
             root_objs = self.scene_view_model.get_root_objects()
             save_scene_to_file(filepath, root_objs)
-            self.setWindowTitle(f"Zennity Engine Editor - {os.path.basename(filepath)}")
+            self.setWindowTitle(f"Zennity Editor - {os.path.basename(filepath)}")
             self.statusBar().showMessage(f"Cena salva em: {os.path.basename(filepath)}", 4000)
             self.log_action(f"Cena gravada em disco: {filepath}")
         except Exception as e:
@@ -444,7 +523,7 @@ class MainWindow(QMainWindow):
                 self.viewport.active_scene.selected_index = -1
                 self.scene_view_model.on_model_hierarchy_changed()
                 
-            self.setWindowTitle(f"Zennity Engine Editor - {os.path.basename(filepath)}")
+            self.setWindowTitle(f"Zennity Editor - {os.path.basename(filepath)}")
             self.statusBar().showMessage(f"Cena carregada: {os.path.basename(filepath)}", 4000)
             self.log_action(f"Cena carregada do disco: {filepath}")
         except Exception as e:
@@ -468,7 +547,7 @@ class MainWindow(QMainWindow):
                 count_rec(o.children)
                 
         count_rec(self.scene_view_model.get_root_objects())
-        self.lbl_obj.setText(f"Objetos: {count}  ")
+        self.lbl_obj.setText(f"Objects {count}")
 
     @Slot(str)
     def on_bus_asset_selected(self, filepath: str) -> None:
@@ -489,7 +568,7 @@ class MainWindow(QMainWindow):
             elif property_name == "grid_state" and value is not None:
                 grid_on = bool(value)
                 self.act_toggle_grid.setChecked(grid_on)
-                self.act_toggle_grid.setText("Grade: ON" if grid_on else "Grade: OFF")
+                self.act_toggle_grid.setText("Grid")
 
     @Slot()
     def on_play_clicked(self) -> None:
@@ -539,7 +618,7 @@ class MainWindow(QMainWindow):
 
     @Slot(bool)
     def on_grid_toggled(self, enabled: bool) -> None:
-        self.act_toggle_grid.setText("Grade: ON" if enabled else "Grade: OFF")
+        self.act_toggle_grid.setText("Grid")
         self.log_action(f"Exibição da grade: {'Habilitada' if enabled else 'Desabilitada'}")
         
         # Se a grade foi ligada/desligada na barra, repassa para as preferências e o EventBus
