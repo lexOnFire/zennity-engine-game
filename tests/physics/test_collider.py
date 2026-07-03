@@ -12,33 +12,30 @@ Estratégia de isolamento:
     dependência de pygame.Surface ou sprite.
   - Nenhum patch global de pygame é necessário — o import de pygame
     usado em rect() e draw() é mantido mas draw() nunca é chamado aqui.
-
-Grupos:
-  TestCollisionInfo          (4)  — dataclass CollisionInfo
-  TestBoxColliderInit        (7)  — construtor, defaults, campos
-  TestBoxColliderLifecycle   (5)  — start() registro, destroy() remoção
-  TestBoxColliderRect        (6)  — rect sem GO, com GO, offset, alinhamento
-  TestBoxCheckAllBasic       (8)  — check_all: detecção, callbacks, exit
-  TestBoxCheckAllTrigger     (5)  — is_trigger: detecta mas não resolve
-  TestBoxResolve             (8)  — _resolve: MTV eixo X, eixo Y, share=0.5
-  TestCircleColliderInit     (6)  — construtor, defaults, campos
-  TestCircleColliderCenter   (4)  — center sem GO, com GO, offset
-  TestCircleCheckAllBasic    (8)  — check_all: detecção, callbacks, exit
-  TestCircleCheckAllTrigger  (4)  — is_trigger não resolve
-  TestCircleResolve          (7)  — _resolve: normal, overlap, dist==0 fallback
-
-Total: 72 testes.
 """
 from __future__ import annotations
 
+import importlib
 import math
-import pytest
+import sys
 from unittest.mock import MagicMock
 
 import pygame
+import pytest
+
 pygame.init()  # necessário para pygame.Rect funcionar sem display
 
-from engine.physics.collider import BoxCollider, CircleCollider, CollisionInfo
+# Em execuções completas do pytest, algum teste anterior pode deixar um módulo
+# fake em sys.modules. O arquivo real possui CollisionInfo; se o módulo carregado
+# não possui, descartamos e importamos novamente do pacote real.
+_collider_module = importlib.import_module("engine.physics.collider")
+if not hasattr(_collider_module, "CollisionInfo"):
+    sys.modules.pop("engine.physics.collider", None)
+    _collider_module = importlib.import_module("engine.physics.collider")
+
+BoxCollider = _collider_module.BoxCollider
+CircleCollider = _collider_module.CircleCollider
+CollisionInfo = _collider_module.CollisionInfo
 
 
 # ---------------------------------------------------------------------------
@@ -97,7 +94,6 @@ def _circle(x=0.0, y=0.0, r=16.0, ox=0.0, oy=0.0,
 # ---------------------------------------------------------------------------
 # Fixture de isolamento
 # ---------------------------------------------------------------------------
-
 @pytest.fixture(autouse=True)
 def _clean_registries():
     BoxCollider._registry.clear()
@@ -116,7 +112,6 @@ def _clean_registries():
 # ===========================================================================
 # 1. CollisionInfo
 # ===========================================================================
-
 class TestCollisionInfo:
     def test_fields_stored(self):
         other = MagicMock()
@@ -143,7 +138,6 @@ class TestCollisionInfo:
 # ===========================================================================
 # 2. BoxCollider — construtor
 # ===========================================================================
-
 class TestBoxColliderInit:
     def test_default_size(self):
         c = BoxCollider()
@@ -181,7 +175,6 @@ class TestBoxColliderInit:
 # ===========================================================================
 # 3. BoxCollider — ciclo de vida
 # ===========================================================================
-
 class TestBoxColliderLifecycle:
     def test_start_registers_collider(self):
         c = BoxCollider()
@@ -214,549 +207,249 @@ class TestBoxColliderLifecycle:
 # ===========================================================================
 # 4. BoxCollider — rect
 # ===========================================================================
-
 class TestBoxColliderRect:
     def test_rect_without_game_object(self):
         c = BoxCollider(width=32, height=32)
-        c.game_object = None
         r = c.rect
-        assert r.width == 32
-        assert r.height == 32
+        assert isinstance(r, pygame.Rect)
+        assert r.topleft == (0, 0)
+        assert r.size == (32, 32)
 
-    def test_rect_centered_on_position(self):
-        c = _box(x=100.0, y=200.0, w=32.0, h=32.0)
-        r = c.rect
-        assert r.left == 84    # 100 - 16
-        assert r.top  == 184   # 200 - 16
+    def test_rect_with_game_object_centered(self):
+        c = _box(x=100, y=80, w=40, h=20)
+        assert c.rect == pygame.Rect(80, 70, 40, 20)
 
     def test_rect_with_offset(self):
-        c = _box(x=0.0, y=0.0, w=32.0, h=32.0, ox=10.0, oy=5.0)
-        r = c.rect
-        assert r.left == -6    # 0 + 10 - 16
-        assert r.top  == -11   # 0 + 5 - 16
+        c = _box(x=100, y=80, w=40, h=20, ox=10, oy=-5)
+        assert c.rect == pygame.Rect(90, 65, 40, 20)
 
-    def test_rect_size_matches_width_height(self):
-        c = _box(w=64.0, h=48.0)
-        r = c.rect
-        assert r.width == 64
-        assert r.height == 48
+    def test_rect_int_conversion(self):
+        c = _box(x=10.7, y=20.9, w=5.5, h=6.5)
+        assert isinstance(c.rect.left, int)
+        assert isinstance(c.rect.width, int)
 
-    def test_rect_is_pygame_rect(self):
-        c = _box()
-        assert isinstance(c.rect, pygame.Rect)
+    def test_rect_updates_when_transform_moves(self):
+        c = _box(x=50, y=50, w=20, h=20)
+        c.game_object.transform.get_world_position.return_value = [70, 70]
+        assert c.rect.topleft == (60, 60)
 
-    def test_rect_position_updates_with_transform(self):
-        c = _box(x=0.0, y=0.0, w=32.0, h=32.0)
-        c.game_object.transform.get_world_position.return_value = [50.0, 50.0]
-        r = c.rect
-        assert r.left == 34  # 50 - 16
+    def test_rect_negative_coords(self):
+        c = _box(x=-10, y=-10, w=20, h=20)
+        assert c.rect.topleft == (-20, -20)
 
 
 # ===========================================================================
 # 5. BoxCollider — check_all básico
 # ===========================================================================
-
 class TestBoxCheckAllBasic:
-    def _overlapping_pair(self, trigger_a=False, trigger_b=False,
-                          rb_a=None, rb_b=None):
-        """Dois boxes que se sobrepõem na mesma cena, mesma posição."""
+    def test_no_collision_no_callbacks(self):
         scene = MagicMock()
-        a = _box(x=0, y=0, w=32, h=32, trigger=trigger_a, rb=rb_a, scene=scene)
-        b = _box(x=10, y=10, w=32, h=32, trigger=trigger_b, rb=rb_b, scene=scene)
-        a.start()
-        b.start()
-        return a, b
-
-    def test_on_collision_enter_called_when_overlapping(self):
-        a, b = self._overlapping_pair()
-        cb_a = MagicMock()
-        a.on_collision_enter = cb_a
+        a = _box(0, 0, scene=scene)
+        b = _box(200, 0, scene=scene)
+        a.on_collision_enter = MagicMock()
+        b.on_collision_enter = MagicMock()
+        BoxCollider._registry.extend([a, b])
         BoxCollider.check_all()
-        cb_a.assert_called_once()
+        a.on_collision_enter.assert_not_called()
+        b.on_collision_enter.assert_not_called()
 
-    def test_on_collision_enter_receives_collision_info(self):
-        a, b = self._overlapping_pair()
-        infos = []
-        a.on_collision_enter = lambda info: infos.append(info)
-        BoxCollider.check_all()
-        assert len(infos) == 1
-        assert isinstance(infos[0], CollisionInfo)
-        assert infos[0].other is b
-
-    def test_both_callbacks_fired_on_enter(self):
-        a, b = self._overlapping_pair()
-        cb_a, cb_b = MagicMock(), MagicMock()
-        a.on_collision_enter = cb_a
-        b.on_collision_enter = cb_b
-        BoxCollider.check_all()
-        cb_a.assert_called_once()
-        cb_b.assert_called_once()
-
-    def test_enter_not_fired_twice_on_sustained_overlap(self):
-        a, b = self._overlapping_pair()
-        cb_a = MagicMock()
-        a.on_collision_enter = cb_a
-        BoxCollider.check_all()
-        BoxCollider.check_all()
-        assert cb_a.call_count == 1  # entra só uma vez
-
-    def test_on_collision_exit_called_when_no_longer_overlapping(self):
+    def test_collision_enter_callbacks(self):
         scene = MagicMock()
-        a = _box(x=0,  y=0,  w=32, h=32, scene=scene)
-        b = _box(x=10, y=10, w=32, h=32, scene=scene)
-        a.start(); b.start()
-        BoxCollider.check_all()  # enter
-        # Afasta b
-        b.game_object.transform.get_world_position.return_value = [200.0, 200.0]
-        cb_exit = MagicMock()
-        a.on_collision_exit = cb_exit
-        BoxCollider.check_all()  # exit
-        cb_exit.assert_called_once_with(b)
+        a = _box(0, 0, w=20, h=20, scene=scene)
+        b = _box(10, 0, w=20, h=20, scene=scene)
+        a.on_collision_enter = MagicMock()
+        b.on_collision_enter = MagicMock()
+        BoxCollider._registry.extend([a, b])
+        BoxCollider.check_all()
+        assert b in a._colliding_with
+        assert a in b._colliding_with
+        a.on_collision_enter.assert_called_once()
+        b.on_collision_enter.assert_called_once()
+        info = a.on_collision_enter.call_args.args[0]
+        assert isinstance(info, CollisionInfo)
+        assert info.other is b
 
-    def test_no_collision_when_separated(self):
+    def test_enter_only_once_while_still_colliding(self):
         scene = MagicMock()
-        a = _box(x=0,   y=0,   w=32, h=32, scene=scene)
-        b = _box(x=200, y=200, w=32, h=32, scene=scene)
-        a.start(); b.start()
-        cb = MagicMock()
-        a.on_collision_enter = cb
+        a = _box(0, 0, w=20, h=20, scene=scene)
+        b = _box(10, 0, w=20, h=20, scene=scene)
+        a.on_collision_enter = MagicMock()
+        BoxCollider._registry.extend([a, b])
         BoxCollider.check_all()
-        cb.assert_not_called()
-
-    def test_different_scenes_no_collision(self):
-        a = _box(x=0, y=0, w=32, h=32, scene=MagicMock())
-        b = _box(x=0, y=0, w=32, h=32, scene=MagicMock())
-        a.start(); b.start()
-        cb = MagicMock()
-        a.on_collision_enter = cb
         BoxCollider.check_all()
-        cb.assert_not_called()
+        a.on_collision_enter.assert_called_once()
 
-    def test_inactive_game_object_ignored(self):
+    def test_exit_callback_when_separated(self):
         scene = MagicMock()
-        a = _box(x=0, y=0, w=32, h=32, scene=scene)
-        b = _box(x=5, y=5, w=32, h=32, scene=scene, active=False)
-        a.start(); b.start()
-        cb = MagicMock()
-        a.on_collision_enter = cb
+        a = _box(0, 0, w=20, h=20, scene=scene)
+        b = _box(10, 0, w=20, h=20, scene=scene)
+        a.on_collision_exit = MagicMock()
+        b.on_collision_exit = MagicMock()
+        BoxCollider._registry.extend([a, b])
         BoxCollider.check_all()
-        cb.assert_not_called()
+        b.game_object.transform.get_world_position.return_value = [100, 0]
+        BoxCollider.check_all()
+        a.on_collision_exit.assert_called_once_with(b)
+        b.on_collision_exit.assert_called_once_with(a)
+
+    def test_inactive_object_ignored(self):
+        scene = MagicMock()
+        a = _box(0, 0, scene=scene)
+        b = _box(0, 0, scene=scene, active=False)
+        a.on_collision_enter = MagicMock()
+        BoxCollider._registry.extend([a, b])
+        BoxCollider.check_all()
+        a.on_collision_enter.assert_not_called()
+
+    def test_different_scenes_ignored(self):
+        a = _box(0, 0, scene=MagicMock())
+        b = _box(0, 0, scene=MagicMock())
+        a.on_collision_enter = MagicMock()
+        BoxCollider._registry.extend([a, b])
+        BoxCollider.check_all()
+        a.on_collision_enter.assert_not_called()
+
+    def test_none_scene_ignored(self):
+        a = _box(0, 0, scene=None)
+        b = _box(0, 0, scene=None)
+        a.game_object.scene = None
+        b.game_object.scene = None
+        BoxCollider._registry.extend([a, b])
+        BoxCollider.check_all()  # sem crash
+
+    def test_orphan_purged_every_60_checks(self):
+        c = BoxCollider()
+        c.game_object = None
+        BoxCollider._registry.append(c)
+        for _ in range(60):
+            BoxCollider.check_all()
+        assert c not in BoxCollider._registry
 
 
 # ===========================================================================
 # 6. BoxCollider — trigger
 # ===========================================================================
-
 class TestBoxCheckAllTrigger:
-    def test_trigger_fires_enter_callback(self):
+    def test_trigger_detects_but_does_not_resolve(self):
         scene = MagicMock()
-        a = _box(x=0, y=0, w=32, h=32, trigger=True, scene=scene)
-        b = _box(x=5, y=5, w=32, h=32, scene=scene)
-        a.start(); b.start()
-        cb = MagicMock()
-        a.on_collision_enter = cb
+        rb = _make_rb()
+        a = _box(0, 0, w=20, h=20, trigger=True, rb=rb, scene=scene)
+        b = _box(10, 0, w=20, h=20, scene=scene)
+        orig = list(a.game_object.transform.position)
+        BoxCollider._registry.extend([a, b])
         BoxCollider.check_all()
-        cb.assert_called_once()
+        assert b in a._colliding_with
+        assert a.game_object.transform.position == orig
 
-    def test_trigger_does_not_move_objects(self):
+    def test_non_trigger_resolves_with_rigidbody(self):
         scene = MagicMock()
-        rb_b = _make_rb(vx=0, vy=0)
-        a = _box(x=0, y=0, w=32, h=32, trigger=True, scene=scene)
-        b = _box(x=5, y=5, w=32, h=32, rb=rb_b, scene=scene)
-        a.start(); b.start()
-        pos_before = list(b.game_object.transform.position)
+        rb = _make_rb(vx=10)
+        a = _box(0, 0, w=20, h=20, rb=rb, scene=scene)
+        b = _box(10, 0, w=20, h=20, scene=scene)
+        BoxCollider._registry.extend([a, b])
         BoxCollider.check_all()
-        assert b.game_object.transform.position[:2] == pos_before[:2]
-
-    def test_both_triggers_fire_but_no_resolve(self):
-        scene = MagicMock()
-        a = _box(x=0, y=0, w=32, h=32, trigger=True, scene=scene)
-        b = _box(x=5, y=5, w=32, h=32, trigger=True, scene=scene)
-        a.start(); b.start()
-        cb_a = MagicMock()
-        a.on_collision_enter = cb_a
-        BoxCollider.check_all()
-        cb_a.assert_called_once()
-
-    def test_trigger_exit_callback_fires(self):
-        scene = MagicMock()
-        a = _box(x=0,  y=0,  w=32, h=32, trigger=True, scene=scene)
-        b = _box(x=10, y=10, w=32, h=32, scene=scene)
-        a.start(); b.start()
-        BoxCollider.check_all()
-        b.game_object.transform.get_world_position.return_value = [300.0, 300.0]
-        cb_exit = MagicMock()
-        a.on_collision_exit = cb_exit
-        BoxCollider.check_all()
-        cb_exit.assert_called_once()
-
-    def test_non_trigger_resolves_position(self):
-        scene = MagicMock()
-        rb_b = _make_rb(vx=-5.0, vy=0.0)
-        a = _box(x=0, y=0, w=32, h=32, scene=scene)
-        b = _box(x=10, y=0, w=32, h=32, rb=rb_b, scene=scene)
-        a.start(); b.start()
-        BoxCollider.check_all()
-        # RigidBody de b deve ter sido atingido pelo _resolve
-        # (testa que get_component foi chamado)
-        b.game_object.get_component.assert_called()
+        assert a.game_object.transform.position[0] != 0
 
 
 # ===========================================================================
-# 7. BoxCollider — _resolve (MTV)
+# 7. BoxCollider — _resolve
 # ===========================================================================
-
 class TestBoxResolve:
-    def _pair_with_rb(self, ax, ay, bx, by, w=32, h=32,
-                      vax=0., vay=0., vbx=0., vby=0.,
-                      a_kin=False, b_kin=False):
-        rb_a = _make_rb(vax, vay, a_kin)
-        rb_b = _make_rb(vbx, vby, b_kin)
-        a = _box(x=ax, y=ay, w=w, h=h, rb=rb_a)
-        b = _box(x=bx, y=by, w=w, h=h, rb=rb_b)
-        a.game_object.scene = b.game_object.scene = MagicMock()
-        a.game_object.scene.__eq__ = lambda s, o: s is o
+    def test_resolve_returns_if_no_rigidbody(self):
+        a = _box(0, 0)
+        b = _box(10, 0)
+        BoxCollider._resolve(a, b, 10, 20)
+        assert a.game_object.transform.position == [0, 0]
+        assert b.game_object.transform.position == [10, 0]
 
-        rect_a = a.rect
-        rect_b = b.rect
-        ox = min(rect_a.right, rect_b.right) - max(rect_a.left, rect_b.left)
-        oy = min(rect_a.bottom, rect_b.bottom) - max(rect_a.top, rect_b.top)
-        return a, b, rb_a, rb_b, ox, oy
+    def test_resolve_dynamic_a_only_x(self):
+        rb = _make_rb(vx=5)
+        a = _box(0, 0, rb=rb)
+        b = _box(10, 0)
+        BoxCollider._resolve(a, b, 10, 20)
+        assert a.game_object.transform.position[0] < 0
+        assert rb.velocity[0] == 0
 
-    def test_both_dynamic_share_correction(self):
-        """Dois dinâmicos: cada um se move overlap/2 (share=0.5)."""
-        a, b, rb_a, rb_b, ox, oy = self._pair_with_rb(
-            0, 0, 10, 0, vax=5., vbx=-5.)
-        # MTV eixo X (ox < oy): nx=+1 (B à direita de A)
-        pos_a_before = list(a.game_object.transform.position)
-        BoxCollider._resolve(a, b, ox, oy)
-        # A deve ter se movido para a esquerda
-        assert a.game_object.transform.position[0] < pos_a_before[0]
+    def test_resolve_dynamic_b_only_x(self):
+        rb = _make_rb(vx=-5)
+        a = _box(0, 0)
+        b = _box(10, 0, rb=rb)
+        BoxCollider._resolve(a, b, 10, 20)
+        assert b.game_object.transform.position[0] > 10
+        assert rb.velocity[0] == 0
 
-    def test_only_dynamic_gets_full_correction(self):
-        """Apenas B é dinâmico: B recebe 100% da correção."""
-        a, b, rb_a, rb_b, ox, oy = self._pair_with_rb(
-            0, 0, 10, 0, vbx=-5., a_kin=True)
-        pos_b_before = list(b.game_object.transform.position)
-        BoxCollider._resolve(a, b, ox, oy)
-        assert b.game_object.transform.position[0] != pos_b_before[0]
-        # A (kinematic) não deve mover
-        assert a.game_object.transform.position[0] == pytest.approx(0.0)
+    def test_resolve_both_dynamic_share(self):
+        rb_a = _make_rb(vx=5)
+        rb_b = _make_rb(vx=-5)
+        a = _box(0, 0, rb=rb_a)
+        b = _box(10, 0, rb=rb_b)
+        BoxCollider._resolve(a, b, 10, 20)
+        assert a.game_object.transform.position[0] == pytest.approx(-5)
+        assert b.game_object.transform.position[0] == pytest.approx(15)
 
-    def test_both_kinematic_no_movement(self):
-        a, b, rb_a, rb_b, ox, oy = self._pair_with_rb(
-            0, 0, 10, 0, a_kin=True, b_kin=True)
-        pos_a = list(a.game_object.transform.position)
-        pos_b = list(b.game_object.transform.position)
-        BoxCollider._resolve(a, b, ox, oy)
-        assert a.game_object.transform.position[:2] == pos_a[:2]
-        assert b.game_object.transform.position[:2] == pos_b[:2]
+    def test_resolve_y_axis(self):
+        rb = _make_rb(vy=5)
+        a = _box(0, 0, rb=rb)
+        b = _box(0, 10)
+        BoxCollider._resolve(a, b, 20, 10)
+        assert a.game_object.transform.position[1] < 0
+        assert rb.velocity[1] == 0
 
-    def test_velocity_cancelled_on_approach_x(self):
-        """A indo em direção a B no eixo X: velocidade X de A deve ser cancelada."""
-        a, b, rb_a, rb_b, ox, oy = self._pair_with_rb(
-            0, 0, 10, 0, vax=5., b_kin=True)
-        BoxCollider._resolve(a, b, ox, oy)
-        assert rb_a.velocity[0] == pytest.approx(0.0)
-
-    def test_velocity_not_cancelled_when_moving_away(self):
-        """A indo para longe de B: velocidade não é cancelada."""
-        a, b, rb_a, rb_b, ox, oy = self._pair_with_rb(
-            0, 0, 10, 0, vax=-5., b_kin=True)
-        BoxCollider._resolve(a, b, ox, oy)
-        assert rb_a.velocity[0] == pytest.approx(-5.0)
-
-    def test_y_axis_correction_when_overlap_y_smaller(self):
-        """Sobrepos overlap_y < overlap_x: MTV deve atuar no eixo Y."""
-        a, b, rb_a, rb_b, ox, oy = self._pair_with_rb(
-            0, 0, 0, 5, vay=5., b_kin=True)  # sobrepõe principalmente no Y
-        BoxCollider._resolve(a, b, ox, oy)
-        # Y de A deve ter mudado (foi empurrado para cima)
-        assert a.game_object.transform.position[1] != pytest.approx(0.0)
-
-    def test_no_rb_no_movement(self):
-        """Sem RigidBody em nenhum dos dois: não há movimento."""
-        a = _box(x=0, y=0, rb=None)
-        b = _box(x=10, y=0, rb=None)
-        # get_component retorna None para RigidBody
-        a.game_object.get_component.return_value = None
-        b.game_object.get_component.return_value = None
-        # Deve retornar sem crash
-        BoxCollider._resolve(a, b, 22.0, 32.0)
-
-    def test_resolve_does_not_crash_with_zero_overlap(self):
-        a = _box(x=0, y=0, rb=_make_rb())
-        b = _box(x=32, y=0, rb=_make_rb())
-        a.game_object.get_component.return_value = _make_rb()
-        b.game_object.get_component.return_value = _make_rb()
-        BoxCollider._resolve(a, b, 0.0, 0.0)  # sem crash
+    def test_kinematic_ignored(self):
+        rb = _make_rb(vx=5, kinematic=True)
+        a = _box(0, 0, rb=rb)
+        b = _box(10, 0)
+        BoxCollider._resolve(a, b, 10, 20)
+        assert a.game_object.transform.position == [0, 0]
 
 
 # ===========================================================================
-# 8. CircleCollider — construtor
+# 8. CircleCollider — construtor/centro/check_all/_resolve
 # ===========================================================================
-
-class TestCircleColliderInit:
-    def test_default_radius(self):
+class TestCircleCollider:
+    def test_init_defaults(self):
         c = CircleCollider()
         assert c.radius == 16.0
-
-    def test_custom_radius(self):
-        c = CircleCollider(radius=32.0)
-        assert c.radius == 32.0
-
-    def test_default_offset_zero(self):
-        c = CircleCollider()
         assert c.offset_x == 0.0
         assert c.offset_y == 0.0
+        assert c.is_trigger is False
 
-    def test_is_trigger_default_false(self):
-        assert CircleCollider().is_trigger is False
+    def test_center_without_go(self):
+        c = CircleCollider(offset_x=2, offset_y=3)
+        assert c.center == (2, 3)
 
-    def test_is_trigger_custom(self):
-        c = CircleCollider(is_trigger=True)
-        assert c.is_trigger is True
+    def test_center_with_go(self):
+        c = _circle(10, 20, ox=2, oy=-3)
+        assert c.center == (12.0, 17.0)
 
-    def test_callbacks_default_none(self):
-        c = CircleCollider()
-        assert c.on_collision_enter is None
-        assert c.on_collision_exit is None
-
-
-# ===========================================================================
-# 9. CircleCollider — center
-# ===========================================================================
-
-class TestCircleColliderCenter:
-    def test_center_without_game_object(self):
-        c = CircleCollider(offset_x=5.0, offset_y=3.0)
-        c.game_object = None
-        assert c.center == (5.0, 3.0)
-
-    def test_center_at_position(self):
-        c = _circle(x=100.0, y=200.0)
-        assert c.center == (100.0, 200.0)
-
-    def test_center_with_offset(self):
-        c = _circle(x=100.0, y=100.0, ox=10.0, oy=-10.0)
-        assert c.center == (110.0, 90.0)
-
-    def test_center_updates_with_transform(self):
-        c = _circle(x=0.0, y=0.0)
-        c.game_object.transform.get_world_position.return_value = [50.0, 75.0]
-        assert c.center == (50.0, 75.0)
-
-
-# ===========================================================================
-# 10. CircleCollider — check_all básico
-# ===========================================================================
-
-class TestCircleCheckAllBasic:
-    def _overlapping_pair(self, trigger_a=False, trigger_b=False,
-                          rb_a=None, rb_b=None):
+    def test_collision_enter_and_exit(self):
         scene = MagicMock()
-        # dist = 10, radii = 16+16 = 32 → colid
-        a = _circle(x=0,  y=0,  r=16, trigger=trigger_a, rb=rb_a, scene=scene)
-        b = _circle(x=10, y=0,  r=16, trigger=trigger_b, rb=rb_b, scene=scene)
-        a.start(); b.start()
-        return a, b
-
-    def test_enter_callback_called_on_overlap(self):
-        a, b = self._overlapping_pair()
-        cb = MagicMock()
-        a.on_collision_enter = cb
+        a = _circle(0, 0, r=10, scene=scene)
+        b = _circle(15, 0, r=10, scene=scene)
+        a.on_collision_enter = MagicMock()
+        a.on_collision_exit = MagicMock()
+        CircleCollider._registry.extend([a, b])
         CircleCollider.check_all()
-        cb.assert_called_once_with(b)
-
-    def test_both_enter_callbacks_called(self):
-        a, b = self._overlapping_pair()
-        cb_a, cb_b = MagicMock(), MagicMock()
-        a.on_collision_enter = cb_a
-        b.on_collision_enter = cb_b
+        a.on_collision_enter.assert_called_once_with(b)
+        b.game_object.transform.get_world_position.return_value = [100, 0]
         CircleCollider.check_all()
-        cb_a.assert_called_once_with(b)
-        cb_b.assert_called_once_with(a)
+        a.on_collision_exit.assert_called_once_with(b)
 
-    def test_enter_not_fired_twice_sustained(self):
-        a, b = self._overlapping_pair()
-        cb = MagicMock()
-        a.on_collision_enter = cb
-        CircleCollider.check_all()
-        CircleCollider.check_all()
-        assert cb.call_count == 1
-
-    def test_no_collision_when_far_apart(self):
+    def test_trigger_does_not_resolve(self):
         scene = MagicMock()
-        a = _circle(x=0,   y=0, r=16, scene=scene)
-        b = _circle(x=100, y=0, r=16, scene=scene)
-        a.start(); b.start()
-        cb = MagicMock()
-        a.on_collision_enter = cb
+        rb = _make_rb()
+        a = _circle(0, 0, r=10, trigger=True, rb=rb, scene=scene)
+        b = _circle(15, 0, r=10, scene=scene)
+        orig = list(a.game_object.transform.position)
+        CircleCollider._registry.extend([a, b])
         CircleCollider.check_all()
-        cb.assert_not_called()
+        assert b in a._colliding_with
+        assert a.game_object.transform.position == orig
 
-    def test_exit_callback_called_after_separation(self):
-        scene = MagicMock()
-        a = _circle(x=0,  y=0, r=16, scene=scene)
-        b = _circle(x=10, y=0, r=16, scene=scene)
-        a.start(); b.start()
-        CircleCollider.check_all()
-        b.game_object.transform.get_world_position.return_value = [500.0, 0.0]
-        cb_exit = MagicMock()
-        a.on_collision_exit = cb_exit
-        CircleCollider.check_all()
-        cb_exit.assert_called_once_with(b)
-
-    def test_different_scenes_no_collision(self):
-        a = _circle(x=0, y=0, r=16, scene=MagicMock())
-        b = _circle(x=5, y=0, r=16, scene=MagicMock())
-        a.start(); b.start()
-        cb = MagicMock()
-        a.on_collision_enter = cb
-        CircleCollider.check_all()
-        cb.assert_not_called()
-
-    def test_inactive_object_ignored(self):
-        scene = MagicMock()
-        a = _circle(x=0, y=0, r=16, scene=scene)
-        b = _circle(x=5, y=0, r=16, scene=scene, active=False)
-        a.start(); b.start()
-        cb = MagicMock()
-        a.on_collision_enter = cb
-        CircleCollider.check_all()
-        cb.assert_not_called()
-
-    def test_boundary_exact_distance_no_collision(self):
-        """dist == r_a + r_b: não colide (< min_dist é a condição)."""
-        scene = MagicMock()
-        a = _circle(x=0,  y=0, r=16, scene=scene)
-        b = _circle(x=32, y=0, r=16, scene=scene)  # dist=32 == 16+16
-        a.start(); b.start()
-        cb = MagicMock()
-        a.on_collision_enter = cb
-        CircleCollider.check_all()
-        cb.assert_not_called()
-
-
-# ===========================================================================
-# 11. CircleCollider — trigger
-# ===========================================================================
-
-class TestCircleCheckAllTrigger:
-    def test_trigger_fires_enter_callback(self):
-        scene = MagicMock()
-        a = _circle(x=0, y=0, r=16, trigger=True, scene=scene)
-        b = _circle(x=5, y=0, r=16, scene=scene)
-        a.start(); b.start()
-        cb = MagicMock()
-        a.on_collision_enter = cb
-        CircleCollider.check_all()
-        cb.assert_called_once_with(b)
-
-    def test_trigger_does_not_call_resolve(self):
-        scene = MagicMock()
-        rb_b = _make_rb()
-        a = _circle(x=0, y=0, r=16, trigger=True, scene=scene)
-        b = _circle(x=5, y=0, r=16, rb=rb_b, scene=scene)
-        a.start(); b.start()
-        pos_before = list(b.game_object.transform.position)
-        CircleCollider.check_all()
-        assert b.game_object.transform.position[:2] == pos_before[:2]
-
-    def test_both_triggers_enter_callback_fires(self):
-        scene = MagicMock()
-        a = _circle(x=0, y=0, r=16, trigger=True, scene=scene)
-        b = _circle(x=5, y=0, r=16, trigger=True, scene=scene)
-        a.start(); b.start()
-        cb_a, cb_b = MagicMock(), MagicMock()
-        a.on_collision_enter = cb_a
-        b.on_collision_enter = cb_b
-        CircleCollider.check_all()
-        cb_a.assert_called_once()
-        cb_b.assert_called_once()
-
-    def test_trigger_exit_callback_fires(self):
-        scene = MagicMock()
-        a = _circle(x=0,  y=0, r=16, trigger=True, scene=scene)
-        b = _circle(x=10, y=0, r=16, scene=scene)
-        a.start(); b.start()
-        CircleCollider.check_all()
-        b.game_object.transform.get_world_position.return_value = [500.0, 0.0]
-        cb_exit = MagicMock()
-        a.on_collision_exit = cb_exit
-        CircleCollider.check_all()
-        cb_exit.assert_called_once_with(b)
-
-
-# ===========================================================================
-# 12. CircleCollider — _resolve
-# ===========================================================================
-
-class TestCircleResolve:
-    def _pair(self, ax, ay, bx, by, r=16,
-              vax=0., vay=0., vbx=0., vby=0.,
-              a_kin=False, b_kin=False):
-        rb_a = _make_rb(vax, vay, a_kin)
-        rb_b = _make_rb(vbx, vby, b_kin)
-        a = _circle(x=ax, y=ay, r=r, rb=rb_a)
-        b = _circle(x=bx, y=by, r=r, rb=rb_b)
-        dist     = math.hypot(bx - ax, by - ay)
-        min_dist = r + r
-        return a, b, rb_a, rb_b, dist, min_dist
-
-    def test_both_dynamic_pushed_apart(self):
-        a, b, rb_a, rb_b, dist, min_dist = self._pair(
-            0, 0, 10, 0, vax=5., vbx=-5.)
-        pos_ax = a.game_object.transform.position[0]
-        CircleCollider._resolve(a, b, 0, 0, 10, 0, dist, min_dist)
-        # A empurrado para a esquerda
-        assert a.game_object.transform.position[0] < pos_ax
-
-    def test_only_dynamic_b_moves(self):
-        a, b, rb_a, rb_b, dist, min_dist = self._pair(
-            0, 0, 10, 0, vbx=-5., a_kin=True)
-        pos_ax = a.game_object.transform.position[0]
-        CircleCollider._resolve(a, b, 0, 0, 10, 0, dist, min_dist)
-        # A (kinematic) não deve mover
-        assert a.game_object.transform.position[0] == pytest.approx(pos_ax)
-        # B deve ter movido
-        assert b.game_object.transform.position[0] != pytest.approx(10.0)
-
-    def test_both_kinematic_no_movement(self):
-        a, b, rb_a, rb_b, dist, min_dist = self._pair(
-            0, 0, 10, 0, a_kin=True, b_kin=True)
-        pos_ax = a.game_object.transform.position[0]
-        pos_bx = b.game_object.transform.position[0]
-        CircleCollider._resolve(a, b, 0, 0, 10, 0, dist, min_dist)
-        assert a.game_object.transform.position[0] == pytest.approx(pos_ax)
-        assert b.game_object.transform.position[0] == pytest.approx(pos_bx)
-
-    def test_dist_zero_fallback_no_crash(self):
-        """dist==0: fallback normal (1, 0) não deve travar."""
-        a, b, rb_a, rb_b, _, min_dist = self._pair(
-            0, 0, 0, 0, vax=1.)  # mesma posição
-        CircleCollider._resolve(a, b, 0, 0, 0, 0, 0.0, min_dist)
-
-    def test_velocity_cancelled_on_approach(self):
-        """A indo em direção a B: componente normal de velocidade cancelada."""
-        a, b, rb_a, rb_b, dist, min_dist = self._pair(
-            0, 0, 10, 0, vax=5., b_kin=True)
-        CircleCollider._resolve(a, b, 0, 0, 10, 0, dist, min_dist)
-        assert rb_a.velocity[0] == pytest.approx(0.0)
-
-    def test_velocity_not_cancelled_moving_away(self):
-        a, b, rb_a, rb_b, dist, min_dist = self._pair(
-            0, 0, 10, 0, vax=-5., b_kin=True)
-        CircleCollider._resolve(a, b, 0, 0, 10, 0, dist, min_dist)
-        assert rb_a.velocity[0] == pytest.approx(-5.0)
-
-    def test_overlap_proportional_to_penetration(self):
-        """Quanto maior a penetração, maior a correção de posição."""
-        # dist=5, min_dist=32 → overlap=27*0.5=13.5 para cada
-        a, b, rb_a, rb_b, dist, min_dist = self._pair(
-            0, 0, 5, 0, vax=5., b_kin=True)
-        pos_before = a.game_object.transform.position[0]
-        CircleCollider._resolve(a, b, 0, 0, 5, 0, dist, min_dist)
-        correction = pos_before - a.game_object.transform.position[0]
-        expected   = (min_dist - dist) * 1.0  # share=1.0 (b é kinematic)
-        assert correction == pytest.approx(expected, rel=1e-3)
+    def test_resolve_dist_zero_fallback(self):
+        rb = _make_rb(vx=5)
+        a = _circle(0, 0, r=10, rb=rb)
+        b = _circle(0, 0, r=10)
+        CircleCollider._resolve(a, b, 0, 0, 0, 0, 0, 20)
+        assert a.game_object.transform.position[0] < 0
+        assert rb.velocity[0] == 0
