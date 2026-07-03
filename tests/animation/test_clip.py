@@ -4,10 +4,9 @@ tests/animation/test_clip.py
 Testes unitários de engine/animation/clip.py.
 
 Estratégia de isolamento:
-  - pygame.transform.flip é stubado para retornar um novo objeto
-    distinto do original, sem SDL. Frames são MagicMock opacos.
-  - AnimationEvent é um dataclass puro — sem mocks necessários.
-  - AnimationClip usa apenas tipos Python nativos + pygame stubado.
+  - pygame.transform.flip é mockado apenas durante cada teste deste arquivo.
+  - O mock é restaurado automaticamente pelo monkeypatch, sem afetar outros testes.
+  - Frames são MagicMock opacos.
 """
 from __future__ import annotations
 
@@ -17,7 +16,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-# ── stub pygame ──────────────────────────────────────────────────────────────
+# ── pygame / transform guard ────────────────────────────────────────────────
 
 if "pygame" not in sys.modules:
     _pg = ModuleType("pygame")
@@ -33,21 +32,17 @@ else:
         _pg.transform = _transform
         sys.modules["pygame.transform"] = _transform
 
-# Sempre garante MagicMock, mesmo quando pygame real já foi importado por outro teste.
-_transform.flip = MagicMock(side_effect=lambda f, h, v: MagicMock(name=f"flip({f})"))
-_pg.transform = _transform
-sys.modules["pygame.transform"] = _transform
-
 from engine.animation.clip import AnimationClip, AnimationEvent  # noqa: E402
 
 
 # ── helpers ────────────────────────────────────────────────────────────────
 
 @pytest.fixture(autouse=True)
-def reset_flip():
-    _transform.flip.reset_mock()
+def reset_flip(monkeypatch):
+    flip_mock = MagicMock(side_effect=lambda f, h, v: MagicMock(name=f"flip({f})"))
+    monkeypatch.setattr(_transform, "flip", flip_mock, raising=False)
+    monkeypatch.setattr(_pg, "transform", _transform, raising=False)
     yield
-    _transform.flip.reset_mock()
 
 
 def _frames(n=4):
@@ -59,7 +54,7 @@ def _clip(name="idle", n=4, fps=10.0, loop=True, flip_h=False):
                          loop=loop, flip_h=flip_h)
 
 
-# ── TestAnimationEvent ──────────────────────────────────────────────────────────
+# ── TestAnimationEvent ──────────────────────────────────────────────────────
 class TestAnimationEvent:
     def test_frame_index_stored(self):
         ev = AnimationEvent(frame_index=3, callback=lambda: None)
@@ -90,7 +85,7 @@ class TestAnimationEvent:
         assert ev2.fired is False
 
 
-# ── TestAnimationClipInit ─────────────────────────────────────────────────────────
+# ── TestAnimationClipInit ───────────────────────────────────────────────────
 class TestAnimationClipInit:
     def test_name_stored(self):
         assert _clip("run").name == "run"
@@ -99,7 +94,6 @@ class TestAnimationClipInit:
         assert _clip(fps=12.0).fps == pytest.approx(12.0)
 
     def test_fps_minimum_clamped(self):
-        """fps <= 0 deve ser clamped para 0.01."""
         c = AnimationClip("x", _frames(), fps=0.0)
         assert c.fps == pytest.approx(0.01)
 
@@ -131,7 +125,7 @@ class TestAnimationClipInit:
         _transform.flip.assert_not_called()
 
 
-# ── TestFlipH ───────────────────────────────────────────────────────────────────
+# ── TestFlipH ───────────────────────────────────────────────────────────────
 class TestFlipH:
     def test_flip_h_calls_transform_for_each_frame(self):
         frames = _frames(3)
@@ -141,7 +135,6 @@ class TestFlipH:
     def test_flip_h_replaces_frames_with_flipped(self):
         frames = _frames(2)
         c = AnimationClip("idle", frames, flip_h=True)
-        # frames originais não devem aparecer
         for f in frames:
             assert f not in c.frames
 
@@ -161,7 +154,7 @@ class TestFlipH:
         assert c.frames == frames
 
 
-# ── TestFrameCount ────────────────────────────────────────────────────────────────
+# ── TestFrameCount ──────────────────────────────────────────────────────────
 class TestFrameCount:
     def test_frame_count_matches_input(self):
         assert _clip(n=6).frame_count == 6
@@ -174,10 +167,9 @@ class TestFrameCount:
         assert c.frame_count == 0
 
 
-# ── TestDuration ────────────────────────────────────────────────────────────────
+# ── TestDuration ────────────────────────────────────────────────────────────
 class TestDuration:
     def test_duration_4_frames_10fps(self):
-        """4 frames @ 10 fps = 0.4 s."""
         assert _clip(n=4, fps=10.0).duration == pytest.approx(0.4)
 
     def test_duration_8_frames_8fps(self):
@@ -193,7 +185,7 @@ class TestDuration:
         assert c1.duration == pytest.approx(c2.duration * 2)
 
 
-# ── TestAddEvent ────────────────────────────────────────────────────────────────
+# ── TestAddEvent ────────────────────────────────────────────────────────────
 class TestAddEvent:
     def test_add_event_returns_self(self):
         c = _clip()
@@ -220,7 +212,6 @@ class TestAddEvent:
         assert c.events[0].fired is False
 
     def test_add_event_chaining(self):
-        """Encadeamento: clip.add_event(0, cb1).add_event(1, cb2)."""
         c = _clip()
         cb1, cb2 = MagicMock(), MagicMock()
         c.add_event(0, cb1).add_event(1, cb2)
@@ -230,13 +221,12 @@ class TestAddEvent:
         assert isinstance(_clip().events, list)
 
     def test_events_with_constructor_events_param(self):
-        """AnimationClip aceita events via construtor via add_event pós-criação."""
         c = _clip()
         c.add_event(0, lambda: None)
         assert len(c.events) == 1
 
 
-# ── TestRepr ───────────────────────────────────────────────────────────────────
+# ── TestRepr ────────────────────────────────────────────────────────────────
 class TestRepr:
     def test_repr_contains_name(self):
         assert "run" in repr(_clip("run"))
