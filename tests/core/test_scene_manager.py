@@ -10,30 +10,41 @@ Fluxo real de SceneManager.update():
   4. Se tr.phase in (IN, DONE)   → atualiza cena
   5. Se tr.is_done               → limpa _transition e dispara on_transition_end
 
+Nota sobre TestDoSwapLoadResources:
+  BoxCollider, CircleCollider e AudioManager são importados de forma LAZY
+  dentro de _do_swap_load() / _run_physics() com `from engine.physics.collider
+  import BoxCollider`. Por isso não existem como atributos de
+  engine.core.scene_manager e patch("engine.core.scene_manager.BoxCollider")
+  falha com AttributeError.
+  Solução: injetar módulos fake em sys.modules antes do load() usando
+  patch.dict("sys.modules", {...}), que é exatamente o que Python consulta
+  em um import lazy em runtime.
+
 Grupos:
-  TestSingleton              ( 5) instance(), reset(), isolamento
-  TestLoad                   ( 7) load instantâneo
-  TestPush                   ( 6) push instantâneo
-  TestPop                    ( 6) pop instantâneo
-  TestReplace                ( 2) load sobre pilha profunda
-  TestProperties             ( 3) current, depth, is_transitioning
-  TestLifecycle              ( 4) start, engine antes do start
-  TestDelegation             ( 5) update/draw/handle_event
-  TestBindEngine             ( 3) bind()
-  TestCallbacks              ( 4) on_transition_start, handle bloqueado
-  TestEdgeCases              ( 4) reload, cycles, manual clear
-  TestRepr                   ( 3) __repr__
-  TestPushPopWithTransition  ( 6) push/pop com transição
-  TestTransitionFlow         ( 6) fluxo completo de transição
-  TestUpdateDrawTopOfStack   ( 5) top-of-stack isolation
-  TestDoSwapLoadResources    ( 5) colliders + audio em _do_swap_load
-  TestDeprecatedShim         ( 4) import legado emite DeprecationWarning
+  TestSingleton              ( 5)
+  TestLoad                   ( 7)
+  TestPush                   ( 6)
+  TestPop                    ( 6)
+  TestReplace                ( 2)
+  TestProperties             ( 3)
+  TestLifecycle              ( 4)
+  TestDelegation             ( 5)
+  TestBindEngine             ( 3)
+  TestCallbacks              ( 4)
+  TestEdgeCases              ( 4)
+  TestRepr                   ( 3)
+  TestPushPopWithTransition  ( 6)
+  TestTransitionFlow         ( 6)
+  TestUpdateDrawTopOfStack   ( 5)
+  TestDoSwapLoadResources    ( 5)
+  TestDeprecatedShim         ( 4)
 
 Total: 74 testes.
 """
 from __future__ import annotations
 
 import sys
+import types
 import warnings
 import pytest
 from unittest.mock import MagicMock, patch
@@ -44,7 +55,6 @@ from unittest.mock import MagicMock, patch
 # ---------------------------------------------------------------------------
 
 def _make_scene(name="TestScene"):
-    """Cena mock com a interface mínima esperada pelo SceneManager."""
     scene = MagicMock()
     scene.__class__.__name__ = name
     scene.engine = None
@@ -54,11 +64,8 @@ def _make_scene(name="TestScene"):
 def _make_transition(swap_after=1):
     """
     Transição fake controlada por ticks.
-
-    swap_after=N: no tick N, seta should_swap=True E is_done=True
-    simultaneamente, para que o SM execute o swap e limpe _transition
-    no mesmo update().
-    Para testes de 'ainda transitioning antes do swap', usar swap_after=99.
+    No tick N seta should_swap=True E is_done=True simultaneamente.
+    Para 'ainda transitioning antes do swap', usar swap_after=99.
     """
     from engine.transitions import TransitionPhase
 
@@ -85,6 +92,24 @@ def _make_transition(swap_after=1):
     return tr
 
 
+def _make_collider_module():
+    """
+    Cria um módulo fake de engine.physics.collider com
+    BoxCollider e CircleCollider como MagicMock.
+    Usado por TestDoSwapLoadResources para interceptar o import lazy.
+    """
+    mod = types.ModuleType("engine.physics.collider")
+    mod.BoxCollider    = MagicMock()
+    mod.CircleCollider = MagicMock()
+    return mod
+
+
+def _make_audio_module():
+    mod = types.ModuleType("engine.audio")
+    mod.AudioManager = MagicMock()
+    return mod
+
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -107,7 +132,6 @@ def _patch_deps():
 
 @pytest.fixture
 def sm():
-    """Instância limpa para cada teste."""
     from engine.core.scene_manager import SceneManager
     SceneManager.reset()
     manager = SceneManager.instance()
@@ -261,7 +285,7 @@ class TestPop:
         assert sm.current is scene
 
     def test_pop_empty_stack_is_safe(self, sm):
-        sm.pop()  # sem crash
+        sm.pop()
 
     def test_push_then_pop_returns_to_base(self, sm):
         base = _make_scene("Base")
@@ -382,10 +406,10 @@ class TestDelegation:
         scene.handle_event.assert_called_once_with(event)
 
     def test_update_does_nothing_when_empty(self, sm):
-        sm.update(0.016)  # sem crash
+        sm.update(0.016)
 
     def test_draw_does_nothing_when_empty(self, sm):
-        sm.draw(MagicMock())  # sem crash
+        sm.draw(MagicMock())
 
 
 # ===========================================================================
@@ -568,9 +592,9 @@ class TestTransitionFlow:
         sm.load(s1)
         tr = _make_transition(swap_after=2)
         sm.load(s2, transition=tr)
-        sm.update(0.016)  # tick 1 — sem swap
+        sm.update(0.016)
         assert sm.current is not s2
-        sm.update(0.016)  # tick 2 — swap
+        sm.update(0.016)
         assert sm.current is s2
 
     def test_on_transition_end_fires_after_done(self, sm):
@@ -657,36 +681,71 @@ class TestUpdateDrawTopOfStack:
 # ===========================================================================
 # 16. _do_swap_load limpa colisores e áudio
 # ===========================================================================
+#
+# BoxCollider, CircleCollider e AudioManager são importados de forma LAZY
+# dentro de _do_swap_load():
+#
+#   from engine.physics.collider import BoxCollider, CircleCollider
+#   from engine.audio import AudioManager
+#
+# Como são imports locais ao método, eles não ficam como atributos do módulo
+# engine.core.scene_manager. A estratégia correta de mock é injetar módulos
+# falsos no sys.modules ANTES de chamar load(), usando patch.dict.
+# Python consulta sys.modules primeiro em qualquer import; se a chave já
+# existe ele usa o objeto lá sem reimportar do disco.
+# ===========================================================================
 
 class TestDoSwapLoadResources:
-    _BOX   = "engine.core.scene_manager.BoxCollider"
-    _CIRC  = "engine.core.scene_manager.CircleCollider"
-    _AUDIO = "engine.core.scene_manager.AudioManager"
+    def _fake_modules(self):
+        """Retorna (collider_mod, audio_mod) com MagicMocks internos."""
+        collider_mod = _make_collider_module()
+        audio_mod    = _make_audio_module()
+        return collider_mod, audio_mod
 
     def test_load_clears_box_registry(self, sm):
-        with patch(self._BOX) as mock_box, patch(self._CIRC), patch(self._AUDIO):
+        cmod, amod = self._fake_modules()
+        with patch.dict(sys.modules, {
+            "engine.physics.collider": cmod,
+            "engine.audio": amod,
+        }):
             sm.load(_make_scene())
-        mock_box._registry.clear.assert_called()
+        cmod.BoxCollider._registry.clear.assert_called()
 
     def test_load_clears_circle_registry(self, sm):
-        with patch(self._BOX), patch(self._CIRC) as mock_circ, patch(self._AUDIO):
+        cmod, amod = self._fake_modules()
+        with patch.dict(sys.modules, {
+            "engine.physics.collider": cmod,
+            "engine.audio": amod,
+        }):
             sm.load(_make_scene())
-        mock_circ._registry.clear.assert_called()
+        cmod.CircleCollider._registry.clear.assert_called()
 
     def test_load_clears_scene_tilemaps(self, sm):
-        with patch(self._BOX) as mock_box, patch(self._CIRC), patch(self._AUDIO):
+        cmod, amod = self._fake_modules()
+        with patch.dict(sys.modules, {
+            "engine.physics.collider": cmod,
+            "engine.audio": amod,
+        }):
             sm.load(_make_scene())
-        mock_box._scene_tilemaps.clear.assert_called()
+        cmod.BoxCollider._scene_tilemaps.clear.assert_called()
 
     def test_load_stops_music(self, sm):
-        with patch(self._BOX), patch(self._CIRC), patch(self._AUDIO) as mock_audio:
+        cmod, amod = self._fake_modules()
+        with patch.dict(sys.modules, {
+            "engine.physics.collider": cmod,
+            "engine.audio": amod,
+        }):
             sm.load(_make_scene())
-        mock_audio.stop_music.assert_called()
+        amod.AudioManager.stop_music.assert_called()
 
     def test_load_unloads_audio_cache(self, sm):
-        with patch(self._BOX), patch(self._CIRC), patch(self._AUDIO) as mock_audio:
+        cmod, amod = self._fake_modules()
+        with patch.dict(sys.modules, {
+            "engine.physics.collider": cmod,
+            "engine.audio": amod,
+        }):
             sm.load(_make_scene())
-        mock_audio.unload_cache.assert_called()
+        amod.AudioManager.unload_cache.assert_called()
 
 
 # ===========================================================================
@@ -695,7 +754,6 @@ class TestDoSwapLoadResources:
 
 class TestDeprecatedShim:
     def _import_shim(self):
-        """Remove o módulo do cache e reimporta para garantir o warning."""
         for key in list(sys.modules):
             if key == "engine.scene_manager":
                 del sys.modules[key]
