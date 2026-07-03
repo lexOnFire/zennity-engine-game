@@ -56,6 +56,7 @@ class MainWindow(QMainWindow):
         
         # Conecta os ViewModels aos docks
         self.dock_hierarchy.set_viewmodel(self.scene_view_model)
+        self.dock_inspector.set_viewmodel(self.scene_view_model)
         self.dock_assets.set_models(self.asset_model, self.asset_view_model)
         
         # Conecta sinais
