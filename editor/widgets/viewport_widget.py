@@ -9,7 +9,8 @@ from PySide6.QtGui import QPainter, QImage, QPixmap, QMouseEvent, QKeyEvent, QWh
 
 # Barramento de Eventos do Editor
 from editor.core.event_bus import (
-    EventBus, EVENT_PLAY_STATE_CHANGED, EVENT_SELECTION_CHANGED, EVENT_PROPERTY_CHANGED
+    EventBus, EVENT_PLAY_STATE_CHANGED, EVENT_SELECTION_CHANGED, EVENT_PROPERTY_CHANGED,
+    EVENT_HIERARCHY_UPDATED
 )
 
 # Core da Engine
@@ -50,6 +51,7 @@ class ViewportWidget(QOpenGLWidget):
         EventBus.subscribe(EVENT_PLAY_STATE_CHANGED, self.on_bus_play_state_changed)
         EventBus.subscribe(EVENT_SELECTION_CHANGED, self.on_bus_selection_changed)
         EventBus.subscribe(EVENT_PROPERTY_CHANGED, self.on_bus_property_changed)
+        EventBus.subscribe(EVENT_HIERARCHY_UPDATED, self.on_bus_hierarchy_updated)
         
         # Timer (60 FPS)
         self.timer = QTimer(self)
@@ -235,6 +237,30 @@ class ViewportWidget(QOpenGLWidget):
             self.active_scene.selected_index = self.active_scene.editable_objects.index(obj)
         else:
             self.active_scene.selected_index = -1
+
+    def on_bus_hierarchy_updated(self) -> None:
+        """Sincroniza os objetos da cena do Pygame com o modelo sempre que a hierarquia mudar."""
+        if not self.active_scene or not self.viewmodel:
+            return
+            
+        objs = self.viewmodel.get_root_objects()
+        
+        # Sincroniza as listas internas da cena ativa
+        if hasattr(self.active_scene, "editable_objects"):
+            self.active_scene.editable_objects.clear()
+            self.active_scene.game_objects.clear()
+            for obj in objs:
+                self.active_scene.add_game_object(obj)
+                self.active_scene.editable_objects.append(obj)
+                
+        # Sincroniza a seleção na cena ativa
+        selected_obj = self.viewmodel.selected_object
+        if selected_obj in objs:
+            self.active_scene.selected_index = objs.index(selected_obj)
+        else:
+            self.active_scene.selected_index = -1
+            
+        self.update()
 
     def on_bus_property_changed(self, component_name: str, property_name: str, value: object) -> None:
         if component_name == "Editor" and property_name == "tool_mode" and self.active_scene:
