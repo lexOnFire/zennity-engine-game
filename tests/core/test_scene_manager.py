@@ -1,20 +1,9 @@
 """
 tests/core/test_scene_manager.py
 ────────────────────────────────────────────────────────────────
-Commit 20: suite expandida do SceneManager — 55 testes.
+Commit 20: suite expandida do SceneManager — 67 testes.
 
-Novos grupos adicionados em relação ao Commit 17:
-  TestPushPopWithTransition (6)  — fluxo push/pop com FakeTransition
-  TestUpdateDraw            (5)  — update/draw delegam para cena ativa
-  TestTransitionFlow        (6)  — swap executado no tick certo,
-                                    on_transition_end, bloqueio de eventos
-
-Estrátégia de isolamento:
-  - Singleton resetado via SceneManager.reset() em cada teste.
-  - UIManager, physics e AudioManager mockados.
-  - FakeTransition: completa em N ticks, sem pygame real.
-
-Grupos completos:
+Grupos:
   TestSingleton              (3)
   TestLoad                   (7)
   TestPush                   (6)
@@ -27,9 +16,9 @@ Grupos completos:
   TestCallbacks              (4)
   TestEdgeCases              (4)
   TestRepr                   (3)
-  TestPushPopWithTransition  (6) NEW
-  TestTransitionFlow         (6) NEW (inclui on_transition_end)
-  TestUpdateDraw             (5) NEW (update/draw top-of-stack)
+  TestPushPopWithTransition  (6)
+  TestTransitionFlow         (6)
+  TestUpdateDrawTopOfStack   (5)
 
 Total: 67 testes.
 """
@@ -51,27 +40,38 @@ def _make_scene(name="TestScene"):
     return scene
 
 
-def _make_transition(swap_after=1):
+def _make_transition(swap_after=1, done_after=None):
     """
-    Transição fake: should_swap vira True no tick N;
-    is_done vira True no tick N+1.
+    Transição fake controlada por ticks.
+
+    swap_after  — tick em que should_swap vira True  (default: 1)
+    done_after  — tick em que is_done    vira True  (default: swap_after + 1)
+
+    O SceneManager lê tr.is_done ANTES de chamar tr.update(), então
+    is_done só é detectado no tick SEGUINTE ao que o side_effect o seta.
     """
     from engine.transitions import TransitionPhase
+
+    if done_after is None:
+        done_after = swap_after + 1
+
     tr = MagicMock()
-    tr.is_done     = False
-    tr.should_swap = False
-    tr.phase       = TransitionPhase.OUT
+    tr.is_done      = False
+    tr.should_swap  = False
+    tr.phase        = TransitionPhase.OUT
     tr.snapshot_out = None
     tr.snapshot_in  = None
+
     tick = [0]
 
     def _upd(dt):
         tick[0] += 1
-        if tick[0] == swap_after:
+        if tick[0] >= swap_after:
             tr.should_swap = True
             tr.phase = TransitionPhase.IN
-        if tick[0] > swap_after:
+        if tick[0] >= done_after:
             tr.is_done = True
+
     tr.update.side_effect = _upd
     return tr
 
@@ -135,7 +135,7 @@ class TestSingleton:
 
 
 # ===========================================================================
-# 2. load() — substitui toda a pilha
+# 2. load()
 # ===========================================================================
 
 class TestLoad:
@@ -177,7 +177,7 @@ class TestLoad:
 
 
 # ===========================================================================
-# 3. push() — empilha sem destruir cena anterior
+# 3. push()
 # ===========================================================================
 
 class TestPush:
@@ -218,7 +218,7 @@ class TestPush:
 
 
 # ===========================================================================
-# 4. pop() — remove topo
+# 4. pop()
 # ===========================================================================
 
 class TestPop:
@@ -243,7 +243,7 @@ class TestPop:
         assert sm.current is scene
 
     def test_pop_empty_stack_is_safe(self, sm):
-        sm.pop()  # não deve lançar
+        sm.pop()
 
     def test_push_then_pop_returns_to_base(self, sm):
         base = _make_scene("Base")
@@ -327,7 +327,6 @@ class TestLifecycle:
         s.start.assert_called_once()
 
     def test_engine_assigned_before_start(self, sm):
-        """engine deve estar atribuído quando start() for chamado."""
         from engine.core.scene import Scene as RealScene
         assigned = {}
 
@@ -483,7 +482,7 @@ class TestRepr:
 
 
 # ===========================================================================
-# 13. push/pop COM transição (NEW)
+# 13. push/pop COM transição
 # ===========================================================================
 
 class TestPushPopWithTransition:
@@ -492,7 +491,7 @@ class TestPushPopWithTransition:
         over = _make_scene("Over")
         tr = _make_transition(swap_after=1)
         sm.push(over, transition=tr)
-        sm.update(0.016)  # swap dispara
+        sm.update(0.016)
         assert sm.stack_depth == 2
 
     def test_push_transition_new_scene_becomes_current(self, sm):
@@ -508,7 +507,7 @@ class TestPushPopWithTransition:
         over = _make_scene("Over")
         tr = _make_transition(swap_after=1)
         sm.push(over, transition=tr)
-        over.start.assert_not_called()  # antes do swap
+        over.start.assert_not_called()
         sm.update(0.016)
         over.start.assert_called_once()
 
@@ -537,7 +536,7 @@ class TestPushPopWithTransition:
 
 
 # ===========================================================================
-# 14. Fluxo completo de transição — on_transition_end (NEW)
+# 14. Fluxo completo de transição
 # ===========================================================================
 
 class TestTransitionFlow:
@@ -553,19 +552,35 @@ class TestTransitionFlow:
         sm.load(s1)
         tr = _make_transition(swap_after=2)
         sm.load(s2, transition=tr)
-        sm.update(0.016)       # tick 1 — sem swap ainda
-        assert sm.current is not s2  # s2 ainda não ativo
-        sm.update(0.016)       # tick 2 — swap ocorre
+        sm.update(0.016)         # tick 1 — sem swap ainda
+        assert sm.current is not s2
+        sm.update(0.016)         # tick 2 — swap ocorre
         assert sm.current is s2
 
     def test_on_transition_end_fires_after_done(self, sm):
+        """
+        Fluxo real do SceneManager.update():
+          1. verifica tr.is_done  → False  (pula limpeza)
+          2. chama tr.update(dt)  → side_effect seta should_swap=True (tick 1)
+          3. chama _execute_pending_swap()
+          4. verifica tr.phase IN → chama scene.update()
+          5. verifica tr.is_done  → ainda False
+
+        No tick 2:
+          1. verifica tr.is_done  → False
+          2. chama tr.update(dt)  → side_effect seta is_done=True (tick 2 >= done_after=2)
+          3. should_swap já True (sem novo swap)
+          4. tr.is_done agora True → limpa _transition e dispara on_transition_end
+
+        Portanto: swap_after=1, done_after=2 → callback no tick 2.
+        """
         cb = MagicMock()
         sm.on_transition_end = cb
-        tr = _make_transition(swap_after=1)
+        tr = _make_transition(swap_after=1, done_after=2)
         sm.load(_make_scene(), transition=tr)
-        sm.update(0.016)  # tick 1: should_swap + is_done no tick seguinte
-        tr.is_done = True
-        sm.update(0.016)  # tick 2: transition done → callback
+        sm.update(0.016)   # tick 1: swap executado, is_done ainda False
+        cb.assert_not_called()
+        sm.update(0.016)   # tick 2: is_done vira True dentro de update → callback
         cb.assert_called_once()
 
     def test_scene_start_not_called_before_swap(self, sm):
@@ -584,16 +599,22 @@ class TestTransitionFlow:
         new.start.assert_called_once()
 
     def test_transition_cleared_after_done(self, sm):
-        tr = _make_transition(swap_after=1)
+        """
+        _transition só é zerado quando tr.is_done é True no início
+        de update() (ANTES de chamar tr.update).
+        Com done_after=2: no tick 2 o side_effect seta is_done=True;
+        no tick 3 o SceneManager lê is_done=True logo no início e limpa.
+        """
+        tr = _make_transition(swap_after=1, done_after=2)
         sm.load(_make_scene(), transition=tr)
-        sm.update(0.016)   # should_swap
-        tr.is_done = True
-        sm.update(0.016)   # done → _transition = None
+        sm.update(0.016)   # tick 1: swap
+        sm.update(0.016)   # tick 2: is_done=True setado pelo side_effect
+        sm.update(0.016)   # tick 3: SM lê is_done=True → _transition = None
         assert sm._transition is None
 
 
 # ===========================================================================
-# 15. update/draw com top-of-stack (NEW)
+# 15. update/draw com top-of-stack
 # ===========================================================================
 
 class TestUpdateDrawTopOfStack:
