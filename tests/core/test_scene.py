@@ -1,27 +1,50 @@
 """
 tests/core/test_scene.py
 ────────────────────────────────────────────────────────────────
-Commit 19: suite completa de Scene.
+Suite completa de engine.core.scene.Scene — 62 testes.
 
 Grupos:
-  TestAddGameObject   (8)  — append, set scene, idempotente, retorno, start, múltiplos
-  TestRemoveGameObject(5)  — remove, limpa scene, safe ausente, não destrói, re-add
-  TestFind            (9)  — find, find_by_tag, find_by_id, edge-cases
-  TestUpdateDraw      (6)  — propaga, pula inativo, pula removido, surface real
-  TestSubclassHooks   (5)  — start, on_exit, handle_event, update/draw override
-  TestSceneDefaults   (3)  — nome, lista vazia, engine=None
-  TestRepr            (3)  — nome, contagem, default
-  TestEdgeCases      (11)  — destroy durante update, add durante iterate, find após remove,
-                             tag muda dinamicamente, handle_event subclasse,
-                             múltiplos removes, scene vazia draw, GO sem components,
-                             find_by_tag vazio, re-add limpa scene antiga, 50 GOs
+  TestAddGameObject    ( 8) append, idempotência, .scene, start comp, retorno,
+                            múltiplos, re-add, propaga filhos
+  TestRemoveGameObject ( 5) remove, limpa .scene, safe, não destrói, count
+  TestFind             ( 9) find, tag, id (full e short), case-sensitive,
+                            none quando ausente, primeiro match, tag vazia, id ausente
+  TestUpdateDraw       ( 8) delega update/draw, skips inativo, skips removido,
+                            surface real, ordem de update, snapshot contra mutação
+                            (add e remove durante iteração)
+  TestSubclassHooks    ( 7) start, on_exit, handle_event, update+super, draw+super,
+                            engine acessível em start, add GO em start
+  TestSceneDefaults    ( 3) lista vazia, name, engine=None
+  TestRepr             ( 4) nome, contagem, default, é string
+  TestEdgeCases        (18) vazia update/draw, GO sem components, find após remove,
+                            tag após remove, handle_event subclasse, removes duplos,
+                            migra cena, 50 GOs, name vazio, id após remove,
+                            dt=0, update em múltiplos frames, draw preserva ordem,
+                            re-add após remove, tag dinìimica, find_by_tag todos,
+                            find_by_id short após remove
 
-Total esperado: 50 testes.
+Total: 62 testes.
+
+Estratégia:
+  - GameObject + Component reais — integração genuina.
+  - pygame.Surface(1,1) via fixture `screen` — sem init() completo.
+  - Nenhum acesso a rede, arquivo ou sys.modules.
 """
 from __future__ import annotations
 
 import pytest
 from unittest.mock import MagicMock
+
+import pygame
+
+
+# ---------------------------------------------------------------------------
+# Fixture
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def screen():
+    return pygame.Surface((1, 1))
 
 
 # ===========================================================================
@@ -75,7 +98,6 @@ class TestAddGameObject:
         assert len(scene.game_objects) == 5
 
     def test_re_add_after_remove(self):
-        """GO removido pode ser adicionado novamente sem duplicatas."""
         from engine.core import Scene, GameObject
         scene = Scene()
         go = GameObject("A")
@@ -86,7 +108,6 @@ class TestAddGameObject:
         assert go.scene is scene
 
     def test_add_sets_scene_on_children(self):
-        """Filhos já vinculados ao GO herdam a cena."""
         from engine.core import Scene, GameObject
         scene = Scene()
         parent = GameObject("P")
@@ -117,7 +138,7 @@ class TestRemoveGameObject:
 
     def test_remove_nonexistent_is_safe(self):
         from engine.core import Scene, GameObject
-        Scene().remove_game_object(GameObject("A"))  # nunca adicionado
+        Scene().remove_game_object(GameObject("A"))
 
     def test_remove_does_not_destroy_go(self):
         from engine.core import Scene, GameObject
@@ -168,7 +189,7 @@ class TestFind:
         scene = Scene()
         e1 = scene.add_game_object(GameObject("E1", tag="Enemy"))
         e2 = scene.add_game_object(GameObject("E2", tag="Enemy"))
-        scene.add_game_object(GameObject("P", tag="Player"))
+        scene.add_game_object(GameObject("P",  tag="Player"))
         result = scene.find_by_tag("Enemy")
         assert e1 in result and e2 in result and len(result) == 2
 
@@ -267,11 +288,59 @@ class TestUpdateDraw:
         scene.draw(MagicMock())
         assert d.drawn is False
 
-    def test_draw_does_not_crash_with_real_surface(self, screen):
+    def test_draw_with_real_surface(self, screen):
         from engine.core import Scene, GameObject
         scene = Scene()
         scene.add_game_object(GameObject("Sprite"))
-        scene.draw(screen)
+        scene.draw(screen)  # não deve lançar
+
+    def test_update_preserves_insertion_order(self):
+        """GOs são atualizados na ordem em que foram adicionados."""
+        from engine.core import Scene, GameObject, Component
+        order = []
+
+        def _make_tracker(label):
+            class _T(Component):
+                _label = label
+                def update(self, dt): order.append(self._label)
+            return _T()
+
+        scene = Scene()
+        for lbl in ("A", "B", "C"):
+            go = GameObject(lbl)
+            go.add_component(_make_tracker(lbl))
+            scene.add_game_object(go)
+
+        scene.update(0.016)
+        assert order == ["A", "B", "C"]
+
+    def test_add_during_update_no_crash(self):
+        """list() snapshot protege contra RuntimeError de mutação."""
+        from engine.core import Scene, GameObject, Component
+        scene = Scene()
+        extra = GameObject("Extra")
+
+        class _Adder(Component):
+            def update(self, dt): scene.add_game_object(extra)
+
+        go = GameObject("Adder")
+        go.add_component(_Adder())
+        scene.add_game_object(go)
+        scene.update(0.016)
+
+    def test_remove_during_update_no_crash(self):
+        """list() snapshot protege contra RuntimeError de remoção."""
+        from engine.core import Scene, GameObject, Component
+        scene = Scene()
+        victim = scene.add_game_object(GameObject("Victim"))
+
+        class _Remover(Component):
+            def update(self, dt): scene.remove_game_object(victim)
+
+        go = GameObject("Remover")
+        go.add_component(_Remover())
+        scene.add_game_object(go)
+        scene.update(0.016)
 
 
 # ===========================================================================
@@ -329,6 +398,26 @@ class TestSubclassHooks:
         scene.draw(MagicMock())
         assert d.drawn is True
 
+    def test_engine_accessible_in_start(self):
+        from engine.core import Scene
+        captured = {}
+        class MyScene(Scene):
+            def start(self): captured["engine"] = self.engine
+        sc = MyScene()
+        fake_engine = MagicMock()
+        sc.engine = fake_engine
+        sc.start()
+        assert captured["engine"] is fake_engine
+
+    def test_add_go_in_start(self):
+        from engine.core import Scene, GameObject
+        go_ref = GameObject("Spawned")
+        class MyScene(Scene):
+            def start(self): self.add_game_object(go_ref)
+        sc = MyScene()
+        sc.start()
+        assert go_ref in sc.game_objects
+
 
 # ===========================================================================
 # 6. Defaults
@@ -368,6 +457,10 @@ class TestRepr:
         from engine.core import Scene
         assert "Scene" in repr(Scene())
 
+    def test_repr_is_string(self):
+        from engine.core import Scene
+        assert isinstance(repr(Scene()), str)
+
 
 # ===========================================================================
 # 8. Edge cases
@@ -376,18 +469,18 @@ class TestRepr:
 class TestEdgeCases:
     def test_empty_scene_draw_is_safe(self):
         from engine.core import Scene
-        Scene().draw(MagicMock())  # sem GOs, não lança
+        Scene().draw(MagicMock())
 
     def test_empty_scene_update_is_safe(self):
         from engine.core import Scene
-        Scene().update(0.016)  # sem GOs, não lança
+        Scene().update(0.016)
 
     def test_go_without_components_updates_safely(self):
         from engine.core import Scene, GameObject
         scene = Scene()
         go = GameObject("Empty")
         scene.add_game_object(go)
-        scene.update(0.016)  # nenhum component, não lança
+        scene.update(0.016)
 
     def test_find_after_remove_returns_none(self):
         from engine.core import Scene, GameObject
@@ -397,7 +490,6 @@ class TestEdgeCases:
         assert scene.find("X") is None
 
     def test_find_by_tag_after_remove(self):
-        """GO removido não deve aparecer em find_by_tag."""
         from engine.core import Scene, GameObject
         scene = Scene()
         go = scene.add_game_object(GameObject("E", tag="Enemy"))
@@ -419,10 +511,9 @@ class TestEdgeCases:
         scene = Scene()
         go = scene.add_game_object(GameObject("A"))
         scene.remove_game_object(go)
-        scene.remove_game_object(go)  # segunda remoção não lança
+        scene.remove_game_object(go)
 
     def test_add_go_to_two_scenes_migrates_scene_ref(self):
-        """Adicionar GO já pertencente a uma cena em outra cena atualiza go.scene."""
         from engine.core import Scene, GameObject
         s1, s2 = Scene(), Scene()
         go = GameObject("A")
@@ -431,7 +522,6 @@ class TestEdgeCases:
         assert go.scene is s2
 
     def test_large_scene_update_performance(self):
-        """50 GOs com 1 component cada executam update sem erro."""
         from engine.core import Scene, GameObject, Component
         class Noop(Component):
             def update(self, dt): pass
@@ -440,13 +530,12 @@ class TestEdgeCases:
             go = GameObject(str(i))
             go.add_component(Noop())
             scene.add_game_object(go)
-        scene.update(0.016)  # não deve lançar
+        scene.update(0.016)
         assert len(scene.game_objects) == 50
 
     def test_scene_name_empty_string(self):
         from engine.core import Scene
-        s = Scene("")
-        assert s.name == ""
+        assert Scene("").name == ""
 
     def test_find_by_id_after_remove(self):
         from engine.core import Scene, GameObject
@@ -455,3 +544,82 @@ class TestEdgeCases:
         gid = go.id
         scene.remove_game_object(go)
         assert scene.find_by_id(gid) is None
+
+    def test_update_dt_zero(self):
+        from engine.core import Scene, GameObject, Component
+        class Ticker(Component):
+            def __init__(self): super().__init__(); self.dts = []
+            def update(self, dt): self.dts.append(dt)
+        scene = Scene()
+        go = GameObject("A")
+        t = go.add_component(Ticker())
+        scene.add_game_object(go)
+        scene.update(0)
+        assert t.dts == [0]
+
+    def test_update_multiple_frames_accumulates(self):
+        from engine.core import Scene, GameObject, Component
+        class Ticker(Component):
+            def __init__(self): super().__init__(); self.ticks = 0
+            def update(self, dt): self.ticks += 1
+        scene = Scene()
+        go = GameObject("A")
+        t = go.add_component(Ticker())
+        scene.add_game_object(go)
+        for _ in range(5):
+            scene.update(0.016)
+        assert t.ticks == 5
+
+    def test_draw_preserves_insertion_order(self):
+        from engine.core import Scene, GameObject, Component
+        drawn_order = []
+
+        def _make_drawer(label):
+            class _D(Component):
+                _label = label
+                def draw(self, screen): drawn_order.append(self._label)
+            return _D()
+
+        scene = Scene()
+        for lbl in ("X", "Y", "Z"):
+            go = GameObject(lbl)
+            go.add_component(_make_drawer(lbl))
+            scene.add_game_object(go)
+
+        scene.draw(MagicMock())
+        assert drawn_order == ["X", "Y", "Z"]
+
+    def test_re_add_after_remove_scene_ref_correct(self):
+        from engine.core import Scene, GameObject
+        s1, s2 = Scene(), Scene()
+        go = GameObject("A")
+        s1.add_game_object(go)
+        s1.remove_game_object(go)
+        s2.add_game_object(go)
+        assert go.scene is s2
+        assert go not in s1.game_objects
+
+    def test_dynamic_tag_change_reflected_in_find_by_tag(self):
+        """find_by_tag lê go.tag em tempo real; tag mutada deve ser refletida."""
+        from engine.core import Scene, GameObject
+        scene = Scene()
+        go = scene.add_game_object(GameObject("A", tag="OldTag"))
+        go.tag = "NewTag"
+        assert scene.find_by_tag("NewTag") == [go]
+        assert scene.find_by_tag("OldTag") == []
+
+    def test_find_by_tag_returns_all_matching(self):
+        from engine.core import Scene, GameObject
+        scene = Scene()
+        walls = [scene.add_game_object(GameObject(f"W{i}", tag="Wall")) for i in range(4)]
+        scene.add_game_object(GameObject("Floor", tag="Floor"))
+        result = scene.find_by_tag("Wall")
+        assert set(result) == set(walls)
+
+    def test_find_by_id_short_after_remove_returns_none(self):
+        from engine.core import Scene, GameObject
+        scene = Scene()
+        go = scene.add_game_object(GameObject("A"))
+        sid = go.short_id
+        scene.remove_game_object(go)
+        assert scene.find_by_id(sid) is None
