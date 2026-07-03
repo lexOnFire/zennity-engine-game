@@ -191,6 +191,10 @@ class MainWindow(QMainWindow):
         self.act_save.setShortcut(QKeySequence.Save)
         self.act_save.triggered.connect(self.on_save_scene)
         
+        self.act_export = QAction("Exportar Jogo...", self)
+        self.act_export.setShortcut(QKeySequence("Ctrl+E"))
+        self.act_export.triggered.connect(self.on_export_project)
+        
         self.act_exit = QAction("Sair", self)
         self.act_exit.setShortcut(QKeySequence("Ctrl+Q"))
         self.act_exit.triggered.connect(self.close)
@@ -232,6 +236,7 @@ class MainWindow(QMainWindow):
         menu_file.addAction(self.act_new)
         menu_file.addAction(self.act_open)
         menu_file.addAction(self.act_save)
+        menu_file.addAction(self.act_export)
         menu_file.addSeparator()
         menu_file.addAction(self.act_exit)
         
@@ -583,3 +588,24 @@ class MainWindow(QMainWindow):
         mode = "2D" if "2D" in text else "3D"
         self.log_action(f"Alterando modo de câmera para: {mode}")
         EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="Editor", property_name="camera_mode", value=mode)
+
+    @Slot()
+    def on_export_project(self) -> None:
+        """Exporta o jogo empacotando os scripts e assets em uma pasta standalone."""
+        dest_dir = QFileDialog.getExistingDirectory(self, "Selecionar Pasta para Exportar o Jogo")
+        if not dest_dir:
+            return
+            
+        try:
+            root_objs = self.scene_view_model.get_root_objects()
+            from editor.core.exporter import export_project
+            export_project(dest_dir, root_objs)
+            
+            QMessageBox.information(
+                self, "Exportação Concluída",
+                f"Jogo exportado com sucesso para:\n{dest_dir}\n\n"
+                "Para jogar, execute o arquivo 'jogar.bat' (Windows) ou 'jogar.sh' (Linux/macOS)."
+            )
+            self.log_action(f"Build exportado com sucesso para: {dest_dir}")
+        except Exception as e:
+            QMessageBox.critical(self, "Erro de Exportação", f"Falha ao empacotar jogo:\n{str(e)}")
