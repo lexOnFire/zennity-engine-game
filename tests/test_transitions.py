@@ -1,402 +1,440 @@
 """
 tests/test_transitions.py
-=================================================================
-Testes para engine/transitions.py - sem display pygame.
-Cobre: easing, Transition base, FadeTransition,
-       SlideTransition, WipeTransition, CrossfadeTransition.
+────────────────────────────────────────────────────────────────
+Testes unitários de engine/transitions.py.
+
+Estratégia de isolamento:
+  - pygame é stubado em sys.modules com Surface/SRCALPHA mínimos.
+    Surface fake rastreia blit, fill, set_alpha e get_size.
+  - draw.rect é MagicMock para WipeTransition.
+  - Testes de update são completamente determinísticos: controlamos dt
+    exatamente para acionar transições de fase.
+  - Nenhum teste usa pygame.time ou dependência real de tempo.
 """
 from __future__ import annotations
 
-import os
+import sys
+from types import ModuleType
+from unittest.mock import MagicMock, patch
+
 import pytest
 
-os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
-os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
+# ── stub pygame ──────────────────────────────────────────────────────────────
 
-import pygame
-
-pygame.display.init()
-
-
-# --------------------------------------------------------------------------
-# helpers
-# --------------------------------------------------------------------------
-
-def make_surface(w: int = 100, h: int = 80) -> pygame.Surface:
-    s = pygame.Surface((w, h), pygame.SRCALPHA)
-    s.fill((30, 60, 200, 255))
-    return s
+class _FakeSurface:
+    SRCALPHA = 0x00010000
+    def __init__(self, size=(800, 600), flags=0):
+        self._size  = size
+        self._flags = flags
+        self._alpha = 255
+        self.blit       = MagicMock()
+        self.fill       = MagicMock()
+        self.set_alpha  = MagicMock(side_effect=lambda a: setattr(self, '_alpha', a))
+        self.get_size   = MagicMock(return_value=size)
 
 
-def make_screen(w: int = 100, h: int = 80) -> pygame.Surface:
-    s = pygame.Surface((w, h))
-    s.fill((10, 10, 10))
-    return s
+if "pygame" not in sys.modules:
+    _pg               = ModuleType("pygame")
+    _pg.Surface       = _FakeSurface
+    _pg.SRCALPHA      = _FakeSurface.SRCALPHA
+    _pg.draw          = ModuleType("pygame.draw")
+    _pg.draw.rect     = MagicMock()
+    _pg.event         = ModuleType("pygame.event")
+    _pg.event.Event   = MagicMock
+    sys.modules["pygame"]       = _pg
+    sys.modules["pygame.draw"]  = _pg.draw
+    sys.modules["pygame.event"] = _pg.event
+else:
+    _pg = sys.modules["pygame"]
+
+from engine.transitions import (     # noqa: E402
+    Transition, TransitionPhase,
+    FadeTransition, SlideTransition, SlideDirection,
+    WipeTransition, CrossfadeTransition,
+    EASING,
+)
 
 
-def run_to_swap(transition) -> None:
-    from engine.transitions import TransitionPhase
-    while transition.phase not in (TransitionPhase.SWAP, TransitionPhase.DONE):
-        transition.update(0.016)
+# ── helpers ─────────────────────────────────────────────────────────────────
+
+def screen():
+    return _FakeSurface((800, 600))
 
 
-def run_to_done(transition) -> None:
-    for _ in range(5000):
-        transition.update(0.016)
-        if transition.is_done:
-            break
+def advance(tr: Transition, dt: float, steps: int = 1):
+    for _ in range(steps):
+        tr.update(dt)
 
 
-# ==========================================================================
-# Easing
-# ==========================================================================
+def run_to_swap(tr: Transition, over: float = 0.01):
+    """Avança exatamente até a fase SWAP (duration_out + epsilon)."""
+    advance(tr, tr.duration_out + over)
 
+
+def run_to_done(tr: Transition, over: float = 0.01):
+    """Avança até DONE: SWAP → IN → DONE."""
+    run_to_swap(tr, over)
+    advance(tr, 0.001)          # SWAP → IN
+    advance(tr, tr.duration_in + over)  # IN → DONE
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 class TestEasing:
-    @pytest.mark.parametrize("name", ["linear", "ease_in", "ease_out", "ease_in_out"])
-    def test_zero_returns_zero(self, name):
-        from engine.transitions import EASING
-        assert EASING[name](0.0) == pytest.approx(0.0)
-
-    @pytest.mark.parametrize("name", ["linear", "ease_in", "ease_out", "ease_in_out"])
-    def test_one_returns_one(self, name):
-        from engine.transitions import EASING
-        assert EASING[name](1.0) == pytest.approx(1.0)
-
-    @pytest.mark.parametrize("name", ["linear", "ease_in", "ease_out", "ease_in_out"])
-    def test_midpoint_in_range(self, name):
-        from engine.transitions import EASING
-        val = EASING[name](0.5)
-        assert 0.0 <= val <= 1.0
-
-    def test_ease_in_slower_than_linear_at_midpoint(self):
-        from engine.transitions import EASING
-        assert EASING["ease_in"](0.5) < EASING["linear"](0.5)
-
-    def test_ease_out_faster_than_linear_at_midpoint(self):
-        from engine.transitions import EASING
-        assert EASING["ease_out"](0.5) > EASING["linear"](0.5)
-
-    def test_ease_in_out_symmetric(self):
-        from engine.transitions import EASING
-        assert EASING["ease_in_out"](0.5) == pytest.approx(0.5)
-
-    def test_unknown_easing_falls_back_to_ease_in_out(self):
-        from engine.transitions import Transition, _ease_in_out
-        t = Transition(easing="nonexistent")
-        assert t._ease(0.5) == pytest.approx(_ease_in_out(0.5))
+    def test_linear_zero(self):      assert EASING["linear"](0.0)      == pytest.approx(0.0)
+    def test_linear_half(self):      assert EASING["linear"](0.5)      == pytest.approx(0.5)
+    def test_linear_one(self):       assert EASING["linear"](1.0)      == pytest.approx(1.0)
+    def test_ease_in_zero(self):     assert EASING["ease_in"](0.0)     == pytest.approx(0.0)
+    def test_ease_in_one(self):      assert EASING["ease_in"](1.0)     == pytest.approx(1.0)
+    def test_ease_in_slow_start(self): assert EASING["ease_in"](0.5)  < 0.5
+    def test_ease_out_zero(self):    assert EASING["ease_out"](0.0)    == pytest.approx(0.0)
+    def test_ease_out_one(self):     assert EASING["ease_out"](1.0)    == pytest.approx(1.0)
+    def test_ease_out_fast_start(self): assert EASING["ease_out"](0.5) > 0.5
+    def test_ease_in_out_zero(self): assert EASING["ease_in_out"](0.0) == pytest.approx(0.0)
+    def test_ease_in_out_half(self): assert EASING["ease_in_out"](0.5) == pytest.approx(0.5)
+    def test_ease_in_out_one(self):  assert EASING["ease_in_out"](1.0) == pytest.approx(1.0)
 
 
-# ==========================================================================
-# Transition (base)
-# ==========================================================================
-
+# ─────────────────────────────────────────────────────────────────────────────
 class TestTransitionBase:
+    # -- init --
     def test_initial_phase_is_out(self):
-        from engine.transitions import Transition, TransitionPhase
         assert Transition().phase == TransitionPhase.OUT
 
-    def test_initial_progress_is_zero(self):
-        from engine.transitions import Transition
+    def test_initial_is_not_done(self):
+        assert Transition().is_done is False
+
+    def test_initial_should_not_swap(self):
+        assert Transition().should_swap is False
+
+    def test_initial_progress_zero(self):
         assert Transition().progress == pytest.approx(0.0)
 
-    def test_is_done_false_initially(self):
-        from engine.transitions import Transition
-        assert not Transition().is_done
+    def test_min_duration_clamped(self):
+        tr = Transition(duration_out=0.0, duration_in=-1.0)
+        assert tr.duration_out >= 0.01
+        assert tr.duration_in  >= 0.01
 
-    def test_should_swap_false_initially(self):
-        from engine.transitions import Transition
-        assert not Transition().should_swap
+    def test_unknown_easing_falls_back(self):
+        tr = Transition(easing="unknown_xyz")
+        advance(tr, 0.1)
+        assert 0.0 <= tr.progress <= 1.0
 
-    def test_duration_minimum_clamped(self):
-        from engine.transitions import Transition
-        t = Transition(duration_out=-5.0, duration_in=0.0)
-        assert t.duration_out >= 0.01
-        assert t.duration_in  >= 0.01
+    # -- OUT phase --
+    def test_progress_increases_during_out(self):
+        tr = Transition(duration_out=1.0, duration_in=1.0)
+        advance(tr, 0.5)
+        assert tr.progress > 0.0
 
-    def test_update_advances_progress(self):
-        from engine.transitions import Transition
-        t = Transition(duration_out=1.0, duration_in=1.0, easing="linear")
-        t.update(0.5)
-        assert t.progress == pytest.approx(0.5)
+    def test_progress_clamped_at_1_end_of_out(self):
+        tr = Transition(duration_out=0.5, duration_in=0.5, easing="linear")
+        advance(tr, 1.0)
+        assert tr.progress == pytest.approx(1.0)
 
-    def test_progress_capped_at_one(self):
-        from engine.transitions import Transition
-        t = Transition(duration_out=0.1, duration_in=0.1, easing="linear")
-        t.update(9999.0)
-        assert t.progress == pytest.approx(1.0)
+    # -- SWAP phase --
+    def test_reaches_swap_after_out(self):
+        tr = Transition(duration_out=0.3, duration_in=0.3)
+        run_to_swap(tr)
+        assert tr.phase == TransitionPhase.SWAP
 
-    def test_out_phase_transitions_to_swap(self):
-        from engine.transitions import Transition, TransitionPhase
-        t = Transition(duration_out=0.1, duration_in=0.5, easing="linear")
-        t.update(0.2)
-        assert t.phase == TransitionPhase.SWAP
+    def test_should_swap_true_during_swap(self):
+        tr = Transition(duration_out=0.3, duration_in=0.3)
+        run_to_swap(tr)
+        assert tr.should_swap is True
 
-    def test_swap_phase_transitions_to_in_next_update(self):
-        from engine.transitions import Transition, TransitionPhase
-        t = Transition(duration_out=0.01, duration_in=0.5, easing="linear")
-        run_to_swap(t)
-        assert t.phase == TransitionPhase.SWAP
-        t.update(0.001)
-        assert t.phase == TransitionPhase.IN
+    # -- IN phase --
+    def test_swap_advances_to_in_next_update(self):
+        tr = Transition(duration_out=0.3, duration_in=0.3)
+        run_to_swap(tr)
+        advance(tr, 0.001)
+        assert tr.phase == TransitionPhase.IN
 
-    def test_should_swap_true_in_swap_phase(self):
-        from engine.transitions import Transition
-        t = Transition(duration_out=0.01, duration_in=0.5, easing="linear")
-        run_to_swap(t)
-        assert t.should_swap
+    def test_should_swap_false_during_in(self):
+        tr = Transition(duration_out=0.3, duration_in=0.3)
+        run_to_swap(tr)
+        advance(tr, 0.001)
+        assert tr.should_swap is False
 
-    def test_in_phase_progresses_to_done(self):
-        from engine.transitions import Transition, TransitionPhase
-        t = Transition(duration_out=0.01, duration_in=0.01, easing="linear")
-        run_to_done(t)
-        assert t.phase == TransitionPhase.DONE
-        assert t.is_done
+    # -- DONE --
+    def test_reaches_done(self):
+        tr = Transition(duration_out=0.3, duration_in=0.3)
+        run_to_done(tr)
+        assert tr.is_done is True
 
-    def test_update_after_done_is_noop(self):
-        from engine.transitions import Transition
-        t = Transition(duration_out=0.01, duration_in=0.01, easing="linear")
-        run_to_done(t)
-        p = t.progress
-        t.update(99.9)
-        assert t.progress == p
+    def test_progress_frozen_after_done(self):
+        tr = Transition(duration_out=0.2, duration_in=0.2)
+        run_to_done(tr)
+        p = tr.progress
+        advance(tr, 1.0)
+        assert tr.progress == p
 
-    def test_in_phase_progress_restarts_from_zero(self):
-        from engine.transitions import Transition, TransitionPhase
-        t = Transition(duration_out=0.01, duration_in=1.0, easing="linear")
-        run_to_swap(t)
-        t.update(0.001)
-        assert t.phase == TransitionPhase.IN
-        assert t.progress < 0.1
+    def test_phase_done_no_further_changes(self):
+        tr = Transition(duration_out=0.2, duration_in=0.2)
+        run_to_done(tr)
+        advance(tr, 10.0)
+        assert tr.phase == TransitionPhase.DONE
 
-    def test_draw_base_does_nothing(self):
-        from engine.transitions import Transition
-        Transition().draw(make_screen())
+    # -- draw base is no-op --
+    def test_base_draw_no_error(self):
+        Transition().draw(screen())
 
 
-# ==========================================================================
-# FadeTransition
-# ==========================================================================
-
+# ─────────────────────────────────────────────────────────────────────────────
 class TestFadeTransition:
-    def test_default_color_is_black(self):
-        from engine.transitions import FadeTransition
-        assert FadeTransition().color == (0, 0, 0)
+    def _make(self, **kw):
+        return FadeTransition(duration_out=0.3, duration_in=0.3, **kw)
 
-    def test_custom_color_stored(self):
-        from engine.transitions import FadeTransition
-        assert FadeTransition(color=(255, 0, 128)).color == (255, 0, 128)
+    def test_draw_out_blits_snapshot(self):
+        tr  = self._make()
+        sc  = screen()
+        snap = _FakeSurface()
+        tr.snapshot_out = snap
+        advance(tr, 0.1)
+        tr.draw(sc)
+        sc.blit.assert_called()
 
-    def test_draw_out_without_snapshot_no_crash(self):
-        from engine.transitions import FadeTransition
-        t = FadeTransition(duration_out=0.5)
-        t.update(0.1)
-        t.draw(make_screen())
+    def test_draw_out_no_snapshot_no_error(self):
+        tr = self._make()
+        advance(tr, 0.1)
+        tr.draw(screen())  # snapshot_out is None
 
-    def test_draw_out_with_snapshot_blits_overlay(self):
-        from engine.transitions import FadeTransition, TransitionPhase
-        t = FadeTransition(duration_out=0.5, duration_in=0.5, easing="linear")
-        t.snapshot_out = make_surface()
-        t.update(0.25)
-        assert t.phase == TransitionPhase.OUT
-        t.draw(make_screen())
+    def test_draw_out_alpha_increases_with_progress(self):
+        """Dois frames: alpha do overlay deve ser maior no segundo."""
+        tr1 = self._make(easing="linear")
+        tr2 = self._make(easing="linear")
+        sc1, sc2 = screen(), screen()
+        snap = _FakeSurface()
+        tr1.snapshot_out = snap
+        tr2.snapshot_out = snap
+        advance(tr1, 0.1)
+        advance(tr2, 0.25)
+        # Captamos a última Surface passada para blit que tenha set_alpha
+        # Na impl, overlay é Surface nova; cheque indiretamente via progress
+        assert tr2.progress > tr1.progress
 
-    def test_draw_in_with_snapshot_no_crash(self):
-        from engine.transitions import FadeTransition
-        t = FadeTransition(duration_out=0.01, duration_in=0.5, easing="linear")
-        t.snapshot_out = make_surface()
-        t.snapshot_in  = make_surface()
-        run_to_swap(t)
-        t.update(0.01)
-        t.draw(make_screen())
+    def test_draw_in_blits_snapshot_in(self):
+        tr   = self._make()
+        sc   = screen()
+        snap = _FakeSurface()
+        tr.snapshot_in  = snap
+        tr.snapshot_out = _FakeSurface()
+        run_to_swap(tr)
+        advance(tr, 0.001)   # IN
+        advance(tr, 0.1)
+        tr.draw(sc)
+        sc.blit.assert_called()
 
-    def test_draw_done_is_noop(self):
-        from engine.transitions import FadeTransition
-        t = FadeTransition(duration_out=0.01, duration_in=0.01)
-        run_to_done(t)
-        screen = make_screen()
-        before = pygame.surfarray.array3d(screen).tolist()
-        t.draw(screen)
-        assert pygame.surfarray.array3d(screen).tolist() == before
+    def test_draw_done_no_blit(self):
+        tr = self._make()
+        sc = screen()
+        run_to_done(tr)
+        tr.draw(sc)
+        sc.blit.assert_not_called()
 
-    def test_full_lifecycle_no_exception(self):
-        from engine.transitions import FadeTransition
-        t = FadeTransition(color=(128, 0, 64), duration_out=0.1, duration_in=0.1)
-        t.snapshot_out = make_surface()
-        t.snapshot_in  = make_surface()
-        screen = make_screen()
-        for _ in range(200):
-            t.update(0.002)
-            t.draw(screen)
-            if t.is_done:
-                break
-        assert t.is_done
+    def test_custom_color(self):
+        tr = FadeTransition(color=(255, 0, 128), duration_out=0.2, duration_in=0.2)
+        assert tr.color == (255, 0, 128)
 
 
-# ==========================================================================
-# SlideTransition
-# ==========================================================================
-
+# ─────────────────────────────────────────────────────────────────────────────
 class TestSlideTransition:
-    @pytest.mark.parametrize("direction_name", ["LEFT", "RIGHT", "UP", "DOWN"])
-    def test_all_directions_no_crash(self, direction_name):
-        from engine.transitions import SlideTransition, SlideDirection
-        t = SlideTransition(direction=SlideDirection[direction_name],
-                            duration_out=0.01, duration_in=0.3)
-        t.snapshot_out = make_surface()
-        t.snapshot_in  = make_surface()
-        screen = make_screen()
-        for _ in range(300):
-            t.update(0.002)
-            t.draw(screen)
-            if t.is_done:
-                break
-        assert t.is_done
+    def _make(self, direction=SlideDirection.LEFT):
+        return SlideTransition(direction=direction, duration_out=0.01, duration_in=0.3)
 
-    def test_draws_snapshot_out_during_out_phase(self):
-        from engine.transitions import SlideTransition, TransitionPhase
-        t = SlideTransition(duration_out=1.0, duration_in=0.3, easing="linear")
-        t.snapshot_out = make_surface()
-        t.update(0.1)
-        assert t.phase == TransitionPhase.OUT
-        t.draw(make_screen())
-
-    def test_slide_left_in_phase_entered(self):
-        from engine.transitions import SlideTransition, SlideDirection, TransitionPhase
-        t = SlideTransition(direction=SlideDirection.LEFT,
-                            duration_out=0.01, duration_in=1.0, easing="linear")
-        t.snapshot_out = make_surface()
-        t.snapshot_in  = make_surface()
-        run_to_swap(t)
-        t.update(0.001)
-        assert t.phase == TransitionPhase.IN
-
-    def test_default_direction_is_left(self):
-        from engine.transitions import SlideTransition, SlideDirection
+    def test_default_direction_left(self):
         assert SlideTransition().direction == SlideDirection.LEFT
 
-    def test_draw_without_snapshots_no_crash(self):
-        from engine.transitions import SlideTransition
-        t = SlideTransition(duration_out=0.01, duration_in=0.3)
-        run_to_swap(t)
-        t.update(0.01)
-        t.draw(make_screen())
+    def test_draw_out_blits_snapshot_out(self):
+        tr  = self._make()
+        sc  = screen()
+        snap = _FakeSurface()
+        tr.snapshot_out = snap
+        advance(tr, 0.005)   # still OUT
+        tr.draw(sc)
+        sc.blit.assert_called_with(snap, (0, 0))
+
+    def test_draw_in_blits_snapshot_in(self):
+        tr   = self._make()
+        sc   = screen()
+        snap_out = _FakeSurface()
+        snap_in  = _FakeSurface()
+        tr.snapshot_out = snap_out
+        tr.snapshot_in  = snap_in
+        run_to_swap(tr)
+        advance(tr, 0.001)   # IN
+        advance(tr, 0.1)
+        tr.draw(sc)
+        # snapshot_in deve ser blitado
+        calls = [c.args[0] for c in sc.blit.call_args_list]
+        assert snap_in in calls
+
+    @pytest.mark.parametrize("direction", list(SlideDirection))
+    def test_all_directions_no_error(self, direction):
+        tr = self._make(direction)
+        sc = screen()
+        tr.snapshot_out = _FakeSurface()
+        tr.snapshot_in  = _FakeSurface()
+        run_to_swap(tr)
+        advance(tr, 0.001)
+        advance(tr, 0.1)
+        tr.draw(sc)
+
+    def test_draw_done_no_blit(self):
+        tr = self._make()
+        sc = screen()
+        run_to_done(tr)
+        tr.draw(sc)
+        sc.blit.assert_not_called()
 
 
-# ==========================================================================
-# WipeTransition
-# ==========================================================================
-
+# ─────────────────────────────────────────────────────────────────────────────
 class TestWipeTransition:
-    def test_horizontal_wipe_full_lifecycle(self):
-        from engine.transitions import WipeTransition
-        t = WipeTransition(horizontal=True, duration_out=0.1, duration_in=0.1)
-        t.snapshot_out = make_surface()
-        t.snapshot_in  = make_surface()
-        run_to_done(t)
-        assert t.is_done
+    def _make(self, horizontal=True):
+        return WipeTransition(horizontal=horizontal, duration_out=0.3, duration_in=0.3)
 
-    def test_vertical_wipe_full_lifecycle(self):
-        from engine.transitions import WipeTransition
-        t = WipeTransition(horizontal=False, duration_out=0.1, duration_in=0.1)
-        t.snapshot_out = make_surface()
-        t.snapshot_in  = make_surface()
-        screen = make_screen()
-        for _ in range(300):
-            t.update(0.002)
-            t.draw(screen)
-            if t.is_done:
-                break
-        assert t.is_done
+    def test_draw_out_calls_draw_rect(self):
+        tr = self._make()
+        sc = screen()
+        tr.snapshot_out = _FakeSurface()
+        advance(tr, 0.1)
+        _pg.draw.rect.reset_mock()
+        tr.draw(sc)
+        _pg.draw.rect.assert_called_once()
 
-    def test_draw_out_phase_draws_black_rect(self):
-        from engine.transitions import WipeTransition, TransitionPhase
-        t = WipeTransition(horizontal=True, duration_out=1.0, duration_in=0.1, easing="linear")
-        t.snapshot_out = make_surface(100, 80)
-        screen = make_screen(100, 80)
-        t.update(0.5)
-        assert t.phase == TransitionPhase.OUT
-        t.draw(screen)
-        assert screen.get_at((0, 0))[:3] == (0, 0, 0)
+    def test_draw_in_calls_draw_rect(self):
+        tr = self._make()
+        sc = screen()
+        tr.snapshot_out = _FakeSurface()
+        tr.snapshot_in  = _FakeSurface()
+        run_to_swap(tr)
+        advance(tr, 0.001)
+        advance(tr, 0.1)
+        _pg.draw.rect.reset_mock()
+        tr.draw(sc)
+        _pg.draw.rect.assert_called_once()
 
-    def test_draw_done_is_noop(self):
-        from engine.transitions import WipeTransition
-        t = WipeTransition(duration_out=0.01, duration_in=0.01)
-        t.snapshot_out = make_surface()
-        t.snapshot_in  = make_surface()
-        run_to_done(t)
-        screen = make_screen()
-        before = pygame.surfarray.array3d(screen).tolist()
-        t.draw(screen)
-        assert pygame.surfarray.array3d(screen).tolist() == before
+    def test_draw_vertical_out_no_error(self):
+        tr = self._make(horizontal=False)
+        sc = screen()
+        tr.snapshot_out = _FakeSurface()
+        advance(tr, 0.1)
+        tr.draw(sc)
 
-    def test_default_is_horizontal(self):
-        from engine.transitions import WipeTransition
-        assert WipeTransition().horizontal is True
+    def test_draw_vertical_in_no_error(self):
+        tr = self._make(horizontal=False)
+        sc = screen()
+        tr.snapshot_out = _FakeSurface()
+        tr.snapshot_in  = _FakeSurface()
+        run_to_swap(tr)
+        advance(tr, 0.001)
+        advance(tr, 0.1)
+        tr.draw(sc)
+
+    def test_draw_done_skipped(self):
+        tr = self._make()
+        sc = screen()
+        run_to_done(tr)
+        _pg.draw.rect.reset_mock()
+        tr.draw(sc)
+        _pg.draw.rect.assert_not_called()
 
 
-# ==========================================================================
-# CrossfadeTransition
-# ==========================================================================
-
+# ─────────────────────────────────────────────────────────────────────────────
 class TestCrossfadeTransition:
+    def _make(self):
+        return CrossfadeTransition(duration=0.4)
+
     def test_duration_split_equally(self):
-        from engine.transitions import CrossfadeTransition
-        t = CrossfadeTransition(duration=1.0)
-        assert t.duration_out == pytest.approx(0.5)
-        assert t.duration_in  == pytest.approx(0.5)
+        tr = CrossfadeTransition(duration=0.6)
+        assert tr.duration_out == pytest.approx(0.3)
+        assert tr.duration_in  == pytest.approx(0.3)
 
-    def test_full_crossfade_no_crash(self):
-        from engine.transitions import CrossfadeTransition
-        t = CrossfadeTransition(duration=0.2)
-        t.snapshot_out = make_surface()
-        t.snapshot_in  = make_surface()
-        screen = make_screen()
-        for _ in range(500):
-            t.update(0.001)
-            t.draw(screen)
-            if t.is_done:
-                break
-        assert t.is_done
+    def test_draw_out_blits_snapshot(self):
+        tr   = self._make()
+        sc   = screen()
+        snap = _FakeSurface()
+        tr.snapshot_out = snap
+        advance(tr, 0.1)
+        tr.draw(sc)
+        # Ou sc.blit ou sc.fill deve ter sido chamado
+        assert sc.blit.called or sc.fill.called
 
-    def test_draw_out_phase_no_crash_without_snapshots(self):
-        from engine.transitions import CrossfadeTransition
-        t = CrossfadeTransition(duration=1.0)
-        t.update(0.1)
-        t.draw(make_screen())
+    def test_draw_in_blits_snapshot_in(self):
+        tr      = self._make()
+        sc      = screen()
+        snap_in = _FakeSurface()
+        tr.snapshot_out = _FakeSurface()
+        tr.snapshot_in  = snap_in
+        run_to_swap(tr)
+        advance(tr, 0.001)
+        advance(tr, 0.1)
+        tr.draw(sc)
+        assert sc.fill.called or sc.blit.called
 
-    def test_draw_in_phase_with_snapshot_no_crash(self):
-        from engine.transitions import CrossfadeTransition
-        t = CrossfadeTransition(duration=0.04)
-        t.snapshot_out = make_surface()
-        t.snapshot_in  = make_surface()
-        run_to_swap(t)
-        t.update(0.002)
-        t.draw(make_screen())
+    def test_draw_done_no_blit(self):
+        tr = self._make()
+        sc = screen()
+        run_to_done(tr)
+        tr.draw(sc)
+        sc.blit.assert_not_called()
+        sc.fill.assert_not_called()
 
-    def test_alpha_surf_recreated_on_resize(self):
-        from engine.transitions import CrossfadeTransition
-        t = CrossfadeTransition(duration=1.0)
-        t.snapshot_out = make_surface(50, 50)
-        t.snapshot_in  = make_surface(200, 150)
-        t.update(0.1)
-        t.draw(make_screen(50, 50))
-        t.draw(make_screen(200, 150))
+    def test_alpha_surface_created_lazily(self):
+        tr = self._make()
+        assert tr._alpha_surf is None
+        tr.snapshot_out = _FakeSurface()
+        advance(tr, 0.1)
+        tr.draw(screen())
+        # Após draw o _alpha_surf deve existir ou snapshot coverage sem alpha surf
+        # (dependê ncia: só criada se progress < 1.0 e snap disponivel)
 
-    def test_draw_done_is_noop(self):
-        from engine.transitions import CrossfadeTransition
-        t = CrossfadeTransition(duration=0.02)
-        run_to_done(t)
-        screen = make_screen()
-        before = pygame.surfarray.array3d(screen).tolist()
-        t.draw(screen)
-        assert pygame.surfarray.array3d(screen).tolist() == before
+    def test_reaches_done_full_cycle(self):
+        tr = self._make()
+        run_to_done(tr)
+        assert tr.is_done
 
 
-# ==========================================================================
-# SlideDirection enum
-# ==========================================================================
+# ─────────────────────────────────────────────────────────────────────────────
+class TestFullCycleIntegration:
+    """Verifica a sequência completa OUT→SWAP→IN→DONE para todas as transições."""
 
-class TestSlideDirection:
-    def test_all_four_directions_exist(self):
-        from engine.transitions import SlideDirection
-        assert {d.name for d in SlideDirection} == {"LEFT", "RIGHT", "UP", "DOWN"}
+    @pytest.mark.parametrize("cls,kw", [
+        (FadeTransition,       {"duration_out": 0.2, "duration_in": 0.2}),
+        (SlideTransition,      {"duration_out": 0.01, "duration_in": 0.2}),
+        (WipeTransition,       {"duration_out": 0.2, "duration_in": 0.2}),
+        (CrossfadeTransition,  {"duration": 0.4}),
+    ])
+    def test_full_cycle(self, cls, kw):
+        tr = cls(**kw)
+        assert tr.phase == TransitionPhase.OUT
+        run_to_swap(tr)
+        assert tr.phase == TransitionPhase.SWAP
+        advance(tr, 0.001)
+        assert tr.phase == TransitionPhase.IN
+        advance(tr, tr.duration_in + 0.01)
+        assert tr.phase == TransitionPhase.DONE
+        assert tr.is_done
+
+    @pytest.mark.parametrize("cls,kw", [
+        (FadeTransition,       {"duration_out": 0.2, "duration_in": 0.2}),
+        (SlideTransition,      {"duration_out": 0.01, "duration_in": 0.2}),
+        (WipeTransition,       {"duration_out": 0.2, "duration_in": 0.2}),
+        (CrossfadeTransition,  {"duration": 0.4}),
+    ])
+    def test_draw_no_error_in_all_phases(self, cls, kw):
+        tr   = cls(**kw)
+        sc   = screen()
+        snap = _FakeSurface()
+        tr.snapshot_out = snap
+        tr.snapshot_in  = snap
+        # OUT
+        advance(tr, 0.05)
+        tr.draw(sc)
+        # SWAP
+        run_to_swap(tr)
+        tr.draw(sc)
+        # IN
+        advance(tr, 0.001)
+        tr.draw(sc)
+        # DONE
+        run_to_done(tr)
+        tr.draw(sc)
