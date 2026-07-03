@@ -90,6 +90,17 @@ class GameObject:
         return component
 
     def get_component(self, component_type: Type[T]) -> Optional[T]:
+        from .component import Component
+
+        # Transform é criado automaticamente em todo GameObject. Quando a busca
+        # é pelo tipo base Component, priorizamos componentes adicionados pelo
+        # usuário; buscas específicas como get_component(Transform) continuam
+        # retornando o Transform normalmente.
+        if component_type is Component:
+            for comp in self.components:
+                if comp is not self.transform and isinstance(comp, component_type):
+                    return comp
+
         for comp in self.components:
             if isinstance(comp, component_type):
                 return comp
