@@ -148,7 +148,7 @@ class ProfilerDock(QDockWidget):
         scene = viewport.active_scene
         
         # 1. Calcula FPS real a partir do Delta Time do último frame
-        dt = max(0.0001, time.time() - viewport.last_time)
+        dt = max(0.0001, time.time() - viewport._last_time)
         # Se a simulação não estiver rodando ativamente, o tick do QTimer define a taxa
         fps = 1.0 / dt if dt < 0.2 else 60.0
         # Média simples para atenuar ruídos
