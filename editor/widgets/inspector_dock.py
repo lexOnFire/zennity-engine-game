@@ -39,8 +39,8 @@ class InspectorDock(QDockWidget):
         # Conteúdo interno principal
         self.main_content = QWidget()
         self.layout_content = QVBoxLayout(self.main_content)
-        self.layout_content.setContentsMargins(6, 6, 6, 6)
-        self.layout_content.setSpacing(8)
+        self.layout_content.setContentsMargins(10, 10, 10, 10)
+        self.layout_content.setSpacing(12)
         self.layout_content.setAlignment(Qt.AlignTop)
         
         self.scroll.setWidget(self.main_content)
@@ -88,7 +88,7 @@ class InspectorDock(QDockWidget):
         
         self.txt_name = QLineEdit(obj.name)
         self.txt_name.setStyleSheet(
-            "font-weight: bold; font-size: 14px; color: #409cff; background: transparent; border: 1px solid #2d313f; border-radius: 4px;"
+            "font-weight: 600; font-size: 16px; color: #5db0ff; background: #111217; border: 1px solid #2d313f; border-radius: 6px; padding: 4px 8px;"
         )
         self.txt_name.editingFinished.connect(self.on_name_edited)
         

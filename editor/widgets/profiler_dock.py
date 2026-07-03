@@ -39,8 +39,8 @@ class PerformanceChartWidget(QWidget):
         
         # Desenha o fundo escuro
         painter.setBrush(QBrush(QColor("#111217")))
-        painter.setPen(QPen(QColor("#2d313f"), 1))
-        painter.drawRoundedRect(0, 0, w, h, 4, 4)
+        painter.setPen(QPen(QColor("#323846"), 1))
+        painter.drawRoundedRect(0, 0, w, h, 6, 6)
         
         # Desenha linhas horizontais de grade de referência (FPS 30 e 60)
         painter.setPen(QPen(QColor("#242732"), 1, Qt.DashLine))
@@ -78,12 +78,12 @@ class PerformanceChartWidget(QWidget):
         poly.append(QPointF(w, h))
         poly.append(QPointF(0, h))
         
-        painter.setBrush(QBrush(QColor(64, 156, 255, 30)))  # Azul cobalto translúcido
+        painter.setBrush(QBrush(QColor(93, 176, 255, 40)))  # Azul mais brilhante e translúcido
         painter.setPen(Qt.NoPen)
         painter.drawPolygon(poly)
         
         # Desenha a linha de contorno
-        pen = QPen(QColor("#409cff"), 2, Qt.SolidLine)
+        pen = QPen(QColor("#5db0ff"), 2, Qt.SolidLine)
         painter.setPen(pen)
         for i in range(len(points) - 1):
             painter.drawLine(points[i], points[i+1])
@@ -120,7 +120,7 @@ class ProfilerDock(QDockWidget):
         self.lbl_physics = QLabel("Física: 0 corpos / 0 colisores")
         
         for lbl in (self.lbl_fps, self.lbl_frame_time, self.lbl_memory, self.lbl_physics):
-            lbl.setStyleSheet("color: #e3e8f0; font-family: monospace; font-size: 12px; font-weight: bold;")
+            lbl.setStyleSheet("color: #cfd4de; font-family: 'JetBrains Mono', 'Cascadia Code', monospace; font-size: 11px; font-weight: 600;")
             m_layout.addWidget(lbl)
             
         m_layout.addStretch()

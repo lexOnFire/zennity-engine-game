@@ -22,7 +22,7 @@ class CollapsibleSection(QWidget):
         # Cabeçalho da seção
         self.header_widget = QWidget()
         self.header_widget.setStyleSheet(
-            "background-color: #242730; border: 1px solid #2d313f; border-radius: 4px;"
+            "background-color: #22252e; border: 1px solid #2d313f; border-radius: 6px;"
         )
         self.header_layout = QHBoxLayout(self.header_widget)
         self.header_layout.setContentsMargins(8, 4, 8, 4)
@@ -30,12 +30,12 @@ class CollapsibleSection(QWidget):
         # Botão/Indicador de seta
         self.btn_toggle = QPushButton("▼")
         self.btn_toggle.setFixedWidth(20)
-        self.btn_toggle.setStyleSheet("background: transparent; border: none; font-weight: bold; color: #828a9b;")
+        self.btn_toggle.setStyleSheet("background: transparent; border: none; font-weight: bold; color: #a0a8b9; font-size: 10px;")
         self.btn_toggle.clicked.connect(self.toggle_collapse)
         
         # Título do componente
         self.lbl_title = QLabel(title)
-        self.lbl_title.setStyleSheet("font-weight: bold; color: #e3e8f0; border: none;")
+        self.lbl_title.setStyleSheet("font-weight: 600; color: #cfd4de; border: none; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;")
         
         self.header_layout.addWidget(self.btn_toggle)
         self.header_layout.addWidget(self.lbl_title)
@@ -45,7 +45,7 @@ class CollapsibleSection(QWidget):
         
         # Área de conteúdo (onde ficam as propriedades)
         self.content_widget = QWidget()
-        self.content_widget.setStyleSheet("background-color: #1a1c23; border: none;")
+        self.content_widget.setStyleSheet("background-color: #1a1c23; border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; border: none;")
         self.content_layout = QVBoxLayout(self.content_widget)
         self.content_layout.setContentsMargins(12, 8, 12, 8)
         self.content_layout.setSpacing(6)

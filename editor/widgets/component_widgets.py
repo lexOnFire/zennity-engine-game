@@ -24,8 +24,8 @@ def create_spin_box(val: float, is_double: bool = True) -> QWidget:
         sb.setValue(int(val))
         
     sb.setStyleSheet(
-        "background-color: #111217; border: 1px solid #2d313f; border-radius: 3px;"
-        "padding: 2px 4px; color: #e3e8f0; selection-background-color: #409cff;"
+        "background-color: #111217; border: 1px solid #2d313f; border-radius: 4px;"
+        "padding: 4px 6px; color: #cfd4de; selection-background-color: #409cff;"
     )
     return sb
 
@@ -46,9 +46,9 @@ class TransformComponentWidget(QWidget):
         
         # Cabeçalhos dos eixos
         layout.addWidget(QLabel(""), 0, 0)
-        lbl_x = QLabel("X"); lbl_x.setAlignment(Qt.AlignCenter); lbl_x.setStyleSheet("color: #eb5757; font-weight: bold;")
-        lbl_y = QLabel("Y"); lbl_y.setAlignment(Qt.AlignCenter); lbl_y.setStyleSheet("color: #27ae60; font-weight: bold;")
-        lbl_z = QLabel("Z"); lbl_z.setAlignment(Qt.AlignCenter); lbl_z.setStyleSheet("color: #2f80ed; font-weight: bold;")
+        lbl_x = QLabel("X"); lbl_x.setAlignment(Qt.AlignCenter); lbl_x.setStyleSheet("color: #ff5c5c; font-weight: 600; font-size: 10px;")
+        lbl_y = QLabel("Y"); lbl_y.setAlignment(Qt.AlignCenter); lbl_y.setStyleSheet("color: #4ade80; font-weight: 600; font-size: 10px;")
+        lbl_z = QLabel("Z"); lbl_z.setAlignment(Qt.AlignCenter); lbl_z.setStyleSheet("color: #60a5fa; font-weight: 600; font-size: 10px;")
         
         layout.addWidget(lbl_x, 0, 1)
         layout.addWidget(lbl_y, 0, 2)

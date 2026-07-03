@@ -293,16 +293,16 @@ class MainWindow(QMainWindow):
         
         # ── Controles de Simulação ──────────────────────────
         self.btn_play = QPushButton(" ▶  PLAY ")
-        self.btn_play.setStyleSheet("background-color: #306430; border-color: #204c20;")
+        self.btn_play.setStyleSheet("background-color: #2e7d32; border: 1px solid #1b5e20; color: white; padding: 4px 12px; border-radius: 6px; font-weight: bold;")
         self.btn_play.clicked.connect(self.on_play_clicked)
         
         self.btn_pause = QPushButton(" ⏸  PAUSE ")
-        self.btn_pause.setStyleSheet("background-color: #2b303f;")
+        self.btn_pause.setStyleSheet("background-color: #37474f; border: 1px solid #263238; color: #cfd4de; padding: 4px 12px; border-radius: 6px; font-weight: bold;")
         self.btn_pause.setEnabled(False)
         self.btn_pause.clicked.connect(self.on_pause_clicked)
         
         self.btn_stop = QPushButton(" ■  STOP ")
-        self.btn_stop.setStyleSheet("background-color: #8c2424; border-color: #601818;")
+        self.btn_stop.setStyleSheet("background-color: #c62828; border: 1px solid #b71c1c; color: white; padding: 4px 12px; border-radius: 6px; font-weight: bold;")
         self.btn_stop.setEnabled(False)
         self.btn_stop.clicked.connect(self.on_stop_clicked)
         
@@ -360,7 +360,7 @@ class MainWindow(QMainWindow):
         self.lbl_obj = QLabel("Objetos: 0  ")
         
         for lbl in (self.lbl_fps, self.lbl_mem, self.lbl_obj):
-            lbl.setStyleSheet("color: #828a9b; font-family: monospace; font-size: 11px;")
+            lbl.setStyleSheet("color: #cfd4de; font-family: 'JetBrains Mono', 'Cascadia Code', monospace; font-size: 11px; font-weight: 600; margin-right: 10px;")
             statusbar.addPermanentWidget(lbl)
 
     # ──────────────────────────────────────────────────────────────────────────
