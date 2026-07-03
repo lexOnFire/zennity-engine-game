@@ -4,47 +4,35 @@ tests/core/test_scene_manager.py
 Testes unitários do SceneManager.
 
 Estratégia de isolamento:
-  - pygame NÃO é inicializado.
-  - engine/__init__.py executa imports pesados quando qualquer submódulo
-    de `engine` é carregado. Para evitar isso, TODOS os módulos do
-    pacote `engine` são inseridos em sys.modules como stubs ANTES de
-    qualquer `import engine.*`.
-  - Stubs que representam pacotes (diretórios) precisam de __path__=[]
-    para que o Python os trate como pacote e permita `from pkg.sub import X`.
-  - SceneManager.reset() em autouse fixture garante singleton limpo.
+  - Todos os módulos pesados de `engine.*` são colocados em sys.modules
+    como stubs ANTES de qualquer import real.
+  - `engine.core` e `engine` precisam de __path__ apontando para o
+    diretório físico real, caso contrário o Python não encontra
+    engine/core/scene_manager.py no disco.
+  - engine/core/scene_manager.py é carregado via importlib.util.spec_from_file_location
+    para total controle, evitando que engine/__init__.py seja re-executado.
 """
 from __future__ import annotations
 
 import sys
 import os
 import types
+import importlib.util
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 
-
 # ─────────────────────────────────────────────────────────────────
-# Helpers para criar stubs de módulo e pacote
+# Localiza a raiz do projeto (onde engine/ existe)
 # ─────────────────────────────────────────────────────────────────
 
-def _mod(name: str, is_package: bool = False, **attrs):
-    """
-    Cria e registra um stub de módulo em sys.modules.
-    is_package=True define __path__=[] para que Python aceite
-    `from <name>.<sub> import X` sem tentar carregar do disco.
-    """
-    m = types.ModuleType(name)
-    if is_package:
-        m.__path__ = []          # marca como pacote
-        m.__package__ = name
-    else:
-        m.__package__ = name.rsplit(".", 1)[0] if "." in name else name
-    m.__spec__ = None
-    for k, v in attrs.items():
-        setattr(m, k, v)
-    sys.modules[name] = m
-    return m
-
+_HERE       = Path(__file__).resolve().parent          # tests/core/
+_TESTS_DIR  = _HERE.parent                             # tests/
+_ROOT       = _TESTS_DIR.parent                        # raiz do projeto
+_ENGINE_DIR = _ROOT / "engine"                         # engine/
+_CORE_DIR   = _ENGINE_DIR / "core"                     # engine/core/
+_SM_FILE    = _CORE_DIR / "scene_manager.py"           # arquivo real
 
 # ─────────────────────────────────────────────────────────────────
 # pygame stubs
@@ -58,14 +46,10 @@ class _FakeSurface:
 
 _pg = MagicMock()
 _pg.Surface = _FakeSurface
-
-for _name in (
-    "pygame", "pygame.mixer", "pygame.font",
-    "pygame.image", "pygame.display", "pygame.event",
-    "pygame.transform", "pygame.draw",
-):
-    sys.modules.setdefault(_name, _pg)
-
+for _n in ("pygame", "pygame.mixer", "pygame.font",
+           "pygame.image", "pygame.display", "pygame.event",
+           "pygame.transform", "pygame.draw"):
+    sys.modules.setdefault(_n, _pg)
 
 # ─────────────────────────────────────────────────────────────────
 # Stubs de transições
@@ -75,46 +59,53 @@ class _Phase:
     OUT = "OUT"; SWAP = "SWAP"; IN = "IN"; DONE = "DONE"
 
 
-class _FakeTransitionBase:
+class _FakeTransition:
     def __init__(self):
-        self.phase = _Phase.OUT
-        self.is_done = False
-        self.should_swap = False
+        self.phase        = _Phase.OUT
+        self.is_done      = False
+        self.should_swap  = False
         self.snapshot_out = None
-        self.snapshot_in = None
+        self.snapshot_in  = None
     def update(self, dt): pass
     def draw(self, screen): pass
 
 
-_mod("engine.transitions",
-    Transition=_FakeTransitionBase,
-    TransitionPhase=_Phase,
-    FadeTransition=MagicMock(),
-    SlideTransition=MagicMock(),
-    SlideDirection=MagicMock(),
-    WipeTransition=MagicMock(),
-    CrossfadeTransition=MagicMock(),
-)
-
+_tr_mod = types.ModuleType("engine.transitions")
+_tr_mod.Transition          = _FakeTransition
+_tr_mod.TransitionPhase     = _Phase
+_tr_mod.FadeTransition      = MagicMock()
+_tr_mod.SlideTransition     = MagicMock()
+_tr_mod.SlideDirection      = MagicMock()
+_tr_mod.WipeTransition      = MagicMock()
+_tr_mod.CrossfadeTransition = MagicMock()
+sys.modules["engine.transitions"] = _tr_mod
 
 # ─────────────────────────────────────────────────────────────────
-# UIManager mock (usado diretamente por SceneManager)
+# UIManager mock
 # ─────────────────────────────────────────────────────────────────
 
 _ui_manager_mock = MagicMock()
-_mod("engine.ui", is_package=True,
-    UIElement=MagicMock(), Anchor=MagicMock(), Pivot=MagicMock(),
-    Label=MagicMock(), Button=MagicMock(), UIImage=MagicMock(),
-    ProgressBar=MagicMock(), Panel=MagicMock(), UICanvas=MagicMock(),
-    UIManager=_ui_manager_mock,
-)
-_mod("engine.ui.ui_manager", UIManager=_ui_manager_mock)
 
+_ui_pkg = types.ModuleType("engine.ui")
+_ui_pkg.__path__    = [str(_ENGINE_DIR / "ui")]
+_ui_pkg.__package__ = "engine.ui"
+_ui_pkg.UIManager   = _ui_manager_mock
+sys.modules["engine.ui"] = _ui_pkg
+
+_ui_mgr_mod = types.ModuleType("engine.ui.ui_manager")
+_ui_mgr_mod.UIManager = _ui_manager_mock
+sys.modules["engine.ui.ui_manager"] = _ui_mgr_mod
 
 # ─────────────────────────────────────────────────────────────────
-# Stubs de todos os submódulos de engine.*
-# (engine/__init__.py importa todos eles ao ser carregado)
+# Stubs de todos os outros submódulos que engine/__init__.py importa
 # ─────────────────────────────────────────────────────────────────
+
+def _fake_mod(name, **attrs):
+    m = types.ModuleType(name)
+    for k, v in attrs.items():
+        setattr(m, k, v)
+    sys.modules[name] = m
+    return m
 
 _box_mock    = MagicMock()
 _circle_mock = MagicMock()
@@ -122,72 +113,77 @@ _box_mock._scene_tilemaps           = {}
 _box_mock._scene_tilemap_components = {}
 _box_mock._registry                 = []
 _circle_mock._registry              = []
-
-_mod("engine.physics", is_package=True,
-    BoxCollider=_box_mock, CircleCollider=_circle_mock,
-    CollisionInfo=MagicMock())
-_mod("engine.physics.collider",
-    BoxCollider=_box_mock, CircleCollider=_circle_mock,
-    CollisionInfo=MagicMock())
-_mod("engine.physics.rigidbody",        RigidBody=MagicMock())
-_mod("engine.physics.tilemap_collider", TilemapCollider=MagicMock())
-
-_mod("engine.tilemap", is_package=True,
-    TileMap=MagicMock(), TilemapRenderer=MagicMock(), TileMapLoader=MagicMock())
-_mod("engine.tilemap.tilemap",
-    TileMap=MagicMock(), TilemapRenderer=MagicMock())
-_mod("engine.tilemap.tilemap_loader",   TileMapLoader=MagicMock())
-
-_mod("engine.graphics", is_package=True, Camera2D=MagicMock())
-_mod("engine.graphics.camera2d",        Camera2D=MagicMock())
-_mod("engine.graphics.particles",
-    Particle=MagicMock(), ParticleSystem=MagicMock())
-
 _audio_mock = MagicMock()
-_mod("engine.audio", AudioManager=_audio_mock)
 
-# engine.core como PACOTE (is_package=True é obrigatório)
-# para que `from engine.core.scene_manager import ...` funcione
-_mod("engine.core", is_package=True,
-    Engine=MagicMock(), Scene=MagicMock(), SceneManager=None)
+_fake_mod("engine.physics.collider",
+          BoxCollider=_box_mock, CircleCollider=_circle_mock,
+          CollisionInfo=MagicMock())
+_fake_mod("engine.physics.rigidbody",        RigidBody=MagicMock())
+_fake_mod("engine.physics.tilemap_collider", TilemapCollider=MagicMock())
+_fake_mod("engine.tilemap.tilemap",
+          TileMap=MagicMock(), TilemapRenderer=MagicMock())
+_fake_mod("engine.tilemap.tilemap_loader",   TileMapLoader=MagicMock())
+_fake_mod("engine.graphics.camera2d",        Camera2D=MagicMock())
+_fake_mod("engine.graphics.particles",
+          Particle=MagicMock(), ParticleSystem=MagicMock())
+_fake_mod("engine.audio",                    AudioManager=_audio_mock)
 
-_mod("engine.core.scene",       Scene=MagicMock())
-_mod("engine.core.engine",      Engine=MagicMock())
-_mod("engine.core.game_object", GameObject=MagicMock())
-_mod("engine.core.component",   Component=MagicMock())
-_mod("engine.core.system",      System=MagicMock())
-_mod("engine.core.event_bus",   EventBus=MagicMock())
-_mod("engine.core.application", Application=MagicMock())
-_mod("engine.core.logger",      Logger=MagicMock())
-_mod("engine.core.time",        Time=MagicMock())
+# engine.core submódulos (folhas)
+_fake_mod("engine.core.scene",       Scene=MagicMock())
+_fake_mod("engine.core.engine",      Engine=MagicMock())
+_fake_mod("engine.core.game_object", GameObject=MagicMock())
+_fake_mod("engine.core.component",   Component=MagicMock())
+_fake_mod("engine.core.system",      System=MagicMock())
+_fake_mod("engine.core.event_bus",   EventBus=MagicMock())
+_fake_mod("engine.core.application", Application=MagicMock())
+_fake_mod("engine.core.logger",      Logger=MagicMock())
+_fake_mod("engine.core.time",        Time=MagicMock())
 
-# engine (pacote raiz) — evita que engine/__init__.py real seja executado
-_mod("engine", is_package=True,
-    Engine=MagicMock(), Scene=MagicMock(), SceneManager=None,
-    Transition=_FakeTransitionBase, FadeTransition=MagicMock(),
-    SlideTransition=MagicMock(), SlideDirection=MagicMock(),
-    WipeTransition=MagicMock(), CrossfadeTransition=MagicMock(),
-    TileMap=MagicMock(), TilemapRenderer=MagicMock(), TileMapLoader=MagicMock(),
-    Camera2D=MagicMock(), RigidBody=MagicMock(),
-    BoxCollider=_box_mock, CircleCollider=_circle_mock,
-    CollisionInfo=MagicMock(), TilemapCollider=MagicMock(),
-    UIElement=MagicMock(), Anchor=MagicMock(), Pivot=MagicMock(),
-    Label=MagicMock(), Button=MagicMock(), UIImage=MagicMock(),
-    ProgressBar=MagicMock(), Panel=MagicMock(), UICanvas=MagicMock(),
-    UIManager=_ui_manager_mock,
-    Particle=MagicMock(), ParticleSystem=MagicMock(),
+# ─────────────────────────────────────────────────────────────────
+# engine.core como PACOTE com __path__ real
+# ─────────────────────────────────────────────────────────────────
+# __path__ precisa apontar para o diretório físico para que
+# Python encontre engine/core/scene_manager.py ao fazer o import.
+
+_engine_core_pkg = types.ModuleType("engine.core")
+_engine_core_pkg.__path__    = [str(_CORE_DIR)]   # ← caminho real no disco
+_engine_core_pkg.__package__ = "engine.core"
+_engine_core_pkg.Engine      = MagicMock()
+_engine_core_pkg.Scene       = MagicMock()
+sys.modules["engine.core"] = _engine_core_pkg
+
+# engine (pacote raiz) também com __path__ real
+_engine_pkg = types.ModuleType("engine")
+_engine_pkg.__path__    = [str(_ENGINE_DIR)]      # ← caminho real
+_engine_pkg.__package__ = "engine"
+for _attr in (
+    "Engine", "Scene", "SceneManager",
+    "Transition", "FadeTransition", "SlideTransition", "SlideDirection",
+    "WipeTransition", "CrossfadeTransition",
+    "TileMap", "TilemapRenderer", "TileMapLoader",
+    "Camera2D", "RigidBody",
+    "BoxCollider", "CircleCollider", "CollisionInfo", "TilemapCollider",
+    "UIElement", "Anchor", "Pivot", "Label", "Button", "UIImage",
+    "ProgressBar", "Panel", "UICanvas", "UIManager",
+    "Particle", "ParticleSystem",
+):
+    setattr(_engine_pkg, _attr, MagicMock())
+_engine_pkg.UIManager = _ui_manager_mock
+sys.modules["engine"] = _engine_pkg
+
+# ─────────────────────────────────────────────────────────────────
+# Carrega engine/core/scene_manager.py diretamente do disco
+# ─────────────────────────────────────────────────────────────────
+
+_spec = importlib.util.spec_from_file_location(
+    "engine.core.scene_manager",
+    str(_SM_FILE),
 )
+_sm_module = importlib.util.module_from_spec(_spec)
+sys.modules["engine.core.scene_manager"] = _sm_module
+_spec.loader.exec_module(_sm_module)
 
-
-# ─────────────────────────────────────────────────────────────────
-# Import do módulo real — seguro agora
-# ─────────────────────────────────────────────────────────────────
-
-import importlib as _il
-# Remover o stub de engine.core.scene_manager para que o arquivo real seja carregado
-sys.modules.pop("engine.core.scene_manager", None)
-from engine.core.scene_manager import SceneManager  # noqa: E402
-
+SceneManager = _sm_module.SceneManager
 
 # ─────────────────────────────────────────────────────────────────
 # Helpers
@@ -205,7 +201,7 @@ def make_scene(name="Scene"):
 
 
 def make_transition(should_swap_after: int = 0):
-    tr = _FakeTransitionBase()
+    tr = _FakeTransition()
     tr._update_count = 0
     tr._swap_after   = should_swap_after
 
@@ -230,18 +226,18 @@ def reset_sm():
     SceneManager.reset()
 
 
-# ─────────────────────────────────────────────────────────────────
+# ================================================================
+# TESTES
+# ================================================================
+
 class TestSingleton:
     def test_instance_returns_same_object(self):
-        a = SceneManager.instance()
-        b = SceneManager.instance()
-        assert a is b
+        assert SceneManager.instance() is SceneManager.instance()
 
     def test_reset_creates_new_instance(self):
         a = SceneManager.instance()
         SceneManager.reset()
-        b = SceneManager.instance()
-        assert a is not b
+        assert SceneManager.instance() is not a
 
     def test_reset_clears_inst(self):
         SceneManager.instance()
@@ -255,7 +251,6 @@ class TestSingleton:
         assert SceneManager.instance()._transition is None
 
 
-# ─────────────────────────────────────────────────────────────────
 class TestLoad:
     def test_load_sets_current(self):
         sm = SceneManager.instance()
@@ -279,8 +274,7 @@ class TestLoad:
         a, b = make_scene("A"), make_scene("B")
         sm.load(a)
         sm.load(b)
-        assert sm.current is b
-        assert sm.stack_depth == 1
+        assert sm.current is b and sm.stack_depth == 1
 
     def test_load_clears_stack_completely(self):
         sm = SceneManager.instance()
@@ -303,7 +297,6 @@ class TestLoad:
         _ui_manager_mock.reset.assert_called()
 
 
-# ─────────────────────────────────────────────────────────────────
 class TestPushPop:
     def test_push_increases_depth(self):
         sm = SceneManager.instance()
@@ -345,8 +338,7 @@ class TestPushPop:
         s  = make_scene()
         sm.load(s)
         sm.pop()
-        assert sm.stack_depth == 1
-        assert sm.current is s
+        assert sm.stack_depth == 1 and sm.current is s
 
     def test_pop_calls_ui_setup_if_present(self):
         sm   = SceneManager.instance()
@@ -359,16 +351,11 @@ class TestPushPop:
     def test_multiple_push_pop_restores_order(self):
         sm      = SceneManager.instance()
         a, b, c = make_scene("A"), make_scene("B"), make_scene("C")
-        sm.load(a)
-        sm.push(b)
-        sm.push(c)
-        sm.pop()
-        sm.pop()
-        assert sm.current is a
-        assert sm.stack_depth == 1
+        sm.load(a); sm.push(b); sm.push(c)
+        sm.pop();   sm.pop()
+        assert sm.current is a and sm.stack_depth == 1
 
 
-# ─────────────────────────────────────────────────────────────────
 class TestStackProperties:
     def test_current_none_when_empty(self):
         assert SceneManager.instance().current is None
@@ -381,19 +368,18 @@ class TestStackProperties:
 
     def test_is_transitioning_true_during_active_transition(self):
         sm = SceneManager.instance()
-        tr = _FakeTransitionBase()
-        sm._transition = tr   # is_done=False por padrão
+        tr = _FakeTransition()   # is_done=False
+        sm._transition = tr
         assert sm.is_transitioning is True
 
     def test_is_transitioning_false_when_done(self):
         sm = SceneManager.instance()
-        tr = _FakeTransitionBase()
+        tr = _FakeTransition()
         tr.is_done = True
         sm._transition = tr
         assert sm.is_transitioning is False
 
 
-# ─────────────────────────────────────────────────────────────────
 class TestBind:
     def test_bind_sets_engine(self):
         sm  = SceneManager.instance()
@@ -408,7 +394,6 @@ class TestBind:
         assert eng.change_scene is sm.load
 
 
-# ─────────────────────────────────────────────────────────────────
 class TestHandleEvent:
     def test_event_forwarded_to_current_scene(self):
         sm = SceneManager.instance()
@@ -422,7 +407,7 @@ class TestHandleEvent:
         sm = SceneManager.instance()
         s  = make_scene()
         sm.load(s)
-        sm._transition = _FakeTransitionBase()   # is_done=False
+        sm._transition = _FakeTransition()
         sm.handle_event(MagicMock())
         s.handle_event.assert_not_called()
 
@@ -430,15 +415,13 @@ class TestHandleEvent:
         sm = SceneManager.instance()
         s  = make_scene()
         sm.load(s)
-        tr = _FakeTransitionBase()
-        tr.is_done = True
+        tr = _FakeTransition(); tr.is_done = True
         sm._transition = tr
         ev = MagicMock()
         sm.handle_event(ev)
         s.handle_event.assert_called_once_with(ev)
 
 
-# ─────────────────────────────────────────────────────────────────
 class TestLoadWithTransition:
     def test_transition_stored(self):
         sm = SceneManager.instance()
@@ -448,19 +431,19 @@ class TestLoadWithTransition:
         assert sm._transition is tr
 
     def test_pending_scene_set(self):
-        sm        = SceneManager.instance()
+        sm = SceneManager.instance()
         sm.load(make_scene())
-        new_scene = make_scene()
-        sm.load(new_scene, transition=make_transition(should_swap_after=99))
-        assert sm._pending_scene is new_scene
+        ns = make_scene()
+        sm.load(ns, transition=make_transition(should_swap_after=99))
+        assert sm._pending_scene is ns
 
     def test_scene_swaps_when_should_swap(self):
-        sm        = SceneManager.instance()
-        sm.load(make_scene("Initial"))
-        new_scene = make_scene("New")
-        sm.load(new_scene, transition=make_transition(should_swap_after=0))
+        sm = SceneManager.instance()
+        sm.load(make_scene("Init"))
+        ns = make_scene("New")
+        sm.load(ns, transition=make_transition(should_swap_after=0))
         sm.update(0.016)
-        assert sm.current is new_scene
+        assert sm.current is ns
 
     def test_transition_cleared_when_done(self):
         sm = SceneManager.instance()
@@ -471,7 +454,6 @@ class TestLoadWithTransition:
         assert sm._transition is None
 
 
-# ─────────────────────────────────────────────────────────────────
 class TestPushWithTransition:
     def test_push_transition_adds_scene_on_swap(self):
         sm  = SceneManager.instance()
@@ -479,8 +461,7 @@ class TestPushWithTransition:
         top = make_scene("Top")
         sm.push(top, transition=make_transition(should_swap_after=0))
         sm.update(0.016)
-        assert sm.current is top
-        assert sm.stack_depth == 2
+        assert sm.current is top and sm.stack_depth == 2
 
     def test_push_transition_does_not_clear_stack(self):
         sm = SceneManager.instance()
@@ -490,7 +471,6 @@ class TestPushWithTransition:
         assert sm.stack_depth == 2
 
 
-# ─────────────────────────────────────────────────────────────────
 class TestPopWithTransition:
     def test_pop_transition_removes_top(self):
         sm   = SceneManager.instance()
@@ -499,18 +479,15 @@ class TestPopWithTransition:
         sm.push(make_scene("Top"))
         sm.pop(transition=make_transition(should_swap_after=0))
         sm.update(0.016)
-        assert sm.stack_depth == 1
-        assert sm.current is base
+        assert sm.stack_depth == 1 and sm.current is base
 
     def test_pop_on_single_with_transition_does_nothing(self):
         sm = SceneManager.instance()
-        s  = make_scene()
-        sm.load(s)
+        sm.load(make_scene())
         sm.pop(transition=make_transition())
         assert sm.stack_depth == 1
 
 
-# ─────────────────────────────────────────────────────────────────
 class TestCallbacks:
     def test_on_transition_start_called(self):
         sm = SceneManager.instance()
@@ -540,7 +517,6 @@ class TestCallbacks:
         sm.update(0.016)
 
 
-# ─────────────────────────────────────────────────────────────────
 class TestUpdateDraw:
     def test_update_calls_scene_update(self):
         sm = SceneManager.instance()
@@ -553,72 +529,69 @@ class TestUpdateDraw:
         SceneManager.instance().update(0.016)
 
     def test_draw_calls_scene_draw(self):
-        sm     = SceneManager.instance()
-        s      = make_scene()
+        sm = SceneManager.instance()
+        s  = make_scene()
         sm.load(s)
-        screen = _FakeSurface()
-        sm.draw(screen)
-        s.draw.assert_called_once_with(screen)
+        sc = _FakeSurface()
+        sm.draw(sc)
+        s.draw.assert_called_once_with(sc)
 
     def test_draw_no_scene_no_error(self):
         SceneManager.instance().draw(_FakeSurface())
 
 
-# ─────────────────────────────────────────────────────────────────
 class TestRunPhysics:
     def test_run_physics_called_on_update(self):
         from unittest.mock import patch as _patch
-        sm          = SceneManager.instance()
+        sm     = SceneManager.instance()
         sm.load(make_scene())
-        box         = MagicMock()
-        circle      = MagicMock()
-        fake_mod    = types.ModuleType("engine.physics.collider")
-        fake_mod.BoxCollider    = box
-        fake_mod.CircleCollider = circle
-        with _patch.dict(sys.modules, {"engine.physics.collider": fake_mod}):
+        box    = MagicMock()
+        circle = MagicMock()
+        fake   = types.ModuleType("engine.physics.collider")
+        fake.BoxCollider    = box
+        fake.CircleCollider = circle
+        with _patch.dict(sys.modules, {"engine.physics.collider": fake}):
             sm.update(0.016)
         box.check_all.assert_called_once()
         circle.check_all.assert_called_once()
 
     def test_run_physics_silences_exceptions(self):
         from unittest.mock import patch as _patch
-        sm       = SceneManager.instance()
+        sm     = SceneManager.instance()
         sm.load(make_scene())
-        broken   = MagicMock()
+        broken = MagicMock()
         broken.check_all.side_effect = RuntimeError("boom")
-        fake_mod = types.ModuleType("engine.physics.collider")
-        fake_mod.BoxCollider    = broken
-        fake_mod.CircleCollider = MagicMock()
-        with _patch.dict(sys.modules, {"engine.physics.collider": fake_mod}):
+        fake   = types.ModuleType("engine.physics.collider")
+        fake.BoxCollider    = broken
+        fake.CircleCollider = MagicMock()
+        with _patch.dict(sys.modules, {"engine.physics.collider": fake}):
             sm.update(0.016)
 
 
-# ─────────────────────────────────────────────────────────────────
 class TestDoSwapLoadCleanup:
     def test_do_swap_load_clears_collider_registry(self):
         from unittest.mock import patch as _patch
-        sm          = SceneManager.instance()
-        box         = MagicMock()
-        circle      = MagicMock()
+        sm     = SceneManager.instance()
+        box    = MagicMock()
+        circle = MagicMock()
         box._scene_tilemaps           = {"x": 1}
         box._scene_tilemap_components = {"x": 1}
         box._registry                 = ["a"]
         circle._registry              = ["b"]
-        fake_mod = types.ModuleType("engine.physics.collider")
-        fake_mod.BoxCollider    = box
-        fake_mod.CircleCollider = circle
-        with _patch.dict(sys.modules, {"engine.physics.collider": fake_mod}):
+        fake   = types.ModuleType("engine.physics.collider")
+        fake.BoxCollider    = box
+        fake.CircleCollider = circle
+        with _patch.dict(sys.modules, {"engine.physics.collider": fake}):
             sm._do_swap_load(make_scene())
-        assert box._registry    == []
-        assert circle._registry == []
+        assert box._registry == [] and circle._registry == []
 
     def test_do_swap_load_stops_music(self):
         from unittest.mock import patch as _patch
-        sm         = SceneManager.instance()
-        audio      = MagicMock()
-        audio_mod  = types.ModuleType("engine.audio")
+        sm        = SceneManager.instance()
+        audio     = MagicMock()
+        audio_mod = types.ModuleType("engine.audio")
         audio_mod.AudioManager = audio
-        col_mod    = types.ModuleType("engine.physics.collider")
+        col_mod   = types.ModuleType("engine.physics.collider")
         col_mod.BoxCollider    = MagicMock()
         col_mod.CircleCollider = MagicMock()
         with _patch.dict(sys.modules, {
@@ -633,5 +606,4 @@ class TestDoSwapLoadCleanup:
         sm = SceneManager.instance()
         sm.load(make_scene("MyScene"))
         r  = repr(sm)
-        assert "MyScene" in r
-        assert "depth=1" in r
+        assert "MyScene" in r and "depth=1" in r
