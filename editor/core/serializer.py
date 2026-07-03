@@ -14,6 +14,7 @@ def serialize_game_object(go: GameObject) -> Dict[str, Any]:
         "tag": go.tag,
         "mesh_type": go.mesh_type,
         "active": go.active,
+        "script_path": getattr(go, "script_path", ""),
         "transform": {
             "position": go.transform.position.tolist(),
             "scale": go.transform.scale.tolist(),
@@ -66,6 +67,7 @@ def deserialize_game_object(data: Dict[str, Any]) -> GameObject:
     go._id = data["id"]
     go.mesh_type = data.get("mesh_type")
     go.active = data.get("active", True)
+    go.script_path = data.get("script_path", "")
     
     # Restaura transformações
     t_data = data["transform"]

@@ -115,6 +115,11 @@ class ViewportWidget(QOpenGLWidget):
         if self.active_scene:
             self.active_scene.update(dt)
             
+            # Executa os scripts de comportamento no PLAY
+            if getattr(self.active_scene, "playing", False):
+                from editor_legacy.script_manager import ScriptManager
+                ScriptManager.update_all(self.active_scene.editable_objects, dt)
+            
             # ── Binding Bidirecional: Sincronização do Arrasto com o Inspector ──
             is_dragging = False
             # Cena 3D: arrastando o gizmo
@@ -145,10 +150,21 @@ class ViewportWidget(QOpenGLWidget):
         if not self.active_scene or not hasattr(self.active_scene, "playing"):
             return
             
+        from editor_legacy.script_manager import ScriptManager
+            
         if state == "play" and not self.active_scene.playing:
             self.active_scene.toggle_play()
+            
+            # Carrega e inicializa os scripts associados
+            for obj in self.active_scene.editable_objects:
+                if getattr(obj, "script_path", ""):
+                    ScriptManager.load(obj)
         elif state == "stop" and self.active_scene.playing:
             self.active_scene.toggle_play()
+            
+            # Remove referências temporárias dos scripts
+            for obj in self.active_scene.editable_objects:
+                ScriptManager.unload(obj)
 
     def on_bus_selection_changed(self, obj: Optional[object]) -> None:
         if not self.active_scene or not hasattr(self.active_scene, "editable_objects"):

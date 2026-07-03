@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (
     QWidget, QGridLayout, QHBoxLayout, QLabel, QDoubleSpinBox,
-    QSpinBox, QCheckBox, QFormLayout
+    QSpinBox, QCheckBox, QFormLayout, QComboBox, QPushButton
 )
 from PySide6.QtCore import Qt, Slot
 from engine.game_object import GameObject
@@ -169,3 +169,99 @@ class ColliderComponentWidget(QWidget):
             layout.addRow("Raio (R):", self.sb_r)
             
         layout.addRow("Is Trigger:", self.chk_trigger)
+
+
+from editor_legacy.script_manager import ScriptManager
+
+class ScriptComponentWidget(QWidget):
+    """
+    Editor para associar e editar scripts de comportamento nos GameObjects.
+    """
+    
+    def __init__(self, viewmodel: SceneViewModel, parent: QWidget = None) -> None:
+        super().__init__(parent)
+        self.viewmodel = viewmodel
+        self.obj = self.viewmodel.selected_object
+        
+        layout = QFormLayout(self)
+        layout.setContentsMargins(0, 4, 0, 4)
+        layout.setSpacing(6)
+        
+        # 1. Combo box de scripts
+        self.cb_scripts = QComboBox()
+        self.refresh_scripts_list()
+        
+        # Seleciona o script atual se houver
+        current_script = getattr(self.obj, "script_path", "")
+        if current_script:
+            idx = self.cb_scripts.findText(current_script)
+            if idx >= 0:
+                self.cb_scripts.setCurrentIndex(idx)
+            else:
+                self.cb_scripts.addItem(current_script)
+                self.cb_scripts.setCurrentIndex(self.cb_scripts.count() - 1)
+                
+        self.cb_scripts.currentIndexChanged.connect(self.on_script_changed)
+        layout.addRow("Arquivo Script:", self.cb_scripts)
+        
+        # 2. Botões de ação
+        btn_layout = QHBoxLayout()
+        self.btn_edit = QPushButton("Editar Code")
+        self.btn_edit.clicked.connect(self.edit_script)
+        self.btn_edit.setEnabled(bool(current_script and current_script != "Nenhum"))
+        
+        self.btn_create = QPushButton("Novo Script")
+        self.btn_create.clicked.connect(self.create_script)
+        
+        btn_layout.addWidget(self.btn_edit)
+        btn_layout.addWidget(self.btn_create)
+        layout.addRow("", btn_layout)
+
+    def refresh_scripts_list(self) -> None:
+        self.cb_scripts.clear()
+        scripts = ScriptManager.list_scripts()
+        self.cb_scripts.addItems(scripts)
+
+    def on_script_changed(self, index: int) -> None:
+        script = self.cb_scripts.currentText()
+        if script == "Nenhum":
+            self.obj.script_path = ""
+            self.btn_edit.setEnabled(False)
+        else:
+            self.obj.script_path = script
+            self.btn_edit.setEnabled(True)
+            
+        # Publica alteração no EventBus
+        try:
+            from editor.core.event_bus import EventBus, EVENT_PROPERTY_CHANGED
+            EventBus.emit(
+                EVENT_PROPERTY_CHANGED,
+                component_name="Script",
+                property_name="script_path",
+                value=self.obj.script_path
+            )
+        except Exception:
+            pass
+
+    def edit_script(self) -> None:
+        script = getattr(self.obj, "script_path", "")
+        if script and script != "Nenhum":
+            # Procura pela MainWindow no parent tree e abre o CodeEditorDock
+            win = self.window()
+            if win and hasattr(win, "dock_code_editor"):
+                win.dock_code_editor.open_file(script)
+
+    def create_script(self) -> None:
+        if not self.obj:
+            return
+            
+        path = ScriptManager.create_template(self.obj)
+        self.refresh_scripts_list()
+        
+        # Seleciona o novo script no combo box
+        idx = self.cb_scripts.findText(path)
+        if idx >= 0:
+            self.cb_scripts.setCurrentIndex(idx)
+            
+        # Abre o editor de código automaticamente
+        self.edit_script()

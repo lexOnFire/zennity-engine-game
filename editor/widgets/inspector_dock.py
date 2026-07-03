@@ -12,7 +12,8 @@ from editor.viewmodels.scene_viewmodel import SceneViewModel
 # Importa os Widgets de Componentes
 from editor.widgets.collapsible_section import CollapsibleSection
 from editor.widgets.component_widgets import (
-    TransformComponentWidget, RigidBodyComponentWidget, ColliderComponentWidget
+    TransformComponentWidget, RigidBodyComponentWidget, ColliderComponentWidget,
+    ScriptComponentWidget
 )
 
 
@@ -123,6 +124,12 @@ class InspectorDock(QDockWidget):
             sec_col.set_content_widget(self.col_widget)
             self.layout_content.addWidget(sec_col)
             
+        # ── 4. Componente: Script (Comportamento) ───────────
+        sec_script = CollapsibleSection("Script (Comportamento)")
+        self.script_widget = ScriptComponentWidget(self.viewmodel)
+        sec_script.set_content_widget(self.script_widget)
+        self.layout_content.addWidget(sec_script)
+            
         self._block_updates = False
 
     @Slot()
@@ -166,3 +173,13 @@ class InspectorDock(QDockWidget):
             elif cc and hasattr(self.col_widget, "sb_r"):
                 self.col_widget.sb_r.setValue(cc.radius)
             self.col_widget.blockSignals(False)
+            
+        elif component_name == "Script" and hasattr(self, "script_widget"):
+            self.script_widget.blockSignals(True)
+            self.script_widget.refresh_scripts_list()
+            current_script = getattr(obj, "script_path", "")
+            idx = self.script_widget.cb_scripts.findText(current_script)
+            if idx >= 0:
+                self.script_widget.cb_scripts.setCurrentIndex(idx)
+            self.script_widget.btn_edit.setEnabled(bool(current_script and current_script != "Nenhum"))
+            self.script_widget.blockSignals(False)
