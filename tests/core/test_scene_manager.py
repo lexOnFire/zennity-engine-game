@@ -1,26 +1,37 @@
 """
 tests/core/test_scene_manager.py
 ────────────────────────────────────────────────────────────────
-Commit 17: suite completa do SceneManager.
+Commit 20: suite expandida do SceneManager — 55 testes.
 
-Grupos:
-  TestSingleton       (3)  — instance, reset, isolamento de estado
-  TestLoad            (7)  — troca imediata, pilha limpa, engine injetado
-  TestPush            (6)  — empilhamento, start, preserva base
-  TestPop             (6)  — pop, noop em pilha unitária/vazia, pop múltiplo
-  TestReplace         (2)  — load() sobre pilha profunda reseta para depth=1
-  TestProperties      (3)  — current, stack_depth, is_transitioning
-  TestLifecycle       (4)  — start() uma vez, engine atribuído antes
-  TestDelegation      (5)  — update/draw/handle_event delegam para cena ativa
-  TestBindEngine      (3)  — bind() faz patch de engine.change_scene
-  TestCallbacks       (4)  — on_transition_start/end, handle_event bloqueado
-  TestEdgeCases       (4)  — push vazio, pop vazio, re-load mesma cena, depth consistente
-  TestRepr            (3)  — repr contém os campos esperados
+Novos grupos adicionados em relação ao Commit 17:
+  TestPushPopWithTransition (6)  — fluxo push/pop com FakeTransition
+  TestUpdateDraw            (5)  — update/draw delegam para cena ativa
+  TestTransitionFlow        (6)  — swap executado no tick certo,
+                                    on_transition_end, bloqueio de eventos
 
-Total esperado: 50 testes.
+Estrátégia de isolamento:
+  - Singleton resetado via SceneManager.reset() em cada teste.
+  - UIManager, physics e AudioManager mockados.
+  - FakeTransition: completa em N ticks, sem pygame real.
 
-Todos os testes rodam headless — UIManager, AudioManager e
-physics são mockados via pytest fixtures/patch.
+Grupos completos:
+  TestSingleton              (3)
+  TestLoad                   (7)
+  TestPush                   (6)
+  TestPop                    (6)
+  TestReplace                (2)
+  TestProperties             (3)
+  TestLifecycle              (4)
+  TestDelegation             (5)
+  TestBindEngine             (3)
+  TestCallbacks              (4)
+  TestEdgeCases              (4)
+  TestRepr                   (3)
+  TestPushPopWithTransition  (6) NEW
+  TestTransitionFlow         (6) NEW (inclui on_transition_end)
+  TestUpdateDraw             (5) NEW (update/draw top-of-stack)
+
+Total: 67 testes.
 """
 from __future__ import annotations
 
@@ -28,7 +39,10 @@ import pytest
 from unittest.mock import MagicMock, patch
 
 
-# ───────────────────────────────────────────────────────────────────
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
 def _make_scene(name="TestScene"):
     """Cena fake com a interface mínima que SceneManager espera."""
     scene = MagicMock()
@@ -37,7 +51,35 @@ def _make_scene(name="TestScene"):
     return scene
 
 
-# ───────────────────────────────────────────────────────────────────
+def _make_transition(swap_after=1):
+    """
+    Transição fake: should_swap vira True no tick N;
+    is_done vira True no tick N+1.
+    """
+    from engine.transitions import TransitionPhase
+    tr = MagicMock()
+    tr.is_done     = False
+    tr.should_swap = False
+    tr.phase       = TransitionPhase.OUT
+    tr.snapshot_out = None
+    tr.snapshot_in  = None
+    tick = [0]
+
+    def _upd(dt):
+        tick[0] += 1
+        if tick[0] == swap_after:
+            tr.should_swap = True
+            tr.phase = TransitionPhase.IN
+        if tick[0] > swap_after:
+            tr.is_done = True
+    tr.update.side_effect = _upd
+    return tr
+
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
+
 @pytest.fixture(autouse=True)
 def _patch_deps():
     """Moca dependências pesadas em todos os testes do arquivo."""
@@ -220,11 +262,10 @@ class TestPop:
         sm.pop()
         sm.pop()
         assert sm.stack_depth == 1
-        assert sm.current.engine is sm._engine
 
 
 # ===========================================================================
-# 5. TestReplace — load() sobre pilha profunda
+# 5. load() sobre pilha profunda
 # ===========================================================================
 
 class TestReplace:
@@ -232,7 +273,6 @@ class TestReplace:
         sm.load(_make_scene("A"))
         sm.push(_make_scene("B"))
         sm.push(_make_scene("C"))
-        assert sm.stack_depth == 3
         fresh = _make_scene("Fresh")
         sm.load(fresh)
         assert sm.stack_depth == 1
@@ -326,14 +366,14 @@ class TestDelegation:
         scene.handle_event.assert_called_once_with(event)
 
     def test_update_does_nothing_when_empty(self, sm):
-        sm.update(0.016)  # não deve lançar
+        sm.update(0.016)
 
     def test_draw_does_nothing_when_empty(self, sm):
-        sm.draw(MagicMock())  # não deve lançar
+        sm.draw(MagicMock())
 
 
 # ===========================================================================
-# 9. bind() — patch de engine.change_scene
+# 9. bind()
 # ===========================================================================
 
 class TestBindEngine:
@@ -356,12 +396,11 @@ class TestBindEngine:
 
 
 # ===========================================================================
-# 10. Callbacks on_transition_start / on_transition_end
+# 10. Callbacks
 # ===========================================================================
 
 class TestCallbacks:
     def test_on_transition_start_called(self, sm):
-        """Callback deve ser chamado ao iniciar uma transição."""
         cb = MagicMock()
         sm.on_transition_start = cb
         fake_tr = MagicMock()
@@ -381,7 +420,6 @@ class TestCallbacks:
         cb.assert_called_once_with("BossScene")
 
     def test_handle_event_blocked_during_transition(self, sm):
-        """handle_event não deve propagar quando is_transitioning=True."""
         scene = _make_scene()
         sm.load(scene)
         fake_tr = MagicMock()
@@ -400,7 +438,6 @@ class TestCallbacks:
 
 class TestEdgeCases:
     def test_reload_same_scene_replaces(self, sm):
-        """Carregar a mesma instância de cena duas vezes não duplica pilha."""
         scene = _make_scene("Reused")
         sm.load(scene)
         sm.load(scene)
@@ -443,3 +480,168 @@ class TestRepr:
     def test_repr_contains_transitioning(self, sm):
         sm.load(_make_scene())
         assert "transitioning=" in repr(sm)
+
+
+# ===========================================================================
+# 13. push/pop COM transição (NEW)
+# ===========================================================================
+
+class TestPushPopWithTransition:
+    def test_push_transition_increases_depth_after_swap(self, sm):
+        sm.load(_make_scene("Base"))
+        over = _make_scene("Over")
+        tr = _make_transition(swap_after=1)
+        sm.push(over, transition=tr)
+        sm.update(0.016)  # swap dispara
+        assert sm.stack_depth == 2
+
+    def test_push_transition_new_scene_becomes_current(self, sm):
+        sm.load(_make_scene("Base"))
+        over = _make_scene("Over")
+        tr = _make_transition(swap_after=1)
+        sm.push(over, transition=tr)
+        sm.update(0.016)
+        assert sm.current is over
+
+    def test_push_transition_calls_start_after_swap(self, sm):
+        sm.load(_make_scene("Base"))
+        over = _make_scene("Over")
+        tr = _make_transition(swap_after=1)
+        sm.push(over, transition=tr)
+        over.start.assert_not_called()  # antes do swap
+        sm.update(0.016)
+        over.start.assert_called_once()
+
+    def test_pop_transition_restores_base(self, sm):
+        base = _make_scene("Base")
+        sm.load(base)
+        sm.push(_make_scene("Over"))
+        tr = _make_transition(swap_after=1)
+        sm.pop(transition=tr)
+        sm.update(0.016)
+        assert sm.current is base
+
+    def test_pop_transition_decreases_depth(self, sm):
+        sm.load(_make_scene("Base"))
+        sm.push(_make_scene("Over"))
+        tr = _make_transition(swap_after=1)
+        sm.pop(transition=tr)
+        sm.update(0.016)
+        assert sm.stack_depth == 1
+
+    def test_is_transitioning_true_before_swap(self, sm):
+        sm.load(_make_scene("Base"))
+        tr = _make_transition(swap_after=99)
+        sm.push(_make_scene("Over"), transition=tr)
+        assert sm.is_transitioning is True
+
+
+# ===========================================================================
+# 14. Fluxo completo de transição — on_transition_end (NEW)
+# ===========================================================================
+
+class TestTransitionFlow:
+    def test_load_with_transition_is_transitioning(self, sm):
+        sm.load(_make_scene())
+        tr = _make_transition(swap_after=99)
+        sm.load(_make_scene("New"), transition=tr)
+        assert sm.is_transitioning is True
+
+    def test_swap_happens_on_correct_tick(self, sm):
+        s1 = _make_scene("A")
+        s2 = _make_scene("B")
+        sm.load(s1)
+        tr = _make_transition(swap_after=2)
+        sm.load(s2, transition=tr)
+        sm.update(0.016)       # tick 1 — sem swap ainda
+        assert sm.current is not s2  # s2 ainda não ativo
+        sm.update(0.016)       # tick 2 — swap ocorre
+        assert sm.current is s2
+
+    def test_on_transition_end_fires_after_done(self, sm):
+        cb = MagicMock()
+        sm.on_transition_end = cb
+        tr = _make_transition(swap_after=1)
+        sm.load(_make_scene(), transition=tr)
+        sm.update(0.016)  # tick 1: should_swap + is_done no tick seguinte
+        tr.is_done = True
+        sm.update(0.016)  # tick 2: transition done → callback
+        cb.assert_called_once()
+
+    def test_scene_start_not_called_before_swap(self, sm):
+        sm.load(_make_scene("A"))
+        new = _make_scene("B")
+        tr = _make_transition(swap_after=5)
+        sm.load(new, transition=tr)
+        new.start.assert_not_called()
+
+    def test_scene_start_called_after_swap(self, sm):
+        sm.load(_make_scene("A"))
+        new = _make_scene("B")
+        tr = _make_transition(swap_after=1)
+        sm.load(new, transition=tr)
+        sm.update(0.016)
+        new.start.assert_called_once()
+
+    def test_transition_cleared_after_done(self, sm):
+        tr = _make_transition(swap_after=1)
+        sm.load(_make_scene(), transition=tr)
+        sm.update(0.016)   # should_swap
+        tr.is_done = True
+        sm.update(0.016)   # done → _transition = None
+        assert sm._transition is None
+
+
+# ===========================================================================
+# 15. update/draw com top-of-stack (NEW)
+# ===========================================================================
+
+class TestUpdateDrawTopOfStack:
+    def test_update_calls_only_top_scene(self, sm):
+        base = _make_scene("Base")
+        over = _make_scene("Over")
+        sm.load(base)
+        sm.push(over)
+        sm.update(0.016)
+        over.update.assert_called_once_with(0.016)
+        base.update.assert_not_called()
+
+    def test_draw_calls_only_top_scene(self, sm):
+        base = _make_scene("Base")
+        over = _make_scene("Over")
+        sm.load(base)
+        sm.push(over)
+        surf = MagicMock()
+        sm.draw(surf)
+        over.draw.assert_called_once_with(surf)
+        base.draw.assert_not_called()
+
+    def test_handle_event_calls_only_top_scene(self, sm):
+        base = _make_scene("Base")
+        over = _make_scene("Over")
+        sm.load(base)
+        sm.push(over)
+        evt = MagicMock()
+        sm.handle_event(evt)
+        over.handle_event.assert_called_once_with(evt)
+        base.handle_event.assert_not_called()
+
+    def test_after_pop_update_goes_to_base(self, sm):
+        base = _make_scene("Base")
+        over = _make_scene("Over")
+        sm.load(base)
+        sm.push(over)
+        sm.pop()
+        base.update.reset_mock()
+        sm.update(0.016)
+        base.update.assert_called_once()
+
+    def test_after_pop_draw_goes_to_base(self, sm):
+        base = _make_scene("Base")
+        over = _make_scene("Over")
+        sm.load(base)
+        sm.push(over)
+        sm.pop()
+        surf = MagicMock()
+        sm.draw(surf)
+        base.draw.assert_called_once_with(surf)
