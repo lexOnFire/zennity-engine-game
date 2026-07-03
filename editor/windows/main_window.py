@@ -167,11 +167,11 @@ class MainWindow(QMainWindow):
         # ── Editar ──────────────────────────────────────────
         self.act_undo = QAction("Desfazer", self)
         self.act_undo.setShortcut(QKeySequence.Undo)
-        self.act_undo.triggered.connect(lambda: self.log_action("Undo"))
+        self.act_undo.triggered.connect(self.on_undo_triggered)
         
         self.act_redo = QAction("Refazer", self)
         self.act_redo.setShortcut(QKeySequence.Redo)
-        self.act_redo.triggered.connect(lambda: self.log_action("Redo"))
+        self.act_redo.triggered.connect(self.on_redo_triggered)
         
         self.act_duplicate = QAction("Duplicar", self)
         self.act_duplicate.setShortcut(QKeySequence("Ctrl+D"))
@@ -420,3 +420,31 @@ class MainWindow(QMainWindow):
             "<p>Um editor de jogos modular escrito em Python e PySide6.</p>"
             "<p>Inspirado no visual profissional e moderno da Unreal Engine.</p>"
         )
+
+    @Slot()
+    def on_undo_triggered(self) -> None:
+        """Slot para o comando Undo global."""
+        if hasattr(self.viewport, "active_scene") and self.viewport.active_scene:
+            if hasattr(self.viewport.active_scene, "undo"):
+                self.viewport.active_scene.undo()
+                self.log_action("Undo executado")
+                
+                # Sincroniza a árvore de objetos do modelo após a reversão
+                self.scene_model.clear()
+                for obj in self.viewport.active_scene.editable_objects:
+                    self.scene_model.add_object(obj)
+                self.scene_view_model.on_model_hierarchy_changed()
+
+    @Slot()
+    def on_redo_triggered(self) -> None:
+        """Slot para o comando Redo global."""
+        if hasattr(self.viewport, "active_scene") and self.viewport.active_scene:
+            if hasattr(self.viewport.active_scene, "redo"):
+                self.viewport.active_scene.redo()
+                self.log_action("Redo executado")
+                
+                # Sincroniza a árvore de objetos do modelo após o redo
+                self.scene_model.clear()
+                for obj in self.viewport.active_scene.editable_objects:
+                    self.scene_model.add_object(obj)
+                self.scene_view_model.on_model_hierarchy_changed()
