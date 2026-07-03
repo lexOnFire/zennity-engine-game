@@ -147,14 +147,18 @@ class Animator(Component):
         if next_index >= clip.frame_count:
             if clip.loop:
                 next_index = 0
-                # Reseta eventos para o próximo loop
+                self._frame_index = next_index
+                self._push_frame()
+                self._fire_events()
+                # Reseta eventos APÓS disparar os do frame 0,
+                # para que o próximo loop possa dispará-los novamente
                 for ev in clip.events:
                     ev.fired = False
             else:
                 self._finished = True
                 if self.on_finish:
                     self.on_finish(clip.name)
-                return
+            return
 
         self._frame_index = next_index
         self._push_frame()

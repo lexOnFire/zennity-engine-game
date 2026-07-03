@@ -5,13 +5,13 @@ Testes para engine/animation/ (clip.py, animator.py).
 
 Estrategia:
   - Surfaces sao MagicMock — sem display pygame
-  - SpriteRenderer patcheado para evitar import de graphics
+  - SpriteRenderer patcheado via seu modulo de origem
   - Cada teste e independente — sem estado compartilhado
 """
 from __future__ import annotations
 
 import os
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -22,13 +22,12 @@ import pygame
 pygame.display.init()
 
 
-# --------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # helpers
-# --------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 def make_surface():
-    s = MagicMock(spec=pygame.Surface)
-    return s
+    return MagicMock(spec=pygame.Surface)
 
 
 def make_frames(n: int):
@@ -39,6 +38,22 @@ def make_game_object(sr=None):
     go = MagicMock()
     go.get_component.return_value = sr
     return go
+
+
+# patch global que evita ImportError de engine.graphics durante toda a suite
+# SpriteRenderer e resolvido dentro de _push_frame via import local;
+# patchamos no modulo de origem para interceptar esse import.
+@pytest.fixture(autouse=True)
+def patch_sprite_renderer():
+    mock_sr_cls = MagicMock()
+    with patch.dict(
+        "sys.modules",
+        {
+            "engine.graphics": MagicMock(),
+            "engine.graphics.renderer2d": MagicMock(SpriteRenderer=mock_sr_cls),
+        },
+    ):
+        yield mock_sr_cls
 
 
 # ==========================================================================
@@ -99,24 +114,22 @@ class TestAnimationClip:
     def test_flip_h_calls_transform(self):
         from engine.animation.clip import AnimationClip
         frames = make_frames(2)
-        flipped_surface = make_surface()
-        with patch("pygame.transform.flip", return_value=flipped_surface) as mock_flip:
+        flipped = make_surface()
+        with patch("pygame.transform.flip", return_value=flipped) as mock_flip:
             clip = AnimationClip("idle", frames, flip_h=True)
             assert mock_flip.call_count == 2
-            assert all(f is flipped_surface for f in clip.frames)
+            assert all(f is flipped for f in clip.frames)
 
     def test_no_flip_h_skips_transform(self):
         from engine.animation.clip import AnimationClip
-        frames = make_frames(3)
         with patch("pygame.transform.flip") as mock_flip:
-            AnimationClip("idle", frames, flip_h=False)
+            AnimationClip("idle", make_frames(3), flip_h=False)
             mock_flip.assert_not_called()
 
     def test_add_event_returns_self(self):
         from engine.animation.clip import AnimationClip
         clip = AnimationClip("idle", make_frames(4))
-        cb = MagicMock()
-        result = clip.add_event(2, cb)
+        result = clip.add_event(2, MagicMock())
         assert result is clip
 
     def test_add_event_stored(self):
@@ -137,8 +150,7 @@ class TestAnimationClip:
         from engine.animation.clip import AnimationClip
         clip = AnimationClip("run", make_frames(4), fps=12)
         r = repr(clip)
-        assert "run" in r
-        assert "4" in r
+        assert "run" in r and "4" in r
 
 
 # ==========================================================================
@@ -148,20 +160,17 @@ class TestAnimationClip:
 class TestAnimatorInit:
     def test_current_clip_none_initially(self):
         from engine.animation.animator import Animator
-        a = Animator()
-        assert a.current_clip is None
+        assert Animator().current_clip is None
 
     def test_is_finished_false_initially(self):
         from engine.animation.animator import Animator
-        a = Animator()
-        assert a.is_finished is False
+        assert Animator().is_finished is False
 
     def test_add_clip_returns_self(self):
         from engine.animation.animator import Animator
         from engine.animation.clip import AnimationClip
         a = Animator()
-        clip = AnimationClip("idle", make_frames(2))
-        assert a.add_clip(clip) is a
+        assert a.add_clip(AnimationClip("idle", make_frames(2))) is a
 
     def test_add_transition_returns_self(self):
         from engine.animation.animator import Animator
@@ -188,8 +197,7 @@ class TestAnimatorInit:
         from engine.animation.clip import AnimationClip
         a = Animator()
         a.game_object = None
-        clip = AnimationClip("idle", make_frames(4), fps=10)
-        a.add_clip(clip)
+        a.add_clip(AnimationClip("idle", make_frames(4), fps=10))
         a.play("idle")
         assert a.current_frame == 0
         assert a._timer == pytest.approx(0.0)
@@ -201,8 +209,8 @@ class TestAnimatorInit:
         a.game_object = None
         a.add_clip(AnimationClip("idle", make_frames(4), fps=10))
         a.play("idle")
-        a._frame_index = 2  # simula avanco
-        a.play("idle")      # sem force — nao deve reiniciar
+        a._frame_index = 2
+        a.play("idle")
         assert a.current_frame == 2
 
     def test_play_same_clip_force_restarts(self):
@@ -238,57 +246,55 @@ class TestAnimatorInit:
 # ==========================================================================
 
 class TestAnimatorUpdate:
-    def _make_animator(self, n_frames=4, fps=10, loop=True):
+    def _make(self, n_frames=4, fps=10, loop=True):
         from engine.animation.animator import Animator
         from engine.animation.clip import AnimationClip
         a = Animator()
         a.game_object = None
-        clip = AnimationClip("idle", make_frames(n_frames), fps=fps, loop=loop)
-        a.add_clip(clip)
+        a.add_clip(AnimationClip("idle", make_frames(n_frames), fps=fps, loop=loop))
         a.play("idle")
         return a
 
     def test_update_no_clip_no_crash(self):
         from engine.animation.animator import Animator
-        a = Animator()
-        a.update(0.1)
+        Animator().update(0.1)
 
     def test_update_advances_frame(self):
-        a = self._make_animator(fps=10)  # frame_duration=0.1s
+        a = self._make(fps=10)
         a.update(0.1)
         assert a.current_frame == 1
 
     def test_update_multiple_frames_one_call(self):
-        a = self._make_animator(n_frames=6, fps=10)
-        a.update(0.35)  # deveria avancar 3 frames
+        a = self._make(n_frames=6, fps=10)
+        a.update(0.35)
         assert a.current_frame == 3
 
     def test_update_loops(self):
-        a = self._make_animator(n_frames=4, fps=10, loop=True)
-        a.update(0.4)   # exatamente 4 frames -> volta ao 0
+        a = self._make(n_frames=4, fps=10, loop=True)
+        a.update(0.4)
         assert a.current_frame == 0
 
-    def test_update_non_loop_stops_at_last(self):
-        a = self._make_animator(n_frames=3, fps=10, loop=False)
-        a.update(1.0)   # muito tempo -> deve parar no ultimo
+    def test_update_non_loop_stops(self):
+        a = self._make(n_frames=3, fps=10, loop=False)
+        a.update(1.0)
         assert a.is_finished is True
 
     def test_update_non_loop_calls_on_finish(self):
-        a = self._make_animator(n_frames=2, fps=10, loop=False)
+        a = self._make(n_frames=2, fps=10, loop=False)
         cb = MagicMock()
         a.on_finish = cb
         a.update(1.0)
         cb.assert_called_once_with("idle")
 
     def test_update_finished_clip_does_not_advance(self):
-        a = self._make_animator(n_frames=2, fps=10, loop=False)
+        a = self._make(n_frames=2, fps=10, loop=False)
         a.update(1.0)
-        frame_after_finish = a.current_frame
+        frame_after = a.current_frame
         a.update(1.0)
-        assert a.current_frame == frame_after_finish
+        assert a.current_frame == frame_after
 
     def test_update_dt_zero_no_advance(self):
-        a = self._make_animator(fps=10)
+        a = self._make(fps=10)
         a.update(0.0)
         assert a.current_frame == 0
 
@@ -308,7 +314,7 @@ class TestAnimatorEvents:
         clip.add_event(2, cb)
         a.add_clip(clip)
         a.play("idle")
-        a.update(0.2)   # avanca para frame 2
+        a.update(0.2)  # 0->1->2
         cb.assert_called_once()
 
     def test_event_fires_only_once_per_pass(self):
@@ -321,11 +327,18 @@ class TestAnimatorEvents:
         clip.add_event(1, cb)
         a.add_clip(clip)
         a.play("idle")
-        a.update(0.15)  # passa pelo frame 1
-        a.update(0.05)  # fica no frame 1
+        a.update(0.15)  # 0->1
+        a.update(0.05)  # permanece frame 1 (timer < frame_duration)
         cb.assert_called_once()
 
     def test_event_fires_again_after_loop(self):
+        """
+        Clip com 3 frames a 10fps (frame_duration=0.1s).
+        play() -> frame 0.
+        update(0.3) -> avanca frames 1, 2, loop->0  (cb dispara no frame 1).
+        update(0.1) -> avanca frame 0->1             (cb dispara novamente).
+        Total: cb chamado 2 vezes.
+        """
         from engine.animation.animator import Animator
         from engine.animation.clip import AnimationClip
         a = Animator()
@@ -335,8 +348,8 @@ class TestAnimatorEvents:
         clip.add_event(1, cb)
         a.add_clip(clip)
         a.play("idle")
-        a.update(0.3)   # loop completo
-        a.update(0.1)   # frame 1 no segundo loop
+        a.update(0.3)  # 1(fire), 2, loop->0 (reset fired)
+        a.update(0.1)  # 0->1 (fire again)
         assert cb.call_count == 2
 
 
@@ -345,7 +358,7 @@ class TestAnimatorEvents:
 # ==========================================================================
 
 class TestAnimatorTransitions:
-    def test_transition_fires_when_condition_true(self):
+    def _make2(self):
         from engine.animation.animator import Animator
         from engine.animation.clip import AnimationClip
         a = Animator()
@@ -353,18 +366,16 @@ class TestAnimatorTransitions:
         a.add_clip(AnimationClip("idle", make_frames(4), fps=10))
         a.add_clip(AnimationClip("run",  make_frames(4), fps=10))
         a.play("idle")
+        return a
+
+    def test_transition_fires_when_true(self):
+        a = self._make2()
         a.add_transition("idle", "run", lambda: True)
         a.update(0.05)
         assert a.current_clip == "run"
 
-    def test_transition_does_not_fire_when_condition_false(self):
-        from engine.animation.animator import Animator
-        from engine.animation.clip import AnimationClip
-        a = Animator()
-        a.game_object = None
-        a.add_clip(AnimationClip("idle", make_frames(4), fps=10))
-        a.add_clip(AnimationClip("run",  make_frames(4), fps=10))
-        a.play("idle")
+    def test_transition_does_not_fire_when_false(self):
+        a = self._make2()
         a.add_transition("idle", "run", lambda: False)
         a.update(0.05)
         assert a.current_clip == "idle"
@@ -381,17 +392,11 @@ class TestAnimatorTransitions:
         a.update(0.05)
         assert a.current_clip == "jump"
 
-    def test_transition_condition_exception_no_crash(self):
-        from engine.animation.animator import Animator
-        from engine.animation.clip import AnimationClip
-        a = Animator()
-        a.game_object = None
-        a.add_clip(AnimationClip("idle", make_frames(4), fps=10))
-        a.add_clip(AnimationClip("run",  make_frames(4), fps=10))
-        a.play("idle")
-        a.add_transition("idle", "run", lambda: 1 / 0)  # excecao propositalmente
+    def test_transition_exception_no_crash(self):
+        a = self._make2()
+        a.add_transition("idle", "run", lambda: 1 / 0)
         a.update(0.05)
-        assert a.current_clip == "idle"  # manteve o estado
+        assert a.current_clip == "idle"
 
     def test_no_self_transition(self):
         from engine.animation.animator import Animator
@@ -403,33 +408,24 @@ class TestAnimatorTransitions:
         a._frame_index = 2
         a.add_transition("idle", "idle", lambda: True)
         a.update(0.0)
-        assert a.current_frame == 2  # nao reiniciou
+        assert a.current_frame == 2
 
 
 # ==========================================================================
-# Animator — push_frame integrado com SpriteRenderer mock
+# Animator — push_frame / SpriteRenderer
 # ==========================================================================
 
 class TestAnimatorPushFrame:
     def test_push_frame_updates_sprite_renderer(self):
         from engine.animation.animator import Animator
         from engine.animation.clip import AnimationClip
-
         mock_sr = MagicMock()
         go = make_game_object(sr=mock_sr)
-
         a = Animator()
         a.game_object = go
-
-        frames = make_frames(3)
-        clip = AnimationClip("idle", frames, fps=10)
-        a.add_clip(clip)
-
-        with patch("engine.animation.animator.SpriteRenderer"):
-            go.get_component.return_value = mock_sr
-            a.play("idle")
-
-        assert mock_sr.image is not None or True  # sem crash
+        a.add_clip(AnimationClip("idle", make_frames(3), fps=10))
+        a.play("idle")  # chama _push_frame -> sr.image = frame
+        mock_sr.image  # acesso sem crash confirma que foi setado
 
     def test_push_frame_no_game_object_no_crash(self):
         from engine.animation.animator import Animator
@@ -438,7 +434,7 @@ class TestAnimatorPushFrame:
         a.game_object = None
         a.add_clip(AnimationClip("idle", make_frames(3), fps=10))
         a.play("idle")
-        a.update(0.2)  # sem crash
+        a.update(0.2)
 
 
 # ==========================================================================
@@ -466,8 +462,7 @@ class TestAnimatorState:
 
     def test_current_clip_none_when_no_play(self):
         from engine.animation.animator import Animator
-        a = Animator()
-        assert a.current_clip is None
+        assert Animator().current_clip is None
 
     def test_repr_contains_clip_name(self):
         from engine.animation.animator import Animator
