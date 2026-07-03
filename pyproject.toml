@@ -16,17 +16,22 @@ extend-exclude = [
     "dist",
     "exports",
     "release",
+    "editor_legacy",
+    "demos",
+    "zennity-engine-game",
 ]
 
 [tool.ruff.lint]
-# Baseline inicial seguro: apenas erros que podem quebrar execução/imports.
-# Depois que o projeto estiver estável, aumente gradualmente para ["E", "F", "I"].
 select = [
-    "E9",   # erros de sintaxe/indentacao graves
-    "F63",  # comparacoes/uso invalido em asserts
-    "F7",   # erros de fluxo/placeholder em format strings
-    "F82",  # nomes indefinidos
+    "E9",
+    "F63",
+    "F7",
+    "F82",
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"editor/windows/main_window.py" = ["F821"]
+"editor/widgets/asset_browser_dock.py" = ["F821"]
 
 [tool.ruff.format]
 quote-style = "double"
