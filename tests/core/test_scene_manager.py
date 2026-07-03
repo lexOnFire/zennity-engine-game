@@ -1,50 +1,50 @@
 """
 tests/core/test_scene_manager.py
 ────────────────────────────────────────────────────────────────
-Commit 20: suite expandida do SceneManager — 67 testes.
+Suite completa do SceneManager — 74 testes.
 
 Fluxo real de SceneManager.update():
-  1. if tr.is_done   → limpa _transition e retorna
-  2. tr.update(dt)   → side_effect incrementa tick
-  3. if should_swap  → _execute_pending_swap() (zera _pending_scene)
-  4. if tr.is_done   → limpa _transition e dispara on_transition_end
-
-O side_effect reseta should_swap=False imediatamente após setá-lo True,
-para que no próximo tick não haja segundo swap com _pending_scene=None.
-is_done é setado no mesmo tick do swap (done_after == swap_after) para que
-o SM limpe _transition no passo 4 do mesmo update().
+  1. Se tr is None ou tr.is_done  → executa cena normal e sai
+  2. tr.update(dt)               → side_effect incrementa tick
+  3. Se tr.should_swap           → _execute_pending_swap() (zera _pending_scene)
+  4. Se tr.phase in (IN, DONE)   → atualiza cena
+  5. Se tr.is_done               → limpa _transition e dispara on_transition_end
 
 Grupos:
-  TestSingleton              (3)
-  TestLoad                   (7)
-  TestPush                   (6)
-  TestPop                    (6)
-  TestReplace                (2)
-  TestProperties             (3)
-  TestLifecycle              (4)
-  TestDelegation             (5)
-  TestBindEngine             (3)
-  TestCallbacks              (4)
-  TestEdgeCases              (4)
-  TestRepr                   (3)
-  TestPushPopWithTransition  (6)
-  TestTransitionFlow         (6)
-  TestUpdateDrawTopOfStack   (5)
+  TestSingleton              ( 5) instance(), reset(), isolamento
+  TestLoad                   ( 7) load instantâneo
+  TestPush                   ( 6) push instantâneo
+  TestPop                    ( 6) pop instantâneo
+  TestReplace                ( 2) load sobre pilha profunda
+  TestProperties             ( 3) current, depth, is_transitioning
+  TestLifecycle              ( 4) start, engine antes do start
+  TestDelegation             ( 5) update/draw/handle_event
+  TestBindEngine             ( 3) bind()
+  TestCallbacks              ( 4) on_transition_start, handle bloqueado
+  TestEdgeCases              ( 4) reload, cycles, manual clear
+  TestRepr                   ( 3) __repr__
+  TestPushPopWithTransition  ( 6) push/pop com transição
+  TestTransitionFlow         ( 6) fluxo completo de transição
+  TestUpdateDrawTopOfStack   ( 5) top-of-stack isolation
+  TestDoSwapLoadResources    ( 5) colliders + audio em _do_swap_load
+  TestDeprecatedShim         ( 4) import legado emite DeprecationWarning
 
-Total: 67 testes.
+Total: 74 testes.
 """
 from __future__ import annotations
 
+import sys
+import warnings
 import pytest
 from unittest.mock import MagicMock, patch
 
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Stubs
 # ---------------------------------------------------------------------------
 
 def _make_scene(name="TestScene"):
-    """Cena fake com a interface mínima que SceneManager espera."""
+    """Cena mock com a interface mínima esperada pelo SceneManager."""
     scene = MagicMock()
     scene.__class__.__name__ = name
     scene.engine = None
@@ -55,20 +55,10 @@ def _make_transition(swap_after=1):
     """
     Transição fake controlada por ticks.
 
-    Fluxo alinhado com SceneManager.update():
-      1. SM lê tr.is_done ANTES de chamar tr.update()
-      2. SM chama tr.update(dt)  → side_effect incrementa tick
-      3. SM verifica tr.should_swap  → executa swap (zera _pending_scene)
-      4. SM verifica tr.is_done novamente
-
-    Para evitar segundo swap com _pending_scene=None:
-      - should_swap é setado True apenas no tick swap_after
-        e imediatamente voltado a False na mesma chamada
-        (usando um atributo auxiliar no dict de estado).
-      - is_done é setado True no mesmo tick (swap_after),
-        assim o SM limpa _transition no passo 4 do mesmo update().
-
-    Para testes de 'ainda transitioning antes do swap' usa swap_after grande.
+    swap_after=N: no tick N, seta should_swap=True E is_done=True
+    simultaneamente, para que o SM execute o swap e limpe _transition
+    no mesmo update().
+    Para testes de 'ainda transitioning antes do swap', usar swap_after=99.
     """
     from engine.transitions import TransitionPhase
 
@@ -85,11 +75,10 @@ def _make_transition(swap_after=1):
         state["tick"] += 1
         if state["tick"] >= swap_after and not state["swapped"]:
             state["swapped"] = True
-            tr.should_swap = True   # SM vê True neste update
+            tr.should_swap = True
             tr.phase       = TransitionPhase.IN
-            tr.is_done     = True   # SM também vê is_done=True no passo 4
+            tr.is_done     = True
         else:
-            # garante que no próximo tick should_swap já é False
             tr.should_swap = False
 
     tr.update.side_effect = _upd
@@ -102,7 +91,7 @@ def _make_transition(swap_after=1):
 
 @pytest.fixture(autouse=True)
 def _patch_deps():
-    """Moca dependências pesadas em todos os testes do arquivo."""
+    """Moca UIManager e _run_physics em todos os testes."""
     patches = [
         patch("engine.core.scene_manager.UIManager"),
         patch("engine.core.scene_manager.SceneManager._run_physics"),
@@ -118,7 +107,7 @@ def _patch_deps():
 
 @pytest.fixture
 def sm():
-    """Instância limpa do SceneManager para cada teste."""
+    """Instância limpa para cada teste."""
     from engine.core.scene_manager import SceneManager
     SceneManager.reset()
     manager = SceneManager.instance()
@@ -132,7 +121,7 @@ def sm():
 # ===========================================================================
 
 class TestSingleton:
-    def test_instance_is_same_object(self, sm):
+    def test_instance_returns_same_object(self, sm):
         from engine.core.scene_manager import SceneManager
         assert SceneManager.instance() is sm
 
@@ -152,6 +141,16 @@ class TestSingleton:
         SceneManager.reset()
         sm2 = SceneManager.instance()
         assert sm2.current is None
+
+    def test_fresh_instance_stack_empty(self):
+        from engine.core.scene_manager import SceneManager
+        SceneManager.reset()
+        assert SceneManager.instance().stack_depth == 0
+
+    def test_fresh_instance_not_transitioning(self):
+        from engine.core.scene_manager import SceneManager
+        SceneManager.reset()
+        assert SceneManager.instance().is_transitioning is False
 
 
 # ===========================================================================
@@ -175,8 +174,7 @@ class TestLoad:
         assert scene.engine is sm._engine
 
     def test_load_replaces_existing_scene(self, sm):
-        s1 = _make_scene("S1")
-        s2 = _make_scene("S2")
+        s1, s2 = _make_scene("S1"), _make_scene("S2")
         sm.load(s1)
         sm.load(s2)
         assert sm.current is s2
@@ -263,7 +261,7 @@ class TestPop:
         assert sm.current is scene
 
     def test_pop_empty_stack_is_safe(self, sm):
-        sm.pop()
+        sm.pop()  # sem crash
 
     def test_push_then_pop_returns_to_base(self, sm):
         base = _make_scene("Base")
@@ -299,8 +297,7 @@ class TestReplace:
         assert sm.current is fresh
 
     def test_old_scenes_removed_from_stack(self, sm):
-        old_a = _make_scene("A")
-        old_b = _make_scene("B")
+        old_a, old_b = _make_scene("A"), _make_scene("B")
         sm.load(old_a)
         sm.push(old_b)
         sm.load(_make_scene("New"))
@@ -385,10 +382,10 @@ class TestDelegation:
         scene.handle_event.assert_called_once_with(event)
 
     def test_update_does_nothing_when_empty(self, sm):
-        sm.update(0.016)
+        sm.update(0.016)  # sem crash
 
     def test_draw_does_nothing_when_empty(self, sm):
-        sm.draw(MagicMock())
+        sm.draw(MagicMock())  # sem crash
 
 
 # ===========================================================================
@@ -511,7 +508,7 @@ class TestPushPopWithTransition:
         over = _make_scene("Over")
         tr = _make_transition(swap_after=1)
         sm.push(over, transition=tr)
-        sm.update(0.016)   # tick 1: swap + is_done
+        sm.update(0.016)
         assert sm.stack_depth == 2
 
     def test_push_transition_new_scene_becomes_current(self, sm):
@@ -567,33 +564,22 @@ class TestTransitionFlow:
         assert sm.is_transitioning is True
 
     def test_swap_happens_on_correct_tick(self, sm):
-        """
-        swap_after=2: tick 1 não troca, tick 2 troca.
-        """
-        s1 = _make_scene("A")
-        s2 = _make_scene("B")
+        s1, s2 = _make_scene("A"), _make_scene("B")
         sm.load(s1)
         tr = _make_transition(swap_after=2)
         sm.load(s2, transition=tr)
-        sm.update(0.016)         # tick 1 — sem swap
+        sm.update(0.016)  # tick 1 — sem swap
         assert sm.current is not s2
-        sm.update(0.016)         # tick 2 — swap ocorre
+        sm.update(0.016)  # tick 2 — swap
         assert sm.current is s2
 
     def test_on_transition_end_fires_after_done(self, sm):
-        """
-        Com swap_after=1, no tick 1:
-          - tr.update() seta should_swap=True E is_done=True
-          - SM executa swap
-          - SM lê tr.is_done=True no passo 4 → dispara on_transition_end
-        Portanto: callback já chamado após o primeiro update().
-        """
         cb = MagicMock()
         sm.on_transition_end = cb
         tr = _make_transition(swap_after=1)
         sm.load(_make_scene(), transition=tr)
-        cb.assert_not_called()          # antes de qualquer tick
-        sm.update(0.016)                # tick 1: swap + done
+        cb.assert_not_called()
+        sm.update(0.016)
         cb.assert_called_once()
 
     def test_scene_start_not_called_before_swap(self, sm):
@@ -612,13 +598,9 @@ class TestTransitionFlow:
         new.start.assert_called_once()
 
     def test_transition_cleared_after_done(self, sm):
-        """
-        swap_after=1: no tick 1 is_done=True é setado pelo side_effect,
-        e o SM já zera _transition no passo 4 do mesmo update().
-        """
         tr = _make_transition(swap_after=1)
         sm.load(_make_scene(), transition=tr)
-        sm.update(0.016)   # tick 1: swap + done → _transition limpo
+        sm.update(0.016)
         assert sm._transition is None
 
 
@@ -628,8 +610,7 @@ class TestTransitionFlow:
 
 class TestUpdateDrawTopOfStack:
     def test_update_calls_only_top_scene(self, sm):
-        base = _make_scene("Base")
-        over = _make_scene("Over")
+        base, over = _make_scene("Base"), _make_scene("Over")
         sm.load(base)
         sm.push(over)
         sm.update(0.016)
@@ -637,8 +618,7 @@ class TestUpdateDrawTopOfStack:
         base.update.assert_not_called()
 
     def test_draw_calls_only_top_scene(self, sm):
-        base = _make_scene("Base")
-        over = _make_scene("Over")
+        base, over = _make_scene("Base"), _make_scene("Over")
         sm.load(base)
         sm.push(over)
         surf = MagicMock()
@@ -647,8 +627,7 @@ class TestUpdateDrawTopOfStack:
         base.draw.assert_not_called()
 
     def test_handle_event_calls_only_top_scene(self, sm):
-        base = _make_scene("Base")
-        over = _make_scene("Over")
+        base, over = _make_scene("Base"), _make_scene("Over")
         sm.load(base)
         sm.push(over)
         evt = MagicMock()
@@ -657,8 +636,7 @@ class TestUpdateDrawTopOfStack:
         base.handle_event.assert_not_called()
 
     def test_after_pop_update_goes_to_base(self, sm):
-        base = _make_scene("Base")
-        over = _make_scene("Over")
+        base, over = _make_scene("Base"), _make_scene("Over")
         sm.load(base)
         sm.push(over)
         sm.pop()
@@ -667,11 +645,80 @@ class TestUpdateDrawTopOfStack:
         base.update.assert_called_once()
 
     def test_after_pop_draw_goes_to_base(self, sm):
-        base = _make_scene("Base")
-        over = _make_scene("Over")
+        base, over = _make_scene("Base"), _make_scene("Over")
         sm.load(base)
         sm.push(over)
         sm.pop()
         surf = MagicMock()
         sm.draw(surf)
         base.draw.assert_called_once_with(surf)
+
+
+# ===========================================================================
+# 16. _do_swap_load limpa colisores e áudio
+# ===========================================================================
+
+class TestDoSwapLoadResources:
+    _BOX   = "engine.core.scene_manager.BoxCollider"
+    _CIRC  = "engine.core.scene_manager.CircleCollider"
+    _AUDIO = "engine.core.scene_manager.AudioManager"
+
+    def test_load_clears_box_registry(self, sm):
+        with patch(self._BOX) as mock_box, patch(self._CIRC), patch(self._AUDIO):
+            sm.load(_make_scene())
+        mock_box._registry.clear.assert_called()
+
+    def test_load_clears_circle_registry(self, sm):
+        with patch(self._BOX), patch(self._CIRC) as mock_circ, patch(self._AUDIO):
+            sm.load(_make_scene())
+        mock_circ._registry.clear.assert_called()
+
+    def test_load_clears_scene_tilemaps(self, sm):
+        with patch(self._BOX) as mock_box, patch(self._CIRC), patch(self._AUDIO):
+            sm.load(_make_scene())
+        mock_box._scene_tilemaps.clear.assert_called()
+
+    def test_load_stops_music(self, sm):
+        with patch(self._BOX), patch(self._CIRC), patch(self._AUDIO) as mock_audio:
+            sm.load(_make_scene())
+        mock_audio.stop_music.assert_called()
+
+    def test_load_unloads_audio_cache(self, sm):
+        with patch(self._BOX), patch(self._CIRC), patch(self._AUDIO) as mock_audio:
+            sm.load(_make_scene())
+        mock_audio.unload_cache.assert_called()
+
+
+# ===========================================================================
+# 17. Shim de compatibilidade (engine/scene_manager.py)
+# ===========================================================================
+
+class TestDeprecatedShim:
+    def _import_shim(self):
+        """Remove o módulo do cache e reimporta para garantir o warning."""
+        for key in list(sys.modules):
+            if key == "engine.scene_manager":
+                del sys.modules[key]
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            import engine.scene_manager as shim  # noqa: F401
+            return shim, w
+
+    def test_shim_emits_deprecation_warning(self):
+        _, w = self._import_shim()
+        cats = [str(x.category) for x in w]
+        assert any("DeprecationWarning" in c for c in cats)
+
+    def test_shim_warning_mentions_engine_core(self):
+        _, w = self._import_shim()
+        messages = [str(x.message) for x in w]
+        assert any("engine.core" in m for m in messages)
+
+    def test_shim_exports_scene_manager_class(self):
+        from engine.core.scene_manager import SceneManager
+        shim, _ = self._import_shim()
+        assert shim.SceneManager is SceneManager
+
+    def test_shim_all_contains_scene_manager(self):
+        shim, _ = self._import_shim()
+        assert "SceneManager" in shim.__all__
