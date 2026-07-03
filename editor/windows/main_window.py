@@ -19,16 +19,17 @@ from editor.widgets.hierarchy_dock import HierarchyDock
 from editor.widgets.asset_browser_dock import AssetBrowserDock
 from editor.widgets.console_dock import ConsoleDock
 from editor.widgets.inspector_dock import InspectorDock
+from editor.widgets.viewport_widget import ViewportWidget
 
 
 class MainWindow(QMainWindow):
     """
     Janela Principal do Zennity Editor construída sobre o PySide6.
     
-    Implementação da Semana 4:
-      - Sistema de Asset Browser (MVVM) com navegação de diretórios e grid
-      - Sincronização e filtros de pesquisa de assets
-      - Integração com a barra de status ao selecionar recursos
+    Implementação da Semana 6:
+      - Integração do ViewportWidget baseado em QOpenGLWidget
+      - Sincronização do motor físico e modo Play/Stop da Viewport com a UI
+      - Direcionamento de comandos de cena (MVVM)
     """
     
     def __init__(self) -> None:
@@ -48,16 +49,17 @@ class MainWindow(QMainWindow):
         self.asset_model = AssetModel(self)
         self.asset_view_model = AssetViewModel(self.asset_model)
         
-        # Central widget temporário (Viewport)
+        # Viewport gráfica baseada em OpenGL (Semana 6)
         self.setup_central_widget()
         
         # Inicializa docks do editor
         self.create_docks()
         
-        # Conecta os ViewModels aos docks
+        # Conecta os ViewModels aos docks e viewport
         self.dock_hierarchy.set_viewmodel(self.scene_view_model)
         self.dock_inspector.set_viewmodel(self.scene_view_model)
         self.dock_assets.set_models(self.asset_model, self.asset_view_model)
+        self.viewport.set_viewmodel(self.scene_view_model)
         
         # Conecta sinais
         self.scene_view_model.hierarchy_updated.connect(self.update_object_count_status)
@@ -69,6 +71,9 @@ class MainWindow(QMainWindow):
         self.create_tool_bar()
         self.create_status_bar()
         
+        # Sincroniza contagem inicial
+        self.update_object_count_status()
+        
         # Tenta carregar o layout anterior, senão aplica o layout padrão (Unreal)
         self.settings = QSettings("Zennity", "EditorLayout")
         if not self.restore_layout_state():
@@ -77,19 +82,9 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Zennity Editor pronto.", 5000)
 
     def setup_central_widget(self) -> None:
-        """Configura a área central provisória do editor."""
-        central = QWidget()
-        central.setStyleSheet("background-color: #12141a;")
-        
-        layout = QVBoxLayout(central)
-        layout.setAlignment(Qt.AlignCenter)
-        
-        label = QLabel("Zennity Viewport (PySide6)\n[OpenGL/Viewport Central - Semana 6]")
-        label.setStyleSheet("color: #484e5f; font-size: 16px; font-weight: bold;")
-        label.setAlignment(Qt.AlignCenter)
-        
-        layout.addWidget(label)
-        self.setCentralWidget(central)
+        """Configura a área central gráfica OpenGL (Viewport)."""
+        self.viewport = ViewportWidget(self)
+        self.setCentralWidget(self.viewport)
 
     def create_docks(self) -> None:
         """Instancia os painéis acopláveis."""
@@ -315,6 +310,20 @@ class MainWindow(QMainWindow):
         self.log_action("Novo Projeto/Cena")
         self.scene_model.clear()
         self.scene_view_model.selected_object = None
+        
+        # Limpa cena da viewport
+        if hasattr(self.viewport, "active_scene") and self.viewport.active_scene:
+            if hasattr(self.viewport.active_scene, "editable_objects"):
+                self.viewport.active_scene.editable_objects.clear()
+                self.viewport.active_scene.game_objects.clear()
+                self.viewport.active_scene.selected_index = -1
+                self.viewport.active_scene.spawn_default_scene()
+                
+                # Ressincroniza
+                for obj in self.viewport.active_scene.editable_objects:
+                    self.scene_model.add_object(obj)
+                if self.viewport.active_scene.selected_index >= 0:
+                    self.scene_view_model.selected_object = self.viewport.active_scene.editable_objects[self.viewport.active_scene.selected_index]
 
     @Slot()
     def update_object_count_status(self) -> None:
@@ -342,6 +351,11 @@ class MainWindow(QMainWindow):
         self.btn_pause.setEnabled(True)
         self.btn_stop.setEnabled(True)
         self.statusBar().showMessage("Simulação em execução...")
+        
+        # Aciona play na cena
+        if hasattr(self.viewport, "active_scene") and self.viewport.active_scene:
+            if not getattr(self.viewport.active_scene, "playing", False):
+                self.viewport.active_scene.toggle_play()
 
     @Slot()
     def on_pause_clicked(self) -> None:
@@ -357,6 +371,11 @@ class MainWindow(QMainWindow):
         self.btn_pause.setEnabled(False)
         self.btn_stop.setEnabled(False)
         self.statusBar().showMessage("Simulação finalizada.")
+        
+        # Aciona stop na cena
+        if hasattr(self.viewport, "active_scene") and self.viewport.active_scene:
+            if getattr(self.viewport.active_scene, "playing", False):
+                self.viewport.active_scene.toggle_play()
 
     def on_transform_tool_changed(self, tool_name: str) -> None:
         """Garante seleção exclusiva entre as ferramentas de transformação."""
