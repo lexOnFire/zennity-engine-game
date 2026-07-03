@@ -419,3 +419,63 @@ QScrollBar::sub-page {
     width: 0;
     height: 0;
 }
+
+QWidget#CreateDockRoot {
+    background: #181817;
+}
+
+QLabel#PanelTitle {
+    background: transparent;
+    color: #f7f2e8;
+    font-size: 15px;
+    font-weight: 800;
+}
+
+QLabel#PanelHint {
+    background: #151514;
+    border: 1px solid #292824;
+    border-radius: 6px;
+    color: #aaa397;
+    padding: 8px;
+}
+
+QLabel#SectionLabel {
+    background: transparent;
+    color: #5aa195;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    padding-top: 4px;
+    text-transform: uppercase;
+}
+
+QFrame#PanelSeparator {
+    background: #292824;
+    border: none;
+    max-height: 1px;
+    margin-top: 3px;
+    margin-bottom: 3px;
+}
+
+QPushButton#CreatePresetButton,
+QPushButton#CreateTemplateButton {
+    background: #22211e;
+    border: 1px solid #38362f;
+    border-radius: 7px;
+    color: #ded8cc;
+    min-height: 34px;
+    padding: 7px 8px;
+    text-align: left;
+}
+
+QPushButton#CreatePresetButton:hover,
+QPushButton#CreateTemplateButton:hover {
+    background: #2d2b26;
+    border-color: #5aa195;
+    color: #f7f2e8;
+}
+
+QPushButton#CreateTemplateButton {
+    background: #263631;
+    border-color: #3d5f56;
+}
