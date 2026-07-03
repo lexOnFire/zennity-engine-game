@@ -1,10 +1,16 @@
 """Testes unitários de engine.transitions."""
 from __future__ import annotations
 
+import sys
 from unittest.mock import MagicMock
 
 import pygame
 import pytest
+
+# Em execuções completas do pytest, outro teste pode ter deixado um módulo fake
+# em sys.modules durante a coleta. Remove apenas este alvo para garantir que o
+# import abaixo carregue a implementação real da engine.
+sys.modules.pop("engine.transitions", None)
 
 from engine.transitions import (
     EASING,
