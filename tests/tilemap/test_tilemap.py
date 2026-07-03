@@ -283,17 +283,19 @@ class TestTileMapStructure:
 
 class TestTileMapCollision:
     def _make_solid_map(self):
-        """4x4 mapa, layer 'collision', tiles 1-4 (GID 1 = solid)."""
+        """4x4 mapa, layer 'collision', tiles 1-4 (GID 1 = solid).
+        Tiles solidos:
+          (col=0, row=0) -> world (0,0)
+          (col=1, row=1) -> world (16,16)
+        """
         tm = make_tilemap(tw=16, th=16, mw=4, mh=4)
         ts = make_tileset(first_gid=1, n_tiles=4, solid_gids=[1])
         tm.add_tileset(ts)
-        # tile (0,0) e (1,1) solidos, resto vazio
         data = [0] * 16
         data[0]     = 1   # col=0, row=0
         data[1*4+1] = 1   # col=1, row=1
         from engine.tilemap.tilemap import TileLayer
-        layer = TileLayer("collision", 4, 4, data)
-        tm.add_layer(layer)
+        tm.add_layer(TileLayer("collision", 4, 4, data))
         return tm
 
     def test_is_solid_at_solid_tile(self):
@@ -308,13 +310,16 @@ class TestTileMapCollision:
         tm = make_tilemap()
         assert tm.is_solid_at(0, 0, layer_name="nope") is False
 
-    def test_get_solid_rects_finds_tiles(self):
+    def test_get_solid_rects_finds_both_tiles(self):
+        """Regiao que cobre o mapa inteiro retorna os 2 tiles solidos."""
         tm = self._make_solid_map()
         rects = tm.get_solid_rects_in_region(0, 0, 64, 64)
         assert len(rects) == 2
 
     def test_get_solid_rects_empty_region(self):
+        """Regiao sem tiles solidos retorna lista vazia."""
         tm = self._make_solid_map()
+        # col=2, row=0 -> world x=32, sem tile solido ali
         rects = tm.get_solid_rects_in_region(32, 0, 16, 16)
         assert rects == []
 
@@ -323,11 +328,20 @@ class TestTileMapCollision:
         assert tm.get_solid_rects_in_region(0, 0, 64, 64, layer_name="nope") == []
 
     def test_solid_rect_correct_position(self):
+        """Regiao (0,0,15,15) cobre apenas o tile (col=0,row=0) — 1 rect com pos (0,0)."""
         tm = self._make_solid_map()
-        rects = tm.get_solid_rects_in_region(0, 0, 16, 16)
+        # Usar w=15/h=15 garante que math.ceil(15/16)=1 — apenas col/row 0
+        rects = tm.get_solid_rects_in_region(0, 0, 15, 15)
         assert len(rects) == 1
         assert rects[0].x == 0 and rects[0].y == 0
         assert rects[0].width == 16 and rects[0].height == 16
+
+    def test_solid_rect_second_tile_position(self):
+        """Regiao (16,16,15,15) cobre apenas o tile (col=1,row=1) — pos (16,16)."""
+        tm = self._make_solid_map()
+        rects = tm.get_solid_rects_in_region(16, 16, 15, 15)
+        assert len(rects) == 1
+        assert rects[0].x == 16 and rects[0].y == 16
 
 
 # ==========================================================================
@@ -387,7 +401,6 @@ class TestTileMapDraw:
         screen = pygame.Surface((32, 32))
         screen.fill((0, 0, 0))
         tm.draw(screen)
-        # Superficie deve permanecer preta (nenhum tile desenhado)
         assert screen.get_at((0, 0))[:3] == (0, 0, 0)
 
     def test_draw_debug_no_crash(self):
