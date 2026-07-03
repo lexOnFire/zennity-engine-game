@@ -1,22 +1,22 @@
 """
 tests/core/test_event_bus.py
 ────────────────────────────────────────────────────────────────
-Commit 12: suite completa do EventBus.
+Commit 18: suite completa do EventBus.
 
 Grupos:
   TestSubscribe       (6)  — subscribe, duplicata, listener_count, has_listeners
-  TestEmit            (6)  — despacho síncrono, kwargs, múltiplos, isolamento de exceção
+  TestEmit            (6)  — despacho síncrono, kwargs, múltiplos, isolamento
   TestUnsubscribe     (4)  — remove listener, sem efeito se ausente, só o alvo
   TestOnce            (5)  — uma só chamada, auto-remove, coexistência, kwargs
   TestDeferred        (6)  — emit_deferred, flush, FIFO, fila limpa, pending_count
-  TestClear           (5)  — clear(event), clear() total, limpa fila, safe em ausente
+  TestClear           (5)  — clear(event), clear() total, limpa fila, safe
   TestInspect         (5)  — listener_count, has_listeners, pending_count
   TestPublishAlias    (3)  — retrocompat: publish(), has_subscribers(), subscribers_count()
+  TestEdgeCases      (10)  — emit dentro de listener, once+unsub, flush vazio,
+                            deferred após clear, emissão de evento desconhecido,
+                            subscribe vazio após clear, double-flush, re-subscribe
 
-Total esperado: 40 testes.
-
-Nota: EventBus usa estado de CLASSE (classmethods). Cada teste
-isolado via autouse fixture que chama EventBus.clear().
+Total esperado: 50 testes.
 """
 from __future__ import annotations
 
@@ -87,7 +87,7 @@ class TestEmit:
         assert received == {"a": 1, "b": 2}
 
     def test_no_listeners_emit_is_safe(self):
-        EventBus.emit("no_such_event", value=99)  # não deve lançar
+        EventBus.emit("no_such_event", value=99)
 
     def test_duplicate_subscribe_fires_once(self):
         calls = []
@@ -110,7 +110,7 @@ class TestEmit:
         def bad(): raise ValueError("boom")
         EventBus.subscribe("err", bad)
         EventBus.subscribe("err", lambda: results.append("ok"))
-        EventBus.emit("err")  # não deve propagar ValueError
+        EventBus.emit("err")
         assert results == ["ok"]
 
 
@@ -128,7 +128,7 @@ class TestUnsubscribe:
         assert calls == []
 
     def test_unsubscribe_nonexistent_is_safe(self):
-        EventBus.unsubscribe("ghost", lambda: None)  # não deve lançar
+        EventBus.unsubscribe("ghost", lambda: None)
 
     def test_unsubscribe_only_target_listener(self):
         calls = []
@@ -264,11 +264,11 @@ class TestClear:
         assert EventBus.pending_count() == 0
 
     def test_clear_nonexistent_event_is_safe(self):
-        EventBus.clear("ghost.event")  # não deve lançar
+        EventBus.clear("ghost.event")
 
 
 # ===========================================================================
-# 7. Inspecão
+# 7. Inspeção
 # ===========================================================================
 
 class TestInspect:
@@ -313,3 +313,84 @@ class TestPublishAlias:
         EventBus.subscribe("evt", lambda: None)
         bus = EventBus()
         assert bus.subscribers_count("evt") == 2
+
+
+# ===========================================================================
+# 9. Edge cases
+# ===========================================================================
+
+class TestEdgeCases:
+    def test_emit_inside_listener_does_not_deadlock(self):
+        """Emitir outro evento dentro de um listener não deve travar."""
+        inner_calls = []
+        EventBus.subscribe("inner", lambda: inner_calls.append(1))
+        EventBus.subscribe("outer", lambda: EventBus.emit("inner"))
+        EventBus.emit("outer")
+        assert inner_calls == [1]
+
+    def test_double_flush_is_safe(self):
+        """Chamar flush() duas vezes seguidas não deve lançar."""
+        EventBus.emit_deferred("x")
+        EventBus.flush()
+        EventBus.flush()  # fila já vazia
+
+    def test_deferred_after_clear_not_dispatched(self):
+        """Evento diferido cujo listener foi removido com clear() não chama callback."""
+        calls = []
+        EventBus.subscribe("gone", lambda: calls.append(1))
+        EventBus.emit_deferred("gone")
+        EventBus.clear("gone")  # remove listener antes do flush
+        EventBus.flush()
+        assert calls == []
+
+    def test_re_subscribe_after_unsubscribe(self):
+        """Listener removido pode ser re-registrado sem duplicação."""
+        calls = []
+        cb = lambda: calls.append(1)
+        EventBus.subscribe("r", cb)
+        EventBus.unsubscribe("r", cb)
+        EventBus.subscribe("r", cb)
+        EventBus.emit("r")
+        assert calls == [1]
+
+    def test_subscribe_after_clear_works(self):
+        """Novo subscribe após clear() funciona normalmente."""
+        EventBus.subscribe("c", lambda: None)
+        EventBus.clear("c")
+        calls = []
+        EventBus.subscribe("c", lambda: calls.append(1))
+        EventBus.emit("c")
+        assert calls == [1]
+
+    def test_listener_count_zero_after_clear_all(self):
+        for i in range(5):
+            EventBus.subscribe(f"evt{i}", lambda: None)
+        EventBus.clear()
+        for i in range(5):
+            assert EventBus.listener_count(f"evt{i}") == 0
+
+    def test_once_unsubscribed_manually_not_called(self):
+        """once() pode ser cancelado com unsubscribe antes do emit."""
+        calls = []
+        cb = lambda: calls.append(1)
+        EventBus.once("o", cb)
+        EventBus.unsubscribe("o", cb)
+        EventBus.emit("o")
+        assert calls == []
+
+    def test_many_listeners_all_receive_event(self):
+        calls = []
+        for i in range(20):
+            EventBus.subscribe("big", lambda i=i: calls.append(i))
+        EventBus.emit("big")
+        assert len(calls) == 20
+
+    def test_different_events_do_not_cross_fire(self):
+        a_calls, b_calls = [], []
+        EventBus.subscribe("a", lambda: a_calls.append(1))
+        EventBus.subscribe("b", lambda: b_calls.append(1))
+        EventBus.emit("a")
+        assert a_calls == [1] and b_calls == []
+
+    def test_flush_empty_queue_is_safe(self):
+        EventBus.flush()  # nenhum evento diferido
