@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import sys
 from types import ModuleType
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -22,14 +22,21 @@ import pytest
 if "pygame" not in sys.modules:
     _pg = ModuleType("pygame")
     _transform = ModuleType("pygame.transform")
-    # flip retorna um novo MagicMock distinto do frame original
-    _transform.flip = MagicMock(side_effect=lambda f, h, v: MagicMock(name=f"flip({f})"))
     _pg.transform = _transform
-    sys.modules["pygame"]           = _pg
+    sys.modules["pygame"] = _pg
     sys.modules["pygame.transform"] = _transform
 else:
-    _pg        = sys.modules["pygame"]
-    _transform = sys.modules.get("pygame.transform", _pg.transform)
+    _pg = sys.modules["pygame"]
+    _transform = sys.modules.get("pygame.transform", getattr(_pg, "transform", None))
+    if _transform is None:
+        _transform = ModuleType("pygame.transform")
+        _pg.transform = _transform
+        sys.modules["pygame.transform"] = _transform
+
+# Sempre garante MagicMock, mesmo quando pygame real já foi importado por outro teste.
+_transform.flip = MagicMock(side_effect=lambda f, h, v: MagicMock(name=f"flip({f})"))
+_pg.transform = _transform
+sys.modules["pygame.transform"] = _transform
 
 from engine.animation.clip import AnimationClip, AnimationEvent  # noqa: E402
 
