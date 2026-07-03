@@ -24,6 +24,8 @@ class ConsoleDock(QDockWidget):
         self.setAllowedAreas(Qt.BottomDockWidgetArea | Qt.LeftDockWidgetArea)
         
         self.log_history = []  # Guarda tuplas de (mensagem, tipo) para filtragem
+        self.command_history = []  # Histórico de comandos Python digitados
+        self.history_index = -1
         
         # Conteúdo interno
         content = QWidget()
@@ -79,6 +81,9 @@ class ConsoleDock(QDockWidget):
         layout.addWidget(cmd_panel)
         
         self.setWidget(content)
+        
+        # Filtro de eventos para capturar Up/Down e navegar no histórico
+        self.txt_input.installEventFilter(self)
         
         # Inscreve-se no EventBus para receber logs em tempo real
         EventBus.subscribe(EVENT_LOG_ADDED, self.on_bus_log_received)
@@ -137,6 +142,12 @@ class ConsoleDock(QDockWidget):
             
         self.txt_input.clear()
         
+        # Adiciona ao histórico de comandos digitados
+        if cmd_str:
+            if not self.command_history or self.command_history[-1] != cmd_str:
+                self.command_history.append(cmd_str)
+            self.history_index = -1
+        
         # Mostra o comando digitado no console
         self.on_bus_log_received(f">>> {cmd_str}", "debug")
         
@@ -182,3 +193,31 @@ class ConsoleDock(QDockWidget):
             self.on_bus_log_received(stdout_res, "info")
         if stderr_res:
             self.on_bus_log_received(stderr_res, "error")
+
+    def eventFilter(self, watched, event) -> bool:
+        """Filtra eventos para permitir navegação no histórico de comandos com as setas Up/Down."""
+        from PySide6.QtCore import QEvent
+        if watched == self.txt_input and event.type() == QEvent.KeyPress:
+            key = event.key()
+            if key == Qt.Key_Up:
+                if self.command_history:
+                    if self.history_index == -1:
+                        self.history_index = len(self.command_history) - 1
+                    else:
+                        self.history_index = max(0, self.history_index - 1)
+                    self.txt_input.setText(self.command_history[self.history_index])
+                    # Move o cursor para o fim da linha
+                    self.txt_input.setCursorPosition(len(self.txt_input.text()))
+                return True
+            elif key == Qt.Key_Down:
+                if self.command_history:
+                    if self.history_index != -1:
+                        self.history_index += 1
+                        if self.history_index >= len(self.command_history):
+                            self.history_index = -1
+                            self.txt_input.clear()
+                        else:
+                            self.txt_input.setText(self.command_history[self.history_index])
+                            self.txt_input.setCursorPosition(len(self.txt_input.text()))
+                return True
+        return super().eventFilter(watched, event)

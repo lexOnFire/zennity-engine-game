@@ -314,6 +314,46 @@ class ViewportWidget(QOpenGLWidget):
         self.active_scene.handle_event(pg_event)
         event.accept()
 
+    def get_pygame_key(self, qt_key: Qt.Key) -> Optional[int]:
+        """Traduz dinamicamente códigos de teclas do Qt para códigos correspondentes do Pygame."""
+        key_map = {
+            Qt.Key_Escape: pygame.K_ESCAPE,
+            Qt.Key_Delete: pygame.K_DELETE,
+            Qt.Key_Backspace: pygame.K_BACKSPACE,
+            Qt.Key_Left: pygame.K_LEFT,
+            Qt.Key_Right: pygame.K_RIGHT,
+            Qt.Key_Up: pygame.K_UP,
+            Qt.Key_Down: pygame.K_DOWN,
+            Qt.Key_Space: pygame.K_SPACE,
+            Qt.Key_Return: pygame.K_RETURN,
+            Qt.Key_Enter: pygame.K_KP_ENTER,
+            Qt.Key_Shift: pygame.K_LSHIFT,
+            Qt.Key_Control: pygame.K_LCTRL,
+            Qt.Key_Alt: pygame.K_LALT,
+            Qt.Key_Tab: pygame.K_TAB,
+            Qt.Key_F1: pygame.K_F1,
+            Qt.Key_F2: pygame.K_F2,
+            Qt.Key_F3: pygame.K_F3,
+            Qt.Key_F4: pygame.K_F4,
+            Qt.Key_F5: pygame.K_F5,
+            Qt.Key_F6: pygame.K_F6,
+            Qt.Key_F7: pygame.K_F7,
+            Qt.Key_F8: pygame.K_F8,
+            Qt.Key_F9: pygame.K_F9,
+            Qt.Key_F10: pygame.K_F10,
+            Qt.Key_F11: pygame.K_F11,
+            Qt.Key_F12: pygame.K_F12,
+        }
+        
+        # Mapeia dinamicamente letras A-Z (Pygame K_a=97, Qt Key_A=65)
+        if Qt.Key_A <= qt_key <= Qt.Key_Z:
+            return qt_key - Qt.Key_A + pygame.K_a
+        # Mapeia dinamicamente números 0-9
+        elif Qt.Key_0 <= qt_key <= Qt.Key_9:
+            return qt_key - Qt.Key_0 + pygame.K_0
+            
+        return key_map.get(qt_key)
+
     def keyPressEvent(self, event: QKeyEvent) -> None:
         # Atalho de Foco ('F')
         if event.key() == Qt.Key_F:
@@ -323,20 +363,8 @@ class ViewportWidget(QOpenGLWidget):
             
         if not self.active_scene:
             return
-        key_map = {
-            Qt.Key_Escape: pygame.K_ESCAPE,
-            Qt.Key_Delete: pygame.K_DELETE,
-            Qt.Key_Backspace: pygame.K_BACKSPACE,
-            Qt.Key_Left: pygame.K_LEFT,
-            Qt.Key_Right: pygame.K_RIGHT,
-            Qt.Key_Up: pygame.K_UP,
-            Qt.Key_Down: pygame.K_DOWN,
-            Qt.Key_F1: pygame.K_F1,
-            Qt.Key_Z: pygame.K_z,
-            Qt.Key_Y: pygame.K_y,
-            Qt.Key_D: pygame.K_d
-        }
-        pg_key = key_map.get(event.key())
+            
+        pg_key = self.get_pygame_key(event.key())
         if pg_key is not None:
             mod = pygame.KMOD_NONE
             if event.modifiers() & Qt.ControlModifier:
@@ -351,3 +379,23 @@ class ViewportWidget(QOpenGLWidget):
             event.accept()
         else:
             super().keyPressEvent(event)
+
+    def keyReleaseEvent(self, event: QKeyEvent) -> None:
+        if not self.active_scene:
+            return
+            
+        pg_key = self.get_pygame_key(event.key())
+        if pg_key is not None:
+            mod = pygame.KMOD_NONE
+            if event.modifiers() & Qt.ControlModifier:
+                mod |= pygame.KMOD_CTRL
+            pg_event = pygame.event.Event(
+                pygame.KEYUP,
+                key=pg_key,
+                mod=mod,
+                unicode=""
+            )
+            self.active_scene.handle_event(pg_event)
+            event.accept()
+        else:
+            super().keyReleaseEvent(event)
