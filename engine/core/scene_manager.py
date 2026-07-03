@@ -100,7 +100,7 @@ class SceneManager:
         if tr.should_swap:
             self._execute_pending_swap()
 
-        if tr.phase in (TransitionPhase.IN, TransitionPhase.DONE):
+        if self._phase_is(tr.phase, TransitionPhase.IN) or self._phase_is(tr.phase, TransitionPhase.DONE):
             if self.current:
                 self.current.update(dt)
                 self._run_physics()
@@ -120,17 +120,17 @@ class SceneManager:
                 self.current.draw(screen)
             return
 
-        if tr.phase == TransitionPhase.OUT:
+        if self._phase_is(tr.phase, TransitionPhase.OUT):
             if tr.snapshot_out is None and self.current:
                 snap = pygame.Surface(screen.get_size())
                 self.current.draw(snap)
                 tr.snapshot_out = snap
             tr.draw(screen)
 
-        elif tr.phase == TransitionPhase.SWAP:
+        elif self._phase_is(tr.phase, TransitionPhase.SWAP):
             tr.draw(screen)
 
-        elif tr.phase == TransitionPhase.IN:
+        elif self._phase_is(tr.phase, TransitionPhase.IN):
             if tr.snapshot_in is None and self.current:
                 snap = pygame.Surface(screen.get_size())
                 self.current.draw(snap)
@@ -142,6 +142,16 @@ class SceneManager:
             return
         if self.current:
             self.current.handle_event(event)
+
+    @staticmethod
+    def _phase_is(current, expected) -> bool:
+        if current == expected:
+            return True
+        current_name = getattr(current, "name", current)
+        expected_name = getattr(expected, "name", expected)
+        current_value = getattr(current, "value", current_name)
+        expected_value = getattr(expected, "value", expected_name)
+        return current_name == expected_name or current_value == expected_value
 
     @staticmethod
     def _reset_ui() -> None:
