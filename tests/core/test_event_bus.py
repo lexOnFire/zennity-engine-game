@@ -1,413 +1,358 @@
 """
 tests/core/test_event_bus.py
-────────────────────────────────────────────────────────────────
-Commit 4: suite completa do EventBus — 52 testes.
+─────────────────────────────────────────────────────────────────
+Testes unitários de engine/event_bus.py.
 
-Estratégia de isolamento:
-  - EventBus usa estado de CLASSE (_listeners, _once, _queue).
-  - Fixture autouse chama EventBus.clear() antes e depois de cada teste,
-    garantindo que nenhum estado vaze entre testes.
-  - Nenhuma dependência de Pygame — sem patches extras necessários.
-
-Grupos:
-  TestSubscribe      (7)  — subscribe, duplicata, múltiplos, lambda
-  TestEmit           (8)  — emit síncrono, kwargs, ordem, exceções
-  TestUnsubscribe    (6)  — off/unsubscribe, inexistente, parcial, duplo
-  TestOnce           (7)  — once, auto-remove, coexistência, unsub manual
-  TestClear          (6)  — clear(event) e clear() global, fila, safe
-  TestDeferred       (8)  — emit_deferred, flush, FIFO, once, kwargs
-  TestInspection     (6)  — listener_count, has_listeners, pending_count
-  TestRetrocompat    (4)  — publish(), has_subscribers(), unsubscribe_all()
-
-Total: 52 testes.
+Estratégia:
+  - Sem pygame, sem engine/__init__.py: EventBus é puro Python.
+  - autouse fixture reseta o estado global de classe antes de cada teste.
+  - Nenhum teste depende da ordem de execução.
 """
 from __future__ import annotations
 
+from collections import defaultdict, deque
+from unittest.mock import MagicMock, call
+
 import pytest
-from unittest.mock import MagicMock
 
-from engine.core.event_bus import EventBus
+from engine.event_bus import EventBus
 
-
-# ---------------------------------------------------------------------------
-# Fixture de isolamento
-# ---------------------------------------------------------------------------
 
 @pytest.fixture(autouse=True)
-def _clean_bus():
-    """Limpa todo o estado global do EventBus antes e após cada teste."""
-    EventBus.clear()
+def reset_bus():
+    EventBus._listeners = defaultdict(list)
+    EventBus._once      = defaultdict(list)
+    EventBus._queue     = deque()
     yield
-    EventBus.clear()
+    EventBus._listeners = defaultdict(list)
+    EventBus._once      = defaultdict(list)
+    EventBus._queue     = deque()
 
 
-# ===========================================================================
-# 1. subscribe()
-# ===========================================================================
-
+# ─────────────────────────────────────────────────────────────────
 class TestSubscribe:
-    def test_subscribe_registers_listener(self):
+    def test_subscribe_adds_listener(self):
         cb = MagicMock()
-        EventBus.subscribe("test.event", cb)
-        assert EventBus.has_listeners("test.event")
+        EventBus.subscribe("ev", cb)
+        assert EventBus.listener_count("ev") == 1
 
     def test_subscribe_duplicate_ignored(self):
         cb = MagicMock()
-        EventBus.subscribe("e", cb)
-        EventBus.subscribe("e", cb)
-        assert EventBus.listener_count("e") == 1
+        EventBus.subscribe("ev", cb)
+        EventBus.subscribe("ev", cb)
+        assert EventBus.listener_count("ev") == 1
 
     def test_subscribe_multiple_listeners(self):
-        cb1, cb2, cb3 = MagicMock(), MagicMock(), MagicMock()
-        EventBus.subscribe("e", cb1)
-        EventBus.subscribe("e", cb2)
-        EventBus.subscribe("e", cb3)
-        assert EventBus.listener_count("e") == 3
+        a, b = MagicMock(), MagicMock()
+        EventBus.subscribe("ev", a)
+        EventBus.subscribe("ev", b)
+        assert EventBus.listener_count("ev") == 2
 
     def test_subscribe_different_events_independent(self):
-        cb1, cb2 = MagicMock(), MagicMock()
-        EventBus.subscribe("a", cb1)
-        EventBus.subscribe("b", cb2)
-        assert EventBus.listener_count("a") == 1
-        assert EventBus.listener_count("b") == 1
+        EventBus.subscribe("ev.a", MagicMock())
+        EventBus.subscribe("ev.b", MagicMock())
+        assert EventBus.listener_count("ev.a") == 1
+        assert EventBus.listener_count("ev.b") == 1
 
-    def test_subscribe_does_not_call_listener(self):
-        cb = MagicMock()
-        EventBus.subscribe("e", cb)
-        cb.assert_not_called()
+    def test_has_listeners_true_after_subscribe(self):
+        EventBus.subscribe("ev", MagicMock())
+        assert EventBus.has_listeners("ev") is True
 
-    def test_subscribe_unknown_event_creates_entry(self):
-        cb = MagicMock()
-        EventBus.subscribe("novo.evento", cb)
-        assert EventBus.listener_count("novo.evento") == 1
-
-    def test_subscribe_lambda_receives_kwargs(self):
-        results = []
-        EventBus.subscribe("e", lambda x: results.append(x))
-        EventBus.emit("e", x=42)
-        assert results == [42]
+    def test_has_listeners_false_for_unknown_event(self):
+        assert EventBus.has_listeners("nope") is False
 
 
-# ===========================================================================
-# 2. emit() — síncrono
-# ===========================================================================
-
-class TestEmit:
-    def test_emit_calls_listener(self):
-        cb = MagicMock()
-        EventBus.subscribe("e", cb)
-        EventBus.emit("e")
-        cb.assert_called_once()
-
-    def test_emit_passes_kwargs(self):
-        cb = MagicMock()
-        EventBus.subscribe("e", cb)
-        EventBus.emit("e", x=1, y=2)
-        cb.assert_called_once_with(x=1, y=2)
-
-    def test_emit_calls_all_listeners(self):
-        cb1, cb2 = MagicMock(), MagicMock()
-        EventBus.subscribe("e", cb1)
-        EventBus.subscribe("e", cb2)
-        EventBus.emit("e")
-        cb1.assert_called_once()
-        cb2.assert_called_once()
-
-    def test_emit_preserves_subscription_order(self):
-        order = []
-        EventBus.subscribe("e", lambda: order.append(1))
-        EventBus.subscribe("e", lambda: order.append(2))
-        EventBus.subscribe("e", lambda: order.append(3))
-        EventBus.emit("e")
-        assert order == [1, 2, 3]
-
-    def test_emit_no_listeners_is_safe(self):
-        EventBus.emit("evento.inexistente")  # não deve lançar
-
-    def test_emit_does_not_affect_other_events(self):
-        cb_a, cb_b = MagicMock(), MagicMock()
-        EventBus.subscribe("a", cb_a)
-        EventBus.subscribe("b", cb_b)
-        EventBus.emit("a")
-        cb_b.assert_not_called()
-
-    def test_emit_exception_does_not_stop_others(self):
-        """Exceção em um listener não interrompe os demais."""
-        def bad(): raise RuntimeError("boom")
-        cb_after = MagicMock()
-        EventBus.subscribe("e", bad)
-        EventBus.subscribe("e", cb_after)
-        EventBus.emit("e")  # não deve lançar
-        cb_after.assert_called_once()
-
-    def test_emit_multiple_times_calls_listener_each_time(self):
-        cb = MagicMock()
-        EventBus.subscribe("e", cb)
-        EventBus.emit("e")
-        EventBus.emit("e")
-        EventBus.emit("e")
-        assert cb.call_count == 3
-
-
-# ===========================================================================
-# 3. unsubscribe()
-# ===========================================================================
-
+# ─────────────────────────────────────────────────────────────────
 class TestUnsubscribe:
     def test_unsubscribe_removes_listener(self):
         cb = MagicMock()
-        EventBus.subscribe("e", cb)
-        EventBus.unsubscribe("e", cb)
-        EventBus.emit("e")
-        cb.assert_not_called()
+        EventBus.subscribe("ev", cb)
+        EventBus.unsubscribe("ev", cb)
+        assert EventBus.listener_count("ev") == 0
 
-    def test_unsubscribe_unknown_event_is_safe(self):
-        EventBus.unsubscribe("nao.existe", MagicMock())
+    def test_unsubscribe_nonexistent_no_error(self):
+        EventBus.unsubscribe("ev", MagicMock())
 
-    def test_unsubscribe_unknown_callback_is_safe(self):
-        cb1, cb2 = MagicMock(), MagicMock()
-        EventBus.subscribe("e", cb1)
-        EventBus.unsubscribe("e", cb2)  # cb2 nunca foi inscrito
+    def test_unsubscribe_unknown_event_no_error(self):
+        EventBus.unsubscribe("ghost", MagicMock())
 
-    def test_unsubscribe_only_target_listener(self):
-        cb1, cb2 = MagicMock(), MagicMock()
-        EventBus.subscribe("e", cb1)
-        EventBus.subscribe("e", cb2)
-        EventBus.unsubscribe("e", cb1)
-        EventBus.emit("e")
-        cb1.assert_not_called()
-        cb2.assert_called_once()
+    def test_unsubscribe_one_of_many(self):
+        a, b = MagicMock(), MagicMock()
+        EventBus.subscribe("ev", a)
+        EventBus.subscribe("ev", b)
+        EventBus.unsubscribe("ev", a)
+        assert EventBus.listener_count("ev") == 1
+        EventBus.emit("ev")
+        b.assert_called_once()
+        a.assert_not_called()
 
-    def test_unsubscribe_all_then_no_listeners(self):
-        cb1, cb2 = MagicMock(), MagicMock()
-        EventBus.subscribe("e", cb1)
-        EventBus.subscribe("e", cb2)
-        EventBus.unsubscribe("e", cb1)
-        EventBus.unsubscribe("e", cb2)
-        assert EventBus.listener_count("e") == 0
-
-    def test_unsubscribe_twice_is_safe(self):
+    def test_unsubscribe_does_not_affect_other_events(self):
         cb = MagicMock()
-        EventBus.subscribe("e", cb)
-        EventBus.unsubscribe("e", cb)
-        EventBus.unsubscribe("e", cb)  # segunda chamada não deve lançar
+        EventBus.subscribe("a", cb)
+        EventBus.subscribe("b", cb)
+        EventBus.unsubscribe("a", cb)
+        assert EventBus.listener_count("b") == 1
 
 
-# ===========================================================================
-# 4. once()
-# ===========================================================================
+# ─────────────────────────────────────────────────────────────────
+class TestEmit:
+    def test_emit_calls_listener(self):
+        cb = MagicMock()
+        EventBus.subscribe("ev", cb)
+        EventBus.emit("ev")
+        cb.assert_called_once_with()
 
+    def test_emit_passes_kwargs(self):
+        cb = MagicMock()
+        EventBus.subscribe("ev", cb)
+        EventBus.emit("ev", x=1, y=2)
+        cb.assert_called_once_with(x=1, y=2)
+
+    def test_emit_calls_all_listeners(self):
+        a, b = MagicMock(), MagicMock()
+        EventBus.subscribe("ev", a)
+        EventBus.subscribe("ev", b)
+        EventBus.emit("ev")
+        a.assert_called_once()
+        b.assert_called_once()
+
+    def test_emit_unknown_event_no_error(self):
+        EventBus.emit("ghost")
+
+    def test_emit_exception_in_listener_does_not_stop_others(self):
+        bad = MagicMock(side_effect=RuntimeError("boom"))
+        good = MagicMock()
+        EventBus.subscribe("ev", bad)
+        EventBus.subscribe("ev", good)
+        EventBus.emit("ev")
+        good.assert_called_once()
+
+    def test_emit_multiple_times(self):
+        cb = MagicMock()
+        EventBus.subscribe("ev", cb)
+        EventBus.emit("ev")
+        EventBus.emit("ev")
+        assert cb.call_count == 2
+
+    def test_emit_does_not_affect_other_events(self):
+        a, b = MagicMock(), MagicMock()
+        EventBus.subscribe("ev.a", a)
+        EventBus.subscribe("ev.b", b)
+        EventBus.emit("ev.a")
+        b.assert_not_called()
+
+
+# ─────────────────────────────────────────────────────────────────
 class TestOnce:
-    def test_once_fires_on_first_emit(self):
+    def test_once_called_on_first_emit(self):
         cb = MagicMock()
-        EventBus.once("e", cb)
-        EventBus.emit("e")
+        EventBus.once("ev", cb)
+        EventBus.emit("ev")
         cb.assert_called_once()
 
-    def test_once_not_fired_on_second_emit(self):
+    def test_once_not_called_on_second_emit(self):
         cb = MagicMock()
-        EventBus.once("e", cb)
-        EventBus.emit("e")
-        EventBus.emit("e")
+        EventBus.once("ev", cb)
+        EventBus.emit("ev")
+        EventBus.emit("ev")
         assert cb.call_count == 1
 
-    def test_once_auto_removed_after_fire(self):
-        EventBus.once("e", MagicMock())
-        EventBus.emit("e")
-        assert EventBus.listener_count("e") == 0
-
-    def test_once_coexists_with_regular_subscriber(self):
-        cb_once = MagicMock()
-        cb_perm = MagicMock()
-        EventBus.once("e", cb_once)
-        EventBus.subscribe("e", cb_perm)
-        EventBus.emit("e")
-        EventBus.emit("e")
-        assert cb_once.call_count == 1
-        assert cb_perm.call_count == 2
+    def test_once_removed_after_call(self):
+        cb = MagicMock()
+        EventBus.once("ev", cb)
+        EventBus.emit("ev")
+        assert EventBus.listener_count("ev") == 0
 
     def test_once_receives_kwargs(self):
         cb = MagicMock()
-        EventBus.once("e", cb)
-        EventBus.emit("e", score=100)
-        cb.assert_called_once_with(score=100)
+        EventBus.once("ev", cb)
+        EventBus.emit("ev", val=42)
+        cb.assert_called_once_with(val=42)
 
-    def test_multiple_once_listeners_each_fire_once(self):
-        cb1, cb2 = MagicMock(), MagicMock()
-        EventBus.once("e", cb1)
-        EventBus.once("e", cb2)
-        EventBus.emit("e")
-        EventBus.emit("e")
-        assert cb1.call_count == 1
-        assert cb2.call_count == 1
+    def test_once_and_regular_together(self):
+        permanent = MagicMock()
+        one_shot  = MagicMock()
+        EventBus.subscribe("ev", permanent)
+        EventBus.once("ev", one_shot)
+        EventBus.emit("ev")
+        EventBus.emit("ev")
+        assert permanent.call_count == 2
+        assert one_shot.call_count  == 1
 
     def test_once_unsubscribe_before_emit(self):
         cb = MagicMock()
-        EventBus.once("e", cb)
-        EventBus.unsubscribe("e", cb)
-        EventBus.emit("e")
+        EventBus.once("ev", cb)
+        EventBus.unsubscribe("ev", cb)
+        EventBus.emit("ev")
         cb.assert_not_called()
 
 
-# ===========================================================================
-# 5. clear()
-# ===========================================================================
-
-class TestClear:
-    def test_clear_event_removes_listeners(self):
+# ─────────────────────────────────────────────────────────────────
+class TestEmitDeferred:
+    def test_emit_deferred_does_not_call_immediately(self):
         cb = MagicMock()
-        EventBus.subscribe("e", cb)
-        EventBus.clear("e")
-        EventBus.emit("e")
+        EventBus.subscribe("ev", cb)
+        EventBus.emit_deferred("ev")
         cb.assert_not_called()
 
-    def test_clear_event_count_zero(self):
-        EventBus.subscribe("e", MagicMock())
-        EventBus.clear("e")
-        assert EventBus.listener_count("e") == 0
+    def test_emit_deferred_increments_pending_count(self):
+        EventBus.emit_deferred("ev")
+        assert EventBus.pending_count() == 1
 
-    def test_clear_event_does_not_affect_other_events(self):
-        cb_a, cb_b = MagicMock(), MagicMock()
-        EventBus.subscribe("a", cb_a)
-        EventBus.subscribe("b", cb_b)
-        EventBus.clear("a")
-        EventBus.emit("b")
-        cb_b.assert_called_once()
-
-    def test_clear_all_removes_all_listeners(self):
-        EventBus.subscribe("a", MagicMock())
-        EventBus.subscribe("b", MagicMock())
-        EventBus.clear()
-        assert EventBus.listener_count("a") == 0
-        assert EventBus.listener_count("b") == 0
-
-    def test_clear_all_empties_deferred_queue(self):
-        EventBus.emit_deferred("e", x=1)
-        EventBus.emit_deferred("e", x=2)
-        EventBus.clear()
-        assert EventBus.pending_count() == 0
-
-    def test_clear_unknown_event_is_safe(self):
-        EventBus.clear("evento.que.nao.existe")
-
-
-# ===========================================================================
-# 6. emit_deferred() + flush()
-# ===========================================================================
-
-class TestDeferred:
-    def test_deferred_not_dispatched_immediately(self):
-        cb = MagicMock()
-        EventBus.subscribe("e", cb)
-        EventBus.emit_deferred("e")
-        cb.assert_not_called()
-
-    def test_flush_dispatches_deferred(self):
-        cb = MagicMock()
-        EventBus.subscribe("e", cb)
-        EventBus.emit_deferred("e")
-        EventBus.flush()
-        cb.assert_called_once()
-
-    def test_flush_passes_kwargs(self):
-        cb = MagicMock()
-        EventBus.subscribe("e", cb)
-        EventBus.emit_deferred("e", valor=99)
-        EventBus.flush()
-        cb.assert_called_once_with(valor=99)
-
-    def test_flush_processes_fifo_order(self):
-        order = []
-        EventBus.subscribe("e", lambda n: order.append(n))
-        EventBus.emit_deferred("e", n=1)
-        EventBus.emit_deferred("e", n=2)
-        EventBus.emit_deferred("e", n=3)
-        EventBus.flush()
-        assert order == [1, 2, 3]
-
-    def test_flush_empties_queue(self):
-        EventBus.emit_deferred("e")
-        EventBus.flush()
-        assert EventBus.pending_count() == 0
-
-    def test_flush_empty_queue_is_safe(self):
-        EventBus.flush()
-
-    def test_multiple_deferred_different_events(self):
-        cb_a, cb_b = MagicMock(), MagicMock()
-        EventBus.subscribe("a", cb_a)
-        EventBus.subscribe("b", cb_b)
-        EventBus.emit_deferred("a")
-        EventBus.emit_deferred("b")
-        EventBus.flush()
-        cb_a.assert_called_once()
-        cb_b.assert_called_once()
-
-    def test_deferred_respects_once(self):
-        cb = MagicMock()
-        EventBus.once("e", cb)
-        EventBus.emit_deferred("e")
-        EventBus.emit_deferred("e")
-        EventBus.flush()
-        assert cb.call_count == 1
-
-
-# ===========================================================================
-# 7. Inspecão
-# ===========================================================================
-
-class TestInspection:
-    def test_listener_count_zero_for_unknown_event(self):
-        assert EventBus.listener_count("nao.existe") == 0
-
-    def test_listener_count_increments(self):
-        EventBus.subscribe("e", MagicMock())
-        EventBus.subscribe("e", MagicMock())
-        assert EventBus.listener_count("e") == 2
-
-    def test_has_listeners_false_when_empty(self):
-        assert EventBus.has_listeners("e") is False
-
-    def test_has_listeners_true_after_subscribe(self):
-        EventBus.subscribe("e", MagicMock())
-        assert EventBus.has_listeners("e") is True
-
-    def test_pending_count_zero_initially(self):
-        assert EventBus.pending_count() == 0
-
-    def test_pending_count_increments_with_deferred(self):
+    def test_emit_deferred_multiple_increments_count(self):
         EventBus.emit_deferred("a")
         EventBus.emit_deferred("b")
         assert EventBus.pending_count() == 2
 
-
-# ===========================================================================
-# 8. Retrocompatibilidade (instanciamento + publish)
-# ===========================================================================
-
-class TestRetrocompat:
-    def test_instance_publish_calls_emit(self):
+    def test_flush_dispatches_deferred(self):
         cb = MagicMock()
-        EventBus.subscribe("e", cb)
-        bus = EventBus()
-        bus.publish("e", x=7)
+        EventBus.subscribe("ev", cb)
+        EventBus.emit_deferred("ev", x=7)
+        EventBus.flush()
         cb.assert_called_once_with(x=7)
 
-    def test_instance_has_subscribers(self):
-        bus = EventBus()
-        EventBus.subscribe("e", MagicMock())
-        assert bus.has_subscribers("e") is True
+    def test_flush_clears_queue(self):
+        EventBus.emit_deferred("ev")
+        EventBus.flush()
+        assert EventBus.pending_count() == 0
 
-    def test_instance_subscribers_count(self):
-        bus = EventBus()
-        EventBus.subscribe("e", MagicMock())
-        EventBus.subscribe("e", MagicMock())
-        assert bus.subscribers_count("e") == 2
+    def test_flush_dispatches_in_order(self):
+        order = []
+        EventBus.subscribe("a", lambda: order.append("a"))
+        EventBus.subscribe("b", lambda: order.append("b"))
+        EventBus.emit_deferred("a")
+        EventBus.emit_deferred("b")
+        EventBus.flush()
+        assert order == ["a", "b"]
 
-    def test_unsubscribe_all_via_instance(self):
+    def test_flush_empty_queue_no_error(self):
+        EventBus.flush()
+
+    def test_flush_does_not_double_dispatch(self):
         cb = MagicMock()
-        EventBus.subscribe("e", cb)
-        bus = EventBus()
-        bus.unsubscribe_all("e")
-        EventBus.emit("e")
+        EventBus.subscribe("ev", cb)
+        EventBus.emit_deferred("ev")
+        EventBus.flush()
+        EventBus.flush()
+        cb.assert_called_once()
+
+
+# ─────────────────────────────────────────────────────────────────
+class TestClear:
+    def test_clear_event_removes_listeners(self):
+        EventBus.subscribe("ev", MagicMock())
+        EventBus.clear("ev")
+        assert EventBus.listener_count("ev") == 0
+
+    def test_clear_event_does_not_affect_others(self):
+        EventBus.subscribe("a", MagicMock())
+        EventBus.subscribe("b", MagicMock())
+        EventBus.clear("a")
+        assert EventBus.listener_count("b") == 1
+
+    def test_clear_all_removes_everything(self):
+        EventBus.subscribe("a", MagicMock())
+        EventBus.subscribe("b", MagicMock())
+        EventBus.emit_deferred("c")
+        EventBus.clear()
+        assert EventBus.listener_count("a") == 0
+        assert EventBus.listener_count("b") == 0
+        assert EventBus.pending_count()     == 0
+
+    def test_clear_unknown_event_no_error(self):
+        EventBus.clear("ghost")
+
+    def test_clear_also_removes_once_listeners(self):
+        cb = MagicMock()
+        EventBus.once("ev", cb)
+        EventBus.clear("ev")
+        EventBus.emit("ev")
         cb.assert_not_called()
+
+
+# ─────────────────────────────────────────────────────────────────
+class TestInspection:
+    def test_listener_count_zero_for_new_event(self):
+        assert EventBus.listener_count("new") == 0
+
+    def test_listener_count_correct_after_subscribe(self):
+        EventBus.subscribe("ev", MagicMock())
+        EventBus.subscribe("ev", MagicMock())
+        assert EventBus.listener_count("ev") == 2
+
+    def test_pending_count_zero_initially(self):
+        assert EventBus.pending_count() == 0
+
+    def test_pending_count_after_emit_deferred(self):
+        EventBus.emit_deferred("a")
+        EventBus.emit_deferred("b")
+        EventBus.emit_deferred("c")
+        assert EventBus.pending_count() == 3
+
+
+# ─────────────────────────────────────────────────────────────────
+class TestInstanceAlias:
+    """Instâncias devem delegar para o estado global (retrocompat)."""
+
+    def test_publish_calls_listener(self):
+        cb  = MagicMock()
+        bus = EventBus()
+        EventBus.subscribe("ev", cb)
+        bus.publish("ev", val=99)
+        cb.assert_called_once_with(val=99)
+
+    def test_has_subscribers_true(self):
+        bus = EventBus()
+        EventBus.subscribe("ev", MagicMock())
+        assert bus.has_subscribers("ev") is True
+
+    def test_has_subscribers_false(self):
+        assert EventBus().has_subscribers("ghost") is False
+
+    def test_subscribers_count(self):
+        EventBus.subscribe("ev", MagicMock())
+        EventBus.subscribe("ev", MagicMock())
+        assert EventBus().subscribers_count("ev") == 2
+
+    def test_unsubscribe_all_clears_event(self):
+        EventBus.subscribe("ev", MagicMock())
+        EventBus().unsubscribe_all("ev")
+        assert EventBus.listener_count("ev") == 0
+
+
+# ─────────────────────────────────────────────────────────────────
+class TestEdgeCases:
+    def test_listener_subscribes_during_emit(self):
+        """Listener adicionado durante emit não é chamado no mesmo ciclo."""
+        late = MagicMock()
+        def spawner():
+            EventBus.subscribe("ev", late)
+        EventBus.subscribe("ev", spawner)
+        EventBus.emit("ev")
+        late.assert_not_called()
+        EventBus.emit("ev")
+        late.assert_called_once()
+
+    def test_listener_unsubscribes_self_during_emit(self):
+        """Listener pode se remover durante emissão sem causar erro."""
+        cb = MagicMock()
+        def self_remove():
+            EventBus.unsubscribe("ev", self_remove)
+        EventBus.subscribe("ev", self_remove)
+        EventBus.subscribe("ev", cb)
+        EventBus.emit("ev")
+        cb.assert_called_once()
+
+    def test_emit_with_no_kwargs(self):
+        cb = MagicMock()
+        EventBus.subscribe("ping", cb)
+        EventBus.emit("ping")
+        cb.assert_called_once_with()
+
+    def test_multiple_deferred_same_event(self):
+        cb = MagicMock()
+        EventBus.subscribe("ev", cb)
+        EventBus.emit_deferred("ev", n=1)
+        EventBus.emit_deferred("ev", n=2)
+        EventBus.flush()
+        assert cb.call_args_list == [call(n=1), call(n=2)]
