@@ -1,0 +1,39 @@
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+extend-exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "ENV",
+    "env",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+    "build",
+    "dist",
+    "exports",
+    "release",
+    "editor_legacy",
+    "demos",
+    "zennity-engine-game",
+]
+
+[tool.ruff.lint]
+select = [
+    "E9",
+    "F63",
+    "F7",
+    "F82",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"editor/windows/main_window.py" = ["F821"]
+"editor/widgets/asset_browser_dock.py" = ["F821"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
