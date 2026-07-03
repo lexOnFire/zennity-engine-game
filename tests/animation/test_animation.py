@@ -23,7 +23,6 @@ import pytest
 # ---------------------------------------------------------------------------
 
 def make_surface():
-    # Surface 1x1 real — evita MagicMock em codigo que inspeciona Surface
     return pygame.Surface((1, 1))
 
 
@@ -91,11 +90,9 @@ class TestAnimationClip:
     def test_flip_h_mirrors_frames(self):
         from engine.animation.clip import AnimationClip
         frames = [pygame.Surface((4, 4)) for _ in range(2)]
-        # desenha pixel vermelho na coluna 0 de cada frame
         for f in frames:
             f.set_at((0, 0), (255, 0, 0))
         clip = AnimationClip("idle", frames, flip_h=True)
-        # apos flip, o pixel vermelho deve estar na coluna 3 (rightmost)
         for f in clip.frames:
             assert f.get_at((3, 0))[:3] == (255, 0, 0)
 
@@ -283,13 +280,11 @@ class TestAnimatorEvents:
         """
         3 frames a 10fps (frame_duration=0.1s). Evento no frame 1.
 
-        Progresso de frames:
-          update(0.35) -> 4 ticks:
-            tick 1: 0 -> 1   (event fires, fired=True)
-            tick 2: 1 -> 2
-            tick 3: 2 -> 0   (loop: fired resetado para todos eventos)
-            tick 4: 0 -> 1   (event fires novamente, fired=True)
-          => call_count == 2 apos update(0.35)
+        update(0.45) -> 4 ticks inteiros (floor(0.45/0.1)=4):
+          tick 1: 0->1  event fires  (call_count=1, fired=True)
+          tick 2: 1->2
+          tick 3: 2->0  loop: fired resetado
+          tick 4: 0->1  event fires  (call_count=2)
         """
         from engine.animation.clip import AnimationClip
         from engine.animation.animator import Animator
@@ -300,9 +295,7 @@ class TestAnimatorEvents:
         a.game_object = None
         a.add_clip(clip)
         a.play("idle")
-        # 0.35s / 0.1s = 3.5 ticks -> 3 avancos inteiros:
-        # 0->1(fire), 1->2, 2->0(loop+reset), 0->1(fire again) = 2 fires
-        a.update(0.35)
+        a.update(0.45)
         assert cb.call_count == 2
 
 
@@ -381,9 +374,8 @@ class TestAnimatorPushFrame:
         a = Animator()
         a.game_object = go
         a.add_clip(AnimationClip("idle", make_frames(3), fps=10))
-        a.play("idle")  # dispara _push_frame -> sr.image = frames[0]
+        a.play("idle")
 
-        # confirma que set foi chamado (MagicMock registra atribuicao)
         assert go.get_component.called
 
     def test_push_frame_no_game_object_no_crash(self):
