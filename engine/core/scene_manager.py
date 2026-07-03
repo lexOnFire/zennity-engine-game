@@ -8,13 +8,13 @@ SceneManager — singleton que gerencia a pilha de cenas e transições.
 """
 from __future__ import annotations
 
+import importlib
 import traceback
 from typing import Callable, List, Optional
 
 import pygame
 
 from engine.transitions import Transition, TransitionPhase, FadeTransition  # noqa: F401
-from engine.ui.ui_manager import UIManager
 
 
 class SceneManager:
@@ -105,7 +105,7 @@ class SceneManager:
         prev_scene = self._stack[-2]
         if transition is None:
             self._stack.pop()
-            UIManager.reset()
+            self._reset_ui()
             if hasattr(prev_scene, "_ui_setup"):
                 prev_scene._ui_setup()
             return
@@ -198,6 +198,11 @@ class SceneManager:
     # ------------------------------------------------------------------ #
 
     @staticmethod
+    def _reset_ui() -> None:
+        ui_module = importlib.import_module("engine.ui.ui_manager")
+        ui_module.UIManager.reset()
+
+    @staticmethod
     def _run_physics() -> None:
         """
         Chama check_all() em todos os colliders registrados.
@@ -229,9 +234,9 @@ class SceneManager:
         if self._pending_pop:
             if len(self._stack) > 1:
                 self._stack.pop()
-            UIManager.reset()
+            self._reset_ui()
         elif self._pending_push:
-            UIManager.reset()
+            self._reset_ui()
             scene = self._pending_scene
             scene.engine = self._engine
             scene.start()
@@ -245,7 +250,7 @@ class SceneManager:
 
     def _do_swap_load(self, new_scene) -> None:
         """Troca imediata — limpa pilha, libera recursos e inicia nova cena."""
-        UIManager.reset()
+        self._reset_ui()
         self._stack.clear()
         try:
             from engine.physics.collider import BoxCollider, CircleCollider
@@ -267,7 +272,7 @@ class SceneManager:
 
     def _do_swap_push(self, new_scene) -> None:
         """Push imediato."""
-        UIManager.reset()
+        self._reset_ui()
         new_scene.engine = self._engine
         new_scene.start()
         self._stack.append(new_scene)
