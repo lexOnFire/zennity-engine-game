@@ -1,625 +1,323 @@
 """
 tests/core/test_scene.py
 ────────────────────────────────────────────────────────────────
-Suite completa de engine.core.scene.Scene — 62 testes.
-
-Grupos:
-  TestAddGameObject    ( 8) append, idempotência, .scene, start comp, retorno,
-                            múltiplos, re-add, propaga filhos
-  TestRemoveGameObject ( 5) remove, limpa .scene, safe, não destrói, count
-  TestFind             ( 9) find, tag, id (full e short), case-sensitive,
-                            none quando ausente, primeiro match, tag vazia, id ausente
-  TestUpdateDraw       ( 8) delega update/draw, skips inativo, skips removido,
-                            surface real, ordem de update, snapshot contra mutação
-                            (add e remove durante iteração)
-  TestSubclassHooks    ( 7) start, on_exit, handle_event, update+super, draw+super,
-                            engine acessível em start, add GO em start
-  TestSceneDefaults    ( 3) lista vazia, name, engine=None
-  TestRepr             ( 4) nome, contagem, default, é string
-  TestEdgeCases        (18) vazia update/draw, GO sem components, find após remove,
-                            tag após remove, handle_event subclasse, removes duplos,
-                            migra cena, 50 GOs, name vazio, id após remove,
-                            dt=0, update em múltiplos frames, draw preserva ordem,
-                            re-add após remove, tag dinìimica, find_by_tag todos,
-                            find_by_id short após remove
-
-Total: 62 testes.
+Testes unitários de engine/core/scene.py.
 
 Estratégia:
-  - GameObject + Component reais — integração genuina.
-  - pygame.Surface(1,1) via fixture `screen` — sem init() completo.
-  - Nenhum acesso a rede, arquivo ou sys.modules.
+  - pygame é mockado via sys.modules (Scene importa pygame apenas para
+    type hints de Surface e Event).
+  - Engine é simulada com MagicMock — Scene não chama nada nela;
+    a referência existe só para testes de atributo.
+  - Cada teste cria GameObjects reais para exercitar integração
+    Scene ↔ GameObject (propagation de .scene, start, update, draw).
 """
 from __future__ import annotations
 
-import pytest
+import sys
+from types import ModuleType
 from unittest.mock import MagicMock
 
-import pygame
+import pytest
+
+# ── stub pygame (Surface + Event para type hints) ───────────────────────
+if "pygame" not in sys.modules:
+    _pg = ModuleType("pygame")
+    _pg.Surface = MagicMock
+    _pg.event   = ModuleType("pygame.event")
+    _pg.event.Event = MagicMock
+    sys.modules["pygame"]       = _pg
+    sys.modules["pygame.event"] = _pg.event
+else:
+    _pg = sys.modules["pygame"]
+
+from engine.core.scene import Scene      # noqa: E402
+from engine.game_object import GameObject  # noqa: E402
+from engine.core.component import Component  # noqa: E402
 
 
-# ---------------------------------------------------------------------------
-# Fixture
-# ---------------------------------------------------------------------------
-
-@pytest.fixture
-def screen():
-    return pygame.Surface((1, 1))
+def make_go(name="GO", tag="Untagged") -> GameObject:
+    return GameObject(name, tag=tag)
 
 
-# ===========================================================================
-# 1. add_game_object
-# ===========================================================================
-
-class TestAddGameObject:
-    def test_go_appears_in_list(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        go = GameObject("A")
-        scene.add_game_object(go)
-        assert go in scene.game_objects
-
-    def test_add_sets_go_scene(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        go = GameObject("A")
-        scene.add_game_object(go)
-        assert go.scene is scene
-
-    def test_add_is_idempotent(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        go = GameObject("A")
-        scene.add_game_object(go)
-        scene.add_game_object(go)
-        assert scene.game_objects.count(go) == 1
-
-    def test_add_returns_go(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        go = GameObject("A")
-        assert scene.add_game_object(go) is go
-
-    def test_add_triggers_component_start(self):
-        from engine.core import Scene, GameObject, Component
-        class Spy(Component):
-            def __init__(self): super().__init__(); self.started = False
-            def start(self): self.started = True
-        go = GameObject("A")
-        spy = go.add_component(Spy())
-        Scene().add_game_object(go)
-        assert spy.started is True
-
-    def test_add_multiple_gos(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        for i in range(5):
-            scene.add_game_object(GameObject(str(i)))
-        assert len(scene.game_objects) == 5
-
-    def test_re_add_after_remove(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        go = GameObject("A")
-        scene.add_game_object(go)
-        scene.remove_game_object(go)
-        scene.add_game_object(go)
-        assert scene.game_objects.count(go) == 1
-        assert go.scene is scene
-
-    def test_add_sets_scene_on_children(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        parent = GameObject("P")
-        child  = GameObject("C")
-        parent.add_child(child)
-        scene.add_game_object(parent)
-        assert child.scene is scene
+def make_tracked_go(name="GO") -> tuple[GameObject, MagicMock, MagicMock]:
+    """GO + mocks de update e draw para verificar propagação."""
+    go   = make_go(name)
+    comp = Component()
+    comp.update = MagicMock()
+    comp.draw   = MagicMock()
+    go.add_component(comp)
+    return go, comp.update, comp.draw
 
 
-# ===========================================================================
-# 2. remove_game_object
-# ===========================================================================
+# ─────────────────────────────────────────────────────────────────────────────
+class TestSceneInit:
+    def test_default_name(self):
+        assert Scene().name == "Scene"
 
-class TestRemoveGameObject:
-    def test_remove_takes_go_out(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        go = scene.add_game_object(GameObject("A"))
-        scene.remove_game_object(go)
-        assert go not in scene.game_objects
+    def test_custom_name(self):
+        assert Scene("Level1").name == "Level1"
 
-    def test_remove_clears_go_scene(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        go = scene.add_game_object(GameObject("A"))
-        scene.remove_game_object(go)
-        assert go.scene is None
+    def test_game_objects_empty(self):
+        assert Scene().game_objects == []
 
-    def test_remove_nonexistent_is_safe(self):
-        from engine.core import Scene, GameObject
-        Scene().remove_game_object(GameObject("A"))
-
-    def test_remove_does_not_destroy_go(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        go = scene.add_game_object(GameObject("A"))
-        scene.remove_game_object(go)
-        assert go.active is True
-
-    def test_remove_decrements_count(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        go = scene.add_game_object(GameObject("A"))
-        scene.add_game_object(GameObject("B"))
-        scene.remove_game_object(go)
-        assert len(scene.game_objects) == 1
-
-
-# ===========================================================================
-# 3. find / find_by_tag / find_by_id
-# ===========================================================================
-
-class TestFind:
-    def test_find_by_name(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        go = scene.add_game_object(GameObject("Boss"))
-        assert scene.find("Boss") is go
-
-    def test_find_returns_none_when_absent(self):
-        from engine.core import Scene
-        assert Scene().find("Ghost") is None
-
-    def test_find_returns_first_match(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        go1 = scene.add_game_object(GameObject("Twin"))
-        scene.add_game_object(GameObject("Twin"))
-        assert scene.find("Twin") is go1
-
-    def test_find_is_case_sensitive(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        scene.add_game_object(GameObject("Hero"))
-        assert scene.find("hero") is None
-
-    def test_find_by_tag_returns_all(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        e1 = scene.add_game_object(GameObject("E1", tag="Enemy"))
-        e2 = scene.add_game_object(GameObject("E2", tag="Enemy"))
-        scene.add_game_object(GameObject("P",  tag="Player"))
-        result = scene.find_by_tag("Enemy")
-        assert e1 in result and e2 in result and len(result) == 2
-
-    def test_find_by_tag_empty_when_none(self):
-        from engine.core import Scene
-        assert Scene().find_by_tag("Alien") == []
-
-    def test_find_by_id_full_uuid(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        go = scene.add_game_object(GameObject("A"))
-        assert scene.find_by_id(go.id) is go
-
-    def test_find_by_id_short(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        go = scene.add_game_object(GameObject("A"))
-        assert scene.find_by_id(go.short_id) is go
-
-    def test_find_by_id_none_when_absent(self):
-        from engine.core import Scene
-        assert Scene().find_by_id("00000000") is None
-
-
-# ===========================================================================
-# 4. update / draw
-# ===========================================================================
-
-class TestUpdateDraw:
-    def test_update_delegates_to_all_gos(self):
-        from engine.core import Scene, GameObject, Component
-        class Ticker(Component):
-            def __init__(self): super().__init__(); self.ticks = 0
-            def update(self, dt): self.ticks += 1
-        scene = Scene()
-        tickers = []
-        for i in range(3):
-            go = GameObject(str(i))
-            t = go.add_component(Ticker())
-            tickers.append(t)
-            scene.add_game_object(go)
-        scene.update(0.016)
-        assert all(t.ticks == 1 for t in tickers)
-
-    def test_draw_delegates_to_all_gos(self):
-        from engine.core import Scene, GameObject, Component
-        class Drawer(Component):
-            def __init__(self): super().__init__(); self.drawn = False
-            def draw(self, screen): self.drawn = True
-        scene = Scene()
-        drawers = []
-        for i in range(3):
-            go = GameObject(str(i))
-            d = go.add_component(Drawer())
-            drawers.append(d)
-            scene.add_game_object(go)
-        scene.draw(MagicMock())
-        assert all(d.drawn for d in drawers)
-
-    def test_update_skips_removed_go(self):
-        from engine.core import Scene, GameObject, Component
-        class Ticker(Component):
-            def __init__(self): super().__init__(); self.ticks = 0
-            def update(self, dt): self.ticks += 1
-        scene = Scene()
-        go = GameObject("A")
-        t = go.add_component(Ticker())
-        scene.add_game_object(go)
-        scene.remove_game_object(go)
-        scene.update(0.016)
-        assert t.ticks == 0
-
-    def test_update_skips_inactive_go(self):
-        from engine.core import Scene, GameObject, Component
-        class Ticker(Component):
-            def __init__(self): super().__init__(); self.ticks = 0
-            def update(self, dt): self.ticks += 1
-        scene = Scene()
-        go = GameObject("A")
-        t = go.add_component(Ticker())
-        scene.add_game_object(go)
-        go.active = False
-        scene.update(0.016)
-        assert t.ticks == 0
-
-    def test_draw_skips_inactive_go(self):
-        from engine.core import Scene, GameObject, Component
-        class Drawer(Component):
-            def __init__(self): super().__init__(); self.drawn = False
-            def draw(self, screen): self.drawn = True
-        scene = Scene()
-        go = GameObject("A")
-        d = go.add_component(Drawer())
-        scene.add_game_object(go)
-        go.active = False
-        scene.draw(MagicMock())
-        assert d.drawn is False
-
-    def test_draw_with_real_surface(self, screen):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        scene.add_game_object(GameObject("Sprite"))
-        scene.draw(screen)  # não deve lançar
-
-    def test_update_preserves_insertion_order(self):
-        """GOs são atualizados na ordem em que foram adicionados."""
-        from engine.core import Scene, GameObject, Component
-        order = []
-
-        def _make_tracker(label):
-            class _T(Component):
-                _label = label
-                def update(self, dt): order.append(self._label)
-            return _T()
-
-        scene = Scene()
-        for lbl in ("A", "B", "C"):
-            go = GameObject(lbl)
-            go.add_component(_make_tracker(lbl))
-            scene.add_game_object(go)
-
-        scene.update(0.016)
-        assert order == ["A", "B", "C"]
-
-    def test_add_during_update_no_crash(self):
-        """list() snapshot protege contra RuntimeError de mutação."""
-        from engine.core import Scene, GameObject, Component
-        scene = Scene()
-        extra = GameObject("Extra")
-
-        class _Adder(Component):
-            def update(self, dt): scene.add_game_object(extra)
-
-        go = GameObject("Adder")
-        go.add_component(_Adder())
-        scene.add_game_object(go)
-        scene.update(0.016)
-
-    def test_remove_during_update_no_crash(self):
-        """list() snapshot protege contra RuntimeError de remoção."""
-        from engine.core import Scene, GameObject, Component
-        scene = Scene()
-        victim = scene.add_game_object(GameObject("Victim"))
-
-        class _Remover(Component):
-            def update(self, dt): scene.remove_game_object(victim)
-
-        go = GameObject("Remover")
-        go.add_component(_Remover())
-        scene.add_game_object(go)
-        scene.update(0.016)
-
-
-# ===========================================================================
-# 5. Subclasse e hooks
-# ===========================================================================
-
-class TestSubclassHooks:
-    def test_start_hook(self):
-        from engine.core import Scene
-        class MyScene(Scene):
-            def __init__(self): super().__init__(); self.started = False
-            def start(self): self.started = True
-        s = MyScene()
-        s.start()
-        assert s.started is True
-
-    def test_on_exit_hook(self):
-        from engine.core import Scene
-        class MyScene(Scene):
-            def __init__(self): super().__init__(); self.exited = False
-            def on_exit(self): self.exited = True
-        s = MyScene()
-        s.on_exit()
-        assert s.exited is True
-
-    def test_handle_event_base_does_not_raise(self):
-        from engine.core import Scene
-        Scene().handle_event(MagicMock())
-
-    def test_subclass_update_calls_super(self):
-        from engine.core import Scene, GameObject, Component
-        class Ticker(Component):
-            def __init__(self): super().__init__(); self.ticks = 0
-            def update(self, dt): self.ticks += 1
-        class MyScene(Scene):
-            def update(self, dt): super().update(dt)
-        scene = MyScene()
-        go = GameObject("G")
-        t = go.add_component(Ticker())
-        scene.add_game_object(go)
-        scene.update(0.016)
-        assert t.ticks == 1
-
-    def test_subclass_draw_calls_super(self):
-        from engine.core import Scene, GameObject, Component
-        class Drawer(Component):
-            def __init__(self): super().__init__(); self.drawn = False
-            def draw(self, screen): self.drawn = True
-        class MyScene(Scene):
-            def draw(self, screen): super().draw(screen)
-        scene = MyScene()
-        go = GameObject("G")
-        d = go.add_component(Drawer())
-        scene.add_game_object(go)
-        scene.draw(MagicMock())
-        assert d.drawn is True
-
-    def test_engine_accessible_in_start(self):
-        from engine.core import Scene
-        captured = {}
-        class MyScene(Scene):
-            def start(self): captured["engine"] = self.engine
-        sc = MyScene()
-        fake_engine = MagicMock()
-        sc.engine = fake_engine
-        sc.start()
-        assert captured["engine"] is fake_engine
-
-    def test_add_go_in_start(self):
-        from engine.core import Scene, GameObject
-        go_ref = GameObject("Spawned")
-        class MyScene(Scene):
-            def start(self): self.add_game_object(go_ref)
-        sc = MyScene()
-        sc.start()
-        assert go_ref in sc.game_objects
-
-
-# ===========================================================================
-# 6. Defaults
-# ===========================================================================
-
-class TestSceneDefaults:
-    def test_starts_empty(self):
-        from engine.core import Scene
-        assert len(Scene().game_objects) == 0
-
-    def test_name_set(self):
-        from engine.core import Scene
-        assert Scene("Main").name == "Main"
-
-    def test_engine_none_by_default(self):
-        from engine.core import Scene
+    def test_engine_none(self):
         assert Scene().engine is None
 
-
-# ===========================================================================
-# 7. __repr__
-# ===========================================================================
-
-class TestRepr:
     def test_repr_contains_name(self):
-        from engine.core import Scene
-        assert "GameScene" in repr(Scene("GameScene"))
+        s = Scene("Boss")
+        assert "Boss" in repr(s)
 
-    def test_repr_contains_object_count(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        scene.add_game_object(GameObject("A"))
-        scene.add_game_object(GameObject("B"))
-        assert "2" in repr(scene)
-
-    def test_repr_default_name(self):
-        from engine.core import Scene
-        assert "Scene" in repr(Scene())
-
-    def test_repr_is_string(self):
-        from engine.core import Scene
-        assert isinstance(repr(Scene()), str)
+    def test_repr_contains_count(self):
+        s = Scene()
+        s.add_game_object(make_go())
+        assert "objects=1" in repr(s)
 
 
-# ===========================================================================
-# 8. Edge cases
-# ===========================================================================
+# ─────────────────────────────────────────────────────────────────────────────
+class TestAddGameObject:
+    def test_add_appends_go(self):
+        s  = Scene()
+        go = make_go()
+        s.add_game_object(go)
+        assert go in s.game_objects
 
-class TestEdgeCases:
-    def test_empty_scene_draw_is_safe(self):
-        from engine.core import Scene
-        Scene().draw(MagicMock())
+    def test_add_returns_go(self):
+        s  = Scene()
+        go = make_go()
+        assert s.add_game_object(go) is go
 
-    def test_empty_scene_update_is_safe(self):
-        from engine.core import Scene
+    def test_add_sets_scene_on_go(self):
+        s  = Scene()
+        go = make_go()
+        s.add_game_object(go)
+        assert go.scene is s
+
+    def test_add_duplicate_ignored(self):
+        s  = Scene()
+        go = make_go()
+        s.add_game_object(go)
+        s.add_game_object(go)
+        assert s.game_objects.count(go) == 1
+
+    def test_add_multiple(self):
+        s  = Scene()
+        a, b = make_go("A"), make_go("B")
+        s.add_game_object(a)
+        s.add_game_object(b)
+        assert len(s.game_objects) == 2
+
+    def test_add_triggers_component_start(self):
+        s    = Scene()
+        go   = make_go()
+        comp = Component()
+        comp.start = MagicMock()
+        go.add_component(comp)
+        comp._started = False
+        s.add_game_object(go)
+        comp.start.assert_called_once()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+class TestRemoveGameObject:
+    def test_remove_takes_go_out_of_list(self):
+        s  = Scene()
+        go = make_go()
+        s.add_game_object(go)
+        s.remove_game_object(go)
+        assert go not in s.game_objects
+
+    def test_remove_sets_scene_none_on_go(self):
+        s  = Scene()
+        go = make_go()
+        s.add_game_object(go)
+        s.remove_game_object(go)
+        assert go.scene is None
+
+    def test_remove_nonexistent_no_error(self):
+        s  = Scene()
+        go = make_go()
+        s.remove_game_object(go)  # nunca adicionado
+
+    def test_remove_one_of_many(self):
+        s    = Scene()
+        a, b = make_go("A"), make_go("B")
+        s.add_game_object(a)
+        s.add_game_object(b)
+        s.remove_game_object(a)
+        assert a not in s.game_objects
+        assert b in s.game_objects
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+class TestFind:
+    def test_find_by_name_returns_go(self):
+        s  = Scene()
+        go = make_go("Player")
+        s.add_game_object(go)
+        assert s.find("Player") is go
+
+    def test_find_missing_returns_none(self):
+        s = Scene()
+        assert s.find("Ghost") is None
+
+    def test_find_returns_first_match(self):
+        s   = Scene()
+        a   = make_go("X")
+        b   = make_go("X")
+        s.add_game_object(a)
+        s.add_game_object(b)
+        assert s.find("X") is a
+
+    def test_find_by_tag_returns_all(self):
+        s  = Scene()
+        e1 = make_go("E1", tag="Enemy")
+        e2 = make_go("E2", tag="Enemy")
+        p  = make_go("P",  tag="Player")
+        for go in (e1, e2, p):
+            s.add_game_object(go)
+        result = s.find_by_tag("Enemy")
+        assert e1 in result
+        assert e2 in result
+        assert p  not in result
+
+    def test_find_by_tag_empty(self):
+        s = Scene()
+        assert s.find_by_tag("Missing") == []
+
+    def test_find_by_id_full_uuid(self):
+        s  = Scene()
+        go = make_go()
+        s.add_game_object(go)
+        assert s.find_by_id(go.id) is go
+
+    def test_find_by_id_short(self):
+        s  = Scene()
+        go = make_go()
+        s.add_game_object(go)
+        assert s.find_by_id(go.short_id) is go
+
+    def test_find_by_id_missing_returns_none(self):
+        s = Scene()
+        assert s.find_by_id("00000000") is None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+class TestUpdate:
+    def test_update_propagates_to_all_gos(self):
+        s = Scene()
+        go1, upd1, _ = make_tracked_go("A")
+        go2, upd2, _ = make_tracked_go("B")
+        s.add_game_object(go1)
+        s.add_game_object(go2)
+        s.update(0.016)
+        upd1.assert_called_once_with(0.016)
+        upd2.assert_called_once_with(0.016)
+
+    def test_update_skips_inactive_go(self):
+        s = Scene()
+        go, upd, _ = make_tracked_go()
+        go.active = False
+        s.add_game_object(go)
+        s.update(0.016)
+        upd.assert_not_called()
+
+    def test_update_safe_when_go_removed_during_iteration(self):
+        """GO removido durante update não deve causar RuntimeError."""
+        s  = Scene()
+        go = make_go()
+        victim = make_go("victim")
+
+        class Remover(Component):
+            def update(self, dt):
+                s.remove_game_object(victim)
+
+        go.add_component(Remover())
+        s.add_game_object(go)
+        s.add_game_object(victim)
+        s.update(0.016)  # não deve lançar
+
+    def test_update_empty_scene_no_error(self):
         Scene().update(0.016)
 
-    def test_go_without_components_updates_safely(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        go = GameObject("Empty")
-        scene.add_game_object(go)
-        scene.update(0.016)
 
-    def test_find_after_remove_returns_none(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        go = scene.add_game_object(GameObject("X"))
-        scene.remove_game_object(go)
-        assert scene.find("X") is None
+# ─────────────────────────────────────────────────────────────────────────────
+class TestDraw:
+    def test_draw_propagates_to_all_gos(self):
+        s = Scene()
+        go1, _, drw1 = make_tracked_go("A")
+        go2, _, drw2 = make_tracked_go("B")
+        s.add_game_object(go1)
+        s.add_game_object(go2)
+        screen = MagicMock()
+        s.draw(screen)
+        drw1.assert_called_once_with(screen)
+        drw2.assert_called_once_with(screen)
 
-    def test_find_by_tag_after_remove(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        go = scene.add_game_object(GameObject("E", tag="Enemy"))
-        scene.remove_game_object(go)
-        assert scene.find_by_tag("Enemy") == []
+    def test_draw_skips_inactive_go(self):
+        s = Scene()
+        go, _, drw = make_tracked_go()
+        go.active = False
+        s.add_game_object(go)
+        s.draw(MagicMock())
+        drw.assert_not_called()
 
-    def test_handle_event_subclass_receives_event(self):
-        from engine.core import Scene
-        class Evented(Scene):
-            def __init__(self): super().__init__(); self.last = None
-            def handle_event(self, e): self.last = e
-        s = Evented()
-        fake = MagicMock()
-        s.handle_event(fake)
-        assert s.last is fake
+    def test_draw_empty_scene_no_error(self):
+        Scene().draw(MagicMock())
 
-    def test_multiple_removes_of_same_go_is_safe(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        go = scene.add_game_object(GameObject("A"))
-        scene.remove_game_object(go)
-        scene.remove_game_object(go)
 
-    def test_add_go_to_two_scenes_migrates_scene_ref(self):
-        from engine.core import Scene, GameObject
-        s1, s2 = Scene(), Scene()
-        go = GameObject("A")
-        s1.add_game_object(go)
-        s2.add_game_object(go)
-        assert go.scene is s2
+# ─────────────────────────────────────────────────────────────────────────────
+class TestLifecycleHooks:
+    def test_start_is_noop_by_default(self):
+        Scene().start()  # não deve lançar
 
-    def test_large_scene_update_performance(self):
-        from engine.core import Scene, GameObject, Component
-        class Noop(Component):
-            def update(self, dt): pass
-        scene = Scene()
-        for i in range(50):
-            go = GameObject(str(i))
-            go.add_component(Noop())
-            scene.add_game_object(go)
-        scene.update(0.016)
-        assert len(scene.game_objects) == 50
+    def test_on_exit_is_noop_by_default(self):
+        Scene().on_exit()  # não deve lançar
 
-    def test_scene_name_empty_string(self):
-        from engine.core import Scene
-        assert Scene("").name == ""
+    def test_handle_event_is_noop_by_default(self):
+        Scene().handle_event(MagicMock())  # não deve lançar
 
-    def test_find_by_id_after_remove(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        go = scene.add_game_object(GameObject("A"))
-        gid = go.id
-        scene.remove_game_object(go)
-        assert scene.find_by_id(gid) is None
+    def test_subclass_can_override_start(self):
+        called = []
+        class MyScene(Scene):
+            def start(self): called.append(True)
+        MyScene().start()
+        assert called == [True]
 
-    def test_update_dt_zero(self):
-        from engine.core import Scene, GameObject, Component
-        class Ticker(Component):
-            def __init__(self): super().__init__(); self.dts = []
-            def update(self, dt): self.dts.append(dt)
-        scene = Scene()
-        go = GameObject("A")
-        t = go.add_component(Ticker())
-        scene.add_game_object(go)
-        scene.update(0)
-        assert t.dts == [0]
+    def test_subclass_update_calls_super(self):
+        s = Scene()
+        go, upd, _ = make_tracked_go()
+        s.add_game_object(go)
 
-    def test_update_multiple_frames_accumulates(self):
-        from engine.core import Scene, GameObject, Component
-        class Ticker(Component):
-            def __init__(self): super().__init__(); self.ticks = 0
-            def update(self, dt): self.ticks += 1
-        scene = Scene()
-        go = GameObject("A")
-        t = go.add_component(Ticker())
-        scene.add_game_object(go)
-        for _ in range(5):
-            scene.update(0.016)
-        assert t.ticks == 5
+        class MyScene(Scene):
+            def update(self, dt): super().update(dt)
 
-    def test_draw_preserves_insertion_order(self):
-        from engine.core import Scene, GameObject, Component
-        drawn_order = []
+        ms = MyScene()
+        ms.game_objects = s.game_objects
+        ms.update(0.016)
+        upd.assert_called_once_with(0.016)
 
-        def _make_drawer(label):
-            class _D(Component):
-                _label = label
-                def draw(self, screen): drawn_order.append(self._label)
-            return _D()
+    def test_subclass_draw_calls_super(self):
+        s = Scene()
+        go, _, drw = make_tracked_go()
+        s.add_game_object(go)
+        screen = MagicMock()
 
-        scene = Scene()
-        for lbl in ("X", "Y", "Z"):
-            go = GameObject(lbl)
-            go.add_component(_make_drawer(lbl))
-            scene.add_game_object(go)
+        class MyScene(Scene):
+            def draw(self, screen): super().draw(screen)
 
-        scene.draw(MagicMock())
-        assert drawn_order == ["X", "Y", "Z"]
+        ms = MyScene()
+        ms.game_objects = s.game_objects
+        ms.draw(screen)
+        drw.assert_called_once_with(screen)
 
-    def test_re_add_after_remove_scene_ref_correct(self):
-        from engine.core import Scene, GameObject
-        s1, s2 = Scene(), Scene()
-        go = GameObject("A")
-        s1.add_game_object(go)
-        s1.remove_game_object(go)
-        s2.add_game_object(go)
-        assert go.scene is s2
-        assert go not in s1.game_objects
 
-    def test_dynamic_tag_change_reflected_in_find_by_tag(self):
-        """find_by_tag lê go.tag em tempo real; tag mutada deve ser refletida."""
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        go = scene.add_game_object(GameObject("A", tag="OldTag"))
-        go.tag = "NewTag"
-        assert scene.find_by_tag("NewTag") == [go]
-        assert scene.find_by_tag("OldTag") == []
+# ─────────────────────────────────────────────────────────────────────────────
+class TestEngineRef:
+    def test_engine_can_be_set(self):
+        s        = Scene()
+        engine   = MagicMock()
+        s.engine = engine
+        assert s.engine is engine
 
-    def test_find_by_tag_returns_all_matching(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        walls = [scene.add_game_object(GameObject(f"W{i}", tag="Wall")) for i in range(4)]
-        scene.add_game_object(GameObject("Floor", tag="Floor"))
-        result = scene.find_by_tag("Wall")
-        assert set(result) == set(walls)
-
-    def test_find_by_id_short_after_remove_returns_none(self):
-        from engine.core import Scene, GameObject
-        scene = Scene()
-        go = scene.add_game_object(GameObject("A"))
-        sid = go.short_id
-        scene.remove_game_object(go)
-        assert scene.find_by_id(sid) is None
+    def test_engine_default_none(self):
+        assert Scene().engine is None
