@@ -281,9 +281,15 @@ class TestAnimatorEvents:
 
     def test_event_fires_again_after_loop(self):
         """
-        3 frames a 10fps. Evento no frame 1.
-        update(0.3) -> frames 1(fire), 2, loop->0  (fired resetado)
-        update(0.1) -> frame 0->1                  (fire again)
+        3 frames a 10fps (frame_duration=0.1s). Evento no frame 1.
+
+        Progresso de frames:
+          update(0.35) -> 4 ticks:
+            tick 1: 0 -> 1   (event fires, fired=True)
+            tick 2: 1 -> 2
+            tick 3: 2 -> 0   (loop: fired resetado para todos eventos)
+            tick 4: 0 -> 1   (event fires novamente, fired=True)
+          => call_count == 2 apos update(0.35)
         """
         from engine.animation.clip import AnimationClip
         from engine.animation.animator import Animator
@@ -294,8 +300,9 @@ class TestAnimatorEvents:
         a.game_object = None
         a.add_clip(clip)
         a.play("idle")
-        a.update(0.3)
-        a.update(0.1)
+        # 0.35s / 0.1s = 3.5 ticks -> 3 avancos inteiros:
+        # 0->1(fire), 1->2, 2->0(loop+reset), 0->1(fire again) = 2 fires
+        a.update(0.35)
         assert cb.call_count == 2
 
 
