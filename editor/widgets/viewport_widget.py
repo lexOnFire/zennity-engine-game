@@ -138,9 +138,6 @@ class ViewportWidget(QOpenGLWidget):
         if hasattr(self.active_scene, "spawn_object"):
             self.active_scene.spawn_object(shape_type)
             self._sync_model_from_scene()
-        elif hasattr(self.active_scene, "spawn_object"):
-            # Fallback: cria via ViewModel (editor 3D sem spawn_object dedicado)
-            self.viewmodel.create_object(shape_type)
 
     def delete_selected_object(self) -> None:
         """Deleta o objeto selecionado na cena ativa."""
@@ -208,66 +205,107 @@ class ViewportWidget(QOpenGLWidget):
 
     def _apply_qt_shims(self) -> None:
         """
-        Monkey-patch nas cenas legadas do Pygame para:
-          1. Fazer a viewport ocupar 100% da área do widget Qt.
-          2. Ocultar toolbar, painel esquerdo, painel direito e statusbar legados.
-          3. Corrigir coordenadas de hit-test de mouse.
+        Monkey-patch nas cenas legadas do Pygame:
+          1. Layout dinâmico: captura self._vp_w / self._vp_h em tempo de execução.
+          2. Oculta toolbar, painel esq/dir e statusbar legados do Pygame.
+          3. Editor 3D: desativa modais e configura câmera.
         Chamado após criar/trocar a cena e a cada resize.
         """
         if not self.active_scene:
             return
 
-        w, h = self._vp_w, self._vp_h
-        scene = self.active_scene
+        widget = self  # captura por referência — sem valores fixos
+        scene  = self.active_scene
 
         # ── Editor 2D ────────────────────────────────────────────────────────
         if hasattr(scene, "_layout") and not hasattr(scene, "_lay"):
-            # Substitui o cálculo de layout para ocupar 100% do widget
-            def _qt_layout_2d(self_scene=scene, _w=w, _h=h):
+
+            def _qt_layout_2d(_w=widget):
+                """Layout que lê dimensões reais do widget a cada frame."""
+                w, h = _w._vp_w, _w._vp_h
                 return {
-                    "sw": _w, "sh": _h,
-                    "vp_left":    0,
-                    "vp_top":     0,
-                    "vp_right":   _w,
-                    "vp_bottom":  _h,
-                    "vp_w":       _w,
-                    "vp_h":       _h,
-                    "panel_left_w":   0,
-                    "panel_right_x":  _w,
-                    "panel_right_w":  0,
-                    "status_y":   _h,
+                    "sw": w, "sh": h,
+                    "vp_left":   0,
+                    "vp_top":    0,
+                    "vp_right":  w,
+                    "vp_bottom": h,
+                    "vp_w":      w,
+                    "vp_h":      h,
+                    "panel_left_w":  0,
+                    "panel_right_x": w,
+                    "panel_right_w": 0,
+                    "status_y":  h,
                 }
             scene._layout = _qt_layout_2d
 
-            # Substitui o draw: só renderiza a viewport, sem painéis legados
+            # Move todos os botões legados do Pygame para fora da tela
+            # (rect com y negativo garante que collidepoint() nunca dispare)
+            for btn in getattr(scene, "_all_toolbar_btns", []):
+                btn.rect.y = -9999
+
             def _qt_draw_2d(screen, _scene=scene):
                 lay = _scene._layout()
                 screen.fill((28, 29, 36))
                 _scene._draw_viewport(screen, lay)
             scene.draw = _qt_draw_2d
 
-            # Silencia handle_event nos cliques fora da viewport (painel esq/dir legado)
-            # — os botões legados ficam em coords negativas graças ao layout corrigido,
-            #   então o hit-test deles nunca dispara. Nada mais a fazer.
+            # Guarda o original e substitui por wrapper que filtra eventos
+            if not hasattr(scene.handle_event, "__wrapped__"):
+                _orig_handle = scene.handle_event
+
+                def _qt_handle_event_2d(event, _scene=scene, _orig=_orig_handle):
+                    """
+                    Wrapper que deixa passar apenas:
+                      - Eventos de teclado e scroll (sempre).
+                      - Eventos de mouse dentro da viewport (filtra a hierarquia
+                        e o inspector legados que ficavam em x < 240 e x > sw-260).
+                    """
+                    import pygame as _pg
+                    if event.type in (_pg.KEYDOWN, _pg.KEYUP):
+                        _orig(event)
+                        return
+                    if event.type == _pg.MOUSEWHEEL:
+                        _orig(event)
+                        return
+                    if event.type in (_pg.MOUSEBUTTONDOWN, _pg.MOUSEBUTTONUP, _pg.MOUSEMOTION):
+                        lay = _scene._layout()
+                        mx, my = _pg.mouse.get_pos()
+                        # Só processa se o mouse está dentro da viewport completa
+                        if _scene._in_viewport(mx, my, lay):
+                            _orig(event)
+                        return
+                    _orig(event)
+
+                _qt_handle_event_2d.__wrapped__ = _orig_handle
+                scene.handle_event = _qt_handle_event_2d
 
         # ── Editor 3D ────────────────────────────────────────────────────────
         elif hasattr(scene, "_lay"):
-            lay = scene._lay
-            lay.left_panel_rect    = pygame.Rect(0,  0, 0, 0)
-            lay.right_panel_rect   = pygame.Rect(w,  0, 0, 0)
-            lay.top_bar_rect       = pygame.Rect(0,  0, w, 0)
-            lay.status_bar_rect    = pygame.Rect(0,  h, w, 0)
-            lay.viewport_rect      = pygame.Rect(0,  0, w, h)
-            lay.viewport_edit_rect = pygame.Rect(0,  0, w, h)
-            lay.viewport_game_rect = pygame.Rect(0,  0, w, h)
-            lay.right_x     = w
-            lay.viewport_y  = 0
-            lay.viewport_h  = h
-            lay.viewport_w  = w
-            # Congela o update de layout (evita reset no resize do Pygame)
-            lay.update = lambda sw, sh: None
 
-            def _qt_draw_3d(screen, _scene=scene, _lay=lay):
+            def _sync_3d_layout(_w=widget, _lay=scene._lay):
+                """Atualiza os Rects de layout do editor 3D com dimensões reais."""
+                w, h = _w._vp_w, _w._vp_h
+                _lay.left_panel_rect    = pygame.Rect(0, 0, 0, 0)
+                _lay.right_panel_rect   = pygame.Rect(w, 0, 0, 0)
+                _lay.top_bar_rect       = pygame.Rect(0, 0, w, 0)
+                _lay.status_bar_rect    = pygame.Rect(0, h, w, 0)
+                _lay.viewport_rect      = pygame.Rect(0, 0, w, h)
+                _lay.viewport_edit_rect = pygame.Rect(0, 0, w, h)
+                _lay.viewport_game_rect = pygame.Rect(0, 0, w, h)
+                _lay.right_x    = w
+                _lay.viewport_y = 0
+                _lay.viewport_h = h
+                _lay.viewport_w = w
+
+            # Aplica imediatamente
+            _sync_3d_layout()
+            # Congela atualização interna de layout
+            scene._lay.update = lambda sw, sh: None
+
+            def _qt_draw_3d(screen, _scene=scene, _w=widget):
+                # Sincroniza layout a cada frame (responde ao resize)
+                _sync_3d_layout()
+
                 # Suprime modais/painéis legados
                 _scene.showing_welcome    = False
                 _scene.showing_templates  = False
@@ -275,12 +313,14 @@ class ViewportWidget(QOpenGLWidget):
                 if hasattr(_scene, "code_editor"):
                     _scene.code_editor.is_open = False
 
+                lay = _scene._lay
+
                 # Câmera 3D ocupa toda a viewport
                 cam = _scene.camera_comp
                 cam.viewport_x      = 0
                 cam.viewport_y      = 0
-                cam.viewport_width  = _lay.viewport_rect.width
-                cam.viewport_height = _lay.viewport_rect.height
+                cam.viewport_width  = lay.viewport_rect.width
+                cam.viewport_height = lay.viewport_rect.height
                 cam.update(0.0)
 
                 from engine.graphics.renderer3d import Camera3D, MeshRenderer3D
