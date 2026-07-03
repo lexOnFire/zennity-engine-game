@@ -8,7 +8,7 @@ AnimationEvent — callback disparado em um frame específico.
 """
 
 from dataclasses import dataclass, field
-from typing import Callable, Dict, List, Optional
+from typing import Callable, List, Optional
 import pygame
 
 
@@ -24,8 +24,8 @@ class AnimationEvent:
     fired       : bool     – Controle interno — não editar.
     """
     frame_index: int
-    callback:    Callable[[], None]
-    fired:       bool = field(default=False, repr=False)
+    callback: Callable[[], None]
+    fired: bool = field(default=False, repr=False)
 
 
 class AnimationClip:
@@ -39,26 +39,28 @@ class AnimationClip:
     fps     : float                – Velocidade da animação em frames/segundo.
     loop    : bool                 – Reinicia ao chegar no último frame.
     flip_h  : bool                 – Espelha todos os frames horizontalmente.
+    events  : Optional[List[AnimationEvent]] – Eventos iniciais do clip.
     """
 
     def __init__(
         self,
-        name:   str,
+        name: str,
         frames: List[pygame.Surface],
-        fps:    float = 10.0,
-        loop:   bool  = True,
-        flip_h: bool  = False,
+        fps: float = 10.0,
+        loop: bool = True,
+        flip_h: bool = False,
+        events: Optional[List[AnimationEvent]] = None,
     ) -> None:
-        self.name   = name
-        self.fps    = max(fps, 0.01)
-        self.loop   = loop
+        self.name = name
+        self.fps = max(fps, 0.01)
+        self.loop = loop
 
         if flip_h:
             self.frames = [pygame.transform.flip(f, True, False) for f in frames]
         else:
             self.frames = list(frames)
 
-        self._events: List[AnimationEvent] = []
+        self._events: List[AnimationEvent] = list(events or [])
 
     # ------------------------------------------------------------------
     # Eventos
