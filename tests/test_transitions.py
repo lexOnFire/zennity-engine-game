@@ -57,6 +57,10 @@ else:
        getattr(_pg.Surface, "_fake", False):
         _pg.Surface = _FakeSurface
 
+# Em execuções completas do pytest, outro teste pode deixar engine.transitions
+# cacheado/fake durante a coleta. Removemos antes do import real.
+sys.modules.pop("engine.transitions", None)
+
 from engine.transitions import (   # noqa: E402
     Transition, TransitionPhase,
     FadeTransition, SlideTransition, SlideDirection,
