@@ -119,36 +119,40 @@ class MainWindow(QMainWindow):
         self.dock_code_editor.hide()  # Inicializa fechado
         self.dock_profiler  = ProfilerDock(self)
         
-        # Adiciona à janela principal
+        # Adiciona à janela principal nas posições do layout desejado
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_hierarchy)
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_assets)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.dock_inspector)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_assets)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_console)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_profiler)
-        self.tabifyDockWidget(self.dock_console, self.dock_profiler)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.dock_inspector)
         self.addDockWidget(Qt.RightDockWidgetArea, self.dock_code_editor)
+        
+        # Agrupa Console e Profiler em abas na direita-inferior
+        self.tabifyDockWidget(self.dock_console, self.dock_profiler)
+        # Divide o rodapé horizontalmente: Assets (esquerda) e Console/Profiler (direita)
+        self.splitDockWidget(self.dock_assets, self.dock_console, Qt.Horizontal)
 
     def apply_default_layout(self) -> None:
-        """Posiciona os docks na disposição padrão inspirada na Unreal Engine."""
+        """Posiciona os docks na disposição padrão solicitada pelo usuário."""
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_hierarchy)
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_assets)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.dock_inspector)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_assets)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_console)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_profiler)
-        self.tabifyDockWidget(self.dock_console, self.dock_profiler)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.dock_inspector)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.dock_code_editor)
         
-        # Empilha Hierarchy sobre AssetBrowser na esquerda
-        self.splitDockWidget(self.dock_hierarchy, self.dock_assets, Qt.Vertical)
+        self.tabifyDockWidget(self.dock_console, self.dock_profiler)
+        self.splitDockWidget(self.dock_assets, self.dock_console, Qt.Horizontal)
         
         # Garante que todos estejam visíveis
         self.dock_hierarchy.show()
+        self.dock_inspector.show()
         self.dock_assets.show()
         self.dock_console.show()
         self.dock_profiler.show()
-        self.dock_inspector.show()
         self.dock_code_editor.hide()
         
-        self.log_action("Layout padrão da Unreal restaurado")
+        self.log_action("Layout padrão em grade horizontal restaurado")
 
     def save_layout_state(self) -> None:
         """Salva a geometria e o estado dos painéis acopláveis."""
