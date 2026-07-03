@@ -2,19 +2,22 @@ from typing import Optional
 from PySide6.QtCore import QObject, Signal, Slot
 from engine.game_object import GameObject
 from editor.models.scene_model import SceneModel
+from editor.core.event_bus import (
+    EventBus, EVENT_SELECTION_CHANGED, EVENT_HIERARCHY_UPDATED, EVENT_PROPERTY_CHANGED
+)
 
 
 class SceneViewModel(QObject):
     """
     ViewModel que expõe a estrutura da cena, gerencia a seleção
-    e atualizações dinâmicas das propriedades dos GameObjects.
+    e publica alterações no barramento global de eventos (EventBus).
     Componente 'ViewModel' na arquitetura MVVM do editor.
     """
     
-    # Sinais para comunicação com a View (Widgets)
-    selection_changed = Signal(object)  # Emite o GameObject selecionado (ou None)
-    hierarchy_updated = Signal()        # Notifica que a hierarquia precisa ser redesenhada
-    property_changed = Signal(str, str, object)  # Emite (component_name, property_name, value)
+    # Sinais locais mantidos para compatibilidade com ligações Qt tradicionais
+    selection_changed = Signal(object)
+    hierarchy_updated = Signal()
+    property_changed = Signal(str, str, object)
 
     def __init__(self, model: SceneModel) -> None:
         super().__init__()
@@ -22,7 +25,7 @@ class SceneViewModel(QObject):
         self._selected_object: Optional[GameObject] = None
         
         # Conecta sinais do modelo
-        self._model.object_structure_changed.connect(self.hierarchy_updated.emit)
+        self._model.object_structure_changed.connect(self.on_model_hierarchy_changed)
 
     @property
     def selected_object(self) -> Optional[GameObject]:
@@ -33,6 +36,14 @@ class SceneViewModel(QObject):
         if self._selected_object != obj:
             self._selected_object = obj
             self.selection_changed.emit(obj)
+            # Despacha no EventBus global para desacoplamento de outros painéis
+            EventBus.emit(EVENT_SELECTION_CHANGED, obj=obj)
+
+    @Slot()
+    def on_model_hierarchy_changed(self) -> None:
+        """Chamado quando a árvore de dados é alterada no modelo."""
+        self.hierarchy_updated.emit()
+        EventBus.emit(EVENT_HIERARCHY_UPDATED)
 
     def get_root_objects(self):
         return self._model.get_root_objects()
@@ -101,7 +112,7 @@ class SceneViewModel(QObject):
         go.mesh_type = src.mesh_type
         
         go.transform.position = src.transform.position.copy()
-        go.transform.position[0] += 50.0  # pequeno offset em 2D
+        go.transform.position[0] += 50.0
         go.transform.position[1] += 50.0
         go.transform.scale    = src.transform.scale.copy()
         go.transform.rotation = src.transform.rotation.copy()
@@ -125,12 +136,11 @@ class SceneViewModel(QObject):
     def rename_object(self, obj: GameObject, new_name: str) -> None:
         if obj and new_name.strip():
             obj.name = new_name.strip()
-            self.hierarchy_updated.emit()
+            self.on_model_hierarchy_changed()
 
     # ── Métodos de Atualização de Propriedades ─────────────────────────────────
 
     def set_transform_property(self, prop_name: str, index: int, value: float) -> None:
-        """Modifica posição, escala ou rotação (numpy array) do objeto selecionado."""
         if not self._selected_object:
             return
             
@@ -139,15 +149,16 @@ class SceneViewModel(QObject):
             transform.position[index] = value
         elif prop_name == "scale":
             transform.scale[index] = value
-            # Sincroniza colisor correspondente se for alterada a escala
             self._sync_collider_dimensions(self._selected_object)
         elif prop_name == "rotation":
             transform.rotation[index] = value
             
-        self.property_changed.emit("Transform", f"{prop_name}_{index}", value)
+        # Emite sinal local e publica no EventBus
+        prop_id = f"{prop_name}_{index}"
+        self.property_changed.emit("Transform", prop_id, value)
+        EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="Transform", property_name=prop_id, value=value)
 
     def set_rigidbody_property(self, prop_name: str, value) -> None:
-        """Modifica massa, gravidade ou kinematic do RigidBody do objeto selecionado."""
         if not self._selected_object:
             return
             
@@ -164,9 +175,9 @@ class SceneViewModel(QObject):
             rb.is_kinematic = bool(value)
             
         self.property_changed.emit("RigidBody", prop_name, value)
+        EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="RigidBody", property_name=prop_name, value=value)
 
     def set_collider_property(self, prop_name: str, value) -> None:
-        """Modifica largura, altura, raio ou trigger do colisor do objeto selecionado."""
         if not self._selected_object:
             return
             
@@ -192,10 +203,13 @@ class SceneViewModel(QObject):
                 cc.is_trigger = bool(value)
                 
         self.property_changed.emit("Collider", prop_name, value)
-        self.property_changed.emit("Transform", "scale", None)  # Notifica que escala mudou
+        EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="Collider", property_name=prop_name, value=value)
+        
+        # Emite sinal extra para atualizar escala
+        self.property_changed.emit("Transform", "scale", None)
+        EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="Transform", property_name="scale", value=None)
 
     def _sync_collider_dimensions(self, obj: GameObject) -> None:
-        """Mantém as dimensões do colisor física sincronizadas com a escala 3D/2D."""
         from engine.physics.collider import BoxCollider, CircleCollider
         scale = obj.transform.scale
         bc = obj.get_component(BoxCollider)

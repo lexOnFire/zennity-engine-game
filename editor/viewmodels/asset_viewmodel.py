@@ -1,6 +1,7 @@
 import os
 from PySide6.QtCore import QObject, Signal, Slot
 from editor.models.asset_model import AssetModel
+from editor.core.event_bus import EventBus, EVENT_ASSET_SELECTED
 
 
 class AssetViewModel(QObject):
@@ -9,9 +10,9 @@ class AssetViewModel(QObject):
     Componente 'ViewModel' na arquitetura MVVM do editor.
     """
     
-    current_folder_changed = Signal(str)           # Emite o caminho absoluto do diretório ativo
-    navigation_state_changed = Signal(bool, bool)  # Emite (can_go_back, can_go_forward)
-    asset_selected = Signal(str)                   # Emite o caminho absoluto do asset selecionado
+    current_folder_changed = Signal(str)
+    navigation_state_changed = Signal(bool, bool)
+    asset_selected = Signal(str)
 
     def __init__(self, model: AssetModel) -> None:
         super().__init__()
@@ -20,7 +21,6 @@ class AssetViewModel(QObject):
         self._root_path = self._model.get_assets_root_path()
         self._current_path = self._root_path
         
-        # Histórico de navegação para botões Voltar/Avançar
         self._back_stack = []
         self._forward_stack = []
         
@@ -35,17 +35,17 @@ class AssetViewModel(QObject):
         return self._root_path
 
     def select_asset(self, path: str) -> None:
-        """Seleciona um arquivo e notifica."""
+        """Seleciona um arquivo, emite sinal e publica no EventBus global."""
         if os.path.isfile(path):
             self._selected_asset_path = path
             self.asset_selected.emit(path)
+            # Publica no EventBus global para que outros painéis escutem
+            EventBus.emit(EVENT_ASSET_SELECTED, filepath=path)
 
     def go_to_folder(self, path: str) -> None:
-        """Navega para a pasta especificada e gerencia o histórico."""
         if not os.path.isdir(path):
             return
             
-        # Garante que não ultrapasse a raiz de Assets para cima
         if not path.startswith(self._root_path):
             path = self._root_path
             
@@ -58,7 +58,6 @@ class AssetViewModel(QObject):
             self.navigation_state_changed.emit(self.can_go_back(), self.can_go_forward())
 
     def go_back(self) -> None:
-        """Retorna no histórico de navegação."""
         if self.can_go_back():
             prev = self._back_stack.pop()
             self._forward_stack.append(self._current_path)
@@ -68,7 +67,6 @@ class AssetViewModel(QObject):
             self.navigation_state_changed.emit(self.can_go_back(), self.can_go_forward())
 
     def go_forward(self) -> None:
-        """Avança no histórico de navegação."""
         if self.can_go_forward():
             nxt = self._forward_stack.pop()
             self._back_stack.append(self._current_path)
@@ -84,7 +82,6 @@ class AssetViewModel(QObject):
         return len(self._forward_stack) > 0
 
     def get_parent_directory(self) -> str:
-        """Retorna o caminho da pasta pai (se estiver abaixo de Assets)."""
         parent = os.path.dirname(self._current_path)
         if parent.startswith(self._root_path):
             return parent

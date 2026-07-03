@@ -8,6 +8,12 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QAction, QKeySequence, QIcon, QCloseEvent
 from PySide6.QtCore import Qt, Slot, QSettings
 
+# Barramento de Eventos do Editor
+from editor.core.event_bus import (
+    EventBus, EVENT_PLAY_STATE_CHANGED, EVENT_SELECTION_CHANGED,
+    EVENT_HIERARCHY_UPDATED, EVENT_ASSET_SELECTED
+)
+
 # Modelos e ViewModels MVVM
 from editor.models.scene_model import SceneModel
 from editor.viewmodels.scene_viewmodel import SceneViewModel
@@ -26,10 +32,9 @@ class MainWindow(QMainWindow):
     """
     Janela Principal do Zennity Editor construída sobre o PySide6.
     
-    Implementação da Semana 6:
-      - Integração do ViewportWidget baseado em QOpenGLWidget
-      - Sincronização do motor físico e modo Play/Stop da Viewport com a UI
-      - Direcionamento de comandos de cena (MVVM)
+    Implementação da Semana 7:
+      - Desacoplamento de componentes via barramento de eventos (EventBus)
+      - Redução do acoplamento direto de conexões no inicializador
     """
     
     def __init__(self) -> None:
@@ -61,9 +66,9 @@ class MainWindow(QMainWindow):
         self.dock_assets.set_models(self.asset_model, self.asset_view_model)
         self.viewport.set_viewmodel(self.scene_view_model)
         
-        # Conecta sinais
-        self.scene_view_model.hierarchy_updated.connect(self.update_object_count_status)
-        self.asset_view_model.asset_selected.connect(self.on_asset_selected)
+        # ── Inscrições no EventBus (Desacoplado) ──────────────────────────────
+        EventBus.subscribe(EVENT_HIERARCHY_UPDATED, self.update_object_count_status)
+        EventBus.subscribe(EVENT_ASSET_SELECTED, self.on_bus_asset_selected)
         
         # Inicializa ações e menus
         self.create_actions()
@@ -311,7 +316,6 @@ class MainWindow(QMainWindow):
         self.scene_model.clear()
         self.scene_view_model.selected_object = None
         
-        # Limpa cena da viewport
         if hasattr(self.viewport, "active_scene") and self.viewport.active_scene:
             if hasattr(self.viewport.active_scene, "editable_objects"):
                 self.viewport.active_scene.editable_objects.clear()
@@ -319,7 +323,6 @@ class MainWindow(QMainWindow):
                 self.viewport.active_scene.selected_index = -1
                 self.viewport.active_scene.spawn_default_scene()
                 
-                # Ressincroniza
                 for obj in self.viewport.active_scene.editable_objects:
                     self.scene_model.add_object(obj)
                 if self.viewport.active_scene.selected_index >= 0:
@@ -339,10 +342,10 @@ class MainWindow(QMainWindow):
         self.lbl_obj.setText(f"Objetos: {count}  ")
 
     @Slot(str)
-    def on_asset_selected(self, filepath: str) -> None:
-        """Chamado quando um recurso é selecionado no Asset Browser."""
+    def on_bus_asset_selected(self, filepath: str) -> None:
+        """Slot ouvinte de eventos do EventBus para seleção de recursos."""
         self.statusBar().showMessage(f"Asset selecionado: {os.path.basename(filepath)}", 3000)
-        self.log_action(f"Recurso selecionado: {filepath}")
+        self.log_action(f"Recurso selecionado via EventBus: {filepath}")
 
     @Slot()
     def on_play_clicked(self) -> None:
@@ -352,17 +355,16 @@ class MainWindow(QMainWindow):
         self.btn_stop.setEnabled(True)
         self.statusBar().showMessage("Simulação em execução...")
         
-        # Aciona play na cena
-        if hasattr(self.viewport, "active_scene") and self.viewport.active_scene:
-            if not getattr(self.viewport.active_scene, "playing", False):
-                self.viewport.active_scene.toggle_play()
+        # Publica o estado no EventBus global (Viewport escuta de forma desacoplada)
+        EventBus.emit(EVENT_PLAY_STATE_CHANGED, state="play")
 
     @Slot()
     def on_pause_clicked(self) -> None:
         self.log_action("PAUSE - Pausando simulação")
         self.btn_play.setEnabled(True)
         self.btn_pause.setEnabled(False)
-        self.statusBar().showMessage("Simulação pausada.")
+        
+        EventBus.emit(EVENT_PLAY_STATE_CHANGED, state="pause")
 
     @Slot()
     def on_stop_clicked(self) -> None:
@@ -372,10 +374,7 @@ class MainWindow(QMainWindow):
         self.btn_stop.setEnabled(False)
         self.statusBar().showMessage("Simulação finalizada.")
         
-        # Aciona stop na cena
-        if hasattr(self.viewport, "active_scene") and self.viewport.active_scene:
-            if getattr(self.viewport.active_scene, "playing", False):
-                self.viewport.active_scene.toggle_play()
+        EventBus.emit(EVENT_PLAY_STATE_CHANGED, state="stop")
 
     def on_transform_tool_changed(self, tool_name: str) -> None:
         """Garante seleção exclusiva entre as ferramentas de transformação."""
