@@ -3,6 +3,17 @@ tests/core/test_scene_manager.py
 ────────────────────────────────────────────────────────────────
 Commit 20: suite expandida do SceneManager — 67 testes.
 
+Fluxo real de SceneManager.update():
+  1. if tr.is_done   → limpa _transition e retorna
+  2. tr.update(dt)   → side_effect incrementa tick
+  3. if should_swap  → _execute_pending_swap() (zera _pending_scene)
+  4. if tr.is_done   → limpa _transition e dispara on_transition_end
+
+O side_effect reseta should_swap=False imediatamente após setá-lo True,
+para que no próximo tick não haja segundo swap com _pending_scene=None.
+is_done é setado no mesmo tick do swap (done_after == swap_after) para que
+o SM limpe _transition no passo 4 do mesmo update().
+
 Grupos:
   TestSingleton              (3)
   TestLoad                   (7)
@@ -40,20 +51,26 @@ def _make_scene(name="TestScene"):
     return scene
 
 
-def _make_transition(swap_after=1, done_after=None):
+def _make_transition(swap_after=1):
     """
     Transição fake controlada por ticks.
 
-    swap_after  — tick em que should_swap vira True  (default: 1)
-    done_after  — tick em que is_done    vira True  (default: swap_after + 1)
+    Fluxo alinhado com SceneManager.update():
+      1. SM lê tr.is_done ANTES de chamar tr.update()
+      2. SM chama tr.update(dt)  → side_effect incrementa tick
+      3. SM verifica tr.should_swap  → executa swap (zera _pending_scene)
+      4. SM verifica tr.is_done novamente
 
-    O SceneManager lê tr.is_done ANTES de chamar tr.update(), então
-    is_done só é detectado no tick SEGUINTE ao que o side_effect o seta.
+    Para evitar segundo swap com _pending_scene=None:
+      - should_swap é setado True apenas no tick swap_after
+        e imediatamente voltado a False na mesma chamada
+        (usando um atributo auxiliar no dict de estado).
+      - is_done é setado True no mesmo tick (swap_after),
+        assim o SM limpa _transition no passo 4 do mesmo update().
+
+    Para testes de 'ainda transitioning antes do swap' usa swap_after grande.
     """
     from engine.transitions import TransitionPhase
-
-    if done_after is None:
-        done_after = swap_after + 1
 
     tr = MagicMock()
     tr.is_done      = False
@@ -62,15 +79,18 @@ def _make_transition(swap_after=1, done_after=None):
     tr.snapshot_out = None
     tr.snapshot_in  = None
 
-    tick = [0]
+    state = {"tick": 0, "swapped": False}
 
     def _upd(dt):
-        tick[0] += 1
-        if tick[0] >= swap_after:
-            tr.should_swap = True
-            tr.phase = TransitionPhase.IN
-        if tick[0] >= done_after:
-            tr.is_done = True
+        state["tick"] += 1
+        if state["tick"] >= swap_after and not state["swapped"]:
+            state["swapped"] = True
+            tr.should_swap = True   # SM vê True neste update
+            tr.phase       = TransitionPhase.IN
+            tr.is_done     = True   # SM também vê is_done=True no passo 4
+        else:
+            # garante que no próximo tick should_swap já é False
+            tr.should_swap = False
 
     tr.update.side_effect = _upd
     return tr
@@ -491,7 +511,7 @@ class TestPushPopWithTransition:
         over = _make_scene("Over")
         tr = _make_transition(swap_after=1)
         sm.push(over, transition=tr)
-        sm.update(0.016)
+        sm.update(0.016)   # tick 1: swap + is_done
         assert sm.stack_depth == 2
 
     def test_push_transition_new_scene_becomes_current(self, sm):
@@ -547,40 +567,33 @@ class TestTransitionFlow:
         assert sm.is_transitioning is True
 
     def test_swap_happens_on_correct_tick(self, sm):
+        """
+        swap_after=2: tick 1 não troca, tick 2 troca.
+        """
         s1 = _make_scene("A")
         s2 = _make_scene("B")
         sm.load(s1)
         tr = _make_transition(swap_after=2)
         sm.load(s2, transition=tr)
-        sm.update(0.016)         # tick 1 — sem swap ainda
+        sm.update(0.016)         # tick 1 — sem swap
         assert sm.current is not s2
         sm.update(0.016)         # tick 2 — swap ocorre
         assert sm.current is s2
 
     def test_on_transition_end_fires_after_done(self, sm):
         """
-        Fluxo real do SceneManager.update():
-          1. verifica tr.is_done  → False  (pula limpeza)
-          2. chama tr.update(dt)  → side_effect seta should_swap=True (tick 1)
-          3. chama _execute_pending_swap()
-          4. verifica tr.phase IN → chama scene.update()
-          5. verifica tr.is_done  → ainda False
-
-        No tick 2:
-          1. verifica tr.is_done  → False
-          2. chama tr.update(dt)  → side_effect seta is_done=True (tick 2 >= done_after=2)
-          3. should_swap já True (sem novo swap)
-          4. tr.is_done agora True → limpa _transition e dispara on_transition_end
-
-        Portanto: swap_after=1, done_after=2 → callback no tick 2.
+        Com swap_after=1, no tick 1:
+          - tr.update() seta should_swap=True E is_done=True
+          - SM executa swap
+          - SM lê tr.is_done=True no passo 4 → dispara on_transition_end
+        Portanto: callback já chamado após o primeiro update().
         """
         cb = MagicMock()
         sm.on_transition_end = cb
-        tr = _make_transition(swap_after=1, done_after=2)
+        tr = _make_transition(swap_after=1)
         sm.load(_make_scene(), transition=tr)
-        sm.update(0.016)   # tick 1: swap executado, is_done ainda False
-        cb.assert_not_called()
-        sm.update(0.016)   # tick 2: is_done vira True dentro de update → callback
+        cb.assert_not_called()          # antes de qualquer tick
+        sm.update(0.016)                # tick 1: swap + done
         cb.assert_called_once()
 
     def test_scene_start_not_called_before_swap(self, sm):
@@ -600,16 +613,12 @@ class TestTransitionFlow:
 
     def test_transition_cleared_after_done(self, sm):
         """
-        _transition só é zerado quando tr.is_done é True no início
-        de update() (ANTES de chamar tr.update).
-        Com done_after=2: no tick 2 o side_effect seta is_done=True;
-        no tick 3 o SceneManager lê is_done=True logo no início e limpa.
+        swap_after=1: no tick 1 is_done=True é setado pelo side_effect,
+        e o SM já zera _transition no passo 4 do mesmo update().
         """
-        tr = _make_transition(swap_after=1, done_after=2)
+        tr = _make_transition(swap_after=1)
         sm.load(_make_scene(), transition=tr)
-        sm.update(0.016)   # tick 1: swap
-        sm.update(0.016)   # tick 2: is_done=True setado pelo side_effect
-        sm.update(0.016)   # tick 3: SM lê is_done=True → _transition = None
+        sm.update(0.016)   # tick 1: swap + done → _transition limpo
         assert sm._transition is None
 
 
