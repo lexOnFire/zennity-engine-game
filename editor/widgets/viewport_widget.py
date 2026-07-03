@@ -1,7 +1,7 @@
 import time
 import pygame
 import numpy as np
-from typing import Optional
+from typing import Optional, Dict, Tuple
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
 from PySide6.QtWidgets import QWidget
 from PySide6.QtCore import Qt, QTimer, Slot, QPoint, QSize
@@ -22,9 +22,10 @@ class ViewportWidget(QOpenGLWidget):
     """
     Viewport gráfica baseada em QOpenGLWidget.
     
-    Implementação da Semana 13:
+    Implementação da Semana 13 & Melhorias de Interação:
       - Suporte à tecla 'F' para focar a câmera no objeto selecionado
       - Alternância dinâmica entre visualização 2D (Ortográfica) e 3D (Perspectiva)
+      - Monkey-patch de layouts 2D/3D e mouse.get_pos para sincronização e hit-test de mouse perfeitos no Qt
     """
     
     def __init__(self, parent: QWidget = None) -> None:
@@ -40,6 +41,10 @@ class ViewportWidget(QOpenGLWidget):
         self.viewmodel: Optional[SceneViewModel] = None
         self.active_scene: Optional[Scene] = None
         self.editor_mode = "2D"  # '2D' ou '3D'
+        
+        # Monkey-patch para pygame.mouse.get_pos obter coordenadas locais da viewport do Qt
+        self.mouse_pos_qt = (0, 0)
+        pygame.mouse.get_pos = lambda: self.mouse_pos_qt
         
         # Framebuffer do Pygame
         self.pg_surface: Optional[pygame.Surface] = None
@@ -73,6 +78,9 @@ class ViewportWidget(QOpenGLWidget):
                 self.viewmodel._model.add_object(obj)
             if self.active_scene.selected_index >= 0:
                 self.viewmodel.selected_object = self.active_scene.editable_objects[self.active_scene.selected_index]
+                
+        # Aplica patches iniciais de layout de tela cheia
+        self._apply_qt_shims()
 
     def change_editor_mode(self, mode: str) -> None:
         """Alterna dinamicamente a cena da Viewport entre editor 2D e editor 3D."""
@@ -109,9 +117,94 @@ class ViewportWidget(QOpenGLWidget):
         else:
             self.active_scene.selected_index = -1
             
-        # Redimensiona a tela do Pygame na nova cena
+        # Reaplica shims de tamanho e layout
+        self._apply_qt_shims()
         self.resizeGL(self.width(), self.height())
         self.update()
+
+    def _apply_qt_shims(self) -> None:
+        """Aplica monkey-patches dinâmicos na cena ativa para fazê-la rodar perfeitamente no Qt sem painéis legados duplicados."""
+        if not self.active_scene:
+            return
+            
+        w, h = self.width_pv, self.height_pv
+        
+        # ── 1. Monkey-patch do Layout e render do Editor 2D ──────────────────
+        if hasattr(self.active_scene, "_layout"):
+            def qt_layout_2d():
+                return {
+                    "sw": w, "sh": h,
+                    "vp_left": 0,
+                    "vp_top": 0,
+                    "vp_right": w,
+                    "vp_bottom": h,
+                    "vp_w": w,
+                    "vp_h": h,
+                    "panel_left_w": 0,
+                    "panel_right_x": w,
+                    "panel_right_w": 0,
+                    "status_y": h
+                }
+            self.active_scene._layout = qt_layout_2d
+            
+            # Sobrescreve o draw para renderizar apenas a viewport
+            def qt_draw_2d(screen):
+                lay = self.active_scene._layout()
+                screen.fill((30, 31, 38))  # Fundo escuro do tema
+                self.active_scene._draw_viewport(screen, lay)
+            self.active_scene.draw = qt_draw_2d
+            
+        # ── 2. Monkey-patch do Layout e render do Editor 3D ──────────────────
+        if hasattr(self.active_scene, "_lay"):
+            lay = self.active_scene._lay
+            lay.left_panel_rect = pygame.Rect(0, 0, 0, 0)
+            lay.right_panel_rect = pygame.Rect(w, 0, 0, 0)
+            lay.top_bar_rect = pygame.Rect(0, 0, w, 0)
+            lay.status_bar_rect = pygame.Rect(0, h, w, 0)
+            lay.viewport_rect = pygame.Rect(0, 0, w, h)
+            lay.viewport_edit_rect = pygame.Rect(0, 0, w, h)
+            lay.viewport_game_rect = pygame.Rect(0, 0, w, h)
+            lay.right_x = w
+            lay.viewport_y = 0
+            lay.viewport_h = h
+            lay.viewport_w = w
+            
+            # Trava a atualização de layout
+            lay.update = lambda sw, sh: None
+            
+            # Sobrescreve o draw para ocultar modais legados e barras laterais no Qt
+            def qt_draw_3d(screen):
+                self.active_scene.showing_welcome = False
+                self.active_scene.showing_templates = False
+                self.active_scene.showing_help_modal = False
+                self.active_scene.code_editor.is_open = False
+                
+                # Sincroniza a câmera 3D com a viewport cheia do widget
+                self.active_scene.camera_comp.viewport_x = lay.viewport_rect.x
+                self.active_scene.camera_comp.viewport_y = lay.viewport_rect.y
+                self.active_scene.camera_comp.viewport_width = lay.viewport_rect.width
+                self.active_scene.camera_comp.viewport_height = lay.viewport_rect.height
+                self.active_scene.camera_comp.update(0.0)
+                
+                from engine.graphics.renderer3d import Camera3D, MeshRenderer3D
+                Camera3D.main = self.active_scene.camera_comp
+                
+                pygame.draw.rect(screen, (30, 31, 38), lay.viewport_rect)
+                self.active_scene._draw_floor_grid(screen)
+                
+                # Renderiza e destaca objeto ativo
+                for go in self.active_scene.game_objects:
+                    go.draw(screen)
+                    if self.active_scene.selected_index >= 0 and go == self.active_scene.editable_objects[self.active_scene.selected_index]:
+                        r = go.get_component(MeshRenderer3D)
+                        if r:
+                            ow, oc, olw = r.wireframe, r.color, r.line_width
+                            r.wireframe, r.color, r.line_width = True, (64, 156, 255), 3  # Azul Destaque
+                            r.draw(screen)
+                            r.wireframe, r.color, r.line_width = ow, oc, olw
+                self.active_scene._draw_gizmo(screen)
+                
+            self.active_scene.draw = qt_draw_3d
 
     def focus_camera_on_selected(self) -> None:
         """Foca suave ou instantaneamente a câmera no objeto selecionado na viewport."""
@@ -142,13 +235,16 @@ class ViewportWidget(QOpenGLWidget):
         self.height_pv = max(32, h)
         self.pg_surface = pygame.Surface((self.width_pv, self.height_pv), pygame.SRCALPHA)
         
+        # Reaplica o patch de layout no redimensionamento da janela do Qt
+        self._apply_qt_shims()
+        
         if self.active_scene and hasattr(self.active_scene, "vp_w"):
-            self.active_scene.vp_left = 10
-            self.active_scene.vp_top = 10
-            self.active_scene.vp_right = self.width_pv - 10
-            self.active_scene.vp_bottom = self.height_pv - 10
-            self.active_scene.vp_w = self.width_pv - 20
-            self.active_scene.vp_h = self.height_pv - 20
+            self.active_scene.vp_left = 0
+            self.active_scene.vp_top = 0
+            self.active_scene.vp_right = self.width_pv
+            self.active_scene.vp_bottom = self.height_pv
+            self.active_scene.vp_w = self.width_pv
+            self.active_scene.vp_h = self.height_pv
 
     def paintGL(self) -> None:
         if self.pg_surface is None or not self.active_scene:
@@ -290,10 +386,11 @@ class ViewportWidget(QOpenGLWidget):
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if not self.active_scene:
             return
+        self.mouse_pos_qt = (event.x(), event.y())
         btn = self.translate_mouse_button(event.button())
         pg_event = pygame.event.Event(
             pygame.MOUSEBUTTONDOWN,
-            pos=(event.x(), event.y()),
+            pos=self.mouse_pos_qt,
             button=btn
         )
         self.active_scene.handle_event(pg_event)
@@ -302,10 +399,11 @@ class ViewportWidget(QOpenGLWidget):
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         if not self.active_scene:
             return
+        self.mouse_pos_qt = (event.x(), event.y())
         btn = self.translate_mouse_button(event.button())
         pg_event = pygame.event.Event(
             pygame.MOUSEBUTTONUP,
-            pos=(event.x(), event.y()),
+            pos=self.mouse_pos_qt,
             button=btn
         )
         self.active_scene.handle_event(pg_event)
@@ -314,9 +412,10 @@ class ViewportWidget(QOpenGLWidget):
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         if not self.active_scene:
             return
+        self.mouse_pos_qt = (event.x(), event.y())
         pg_event = pygame.event.Event(
             pygame.MOUSEMOTION,
-            pos=(event.x(), event.y()),
+            pos=self.mouse_pos_qt,
             buttons=(
                 1 if event.buttons() & Qt.LeftButton else 0,
                 1 if event.buttons() & Qt.MiddleButton else 0,
