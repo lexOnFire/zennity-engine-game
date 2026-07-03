@@ -390,6 +390,9 @@ class MainWindow(QMainWindow):
             act.setChecked(act is target)
             
         self.log_action(f"Ferramenta alterada para: {tool_name.upper()}")
+        
+        # Publica no EventBus para a Viewport atualizar seus Gizmos
+        EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="Editor", property_name="tool_mode", value=tool_name)
 
     @Slot(bool)
     def on_grid_toggled(self, enabled: bool) -> None:

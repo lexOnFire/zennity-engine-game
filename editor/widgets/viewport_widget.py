@@ -9,7 +9,7 @@ from PySide6.QtGui import QPainter, QImage, QPixmap, QMouseEvent, QKeyEvent, QWh
 
 # Barramento de Eventos do Editor
 from editor.core.event_bus import (
-    EventBus, EVENT_PLAY_STATE_CHANGED, EVENT_SELECTION_CHANGED
+    EventBus, EVENT_PLAY_STATE_CHANGED, EVENT_SELECTION_CHANGED, EVENT_PROPERTY_CHANGED
 )
 
 # Core da Engine
@@ -21,9 +21,9 @@ class ViewportWidget(QOpenGLWidget):
     """
     Viewport gráfica baseada em QOpenGLWidget.
     
-    Implementação da Semana 7:
-      - Desacoplamento via EventBus (escuta estados de Play/Stop e seleção)
-      - Loop de renderização acelerado por hardware com framebuffer do Pygame
+    Implementação da Semana 9:
+      - Sincronização dos Gizmos de Transformação (Mover, Rotacionar, Escalar)
+      - Propagação bidirecional de arrasto de gizmo/handles para o Inspector
     """
     
     def __init__(self, parent: QWidget = None) -> None:
@@ -45,9 +45,10 @@ class ViewportWidget(QOpenGLWidget):
         
         self.last_time = time.time()
         
-        # Inscreve-se no EventBus para ouvir a simulação de forma desacoplada
+        # Inscreve-se no EventBus para ouvir a simulação e ferramentas
         EventBus.subscribe(EVENT_PLAY_STATE_CHANGED, self.on_bus_play_state_changed)
         EventBus.subscribe(EVENT_SELECTION_CHANGED, self.on_bus_selection_changed)
+        EventBus.subscribe(EVENT_PROPERTY_CHANGED, self.on_bus_property_changed)
         
         # Timer (60 FPS)
         self.timer = QTimer(self)
@@ -114,12 +115,33 @@ class ViewportWidget(QOpenGLWidget):
         if self.active_scene:
             self.active_scene.update(dt)
             
+            # ── Binding Bidirecional: Sincronização do Arrasto com o Inspector ──
+            is_dragging = False
+            # Cena 3D: arrastando o gizmo
+            if getattr(self.active_scene, "is_dragging_gizmo", False):
+                is_dragging = True
+            # Cena 2D: arrastando o corpo do objeto ou arrastando os handles de escala
+            elif getattr(self.active_scene, "_dragging_target", None) is not None:
+                is_dragging = True
+            else:
+                scale_handle = getattr(self.active_scene, "_scale_handle_idx", -1)
+                if scale_handle is not None and scale_handle >= 0:
+                    is_dragging = True
+                
+            if is_dragging and self.viewmodel and self.viewmodel.selected_object:
+                # Dispara notificação genérica de mudança para forçar o redesenho dos spinboxes no Inspector
+                EventBus.emit(
+                    EVENT_PROPERTY_CHANGED,
+                    component_name="Transform",
+                    property_name="position",
+                    value=None
+                )
+            
         self.update()
 
     # ── Handlers do EventBus ──────────────────────────────────────────────────
 
     def on_bus_play_state_changed(self, state: str) -> None:
-        """Ouvinte do EventBus para alternar simulação física."""
         if not self.active_scene or not hasattr(self.active_scene, "playing"):
             return
             
@@ -129,7 +151,6 @@ class ViewportWidget(QOpenGLWidget):
             self.active_scene.toggle_play()
 
     def on_bus_selection_changed(self, obj: Optional[object]) -> None:
-        """Ouvinte do EventBus para sincronizar seleção da viewport."""
         if not self.active_scene or not hasattr(self.active_scene, "editable_objects"):
             return
             
@@ -137,6 +158,23 @@ class ViewportWidget(QOpenGLWidget):
             self.active_scene.selected_index = self.active_scene.editable_objects.index(obj)
         else:
             self.active_scene.selected_index = -1
+
+    def on_bus_property_changed(self, component_name: str, property_name: str, value: object) -> None:
+        """Ouve alterações de configurações e ferramentas na interface do editor."""
+        if component_name == "Editor" and property_name == "tool_mode" and self.active_scene:
+            tool_name = str(value)
+            # Sincroniza a ferramenta de transform ativa com os gizmos da cena Pygame
+            if tool_name == "select":
+                pass
+            elif tool_name == "move":
+                if hasattr(self.active_scene, "gizmo_mode"):
+                    self.active_scene.gizmo_mode = "translate"
+            elif tool_name == "rotate":
+                if hasattr(self.active_scene, "gizmo_mode"):
+                    self.active_scene.gizmo_mode = "rotate"
+            elif tool_name == "scale":
+                if hasattr(self.active_scene, "gizmo_mode"):
+                    self.active_scene.gizmo_mode = "scale"
 
     # ── Mapeamento de Eventos ──────────────────────────────────────────────────
 
