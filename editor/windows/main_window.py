@@ -30,6 +30,7 @@ from editor.widgets.console_dock import ConsoleDock
 from editor.widgets.inspector_dock import InspectorDock
 from editor.widgets.viewport_widget import ViewportWidget
 from editor.widgets.code_editor_dock import CodeEditorDock
+from editor.widgets.profiler_dock import ProfilerDock
 
 # Diálogos
 from editor.windows.preferences_dialog import PreferencesDialog
@@ -116,11 +117,14 @@ class MainWindow(QMainWindow):
         self.dock_inspector = InspectorDock(self)
         self.dock_code_editor = CodeEditorDock(self)
         self.dock_code_editor.hide()  # Inicializa fechado
+        self.dock_profiler  = ProfilerDock(self)
         
         # Adiciona à janela principal
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_hierarchy)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_assets)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_console)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_profiler)
+        self.tabifyDockWidget(self.dock_console, self.dock_profiler)
         self.addDockWidget(Qt.RightDockWidgetArea, self.dock_inspector)
         self.addDockWidget(Qt.RightDockWidgetArea, self.dock_code_editor)
 
@@ -129,6 +133,8 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_hierarchy)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_assets)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_console)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_profiler)
+        self.tabifyDockWidget(self.dock_console, self.dock_profiler)
         self.addDockWidget(Qt.RightDockWidgetArea, self.dock_inspector)
         
         # Empilha Hierarchy sobre AssetBrowser na esquerda
@@ -138,6 +144,7 @@ class MainWindow(QMainWindow):
         self.dock_hierarchy.show()
         self.dock_assets.show()
         self.dock_console.show()
+        self.dock_profiler.show()
         self.dock_inspector.show()
         self.dock_code_editor.hide()
         
@@ -261,6 +268,7 @@ class MainWindow(QMainWindow):
         menu_window.addAction(self.dock_inspector.toggleViewAction())
         menu_window.addAction(self.dock_assets.toggleViewAction())
         menu_window.addAction(self.dock_console.toggleViewAction())
+        menu_window.addAction(self.dock_profiler.toggleViewAction())
         menu_window.addAction(self.dock_code_editor.toggleViewAction())
         
         # Menu Criar (Create - novos GameObjects na cena)
