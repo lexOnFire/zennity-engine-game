@@ -1,290 +1,312 @@
 """
 tests/test_time.py
-────────────────────────────────────────────────────────────────
-Testes unitários de engine/time.py.
+────────────────────────────────────────────────────────────────────────────
+Testes unitários de engine/time.py (Time).
 
 Estratégia de isolamento:
-  - pygame.time.Clock é stubado via sys.modules antes do import,
-    expondo tick(fps) e get_fps() como MagicMock controlável.
-  - _clock.tick é configurado para retornar milissegundos fixos em
-    cada teste (‖16 ms = ~60 fps”) via return_value / side_effect.
-  - Time._current é resetado para None antes e depois de cada teste
-    pelo fixture autouse, garantindo isolamento de Time.current().
-  - Nenhum loop real, nenhuma janela pygame.
+  - pygame.time.Clock é stubado: `tick()` retorna um valor controlado
+    em milissegundos, `get_fps()` retorna um float configurável.
+  - `Time._current` é limpo antes/depois de cada teste para não
+    vazar estado entre testes.
+  - Nenhum loop da Application é executado; `time.tick()` é chamado
+    diretamente com o valor de ms injetado via `_clock.tick.return_value`.
 """
 from __future__ import annotations
 
 import sys
 from types import ModuleType
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
 # ── stub pygame ──────────────────────────────────────────────────────────────
+
+class _FakeClock:
+    """Clock fictício: tick() retorna ms configurável, get_fps() também."""
+    def __init__(self):
+        self.tick     = MagicMock(return_value=16)   # ~60 fps
+        self.get_fps  = MagicMock(return_value=60.0)
+
+
+def _build_pygame_stub():
+    pg = ModuleType("pygame")
+    time_mod = ModuleType("pygame.time")
+    time_mod.Clock = _FakeClock
+    pg.time = time_mod
+    sys.modules["pygame"]      = pg
+    sys.modules["pygame.time"] = time_mod
+    return pg
+
+
 if "pygame" not in sys.modules:
-    _pg                    = ModuleType("pygame")
-    _pg_time               = ModuleType("pygame.time")
-
-    _fake_clock            = MagicMock()
-    _fake_clock.tick       = MagicMock(return_value=16)   # 16 ms por default
-    _fake_clock.get_fps    = MagicMock(return_value=62.5)
-
-    _ClockClass            = MagicMock(return_value=_fake_clock)
-    _pg_time.Clock         = _ClockClass
-
-    _pg.time               = _pg_time
-    sys.modules["pygame"]       = _pg
-    sys.modules["pygame.time"]  = _pg_time
+    _pg = _build_pygame_stub()
 else:
-    _pg        = sys.modules["pygame"]
-    _pg_time   = sys.modules.get("pygame.time", _pg.time)
-    _fake_clock = _pg_time.Clock.return_value
+    _pg = sys.modules["pygame"]
+    # garante que Clock seja substituído mesmo se pygame já existir
+    if not isinstance(getattr(getattr(_pg, "time", None), "Clock", None), type) or \
+       getattr(_pg.time.Clock, "_fake", False):
+        _pg.time.Clock = _FakeClock
 
 from engine.time import Time  # noqa: E402
 
 
-# ── fixture autouse ──────────────────────────────────────────────────────────────
+# ── fixture ────────────────────────────────────────────────────────────────
+
 @pytest.fixture(autouse=True)
-def reset_time():
+def reset_current():
     Time._current = None
-    _fake_clock.tick.reset_mock()
-    _fake_clock.tick.return_value = 16
-    _fake_clock.get_fps.reset_mock()
-    _fake_clock.get_fps.return_value = 62.5
     yield
     Time._current = None
 
 
-def _make_time(**kw) -> Time:
-    """Cria uma instância de Time com defaults sensíveis para testes."""
-    return Time(**kw)
+@pytest.fixture()
+def t():
+    """Time com FakeClock pronto para tick()."""
+    return Time(target_fps=60, dt_cap=0.1)
 
 
-# ────────────────────────────────────────────────────────────────────────────
+# ── helpers ────────────────────────────────────────────────────────────────
+
+def _tick(t: Time, ms: int, fps: float = 60.0) -> float:
+    """Injeta ms no clock e executa um tick."""
+    t._clock.tick.return_value    = ms
+    t._clock.get_fps.return_value = fps
+    return t.tick()
+
+
+# ── TestInit ─────────────────────────────────────────────────────────────────
 class TestInit:
-    def test_defaults_delta_zero(self):
-        t = _make_time()
+    def test_fps_target_stored(self):
+        assert Time(target_fps=30).fps_target == 30
+
+    def test_dt_cap_stored(self):
+        assert Time(dt_cap=0.05).dt_cap == pytest.approx(0.05)
+
+    def test_delta_zero(self, t):
         assert t.delta == pytest.approx(0.0)
 
-    def test_defaults_frame_zero(self):
-        t = _make_time()
-        assert t.frame == 0
+    def test_scaled_delta_zero(self, t):
+        assert t.scaled_delta == pytest.approx(0.0)
 
-    def test_defaults_elapsed_zero(self):
-        t = _make_time()
+    def test_raw_delta_zero(self, t):
+        assert t.raw_delta == pytest.approx(0.0)
+
+    def test_elapsed_zero(self, t):
         assert t.elapsed == pytest.approx(0.0)
 
-    def test_defaults_scale_one(self):
-        t = _make_time()
+    def test_frame_zero(self, t):
+        assert t.frame == 0
+
+    def test_scale_one(self, t):
         assert t.scale == pytest.approx(1.0)
 
-    def test_defaults_not_paused(self):
-        t = _make_time()
+    def test_paused_false(self, t):
         assert t.paused is False
 
-    def test_defaults_target_fps(self):
-        t = _make_time(target_fps=30)
-        assert t.fps_target == 30
-
-    def test_defaults_dt_cap(self):
-        t = _make_time(dt_cap=0.05)
-        assert t.dt_cap == pytest.approx(0.05)
-
-    def test_registers_as_current(self):
-        t = _make_time()
+    def test_registers_as_current(self, t):
         assert Time._current is t
 
-    def test_second_instance_replaces_current(self):
-        _make_time()
-        t2 = _make_time()
+    def test_second_instance_overwrites_current(self, t):
+        t2 = Time()
         assert Time._current is t2
 
 
-# ────────────────────────────────────────────────────────────────────────────
+# ── TestTick ─────────────────────────────────────────────────────────────────
 class TestTick:
-    def test_tick_increments_frame(self):
-        t = _make_time()
-        t.tick()
-        assert t.frame == 1
+    def test_tick_returns_delta(self, t):
+        dt = _tick(t, 16)
+        assert dt == pytest.approx(0.016)
 
-    def test_tick_twice_increments_to_two(self):
-        t = _make_time()
-        t.tick(); t.tick()
-        assert t.frame == 2
+    def test_raw_delta_set(self, t):
+        _tick(t, 50)
+        assert t.raw_delta == pytest.approx(0.05)
 
-    def test_tick_sets_raw_delta(self):
-        _fake_clock.tick.return_value = 20
-        t = _make_time()
-        t.tick()
-        assert t.raw_delta == pytest.approx(0.020)
-
-    def test_tick_sets_delta_capped(self):
-        """raw_delta > dt_cap → delta é clamped ao cap."""
-        _fake_clock.tick.return_value = 500   # 500 ms
-        t = _make_time(dt_cap=0.1)
-        t.tick()
+    def test_delta_capped(self, t):
+        """Frame de 500 ms é recortado para dt_cap=0.1."""
+        _tick(t, 500)
         assert t.delta == pytest.approx(0.1)
 
-    def test_tick_delta_below_cap_not_capped(self):
-        _fake_clock.tick.return_value = 16
-        t = _make_time(dt_cap=0.1)
-        t.tick()
-        assert t.delta == pytest.approx(0.016)
-
-    def test_tick_raw_delta_not_capped(self):
-        """raw_delta nunca é clamped."""
-        _fake_clock.tick.return_value = 500
-        t = _make_time(dt_cap=0.1)
-        t.tick()
+    def test_raw_delta_not_capped(self, t):
+        """raw_delta nunca é cortado pelo cap."""
+        _tick(t, 500)
         assert t.raw_delta == pytest.approx(0.5)
 
-    def test_tick_returns_delta(self):
-        _fake_clock.tick.return_value = 16
-        t = _make_time()
-        ret = t.tick()
-        assert ret == pytest.approx(t.delta)
-
-    def test_tick_updates_fps_actual(self):
-        _fake_clock.get_fps.return_value = 59.9
-        t = _make_time()
-        t.tick()
-        assert t.fps_actual == pytest.approx(59.9)
-
-    def test_tick_calls_clock_tick_with_target_fps(self):
-        t = _make_time(target_fps=30)
-        t.tick()
-        _fake_clock.tick.assert_called_with(30)
-
-
-# ────────────────────────────────────────────────────────────────────────────
-class TestScaledDelta:
-    def test_scaled_delta_equals_delta_times_scale(self):
-        _fake_clock.tick.return_value = 16
-        t = _make_time()
-        t.scale = 2.0
-        t.tick()
-        assert t.scaled_delta == pytest.approx(t.delta * 2.0)
-
-    def test_scale_half_halves_scaled_delta(self):
-        _fake_clock.tick.return_value = 16
-        t = _make_time()
-        t.scale = 0.5
-        t.tick()
-        assert t.scaled_delta == pytest.approx(t.delta * 0.5)
-
-    def test_scale_zero_zeroes_scaled_delta(self):
-        t = _make_time()
-        t.scale = 0.0
-        t.tick()
-        assert t.scaled_delta == pytest.approx(0.0)
-
-    def test_paused_zeroes_scaled_delta(self):
-        _fake_clock.tick.return_value = 16
-        t = _make_time()
-        t.paused = True
-        t.tick()
-        assert t.scaled_delta == pytest.approx(0.0)
-
-    def test_paused_does_not_affect_delta(self):
-        _fake_clock.tick.return_value = 16
-        t = _make_time()
-        t.paused = True
-        t.tick()
+    def test_delta_below_cap_not_changed(self, t):
+        _tick(t, 16)
         assert t.delta == pytest.approx(0.016)
 
-    def test_unpause_restores_scaled_delta(self):
-        _fake_clock.tick.return_value = 16
-        t = _make_time()
-        t.paused = True
-        t.tick()
-        t.paused = False
-        t.tick()
-        assert t.scaled_delta == pytest.approx(0.016)
+    def test_frame_increments(self, t):
+        _tick(t, 16)
+        _tick(t, 16)
+        assert t.frame == 2
 
+    def test_frame_starts_at_one_after_first_tick(self, t):
+        _tick(t, 16)
+        assert t.frame == 1
 
-# ────────────────────────────────────────────────────────────────────────────
-class TestElapsed:
-    def test_elapsed_accumulates_scaled_delta(self):
-        _fake_clock.tick.return_value = 16
-        t = _make_time()
-        t.tick(); t.tick()
-        assert t.elapsed == pytest.approx(0.032, abs=1e-6)
+    def test_fps_actual_updated(self, t):
+        _tick(t, 16, fps=58.3)
+        assert t.fps_actual == pytest.approx(58.3)
 
-    def test_elapsed_not_affected_by_paused(self):
-        _fake_clock.tick.return_value = 16
-        t = _make_time()
-        t.tick()            # +0.016
-        t.paused = True
-        t.tick()            # +0.0
-        assert t.elapsed == pytest.approx(0.016, abs=1e-6)
-
-    def test_elapsed_uses_scale(self):
-        _fake_clock.tick.return_value = 16
-        t = _make_time()
-        t.scale = 2.0
-        t.tick()
-        assert t.elapsed == pytest.approx(0.032, abs=1e-6)
-
-    def test_elapsed_zero_when_always_paused(self):
-        t = _make_time()
-        t.paused = True
-        t.tick(); t.tick(); t.tick()
-        assert t.elapsed == pytest.approx(0.0)
-
-
-# ────────────────────────────────────────────────────────────────────────────
-class TestProperties:
-    def test_fps_property_returns_fps_actual(self):
-        _fake_clock.get_fps.return_value = 55.0
-        t = _make_time()
-        t.tick()
+    def test_fps_property_mirrors_fps_actual(self, t):
+        _tick(t, 16, fps=55.0)
         assert t.fps == pytest.approx(55.0)
 
-    def test_dt_alias_equals_delta(self):
-        _fake_clock.tick.return_value = 16
-        t = _make_time()
-        t.tick()
+    def test_dt_property_mirrors_delta(self, t):
+        _tick(t, 20)
         assert t.dt == pytest.approx(t.delta)
 
-    def test_repr_contains_frame(self):
-        t = _make_time()
+    def test_clock_tick_called_with_fps_target(self, t):
+        t._clock.tick.return_value = 16
         t.tick()
-        assert "frame=1" in repr(t)
+        t._clock.tick.assert_called_with(t.fps_target)
 
-    def test_repr_contains_scale(self):
-        t = _make_time()
+
+# ── TestScaledDelta ──────────────────────────────────────────────────────────────
+class TestScaledDelta:
+    def test_scaled_delta_normal(self, t):
+        """scale=1.0 => scaled_delta == delta."""
+        _tick(t, 16)
+        assert t.scaled_delta == pytest.approx(t.delta)
+
+    def test_scaled_delta_half_speed(self, t):
         t.scale = 0.5
-        assert "scale=0.5" in repr(t)
+        _tick(t, 16)
+        assert t.scaled_delta == pytest.approx(0.016 * 0.5)
 
-    def test_repr_contains_paused(self):
-        t = _make_time()
+    def test_scaled_delta_double_speed(self, t):
+        t.scale = 2.0
+        _tick(t, 16)
+        assert t.scaled_delta == pytest.approx(0.016 * 2.0)
+
+    def test_scaled_delta_zero_when_paused(self, t):
         t.paused = True
-        assert "paused=True" in repr(t)
+        _tick(t, 16)
+        assert t.scaled_delta == pytest.approx(0.0)
+
+    def test_paused_does_not_affect_delta(self, t):
+        t.paused = True
+        _tick(t, 16)
+        assert t.delta == pytest.approx(0.016)
+
+    def test_scale_zero_gives_zero_scaled(self, t):
+        t.scale = 0.0
+        _tick(t, 16)
+        assert t.scaled_delta == pytest.approx(0.0)
 
 
-# ────────────────────────────────────────────────────────────────────────────
+# ── TestElapsed ────────────────────────────────────────────────────────────────
+class TestElapsed:
+    def test_elapsed_accumulates_scaled_delta(self, t):
+        _tick(t, 16)
+        _tick(t, 16)
+        assert t.elapsed == pytest.approx(0.032)
+
+    def test_elapsed_frozen_when_paused(self, t):
+        _tick(t, 16)
+        t.paused = True
+        _tick(t, 16)
+        _tick(t, 16)
+        assert t.elapsed == pytest.approx(0.016)  # só o primeiro frame
+
+    def test_elapsed_uses_scale(self, t):
+        t.scale = 0.5
+        _tick(t, 16)
+        _tick(t, 16)
+        assert t.elapsed == pytest.approx(0.016)  # 2 * 0.016 * 0.5
+
+    def test_elapsed_zero_with_zero_ms(self, t):
+        _tick(t, 0)
+        assert t.elapsed == pytest.approx(0.0)
+
+    def test_elapsed_many_frames(self, t):
+        """10 frames de 16 ms com scale=1.0 = 0.16 s."""
+        for _ in range(10):
+            _tick(t, 16)
+        assert t.elapsed == pytest.approx(0.16)
+
+
+# ── TestPauseUnpause ────────────────────────────────────────────────────────────
+class TestPauseUnpause:
+    def test_pause_stops_elapsed(self, t):
+        _tick(t, 16)
+        before = t.elapsed
+        t.paused = True
+        _tick(t, 16)
+        assert t.elapsed == pytest.approx(before)
+
+    def test_unpause_resumes_elapsed(self, t):
+        t.paused = True
+        _tick(t, 16)
+        t.paused = False
+        _tick(t, 16)
+        assert t.elapsed == pytest.approx(0.016)
+
+    def test_pause_frame_still_increments(self, t):
+        t.paused = True
+        _tick(t, 16)
+        assert t.frame == 1
+
+    def test_pause_delta_still_updates(self, t):
+        t.paused = True
+        _tick(t, 20)
+        assert t.delta == pytest.approx(0.020)
+
+
+# ── TestDtCap ──────────────────────────────────────────────────────────────────
+class TestDtCap:
+    def test_dt_cap_default_is_01(self):
+        assert Time().dt_cap == pytest.approx(0.1)
+
+    def test_custom_dt_cap_applied(self):
+        t = Time(dt_cap=0.05)
+        _tick(t, 200)  # 0.2 s > cap
+        assert t.delta == pytest.approx(0.05)
+
+    def test_dt_below_cap_unchanged(self):
+        t = Time(dt_cap=0.05)
+        _tick(t, 30)  # 0.030 s < cap
+        assert t.delta == pytest.approx(0.030)
+
+    def test_dt_exactly_cap(self):
+        t = Time(dt_cap=0.05)
+        _tick(t, 50)  # exatamente 0.05 s
+        assert t.delta == pytest.approx(0.05)
+
+
+# ── TestCurrent ─────────────────────────────────────────────────────────────────
 class TestCurrent:
-    def test_current_returns_instance(self):
-        t = _make_time()
+    def test_current_returns_active_instance(self, t):
         assert Time.current() is t
 
-    def test_current_raises_when_not_initialized(self):
+    def test_current_raises_when_none(self):
         Time._current = None
         with pytest.raises(RuntimeError, match="Time não foi inicializado"):
             Time.current()
 
-    def test_current_updates_on_new_instance(self):
-        _make_time()
-        t2 = _make_time()
+    def test_current_updated_on_new_instance(self, t):
+        t2 = Time()
         assert Time.current() is t2
 
-    def test_current_delta_after_tick(self):
-        _fake_clock.tick.return_value = 32
-        t = _make_time()
-        t.tick()
-        assert Time.current().delta == pytest.approx(0.032)
+    def test_current_delta_accessible(self, t):
+        _tick(t, 16)
+        assert Time.current().delta == pytest.approx(0.016)
 
-    def test_current_frame_after_ticks(self):
-        t = _make_time()
-        t.tick(); t.tick(); t.tick()
-        assert Time.current().frame == 3
+
+# ── TestRepr ───────────────────────────────────────────────────────────────────
+class TestRepr:
+    def test_repr_contains_frame(self, t):
+        _tick(t, 16)
+        assert "frame=1" in repr(t)
+
+    def test_repr_contains_scale(self, t):
+        t.scale = 2.0
+        assert "scale=2.0" in repr(t)
+
+    def test_repr_contains_paused(self, t):
+        t.paused = True
+        assert "paused=True" in repr(t)
+
+    def test_repr_contains_elapsed(self, t):
+        _tick(t, 16)
+        assert "elapsed=" in repr(t)
