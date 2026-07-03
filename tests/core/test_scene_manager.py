@@ -43,8 +43,12 @@ class _FakePhase:
     DONE = "DONE"
 
 _trans_mod.TransitionPhase = _FakePhase
-_trans_mod.Transition      = MagicMock
-_trans_mod.FadeTransition  = MagicMock
+_trans_mod.Transition       = MagicMock
+_trans_mod.FadeTransition   = MagicMock
+_trans_mod.SlideTransition  = MagicMock
+_trans_mod.SlideDirection   = MagicMock
+_trans_mod.WipeTransition   = MagicMock
+_trans_mod.CrossfadeTransition = MagicMock
 sys.modules["engine.transitions"] = _trans_mod
 
 # engine.ui.ui_manager
@@ -115,6 +119,7 @@ def clean_sm(monkeypatch):
         "_get_collider_classes",
         staticmethod(lambda: (_BC, _CC)),
     )
+    monkeypatch.setitem(sys.modules, "engine.audio", _audio_mod)
     _UIManager.reset.reset_mock()
     _BC.check_all.reset_mock()
     _CC.check_all.reset_mock()

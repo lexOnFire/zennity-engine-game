@@ -163,7 +163,7 @@ class Transform(Component):
         )
 
         if self.game_object and self.game_object.parent:
-            parent_t = self.game_object.parent.get_component(Transform)
+            parent_t = getattr(self.game_object.parent, "transform", None)
             if parent_t:
                 return parent_t.get_model_matrix() @ local
 
@@ -181,7 +181,7 @@ class Transform(Component):
         """Rotação acumulada no espaço mundo (graus)."""
         rot = self._rotation.copy()
         if self.game_object and self.game_object.parent:
-            parent_t = self.game_object.parent.get_component(Transform)
+            parent_t = getattr(self.game_object.parent, "transform", None)
             if parent_t:
                 rot += parent_t.world_rotation
         return rot

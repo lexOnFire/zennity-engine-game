@@ -126,10 +126,10 @@ class EventBus:
     @classmethod
     def flush(cls) -> None:
         """
-        Despacha todos os eventos adiados da fila.
-        Chamado por Application.run() ao final de cada frame.
+        Despacha os eventos adiados que já estavam na fila.
+        Eventos enfileirados por listeners ficam para o próximo flush().
         """
-        while cls._queue:
+        for _ in range(len(cls._queue)):
             event, kwargs = cls._queue.popleft()
             cls.emit(event, **kwargs)
 

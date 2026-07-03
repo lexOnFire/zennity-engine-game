@@ -80,6 +80,13 @@ from engine.assets import Assets, Mesh  # noqa: E402
 @pytest.fixture(autouse=True)
 def clean_cache(monkeypatch):
     """Limpa todos os caches de classe entre testes."""
+    global _pg, _mixer, _image, _font_mod
+
+    assets_pygame = sys.modules[Assets.__module__].pygame
+    _pg = assets_pygame
+    _mixer = assets_pygame.mixer
+    _image = assets_pygame.image
+    _font_mod = assets_pygame.font
     image_load = MagicMock(return_value=_FakeSurface())
     sound_ctor = MagicMock(return_value=MagicMock())
     sysfont = MagicMock(return_value=MagicMock())
@@ -196,9 +203,10 @@ class TestGetImage:
 
 class TestLoadSpriteSheet:
     def _make_sheet(self, w, h):
-        fake = _FakeSurface((w, h))
-        fake.get_size.return_value = (w, h)
-        return fake
+        sheet = _pg.Surface((w, h))
+        if hasattr(sheet, "fill"):
+            sheet.fill((255, 255, 255))
+        return sheet
 
     def test_returns_list_of_frames(self):
         sheet = self._make_sheet(64, 32)

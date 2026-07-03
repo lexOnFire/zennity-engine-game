@@ -17,6 +17,8 @@ import sys
 _REAL_ENGINE_MODULES = (
     "engine.physics.collider",
     "engine.transitions",
+    "engine.audio",
+    "engine.graphics.math3d",
 )
 
 
@@ -33,6 +35,10 @@ def _remove_fake_engine_modules() -> None:
         if module_name == "engine.physics.collider" and not hasattr(module, "CollisionInfo"):
             sys.modules.pop(module_name, None)
         elif module_name == "engine.transitions" and not hasattr(module, "SlideTransition"):
+            sys.modules.pop(module_name, None)
+        elif module_name == "engine.audio" and not getattr(module, "__file__", None):
+            sys.modules.pop(module_name, None)
+        elif module_name == "engine.graphics.math3d" and not getattr(module, "__file__", None):
             sys.modules.pop(module_name, None)
 
 

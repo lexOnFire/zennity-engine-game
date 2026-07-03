@@ -53,9 +53,6 @@ if "pygame" not in sys.modules:
 else:
     _pg = sys.modules["pygame"]
     _pg.SRCALPHA = getattr(_pg, "SRCALPHA", 65536)
-    if not isinstance(getattr(_pg, "Surface", None), type) or \
-       getattr(_pg.Surface, "_fake", False):
-        _pg.Surface = _FakeSurface
 
 # Em execuções completas do pytest, outro teste pode deixar engine.transitions
 # cacheado/fake durante a coleta. Removemos antes do import real.
@@ -98,6 +95,17 @@ def _run_to_done(t: Transition):
 
 def _fake_snap(size=(800, 600)):
     return _FakeSurface(size)
+
+@pytest.fixture(autouse=True)
+def _stub_transition_pygame(monkeypatch):
+    import engine.transitions as transitions_mod
+    draw_mod = getattr(transitions_mod.pygame, "draw", ModuleType("pygame.draw"))
+    rect = MagicMock()
+    monkeypatch.setattr(transitions_mod.pygame, "SRCALPHA", getattr(transitions_mod.pygame, "SRCALPHA", 65536), raising=False)
+    monkeypatch.setattr(transitions_mod.pygame, "Surface", _FakeSurface, raising=False)
+    monkeypatch.setattr(draw_mod, "rect", rect, raising=False)
+    monkeypatch.setattr(transitions_mod.pygame, "draw", draw_mod, raising=False)
+    monkeypatch.setattr(_pg, "draw", draw_mod, raising=False)
 
 
 # ── TestEasing ────────────────────────────────────────────────────────────────
