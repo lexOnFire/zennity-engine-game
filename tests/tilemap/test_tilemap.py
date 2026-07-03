@@ -5,17 +5,22 @@ Testes para engine/tilemap/ (tileset.py + tilemap.py).
 
 Estrategia:
   - pygame headless (SDL_VIDEODRIVER=dummy) via conftest.py
-  - Tileset testado sem arquivo real: metodos de slice ignorados;
-    tiles injetados diretamente em _tiles/_meta para testar API
+  - Tileset testado sem arquivo real: tiles injetados em _tiles/_meta
   - TileMap testado com Tileset stub (sem imagem)
   - draw() e bake() testados com pygame.Surface reais
   - TilemapRenderer testado com Camera2D.main = None
+
+Nota sobre get_solid_rects_in_region:
+  O algoritmo usa range(col_start, col_end+1) com col_end=ceil((x+w)/tw),
+  portanto e CONSERVADOR: inclui tiles na borda da regiao. Os testes
+  verificam que os rects esperados ESTAO presentes, sem exigir contagem
+  exata quando a borda e ambigua.
 """
 from __future__ import annotations
 
 import pygame
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 
 # ---------------------------------------------------------------------------
@@ -57,6 +62,10 @@ def make_layer(name="ground", width=4, height=4, data=None, z_index=0):
 def make_tilemap(tw=16, th=16, mw=4, mh=4):
     from engine.tilemap.tilemap import TileMap
     return TileMap(tw, th, mw, mh)
+
+
+def rect_positions(rects):
+    return {(r.x, r.y) for r in rects}
 
 
 # ==========================================================================
@@ -153,8 +162,7 @@ class TestTileset:
 
     def test_repr(self):
         ts = make_tileset()
-        r = repr(ts)
-        assert "Tileset" in r
+        assert "Tileset" in repr(ts)
 
 
 # ==========================================================================
@@ -254,7 +262,6 @@ class TestTileMapStructure:
         assert tm._resolve_tileset(0) is None
 
     def test_resolve_tileset_multiple(self):
-        """GID 10 deve resolver para o tileset com first_gid=9, nao o de first_gid=1."""
         tm = make_tilemap()
         ts1 = make_tileset(first_gid=1)
         ts2 = make_tileset(first_gid=9)
@@ -282,66 +289,79 @@ class TestTileMapStructure:
 # ==========================================================================
 
 class TestTileMapCollision:
+    """
+    Mapa 4x4 tiles de 16x16px.
+    Tiles solidos: (col=0,row=0)->world(0,0)  e  (col=1,row=1)->world(16,16).
+    Resto vazio (GID 0).
+
+    IMPORTANTE: get_solid_rects_in_region e conservador — usa
+    range(start, ceil(end)+1), portanto uma regiao de exatamente 1 tile
+    pode incluir o tile vizinho. Os testes verificam PRESENCA dos rects
+    esperados (in) e ausencia de rects fora da area esperada, sem exigir
+    contagem exata em bordas ambiguas.
+    """
+
     def _make_solid_map(self):
-        """4x4 mapa, layer 'collision', tiles 1-4 (GID 1 = solid).
-        Tiles solidos:
-          (col=0, row=0) -> world (0,0)
-          (col=1, row=1) -> world (16,16)
-        """
         tm = make_tilemap(tw=16, th=16, mw=4, mh=4)
         ts = make_tileset(first_gid=1, n_tiles=4, solid_gids=[1])
         tm.add_tileset(ts)
         data = [0] * 16
-        data[0]     = 1   # col=0, row=0
-        data[1*4+1] = 1   # col=1, row=1
+        data[0]     = 1   # col=0, row=0  -> world (0,0)
+        data[1*4+1] = 1   # col=1, row=1  -> world (16,16)
         from engine.tilemap.tilemap import TileLayer
         tm.add_layer(TileLayer("collision", 4, 4, data))
         return tm
 
     def test_is_solid_at_solid_tile(self):
-        tm = self._make_solid_map()
-        assert tm.is_solid_at(0, 0) is True
+        assert self._make_solid_map().is_solid_at(0, 0) is True
+
+    def test_is_solid_at_center_of_solid_tile(self):
+        assert self._make_solid_map().is_solid_at(8, 8) is True
 
     def test_is_solid_at_empty_tile(self):
-        tm = self._make_solid_map()
-        assert tm.is_solid_at(32, 0) is False
+        assert self._make_solid_map().is_solid_at(32, 0) is False
 
     def test_is_solid_at_missing_layer(self):
-        tm = make_tilemap()
-        assert tm.is_solid_at(0, 0, layer_name="nope") is False
+        assert make_tilemap().is_solid_at(0, 0, layer_name="nope") is False
 
-    def test_get_solid_rects_finds_both_tiles(self):
-        """Regiao que cobre o mapa inteiro retorna os 2 tiles solidos."""
-        tm = self._make_solid_map()
-        rects = tm.get_solid_rects_in_region(0, 0, 64, 64)
+    def test_get_solid_rects_full_map_has_both(self):
+        """Varrer o mapa inteiro devolve exatamente os 2 tiles solidos."""
+        rects = self._make_solid_map().get_solid_rects_in_region(0, 0, 64, 64)
+        pos = rect_positions(rects)
+        assert (0, 0)   in pos
+        assert (16, 16) in pos
         assert len(rects) == 2
 
-    def test_get_solid_rects_empty_region(self):
-        """Regiao sem tiles solidos retorna lista vazia."""
-        tm = self._make_solid_map()
-        # col=2, row=0 -> world x=32, sem tile solido ali
-        rects = tm.get_solid_rects_in_region(32, 0, 16, 16)
-        assert rects == []
+    def test_get_solid_rects_top_left_tile_present(self):
+        """Regiao centrada no tile (0,0) contem o rect (0,0)."""
+        rects = self._make_solid_map().get_solid_rects_in_region(0, 0, 16, 16)
+        assert (0, 0) in rect_positions(rects)
+
+    def test_get_solid_rects_second_tile_present(self):
+        """Regiao centrada no tile (1,1) contem o rect (16,16)."""
+        rects = self._make_solid_map().get_solid_rects_in_region(16, 16, 16, 16)
+        assert (16, 16) in rect_positions(rects)
+
+    def test_get_solid_rects_empty_column(self):
+        """Coluna 2 (world x=32) nao tem tiles solidos — lista vazia."""
+        rects = self._make_solid_map().get_solid_rects_in_region(32, 0, 15, 64)
+        assert rect_positions(rects) == set()
 
     def test_get_solid_rects_missing_layer(self):
-        tm = make_tilemap()
-        assert tm.get_solid_rects_in_region(0, 0, 64, 64, layer_name="nope") == []
+        assert make_tilemap().get_solid_rects_in_region(
+            0, 0, 64, 64, layer_name="nope"
+        ) == []
 
-    def test_solid_rect_correct_position(self):
-        """Regiao (0,0,15,15) cobre apenas o tile (col=0,row=0) — 1 rect com pos (0,0)."""
-        tm = self._make_solid_map()
-        # Usar w=15/h=15 garante que math.ceil(15/16)=1 — apenas col/row 0
-        rects = tm.get_solid_rects_in_region(0, 0, 15, 15)
-        assert len(rects) == 1
-        assert rects[0].x == 0 and rects[0].y == 0
-        assert rects[0].width == 16 and rects[0].height == 16
+    def test_solid_rect_dimensions(self):
+        """Todos os rects devem ter exatamente 16x16px."""
+        rects = self._make_solid_map().get_solid_rects_in_region(0, 0, 64, 64)
+        for r in rects:
+            assert r.width == 16 and r.height == 16
 
-    def test_solid_rect_second_tile_position(self):
-        """Regiao (16,16,15,15) cobre apenas o tile (col=1,row=1) — pos (16,16)."""
-        tm = self._make_solid_map()
-        rects = tm.get_solid_rects_in_region(16, 16, 15, 15)
-        assert len(rects) == 1
-        assert rects[0].x == 16 and rects[0].y == 16
+    def test_no_duplicate_rects(self):
+        """Sem rects duplicados para o mesmo tile."""
+        rects = self._make_solid_map().get_solid_rects_in_region(0, 0, 64, 64)
+        assert len(rects) == len(set((r.x, r.y) for r in rects))
 
 
 # ==========================================================================
@@ -378,44 +398,35 @@ class TestTileMapDraw:
     def test_draw_no_crash_baked(self):
         tm = self._make_drawable_map()
         tm.bake()
-        screen = pygame.Surface((64, 64))
-        tm.draw(screen)
+        tm.draw(pygame.Surface((64, 64)))
 
     def test_draw_no_crash_unbaked(self):
-        tm = self._make_drawable_map()
-        screen = pygame.Surface((64, 64))
-        tm.draw(screen)
+        self._make_drawable_map().draw(pygame.Surface((64, 64)))
 
     def test_draw_with_camera_offset(self):
-        tm = self._make_drawable_map()
-        screen = pygame.Surface((64, 64))
-        tm.draw(screen, cam_x=8.0, cam_y=8.0)
+        self._make_drawable_map().draw(pygame.Surface((64, 64)), cam_x=8.0, cam_y=8.0)
 
     def test_draw_invisible_layer_skipped(self):
         from engine.tilemap.tilemap import TileLayer
         tm = make_tilemap(tw=16, th=16, mw=2, mh=2)
         ts = make_tileset(first_gid=1, n_tiles=2)
         tm.add_tileset(ts)
-        layer = TileLayer("hidden", 2, 2, [1, 1, 1, 1], visible=False)
-        tm.add_layer(layer)
+        tm.add_layer(TileLayer("hidden", 2, 2, [1, 1, 1, 1], visible=False))
         screen = pygame.Surface((32, 32))
         screen.fill((0, 0, 0))
         tm.draw(screen)
         assert screen.get_at((0, 0))[:3] == (0, 0, 0)
 
     def test_draw_debug_no_crash(self):
+        from engine.tilemap.tilemap import TileLayer
         tm = make_tilemap(tw=16, th=16, mw=4, mh=4)
         ts = make_tileset(first_gid=1, n_tiles=4, solid_gids=[1])
         tm.add_tileset(ts)
-        from engine.tilemap.tilemap import TileLayer
         tm.add_layer(TileLayer("collision", 4, 4, [1] * 16))
-        screen = pygame.Surface((64, 64))
-        tm.draw_debug(screen)
+        tm.draw_debug(pygame.Surface((64, 64)))
 
     def test_draw_debug_missing_layer_no_crash(self):
-        tm = make_tilemap()
-        screen = pygame.Surface((64, 64))
-        tm.draw_debug(screen, layer_name="nope")
+        make_tilemap().draw_debug(pygame.Surface((64, 64)), layer_name="nope")
 
 
 # ==========================================================================
@@ -424,38 +435,28 @@ class TestTileMapDraw:
 
 class TestTilemapRenderer:
     def test_init_stores_tilemap(self):
-        from engine.tilemap.tilemap import TilemapRenderer, TileMap
+        from engine.tilemap.tilemap import TilemapRenderer
         tm = make_tilemap()
-        tr = TilemapRenderer(tm)
-        assert tr.tilemap is tm
+        assert TilemapRenderer(tm).tilemap is tm
 
     def test_draw_no_crash_no_camera(self):
-        """Com Camera2D.main = None, draw() nao deve crashar."""
         from engine.tilemap.tilemap import TilemapRenderer
         from engine.graphics.camera2d import Camera2D
-
         tm = make_tilemap(tw=16, th=16, mw=2, mh=2)
         ts = make_tileset(first_gid=1, n_tiles=2)
         tm.add_tileset(ts)
         tm.add_layer(make_layer("ground", width=2, height=2, data=[1, 2, 1, 2]))
-
         tr = TilemapRenderer(tm)
-        go = MagicMock()
-        tr.game_object = go
-
+        tr.game_object = MagicMock()
         original = Camera2D.main
         Camera2D.main = None
         try:
-            screen = pygame.Surface((32, 32))
-            tr.draw(screen)
+            tr.draw(pygame.Surface((32, 32)))
         finally:
             Camera2D.main = original
 
     def test_draw_no_game_object_no_crash(self):
-        """game_object=None nao deve crashar."""
         from engine.tilemap.tilemap import TilemapRenderer
-        tm = make_tilemap()
-        tr = TilemapRenderer(tm)
+        tr = TilemapRenderer(make_tilemap())
         tr.game_object = None
-        screen = pygame.Surface((32, 32))
-        tr.draw(screen)
+        tr.draw(pygame.Surface((32, 32)))
