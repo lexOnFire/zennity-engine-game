@@ -1,0 +1,34 @@
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+extend-exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "ENV",
+    "env",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+    "build",
+    "dist",
+    "exports",
+    "release",
+]
+
+[tool.ruff.lint]
+# Baseline inicial seguro: apenas erros que podem quebrar execução/imports.
+# Depois que o projeto estiver estável, aumente gradualmente para ["E", "F", "I"].
+select = [
+    "E9",   # erros de sintaxe/indentacao graves
+    "F63",  # comparacoes/uso invalido em asserts
+    "F7",   # erros de fluxo/placeholder em format strings
+    "F82",  # nomes indefinidos
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
