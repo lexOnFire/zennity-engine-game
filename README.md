@@ -1,70 +1,75 @@
-# 🎮 Zennity Engine
+# 🎮 Zennity Engine & Editor
 
-> Uma engine 2D modular construída em cima do Pygame, com arquitetura inspirada em Unity (ECS — Entity Component System).
+> Uma engine modular 2D/3D construída sobre o Pygame com arquitetura ECS (Entity Component System) inspirada em Unity, integrada a um **Editor Profissional em PySide6** com design moderno inspirado na Unreal Engine.
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)
-![Pygame](https://img.shields.io/badge/Pygame-2.x-green?logo=pygame)
+![Pygame](https://img.shields.io/badge/Pygame-2.x%20%2F%20CE-green?logo=pygame)
+![PySide6](https://img.shields.io/badge/PySide6-6.5%2B-darkgreen?logo=qt)
 ![License](https://img.shields.io/badge/license-MIT-brightgreen)
 
 ---
 
-## ✨ Funcionalidades
+## 🖥️ O Novo Zennity Editor (PySide6)
 
-- **Engine Loop** com delta time e troca de cenas agendada
-- **Sistema de Cenas** (`Scene`) com `start`, `update`, `draw`, `handle_event`
-- **GameObject + Components** — arquitetura ECS inspirada em Unity
-- **Transform** com posição, rotação e escala usando NumPy
-- **Sistema de Física** com `RigidBody`, `BoxCollider` e detecção AABB
-- **Sistema de Gráficos** com `Camera` e `SpriteRenderer`
-- **Gerenciamento de Assets** (imagens, fontes, etc.)
-- **Sistema de Áudio** (música e efeitos sonoros)
-- **Input Manager** com suporte a teclado e mouse
+O Zennity Editor é um ambiente integrado de desenvolvimento rico, responsivo e desacoplado através de uma arquitetura **MVVM** e comunicação assíncrona por **EventBus**.
+
+### ✨ Funcionalidades do Editor
+* **Workspace Unreal-inspired:** Interface escura com destaque cobalto cobrindo painéis flexíveis acopláveis (Docks) com persistência automática de layout via `QSettings`.
+* **Outliner de Hierarquia:** Árvore recursiva dinâmica com busca rápida de texto, duplicação rápida (`Ctrl+D`), exclusão (`Delete`) e renomeação instantânea com duplo clique.
+* **Asset Browser:** Navegador de arquivos com histórico de pastas (Voltar/Avançar/Subir), breadcrumbs interativos e visualização em grade de recursos.
+* **Inspector Colapsável:** Exibição e edição dinâmica de propriedades de componentes (`Transform`, `RigidBody`, `Colliders`) e scripts.
+* **Viewport Acelerada (OpenGL):** Renderização direta do framebuffer do Pygame no Qt em 60 FPS com suporte a atalho de foco (`F`) e alternância em tempo real entre projeções 2D e 3D.
+* **Terminal Python & Console:** Console de mensagens do sistema colorido por severidade com interpretador interativo integrado para executar scripts no contexto do editor.
+* **Gizmos de Transformação:** Handles visuais e binding bidirecional para translação, rotação e escala.
+* **Code Editor e Scripts:** Editor de código-fonte embutido com atalho de salvamento (`Ctrl+S`) para programar comportamentos dos objetos em tempo real.
+* **Build Exporter:** Exportação automatizada da cena ativa `.zscene` para uma pasta autônoma contendo todas as dependências lógicas e launchers rápidos (`jogar.bat`).
+* **Profiler Gráfico:** Gráficos nativos gerados via `QPainter` medindo FPS, consumo de RAM e física ativa.
 
 ---
 
-## 📦 Instalação
+## 📦 Instalação e Execução
 
+### 1. Clonar o Repositório
 ```bash
-# Clone o repositório
 git clone https://github.com/lexOnFire/zennity-engine-game.git
 cd zennity-engine-game
+```
 
-# Instale as dependências
+### 2. Instalar Dependências
+```bash
 pip install -r requirements.txt
+```
+
+### 3. Executar o Editor
+```bash
+python editor/main.py
 ```
 
 ---
 
-## 🚀 Uso Rápido
+## 🚀 Uso Standalone (Engine Pura)
 
 ```python
-from engine.core import Engine, Scene
+from engine.core import Application, Scene
 from engine.game_object import GameObject
 from engine.physics.rigidbody import RigidBody
 from engine.physics.collider import BoxCollider
-import pygame
 
 class GameScene(Scene):
     def start(self):
         # Cria um player
         self.player = GameObject(name="Player")
-        self.player.transform.x = 400
-        self.player.transform.y = 300
+        self.player.transform.position[0] = 400
+        self.player.transform.position[1] = 300
 
-        # Adiciona física
-        rb = self.player.add_component(RigidBody())
-        col = self.player.add_component(BoxCollider(width=32, height=32))
-
-    def update(self, dt):
-        self.player.update(dt)
-
-    def draw(self, screen):
-        self.player.draw(screen)
-        screen.fill((30, 30, 30))  # fundo
+        # Adiciona componentes
+        self.player.add_component(RigidBody())
+        self.player.add_component(BoxCollider(width=32, height=32))
+        self.add_game_object(self.player)
 
 if __name__ == "__main__":
-    engine = Engine(width=800, height=600, title="Zennity Demo")
-    engine.run(GameScene())
+    app = Application(800, 600, "Zennity Standalone Game")
+    app.run(GameScene())
 ```
 
 ---
@@ -73,49 +78,30 @@ if __name__ == "__main__":
 
 ```
 zennity-engine-game/
-├── engine/
-│   ├── core.py            # Engine principal + Sistema de Cenas
-│   ├── game_object.py     # GameObject (container de componentes)
-│   ├── component.py       # Component base + Transform
-│   ├── assets.py          # Gerenciamento de assets
-│   ├── audio.py           # Sistema de áudio
-│   ├── input.py           # Input Manager
-│   ├── physics/
-│   │   ├── rigidbody.py   # Física e movimento
-│   │   └── collider.py    # Detecção de colisão AABB
-│   └── graphics/
-│       ├── camera.py      # Sistema de câmera 2D
-│       └── renderer.py    # SpriteRenderer
-├── demos/                 # Demos e exemplos
-├── scripts/               # Scripts utilitários
-├── requirements.txt
-└── README.md
+├── engine/                # Módulos canônicos da Zennity Engine (ECS)
+│   ├── core/              # Engine principal, Cenas e EventBus
+│   ├── physics/           # RigidBody, Box/Circle Colliders
+│   └── graphics/          # Renderers 3D, Câmera e Matrizes
+├── editor/                # O Novo Zennity Editor modular (PySide6)
+│   ├── core/              # EventBus do editor e exportador
+│   ├── models/            # Scene e Asset Models
+│   ├── viewmodels/        # Apresentação e lógica de bindings
+│   ├── widgets/           # Hierarchy, Inspector, Console, Docks, Viewport
+│   ├── windows/           # MainWindow e Diálogos de Preferências
+│   └── themes/            # dark_theme.qss e ícones
+├── editor_legacy/         # Versão legada do editor Pygame (compatibilidade)
+├── demos/                 # Exemplos práticos e demonstrativos
+├── scripts/               # Scripts utilitários e de comportamento do usuário
+└── tests/                 # Suites completas de testes unitários (pytest)
 ```
 
 ---
 
-## 🧩 Sistemas
+## 🛠️ Dependências Principais
 
-### Physics
-
-| Classe | Descrição |
-|---|---|
-| `RigidBody` | Aplica gravidade, velocidade e movimento baseado em dt |
-| `BoxCollider` | Colisão AABB com callbacks `on_collision_enter` e `on_collision_exit` |
-
-### Graphics
-
-| Classe | Descrição |
-|---|---|
-| `Camera` | Câmera 2D com follow suave de target |
-| `SpriteRenderer` | Renderiza sprites com suporte à câmera |
-
----
-
-## 🛠️ Dependências
-
-- `pygame >= 2.0`
-- `numpy`
+* `pygame-ce` ou `pygame >= 2.5`
+* `numpy`
+* `PySide6 >= 6.5.0`
 
 ---
 
@@ -125,4 +111,4 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para de
 
 ---
 
-> Feito com 💙 por [lexOnFire](https://github.com/lexOnFire)
+> Desenvolvido com 💙 por [lexOnFire](https://github.com/lexOnFire)

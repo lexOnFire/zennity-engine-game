@@ -45,12 +45,12 @@
 
 ---
 
-### v0.4 — Editor com Workspaces 🔄
-- [ ] Workspace 2D (Hierarchy + Inspector + Scene2D + Assets)
-- [ ] Workspace 3D (Hierarchy + Viewport3D + Materials + Lighting)
+### v0.4 — Editor com Workspaces ✅
+- [x] Workspace 2D (Hierarchy + Inspector + Scene2D + Assets)
+- [x] Workspace 3D (Hierarchy + Viewport3D)
 - [ ] Workspace UI (Canvas + Widgets + Styles)
 - [ ] Workspace Animation (Timeline + State Machine)
-- [ ] Salvar/carregar cena em formato JSON
+- [x] Salvar/carregar cena em formato JSON
 - [ ] Drag & drop de assets
 
 ---
@@ -68,7 +68,7 @@
 - [ ] Sistema de Prefabs (salvar/instanciar GO com componentes)
 - [ ] Inspector com edição de todos os tipos de campo
 - [ ] Hierarchy com drag & drop e parentesco
-- [ ] Undo/Redo no editor
+- [x] Undo/Redo no editor
 
 ---
 
@@ -82,8 +82,8 @@
 
 ### v0.8 — CLI e Package Manager
 - [ ] `zennity new` — cria projeto a partir de template
-- [ ] `zennity build` — empacota o jogo
-- [ ] `zennity export` — exporta para plataforma alvo
+- [x] `zennity build` — empacota o jogo (standalone launcher)
+- [x] `zennity export` — exporta para pasta standalone
 - [ ] `zpm install <pacote>` — instala módulo da comunidade
 
 ---
@@ -92,7 +92,7 @@
 - [ ] Terrain 3D
 - [ ] Animation Graph (state machine visual)
 - [ ] Particle Editor
-- [ ] Profiler integrado ao editor
+- [x] Profiler integrado ao editor
 - [ ] Documentação completa
 - [ ] 3+ demos polidos
 
