@@ -4,67 +4,32 @@ tests/test_time.py
 Testes unitários de engine/time.py (Time).
 
 Estratégia de isolamento:
-  - pygame.time.Clock é stubado: `tick()` retorna um valor controlado
-    em milissegundos, `get_fps()` retorna um float configurável.
-  - `Time._current` é limpo antes/depois de cada teste para não
-    vazar estado entre testes.
-  - Nenhum loop da Application é executado; `time.tick()` é chamado
-    diretamente com o valor de ms injetado via `_clock.tick.return_value`.
+  - pygame.time.Clock é substituído por um fake usando monkeypatch.
+  - O patch vale apenas durante cada teste e não polui outros módulos.
+  - `Time._current` é limpo antes/depois de cada teste para não vazar estado.
 """
 from __future__ import annotations
 
-import sys
-from types import ModuleType
 from unittest.mock import MagicMock
 
+import pygame
 import pytest
 
-# ── stub pygame ──────────────────────────────────────────────────────────────
+from engine.time import Time
+
 
 class _FakeClock:
     """Clock fictício: tick() retorna ms configurável, get_fps() também."""
-    _fake = True
 
     def __init__(self):
-        self.tick = MagicMock(return_value=16)      # ~60 fps
+        self.tick = MagicMock(return_value=16)
         self.get_fps = MagicMock(return_value=60.0)
 
 
-def _ensure_pygame_time_stub():
-    """
-    Garante um pygame.time.Clock fake e controlável.
-
-    O pytest coleta vários módulos no mesmo processo. Se outro teste importar
-    o pygame real antes deste arquivo, pygame.time.Clock será uma classe nativa
-    sem `.return_value`, quebrando a preparação do teste. Por isso a substituição
-    é feita sempre, preservando o módulo pygame existente quando ele já existe.
-    """
-    if "pygame" not in sys.modules:
-        pg = ModuleType("pygame")
-        sys.modules["pygame"] = pg
-    else:
-        pg = sys.modules["pygame"]
-
-    time_mod = getattr(pg, "time", None)
-    if time_mod is None:
-        time_mod = ModuleType("pygame.time")
-        pg.time = time_mod
-
-    time_mod.Clock = _FakeClock
-    sys.modules["pygame.time"] = time_mod
-    return pg
-
-
-_pg = _ensure_pygame_time_stub()
-
-from engine.time import Time  # noqa: E402
-
-
-# ── fixture ────────────────────────────────────────────────────────────────
-
 @pytest.fixture(autouse=True)
-def reset_current():
+def reset_current(monkeypatch):
     Time._current = None
+    monkeypatch.setattr(pygame.time, "Clock", _FakeClock)
     yield
     Time._current = None
 
@@ -75,7 +40,6 @@ def t():
     return Time(target_fps=60, dt_cap=0.1)
 
 
-# ── helpers ────────────────────────────────────────────────────────────────
 def _tick(t: Time, ms: int, fps: float = 60.0) -> float:
     """Injeta ms no clock e executa um tick."""
     t._clock.tick.return_value = ms
@@ -83,7 +47,6 @@ def _tick(t: Time, ms: int, fps: float = 60.0) -> float:
     return t.tick()
 
 
-# ── TestInit ─────────────────────────────────────────────────────────────────
 class TestInit:
     def test_fps_target_stored(self):
         assert Time(target_fps=30).fps_target == 30
@@ -120,7 +83,6 @@ class TestInit:
         assert Time._current is t2
 
 
-# ── TestTick ─────────────────────────────────────────────────────────────────
 class TestTick:
     def test_tick_returns_delta(self, t):
         dt = _tick(t, 16)
@@ -171,7 +133,6 @@ class TestTick:
         t._clock.tick.assert_called_with(t.fps_target)
 
 
-# ── TestScaledDelta ──────────────────────────────────────────────────────────────
 class TestScaledDelta:
     def test_scaled_delta_normal(self, t):
         """scale=1.0 => scaled_delta == delta."""
@@ -204,7 +165,6 @@ class TestScaledDelta:
         assert t.scaled_delta == pytest.approx(0.0)
 
 
-# ── TestElapsed ────────────────────────────────────────────────────────────────
 class TestElapsed:
     def test_elapsed_accumulates_scaled_delta(self, t):
         _tick(t, 16)
@@ -216,13 +176,13 @@ class TestElapsed:
         t.paused = True
         _tick(t, 16)
         _tick(t, 16)
-        assert t.elapsed == pytest.approx(0.016)  # só o primeiro frame
+        assert t.elapsed == pytest.approx(0.016)
 
     def test_elapsed_uses_scale(self, t):
         t.scale = 0.5
         _tick(t, 16)
         _tick(t, 16)
-        assert t.elapsed == pytest.approx(0.016)  # 2 * 0.016 * 0.5
+        assert t.elapsed == pytest.approx(0.016)
 
     def test_elapsed_zero_with_zero_ms(self, t):
         _tick(t, 0)
