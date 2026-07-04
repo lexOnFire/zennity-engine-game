@@ -190,9 +190,14 @@ class SimplePanel(Panel):
 class AssetPreviewPanel(Panel):
     def __init__(self) -> None:
         super().__init__("Asset Preview")
+        body = QWidget()
+        body_layout = QHBoxLayout(body)
+        body_layout.setContentsMargins(8, 8, 8, 8)
+        body_layout.setSpacing(12)
+
         self.image = QLabel()
         self.image.setAlignment(Qt.AlignCenter)
-        self.image.setMinimumHeight(120)
+        self.image.setMinimumSize(220, 140)
         self.image.setObjectName("AssetPreviewImage")
 
         self.details = QLabel("Nenhum asset selecionado")
@@ -200,8 +205,9 @@ class AssetPreviewPanel(Panel):
         self.details.setWordWrap(True)
         self.details.setObjectName("AssetPreviewDetails")
 
-        self.layout.addWidget(self.image)
-        self.layout.addWidget(self.details)
+        body_layout.addWidget(self.image)
+        body_layout.addWidget(self.details, 1)
+        self.layout.addWidget(body)
         self.layout.addStretch(1)
 
     def load_asset(self, asset) -> None:
