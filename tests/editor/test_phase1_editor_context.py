@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QApplication
 from editor.phase1_editor import ZennityPhase1Editor
 from editor.runtime import EditorContext
 from editor.runtime.tool_manager import EditorTool
+from engine.physics.rigidbody import RigidBody
 
 
 @pytest.fixture(scope="session")
@@ -90,6 +91,70 @@ def test_phase1_snap_toolbar_toggle_updates_editor_state(
     assert not phase1_editor._snap_action.isChecked()
     assert phase1_editor._snap_action.text() == "Snap: OFF"
     assert phase1_editor.status_msg.text() == "Snap desativado"
+
+
+def test_phase1_play_controls_reflect_simulation_state(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    assert phase1_editor.btn_play.isEnabled()
+    assert not phase1_editor.btn_stop.isEnabled()
+    assert not phase1_editor.editor_context.state.is_playing
+
+    phase1_editor.play()
+
+    assert not phase1_editor.btn_play.isEnabled()
+    assert phase1_editor.btn_play.text() == "Playing"
+    assert phase1_editor.btn_stop.isEnabled()
+    assert phase1_editor.editor_context.state.is_playing
+
+    phase1_editor.stop()
+
+    assert phase1_editor.btn_play.isEnabled()
+    assert phase1_editor.btn_play.text() == "Play"
+    assert not phase1_editor.btn_stop.isEnabled()
+    assert not phase1_editor.editor_context.state.is_playing
+
+
+def test_phase1_stop_restores_scene_and_reselects_restored_object(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    selected = phase1_editor.scene_objects()[1]
+    original_y = float(selected.transform.position[1])
+    phase1_editor.select_object(selected)
+
+    phase1_editor.play()
+    phase1_editor.viewport.active_scene.update(0.1)
+    assert float(selected.transform.position[1]) > original_y
+
+    phase1_editor.stop()
+
+    restored = phase1_editor.scene_objects()[1]
+    assert restored is phase1_editor.editor_context.selection.selected
+    assert float(restored.transform.position[1]) == pytest.approx(original_y)
+    rb = restored.get_component(RigidBody)
+    assert rb is not None
+    assert float(rb.velocity[1]) == pytest.approx(0.0)
+
+
+def test_phase1_play_cycles_start_from_same_physics_state(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    player = phase1_editor.scene_objects()[1]
+    original_y = float(player.transform.position[1])
+
+    phase1_editor.play()
+    phase1_editor.viewport.active_scene.update(0.1)
+    first_delta = float(player.transform.position[1]) - original_y
+    phase1_editor.stop()
+
+    restored = phase1_editor.scene_objects()[1]
+    phase1_editor.play()
+    phase1_editor.viewport.active_scene.update(0.1)
+    second_delta = float(restored.transform.position[1]) - original_y
+    phase1_editor.stop()
+
+    assert first_delta > 0.0
+    assert second_delta == pytest.approx(first_delta)
 
 
 def test_phase1_rotate_and_scale_report_unimplemented_tools(

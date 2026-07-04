@@ -58,10 +58,11 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.btn_play.clicked.connect(self.play)
         toolbar.addWidget(self.btn_play)
 
-        btn_stop = QToolButton()
-        btn_stop.setText("Stop")
-        btn_stop.clicked.connect(self.stop)
-        toolbar.addWidget(btn_stop)
+        self.btn_stop = QToolButton()
+        self.btn_stop.setText("Stop")
+        self.btn_stop.clicked.connect(self.stop)
+        self.btn_stop.setEnabled(False)
+        toolbar.addWidget(self.btn_stop)
         toolbar.addWidget(QComboBox())
 
     def _build_tool_buttons(self, toolbar: QToolBar) -> None:
@@ -153,6 +154,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.viewport.object_transform_changed.connect(self.on_viewport_object_changed)
         self.viewport.tool_message_requested.connect(self.on_tool_message_requested)
         self.on_viewport_selection_changed(self.editor_context.selection.selected)
+        self._sync_play_controls()
 
     def _on_runtime_tool_changed(self, tool: EditorTool) -> None:
         action = self._tool_actions.get(tool)
@@ -193,6 +195,42 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             self.status_msg.setText(message)
         if hasattr(self, "console"):
             self.console.add("INFO", message)
+
+    def _is_scene_playing(self) -> bool:
+        return bool(getattr(getattr(self.viewport, "active_scene", None), "playing", False))
+
+    def _sync_play_controls(self) -> None:
+        playing = self._is_scene_playing()
+        self.editor_context.state.is_playing = playing
+        if hasattr(self, "btn_play"):
+            self.btn_play.setEnabled(not playing)
+            self.btn_play.setText("Playing" if playing else "Play")
+        if hasattr(self, "btn_stop"):
+            self.btn_stop.setEnabled(playing)
+
+    def play(self) -> None:
+        if self._is_scene_playing():
+            self._sync_play_controls()
+            if hasattr(self, "status_msg"):
+                self.status_msg.setText("Simulacao ja ativa.")
+            return
+        self.viewport._on_play_state_changed("play")
+        self._sync_play_controls()
+        self.status_msg.setText("Simulacao ativa.")
+        self.console.add("INFO", "Play iniciado.")
+
+    def stop(self) -> None:
+        if not self._is_scene_playing():
+            self._sync_play_controls()
+            if hasattr(self, "status_msg"):
+                self.status_msg.setText("Simulacao parada.")
+            return
+        self.viewport._on_play_state_changed("stop")
+        self.refresh_hierarchy_from_viewport()
+        self.viewport.sync_selection_from_scene()
+        self._sync_play_controls()
+        self.status_msg.setText("Simulacao parada.")
+        self.console.add("INFO", "Play finalizado.")
 
     def create_object(self, name: str) -> None:
         mapping = {
