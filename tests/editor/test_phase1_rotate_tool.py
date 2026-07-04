@@ -375,3 +375,38 @@ def test_viewport_rotate_drag_cleans_up_after_end(
 
     assert phase1_editor.viewport._rotate_drag_object is None
     assert phase1_editor.viewport._rotate_current_mouse is None
+
+
+# ── Testes de Undo/Redo Toolbar Integration ──────────────────────────────────
+
+def test_undo_redo_toolbar_actions_enabled_state(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    """Verifica se os estados de habilitado/desabilitado dos botões de Undo/Redo no toolbar são sincronizados."""
+    # Início: pilha vazia, botões desabilitados
+    assert not phase1_editor.act_undo.isEnabled()
+    assert not phase1_editor.act_redo.isEnabled()
+
+    selected = _selected(phase1_editor)
+    phase1_editor.select_object(selected)
+    _set_rotate_tool(phase1_editor)
+    cx, cy = phase1_editor.viewport.world_to_viewport(selected.transform.position)
+
+    # Realiza rotação
+    phase1_editor.viewport._begin_rotate_drag(selected, cx + 60, cy)
+    phase1_editor.viewport._update_rotate_drag(cx, cy + 60)
+    phase1_editor.viewport._end_rotate_drag()
+
+    # Botão de desfazer deve estar habilitado, refazer desabilitado
+    assert phase1_editor.act_undo.isEnabled()
+    assert not phase1_editor.act_redo.isEnabled()
+
+    # Desfaz
+    phase1_editor.act_undo.trigger()
+    assert not phase1_editor.act_undo.isEnabled()
+    assert phase1_editor.act_redo.isEnabled()
+
+    # Refaz
+    phase1_editor.act_redo.trigger()
+    assert phase1_editor.act_undo.isEnabled()
+    assert not phase1_editor.act_redo.isEnabled()

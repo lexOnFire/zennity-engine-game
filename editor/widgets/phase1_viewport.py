@@ -37,6 +37,7 @@ class Phase1ViewportWidget(ViewportWidget):
 
     object_transform_changed = Signal(object)
     tool_message_requested = Signal(str)
+    history_changed = Signal()
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -218,6 +219,7 @@ class Phase1ViewportWidget(ViewportWidget):
                         undo_action=_undo,
                     )
                 )
+                self.history_changed.emit()
         self._move_drag_object = None
         self._update_hover_cursor(*self._qt_mouse_pos)
 
@@ -288,6 +290,7 @@ class Phase1ViewportWidget(ViewportWidget):
                         undo_action=_undo,
                     )
                 )
+                self.history_changed.emit()
         self._rotate_drag_object = None
         self._rotate_current_mouse = None
         self._update_hover_cursor(*self._qt_mouse_pos)

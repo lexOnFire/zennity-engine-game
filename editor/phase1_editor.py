@@ -42,8 +42,20 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         toolbar.setMovable(False)
         self.addToolBar(toolbar)
 
-        for text in ["Open", "Save", "Undo", "Redo"]:
+        for text in ["Open", "Save"]:
             toolbar.addWidget(QToolButton(text=text))
+
+        self.act_undo = QAction("Undo", self)
+        self.act_undo.setShortcut("Ctrl+Z")
+        self.act_undo.triggered.connect(self.undo)
+        self.addAction(self.act_undo)
+        toolbar.addAction(self.act_undo)
+
+        self.act_redo = QAction("Redo", self)
+        self.act_redo.setShortcut("Ctrl+Y")
+        self.act_redo.triggered.connect(self.redo)
+        self.addAction(self.act_redo)
+        toolbar.addAction(self.act_redo)
 
         spacer = QWidget()
         spacer.setMinimumWidth(180)
@@ -155,8 +167,31 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.scene_view_model.property_changed.connect(self.on_viewmodel_property_changed)
         self.viewport.object_transform_changed.connect(self.on_viewport_object_changed)
         self.viewport.tool_message_requested.connect(self.on_tool_message_requested)
+        self.viewport.history_changed.connect(self._update_undo_redo_states)
         self.on_viewport_selection_changed(self.editor_context.selection.selected)
         self._sync_play_controls()
+        self._update_undo_redo_states()
+
+    def _update_undo_redo_states(self) -> None:
+        if hasattr(self, "act_undo") and hasattr(self, "act_redo"):
+            self.act_undo.setEnabled(self.editor_context.commands.can_undo)
+            self.act_redo.setEnabled(self.editor_context.commands.can_redo)
+
+    def undo(self) -> None:
+        self.editor_context.commands.undo()
+        self.refresh_hierarchy_from_viewport()
+        sel = self.editor_context.selection.selected
+        if sel is not None:
+            self.on_viewport_selection_changed(sel)
+        self._update_undo_redo_states()
+
+    def redo(self) -> None:
+        self.editor_context.commands.redo()
+        self.refresh_hierarchy_from_viewport()
+        sel = self.editor_context.selection.selected
+        if sel is not None:
+            self.on_viewport_selection_changed(sel)
+        self._update_undo_redo_states()
 
     def _on_runtime_tool_changed(self, tool: EditorTool) -> None:
         action = self._tool_actions.get(tool)

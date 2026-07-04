@@ -871,20 +871,34 @@ class Editor2DScene(Scene):
             surf = pygame.Surface((r*2, r*2), pygame.SRCALPHA)
             pygame.draw.circle(surf, (*fill_col, 190), (r, r), r)
             pygame.draw.circle(surf, (*(T.ACCENT if selected else T.BORDER), 255), (r, r), r, 2)
+            
+            # Desenha linha de raio para indicar o ângulo rz
+            rz = getattr(obj.transform, "rz", 0.0)
+            rad = math.radians(rz)
+            end_x = r + r * math.cos(rad)
+            end_y = r + r * math.sin(rad)
+            pygame.draw.line(surf, (255, 255, 255, 180), (r, r), (int(end_x), int(end_y)), 2)
+            
             screen.blit(surf, (int(sx)-r, int(sy)-r))
         else:
-            rect = pygame.Rect(int(sx-sw/2), int(sy-sh/2), max(1,int(sw)), max(1,int(sh)))
-            surf = pygame.Surface((max(1,int(sw)), max(1,int(sh))), pygame.SRCALPHA)
+            surf_w = max(1, int(sw))
+            surf_h = max(1, int(sh))
+            surf = pygame.Surface((surf_w, surf_h), pygame.SRCALPHA)
             surf.fill((*fill_col, 120 if is_trigger else 190))
-            screen.blit(surf, rect.topleft)
             if is_trigger:
-                for i in range(0, int(sw), 8):
-                    pygame.draw.line(screen, (*T.WARNING, 200),
-                                     (rect.left+i, rect.top), (min(rect.left+i+4,rect.right), rect.top))
-                    pygame.draw.line(screen, (*T.WARNING, 200),
-                                     (rect.left+i, rect.bottom), (min(rect.left+i+4,rect.right), rect.bottom))
+                for i in range(0, surf_w, 8):
+                    pygame.draw.line(surf, (*T.WARNING, 200), (i, 0), (min(i+4, surf_w), 0))
+                    pygame.draw.line(surf, (*T.WARNING, 200), (i, surf_h-1), (min(i+4, surf_w), surf_h-1))
             else:
-                pygame.draw.rect(screen, T.ACCENT if selected else T.BORDER, rect, 2, border_radius=4)
+                pygame.draw.rect(surf, T.ACCENT if selected else T.BORDER, (0, 0, surf_w, surf_h), 2, border_radius=4)
+            
+            rz = getattr(obj.transform, "rz", 0.0)
+            if rz != 0.0:
+                rotated_surf = pygame.transform.rotate(surf, -rz)
+                rotated_rect = rotated_surf.get_rect(center=(int(sx), int(sy)))
+                screen.blit(rotated_surf, rotated_rect.topleft)
+            else:
+                screen.blit(surf, (int(sx-sw/2), int(sy-sh/2)))
 
         name_s = self.font_sm.render(obj.name, True, T.TEXT_PRIMARY)
         screen.blit(name_s, (int(sx)-name_s.get_width()//2, int(sy-sh/2)-14))
