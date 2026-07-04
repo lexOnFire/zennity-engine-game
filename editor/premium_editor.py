@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from editor.assets import AssetBrowserModel, AssetBrowserViewModel
 from editor.models.scene_model import SceneModel
 from editor.runtime.editor_context import EditorContext
 from editor.viewmodels.scene_viewmodel import SceneViewModel
@@ -88,27 +89,29 @@ class HierarchyPanel(Panel):
 class ResourcesPanel(Panel):
     def __init__(self) -> None:
         super().__init__("Recursos")
+        self.asset_model = AssetBrowserModel()
+        self.asset_viewmodel = AssetBrowserViewModel(self.asset_model)
         search = QLineEdit()
         search.setPlaceholderText("Filtrar assets...")
         search.setObjectName("SearchBox")
         self.layout.addWidget(search)
-        tree = QTreeWidget()
-        tree.setHeaderHidden(True)
-        self.layout.addWidget(tree)
-        root = QTreeWidgetItem(tree, ["Assets"])
-        for folder, files in {
-            "Animations": ["player_idle.anim", "enemy_walk.anim"],
-            "Materials": ["default.mat", "brick.mat"],
-            "Meshes": ["cube.mesh", "plane.mesh"],
-            "Scenes": ["MainScene.zscene"],
-            "Scripts": ["player_controller.py"],
-            "Textures": ["brick_diffuse.png"],
-            "Audio": ["jump.wav"],
-        }.items():
-            folder_item = QTreeWidgetItem(root, [folder])
-            for file_name in files:
-                QTreeWidgetItem(folder_item, [file_name])
-        root.setExpanded(True)
+        self.tree = QTreeWidget()
+        self.tree.setHeaderLabels(["Nome", "Tipo"])
+        self.layout.addWidget(self.tree)
+        self.refresh_assets()
+
+    def refresh_assets(self) -> None:
+        self.tree.clear()
+        root = self.asset_viewmodel.refresh()
+        root_item = QTreeWidgetItem(self.tree, [root.name, root.item_type])
+        self._populate_item(root_item, root)
+        root_item.setExpanded(True)
+
+    def _populate_item(self, parent_item: QTreeWidgetItem, browser_item) -> None:
+        for child in browser_item.children:
+            tree_item = QTreeWidgetItem(parent_item, [child.name, child.item_type])
+            tree_item.setData(0, Qt.UserRole, child.asset)
+            self._populate_item(tree_item, child)
 
 
 class CreatePanel(Panel):

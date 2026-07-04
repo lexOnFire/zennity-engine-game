@@ -28,6 +28,18 @@ def _get_scene_objects(scene: Any) -> list[Any]:
     return list(objects)
 
 
+def _portable_asset_path(value: Any) -> Any:
+    if value in (None, ""):
+        return value
+    path = Path(str(value))
+    if not path.is_absolute():
+        return path.as_posix()
+    try:
+        return path.resolve().relative_to(Path.cwd().resolve()).as_posix()
+    except ValueError:
+        return str(value)
+
+
 def _component_by_class_name(obj: GameObject, *class_names: str) -> Any:
     names = set(class_names)
     for component in getattr(obj, "components", []):
@@ -108,7 +120,8 @@ def serialize_game_object(obj: GameObject) -> dict[str, Any]:
         },
         "visual": {
             "mesh_type": getattr(obj, "mesh_type", None),
-            "sprite_path": getattr(obj, "sprite_path", None),
+            "sprite_path": _portable_asset_path(getattr(obj, "sprite_path", None)),
+            "asset_uuid": getattr(obj, "asset_uuid", None),
             "color": getattr(obj, "color", None),
             "material": getattr(obj, "material", None),
         },
@@ -183,6 +196,8 @@ def deserialize_game_object(data: dict[str, Any]) -> GameObject:
     visual = data.get("visual", {}) or {}
     obj.mesh_type = visual.get("mesh_type")
     obj.sprite_path = visual.get("sprite_path")
+    if visual.get("asset_uuid") is not None:
+        obj.asset_uuid = visual.get("asset_uuid")
     if visual.get("color") is not None:
         obj.color = visual.get("color")
     if visual.get("material") is not None:
