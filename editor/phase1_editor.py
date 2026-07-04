@@ -93,6 +93,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.viewport.setObjectName("ViewportCanvas")
         self.viewport.set_viewmodel(self.scene_view_model)
         self.viewport.set_tool_manager(self.editor_context.tools)
+        self.viewport.set_editor_state(self.editor_context.state)
 
         left = QSplitter(Qt.Vertical)
         left.addWidget(self.hierarchy)

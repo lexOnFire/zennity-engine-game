@@ -147,6 +147,62 @@ def test_phase1_viewport_move_tool_moves_selected_object_and_updates_inspector(
     assert f"Y {float(selected.transform.position[1]):.1f}" in phase1_editor.inspector.transform_label.text()
 
 
+def test_phase1_move_tool_does_not_jump_when_drag_starts_off_center(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    selected = phase1_editor.scene_objects()[1]
+    phase1_editor.select_object(selected)
+    phase1_editor.editor_context.tools.set_active_tool(EditorTool.MOVE)
+    center = phase1_editor.viewport.world_to_viewport(selected.transform.position)
+    original = selected.transform.position.copy()
+    start_x = center[0] + 8.0
+    start_y = center[1] + 6.0
+
+    assert phase1_editor.viewport._begin_move_drag(selected, start_x, start_y)
+    phase1_editor.viewport._update_move_drag(start_x, start_y)
+
+    assert float(selected.transform.position[0]) == pytest.approx(float(original[0]))
+    assert float(selected.transform.position[1]) == pytest.approx(float(original[1]))
+
+
+def test_phase1_move_tool_snap_disabled_moves_freely(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    selected = phase1_editor.scene_objects()[1]
+    selected.transform.position[0] = 101.0
+    selected.transform.position[1] = 99.0
+    phase1_editor.select_object(selected)
+    phase1_editor.editor_context.state.snap_enabled = False
+    phase1_editor.editor_context.state.snap_size = 16
+    phase1_editor.editor_context.tools.set_active_tool(EditorTool.MOVE)
+    start = phase1_editor.viewport.world_to_viewport(selected.transform.position)
+
+    assert phase1_editor.viewport._begin_move_drag(selected, start[0], start[1])
+    phase1_editor.viewport._update_move_drag(start[0] + 5.0, start[1] + 7.0)
+
+    assert float(selected.transform.position[0]) == pytest.approx(106.0)
+    assert float(selected.transform.position[1]) == pytest.approx(106.0)
+
+
+def test_phase1_move_tool_snap_enabled_snaps_drag_position(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    selected = phase1_editor.scene_objects()[1]
+    selected.transform.position[0] = 101.0
+    selected.transform.position[1] = 99.0
+    phase1_editor.select_object(selected)
+    phase1_editor.editor_context.state.snap_enabled = True
+    phase1_editor.editor_context.state.snap_size = 16
+    phase1_editor.editor_context.tools.set_active_tool(EditorTool.MOVE)
+    start = phase1_editor.viewport.world_to_viewport(selected.transform.position)
+
+    assert phase1_editor.viewport._begin_move_drag(selected, start[0], start[1])
+    phase1_editor.viewport._update_move_drag(start[0] + 5.0, start[1] + 7.0)
+
+    assert float(selected.transform.position[0]) == pytest.approx(112.0)
+    assert float(selected.transform.position[1]) == pytest.approx(112.0)
+
+
 def test_phase1_move_tool_does_not_drag_while_playing(
     phase1_editor: ZennityPhase1Editor,
 ) -> None:
@@ -154,10 +210,14 @@ def test_phase1_move_tool_does_not_drag_while_playing(
     phase1_editor.select_object(selected)
     phase1_editor.editor_context.tools.set_active_tool(EditorTool.MOVE)
     start = phase1_editor.viewport.world_to_viewport(selected.transform.position)
+    original = selected.transform.position.copy()
     phase1_editor.viewport.active_scene.playing = True
 
     assert not phase1_editor.viewport._begin_move_drag(selected, start[0], start[1])
+    phase1_editor.viewport._update_move_drag(start[0] + 32.0, start[1] + 16.0)
     assert phase1_editor.viewport._move_drag_object is None
+    assert float(selected.transform.position[0]) == pytest.approx(float(original[0]))
+    assert float(selected.transform.position[1]) == pytest.approx(float(original[1]))
 
 
 def test_phase1_gizmo_is_hidden_while_playing(
@@ -180,7 +240,9 @@ def test_phase1_select_tool_does_not_start_move_drag(phase1_editor: ZennityPhase
     start = phase1_editor.viewport.world_to_viewport(selected.transform.position)
     original = selected.transform.position.copy()
 
+    assert not phase1_editor.viewport._begin_move_drag(selected, start[0], start[1])
     phase1_editor.viewport.select_object(phase1_editor.viewport._object_at_viewport_point(start[0], start[1]))
+    phase1_editor.viewport._update_move_drag(start[0] + 32.0, start[1] + 16.0)
 
     assert phase1_editor.editor_context.selection.selected is selected
     assert phase1_editor.viewport._move_drag_object is None
