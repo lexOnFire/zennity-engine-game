@@ -1,24 +1,18 @@
 """
 editor/widgets/phase1_viewport.py
 ─────────────────────────────────────────────────────────────────────────────
-Viewport da Fase 1 com suporte a Move Tool e Rotate Tool.
-
-Regras desta camada:
-  * Não altera scene.draw.
-  * Não usa monkey patch.
-  * Todo estado de runtime vem de EditorContext (injetado via setters).
-  * Cada operação que muda Transform é registrada como FunctionCommand
-    no CommandManager para suportar Ctrl+Z / Ctrl+Y.
+Viewport da Fase 2 do Zennity Editor.
+Integra câmera com pan/zoom suave direcionado, grid infinito e overlays de HUD/caixas.
 """
 from __future__ import annotations
 
 import math
+import time
 from typing import Any
 
 import numpy as np
 from PySide6.QtCore import QRectF, Qt, Signal
-from PySide6.QtGui import QColor, QPainter, QPen
-from PySide6.QtGui import QMouseEvent
+from PySide6.QtGui import QColor, QPainter, QPen, QMouseEvent, QWheelEvent
 
 from editor.gizmos.qt_gizmo_overlay import QtMoveGizmoOverlay
 from editor.gizmos.rotate_gizmo import QtRotateGizmoOverlay
@@ -27,13 +21,13 @@ from editor.runtime.editor_state import EditorState
 from editor.runtime.tool_manager import EditorTool, ToolManager
 from editor.widgets.viewport_widget import ViewportWidget
 
+# Novos módulos da Fase 2
+from editor.viewport.viewport_camera import ViewportCamera
+from editor.viewport.viewport_renderer import ViewportRenderer
+
 
 class Phase1ViewportWidget(ViewportWidget):
-    """Viewport da Fase 1 com overlay de gizmo Qt seguro.
-
-    Herda toda a lógica funcional da Viewport original e apenas desenha o gizmo
-    por cima, sem tocar em eventos de mouse/teclado ou scene.draw.
-    """
+    """Viewport da Fase 2 com câmera profissional, grid infinito, outlines e HUD overlays."""
 
     object_transform_changed = Signal(object)
     tool_message_requested = Signal(str)
@@ -41,11 +35,16 @@ class Phase1ViewportWidget(ViewportWidget):
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        # Gizmos de overlay
+        
+        # Câmera e Renderizador da Viewport (Fase 2)
+        self.camera = ViewportCamera()
+        self.renderer = ViewportRenderer()
+
+        # Gizmos legados / Fase 1
         self.move_gizmo_overlay = QtMoveGizmoOverlay()
         self.rotate_gizmo_overlay = QtRotateGizmoOverlay()
 
-        # Serviços injetados pelo EditorContext
+        # Serviços injetados
         self.tool_manager: ToolManager | None = None
         self.editor_state: EditorState | None = None
         self.command_manager: CommandManager | None = None
@@ -58,9 +57,16 @@ class Phase1ViewportWidget(ViewportWidget):
         # Estado do drag de Rotate
         self._rotate_drag_object: Any = None
         self._rotate_start_rz: float = 0.0
-        self._rotate_start_angle: float = 0.0  # ângulo atan2 no início do drag
+        self._rotate_start_angle: float = 0.0
         self._rotate_center_screen: tuple[float, float] = (0.0, 0.0)
         self._rotate_current_mouse: tuple[float, float] | None = None
+
+        # Estado de Panning
+        self._panning: bool = False
+        self._pan_last_mouse: tuple[float, float] = (0.0, 0.0)
+
+        # Tempo do último render
+        self._last_render_time: float = time.time()
 
     # ── Injeção de dependências ───────────────────────────────────────────────
 
@@ -71,7 +77,6 @@ class Phase1ViewportWidget(ViewportWidget):
         self.editor_state = editor_state
 
     def set_command_manager(self, command_manager: CommandManager) -> None:
-        """Injeta o CommandManager para registrar undo/redo de operacoes de editor."""
         self.command_manager = command_manager
 
     # ── Helpers de estado ─────────────────────────────────────────────────────
@@ -87,8 +92,6 @@ class Phase1ViewportWidget(ViewportWidget):
     def _should_draw_gizmo(self, selected: Any) -> bool:
         return selected is not None and not self._is_playing()
 
-    # ── Snap de posição (Move Tool) ───────────────────────────────────────────
-
     def _snap_size(self) -> float:
         if self.editor_state is None:
             return 1.0
@@ -98,7 +101,6 @@ class Phase1ViewportWidget(ViewportWidget):
         return bool(self.editor_state is not None and self.editor_state.snap_enabled)
 
     def _apply_snap(self, position: np.ndarray) -> np.ndarray:
-        """Snap de grade sobre posição absoluta (não relativa ao delta)."""
         if not self._snap_enabled():
             return position
         snap = self._snap_size()
@@ -107,21 +109,51 @@ class Phase1ViewportWidget(ViewportWidget):
         snapped[1] = round(float(snapped[1]) / snap) * snap
         return snapped
 
-    # ── Snap angular (Rotate Tool) ────────────────────────────────────────────
-
     def _snap_angle(self) -> float:
         if self.editor_state is None:
             return 15.0
         return max(1.0, float(self.editor_state.snap_angle))
 
     def _apply_snap_angle(self, degrees: float) -> float:
-        """Snap angular sobre graus absolutos (não delta)."""
         if not self._snap_enabled():
             return degrees
         snap = self._snap_angle()
         return round(degrees / snap) * snap
 
-    # ── Hit-test e seleção ────────────────────────────────────────────────────
+    # ── API Pública da Viewport (Mapeamento de Coordenadas) ───────────────────
+
+    def world_to_viewport(self, point: tuple[float, float] | np.ndarray) -> tuple[float, float]:
+        """Converte ponto no mundo [x, y] para coordenadas locais da viewport [px, py]."""
+        return self.camera.world_to_viewport(point)
+
+    def viewport_to_world(self, point: tuple[float, float]) -> np.ndarray:
+        """Converte coordenadas locais da viewport [px, py] para ponto no mundo [x, y, 0]."""
+        return self.camera.viewport_to_world(point)
+
+    def screen_to_world(self, point: tuple[float, float]) -> np.ndarray:
+        """Mapeia ponto de tela para coordenadas de mundo."""
+        return self.camera.screen_to_world(point)
+
+    def world_to_screen(self, point: tuple[float, float] | np.ndarray) -> tuple[float, float]:
+        """Mapeia coordenadas de mundo para coordenadas de tela."""
+        return self.camera.world_to_screen(point)
+
+    # ── Sincronização ─────────────────────────────────────────────────────────
+
+    def sync_camera_from_engine(self) -> None:
+        """Atualiza a câmera a partir da engine se modificada externamente (ex. testes)."""
+        from engine.graphics.camera2d import Camera2D
+        if Camera2D.main is not None:
+            # Sincroniza de volta se não estiver sob controle manual ativo
+            if self.camera.zoom_anchor is None and not self._panning:
+                if not math.isclose(self.camera.zoom, Camera2D.main.zoom, abs_tol=1e-3):
+                    self.camera.zoom = Camera2D.main.zoom
+                    self.camera.target_zoom = Camera2D.main.zoom
+                if not np.allclose(self.camera.position[:2], Camera2D.main.transform.position[:2], atol=1e-3):
+                    self.camera.position[0] = Camera2D.main.transform.position[0]
+                    self.camera.position[1] = Camera2D.main.transform.position[1]
+
+    # ── Seleção e Hover ───────────────────────────────────────────────────────
 
     def _selected_transform_object(self) -> Any:
         selected = self.selected_object() if hasattr(self, "selected_object") else None
@@ -143,13 +175,19 @@ class Phase1ViewportWidget(ViewportWidget):
             if pos is None or scale is None:
                 continue
             if getattr(obj, "mesh_type", "") == "Círculo":
-                if math.hypot(world[0] - pos[0], world[1] - pos[1]) <= scale[0] / 2:
+                if math.hypot(world[0] - pos[0], world[1] - pos[1]) <= scale[0] / 2.0:
                     return obj
-            elif abs(world[0] - pos[0]) <= scale[0] / 2 and abs(world[1] - pos[1]) <= scale[1] / 2:
+            elif abs(world[0] - pos[0]) <= scale[0] / 2.0 and abs(world[1] - pos[1]) <= scale[1] / 2.0:
                 return obj
         return None
 
-    # ── Move Tool: drag ───────────────────────────────────────────────────────
+    # ── Eventos de Redimensionamento ──────────────────────────────────────────
+
+    def resizeGL(self, w: int, h: int) -> None:
+        super().resizeGL(w, h)
+        self.camera.set_viewport_size(w, h)
+
+    # ── Drag/Drop de Transformações ───────────────────────────────────────────
 
     def _gizmo_hit_at_viewport_point(self, x: float, y: float, selected: Any) -> bool:
         if not self._should_draw_gizmo(selected) or not hasattr(selected, "transform"):
@@ -184,9 +222,6 @@ class Phase1ViewportWidget(ViewportWidget):
         world = self.viewport_to_world((x, y))
         delta = world - self._move_start_world
         next_position = self._move_start_position + delta
-        # Snap é aplicado sobre a posição absoluta, não sobre o delta.
-        # Não condicionar ao delta — snap com delta zero ainda pode corrigir
-        # uma posição que está fora da grade.
         next_position = self._apply_snap(next_position)
         obj.transform.position[0] = next_position[0]
         obj.transform.position[1] = next_position[1]
@@ -194,12 +229,10 @@ class Phase1ViewportWidget(ViewportWidget):
         self.update()
 
     def _end_move_drag(self) -> None:
-        """Finaliza o drag e registra um Command reversível no CommandManager."""
         obj = self._move_drag_object
         if obj is not None and hasattr(obj, "transform"):
             final_position = obj.transform.position.copy()
             start_position = self._move_start_position.copy()
-            # Só registra undo se houve movimento real
             moved = not np.allclose(final_position[:2], start_position[:2])
             if moved and self.command_manager is not None:
                 def _do(p=final_position, o=obj) -> None:
@@ -223,16 +256,12 @@ class Phase1ViewportWidget(ViewportWidget):
         self._move_drag_object = None
         self._update_hover_cursor(*self._qt_mouse_pos)
 
-    # ── Rotate Tool: drag ─────────────────────────────────────────────────────
-
     def _rotate_gizmo_hit_at_viewport_point(self, x: float, y: float, selected: Any) -> bool:
-        """True se (x, y) está sobre o anel ou o centro do rotate gizmo."""
         if not self._should_draw_gizmo(selected):
             return False
         return self.rotate_gizmo_overlay.hit_test(x, y, selected, self.world_to_viewport)
 
     def _begin_rotate_drag(self, obj: Any, x: float, y: float) -> bool:
-        """Inicia o drag de rotação. Retorna True se o drag foi aceito."""
         if self._active_tool() != EditorTool.ROTATE:
             return False
         if self._is_playing():
@@ -242,7 +271,6 @@ class Phase1ViewportWidget(ViewportWidget):
         cx, cy = self.world_to_viewport(obj.transform.position)
         self._rotate_drag_object = obj
         self._rotate_start_rz = float(obj.transform.rz)
-        # Ângulo atan2 do centro ao ponto de clique inicial (graus, tela)
         self._rotate_start_angle = math.degrees(math.atan2(y - cy, x - cx))
         self._rotate_center_screen = (cx, cy)
         self._rotate_current_mouse = (x, y)
@@ -251,12 +279,9 @@ class Phase1ViewportWidget(ViewportWidget):
         return True
 
     def _update_rotate_drag(self, x: float, y: float) -> None:
-        """Atualiza o rz do objeto durante o drag."""
         obj = self._rotate_drag_object
         if obj is None or not hasattr(obj, "transform"):
             return
-        # Recomputa o centro a cada frame — posição não muda durante rotate,
-        # mas protege contra edge cases (câmera movida por atalho).
         cx, cy = self.world_to_viewport(obj.transform.position)
         current_angle = math.degrees(math.atan2(y - cy, x - cx))
         delta = current_angle - self._rotate_start_angle
@@ -267,12 +292,10 @@ class Phase1ViewportWidget(ViewportWidget):
         self.update()
 
     def _end_rotate_drag(self) -> None:
-        """Finaliza o drag e registra um Command reversível no CommandManager."""
         obj = self._rotate_drag_object
         if obj is not None and hasattr(obj, "transform"):
             final_rz = float(obj.transform.rz)
             start_rz = self._rotate_start_rz
-            # Só registra undo se houve rotação real (tolerância de 0.01°)
             rotated = not math.isclose(final_rz, start_rz, abs_tol=0.01)
             if rotated and self.command_manager is not None:
                 def _do(rz=final_rz, o=obj) -> None:
@@ -295,7 +318,7 @@ class Phase1ViewportWidget(ViewportWidget):
         self._rotate_current_mouse = None
         self._update_hover_cursor(*self._qt_mouse_pos)
 
-    # ── Cursores ──────────────────────────────────────────────────────────────
+    # ── Cursores e Mensagens ──────────────────────────────────────────────────
 
     def _update_hover_cursor(self, x: float, y: float) -> None:
         if self._is_playing():
@@ -304,43 +327,53 @@ class Phase1ViewportWidget(ViewportWidget):
         tool = self._active_tool()
         selected = self._selected_transform_object()
 
-        # Drag ativos têm prioridade
-        if self._move_drag_object is not None or self._rotate_drag_object is not None:
+        if self._move_drag_object is not None or self._rotate_drag_object is not None or self._panning:
             self.setCursor(Qt.ClosedHandCursor)
-
         elif tool == EditorTool.MOVE and (
             self._gizmo_hit_at_viewport_point(x, y, selected)
             or self._object_at_viewport_point(x, y) is not None
         ):
             self.setCursor(Qt.OpenHandCursor)
-
         elif tool == EditorTool.ROTATE and (
             self._rotate_gizmo_hit_at_viewport_point(x, y, selected)
             or self._object_at_viewport_point(x, y) is not None
         ):
-            # Qt não tem cursor de rotação nativo — CrossCursor sinaliza interação
             self.setCursor(Qt.CrossCursor)
-
         elif tool == EditorTool.SELECT and self._object_at_viewport_point(x, y) is not None:
             self.setCursor(Qt.PointingHandCursor)
-
         else:
             self.unsetCursor()
-
-    # ── Mensagem de ferramenta não implementada ───────────────────────────────
 
     def _show_unimplemented_tool_message(self, tool: EditorTool) -> None:
         self.tool_message_requested.emit(f"{tool.value.title()} em desenvolvimento")
 
-    # ── Eventos de mouse ──────────────────────────────────────────────────────
+    # ── Eventos de Entrada (Mouse / Wheel) ────────────────────────────────────
+
+    def wheelEvent(self, event: QWheelEvent) -> None:
+        """Processa zoom suave centralizado no cursor do mouse."""
+        degrees = event.angleDelta().y() / 8.0
+        steps = degrees / 15.0
+        factor = 1.15 if steps > 0 else 1.0 / 1.15
+        
+        pos = event.position()
+        self.camera.zoom_to_mouse(factor, pos.x(), pos.y())
+        event.accept()
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         tool = self._active_tool()
+        x, y = float(event.x()), float(event.y())
+
+        # Intercepta Pan (Botão do meio)
+        if event.button() == Qt.MiddleButton:
+            self._panning = True
+            self._pan_last_mouse = (x, y)
+            self.setCursor(Qt.ClosedHandCursor)
+            event.accept()
+            return
+
         if event.button() != Qt.LeftButton:
             super().mousePressEvent(event)
             return
-
-        x, y = float(event.x()), float(event.y())
 
         if tool == EditorTool.SELECT:
             self.select_object(self._object_at_viewport_point(x, y))
@@ -363,7 +396,6 @@ class Phase1ViewportWidget(ViewportWidget):
             clicked = self._object_at_viewport_point(x, y)
             selected = self._selected_transform_object()
             target = clicked
-            # Fallback: se clicou no anel do gizmo sem clicar num objeto
             if target is None and self._rotate_gizmo_hit_at_viewport_point(x, y, selected):
                 target = selected
             if target is not None and self._begin_rotate_drag(target, x, y):
@@ -382,6 +414,15 @@ class Phase1ViewportWidget(ViewportWidget):
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         x, y = float(event.x()), float(event.y())
 
+        # Processa Pan ativo
+        if self._panning:
+            dx = x - self._pan_last_mouse[0]
+            dy = y - self._pan_last_mouse[1]
+            self.camera.pan(dx, dy)
+            self._pan_last_mouse = (x, y)
+            event.accept()
+            return
+
         if self._active_tool() == EditorTool.MOVE and self._move_drag_object is not None:
             self._update_move_drag(x, y)
             event.accept()
@@ -396,6 +437,12 @@ class Phase1ViewportWidget(ViewportWidget):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.MiddleButton and self._panning:
+            self._panning = False
+            self._update_hover_cursor(float(event.x()), float(event.y()))
+            event.accept()
+            return
+
         if event.button() == Qt.LeftButton:
             if self._move_drag_object is not None:
                 self._end_move_drag()
@@ -407,59 +454,57 @@ class Phase1ViewportWidget(ViewportWidget):
                 return
         super().mouseReleaseEvent(event)
 
-    # ── Renderização ──────────────────────────────────────────────────────────
+    # ── Ciclo de Renderização (paintGL) ───────────────────────────────────────
 
     def paintGL(self) -> None:
-        super().paintGL()
-        selected = None
-        if hasattr(self, "selected_object"):
-            selected = self.selected_object()
-        elif getattr(self, "viewmodel", None) is not None:
-            selected = getattr(self.viewmodel, "selected_object", None)
-        if not self._should_draw_gizmo(selected):
+        if not self.pg_surface or not self.active_scene:
             return
 
-        painter = QPainter(self)
-        self._draw_selection_outline(painter, selected)
+        # Sincroniza modificações externas do Camera2D.main
+        self.sync_camera_from_engine()
 
-        tool = self._active_tool()
-        if tool == EditorTool.MOVE:
-            self.move_gizmo_overlay.draw(painter, selected, self.world_to_viewport)
-        elif tool == EditorTool.ROTATE:
-            mouse = self._rotate_current_mouse if self._rotate_drag_object is not None else None
-            self.rotate_gizmo_overlay.draw(
-                painter, selected, self.world_to_viewport, current_mouse=mouse
-            )
+        # Atualiza a interpolação do zoom suave
+        now = time.time()
+        dt = min(now - self._last_render_time, 0.1)
+        self._last_render_time = now
+        self.camera.update(dt)
+
+        # Injeta o grid_renderer na cena ativa para que seja desenhado por baixo
+        if self.active_scene is not None and getattr(self.active_scene, "grid_renderer", None) is None:
+            self.active_scene.grid_renderer = self.renderer.grid_renderer
+
+        # Chama a renderização base (blit da superfície do pygame com os objetos)
+        super().paintGL()
+
+        # Renderiza overlays Qt usando QPainter (Outlines, HUD, Bounding box, coordenadas)
+        painter = QPainter(self)
+        
+        selected = self._selected_transform_object()
+        active_tool = self._active_tool()
+        object_count = len(self.active_scene.editable_objects) if self.active_scene else 0
+        grid_size = self.renderer.grid_renderer.grid_size
+        snap_on = self._snap_enabled()
+
+        # Renderiza HUD, coordenadas e outline/bounding box
+        self.renderer.render_qt_overlays(
+            painter=painter,
+            camera=self.camera,
+            selected=selected,
+            active_tool_name=active_tool.value,
+            object_count=object_count,
+            grid_size=grid_size,
+            snap_on=snap_on,
+            mouse_screen_pos=self._qt_mouse_pos,
+        )
+
+        # Renderiza os Gizmos clássicos (MOVE/ROTATE) por cima do HUD/Outlines
+        if self._should_draw_gizmo(selected):
+            if active_tool == EditorTool.MOVE:
+                self.move_gizmo_overlay.draw(painter, selected, self.world_to_viewport)
+            elif active_tool == EditorTool.ROTATE:
+                mouse = self._rotate_current_mouse if self._rotate_drag_object is not None else None
+                self.rotate_gizmo_overlay.draw(
+                    painter, selected, self.world_to_viewport, current_mouse=mouse
+                )
 
         painter.end()
-
-    def _draw_selection_outline(self, painter: QPainter, selected: Any) -> None:
-        if selected is None or not hasattr(selected, "transform"):
-            return
-        pos = getattr(selected.transform, "position", None)
-        scale = getattr(selected.transform, "scale", None)
-        if pos is None or scale is None:
-            return
-
-        cx, cy = self.world_to_viewport(pos)
-        
-        # Converte as extremidades para obter largura e altura na viewport (considerando zoom)
-        p0 = self.world_to_viewport((pos[0] - scale[0] / 2, pos[1] - scale[1] / 2, pos[2]))
-        p1 = self.world_to_viewport((pos[0] + scale[0] / 2, pos[1] + scale[1] / 2, pos[2]))
-        sw = abs(p1[0] - p0[0])
-        sh = abs(p1[1] - p0[1])
-
-        # Cria retângulo local centralizado em (0,0) com padding de 3px
-        rect = QRectF(-sw / 2 - 3.0, -sh / 2 - 3.0, sw + 6.0, sh + 6.0)
-
-        painter.save()
-        painter.setRenderHint(QPainter.Antialiasing, True)
-        painter.setPen(QPen(QColor(80, 160, 255), 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-        
-        # Move para o centro do objeto e rotaciona
-        painter.translate(cx, cy)
-        rz = float(getattr(selected.transform, "rz", 0.0))
-        painter.rotate(rz)
-        
-        painter.drawRect(rect)
-        painter.restore()
