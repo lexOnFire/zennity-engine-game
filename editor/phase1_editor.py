@@ -5,12 +5,13 @@ from typing import Any
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QActionGroup
-from PySide6.QtWidgets import QFileDialog, QComboBox, QSplitter, QToolBar, QToolButton, QWidget
+from PySide6.QtWidgets import QFileDialog, QComboBox, QSplitter, QTabWidget, QToolBar, QToolButton, QWidget
 
 from editor.premium_editor import (
     AssetPreviewPanel,
     ConsolePanel,
     CreatePanel,
+    PrefabsPanel,
     ResourcesPanel,
     ZennityPremiumEditor,
     SimplePanel,
@@ -75,7 +76,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             file_menu.addAction(action)
             self.addAction(action)
 
-        for item in ["Player", "Plataforma", "Inimigo", "Camera 2D", "Cube 3D"]:
+        for item in ["Player", "Plataforma", "Inimigo", "Sprite 2D", "Camera 2D"]:
             create_menu.addAction(item, lambda checked=False, value=item: self.create_object(value))
         build_menu.addAction("Play", self.play)
         build_menu.addAction("Stop", self.stop)
@@ -176,6 +177,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.hierarchy = RealHierarchyPanel()
         self.resources = ResourcesPanel()
         self.create_panel = CreatePanel()
+        self.prefabs = PrefabsPanel()
         self.inspector = RealInspectorPanel()
         self.console = ConsolePanel()
         self.preview = AssetPreviewPanel()
@@ -188,11 +190,18 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.viewport.set_editor_state(self.editor_context.state)
         self.viewport.set_command_manager(self.editor_context.commands)
 
+        scene_tabs = QTabWidget()
+        scene_tabs.addTab(self.hierarchy, "Hierarchy")
+        scene_tabs.addTab(self.create_panel, "Criar")
+
+        asset_tabs = QTabWidget()
+        asset_tabs.addTab(self.resources, "Assets")
+        asset_tabs.addTab(self.prefabs, "Adicionar Prefabs")
+
         left = QSplitter(Qt.Vertical)
-        left.addWidget(self.hierarchy)
-        left.addWidget(self.resources)
-        left.addWidget(self.create_panel)
-        left.setSizes([330, 300, 160])
+        left.addWidget(scene_tabs)
+        left.addWidget(asset_tabs)
+        left.setSizes([380, 360])
 
         center = QSplitter(Qt.Vertical)
         center.addWidget(self.viewport)
@@ -217,6 +226,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.hierarchy.selected.connect(self.select_object)
         self.create_panel.create_requested.connect(self.create_object)
         self.resources.asset_selected.connect(self.preview.load_asset)
+        self.prefabs.asset_selected.connect(self.preview.load_asset)
         self.scene_view_model.selection_changed.connect(self.on_viewport_selection_changed)
         self.scene_view_model.property_changed.connect(self.on_viewmodel_property_changed)
         self.viewport.object_transform_changed.connect(self.on_viewport_object_changed)
@@ -430,8 +440,6 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
     def create_object(self, name: str) -> None:
         mapping = {
             "Sprite 2D": "Quadrado",
-            "Cube 3D": "Cube",
-            "Plane 3D": "Plane",
             "Plataforma 2D": "Plataforma",
             "Top-down 2D": "Player",
         }

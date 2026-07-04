@@ -134,7 +134,6 @@ class CreatePanel(Panel):
         body_layout.setContentsMargins(8, 8, 8, 8)
         groups = [
             ("2D", ["Player", "Plataforma", "Inimigo", "Sprite 2D", "Camera 2D"]),
-            ("3D experimental", ["Cube 3D", "Plane 3D", "Camera 3D", "Light 3D"]),
             ("Templates", ["Plataforma 2D", "Top-down 2D"]),
         ]
         for title, items in groups:
@@ -148,6 +147,34 @@ class CreatePanel(Panel):
                 body_layout.addWidget(button)
         body_layout.addStretch(1)
         self.layout.addWidget(body)
+
+
+class PrefabsPanel(Panel):
+    asset_selected = Signal(object)
+
+    def __init__(self) -> None:
+        super().__init__("Prefabs")
+        self.asset_model = AssetBrowserModel()
+        self.asset_viewmodel = AssetBrowserViewModel(self.asset_model)
+        self.tree = QTreeWidget()
+        self.tree.setHeaderLabels(["Nome", "Path"])
+        self.layout.addWidget(self.tree)
+        self.refresh_prefabs()
+        self.tree.itemSelectionChanged.connect(self._selected)
+
+    def refresh_prefabs(self) -> None:
+        self.tree.clear()
+        self.asset_viewmodel.refresh()
+        for asset in self.asset_viewmodel.assets_by_type("prefab"):
+            item = QTreeWidgetItem(self.tree, [asset.name, asset.path])
+            item.setData(0, Qt.UserRole, asset)
+
+    def _selected(self) -> None:
+        item = self.tree.currentItem()
+        if item is None:
+            self.asset_selected.emit(None)
+            return
+        self.asset_selected.emit(item.data(0, Qt.UserRole))
 
 
 class InspectorPanel(Panel):
@@ -274,7 +301,7 @@ class ZennityPremiumEditor(QMainWindow):
         for name in ["Arquivo", "Editar", "Janela", "Criar", "Ferramentas", "Build + Executar", "Ajuda"]:
             menu = bar.addMenu(name)
             if name == "Criar":
-                for item in ["Player", "Plataforma", "Inimigo", "Camera 2D", "Cube 3D"]:
+                for item in ["Player", "Plataforma", "Inimigo", "Sprite 2D", "Camera 2D"]:
                     menu.addAction(item, lambda checked=False, value=item: self.create_object(value))
             elif name == "Build + Executar":
                 menu.addAction("Play", self.play)
@@ -350,7 +377,7 @@ class ZennityPremiumEditor(QMainWindow):
         self.create_panel.create_requested.connect(self.create_object)
 
     def create_object(self, name: str) -> None:
-        mapping = {"Sprite 2D": "Quadrado", "Cube 3D": "Cube", "Plane 3D": "Plane"}
+        mapping = {"Sprite 2D": "Quadrado"}
         value = mapping.get(name, name)
         if hasattr(self.viewport, "create_object"):
             self.viewport.create_object(value)

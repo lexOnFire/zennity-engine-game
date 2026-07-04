@@ -14,3 +14,6 @@ class AssetBrowserViewModel:
 
     def list_assets(self):
         return self.model.database.list_assets()
+
+    def assets_by_type(self, asset_type: str):
+        return self.model.database.list_assets_by_type(asset_type)
