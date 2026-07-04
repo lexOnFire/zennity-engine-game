@@ -1,13 +1,92 @@
 """
 editor/viewport/bounding_box.py
 ─────────────────────────────────────────────────────────────────────────────
-Caixa delimitadora (Bounding Box) e 8 alças de controle/escala rotacionadas.
+Caixa delimitadora (Bounding Box) e 8 alças de controle/escala rotacionadas,
+incluindo APIs públicas para o cálculo de limites e detecção de cliques.
 """
 from __future__ import annotations
 
 from typing import Any, Callable
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QBrush, QColor, QPainter, QPen
+
+
+def get_object_bounds(obj: Any) -> tuple[float, float, float, float]:
+    """Calcula os limites (min_x, min_y, max_x, max_y) do objeto no espaço de mundo.
+
+    Suporta objetos retangulares convencionais e circulares (via CircleCollider ou mesh_type).
+    """
+    if obj is None or not hasattr(obj, "transform"):
+        return (0.0, 0.0, 0.0, 0.0)
+
+    pos = obj.transform.position
+    scale = obj.transform.scale
+
+    # Detecta se é círculo via CircleCollider ou mesh_type
+    is_circle = False
+    radius = 0.0
+    if getattr(obj, "mesh_type", "") == "Círculo":
+        is_circle = True
+        radius = float(scale[0] / 2.0)
+    elif hasattr(obj, "get_component"):
+        from engine.physics.collider import CircleCollider
+        cc = obj.get_component(CircleCollider)
+        if cc is not None:
+            is_circle = True
+            radius = float(getattr(cc, "radius", 0.0))
+
+    if is_circle:
+        return (
+            float(pos[0] - radius),
+            float(pos[1] - radius),
+            float(pos[0] + radius),
+            float(pos[1] + radius),
+        )
+
+    # Retângulo padrão
+    return (
+        float(pos[0] - scale[0] / 2.0),
+        float(pos[1] - scale[1] / 2.0),
+        float(pos[0] + scale[0] / 2.0),
+        float(pos[1] + scale[1] / 2.0),
+    )
+
+
+def get_handle_positions(bounds: tuple[float, float, float, float]) -> list[tuple[float, float]]:
+    """Calcula as coordenadas dos 8 handles a partir de limites (sem rotação).
+
+    A ordem dos handles segue: TL, TC, TR, RC, BR, BC, BL, LC.
+    """
+    min_x, min_y, max_x, max_y = bounds
+    mid_x = (min_x + max_x) / 2.0
+    mid_y = (min_y + max_y) / 2.0
+
+    return [
+        (min_x, min_y),  # Top-Left (TL)
+        (mid_x, min_y),  # Top-Center (TC)
+        (max_x, min_y),  # Top-Right (TR)
+        (max_x, mid_y),  # Right-Center (RC)
+        (max_x, max_y),  # Bottom-Right (BR)
+        (mid_x, max_y),  # Bottom-Center (BC)
+        (min_x, max_y),  # Bottom-Left (BL)
+        (min_x, mid_y),  # Left-Center (LC)
+    ]
+
+
+def hit_test_handle(
+    point: tuple[float, float],
+    handle_positions: list[tuple[float, float]],
+    tolerance: float = 6.0,
+) -> int | None:
+    """Verifica se um ponto (ex. mouse na tela) colide com algum dos 8 handles.
+
+    Retorna o índice do handle (0-7) ou None se nenhuma colisão for encontrada.
+    """
+    px, py = point
+    for idx, (hx, hy) in enumerate(handle_positions):
+        if abs(px - hx) <= tolerance and abs(py - hy) <= tolerance:
+            return idx
+    return None
 
 
 class BoundingBoxRenderer:
@@ -70,17 +149,9 @@ class BoundingBoxRenderer:
         painter.setBrush(QBrush(self.handle_color))
 
         hs = self.handle_size
-        # Mapeamento local das 8 alças ao redor do centro (0,0)
-        points = [
-            (-sw / 2.0, -sh / 2.0),  # Top-Left (TL)
-            (0.0, -sh / 2.0),        # Top-Center (TC)
-            (sw / 2.0, -sh / 2.0),   # Top-Right (TR)
-            (sw / 2.0, 0.0),         # Right-Center (RC)
-            (sw / 2.0, sh / 2.0),    # Bottom-Right (BR)
-            (0.0, sh / 2.0),         # Bottom-Center (BC)
-            (-sw / 2.0, sh / 2.0),   # Bottom-Left (BL)
-            (-sw / 2.0, 0.0),        # Left-Center (LC)
-        ]
+        # Obtém posições locais dos handles
+        local_bounds = (-sw / 2.0, -sh / 2.0, sw / 2.0, sh / 2.0)
+        points = get_handle_positions(local_bounds)
 
         for px, py in points:
             # Desenha quadrado local

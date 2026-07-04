@@ -181,3 +181,95 @@ def test_viewport_public_coordinate_api(phase1_editor: ZennityPhase1Editor) -> N
     back = vp.viewport_to_world(vp_pt)
     assert back[0] == pytest.approx(50.0)
     assert back[1] == pytest.approx(-10.0)
+
+
+# ── Testes de Bounding Box e Selection Outline APIs ───────────────────────────
+
+def test_bounding_box_apis_rectangular_bounds() -> None:
+    """Verifica o cálculo de bounds retangulares para objetos convencionais."""
+    from engine.core.game_object import GameObject
+    from editor.viewport.bounding_box import get_object_bounds
+
+    obj = GameObject("RectObject")
+    obj.transform.position = np.array([10.0, 20.0, 0.0], dtype=np.float32)
+    obj.transform.scale = np.array([100.0, 50.0, 1.0], dtype=np.float32)
+    
+    # min_x = 10 - 50 = -40; max_x = 10 + 50 = 60
+    # min_y = 20 - 25 = -5; max_y = 20 + 25 = 45
+    bounds = get_object_bounds(obj)
+    assert bounds == (-40.0, -5.0, 60.0, 45.0)
+
+
+def test_bounding_box_apis_circular_bounds() -> None:
+    """Verifica o cálculo de bounds circulares para objetos baseados em círculo."""
+    from engine.core.game_object import GameObject
+    from engine.physics.collider import CircleCollider
+    from editor.viewport.bounding_box import get_object_bounds
+
+    obj = GameObject("CircleObject")
+    obj.transform.position = np.array([5.0, 5.0, 0.0], dtype=np.float32)
+    obj.transform.scale = np.array([40.0, 40.0, 1.0], dtype=np.float32)
+    obj.add_component(CircleCollider(radius=15.0))
+
+    # min_x = 5 - 15 = -10; max_x = 5 + 15 = 20
+    bounds = get_object_bounds(obj)
+    assert bounds == (-10.0, -10.0, 20.0, 20.0)
+
+
+def test_bounding_box_apis_eight_handle_positions() -> None:
+    """Valida as posições geradas para as 8 alças ao redor dos bounds."""
+    from editor.viewport.bounding_box import get_handle_positions
+
+    bounds = (-10.0, -20.0, 30.0, 40.0)
+    # mid_x = 10.0, mid_y = 10.0
+    handles = get_handle_positions(bounds)
+    
+    # Ordem: TL, TC, TR, RC, BR, BC, BL, LC
+    expected = [
+        (-10.0, -20.0), # TL
+        (10.0, -20.0),  # TC
+        (30.0, -20.0),  # TR
+        (30.0, 10.0),   # RC
+        (30.0, 40.0),   # BR
+        (10.0, 40.0),   # BC
+        (-10.0, 40.0),  # BL
+        (-10.0, 10.0),  # LC
+    ]
+    assert handles == expected
+
+
+def test_bounding_box_apis_hit_test_handle() -> None:
+    """Verifica se o hit test detecta cliques corretos nos handles de escala."""
+    from editor.viewport.bounding_box import hit_test_handle
+
+    handles = [
+        (10.0, 10.0),
+        (20.0, 10.0),
+        (30.0, 10.0),
+    ]
+
+    # Cliques exatos
+    assert hit_test_handle((10.0, 10.0), handles) == 0
+    assert hit_test_handle((30.0, 10.0), handles) == 2
+
+    # Cliques com tolerância (limite 6px)
+    assert hit_test_handle((12.0, 9.0), handles) == 0
+    assert hit_test_handle((20.0, 20.0), handles) is None # muito longe
+
+
+def test_bounding_box_draw_no_selection_no_crash() -> None:
+    """Verifica que o BoundingBoxRenderer e o SelectionOutlineRenderer não quebram sem seleção."""
+    from PySide6.QtGui import QPainter
+    from editor.viewport.bounding_box import BoundingBoxRenderer
+    from editor.viewport.selection_outline import SelectionOutlineRenderer
+
+    class DummyPainter(QPainter):
+        pass
+
+    painter = DummyPainter()
+    box_renderer = BoundingBoxRenderer()
+    outline_renderer = SelectionOutlineRenderer()
+
+    # Sem seleção (selected=None), deve retornar silenciosamente sem erro
+    box_renderer.draw(painter, None, lambda x: (0, 0))
+    outline_renderer.draw(painter, None, lambda x: (0, 0))

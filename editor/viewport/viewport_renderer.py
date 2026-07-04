@@ -67,16 +67,17 @@ class ViewportRenderer:
         grid_size: int,
         snap_on: bool,
         mouse_screen_pos: tuple[float, float],
+        is_playing: bool = False,
     ) -> None:
         """Renderiza os elementos Qt por cima do framebuffer do Pygame."""
         vp_w, vp_h = camera.vp_w, camera.vp_h
         
         # 1. Borda de Seleção (Selection Outline)
-        if selected is not None:
+        if selected is not None and not is_playing:
             self.outline_renderer.draw(painter, selected, camera.world_to_viewport)
 
         # 2. Caixa Delimitadora (Bounding Box com 8 alças)
-        if selected is not None:
+        if selected is not None and not is_playing:
             self.bounding_box_renderer.draw(painter, selected, camera.world_to_viewport)
 
         # 3. HUD Superior Esquerdo (Estatísticas)

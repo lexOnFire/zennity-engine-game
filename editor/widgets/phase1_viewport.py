@@ -511,6 +511,7 @@ class Phase1ViewportWidget(ViewportWidget):
             grid_size=grid_size,
             snap_on=snap_on,
             mouse_screen_pos=self._qt_mouse_pos,
+            is_playing=self._is_playing(),
         )
 
         # Renderiza os Gizmos clássicos (MOVE/ROTATE) por cima do HUD/Outlines

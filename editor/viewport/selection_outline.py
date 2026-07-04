@@ -1,7 +1,8 @@
 """
 editor/viewport/selection_outline.py
 ─────────────────────────────────────────────────────────────────────────────
-Desenho da borda de seleção (selection outline) rotacionada para o objeto selecionado.
+Desenho da borda de seleção (selection outline) rotacionada para o objeto selecionado,
+suportando formas retangulares e circulares.
 """
 from __future__ import annotations
 
@@ -30,7 +31,7 @@ class SelectionOutlineRenderer:
         selected: Any,
         world_to_viewport: Callable[[Any], tuple[float, float]],
     ) -> None:
-        """Desenha a borda de seleção ao redor do objeto.
+        """Desenha a borda de seleção ao redor do objeto (retângulo ou círculo).
 
         Mapeia a largura e altura mundial para a tela e aplica transformações locais
         no painter para desenhar alinhado à rotação real (rz) do objeto.
@@ -65,7 +66,20 @@ class SelectionOutlineRenderer:
         rz = float(getattr(selected.transform, "rz", 0.0))
         painter.rotate(rz)
 
-        # Desenha
-        painter.drawRect(rect)
+        # Detecta se é círculo via mesh_type ou CircleCollider
+        is_circle = False
+        if getattr(selected, "mesh_type", "") == "Círculo":
+            is_circle = True
+        elif hasattr(selected, "get_component"):
+            # Importação tardia para evitar dependências circulares
+            from engine.physics.collider import CircleCollider
+            if selected.get_component(CircleCollider) is not None:
+                is_circle = True
+
+        # Desenha conforme a forma geométrica
+        if is_circle:
+            painter.drawEllipse(rect)
+        else:
+            painter.drawRect(rect)
         
         painter.restore()
