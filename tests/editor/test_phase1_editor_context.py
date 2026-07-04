@@ -229,14 +229,14 @@ def test_phase1_play_stop_preserves_objects_and_selection(
 def test_phase1_rotate_reports_active_and_scale_reports_unimplemented(
     phase1_editor: ZennityPhase1Editor,
 ) -> None:
-    """Rotate Tool esta implementada; Scale ainda esta em desenvolvimento."""
+    """Rotate e Scale devem ser ferramentas ativas pelo ToolManager."""
     phase1_editor.editor_context.tools.set_active_tool(EditorTool.ROTATE)
 
     assert phase1_editor.status_msg.text() == "Ferramenta ativa: Rotate"
 
     phase1_editor.editor_context.tools.set_active_tool(EditorTool.SCALE)
 
-    assert phase1_editor.status_msg.text() == "Scale em desenvolvimento"
+    assert phase1_editor.status_msg.text() == "Ferramenta ativa: Scale"
 
 
 def test_phase1_selection_uses_editor_context(phase1_editor: ZennityPhase1Editor) -> None:

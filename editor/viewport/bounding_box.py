@@ -112,7 +112,7 @@ class BoundingBoxRenderer:
         selected: Any,
         world_to_viewport: Callable[[Any], tuple[float, float]],
         *,
-        show_handles: bool = True,
+        show_handles: bool = False,
     ) -> None:
         """Renderiza a linha limite e, quando solicitado, as 8 alças quadradas."""
         if selected is None or not hasattr(selected, "transform"):

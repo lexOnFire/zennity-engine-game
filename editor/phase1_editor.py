@@ -198,10 +198,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         if action is not None and not action.isChecked():
             action.setChecked(True)
         if hasattr(self, "status_msg"):
-            if tool == EditorTool.SCALE:
-                self.status_msg.setText(f"{tool.value.title()} em desenvolvimento")
-            else:
-                self.status_msg.setText(f"Ferramenta ativa: {tool.value.title()}")
+            self.status_msg.setText(f"Ferramenta ativa: {tool.value.title()}")
 
     def scene_objects(self) -> list[Any]:
         scene = getattr(self.viewport, "active_scene", None)

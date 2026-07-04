@@ -138,7 +138,7 @@ def test_bounding_box_eight_handles_rotation(phase1_editor: ZennityPhase1Editor)
             captured_rects.append(rect)
 
     painter = DummyPainter()
-    renderer.draw(painter, selected, mock_w2v)
+    renderer.draw(painter, selected, mock_w2v, show_handles=True)
 
     # 1 caixa delimitadora + 8 alças = 9 retângulos desenhados
     assert len(captured_rects) == 9
@@ -167,6 +167,78 @@ def test_bounding_box_can_hide_scale_handles(phase1_editor: ZennityPhase1Editor)
 
     # Apenas a caixa principal deve ser desenhada; os 8 handles ficam ocultos.
     assert len(captured_rects) == 1
+
+
+def test_viewport_renderer_shows_handles_only_for_scale_tool(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    """Handles da bounding box devem aparecer somente com a Scale Tool ativa."""
+    selected = phase1_editor.scene_objects()[1]
+    renderer = phase1_editor.viewport.renderer
+    camera = phase1_editor.viewport.camera
+    calls = []
+
+    def capture_draw(painter, obj, world_to_viewport, *, show_handles=False):
+        calls.append(show_handles)
+
+    renderer.bounding_box_renderer.draw = capture_draw
+
+    class DummyPainter(QPainter):
+        pass
+
+    painter = DummyPainter()
+
+    for tool_name, expected in (
+        ("select", False),
+        ("move", False),
+        ("rotate", False),
+        ("scale", True),
+    ):
+        calls.clear()
+        renderer.render_qt_overlays(
+            painter=painter,
+            camera=camera,
+            selected=selected,
+            active_tool_name=tool_name,
+            object_count=1,
+            grid_size=32,
+            snap_on=False,
+            mouse_screen_pos=(0.0, 0.0),
+            is_playing=False,
+        )
+        assert calls == [expected]
+
+
+def test_viewport_renderer_hides_handles_during_play_mode(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    """Play Mode deve esconder bounding box, gizmos e handles."""
+    selected = phase1_editor.scene_objects()[1]
+    renderer = phase1_editor.viewport.renderer
+    camera = phase1_editor.viewport.camera
+    calls = []
+
+    def capture_draw(painter, obj, world_to_viewport, *, show_handles=False):
+        calls.append(show_handles)
+
+    renderer.bounding_box_renderer.draw = capture_draw
+
+    class DummyPainter(QPainter):
+        pass
+
+    renderer.render_qt_overlays(
+        painter=DummyPainter(),
+        camera=camera,
+        selected=selected,
+        active_tool_name="scale",
+        object_count=1,
+        grid_size=32,
+        snap_on=False,
+        mouse_screen_pos=(0.0, 0.0),
+        is_playing=True,
+    )
+
+    assert calls == []
 
 
 # ── Testes de Grid ────────────────────────────────────────────────────────────
