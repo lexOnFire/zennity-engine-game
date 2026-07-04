@@ -163,7 +163,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         if action is not None and not action.isChecked():
             action.setChecked(True)
         if hasattr(self, "status_msg"):
-            if tool in (EditorTool.ROTATE, EditorTool.SCALE):
+            if tool == EditorTool.SCALE:
                 self.status_msg.setText(f"{tool.value.title()} em desenvolvimento")
             else:
                 self.status_msg.setText(f"Ferramenta ativa: {tool.value.title()}")

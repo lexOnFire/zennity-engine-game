@@ -226,12 +226,13 @@ def test_phase1_play_stop_preserves_objects_and_selection(
     assert restored_selected.name == selected_name
 
 
-def test_phase1_rotate_and_scale_report_unimplemented_tools(
+def test_phase1_rotate_reports_active_and_scale_reports_unimplemented(
     phase1_editor: ZennityPhase1Editor,
 ) -> None:
+    """Rotate Tool esta implementada; Scale ainda esta em desenvolvimento."""
     phase1_editor.editor_context.tools.set_active_tool(EditorTool.ROTATE)
 
-    assert phase1_editor.status_msg.text() == "Rotate em desenvolvimento"
+    assert phase1_editor.status_msg.text() == "Ferramenta ativa: Rotate"
 
     phase1_editor.editor_context.tools.set_active_tool(EditorTool.SCALE)
 

@@ -13,3 +13,4 @@ class EditorState:
     grid_size: int = 32
     snap_enabled: bool = False
     snap_size: int = 16
+    snap_angle: int = 15  # graus — usado pela Rotate Tool quando snap esta ativo
