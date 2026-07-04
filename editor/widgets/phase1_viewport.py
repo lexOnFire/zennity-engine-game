@@ -440,16 +440,26 @@ class Phase1ViewportWidget(ViewportWidget):
         scale = getattr(selected.transform, "scale", None)
         if pos is None or scale is None:
             return
-        left_top = self.world_to_viewport((pos[0] - scale[0] / 2, pos[1] - scale[1] / 2, pos[2]))
-        right_bottom = self.world_to_viewport((pos[0] + scale[0] / 2, pos[1] + scale[1] / 2, pos[2]))
-        rect = QRectF(
-            min(left_top[0], right_bottom[0]),
-            min(left_top[1], right_bottom[1]),
-            abs(right_bottom[0] - left_top[0]),
-            abs(right_bottom[1] - left_top[1]),
-        ).adjusted(-3.0, -3.0, 3.0, 3.0)
+
+        cx, cy = self.world_to_viewport(pos)
+        
+        # Converte as extremidades para obter largura e altura na viewport (considerando zoom)
+        p0 = self.world_to_viewport((pos[0] - scale[0] / 2, pos[1] - scale[1] / 2, pos[2]))
+        p1 = self.world_to_viewport((pos[0] + scale[0] / 2, pos[1] + scale[1] / 2, pos[2]))
+        sw = abs(p1[0] - p0[0])
+        sh = abs(p1[1] - p0[1])
+
+        # Cria retângulo local centralizado em (0,0) com padding de 3px
+        rect = QRectF(-sw / 2 - 3.0, -sh / 2 - 3.0, sw + 6.0, sh + 6.0)
+
         painter.save()
         painter.setRenderHint(QPainter.Antialiasing, True)
         painter.setPen(QPen(QColor(80, 160, 255), 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        
+        # Move para o centro do objeto e rotaciona
+        painter.translate(cx, cy)
+        rz = float(getattr(selected.transform, "rz", 0.0))
+        painter.rotate(rz)
+        
         painter.drawRect(rect)
         painter.restore()
