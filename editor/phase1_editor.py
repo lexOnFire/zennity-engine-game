@@ -151,6 +151,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.hierarchy.selected.connect(self.select_object)
         self.create_panel.create_requested.connect(self.create_object)
         self.scene_view_model.selection_changed.connect(self.on_viewport_selection_changed)
+        self.scene_view_model.property_changed.connect(self.on_viewmodel_property_changed)
         self.viewport.object_transform_changed.connect(self.on_viewport_object_changed)
         self.viewport.tool_message_requested.connect(self.on_tool_message_requested)
         self.on_viewport_selection_changed(self.editor_context.selection.selected)
@@ -189,6 +190,10 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
     def on_viewport_object_changed(self, obj: Any) -> None:
         if obj is self.editor_context.selection.selected:
             self.inspector.load_object(obj)
+
+    def on_viewmodel_property_changed(self, component_name: str, property_name: str, value: object) -> None:
+        if component_name == "Transform":
+            self.on_viewport_object_changed(self.editor_context.selection.selected)
 
     def on_tool_message_requested(self, message: str) -> None:
         if hasattr(self, "status_msg"):

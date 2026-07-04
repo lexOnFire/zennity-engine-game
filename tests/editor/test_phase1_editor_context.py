@@ -42,6 +42,26 @@ def _hierarchy_item_for(editor: ZennityPhase1Editor, obj: object):
     raise AssertionError(f"Object {obj!r} was not found in the hierarchy")
 
 
+class _MousePress:
+    def __init__(self, x: float, y: float, button: Qt.MouseButton = Qt.LeftButton) -> None:
+        self._x = x
+        self._y = y
+        self._button = button
+        self.accepted = False
+
+    def button(self) -> Qt.MouseButton:
+        return self._button
+
+    def x(self) -> float:
+        return self._x
+
+    def y(self) -> float:
+        return self._y
+
+    def accept(self) -> None:
+        self.accepted = True
+
+
 def _scene_registered_colliders(scene: object) -> list[object]:
     colliders = [*BoxCollider._registry, *CircleCollider._registry]
     return [
@@ -185,6 +205,27 @@ def test_phase1_play_cycles_start_from_same_physics_state(
     assert deltas[2] == pytest.approx(deltas[0])
 
 
+def test_phase1_play_stop_preserves_objects_and_selection(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    phase1_editor.create_object("Plataforma 2D")
+    phase1_editor.create_object("Top-down 2D")
+    selected = phase1_editor.scene_objects()[-1]
+    selected_name = selected.name
+    original_count = len(phase1_editor.scene_objects())
+    phase1_editor.select_object(selected)
+
+    phase1_editor.play()
+    phase1_editor.viewport.active_scene.update(0.1)
+    phase1_editor.stop()
+
+    restored_objects = phase1_editor.scene_objects()
+    restored_selected = phase1_editor.editor_context.selection.selected
+    assert len(restored_objects) == original_count
+    assert restored_selected in restored_objects
+    assert restored_selected.name == selected_name
+
+
 def test_phase1_rotate_and_scale_report_unimplemented_tools(
     phase1_editor: ZennityPhase1Editor,
 ) -> None:
@@ -274,6 +315,18 @@ def test_phase1_viewport_move_tool_moves_selected_object_and_updates_inspector(
     assert f"Y {float(selected.transform.position[1]):.1f}" in phase1_editor.inspector.transform_label.text()
 
 
+def test_phase1_viewmodel_transform_change_refreshes_inspector(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    selected = phase1_editor.scene_objects()[1]
+    phase1_editor.select_object(selected)
+
+    phase1_editor.scene_view_model.set_transform_property("position", 0, 123.0)
+
+    assert float(selected.transform.position[0]) == pytest.approx(123.0)
+    assert "X 123.0" in phase1_editor.inspector.transform_label.text()
+
+
 def test_phase1_move_tool_does_not_jump_when_drag_starts_off_center(
     phase1_editor: ZennityPhase1Editor,
 ) -> None:
@@ -288,6 +341,24 @@ def test_phase1_move_tool_does_not_jump_when_drag_starts_off_center(
     assert phase1_editor.viewport._begin_move_drag(selected, start_x, start_y)
     phase1_editor.viewport._update_move_drag(start_x, start_y)
 
+    assert float(selected.transform.position[0]) == pytest.approx(float(original[0]))
+    assert float(selected.transform.position[1]) == pytest.approx(float(original[1]))
+
+
+def test_phase1_move_tool_does_not_drag_from_empty_viewport_space(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    selected = phase1_editor.scene_objects()[1]
+    phase1_editor.select_object(selected)
+    phase1_editor.editor_context.tools.set_active_tool(EditorTool.MOVE)
+    original = selected.transform.position.copy()
+    event = _MousePress(-1000.0, -1000.0)
+
+    phase1_editor.viewport.mousePressEvent(event)
+    phase1_editor.viewport._update_move_drag(0.0, 0.0)
+
+    assert phase1_editor.viewport._move_drag_object is None
+    assert phase1_editor.editor_context.selection.selected is selected
     assert float(selected.transform.position[0]) == pytest.approx(float(original[0]))
     assert float(selected.transform.position[1]) == pytest.approx(float(original[1]))
 

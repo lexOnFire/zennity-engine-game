@@ -174,7 +174,9 @@ class Phase1ViewportWidget(ViewportWidget):
         if tool == EditorTool.MOVE:
             clicked = self._object_at_viewport_point(x, y)
             selected = self._selected_transform_object()
-            target = clicked or selected
+            target = clicked
+            if target is None and self._gizmo_hit_at_viewport_point(x, y, selected):
+                target = selected
             if target is not None and self._begin_move_drag(target, x, y):
                 event.accept()
                 return
