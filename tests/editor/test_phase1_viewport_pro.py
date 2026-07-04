@@ -100,13 +100,13 @@ def test_viewport_camera_zoom_to_mouse_preserves_anchor() -> None:
 
     # Aplica zoom-to-mouse com fator 2x
     camera.zoom_to_mouse(2.0, mouse_screen[0], mouse_screen[1])
-    
+
     # Executa update() para processar a interpolação suave até o fim
     for _ in range(20):
         camera.update(0.1)
 
     assert camera.zoom == pytest.approx(2.0)
-    
+
     # O ponto na tela (500, 400) deve continuar mapeando para o mesmo ponto do mundo anterior
     mouse_world_after = camera.screen_to_world(mouse_screen)
     assert mouse_world_after[0] == pytest.approx(mouse_world_before[0], abs=1e-2)
@@ -123,9 +123,9 @@ def test_bounding_box_eight_handles_rotation(phase1_editor: ZennityPhase1Editor)
     selected.transform.scale[0] = 100.0
     selected.transform.scale[1] = 50.0
     selected.transform.rz = 90.0  # Rotação de 90 graus
-    
+
     renderer = BoundingBoxRenderer()
-    
+
     # Mock do world_to_viewport para retornar o próprio vetor (coordenada local de mundo)
     # permitindo validar a matemática de rotação das alças de forma direta.
     def mock_w2v(pt):
@@ -144,12 +144,37 @@ def test_bounding_box_eight_handles_rotation(phase1_editor: ZennityPhase1Editor)
     assert len(captured_rects) == 9
 
 
+def test_bounding_box_can_hide_scale_handles(phase1_editor: ZennityPhase1Editor) -> None:
+    """Bounding box deve conseguir ocultar handles fora da Scale Tool."""
+    selected = phase1_editor.scene_objects()[1]
+    selected.transform.position[0] = 0.0
+    selected.transform.position[1] = 0.0
+    selected.transform.scale[0] = 100.0
+    selected.transform.scale[1] = 50.0
+
+    renderer = BoundingBoxRenderer()
+
+    def mock_w2v(pt):
+        return float(pt[0]), float(pt[1])
+
+    captured_rects = []
+    class DummyPainter(QPainter):
+        def drawRect(self, rect):
+            captured_rects.append(rect)
+
+    painter = DummyPainter()
+    renderer.draw(painter, selected, mock_w2v, show_handles=False)
+
+    # Apenas a caixa principal deve ser desenhada; os 8 handles ficam ocultos.
+    assert len(captured_rects) == 1
+
+
 # ── Testes de Grid ────────────────────────────────────────────────────────────
 
 def test_grid_renderer_opacity_fading() -> None:
     """Verifica se o GridRenderer oculta ou atenua linhas conforme o zoom."""
     grid = GridRenderer()
-    
+
     class DummyPainter(QPainter):
         def drawLine(self, *args):
             pass
@@ -159,7 +184,7 @@ def test_grid_renderer_opacity_fading() -> None:
 
     # Zoom extremamente baixo (0.1x) -> espaçamento 3.2px (fada a zero secundário)
     grid.draw(painter, 800, 600, 0.1, cam_pos, lambda pt: (pt[0], pt[1]))
-    
+
     # Zoom alto (2.0x) -> espaçamento 64px, secundário visível
     grid.draw(painter, 800, 600, 2.0, cam_pos, lambda pt: (pt[0], pt[1]))
 
@@ -193,7 +218,7 @@ def test_bounding_box_apis_rectangular_bounds() -> None:
     obj = GameObject("RectObject")
     obj.transform.position = np.array([10.0, 20.0, 0.0], dtype=np.float32)
     obj.transform.scale = np.array([100.0, 50.0, 1.0], dtype=np.float32)
-    
+
     # min_x = 10 - 50 = -40; max_x = 10 + 50 = 60
     # min_y = 20 - 25 = -5; max_y = 20 + 25 = 45
     bounds = get_object_bounds(obj)
@@ -223,7 +248,7 @@ def test_bounding_box_apis_eight_handle_positions() -> None:
     bounds = (-10.0, -20.0, 30.0, 40.0)
     # mid_x = 10.0, mid_y = 10.0
     handles = get_handle_positions(bounds)
-    
+
     # Ordem: TL, TC, TR, RC, BR, BC, BL, LC
     expected = [
         (-10.0, -20.0), # TL
