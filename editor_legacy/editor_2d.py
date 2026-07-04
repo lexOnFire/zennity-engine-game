@@ -268,6 +268,8 @@ class Editor2DScene(Scene):
     def _remove_go(self, go: GameObject) -> None:
         if go in self.game_objects:
             self.game_objects.remove(go)
+        if getattr(go, "scene", None) is self:
+            go.destroy()
 
     def spawn_object(self, shape: str) -> None:
         if self.playing:

@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QApplication
 from editor.phase1_editor import ZennityPhase1Editor
 from editor.runtime import EditorContext
 from editor.runtime.tool_manager import EditorTool
+from engine.physics.collider import BoxCollider, CircleCollider
 from engine.physics.rigidbody import RigidBody
 
 
@@ -39,6 +40,32 @@ def _hierarchy_item_for(editor: ZennityPhase1Editor, obj: object):
         if item.data(0, Qt.UserRole) is obj:
             return item
     raise AssertionError(f"Object {obj!r} was not found in the hierarchy")
+
+
+def _scene_registered_colliders(scene: object) -> list[object]:
+    colliders = [*BoxCollider._registry, *CircleCollider._registry]
+    return [
+        collider
+        for collider in colliders
+        if getattr(getattr(collider, "game_object", None), "scene", None) is scene
+    ]
+
+
+def _scene_attached_colliders(scene: object) -> list[object]:
+    attached: list[object] = []
+    for obj in getattr(scene, "game_objects", []):
+        attached.extend(obj.get_components(BoxCollider))
+        attached.extend(obj.get_components(CircleCollider))
+    return attached
+
+
+def _assert_scene_collider_registry_is_current(scene: object) -> None:
+    registered = _scene_registered_colliders(scene)
+    attached = _scene_attached_colliders(scene)
+    scene_objects = set(getattr(scene, "game_objects", []))
+
+    assert len(registered) == len(attached)
+    assert all(getattr(collider, "game_object", None) in scene_objects for collider in registered)
 
 
 def test_phase1_editor_owns_editor_context(phase1_editor: ZennityPhase1Editor) -> None:
@@ -139,22 +166,23 @@ def test_phase1_stop_restores_scene_and_reselects_restored_object(
 def test_phase1_play_cycles_start_from_same_physics_state(
     phase1_editor: ZennityPhase1Editor,
 ) -> None:
-    player = phase1_editor.scene_objects()[1]
-    original_y = float(player.transform.position[1])
+    scene = phase1_editor.viewport.active_scene
+    original_y = float(phase1_editor.scene_objects()[1].transform.position[1])
+    deltas: list[float] = []
 
-    phase1_editor.play()
-    phase1_editor.viewport.active_scene.update(0.1)
-    first_delta = float(player.transform.position[1]) - original_y
-    phase1_editor.stop()
+    _assert_scene_collider_registry_is_current(scene)
 
-    restored = phase1_editor.scene_objects()[1]
-    phase1_editor.play()
-    phase1_editor.viewport.active_scene.update(0.1)
-    second_delta = float(restored.transform.position[1]) - original_y
-    phase1_editor.stop()
+    for _ in range(3):
+        player = phase1_editor.scene_objects()[1]
+        phase1_editor.play()
+        scene.update(0.1)
+        deltas.append(float(player.transform.position[1]) - original_y)
+        phase1_editor.stop()
+        _assert_scene_collider_registry_is_current(scene)
 
-    assert first_delta > 0.0
-    assert second_delta == pytest.approx(first_delta)
+    assert deltas[0] > 0.0
+    assert deltas[1] == pytest.approx(deltas[0])
+    assert deltas[2] == pytest.approx(deltas[0])
 
 
 def test_phase1_rotate_and_scale_report_unimplemented_tools(
