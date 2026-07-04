@@ -147,6 +147,32 @@ def test_phase1_viewport_move_tool_moves_selected_object_and_updates_inspector(
     assert f"Y {float(selected.transform.position[1]):.1f}" in phase1_editor.inspector.transform_label.text()
 
 
+def test_phase1_move_tool_does_not_drag_while_playing(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    selected = phase1_editor.scene_objects()[1]
+    phase1_editor.select_object(selected)
+    phase1_editor.editor_context.tools.set_active_tool(EditorTool.MOVE)
+    start = phase1_editor.viewport.world_to_viewport(selected.transform.position)
+    phase1_editor.viewport.active_scene.playing = True
+
+    assert not phase1_editor.viewport._begin_move_drag(selected, start[0], start[1])
+    assert phase1_editor.viewport._move_drag_object is None
+
+
+def test_phase1_gizmo_is_hidden_while_playing(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    selected = phase1_editor.scene_objects()[1]
+    phase1_editor.select_object(selected)
+
+    assert phase1_editor.viewport._should_draw_gizmo(selected)
+
+    phase1_editor.viewport.active_scene.playing = True
+
+    assert not phase1_editor.viewport._should_draw_gizmo(selected)
+
+
 def test_phase1_select_tool_does_not_start_move_drag(phase1_editor: ZennityPhase1Editor) -> None:
     selected = phase1_editor.scene_objects()[1]
     phase1_editor.select_object(selected)

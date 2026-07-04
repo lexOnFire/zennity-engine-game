@@ -38,6 +38,12 @@ class Phase1ViewportWidget(ViewportWidget):
             return EditorTool.SELECT
         return self.tool_manager.active_tool
 
+    def _is_playing(self) -> bool:
+        return bool(getattr(getattr(self, "active_scene", None), "playing", False))
+
+    def _should_draw_gizmo(self, selected: Any) -> bool:
+        return selected is not None and not self._is_playing()
+
     def _selected_transform_object(self) -> Any:
         selected = self.selected_object() if hasattr(self, "selected_object") else None
         if selected is not None and hasattr(selected, "transform"):
@@ -65,6 +71,8 @@ class Phase1ViewportWidget(ViewportWidget):
         return None
 
     def _begin_move_drag(self, obj: Any, x: float, y: float) -> bool:
+        if self._is_playing():
+            return False
         if obj is None or not hasattr(obj, "transform"):
             return False
         world = self.viewport_to_world((x, y))
@@ -140,7 +148,7 @@ class Phase1ViewportWidget(ViewportWidget):
             selected = self.selected_object()
         elif getattr(self, "viewmodel", None) is not None:
             selected = getattr(self.viewmodel, "selected_object", None)
-        if selected is None:
+        if not self._should_draw_gizmo(selected):
             return
         painter = QPainter(self)
         self.move_gizmo_overlay.draw(painter, selected, self.world_to_viewport)
