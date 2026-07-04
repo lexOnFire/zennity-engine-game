@@ -13,6 +13,17 @@ from engine.assets.asset_types import AssetType
 class AssetDatabase:
     """Scans the project Assets directory and maintains .meta files."""
 
+    DEFAULT_FOLDERS = (
+        "Scenes",
+        "Prefabs",
+        "Scripts",
+        "Textures",
+        "Audio",
+        "Animations",
+        "Materials",
+        "Meshes",
+    )
+
     def __init__(self, project_root: str | Path | None = None, assets_dir: str = "Assets") -> None:
         self.project_root = Path(project_root or Path.cwd()).resolve()
         self.assets_root = (self.project_root / assets_dir).resolve()
@@ -21,7 +32,7 @@ class AssetDatabase:
         self._assets_by_path: dict[str, AssetInfo] = {}
 
     def scan(self) -> list[AssetInfo]:
-        self.assets_root.mkdir(parents=True, exist_ok=True)
+        self.ensure_project_folders()
         self._assets_by_uuid.clear()
         self._assets_by_path.clear()
 
@@ -31,6 +42,11 @@ class AssetDatabase:
             self._assets_by_path[info.path] = info
 
         return self.list_assets()
+
+    def ensure_project_folders(self) -> None:
+        self.assets_root.mkdir(parents=True, exist_ok=True)
+        for folder in self.DEFAULT_FOLDERS:
+            (self.assets_root / folder).mkdir(parents=True, exist_ok=True)
 
     def refresh(self) -> list[AssetInfo]:
         self.remove_missing_assets()

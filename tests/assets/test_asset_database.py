@@ -21,6 +21,8 @@ def test_scan_creates_assets_folder(tmp_path) -> None:
 
     assert assets == []
     assert (tmp_path / "Assets").is_dir()
+    for folder in AssetDatabase.DEFAULT_FOLDERS:
+        assert (tmp_path / "Assets" / folder).is_dir()
 
 
 def test_scan_recognizes_types_and_creates_meta(tmp_path) -> None:

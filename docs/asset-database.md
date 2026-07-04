@@ -8,6 +8,17 @@ metadata for every imported asset.
 Every project has a root folder named `Assets/`. It is created automatically
 when `AssetDatabase.scan()` runs.
 
+New projects also receive standard subfolders:
+
+- `Assets/Scenes/`
+- `Assets/Prefabs/`
+- `Assets/Scripts/`
+- `Assets/Textures/`
+- `Assets/Audio/`
+- `Assets/Animations/`
+- `Assets/Materials/`
+- `Assets/Meshes/`
+
 ## Supported Types
 
 - `scene`: `.zscene`
