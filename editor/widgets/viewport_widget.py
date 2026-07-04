@@ -119,10 +119,9 @@ class ViewportWidget(QOpenGLWidget):
         idx = getattr(self.active_scene, "selected_index", -1)
         objs = self.active_scene.editable_objects
         if 0 <= idx < len(objs):
-            self.viewmodel._selected_object = objs[idx]
-            # Emite sem loop: usa o atributo direto para não re-triggar selecão na cena
+            self.viewmodel.selected_object = objs[idx]
         else:
-            self.viewmodel._selected_object = None
+            self.viewmodel.selected_object = None
 
         # Notifica Outliner e Inspector via sinal de hierarquia
         self.viewmodel.on_model_hierarchy_changed()
@@ -421,10 +420,7 @@ class ViewportWidget(QOpenGLWidget):
         sel  = objs[idx] if 0 <= idx < len(objs) else None
 
         if sel != self.viewmodel._selected_object:
-            # Atualiza sem emitir selection_changed (para não re-triggar selecão na cena)
-            self.viewmodel._selected_object = sel
-            self.viewmodel.selection_changed.emit(sel)
-            EventBus.emit(EVENT_SELECTION_CHANGED, obj=sel)
+            self.viewmodel.selected_object = sel
 
     # ──────────────────────────────────────────────────────────────────────────
     # Handlers de Eventos do EventBus

@@ -19,6 +19,7 @@ from editor.models.scene_model import SceneModel
 from editor.viewmodels.scene_viewmodel import SceneViewModel
 from editor.models.asset_model import AssetModel
 from editor.viewmodels.asset_viewmodel import AssetViewModel
+from editor.runtime.editor_context import EditorContext
 
 # Serialização
 from editor.core.serializer import save_scene_to_file, load_scene_from_file
@@ -60,9 +61,15 @@ class MainWindow(QMainWindow):
             | QMainWindow.GroupedDragging
         )
         
+        # Runtime do editor: estado compartilhado, selecao, ferramentas e comandos
+        self.editor_context = EditorContext()
+
         # Inicializa o Model e o ViewModel de Cena (Semana 3)
         self.scene_model = SceneModel()
-        self.scene_view_model = SceneViewModel(self.scene_model)
+        self.scene_view_model = SceneViewModel(
+            self.scene_model,
+            selection_manager=self.editor_context.selection,
+        )
         
         # Inicializa o Model e o ViewModel de Assets (Semana 4)
         self.asset_model = AssetModel(self)
@@ -459,8 +466,8 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_new_scene(self) -> None:
         self.log_action("Novo Projeto/Cena")
+        self.editor_context.reset_scene_state()
         self.scene_model.clear()
-        self.scene_view_model.selected_object = None
         self.setWindowTitle("Zennity Editor - NovoProjeto.zscene*")
         
         if hasattr(self.viewport, "active_scene") and self.viewport.active_scene:
@@ -506,8 +513,8 @@ class MainWindow(QMainWindow):
             loaded_objs = load_scene_from_file(filepath)
             
             # Limpa o estado atual
+            self.editor_context.reset_scene_state()
             self.scene_model.clear()
-            self.scene_view_model.selected_object = None
             
             # Repopula a viewport
             if hasattr(self.viewport, "active_scene") and self.viewport.active_scene:

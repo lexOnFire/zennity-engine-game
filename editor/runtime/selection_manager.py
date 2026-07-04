@@ -27,6 +27,8 @@ class SelectionManager:
         self._selected = obj
         self._notify()
 
+    select = set_selected
+
     def clear(self) -> None:
         self.set_selected(None)
 
@@ -37,6 +39,10 @@ class SelectionManager:
     def unsubscribe(self, callback: SelectionListener) -> None:
         if callback in self._listeners:
             self._listeners.remove(callback)
+
+    def reset(self) -> None:
+        self._selected = None
+        self._listeners.clear()
 
     def _notify(self) -> None:
         for callback in list(self._listeners):

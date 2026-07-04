@@ -5,6 +5,7 @@ from editor.models.scene_model import SceneModel
 from editor.core.event_bus import (
     EventBus, EVENT_SELECTION_CHANGED, EVENT_HIERARCHY_UPDATED, EVENT_PROPERTY_CHANGED
 )
+from editor.runtime.selection_manager import SelectionManager
 
 
 class SceneViewModel(QObject):
@@ -19,13 +20,15 @@ class SceneViewModel(QObject):
     hierarchy_updated = Signal()
     property_changed = Signal(str, str, object)
 
-    def __init__(self, model: SceneModel) -> None:
+    def __init__(self, model: SceneModel, selection_manager: Optional[SelectionManager] = None) -> None:
         super().__init__()
         self._model = model
+        self.selection_manager = selection_manager or SelectionManager()
         self._selected_object: Optional[GameObject] = None
         
         # Conecta sinais do modelo
         self._model.object_structure_changed.connect(self.on_model_hierarchy_changed)
+        self.selection_manager.subscribe(self._on_runtime_selection_changed)
 
     @property
     def selected_object(self) -> Optional[GameObject]:
@@ -33,11 +36,14 @@ class SceneViewModel(QObject):
 
     @selected_object.setter
     def selected_object(self, obj: Optional[GameObject]) -> None:
-        if self._selected_object != obj:
-            self._selected_object = obj
-            self.selection_changed.emit(obj)
-            # Despacha no EventBus global para desacoplamento de outros painéis
-            EventBus.emit(EVENT_SELECTION_CHANGED, obj=obj)
+        self.selection_manager.set_selected(obj)
+
+    def _on_runtime_selection_changed(self, obj: Optional[GameObject]) -> None:
+        if self._selected_object is obj:
+            return
+        self._selected_object = obj
+        self.selection_changed.emit(obj)
+        EventBus.emit(EVENT_SELECTION_CHANGED, obj=obj)
 
     @Slot()
     def on_model_hierarchy_changed(self) -> None:
