@@ -51,9 +51,25 @@ class RealHierarchyPanel(HierarchyPanel):
 class RealInspectorPanel(InspectorPanel):
     """Inspector que mostra dados reais do objeto selecionado."""
 
+    def __init__(self) -> None:
+        super().__init__()
+        sections = [
+            label
+            for label in self.findChildren(QLabel)
+            if label.objectName() == "InspectorSection"
+        ]
+        if len(sections) >= 1:
+            self.transform_label = sections[0]
+        if len(sections) >= 2:
+            self.renderer_label = sections[1]
+
     def load_object(self, obj: Any) -> None:
         if obj is None:
             self.name.setText("Nenhum objeto selecionado")
+            if hasattr(self, "transform_label"):
+                self.transform_label.setText("Transform\n  X: 0    Y: 0    Z: 0")
+            if hasattr(self, "renderer_label"):
+                self.renderer_label.setText("Components\n  Sem componentes")
             return
 
         name = getattr(obj, "name", str(obj))

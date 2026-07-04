@@ -92,6 +92,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.viewport = Phase1ViewportWidget(self)
         self.viewport.setObjectName("ViewportCanvas")
         self.viewport.set_viewmodel(self.scene_view_model)
+        self.viewport.set_tool_manager(self.editor_context.tools)
 
         left = QSplitter(Qt.Vertical)
         left.addWidget(self.hierarchy)
@@ -122,6 +123,8 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.hierarchy.selected.connect(self.select_object)
         self.create_panel.create_requested.connect(self.create_object)
         self.scene_view_model.selection_changed.connect(self.on_viewport_selection_changed)
+        self.viewport.object_transform_changed.connect(self.on_viewport_object_changed)
+        self.viewport.tool_message_requested.connect(self.on_tool_message_requested)
         self.on_viewport_selection_changed(self.editor_context.selection.selected)
 
     def _on_runtime_tool_changed(self, tool: EditorTool) -> None:
@@ -129,7 +132,10 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         if action is not None and not action.isChecked():
             action.setChecked(True)
         if hasattr(self, "status_msg"):
-            self.status_msg.setText(f"Ferramenta ativa: {tool.value.title()}")
+            if tool in (EditorTool.ROTATE, EditorTool.SCALE):
+                self.status_msg.setText(f"{tool.value.title()} em desenvolvimento")
+            else:
+                self.status_msg.setText(f"Ferramenta ativa: {tool.value.title()}")
 
     def scene_objects(self) -> list[Any]:
         scene = getattr(self.viewport, "active_scene", None)
@@ -150,6 +156,16 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
     def on_viewport_selection_changed(self, obj: Any) -> None:
         self.inspector.load_object(obj)
         self.hierarchy.select_object(obj)
+
+    def on_viewport_object_changed(self, obj: Any) -> None:
+        if obj is self.editor_context.selection.selected:
+            self.inspector.load_object(obj)
+
+    def on_tool_message_requested(self, message: str) -> None:
+        if hasattr(self, "status_msg"):
+            self.status_msg.setText(message)
+        if hasattr(self, "console"):
+            self.console.add("INFO", message)
 
     def create_object(self, name: str) -> None:
         mapping = {

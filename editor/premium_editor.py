@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 from PySide6.QtCore import Qt, QSize, Signal
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QFont
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -180,6 +180,7 @@ class ZennityPremiumEditor(QMainWindow):
         self.setObjectName("ZennityPremiumEditor")
         self.setWindowTitle("Zennity Engine Editor - Premium")
         self.resize(1440, 900)
+        self._apply_safe_font()
         self.object_count = 0
         if not hasattr(self, "editor_context"):
             self.editor_context = EditorContext()
@@ -193,6 +194,14 @@ class ZennityPremiumEditor(QMainWindow):
         self._build_layout()
         self._build_status()
         self._connect()
+
+    def _apply_safe_font(self) -> None:
+        font = QApplication.font() if QApplication.instance() is not None else self.font()
+        if font.pointSize() <= 0 and font.pointSizeF() <= 0:
+            font = QFont(font)
+            font.setPointSize(10)
+            QApplication.setFont(font)
+            self.setFont(font)
 
     def _build_menu(self) -> None:
         bar = self.menuBar()

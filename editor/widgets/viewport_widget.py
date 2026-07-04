@@ -158,6 +158,22 @@ class ViewportWidget(QOpenGLWidget):
         """Sincroniza a selecao da cena legada com o SelectionManager."""
         self.select_object(self._selected_from_scene())
 
+    def world_to_viewport(self, point) -> tuple[float, float]:
+        """Converte coordenadas de mundo para coordenadas locais da viewport."""
+        if self.active_scene is None:
+            return float(point[0]), float(point[1])
+        if hasattr(self.active_scene, "_layout") and hasattr(self.active_scene, "_world_to_vp"):
+            return self.active_scene._world_to_vp(np.asarray(point, dtype=np.float32), self.active_scene._layout())
+        return float(point[0]), float(point[1])
+
+    def viewport_to_world(self, point) -> np.ndarray:
+        """Converte coordenadas locais da viewport para coordenadas de mundo."""
+        if self.active_scene is None:
+            return np.array([float(point[0]), float(point[1]), 0.0], dtype=np.float32)
+        if hasattr(self.active_scene, "_layout") and hasattr(self.active_scene, "_vp_to_world"):
+            return self.active_scene._vp_to_world(float(point[0]), float(point[1]), self.active_scene._layout())
+        return np.array([float(point[0]), float(point[1]), 0.0], dtype=np.float32)
+
     def create_object(self, shape_type: str) -> None:
         """
         Ponto de entrada único para criação de objetos via menu Criar.

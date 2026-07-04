@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable
 
 from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QColor, QPainter, QPen, QBrush, QPolygonF
@@ -12,15 +12,19 @@ class QtMoveGizmoOverlay:
     def __init__(self) -> None:
         self.axis_length = 72
 
-    def draw(self, painter: QPainter, selected: Any) -> None:
+    def draw(
+        self,
+        painter: QPainter,
+        selected: Any,
+        world_to_viewport: Callable[[Any], tuple[float, float]],
+    ) -> None:
         if selected is None or not hasattr(selected, "transform"):
             return
         pos = getattr(selected.transform, "position", None)
         if pos is None:
             return
 
-        cx = float(pos[0])
-        cy = float(pos[1])
+        cx, cy = world_to_viewport(pos)
         center = QPointF(cx, cy)
         x_end = QPointF(cx + self.axis_length, cy)
         y_end = QPointF(cx, cy - self.axis_length)
