@@ -13,7 +13,10 @@ from editor.premium_editor import (
     ZennityPremiumEditor,
 )
 from editor.premium_panels import RealHierarchyPanel, RealInspectorPanel
+from editor.selection_runtime import install_viewport_selection_api
 from editor.widgets.viewport_widget import ViewportWidget
+
+install_viewport_selection_api()
 
 
 class ZennityPhase1Editor(ZennityPremiumEditor):
@@ -83,13 +86,10 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             self.stats.setText(f"FPS: 60 | Memoria: 512 MB | Objetos: {self.object_count}")
 
     def select_object(self, obj: Any) -> None:
-        self.inspector.load_object(obj)
-        scene = getattr(self.viewport, "active_scene", None)
-        objects = getattr(scene, "editable_objects", []) if scene else []
-        if scene is not None:
-            scene.selected_index = objects.index(obj) if obj in objects else -1
-        self.scene_view_model._selected_object = obj
-        self.viewport.update()
+        self.viewport.select_object(obj)
+        selected = self.viewport.selected_object()
+        self.inspector.load_object(selected)
+        self.hierarchy.select_object(selected)
 
     def on_viewport_selection_changed(self, obj: Any) -> None:
         self.inspector.load_object(obj)
@@ -110,7 +110,6 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         created = objects[-1] if objects else None
         self.refresh_hierarchy_from_viewport()
         if created is not None:
-            self.hierarchy.select_object(created)
             self.select_object(created)
 
         self.console.add("INFO", f"Objeto criado: {name}")
