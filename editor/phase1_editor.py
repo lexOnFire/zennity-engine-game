@@ -122,6 +122,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.hierarchy.selected.connect(self.select_object)
         self.create_panel.create_requested.connect(self.create_object)
         self.scene_view_model.selection_changed.connect(self.on_viewport_selection_changed)
+        self.on_viewport_selection_changed(self.editor_context.selection.selected)
 
     def _on_runtime_tool_changed(self, tool: EditorTool) -> None:
         action = self._tool_actions.get(tool)
@@ -145,9 +146,6 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
 
     def select_object(self, obj: Any) -> None:
         self.editor_context.selection.set_selected(obj)
-        selected = self.editor_context.selection.selected
-        self.inspector.load_object(selected)
-        self.hierarchy.select_object(selected)
 
     def on_viewport_selection_changed(self, obj: Any) -> None:
         self.inspector.load_object(obj)

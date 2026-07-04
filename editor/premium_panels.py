@@ -29,16 +29,23 @@ class RealHierarchyPanel(HierarchyPanel):
         root = self.tree.topLevelItem(0)
         if root is None:
             return
-        for index in range(root.childCount()):
-            item = root.child(index)
-            if item.data(0, Qt.UserRole) is obj:
-                self.tree.setCurrentItem(item)
+        self.tree.blockSignals(True)
+        try:
+            self.tree.clearSelection()
+            self.tree.setCurrentItem(None)
+            if obj is None:
                 return
+            for index in range(root.childCount()):
+                item = root.child(index)
+                if item.data(0, Qt.UserRole) is obj:
+                    self.tree.setCurrentItem(item)
+                    return
+        finally:
+            self.tree.blockSignals(False)
 
     def _selected(self) -> None:
         item = self.tree.currentItem()
-        if item:
-            self.selected.emit(item.data(0, Qt.UserRole))
+        self.selected.emit(item.data(0, Qt.UserRole) if item else None)
 
 
 class RealInspectorPanel(InspectorPanel):
