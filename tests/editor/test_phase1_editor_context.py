@@ -11,8 +11,10 @@ from PySide6.QtWidgets import QApplication
 from editor.phase1_editor import ZennityPhase1Editor
 from editor.runtime import EditorContext
 from editor.runtime.tool_manager import EditorTool
+from engine.game_object import GameObject
 from engine.physics.collider import BoxCollider, CircleCollider
 from engine.physics.rigidbody import RigidBody
+from engine.scene import load_scene
 
 
 @pytest.fixture(scope="session")
@@ -104,6 +106,54 @@ def test_phase1_toolbar_tools_update_tool_manager(phase1_editor: ZennityPhase1Ed
 
     assert phase1_editor._tool_actions[EditorTool.ROTATE].isChecked()
     assert not phase1_editor._tool_actions[EditorTool.MOVE].isChecked()
+
+
+def test_phase1_file_menu_has_scene_actions(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    actions = {
+        phase1_editor.act_new_scene.text(): phase1_editor.act_new_scene.shortcut().toString(),
+        phase1_editor.act_open_scene.text(): phase1_editor.act_open_scene.shortcut().toString(),
+        phase1_editor.act_save_scene.text(): phase1_editor.act_save_scene.shortcut().toString(),
+        phase1_editor.act_save_scene_as.text(): phase1_editor.act_save_scene_as.shortcut().toString(),
+    }
+
+    assert actions == {
+        "New Scene": "Ctrl+N",
+        "Open Scene": "Ctrl+O",
+        "Save Scene": "Ctrl+S",
+        "Save Scene As": "Ctrl+Shift+S",
+    }
+
+
+def test_phase1_save_scene_uses_current_scene_path(
+    phase1_editor: ZennityPhase1Editor,
+    tmp_path,
+) -> None:
+    phase1_editor.current_scene_path = tmp_path / "level.zscene"
+
+    phase1_editor.save_scene()
+
+    loaded = load_scene(phase1_editor.current_scene_path)
+    assert loaded["scene_name"] == getattr(phase1_editor.viewport.active_scene, "name", "Untitled")
+    assert len(loaded["objects"]) == len(phase1_editor.scene_objects())
+
+
+def test_phase1_apply_scene_data_replaces_scene_and_selection(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    obj = GameObject("LoadedPlayer", tag="Player")
+    obj.mesh_type = "rect"
+    obj.transform.position = [42.0, 84.0, 0.0]
+
+    phase1_editor._apply_scene_data({"scene_name": "Loaded", "objects": [obj]})
+
+    objects = phase1_editor.scene_objects()
+    assert len(objects) == 1
+    assert objects[0] is obj
+    assert phase1_editor.viewport.active_scene.name == "Loaded"
+    assert phase1_editor.editor_context.selection.selected is obj
+    assert phase1_editor.hierarchy.tree.topLevelItem(0).child(0).data(0, Qt.UserRole) is obj
 
 
 def test_phase1_toolbar_active_tool_is_visually_checked(

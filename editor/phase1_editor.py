@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QActionGroup
-from PySide6.QtWidgets import QComboBox, QSplitter, QToolBar, QToolButton, QWidget
+from PySide6.QtWidgets import QFileDialog, QComboBox, QSplitter, QToolBar, QToolButton, QWidget
 
 from editor.premium_editor import (
     ConsolePanel,
@@ -17,6 +18,7 @@ from editor.premium_panels import RealHierarchyPanel, RealInspectorPanel
 from editor.runtime.editor_context import EditorContext
 from editor.runtime.tool_manager import EditorTool
 from editor.widgets.phase1_viewport import Phase1ViewportWidget
+from engine.scene import load_scene, save_scene
 
 
 class ZennityPhase1Editor(ZennityPremiumEditor):
@@ -33,8 +35,51 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.editor_context = EditorContext()
         self._tool_actions: dict[EditorTool, QAction] = {}
         self._snap_action: QAction | None = None
+        self.current_scene_path: Path | None = None
         super().__init__()
         self.editor_context.tools.subscribe(self._on_runtime_tool_changed)
+
+    def _build_menu(self) -> None:
+        bar = self.menuBar()
+        file_menu = bar.addMenu("Arquivo")
+        edit_menu = bar.addMenu("Editar")
+        window_menu = bar.addMenu("Janela")
+        create_menu = bar.addMenu("Criar")
+        tools_menu = bar.addMenu("Ferramentas")
+        build_menu = bar.addMenu("Build + Executar")
+        help_menu = bar.addMenu("Ajuda")
+
+        self.act_new_scene = QAction("New Scene", self)
+        self.act_new_scene.setShortcut("Ctrl+N")
+        self.act_new_scene.triggered.connect(self.new_scene)
+
+        self.act_open_scene = QAction("Open Scene", self)
+        self.act_open_scene.setShortcut("Ctrl+O")
+        self.act_open_scene.triggered.connect(self.open_scene)
+
+        self.act_save_scene = QAction("Save Scene", self)
+        self.act_save_scene.setShortcut("Ctrl+S")
+        self.act_save_scene.triggered.connect(self.save_scene)
+
+        self.act_save_scene_as = QAction("Save Scene As", self)
+        self.act_save_scene_as.setShortcut("Ctrl+Shift+S")
+        self.act_save_scene_as.triggered.connect(self.save_scene_as)
+
+        for action in (
+            self.act_new_scene,
+            self.act_open_scene,
+            self.act_save_scene,
+            self.act_save_scene_as,
+        ):
+            file_menu.addAction(action)
+            self.addAction(action)
+
+        for item in ["Player", "Plataforma", "Inimigo", "Camera 2D", "Cube 3D"]:
+            create_menu.addAction(item, lambda checked=False, value=item: self.create_object(value))
+        build_menu.addAction("Play", self.play)
+        build_menu.addAction("Stop", self.stop)
+
+        self._unused_menu_refs = (edit_menu, window_menu, tools_menu, help_menu)
 
     def _build_toolbar(self) -> None:
         toolbar = QToolBar("MainToolBar")
@@ -42,8 +87,15 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         toolbar.setMovable(False)
         self.addToolBar(toolbar)
 
-        for text in ["Open", "Save"]:
-            toolbar.addWidget(QToolButton(text=text))
+        open_button = QToolButton()
+        open_button.setText("Open")
+        open_button.clicked.connect(self.open_scene)
+        toolbar.addWidget(open_button)
+
+        save_button = QToolButton()
+        save_button.setText("Save")
+        save_button.clicked.connect(self.save_scene)
+        toolbar.addWidget(save_button)
 
         self.act_undo = QAction("Undo", self)
         self.act_undo.setShortcut("Ctrl+Z")
@@ -206,6 +258,54 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             return []
         return list(getattr(scene, "editable_objects", []))
 
+    def _active_scene(self) -> Any:
+        return getattr(self.viewport, "active_scene", None)
+
+    def _clear_scene_objects(self) -> None:
+        scene = self._active_scene()
+        if scene is None:
+            return
+
+        for obj in list(getattr(scene, "editable_objects", [])):
+            if hasattr(scene, "_remove_go"):
+                scene._remove_go(obj)
+            elif obj in getattr(scene, "game_objects", []):
+                scene.game_objects.remove(obj)
+                obj.scene = None
+
+        scene.editable_objects.clear()
+        if hasattr(scene, "selected_index"):
+            scene.selected_index = -1
+
+    def _sync_scene_after_load(self, selected: Any = None) -> None:
+        if hasattr(self.viewport, "_sync_model_from_scene"):
+            self.viewport._sync_model_from_scene()
+        self.refresh_hierarchy_from_viewport()
+        self.select_object(selected)
+        self._update_undo_redo_states()
+
+    def _apply_scene_data(self, scene_data: dict[str, Any]) -> None:
+        scene = self._active_scene()
+        if scene is None:
+            return
+
+        self._clear_scene_objects()
+        scene.name = str(scene_data.get("scene_name", "Untitled"))
+
+        objects = list(scene_data.get("objects", []))
+        for obj in objects:
+            if hasattr(scene, "_add_go"):
+                scene._add_go(obj)
+            else:
+                scene.game_objects.append(obj)
+                obj.scene = scene
+            scene.editable_objects.append(obj)
+
+        selected = objects[0] if objects else None
+        if hasattr(scene, "selected_index"):
+            scene.selected_index = 0 if selected is not None else -1
+        self._sync_scene_after_load(selected)
+
     def refresh_hierarchy_from_viewport(self) -> None:
         objects = self.scene_objects()
         self.object_count = len(objects)
@@ -233,6 +333,61 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             self.status_msg.setText(message)
         if hasattr(self, "console"):
             self.console.add("INFO", message)
+
+    def new_scene(self) -> None:
+        self._clear_scene_objects()
+        scene = self._active_scene()
+        if scene is not None:
+            scene.name = "Untitled"
+        self.current_scene_path = None
+        self._sync_scene_after_load(None)
+        self.status_msg.setText("Nova cena criada.")
+        self.console.add("INFO", "Nova cena criada.")
+
+    def open_scene(self) -> None:
+        file_name, _ = QFileDialog.getOpenFileName(
+            self,
+            "Open Scene",
+            "",
+            "Zennity Scene (*.zscene);;JSON (*.json);;All Files (*)",
+        )
+        if not file_name:
+            return
+
+        scene_data = load_scene(file_name)
+        self.current_scene_path = Path(file_name)
+        self._apply_scene_data(scene_data)
+        self.status_msg.setText(f"Cena aberta: {self.current_scene_path.name}")
+        self.console.add("INFO", f"Cena aberta: {self.current_scene_path}")
+
+    def save_scene(self) -> None:
+        if self.current_scene_path is None:
+            self.save_scene_as()
+            return
+
+        scene = self._active_scene()
+        if scene is None:
+            return
+
+        save_scene(scene, self.current_scene_path)
+        self.status_msg.setText(f"Cena salva: {self.current_scene_path.name}")
+        self.console.add("INFO", f"Cena salva: {self.current_scene_path}")
+
+    def save_scene_as(self) -> None:
+        file_name, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Scene As",
+            str(self.current_scene_path or Path("Untitled.zscene")),
+            "Zennity Scene (*.zscene);;JSON (*.json);;All Files (*)",
+        )
+        if not file_name:
+            return
+
+        path = Path(file_name)
+        if path.suffix.lower() != ".zscene":
+            path = path.with_suffix(".zscene")
+        self.current_scene_path = path
+        self.save_scene()
 
     def _is_scene_playing(self) -> bool:
         return bool(getattr(getattr(self.viewport, "active_scene", None), "playing", False))
