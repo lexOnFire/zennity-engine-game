@@ -20,20 +20,22 @@ class StudioWindow(MainWindow):
         self.studio_settings = QSettings("Zennity", "StudioLayout")
         self._focus_mode = False
         self._focus_hidden_docks = []
+        self._layout_locked = False
 
         install_editor_mvp(self)
         self.configure_docks()
         self.create_studio_actions()
-        self.apply_studio_layout()
+        self.restore_factory_layout()
         self.statusBar().showMessage("Studio Editor pronto", 5000)
 
     def configure_docks(self) -> None:
         """Evita painéis cortados e melhora o encaixe ao arrastar."""
-        self.setDockOptions(
-            QDockWidget.DockWidgetClosable
-            if False else self.dockOptions()
-        )
         for dock in self.studio_docks():
+            dock.setAllowedAreas(
+                Qt.LeftDockWidgetArea
+                | Qt.RightDockWidgetArea
+                | Qt.BottomDockWidgetArea
+            )
             dock.setFeatures(
                 QDockWidget.DockWidgetMovable
                 | QDockWidget.DockWidgetFloatable
@@ -42,10 +44,10 @@ class StudioWindow(MainWindow):
             dock.setMinimumWidth(220)
             dock.setMinimumHeight(140)
 
-        self.dock_hierarchy.setMinimumWidth(260)
-        self.dock_assets.setMinimumWidth(260)
-        self.dock_create.setMinimumWidth(260)
-        self.dock_inspector.setMinimumWidth(320)
+        self.dock_hierarchy.setMinimumWidth(280)
+        self.dock_assets.setMinimumWidth(280)
+        self.dock_create.setMinimumWidth(280)
+        self.dock_inspector.setMinimumWidth(340)
         self.dock_console.setMinimumHeight(180)
         self.dock_profiler.setMinimumHeight(180)
 
@@ -59,15 +61,20 @@ class StudioWindow(MainWindow):
         self.act_save_studio_layout = QAction("Salvar Layout Atual", self)
         self.act_save_studio_layout.triggered.connect(self.save_studio_layout)
 
-        self.act_restore_studio_layout = QAction("Restaurar Layout Studio", self)
-        self.act_restore_studio_layout.triggered.connect(self.apply_studio_layout)
+        self.act_restore_studio_layout = QAction("Restaurar Layout Padrão", self)
+        self.act_restore_studio_layout.triggered.connect(self.restore_factory_layout)
 
         self.act_show_all_panels = QAction("Mostrar Todos os Painéis", self)
         self.act_show_all_panels.triggered.connect(self.show_all_panels)
 
+        self.act_lock_layout = QAction("Travar Layout", self)
+        self.act_lock_layout.setCheckable(True)
+        self.act_lock_layout.triggered.connect(self.set_layout_locked)
+
         view_menu = self.menuBar().addMenu("Painéis")
         view_menu.addAction(self.act_focus_viewport)
         view_menu.addAction(self.act_show_all_panels)
+        view_menu.addAction(self.act_lock_layout)
         view_menu.addSeparator()
         view_menu.addAction(self.dock_hierarchy.toggleViewAction())
         view_menu.addAction(self.dock_create.toggleViewAction())
@@ -85,13 +92,16 @@ class StudioWindow(MainWindow):
         run_menu.addAction("Pause", self.on_pause_clicked)
         run_menu.addAction("Stop", self.on_stop_clicked)
 
-    def apply_studio_layout(self) -> None:
-        """Organiza os docks sem sobrepor nem esmagar painéis."""
+    def restore_factory_layout(self) -> None:
+        """Reconstrói o layout padrão do zero e recupera painéis escondidos."""
         self._focus_mode = False
         self._focus_hidden_docks = []
 
         for dock in self.studio_docks():
+            dock.blockSignals(True)
             dock.setFloating(False)
+            dock.show()
+            dock.blockSignals(False)
 
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_hierarchy)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_assets)
@@ -109,12 +119,11 @@ class StudioWindow(MainWindow):
         self.dock_console.raise_()
 
         self.dock_code_editor.hide()
-        self.show_all_panels(include_code_editor=False)
 
-        self.resizeDocks([self.dock_hierarchy, self.dock_inspector], [300, 360], Qt.Horizontal)
-        self.resizeDocks([self.dock_hierarchy, self.dock_create], [520, 230], Qt.Vertical)
-        self.resizeDocks([self.dock_console], [210], Qt.Vertical)
-        self.statusBar().showMessage("Layout Studio restaurado", 3000)
+        self.resizeDocks([self.dock_hierarchy, self.dock_inspector], [310, 380], Qt.Horizontal)
+        self.resizeDocks([self.dock_hierarchy, self.dock_create], [520, 240], Qt.Vertical)
+        self.resizeDocks([self.dock_console], [220], Qt.Vertical)
+        self.statusBar().showMessage("Layout padrão restaurado", 3000)
 
     def studio_docks(self):
         return [
@@ -136,9 +145,26 @@ class StudioWindow(MainWindow):
             self.dock_console,
             self.dock_profiler,
         ]:
+            dock.setFloating(False)
             dock.show()
         if include_code_editor:
             self.dock_code_editor.show()
+        self.statusBar().showMessage("Painéis visíveis", 2500)
+
+    def set_layout_locked(self, locked: bool) -> None:
+        """Trava ou destrava arraste/fechamento de painéis."""
+        self._layout_locked = locked
+        features = QDockWidget.NoDockWidgetFeatures if locked else (
+            QDockWidget.DockWidgetMovable
+            | QDockWidget.DockWidgetFloatable
+            | QDockWidget.DockWidgetClosable
+        )
+        for dock in self.studio_docks():
+            dock.setFeatures(features)
+        self.statusBar().showMessage(
+            "Layout travado" if locked else "Layout destravado",
+            3000,
+        )
 
     def toggle_focus_mode(self) -> None:
         """Oculta painéis para deixar a Viewport maior; Ctrl+Space volta tudo."""
@@ -151,6 +177,7 @@ class StudioWindow(MainWindow):
             return
 
         for dock in self._focus_hidden_docks:
+            dock.setFloating(False)
             dock.show()
         self._focus_hidden_docks = []
         self._focus_mode = False
