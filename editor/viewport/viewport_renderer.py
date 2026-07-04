@@ -38,7 +38,7 @@ class ViewportRenderer:
         now = time.time()
         delta = now - self._fps_last_time
         self._fps_last_time = now
-        
+
         # Filtro passa-baixa simples para suavizar o indicador de FPS
         if delta > 0.0:
             current_fps = 1.0 / delta
@@ -71,14 +71,21 @@ class ViewportRenderer:
     ) -> None:
         """Renderiza os elementos Qt por cima do framebuffer do Pygame."""
         vp_w, vp_h = camera.vp_w, camera.vp_h
-        
+
         # 1. Borda de Seleção (Selection Outline)
         if selected is not None and not is_playing:
             self.outline_renderer.draw(painter, selected, camera.world_to_viewport)
 
-        # 2. Caixa Delimitadora (Bounding Box com 8 alças)
+        # 2. Caixa Delimitadora.
+        # Os handles são exclusivos da Scale Tool para não poluir Move/Rotate.
         if selected is not None and not is_playing:
-            self.bounding_box_renderer.draw(painter, selected, camera.world_to_viewport)
+            show_scale_handles = active_tool_name.lower() == "scale"
+            self.bounding_box_renderer.draw(
+                painter,
+                selected,
+                camera.world_to_viewport,
+                show_handles=show_scale_handles,
+            )
 
         # 3. HUD Superior Esquerdo (Estatísticas)
         fps = self.calculate_fps()
