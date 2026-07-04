@@ -14,7 +14,7 @@ from editor.premium_editor import (
 )
 from editor.premium_panels import RealHierarchyPanel, RealInspectorPanel
 from editor.selection_runtime import install_viewport_selection_api
-from editor.widgets.viewport_widget import ViewportWidget
+from editor.widgets.phase1_viewport import Phase1ViewportWidget
 
 install_viewport_selection_api()
 
@@ -38,7 +38,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.preview = SimplePanel("Asset Preview", "Preview de assets")
         self.profiler = SimplePanel("Profiler", "FPS, CPU, memoria")
 
-        self.viewport = ViewportWidget(self)
+        self.viewport = Phase1ViewportWidget(self)
         self.viewport.setObjectName("ViewportCanvas")
         self.viewport.set_viewmodel(self.scene_view_model)
 
