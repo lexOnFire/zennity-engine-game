@@ -239,7 +239,7 @@ class Editor2DScene(Scene):
 
     def spawn_default_scene(self) -> None:
         floor = GameObject("Chão")
-        floor.transform.position = np.array([400.0, 500.0, 0.0], dtype=np.float32)
+        floor.transform.position = np.array([0.0, 200.0, 0.0], dtype=np.float32)
         floor.transform.scale    = np.array([600.0,  32.0, 1.0], dtype=np.float32)
         floor.add_component(BoxCollider(width=600, height=32))
         rb = floor.add_component(RigidBody()); rb.is_kinematic = True
@@ -247,7 +247,7 @@ class Editor2DScene(Scene):
         self._add_go(floor); self.editable_objects.append(floor)
 
         player = GameObject("Player")
-        player.transform.position = np.array([400.0, 200.0, 0.0], dtype=np.float32)
+        player.transform.position = np.array([0.0, -100.0, 0.0], dtype=np.float32)
         player.transform.scale    = np.array([ 36.0,  48.0, 1.0], dtype=np.float32)
         player.add_component(BoxCollider(width=36, height=48))
         player.add_component(RigidBody(mass=1.0, gravity_scale=1.0))
