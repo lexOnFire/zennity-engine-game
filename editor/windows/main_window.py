@@ -10,7 +10,7 @@ from PySide6.QtCore import Qt, Slot, QSettings, QSize
 
 # Barramento de Eventos do Editor
 from editor.core.event_bus import (
-    EventBus, EVENT_PLAY_STATE_CHANGED, EVENT_SELECTION_CHANGED,
+    EventBus, EVENT_PLAY_STATE_CHANGED,
     EVENT_HIERARCHY_UPDATED, EVENT_ASSET_SELECTED, EVENT_PROPERTY_CHANGED
 )
 
@@ -474,13 +474,12 @@ class MainWindow(QMainWindow):
             if hasattr(self.viewport.active_scene, "editable_objects"):
                 self.viewport.active_scene.editable_objects.clear()
                 self.viewport.active_scene.game_objects.clear()
-                self.viewport.active_scene.selected_index = -1
+                self.viewport.clear_selection()
                 self.viewport.active_scene.spawn_default_scene()
                 
                 for obj in self.viewport.active_scene.editable_objects:
                     self.scene_model.add_object(obj)
-                if self.viewport.active_scene.selected_index >= 0:
-                    self.scene_view_model.selected_object = self.viewport.active_scene.editable_objects[self.viewport.active_scene.selected_index]
+                self.viewport.sync_selection_from_scene()
 
     @Slot()
     def on_save_scene(self) -> None:
@@ -527,7 +526,7 @@ class MainWindow(QMainWindow):
                         self.viewport.active_scene.editable_objects.append(obj)
                     self.scene_model.add_object(obj)
                     
-                self.viewport.active_scene.selected_index = -1
+                self.viewport.clear_selection()
                 self.scene_view_model.on_model_hierarchy_changed()
                 
             self.setWindowTitle(f"Zennity Editor - {os.path.basename(filepath)}")

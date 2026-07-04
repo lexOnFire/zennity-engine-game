@@ -32,7 +32,7 @@ class SceneViewModel(QObject):
 
     @property
     def selected_object(self) -> Optional[GameObject]:
-        return self._selected_object
+        return self.selection_manager.selected
 
     @selected_object.setter
     def selected_object(self, obj: Optional[GameObject]) -> None:
@@ -102,17 +102,18 @@ class SceneViewModel(QObject):
 
     @Slot()
     def delete_selected(self) -> None:
-        if self._selected_object:
-            obj_to_remove = self._selected_object
+        selected = self.selected_object
+        if selected:
+            obj_to_remove = selected
             self.selected_object = None
             self._model.remove_object(obj_to_remove)
 
     @Slot()
     def duplicate_selected(self) -> None:
-        if not self._selected_object:
+        src = self.selected_object
+        if not src:
             return
-            
-        src = self._selected_object
+
         name = f"{src.name}_cópia"
         go = GameObject(name)
         go.mesh_type = src.mesh_type
@@ -147,15 +148,16 @@ class SceneViewModel(QObject):
     # ── Métodos de Atualização de Propriedades ─────────────────────────────────
 
     def set_transform_property(self, prop_name: str, index: int, value: float) -> None:
-        if not self._selected_object:
+        selected = self.selected_object
+        if not selected:
             return
             
-        transform = self._selected_object.transform
+        transform = selected.transform
         if prop_name == "position":
             transform.position[index] = value
         elif prop_name == "scale":
             transform.scale[index] = value
-            self._sync_collider_dimensions(self._selected_object)
+            self._sync_collider_dimensions(selected)
         elif prop_name == "rotation":
             transform.rotation[index] = value
             
@@ -165,11 +167,12 @@ class SceneViewModel(QObject):
         EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="Transform", property_name=prop_id, value=value)
 
     def set_rigidbody_property(self, prop_name: str, value) -> None:
-        if not self._selected_object:
+        selected = self.selected_object
+        if not selected:
             return
             
         from engine.physics.rigidbody import RigidBody
-        rb = self._selected_object.get_component(RigidBody)
+        rb = selected.get_component(RigidBody)
         if not rb:
             return
             
@@ -184,27 +187,28 @@ class SceneViewModel(QObject):
         EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="RigidBody", property_name=prop_name, value=value)
 
     def set_collider_property(self, prop_name: str, value) -> None:
-        if not self._selected_object:
+        selected = self.selected_object
+        if not selected:
             return
             
         from engine.physics.collider import BoxCollider, CircleCollider
-        bc = self._selected_object.get_component(BoxCollider)
-        cc = self._selected_object.get_component(CircleCollider)
+        bc = selected.get_component(BoxCollider)
+        cc = selected.get_component(CircleCollider)
         
         if bc:
             if prop_name == "width":
                 bc.width = int(value)
-                self._selected_object.transform.scale[0] = float(value)
+                selected.transform.scale[0] = float(value)
             elif prop_name == "height":
                 bc.height = int(value)
-                self._selected_object.transform.scale[1] = float(value)
+                selected.transform.scale[1] = float(value)
             elif prop_name == "is_trigger":
                 bc.is_trigger = bool(value)
         elif cc:
             if prop_name == "radius":
                 cc.radius = int(value)
-                self._selected_object.transform.scale[0] = float(value * 2)
-                self._selected_object.transform.scale[1] = float(value * 2)
+                selected.transform.scale[0] = float(value * 2)
+                selected.transform.scale[1] = float(value * 2)
             elif prop_name == "is_trigger":
                 cc.is_trigger = bool(value)
                 

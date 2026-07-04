@@ -4,9 +4,10 @@ editor/widgets/viewport_widget.py
 Widget de Viewport gráfica PySide6/Pygame.
 
 Arquitetura:
-  - A viewport é a ÚNICA fonte de verdade para os objetos da cena física.
+  - A viewport desenha e adapta input Qt/Pygame para a cena ativa.
   - O SceneModel/ViewModel apenas espelha o estado da cena para o Outliner.
   - Qualquer criação/deleção de objeto passa pela cena ativa da viewport.
+  - A seleção pertence ao SelectionManager do Editor Runtime.
   - Monkey-patches silenciam os painéis legados do Pygame (toolbar, painel esq/dir, statusbar).
 """
 
@@ -22,10 +23,10 @@ from PySide6.QtGui import QPainter, QImage, QMouseEvent, QKeyEvent, QWheelEvent
 from editor.core.event_bus import (
     EventBus,
     EVENT_PLAY_STATE_CHANGED,
-    EVENT_SELECTION_CHANGED,
     EVENT_PROPERTY_CHANGED,
     EVENT_HIERARCHY_UPDATED,
 )
+from editor.runtime.selection_manager import SelectionManager
 from editor.viewmodels.scene_viewmodel import SceneViewModel
 
 
@@ -34,10 +35,10 @@ class ViewportWidget(QOpenGLWidget):
     Viewport gráfica embarcando o loop do Pygame dentro de um QOpenGLWidget.
 
     Regras de sincronização:
-      1. A cena ativa (active_scene) é a fonte de verdade dos GameObjects.
+      1. A cena ativa (active_scene) mantém os GameObjects enquanto a Fase 1 migra.
       2. O SceneModel é apenas um espelho para o Outliner — alimentado daqui.
       3. Criar/deletar objetos: chamar sempre active_scene.spawn_object / delete_selected.
-      4. Os painéis legados do Pygame são silenciados via monkey-patch no draw.
+      4. A seleção é centralizada no SelectionManager.
     """
 
     def __init__(self, parent: QWidget = None) -> None:
@@ -51,6 +52,7 @@ class ViewportWidget(QOpenGLWidget):
         pygame.font.init()
 
         self.viewmodel: Optional[SceneViewModel] = None
+        self.selection_manager: Optional[SelectionManager] = None
         self.active_scene = None          # Editor2DScene ou EditorScene (3D)
         self.editor_mode: str = "2D"
 
@@ -67,7 +69,6 @@ class ViewportWidget(QOpenGLWidget):
 
         # Assina eventos globais
         EventBus.subscribe(EVENT_PLAY_STATE_CHANGED,  self._on_play_state_changed)
-        EventBus.subscribe(EVENT_SELECTION_CHANGED,   self._on_selection_changed)
         EventBus.subscribe(EVENT_PROPERTY_CHANGED,    self._on_property_changed)
 
         # Tick a 60 FPS
@@ -85,6 +86,11 @@ class ViewportWidget(QOpenGLWidget):
         Chamado pela MainWindow após criar os docks.
         """
         self.viewmodel = viewmodel
+        if self.selection_manager is not viewmodel.selection_manager:
+            if self.selection_manager is not None:
+                self.selection_manager.unsubscribe(self._on_runtime_selection_changed)
+            self.selection_manager = viewmodel.selection_manager
+            self.selection_manager.subscribe(self._on_runtime_selection_changed)
 
         # Cria a cena 2D inicial
         from editor_legacy.editor_2d import Editor2DScene
@@ -115,16 +121,42 @@ class ViewportWidget(QOpenGLWidget):
         for obj in self.active_scene.editable_objects:
             model.add_object(obj)
 
-        # Sincroniza seleção
-        idx = getattr(self.active_scene, "selected_index", -1)
-        objs = self.active_scene.editable_objects
-        if 0 <= idx < len(objs):
-            self.viewmodel.selected_object = objs[idx]
-        else:
-            self.viewmodel.selected_object = None
+        self.sync_selection_from_scene()
 
         # Notifica Outliner e Inspector via sinal de hierarquia
         self.viewmodel.on_model_hierarchy_changed()
+
+    def _selected_from_scene(self):
+        """Le a selecao da cena legada enquanto ela ainda usa selected_index."""
+        if not self.active_scene:
+            return None
+        objs = getattr(self.active_scene, "editable_objects", [])
+        idx = getattr(self.active_scene, "selected_index", -1)
+        return objs[idx] if 0 <= idx < len(objs) else None
+
+    def selected_object(self):
+        """Retorna o objeto selecionado pelo SelectionManager."""
+        if self.selection_manager is not None:
+            return self.selection_manager.selected
+        if self.viewmodel is not None:
+            return self.viewmodel.selected_object
+        return None
+
+    def select_object(self, obj) -> None:
+        """Seleciona um objeto via Editor Runtime."""
+        if self.selection_manager is not None:
+            self.selection_manager.set_selected(obj)
+        elif self.viewmodel is not None:
+            self.viewmodel.selected_object = obj
+        else:
+            self._on_runtime_selection_changed(obj)
+
+    def clear_selection(self) -> None:
+        self.select_object(None)
+
+    def sync_selection_from_scene(self) -> None:
+        """Sincroniza a selecao da cena legada com o SelectionManager."""
+        self.select_object(self._selected_from_scene())
 
     def create_object(self, shape_type: str) -> None:
         """
@@ -165,7 +197,7 @@ class ViewportWidget(QOpenGLWidget):
 
         # Salva objetos e seleção atuais
         objs = list(self.active_scene.editable_objects)
-        sel_obj = self.viewmodel.selected_object if self.viewmodel else None
+        sel_obj = self.selected_object()
 
         self.editor_mode = mode
 
@@ -351,7 +383,7 @@ class ViewportWidget(QOpenGLWidget):
         """Tecla F — centraliza câmera no objeto selecionado."""
         if not self.active_scene or not self.viewmodel:
             return
-        obj = self.viewmodel.selected_object
+        obj = self.selected_object()
         if not obj:
             return
 
@@ -406,21 +438,19 @@ class ViewportWidget(QOpenGLWidget):
         if self.active_scene:
             self.active_scene.update(dt)
 
-            # Sincroniza seleção da cena → ViewModel enquanto arrasta
+            # Sincroniza seleção da cena legada → SelectionManager enquanto arrasta
             self._sync_selection_to_model()
 
         self.update()
 
     def _sync_selection_to_model(self) -> None:
-        """Propaga a mudança de selected_index da cena para o ViewModel."""
-        if not self.viewmodel or not self.active_scene:
+        """Propaga a mudança de selected_index da cena legada para o runtime."""
+        if not self.active_scene:
             return
-        idx  = getattr(self.active_scene, "selected_index", -1)
-        objs = getattr(self.active_scene, "editable_objects", [])
-        sel  = objs[idx] if 0 <= idx < len(objs) else None
+        sel = self._selected_from_scene()
 
-        if sel != self.viewmodel._selected_object:
-            self.viewmodel.selected_object = sel
+        if sel is not self.selected_object():
+            self.select_object(sel)
 
     # ──────────────────────────────────────────────────────────────────────────
     # Handlers de Eventos do EventBus
@@ -435,8 +465,8 @@ class ViewportWidget(QOpenGLWidget):
         elif state in ("stop", "pause") and self.active_scene.playing:
             self.active_scene.toggle_play()
 
-    def _on_selection_changed(self, obj) -> None:
-        """Propaga seleção vinda do Outliner → cena ativa."""
+    def _on_runtime_selection_changed(self, obj) -> None:
+        """Propaga seleção do runtime para a cena legada."""
         if not self.active_scene:
             return
         objs = getattr(self.active_scene, "editable_objects", [])
@@ -444,6 +474,7 @@ class ViewportWidget(QOpenGLWidget):
             self.active_scene.selected_index = objs.index(obj)
         else:
             self.active_scene.selected_index = -1
+        self.update()
 
     def _on_property_changed(self, component_name: str, property_name: str, value) -> None:
         if component_name != "Editor":
