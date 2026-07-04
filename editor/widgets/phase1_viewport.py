@@ -144,14 +144,21 @@ class Phase1ViewportWidget(ViewportWidget):
         """Atualiza a câmera a partir da engine se modificada externamente (ex. testes)."""
         from engine.graphics.camera2d import Camera2D
         if Camera2D.main is not None:
-            # Sincroniza de volta se não estiver sob controle manual ativo
-            if self.camera.zoom_anchor is None and not self._panning:
-                if not math.isclose(self.camera.zoom, Camera2D.main.zoom, abs_tol=1e-3):
-                    self.camera.zoom = Camera2D.main.zoom
-                    self.camera.target_zoom = Camera2D.main.zoom
-                if not np.allclose(self.camera.position[:2], Camera2D.main.transform.position[:2], atol=1e-3):
-                    self.camera.position[0] = Camera2D.main.transform.position[0]
-                    self.camera.position[1] = Camera2D.main.transform.position[1]
+            if self._is_playing():
+                # Em modo de jogo, copia passivamente sem restrições
+                self.camera.zoom = Camera2D.main.zoom
+                self.camera.target_zoom = Camera2D.main.zoom
+                self.camera.position[0] = Camera2D.main.transform.position[0]
+                self.camera.position[1] = Camera2D.main.transform.position[1]
+            else:
+                # Sincroniza de volta se não estiver sob controle manual ativo
+                if self.camera.zoom_anchor is None and not self._panning:
+                    if not math.isclose(self.camera.zoom, Camera2D.main.zoom, abs_tol=1e-3):
+                        self.camera.zoom = Camera2D.main.zoom
+                        self.camera.target_zoom = Camera2D.main.zoom
+                    if not np.allclose(self.camera.position[:2], Camera2D.main.transform.position[:2], atol=1e-3):
+                        self.camera.position[0] = Camera2D.main.transform.position[0]
+                        self.camera.position[1] = Camera2D.main.transform.position[1]
 
     # ── Seleção e Hover ───────────────────────────────────────────────────────
 
@@ -463,11 +470,12 @@ class Phase1ViewportWidget(ViewportWidget):
         # Sincroniza modificações externas do Camera2D.main
         self.sync_camera_from_engine()
 
-        # Atualiza a interpolação do zoom suave
+        # Atualiza a interpolação do zoom suave apenas se não estiver em modo de jogo
         now = time.time()
         dt = min(now - self._last_render_time, 0.1)
         self._last_render_time = now
-        self.camera.update(dt)
+        if not self._is_playing():
+            self.camera.update(dt)
 
         # Injeta o grid_renderer na cena ativa para que seja desenhado por baixo
         if self.active_scene is not None and getattr(self.active_scene, "grid_renderer", None) is None:
