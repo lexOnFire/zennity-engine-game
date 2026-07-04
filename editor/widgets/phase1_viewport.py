@@ -477,20 +477,23 @@ class Phase1ViewportWidget(ViewportWidget):
         if not self._is_playing():
             self.camera.update(dt)
 
-        # Garante que o grid clássico do Pygame esteja desativado para evitar sobreposição
+        # Salva o estado real do grid e desativa temporariamente para o blit do Pygame
+        real_show_grid = True
         if self.active_scene is not None:
+            real_show_grid = getattr(self.active_scene, "show_grid", True)
             self.active_scene.show_grid = False
 
         # Chama a renderização base (blit da superfície do pygame com os objetos)
         super().paintGL()
 
+        # Restaura o estado real do grid na cena
+        if self.active_scene is not None:
+            self.active_scene.show_grid = real_show_grid
+
         painter = QPainter(self)
         
         # 1. Renderiza o Grid infinito usando QPainter por cima do fundo do Pygame
-        show_grid = True
-        if self.editor_state is not None:
-            show_grid = getattr(self.active_scene, "show_grid", True)
-        self.renderer.render_grid(painter, self.camera, show_grid)
+        self.renderer.render_grid(painter, self.camera, real_show_grid)
 
         # 2. Renderiza overlays Qt usando QPainter (Outlines, HUD, Bounding box, coordenadas)
         selected = self._selected_transform_object()
