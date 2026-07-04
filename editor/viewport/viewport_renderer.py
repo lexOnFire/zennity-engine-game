@@ -2,13 +2,12 @@
 editor/viewport/viewport_renderer.py
 ─────────────────────────────────────────────────────────────────────────────
 Orquestrador de renderização (ViewportRenderer) coordenando a exibição de grid,
-outlines, bounding boxes e HUD overlays.
+outlines, bounding boxes e HUD overlays usando QPainter.
 """
 from __future__ import annotations
 
 import time
 from typing import Any
-import pygame
 from PySide6.QtGui import QPainter
 
 from editor.viewport.grid_renderer import GridRenderer
@@ -21,9 +20,7 @@ from editor.viewport.viewport_camera import ViewportCamera
 class ViewportRenderer:
     """Orquestra e gerencia o pipeline de renderização visual da viewport.
 
-    Separa o desenho em duas etapas:
-      1. Grid infinito: desenhado diretamente na superfície Pygame (atrás).
-      2. Componentes Qt (Outlines, HUD, Bounding Box): desenhados via QPainter (frente).
+    Desenha todos os overlays da viewport (incluindo o grid infinito) utilizando QPainter.
     """
 
     def __init__(self) -> None:
@@ -48,16 +45,17 @@ class ViewportRenderer:
             self._fps_value += (current_fps - self._fps_value) * 0.1
         return self._fps_value
 
-    def render_pygame_grid(
-        self,
-        screen: pygame.Surface,
-        camera: ViewportCamera,
-        lay: dict,
-        show_grid: bool,
-    ) -> None:
-        """Desenha a grade de fundo na superfície Pygame (atrás dos objetos)."""
+    def render_grid(self, painter: QPainter, camera: ViewportCamera, show_grid: bool) -> None:
+        """Desenha a grade de fundo na Viewport utilizando QPainter (alinhado aos eixos)."""
         if show_grid:
-            self.grid_renderer.draw_pygame(screen, camera.zoom, camera.position, lay)
+            self.grid_renderer.draw(
+                painter=painter,
+                vp_w=camera.vp_w,
+                vp_h=camera.vp_h,
+                zoom=camera.zoom,
+                camera_pos=camera.position,
+                world_to_viewport=camera.world_to_viewport,
+            )
 
     def render_qt_overlays(
         self,

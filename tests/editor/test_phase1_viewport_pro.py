@@ -150,18 +150,18 @@ def test_grid_renderer_opacity_fading() -> None:
     """Verifica se o GridRenderer oculta ou atenua linhas conforme o zoom."""
     grid = GridRenderer()
     
-    # Mock de superfície Pygame
-    surf = pygame.Surface((800, 600), pygame.SRCALPHA)
-    lay = {"vp_w": 800, "vp_h": 600, "vp_left": 0, "vp_top": 0}
+    class DummyPainter(QPainter):
+        def drawLine(self, *args):
+            pass
+
+    painter = DummyPainter()
     cam_pos = np.zeros(3)
 
-    # Zoom extremamente baixo (0.1x) -> espaçamento 32 * 0.1 = 3.2px (fada a zero)
-    # Não deve desenhar o grid secundário para evitar poluição visual
-    grid.draw_pygame(surf, 0.1, cam_pos, lay)
-    # Apenas certifica que não causa erro de execução
+    # Zoom extremamente baixo (0.1x) -> espaçamento 3.2px (fada a zero secundário)
+    grid.draw(painter, 800, 600, 0.1, cam_pos, lambda pt: (pt[0], pt[1]))
     
-    # Zoom alto (2.0x) -> espaçamento 64px, grid secundário visível
-    grid.draw_pygame(surf, 2.0, cam_pos, lay)
+    # Zoom alto (2.0x) -> espaçamento 64px, secundário visível
+    grid.draw(painter, 800, 600, 2.0, cam_pos, lambda pt: (pt[0], pt[1]))
 
 
 # ── Teste da Viewport API ─────────────────────────────────────────────────────

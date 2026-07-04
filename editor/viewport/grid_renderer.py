@@ -1,71 +1,66 @@
 """
 editor/viewport/grid_renderer.py
 ─────────────────────────────────────────────────────────────────────────────
-Renderizador de Grid Infinito baseado em Pygame.
-Desenha grids principal e secundário, com fade inteligente conforme o nível de zoom.
+Renderizador de Grid Infinito usando QPainter.
+Desenha grids principal e secundário, com a origem (0,0) destacada.
 """
 from __future__ import annotations
 
 import math
-import numpy as np
-import pygame
+from typing import Any, Callable
+from PySide6.QtCore import QPointF, Qt
+from PySide6.QtGui import QColor, QPainter, QPen
 
 
 class GridRenderer:
-    """Renderizador do Grid Infinito da Viewport.
-
-    Garante que as linhas do grid acompanhem o deslocamento da câmera e sejam
-    redimensionadas de forma limpa. Desativa linhas finas automaticamente se estiver
-    muito distante (zoom out) para evitar poluição visual (Moire effect).
-    """
+    """Renderizador do Grid Infinito da Viewport usando QPainter."""
 
     def __init__(self) -> None:
         self.grid_size: int = 32
-        self.axis_color = (110, 115, 130, 200)
+        self.axis_color = QColor(140, 150, 170, 220)       # Origem destacada (0,0)
+        self.primary_color = QColor(80, 85, 100, 160)       # Múltiplos de 5
+        self.secondary_color = QColor(60, 62, 74, 80)       # Grade secundária
 
-    def draw_pygame(
+    def draw(
         self,
-        screen: pygame.Surface,
+        painter: QPainter,
+        vp_w: int,
+        vp_h: int,
         zoom: float,
-        camera_pos: np.ndarray,
-        lay: dict,
+        camera_pos: Any,
+        world_to_viewport: Callable[[tuple[float, float] | Any], tuple[float, float]],
     ) -> None:
-        """Desenha o grid infinito em uma superfície Pygame.
+        """Desenha o grid infinito alinhado à câmera usando QPainter.
 
-        Args:
-            screen: Superfície Pygame alvo.
-            zoom: Nível de zoom atual da câmera.
-            camera_pos: Posição [x, y, z] atual da câmera no mundo.
-            lay: Dicionário com layout da viewport (vp_w, vp_h, vp_left, vp_top).
+        Garante que eixos X/Y principais e secundários acompanhem o pan/zoom.
         """
-        vp_w = lay["vp_w"]
-        vp_h = lay["vp_h"]
-        vp_left = lay["vp_left"]
-        vp_top = lay["vp_top"]
+        # Limites visíveis no mundo
+        # Como world_to_viewport(world) = (world - cam) * zoom + center
+        # world = (screen - center) / zoom + cam
+        left_w = (0.0 - vp_w / 2.0) / zoom + camera_pos[0]
+        right_w = (vp_w - vp_w / 2.0) / zoom + camera_pos[0]
+        top_w = (0.0 - vp_h / 2.0) / zoom + camera_pos[1]
+        bottom_w = (vp_h - vp_h / 2.0) / zoom + camera_pos[1]
 
-        # Espaçamento do grid secundário em pixels de tela
+        # Espaçamento do grid secundário em tela
         spacing_px = self.grid_size * zoom
-
-        # Fator de atenuação (fade) para o grid secundário (fina)
-        # Some se for menor que 8px, totalmente visível se for maior que 20px
+        # Fade das linhas secundárias (menor que 8px -> some, maior que 20px -> opacidade máxima)
         alpha_sec = max(0.0, min(1.0, (spacing_px - 8.0) / 12.0))
 
-        # Espaçamento do grid principal (grossa, múltiplos de 5)
+        # Espaçamento do grid principal em tela
         prim_spacing_px = spacing_px * 5
         alpha_prim = max(0.2, min(1.0, (prim_spacing_px - 8.0) / 12.0))
 
-        # Mapeamento reverso para achar os limites do mundo visíveis
-        left_w = (vp_left - vp_w / 2.0) / zoom + camera_pos[0]
-        right_w = (vp_left + vp_w - vp_w / 2.0) / zoom + camera_pos[0]
-        top_w = (vp_top - vp_h / 2.0) / zoom + camera_pos[1]
-        bottom_w = (vp_top + vp_h - vp_h / 2.0) / zoom + camera_pos[1]
+        painter.save()
+        # Não usaremos antialiasing para linhas retas horizontais/verticais (deixa mais limpo/nítido)
+        painter.setRenderHint(QPainter.Antialiasing, False)
 
-        # Superfície de desenho intermediária com suporte a canal alfa
-        grid_surf = pygame.Surface((vp_w, vp_h), pygame.SRCALPHA)
-
-        # ── 1. Desenho do Grid Secundário (Espaçamento de 1x grid_size) ───────
+        # ── 1. Grid Secundário (múltiplos normais de grid_size) ────────────────
         if alpha_sec > 0.0:
-            col_sec = (60, 62, 74, int(50 * alpha_sec))
+            col = QColor(self.secondary_color)
+            col.setAlpha(int(self.secondary_color.alpha() * alpha_sec))
+            pen = QPen(col, 1, Qt.SolidLine)
+            painter.setPen(pen)
 
             # Linhas Verticais
             start_x = math.floor(left_w / self.grid_size) * self.grid_size
@@ -73,9 +68,9 @@ class GridRenderer:
             while curr_x <= right_w:
                 is_primary = abs(curr_x % (self.grid_size * 5)) < 0.1
                 if not is_primary:
-                    sx = int((curr_x - camera_pos[0]) * zoom + vp_w / 2.0)
+                    sx, _ = world_to_viewport((curr_x, 0.0))
                     if 0 <= sx < vp_w:
-                        pygame.draw.line(grid_surf, col_sec, (sx, 0), (sx, vp_h))
+                        painter.drawLine(QPointF(sx, 0.0), QPointF(sx, vp_h))
                 curr_x += self.grid_size
 
             # Linhas Horizontais
@@ -84,40 +79,47 @@ class GridRenderer:
             while curr_y <= bottom_w:
                 is_primary = abs(curr_y % (self.grid_size * 5)) < 0.1
                 if not is_primary:
-                    sy = int((curr_y - camera_pos[1]) * zoom + vp_h / 2.0)
+                    _, sy = world_to_viewport((0.0, curr_y))
                     if 0 <= sy < vp_h:
-                        pygame.draw.line(grid_surf, col_sec, (0, sy), (vp_w, sy))
+                        painter.drawLine(QPointF(0.0, sy), QPointF(vp_w, sy))
                 curr_y += self.grid_size
 
-        # ── 2. Desenho do Grid Principal (Espaçamento de 5x grid_size) ────────
+        # ── 2. Grid Principal (múltiplos de 5x grid_size) + Eixos (0,0) ───────
         if alpha_prim > 0.0:
-            col_prim = (80, 85, 100, int(110 * alpha_prim))
-
-            # Linhas Verticais
+            col_p = QColor(self.primary_color)
+            col_p.setAlpha(int(self.primary_color.alpha() * alpha_prim))
+            
             step_x = self.grid_size * 5
+            
+            # Linhas Verticais Principais
             start_x = math.floor(left_w / step_x) * step_x
             curr_x = start_x
             while curr_x <= right_w:
-                sx = int((curr_x - camera_pos[0]) * zoom + vp_w / 2.0)
+                sx, _ = world_to_viewport((curr_x, 0.0))
                 if 0 <= sx < vp_w:
                     is_axis = abs(curr_x) < 0.1
-                    line_col = self.axis_color if is_axis else col_prim
-                    width = 2 if is_axis else 1
-                    pygame.draw.line(grid_surf, line_col, (sx, 0), (sx, vp_h), width)
+                    if is_axis:
+                        # Destaca o eixo Y central (onde X = 0)
+                        painter.setPen(QPen(self.axis_color, 2, Qt.SolidLine))
+                    else:
+                        painter.setPen(QPen(col_p, 1, Qt.SolidLine))
+                    painter.drawLine(QPointF(sx, 0.0), QPointF(sx, vp_h))
                 curr_x += step_x
 
-            # Linhas Horizontais
+            # Linhas Horizontais Principais
             step_y = self.grid_size * 5
             start_y = math.floor(top_w / step_y) * step_y
             curr_y = start_y
             while curr_y <= bottom_w:
-                sy = int((curr_y - camera_pos[1]) * zoom + vp_h / 2.0)
+                _, sy = world_to_viewport((0.0, curr_y))
                 if 0 <= sy < vp_h:
                     is_axis = abs(curr_y) < 0.1
-                    line_col = self.axis_color if is_axis else col_prim
-                    width = 2 if is_axis else 1
-                    pygame.draw.line(grid_surf, line_col, (0, sy), (vp_w, sy), width)
+                    if is_axis:
+                        # Destaca o eixo X central (onde Y = 0)
+                        painter.setPen(QPen(self.axis_color, 2, Qt.SolidLine))
+                    else:
+                        painter.setPen(QPen(col_p, 1, Qt.SolidLine))
+                    painter.drawLine(QPointF(0.0, sy), QPointF(vp_w, sy))
                 curr_y += step_y
 
-        # Blita a grade na superfície principal da viewport
-        screen.blit(grid_surf, (vp_left, vp_top))
+        painter.restore()

@@ -477,23 +477,28 @@ class Phase1ViewportWidget(ViewportWidget):
         if not self._is_playing():
             self.camera.update(dt)
 
-        # Injeta o grid_renderer na cena ativa para que seja desenhado por baixo
-        if self.active_scene is not None and getattr(self.active_scene, "grid_renderer", None) is None:
-            self.active_scene.grid_renderer = self.renderer.grid_renderer
+        # Garante que o grid clássico do Pygame esteja desativado para evitar sobreposição
+        if self.active_scene is not None:
+            self.active_scene.show_grid = False
 
         # Chama a renderização base (blit da superfície do pygame com os objetos)
         super().paintGL()
 
-        # Renderiza overlays Qt usando QPainter (Outlines, HUD, Bounding box, coordenadas)
         painter = QPainter(self)
         
+        # 1. Renderiza o Grid infinito usando QPainter por cima do fundo do Pygame
+        show_grid = True
+        if self.editor_state is not None:
+            show_grid = getattr(self.active_scene, "show_grid", True)
+        self.renderer.render_grid(painter, self.camera, show_grid)
+
+        # 2. Renderiza overlays Qt usando QPainter (Outlines, HUD, Bounding box, coordenadas)
         selected = self._selected_transform_object()
         active_tool = self._active_tool()
         object_count = len(self.active_scene.editable_objects) if self.active_scene else 0
         grid_size = self.renderer.grid_renderer.grid_size
         snap_on = self._snap_enabled()
 
-        # Renderiza HUD, coordenadas e outline/bounding box
         self.renderer.render_qt_overlays(
             painter=painter,
             camera=self.camera,
