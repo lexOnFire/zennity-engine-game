@@ -464,3 +464,139 @@ def test_phase1_world_to_viewport_uses_scene_camera_transform(
     )
     assert phase1_editor.viewport.viewport_to_world((sx, sy))[0] == pytest.approx(float(selected.transform.position[0]))
     assert phase1_editor.viewport.viewport_to_world((sx, sy))[1] == pytest.approx(float(selected.transform.position[1]))
+
+
+# ── Testes de estabilizacao Fase 1.2 ─────────────────────────────────────────
+
+
+def test_phase1_viewport_has_command_manager_injected(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    """A viewport deve receber o CommandManager do EditorContext."""
+    assert phase1_editor.viewport.command_manager is phase1_editor.editor_context.commands
+
+
+def test_phase1_move_tool_registers_undo_command(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    """Apos drag completo, CommandManager deve ter um comando de undo."""
+    selected = phase1_editor.scene_objects()[1]
+    phase1_editor.select_object(selected)
+    phase1_editor.editor_context.tools.set_active_tool(EditorTool.MOVE)
+    phase1_editor.editor_context.commands.clear()
+
+    start = phase1_editor.viewport.world_to_viewport(selected.transform.position)
+    phase1_editor.viewport._begin_move_drag(selected, start[0], start[1])
+    phase1_editor.viewport._update_move_drag(start[0] + 64.0, start[1])
+    phase1_editor.viewport._end_move_drag()
+
+    assert phase1_editor.editor_context.commands.can_undo
+
+
+def test_phase1_move_tool_undo_restores_position(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    """Ctrl+Z apos move deve restaurar a posicao original do objeto."""
+    selected = phase1_editor.scene_objects()[1]
+    original_x = float(selected.transform.position[0])
+    phase1_editor.select_object(selected)
+    phase1_editor.editor_context.tools.set_active_tool(EditorTool.MOVE)
+    phase1_editor.editor_context.commands.clear()
+
+    start = phase1_editor.viewport.world_to_viewport(selected.transform.position)
+    phase1_editor.viewport._begin_move_drag(selected, start[0], start[1])
+    phase1_editor.viewport._update_move_drag(start[0] + 64.0, start[1])
+    phase1_editor.viewport._end_move_drag()
+
+    assert float(selected.transform.position[0]) == pytest.approx(original_x + 64.0)
+
+    phase1_editor.editor_context.commands.undo()
+
+    assert float(selected.transform.position[0]) == pytest.approx(original_x)
+
+
+def test_phase1_move_tool_redo_reapplies_position(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    """Ctrl+Y apos undo deve reaplicar o move."""
+    selected = phase1_editor.scene_objects()[1]
+    original_x = float(selected.transform.position[0])
+    phase1_editor.select_object(selected)
+    phase1_editor.editor_context.tools.set_active_tool(EditorTool.MOVE)
+    phase1_editor.editor_context.commands.clear()
+
+    start = phase1_editor.viewport.world_to_viewport(selected.transform.position)
+    phase1_editor.viewport._begin_move_drag(selected, start[0], start[1])
+    phase1_editor.viewport._update_move_drag(start[0] + 48.0, start[1])
+    phase1_editor.viewport._end_move_drag()
+
+    phase1_editor.editor_context.commands.undo()
+    assert float(selected.transform.position[0]) == pytest.approx(original_x)
+
+    phase1_editor.editor_context.commands.redo()
+    assert float(selected.transform.position[0]) == pytest.approx(original_x + 48.0)
+
+
+def test_phase1_move_tool_no_command_when_no_movement(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    """Drag sem movimento real nao deve registrar comando no historico."""
+    selected = phase1_editor.scene_objects()[1]
+    phase1_editor.select_object(selected)
+    phase1_editor.editor_context.tools.set_active_tool(EditorTool.MOVE)
+    phase1_editor.editor_context.commands.clear()
+
+    start = phase1_editor.viewport.world_to_viewport(selected.transform.position)
+    phase1_editor.viewport._begin_move_drag(selected, start[0], start[1])
+    # Solta sem mover
+    phase1_editor.viewport._end_move_drag()
+
+    assert not phase1_editor.editor_context.commands.can_undo
+
+
+def test_phase1_snap_applied_over_absolute_position(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    """Snap deve ser calculado sobre posicao absoluta, nao sobre delta.
+
+    Se o objeto esta em (101, 99) e arrastamos apenas 1 pixel (delta minimo),
+    com snap=16 o resultado deve ser (112, 96) — nao (102, 100).
+    """
+    selected = phase1_editor.scene_objects()[1]
+    selected.transform.position[0] = 101.0
+    selected.transform.position[1] = 99.0
+    phase1_editor.select_object(selected)
+    phase1_editor.editor_context.state.snap_enabled = True
+    phase1_editor.editor_context.state.snap_size = 16
+    phase1_editor.editor_context.tools.set_active_tool(EditorTool.MOVE)
+    start = phase1_editor.viewport.world_to_viewport(selected.transform.position)
+
+    phase1_editor.viewport._begin_move_drag(selected, start[0], start[1])
+    # Delta minimo de 1 pixel em viewport — mas o snap deve agir na posicao absoluta
+    phase1_editor.viewport._update_move_drag(start[0] + 1.0, start[1] + 1.0)
+
+    # Com snap=16: round(102/16)*16 = 96, round(100/16)*16 = 96
+    # (resultado depende do zoom da camara, mas deve ser multiplo de 16)
+    x = float(selected.transform.position[0])
+    y = float(selected.transform.position[1])
+    assert x % 16.0 == pytest.approx(0.0, abs=0.01), f"X={x} nao e multiplo de 16"
+    assert y % 16.0 == pytest.approx(0.0, abs=0.01), f"Y={y} nao e multiplo de 16"
+
+
+def test_phase1_snap_disabled_delta_zero_preserves_position(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    """Com snap desabilitado, drag sem mover deve manter posicao exata."""
+    selected = phase1_editor.scene_objects()[1]
+    selected.transform.position[0] = 101.0
+    selected.transform.position[1] = 99.0
+    phase1_editor.select_object(selected)
+    phase1_editor.editor_context.state.snap_enabled = False
+    phase1_editor.editor_context.tools.set_active_tool(EditorTool.MOVE)
+    start = phase1_editor.viewport.world_to_viewport(selected.transform.position)
+
+    phase1_editor.viewport._begin_move_drag(selected, start[0], start[1])
+    phase1_editor.viewport._update_move_drag(start[0], start[1])
+
+    assert float(selected.transform.position[0]) == pytest.approx(101.0)
+    assert float(selected.transform.position[1]) == pytest.approx(99.0)

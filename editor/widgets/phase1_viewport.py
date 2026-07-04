@@ -9,6 +9,7 @@ from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtGui import QMouseEvent
 
 from editor.gizmos.qt_gizmo_overlay import QtMoveGizmoOverlay
+from editor.runtime.command_manager import CommandManager, FunctionCommand
 from editor.runtime.editor_state import EditorState
 from editor.runtime.tool_manager import EditorTool, ToolManager
 from editor.widgets.viewport_widget import ViewportWidget
@@ -29,6 +30,7 @@ class Phase1ViewportWidget(ViewportWidget):
         self.move_gizmo_overlay = QtMoveGizmoOverlay()
         self.tool_manager: ToolManager | None = None
         self.editor_state: EditorState | None = None
+        self.command_manager: CommandManager | None = None
         self._move_drag_object: Any = None
         self._move_start_world = np.zeros(3, dtype=np.float32)
         self._move_start_position = np.zeros(3, dtype=np.float32)
@@ -38,6 +40,10 @@ class Phase1ViewportWidget(ViewportWidget):
 
     def set_editor_state(self, editor_state: EditorState) -> None:
         self.editor_state = editor_state
+
+    def set_command_manager(self, command_manager: CommandManager) -> None:
+        """Injeta o CommandManager para registrar undo/redo de operacoes de editor."""
+        self.command_manager = command_manager
 
     def _active_tool(self) -> EditorTool:
         if self.tool_manager is None:
@@ -115,14 +121,41 @@ class Phase1ViewportWidget(ViewportWidget):
         world = self.viewport_to_world((x, y))
         delta = world - self._move_start_world
         next_position = self._move_start_position + delta
-        if not np.allclose(delta[:2], 0.0):
-            next_position = self._apply_snap(next_position)
+        # Snap é aplicado sobre a posição absoluta, não sobre o delta.
+        # Não condicionar ao delta — snap com delta zero ainda pode corrigir
+        # uma posição que está fora da grade.
+        next_position = self._apply_snap(next_position)
         obj.transform.position[0] = next_position[0]
         obj.transform.position[1] = next_position[1]
         self.object_transform_changed.emit(obj)
         self.update()
 
     def _end_move_drag(self) -> None:
+        """Finaliza o drag e registra um Command reversiível no CommandManager."""
+        obj = self._move_drag_object
+        if obj is not None and hasattr(obj, "transform"):
+            final_position = obj.transform.position.copy()
+            start_position = self._move_start_position.copy()
+            # Só registra undo se houve movimento real
+            moved = not np.allclose(final_position[:2], start_position[:2])
+            if moved and self.command_manager is not None:
+                def _do(p=final_position, o=obj) -> None:
+                    o.transform.position[0] = p[0]
+                    o.transform.position[1] = p[1]
+                    self.object_transform_changed.emit(o)
+
+                def _undo(p=start_position, o=obj) -> None:
+                    o.transform.position[0] = p[0]
+                    o.transform.position[1] = p[1]
+                    self.object_transform_changed.emit(o)
+
+                self.command_manager.execute(
+                    FunctionCommand(
+                        description=f"Move {getattr(obj, 'name', 'object')}",
+                        do=_do,
+                        undo_action=_undo,
+                    )
+                )
         self._move_drag_object = None
         self._update_hover_cursor(*self._qt_mouse_pos)
 
