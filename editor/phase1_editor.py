@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import Any
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QSplitter
+from PySide6.QtGui import QAction, QActionGroup
+from PySide6.QtWidgets import QComboBox, QSplitter, QToolBar, QToolButton, QWidget
 
 from editor.premium_editor import (
     ConsolePanel,
@@ -13,10 +14,9 @@ from editor.premium_editor import (
     ZennityPremiumEditor,
 )
 from editor.premium_panels import RealHierarchyPanel, RealInspectorPanel
-from editor.selection_runtime import install_viewport_selection_api
+from editor.runtime.editor_context import EditorContext
+from editor.runtime.tool_manager import EditorTool
 from editor.widgets.phase1_viewport import Phase1ViewportWidget
-
-install_viewport_selection_api()
 
 
 class ZennityPhase1Editor(ZennityPremiumEditor):
@@ -28,6 +28,57 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
     - Criar objeto sincroniza Viewport, Hierarchy e Inspector.
     - Selecionar na Hierarchy seleciona o objeto real na cena.
     """
+
+    def __init__(self) -> None:
+        self.editor_context = EditorContext()
+        self._tool_actions: dict[EditorTool, QAction] = {}
+        super().__init__()
+        self.editor_context.tools.subscribe(self._on_runtime_tool_changed)
+
+    def _build_toolbar(self) -> None:
+        toolbar = QToolBar("MainToolBar")
+        toolbar.setObjectName("CommandBar")
+        toolbar.setMovable(False)
+        self.addToolBar(toolbar)
+
+        for text in ["Open", "Save", "Undo", "Redo"]:
+            toolbar.addWidget(QToolButton(text=text))
+
+        spacer = QWidget()
+        spacer.setMinimumWidth(180)
+        toolbar.addWidget(spacer)
+
+        self._build_tool_buttons(toolbar)
+
+        self.btn_play = QToolButton()
+        self.btn_play.setText("Play")
+        self.btn_play.clicked.connect(self.play)
+        toolbar.addWidget(self.btn_play)
+
+        btn_stop = QToolButton()
+        btn_stop.setText("Stop")
+        btn_stop.clicked.connect(self.stop)
+        toolbar.addWidget(btn_stop)
+        toolbar.addWidget(QComboBox())
+
+    def _build_tool_buttons(self, toolbar: QToolBar) -> None:
+        group = QActionGroup(self)
+        group.setExclusive(True)
+
+        for label, tool in (
+            ("Select", EditorTool.SELECT),
+            ("Move", EditorTool.MOVE),
+            ("Rotate", EditorTool.ROTATE),
+            ("Scale", EditorTool.SCALE),
+        ):
+            action = QAction(label, self, checkable=True)
+            action.setChecked(tool == self.editor_context.tools.active_tool)
+            action.triggered.connect(lambda checked=False, next_tool=tool: self.editor_context.tools.set_active_tool(next_tool))
+            group.addAction(action)
+            toolbar.addAction(action)
+            self._tool_actions[tool] = action
+
+        self.tool_action_group = group
 
     def _build_layout(self) -> None:
         self.hierarchy = RealHierarchyPanel()
@@ -72,6 +123,13 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.create_panel.create_requested.connect(self.create_object)
         self.scene_view_model.selection_changed.connect(self.on_viewport_selection_changed)
 
+    def _on_runtime_tool_changed(self, tool: EditorTool) -> None:
+        action = self._tool_actions.get(tool)
+        if action is not None and not action.isChecked():
+            action.setChecked(True)
+        if hasattr(self, "status_msg"):
+            self.status_msg.setText(f"Ferramenta ativa: {tool.value.title()}")
+
     def scene_objects(self) -> list[Any]:
         scene = getattr(self.viewport, "active_scene", None)
         if scene is None:
@@ -86,8 +144,8 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             self.stats.setText(f"FPS: 60 | Memoria: 512 MB | Objetos: {self.object_count}")
 
     def select_object(self, obj: Any) -> None:
-        self.viewport.select_object(obj)
-        selected = self.viewport.selected_object()
+        self.editor_context.selection.set_selected(obj)
+        selected = self.editor_context.selection.selected
         self.inspector.load_object(selected)
         self.hierarchy.select_object(selected)
 

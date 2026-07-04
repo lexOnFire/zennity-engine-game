@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
 )
 
 from editor.models.scene_model import SceneModel
+from editor.runtime.editor_context import EditorContext
 from editor.viewmodels.scene_viewmodel import SceneViewModel
 from editor.widgets.viewport_widget import ViewportWidget
 
@@ -180,8 +181,13 @@ class ZennityPremiumEditor(QMainWindow):
         self.setWindowTitle("Zennity Engine Editor - Premium")
         self.resize(1440, 900)
         self.object_count = 0
+        if not hasattr(self, "editor_context"):
+            self.editor_context = EditorContext()
         self.scene_model = SceneModel()
-        self.scene_view_model = SceneViewModel(self.scene_model)
+        self.scene_view_model = SceneViewModel(
+            self.scene_model,
+            selection_manager=self.editor_context.selection,
+        )
         self._build_menu()
         self._build_toolbar()
         self._build_layout()
