@@ -90,10 +90,10 @@ def hit_test_handle(
 
 
 class BoundingBoxRenderer:
-    """Desenha a caixa limite e 8 pontos de ancoragem sobre o objeto selecionado.
+    """Desenha a caixa limite e, opcionalmente, os 8 handles de escala.
 
-    Essa caixa representa os limites de colisão/transformação do objeto, rotacionando
-    em sincronia e preparando o suporte para a futura Scale Tool.
+    A caixa pode aparecer para Select, Move e Rotate, mas os handles devem ser
+    exibidos somente quando a Scale Tool estiver ativa.
     """
 
     def __init__(
@@ -111,8 +111,10 @@ class BoundingBoxRenderer:
         painter: QPainter,
         selected: Any,
         world_to_viewport: Callable[[Any], tuple[float, float]],
+        *,
+        show_handles: bool = True,
     ) -> None:
-        """Renderiza a linha limite (tracejada) e as 8 alças quadradas."""
+        """Renderiza a linha limite e, quando solicitado, as 8 alças quadradas."""
         if selected is None or not hasattr(selected, "transform"):
             return
         pos = getattr(selected.transform, "position", None)
@@ -143,6 +145,10 @@ class BoundingBoxRenderer:
 
         # Bounding box rente à escala visual
         painter.drawRect(QRectF(-sw / 2.0, -sh / 2.0, sw, sh))
+
+        if not show_handles:
+            painter.restore()
+            return
 
         # ── 2. Plota os 8 Pontos de Controle (Alças Quadradas) ────────────────
         painter.setPen(QPen(self.handle_color.darker(120), 1))
