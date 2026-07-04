@@ -228,6 +228,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.resources.asset_selected.connect(self.preview.load_asset)
         self.prefabs.asset_selected.connect(self.preview.load_asset)
         self.scene_view_model.selection_changed.connect(self.on_viewport_selection_changed)
+        self.scene_view_model.hierarchy_updated.connect(self.refresh_hierarchy_from_viewport)
         self.scene_view_model.property_changed.connect(self.on_viewmodel_property_changed)
         self.viewport.object_transform_changed.connect(self.on_viewport_object_changed)
         self.viewport.tool_message_requested.connect(self.on_tool_message_requested)
@@ -321,6 +322,11 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
     def refresh_hierarchy_from_viewport(self) -> None:
         objects = self.scene_objects()
         self.object_count = len(objects)
+        if self.editor_context.selection.selected not in objects:
+            scene_selected = None
+            if hasattr(self.viewport, "_selected_from_scene"):
+                scene_selected = self.viewport._selected_from_scene()
+            self.select_object(scene_selected if scene_selected in objects else None)
         self.hierarchy.refresh_objects(objects)
         if hasattr(self, "stats"):
             self.stats.setText(f"FPS: 60 | Memoria: 512 MB | Objetos: {self.object_count}")

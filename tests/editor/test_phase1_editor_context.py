@@ -344,6 +344,28 @@ def test_phase1_selection_manager_syncs_viewport_hierarchy_and_inspector(
     assert phase1_editor.hierarchy.tree.currentItem().data(0, Qt.UserRole) is selected
 
 
+def test_phase1_hierarchy_refreshes_after_viewport_delete(
+    phase1_editor: ZennityPhase1Editor,
+    qapp: QApplication,
+) -> None:
+    selected = phase1_editor.scene_objects()[0]
+    phase1_editor.select_object(selected)
+    original_count = len(phase1_editor.scene_objects())
+
+    phase1_editor.viewport.delete_selected_object()
+    qapp.processEvents()
+
+    root = phase1_editor.hierarchy.tree.topLevelItem(0)
+    assert root is not None
+    assert len(phase1_editor.scene_objects()) == original_count - 1
+    assert root.childCount() == original_count - 1
+    assert phase1_editor.editor_context.selection.selected in phase1_editor.scene_objects() or (
+        phase1_editor.editor_context.selection.selected is None
+    )
+    for index in range(root.childCount()):
+        assert root.child(index).data(0, Qt.UserRole) is not selected
+
+
 def test_phase1_viewport_move_tool_moves_selected_object_and_updates_inspector(
     phase1_editor: ZennityPhase1Editor,
 ) -> None:
