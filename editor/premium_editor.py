@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 from PySide6.QtCore import Qt, QSize, Signal
-from PySide6.QtGui import QAction, QColor
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -266,7 +266,6 @@ class ZennityPremiumEditor(QMainWindow):
 
     def _connect(self) -> None:
         self.hierarchy.selected.connect(self.inspector.load_object)
-        self.hierarchy.selected.connect(self.viewport.set_selected_object)
         self.create_panel.create_requested.connect(self.create_object)
 
     def create_object(self, name: str) -> None:
@@ -275,7 +274,9 @@ class ZennityPremiumEditor(QMainWindow):
         if hasattr(self.viewport, "create_object"):
             self.viewport.create_object(value)
         self.object_count += 1
-        self.hierarchy.add_object(f"{name}_{self.object_count}")
+        display_name = f"{name}_{self.object_count}"
+        self.hierarchy.add_object(display_name)
+        self.inspector.load_object(display_name)
         self.stats.setText(f"FPS: 60 | Memoria: 512 MB | Objetos: {self.object_count}")
         self.console.add("INFO", f"Objeto criado: {name}")
 
