@@ -79,7 +79,8 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         objects = self.scene_objects()
         self.object_count = len(objects)
         self.hierarchy.refresh_objects(objects)
-        self.stats.setText(f"FPS: 60 | Memoria: 512 MB | Objetos: {self.object_count}")
+        if hasattr(self, "stats"):
+            self.stats.setText(f"FPS: 60 | Memoria: 512 MB | Objetos: {self.object_count}")
 
     def select_object(self, obj: Any) -> None:
         self.inspector.load_object(obj)
