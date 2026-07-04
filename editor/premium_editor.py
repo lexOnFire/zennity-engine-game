@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 from PySide6.QtCore import Qt, QSize, Signal
-from PySide6.QtGui import QAction, QFont
+from PySide6.QtGui import QAction, QFont, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -87,6 +87,8 @@ class HierarchyPanel(Panel):
 
 
 class ResourcesPanel(Panel):
+    asset_selected = Signal(object)
+
     def __init__(self) -> None:
         super().__init__("Recursos")
         self.asset_model = AssetBrowserModel()
@@ -99,6 +101,7 @@ class ResourcesPanel(Panel):
         self.tree.setHeaderLabels(["Nome", "Tipo"])
         self.layout.addWidget(self.tree)
         self.refresh_assets()
+        self.tree.itemSelectionChanged.connect(self._selected)
 
     def refresh_assets(self) -> None:
         self.tree.clear()
@@ -112,6 +115,13 @@ class ResourcesPanel(Panel):
             tree_item = QTreeWidgetItem(parent_item, [child.name, child.item_type])
             tree_item.setData(0, Qt.UserRole, child.asset)
             self._populate_item(tree_item, child)
+
+    def _selected(self) -> None:
+        item = self.tree.currentItem()
+        if item is None:
+            self.asset_selected.emit(None)
+            return
+        self.asset_selected.emit(item.data(0, Qt.UserRole))
 
 
 class CreatePanel(Panel):
@@ -175,6 +185,53 @@ class SimplePanel(Panel):
         label = QLabel(text)
         label.setAlignment(Qt.AlignCenter)
         self.layout.addWidget(label)
+
+
+class AssetPreviewPanel(Panel):
+    def __init__(self) -> None:
+        super().__init__("Asset Preview")
+        self.image = QLabel()
+        self.image.setAlignment(Qt.AlignCenter)
+        self.image.setMinimumHeight(120)
+        self.image.setObjectName("AssetPreviewImage")
+
+        self.details = QLabel("Nenhum asset selecionado")
+        self.details.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        self.details.setWordWrap(True)
+        self.details.setObjectName("AssetPreviewDetails")
+
+        self.layout.addWidget(self.image)
+        self.layout.addWidget(self.details)
+        self.layout.addStretch(1)
+
+    def load_asset(self, asset) -> None:
+        if asset is None:
+            self.image.clear()
+            self.details.setText("Nenhum asset selecionado")
+            return
+
+        if getattr(asset, "type", None) and asset.type.value == "image":
+            pixmap = QPixmap(str(asset.absolute_path))
+            if not pixmap.isNull():
+                self.image.setPixmap(
+                    pixmap.scaled(220, 140, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                )
+            else:
+                self.image.setText("Imagem indisponivel")
+        else:
+            self.image.clear()
+
+        self.details.setText(
+            "\n".join(
+                [
+                    f"Nome: {asset.name}",
+                    f"Tipo: {asset.type.value}",
+                    f"Path: {asset.path}",
+                    f"UUID: {asset.uuid}",
+                    f"Tamanho: {asset.size} bytes",
+                ]
+            )
+        )
 
 
 class ZennityPremiumEditor(QMainWindow):

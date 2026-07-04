@@ -8,11 +8,12 @@ from PySide6.QtGui import QAction, QActionGroup
 from PySide6.QtWidgets import QFileDialog, QComboBox, QSplitter, QToolBar, QToolButton, QWidget
 
 from editor.premium_editor import (
+    AssetPreviewPanel,
     ConsolePanel,
     CreatePanel,
     ResourcesPanel,
-    SimplePanel,
     ZennityPremiumEditor,
+    SimplePanel,
 )
 from editor.premium_panels import RealHierarchyPanel, RealInspectorPanel
 from editor.runtime.editor_context import EditorContext
@@ -177,7 +178,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.create_panel = CreatePanel()
         self.inspector = RealInspectorPanel()
         self.console = ConsolePanel()
-        self.preview = SimplePanel("Asset Preview", "Preview de assets")
+        self.preview = AssetPreviewPanel()
         self.profiler = SimplePanel("Profiler", "FPS, CPU, memoria")
 
         self.viewport = Phase1ViewportWidget(self)
@@ -189,17 +190,17 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
 
         left = QSplitter(Qt.Vertical)
         left.addWidget(self.hierarchy)
-        left.addWidget(self.resources)
         left.addWidget(self.create_panel)
-        left.setSizes([320, 260, 220])
+        left.setSizes([430, 260])
 
         center = QSplitter(Qt.Vertical)
         center.addWidget(self.viewport)
         bottom = QSplitter(Qt.Horizontal)
-        bottom.addWidget(self.console)
+        bottom.addWidget(self.resources)
         bottom.addWidget(self.preview)
+        bottom.addWidget(self.console)
         bottom.addWidget(self.profiler)
-        bottom.setSizes([520, 260, 260])
+        bottom.setSizes([320, 280, 420, 220])
         center.addWidget(bottom)
         center.setSizes([560, 240])
 
@@ -215,6 +216,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
     def _connect(self) -> None:
         self.hierarchy.selected.connect(self.select_object)
         self.create_panel.create_requested.connect(self.create_object)
+        self.resources.asset_selected.connect(self.preview.load_asset)
         self.scene_view_model.selection_changed.connect(self.on_viewport_selection_changed)
         self.scene_view_model.property_changed.connect(self.on_viewmodel_property_changed)
         self.viewport.object_transform_changed.connect(self.on_viewport_object_changed)
