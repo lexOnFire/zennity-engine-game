@@ -32,6 +32,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
     def __init__(self) -> None:
         self.editor_context = EditorContext()
         self._tool_actions: dict[EditorTool, QAction] = {}
+        self._snap_action: QAction | None = None
         super().__init__()
         self.editor_context.tools.subscribe(self._on_runtime_tool_changed)
 
@@ -49,6 +50,8 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         toolbar.addWidget(spacer)
 
         self._build_tool_buttons(toolbar)
+        toolbar.addSeparator()
+        self._build_snap_button(toolbar)
 
         self.btn_play = QToolButton()
         self.btn_play.setText("Play")
@@ -79,6 +82,29 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             self._tool_actions[tool] = action
 
         self.tool_action_group = group
+
+    def _build_snap_button(self, toolbar: QToolBar) -> None:
+        action = QAction(self._snap_label(), self, checkable=True)
+        action.setChecked(self.editor_context.state.snap_enabled)
+        action.triggered.connect(lambda checked=False: self.set_snap_enabled(bool(checked)))
+        toolbar.addAction(action)
+        self._snap_action = action
+
+    def _snap_label(self) -> str:
+        state = "ON" if self.editor_context.state.snap_enabled else "OFF"
+        return f"Snap: {state}"
+
+    def set_snap_enabled(self, enabled: bool) -> None:
+        self.editor_context.state.snap_enabled = enabled
+        self._sync_snap_action()
+        if hasattr(self, "status_msg"):
+            self.status_msg.setText(f"Snap {'ativado' if enabled else 'desativado'}")
+
+    def _sync_snap_action(self) -> None:
+        if self._snap_action is None:
+            return
+        self._snap_action.setChecked(self.editor_context.state.snap_enabled)
+        self._snap_action.setText(self._snap_label())
 
     def _build_layout(self) -> None:
         self.hierarchy = RealHierarchyPanel()

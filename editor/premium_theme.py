@@ -40,6 +40,16 @@ QToolButton:pressed, QPushButton:pressed {
     background-color: #2e3b2e;
     border-color: #4caf50;
 }
+QToolButton:checked {
+    background-color: #1f5f38;
+    border-color: #47d16c;
+    color: #ffffff;
+    font-weight: 600;
+}
+QToolButton:checked:hover {
+    background-color: #267545;
+    border-color: #65e582;
+}
 QSplitter::handle {
     background-color: #151515;
 }

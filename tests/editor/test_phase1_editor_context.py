@@ -58,6 +58,40 @@ def test_phase1_toolbar_tools_update_tool_manager(phase1_editor: ZennityPhase1Ed
     assert not phase1_editor._tool_actions[EditorTool.MOVE].isChecked()
 
 
+def test_phase1_toolbar_active_tool_is_visually_checked(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    phase1_editor.editor_context.tools.set_active_tool(EditorTool.SCALE)
+
+    assert phase1_editor._tool_actions[EditorTool.SCALE].isChecked()
+    assert not phase1_editor._tool_actions[EditorTool.SELECT].isChecked()
+    assert not phase1_editor._tool_actions[EditorTool.MOVE].isChecked()
+    assert not phase1_editor._tool_actions[EditorTool.ROTATE].isChecked()
+
+
+def test_phase1_snap_toolbar_toggle_updates_editor_state(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    assert phase1_editor._snap_action is not None
+    assert phase1_editor._snap_action.text() == "Snap: OFF"
+    assert not phase1_editor._snap_action.isChecked()
+    assert not phase1_editor.editor_context.state.snap_enabled
+
+    phase1_editor._snap_action.trigger()
+
+    assert phase1_editor.editor_context.state.snap_enabled
+    assert phase1_editor._snap_action.isChecked()
+    assert phase1_editor._snap_action.text() == "Snap: ON"
+    assert phase1_editor.status_msg.text() == "Snap ativado"
+
+    phase1_editor._snap_action.trigger()
+
+    assert not phase1_editor.editor_context.state.snap_enabled
+    assert not phase1_editor._snap_action.isChecked()
+    assert phase1_editor._snap_action.text() == "Snap: OFF"
+    assert phase1_editor.status_msg.text() == "Snap desativado"
+
+
 def test_phase1_rotate_and_scale_report_unimplemented_tools(
     phase1_editor: ZennityPhase1Editor,
 ) -> None:
