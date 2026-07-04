@@ -69,7 +69,7 @@ class Editor2DScene(Scene):
         # Câmera
         self.cam_obj = GameObject("EditorCamera")
         self.camera  = self.cam_obj.add_component(Camera2D(zoom=1.0))
-        self.cam_obj.transform.position = np.array([400.0, 300.0, 0.0], dtype=np.float32)
+        self.cam_obj.transform.position = np.array([0.0, 0.0, 0.0], dtype=np.float32)
         self._add_go(self.cam_obj)
         Camera2D.main = self.camera
 
