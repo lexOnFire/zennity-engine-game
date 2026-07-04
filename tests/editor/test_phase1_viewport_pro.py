@@ -19,6 +19,7 @@ from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QPainter
 
 from editor.phase1_editor import ZennityPhase1Editor
+from editor.runtime.tool_manager import EditorTool
 from editor.viewport.viewport_camera import ViewportCamera
 from editor.viewport.grid_renderer import GridRenderer
 from editor.viewport.bounding_box import BoundingBoxRenderer
@@ -239,6 +240,29 @@ def test_viewport_renderer_hides_handles_during_play_mode(
     )
 
     assert calls == []
+
+
+def test_phase1_viewport_syncs_legacy_scale_handles_by_active_tool(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    """A cena legada nao deve vazar handles amarelos fora da Scale Tool."""
+    scene = phase1_editor.viewport.active_scene
+
+    for tool, expected in (
+        (EditorTool.SELECT, False),
+        (EditorTool.MOVE, False),
+        (EditorTool.ROTATE, False),
+        (EditorTool.SCALE, True),
+    ):
+        phase1_editor.editor_context.tools.set_active_tool(tool)
+        phase1_editor.viewport._sync_legacy_scale_handles()
+        assert scene.show_scale_handles is expected
+
+    phase1_editor.editor_context.tools.set_active_tool(EditorTool.SCALE)
+    scene.playing = True
+    phase1_editor.viewport._sync_legacy_scale_handles()
+
+    assert scene.show_scale_handles is False
 
 
 # ── Testes de Grid ────────────────────────────────────────────────────────────

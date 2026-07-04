@@ -838,7 +838,8 @@ class Editor2DScene(Scene):
             self._draw_object(screen, obj, idx, zoom, lay)
 
         # Handles
-        if (not self.playing and 0 <= self.selected_index < len(self.editable_objects)):
+        show_scale_handles = bool(getattr(self, "show_scale_handles", True))
+        if (show_scale_handles and not self.playing and 0 <= self.selected_index < len(self.editable_objects)):
             self._draw_handles(screen, self.editable_objects[self.selected_index], lay)
 
         screen.set_clip(None)

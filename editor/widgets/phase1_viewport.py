@@ -168,6 +168,12 @@ class Phase1ViewportWidget(ViewportWidget):
                         self.camera.position[0] = Camera2D.main.transform.position[0]
                         self.camera.position[1] = Camera2D.main.transform.position[1]
 
+    def _sync_legacy_scale_handles(self) -> None:
+        scene = getattr(self, "active_scene", None)
+        if scene is None:
+            return
+        scene.show_scale_handles = self._active_tool() == EditorTool.SCALE and not self._is_playing()
+
     # ── Seleção e Hover ───────────────────────────────────────────────────────
 
     def _selected_transform_object(self) -> Any:
@@ -618,6 +624,8 @@ class Phase1ViewportWidget(ViewportWidget):
     def paintGL(self) -> None:
         if not self.pg_surface or not self.active_scene:
             return
+
+        self._sync_legacy_scale_handles()
 
         # Sincroniza modificações externas do Camera2D.main
         self.sync_camera_from_engine()
