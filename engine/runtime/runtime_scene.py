@@ -137,7 +137,7 @@ class RuntimeScene:
 
         # Se não existir nenhuma câmera, cria uma câmera padrão no runtime
         from engine.graphics.camera import Camera
-        has_camera = any(isinstance(comp, Camera) for comp in components)
+        has_camera = any(self._component_type_name(comp) == "Camera" for comp in components)
         if not has_camera:
             from engine.game_object import GameObject
             fallback_go = GameObject("Default Runtime Camera")
@@ -156,7 +156,7 @@ class RuntimeScene:
 
         # Se não existir nenhum AudioListener, cria um padrão em runtime
         from engine.audio import AudioListener
-        has_listener = any(isinstance(comp, AudioListener) for comp in components)
+        has_listener = any(self._component_type_name(comp) == "AudioListener" for comp in components)
         if not has_listener:
             from engine.game_object import GameObject
             fallback_listener_go = GameObject("Default Audio Listener")
@@ -179,6 +179,8 @@ class RuntimeScene:
         for component in components:
             component.on_runtime_start()
             self._runtime_started_components.append(component)
+        AudioManager._sources = [comp for comp in components if comp.__class__.__name__ == "AudioSource"]
+        AudioManager._listeners = [comp for comp in components if comp.__class__.__name__ == "AudioListener"]
 
     def update_runtime(self, delta_time: float) -> None:
         if not self._runtime_started:
@@ -200,6 +202,9 @@ class RuntimeScene:
         CameraManager.clear()
         from engine.audio import AudioManager
         AudioManager.clear()
+
+    def _component_type_name(self, component: Any) -> str:
+        return str(getattr(component, "type_name", getattr(component, "component_type", type(component).__name__)))
 
     def update(self, dt: float) -> None:
         self.update_runtime(dt)

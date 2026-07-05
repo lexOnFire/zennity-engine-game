@@ -217,8 +217,8 @@ class AudioManager:
 
     @classmethod
     def get_active_listener(cls) -> Optional[AudioListener]:
-        """Retorna o primeiro AudioListener ativo e habilitado."""
-        for listener in cls._listeners:
+        """Retorna o AudioListener ativo mais recentemente registrado."""
+        for listener in reversed(cls._listeners):
             if listener.enabled:
                 return listener
         return None
@@ -226,8 +226,15 @@ class AudioManager:
     @classmethod
     def clear(cls) -> None:
         """Interrompe sons e limpa o registro de componentes de áudio."""
-        cls.stop_all()
-        cls.unload_cache()
+        try:
+            cls.stop_all()
+        except Exception:
+            cls._music_path = None
+            cls._music_paused = False
+        try:
+            cls.unload_cache()
+        except Exception:
+            cls._sound_cache.clear()
         cls._sources.clear()
         cls._listeners.clear()
 

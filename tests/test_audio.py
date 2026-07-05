@@ -11,13 +11,35 @@ Estratégia de isolamento:
     `reset_audio` restaura todos os atributos entre testes.
   - Nenhum arquivo de áudio real é necessário.
 """
-from __future__ import annotations
-
 import sys
+import pygame
+import pytest
 from types import ModuleType
 from unittest.mock import MagicMock, patch
 
-import pytest
+# Salva o mixer real original antes de stubar
+orig_mixer = getattr(pygame, "mixer", None)
+orig_pygame_mixer_module = sys.modules.get("pygame.mixer")
+
+@pytest.fixture(scope="module", autouse=True)
+def cleanup_pygame_mixer():
+    yield
+    # Restaura o pygame.mixer real original
+    import pygame
+    if orig_mixer is not None:
+        pygame.mixer = orig_mixer
+    if orig_pygame_mixer_module is not None:
+        sys.modules["pygame.mixer"] = orig_pygame_mixer_module
+    elif "pygame.mixer" in sys.modules:
+        del sys.modules["pygame.mixer"]
+    
+    # Restaura os estados estáticos do AudioManager
+    from engine.audio import AudioManager
+    AudioManager._initialized = False
+    AudioManager._sound_cache = {}
+    AudioManager._sources = []
+    AudioManager._listeners = []
+
 
 # ── stub pygame.mixer ─────────────────────────────────────────────────────────────
 

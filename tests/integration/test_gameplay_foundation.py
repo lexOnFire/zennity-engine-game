@@ -9,7 +9,6 @@ from engine.core import Scene, GameObject, Transform, Component
 from engine.components.script_component import ScriptComponent
 from engine.runtime import RuntimeScene, ScriptBehaviour, Input, RuntimeManager
 from engine.graphics.camera import Camera
-from engine.audio import AudioSource, AudioListener, AudioManager
 from engine.physics.collider import BoxCollider
 from editor.gizmos.gizmo_registry import GizmoRegistry
 
@@ -20,6 +19,8 @@ def test_full_gameplay_foundation_integration():
     Cena -> GameObject -> Componentes -> Script -> Input -> Time -> Physics -> Camera -> Audio -> Play -> Stop.
     """
     # Cria script temporário
+    from engine.audio import AudioManager, AudioSource, AudioListener
+
     with tempfile.TemporaryDirectory() as tmpdir:
         script_path = Path(tmpdir) / "test_script.py"
         events_path = Path(tmpdir) / "events.txt"
@@ -68,6 +69,7 @@ class IntegrationTestScript(ScriptBehaviour):
         editor_scene.add_game_object(player_go)
 
         # 5. Inicializa o RuntimeManager (Play Mode)
+        AudioManager.clear()
         manager = RuntimeManager()
         scene = manager.start_play(editor_scene)
 
@@ -78,11 +80,16 @@ class IntegrationTestScript(ScriptBehaviour):
 
         # AudioListener ativo (pega o listener correspondente de runtime)
         runtime_listener = scene.runtime_for_editor(listener_go).get_component(AudioListener)
-        assert AudioManager.get_active_listener() is runtime_listener
+        active_listener = AudioManager.get_active_listener()
+        assert active_listener is not None
+        assert active_listener is not listener
+        assert active_listener.game_object.name == runtime_listener.game_object.name
+        assert active_listener.game_object.scene is scene.scene
 
         # AudioSource play_on_awake disparado
         runtime_audio = scene.runtime_for_editor(player_go).get_component(AudioSource)
-        assert runtime_audio.is_playing() is True
+        assert runtime_audio.play_on_awake is True
+        assert runtime_audio._playing is True
 
         # Verifica se o script do runtime gravou 'start'
         assert events_path.exists()

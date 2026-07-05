@@ -165,3 +165,29 @@ def test_runtime_isolation_and_fallback(mock_pygame_mixer):
     AudioManager.clear()
     assert len(AudioManager._sources) == 0
     assert len(AudioManager._listeners) == 0
+
+
+def test_runtime_listener_registry_ignores_stale_editor_listener(mock_pygame_mixer):
+    """Garante que listeners antigos não vazem para o Runtime World."""
+    from engine.audio import AudioManager, AudioListener
+
+    stale_go = GameObject("StaleListener")
+    stale_listener = stale_go.add_component(AudioListener())
+    AudioManager.register_audio_listener(stale_listener)
+
+    scene = Scene("TestScene")
+    listener_go = GameObject("RuntimeListener")
+    editor_listener = listener_go.add_component(AudioListener())
+    scene.add_game_object(listener_go)
+
+    runtime_scene = RuntimeScene(scene)
+    runtime_scene.start_runtime()
+    runtime_listener = runtime_scene.runtime_for_editor(listener_go).get_component(AudioListener)
+    active_listener = AudioManager.get_active_listener()
+
+    assert runtime_listener is not editor_listener
+    assert active_listener is not None
+    assert active_listener is not stale_listener
+    assert active_listener.game_object.name == runtime_listener.game_object.name
+    assert active_listener.game_object.scene is runtime_scene.scene
+    assert stale_listener not in AudioManager._listeners

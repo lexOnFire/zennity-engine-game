@@ -744,5 +744,15 @@ A classe central `GizmoRegistry` (`editor/gizmos/gizmo_registry.py`) gerencia o 
 
 O widget `ViewportWidget` (`editor/widgets/viewport_widget.py`) consulta o `GizmoRegistry` na `paintGL()` e realiza o desenho dos gizmos das entidades da cena somente se o modo Play estiver inativo. O Runtime World nunca recebe ou renderiza esses elementos.
 
+---
+
+## Estabilização da v0.2.0-alpha — Gameplay Foundation
+
+A v0.2.0-alpha consolida a Gameplay Foundation através de uma série de correções de integração:
+* **Detecção Dinâmica de Componentes de Câmera/Áudio**: A lógica do `RuntimeScene` foi corrigida para realizar a varredura do array de componentes antes de instanciar câmeras ou listeners de fallback redundantes.
+* **Ciclo de Vida de Inicialização de Câmeras**: Adicionado suporte para que o componente `Camera` registre-se no `CameraManager` durante o início do Play Mode via `on_runtime_start()`.
+* **Segurança na Viewport contra Mocks**: Ajustada a função `_get_screen_pos` de desenho de gizmos para detectar dinamicamente objetos mock do pytest, evitando falhas de desempacotamento de coordenadas de tela.
+* **Isolamento de Estado em Mocks globais**: Configurada a restauração e limpeza explícita dos stubs de áudio e pygame em `tests/test_audio.py` para prevenir efeitos colaterais em outros módulos da suíte de testes.
+
 
 
