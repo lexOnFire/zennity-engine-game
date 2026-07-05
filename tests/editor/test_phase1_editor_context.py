@@ -332,6 +332,23 @@ def test_phase1_play_mode_switches_viewport_and_inspector_to_runtime_scene(
     assert phase1_editor.inspector.current_object is editor_selected
 
 
+def test_phase1_game_view_hides_runtime_inner_scene_grid(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    phase1_editor.play()
+    runtime_scene = phase1_editor.editor_context.runtime.runtime_scene
+    runtime_scene.show_grid = True
+    runtime_scene.scene.show_grid = True
+
+    phase1_editor.game_viewport._set_grid_visible(False)
+
+    assert runtime_scene.show_grid is False
+    assert runtime_scene.scene.show_grid is False
+
+    phase1_editor.game_viewport._restore_grid_state([(runtime_scene, True), (runtime_scene.scene, True)])
+    phase1_editor.stop()
+
+
 def test_phase1_rotate_reports_active_and_scale_reports_unimplemented(
     phase1_editor: ZennityPhase1Editor,
 ) -> None:

@@ -197,6 +197,32 @@ class Phase1ViewportWidget(ViewportWidget):
         # Desativa permanentemente os handles legados (eixos desalinhados) na nova viewport
         scene.show_scale_handles = False
 
+    def _grid_state_targets(self) -> list[Any]:
+        scene = getattr(self, "active_scene", None)
+        if scene is None:
+            return []
+        targets = [scene]
+        inner_scene = getattr(scene, "scene", None)
+        if inner_scene is not None and inner_scene is not scene:
+            targets.append(inner_scene)
+        return targets
+
+    def _capture_grid_state(self) -> list[tuple[Any, bool]]:
+        states: list[tuple[Any, bool]] = []
+        for target in self._grid_state_targets():
+            states.append((target, bool(getattr(target, "show_grid", True))))
+        return states
+
+    def _set_grid_visible(self, visible: bool) -> None:
+        for target in self._grid_state_targets():
+            if hasattr(target, "show_grid"):
+                target.show_grid = bool(visible)
+
+    def _restore_grid_state(self, states: list[tuple[Any, bool]]) -> None:
+        for target, visible in states:
+            if hasattr(target, "show_grid"):
+                target.show_grid = visible
+
     # ── Seleção e Hover ───────────────────────────────────────────────────────
 
     def _selected_transform_object(self) -> Any:
@@ -706,18 +732,18 @@ class Phase1ViewportWidget(ViewportWidget):
         if not self._is_playing() and not self.is_game_view():
             self.camera.update(dt)
 
-        # Salva o estado real do grid e desativa temporariamente para o blit do Pygame
-        real_show_grid = True
-        if self.active_scene is not None:
-            real_show_grid = getattr(self.active_scene, "show_grid", True)
-            self.active_scene.show_grid = False
+        # Salva o estado real do grid e desativa temporariamente para o blit do Pygame.
+        # RuntimeScene é um wrapper; a cena interna também precisa ser desligada
+        # para a Game View permanecer limpa durante Play.
+        grid_states = self._capture_grid_state()
+        real_show_grid = grid_states[0][1] if grid_states else True
+        self._set_grid_visible(False)
 
         # Chama a renderização base (blit da superfície do pygame com os objetos)
         super().paintGL()
 
         # Restaura o estado real do grid na cena
-        if self.active_scene is not None:
-            self.active_scene.show_grid = real_show_grid
+        self._restore_grid_state(grid_states)
 
         painter = QPainter(self)
         
