@@ -746,6 +746,49 @@ O widget `ViewportWidget` (`editor/widgets/viewport_widget.py`) consulta o `Gizm
 
 ---
 
+## Animation Runtime Foundation (Fase 21)
+
+A Fase 21 cria a fundação oficial de animações runtime sem adicionar timeline visual, blend tree, state machine avançada ou editor de keyframes.
+
+### AnimationClip e Keyframe
+
+`engine.animation.AnimationClip` mantém compatibilidade com a API antiga baseada em frames de sprite e passa a aceitar keyframes de propriedades:
+
+* `name`: nome serializável do clip.
+* `duration`: duração total em segundos.
+* `loop`: reinicia a reprodução ao fim.
+* `keyframes`: lista de `Keyframe`.
+* `properties`: propriedades animadas como `position`, `rotation` e `scale`.
+
+`Keyframe` contém `time`, `property` e `value`, além de `serialize()` / `deserialize()` para cenas e prefabs.
+
+### Animator Component
+
+`engine.animation.Animator` é um `Component` registrado no `ComponentRegistry`. Ele armazena clips, define o clip atual e expõe:
+
+```python
+animator.play("move")
+animator.pause()
+animator.resume()
+animator.stop()
+```
+
+Durante Play, o `Animator` atualiza apenas clones do Runtime World através de `on_runtime_update(...)`. A implementação consulta exclusivamente `Time.delta_time`; nenhum cálculo próprio de tempo é permitido. O método `update(dt)` legado continua existindo para compatibilidade com animações por frames fora do Play Mode, mas é bloqueado quando o lifecycle runtime está gerenciando a animação.
+
+### Serialização
+
+O `Animator` serializa `default_clip`, `current_clip`, `speed`, estado básico de playback e todos os clips via `components.items`. Como ele é resolvido pelo `ComponentRegistry`, cenas e prefabs podem reconstruir o componente a partir de `"type": "Animator"`.
+
+### Inspector
+
+O Inspector usa `AnimatorInspectorPlugin`, resolvido pelo `InspectorPluginRegistry`. Nesta fase o plugin apenas exibe clip atual, estado de reprodução, loop e velocidade. O Inspector não edita keyframes e não conhece detalhes internos do Animator.
+
+### Limites
+
+Esta fase não implementa timeline, curvas avançadas, importador de spritesheet, blend tree, state machine visual, IK ou animação 3D complexa.
+
+---
+
 ## Estabilização da v0.2.0-alpha — Gameplay Foundation
 
 A v0.2.0-alpha consolida a Gameplay Foundation através de uma série de correções de integração:
@@ -753,6 +796,5 @@ A v0.2.0-alpha consolida a Gameplay Foundation através de uma série de correç
 * **Ciclo de Vida de Inicialização de Câmeras**: Adicionado suporte para que o componente `Camera` registre-se no `CameraManager` durante o início do Play Mode via `on_runtime_start()`.
 * **Segurança na Viewport contra Mocks**: Ajustada a função `_get_screen_pos` de desenho de gizmos para detectar dinamicamente objetos mock do pytest, evitando falhas de desempacotamento de coordenadas de tela.
 * **Isolamento de Estado em Mocks globais**: Configurada a restauração e limpeza explícita dos stubs de áudio e pygame em `tests/test_audio.py` para prevenir efeitos colaterais em outros módulos da suíte de testes.
-
 
 

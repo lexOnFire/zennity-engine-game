@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QApplication, QLabel, QWidget
 from editor.inspector import InspectorPlugin, InspectorPluginRegistry, inspector_plugin_registry
 from editor.premium_panels import RealInspectorPanel
 from editor.runtime.command_manager import CommandManager
+from engine.animation import Animator
 from engine.core import Component, register_component
 from engine.game_object import GameObject
 from engine.physics.collider import BoxCollider
@@ -46,12 +47,14 @@ def test_default_plugins_resolve_builtin_components() -> None:
     assert inspector_plugin_registry.plugin_for(GameObject("Obj").transform).component_type == "Transform"
     assert inspector_plugin_registry.plugin_for(RigidBody()).component_type == "RigidBody"
     assert inspector_plugin_registry.plugin_for(BoxCollider()).component_type == "Collider"
+    assert inspector_plugin_registry.plugin_for(Animator()).component_type == "Animator"
 
 
 def test_inspector_hosts_plugins_for_multiple_components(qapp) -> None:
     obj = GameObject("Inspectable")
     obj.add_component(RigidBody())
     obj.add_component(BoxCollider())
+    obj.add_component(Animator())
     inspector = RealInspectorPanel()
 
     inspector.load_object(obj)
@@ -64,6 +67,7 @@ def test_inspector_hosts_plugins_for_multiple_components(qapp) -> None:
     assert "Transform" in hosted_types
     assert "RigidBody" in hosted_types
     assert "BoxCollider" in hosted_types
+    assert "Animator" in hosted_types
 
 
 def test_inspector_handles_missing_plugin(qapp) -> None:

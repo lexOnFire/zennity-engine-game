@@ -12,6 +12,7 @@
 - [x] Camera System oficial com Camera, CameraManager e Main Camera (Fase 18)
 - [x] Audio Runtime oficial com AudioSource, AudioListener e AudioManager (Fase 19)
 - [x] Scene Gizmos Avançados com GizmoRegistry (Fase 20)
+- [x] Animation Runtime Foundation com Keyframe, AnimationClip e Animator (Fase 21)
 - [x] Estabilização e suíte de testes de integração da v0.2.0-alpha
 
 ### Beta 0.1 — Stabilization ✅
@@ -94,6 +95,7 @@
 - [x] Camera System oficial com Camera, CameraManager e Main Camera (Fase 18)
 - [x] Audio Runtime oficial com AudioSource, AudioListener e AudioManager (Fase 19)
 - [x] Scene Gizmos Avançados com GizmoRegistry e renderizadores especializados (Fase 20)
+- [x] Animation Runtime Foundation com Animator serializável e Time.delta_time (Fase 21)
 - [ ] Hierarchy com drag & drop e parentesco
 - [x] Undo/Redo no editor (Fase 7)
 

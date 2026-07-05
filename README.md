@@ -269,6 +269,28 @@ def draw_my_custom_gizmo(component, screen, scene):
 GizmoRegistry.register("MyComponentType", draw_my_custom_gizmo)
 ```
 
+A Fase 21 adiciona a fundação oficial do Animation Runtime. `AnimationClip` passa a suportar `Keyframe` serializável para propriedades simples como `position`, `rotation` e `scale`, enquanto o componente `Animator` toca, pausa, para e atualiza clips durante o Play Mode usando exclusivamente `Time.delta_time`.
+
+```python
+from engine.animation import AnimationClip, Animator, Keyframe
+
+clip = AnimationClip(
+    "move",
+    frames=[],
+    duration=1.0,
+    loop=True,
+    keyframes=[
+        Keyframe(0.0, "position", [0.0, 0.0, 0.0]),
+        Keyframe(1.0, "position", [100.0, 0.0, 0.0]),
+    ],
+)
+
+animator = game_object.add_component(Animator(default_clip="move"))
+animator.add_clip(clip)
+```
+
+O `Animator` roda somente no Runtime World. Alterações feitas por animação durante Play não modificam a cena do Editor e são descartadas no Stop. Nesta fase ainda não há timeline visual, editor de keyframes, blend tree, state machine avançada ou importador de spritesheets.
+
 ### Criando Scripts
 
 Crie um arquivo `.py` dentro de `Assets/Scripts` e anexe um `ScriptComponent` ao GameObject apontando para esse caminho. Um script mínimo:
