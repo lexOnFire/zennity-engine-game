@@ -20,6 +20,20 @@ Garantia de _started:
     GameObject garante que start() é invocado exatamente uma vez.
     Não chame start() manualmente.
 
+Serialização (Fase 9):
+    Componentes podem implementar serialize() e deserialize() para
+    suportar save/load de cenas e prefabs.
+
+    serialize()     → Dict[str, Any]   — snapshot dos dados do componente
+    deserialize(d)  ← Dict[str, Any]   — restaura estado a partir do dict
+
+    O dict retornado por serialize() DEVE incluir a chave "type" com o
+    nome do componente (usado pelo ComponentRegistry para recriá-lo).
+
+enable/disable:
+    comp.enabled = False   → update() e draw() são ignorados pela engine
+    comp.enabled = True    → retoma o ciclo normal
+
 Uso:
     from engine.core import Component, Transform
 
@@ -36,6 +50,15 @@ Uso:
             if self.hp <= 0:
                 self.game_object.destroy()
 
+        def serialize(self):
+            data = super().serialize()
+            data["hp"] = self.hp
+            return data
+
+        def deserialize(self, data):
+            super().deserialize(data)
+            self.hp = data.get("hp", 100)
+
 Transform:
     Todo GO começa com um Transform já adicionado.
     Acesse via  go.transform  ou  comp.transform  de qualquer componente.
@@ -45,7 +68,7 @@ Transform:
 """
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import Any, Dict, Optional, TYPE_CHECKING
 
 import numpy as np
 
@@ -60,11 +83,40 @@ if TYPE_CHECKING:
 class Component:
     """Bloco de comportamento reutilizável que vive dentro de um GameObject."""
 
+    # Subclasses com UNIQUE = True só podem existir uma vez por GameObject.
+    UNIQUE: bool = False
+
     def __init__(self) -> None:
         #: GO ao qual este componente está anexado.
         self.game_object: Optional["GameObject"] = None
         #: True após start() ser chamado. Não modifique manualmente.
         self._started: bool = False
+        #: Controla se update() e draw() são chamados pela engine.
+        self._enabled: bool = True
+
+    # ------------------------------------------------------------------ #
+    # enabled                                                             #
+    # ------------------------------------------------------------------ #
+
+    @property
+    def enabled(self) -> bool:
+        """Se False, update() e draw() são ignorados."""
+        return self._enabled
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        prev = self._enabled
+        self._enabled = bool(value)
+        if prev and not self._enabled:
+            self.on_disable()
+        elif not prev and self._enabled:
+            self.on_enable()
+
+    def on_enable(self) -> None:
+        """Chamado ao ativar o componente. Sobrescreva se necessário."""
+
+    def on_disable(self) -> None:
+        """Chamado ao desativar o componente. Sobrescreva se necessário."""
 
     # ------------------------------------------------------------------ #
     # Atalhos                                                             #
@@ -100,12 +152,37 @@ class Component:
         """Chamado quando o componente ou seu GO é destruído."""
 
     # ------------------------------------------------------------------ #
+    # Serialização (Fase 9)                                               #
+    # ------------------------------------------------------------------ #
+
+    def serialize(self) -> Dict[str, Any]:
+        """
+        Retorna um dict com o estado serializável do componente.
+        A chave "type" é preenchida automaticamente com o nome da classe.
+        Sobrescreva para adicionar campos específicos — chame super().serialize()
+        e adicione ao dict retornado.
+        """
+        return {
+            "type": type(self).__name__,
+            "enabled": self._enabled,
+        }
+
+    def deserialize(self, data: Dict[str, Any]) -> None:
+        """
+        Restaura o estado do componente a partir de *data*.
+        Sobrescreva para restaurar campos específicos — chame super().deserialize(data)
+        no início.
+        """
+        self._enabled = bool(data.get("enabled", True))
+
+    # ------------------------------------------------------------------ #
     # repr                                                                #
     # ------------------------------------------------------------------ #
 
     def __repr__(self) -> str:
         go_name = self.game_object.name if self.game_object else "<detached>"
-        return f"<{type(self).__name__} on='{go_name}' started={self._started}>"
+        enabled_str = "" if self._enabled else " disabled"
+        return f"<{type(self).__name__} on='{go_name}' started={self._started}{enabled_str}>"
 
 
 # ============================================================== #
@@ -125,6 +202,8 @@ class Transform(Component):
         t.sx, t.sy         — escala
         t.translate(dx, dy)
     """
+
+    UNIQUE = True
 
     def __init__(
         self,
@@ -270,6 +349,26 @@ class Transform(Component):
     def get_world_position(self) -> np.ndarray:
         """Alias de world_position para compatibilidade."""
         return self.world_position
+
+    # ------------------------------------------------------------------ #
+    # Serialização                                                        #
+    # ------------------------------------------------------------------ #
+
+    def serialize(self) -> Dict[str, Any]:
+        data = super().serialize()
+        data["position"] = self._position.tolist()
+        data["rotation"] = self._rotation.tolist()
+        data["scale"]    = self._scale.tolist()
+        return data
+
+    def deserialize(self, data: Dict[str, Any]) -> None:
+        super().deserialize(data)
+        if "position" in data:
+            self._position = np.array(data["position"], dtype=np.float32)
+        if "rotation" in data:
+            self._rotation = np.array(data["rotation"], dtype=np.float32)
+        if "scale" in data:
+            self._scale = np.array(data["scale"], dtype=np.float32)
 
     def __repr__(self) -> str:
         go_name = self.game_object.name if self.game_object else "<detached>"

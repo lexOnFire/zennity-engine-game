@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import List, Type, TypeVar, Optional, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Type, TypeVar, TYPE_CHECKING
 
 import pygame
 
@@ -82,6 +82,20 @@ class GameObject:
     # ------------------------------------------------------------------ #
 
     def add_component(self, component: 'Component') -> 'Component':
+        """
+        Adiciona *component* ao GameObject.
+
+        Se a classe do componente tiver UNIQUE=True e já existir uma instância
+        do mesmo tipo neste GO, levanta TypeError.
+        """
+        # Verificação UNIQUE
+        if getattr(type(component), 'UNIQUE', False):
+            existing = self.get_component(type(component))
+            if existing is not None and existing is not component:
+                raise TypeError(
+                    f"Componente {type(component).__name__} é UNIQUE — "
+                    f"já existe um no GameObject '{self.name}'."
+                )
         component.game_object = self
         self.components.append(component)
         if self.scene and not component._started:
@@ -92,17 +106,74 @@ class GameObject:
     def get_component(self, component_type: Type[T]) -> Optional[T]:
         for comp in self.components:
             if isinstance(comp, component_type):
-                return comp
+                return comp  # type: ignore[return-value]
         return None
 
     def get_components(self, component_type: Type[T]) -> List[T]:
-        return [comp for comp in self.components if isinstance(comp, component_type)]
+        return [comp for comp in self.components if isinstance(comp, component_type)]  # type: ignore[misc]
 
     def remove_component(self, component: 'Component') -> None:
         if component in self.components:
             component.destroy()
             component.game_object = None
             self.components.remove(component)
+
+    # ------------------------------------------------------------------ #
+    # Serialização (Fase 9)                                               #
+    # ------------------------------------------------------------------ #
+
+    def serialize(self) -> Dict[str, Any]:
+        """
+        Retorna um dict com o estado completo do GameObject:
+        nome, tag, active, lista de componentes serializados e filhos.
+        """
+        return {
+            "id":         self._id,
+            "name":       self.name,
+            "tag":        self.tag,
+            "active":     self.active,
+            "components": [c.serialize() for c in self.components],
+            "children":   [child.serialize() for child in self.children],
+        }
+
+    @classmethod
+    def deserialize(cls, data: Dict[str, Any]) -> "GameObject":
+        """
+        Reconstrói um GameObject a partir de um dict produzido por serialize().
+
+        Usa ComponentRegistry para instanciar os componentes pelo nome.
+        O Transform já é criado pelo __init__ e atualizado via deserialize().
+        """
+        from engine.component_registry import ComponentRegistry
+        from engine.core.component import Transform
+
+        go = cls(name=data.get("name", "GameObject"), tag=data.get("tag", "Untagged"))
+        go.active = bool(data.get("active", True))
+
+        # Restaurar o _id original
+        go._id = data.get("id", go._id)
+
+        for comp_data in data.get("components", []):
+            type_name = comp_data.get("type", "")
+            if type_name == "Transform":
+                # Transform já existe — apenas deserializa
+                go.transform.deserialize(comp_data)
+            else:
+                klass = ComponentRegistry.get(type_name)
+                if klass is None:
+                    continue  # componente desconhecido — ignora graciosamente
+                instance = klass.__new__(klass)
+                # Inicializa via Component.__init__ sem parâmetros
+                from engine.core.component import Component
+                Component.__init__(instance)
+                instance.deserialize(comp_data)
+                go.add_component(instance)
+
+        for child_data in data.get("children", []):
+            child = cls.deserialize(child_data)
+            go.add_child(child)
+
+        return go
 
     # ------------------------------------------------------------------ #
     # Hierarquia                                                          #
@@ -144,7 +215,8 @@ class GameObject:
             if not comp._started and self.scene:
                 comp.start()
                 comp._started = True
-            comp.update(dt)
+            if comp.enabled:
+                comp.update(dt)
         for child in self.children:
             child.update(dt)
 
@@ -152,7 +224,8 @@ class GameObject:
         if not self.active:
             return
         for comp in self.components:
-            comp.draw(screen)
+            if comp.enabled:
+                comp.draw(screen)
         for child in self.children:
             child.draw(screen)
 
