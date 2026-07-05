@@ -210,6 +210,18 @@ class PlayerController(ScriptBehaviour):
 
 `Input.is_key_pressed(...)` e `Input.is_key_released(...)` duram apenas um frame. O mesmo vale para `is_mouse_pressed(...)` e `is_mouse_released(...)`. Ao sair do Play, todo estado de teclado e mouse é limpo.
 
+A Fase 16 adiciona o Time System oficial. Scripts e sistemas runtime consultam `Time`; somente o `RuntimeManager` atualiza os valores a cada tick:
+
+```python
+from engine.runtime import ScriptBehaviour, Time
+
+class PlayerController(ScriptBehaviour):
+    def on_update(self, delta_time):
+        print(Time.delta_time, Time.time, Time.frame_count)
+```
+
+`Time.delta_time` e `Time.time` respeitam `Time.time_scale`. `Time.unscaled_delta_time` e `Time.unscaled_time` continuam acumulando o tempo real recebido pelo runtime. `Time.fixed_delta_time` já existe como preparação para Physics futura, mas `FixedUpdate` ainda não foi implementado.
+
 ### Criando Scripts
 
 Crie um arquivo `.py` dentro de `Assets/Scripts` e anexe um `ScriptComponent` ao GameObject apontando para esse caminho. Um script mínimo:

@@ -7,6 +7,7 @@ from engine.runtime.runtime_scene import RuntimeScene
 from engine.runtime.script_behaviour import ScriptBehaviour
 from engine.runtime.script_runtime import ScriptRuntime
 from engine.input import Input
+from engine.time import Time
 
 __all__ = [
     "Input",
@@ -16,5 +17,6 @@ __all__ = [
     "RuntimeState",
     "ScriptBehaviour",
     "ScriptRuntime",
+    "Time",
     "clone_game_object",
 ]

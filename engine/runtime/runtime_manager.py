@@ -6,6 +6,7 @@ from typing import Any
 from engine.input import Input
 from engine.runtime.input_manager import InputManager
 from engine.runtime.runtime_scene import RuntimeScene
+from engine.time import Time
 
 
 class RuntimeState(str, Enum):
@@ -28,6 +29,7 @@ class RuntimeManager:
     def start_play(self, editor_scene: Any) -> RuntimeScene:
         if self.runtime_scene is not None:
             return self.runtime_scene
+        Time._runtime_reset()
         self.input.start()
         Input.bind_manager(self.input)
         self.runtime_scene = RuntimeScene(editor_scene)
@@ -38,8 +40,9 @@ class RuntimeManager:
     def tick(self, delta_time: float) -> None:
         if self.state != RuntimeState.PLAYING or self.runtime_scene is None:
             return
+        scaled_delta_time = Time._runtime_tick(delta_time)
         self.input.update()
-        self.runtime_scene.update(float(delta_time))
+        self.runtime_scene.update(float(scaled_delta_time))
 
     def stop_play(self) -> None:
         if self.runtime_scene is not None:
@@ -48,6 +51,7 @@ class RuntimeManager:
         self.runtime_scene = None
         Input.unbind_manager(self.input)
         self.input.stop()
+        Time._runtime_reset()
         self.state = RuntimeState.STOPPED
 
     def handle_input_event(self, event: Any) -> None:

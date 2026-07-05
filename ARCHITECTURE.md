@@ -539,3 +539,55 @@ A Viewport traduz eventos Qt para eventos neutros do runtime somente quando o `R
 
 ### Limites
 Esta fase não implementa Input Mapping, Input Actions, gamepad, touch, joystick, rebind de teclas, UI de jogo, rede ou qualquer sistema avançado de dispositivos.
+
+## Time System (Fase 16)
+
+A Fase 16 cria a fonte oficial de tempo do Runtime. A API pública é `engine.time.Time`, também exportada por `engine.core` e `engine.runtime` para scripts.
+
+### API pública
+
+Sistemas e scripts consultam:
+
+```python
+from engine.runtime import Time
+
+Time.delta_time
+Time.unscaled_delta_time
+Time.time
+Time.unscaled_time
+Time.frame_count
+Time.time_scale
+Time.fixed_delta_time
+```
+
+`delta_time` e `time` são valores escalados. `unscaled_delta_time` e `unscaled_time` representam o tempo bruto recebido pelo runtime, sem influência de `time_scale`.
+
+### Autoridade de atualização
+
+`RuntimeManager` é a única entidade autorizada a avançar o relógio runtime:
+
+```text
+RuntimeManager.start_play(...)
+  -> Time reset
+RuntimeManager.tick(delta_time)
+  -> Time update
+  -> InputManager.update()
+  -> RuntimeScene.update(Time.delta_time)
+RuntimeManager.stop_play()
+  -> Time reset
+```
+
+Nenhum componente, script, Viewport ou sistema de editor deve calcular ou acumular tempo próprio para o Runtime.
+
+### Time Scale
+
+`Time.time_scale` controla apenas o tempo escalado:
+
+* `1.0`: tempo normal.
+* `0.5`: metade da velocidade.
+* `2.0`: dobro da velocidade.
+* `0.0`: `delta_time` fica zero, mas o Runtime continua ativo e `frame_count` avança.
+
+### Frame Counter e Fixed Delta
+
+`Time.frame_count` incrementa somente durante Play e é resetado ao Stop. `Time.fixed_delta_time` existe como infraestrutura para Physics futura; esta fase não implementa `FixedUpdate`, acumulador fixo ou scheduler.
