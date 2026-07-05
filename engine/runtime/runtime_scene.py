@@ -28,7 +28,10 @@ class RuntimeScene:
         self._copy_scene_state()
 
     def _clear_started_scene(self) -> None:
-        for obj in list(getattr(self.scene, "editable_objects", [])):
+        objs = getattr(self.scene, "editable_objects", None)
+        if objs is None:
+            objs = getattr(self.scene, "game_objects", [])
+        for obj in list(objs):
             if hasattr(self.scene, "_remove_go"):
                 self.scene._remove_go(obj)
             elif obj in getattr(self.scene, "game_objects", []):
@@ -40,7 +43,10 @@ class RuntimeScene:
             self.scene.selected_index = -1
 
     def _clone_editor_objects(self) -> None:
-        for editor_obj in list(getattr(self.editor_scene, "editable_objects", [])):
+        objs = getattr(self.editor_scene, "editable_objects", None)
+        if objs is None:
+            objs = getattr(self.editor_scene, "game_objects", [])
+        for editor_obj in list(objs):
             runtime_obj = clone_game_object(editor_obj)
             self.editor_to_runtime[str(editor_obj.id)] = runtime_obj
             self.runtime_to_editor[str(runtime_obj.id)] = editor_obj
@@ -49,7 +55,8 @@ class RuntimeScene:
             else:
                 self.scene.game_objects.append(runtime_obj)
                 runtime_obj.scene = self.scene
-            self.scene.editable_objects.append(runtime_obj)
+            if hasattr(self.scene, "editable_objects"):
+                self.scene.editable_objects.append(runtime_obj)
 
     def _copy_scene_state(self) -> None:
         self.scene.name = self.name
@@ -95,7 +102,10 @@ class RuntimeScene:
             for child in getattr(obj, "children", []):
                 visit(child, inherited_active)
 
-        for obj in list(getattr(self.scene, "editable_objects", [])):
+        objs = getattr(self.scene, "editable_objects", None)
+        if objs is None:
+            objs = getattr(self.scene, "game_objects", [])
+        for obj in list(objs):
             visit(obj, True)
         return ordered
 
@@ -116,6 +126,10 @@ class RuntimeScene:
         # Limpa o CameraManager antes do Play para isolar câmeras de edições ou execuções passadas
         from engine.graphics.camera_manager import CameraManager
         CameraManager.clear()
+        
+        # Limpa o AudioManager antes do Play para isolar áudio
+        from engine.audio import AudioManager
+        AudioManager.clear()
 
         self._runtime_started = True
         self._runtime_started_components.clear()
@@ -136,6 +150,25 @@ class RuntimeScene:
                 self.scene.editable_objects.append(fallback_go)
                 
             for comp in fallback_go.components:
+                if comp not in components:
+                    components.append(comp)
+
+        # Se não existir nenhum AudioListener, cria um padrão em runtime
+        from engine.audio import AudioManager
+        if AudioManager.get_active_listener() is None:
+            from engine.game_object import GameObject
+            from engine.audio import AudioListener
+            fallback_listener_go = GameObject("Default Audio Listener")
+            fallback_listener = fallback_listener_go.add_component(AudioListener())
+            if hasattr(self.scene, "_add_go"):
+                self.scene._add_go(fallback_listener_go)
+            else:
+                self.scene.game_objects.append(fallback_listener_go)
+                fallback_listener_go.scene = self.scene
+            if hasattr(self.scene, "editable_objects"):
+                self.scene.editable_objects.append(fallback_listener_go)
+                
+            for comp in fallback_listener_go.components:
                 if comp not in components:
                     components.append(comp)
 
@@ -164,6 +197,8 @@ class RuntimeScene:
         self._runtime_started = False
         from engine.graphics.camera_manager import CameraManager
         CameraManager.clear()
+        from engine.audio import AudioManager
+        AudioManager.clear()
 
     def update(self, dt: float) -> None:
         self.update_runtime(dt)
@@ -184,13 +219,17 @@ class RuntimeScene:
 
     def destroy(self) -> None:
         self.stop_runtime()
-        for obj in list(getattr(self.scene, "editable_objects", [])):
+        objs = getattr(self.scene, "editable_objects", None)
+        if objs is None:
+            objs = getattr(self.scene, "game_objects", [])
+        for obj in list(objs):
             if hasattr(self.scene, "_remove_go"):
                 self.scene._remove_go(obj)
             elif obj in getattr(self.scene, "game_objects", []):
                 self.scene.game_objects.remove(obj)
                 obj.scene = None
-        self.scene.editable_objects.clear()
+        if hasattr(self.scene, "editable_objects"):
+            self.scene.editable_objects.clear()
         Physics.unbind_world(self.physics_world)
         self.physics_world.clear()
         self.editor_to_runtime.clear()

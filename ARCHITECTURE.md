@@ -684,3 +684,40 @@ O `CameraManager` gerencia o ciclo de vida das câmeras em runtime, organizando 
 
 A câmera de edição do Editor nunca interfere no Runtime. No início do Play, o `CameraManager` é reiniciado. Caso não exista nenhuma câmera na cena do usuário, o Runtime cria uma câmera de fallback (`Default Runtime Camera`) contendo o componente `Camera` para garantir a exibição padrão e prevenir telas pretas.
 
+---
+
+## Audio Runtime (Fase 19)
+
+A Fase 19 introduz a infraestrutura oficial de áudio na Zennity Engine, de forma modular, isolada e desacoplada do Editor.
+
+### AudioSource Component
+
+O componente `AudioSource` herda de `Component` e é anexado a GameObjects para emitir efeitos sonoros ou trilhas no espaço de jogo:
+
+* `audio_clip`: Caminho absoluto ou relativo para o arquivo de som (ex. `.wav` ou `.ogg`).
+* `volume`: Nível de volume da fonte (entre `0.0` e `1.0`).
+* `pitch`: Modulador de tom/velocidade de reprodução (preparação para futura aceleração).
+* `loop`: Sinalizador booleano; se verdadeiro, reinicia a reprodução automaticamente ao terminar.
+* `play_on_awake`: Se verdadeiro, inicia a reprodução do clipe automaticamente assim que o Play Mode começa.
+* `mute`: Muta a fonte sem interromper a execução do clipe.
+
+Métodos públicos de controle expostos:
+* `play()`: Inicia a reprodução.
+* `stop()`: Interrompe a reprodução.
+* `pause()`: Pausa o canal de áudio.
+* `unpause()`: Retoma o áudio pausado.
+* `is_playing()`: Consulta se o canal está ativo e reproduzindo.
+
+### AudioListener Component
+
+O componente `AudioListener` representa o ponto receptor de som da cena. Embora no futuro suporte cálculo posicional (3D), nesta fase serve para registrar o receptor principal ativo. Apenas um listener pode estar ativo na cena ao mesmo tempo.
+
+### AudioManager
+
+O `AudioManager` é a interface de backend que gerencia todos os recursos de áudio:
+* Mantém o cache centralizado de clipes de áudio em memória (`pygame.mixer.Sound`) para evitar carregamentos repetidos de disco.
+* Controla o registro de componentes `AudioSource` e `AudioListener`.
+* Isola o runtime do Editor: no início e fim do Play Mode, executa o método `clear()`, que interrompe toda e qualquer reprodução de som física no Pygame mixer e libera os recursos alocados.
+* Se no início do Play nenhum `AudioListener` ativo for encontrado na cena, cria e anexa automaticamente um listener padrão de fallback (`Default Audio Listener`).
+
+

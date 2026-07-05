@@ -56,8 +56,11 @@ def register_component(component_type: Type[Component], name: str | None = None)
 
 from engine.core.component import Transform
 from engine.graphics.camera import Camera
+from engine.audio import AudioSource, AudioListener
 
 component_registry.register(Component)
 component_registry.register(Transform)
 component_registry.register(Camera)
+component_registry.register(AudioSource)
+component_registry.register(AudioListener)
 

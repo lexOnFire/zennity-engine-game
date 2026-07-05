@@ -244,6 +244,17 @@ from engine.graphics.camera import Camera
 main_camera = Camera.main
 ```
 
+A Fase 19 adiciona o Audio Runtime oficial. O componente `AudioSource` gerencia a reprodução de clipes de áudio em runtime (`audio_clip`, `volume`, `pitch`, `loop`, `play_on_awake` e `mute`). O componente `AudioListener` representa o ponto receptor de áudio. O `AudioManager` gerencia todas as fontes e listeners ativos, garantindo isolamento total do Editor e a interrupção completa de qualquer reprodução ao parar o Play Mode.
+
+Scripts podem manipular clipes de áudio obtendo o componente `AudioSource`:
+
+```python
+from engine.audio import AudioSource
+
+source = self.game_object.get_component(AudioSource)
+source.play()
+```
+
 ### Criando Scripts
 
 Crie um arquivo `.py` dentro de `Assets/Scripts` e anexe um `ScriptComponent` ao GameObject apontando para esse caminho. Um script mínimo:
