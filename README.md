@@ -21,7 +21,7 @@ O Zennity Editor é um ambiente integrado de desenvolvimento rico, responsivo e 
 * **Component System (Fase 9):** Base oficial de componentes com UUID, `enabled`, registro central, serialização explícita e integração com `GameObject`, cenas, prefabs e Inspector.
 * **Add/Remove Components (Fase 10):** O Inspector adiciona e remove componentes através do `ComponentRegistry`, sempre com comandos reversíveis no `CommandManager`.
 * **Inspector Plugin System (Fase 11/11.1):** O Inspector é apenas um host desacoplado; todos os editores de componente são resolvidos via `InspectorPluginRegistry`.
-* **Play Mode Foundation (Fase 12/13):** Play cria um Runtime World isolado a partir da cena aberta; `RuntimeManager.tick(delta_time)` atualiza somente essa cópia e dispara o lifecycle básico dos componentes.
+* **Play Mode Foundation (Fase 12-14):** Play cria um Runtime World isolado; `RuntimeManager.tick(delta_time)` atualiza somente essa cópia, dispara lifecycle de componentes e executa scripts Python via `ScriptRuntime`.
 * **Viewport Acelerada (OpenGL):** Renderização direta do framebuffer do Pygame no Qt em 60 FPS com suporte a atalho de foco (`F`) e alternância em tempo real entre projeções 2D e 3D.
 * **Terminal Python & Console:** Console de mensagens do sistema colorido por severidade com interpretador interativo integrado para executar scripts no contexto do editor.
 * **Ferramentas da Fase 1:** Seleção centralizada, Move Tool funcional com gizmo de translação, Snap opcional e modos Rotate/Scale preparados para implementação futura.
@@ -147,6 +147,27 @@ class MyComponent(Component):
 
 `RuntimeManager.tick(delta_time)` só executa quando o estado é `PLAYING`. Componentes desabilitados e objetos inativos não recebem lifecycle.
 
+A Fase 14 adiciona o runtime oficial de scripts Python. Scripts de usuário herdam de `ScriptBehaviour` e são referenciados por `ScriptComponent`:
+
+```python
+from engine.runtime import ScriptBehaviour
+
+class PlayerController(ScriptBehaviour):
+    def on_awake(self):
+        ...
+
+    def on_start(self):
+        ...
+
+    def on_update(self, delta_time):
+        self.transform.position[0] += 10 * delta_time
+
+    def on_destroy(self):
+        ...
+```
+
+`ScriptRuntime` carrega módulos apenas dentro do Runtime World. Cada `GameObject` recebe sua própria instância do script, mesmo quando usa o mesmo arquivo `.py`. Erros em um script são registrados e desabilitam somente aquele `ScriptComponent`, sem derrubar o Play Mode. O Editor World nunca executa scripts nem recebe mutações feitas por eles durante Play.
+
 ---
 
 ## 🗂️ Estrutura do Projeto
@@ -155,7 +176,7 @@ class MyComponent(Component):
 zennity-engine-game/
 ├── engine/                # Módulos canônicos da Zennity Engine (ECS)
 │   ├── core/              # Engine principal, Cenas e EventBus
-│   ├── runtime/           # RuntimeScene, RuntimeManager e clone profundo do Play Mode
+│   ├── runtime/           # RuntimeScene, RuntimeManager, ScriptRuntime e clone profundo do Play Mode
 │   ├── physics/           # RigidBody, Box/Circle Colliders
 │   └── graphics/          # Renderers 3D, Câmera e Matrizes
 ├── editor/                # O Novo Zennity Editor modular (PySide6)

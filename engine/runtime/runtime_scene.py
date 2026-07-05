@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from engine.runtime.clone import clone_game_object
+from engine.runtime.script_runtime import ScriptRuntime
 
 
 class RuntimeScene:
@@ -14,6 +15,7 @@ class RuntimeScene:
         self.scene.start()
         self.name = f"{getattr(editor_scene, 'name', 'Scene')} (Runtime)"
         self.playing = True
+        self.script_runtime = ScriptRuntime(self)
         self._runtime_started = False
         self._runtime_started_components: list[Any] = []
         self.editor_to_runtime: dict[str, Any] = {}
@@ -109,7 +111,9 @@ class RuntimeScene:
             return
         self._runtime_started = True
         self._runtime_started_components.clear()
-        for component in self._iter_enabled_runtime_components():
+        components = self._iter_enabled_runtime_components()
+        self.script_runtime.start(components)
+        for component in components:
             component.on_runtime_start()
             self._runtime_started_components.append(component)
 
@@ -119,12 +123,14 @@ class RuntimeScene:
         for component in self._iter_enabled_runtime_components():
             if component in self._runtime_started_components:
                 component.on_runtime_update(float(delta_time))
+        self.script_runtime.update(float(delta_time))
 
     def stop_runtime(self) -> None:
         if not self._runtime_started:
             return
         for component in list(reversed(self._runtime_started_components)):
             component.on_runtime_stop()
+        self.script_runtime.stop()
         self._runtime_started_components.clear()
         self._runtime_started = False
 

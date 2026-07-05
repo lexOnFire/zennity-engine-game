@@ -362,7 +362,7 @@ Ao parar:
 * alterações feitas durante Play desaparecem.
 
 ### Limites
-Esta fase não adiciona execução de scripts, física nova, input de jogo, áudio, animação, partículas, IA, hot reload ou pipeline avançado de assets. A física já existente pode atualizar objetos dentro do Runtime World, mas a Fase 12 apenas garante isolamento arquitetural.
+Esta fase não adiciona física nova, input de jogo, áudio, animação, partículas, IA, hot reload ou pipeline avançado de assets. A física já existente pode atualizar objetos dentro do Runtime World, mas a Fase 12 apenas garante isolamento arquitetural.
 
 ## Runtime Update Loop / Component Lifecycle (Fase 13)
 
@@ -419,4 +419,58 @@ Esta fase não implementa eventos dinâmicos para enable/disable durante Play; o
 Somente clones do Runtime World recebem `on_runtime_*`. Objetos do Editor World continuam persistentes e não são atualizados pelo Runtime Loop.
 
 ### Limites
-Esta fase não implementa execução de scripts Python, física nova, input, áudio, animações, colisões novas, eventos complexos, pause, step frame ou hot reload.
+Esta fase não implementa física nova, input, áudio, animações, colisões novas, eventos complexos, pause, step frame ou hot reload.
+
+## Python Script Runtime (Fase 14)
+
+A Fase 14 introduz a execução oficial de scripts Python no Runtime World. Ela não muda o Editor World e não adiciona hot reload, debugger, sandbox, visual scripting, física ou input avançado.
+
+### ScriptBehaviour
+Scripts de usuário herdam de `engine.runtime.ScriptBehaviour`:
+
+```python
+from engine.runtime import ScriptBehaviour
+
+class PlayerController(ScriptBehaviour):
+    def on_awake(self): ...
+    def on_start(self): ...
+    def on_update(self, delta_time): ...
+    def on_destroy(self): ...
+```
+
+Cada instância recebe:
+
+* `game_object`: o `GameObject` clonado no Runtime World.
+* `transform`: atalho para `game_object.transform`.
+* `runtime`: o `ScriptRuntime` responsável pela execução.
+* `scene`: a `RuntimeScene` ativa.
+
+### ScriptRuntime
+`engine.runtime.ScriptRuntime` pertence à `RuntimeScene`. Ele carrega arquivos referenciados por `ScriptComponent.script_path`, resolve uma subclasse de `ScriptBehaviour`, cria uma instância por componente e mantém essas instâncias até o Stop.
+
+### Ordem de execução
+Ao iniciar Play:
+
+1. `RuntimeManager` cria uma `RuntimeScene`.
+2. `RuntimeScene` clona o Editor World.
+3. `ScriptRuntime` carrega scripts dos `ScriptComponent` habilitados em objetos ativos.
+4. Cada script recebe `on_awake()` e `on_start()`.
+5. Componentes continuam recebendo `on_runtime_start()`.
+
+Durante Play:
+
+1. `RuntimeManager.tick(delta_time)` delega para `RuntimeScene.update(delta_time)`.
+2. Componentes recebem `on_runtime_update(delta_time)`.
+3. Scripts habilitados recebem `on_update(delta_time)`.
+
+Ao parar:
+
+1. Componentes iniciados recebem `on_runtime_stop()`.
+2. Scripts instanciados recebem `on_destroy()`.
+3. Instâncias de script são removidas.
+4. A `RuntimeScene` é destruída.
+
+### Segurança e isolamento
+Scripts são executados somente nos clones do Runtime World. Objetos do Editor World não recebem `on_awake`, `on_start`, `on_update` ou `on_destroy`, e alterações feitas por scripts desaparecem ao parar Play.
+
+Se um script falha durante start ou update, o erro é registrado, apenas aquele `ScriptComponent` é desabilitado e o restante da cena continua rodando.
