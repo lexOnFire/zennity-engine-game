@@ -53,6 +53,7 @@ class ViewportWidget(QOpenGLWidget):
 
         self.viewmodel: Optional[SceneViewModel] = None
         self.selection_manager: Optional[SelectionManager] = None
+        self.runtime_manager = None
         self.active_scene = None          # Editor2DScene ou EditorScene (3D)
         self.editor_mode: str = "2D"
 
@@ -102,6 +103,9 @@ class ViewportWidget(QOpenGLWidget):
 
         # Espelha os objetos da cena no SceneModel (Outliner)
         self._sync_model_from_scene()
+
+    def set_runtime_manager(self, runtime_manager) -> None:
+        self.runtime_manager = runtime_manager
 
     # ──────────────────────────────────────────────────────────────────────────
     # Sincronização Cena ↔ Modelo
@@ -452,7 +456,14 @@ class ViewportWidget(QOpenGLWidget):
         self._last_time = now
 
         if self.active_scene:
-            self.active_scene.update(dt)
+            if (
+                self.runtime_manager is not None
+                and getattr(self.runtime_manager, "is_playing", False)
+                and getattr(self.runtime_manager, "runtime_scene", None) is self.active_scene
+            ):
+                self.runtime_manager.tick(dt)
+            else:
+                self.active_scene.update(dt)
 
             # Sincroniza seleção da cena legada → SelectionManager enquanto arrasta
             self._sync_selection_to_model()

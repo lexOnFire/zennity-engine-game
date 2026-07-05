@@ -67,6 +67,15 @@ class Component:
     def destroy(self) -> None:
         """Chamado quando o componente ou seu GO é destruído."""
 
+    def on_runtime_start(self) -> None:
+        """Chamado uma vez quando o Play Mode inicia no Runtime World."""
+
+    def on_runtime_update(self, delta_time: float) -> None:
+        """Chamado a cada tick do Runtime World durante o Play Mode."""
+
+    def on_runtime_stop(self) -> None:
+        """Chamado uma vez quando o Play Mode encerra no Runtime World."""
+
     def serialize_properties(self) -> dict[str, Any]:
         return {}
 

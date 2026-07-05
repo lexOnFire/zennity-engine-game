@@ -214,6 +214,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.viewport.set_tool_manager(self.editor_context.tools)
         self.viewport.set_editor_state(self.editor_context.state)
         self.viewport.set_command_manager(self.editor_context.commands)
+        self.viewport.set_runtime_manager(self.editor_context.runtime)
         self.editor_scene = self.viewport.active_scene
 
         scene_tabs = QTabWidget()

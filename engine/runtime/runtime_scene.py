@@ -14,6 +14,8 @@ class RuntimeScene:
         self.scene.start()
         self.name = f"{getattr(editor_scene, 'name', 'Scene')} (Runtime)"
         self.playing = True
+        self._runtime_started = False
+        self._runtime_started_components: list[Any] = []
         self.editor_to_runtime: dict[str, Any] = {}
         self.runtime_to_editor: dict[str, Any] = {}
         self._clear_started_scene()
@@ -79,7 +81,55 @@ class RuntimeScene:
             return None
         return self.runtime_to_editor.get(str(getattr(obj, "id", "")))
 
+    def _iter_runtime_objects(self) -> list[Any]:
+        ordered: list[Any] = []
+
+        def visit(obj: Any, parent_active: bool = True) -> None:
+            inherited_active = parent_active and bool(getattr(obj, "active", True))
+            ordered.append((obj, inherited_active))
+            for child in getattr(obj, "children", []):
+                visit(child, inherited_active)
+
+        for obj in list(getattr(self.scene, "editable_objects", [])):
+            visit(obj, True)
+        return ordered
+
+    def _iter_enabled_runtime_components(self) -> list[Any]:
+        components: list[Any] = []
+        for obj, active in self._iter_runtime_objects():
+            if not active:
+                continue
+            for component in getattr(obj, "components", []):
+                if bool(getattr(component, "enabled", True)):
+                    components.append(component)
+        return components
+
+    def start_runtime(self) -> None:
+        if self._runtime_started:
+            return
+        self._runtime_started = True
+        self._runtime_started_components.clear()
+        for component in self._iter_enabled_runtime_components():
+            component.on_runtime_start()
+            self._runtime_started_components.append(component)
+
+    def update_runtime(self, delta_time: float) -> None:
+        if not self._runtime_started:
+            return
+        for component in self._iter_enabled_runtime_components():
+            if component in self._runtime_started_components:
+                component.on_runtime_update(float(delta_time))
+
+    def stop_runtime(self) -> None:
+        if not self._runtime_started:
+            return
+        for component in list(reversed(self._runtime_started_components)):
+            component.on_runtime_stop()
+        self._runtime_started_components.clear()
+        self._runtime_started = False
+
     def update(self, dt: float) -> None:
+        self.update_runtime(dt)
         self.scene.update(dt)
 
     def draw(self, screen: Any) -> None:
@@ -89,6 +139,7 @@ class RuntimeScene:
         self.scene.handle_event(event)
 
     def destroy(self) -> None:
+        self.stop_runtime()
         for obj in list(getattr(self.scene, "editable_objects", [])):
             if hasattr(self.scene, "_remove_go"):
                 self.scene._remove_go(obj)

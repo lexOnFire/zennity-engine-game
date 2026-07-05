@@ -26,11 +26,18 @@ class RuntimeManager:
         if self.runtime_scene is not None:
             return self.runtime_scene
         self.runtime_scene = RuntimeScene(editor_scene)
+        self.runtime_scene.start_runtime()
         self.state = RuntimeState.PLAYING
         return self.runtime_scene
 
+    def tick(self, delta_time: float) -> None:
+        if self.state != RuntimeState.PLAYING or self.runtime_scene is None:
+            return
+        self.runtime_scene.update(float(delta_time))
+
     def stop_play(self) -> None:
         if self.runtime_scene is not None:
+            self.runtime_scene.stop_runtime()
             self.runtime_scene.destroy()
         self.runtime_scene = None
         self.state = RuntimeState.STOPPED

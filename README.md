@@ -21,7 +21,7 @@ O Zennity Editor é um ambiente integrado de desenvolvimento rico, responsivo e 
 * **Component System (Fase 9):** Base oficial de componentes com UUID, `enabled`, registro central, serialização explícita e integração com `GameObject`, cenas, prefabs e Inspector.
 * **Add/Remove Components (Fase 10):** O Inspector adiciona e remove componentes através do `ComponentRegistry`, sempre com comandos reversíveis no `CommandManager`.
 * **Inspector Plugin System (Fase 11/11.1):** O Inspector é apenas um host desacoplado; todos os editores de componente são resolvidos via `InspectorPluginRegistry`.
-* **Play Mode Foundation (Fase 12):** Play cria um Runtime World isolado a partir da cena aberta; Stop descarta essa cópia e restaura o Editor World sem alterar a cena original.
+* **Play Mode Foundation (Fase 12/13):** Play cria um Runtime World isolado a partir da cena aberta; `RuntimeManager.tick(delta_time)` atualiza somente essa cópia e dispara o lifecycle básico dos componentes.
 * **Viewport Acelerada (OpenGL):** Renderização direta do framebuffer do Pygame no Qt em 60 FPS com suporte a atalho de foco (`F`) e alternância em tempo real entre projeções 2D e 3D.
 * **Terminal Python & Console:** Console de mensagens do sistema colorido por severidade com interpretador interativo integrado para executar scripts no contexto do editor.
 * **Ferramentas da Fase 1:** Seleção centralizada, Move Tool funcional com gizmo de translação, Snap opcional e modos Rotate/Scale preparados para implementação futura.
@@ -130,6 +130,22 @@ O Play Mode separa dois mundos:
 * `Runtime World`: cópia profunda criada por `RuntimeManager.start_play(...)`, renderizada pela Viewport durante Play e destruída por `stop_play()`.
 
 `RuntimeScene` clona `GameObject`, `Transform`, componentes e hierarquia sem compartilhar instâncias com a cena do editor. Alterações feitas durante Play desaparecem ao parar.
+
+A Fase 13 adiciona o ciclo de vida básico de componentes:
+
+```python
+class MyComponent(Component):
+    def on_runtime_start(self):
+        ...
+
+    def on_runtime_update(self, delta_time):
+        ...
+
+    def on_runtime_stop(self):
+        ...
+```
+
+`RuntimeManager.tick(delta_time)` só executa quando o estado é `PLAYING`. Componentes desabilitados e objetos inativos não recebem lifecycle.
 
 ---
 

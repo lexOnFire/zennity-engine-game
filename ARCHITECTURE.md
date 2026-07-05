@@ -363,3 +363,60 @@ Ao parar:
 
 ### Limites
 Esta fase não adiciona execução de scripts, física nova, input de jogo, áudio, animação, partículas, IA, hot reload ou pipeline avançado de assets. A física já existente pode atualizar objetos dentro do Runtime World, mas a Fase 12 apenas garante isolamento arquitetural.
+
+## Runtime Update Loop / Component Lifecycle (Fase 13)
+
+A Fase 13 adiciona o loop oficial de atualização do Runtime:
+
+```text
+RuntimeManager.start_play(editor_scene)
+RuntimeManager.tick(delta_time)
+RuntimeManager.stop_play()
+```
+
+`RuntimeManager.tick(delta_time)` só faz trabalho quando o estado é `PLAYING`. Se o runtime estiver `STOPPED`, o método retorna sem alterar nada.
+
+### Ordem de execução
+Ao iniciar Play:
+
+1. `RuntimeManager` cria uma `RuntimeScene`.
+2. `RuntimeScene` clona o Editor World.
+3. Componentes habilitados em objetos ativos recebem `on_runtime_start()` uma única vez.
+
+Durante Play:
+
+1. `RuntimeManager.tick(delta_time)` delega para `RuntimeScene.update(delta_time)`.
+2. `RuntimeScene` chama `on_runtime_update(delta_time)` nos componentes que receberam start.
+3. A cena runtime continua podendo executar o update legado já existente, sempre sobre objetos runtime.
+
+Ao parar:
+
+1. Componentes iniciados recebem `on_runtime_stop()` uma única vez, em ordem reversa.
+2. A `RuntimeScene` é destruída.
+3. O editor volta para o Editor World original.
+
+### Hooks de Component
+`engine.core.Component` possui hooks vazios:
+
+```python
+def on_runtime_start(self) -> None: ...
+def on_runtime_update(self, delta_time: float) -> None: ...
+def on_runtime_stop(self) -> None: ...
+```
+
+Componentes futuros podem sobrescrever esses métodos sem alterar `RuntimeManager`, `RuntimeScene` ou o Editor.
+
+### Enabled e Active
+O lifecycle respeita:
+
+* `component.enabled == False`: o componente não recebe start/update/stop.
+* `game_object.active == False`: nenhum componente desse objeto recebe lifecycle.
+* filhos de um objeto inativo também são ignorados pelo lifecycle runtime.
+
+Esta fase não implementa eventos dinâmicos para enable/disable durante Play; o estado inicial no momento do Play define quais componentes entram no lifecycle.
+
+### Segurança
+Somente clones do Runtime World recebem `on_runtime_*`. Objetos do Editor World continuam persistentes e não são atualizados pelo Runtime Loop.
+
+### Limites
+Esta fase não implementa execução de scripts Python, física nova, input, áudio, animações, colisões novas, eventos complexos, pause, step frame ou hot reload.
