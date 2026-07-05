@@ -210,6 +210,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
 
         self.viewport = Phase1ViewportWidget(self)
         self.viewport.setObjectName("ViewportCanvas")
+        self.viewport.set_view_mode("scene")
         self.viewport.set_viewmodel(self.scene_view_model)
         self.viewport.set_tool_manager(self.editor_context.tools)
         self.viewport.set_editor_state(self.editor_context.state)
@@ -217,21 +218,36 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.viewport.set_runtime_manager(self.editor_context.runtime)
         self.editor_scene = self.viewport.active_scene
 
-        scene_tabs = QTabWidget()
-        scene_tabs.addTab(self.hierarchy, "Hierarchy")
-        scene_tabs.addTab(self.create_panel, "Criar")
+        self.game_viewport = Phase1ViewportWidget(self)
+        self.game_viewport.setObjectName("GameViewportCanvas")
+        self.game_viewport.set_view_mode("game")
+        self.game_viewport.set_viewmodel(self.scene_view_model)
+        self.game_viewport.set_tool_manager(self.editor_context.tools)
+        self.game_viewport.set_editor_state(self.editor_context.state)
+        self.game_viewport.set_command_manager(self.editor_context.commands)
+        self.game_viewport.set_runtime_manager(self.editor_context.runtime)
+        self.game_viewport.active_scene = self.editor_scene
+
+        hierarchy_tabs = QTabWidget()
+        hierarchy_tabs.addTab(self.hierarchy, "Hierarchy")
+        hierarchy_tabs.addTab(self.create_panel, "Criar")
 
         asset_tabs = QTabWidget()
         asset_tabs.addTab(self.resources, "Assets")
         asset_tabs.addTab(self.prefabs, "Adicionar Prefabs")
 
         left = QSplitter(Qt.Vertical)
-        left.addWidget(scene_tabs)
+        left.addWidget(hierarchy_tabs)
         left.addWidget(asset_tabs)
         left.setSizes([380, 360])
 
+        self.viewport_tabs = QTabWidget()
+        self.viewport_tabs.setObjectName("SceneGameTabs")
+        self.viewport_tabs.addTab(self.viewport, "Scene")
+        self.viewport_tabs.addTab(self.game_viewport, "Game")
+
         center = QSplitter(Qt.Vertical)
-        center.addWidget(self.viewport)
+        center.addWidget(self.viewport_tabs)
         console_row = QSplitter(Qt.Horizontal)
         console_row.addWidget(self.console)
         console_row.addWidget(self.profiler)
@@ -260,6 +276,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.viewport.object_transform_changed.connect(self.on_viewport_object_changed)
         self.viewport.tool_message_requested.connect(self.on_tool_message_requested)
         self.viewport.history_changed.connect(self._update_undo_redo_states)
+        self.game_viewport.tool_message_requested.connect(self.on_tool_message_requested)
         self.on_viewport_selection_changed(self.editor_context.selection.selected)
         self._sync_play_controls()
         self._update_undo_redo_states()
@@ -480,10 +497,12 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         editor_selected = self.editor_context.selection.selected
         runtime_scene = self.editor_context.runtime.start_play(editor_scene)
         runtime_selected = runtime_scene.runtime_for_editor(editor_selected)
-        self.viewport.active_scene = runtime_scene
-        self.viewport._apply_qt_shims()
-        self.viewport.resizeGL(self.viewport.width(), self.viewport.height())
-        self.viewport._sync_model_from_scene()
+        self.game_viewport.active_scene = runtime_scene
+        self.game_viewport._apply_qt_shims()
+        self.game_viewport.resizeGL(self.game_viewport.width(), self.game_viewport.height())
+        self.game_viewport._sync_model_from_scene()
+        if hasattr(self, "viewport_tabs"):
+            self.viewport_tabs.setCurrentWidget(self.game_viewport)
         self.select_object(runtime_selected)
         self._sync_play_controls()
         self.status_msg.setText("Simulacao ativa.")
@@ -500,8 +519,13 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         editor_selected = runtime_scene.editor_for_runtime(runtime_selected) if runtime_scene is not None else None
         self.editor_context.runtime.stop_play()
         self.viewport.active_scene = self._editor_scene()
+        self.game_viewport.active_scene = self._editor_scene()
         self.viewport._apply_qt_shims()
         self.viewport.resizeGL(self.viewport.width(), self.viewport.height())
+        self.game_viewport._apply_qt_shims()
+        self.game_viewport.resizeGL(self.game_viewport.width(), self.game_viewport.height())
+        if hasattr(self, "viewport_tabs"):
+            self.viewport_tabs.setCurrentWidget(self.viewport)
         self.refresh_hierarchy_from_viewport()
         self.select_object(editor_selected)
         self._sync_play_controls()

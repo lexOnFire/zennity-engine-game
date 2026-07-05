@@ -220,6 +220,17 @@ def test_phase1_play_controls_reflect_simulation_state(
     assert not phase1_editor.editor_context.state.is_playing
 
 
+def test_phase1_editor_has_scene_and_game_view_tabs(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    tabs = phase1_editor.viewport_tabs
+
+    assert tabs.tabText(0) == "Scene"
+    assert tabs.tabText(1) == "Game"
+    assert phase1_editor.viewport.is_game_view() is False
+    assert phase1_editor.game_viewport.is_game_view() is True
+
+
 def test_phase1_stop_restores_scene_and_reselects_restored_object(
     phase1_editor: ZennityPhase1Editor,
 ) -> None:
@@ -230,7 +241,7 @@ def test_phase1_stop_restores_scene_and_reselects_restored_object(
     phase1_editor.play()
     runtime_selected = phase1_editor.editor_context.selection.selected
     assert runtime_selected is not selected
-    phase1_editor.viewport.active_scene.update(0.1)
+    phase1_editor.game_viewport.active_scene.update(0.1)
     assert float(runtime_selected.transform.position[1]) > original_y
     assert float(selected.transform.position[1]) == pytest.approx(original_y)
 
@@ -256,8 +267,9 @@ def test_phase1_play_cycles_start_from_same_physics_state(
     for _ in range(3):
         player = phase1_editor.scene_objects()[1]
         phase1_editor.play()
-        runtime_player = phase1_editor.editor_context.selection.selected
-        phase1_editor.viewport.active_scene.update(0.1)
+        runtime_scene = phase1_editor.editor_context.runtime.runtime_scene
+        runtime_player = runtime_scene.runtime_for_editor(player)
+        phase1_editor.game_viewport.active_scene.update(0.1)
         deltas.append(float(runtime_player.transform.position[1]) - original_y)
         assert float(player.transform.position[1]) == pytest.approx(original_y)
         phase1_editor.stop()
@@ -279,7 +291,7 @@ def test_phase1_play_stop_preserves_objects_and_selection(
     phase1_editor.select_object(selected)
 
     phase1_editor.play()
-    phase1_editor.viewport.active_scene.update(0.1)
+    phase1_editor.game_viewport.active_scene.update(0.1)
     phase1_editor.stop()
 
     restored_objects = phase1_editor.scene_objects()
@@ -300,10 +312,12 @@ def test_phase1_play_mode_switches_viewport_and_inspector_to_runtime_scene(
 
     runtime_scene = phase1_editor.editor_context.runtime.runtime_scene
     runtime_selected = phase1_editor.editor_context.selection.selected
-    assert phase1_editor.viewport.active_scene is runtime_scene
+    assert phase1_editor.viewport.active_scene is editor_scene
+    assert phase1_editor.game_viewport.active_scene is runtime_scene
+    assert phase1_editor.viewport_tabs.currentWidget() is phase1_editor.game_viewport
     assert runtime_selected is runtime_scene.runtime_for_editor(editor_selected)
     assert phase1_editor.inspector.current_object is runtime_selected
-    assert phase1_editor.hierarchy.tree.topLevelItem(0).child(1).data(0, Qt.UserRole) is runtime_selected
+    assert phase1_editor.hierarchy.tree.topLevelItem(0).child(1).data(0, Qt.UserRole) is editor_selected
 
     runtime_selected.transform.position[0] += 100.0
     assert float(editor_selected.transform.position[0]) != pytest.approx(float(runtime_selected.transform.position[0]))
@@ -311,6 +325,8 @@ def test_phase1_play_mode_switches_viewport_and_inspector_to_runtime_scene(
     phase1_editor.stop()
 
     assert phase1_editor.viewport.active_scene is editor_scene
+    assert phase1_editor.game_viewport.active_scene is editor_scene
+    assert phase1_editor.viewport_tabs.currentWidget() is phase1_editor.viewport
     assert phase1_editor.editor_context.runtime.runtime_scene is None
     assert phase1_editor.editor_context.selection.selected is editor_selected
     assert phase1_editor.inspector.current_object is editor_selected

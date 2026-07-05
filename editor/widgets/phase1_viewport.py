@@ -75,6 +75,7 @@ class Phase1ViewportWidget(ViewportWidget):
 
         # Tempo do último render
         self._last_render_time: float = time.time()
+        self.view_mode: str = "scene"
 
     # ── Injeção de dependências ───────────────────────────────────────────────
 
@@ -87,6 +88,12 @@ class Phase1ViewportWidget(ViewportWidget):
     def set_command_manager(self, command_manager: CommandManager) -> None:
         self.command_manager = command_manager
 
+    def set_view_mode(self, mode: str) -> None:
+        self.view_mode = "game" if str(mode).lower() == "game" else "scene"
+
+    def is_game_view(self) -> bool:
+        return self.view_mode == "game"
+
     # ── Helpers de estado ─────────────────────────────────────────────────────
 
     def _active_tool(self) -> EditorTool:
@@ -95,10 +102,12 @@ class Phase1ViewportWidget(ViewportWidget):
         return self.tool_manager.active_tool
 
     def _is_playing(self) -> bool:
+        if self.editor_state is not None and bool(getattr(self.editor_state, "is_playing", False)):
+            return True
         return bool(getattr(getattr(self, "active_scene", None), "playing", False))
 
     def _should_draw_gizmo(self, selected: Any) -> bool:
-        return selected is not None and not self._is_playing()
+        return selected is not None and not self._is_playing() and not self.is_game_view()
 
     def _snap_size(self) -> float:
         if self.editor_state is None:
@@ -151,6 +160,19 @@ class Phase1ViewportWidget(ViewportWidget):
     def sync_camera_from_engine(self) -> None:
         """Atualiza a câmera a partir da engine se modificada externamente (ex. testes)."""
         from engine.graphics.camera2d import Camera2D
+        if self.is_game_view():
+            try:
+                from engine.graphics.camera import Camera
+                main_camera = Camera.main
+            except Exception:
+                main_camera = None
+            if main_camera is not None and getattr(main_camera, "game_object", None) is not None:
+                transform = main_camera.game_object.transform
+                self.camera.zoom = float(getattr(main_camera, "zoom", 1.0))
+                self.camera.target_zoom = self.camera.zoom
+                self.camera.position[0] = float(transform.position[0])
+                self.camera.position[1] = float(transform.position[1])
+                return
         if Camera2D.main is not None:
             if self._is_playing():
                 # Em modo de jogo, copia passivamente sem restrições
@@ -467,7 +489,7 @@ class Phase1ViewportWidget(ViewportWidget):
     # ── Cursores e Mensagens ──────────────────────────────────────────────────
 
     def _update_hover_cursor(self, x: float, y: float) -> None:
-        if self._is_playing():
+        if self._is_playing() or self.is_game_view():
             self.unsetCursor()
             return
         tool = self._active_tool()
@@ -503,6 +525,9 @@ class Phase1ViewportWidget(ViewportWidget):
     # ── Eventos de Entrada (Mouse / Wheel) ────────────────────────────────────
 
     def wheelEvent(self, event: QWheelEvent) -> None:
+        if self.is_game_view():
+            event.accept()
+            return
         """Processa zoom suave centralizado no cursor do mouse."""
         degrees = event.angleDelta().y() / 8.0
         steps = degrees / 15.0
@@ -513,6 +538,9 @@ class Phase1ViewportWidget(ViewportWidget):
         event.accept()
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
+        if self.is_game_view():
+            super().mousePressEvent(event)
+            return
         if self._is_playing():
             super().mousePressEvent(event)
             return
@@ -573,6 +601,9 @@ class Phase1ViewportWidget(ViewportWidget):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        if self.is_game_view():
+            super().mouseMoveEvent(event)
+            return
         if self._is_playing():
             super().mouseMoveEvent(event)
             return
@@ -607,6 +638,9 @@ class Phase1ViewportWidget(ViewportWidget):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        if self.is_game_view():
+            super().mouseReleaseEvent(event)
+            return
         if self._is_playing():
             super().mouseReleaseEvent(event)
             return
@@ -632,6 +666,28 @@ class Phase1ViewportWidget(ViewportWidget):
                 return
         super().mouseReleaseEvent(event)
 
+    def _tick(self) -> None:
+        now = time.time()
+        dt = min(now - self._last_time, 0.1)
+        self._last_time = now
+
+        if self.active_scene:
+            runtime_playing = (
+                self.runtime_manager is not None
+                and getattr(self.runtime_manager, "is_playing", False)
+            )
+            is_runtime_scene = (
+                runtime_playing
+                and getattr(self.runtime_manager, "runtime_scene", None) is self.active_scene
+            )
+            if is_runtime_scene:
+                self.runtime_manager.tick(dt)
+            elif not runtime_playing:
+                self.active_scene.update(dt)
+                self._sync_selection_to_model()
+
+        self.update()
+
     # ── Ciclo de Renderização (paintGL) ───────────────────────────────────────
 
     def paintGL(self) -> None:
@@ -647,7 +703,7 @@ class Phase1ViewportWidget(ViewportWidget):
         now = time.time()
         dt = min(now - self._last_render_time, 0.1)
         self._last_render_time = now
-        if not self._is_playing():
+        if not self._is_playing() and not self.is_game_view():
             self.camera.update(dt)
 
         # Salva o estado real do grid e desativa temporariamente para o blit do Pygame
@@ -666,7 +722,8 @@ class Phase1ViewportWidget(ViewportWidget):
         painter = QPainter(self)
         
         # 1. Renderiza o Grid infinito usando QPainter por cima do fundo do Pygame
-        self.renderer.render_grid(painter, self.camera, real_show_grid)
+        draw_editor_overlays = not self.is_game_view() and not self._is_playing()
+        self.renderer.render_grid(painter, self.camera, real_show_grid and draw_editor_overlays)
 
         # 2. Renderiza overlays Qt usando QPainter (Outlines, HUD, Bounding box, coordenadas)
         selected = self._selected_transform_object()
@@ -675,17 +732,18 @@ class Phase1ViewportWidget(ViewportWidget):
         grid_size = self.renderer.grid_renderer.grid_size
         snap_on = self._snap_enabled()
 
-        self.renderer.render_qt_overlays(
-            painter=painter,
-            camera=self.camera,
-            selected=selected,
-            active_tool_name=active_tool.value,
-            object_count=object_count,
-            grid_size=grid_size,
-            snap_on=snap_on,
-            mouse_screen_pos=self._qt_mouse_pos,
-            is_playing=self._is_playing(),
-        )
+        if not self.is_game_view():
+            self.renderer.render_qt_overlays(
+                painter=painter,
+                camera=self.camera,
+                selected=selected,
+                active_tool_name=active_tool.value,
+                object_count=object_count,
+                grid_size=grid_size,
+                snap_on=snap_on,
+                mouse_screen_pos=self._qt_mouse_pos,
+                is_playing=self._is_playing(),
+            )
 
         # Renderiza os Gizmos clássicos (MOVE/ROTATE) por cima do HUD/Outlines
         if self._should_draw_gizmo(selected):
