@@ -253,5 +253,55 @@ register_component(Health)
 
 O Inspector não importa `Health`; ele apenas lê o registry.
 
+## Inspector Plugin System (Fase 11)
+
+A Fase 11 desacopla a renderização do Inspector dos tipos concretos de componentes. `RealInspectorPanel` atua como host: ele percorre `GameObject.components`, consulta o registry de plugins e hospeda o widget retornado.
+
+### InspectorPlugin
+`editor.inspector.plugin.InspectorPlugin` define o contrato:
+
+* `supports(component)`: informa se o plugin edita aquele componente.
+* `create_widget(component, command_manager, refresh)`: constrói a interface do componente.
+* `set_property(...)`: helper para alterações com `CommandManager`.
+* `refresh_widget(...)`: ponto de extensão para sincronização futura.
+
+Nenhum plugin deve alterar propriedades diretamente quando a ação vem da UI; alterações devem passar por `CommandManager`.
+
+### InspectorPluginRegistry
+`editor.inspector.plugin_registry.InspectorPluginRegistry` registra e resolve plugins. O Inspector chama apenas:
+
+```python
+plugin = inspector_plugin_registry.plugin_for(component)
+```
+
+Assim o Inspector não precisa importar `RigidBody`, `Collider`, `Script`, `Camera` ou futuros componentes.
+
+### Plugins padrão
+Os plugins iniciais ficam em `editor.inspector.default_plugins`:
+
+* `TransformInspectorPlugin`
+* `RigidBodyInspectorPlugin`
+* `ColliderInspectorPlugin`
+* `ScriptInspectorPlugin`
+
+Eles são registrados automaticamente no `inspector_plugin_registry`.
+
+### Criando novos editores
+Um novo componente aparece no menu Add Component ao registrar o `Component`; ele ganha UI própria ao registrar também o `InspectorPlugin`:
+
+```python
+from editor.inspector import InspectorPlugin, inspector_plugin_registry
+
+class HealthInspectorPlugin(InspectorPlugin):
+    component_type = "Health"
+
+    def create_widget(self, component, command_manager, refresh=None):
+        ...
+
+inspector_plugin_registry.register(HealthInspectorPlugin)
+```
+
+Esse fluxo permite adicionar componentes e editores sem alterar o Inspector.
+
 ### Limites
 Estas fases não implementam Play Mode novo, física real adicional, scripting avançado, visual scripting ou editor visual avançado de componentes. Elas criam a base extensível para essas fases futuras.

@@ -17,8 +17,8 @@ from PySide6.QtWidgets import (
 from editor.premium_editor import HierarchyPanel, InspectorPanel
 from editor.runtime.command_manager import CommandManager, FunctionCommand
 from editor.runtime.component_commands import AddComponentCommand, RemoveComponentCommand
-from engine.core.component import Component, Transform
 from engine.core.component_registry import ComponentRegistry, component_registry
+from editor.inspector import InspectorPluginRegistry, inspector_plugin_registry
 
 
 class RealHierarchyPanel(HierarchyPanel):
@@ -68,6 +68,7 @@ class RealInspectorPanel(InspectorPanel):
         super().__init__()
         self.command_manager: CommandManager | None = None
         self.component_registry: ComponentRegistry = component_registry
+        self.inspector_plugin_registry: InspectorPluginRegistry = inspector_plugin_registry
         self.current_object: Any | None = None
         sections = [
             label
@@ -96,6 +97,9 @@ class RealInspectorPanel(InspectorPanel):
     def set_component_registry(self, registry: ComponentRegistry) -> None:
         self.component_registry = registry
 
+    def set_inspector_plugin_registry(self, registry: InspectorPluginRegistry) -> None:
+        self.inspector_plugin_registry = registry
+
     def load_object(self, obj: Any) -> None:
         self.current_object = obj
         self.status_label.setText("")
@@ -112,32 +116,33 @@ class RealInspectorPanel(InspectorPanel):
         name = getattr(obj, "name", str(obj))
         self.name.setText(name)
 
-        transform = getattr(obj, "transform", None)
-        if transform is None:
-            return
-
-        pos = getattr(transform, "position", [0, 0, 0])
-        rot = getattr(transform, "rotation", [0, 0, 0])
-        scale = getattr(transform, "scale", [1, 1, 1])
-
-        if hasattr(self, "transform_label"):
-            self.transform_label.setText(
-                "Transform\n"
-                f"  Position: X {float(pos[0]):.1f} | Y {float(pos[1]):.1f} | Z {float(pos[2]) if len(pos) > 2 else 0:.1f}\n"
-                f"  Rotation: {list(rot)}\n"
-                f"  Scale: {list(scale)}"
-            )
-
         components = getattr(obj, "components", [])
         component_names = [
             getattr(comp, "type_name", type(comp).__name__)
             for comp in components
-            if comp is not transform
+            if not getattr(comp, "required", False)
         ]
         text = ", ".join(component_names) if component_names else "Sem componentes"
         if hasattr(self, "renderer_label"):
             self.renderer_label.setText("Components\n  " + text)
-        self._render_component_controls(obj, transform)
+        self._update_legacy_component_labels(components)
+        self._render_component_controls(obj)
+
+    def _update_legacy_component_labels(self, components: list[Any]) -> None:
+        for component in components:
+            if getattr(component, "type_name", type(component).__name__) != "Transform":
+                continue
+            pos = getattr(component, "position", [0, 0, 0])
+            rot = getattr(component, "rotation", [0, 0, 0])
+            scale = getattr(component, "scale", [1, 1, 1])
+            if hasattr(self, "transform_label"):
+                self.transform_label.setText(
+                    "Transform\n"
+                    f"  Position: X {float(pos[0]):.1f} | Y {float(pos[1]):.1f} | Z {float(pos[2]) if len(pos) > 2 else 0:.1f}\n"
+                    f"  Rotation: {list(rot)}\n"
+                    f"  Scale: {list(scale)}"
+                )
+            return
 
     def _clear_component_controls(self) -> None:
         while self.component_list_layout.count():
@@ -146,24 +151,32 @@ class RealInspectorPanel(InspectorPanel):
             if widget is not None:
                 widget.deleteLater()
 
-    def _render_component_controls(self, obj: Any, transform: Any) -> None:
+    def _render_component_controls(self, obj: Any) -> None:
         self._clear_component_controls()
 
         for component in getattr(obj, "components", []):
-            if component is transform:
-                continue
+            plugin = self.inspector_plugin_registry.plugin_for(component)
             row = QWidget()
             row_layout = QHBoxLayout(row)
             row_layout.setContentsMargins(0, 0, 0, 0)
             row_layout.setSpacing(6)
-            name = QLabel(getattr(component, "type_name", type(component).__name__))
-            remove = QPushButton("Remove")
-            remove.setEnabled(not getattr(component, "required", False))
-            remove.clicked.connect(
-                lambda checked=False, comp=component: self.remove_component_from_selected(comp)
-            )
-            row_layout.addWidget(name, 1)
-            row_layout.addWidget(remove)
+            if plugin is None:
+                name = QLabel(getattr(component, "type_name", type(component).__name__))
+                name.setObjectName("InspectorSection")
+                row_layout.addWidget(name, 1)
+            else:
+                widget = plugin.create_widget(
+                    component,
+                    self.command_manager,
+                    lambda obj=obj: self.load_object(obj),
+                )
+                row_layout.addWidget(widget, 1)
+            if not getattr(component, "required", False):
+                remove = QPushButton("Remove")
+                remove.clicked.connect(
+                    lambda checked=False, comp=component: self.remove_component_from_selected(comp)
+                )
+                row_layout.addWidget(remove)
             self.component_list_layout.addWidget(row)
 
     def available_component_names(self, include_unavailable: bool = False) -> list[str]:
@@ -171,9 +184,9 @@ class RealInspectorPanel(InspectorPanel):
             return []
         names: list[str] = []
         for component_type in self.component_registry.available_components():
-            if component_type in {Component, Transform} or getattr(component_type, "required", False):
-                continue
             name = str(getattr(component_type, "component_type", component_type.__name__))
+            if name == "Component" or getattr(component_type, "required", False):
+                continue
             if not include_unavailable and not self.can_add_component(name):
                 continue
             names.append(name)
@@ -185,7 +198,7 @@ class RealInspectorPanel(InspectorPanel):
         component_class = self.component_registry.resolve(component_type)
         if component_class is None:
             return False
-        if component_class in {Component, Transform} or getattr(component_class, "required", False):
+        if str(getattr(component_class, "component_type", component_class.__name__)) == "Component" or getattr(component_class, "required", False):
             return False
         if getattr(component_class, "unique", False):
             return self.current_object.get_component(component_class) is None
@@ -239,6 +252,17 @@ class RealInspectorPanel(InspectorPanel):
         return True
 
     def set_component_property(self, component: Any, property_name: str, value: Any) -> None:
+        plugin = self.inspector_plugin_registry.plugin_for(component)
+        if plugin is not None:
+            plugin.set_property(
+                component,
+                property_name,
+                value,
+                self.command_manager,
+                lambda: self.load_object(component.game_object) if getattr(component, "game_object", None) is not None else None,
+            )
+            return
+
         old_value = getattr(component, property_name)
 
         def apply(next_value: Any = value) -> None:
