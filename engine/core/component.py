@@ -76,6 +76,15 @@ class Component:
     def on_runtime_stop(self) -> None:
         """Chamado uma vez quando o Play Mode encerra no Runtime World."""
 
+    def on_trigger_enter(self, other: Any) -> None:
+        """Chamado quando um collider trigger começa contato no Runtime World."""
+
+    def on_trigger_exit(self, other: Any) -> None:
+        """Chamado quando um collider trigger encerra contato no Runtime World."""
+
+    def on_collision_enter(self, other: Any) -> None:
+        """Preparado para colisões físicas futuras no Runtime World."""
+
     def serialize_properties(self) -> dict[str, Any]:
         return {}
 

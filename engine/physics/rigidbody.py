@@ -33,6 +33,7 @@ class RigidBody(Component):
         self.velocity:     np.ndarray = np.zeros(2, dtype=np.float32)
         # acceleration stores only EXTERNAL forces (not gravity)
         self.acceleration: np.ndarray = np.zeros(2, dtype=np.float32)
+        self.force:        np.ndarray = np.zeros(2, dtype=np.float32)
 
         # Flag definida pelo TilemapCollider a cada frame
         self.grounded: bool = False
@@ -48,6 +49,7 @@ class RigidBody(Component):
             "is_kinematic": bool(self.is_kinematic),
             "velocity": [float(v) for v in self.velocity],
             "acceleration": [float(v) for v in self.acceleration],
+            "force": [float(v) for v in self.force],
         }
 
     def deserialize_properties(self, data: dict[str, Any]) -> None:
@@ -58,13 +60,15 @@ class RigidBody(Component):
         self.is_kinematic = bool(data.get("is_kinematic", False))
         self.velocity = np.array(data.get("velocity", [0.0, 0.0]), dtype=np.float32)
         self.acceleration = np.array(data.get("acceleration", [0.0, 0.0]), dtype=np.float32)
+        self.force = np.array(data.get("force", [0.0, 0.0]), dtype=np.float32)
 
     # ------------------------------------------------------------------
 
     def add_force(self, fx: float, fy: float) -> None:
         if self.is_kinematic:
             return
-        self.acceleration += np.array([fx, fy], dtype=np.float32) / self.mass
+        self.force += np.array([fx, fy], dtype=np.float32)
+        self.acceleration = self.force / self.mass
 
     def add_impulse(self, ix: float, iy: float) -> None:
         if self.is_kinematic:
@@ -77,10 +81,16 @@ class RigidBody(Component):
     def stop(self) -> None:
         self.velocity[:]     = 0.0
         self.acceleration[:] = 0.0
+        self.force[:]        = 0.0
 
     # ------------------------------------------------------------------
 
     def update(self, dt: float) -> None:
+        if getattr(self, "_runtime_physics_managed", False):
+            return
+        self.integrate(dt)
+
+    def integrate(self, dt: float) -> None:
         if self.is_kinematic or self.game_object is None:
             return
 
@@ -103,6 +113,7 @@ class RigidBody(Component):
 
         # Reset external forces (gravity is NOT here — it’s in velocity directly)
         self.acceleration[:] = 0.0
+        self.force[:] = 0.0
 
 
 from engine.core.component_registry import register_component

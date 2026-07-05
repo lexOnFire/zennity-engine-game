@@ -82,6 +82,7 @@
 - [x] Python Script Runtime com ScriptBehaviour (Fase 14)
 - [x] Input System com InputManager e API pública Input (Fase 15)
 - [x] Time System com delta/time escalado, unscaled time e frame counter (Fase 16)
+- [x] Physics Runtime Foundation com PhysicsWorld isolado e triggers básicos (Fase 17)
 - [ ] Hierarchy com drag & drop e parentesco
 - [x] Undo/Redo no editor (Fase 7)
 

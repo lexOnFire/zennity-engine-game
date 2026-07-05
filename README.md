@@ -222,6 +222,18 @@ class PlayerController(ScriptBehaviour):
 
 `Time.delta_time` e `Time.time` respeitam `Time.time_scale`. `Time.unscaled_delta_time` e `Time.unscaled_time` continuam acumulando o tempo real recebido pelo runtime. `Time.fixed_delta_time` já existe como preparação para Physics futura, mas `FixedUpdate` ainda não foi implementado.
 
+A Fase 17 adiciona a fundação oficial de física runtime. O `PhysicsWorld` é criado apenas dentro da `RuntimeScene`, registra `RigidBody`, `BoxCollider` e `CircleCollider` dos clones do Play Mode, integra corpos usando `Time.fixed_delta_time` e detecta contatos simples sem resolver interpenetração completa.
+
+Scripts podem consultar a fachada pública:
+
+```python
+from engine.runtime import Physics
+
+contacts = Physics.contacts()
+```
+
+O Editor World não participa da simulação física runtime, e o estado do `PhysicsWorld` é limpo no Stop.
+
 ### Criando Scripts
 
 Crie um arquivo `.py` dentro de `Assets/Scripts` e anexe um `ScriptComponent` ao GameObject apontando para esse caminho. Um script mínimo:

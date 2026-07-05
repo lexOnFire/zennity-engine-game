@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from engine.physics.physics import Physics
+from engine.physics.physics_world import PhysicsWorld
 from engine.runtime.clone import clone_game_object
 from engine.runtime.script_runtime import ScriptRuntime
 
@@ -16,6 +18,7 @@ class RuntimeScene:
         self.name = f"{getattr(editor_scene, 'name', 'Scene')} (Runtime)"
         self.playing = True
         self.script_runtime = ScriptRuntime(self)
+        self.physics_world = PhysicsWorld(self)
         self._runtime_started = False
         self._runtime_started_components: list[Any] = []
         self.editor_to_runtime: dict[str, Any] = {}
@@ -112,6 +115,8 @@ class RuntimeScene:
         self._runtime_started = True
         self._runtime_started_components.clear()
         components = self._iter_enabled_runtime_components()
+        self.physics_world.build_from_scene(self)
+        Physics.bind_world(self.physics_world)
         self.script_runtime.start(components)
         for component in components:
             component.on_runtime_start()
@@ -136,6 +141,7 @@ class RuntimeScene:
 
     def update(self, dt: float) -> None:
         self.update_runtime(dt)
+        self.physics_world.step()
         self.scene.update(dt)
 
     def draw(self, screen: Any) -> None:
@@ -153,6 +159,8 @@ class RuntimeScene:
                 self.scene.game_objects.remove(obj)
                 obj.scene = None
         self.scene.editable_objects.clear()
+        Physics.unbind_world(self.physics_world)
+        self.physics_world.clear()
         self.editor_to_runtime.clear()
         self.runtime_to_editor.clear()
         self.playing = False

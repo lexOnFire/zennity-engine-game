@@ -58,6 +58,8 @@ class BoxCollider(Component):
         # Callbacks — atribua funções externas a estes
         self.on_collision_enter: Optional[Callable[[CollisionInfo], None]] = None
         self.on_collision_exit: Optional[Callable[["BoxCollider"], None]] = None
+        self.on_trigger_enter: Optional[Callable[["BoxCollider"], None]] = None
+        self.on_trigger_exit: Optional[Callable[["BoxCollider"], None]] = None
 
     def serialize_properties(self) -> dict[str, Any]:
         return {
@@ -327,6 +329,8 @@ class CircleCollider(Component):
 
         self.on_collision_enter: Optional[Callable[["CircleCollider"], None]] = None
         self.on_collision_exit: Optional[Callable[["CircleCollider"], None]] = None
+        self.on_trigger_enter: Optional[Callable[["CircleCollider"], None]] = None
+        self.on_trigger_exit: Optional[Callable[["CircleCollider"], None]] = None
 
     def serialize_properties(self) -> dict[str, Any]:
         return {

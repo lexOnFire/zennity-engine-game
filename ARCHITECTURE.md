@@ -591,3 +591,66 @@ Nenhum componente, script, Viewport ou sistema de editor deve calcular ou acumul
 ### Frame Counter e Fixed Delta
 
 `Time.frame_count` incrementa somente durante Play e é resetado ao Stop. `Time.fixed_delta_time` existe como infraestrutura para Physics futura; esta fase não implementa `FixedUpdate`, acumulador fixo ou scheduler.
+
+## Physics Runtime Foundation (Fase 17)
+
+A Fase 17 cria a fundação oficial da física runtime sem substituir a física legada standalone e sem modificar o Editor World.
+
+### PhysicsWorld
+
+`engine.physics.PhysicsWorld` pertence à `RuntimeScene`. Ele é responsável por:
+
+* registrar `RigidBody`;
+* registrar `BoxCollider` e `CircleCollider`;
+* integrar corpos runtime;
+* detectar contatos básicos;
+* emitir trigger enter/exit;
+* limpar todo estado no Stop.
+
+O `PhysicsWorld` nunca usa a cena do editor como fonte de simulação. Ele trabalha apenas com clones do Runtime World.
+
+### Fluxo de atualização
+
+Durante Play, o fluxo oficial é:
+
+```text
+RuntimeManager.tick(delta_time)
+  -> Time update
+  -> InputManager.update()
+  -> RuntimeScene.update(Time.delta_time)
+     -> Component lifecycle
+     -> ScriptRuntime.update(Time.delta_time)
+     -> PhysicsWorld.step(Time.fixed_delta_time)
+     -> Scene update legado em clones runtime
+```
+
+`RigidBody` gerenciado pelo `PhysicsWorld` não é integrado novamente pelo update legado, evitando movimento duplicado.
+
+### Time System
+
+A física runtime não calcula seu próprio tempo. Ela usa `Time.fixed_delta_time` como preparação para `FixedUpdate` futuro. Nesta fase, o step físico ainda é chamado dentro do tick normal.
+
+### Colisões e Triggers
+
+A detecção inicial cobre:
+
+* Box x Box;
+* Circle x Circle;
+* Box x Circle.
+
+Esta fase detecta contatos, mas não implementa resolução completa de interpenetração, impulso, atrito ou bouncing. Triggers emitem `on_trigger_enter(other)` e `on_trigger_exit(other)` para componentes e scripts do Runtime World. `on_collision_enter(other)` fica preparado para evolução futura.
+
+### API pública
+
+Scripts não recebem acesso direto ao `PhysicsWorld`. Eles consultam a fachada:
+
+```python
+from engine.runtime import Physics
+
+Physics.contacts()
+Physics.is_colliding(collider)
+```
+
+### Limites
+
+Esta fase não implementa Character Controller, Raycast, Joint System, NavMesh, partículas, resolução física completa, veículos ou física 3D.

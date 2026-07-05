@@ -53,6 +53,18 @@ class ScriptRuntime:
                 self._record_error(instance.component, "on_destroy", exc)
         self.instances.clear()
 
+    def notify_game_object_event(self, game_object: Any, method_name: str, other: Any) -> None:
+        for instance in list(self.instances.values()):
+            if instance.behaviour.game_object is not game_object:
+                continue
+            method = getattr(instance.behaviour, method_name, None)
+            if method is None:
+                continue
+            try:
+                method(other)
+            except Exception as exc:
+                self._handle_error(instance.component, method_name, exc)
+
     def _start_component(self, component: ScriptComponent) -> None:
         script_path = str(getattr(component, "script_path", "") or "").strip()
         if not script_path:
