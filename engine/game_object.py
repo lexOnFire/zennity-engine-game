@@ -93,6 +93,24 @@ class GameObject:
             component._started = True
         return component
 
+    def insert_component(self, component: 'Component', index: int | None = None) -> 'Component':
+        if getattr(component, "unique", False):
+            existing = self.get_component(type(component))
+            if existing is not None and existing is not component:
+                return existing
+        if component in self.components:
+            self.components.remove(component)
+        component.game_object = self
+        if index is None:
+            self.components.append(component)
+        else:
+            safe_index = max(0, min(int(index), len(self.components)))
+            self.components.insert(safe_index, component)
+        if self.scene and not component._started:
+            component.start()
+            component._started = True
+        return component
+
     def get_component(self, component_type: Type[T]) -> Optional[T]:
         from .component import Component
 
@@ -114,7 +132,7 @@ class GameObject:
         return [comp for comp in self.components if isinstance(comp, component_type) or type(comp).__name__ == component_type.__name__]
 
     def remove_component(self, component: 'Component') -> None:
-        if component is self.transform:
+        if component is self.transform or getattr(component, "required", False):
             raise ValueError("Transform is required and cannot be removed from a GameObject")
         if component in self.components:
             component.destroy()

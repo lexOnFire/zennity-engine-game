@@ -31,6 +31,21 @@ class ComponentRegistry:
     def registered_types(self) -> tuple[str, ...]:
         return tuple(sorted(self._types))
 
+    def available_components(self) -> tuple[type[Component], ...]:
+        seen: set[type[Component]] = set()
+        components: list[type[Component]] = []
+        for component_type in self._types.values():
+            if component_type in seen:
+                continue
+            seen.add(component_type)
+            components.append(component_type)
+        return tuple(
+            sorted(
+                components,
+                key=lambda item: str(getattr(item, "component_type", item.__name__)),
+            )
+        )
+
 
 component_registry = ComponentRegistry()
 

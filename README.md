@@ -19,6 +19,7 @@ O Zennity Editor é um ambiente integrado de desenvolvimento rico, responsivo e 
 * **Asset Browser:** Navegador de arquivos com histórico de pastas (Voltar/Avançar/Subir), breadcrumbs interativos e visualização em grade de recursos.
 * **Inspector Profissional (Fase 8):** Exibição e edição dinâmica com suporte total a desfazer/refazer (Undo/Redo) via `CommandManager`, validação numérica de inputs e isolamento de commits interativos.
 * **Component System (Fase 9):** Base oficial de componentes com UUID, `enabled`, registro central, serialização explícita e integração com `GameObject`, cenas, prefabs e Inspector.
+* **Add/Remove Components (Fase 10):** O Inspector adiciona e remove componentes através do `ComponentRegistry`, sempre com comandos reversíveis no `CommandManager`.
 * **Viewport Acelerada (OpenGL):** Renderização direta do framebuffer do Pygame no Qt em 60 FPS com suporte a atalho de foco (`F`) e alternância em tempo real entre projeções 2D e 3D.
 * **Terminal Python & Console:** Console de mensagens do sistema colorido por severidade com interpretador interativo integrado para executar scripts no contexto do editor.
 * **Ferramentas da Fase 1:** Seleção centralizada, Move Tool funcional com gizmo de translação, Snap opcional e modos Rotate/Scale preparados para implementação futura.
@@ -98,6 +99,8 @@ register_component(Health)
 ```
 
 `Transform` continua sendo obrigatório e acessível por `game_object.transform`. Componentes opcionais como `RigidBody`, `BoxCollider`, `CircleCollider` e `ScriptComponent` são serializados em cenas e prefabs.
+
+No editor, todo componente registrado aparece automaticamente no menu **Add Component** do Inspector. Adicionar e remover componentes opcionais passa por `AddComponentCommand` e `RemoveComponentCommand`, então Undo/Redo permanece consistente. Componentes `unique = True` não podem ser duplicados e componentes `required = True`, como `Transform`, não podem ser removidos.
 
 ---
 

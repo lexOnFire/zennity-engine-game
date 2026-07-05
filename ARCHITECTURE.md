@@ -219,6 +219,39 @@ Cenas e prefabs preservam o formato legado (`collider`, `rigidbody`, `scripts`) 
 ### Inspector
 O Inspector consome `GameObject.components`, lista componentes opcionais e mantém `Transform` visível como seção especial. Edições de propriedades de componente devem passar pelo `CommandManager` para preservar Undo/Redo.
 
-### Limites
-Esta fase não implementa Play Mode novo, física real adicional, scripting avançado, visual scripting ou editor visual de componentes. Ela cria a base extensível para essas fases futuras.
+## Add / Remove Components (Fase 10)
 
+A Fase 10 fecha o ciclo de gerenciamento de componentes no Inspector sem acoplar a UI a componentes concretos.
+
+### Fluxo Add Component
+O botão **Add Component** consulta somente `ComponentRegistry.available_components()`. Ao escolher um tipo, o Inspector cria um `AddComponentCommand`, que resolve e instancia o componente via registry. Componentes `unique = True` são bloqueados quando o GameObject já possui aquele tipo.
+
+### Fluxo Remove Component
+Componentes opcionais listados no Inspector possuem ação de remoção. A remoção usa `RemoveComponentCommand`, guarda a posição original do componente e restaura a mesma instância no Undo. `Transform` e qualquer componente com `required = True` não podem ser removidos.
+
+### CommandManager
+Adicionar e remover componentes segue o mesmo pipeline do restante do editor:
+
+```text
+Inspector -> CommandManager -> AddComponentCommand / RemoveComponentCommand -> GameObject
+```
+
+Isso mantém Undo/Redo consistente e evita lógica duplicada de edição no Inspector.
+
+### Registro de novos componentes
+Para aparecer automaticamente no Inspector, um componente precisa herdar de `Component` e ser registrado:
+
+```python
+from engine.core import Component, register_component
+
+class Health(Component):
+    component_type = "Health"
+    unique = True
+
+register_component(Health)
+```
+
+O Inspector não importa `Health`; ele apenas lê o registry.
+
+### Limites
+Estas fases não implementam Play Mode novo, física real adicional, scripting avançado, visual scripting ou editor visual avançado de componentes. Elas criam a base extensível para essas fases futuras.

@@ -4,6 +4,7 @@ Este pacote centraliza estado e serviços compartilhados do editor.
 """
 
 from editor.runtime.command_manager import CommandManager, FunctionCommand
+from editor.runtime.component_commands import AddComponentCommand, RemoveComponentCommand
 from editor.runtime.editor_context import EditorContext
 from editor.runtime.editor_state import EditorState
 from editor.runtime.selection_manager import SelectionManager
@@ -15,6 +16,8 @@ __all__ = [
     "EditorState",
     "EditorTool",
     "FunctionCommand",
+    "AddComponentCommand",
+    "RemoveComponentCommand",
     "SelectionManager",
     "ToolManager",
 ]

@@ -26,6 +26,7 @@ class Component:
 
     component_type = "Component"
     unique = False
+    required = False
 
     def __init__(self) -> None:
         self.id: str = str(uuid.uuid4())
@@ -101,6 +102,7 @@ class Transform(Component):
 
     component_type = "Transform"
     unique = True
+    required = True
 
     def __init__(
         self,
