@@ -23,6 +23,10 @@ from editor.inspector.plugin_registry import inspector_plugin_registry
 from editor.runtime.command_manager import CommandManager, FunctionCommand
 
 
+# Dicionário para manter o estado de colapso de cada tópico/componente
+COLLAPSED_STATES: dict[str, bool] = {}
+
+
 def _section(title: str) -> tuple[QWidget, QVBoxLayout]:
     widget = QWidget()
     widget.setObjectName("InspectorComponentCard")
@@ -57,14 +61,21 @@ def _section(title: str) -> tuple[QWidget, QVBoxLayout]:
     layout.addWidget(header_host)
     layout.addWidget(body)
 
+    # Restaura o estado colapsado anterior se houver
+    if COLLAPSED_STATES.get(title, False):
+        body.setVisible(False)
+        foldout.setText("▸")
+
     # Função para encolher/expandir o tópico
     def toggle_collapse(event):
         if body.isVisible():
             body.setVisible(False)
             foldout.setText("▸")
+            COLLAPSED_STATES[title] = True
         else:
             body.setVisible(True)
             foldout.setText("▾")
+            COLLAPSED_STATES[title] = False
     
     header_host.mousePressEvent = toggle_collapse
 
