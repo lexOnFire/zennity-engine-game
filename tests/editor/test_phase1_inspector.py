@@ -10,9 +10,10 @@ for name in ["engine.physics.collider", "engine.physics.rigidbody", "engine.phys
 
 import numpy as np
 import pytest
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QCheckBox, QPushButton
 
 from engine.game_object import GameObject
+from engine.components.script_component import ScriptComponent
 from engine.physics.rigidbody import RigidBody
 from engine.physics.collider import BoxCollider, CircleCollider
 from editor.models.scene_model import SceneModel
@@ -311,3 +312,57 @@ def test_script_property_undo_redo(
     
     editor_context.commands.redo()
     assert obj.script_path == "scripts/behavior_test.py"
+
+
+def test_script_inspector_lists_assets_scripts_and_uses_buttons(
+    inspector: InspectorDock,
+    scene_viewmodel: SceneViewModel,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    scripts_dir = tmp_path / "Assets" / "Scripts"
+    scripts_dir.mkdir(parents=True)
+    (scripts_dir / "player_controller.py").write_text(
+        "from engine.runtime import ScriptBehaviour\n",
+        encoding="utf-8",
+    )
+    (scripts_dir / "enemy_ai.py").write_text(
+        "from engine.runtime import ScriptBehaviour\n",
+        encoding="utf-8",
+    )
+    (scripts_dir / "enemy_ai.py.meta").write_text("{}", encoding="utf-8")
+
+    obj = GameObject("ScriptObject")
+    obj.add_component(ScriptComponent(""))
+    scene_viewmodel.selected_object = obj
+
+    sw = inspector.script_widget
+    items = [sw.cb_scripts.itemText(index) for index in range(sw.cb_scripts.count())]
+    buttons = {button.text() for button in sw.findChildren(QPushButton)}
+    checkboxes = {checkbox.text() for checkbox in sw.findChildren(QCheckBox)}
+
+    assert "Assets/Scripts/player_controller.py" in items
+    assert "Assets/Scripts/enemy_ai.py" in items
+    assert all(not item.endswith(".meta") for item in items)
+    assert {"Editar", "Criar"}.issubset(buttons)
+    assert "Editar" not in checkboxes
+
+
+def test_script_inspector_create_button_creates_script_template(
+    inspector: InspectorDock,
+    scene_viewmodel: SceneViewModel,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    obj = GameObject("Player Ship")
+    script = obj.add_component(ScriptComponent(""))
+    scene_viewmodel.selected_object = obj
+
+    inspector.script_widget.create_script()
+
+    created = tmp_path / "Assets" / "Scripts" / "player_ship.py"
+    assert created.exists()
+    assert "class PlayerShipBehaviour(ScriptBehaviour)" in created.read_text(encoding="utf-8")
+    assert script.script_path == "Assets/Scripts/player_ship.py"
