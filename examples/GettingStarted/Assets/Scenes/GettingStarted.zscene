@@ -1,0 +1,92 @@
+{
+  "format_version": 1,
+  "scene_name": "GettingStarted",
+  "engine_version": "0.1.0",
+  "objects": [
+    {
+      "id": "getting-started-player",
+      "uuid": "getting-started-player",
+      "prefab_uuid": null,
+      "name": "Player",
+      "tag": "Player",
+      "layer": 0,
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Retângulo",
+        "sprite_path": null,
+        "asset_uuid": null,
+        "color": [
+          64,
+          148,
+          255
+        ],
+        "material": null
+      },
+      "components": {
+        "scripts": [],
+        "items": [
+          {
+            "id": "getting-started-rigidbody",
+            "type": "RigidBody",
+            "enabled": true,
+            "properties": {
+              "mass": 1.0,
+              "gravity_scale": 1.0,
+              "drag": 0.0,
+              "use_gravity": false,
+              "is_kinematic": true,
+              "velocity": [
+                0.0,
+                0.0
+              ],
+              "acceleration": [
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "getting-started-collider",
+            "type": "BoxCollider",
+            "enabled": true,
+            "properties": {
+              "width": 32.0,
+              "height": 32.0,
+              "offset_x": 0.0,
+              "offset_y": 0.0,
+              "is_trigger": true,
+              "debug_draw": true
+            }
+          },
+          {
+            "id": "getting-started-script",
+            "type": "Script",
+            "enabled": true,
+            "properties": {
+              "script_path": "examples/GettingStarted/Assets/Scripts/player_controller.py"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,10 +1,17 @@
 # Zennity Engine — Roadmap
 
-> Última atualização: 2026-07-01
+> Última atualização: 2026-07-05
 
 ---
 
 ## Versões e Objetivos
+
+### Beta 0.1 — Stabilization ✅
+- [x] Fluxo principal validado: cena, GameObject, componentes, script, Play, Input e Stop
+- [x] Projeto exemplo oficial `examples/GettingStarted`
+- [x] Teste de integração Beta cobrindo Runtime World isolado
+- [x] Documentação de limitações da Beta
+- [x] `CHANGELOG.md`
 
 ### v0.1 — Prova de Conceito ✅
 - [x] ECS básico (GameObject + Component + Transform)
@@ -30,7 +37,7 @@
 - [x] `engine/core/` como pacote canônico (FASE 1 concluída)
 - [x] Shims de retrocompatibilidade para todos os módulos legados
 - [ ] AssetManager migrado para `engine/core/`
-- [ ] Testes automáticos (pytest)
+- [x] Testes automáticos (pytest)
 - [ ] GitHub Actions CI
 
 ---

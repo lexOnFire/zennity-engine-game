@@ -1,6 +1,6 @@
 # Zennity Engine — Architecture
 
-> **Versão:** 2.0 (Master Plan) • **Última revisão:** 2026-07-01
+> **Versão:** 2.0 (Master Plan) • **Última revisão:** 2026-07-05
 
 ## Visão Geral
 
@@ -19,6 +19,20 @@ Ela é composta por quatro produtos principais:
                   │
           Package Manager
 ```
+
+---
+
+## Estado Beta 0.1
+
+A Beta 0.1 é uma estabilização do fluxo principal, não uma fase de novos sistemas. O caminho validado é:
+
+```text
+Cena -> GameObject -> Componentes -> ScriptBehaviour -> Play Mode -> Input -> Stop
+```
+
+O projeto exemplo oficial é `examples/GettingStarted`. Ele usa apenas recursos já estabilizados: Scene Serialization, Component System, Script Runtime, Input System e Runtime World isolado.
+
+Limites mantidos intencionalmente: sem Input Mapping, gamepad, touch, Physics avançada, áudio runtime, animação, networking, Package Manager ou Build System final.
 
 ---
 

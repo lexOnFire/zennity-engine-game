@@ -9,6 +9,18 @@
 
 ---
 
+## Beta 0.1
+
+A Beta 0.1 estabiliza o fluxo principal da Zennity:
+
+```text
+Criar cena -> Criar GameObject -> Adicionar componentes -> Adicionar script -> Play -> Input -> Stop
+```
+
+O projeto exemplo oficial fica em `examples/GettingStarted`. Ele não depende de assets externos e demonstra `GameObject`, componentes, `ScriptBehaviour`, `Input` e Play Mode.
+
+Limites da Beta: ainda não há Input Mapping, gamepad, touch, Physics avançada, áudio integrado ao Play Mode, animação, networking, Package Manager ou Build System final. Alguns módulos legados continuam presentes para compatibilidade.
+
 ## 🖥️ O Novo Zennity Editor (PySide6)
 
 O Zennity Editor é um ambiente integrado de desenvolvimento rico, responsivo e desacoplado através de uma arquitetura **MVVM** e comunicação assíncrona por **EventBus**.
@@ -47,6 +59,20 @@ pip install -r requirements.txt
 ### 3. Executar o Editor
 ```bash
 python editor/main.py
+```
+
+Também é possível abrir o editor da Fase 1 diretamente:
+
+```bash
+python -m editor.phase1_main
+```
+
+### 4. Abrir o Projeto Exemplo
+
+No editor, use `File > Open Scene` e selecione:
+
+```text
+examples/GettingStarted/Assets/Scenes/GettingStarted.zscene
 ```
 
 ---
@@ -184,6 +210,21 @@ class PlayerController(ScriptBehaviour):
 
 `Input.is_key_pressed(...)` e `Input.is_key_released(...)` duram apenas um frame. O mesmo vale para `is_mouse_pressed(...)` e `is_mouse_released(...)`. Ao sair do Play, todo estado de teclado e mouse é limpo.
 
+### Criando Scripts
+
+Crie um arquivo `.py` dentro de `Assets/Scripts` e anexe um `ScriptComponent` ao GameObject apontando para esse caminho. Um script mínimo:
+
+```python
+from engine.runtime import Input, ScriptBehaviour
+
+class PlayerController(ScriptBehaviour):
+    def on_update(self, delta_time):
+        if Input.is_key_down("Space"):
+            self.transform.position[0] += 120.0 * delta_time
+```
+
+Scripts rodam somente durante Play Mode e sempre sobre clones do Runtime World.
+
 ---
 
 ## 🗂️ Estrutura do Projeto
@@ -205,6 +246,7 @@ zennity-engine-game/
 │   └── themes/            # dark_theme.qss e ícones
 ├── editor_legacy/         # Versão legada do editor Pygame (compatibilidade)
 ├── demos/                 # Exemplos práticos e demonstrativos
+├── examples/              # Projetos exemplo oficiais da Beta
 ├── scripts/               # Scripts utilitários e de comportamento do usuário
 └── tests/                 # Suites completas de testes unitários (pytest)
 ```
