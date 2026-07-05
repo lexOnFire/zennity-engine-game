@@ -345,9 +345,16 @@ class TilemapRenderer(Component):
 
     def draw(self, screen: pygame.Surface) -> None:
         if self.tilemap and self.game_object:
+            from engine.graphics.camera import Camera
             from engine.graphics.camera2d import Camera2D
             cam_x, cam_y = 0.0, 0.0
-            if Camera2D.main is not None:
+            main_cam = Camera.main
+            if main_cam is not None and main_cam.game_object:
+                cam_pos = main_cam.game_object.transform.position
+                zoom = main_cam.zoom
+                cam_x = cam_pos[0] - (screen.get_width() / 2.0) / zoom
+                cam_y = cam_pos[1] - (screen.get_height() / 2.0) / zoom
+            elif Camera2D.main is not None and Camera2D.main.game_object:
                 cam_pos = Camera2D.main.game_object.transform.position
                 zoom = Camera2D.main.zoom
                 cam_x = cam_pos[0] - (screen.get_width() / 2.0) / zoom

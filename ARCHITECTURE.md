@@ -654,3 +654,33 @@ Physics.is_colliding(collider)
 ### Limites
 
 Esta fase não implementa Character Controller, Raycast, Joint System, NavMesh, partículas, resolução física completa, veículos ou física 3D.
+
+---
+
+## Camera System (Fase 18)
+
+A Fase 18 introduz o sistema oficial de câmeras no runtime e no editor da Zennity Engine, de forma totalmente desacoplada e isolada do Editor World.
+
+### Camera Component
+
+A classe `Camera` herda de `Component` e é responsável por controlar a renderização e o espaço de tela durante o Play Mode:
+
+* `zoom`: Escala de visualização 2D.
+* `clear_color` / `background_color`: Cor de preenchimento para limpar a tela/viewport.
+* `viewport_rect`: Fração normalizada da área de tela utilizada pela câmera (X, Y, W, H).
+* `priority`: Ordem de empilhamento de renderização da câmera (maior prioridade desenha por último).
+* `active`: Sinalizador para habilitar/desabilitar a câmera.
+
+### CameraManager
+
+O `CameraManager` gerencia o ciclo de vida das câmeras em runtime, organizando o registro e a remoção das instâncias de forma a expor a câmera principal ativa via `Camera.main`:
+
+* `register_camera(camera)`: Registra uma câmera quando ela entra na cena (`start()`).
+* `remove_camera(camera)`: Remove a câmera do gerenciador quando destruída (`destroy()`).
+* `get_main_camera()`: Retorna a câmera ativa com a maior prioridade.
+* `clear()`: Limpa todo o estado no início e fim do Play Mode.
+
+### Isolamento do Runtime e Fallback
+
+A câmera de edição do Editor nunca interfere no Runtime. No início do Play, o `CameraManager` é reiniciado. Caso não exista nenhuma câmera na cena do usuário, o Runtime cria uma câmera de fallback (`Default Runtime Camera`) contendo o componente `Camera` para garantir a exibição padrão e prevenir telas pretas.
+

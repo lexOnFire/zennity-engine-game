@@ -55,6 +55,9 @@ def register_component(component_type: Type[Component], name: str | None = None)
 
 
 from engine.core.component import Transform
+from engine.graphics.camera import Camera
 
 component_registry.register(Component)
 component_registry.register(Transform)
+component_registry.register(Camera)
+

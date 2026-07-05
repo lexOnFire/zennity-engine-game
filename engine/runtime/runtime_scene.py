@@ -112,9 +112,33 @@ class RuntimeScene:
     def start_runtime(self) -> None:
         if self._runtime_started:
             return
+        
+        # Limpa o CameraManager antes do Play para isolar câmeras de edições ou execuções passadas
+        from engine.graphics.camera_manager import CameraManager
+        CameraManager.clear()
+
         self._runtime_started = True
         self._runtime_started_components.clear()
         components = self._iter_enabled_runtime_components()
+
+        # Se não existir nenhuma câmera, cria uma câmera padrão no runtime
+        if CameraManager.get_main_camera() is None:
+            from engine.game_object import GameObject
+            from engine.graphics.camera import Camera
+            fallback_go = GameObject("Default Runtime Camera")
+            fallback_cam = fallback_go.add_component(Camera())
+            if hasattr(self.scene, "_add_go"):
+                self.scene._add_go(fallback_go)
+            else:
+                self.scene.game_objects.append(fallback_go)
+                fallback_go.scene = self.scene
+            if hasattr(self.scene, "editable_objects"):
+                self.scene.editable_objects.append(fallback_go)
+                
+            for comp in fallback_go.components:
+                if comp not in components:
+                    components.append(comp)
+
         self.physics_world.build_from_scene(self)
         Physics.bind_world(self.physics_world)
         self.script_runtime.start(components)
@@ -138,6 +162,8 @@ class RuntimeScene:
         self.script_runtime.stop()
         self._runtime_started_components.clear()
         self._runtime_started = False
+        from engine.graphics.camera_manager import CameraManager
+        CameraManager.clear()
 
     def update(self, dt: float) -> None:
         self.update_runtime(dt)
@@ -145,6 +171,12 @@ class RuntimeScene:
         self.scene.update(dt)
 
     def draw(self, screen: Any) -> None:
+        from engine.graphics.camera import Camera
+        main_cam = Camera.main
+        if main_cam:
+            screen.fill(main_cam.clear_color)
+        else:
+            screen.fill((30, 30, 30))
         self.scene.draw(screen)
 
     def handle_event(self, event: Any) -> None:

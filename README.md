@@ -234,6 +234,16 @@ contacts = Physics.contacts()
 
 O Editor World não participa da simulação física runtime, e o estado do `PhysicsWorld` é limpo no Stop.
 
+A Fase 18 adiciona o Camera System oficial. O componente `Camera` gerencia a cor de limpeza de tela, o zoom 2D, a área da tela (`viewport_rect`) e a prioridade de renderização. O `CameraManager` localiza a câmera principal (`Camera.main`), a qual é usada isoladamente pelo Runtime para desenhar a cena durante o Play.
+
+Scripts podem acessar a câmera principal a partir de:
+
+```python
+from engine.graphics.camera import Camera
+
+main_camera = Camera.main
+```
+
 ### Criando Scripts
 
 Crie um arquivo `.py` dentro de `Assets/Scripts` e anexe um `ScriptComponent` ao GameObject apontando para esse caminho. Um script mínimo:
