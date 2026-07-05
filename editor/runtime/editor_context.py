@@ -4,6 +4,7 @@ from editor.runtime.command_manager import CommandManager
 from editor.runtime.editor_state import EditorState
 from editor.runtime.selection_manager import SelectionManager
 from editor.runtime.tool_manager import ToolManager
+from engine.runtime import RuntimeManager
 
 
 from pathlib import Path
@@ -18,8 +19,10 @@ class EditorContext:
         self.selection = SelectionManager()
         self.tools = ToolManager()
         self.commands = CommandManager()
+        self.runtime = RuntimeManager()
 
     def reset_scene_state(self) -> None:
+        self.runtime.stop_play()
         self.selection.clear()
         self.commands.clear()
         self.state.is_playing = False

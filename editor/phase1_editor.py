@@ -38,6 +38,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self._tool_actions: dict[EditorTool, QAction] = {}
         self._snap_action: QAction | None = None
         self.current_scene_path: Path | None = None
+        self.editor_scene: Any | None = None
         super().__init__()
         self.editor_context.tools.subscribe(self._on_runtime_tool_changed)
 
@@ -213,6 +214,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.viewport.set_tool_manager(self.editor_context.tools)
         self.viewport.set_editor_state(self.editor_context.state)
         self.viewport.set_command_manager(self.editor_context.commands)
+        self.editor_scene = self.viewport.active_scene
 
         scene_tabs = QTabWidget()
         scene_tabs.addTab(self.hierarchy, "Hierarchy")
@@ -293,13 +295,31 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         scene = getattr(self.viewport, "active_scene", None)
         if scene is None:
             return []
+        self._ensure_scene_collider_registry(scene)
         return list(getattr(scene, "editable_objects", []))
+
+    def _ensure_scene_collider_registry(self, scene: Any) -> None:
+        try:
+            from engine.physics.collider import BoxCollider, CircleCollider
+        except Exception:
+            return
+        for obj in getattr(scene, "game_objects", []):
+            for collider_type in (BoxCollider, CircleCollider):
+                for collider in obj.get_components(collider_type):
+                    registry = getattr(collider_type, "_registry", None)
+                    if isinstance(registry, list) and collider not in registry:
+                        registry.append(collider)
 
     def _active_scene(self) -> Any:
         return getattr(self.viewport, "active_scene", None)
 
+    def _editor_scene(self) -> Any:
+        if self.editor_scene is None:
+            self.editor_scene = getattr(self.viewport, "active_scene", None)
+        return self.editor_scene
+
     def _clear_scene_objects(self) -> None:
-        scene = self._active_scene()
+        scene = self._editor_scene()
         if scene is None:
             return
 
@@ -322,7 +342,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self._update_undo_redo_states()
 
     def _apply_scene_data(self, scene_data: dict[str, Any]) -> None:
-        scene = self._active_scene()
+        scene = self._editor_scene()
         if scene is None:
             return
 
@@ -377,8 +397,10 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             self.console.add("INFO", message)
 
     def new_scene(self) -> None:
+        if self.editor_context.runtime.is_playing:
+            self.stop()
         self._clear_scene_objects()
-        scene = self._active_scene()
+        scene = self._editor_scene()
         if scene is not None:
             scene.name = "Untitled"
         self.current_scene_path = None
@@ -387,6 +409,8 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.console.add("INFO", "Nova cena criada.")
 
     def open_scene(self) -> None:
+        if self.editor_context.runtime.is_playing:
+            self.stop()
         file_name, _ = QFileDialog.getOpenFileName(
             self,
             "Open Scene",
@@ -407,7 +431,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             self.save_scene_as()
             return
 
-        scene = self._active_scene()
+        scene = self._editor_scene()
         if scene is None:
             return
 
@@ -432,7 +456,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.save_scene()
 
     def _is_scene_playing(self) -> bool:
-        return bool(getattr(getattr(self.viewport, "active_scene", None), "playing", False))
+        return self.editor_context.runtime.is_playing
 
     def _sync_play_controls(self) -> None:
         playing = self._is_scene_playing()
@@ -449,7 +473,17 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             if hasattr(self, "status_msg"):
                 self.status_msg.setText("Simulacao ja ativa.")
             return
-        self.viewport._on_play_state_changed("play")
+        editor_scene = self._editor_scene()
+        if editor_scene is None:
+            return
+        editor_selected = self.editor_context.selection.selected
+        runtime_scene = self.editor_context.runtime.start_play(editor_scene)
+        runtime_selected = runtime_scene.runtime_for_editor(editor_selected)
+        self.viewport.active_scene = runtime_scene
+        self.viewport._apply_qt_shims()
+        self.viewport.resizeGL(self.viewport.width(), self.viewport.height())
+        self.viewport._sync_model_from_scene()
+        self.select_object(runtime_selected)
         self._sync_play_controls()
         self.status_msg.setText("Simulacao ativa.")
         self.console.add("INFO", "Play iniciado.")
@@ -460,9 +494,15 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             if hasattr(self, "status_msg"):
                 self.status_msg.setText("Simulacao parada.")
             return
-        self.viewport._on_play_state_changed("stop")
+        runtime_scene = self.editor_context.runtime.runtime_scene
+        runtime_selected = self.editor_context.selection.selected
+        editor_selected = runtime_scene.editor_for_runtime(runtime_selected) if runtime_scene is not None else None
+        self.editor_context.runtime.stop_play()
+        self.viewport.active_scene = self._editor_scene()
+        self.viewport._apply_qt_shims()
+        self.viewport.resizeGL(self.viewport.width(), self.viewport.height())
         self.refresh_hierarchy_from_viewport()
-        self.viewport.sync_selection_from_scene()
+        self.select_object(editor_selected)
         self._sync_play_controls()
         self.status_msg.setText("Simulacao parada.")
         self.console.add("INFO", "Play finalizado.")
@@ -514,7 +554,9 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
 
     def instantiate_prefab_ui(self) -> None:
         """Abre caixa de diálogo para escolher um prefab (.zprefab) e instanciá-lo na cena."""
-        if not self.viewport or not self.viewport.active_scene:
+        if self.editor_context.runtime.is_playing:
+            self.stop()
+        if not self.viewport or not self._editor_scene():
             return
 
         assets_prefabs_dir = str(Path(self.editor_context.project_root) / "Assets" / "Prefabs")
@@ -533,7 +575,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         try:
             obj = instantiate_prefab(file_path)
 
-            scene = self.viewport.active_scene
+            scene = self._editor_scene()
             lay = getattr(scene, "_layout", None)
             if lay is not None:
                 layout_data = lay()
@@ -547,6 +589,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             scene._add_go(obj)
             scene.editable_objects.append(obj)
 
+            self.viewport.active_scene = scene
             self.viewport._sync_model_from_scene()
             self.select_object(obj)
 

@@ -228,8 +228,11 @@ def test_phase1_stop_restores_scene_and_reselects_restored_object(
     phase1_editor.select_object(selected)
 
     phase1_editor.play()
+    runtime_selected = phase1_editor.editor_context.selection.selected
+    assert runtime_selected is not selected
     phase1_editor.viewport.active_scene.update(0.1)
-    assert float(selected.transform.position[1]) > original_y
+    assert float(runtime_selected.transform.position[1]) > original_y
+    assert float(selected.transform.position[1]) == pytest.approx(original_y)
 
     phase1_editor.stop()
 
@@ -253,8 +256,10 @@ def test_phase1_play_cycles_start_from_same_physics_state(
     for _ in range(3):
         player = phase1_editor.scene_objects()[1]
         phase1_editor.play()
-        scene.update(0.1)
-        deltas.append(float(player.transform.position[1]) - original_y)
+        runtime_player = phase1_editor.editor_context.selection.selected
+        phase1_editor.viewport.active_scene.update(0.1)
+        deltas.append(float(runtime_player.transform.position[1]) - original_y)
+        assert float(player.transform.position[1]) == pytest.approx(original_y)
         phase1_editor.stop()
         _assert_scene_collider_registry_is_current(scene)
 
@@ -282,6 +287,33 @@ def test_phase1_play_stop_preserves_objects_and_selection(
     assert len(restored_objects) == original_count
     assert restored_selected in restored_objects
     assert restored_selected.name == selected_name
+
+
+def test_phase1_play_mode_switches_viewport_and_inspector_to_runtime_scene(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    editor_scene = phase1_editor.viewport.active_scene
+    editor_selected = phase1_editor.scene_objects()[1]
+    phase1_editor.select_object(editor_selected)
+
+    phase1_editor.play()
+
+    runtime_scene = phase1_editor.editor_context.runtime.runtime_scene
+    runtime_selected = phase1_editor.editor_context.selection.selected
+    assert phase1_editor.viewport.active_scene is runtime_scene
+    assert runtime_selected is runtime_scene.runtime_for_editor(editor_selected)
+    assert phase1_editor.inspector.current_object is runtime_selected
+    assert phase1_editor.hierarchy.tree.topLevelItem(0).child(1).data(0, Qt.UserRole) is runtime_selected
+
+    runtime_selected.transform.position[0] += 100.0
+    assert float(editor_selected.transform.position[0]) != pytest.approx(float(runtime_selected.transform.position[0]))
+
+    phase1_editor.stop()
+
+    assert phase1_editor.viewport.active_scene is editor_scene
+    assert phase1_editor.editor_context.runtime.runtime_scene is None
+    assert phase1_editor.editor_context.selection.selected is editor_selected
+    assert phase1_editor.inspector.current_object is editor_selected
 
 
 def test_phase1_rotate_reports_active_and_scale_reports_unimplemented(

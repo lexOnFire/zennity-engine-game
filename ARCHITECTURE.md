@@ -318,4 +318,48 @@ Se nenhum plugin existir, o Inspector mostra apenas uma entrada fallback com o n
 O cabeçalho do objeto (`active`, `name`, `tag`, `layer`, `is_static`) ainda não é um componente formal e continua fora do `InspectorPluginRegistry`. Essas propriedades devem migrar para comandos reutilizáveis ou para um futuro plugin de metadados do GameObject antes de serem consideradas totalmente integradas ao Undo/Redo.
 
 ### Limites
-Estas fases não implementam Play Mode novo, física real adicional, scripting avançado, visual scripting ou editor visual avançado de componentes. Elas criam a base extensível para essas fases futuras.
+As Fases 9-11 não implementam Play Mode, física real adicional, scripting avançado, visual scripting ou editor visual avançado de componentes. Elas criam a base extensível para essas fases futuras.
+
+## Play Mode Foundation (Fase 12)
+
+A Fase 12 introduz a separação oficial entre dois mundos:
+
+* **Editor World:** cena persistente aberta no editor. Ela é editada pelo Inspector, salva em disco e usada como fonte para prefabs/assets.
+* **Runtime World:** cena temporária criada ao pressionar Play. Ela é descartada no Stop.
+
+`engine.runtime.RuntimeManager` controla o ciclo de vida:
+
+```text
+STOPPED -> start_play(editor_scene) -> PLAYING -> stop_play() -> STOPPED
+```
+
+`RuntimeManager.start_play(...)` cria uma `RuntimeScene`. A `RuntimeScene` recebe a cena do editor, cria uma instância de cena compatível para renderização, clona todos os objetos editáveis e mantém mapas entre objetos do editor e objetos runtime para preservar seleção.
+
+### Clone profundo
+`engine.runtime.clone.clone_game_object(...)` clona:
+
+* `GameObject`;
+* `Transform`;
+* componentes registrados;
+* filhos;
+* metadados leves como `tag`, `layer`, `active`, `mesh_type`, `sprite_path` e `prefab_uuid`.
+
+O clone não compartilha instâncias com o Editor World. Os objetos runtime recebem identidade própria e guardam `runtime_source_id` apontando para o objeto original.
+
+### Integração com Editor
+Durante Play:
+
+* `Phase1ViewportWidget.active_scene` aponta para a `RuntimeScene`;
+* Hierarchy e Inspector são sincronizados com objetos runtime;
+* gizmos e ferramentas de edição continuam bloqueados pelo estado `is_playing`;
+* alterações feitas na runtime não afetam a cena do editor.
+
+Ao parar:
+
+* a `RuntimeScene` é destruída;
+* a Viewport volta para a cena do editor;
+* a seleção volta para o objeto correspondente do Editor World;
+* alterações feitas durante Play desaparecem.
+
+### Limites
+Esta fase não adiciona execução de scripts, física nova, input de jogo, áudio, animação, partículas, IA, hot reload ou pipeline avançado de assets. A física já existente pode atualizar objetos dentro do Runtime World, mas a Fase 12 apenas garante isolamento arquitetural.

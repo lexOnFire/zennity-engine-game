@@ -70,6 +70,7 @@
 - [x] Component System oficial com registry, serialização e Inspector (Fase 9)
 - [x] Add/Remove Components no Inspector com Undo/Redo (Fase 10)
 - [x] Inspector Plugin System desacoplado por componente (Fase 11)
+- [x] Play Mode Foundation com Runtime World isolado (Fase 12)
 - [ ] Hierarchy com drag & drop e parentesco
 - [x] Undo/Redo no editor (Fase 7)
 

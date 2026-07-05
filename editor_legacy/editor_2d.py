@@ -262,6 +262,10 @@ class Editor2DScene(Scene):
 
     def _add_go(self, go: GameObject) -> None:
         go.scene = self
+        for comp in getattr(go, "components", []):
+            registry = getattr(type(comp), "_registry", None)
+            if isinstance(registry, list) and comp not in registry:
+                registry.append(comp)
         if go not in self.game_objects:
             self.game_objects.append(go)
 

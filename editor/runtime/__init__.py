@@ -9,6 +9,7 @@ from editor.runtime.editor_context import EditorContext
 from editor.runtime.editor_state import EditorState
 from editor.runtime.selection_manager import SelectionManager
 from editor.runtime.tool_manager import EditorTool, ToolManager
+from engine.runtime import RuntimeManager, RuntimeScene, RuntimeState
 
 __all__ = [
     "CommandManager",
@@ -20,4 +21,7 @@ __all__ = [
     "RemoveComponentCommand",
     "SelectionManager",
     "ToolManager",
+    "RuntimeManager",
+    "RuntimeScene",
+    "RuntimeState",
 ]

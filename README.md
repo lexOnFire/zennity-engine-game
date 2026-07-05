@@ -21,6 +21,7 @@ O Zennity Editor é um ambiente integrado de desenvolvimento rico, responsivo e 
 * **Component System (Fase 9):** Base oficial de componentes com UUID, `enabled`, registro central, serialização explícita e integração com `GameObject`, cenas, prefabs e Inspector.
 * **Add/Remove Components (Fase 10):** O Inspector adiciona e remove componentes através do `ComponentRegistry`, sempre com comandos reversíveis no `CommandManager`.
 * **Inspector Plugin System (Fase 11/11.1):** O Inspector é apenas um host desacoplado; todos os editores de componente são resolvidos via `InspectorPluginRegistry`.
+* **Play Mode Foundation (Fase 12):** Play cria um Runtime World isolado a partir da cena aberta; Stop descarta essa cópia e restaura o Editor World sem alterar a cena original.
 * **Viewport Acelerada (OpenGL):** Renderização direta do framebuffer do Pygame no Qt em 60 FPS com suporte a atalho de foco (`F`) e alternância em tempo real entre projeções 2D e 3D.
 * **Terminal Python & Console:** Console de mensagens do sistema colorido por severidade com interpretador interativo integrado para executar scripts no contexto do editor.
 * **Ferramentas da Fase 1:** Seleção centralizada, Move Tool funcional com gizmo de translação, Snap opcional e modos Rotate/Scale preparados para implementação futura.
@@ -121,6 +122,15 @@ O plugin deve aplicar alterações pelo `CommandManager`, normalmente usando `se
 
 `RealInspectorPanel` e `InspectorDock` seguem o mesmo fluxo oficial: percorrer componentes, resolver plugin no registry e hospedar o widget retornado. Novos componentes não exigem alteração do Inspector.
 
+### Play Mode Foundation
+
+O Play Mode separa dois mundos:
+
+* `Editor World`: cena persistente editada pelo Inspector, salva em disco e usada por prefabs/assets.
+* `Runtime World`: cópia profunda criada por `RuntimeManager.start_play(...)`, renderizada pela Viewport durante Play e destruída por `stop_play()`.
+
+`RuntimeScene` clona `GameObject`, `Transform`, componentes e hierarquia sem compartilhar instâncias com a cena do editor. Alterações feitas durante Play desaparecem ao parar.
+
 ---
 
 ## 🗂️ Estrutura do Projeto
@@ -129,6 +139,7 @@ O plugin deve aplicar alterações pelo `CommandManager`, normalmente usando `se
 zennity-engine-game/
 ├── engine/                # Módulos canônicos da Zennity Engine (ECS)
 │   ├── core/              # Engine principal, Cenas e EventBus
+│   ├── runtime/           # RuntimeScene, RuntimeManager e clone profundo do Play Mode
 │   ├── physics/           # RigidBody, Box/Circle Colliders
 │   └── graphics/          # Renderers 3D, Câmera e Matrizes
 ├── editor/                # O Novo Zennity Editor modular (PySide6)
