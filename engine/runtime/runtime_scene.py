@@ -141,6 +141,7 @@ class RuntimeScene:
         if not has_camera:
             from engine.game_object import GameObject
             fallback_go = GameObject("Default Runtime Camera")
+            fallback_go.runtime_hidden = True
             fallback_cam = fallback_go.add_component(Camera())
             if hasattr(self.scene, "_add_go"):
                 self.scene._add_go(fallback_go)
@@ -160,6 +161,7 @@ class RuntimeScene:
         if not has_listener:
             from engine.game_object import GameObject
             fallback_listener_go = GameObject("Default Audio Listener")
+            fallback_listener_go.runtime_hidden = True
             fallback_listener = fallback_listener_go.add_component(AudioListener())
             if hasattr(self.scene, "_add_go"):
                 self.scene._add_go(fallback_listener_go)

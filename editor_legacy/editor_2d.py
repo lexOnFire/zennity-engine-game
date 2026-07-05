@@ -312,6 +312,13 @@ class Editor2DScene(Scene):
             go.transform.scale = np.array([40.0, 20.0, 1.0], dtype=np.float32)
             go.add_component(BoxCollider(width=40, height=20))
             rb = go.add_component(RigidBody()); rb.is_kinematic = True
+        elif shape == "Camera 2D":
+            from engine.graphics.camera import Camera
+            go.name = f"Camera2D_{len(self.editable_objects)}"
+            go.transform.scale = np.array([64.0, 40.0, 1.0], dtype=np.float32)
+            cam2d = go.add_component(Camera2D(zoom=1.0))
+            go.add_component(Camera(zoom=1.0, clear_color=(18, 20, 27), priority=10, active=True))
+            Camera2D.main = cam2d
 
         go.mesh_type = shape
         self._add_go(go)
@@ -856,6 +863,8 @@ class Editor2DScene(Scene):
         screen.blit(lbl, (lay["vp_left"] + 8, lay["vp_top"] + 6))
 
     def _draw_object(self, screen, obj, idx, zoom, lay) -> None:
+        if bool(getattr(obj, "runtime_hidden", False)):
+            return
         pos, scale = obj.transform.position, obj.transform.scale
         sx, sy     = self._world_to_vp(pos, lay)
         sw, sh     = scale[0]*zoom, scale[1]*zoom

@@ -349,6 +349,49 @@ def test_phase1_game_view_hides_runtime_inner_scene_grid(
     phase1_editor.stop()
 
 
+def test_phase1_camera_2d_creation_adds_real_camera_component(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    from engine.graphics.camera import Camera
+    from engine.graphics.camera2d import Camera2D
+
+    phase1_editor.create_object("Camera 2D")
+    created = phase1_editor.scene_objects()[-1]
+
+    assert created.mesh_type == "Camera 2D"
+    assert created.get_component(Camera) is not None
+    assert created.get_component(Camera2D) is not None
+
+
+def test_phase1_runtime_fallback_objects_are_hidden_from_game_draw(
+    phase1_editor: ZennityPhase1Editor,
+) -> None:
+    phase1_editor.play()
+    runtime_scene = phase1_editor.editor_context.runtime.runtime_scene
+    hidden_objects = [
+        obj
+        for obj in runtime_scene.scene.editable_objects
+        if bool(getattr(obj, "runtime_hidden", False))
+    ]
+    assert {obj.name for obj in hidden_objects} >= {"Default Runtime Camera", "Default Audio Listener"}
+
+    class FailingFont:
+        def render(self, *args, **kwargs):
+            raise AssertionError("runtime_hidden object should not render labels")
+
+    runtime_scene.scene.font_sm = FailingFont()
+    for obj in hidden_objects:
+        runtime_scene.scene._draw_object(
+            phase1_editor.game_viewport.pg_surface,
+            obj,
+            0,
+            1.0,
+            runtime_scene.scene._layout(),
+        )
+
+    phase1_editor.stop()
+
+
 def test_phase1_rotate_reports_active_and_scale_reports_unimplemented(
     phase1_editor: ZennityPhase1Editor,
 ) -> None:
