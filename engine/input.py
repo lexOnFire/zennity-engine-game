@@ -1,8 +1,9 @@
 import pygame
-from typing import Tuple, Dict
+from typing import Any, Tuple
 
 class Input:
     """Manages input states (keyboard, mouse) with support for key transitions."""
+    _manager: Any | None = None
     _keys_current = pygame.key.ScancodeWrapper()
     _keys_previous = pygame.key.ScancodeWrapper()
     
@@ -10,6 +11,51 @@ class Input:
     _mouse_previous = (False, False, False)
     _mouse_position = (0, 0)
     _mouse_rel = (0, 0)
+
+    @classmethod
+    def bind_manager(cls, manager: Any | None) -> None:
+        cls._manager = manager
+
+    @classmethod
+    def unbind_manager(cls, manager: Any | None = None) -> None:
+        if manager is None or cls._manager is manager:
+            cls._manager = None
+
+    @classmethod
+    def is_key_down(cls, key: Any) -> bool:
+        return bool(cls._manager is not None and cls._manager.is_key_down(key))
+
+    @classmethod
+    def is_key_pressed(cls, key: Any) -> bool:
+        return bool(cls._manager is not None and cls._manager.is_key_pressed(key))
+
+    @classmethod
+    def is_key_released(cls, key: Any) -> bool:
+        return bool(cls._manager is not None and cls._manager.is_key_released(key))
+
+    @classmethod
+    def is_mouse_down(cls, button: Any = 1) -> bool:
+        return bool(cls._manager is not None and cls._manager.is_mouse_down(button))
+
+    @classmethod
+    def is_mouse_pressed(cls, button: Any = 1) -> bool:
+        return bool(cls._manager is not None and cls._manager.is_mouse_pressed(button))
+
+    @classmethod
+    def is_mouse_released(cls, button: Any = 1) -> bool:
+        return bool(cls._manager is not None and cls._manager.is_mouse_released(button))
+
+    @classmethod
+    def mouse_position(cls) -> tuple[float, float]:
+        if cls._manager is None:
+            return (0.0, 0.0)
+        return cls._manager.mouse_position()
+
+    @classmethod
+    def mouse_delta(cls) -> tuple[float, float]:
+        if cls._manager is None:
+            return (0.0, 0.0)
+        return cls._manager.mouse_delta()
 
     @classmethod
     def update(cls) -> None:

@@ -21,7 +21,7 @@ O Zennity Editor é um ambiente integrado de desenvolvimento rico, responsivo e 
 * **Component System (Fase 9):** Base oficial de componentes com UUID, `enabled`, registro central, serialização explícita e integração com `GameObject`, cenas, prefabs e Inspector.
 * **Add/Remove Components (Fase 10):** O Inspector adiciona e remove componentes através do `ComponentRegistry`, sempre com comandos reversíveis no `CommandManager`.
 * **Inspector Plugin System (Fase 11/11.1):** O Inspector é apenas um host desacoplado; todos os editores de componente são resolvidos via `InspectorPluginRegistry`.
-* **Play Mode Foundation (Fase 12-14):** Play cria um Runtime World isolado; `RuntimeManager.tick(delta_time)` atualiza somente essa cópia, dispara lifecycle de componentes e executa scripts Python via `ScriptRuntime`.
+* **Play Mode Foundation (Fase 12-15):** Play cria um Runtime World isolado; `RuntimeManager.tick(delta_time)` atualiza Input, lifecycle de componentes e scripts Python somente nessa cópia.
 * **Viewport Acelerada (OpenGL):** Renderização direta do framebuffer do Pygame no Qt em 60 FPS com suporte a atalho de foco (`F`) e alternância em tempo real entre projeções 2D e 3D.
 * **Terminal Python & Console:** Console de mensagens do sistema colorido por severidade com interpretador interativo integrado para executar scripts no contexto do editor.
 * **Ferramentas da Fase 1:** Seleção centralizada, Move Tool funcional com gizmo de translação, Snap opcional e modos Rotate/Scale preparados para implementação futura.
@@ -168,6 +168,22 @@ class PlayerController(ScriptBehaviour):
 
 `ScriptRuntime` carrega módulos apenas dentro do Runtime World. Cada `GameObject` recebe sua própria instância do script, mesmo quando usa o mesmo arquivo `.py`. Erros em um script são registrados e desabilitam somente aquele `ScriptComponent`, sem derrubar o Play Mode. O Editor World nunca executa scripts nem recebe mutações feitas por eles durante Play.
 
+A Fase 15 adiciona o Input System oficial. Scripts usam apenas a API pública `Input`, sem acessar Qt/PySide ou Pygame diretamente:
+
+```python
+from engine.runtime import Input, ScriptBehaviour
+
+class PlayerController(ScriptBehaviour):
+    def on_update(self, delta_time):
+        if Input.is_key_down("Space"):
+            ...
+
+        if Input.is_mouse_pressed("left"):
+            print(Input.mouse_position(), Input.mouse_delta())
+```
+
+`Input.is_key_pressed(...)` e `Input.is_key_released(...)` duram apenas um frame. O mesmo vale para `is_mouse_pressed(...)` e `is_mouse_released(...)`. Ao sair do Play, todo estado de teclado e mouse é limpo.
+
 ---
 
 ## 🗂️ Estrutura do Projeto
@@ -176,7 +192,7 @@ class PlayerController(ScriptBehaviour):
 zennity-engine-game/
 ├── engine/                # Módulos canônicos da Zennity Engine (ECS)
 │   ├── core/              # Engine principal, Cenas e EventBus
-│   ├── runtime/           # RuntimeScene, RuntimeManager, ScriptRuntime e clone profundo do Play Mode
+│   ├── runtime/           # RuntimeScene, RuntimeManager, ScriptRuntime, InputManager e clone profundo do Play Mode
 │   ├── physics/           # RigidBody, Box/Circle Colliders
 │   └── graphics/          # Renderers 3D, Câmera e Matrizes
 ├── editor/                # O Novo Zennity Editor modular (PySide6)

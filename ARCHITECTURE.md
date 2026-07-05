@@ -474,3 +474,54 @@ Ao parar:
 Scripts são executados somente nos clones do Runtime World. Objetos do Editor World não recebem `on_awake`, `on_start`, `on_update` ou `on_destroy`, e alterações feitas por scripts desaparecem ao parar Play.
 
 Se um script falha durante start ou update, o erro é registrado, apenas aquele `ScriptComponent` é desabilitado e o restante da cena continua rodando.
+
+## Input System (Fase 15)
+
+A Fase 15 cria a infraestrutura oficial de entrada para scripts durante Play Mode. Scripts não acessam eventos Qt/PySide ou Pygame diretamente; eles usam apenas a API pública `engine.input.Input`, também exportada por `engine.runtime`.
+
+### InputManager
+`engine.runtime.InputManager` é o backend central de estado:
+
+* teclas mantidas, pressionadas e liberadas;
+* botões de mouse mantidos, pressionados e liberados;
+* posição do mouse;
+* delta do mouse por frame;
+* limpeza completa no Stop.
+
+O manager é criado e possuído pelo `RuntimeManager`. Fora de Play, ele fica inativo e `Input` retorna estados neutros.
+
+### API pública
+Scripts consultam:
+
+```python
+Input.is_key_down("Space")
+Input.is_key_pressed("Space")
+Input.is_key_released("Space")
+Input.is_mouse_down("left")
+Input.is_mouse_pressed("left")
+Input.is_mouse_released("left")
+Input.mouse_position()
+Input.mouse_delta()
+```
+
+`pressed` e `released` duram um frame. `down` permanece verdadeiro enquanto a tecla ou botão estiver mantido.
+
+### Ciclo de atualização
+Durante Play, a ordem oficial é:
+
+```text
+Viewport encaminha eventos -> RuntimeManager.handle_input_event(...)
+RuntimeManager.tick(delta_time)
+  -> InputManager.update()
+  -> RuntimeScene.update(delta_time)
+     -> Component lifecycle
+     -> ScriptRuntime.update(delta_time)
+```
+
+Assim scripts sempre leem o estado de input já atualizado para aquele frame.
+
+### Integração com Viewport
+A Viewport traduz eventos Qt para eventos neutros do runtime somente quando o `RuntimeManager` está em `PLAYING` e a cena ativa é a `RuntimeScene`. Fora de Play, o editor mantém seu comportamento normal de seleção, gizmos, pan e atalhos.
+
+### Limites
+Esta fase não implementa Input Mapping, Input Actions, gamepad, touch, joystick, rebind de teclas, UI de jogo, rede ou qualquer sistema avançado de dispositivos.

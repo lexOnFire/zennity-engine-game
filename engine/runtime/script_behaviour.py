@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from engine.input import Input
+
 
 class ScriptBehaviour:
     """Base class for Python scripts executed by the Runtime World."""
@@ -10,6 +12,7 @@ class ScriptBehaviour:
         self.game_object: Any | None = None
         self.runtime: Any | None = None
         self.scene: Any | None = None
+        self.input = Input
 
     @property
     def transform(self) -> Any:

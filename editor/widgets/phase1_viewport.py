@@ -513,6 +513,10 @@ class Phase1ViewportWidget(ViewportWidget):
         event.accept()
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
+        if self._is_playing():
+            super().mousePressEvent(event)
+            return
+
         tool = self._active_tool()
         x, y = float(event.x()), float(event.y())
 
@@ -569,6 +573,10 @@ class Phase1ViewportWidget(ViewportWidget):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        if self._is_playing():
+            super().mouseMoveEvent(event)
+            return
+
         x, y = float(event.x()), float(event.y())
 
         # Processa Pan ativo
@@ -599,6 +607,10 @@ class Phase1ViewportWidget(ViewportWidget):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        if self._is_playing():
+            super().mouseReleaseEvent(event)
+            return
+
         if event.button() == Qt.MiddleButton and self._panning:
             self._panning = False
             self._update_hover_cursor(float(event.x()), float(event.y()))

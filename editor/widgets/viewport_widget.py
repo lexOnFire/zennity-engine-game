@@ -14,6 +14,7 @@ Arquitetura:
 import time
 import pygame
 import numpy as np
+from types import SimpleNamespace
 from typing import Optional, List
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
 from PySide6.QtWidgets import QWidget
@@ -531,8 +532,51 @@ class ViewportWidget(QOpenGLWidget):
         if btn == Qt.RightButton:  return 3
         return 0
 
+    def _runtime_input_active(self) -> bool:
+        return bool(
+            self.runtime_manager is not None
+            and getattr(self.runtime_manager, "is_playing", False)
+            and getattr(self.runtime_manager, "runtime_scene", None) is self.active_scene
+        )
+
+    def _qt_key_to_input_name(self, qt_key: Qt.Key) -> str:
+        special = {
+            Qt.Key_Escape: "Escape",
+            Qt.Key_Delete: "Delete",
+            Qt.Key_Backspace: "Backspace",
+            Qt.Key_Left: "Left",
+            Qt.Key_Right: "Right",
+            Qt.Key_Up: "Up",
+            Qt.Key_Down: "Down",
+            Qt.Key_Space: "Space",
+            Qt.Key_Return: "Enter",
+            Qt.Key_Enter: "Enter",
+            Qt.Key_Shift: "Shift",
+            Qt.Key_Control: "Control",
+            Qt.Key_Alt: "Alt",
+            Qt.Key_Tab: "Tab",
+        }
+        for index in range(1, 13):
+            if qt_key == getattr(Qt, f"Key_F{index}"):
+                return f"F{index}"
+        if Qt.Key_A <= qt_key <= Qt.Key_Z:
+            return chr(ord("A") + int(qt_key - Qt.Key_A))
+        if Qt.Key_0 <= qt_key <= Qt.Key_9:
+            return chr(ord("0") + int(qt_key - Qt.Key_0))
+        return special.get(qt_key, str(int(qt_key)))
+
+    def _forward_runtime_input(self, event_type: str, **payload) -> None:
+        if not self._runtime_input_active():
+            return
+        self.runtime_manager.handle_input_event(SimpleNamespace(type=event_type, **payload))
+
     def mousePressEvent(self, event: QMouseEvent) -> None:
         self._qt_mouse_pos = (event.x(), event.y())
+        self._forward_runtime_input(
+            "mouse_down",
+            pos=self._qt_mouse_pos,
+            button=self._qt_btn_to_pg(event.button()),
+        )
         if self.active_scene:
             pg_ev = pygame.event.Event(
                 pygame.MOUSEBUTTONDOWN,
@@ -546,6 +590,11 @@ class ViewportWidget(QOpenGLWidget):
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         self._qt_mouse_pos = (event.x(), event.y())
+        self._forward_runtime_input(
+            "mouse_up",
+            pos=self._qt_mouse_pos,
+            button=self._qt_btn_to_pg(event.button()),
+        )
         if self.active_scene:
             pg_ev = pygame.event.Event(
                 pygame.MOUSEBUTTONUP,
@@ -558,6 +607,7 @@ class ViewportWidget(QOpenGLWidget):
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         self._qt_mouse_pos = (event.x(), event.y())
+        self._forward_runtime_input("mouse_move", pos=self._qt_mouse_pos)
         if self.active_scene:
             btns = event.buttons()
             pg_ev = pygame.event.Event(
@@ -609,7 +659,7 @@ class ViewportWidget(QOpenGLWidget):
         return _map.get(qt_key)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
-        if event.key() == Qt.Key_F:
+        if event.key() == Qt.Key_F and not self._runtime_input_active():
             self.focus_camera_on_selected()
             event.accept()
             return
@@ -619,6 +669,8 @@ class ViewportWidget(QOpenGLWidget):
 
         pg_key = self._qt_key_to_pg(event.key())
         if pg_key is not None:
+            if not event.isAutoRepeat():
+                self._forward_runtime_input("key_down", key=self._qt_key_to_input_name(event.key()))
             mod = pygame.KMOD_NONE
             if event.modifiers() & Qt.ControlModifier:
                 mod |= pygame.KMOD_CTRL
@@ -639,6 +691,8 @@ class ViewportWidget(QOpenGLWidget):
             return
         pg_key = self._qt_key_to_pg(event.key())
         if pg_key is not None:
+            if not event.isAutoRepeat():
+                self._forward_runtime_input("key_up", key=self._qt_key_to_input_name(event.key()))
             mod = pygame.KMOD_NONE
             if event.modifiers() & Qt.ControlModifier:
                 mod |= pygame.KMOD_CTRL
