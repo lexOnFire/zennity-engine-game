@@ -56,20 +56,19 @@ else:
     _draw = sys.modules.get("pygame.draw", _pg.draw)
 
 # stub tileset para não precisar de arquivos de imagem
+class _StubTileset:
+    def __init__(self, first_gid=1, solid_gids=None, surfaces=None):
+        self.first_gid  = first_gid
+        self._solid     = set(solid_gids or [])
+        self._surfaces  = surfaces or {}
+    def is_solid(self, gid): return gid in self._solid
+    def get_surface(self, gid): return self._surfaces.get(gid)
+
 if "engine.tilemap.tileset" not in sys.modules:
     _ts_mod = ModuleType("engine.tilemap.tileset")
-    class _StubTileset:
-        def __init__(self, first_gid=1, solid_gids=None, surfaces=None):
-            self.first_gid  = first_gid
-            self._solid     = set(solid_gids or [])
-            self._surfaces  = surfaces or {}
-        def is_solid(self, gid): return gid in self._solid
-        def get_surface(self, gid): return self._surfaces.get(gid)
     _ts_mod.Tileset = _StubTileset
+    _ts_mod.TileData = object
     sys.modules["engine.tilemap.tileset"] = _ts_mod
-else:
-    _ts_mod = sys.modules["engine.tilemap.tileset"]
-    _StubTileset = _ts_mod.Tileset
 
 from engine.tilemap.tilemap import TileLayer, TileMap, TilemapRenderer  # noqa: E402
 

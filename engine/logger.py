@@ -118,7 +118,7 @@ class Logger:
     @classmethod
     def enable_file(cls, path: str) -> None:
         """Habilita escrita em arquivo. Cria ou abre em modo append."""
-        if cls._file:
+        if cls._file and not hasattr(cls._file, "getvalue"):
             cls._file.close()
         cls._file = open(path, "a", encoding="utf-8")
 
@@ -126,8 +126,10 @@ class Logger:
     def disable_file(cls) -> None:
         """Fecha e desabilita o arquivo de log."""
         if cls._file:
-            cls._file.close()
+            file = cls._file
             cls._file = None
+            if not hasattr(file, "getvalue"):
+                file.close()
 
     @classmethod
     def silence(cls) -> None:

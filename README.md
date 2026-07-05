@@ -17,10 +17,10 @@ O Zennity Editor é um ambiente integrado de desenvolvimento rico, responsivo e 
 * **Workspace Unreal-inspired:** Interface escura com destaque cobalto cobrindo painéis flexíveis acopláveis (Docks) com persistência automática de layout via `QSettings`.
 * **Outliner de Hierarquia:** Árvore recursiva dinâmica com busca rápida de texto, duplicação rápida (`Ctrl+D`), exclusão (`Delete`) e renomeação instantânea com duplo clique.
 * **Asset Browser:** Navegador de arquivos com histórico de pastas (Voltar/Avançar/Subir), breadcrumbs interativos e visualização em grade de recursos.
-* **Inspector Colapsável:** Exibição e edição dinâmica de propriedades de componentes (`Transform`, `RigidBody`, `Colliders`) e scripts.
+* **Inspector Profissional (Fase 8):** Exibição e edição dinâmica com suporte total a desfazer/refazer (Undo/Redo) via `CommandManager`, validação numérica de inputs e isolamento de commits interativos.
 * **Viewport Acelerada (OpenGL):** Renderização direta do framebuffer do Pygame no Qt em 60 FPS com suporte a atalho de foco (`F`) e alternância em tempo real entre projeções 2D e 3D.
 * **Terminal Python & Console:** Console de mensagens do sistema colorido por severidade com interpretador interativo integrado para executar scripts no contexto do editor.
-* **Gizmos de Transformação:** Handles visuais e binding bidirecional para translação, rotação e escala.
+* **Ferramentas da Fase 1:** Seleção centralizada, Move Tool funcional com gizmo de translação, Snap opcional e modos Rotate/Scale preparados para implementação futura.
 * **Code Editor e Scripts:** Editor de código-fonte embutido com atalho de salvamento (`Ctrl+S`) para programar comportamentos dos objetos em tempo real.
 * **Build Exporter:** Exportação automatizada da cena ativa `.zscene` para uma pasta autônoma contendo todas as dependências lógicas e launchers rápidos (`jogar.bat`).
 * **Profiler Gráfico:** Gráficos nativos gerados via `QPainter` medindo FPS, consumo de RAM e física ativa.
@@ -85,6 +85,7 @@ zennity-engine-game/
 ├── editor/                # O Novo Zennity Editor modular (PySide6)
 │   ├── core/              # EventBus do editor e exportador
 │   ├── models/            # Scene e Asset Models
+│   ├── runtime/           # EditorContext, seleção, ferramentas e comandos
 │   ├── viewmodels/        # Apresentação e lógica de bindings
 │   ├── widgets/           # Hierarchy, Inspector, Console, Docks, Viewport
 │   ├── windows/           # MainWindow e Diálogos de Preferências

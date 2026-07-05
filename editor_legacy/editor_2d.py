@@ -69,7 +69,7 @@ class Editor2DScene(Scene):
         # Câmera
         self.cam_obj = GameObject("EditorCamera")
         self.camera  = self.cam_obj.add_component(Camera2D(zoom=1.0))
-        self.cam_obj.transform.position = np.array([400.0, 300.0, 0.0], dtype=np.float32)
+        self.cam_obj.transform.position = np.array([0.0, 0.0, 0.0], dtype=np.float32)
         self._add_go(self.cam_obj)
         Camera2D.main = self.camera
 
@@ -239,7 +239,7 @@ class Editor2DScene(Scene):
 
     def spawn_default_scene(self) -> None:
         floor = GameObject("Chão")
-        floor.transform.position = np.array([400.0, 500.0, 0.0], dtype=np.float32)
+        floor.transform.position = np.array([0.0, 200.0, 0.0], dtype=np.float32)
         floor.transform.scale    = np.array([600.0,  32.0, 1.0], dtype=np.float32)
         floor.add_component(BoxCollider(width=600, height=32))
         rb = floor.add_component(RigidBody()); rb.is_kinematic = True
@@ -247,7 +247,7 @@ class Editor2DScene(Scene):
         self._add_go(floor); self.editable_objects.append(floor)
 
         player = GameObject("Player")
-        player.transform.position = np.array([400.0, 200.0, 0.0], dtype=np.float32)
+        player.transform.position = np.array([0.0, -100.0, 0.0], dtype=np.float32)
         player.transform.scale    = np.array([ 36.0,  48.0, 1.0], dtype=np.float32)
         player.add_component(BoxCollider(width=36, height=48))
         player.add_component(RigidBody(mass=1.0, gravity_scale=1.0))
@@ -268,6 +268,8 @@ class Editor2DScene(Scene):
     def _remove_go(self, go: GameObject) -> None:
         if go in self.game_objects:
             self.game_objects.remove(go)
+        if getattr(go, "scene", None) is self:
+            go.destroy()
 
     def spawn_object(self, shape: str) -> None:
         if self.playing:
@@ -836,7 +838,8 @@ class Editor2DScene(Scene):
             self._draw_object(screen, obj, idx, zoom, lay)
 
         # Handles
-        if (not self.playing and 0 <= self.selected_index < len(self.editable_objects)):
+        show_scale_handles = bool(getattr(self, "show_scale_handles", True))
+        if (show_scale_handles and not self.playing and 0 <= self.selected_index < len(self.editable_objects)):
             self._draw_handles(screen, self.editable_objects[self.selected_index], lay)
 
         screen.set_clip(None)
@@ -869,20 +872,34 @@ class Editor2DScene(Scene):
             surf = pygame.Surface((r*2, r*2), pygame.SRCALPHA)
             pygame.draw.circle(surf, (*fill_col, 190), (r, r), r)
             pygame.draw.circle(surf, (*(T.ACCENT if selected else T.BORDER), 255), (r, r), r, 2)
+            
+            # Desenha linha de raio para indicar o ângulo rz
+            rz = getattr(obj.transform, "rz", 0.0)
+            rad = math.radians(rz)
+            end_x = r + r * math.cos(rad)
+            end_y = r + r * math.sin(rad)
+            pygame.draw.line(surf, (255, 255, 255, 180), (r, r), (int(end_x), int(end_y)), 2)
+            
             screen.blit(surf, (int(sx)-r, int(sy)-r))
         else:
-            rect = pygame.Rect(int(sx-sw/2), int(sy-sh/2), max(1,int(sw)), max(1,int(sh)))
-            surf = pygame.Surface((max(1,int(sw)), max(1,int(sh))), pygame.SRCALPHA)
+            surf_w = max(1, int(sw))
+            surf_h = max(1, int(sh))
+            surf = pygame.Surface((surf_w, surf_h), pygame.SRCALPHA)
             surf.fill((*fill_col, 120 if is_trigger else 190))
-            screen.blit(surf, rect.topleft)
             if is_trigger:
-                for i in range(0, int(sw), 8):
-                    pygame.draw.line(screen, (*T.WARNING, 200),
-                                     (rect.left+i, rect.top), (min(rect.left+i+4,rect.right), rect.top))
-                    pygame.draw.line(screen, (*T.WARNING, 200),
-                                     (rect.left+i, rect.bottom), (min(rect.left+i+4,rect.right), rect.bottom))
+                for i in range(0, surf_w, 8):
+                    pygame.draw.line(surf, (*T.WARNING, 200), (i, 0), (min(i+4, surf_w), 0))
+                    pygame.draw.line(surf, (*T.WARNING, 200), (i, surf_h-1), (min(i+4, surf_w), surf_h-1))
             else:
-                pygame.draw.rect(screen, T.ACCENT if selected else T.BORDER, rect, 2, border_radius=4)
+                pygame.draw.rect(surf, T.ACCENT if selected else T.BORDER, (0, 0, surf_w, surf_h), 2, border_radius=4)
+            
+            rz = getattr(obj.transform, "rz", 0.0)
+            if rz != 0.0:
+                rotated_surf = pygame.transform.rotate(surf, -rz)
+                rotated_rect = rotated_surf.get_rect(center=(int(sx), int(sy)))
+                screen.blit(rotated_surf, rotated_rect.topleft)
+            else:
+                screen.blit(surf, (int(sx-sw/2), int(sy-sh/2)))
 
         name_s = self.font_sm.render(obj.name, True, T.TEXT_PRIMARY)
         screen.blit(name_s, (int(sx)-name_s.get_width()//2, int(sy-sh/2)-14))

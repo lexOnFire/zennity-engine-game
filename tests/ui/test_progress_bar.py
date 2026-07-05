@@ -75,7 +75,15 @@ from engine.ui.progress_bar import ProgressBar  # noqa: E402
 # ── helpers ────────────────────────────────────────────────────────────────
 
 @pytest.fixture(autouse=True)
-def reset_mocks():
+def reset_mocks(monkeypatch):
+    global _draw
+    if not hasattr(_pg, "draw"):
+        _pg.draw = ModuleType("pygame.draw")
+    _draw = _pg.draw
+    if not hasattr(getattr(_draw, "rect", None), "reset_mock"):
+        monkeypatch.setattr(_draw, "rect", MagicMock(), raising=False)
+    if not hasattr(getattr(_font_mod, "SysFont", None), "reset_mock"):
+        monkeypatch.setattr(_font_mod, "SysFont", MagicMock(), raising=False)
     _draw.rect.reset_mock()
     _font_mod.SysFont.reset_mock()
     _font_mod.SysFont.return_value = _FakeFont()

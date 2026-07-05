@@ -38,7 +38,7 @@ class Input:
     @classmethod
     def get_key_down(cls, key: int) -> bool:
         """Returns True only in the frame the key was pressed down."""
-        if not cls._keys_current or not cls._keys_previous:
+        if cls._keys_current is None or cls._keys_previous is None:
             return False
         try:
             return bool(cls._keys_current[key]) and not bool(cls._keys_previous[key])
@@ -48,7 +48,7 @@ class Input:
     @classmethod
     def get_key_up(cls, key: int) -> bool:
         """Returns True only in the frame the key was released."""
-        if not cls._keys_current or not cls._keys_previous:
+        if cls._keys_current is None or cls._keys_previous is None:
             return False
         try:
             return not bool(cls._keys_current[key]) and bool(cls._keys_previous[key])

@@ -69,6 +69,8 @@ def t():
 
 def _tick(t: Time, ms: int, fps: float = 60.0) -> float:
     """Injeta ms no clock e executa um tick."""
+    if not hasattr(t._clock.tick, "return_value"):
+        t._clock = _FakeClock()
     t._clock.tick.return_value    = ms
     t._clock.get_fps.return_value = fps
     return t.tick()
@@ -157,6 +159,8 @@ class TestTick:
         assert t.dt == pytest.approx(t.delta)
 
     def test_clock_tick_called_with_fps_target(self, t):
+        if not hasattr(t._clock.tick, "return_value"):
+            t._clock = _FakeClock()
         t._clock.tick.return_value = 16
         t.tick()
         t._clock.tick.assert_called_with(t.fps_target)

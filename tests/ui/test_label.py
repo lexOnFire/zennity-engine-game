@@ -76,7 +76,9 @@ from engine.ui.label import Label  # noqa: E402
 # ── helpers ────────────────────────────────────────────────────────────────
 
 @pytest.fixture(autouse=True)
-def reset_font_mock():
+def reset_font_mock(monkeypatch):
+    if not hasattr(getattr(_font_mod, "SysFont", None), "reset_mock"):
+        monkeypatch.setattr(_font_mod, "SysFont", MagicMock(), raising=False)
     _font_mod.SysFont.reset_mock()
     _font_mod.SysFont.return_value = _FakeFont()
     yield

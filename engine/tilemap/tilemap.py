@@ -184,9 +184,9 @@ class TileMap:
             return rects
 
         col_start = max(0, int(x // self.tile_width))
-        col_end   = min(layer.width  - 1, math.ceil((x + w) / self.tile_width))
+        col_end   = min(layer.width  - 1, math.ceil((x + w) / self.tile_width) - 1)
         row_start = max(0, int(y // self.tile_height))
-        row_end   = min(layer.height - 1, math.ceil((y + h) / self.tile_height))
+        row_end   = min(layer.height - 1, math.ceil((y + h) / self.tile_height) - 1)
 
         for row in range(row_start, row_end + 1):
             for col in range(col_start, col_end + 1):

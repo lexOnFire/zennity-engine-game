@@ -4,18 +4,18 @@ tests/graphics/test_renderer.py
 Testes unitários de engine/graphics/renderer.py (SpriteRenderer).
 
 Estratégia de isolamento:
-  - pygame, pygame.transform e engine.graphics.camera são stubados
-    via sys.modules antes do import.
+  - pygame, pygame.transform e engine.graphics.camera são preparados
+    antes do import.
+  - pygame.transform.flip/scale são mockados apenas durante cada teste,
+    evitando vazamento para outros testes.
   - _FakeSurface rastreia blit, fill, get_width/height para verificar
     chamadas sem renderização real.
-  - Camera._active é patchado por teste para simular com/sem câmera.
-  - game_object é um MagicMock com transform.get_world_position().
 """
 from __future__ import annotations
 
 import sys
 from types import ModuleType
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -46,14 +46,16 @@ if "pygame" not in sys.modules:
     _pg.Surface      = _FakeSurface
     _pg.SRCALPHA     = _FakeSurface.SRCALPHA
     _transform       = ModuleType("pygame.transform")
-    _transform.flip  = MagicMock(side_effect=lambda s, fx, fy: s)
-    _transform.scale = MagicMock(side_effect=lambda s, size: s)
     _pg.transform    = _transform
     sys.modules["pygame"]           = _pg
     sys.modules["pygame.transform"] = _transform
 else:
     _pg        = sys.modules["pygame"]
-    _transform = sys.modules.get("pygame.transform", _pg.transform)
+    _transform = sys.modules.get("pygame.transform", getattr(_pg, "transform", None))
+    if _transform is None:
+        _transform = ModuleType("pygame.transform")
+        _pg.transform = _transform
+        sys.modules["pygame.transform"] = _transform
 
 # stub Camera para não depender do módulo real
 if "engine.graphics.camera" not in sys.modules:
@@ -72,10 +74,14 @@ from engine.graphics.renderer import SpriteRenderer  # noqa: E402
 # ── helpers ────────────────────────────────────────────────────────────────
 
 @pytest.fixture(autouse=True)
-def reset_camera():
+def reset_camera(monkeypatch):
+    flip_mock = MagicMock(side_effect=lambda s, fx, fy: s)
+    scale_mock = MagicMock(side_effect=lambda s, size: s)
+    monkeypatch.setattr(_transform, "flip", flip_mock, raising=False)
+    monkeypatch.setattr(_transform, "scale", scale_mock, raising=False)
+    monkeypatch.setattr(_pg, "transform", _transform, raising=False)
+
     _StubCamera._active = None
-    _transform.flip.reset_mock()
-    _transform.scale.reset_mock()
     yield
     _StubCamera._active = None
 
@@ -92,7 +98,6 @@ def _renderer(surface=None, w=32, h=32, **kw):
     return r
 
 
-# ────────────────────────────────────────────────────────────────────────────
 class TestInit:
     def test_defaults_visible(self):
         r = _renderer()
@@ -130,7 +135,6 @@ class TestInit:
         assert r.layer == 5
 
 
-# ────────────────────────────────────────────────────────────────────────────
 class TestSurfaceProperty:
     def test_surface_getter(self):
         surf = _make_surface()
@@ -162,7 +166,6 @@ class TestSurfaceProperty:
         surf.fill.assert_called_once_with((0, 255, 0))
 
 
-# ────────────────────────────────────────────────────────────────────────────
 class TestDrawNoCam:
     """draw() sem câmera ativa: coordenadas de mundo direto."""
 
@@ -188,7 +191,6 @@ class TestDrawNoCam:
         screen.blit.assert_not_called()
 
     def test_draw_position_centered_on_world(self):
-        """draw_x = wx - width//2, draw_y = wy - height//2."""
         r = _renderer(w=32, h=32)
         r.game_object = _make_go(100.0, 80.0)
         screen = _make_surface(640, 480)
@@ -209,8 +211,8 @@ class TestDrawNoCam:
         r.draw(_make_surface())
         _transform.flip.assert_called_once()
         args = _transform.flip.call_args[0]
-        assert args[1] is True   # flip_x
-        assert args[2] is False  # flip_y
+        assert args[1] is True
+        assert args[2] is False
 
     def test_draw_flip_y_calls_transform(self):
         r = _renderer(flip_y=True)
@@ -218,10 +220,9 @@ class TestDrawNoCam:
         r.draw(_make_surface())
         _transform.flip.assert_called_once()
         args = _transform.flip.call_args[0]
-        assert args[2] is True   # flip_y
+        assert args[2] is True
 
 
-# ────────────────────────────────────────────────────────────────────────────
 class TestDrawWithCam:
     """draw() com câmera ativa: usa world_to_screen e zoom."""
 
@@ -248,7 +249,6 @@ class TestDrawWithCam:
         r.draw(screen)
         args = screen.blit.call_args[0]
         _, pos = args
-        # draw_x = 300 - 32//2, draw_y = 200 - 32//2
         assert pos == (300 - 16, 200 - 16)
 
     def test_draw_zoom_calls_scale(self):
@@ -291,7 +291,6 @@ class TestDrawWithCam:
         _transform.flip.assert_called_once()
 
     def test_draw_zoom_minimum_one_pixel(self):
-        """zoom muito pequeno: new_w/h deve ser pelo menos 1."""
         self._active_cam(zoom=0.001)
         r = _renderer(w=32, h=32)
         r.game_object = _make_go()

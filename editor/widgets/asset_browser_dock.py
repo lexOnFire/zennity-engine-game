@@ -195,4 +195,4 @@ class AssetBrowserDock(QDockWidget):
             self.model.setNameFilters([f"*{text}*"])
         else:
             # Reseta para as extensões padrão
-            self.model.setNameFilters(["*.py", "*.png", "*.jpg", "*.json", "*.wav", "*.ogg", "*.obj"])
+            self.model.setNameFilters(["*.py", "*.png", "*.jpg", "*.json", "*.wav", "*.ogg", "*.obj", "*.zprefab", "*.zscene", "*.zmat"])

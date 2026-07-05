@@ -2,6 +2,7 @@ from ..component import Component
 from typing import Tuple, Optional, Any
 import numpy as np
 
+
 class Camera2D(Component):
     """Camera component for 2D scenes. Handles panning, zoom, target follow, bounds, and coordinate conversion."""
     main: 'Camera2D' = None
@@ -15,6 +16,7 @@ class Camera2D(Component):
         offset: Tuple[float, float] = (0.0, 0.0)
     ) -> None:
         super().__init__()
+        self._transform_override = None
         self.zoom = zoom
         self.target = target
         self.smoothness = smoothness
@@ -24,6 +26,17 @@ class Camera2D(Component):
         # Define como câmera principal se nenhuma existir
         if Camera2D.main is None:
             Camera2D.main = self
+
+    @property
+    def transform(self):
+        """Retorna o Transform do GameObject, ou um override usado por testes/ferramentas."""
+        if self._transform_override is not None:
+            return self._transform_override
+        return super().transform
+
+    @transform.setter
+    def transform(self, value) -> None:
+        self._transform_override = value
 
     def start(self) -> None:
         if Camera2D.main is None:

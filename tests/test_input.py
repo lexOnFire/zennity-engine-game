@@ -78,8 +78,12 @@ K_w     = _pg.K_w;     K_s     = _pg.K_s
 # ── fixture de isolamento ────────────────────────────────────────────────────
 
 @pytest.fixture(autouse=True)
-def reset_input():
+def reset_input(monkeypatch):
     """Garante estado limpo (nenhuma tecla pressionada) antes de cada teste."""
+    monkeypatch.setattr(_pg.key, "get_pressed", MagicMock(return_value=_FakeKeys()), raising=False)
+    monkeypatch.setattr(_pg.mouse, "get_pressed", MagicMock(return_value=(False, False, False)), raising=False)
+    monkeypatch.setattr(_pg.mouse, "get_pos", MagicMock(return_value=(0, 0)), raising=False)
+    monkeypatch.setattr(_pg.mouse, "get_rel", MagicMock(return_value=(0, 0)), raising=False)
     Input._keys_current  = _FakeKeys()
     Input._keys_previous = _FakeKeys()
     Input._mouse_current  = (False, False, False)

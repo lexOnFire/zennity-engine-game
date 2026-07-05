@@ -67,6 +67,9 @@ class BoxCollider(Component):
     def destroy(self) -> None:
         if self in BoxCollider._registry:
             BoxCollider._registry.remove(self)
+        for other in list(self._colliding_with):
+            other._colliding_with.discard(self)
+        self._colliding_with.clear()
 
     # ------------------------------------------------------------------
     # Rect utilitário
@@ -308,6 +311,9 @@ class CircleCollider(Component):
     def destroy(self) -> None:
         if self in CircleCollider._registry:
             CircleCollider._registry.remove(self)
+        for other in list(self._colliding_with):
+            other._colliding_with.discard(self)
+        self._colliding_with.clear()
 
     # ------------------------------------------------------------------
     # Centro utilitário
