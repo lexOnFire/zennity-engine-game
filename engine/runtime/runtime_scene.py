@@ -6,6 +6,7 @@ from engine.physics.physics import Physics
 from engine.physics.physics_world import PhysicsWorld
 from engine.runtime.clone import clone_game_object
 from engine.runtime.script_runtime import ScriptRuntime
+from engine.ui.ui_renderer import UIRenderer
 
 
 class RuntimeScene:
@@ -19,6 +20,7 @@ class RuntimeScene:
         self.playing = True
         self.script_runtime = ScriptRuntime(self)
         self.physics_world = PhysicsWorld(self)
+        self.ui_renderer = UIRenderer()
         self._runtime_started = False
         self._runtime_started_components: list[Any] = []
         self.editor_to_runtime: dict[str, Any] = {}
@@ -221,6 +223,7 @@ class RuntimeScene:
         else:
             screen.fill((30, 30, 30))
         self.scene.draw(screen)
+        self.ui_renderer.render(self, screen)
 
     def handle_event(self, event: Any) -> None:
         self.scene.handle_event(event)

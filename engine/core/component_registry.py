@@ -58,6 +58,7 @@ from engine.core.component import Transform
 from engine.graphics.camera import Camera
 from engine.audio import AudioSource, AudioListener
 from engine.animation.animator import Animator
+from engine.ui.runtime_components import Canvas, LabelComponent, ImageComponent, ButtonComponent
 
 component_registry.register(Component)
 component_registry.register(Transform)
@@ -65,3 +66,7 @@ component_registry.register(Camera)
 component_registry.register(AudioSource)
 component_registry.register(AudioListener)
 component_registry.register(Animator)
+component_registry.register(Canvas)
+component_registry.register(LabelComponent)
+component_registry.register(ImageComponent)
+component_registry.register(ButtonComponent)

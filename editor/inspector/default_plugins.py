@@ -826,6 +826,100 @@ class AnimatorInspectorPlugin(InspectorPlugin):
         return widget
 
 
+class CanvasInspectorPlugin(InspectorPlugin):
+    component_type = "Canvas"
+
+    def create_widget(
+        self,
+        component: Any,
+        command_manager: CommandManager | None,
+        refresh: callable | None = None,
+    ) -> QWidget:
+        widget, layout = _section("Canvas")
+        visible = QCheckBox("Visible")
+        visible.setChecked(bool(getattr(component, "visible", True)))
+        visible.clicked.connect(
+            lambda: self.set_property(component, "visible", visible.isChecked(), command_manager, refresh)
+        )
+        layout.addWidget(_property_row("Visible", visible))
+        z_order = QSpinBox()
+        z_order.setRange(-999999, 999999)
+        z_order.setValue(int(getattr(component, "z_order", 0)))
+        z_order.valueChanged.connect(lambda value: self.set_property(component, "z_order", int(value), command_manager, refresh))
+        layout.addWidget(_property_row("Z Order", z_order))
+        widget.setProperty("component_type", self.component_type)
+        return widget
+
+
+class LabelInspectorPlugin(InspectorPlugin):
+    component_type = "Label"
+
+    def create_widget(
+        self,
+        component: Any,
+        command_manager: CommandManager | None,
+        refresh: callable | None = None,
+    ) -> QWidget:
+        widget, layout = _section("Label")
+        text = QLineEdit(str(getattr(component, "text", "")))
+        text.editingFinished.connect(lambda: self.set_property(component, "text", text.text(), command_manager, refresh))
+        layout.addWidget(_property_row("Text", text))
+        font_size = QSpinBox()
+        font_size.setRange(1, 200)
+        font_size.setValue(int(getattr(component, "font_size", 20)))
+        font_size.valueChanged.connect(lambda value: self.set_property(component, "font_size", int(value), command_manager, refresh))
+        layout.addWidget(_property_row("Font Size", font_size))
+        widget.setProperty("component_type", self.component_type)
+        return widget
+
+
+class ImageInspectorPlugin(InspectorPlugin):
+    component_type = "Image"
+
+    def create_widget(
+        self,
+        component: Any,
+        command_manager: CommandManager | None,
+        refresh: callable | None = None,
+    ) -> QWidget:
+        widget, layout = _section("Image")
+        sprite_path = QLineEdit(str(getattr(component, "sprite_path", "")))
+        sprite_path.editingFinished.connect(
+            lambda: self.set_property(component, "sprite_path", sprite_path.text(), command_manager, refresh)
+        )
+        layout.addWidget(_property_row("Sprite", sprite_path))
+        alpha = QSpinBox()
+        alpha.setRange(0, 255)
+        alpha.setValue(int(getattr(component, "alpha", 255)))
+        alpha.valueChanged.connect(lambda value: self.set_property(component, "alpha", int(value), command_manager, refresh))
+        layout.addWidget(_property_row("Alpha", alpha))
+        widget.setProperty("component_type", self.component_type)
+        return widget
+
+
+class ButtonInspectorPlugin(InspectorPlugin):
+    component_type = "Button"
+
+    def create_widget(
+        self,
+        component: Any,
+        command_manager: CommandManager | None,
+        refresh: callable | None = None,
+    ) -> QWidget:
+        widget, layout = _section("Button")
+        text = QLineEdit(str(getattr(component, "text", "")))
+        text.editingFinished.connect(lambda: self.set_property(component, "text", text.text(), command_manager, refresh))
+        layout.addWidget(_property_row("Text", text))
+        interactable = QCheckBox("Interactable")
+        interactable.setChecked(bool(getattr(component, "interactable", True)))
+        interactable.clicked.connect(
+            lambda: self.set_property(component, "interactable", interactable.isChecked(), command_manager, refresh)
+        )
+        layout.addWidget(_property_row("Interactable", interactable))
+        widget.setProperty("component_type", self.component_type)
+        return widget
+
+
 def register_default_inspector_plugins() -> None:
     inspector_plugin_registry.register(TransformInspectorPlugin)
     inspector_plugin_registry.register(RigidBodyInspectorPlugin)
@@ -835,6 +929,10 @@ def register_default_inspector_plugins() -> None:
     inspector_plugin_registry.register(AudioSourceInspectorPlugin)
     inspector_plugin_registry.register(AudioListenerInspectorPlugin)
     inspector_plugin_registry.register(AnimatorInspectorPlugin)
+    inspector_plugin_registry.register(CanvasInspectorPlugin)
+    inspector_plugin_registry.register(LabelInspectorPlugin)
+    inspector_plugin_registry.register(ImageInspectorPlugin)
+    inspector_plugin_registry.register(ButtonInspectorPlugin)
 
 
 register_default_inspector_plugins()

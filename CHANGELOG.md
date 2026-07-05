@@ -7,6 +7,7 @@
 * **Audio Runtime**: Componentes `AudioSource` e `AudioListener` com suporte a `play_on_awake`, `volume`, `pitch`, `loop`, `mute` e `AudioManager` para cache e controle centralizado.
 * **Scene Gizmos Avançados**: Renderização exclusiva de gizmos em editor-mode para Câmera, Colisores (Box/Circle) e Áudio, consultados a partir do `GizmoRegistry`.
 * **Animation Runtime Foundation**: `Keyframe`, `AnimationClip` serializável e componente `Animator` integrado ao Runtime World usando exclusivamente `Time.delta_time`.
+* **UI Runtime Foundation**: Componentes `Canvas`, `Label`, `Image` e `Button` com `UIRenderer` desacoplado da câmera e serialização por `ComponentRegistry`.
 * **Inspector Colapsável & Persistente**: Tópicos de componentes do Inspector podem ser contraídos ou expandidos e seus estados são lembrados durante alterações de propriedades.
 * **Teste de Integração**: Suíte de testes `tests/integration/test_gameplay_foundation.py` validando o ciclo completo do Gameplay Milestone.
 

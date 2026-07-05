@@ -14,6 +14,7 @@ from engine.core import Component, register_component
 from engine.game_object import GameObject
 from engine.physics.collider import BoxCollider
 from engine.physics.rigidbody import RigidBody
+from engine.ui.runtime_components import ButtonComponent, Canvas, ImageComponent, LabelComponent
 
 
 @pytest.fixture(scope="session")
@@ -48,6 +49,10 @@ def test_default_plugins_resolve_builtin_components() -> None:
     assert inspector_plugin_registry.plugin_for(RigidBody()).component_type == "RigidBody"
     assert inspector_plugin_registry.plugin_for(BoxCollider()).component_type == "Collider"
     assert inspector_plugin_registry.plugin_for(Animator()).component_type == "Animator"
+    assert inspector_plugin_registry.plugin_for(Canvas()).component_type == "Canvas"
+    assert inspector_plugin_registry.plugin_for(LabelComponent()).component_type == "Label"
+    assert inspector_plugin_registry.plugin_for(ImageComponent()).component_type == "Image"
+    assert inspector_plugin_registry.plugin_for(ButtonComponent()).component_type == "Button"
 
 
 def test_inspector_hosts_plugins_for_multiple_components(qapp) -> None:

@@ -291,6 +291,19 @@ animator.add_clip(clip)
 
 O `Animator` roda somente no Runtime World. Alterações feitas por animação durante Play não modificam a cena do Editor e são descartadas no Stop. Nesta fase ainda não há timeline visual, editor de keyframes, blend tree, state machine avançada ou importador de spritesheets.
 
+### UI Runtime Foundation
+
+A Fase 22 adiciona a base oficial de UI Runtime. `Canvas`, `Label`, `Image` e `Button` são componentes serializáveis, registrados no `ComponentRegistry` e editáveis pelo Inspector Plugin System.
+
+```python
+from engine.ui.runtime_components import Canvas, LabelComponent
+
+canvas = game_object.add_component(Canvas())
+label = game_object.add_component(LabelComponent(text="Start", x=24, y=20))
+```
+
+Durante Play, o `UIRenderer` desenha componentes de UI depois da cena e de forma independente da câmera. Elementos de UI pertencem ao Runtime World, são ocultos da renderização normal da cena e não modificam o Editor World. Nesta fase ainda não há editor visual, layout automático, eventos complexos, temas ou animações de UI.
+
 ### Criando Scripts
 
 Crie um arquivo `.py` dentro de `Assets/Scripts` e anexe um `ScriptComponent` ao GameObject apontando para esse caminho. Um script mínimo:
@@ -316,6 +329,7 @@ zennity-engine-game/
 │   ├── core/              # Engine principal, Cenas e EventBus
 │   ├── runtime/           # RuntimeScene, RuntimeManager, ScriptRuntime, InputManager e clone profundo do Play Mode
 │   ├── physics/           # RigidBody, Box/Circle Colliders
+│   ├── ui/                # UI Runtime: Canvas, componentes básicos e UIRenderer
 │   └── graphics/          # Renderers 3D, Câmera e Matrizes
 ├── editor/                # O Novo Zennity Editor modular (PySide6)
 │   ├── core/              # EventBus do editor e exportador

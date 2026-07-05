@@ -789,6 +789,45 @@ Esta fase não implementa timeline, curvas avançadas, importador de spritesheet
 
 ---
 
+## UI Runtime Foundation (Fase 22)
+
+A Fase 22 cria a fundação oficial da interface de usuário em runtime sem adicionar editor visual, layout automático, temas, animações de UI ou eventos complexos.
+
+### Componentes
+
+`engine.ui.runtime_components` define componentes oficiais de UI:
+
+* `UIElement`: base comum com posição, tamanho, visibilidade e ordem de renderização.
+* `Canvas`: agrupador de UI, único por objeto.
+* `LabelComponent`: texto básico com tamanho de fonte e cor.
+* `ImageComponent`: imagem por `sprite_path` ou placeholder simples.
+* `ButtonComponent`: botão básico com texto e estado `interactable`.
+
+Todos são registrados no `ComponentRegistry`, serializam suas propriedades via `components.items` e podem ser usados em cenas e prefabs sem caminhos especiais.
+
+### Renderização
+
+`engine.ui.UIRenderer` pertence à `RuntimeScene` e desenha a UI depois da cena:
+
+```text
+RuntimeScene.draw(screen)
+  -> camera/background
+  -> scene.draw(screen)
+  -> UIRenderer.render(runtime_scene, screen)
+```
+
+O renderer coleta componentes UI do Runtime World, exige pelo menos um `Canvas` ativo e ordena elementos por `z_order`. A UI não participa das transformações da câmera e objetos com componentes UI são marcados como `runtime_hidden` durante Play para não aparecerem como objetos comuns da cena.
+
+### Inspector
+
+Os plugins `CanvasInspectorPlugin`, `LabelInspectorPlugin`, `ImageInspectorPlugin` e `ButtonInspectorPlugin` são resolvidos pelo `InspectorPluginRegistry`. O Inspector continua sendo apenas host: novos componentes UI devem registrar um `Component` e um `InspectorPlugin`, sem alterar o dock principal.
+
+### Limites
+
+Esta fase não implementa editor visual, auto layout, foco/hover/click runtime avançado, temas, animações ou widgets complexos. O objetivo é fornecer uma base serializável e isolada para evoluir a UI nas próximas fases.
+
+---
+
 ## Estabilização da v0.2.0-alpha — Gameplay Foundation
 
 A v0.2.0-alpha consolida a Gameplay Foundation através de uma série de correções de integração:
@@ -796,5 +835,4 @@ A v0.2.0-alpha consolida a Gameplay Foundation através de uma série de correç
 * **Ciclo de Vida de Inicialização de Câmeras**: Adicionado suporte para que o componente `Camera` registre-se no `CameraManager` durante o início do Play Mode via `on_runtime_start()`.
 * **Segurança na Viewport contra Mocks**: Ajustada a função `_get_screen_pos` de desenho de gizmos para detectar dinamicamente objetos mock do pytest, evitando falhas de desempacotamento de coordenadas de tela.
 * **Isolamento de Estado em Mocks globais**: Configurada a restauração e limpeza explícita dos stubs de áudio e pygame em `tests/test_audio.py` para prevenir efeitos colaterais em outros módulos da suíte de testes.
-
 
