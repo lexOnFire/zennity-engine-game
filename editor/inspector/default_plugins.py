@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QUrl
+from PySide6.QtCore import QUrl, Qt
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -32,6 +32,7 @@ def _section(title: str) -> tuple[QWidget, QVBoxLayout]:
 
     header_host = QWidget()
     header_host.setObjectName("InspectorComponentHeader")
+    header_host.setCursor(Qt.PointingHandCursor)
     header_layout = QHBoxLayout(header_host)
     header_layout.setContentsMargins(6, 4, 6, 4)
     header_layout.setSpacing(6)
@@ -55,6 +56,18 @@ def _section(title: str) -> tuple[QWidget, QVBoxLayout]:
     body_layout.setSpacing(4)
     layout.addWidget(header_host)
     layout.addWidget(body)
+
+    # Função para encolher/expandir o tópico
+    def toggle_collapse(event):
+        if body.isVisible():
+            body.setVisible(False)
+            foldout.setText("▸")
+        else:
+            body.setVisible(True)
+            foldout.setText("▾")
+    
+    header_host.mousePressEvent = toggle_collapse
+
     return widget, body_layout
 
 
