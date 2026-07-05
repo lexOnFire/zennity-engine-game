@@ -1,6 +1,6 @@
 import numpy as np
-from typing import Optional
-from engine.component import Component
+from typing import Any, Optional
+from engine.core.component import Component
 
 
 class RigidBody(Component):
@@ -12,6 +12,8 @@ class RigidBody(Component):
 
     Adicionado: atributo `grounded` para integração com TilemapCollider.
     """
+    component_type = "RigidBody"
+    unique = True
 
     def __init__(
         self,
@@ -36,6 +38,26 @@ class RigidBody(Component):
         self.grounded: bool = False
 
         self.GRAVITY: float = 980.0
+
+    def serialize_properties(self) -> dict[str, Any]:
+        return {
+            "mass": float(self.mass),
+            "gravity_scale": float(self.gravity_scale),
+            "drag": float(self.drag),
+            "use_gravity": bool(self.use_gravity),
+            "is_kinematic": bool(self.is_kinematic),
+            "velocity": [float(v) for v in self.velocity],
+            "acceleration": [float(v) for v in self.acceleration],
+        }
+
+    def deserialize_properties(self, data: dict[str, Any]) -> None:
+        self.mass = max(float(data.get("mass", 1.0)), 0.0001)
+        self.gravity_scale = float(data.get("gravity_scale", 1.0))
+        self.drag = float(data.get("drag", 0.0))
+        self.use_gravity = bool(data.get("use_gravity", True))
+        self.is_kinematic = bool(data.get("is_kinematic", False))
+        self.velocity = np.array(data.get("velocity", [0.0, 0.0]), dtype=np.float32)
+        self.acceleration = np.array(data.get("acceleration", [0.0, 0.0]), dtype=np.float32)
 
     # ------------------------------------------------------------------
 
@@ -81,3 +103,9 @@ class RigidBody(Component):
 
         # Reset external forces (gravity is NOT here — it’s in velocity directly)
         self.acceleration[:] = 0.0
+
+
+from engine.core.component_registry import register_component
+
+register_component(RigidBody)
+register_component(RigidBody, "Rigidbody")

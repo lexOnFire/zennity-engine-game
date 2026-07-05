@@ -82,6 +82,10 @@ class GameObject:
     # ------------------------------------------------------------------ #
 
     def add_component(self, component: 'Component') -> 'Component':
+        if getattr(component, "unique", False):
+            existing = self.get_component(type(component))
+            if existing is not None:
+                return existing
         component.game_object = self
         self.components.append(component)
         if self.scene and not component._started:
@@ -110,10 +114,15 @@ class GameObject:
         return [comp for comp in self.components if isinstance(comp, component_type) or type(comp).__name__ == component_type.__name__]
 
     def remove_component(self, component: 'Component') -> None:
+        if component is self.transform:
+            raise ValueError("Transform is required and cannot be removed from a GameObject")
         if component in self.components:
             component.destroy()
             component.game_object = None
             self.components.remove(component)
+
+    def all_components(self) -> List['Component']:
+        return list(self.components)
 
     # ------------------------------------------------------------------ #
     # Hierarquia                                                          #
@@ -155,7 +164,8 @@ class GameObject:
             if not comp._started and self.scene:
                 comp.start()
                 comp._started = True
-            comp.update(dt)
+            if getattr(comp, "enabled", True):
+                comp.update(dt)
         for child in self.children:
             child.update(dt)
 
@@ -163,7 +173,8 @@ class GameObject:
         if not self.active:
             return
         for comp in self.components:
-            comp.draw(screen)
+            if getattr(comp, "enabled", True):
+                comp.draw(screen)
         for child in self.children:
             child.draw(screen)
 

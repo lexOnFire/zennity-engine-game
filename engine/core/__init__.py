@@ -35,6 +35,11 @@ from engine.game_object          import GameObject                # noqa: F401
 from engine.core.scene           import Scene                     # noqa: F401
 from engine.core.component       import Component                 # noqa: F401
 from engine.core.component       import Transform                 # noqa: F401
+from engine.core.component_registry import (                       # noqa: F401
+    ComponentRegistry,
+    component_registry,
+    register_component,
+)
 from engine.core.scene_manager   import SceneManager              # noqa: F401
 from engine.core.engine          import Engine                    # noqa: F401
 from engine.core.engine          import UpdateSystem, RenderSystem  # noqa: F401
@@ -52,6 +57,7 @@ __all__ = [
     "Time", "Logger", "EventBus",
     # ECS core
     "GameObject", "Scene", "Component", "Transform",
+    "ComponentRegistry", "component_registry", "register_component",
     # Runtime
     "SceneManager", "Engine",
     "UpdateSystem", "RenderSystem",

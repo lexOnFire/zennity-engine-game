@@ -7,6 +7,9 @@ from typing import Any
 import numpy as np
 
 from engine.game_object import GameObject
+from engine.components.script_component import ScriptComponent
+from engine.core.component import Transform
+from engine.core.component_registry import component_registry
 from engine.physics.collider import BoxCollider, CircleCollider
 from engine.physics.rigidbody import RigidBody
 from engine.scene.scene_format import DEFAULT_SCENE_NAME, ENGINE_VERSION, SCENE_FORMAT_VERSION
@@ -89,11 +92,24 @@ def _serialize_rigidbody(obj: GameObject) -> dict[str, Any] | None:
     }
 
 
+def _serialize_component_items(obj: GameObject) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    for component in getattr(obj, "components", []):
+        if isinstance(component, Transform):
+            continue
+        if hasattr(component, "serialize"):
+            items.append(component.serialize())
+    return items
+
+
 def serialize_game_object(obj: GameObject) -> dict[str, Any]:
     """Serialize one GameObject into .zscene-compatible data."""
     transform = obj.transform
     rotation = _vector(transform.rotation, 3, 0.0)
     components: dict[str, Any] = {"scripts": list(getattr(obj, "scripts", []))}
+    component_items = _serialize_component_items(obj)
+    if component_items:
+        components["items"] = component_items
 
     collider = _serialize_collider(obj)
     if collider is not None:
@@ -180,6 +196,11 @@ def _deserialize_rigidbody(data: dict[str, Any]) -> RigidBody:
     return rigidbody
 
 
+def _component_from_item(data: dict[str, Any]) -> Any:
+    component = component_registry.create(data)
+    return component
+
+
 def deserialize_game_object(data: dict[str, Any]) -> GameObject:
     """Build a GameObject from .zscene object data."""
     obj = GameObject(
@@ -217,19 +238,29 @@ def deserialize_game_object(data: dict[str, Any]) -> GameObject:
     obj.transform.scale = np.array(_vector(transform.get("scale"), 3, 1.0), dtype=np.float32)
 
     components = data.get("components", {}) or {}
-    collider_data = components.get("collider")
-    if isinstance(collider_data, dict):
-        collider = _deserialize_collider(collider_data)
-        if collider is not None:
-            obj.add_component(collider)
+    component_items = components.get("items")
+    if isinstance(component_items, list):
+        for item in component_items:
+            if isinstance(item, dict):
+                component = _component_from_item(item)
+                if not isinstance(component, Transform):
+                    obj.add_component(component)
+    else:
+        collider_data = components.get("collider")
+        if isinstance(collider_data, dict):
+            collider = _deserialize_collider(collider_data)
+            if collider is not None:
+                obj.add_component(collider)
 
-    rigidbody_data = components.get("rigidbody")
-    if isinstance(rigidbody_data, dict):
-        obj.add_component(_deserialize_rigidbody(rigidbody_data))
+        rigidbody_data = components.get("rigidbody")
+        if isinstance(rigidbody_data, dict):
+            obj.add_component(_deserialize_rigidbody(rigidbody_data))
 
     scripts = components.get("scripts")
     if isinstance(scripts, list):
         obj.scripts = list(scripts)
+        for script in scripts:
+            obj.add_component(ScriptComponent(str(script)))
 
     return obj
 

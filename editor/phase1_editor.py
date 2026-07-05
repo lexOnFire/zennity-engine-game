@@ -202,6 +202,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.create_panel = CreatePanel()
         self.prefabs = PrefabsPanel()
         self.inspector = RealInspectorPanel()
+        self.inspector.set_command_manager(self.editor_context.commands)
         self.console = ConsolePanel()
         self.preview = AssetPreviewPanel()
         self.profiler = SimplePanel("Profiler", "FPS, CPU, memoria")

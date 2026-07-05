@@ -58,6 +58,7 @@ zennity-engine-game/
 │   │   ├── scene.py
 │   │   ├── scene_manager.py
 │   │   ├── component.py
+│   │   ├── component_registry.py
 │   │   ├── engine.py
 │   │   ├── game_object.py
 │   │   ├── system.py
@@ -177,4 +178,47 @@ O Inspector é implementado usando a arquitetura MVVM do PySide6. A integração
 Localizados em `editor/runtime/property_commands.py`:
 * **`SetTransformPropertyCommand`**: Modifica índices específicos (X, Y, Z) das propriedades NumPy do Transform (`position`, `rotation`, `scale`).
 * **`SetPropertyCommand`**: Lida com atribuições genéricas de atributos em GameObjects ou componentes via reflexão (`setattr`).
+
+---
+
+## Component System (Fase 9)
+
+A Fase 9 oficializa o sistema de componentes sem criar uma arquitetura paralela. `engine.core.Component` é a classe base canônica e todo `GameObject` continua sendo um container de componentes.
+
+### Component
+Todo componente possui:
+
+* `id`: UUID estável do componente.
+* `type_name`: nome serializável do tipo.
+* `game_object`: referência opcional ao dono.
+* `enabled`: controla se `update()` e `draw()` são chamados.
+* `serialize()` / `deserialize()`: contrato estável para cenas e prefabs.
+
+`Transform` continua obrigatório, criado automaticamente no `GameObject` e acessível por `game_object.transform`. Ele é tratado como seção especial do Inspector e não deve ser removido.
+
+### Registry
+`engine.core.component_registry.ComponentRegistry` registra tipos por nome e cria instâncias a partir de dados serializados. Novos componentes devem chamar:
+
+```python
+from engine.core import register_component
+
+register_component(MyComponent)
+```
+
+Componentes built-in registrados nesta fase:
+
+* `RigidBody`
+* `BoxCollider`
+* `CircleCollider`
+* `Script`
+* `Transform`
+
+### Serialização
+Cenas e prefabs preservam o formato legado (`collider`, `rigidbody`, `scripts`) e passam a gravar também `components.items`, uma lista explícita de componentes serializados. Ao carregar, o formato novo tem prioridade; cenas antigas sem `items` continuam usando o fallback legado.
+
+### Inspector
+O Inspector consome `GameObject.components`, lista componentes opcionais e mantém `Transform` visível como seção especial. Edições de propriedades de componente devem passar pelo `CommandManager` para preservar Undo/Redo.
+
+### Limites
+Esta fase não implementa Play Mode novo, física real adicional, scripting avançado, visual scripting ou editor visual de componentes. Ela cria a base extensível para essas fases futuras.
 

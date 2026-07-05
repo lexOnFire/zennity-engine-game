@@ -18,6 +18,7 @@ O Zennity Editor é um ambiente integrado de desenvolvimento rico, responsivo e 
 * **Outliner de Hierarquia:** Árvore recursiva dinâmica com busca rápida de texto, duplicação rápida (`Ctrl+D`), exclusão (`Delete`) e renomeação instantânea com duplo clique.
 * **Asset Browser:** Navegador de arquivos com histórico de pastas (Voltar/Avançar/Subir), breadcrumbs interativos e visualização em grade de recursos.
 * **Inspector Profissional (Fase 8):** Exibição e edição dinâmica com suporte total a desfazer/refazer (Undo/Redo) via `CommandManager`, validação numérica de inputs e isolamento de commits interativos.
+* **Component System (Fase 9):** Base oficial de componentes com UUID, `enabled`, registro central, serialização explícita e integração com `GameObject`, cenas, prefabs e Inspector.
 * **Viewport Acelerada (OpenGL):** Renderização direta do framebuffer do Pygame no Qt em 60 FPS com suporte a atalho de foco (`F`) e alternância em tempo real entre projeções 2D e 3D.
 * **Terminal Python & Console:** Console de mensagens do sistema colorido por severidade com interpretador interativo integrado para executar scripts no contexto do editor.
 * **Ferramentas da Fase 1:** Seleção centralizada, Move Tool funcional com gizmo de translação, Snap opcional e modos Rotate/Scale preparados para implementação futura.
@@ -71,6 +72,32 @@ if __name__ == "__main__":
     app = Application(800, 600, "Zennity Standalone Game")
     app.run(GameScene())
 ```
+
+### Component System
+
+Todo componente herda de `engine.core.Component` e pode ser registrado no `ComponentRegistry`:
+
+```python
+from engine.core import Component, register_component
+
+class Health(Component):
+    component_type = "Health"
+    unique = True
+
+    def __init__(self, value=100):
+        super().__init__()
+        self.value = value
+
+    def serialize_properties(self):
+        return {"value": self.value}
+
+    def deserialize_properties(self, data):
+        self.value = int(data.get("value", 100))
+
+register_component(Health)
+```
+
+`Transform` continua sendo obrigatório e acessível por `game_object.transform`. Componentes opcionais como `RigidBody`, `BoxCollider`, `CircleCollider` e `ScriptComponent` são serializados em cenas e prefabs.
 
 ---
 

@@ -6,6 +6,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QLabel, QTreeWidget, QTreeWidgetItem
 
 from editor.premium_editor import HierarchyPanel, InspectorPanel
+from editor.runtime.command_manager import CommandManager, FunctionCommand
 
 
 class RealHierarchyPanel(HierarchyPanel):
@@ -53,6 +54,7 @@ class RealInspectorPanel(InspectorPanel):
 
     def __init__(self) -> None:
         super().__init__()
+        self.command_manager: CommandManager | None = None
         sections = [
             label
             for label in self.findChildren(QLabel)
@@ -62,6 +64,9 @@ class RealInspectorPanel(InspectorPanel):
             self.transform_label = sections[0]
         if len(sections) >= 2:
             self.renderer_label = sections[1]
+
+    def set_command_manager(self, command_manager: CommandManager) -> None:
+        self.command_manager = command_manager
 
     def load_object(self, obj: Any) -> None:
         if obj is None:
@@ -92,7 +97,35 @@ class RealInspectorPanel(InspectorPanel):
             )
 
         components = getattr(obj, "components", [])
-        component_names = [type(comp).__name__ for comp in components]
+        component_names = [
+            getattr(comp, "type_name", type(comp).__name__)
+            for comp in components
+            if comp is not transform
+        ]
         text = ", ".join(component_names) if component_names else "Sem componentes"
         if hasattr(self, "renderer_label"):
             self.renderer_label.setText("Components\n  " + text)
+
+    def set_component_property(self, component: Any, property_name: str, value: Any) -> None:
+        old_value = getattr(component, property_name)
+
+        def apply(next_value: Any = value) -> None:
+            setattr(component, property_name, next_value)
+            if getattr(component, "game_object", None) is not None:
+                self.load_object(component.game_object)
+
+        def undo(previous_value: Any = old_value) -> None:
+            setattr(component, property_name, previous_value)
+            if getattr(component, "game_object", None) is not None:
+                self.load_object(component.game_object)
+
+        if self.command_manager is None:
+            apply()
+            return
+        self.command_manager.execute(
+            FunctionCommand(
+                f"Set {getattr(component, 'type_name', type(component).__name__)}.{property_name}",
+                apply,
+                undo,
+            )
+        )

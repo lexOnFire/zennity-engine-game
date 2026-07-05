@@ -11,6 +11,8 @@ Conceito:
 """
 from __future__ import annotations
 
+import uuid
+from typing import Any
 from typing import Optional, TYPE_CHECKING
 
 import numpy as np
@@ -22,9 +24,22 @@ if TYPE_CHECKING:
 class Component:
     """Bloco de comportamento reutilizável que vive dentro de um GameObject."""
 
+    component_type = "Component"
+    unique = False
+
     def __init__(self) -> None:
+        self.id: str = str(uuid.uuid4())
         self.game_object: Optional["GameObject"] = None
         self._started: bool = False
+        self.enabled: bool = True
+
+    @property
+    def type_name(self) -> str:
+        return self.component_type or type(self).__name__
+
+    @property
+    def name(self) -> str:
+        return self.type_name
 
     @property
     def transform(self) -> "Transform":
@@ -51,13 +66,41 @@ class Component:
     def destroy(self) -> None:
         """Chamado quando o componente ou seu GO é destruído."""
 
+    def serialize_properties(self) -> dict[str, Any]:
+        return {}
+
+    def deserialize_properties(self, data: dict[str, Any]) -> None:
+        return None
+
+    def serialize(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "type": self.type_name,
+            "enabled": bool(self.enabled),
+            "properties": self.serialize_properties(),
+        }
+
+    @classmethod
+    def deserialize(cls, data: dict[str, Any]) -> "Component":
+        component = cls()
+        if data.get("id"):
+            component.id = str(data["id"])
+        component.enabled = bool(data.get("enabled", True))
+        properties = data.get("properties", {})
+        if isinstance(properties, dict):
+            component.deserialize_properties(properties)
+        return component
+
     def __repr__(self) -> str:
         go_name = self.game_object.name if self.game_object else "<detached>"
-        return f"<{type(self).__name__} on='{go_name}' started={self._started}>"
+        return f"<{type(self).__name__} id='{self.id[:8]}' on='{go_name}' started={self._started}>"
 
 
 class Transform(Component):
     """Componente de transformação espacial (2D e 3D)."""
+
+    component_type = "Transform"
+    unique = True
 
     def __init__(
         self,
