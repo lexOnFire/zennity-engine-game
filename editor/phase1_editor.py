@@ -5,7 +5,7 @@ from typing import Any
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QActionGroup
-from PySide6.QtWidgets import QFileDialog, QComboBox, QSplitter, QTabWidget, QToolBar, QToolButton, QWidget
+from PySide6.QtWidgets import QFileDialog, QComboBox, QSplitter, QTabWidget, QToolBar, QToolButton, QWidget, QMessageBox
 
 from editor.premium_editor import (
     AssetPreviewPanel,
@@ -81,6 +81,15 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         build_menu.addAction("Play", self.play)
         build_menu.addAction("Stop", self.stop)
 
+        prefab_menu = bar.addMenu("Prefabs")
+        self.act_create_prefab = QAction("Create Prefab From Selected", self)
+        self.act_create_prefab.triggered.connect(self.create_prefab_from_selected)
+        prefab_menu.addAction(self.act_create_prefab)
+        
+        self.act_instantiate_prefab = QAction("Instantiate Prefab", self)
+        self.act_instantiate_prefab.triggered.connect(self.instantiate_prefab_ui)
+        prefab_menu.addAction(self.act_instantiate_prefab)
+
         self._unused_menu_refs = (edit_menu, window_menu, tools_menu, help_menu)
 
     def _build_toolbar(self) -> None:
@@ -98,6 +107,20 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         save_button.setText("Save")
         save_button.clicked.connect(self.save_scene)
         toolbar.addWidget(save_button)
+
+        toolbar.addSeparator()
+
+        create_prefab_btn = QToolButton()
+        create_prefab_btn.setText("Create Prefab")
+        create_prefab_btn.setToolTip("Create Prefab From Selected")
+        create_prefab_btn.clicked.connect(self.create_prefab_from_selected)
+        toolbar.addWidget(create_prefab_btn)
+
+        instantiate_prefab_btn = QToolButton()
+        instantiate_prefab_btn.setText("Instantiate Prefab")
+        instantiate_prefab_btn.setToolTip("Instantiate Prefab")
+        instantiate_prefab_btn.clicked.connect(self.instantiate_prefab_ui)
+        toolbar.addWidget(instantiate_prefab_btn)
 
         self.act_undo = QAction("Undo", self)
         self.act_undo.setShortcut("Ctrl+Z")
@@ -459,3 +482,73 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             self.select_object(created)
 
         self.console.add("INFO", f"Objeto criado: {name}")
+
+    def create_prefab_from_selected(self) -> None:
+        """Salva o objeto selecionado como um Prefab (.zprefab)."""
+        selected = self.editor_context.selection.selected
+        if selected is None:
+            QMessageBox.warning(self, "Aviso", "Selecione um objeto na cena antes de criar um Prefab.")
+            return
+
+        default_name = f"{selected.name}.zprefab"
+        assets_prefabs_dir = str(Path(self.editor_context.project_root) / "Assets" / "Prefabs")
+        Path(assets_prefabs_dir).mkdir(parents=True, exist_ok=True)
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Create Prefab From Selected",
+            str(Path(assets_prefabs_dir) / default_name),
+            "Prefab Files (*.zprefab)"
+        )
+
+        if not file_path:
+            return
+
+        from engine.prefabs.prefab_loader import create_prefab_from_object
+        try:
+            prefab_uuid = create_prefab_from_object(selected, file_path)
+            self.console.add("INFO", f"Prefab criado: {selected.name} -> {Path(file_path).name} (UUID: {prefab_uuid})")
+        except Exception as e:
+            QMessageBox.critical(self, "Erro", f"Falha ao criar prefab: {str(e)}")
+
+    def instantiate_prefab_ui(self) -> None:
+        """Abre caixa de diálogo para escolher um prefab (.zprefab) e instanciá-lo na cena."""
+        if not self.viewport or not self.viewport.active_scene:
+            return
+
+        assets_prefabs_dir = str(Path(self.editor_context.project_root) / "Assets" / "Prefabs")
+
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Instantiate Prefab",
+            assets_prefabs_dir,
+            "Prefab Files (*.zprefab)"
+        )
+
+        if not file_path:
+            return
+
+        from engine.prefabs.prefab_loader import instantiate_prefab
+        try:
+            obj = instantiate_prefab(file_path)
+
+            scene = self.viewport.active_scene
+            lay = getattr(scene, "_layout", None)
+            if lay is not None:
+                layout_data = lay()
+                center = scene._vp_to_world(
+                    layout_data["vp_left"] + layout_data["vp_w"] / 2,
+                    layout_data["vp_top"] + layout_data["vp_h"] / 2,
+                    layout_data
+                )
+                obj.transform.position = center.copy()
+
+            scene._add_go(obj)
+            scene.editable_objects.append(obj)
+
+            self.viewport._sync_model_from_scene()
+            self.select_object(obj)
+
+            self.console.add("INFO", f"Prefab instanciado: {obj.name} a partir de {Path(file_path).name}")
+        except Exception as e:
+            QMessageBox.critical(self, "Erro", f"Falha ao instanciar prefab: {str(e)}")

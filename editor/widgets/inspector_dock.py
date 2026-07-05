@@ -5,8 +5,6 @@ from PySide6.QtWidgets import (
 from typing import Optional
 from PySide6.QtCore import Qt, Slot
 from engine.game_object import GameObject
-from engine.physics.rigidbody import RigidBody
-from engine.physics.collider import BoxCollider, CircleCollider
 from editor.viewmodels.scene_viewmodel import SceneViewModel
 
 # Importa os Widgets de Componentes
@@ -106,6 +104,7 @@ class InspectorDock(QDockWidget):
         self.layout_content.addWidget(sec_transform)
         
         # ── 2. Componente: RigidBody (se existir) ───────────
+        from engine.physics.rigidbody import RigidBody
         rb = obj.get_component(RigidBody)
         if rb:
             sec_rb = CollapsibleSection("RigidBody (Física)")
@@ -114,6 +113,7 @@ class InspectorDock(QDockWidget):
             self.layout_content.addWidget(sec_rb)
             
         # ── 3. Componente: Collider (se existir) ────────────
+        from engine.physics.collider import BoxCollider, CircleCollider
         bc = obj.get_component(BoxCollider)
         cc = obj.get_component(CircleCollider)
         if bc or cc:
@@ -151,27 +151,65 @@ class InspectorDock(QDockWidget):
         obj = self.viewmodel.selected_object
         
         if component_name == "Transform" and hasattr(self, "transform_widget"):
-            self.transform_widget.blockSignals(True)
-            self.transform_widget.sb_pos_x.setValue(obj.transform.position[0])
-            self.transform_widget.sb_pos_y.setValue(obj.transform.position[1])
-            self.transform_widget.sb_pos_z.setValue(obj.transform.position[2])
-            self.transform_widget.sb_sc_x.setValue(obj.transform.scale[0])
-            self.transform_widget.sb_sc_y.setValue(obj.transform.scale[1])
-            self.transform_widget.sb_sc_z.setValue(obj.transform.scale[2])
-            self.transform_widget.sb_rot_x.setValue(obj.transform.rotation[0])
-            self.transform_widget.sb_rot_y.setValue(obj.transform.rotation[1])
-            self.transform_widget.sb_rot_z.setValue(obj.transform.rotation[2])
-            self.transform_widget.blockSignals(False)
+            tw = self.transform_widget
+            tw.blockSignals(True)
+            tw.sb_pos_x.setValue(obj.transform.position[0])
+            tw.sb_pos_y.setValue(obj.transform.position[1])
+            tw.sb_pos_z.setValue(obj.transform.position[2])
+            tw.sb_sc_x.setValue(obj.transform.scale[0])
+            tw.sb_sc_y.setValue(obj.transform.scale[1])
+            tw.sb_sc_z.setValue(obj.transform.scale[2])
+            tw.sb_rot_x.setValue(obj.transform.rotation[0])
+            tw.sb_rot_y.setValue(obj.transform.rotation[1])
+            tw.sb_rot_z.setValue(obj.transform.rotation[2])
             
+            # Sincroniza os valores originais para a próxima edição do inspetor (apenas se a mudança veio de fora, ex: viewport/undo)
+            if not getattr(tw, "_block_original_sync", False):
+                tw.sb_pos_x.original_value = float(obj.transform.position[0])
+                tw.sb_pos_y.original_value = float(obj.transform.position[1])
+                tw.sb_pos_z.original_value = float(obj.transform.position[2])
+                tw.sb_rot_x.original_value = float(obj.transform.rotation[0])
+                tw.sb_rot_y.original_value = float(obj.transform.rotation[1])
+                tw.sb_rot_z.original_value = float(obj.transform.rotation[2])
+                tw.sb_sc_x.original_value = float(obj.transform.scale[0])
+                tw.sb_sc_y.original_value = float(obj.transform.scale[1])
+                tw.sb_sc_z.original_value = float(obj.transform.scale[2])
+            
+            tw.blockSignals(False)
+            
+        elif component_name == "RigidBody" and hasattr(self, "rb_widget"):
+            from engine.physics.rigidbody import RigidBody
+            rb = obj.get_component(RigidBody)
+            if rb:
+                self.rb_widget.blockSignals(True)
+                self.rb_widget.sb_mass.setValue(rb.mass)
+                self.rb_widget.sb_grav.setValue(rb.gravity_scale)
+                self.rb_widget.chk_kin.setChecked(rb.is_kinematic)
+                
+                # Sincroniza original_value para a próxima edição do inspetor (apenas se a mudança veio de fora, ex: viewport/undo)
+                if not getattr(self.rb_widget, "_block_original_sync", False):
+                    self.rb_widget.sb_mass.original_value = float(rb.mass)
+                    self.rb_widget.sb_grav.original_value = float(rb.gravity_scale)
+                self.rb_widget.blockSignals(False)
+
         elif component_name == "Collider" and hasattr(self, "col_widget"):
             self.col_widget.blockSignals(True)
+            from engine.physics.collider import BoxCollider, CircleCollider
             bc = obj.get_component(BoxCollider)
             cc = obj.get_component(CircleCollider)
+            col = bc if bc else cc
+            if col:
+                self.col_widget.chk_trigger.setChecked(col.is_trigger)
             if bc and hasattr(self.col_widget, "sb_w"):
                 self.col_widget.sb_w.setValue(bc.width)
                 self.col_widget.sb_h.setValue(bc.height)
+                if not getattr(self.col_widget, "_block_original_sync", False):
+                    self.col_widget.sb_w.original_value = int(bc.width)
+                    self.col_widget.sb_h.original_value = int(bc.height)
             elif cc and hasattr(self.col_widget, "sb_r"):
                 self.col_widget.sb_r.setValue(cc.radius)
+                if not getattr(self.col_widget, "_block_original_sync", False):
+                    self.col_widget.sb_r.original_value = int(cc.radius)
             self.col_widget.blockSignals(False)
             
         elif component_name == "Script" and hasattr(self, "script_widget"):

@@ -65,10 +65,10 @@
 ---
 
 ### v0.6 — Prefabs e Inspector Avançado
-- [ ] Sistema de Prefabs (salvar/instanciar GO com componentes)
-- [ ] Inspector com edição de todos os tipos de campo
+- [x] Sistema de Prefabs (salvar/instanciar GO com componentes) (Fase 6)
+- [x] Inspector Profissional com comandos e desfazer/refazer (Fase 8)
 - [ ] Hierarchy com drag & drop e parentesco
-- [x] Undo/Redo no editor
+- [x] Undo/Redo no editor (Fase 7)
 
 ---
 

@@ -162,3 +162,19 @@ Ver `docs/adr/` para os Architecture Decision Records completos.
 | [ADR-002](docs/adr/ADR-002.md) | Arquitetura baseada em módulos/plugins |
 | [ADR-003](docs/adr/ADR-003.md) | NumPy para matemática do Transform |
 | [ADR-004](docs/adr/ADR-004.md) | Pygame/SDL2 como backend de janela |
+
+---
+
+## Inspector & Command System (Fase 8)
+
+O Inspector é implementado usando a arquitetura MVVM do PySide6. A integração com o sistema de Undo/Redo é desenhada seguindo as seguintes diretrizes:
+
+### 1. Separação de Alterações (Interativo vs. Commit)
+* **Alteração Interativa (`valueChanged`)**: Conectada diretamente ao método `set_transform_property` do ViewModel. Aplica as mudanças no transform do objeto e notifica a Viewport imediatamente. Não gera comandos na pilha de Undo para evitar poluição visual e de performance ao arrastar/digitar.
+* **Commit de Valor (`editingFinished`)**: Disparado quando o foco do spinbox é perdido ou Return/Enter é pressionado. Compara o novo valor com o valor original (`original_value`) antes do início da alteração e, caso sejam diferentes, executa e empilha um comando de propriedade no `CommandManager`.
+
+### 2. Comandos de Propriedade
+Localizados em `editor/runtime/property_commands.py`:
+* **`SetTransformPropertyCommand`**: Modifica índices específicos (X, Y, Z) das propriedades NumPy do Transform (`position`, `rotation`, `scale`).
+* **`SetPropertyCommand`**: Lida com atribuições genéricas de atributos em GameObjects ou componentes via reflexão (`setattr`).
+

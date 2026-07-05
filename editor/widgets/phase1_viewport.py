@@ -172,7 +172,8 @@ class Phase1ViewportWidget(ViewportWidget):
         scene = getattr(self, "active_scene", None)
         if scene is None:
             return
-        scene.show_scale_handles = self._active_tool() == EditorTool.SCALE and not self._is_playing()
+        # Desativa permanentemente os handles legados (eixos desalinhados) na nova viewport
+        scene.show_scale_handles = False
 
     # ── Seleção e Hover ───────────────────────────────────────────────────────
 

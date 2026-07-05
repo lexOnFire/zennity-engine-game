@@ -6,6 +6,14 @@ Valida Pan, Zoom suave, conversões de coordenadas, Bounding Box e Grid.
 """
 from __future__ import annotations
 
+import sys
+# Restaura o ambiente contra poluição de mocks de outros testes
+for name in ["engine.physics.collider", "engine.physics.rigidbody", "engine.physics", "engine.transitions", "engine.audio", "engine.ui.ui_manager", "engine.ui"]:
+    if name in sys.modules:
+        mod = sys.modules[name]
+        if not getattr(mod, "__file__", None) and not getattr(mod, "__path__", None):
+            sys.modules.pop(name, None)
+
 import math
 import os
 import numpy as np
@@ -245,18 +253,13 @@ def test_viewport_renderer_hides_handles_during_play_mode(
 def test_phase1_viewport_syncs_legacy_scale_handles_by_active_tool(
     phase1_editor: ZennityPhase1Editor,
 ) -> None:
-    """A cena legada nao deve vazar handles amarelos fora da Scale Tool."""
+    """A cena legada nao deve vazar handles amarelos em nenhum modo, pois usamos as novas alças da Bounding Box."""
     scene = phase1_editor.viewport.active_scene
 
-    for tool, expected in (
-        (EditorTool.SELECT, False),
-        (EditorTool.MOVE, False),
-        (EditorTool.ROTATE, False),
-        (EditorTool.SCALE, True),
-    ):
+    for tool in (EditorTool.SELECT, EditorTool.MOVE, EditorTool.ROTATE, EditorTool.SCALE):
         phase1_editor.editor_context.tools.set_active_tool(tool)
         phase1_editor.viewport._sync_legacy_scale_handles()
-        assert scene.show_scale_handles is expected
+        assert scene.show_scale_handles is False
 
     phase1_editor.editor_context.tools.set_active_tool(EditorTool.SCALE)
     scene.playing = True

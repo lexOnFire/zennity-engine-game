@@ -98,16 +98,16 @@ class GameObject:
         # retornando o Transform normalmente.
         if component_type is Component:
             for comp in self.components:
-                if comp is not self.transform and isinstance(comp, component_type):
+                if comp is not self.transform and (isinstance(comp, component_type) or type(comp).__name__ == component_type.__name__):
                     return comp
 
         for comp in self.components:
-            if isinstance(comp, component_type):
+            if isinstance(comp, component_type) or type(comp).__name__ == component_type.__name__:
                 return comp
         return None
 
     def get_components(self, component_type: Type[T]) -> List[T]:
-        return [comp for comp in self.components if isinstance(comp, component_type)]
+        return [comp for comp in self.components if isinstance(comp, component_type) or type(comp).__name__ == component_type.__name__]
 
     def remove_component(self, component: 'Component') -> None:
         if component in self.components:

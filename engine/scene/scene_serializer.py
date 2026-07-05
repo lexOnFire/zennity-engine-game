@@ -104,9 +104,11 @@ def serialize_game_object(obj: GameObject) -> dict[str, Any]:
         components["rigidbody"] = rigidbody
 
     object_id = str(getattr(obj, "id", getattr(obj, "uuid", "")))
+    prefab_uuid = getattr(obj, "prefab_uuid", None)
     return {
         "id": object_id,
         "uuid": object_id,
+        "prefab_uuid": prefab_uuid,
         "name": str(getattr(obj, "name", "GameObject")),
         "tag": str(getattr(obj, "tag", "Untagged")),
         "layer": int(getattr(obj, "layer", 0)),
@@ -188,6 +190,9 @@ def deserialize_game_object(data: dict[str, Any]) -> GameObject:
     object_id = data.get("id") or data.get("uuid")
     if object_id:
         obj._id = str(object_id)
+
+    if "prefab_uuid" in data and data["prefab_uuid"] is not None:
+        obj.prefab_uuid = str(data["prefab_uuid"])
 
     obj.layer = int(data.get("layer", 0))
     obj.active = bool(data.get("active", data.get("enabled", True)))

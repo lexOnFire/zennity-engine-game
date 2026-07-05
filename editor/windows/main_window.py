@@ -69,11 +69,16 @@ class MainWindow(QMainWindow):
         self.scene_view_model = SceneViewModel(
             self.scene_model,
             selection_manager=self.editor_context.selection,
+            command_manager=self.editor_context.commands,
         )
         
         # Inicializa o Model e o ViewModel de Assets (Semana 4)
         self.asset_model = AssetModel(self)
         self.asset_view_model = AssetViewModel(self.asset_model)
+        
+        # Sincroniza o project_root do editor com o contexto de runtime
+        from pathlib import Path
+        self.editor_context.project_root = Path(self.asset_model.rootPath()).parent.resolve()
         
         # Viewport gráfica baseada em OpenGL (Semana 6)
         self.setup_central_widget()

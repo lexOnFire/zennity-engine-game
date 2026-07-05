@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+import sys
+# Restaura o ambiente contra poluição de mocks de outros testes
+for name in ["engine.physics.collider", "engine.physics.rigidbody", "engine.physics", "engine.transitions", "engine.audio", "engine.ui.ui_manager", "engine.ui"]:
+    if name in sys.modules:
+        mod = sys.modules[name]
+        if not getattr(mod, "__file__", None) and not getattr(mod, "__path__", None):
+            sys.modules.pop(name, None)
+
 import os
-
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-
 import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
@@ -65,6 +71,7 @@ class _MousePress:
 
 
 def _scene_registered_colliders(scene: object) -> list[object]:
+    from engine.physics.collider import BoxCollider, CircleCollider
     colliders = [*BoxCollider._registry, *CircleCollider._registry]
     return [
         collider
@@ -74,6 +81,7 @@ def _scene_registered_colliders(scene: object) -> list[object]:
 
 
 def _scene_attached_colliders(scene: object) -> list[object]:
+    from engine.physics.collider import BoxCollider, CircleCollider
     attached: list[object] = []
     for obj in getattr(scene, "game_objects", []):
         attached.extend(obj.get_components(BoxCollider))

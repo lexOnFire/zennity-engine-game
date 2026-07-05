@@ -27,7 +27,7 @@ class AssetModel(QFileSystemModel):
         self.setFilter(QDir.AllDirs | QDir.Files | QDir.NoDotAndDotDot)
         
         # Filtros de extensões suportadas pelo editor
-        self.setNameFilters(["*.py", "*.png", "*.jpg", "*.json", "*.wav", "*.ogg", "*.obj"])
+        self.setNameFilters(["*.py", "*.png", "*.jpg", "*.json", "*.wav", "*.ogg", "*.obj", "*.zprefab", "*.zscene", "*.zmat"])
         self.setNameFilterDisables(False)  # Oculta arquivos que não batem com o filtro
 
     def get_assets_root_path(self) -> str:

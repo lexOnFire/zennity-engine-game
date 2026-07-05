@@ -15,11 +15,53 @@ Estratégia de isolamento:
 """
 from __future__ import annotations
 
+import engine
 import sys
 from types import ModuleType
 from unittest.mock import MagicMock, patch, call
 
 import pytest
+
+_MOCKED_MODULES = [
+    "engine.transitions",
+    "engine.ui",
+    "engine.ui.ui_manager",
+    "engine.physics",
+    "engine.physics.collider",
+    "engine.audio"
+]
+_original_sys_modules = {}
+for name in _MOCKED_MODULES:
+    if name in sys.modules:
+        _original_sys_modules[name] = sys.modules[name]
+
+@pytest.fixture(scope="module", autouse=True)
+def restore_sys_modules_after_test_module():
+    # Re-aplica os mocks logo antes da execução do módulo (caso outra coleta tenha limpado)
+    sys.modules["engine.transitions"] = _trans_mod
+    sys.modules["engine.ui"] = sys.modules.get("engine.ui") or ModuleType("engine.ui")
+    sys.modules["engine.ui.ui_manager"] = _ui_mod
+    sys.modules["engine.physics"] = sys.modules.get("engine.physics") or ModuleType("engine.physics")
+    sys.modules["engine.physics.collider"] = _phys_mod
+    sys.modules["engine.audio"] = _audio_mod
+    
+    yield
+    
+    for name in _MOCKED_MODULES:
+        sys.modules.pop(name, None)
+    
+    import importlib
+    for name in [
+        "engine.transitions",
+        "engine.ui.ui_manager",
+        "engine.physics.collider",
+        "engine.physics.rigidbody",
+        "engine.audio"
+    ]:
+        try:
+            importlib.import_module(name)
+        except Exception:
+            pass
 
 # ── stubs de módulos externos ──────────────────────────────────────────
 

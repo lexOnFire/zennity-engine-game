@@ -5,12 +5,12 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Slot
 from engine.game_object import GameObject
 from engine.physics.rigidbody import RigidBody
-from engine.physics.collider import BoxCollider, CircleCollider
 from editor.viewmodels.scene_viewmodel import SceneViewModel
 
 
 def create_spin_box(val: float, is_double: bool = True) -> QWidget:
-    """Cria e formata um spin box escuro de alta precisão."""
+    """Cria e formata um spin box escuro de alta precisão com localidade C neutra."""
+    from PySide6.QtCore import QLocale
     if is_double:
         sb = QDoubleSpinBox()
         sb.setRange(-999999.0, 999999.0)
@@ -23,11 +23,41 @@ def create_spin_box(val: float, is_double: bool = True) -> QWidget:
         sb.setSingleStep(1)
         sb.setValue(int(val))
         
+    sb.setLocale(QLocale.c())
     sb.setStyleSheet(
         "background-color: #111217; border: 1px solid #2d313f; border-radius: 4px;"
         "padding: 4px 6px; color: #cfd4de; selection-background-color: #409cff;"
     )
     return sb
+
+
+def validate_and_get_value(sb: QDoubleSpinBox | QSpinBox) -> float | int | None:
+    """Valida a entrada do spinbox para evitar NaN/Inf ou texto vazio, revertendo para original_value em caso de erro."""
+    import math
+    try:
+        text = sb.cleanText().strip()
+        if text == "":
+            sb.setValue(sb.original_value)
+            return None
+            
+        # Tenta converter o texto exibido diretamente para validar formato numérico
+        cleaned_text = text.replace(",", ".")
+        try:
+            float(cleaned_text)
+        except ValueError:
+            sb.setValue(sb.original_value)
+            return None
+            
+        val = sb.value()
+        if math.isnan(val) or math.isinf(val):
+            sb.setValue(sb.original_value)
+            return None
+            
+        return val
+    except Exception:
+        if hasattr(sb, "original_value"):
+            sb.setValue(sb.original_value)
+        return None
 
 
 class TransformComponentWidget(QWidget):
@@ -84,18 +114,65 @@ class TransformComponentWidget(QWidget):
         layout.addWidget(self.sb_sc_y, 3, 2)
         layout.addWidget(self.sb_sc_z, 3, 3)
         
-        # Conexões de sinais
-        self.sb_pos_x.valueChanged.connect(lambda val: self.viewmodel.set_transform_property("position", 0, val))
-        self.sb_pos_y.valueChanged.connect(lambda val: self.viewmodel.set_transform_property("position", 1, val))
-        self.sb_pos_z.valueChanged.connect(lambda val: self.viewmodel.set_transform_property("position", 2, val))
+        # Armazena os valores originais para commit do histórico de undo
+        self.sb_pos_x.original_value = float(self.obj.transform.position[0])
+        self.sb_pos_y.original_value = float(self.obj.transform.position[1])
+        self.sb_pos_z.original_value = float(self.obj.transform.position[2])
         
-        self.sb_rot_x.valueChanged.connect(lambda val: self.viewmodel.set_transform_property("rotation", 0, val))
-        self.sb_rot_y.valueChanged.connect(lambda val: self.viewmodel.set_transform_property("rotation", 1, val))
-        self.sb_rot_z.valueChanged.connect(lambda val: self.viewmodel.set_transform_property("rotation", 2, val))
+        self.sb_rot_x.original_value = float(self.obj.transform.rotation[0])
+        self.sb_rot_y.original_value = float(self.obj.transform.rotation[1])
+        self.sb_rot_z.original_value = float(self.obj.transform.rotation[2])
         
-        self.sb_sc_x.valueChanged.connect(lambda val: self.viewmodel.set_transform_property("scale", 0, val))
-        self.sb_sc_y.valueChanged.connect(lambda val: self.viewmodel.set_transform_property("scale", 1, val))
-        self.sb_sc_z.valueChanged.connect(lambda val: self.viewmodel.set_transform_property("scale", 2, val))
+        self.sb_sc_x.original_value = float(self.obj.transform.scale[0])
+        self.sb_sc_y.original_value = float(self.obj.transform.scale[1])
+        self.sb_sc_z.original_value = float(self.obj.transform.scale[2])
+
+        self._block_original_sync = False
+        
+        # Conexões interativas em tempo real (valueChanged)
+        self.sb_pos_x.valueChanged.connect(lambda val: self._on_value_changed("position", 0, val))
+        self.sb_pos_y.valueChanged.connect(lambda val: self._on_value_changed("position", 1, val))
+        self.sb_pos_z.valueChanged.connect(lambda val: self._on_value_changed("position", 2, val))
+        
+        self.sb_rot_x.valueChanged.connect(lambda val: self._on_value_changed("rotation", 0, val))
+        self.sb_rot_y.valueChanged.connect(lambda val: self._on_value_changed("rotation", 1, val))
+        self.sb_rot_z.valueChanged.connect(lambda val: self._on_value_changed("rotation", 2, val))
+        
+        self.sb_sc_x.valueChanged.connect(lambda val: self._on_value_changed("scale", 0, val))
+        self.sb_sc_y.valueChanged.connect(lambda val: self._on_value_changed("scale", 1, val))
+        self.sb_sc_z.valueChanged.connect(lambda val: self._on_value_changed("scale", 2, val))
+
+        # Conexões definitivas para gerar comandos de histórico (editingFinished)
+        self.sb_pos_x.editingFinished.connect(lambda: self.commit_val(self.sb_pos_x, "position", 0))
+        self.sb_pos_y.editingFinished.connect(lambda: self.commit_val(self.sb_pos_y, "position", 1))
+        self.sb_pos_z.editingFinished.connect(lambda: self.commit_val(self.sb_pos_z, "position", 2))
+        
+        self.sb_rot_x.editingFinished.connect(lambda: self.commit_val(self.sb_rot_x, "rotation", 0))
+        self.sb_rot_y.editingFinished.connect(lambda: self.commit_val(self.sb_rot_y, "rotation", 1))
+        self.sb_rot_z.editingFinished.connect(lambda: self.commit_val(self.sb_rot_z, "rotation", 2))
+        
+        self.sb_sc_x.editingFinished.connect(lambda: self.commit_val(self.sb_sc_x, "scale", 0))
+        self.sb_sc_y.editingFinished.connect(lambda: self.commit_val(self.sb_sc_y, "scale", 1))
+        self.sb_sc_z.editingFinished.connect(lambda: self.commit_val(self.sb_sc_z, "scale", 2))
+
+    def _on_value_changed(self, prop_name: str, index: int, val: float) -> None:
+        self._block_original_sync = True
+        try:
+            self.viewmodel.set_transform_property(prop_name, index, val)
+        finally:
+            self._block_original_sync = False
+
+    def commit_val(self, sb: QDoubleSpinBox, prop_name: str, index: int) -> None:
+        if not self.viewmodel or not self.viewmodel.selected_object:
+            return
+        val = validate_and_get_value(sb)
+        if val is None:
+            return
+        new_val = float(val)
+        old_val = float(getattr(sb, "original_value", new_val))
+        if old_val != new_val:
+            self.viewmodel.commit_transform_property(prop_name, index, old_val, new_val)
+            sb.original_value = new_val
 
 
 class RigidBodyComponentWidget(QWidget):
@@ -126,10 +203,45 @@ class RigidBodyComponentWidget(QWidget):
         layout.addRow("Escala Gravidade:", self.sb_grav)
         layout.addRow("Cinemático (Estático):", self.chk_kin)
         
-        # Conexões
-        self.sb_mass.valueChanged.connect(lambda val: self.viewmodel.set_rigidbody_property("mass", val))
-        self.sb_grav.valueChanged.connect(lambda val: self.viewmodel.set_rigidbody_property("gravity_scale", val))
-        self.chk_kin.toggled.connect(lambda val: self.viewmodel.set_rigidbody_property("is_kinematic", val))
+        # Armazena os valores originais para commit do histórico de undo
+        self.sb_mass.original_value = float(self.rb.mass)
+        self.sb_grav.original_value = float(self.rb.gravity_scale)
+        self._block_original_sync = False
+        
+        # Conexões interativas em tempo real (valueChanged)
+        self.sb_mass.valueChanged.connect(lambda val: self._on_value_changed("mass", val))
+        self.sb_grav.valueChanged.connect(lambda val: self._on_value_changed("gravity_scale", val))
+        
+        # Conexões definitivas para gerar comandos de histórico (editingFinished / clicked)
+        self.sb_mass.editingFinished.connect(lambda: self.commit_val(self.sb_mass, "mass"))
+        self.sb_grav.editingFinished.connect(lambda: self.commit_val(self.sb_grav, "gravity_scale"))
+        self.chk_kin.clicked.connect(self.commit_kinematic)
+
+    def _on_value_changed(self, prop_name: str, val: float) -> None:
+        self._block_original_sync = True
+        try:
+            self.viewmodel.set_rigidbody_property(prop_name, val)
+        finally:
+            self._block_original_sync = False
+
+    def commit_val(self, sb: QDoubleSpinBox, prop_name: str) -> None:
+        if not self.viewmodel or not self.viewmodel.selected_object:
+            return
+        val = validate_and_get_value(sb)
+        if val is None:
+            return
+        new_val = float(val)
+        old_val = float(getattr(sb, "original_value", new_val))
+        if old_val != new_val:
+            self.viewmodel.commit_rigidbody_property(prop_name, old_val, new_val)
+            sb.original_value = new_val
+
+    def commit_kinematic(self) -> None:
+        if not self.viewmodel or not self.viewmodel.selected_object:
+            return
+        new_val = self.chk_kin.isChecked()
+        old_val = not new_val
+        self.viewmodel.commit_rigidbody_property("is_kinematic", old_val, new_val)
 
 
 class ColliderComponentWidget(QWidget):
@@ -139,6 +251,7 @@ class ColliderComponentWidget(QWidget):
     
     def __init__(self, viewmodel: SceneViewModel, collider, parent: QWidget = None) -> None:
         super().__init__(parent)
+        from engine.physics.collider import BoxCollider, CircleCollider
         self.viewmodel = viewmodel
         self.collider = collider
         
@@ -148,30 +261,63 @@ class ColliderComponentWidget(QWidget):
         
         self.chk_trigger = QCheckBox()
         self.chk_trigger.setChecked(self.collider.is_trigger)
-        self.chk_trigger.toggled.connect(lambda val: self.viewmodel.set_collider_property("is_trigger", val))
+        layout.addRow("Is Trigger:", self.chk_trigger)
         
-        if isinstance(self.collider, BoxCollider):
+        self._block_original_sync = False
+        
+        if type(self.collider).__name__ == "BoxCollider":
             self.sb_w = create_spin_box(self.collider.width, is_double=False)
             self.sb_w.setRange(1, 9999)
-            self.sb_w.valueChanged.connect(lambda val: self.viewmodel.set_collider_property("width", val))
+            self.sb_w.original_value = int(self.collider.width)
+            self.sb_w.valueChanged.connect(lambda val: self._on_value_changed("width", val))
+            self.sb_w.editingFinished.connect(lambda: self.commit_val(self.sb_w, "width"))
+            layout.addRow("Largura (W):", self.sb_w)
             
             self.sb_h = create_spin_box(self.collider.height, is_double=False)
             self.sb_h.setRange(1, 9999)
-            self.sb_h.valueChanged.connect(lambda val: self.viewmodel.set_collider_property("height", val))
-            
-            layout.addRow("Largura (W):", self.sb_w)
+            self.sb_h.original_value = int(self.collider.height)
+            self.sb_h.valueChanged.connect(lambda val: self._on_value_changed("height", val))
+            self.sb_h.editingFinished.connect(lambda: self.commit_val(self.sb_h, "height"))
             layout.addRow("Altura (H):", self.sb_h)
-        elif isinstance(self.collider, CircleCollider):
+            
+        elif type(self.collider).__name__ == "CircleCollider":
             self.sb_r = create_spin_box(self.collider.radius, is_double=False)
             self.sb_r.setRange(1, 9999)
-            self.sb_r.valueChanged.connect(lambda val: self.viewmodel.set_collider_property("radius", val))
-            
+            self.sb_r.original_value = int(self.collider.radius)
+            self.sb_r.valueChanged.connect(lambda val: self._on_value_changed("radius", val))
+            self.sb_r.editingFinished.connect(lambda: self.commit_val(self.sb_r, "radius"))
             layout.addRow("Raio (R):", self.sb_r)
             
-        layout.addRow("Is Trigger:", self.chk_trigger)
+        self.chk_trigger.clicked.connect(self.commit_trigger)
+
+    def _on_value_changed(self, prop_name: str, val: float) -> None:
+        self._block_original_sync = True
+        try:
+            self.viewmodel.set_collider_property(prop_name, val)
+        finally:
+            self._block_original_sync = False
+
+    def commit_val(self, sb: QSpinBox | QDoubleSpinBox, prop_name: str) -> None:
+        if not self.viewmodel or not self.viewmodel.selected_object:
+            return
+        val = validate_and_get_value(sb)
+        if val is None:
+            return
+        new_val = int(val)
+        old_val = int(getattr(sb, "original_value", new_val))
+        if old_val != new_val:
+            self.viewmodel.commit_collider_property(prop_name, old_val, new_val)
+            sb.original_value = new_val
+
+    def commit_trigger(self) -> None:
+        if not self.viewmodel or not self.viewmodel.selected_object:
+            return
+        new_val = self.chk_trigger.isChecked()
+        old_val = not new_val
+        self.viewmodel.commit_collider_property("is_trigger", old_val, new_val)
 
 
-from editor_legacy.script_manager import ScriptManager
+from editor.core.script_manager import ScriptManager
 
 class ScriptComponentWidget(QWidget):
     """
@@ -201,7 +347,8 @@ class ScriptComponentWidget(QWidget):
                 self.cb_scripts.addItem(current_script)
                 self.cb_scripts.setCurrentIndex(self.cb_scripts.count() - 1)
                 
-        self.cb_scripts.currentIndexChanged.connect(self.on_script_changed)
+        # Usamos activated para capturar somente interações de clique do usuário
+        self.cb_scripts.activated.connect(self.on_script_activated)
         layout.addRow("Arquivo Script:", self.cb_scripts)
         
         # 2. Botões de ação
@@ -222,26 +369,15 @@ class ScriptComponentWidget(QWidget):
         scripts = ScriptManager.list_scripts()
         self.cb_scripts.addItems(scripts)
 
-    def on_script_changed(self, index: int) -> None:
+    def on_script_activated(self, index: int) -> None:
+        if not self.viewmodel or not self.viewmodel.selected_object:
+            return
         script = self.cb_scripts.currentText()
-        if script == "Nenhum":
-            self.obj.script_path = ""
-            self.btn_edit.setEnabled(False)
-        else:
-            self.obj.script_path = script
-            self.btn_edit.setEnabled(True)
-            
-        # Publica alteração no EventBus
-        try:
-            from editor.core.event_bus import EventBus, EVENT_PROPERTY_CHANGED
-            EventBus.emit(
-                EVENT_PROPERTY_CHANGED,
-                component_name="Script",
-                property_name="script_path",
-                value=self.obj.script_path
-            )
-        except Exception:
-            pass
+        old_val = getattr(self.obj, "script_path", "")
+        new_val = "" if script == "Nenhum" else script
+        
+        if old_val != new_val:
+            self.viewmodel.commit_script_property(old_val, new_val)
 
     def edit_script(self) -> None:
         script = getattr(self.obj, "script_path", "")
@@ -258,10 +394,13 @@ class ScriptComponentWidget(QWidget):
         path = ScriptManager.create_template(self.obj)
         self.refresh_scripts_list()
         
-        # Seleciona o novo script no combo box
+        # Seleciona o novo script no combo box e realiza o commit do valor
         idx = self.cb_scripts.findText(path)
         if idx >= 0:
             self.cb_scripts.setCurrentIndex(idx)
+            # Como a troca foi programática devido à criação, chamamos o commit explicitamente
+            old_val = getattr(self.obj, "script_path", "")
+            self.viewmodel.commit_script_property(old_val, path)
             
         # Abre o editor de código automaticamente
         self.edit_script()
