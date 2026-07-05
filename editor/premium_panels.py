@@ -4,8 +4,11 @@ from typing import Any
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMenu,
     QPushButton,
     QTreeWidget,
@@ -79,17 +82,60 @@ class RealInspectorPanel(InspectorPanel):
             self.transform_label = sections[0]
         if len(sections) >= 2:
             self.renderer_label = sections[1]
+        for section in sections:
+            section.setVisible(False)
+        self.header = QWidget()
+        self.header.setObjectName("InspectorObjectHeader")
+        header_layout = QVBoxLayout(self.header)
+        header_layout.setContentsMargins(6, 6, 6, 6)
+        header_layout.setSpacing(5)
+
+        title_row = QWidget()
+        title_layout = QHBoxLayout(title_row)
+        title_layout.setContentsMargins(0, 0, 0, 0)
+        title_layout.setSpacing(6)
+        self.object_enabled = QCheckBox()
+        self.object_enabled.setObjectName("InspectorCheckBox")
+        self.object_enabled.setChecked(True)
+        self.object_name = QLineEdit()
+        self.object_name.setObjectName("InspectorObjectName")
+        self.object_static = QCheckBox("Estático")
+        self.object_static.setObjectName("InspectorCheckBox")
+        title_layout.addWidget(self.object_enabled)
+        title_layout.addWidget(self.object_name, 1)
+        title_layout.addWidget(self.object_static)
+
+        meta_row = QWidget()
+        meta_layout = QHBoxLayout(meta_row)
+        meta_layout.setContentsMargins(0, 0, 0, 0)
+        meta_layout.setSpacing(6)
+        self.object_tag = QComboBox()
+        self.object_tag.setObjectName("InspectorCombo")
+        self.object_tag.addItems(["Untagged", "Player", "Enemy"])
+        self.object_layer = QComboBox()
+        self.object_layer.setObjectName("InspectorCombo")
+        self.object_layer.addItems(["Default", "UI", "World"])
+        meta_layout.addWidget(QLabel("Tag"))
+        meta_layout.addWidget(self.object_tag, 1)
+        meta_layout.addWidget(QLabel("Layer"))
+        meta_layout.addWidget(self.object_layer, 1)
+
+        header_layout.addWidget(title_row)
+        header_layout.addWidget(meta_row)
         self.status_label = QLabel("")
-        self.status_label.setObjectName("InspectorSection")
-        self.add_component_button = QPushButton("Add Component")
+        self.status_label.setObjectName("InspectorStatus")
+        self.add_component_button = QPushButton("Adicionar Componente")
+        self.add_component_button.setObjectName("InspectorAddComponentButton")
         self.add_component_button.clicked.connect(self.open_add_component_menu)
         self.component_list = QWidget()
+        self.component_list.setObjectName("InspectorComponentList")
         self.component_list_layout = QVBoxLayout(self.component_list)
-        self.component_list_layout.setContentsMargins(0, 0, 0, 0)
-        self.component_list_layout.setSpacing(4)
-        self.layout.insertWidget(max(0, self.layout.count() - 1), self.add_component_button)
+        self.component_list_layout.setContentsMargins(4, 4, 4, 4)
+        self.component_list_layout.setSpacing(6)
+        self.layout.insertWidget(max(0, self.layout.count() - 1), self.header)
         self.layout.insertWidget(max(0, self.layout.count() - 1), self.component_list)
         self.layout.insertWidget(max(0, self.layout.count() - 1), self.status_label)
+        self.layout.insertWidget(max(0, self.layout.count() - 1), self.add_component_button)
 
     def set_command_manager(self, command_manager: CommandManager) -> None:
         self.command_manager = command_manager
@@ -105,8 +151,10 @@ class RealInspectorPanel(InspectorPanel):
         self.status_label.setText("")
         self.add_component_button.setEnabled(obj is not None)
         if obj is None:
+            self.header.setEnabled(False)
             self._clear_component_controls()
             self.name.setText("Nenhum objeto selecionado")
+            self.object_name.setText("")
             if hasattr(self, "transform_label"):
                 self.transform_label.setText("Transform\n  X: 0    Y: 0    Z: 0")
             if hasattr(self, "renderer_label"):
@@ -115,6 +163,16 @@ class RealInspectorPanel(InspectorPanel):
 
         name = getattr(obj, "name", str(obj))
         self.name.setText(name)
+        self.header.setEnabled(True)
+        self.object_name.setText(name)
+        self.object_enabled.setChecked(bool(getattr(obj, "active", True)))
+        tag = str(getattr(obj, "tag", "Untagged"))
+        tag_index = self.object_tag.findText(tag)
+        self.object_tag.setCurrentIndex(tag_index if tag_index >= 0 else 0)
+        layer = str(getattr(obj, "layer", "Default"))
+        layer_index = self.object_layer.findText(layer)
+        self.object_layer.setCurrentIndex(layer_index if layer_index >= 0 else 0)
+        self.object_static.setChecked(bool(getattr(obj, "is_static", False)))
 
         components = getattr(obj, "components", [])
         component_names = [
@@ -172,7 +230,8 @@ class RealInspectorPanel(InspectorPanel):
                 )
                 row_layout.addWidget(widget, 1)
             if not getattr(component, "required", False):
-                remove = QPushButton("Remove")
+                remove = QPushButton("×")
+                remove.setObjectName("InspectorRemoveComponentButton")
                 remove.clicked.connect(
                     lambda checked=False, comp=component: self.remove_component_from_selected(comp)
                 )
