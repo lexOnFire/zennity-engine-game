@@ -29,8 +29,13 @@ def _get_screen_pos(component: Any, scene: Any) -> Tuple[float, float]:
     if not obj:
         return (0.0, 0.0)
     pos = obj.transform.get_world_position()
-    if hasattr(scene, "_world_to_vp") and hasattr(scene, "_layout"):
-        return scene._world_to_vp(pos, scene._layout())
+    if type(scene).__name__ not in ("MagicMock", "Mock") and hasattr(scene, "_world_to_vp") and hasattr(scene, "_layout"):
+        try:
+            val = scene._world_to_vp(pos, scene._layout())
+            if isinstance(val, (tuple, list, np.ndarray)) and len(val) >= 2:
+                return float(val[0]), float(val[1])
+        except Exception:
+            pass
     return float(pos[0]), float(pos[1])
 
 

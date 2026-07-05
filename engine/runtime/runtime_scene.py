@@ -136,9 +136,10 @@ class RuntimeScene:
         components = self._iter_enabled_runtime_components()
 
         # Se não existir nenhuma câmera, cria uma câmera padrão no runtime
-        if CameraManager.get_main_camera() is None:
+        from engine.graphics.camera import Camera
+        has_camera = any(isinstance(comp, Camera) for comp in components)
+        if not has_camera:
             from engine.game_object import GameObject
-            from engine.graphics.camera import Camera
             fallback_go = GameObject("Default Runtime Camera")
             fallback_cam = fallback_go.add_component(Camera())
             if hasattr(self.scene, "_add_go"):
@@ -154,10 +155,10 @@ class RuntimeScene:
                     components.append(comp)
 
         # Se não existir nenhum AudioListener, cria um padrão em runtime
-        from engine.audio import AudioManager
-        if AudioManager.get_active_listener() is None:
+        from engine.audio import AudioListener
+        has_listener = any(isinstance(comp, AudioListener) for comp in components)
+        if not has_listener:
             from engine.game_object import GameObject
-            from engine.audio import AudioListener
             fallback_listener_go = GameObject("Default Audio Listener")
             fallback_listener = fallback_listener_go.add_component(AudioListener())
             if hasattr(self.scene, "_add_go"):

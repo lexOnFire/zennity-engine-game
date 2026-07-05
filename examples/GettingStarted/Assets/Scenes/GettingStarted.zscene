@@ -1,7 +1,7 @@
 {
   "format_version": 1,
   "scene_name": "GettingStarted",
-  "engine_version": "0.1.0",
+  "engine_version": "0.2.0",
   "objects": [
     {
       "id": "getting-started-player",
@@ -84,6 +84,89 @@
             "properties": {
               "script_path": "examples/GettingStarted/Assets/Scripts/player_controller.py"
             }
+          },
+          {
+            "id": "getting-started-audio-source",
+            "type": "AudioSource",
+            "enabled": true,
+            "properties": {
+              "audio_clip": "Assets/Sounds/click.wav",
+              "volume": 0.8,
+              "pitch": 1.0,
+              "loop": false,
+              "play_on_awake": false,
+              "mute": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "getting-started-camera",
+      "uuid": "getting-started-camera",
+      "prefab_uuid": null,
+      "name": "MainCamera",
+      "tag": "MainCamera",
+      "layer": 0,
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Retângulo",
+        "sprite_path": null,
+        "asset_uuid": null,
+        "color": [
+          100,
+          100,
+          100
+        ],
+        "material": null
+      },
+      "components": {
+        "items": [
+          {
+            "id": "getting-started-camera-comp",
+            "type": "Camera",
+            "enabled": true,
+            "properties": {
+              "zoom": 1.0,
+              "clear_color": [
+                30,
+                30,
+                30
+              ],
+              "viewport_rect": [
+                0.0,
+                0.0,
+                1.0,
+                1.0
+              ],
+              "priority": 10,
+              "active": true
+            }
+          },
+          {
+            "id": "getting-started-listener-comp",
+            "type": "AudioListener",
+            "enabled": true,
+            "properties": {}
           }
         ]
       }

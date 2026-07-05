@@ -6,6 +6,14 @@
 
 ## Versões e Objetivos
 
+### v0.2.0-alpha — Gameplay Foundation (Milestone 2) ✅
+- [x] Time System com delta/time escalado e frame counter (Fase 16)
+- [x] Physics Runtime Foundation com PhysicsWorld isolado e triggers (Fase 17)
+- [x] Camera System oficial com Camera, CameraManager e Main Camera (Fase 18)
+- [x] Audio Runtime oficial com AudioSource, AudioListener e AudioManager (Fase 19)
+- [x] Scene Gizmos Avançados com GizmoRegistry (Fase 20)
+- [x] Estabilização e suíte de testes de integração da v0.2.0-alpha
+
 ### Beta 0.1 — Stabilization ✅
 - [x] Fluxo principal validado: cena, GameObject, componentes, script, Play, Input e Stop
 - [x] Projeto exemplo oficial `examples/GettingStarted`

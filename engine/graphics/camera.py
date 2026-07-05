@@ -58,6 +58,11 @@ class Camera(Component, metaclass=CameraMeta):
         from engine.graphics.camera_manager import CameraManager
         CameraManager.register_camera(self)
 
+    def on_runtime_start(self) -> None:
+        """Registra a câmera no CameraManager durante o Play Mode."""
+        from engine.graphics.camera_manager import CameraManager
+        CameraManager.register_camera(self)
+
     def destroy(self) -> None:
         """Remove a câmera do CameraManager ao ser destruída."""
         from engine.graphics.camera_manager import CameraManager

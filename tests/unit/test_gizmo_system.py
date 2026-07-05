@@ -11,13 +11,7 @@ from editor.gizmos.gizmo_registry import GizmoRegistry, _get_screen_pos, _get_zo
 from editor.widgets.viewport_widget import ViewportWidget
 
 
-@pytest.fixture(autouse=True)
-def setup_pygame():
-    """Garante inicialização mínima do pygame.font para rendering dos textos nos gizmos."""
-    pygame.init()
-    pygame.font.init()
-    yield
-    pygame.quit()
+
 
 
 def test_gizmo_registry_and_resolution():
