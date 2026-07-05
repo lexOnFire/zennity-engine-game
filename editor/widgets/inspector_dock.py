@@ -6,13 +6,7 @@ from typing import Optional
 from PySide6.QtCore import Qt, Slot
 from engine.game_object import GameObject
 from editor.viewmodels.scene_viewmodel import SceneViewModel
-
-# Importa os Widgets de Componentes
-from editor.widgets.collapsible_section import CollapsibleSection
-from editor.widgets.component_widgets import (
-    TransformComponentWidget, RigidBodyComponentWidget, ColliderComponentWidget,
-    ScriptComponentWidget, MeshRendererComponentWidget
-)
+from editor.inspector import InspectorPluginRegistry, inspector_plugin_registry
 
 
 class InspectorDock(QDockWidget):
@@ -27,6 +21,7 @@ class InspectorDock(QDockWidget):
         self.setAllowedAreas(Qt.RightDockWidgetArea | Qt.LeftDockWidgetArea)
         
         self.viewmodel: Optional[SceneViewModel] = None
+        self.plugin_registry: InspectorPluginRegistry = inspector_plugin_registry
         self._block_updates = False
         
         # 1. ScrollArea para rolar verticalmente quando houver muitos componentes
@@ -145,6 +140,9 @@ class InspectorDock(QDockWidget):
         self.viewmodel.selection_changed.connect(self.on_selection_changed)
         self.viewmodel.property_changed.connect(self.on_property_changed)
 
+    def set_inspector_plugin_registry(self, registry: InspectorPluginRegistry) -> None:
+        self.plugin_registry = registry
+
     def show_empty_state(self) -> None:
         """Exibe tela vazia padrão."""
         self.clear_layout()
@@ -171,6 +169,12 @@ class InspectorDock(QDockWidget):
                 item.widget().deleteLater()
             elif item.layout():
                 self._clear_sub_layout(item.layout())
+
+    def _selected_components(self, obj: GameObject) -> list[object]:
+        components = list(getattr(obj, "components", []))
+        if hasattr(obj, "script_path") and not any(getattr(comp, "type_name", type(comp).__name__) == "Script" for comp in components):
+            components.append(_ScriptProxy(obj))
+        return components
 
     @Slot(object)
     def on_selection_changed(self, obj: Optional[GameObject]) -> None:
@@ -239,45 +243,21 @@ class InspectorDock(QDockWidget):
         tag_layer_row.addLayout(layer_layout, 1)
         self.layout_content.addLayout(tag_layer_row)
         
-        # ── 1. Componente: Transform ────────────────────────
-        sec_transform = CollapsibleSection("Transform", "💠")
-        self.transform_widget = TransformComponentWidget(self.viewmodel)
-        sec_transform.set_content_widget(self.transform_widget)
-        self.layout_content.addWidget(sec_transform)
-        
-        # ── 2. Componente: Mesh Renderer (se aplicável) ────────────────────────
-        if getattr(obj, "mesh_type", None):
-            sec_mesh = CollapsibleSection("Mesh Renderer", "📐")
-            self.mesh_widget = MeshRendererComponentWidget(obj)
-            sec_mesh.set_content_widget(self.mesh_widget)
-            self.layout_content.addWidget(sec_mesh)
-        
-        # ── 3. Componente: RigidBody (se existir) ───────────
-        from engine.physics.rigidbody import RigidBody
-        rb = obj.get_component(RigidBody)
-        if rb:
-            sec_rb = CollapsibleSection("RigidBody (Física)", "⚙️")
-            self.rb_widget = RigidBodyComponentWidget(self.viewmodel, rb)
-            sec_rb.set_content_widget(self.rb_widget)
-            self.layout_content.addWidget(sec_rb)
-            
-        # ── 4. Componente: Collider (se existir) ────────────
-        from engine.physics.collider import BoxCollider, CircleCollider
-        bc = obj.get_component(BoxCollider)
-        cc = obj.get_component(CircleCollider)
-        if bc or cc:
-            collider = bc if bc else cc
-            type_name = "Box" if bc else "Circle"
-            sec_col = CollapsibleSection(f"{type_name} Collider", "📦")
-            self.col_widget = ColliderComponentWidget(self.viewmodel, collider)
-            sec_col.set_content_widget(self.col_widget)
-            self.layout_content.addWidget(sec_col)
-            
-        # ── 5. Componente: Script (Comportamento) ───────────
-        sec_script = CollapsibleSection("Script (Comportamento)", "📜")
-        self.script_widget = ScriptComponentWidget(self.viewmodel)
-        sec_script.set_content_widget(self.script_widget)
-        self.layout_content.addWidget(sec_script)
+        command_manager = getattr(self.viewmodel, "command_manager", None)
+        for component in self._selected_components(obj):
+            plugin = self.plugin_registry.plugin_for(component)
+            if plugin is None:
+                fallback = QLabel(getattr(component, "type_name", type(component).__name__))
+                fallback.setStyleSheet("color: #888888; padding: 6px;")
+                self.layout_content.addWidget(fallback)
+                continue
+            widget = plugin.create_widget(
+                component,
+                command_manager,
+                None,
+            )
+            self.layout_content.addWidget(widget)
+            self._capture_legacy_widget_alias(component, widget)
         
         # ── Botão Adicionar Componente ───────────────────
         btn_add = QPushButton("Adicionar Componente")
@@ -285,6 +265,17 @@ class InspectorDock(QDockWidget):
         self.layout_content.addWidget(btn_add)
             
         self._block_updates = False
+
+    def _capture_legacy_widget_alias(self, component: object, widget: QWidget) -> None:
+        type_name = getattr(component, "type_name", type(component).__name__)
+        if type_name == "Transform":
+            self.transform_widget = widget
+        elif type_name == "RigidBody":
+            self.rb_widget = widget
+        elif type_name in {"BoxCollider", "CircleCollider"}:
+            self.col_widget = widget
+        elif type_name == "Script":
+            self.script_widget = widget
 
     @Slot()
     def on_name_edited(self) -> None:
@@ -328,75 +319,21 @@ class InspectorDock(QDockWidget):
         # (ex: a escala mudou de forma indireta ao mudar o tamanho do colisor ou vice-versa)
         obj = self.viewmodel.selected_object
         
-        if component_name == "Transform" and hasattr(self, "transform_widget"):
-            tw = self.transform_widget
-            tw.blockSignals(True)
-            tw.sb_pos_x.setValue(obj.transform.position[0])
-            tw.sb_pos_y.setValue(obj.transform.position[1])
-            tw.sb_pos_z.setValue(obj.transform.position[2])
-            tw.sb_sc_x.setValue(obj.transform.scale[0])
-            tw.sb_sc_y.setValue(obj.transform.scale[1])
-            tw.sb_sc_z.setValue(obj.transform.scale[2])
-            tw.sb_rot_x.setValue(obj.transform.rotation[0])
-            tw.sb_rot_y.setValue(obj.transform.rotation[1])
-            tw.sb_rot_z.setValue(obj.transform.rotation[2])
-            
-            # Sincroniza os valores originais para a próxima edição do inspetor (apenas se a mudança veio de fora, ex: viewport/undo)
-            if not getattr(tw, "_block_original_sync", False):
-                tw.sb_pos_x.original_value = float(obj.transform.position[0])
-                tw.sb_pos_y.original_value = float(obj.transform.position[1])
-                tw.sb_pos_z.original_value = float(obj.transform.position[2])
-                tw.sb_rot_x.original_value = float(obj.transform.rotation[0])
-                tw.sb_rot_y.original_value = float(obj.transform.rotation[1])
-                tw.sb_rot_z.original_value = float(obj.transform.rotation[2])
-                tw.sb_sc_x.original_value = float(obj.transform.scale[0])
-                tw.sb_sc_y.original_value = float(obj.transform.scale[1])
-                tw.sb_sc_z.original_value = float(obj.transform.scale[2])
-            
-            tw.blockSignals(False)
-            
-        elif component_name == "RigidBody" and hasattr(self, "rb_widget"):
-            from engine.physics.rigidbody import RigidBody
-            rb = obj.get_component(RigidBody)
-            if rb:
-                self.rb_widget.blockSignals(True)
-                self.rb_widget.sb_mass.setValue(rb.mass)
-                self.rb_widget.sb_grav.setValue(rb.gravity_scale)
-                self.rb_widget.chk_kin.setChecked(rb.is_kinematic)
-                
-                # Sincroniza original_value para a próxima edição do inspetor (apenas se a mudança veio de fora, ex: viewport/undo)
-                if not getattr(self.rb_widget, "_block_original_sync", False):
-                    self.rb_widget.sb_mass.original_value = float(rb.mass)
-                    self.rb_widget.sb_grav.original_value = float(rb.gravity_scale)
-                self.rb_widget.blockSignals(False)
+        self.on_selection_changed(obj)
 
-        elif component_name == "Collider" and hasattr(self, "col_widget"):
-            self.col_widget.blockSignals(True)
-            from engine.physics.collider import BoxCollider, CircleCollider
-            bc = obj.get_component(BoxCollider)
-            cc = obj.get_component(CircleCollider)
-            col = bc if bc else cc
-            if col:
-                self.col_widget.chk_trigger.setChecked(col.is_trigger)
-            if bc and hasattr(self.col_widget, "sb_w"):
-                self.col_widget.sb_w.setValue(bc.width)
-                self.col_widget.sb_h.setValue(bc.height)
-                if not getattr(self.col_widget, "_block_original_sync", False):
-                    self.col_widget.sb_w.original_value = int(bc.width)
-                    self.col_widget.sb_h.original_value = int(bc.height)
-            elif cc and hasattr(self.col_widget, "sb_r"):
-                self.col_widget.sb_r.setValue(cc.radius)
-                if not getattr(self.col_widget, "_block_original_sync", False):
-                    self.col_widget.sb_r.original_value = int(cc.radius)
-            self.col_widget.blockSignals(False)
-            
-        elif component_name == "Script" and hasattr(self, "script_widget"):
-            self.script_widget.blockSignals(True)
-            self.script_widget.refresh_scripts_list()
-            current_script = getattr(obj, "script_path", "")
-            idx = self.script_widget.cb_scripts.findText(current_script)
-            if idx >= 0:
-                self.script_widget.cb_scripts.setCurrentIndex(idx)
-            self.script_widget.btn_edit.setEnabled(bool(current_script and current_script != "Nenhum"))
-            self.script_widget.blockSignals(False)
+
+class _ScriptProxy:
+    component_type = "Script"
+    type_name = "Script"
+
+    def __init__(self, owner: GameObject) -> None:
+        self.game_object = owner
+
+    @property
+    def script_path(self) -> str:
+        return str(getattr(self.game_object, "script_path", ""))
+
+    @script_path.setter
+    def script_path(self, value: str) -> None:
+        self.game_object.script_path = value
 

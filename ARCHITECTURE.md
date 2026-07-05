@@ -253,9 +253,11 @@ register_component(Health)
 
 O Inspector não importa `Health`; ele apenas lê o registry.
 
-## Inspector Plugin System (Fase 11)
+## Inspector Plugin System (Fase 11 / 11.1)
 
-A Fase 11 desacopla a renderização do Inspector dos tipos concretos de componentes. `RealInspectorPanel` atua como host: ele percorre `GameObject.components`, consulta o registry de plugins e hospeda o widget retornado.
+A Fase 11 desacopla a renderização do Inspector dos tipos concretos de componentes. A Fase 11.1 finaliza a migração removendo o caminho paralelo antigo do `InspectorDock`.
+
+`RealInspectorPanel` e `InspectorDock` atuam como hosts: eles percorrem `GameObject.components`, consultam o registry de plugins e hospedam o widget retornado. Nenhum dos dois deve importar widgets concretos como `RigidBodyComponentWidget`, `ColliderComponentWidget`, `ScriptComponentWidget` ou componentes de física.
 
 ### InspectorPlugin
 `editor.inspector.plugin.InspectorPlugin` define o contrato:
@@ -302,6 +304,18 @@ inspector_plugin_registry.register(HealthInspectorPlugin)
 ```
 
 Esse fluxo permite adicionar componentes e editores sem alterar o Inspector.
+
+### Caminho oficial
+O único fluxo oficial de renderização do Inspector é:
+
+```text
+GameObject.components -> InspectorPluginRegistry.plugin_for(component) -> InspectorPlugin.create_widget(...)
+```
+
+Se nenhum plugin existir, o Inspector mostra apenas uma entrada fallback com o nome do componente e não falha.
+
+### Dívida técnica
+O cabeçalho do objeto (`active`, `name`, `tag`, `layer`, `is_static`) ainda não é um componente formal e continua fora do `InspectorPluginRegistry`. Essas propriedades devem migrar para comandos reutilizáveis ou para um futuro plugin de metadados do GameObject antes de serem consideradas totalmente integradas ao Undo/Redo.
 
 ### Limites
 Estas fases não implementam Play Mode novo, física real adicional, scripting avançado, visual scripting ou editor visual avançado de componentes. Elas criam a base extensível para essas fases futuras.

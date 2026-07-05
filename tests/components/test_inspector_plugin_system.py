@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from pathlib import Path
 
 import pytest
 from PySide6.QtWidgets import QApplication, QLabel, QWidget
@@ -140,3 +141,21 @@ def test_new_component_and_plugin_appear_without_inspector_change(qapp) -> None:
     component = inspector.add_component_to_selected("Health")
     assert isinstance(component, Health)
     assert "Health" in inspector.renderer_label.text()
+
+
+def test_inspector_dock_does_not_import_concrete_component_widgets() -> None:
+    source = Path("editor/widgets/inspector_dock.py").read_text(encoding="utf-8")
+
+    forbidden = [
+        "TransformComponentWidget",
+        "RigidBodyComponentWidget",
+        "ColliderComponentWidget",
+        "ScriptComponentWidget",
+        "MeshRendererComponentWidget",
+        "from engine.physics",
+        "isinstance(",
+        "elif component_name",
+    ]
+
+    for token in forbidden:
+        assert token not in source
