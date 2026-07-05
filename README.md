@@ -255,6 +255,20 @@ source = self.game_object.get_component(AudioSource)
 source.play()
 ```
 
+A Fase 20 adiciona o sistema de Scene Gizmos Avançados. O `GizmoRegistry` centraliza o registro de renderizadores visuais exclusivos de editor para componentes específicos. Implementamos gizmos profissionais para `Camera` (retângulo de fov azul), `BoxCollider` e `CircleCollider` (bordas verdes de colisão físicas) e `AudioSource`/`AudioListener` (ícones amarelo e magenta com alcance sonoro). Esses gizmos são exibidos unicamente na Viewport do Editor em modo edição, garantindo total isolamento visual e zero impacto no Runtime World.
+
+Para registrar um novo gizmo personalizado de componente:
+
+```python
+from editor.gizmos.gizmo_registry import GizmoRegistry
+
+def draw_my_custom_gizmo(component, screen, scene):
+    # Lógica de desenho com pygame.draw
+    pass
+
+GizmoRegistry.register("MyComponentType", draw_my_custom_gizmo)
+```
+
 ### Criando Scripts
 
 Crie um arquivo `.py` dentro de `Assets/Scripts` e anexe um `ScriptComponent` ao GameObject apontando para esse caminho. Um script mínimo:

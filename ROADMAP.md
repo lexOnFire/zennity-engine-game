@@ -85,6 +85,7 @@
 - [x] Physics Runtime Foundation com PhysicsWorld isolado e triggers básicos (Fase 17)
 - [x] Camera System oficial com Camera, CameraManager e Main Camera (Fase 18)
 - [x] Audio Runtime oficial com AudioSource, AudioListener e AudioManager (Fase 19)
+- [x] Scene Gizmos Avançados com GizmoRegistry e renderizadores especializados (Fase 20)
 - [ ] Hierarchy com drag & drop e parentesco
 - [x] Undo/Redo no editor (Fase 7)
 

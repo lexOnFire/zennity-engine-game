@@ -720,4 +720,29 @@ O `AudioManager` é a interface de backend que gerencia todos os recursos de áu
 * Isola o runtime do Editor: no início e fim do Play Mode, executa o método `clear()`, que interrompe toda e qualquer reprodução de som física no Pygame mixer e libera os recursos alocados.
 * Se no início do Play nenhum `AudioListener` ativo for encontrado na cena, cria e anexa automaticamente um listener padrão de fallback (`Default Audio Listener`).
 
+---
+
+## Scene Gizmos Avançados (Fase 20)
+
+A Fase 20 introduz o sistema de Scene Gizmos Avançados no Editor, oferecendo representações visuais profissionais para componentes importantes em modo de edição, com isolamento completo do Runtime.
+
+### GizmoRegistry
+
+A classe central `GizmoRegistry` (`editor/gizmos/gizmo_registry.py`) gerencia o mapeamento global de renderizadores de gizmo:
+* Permite registrar funções de desenho através de `register(component_type, draw_func)`.
+* As funções de desenho recebem a assinatura: `draw_func(component, screen, scene)` onde `screen` é a Pygame surface da Viewport e `scene` é a cena do editor correspondente.
+
+### Gizmos Implementados
+
+1. **Camera**: Desenha um corpo de câmera azul ciano (`0, 229, 255`) com lente direcional e, caso a câmera esteja selecionada, um retângulo pontilhado indicando a área de frustum/viewport proporcional ao zoom atual.
+2. **BoxCollider**: Desenha um retângulo verde (`76, 175, 80`) correspondente às dimensões físicas do colisor, aplicando rotação 2D correta com base no transform do GameObject.
+3. **CircleCollider**: Desenha uma circunferência verde indicando a abrangência de colisão correspondente ao raio.
+4. **AudioSource**: Desenha uma representação de alto-falante e raio de dispersão sonoro amarelo (`255, 235, 59`) com o rótulo `"AudioSource"`.
+5. **AudioListener**: Desenha um receptor magenta (`233, 30, 99`) com o rótulo `"AudioListener"`.
+
+### Integração com a Viewport
+
+O widget `ViewportWidget` (`editor/widgets/viewport_widget.py`) consulta o `GizmoRegistry` na `paintGL()` e realiza o desenho dos gizmos das entidades da cena somente se o modo Play estiver inativo. O Runtime World nunca recebe ou renderiza esses elementos.
+
+
 

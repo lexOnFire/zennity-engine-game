@@ -442,6 +442,24 @@ class ViewportWidget(QOpenGLWidget):
 
         self.active_scene.draw(self.pg_surface)
 
+        is_playing = (
+            self.runtime_manager is not None
+            and getattr(self.runtime_manager, "is_playing", False)
+        )
+        if not is_playing:
+            from editor.gizmos.gizmo_registry import GizmoRegistry
+            objs = getattr(self.active_scene, "editable_objects", getattr(self.active_scene, "game_objects", []))
+            for obj in objs:
+                if obj.name == "EditorCamera":
+                    continue
+                for comp in obj.components:
+                    draw_func = GizmoRegistry.get_gizmo(comp.component_type)
+                    if draw_func:
+                        try:
+                            draw_func(comp, self.pg_surface, self.active_scene)
+                        except Exception:
+                            pass
+
         raw = pygame.image.tostring(self.pg_surface, "RGBA")
         img = QImage(raw, self._vp_w, self._vp_h,
                      self._vp_w * 4, QImage.Format_RGBA8888)
