@@ -872,3 +872,44 @@ Nesta fase não há marketplace, downloads remotos, resolução avançada de dep
 ### Integração
 
 `tests/integration/test_v030_stabilization.py` valida o fluxo Projeto -> Assets -> Package Manager -> Runtime -> UI -> Tilemap -> Animation -> Play -> Stop -> serialização. O projeto `examples/GettingStarted` acompanha esse fluxo com recursos sem depender de assets externos.
+
+---
+
+## Hierarchy Improvements (Fase 26)
+
+A Fase 26 inicia o milestone v0.4.0-alpha — Editor Polish. O escopo fica limitado ao editor e não altera Runtime, Component System ou Scene Serialization.
+
+### Responsabilidades
+
+`RealHierarchyPanel` é o host visual da árvore. Ele renderiza objetos raiz e filhos recursivamente, mantém seleção sincronizada com `SelectionManager`, aplica filtro visual e emite intenções de usuário:
+
+* criar objeto vazio;
+* duplicar;
+* excluir;
+* renomear;
+* reparent/reordenar.
+
+`ZennityPhase1Editor` recebe essas intenções e executa comandos reversíveis através de `CommandManager`.
+
+### Comandos
+
+`editor.runtime.hierarchy_commands` contém as operações de Hierarchy:
+
+* `ReparentGameObjectCommand`
+* `DuplicateGameObjectCommand`
+* `DeleteGameObjectCommand`
+* `RenameGameObjectCommand`
+
+Reparent valida ciclos com `can_reparent(...)`. Delete reversível remove o objeto da cena sem chamar `destroy()`, preservando componentes e filhos para Undo.
+
+### Atalhos e UX
+
+* `Ctrl+D`: duplicar objeto selecionado.
+* `Delete`: excluir objeto selecionado.
+* `F2`: renomear.
+* Duplo clique: renomear.
+* Menu de contexto: `Create Empty`, `Duplicate`, `Delete`, `Rename`, `Expand All`, `Collapse All`.
+
+### Limites
+
+Esta fase não implementa Project Browser avançado, nova Scene View, nova UX do Inspector, Build Pipeline ou sistemas de Runtime.

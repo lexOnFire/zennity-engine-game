@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.4.0-alpha — Editor Polish (em desenvolvimento)
+
+### Added
+* **Hierarchy Improvements (Fase 26)**: A Hierarchy agora suporta drag & drop para reparent, mover para raiz e reordenar irmãos.
+* **Operações com Undo/Redo**: Duplicate, Delete, Rename e Reparent usam `CommandManager` quando acionados pela Hierarchy.
+* **Context Menu**: Menu de contexto com `Create Empty`, `Duplicate`, `Delete`, `Rename`, `Expand All` e `Collapse All`.
+* **Atalhos**: `Ctrl+D` duplica, `Delete` remove e `F2` inicia renomeação.
+* **Filtro Melhorado**: Resultados em filhos mantêm pais visíveis e expandidos.
+
+### Fixed & Stabilized
+* Delete reversível não destrói componentes/filhos internamente, preservando Undo.
+* Reparent bloqueia ciclos e impede objeto ser filho de si mesmo.
+
+---
+
 ## v0.3.0-alpha — Production Tools (Julho 2026)
 
 ### Added

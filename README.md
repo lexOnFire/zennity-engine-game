@@ -315,6 +315,17 @@ A v0.3.0-alpha consolida o Milestone 3 com Tilemap, Asset Pipeline e Package Man
 
 O teste `tests/integration/test_v030_stabilization.py` cobre o fluxo principal: pacote local, assets, cena com Tilemap, UI Runtime, Animation, Play/Stop e serialização completa.
 
+### Editor Polish v0.4.0-alpha
+
+A Fase 26 melhora a Hierarchy/Outliner sem alterar Runtime ou Component System.
+
+* Arraste objetos na Hierarchy para reordenar, criar parentesco ou voltar para raiz.
+* Use `Ctrl+D` para duplicar, `Delete` para excluir e `F2` para renomear.
+* O menu de contexto oferece `Create Empty`, `Duplicate`, `Delete`, `Rename`, `Expand All` e `Collapse All`.
+* O filtro mantém pais visíveis quando um filho corresponde à busca.
+
+Duplicate, Delete, Rename e Reparent usam `CommandManager`, então Undo/Redo continuam disponíveis. A Hierarchy bloqueia ciclos e nomes vazios.
+
 ### Criando Scripts
 
 Crie um arquivo `.py` dentro de `Assets/Scripts` e anexe um `ScriptComponent` ao GameObject apontando para esse caminho. Um script mínimo:

@@ -17,6 +17,14 @@ from editor.premium_editor import (
     SimplePanel,
 )
 from editor.premium_panels import RealHierarchyPanel, RealInspectorPanel
+from editor.runtime.command_manager import FunctionCommand
+from editor.runtime.hierarchy_commands import (
+    DeleteGameObjectCommand,
+    DuplicateGameObjectCommand,
+    RenameGameObjectCommand,
+    ReparentGameObjectCommand,
+    can_reparent,
+)
 from editor.runtime.editor_context import EditorContext
 from editor.runtime.tool_manager import EditorTool
 from editor.widgets.phase1_viewport import Phase1ViewportWidget
@@ -267,6 +275,11 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
 
     def _connect(self) -> None:
         self.hierarchy.selected.connect(self.select_object)
+        self.hierarchy.create_empty_requested.connect(lambda: self.create_object("Empty"))
+        self.hierarchy.duplicate_requested.connect(self.duplicate_object)
+        self.hierarchy.delete_requested.connect(self.delete_object)
+        self.hierarchy.rename_requested.connect(self.rename_object)
+        self.hierarchy.reparent_requested.connect(self.reparent_object)
         self.create_panel.create_requested.connect(self.create_object)
         self.resources.asset_selected.connect(self.preview.load_asset)
         self.prefabs.asset_selected.connect(self.preview.load_asset)
@@ -355,6 +368,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
     def _sync_scene_after_load(self, selected: Any = None) -> None:
         if hasattr(self.viewport, "_sync_model_from_scene"):
             self.viewport._sync_model_from_scene()
+        self._sync_scene_selection_index(selected)
         self.refresh_hierarchy_from_viewport()
         self.select_object(selected)
         self._update_undo_redo_states()
@@ -395,6 +409,98 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
 
     def select_object(self, obj: Any) -> None:
         self.editor_context.selection.set_selected(obj)
+        self._sync_scene_selection_index(obj)
+
+    def _sync_scene_selection_index(self, obj: Any) -> None:
+        scene = self._editor_scene()
+        if scene is None or not hasattr(scene, "selected_index"):
+            return
+        objects = list(getattr(scene, "editable_objects", []))
+        scene.selected_index = objects.index(obj) if obj in objects else -1
+
+    def _after_hierarchy_command(self, selected: Any = None) -> None:
+        if hasattr(self.viewport, "_sync_model_from_scene"):
+            self.viewport._sync_model_from_scene()
+        self.refresh_hierarchy_from_viewport()
+        self.select_object(selected)
+        self.on_viewport_object_changed(selected)
+        self.viewport.update()
+        self.game_viewport.update()
+        self._update_undo_redo_states()
+
+    def reparent_object(self, obj: Any, parent: Any = None, index: Any = None) -> bool:
+        scene = self._editor_scene()
+        if scene is None or obj is None:
+            return False
+        if not can_reparent(obj, parent):
+            if hasattr(self, "status_msg"):
+                self.status_msg.setText("Reparent inválido: ciclo de hierarquia bloqueado.")
+            return False
+        command = ReparentGameObjectCommand(scene, obj, parent, index)
+
+        def do() -> None:
+            command.execute()
+            self._after_hierarchy_command(obj)
+
+        def undo() -> None:
+            command.undo()
+            self._after_hierarchy_command(obj)
+
+        self.editor_context.commands.execute(FunctionCommand(command.description, do, undo))
+        return True
+
+    def duplicate_object(self, obj: Any = None) -> Any:
+        scene = self._editor_scene()
+        source = obj or self.editor_context.selection.selected
+        if scene is None or source is None:
+            return None
+        command = DuplicateGameObjectCommand(scene, source)
+
+        def do() -> None:
+            command.execute()
+            self._after_hierarchy_command(command.clone)
+
+        def undo() -> None:
+            command.undo()
+            self._after_hierarchy_command(source)
+
+        self.editor_context.commands.execute(FunctionCommand(command.description, do, undo))
+        return command.clone
+
+    def delete_object(self, obj: Any = None) -> bool:
+        scene = self._editor_scene()
+        target = obj or self.editor_context.selection.selected
+        if scene is None or target is None:
+            return False
+        command = DeleteGameObjectCommand(scene, target)
+
+        def do() -> None:
+            command.execute()
+            self._after_hierarchy_command(None)
+
+        def undo() -> None:
+            command.undo()
+            self._after_hierarchy_command(target)
+
+        self.editor_context.commands.execute(FunctionCommand(command.description, do, undo))
+        return True
+
+    def rename_object(self, obj: Any, new_name: str) -> bool:
+        if obj is None or not str(new_name).strip():
+            self.refresh_hierarchy_from_viewport()
+            return False
+        command = RenameGameObjectCommand(obj, str(new_name))
+
+        def do() -> None:
+            command.execute()
+            self._after_hierarchy_command(obj)
+
+        def undo() -> None:
+            command.undo()
+            self._after_hierarchy_command(obj)
+
+        self.editor_context.commands.execute(FunctionCommand(command.description, do, undo))
+        return True
 
     def on_viewport_selection_changed(self, obj: Any) -> None:
         self.inspector.load_object(obj)

@@ -6,6 +6,12 @@
 
 ## Versões e Objetivos
 
+### v0.4.0-alpha — Editor Polish (Milestone 4) 🔄
+- [x] Hierarchy Improvements com drag & drop, reparent, ordenação, duplicate, delete, rename e menu de contexto (Fase 26)
+- [ ] Project Browser avançado
+- [ ] Inspector UX polish
+- [ ] Scene View polish
+
 ### v0.3.0-alpha — Production Tools (Milestone 3) ✅
 - [x] Animation Runtime Foundation estabilizada no fluxo Play/Stop
 - [x] UI Runtime Foundation com Canvas, Label, Image, Button e UIRenderer
@@ -110,7 +116,7 @@
 - [x] Tilemap System com componentes desacoplados de render/dados e suporte a multicamadas (Fase 23)
 - [x] Asset Pipeline com ImporterRegistry, importadores especialistas e UUIDs estáveis (Fase 24)
 - [x] Package Manager com Package, PackageRegistry, PackageManager e suporte local (Fase 25)
-- [ ] Hierarchy com drag & drop e parentesco
+- [x] Hierarchy com drag & drop e parentesco (Fase 26)
 - [x] Undo/Redo no editor (Fase 7)
 
 ---
