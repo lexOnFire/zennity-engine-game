@@ -6,11 +6,12 @@
 
 ## Versões e Objetivos
 
-### v0.4.0-alpha — Editor Polish (Milestone 4) 🔄
+### v0.4.0-alpha — Editor Polish (Milestone 4) ✅
 - [x] Hierarchy Improvements com drag & drop, reparent, ordenação, duplicate, delete, rename e menu de contexto (Fase 26)
 - [x] Project Browser avançado com thumbnails, lista/grade, contexto, favoritos, busca e operações preservando GUIDs (Fase 27)
 - [x] Inspector UX polish com filtro de componentes, menu de contexto, reset/copy/paste values, move up/down e comandos reversíveis (Fase 28)
 - [x] Scene View polish com estado testável de grid/gizmos/overlays, foco seguro e HUD aprimorado (Fase 29)
+- [x] Docking & Workspace com layouts serializáveis, presets Default/Compact/Animation e testes de WorkspaceManager (Fase 30)
 
 ### v0.3.0-alpha — Production Tools (Milestone 3) ✅
 - [x] Animation Runtime Foundation estabilizada no fluxo Play/Stop
