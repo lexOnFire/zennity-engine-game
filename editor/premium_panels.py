@@ -327,13 +327,18 @@ class RealInspectorPanel(InspectorPanel):
         if obj is None:
             self.header.setEnabled(False)
             self.object_name.setText("")
+            if hasattr(self, "name"):
+                self.name.setText("Nenhum objeto selecionado")
             self.component_filter.clear()
             self.renderer_label.setText("Components\n  Sem componentes")
             self.transform_label.setText("Transform\n  X: 0    Y: 0    Z: 0")
             self._clear_component_controls()
             return
+        display_name = getattr(obj, "name", str(obj))
         self.header.setEnabled(True)
-        self.object_name.setText(getattr(obj, "name", str(obj)))
+        self.object_name.setText(display_name)
+        if hasattr(self, "name"):
+            self.name.setText(display_name)
         self.object_enabled.setChecked(bool(getattr(obj, "active", True)))
         self.object_static.setChecked(bool(getattr(obj, "is_static", False)))
         self.object_tag.setCurrentText(str(getattr(obj, "tag", "Untagged")))
