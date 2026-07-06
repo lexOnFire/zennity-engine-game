@@ -42,12 +42,10 @@ class InspectorDock(QDockWidget):
         self._component_filter_text = ""
         self._component_clipboard: dict[str, object] | None = None
 
-        # 1. ScrollArea para rolar verticalmente quando houver muitos componentes
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
         self.scroll.setFrameShape(QFrame.NoFrame)
 
-        # Conteúdo interno principal
         self.main_content = QWidget()
         self.main_content.setObjectName("main_content")
         self.layout_content = QVBoxLayout(self.main_content)
@@ -58,7 +56,6 @@ class InspectorDock(QDockWidget):
         self.scroll.setWidget(self.main_content)
         self.setWidget(self.scroll)
 
-        # Aplicar estilo unificado premium escuro (tipo Unity/Godot)
         self.setStyleSheet("""
             QWidget#main_content {
                 background-color: #1a1a1a;
@@ -156,7 +153,6 @@ class InspectorDock(QDockWidget):
             }
         """)
 
-        # Widget padrão para exibição sem objeto selecionado
         self.show_empty_state()
 
     def set_viewmodel(self, viewmodel: SceneViewModel) -> None:
@@ -184,7 +180,6 @@ class InspectorDock(QDockWidget):
             if item.widget():
                 item.widget().deleteLater()
             elif item.layout():
-                # Limpa layouts recursivamente
                 self._clear_sub_layout(item.layout())
 
     def _clear_sub_layout(self, layout) -> None:
@@ -247,7 +242,6 @@ class InspectorDock(QDockWidget):
         self._block_updates = True
         self.clear_layout()
 
-        # ── Cabeçalho do Objeto (Ativo, Nome e Estático) ────────────────
         top_row = QHBoxLayout()
         top_row.setContentsMargins(0, 0, 0, 4)
         top_row.setSpacing(6)
@@ -271,12 +265,10 @@ class InspectorDock(QDockWidget):
         top_row.addWidget(self.chk_static)
         self.layout_content.addLayout(top_row)
 
-        # ── Tag & Layer ────────────────
         tag_layer_row = QHBoxLayout()
         tag_layer_row.setContentsMargins(0, 0, 0, 8)
         tag_layer_row.setSpacing(8)
 
-        # Tag
         tag_layout = QHBoxLayout()
         tag_layout.setSpacing(4)
         lbl_tag = QLabel("Tag")
@@ -288,7 +280,6 @@ class InspectorDock(QDockWidget):
         tag_layout.addWidget(lbl_tag)
         tag_layout.addWidget(self.cb_tag, 1)
 
-        # Layer
         layer_layout = QHBoxLayout()
         layer_layout.setSpacing(4)
         lbl_layer = QLabel("Layer")
@@ -333,7 +324,6 @@ class InspectorDock(QDockWidget):
             empty_filter.setStyleSheet("color: #707070; padding: 6px;")
             self.layout_content.addWidget(empty_filter)
 
-        # ── Botão Adicionar Componente ───────────────────
         btn_add = QPushButton("Adicionar Componente")
         btn_add.setStyleSheet("font-weight: bold; padding: 6px; margin-top: 8px;")
         self.layout_content.addWidget(btn_add)
@@ -403,7 +393,7 @@ class InspectorDock(QDockWidget):
         if hasattr(component, "enabled"):
             component.enabled = bool(snapshot.get("enabled", True))
         properties = deepcopy(snapshot.get("properties", {}))
-        if hasattr(component, "deserialize_properties") and isinstance(properties, dict):
+        if hasattr(component, "deserialize_properties") and type(properties) is dict:
             component.deserialize_properties(properties)
         self._refresh_selected()
 
@@ -581,11 +571,7 @@ class InspectorDock(QDockWidget):
         """Chamado quando uma propriedade é alterada externamente (ex: sincroniza visual)."""
         if self._block_updates or not self.viewmodel or not self.viewmodel.selected_object:
             return
-
-        # Atualiza a interface apenas se as propriedades mudarem fora do foco do spinbox
-        # (ex: a escala mudou de forma indireta ao mudar o tamanho do colisor ou vice-versa)
         obj = self.viewmodel.selected_object
-
         self.on_selection_changed(obj)
 
 
