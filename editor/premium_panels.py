@@ -250,6 +250,12 @@ class RealInspectorPanel(InspectorPanel):
         sections = [label for label in self.findChildren(QLabel) if label.objectName() == "InspectorSection"]
         for section in sections:
             section.setVisible(False)
+        self.transform_label = QLabel("")
+        self.transform_label.setObjectName("InspectorSection")
+        self.transform_label.setVisible(False)
+        self.renderer_label = QLabel("Components\n  Sem componentes")
+        self.renderer_label.setObjectName("InspectorSection")
+        self.renderer_label.setVisible(False)
         self.header = QWidget()
         self.header.setObjectName("InspectorObjectHeader")
         header_layout = QVBoxLayout(self.header)
@@ -322,6 +328,8 @@ class RealInspectorPanel(InspectorPanel):
             self.header.setEnabled(False)
             self.object_name.setText("")
             self.component_filter.clear()
+            self.renderer_label.setText("Components\n  Sem componentes")
+            self.transform_label.setText("Transform\n  X: 0    Y: 0    Z: 0")
             self._clear_component_controls()
             return
         self.header.setEnabled(True)
@@ -330,7 +338,26 @@ class RealInspectorPanel(InspectorPanel):
         self.object_static.setChecked(bool(getattr(obj, "is_static", False)))
         self.object_tag.setCurrentText(str(getattr(obj, "tag", "Untagged")))
         self.object_layer.setCurrentText(str(getattr(obj, "layer", "Default")))
+        self._update_legacy_labels(getattr(obj, "components", []))
         self._render_component_controls(obj)
+
+    def _update_legacy_labels(self, components: list[Any]) -> None:
+        component_names = [self._component_type(comp) for comp in components if not getattr(comp, "required", False)]
+        text = ", ".join(component_names) if component_names else "Sem componentes"
+        self.renderer_label.setText("Components\n  " + text)
+        for component in components:
+            if self._component_type(component) != "Transform":
+                continue
+            pos = getattr(component, "position", [0, 0, 0])
+            rot = getattr(component, "rotation", [0, 0, 0])
+            scale = getattr(component, "scale", [1, 1, 1])
+            self.transform_label.setText(
+                "Transform\n"
+                f"  Position: X {float(pos[0]):.1f} | Y {float(pos[1]):.1f} | Z {float(pos[2]) if len(pos) > 2 else 0:.1f}\n"
+                f"  Rotation: {list(rot)}\n"
+                f"  Scale: {list(scale)}"
+            )
+            return
 
     def _clear_component_controls(self) -> None:
         while self.component_list_layout.count():
@@ -517,7 +544,11 @@ class RealInspectorPanel(InspectorPanel):
         return command.component
 
     def remove_component_from_selected(self, component: Any) -> bool:
-        if self.current_object is None or component is getattr(self.current_object, "transform", None) or getattr(component, "required", False):
+        if self.current_object is None:
+            self.status_label.setText("Nenhum objeto selecionado.")
+            return False
+        if component is getattr(self.current_object, "transform", None) or getattr(component, "required", False):
+            self.status_label.setText("Transform nao pode ser removido.")
             return False
         command = RemoveComponentCommand(self.current_object, component)
         if self.command_manager is None:
