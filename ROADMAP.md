@@ -8,7 +8,7 @@
 
 ### v0.5.0-alpha — Export Foundation (Milestone 5) 🔄
 - [x] Export configuration foundation com BuildConfig, BuildTarget, validação e testes iniciais (Fase 31)
-- [ ] Export Profiles
+- [x] Export Profiles com ExportProfile, ExportProfileManager, perfis Debug/Release e persistência JSON (Fase 32)
 - [ ] Desktop Packaging
 - [ ] Build Report UI
 - [ ] Release Candidate Stabilization
