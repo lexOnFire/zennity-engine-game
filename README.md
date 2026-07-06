@@ -28,7 +28,7 @@ O Zennity Editor é um ambiente integrado de desenvolvimento rico, responsivo e 
 ### ✨ Funcionalidades do Editor
 * **Workspace Unreal-inspired:** Interface escura com destaque cobalto cobrindo painéis flexíveis acopláveis (Docks) com persistência automática de layout via `QSettings`.
 * **Outliner de Hierarquia:** Árvore recursiva dinâmica com busca rápida de texto, duplicação rápida (`Ctrl+D`), exclusão (`Delete`) e renomeação instantânea com duplo clique.
-* **Asset Browser:** Navegador de arquivos com histórico de pastas (Voltar/Avançar/Subir), breadcrumbs interativos e visualização em grade de recursos.
+* **Project Browser / Assets (Fase 27):** Navegador de assets com thumbnails por tipo, alternância Lista/Grade, busca por nome/extensão/tipo, favoritos de pastas e menu de contexto para criar pasta, renomear, duplicar, excluir, revelar e copiar path.
 * **Inspector Profissional (Fase 8):** Exibição e edição dinâmica com suporte total a desfazer/refazer (Undo/Redo) via `CommandManager`, validação numérica de inputs e isolamento de commits interativos.
 * **Component System (Fase 9):** Base oficial de componentes com UUID, `enabled`, registro central, serialização explícita e integração com `GameObject`, cenas, prefabs e Inspector.
 * **Add/Remove Components (Fase 10):** O Inspector adiciona e remove componentes através do `ComponentRegistry`, sempre com comandos reversíveis no `CommandManager`.

@@ -8,7 +8,7 @@
 
 ### v0.4.0-alpha — Editor Polish (Milestone 4) 🔄
 - [x] Hierarchy Improvements com drag & drop, reparent, ordenação, duplicate, delete, rename e menu de contexto (Fase 26)
-- [ ] Project Browser avançado
+- [x] Project Browser avançado com thumbnails, lista/grade, contexto, favoritos, busca e operações preservando GUIDs (Fase 27)
 - [ ] Inspector UX polish
 - [ ] Scene View polish
 

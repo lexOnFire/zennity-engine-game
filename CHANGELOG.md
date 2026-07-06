@@ -8,10 +8,12 @@
 * **Context Menu**: Menu de contexto com `Create Empty`, `Duplicate`, `Delete`, `Rename`, `Expand All` e `Collapse All`.
 * **Atalhos**: `Ctrl+D` duplica, `Delete` remove e `F2` inicia renomeação.
 * **Filtro Melhorado**: Resultados em filhos mantêm pais visíveis e expandidos.
+* **Project Browser Improvements (Fase 27)**: Assets agora têm thumbnails por tipo, modos Lista/Grade, busca por nome/extensão/tipo, favoritos de pastas e menu de contexto para criação, rename, duplicate, delete, reveal e copy path.
 
 ### Fixed & Stabilized
 * Delete reversível não destrói componentes/filhos internamente, preservando Undo.
 * Reparent bloqueia ciclos e impede objeto ser filho de si mesmo.
+* Operações de rename/move do Project Browser preservam o `.meta` e o UUID; duplicações recebem novo UUID.
 
 ---
 

@@ -252,6 +252,20 @@ Inspector -> CommandManager -> AddComponentCommand / RemoveComponentCommand -> G
 
 Isso mantém Undo/Redo consistente e evita lógica duplicada de edição no Inspector.
 
+## Project Browser Improvements (Fase 27)
+
+O Project Browser é uma camada exclusivamente de editor sobre o `AssetDatabase`. A lógica de arquivos vive em `editor.assets.project_browser.ProjectBrowserService`; a UI apenas chama esse serviço e atualiza a árvore.
+
+Responsabilidades principais:
+
+* `ProjectBrowserService`: cria pastas, renomeia, duplica, exclui, move assets entre pastas, copia paths e chama `AssetDatabase.refresh()`.
+* `ProjectBrowserSession`: mantém estado de sessão, como modo `list`/`grid` e favoritos de pastas.
+* `AssetDatabase`: continua sendo a fonte oficial de assets, `.meta` e UUIDs.
+
+Renomear e mover assets também move o arquivo `.meta`, preservando o UUID. Duplicar não copia o `.meta`, então o asset duplicado recebe novo UUID no próximo refresh. Arquivos `.meta` continuam invisíveis como assets principais.
+
+O Project Browser não altera Runtime, Scene Serialization ou GUIDs diretamente.
+
 ### Registro de novos componentes
 Para aparecer automaticamente no Inspector, um componente precisa herdar de `Component` e ser registrado:
 
