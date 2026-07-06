@@ -11,6 +11,7 @@
 * **Project Browser Improvements (Fase 27)**: Assets agora têm thumbnails por tipo, modos Lista/Grade, busca por nome/extensão/tipo, favoritos de pastas e menu de contexto para criação, rename, duplicate, delete, reveal e copy path.
 * **Inspector UX Polish (Fase 28)**: O Inspector ganhou filtro de componentes, menu de contexto por componente, reset, copy/paste values, move up/down e remoção reversível via `CommandManager`.
 * **Scene View Polish (Fase 29)**: Adicionado estado testável para grid, gizmos, overlays, seleção e modo scene/game, além de HUD aprimorado com cena, modo, ferramenta, objetos e coordenadas.
+* **Docking & Workspace (Fase 30)**: Adicionado sistema de workspace serializável com presets Default, Compact e Animation, além de `WorkspaceManager` testável.
 
 ### Fixed & Stabilized
 * Delete reversível não destrói componentes/filhos internamente, preservando Undo.
@@ -18,6 +19,7 @@
 * Operações de rename/move do Project Browser preservam o `.meta` e o UUID; duplicações recebem novo UUID.
 * Propriedades do cabeçalho do Inspector (`active`, `is_static`, `tag` e `layer`) agora são aplicadas por comandos reversíveis.
 * Foco da Scene View usa cálculo seguro de posição selecionada e não muta Runtime.
+* Layouts de workspace agora têm representação desacoplada de PySide, permitindo testes sem abrir o editor.
 
 ---
 
