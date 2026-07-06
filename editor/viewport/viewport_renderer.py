@@ -1,8 +1,6 @@
 """
 editor/viewport/viewport_renderer.py
-─────────────────────────────────────────────────────────────────────────────
-Orquestrador de renderização (ViewportRenderer) coordenando a exibição de grid,
-outlines, bounding boxes e HUD overlays usando QPainter.
+ViewportRenderer coordinates grid, outlines, bounding boxes and HUD overlays.
 """
 from __future__ import annotations
 
@@ -18,35 +16,28 @@ from editor.viewport.viewport_camera import ViewportCamera
 
 
 class ViewportRenderer:
-    """Orquestra e gerencia o pipeline de renderização visual da viewport.
-
-    Desenha todos os overlays da viewport (incluindo o grid infinito) utilizando QPainter.
-    """
+    """Coordinates all QPainter based Scene View overlays."""
 
     def __init__(self) -> None:
         self.grid_renderer = GridRenderer()
         self.outline_renderer = SelectionOutlineRenderer()
         self.bounding_box_renderer = BoundingBoxRenderer()
         self.overlay = ViewportOverlay()
-
-        # Para cálculo dinâmico de FPS
         self._fps_last_time: float = time.time()
         self._fps_value: float = 60.0
 
     def calculate_fps(self) -> float:
-        """Calcula e retorna o frame rate atual de renderização."""
+        """Return a smoothed render FPS value."""
         now = time.time()
         delta = now - self._fps_last_time
         self._fps_last_time = now
-
-        # Filtro passa-baixa simples para suavizar o indicador de FPS
         if delta > 0.0:
             current_fps = 1.0 / delta
             self._fps_value += (current_fps - self._fps_value) * 0.1
         return self._fps_value
 
     def render_grid(self, painter: QPainter, camera: ViewportCamera, show_grid: bool) -> None:
-        """Desenha a grade de fundo na Viewport utilizando QPainter (alinhado aos eixos)."""
+        """Draw the editor grid when enabled."""
         if show_grid:
             self.grid_renderer.draw(
                 painter=painter,
@@ -68,17 +59,18 @@ class ViewportRenderer:
         snap_on: bool,
         mouse_screen_pos: tuple[float, float],
         is_playing: bool = False,
+        scene_name: str = "Scene",
+        view_mode: str = "Edit",
+        overlays_visible: bool = True,
+        selection_visible: bool = True,
     ) -> None:
-        """Renderiza os elementos Qt por cima do framebuffer do Pygame."""
+        """Render Scene View visual overlays above the Pygame framebuffer."""
         vp_w, vp_h = camera.vp_w, camera.vp_h
 
-        # 1. Borda de Seleção (Selection Outline)
-        if selected is not None and not is_playing:
+        if selected is not None and not is_playing and selection_visible:
             self.outline_renderer.draw(painter, selected, camera.world_to_viewport)
 
-        # 2. Caixa Delimitadora.
-        # Os handles são exclusivos da Scale Tool para não poluir Move/Rotate.
-        if selected is not None and not is_playing:
+        if selected is not None and not is_playing and selection_visible:
             show_scale_handles = active_tool_name.lower() == "scale"
             self.bounding_box_renderer.draw(
                 painter,
@@ -87,9 +79,11 @@ class ViewportRenderer:
                 show_handles=show_scale_handles,
             )
 
-        # 3. HUD Superior Esquerdo (Estatísticas)
+        if not overlays_visible:
+            return
+
         fps = self.calculate_fps()
-        camera_name = "Câmera 2D"  # Para Fase 2, padrão 2D
+        camera_name = "Camera 2D"
         self.overlay.draw_hud(
             painter,
             vp_w,
@@ -98,9 +92,11 @@ class ViewportRenderer:
             fps=fps,
             object_count=object_count,
             active_tool=active_tool_name,
+            scene_name=scene_name,
+            view_mode=view_mode,
+            is_playing=is_playing,
         )
 
-        # 4. HUD Inferior Esquerdo (Coordenadas do Mouse e Status)
         mouse_world = camera.screen_to_world(mouse_screen_pos)
         zoom_pct = int(camera.zoom * 100.0)
         self.overlay.draw_coordinates(
