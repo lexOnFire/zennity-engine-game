@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Any
 
 from PySide6.QtCore import Qt, Signal
@@ -7,6 +8,7 @@ from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
     QComboBox,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -254,6 +256,9 @@ class RealInspectorPanel(InspectorPanel):
         self.component_registry: ComponentRegistry = component_registry
         self.inspector_plugin_registry: InspectorPluginRegistry = inspector_plugin_registry
         self.current_object: Any | None = None
+        self.component_foldouts: dict[str, bool] = {}
+        self.component_clipboard: dict[str, Any] | None = None
+        self.selected_component: Any | None = None
         sections = [
             label
             for label in self.findChildren(QLabel)
@@ -305,6 +310,10 @@ class RealInspectorPanel(InspectorPanel):
         header_layout.addWidget(meta_row)
         self.status_label = QLabel("")
         self.status_label.setObjectName("InspectorStatus")
+        self.component_filter = QLineEdit()
+        self.component_filter.setObjectName("InspectorComponentFilter")
+        self.component_filter.setPlaceholderText("Filtrar componentes...")
+        self.component_filter.textChanged.connect(self.apply_component_filter)
         self.add_component_button = QPushButton("Adicionar Componente")
         self.add_component_button.setObjectName("InspectorAddComponentButton")
         self.add_component_button.clicked.connect(self.open_add_component_menu)
@@ -314,6 +323,7 @@ class RealInspectorPanel(InspectorPanel):
         self.component_list_layout.setContentsMargins(4, 4, 4, 4)
         self.component_list_layout.setSpacing(6)
         self.layout.insertWidget(max(0, self.layout.count() - 1), self.header)
+        self.layout.insertWidget(max(0, self.layout.count() - 1), self.component_filter)
         self.layout.insertWidget(max(0, self.layout.count() - 1), self.component_list)
         self.layout.insertWidget(max(0, self.layout.count() - 1), self.status_label)
         self.layout.insertWidget(max(0, self.layout.count() - 1), self.add_component_button)
@@ -331,11 +341,13 @@ class RealInspectorPanel(InspectorPanel):
         self.current_object = obj
         self.status_label.setText("")
         self.add_component_button.setEnabled(obj is not None)
+        self.component_filter.setEnabled(obj is not None)
         if obj is None:
             self.header.setEnabled(False)
             self._clear_component_controls()
             self.name.setText("Nenhum objeto selecionado")
             self.object_name.setText("")
+            self.component_filter.clear()
             if hasattr(self, "transform_label"):
                 self.transform_label.setText("Transform\n  X: 0    Y: 0    Z: 0")
             if hasattr(self, "renderer_label"):
@@ -394,30 +406,258 @@ class RealInspectorPanel(InspectorPanel):
         self._clear_component_controls()
 
         for component in getattr(obj, "components", []):
+            if not self._component_matches_filter(component):
+                continue
             plugin = self.inspector_plugin_registry.plugin_for(component)
-            row = QWidget()
-            row_layout = QHBoxLayout(row)
-            row_layout.setContentsMargins(0, 0, 0, 0)
-            row_layout.setSpacing(6)
+            row = self._create_component_shell(component)
+            body = row.findChild(QWidget, "InspectorComponentBody")
+            body_layout = body.layout() if body is not None else None
             if plugin is None:
                 name = QLabel(getattr(component, "type_name", type(component).__name__))
                 name.setObjectName("InspectorSection")
-                row_layout.addWidget(name, 1)
+                if body_layout is not None:
+                    body_layout.addWidget(name)
             else:
                 widget = plugin.create_widget(
                     component,
                     self.command_manager,
                     lambda obj=obj: self.load_object(obj),
                 )
-                row_layout.addWidget(widget, 1)
-            if not getattr(component, "required", False):
-                remove = QPushButton("×")
-                remove.setObjectName("InspectorRemoveComponentButton")
-                remove.clicked.connect(
-                    lambda checked=False, comp=component: self.remove_component_from_selected(comp)
-                )
-                row_layout.addWidget(remove)
+                if body_layout is not None:
+                    body_layout.addWidget(widget)
             self.component_list_layout.addWidget(row)
+
+    def _create_component_shell(self, component: Any) -> QFrame:
+        type_name = self._component_type(component)
+        key = self._component_key(component)
+        is_open = self.component_foldouts.get(key, True)
+        shell = QFrame()
+        shell.setObjectName("InspectorComponentShell")
+        shell.setProperty("component_type", type_name)
+        shell.setProperty("component_id", key)
+        shell.setProperty("selected", component is self.selected_component)
+        shell.setProperty("disabled", not bool(getattr(component, "enabled", True)))
+        shell.setContextMenuPolicy(Qt.CustomContextMenu)
+        shell.customContextMenuRequested.connect(
+            lambda pos, comp=component, frame=shell: self.open_component_context_menu(comp, frame.mapToGlobal(pos))
+        )
+        layout = QVBoxLayout(shell)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(4)
+
+        header = QWidget()
+        header.setObjectName("InspectorComponentHeader")
+        header_layout = QHBoxLayout(header)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        header_layout.setSpacing(4)
+
+        toggle = QPushButton("v" if is_open else ">")
+        toggle.setObjectName("InspectorFoldoutButton")
+        toggle.setFixedWidth(24)
+        toggle.clicked.connect(lambda checked=False, comp=component: self.toggle_component_foldout(comp))
+        icon = QLabel(self._component_icon(type_name))
+        icon.setObjectName("InspectorComponentIcon")
+        title = QLabel(type_name)
+        title.setObjectName("InspectorComponentTitle")
+        if not getattr(component, "enabled", True):
+            title.setText(f"{type_name} (desabilitado)")
+        title.mousePressEvent = lambda event, comp=component: self.select_component(comp)
+        menu_button = QPushButton("...")
+        menu_button.setObjectName("InspectorComponentMenuButton")
+        menu_button.setFixedWidth(28)
+        menu_button.clicked.connect(
+            lambda checked=False, comp=component, button=menu_button: self.open_component_context_menu(
+                comp,
+                button.mapToGlobal(button.rect().bottomLeft()),
+            )
+        )
+
+        header_layout.addWidget(toggle)
+        header_layout.addWidget(icon)
+        header_layout.addWidget(title, 1)
+        header_layout.addWidget(menu_button)
+        layout.addWidget(header)
+
+        body = QWidget()
+        body.setObjectName("InspectorComponentBody")
+        body_layout = QVBoxLayout(body)
+        body_layout.setContentsMargins(0, 0, 0, 0)
+        body_layout.setSpacing(4)
+        body.setVisible(is_open)
+        layout.addWidget(body)
+        return shell
+
+    def _component_type(self, component: Any) -> str:
+        return str(getattr(component, "type_name", type(component).__name__))
+
+    def _component_key(self, component: Any) -> str:
+        return str(getattr(component, "id", id(component)))
+
+    def _component_icon(self, type_name: str) -> str:
+        icons = {
+            "Transform": "T",
+            "RigidBody": "R",
+            "BoxCollider": "C",
+            "CircleCollider": "C",
+            "Script": "S",
+            "Camera": "M",
+            "AudioSource": "A",
+            "Animator": "N",
+        }
+        return icons.get(type_name, type_name[:1].upper() if type_name else "?")
+
+    def _component_matches_filter(self, component: Any) -> bool:
+        query = self.component_filter.text().strip().lower()
+        if not query:
+            return True
+        return query in self._component_type(component).lower()
+
+    def apply_component_filter(self, _text: str = "") -> None:
+        if self.current_object is not None:
+            self._render_component_controls(self.current_object)
+
+    def select_component(self, component: Any) -> None:
+        self.selected_component = component
+        if self.current_object is not None:
+            self._render_component_controls(self.current_object)
+
+    def toggle_component_foldout(self, component: Any) -> bool:
+        key = self._component_key(component)
+        next_state = not self.component_foldouts.get(key, True)
+        self.component_foldouts[key] = next_state
+        if self.current_object is not None:
+            self._render_component_controls(self.current_object)
+        return next_state
+
+    def open_component_context_menu(self, component: Any, global_pos) -> None:
+        menu = QMenu(self)
+        reset = menu.addAction("Reset")
+        copy = menu.addAction("Copy")
+        paste = menu.addAction("Paste Values")
+        remove = menu.addAction("Remove")
+        menu.addSeparator()
+        move_up = menu.addAction("Move Up")
+        move_down = menu.addAction("Move Down")
+        paste.setEnabled(self.can_paste_component_values(component))
+        remove.setEnabled(not getattr(component, "required", False))
+        action = menu.exec(global_pos)
+        if action is reset:
+            self.reset_component(component)
+        elif action is copy:
+            self.copy_component(component)
+        elif action is paste:
+            self.paste_component_values(component)
+        elif action is remove:
+            self.remove_component_from_selected(component)
+        elif action is move_up:
+            self.move_component_visual(component, -1)
+        elif action is move_down:
+            self.move_component_visual(component, 1)
+
+    def copy_component(self, component: Any) -> dict[str, Any] | None:
+        if not hasattr(component, "serialize"):
+            self.status_label.setText("Componente nao pode ser copiado.")
+            return None
+        self.component_clipboard = deepcopy(component.serialize())
+        self.status_label.setText(f"Componente {self._component_type(component)} copiado.")
+        return self.component_clipboard
+
+    def can_paste_component_values(self, component: Any) -> bool:
+        return (
+            self.component_clipboard is not None
+            and self.component_clipboard.get("type") == self._component_type(component)
+            and hasattr(component, "deserialize_properties")
+        )
+
+    def paste_component_values(self, component: Any) -> bool:
+        if not self.can_paste_component_values(component):
+            self.status_label.setText("Nao ha valores compativeis para colar.")
+            return False
+        assert self.component_clipboard is not None
+        before = deepcopy(component.serialize())
+        after = deepcopy(self.component_clipboard)
+        after["id"] = getattr(component, "id", after.get("id"))
+
+        def apply() -> None:
+            self._apply_component_snapshot(component, after)
+            if self.current_object is not None:
+                self.load_object(self.current_object)
+
+        def undo() -> None:
+            self._apply_component_snapshot(component, before)
+            if self.current_object is not None:
+                self.load_object(self.current_object)
+
+        self._execute_component_ux_command(
+            f"Paste {self._component_type(component)} Values",
+            apply,
+            undo,
+        )
+        return True
+
+    def reset_component(self, component: Any) -> bool:
+        component_class = self.component_registry.resolve(self._component_type(component)) or type(component)
+        try:
+            default_component = component_class()
+        except Exception as exc:
+            self.status_label.setText(f"Reset indisponivel: {exc}")
+            return False
+        before = deepcopy(component.serialize())
+        after = deepcopy(default_component.serialize())
+        after["id"] = getattr(component, "id", after.get("id"))
+
+        def apply() -> None:
+            self._apply_component_snapshot(component, after)
+            if self.current_object is not None:
+                self.load_object(self.current_object)
+
+        def undo() -> None:
+            self._apply_component_snapshot(component, before)
+            if self.current_object is not None:
+                self.load_object(self.current_object)
+
+        self._execute_component_ux_command(
+            f"Reset {self._component_type(component)}",
+            apply,
+            undo,
+        )
+        return True
+
+    def move_component_visual(self, component: Any, offset: int) -> bool:
+        if self.current_object is None or component not in getattr(self.current_object, "components", []):
+            return False
+        components = self.current_object.components
+        old_index = components.index(component)
+        new_index = max(0, min(len(components) - 1, old_index + offset))
+        if old_index == new_index:
+            return False
+
+        def move(src: int, dst: int) -> None:
+            item = components.pop(src)
+            components.insert(dst, item)
+            self.load_object(self.current_object)
+
+        self._execute_component_ux_command(
+            f"Move {self._component_type(component)}",
+            lambda: move(old_index, new_index),
+            lambda: move(new_index, old_index),
+        )
+        return True
+
+    def _apply_component_snapshot(self, component: Any, data: dict[str, Any]) -> None:
+        if "enabled" in data:
+            component.enabled = bool(data.get("enabled", True))
+        if data.get("id"):
+            component.id = str(data["id"])
+        properties = data.get("properties", {})
+        if isinstance(properties, dict) and hasattr(component, "deserialize_properties"):
+            component.deserialize_properties(deepcopy(properties))
+
+    def _execute_component_ux_command(self, description: str, apply, undo) -> None:
+        if self.command_manager is None:
+            apply()
+            return
+        self.command_manager.execute(FunctionCommand(description, apply, undo))
 
     def available_component_names(self, include_unavailable: bool = False) -> list[str]:
         if self.current_object is None:

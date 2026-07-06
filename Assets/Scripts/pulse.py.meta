@@ -1,0 +1,8 @@
+{
+  "uuid": "fe35ae3e-d56a-4bc3-8209-d033a740681e",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/pulse.py",
+  "import_settings": {},
+  "dependencies": []
+}

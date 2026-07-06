@@ -1,0 +1,8 @@
+{
+  "uuid": "0df80ac2-7fbf-4103-aa6b-fabf4ba6792b",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/builtin_destroy_on_collision.py",
+  "import_settings": {},
+  "dependencies": []
+}

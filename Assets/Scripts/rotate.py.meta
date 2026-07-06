@@ -1,0 +1,8 @@
+{
+  "uuid": "3ba22691-d22f-4595-9b12-8fba3c881bf3",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/rotate.py",
+  "import_settings": {},
+  "dependencies": []
+}

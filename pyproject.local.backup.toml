@@ -1,0 +1,82 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "zennity-engine"
+version = "0.2.0"
+description = "Zennity Engine — Game Engine 2D/3D em Python"
+requires-python = ">=3.11"
+dependencies = [
+    "pygame-ce>=2.5.0",
+    "numpy>=1.26",
+    "PySide6>=6.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-env>=1.1",
+    "ruff>=0.4",
+    "mypy>=1.10",
+]
+
+# ── Ruff ─────────────────────────────────────────────────────────────────────
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking (melhora TYPE_CHECKING imports)
+    "ANN", # flake8-annotations (type hints)
+]
+ignore = [
+    "ANN101",  # self sem anotação — desnecessário
+    "ANN102",  # cls sem anotação — desnecessário
+    "ANN204",  # __init__ sem retorno explícito
+    "B008",    # function calls in defaults (normal em engines)
+    "SIM108",  # ternary obrigatório — às vezes if/else é mais claro
+]
+# Não aplica Ruff nos legados de terceiros
+exclude = [
+    "editor_legacy/",
+    "__pycache__",
+    ".git",
+    "demos/",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ANN", "S101"]  # testes não precisam de anotações nem assert warnings
+
+# ── Mypy ─────────────────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.11"
+# Fase 1: tipagem estrita apenas em engine/ — editor_legacy é gradual
+files = ["engine/"]
+strict = false
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+# Módulos legados/externos — silencia
+[[tool.mypy.overrides]]
+module = ["pygame.*", "PySide6.*", "editor_legacy.*"]
+ignore_missing_imports = true
+ignore_errors = true
+
+# ── pytest ────────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+env = [
+    "SDL_VIDEODRIVER=dummy",
+    "SDL_AUDIODRIVER=dummy",
+    "PYGAME_HIDE_SUPPORT_PROMPT=1",
+]
