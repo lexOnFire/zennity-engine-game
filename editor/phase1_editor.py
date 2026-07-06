@@ -40,6 +40,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self._snap_action: QAction | None = None
         self.current_scene_path: Path | None = None
         self.editor_scene: Any | None = None
+        self._left_panel_focus = "hierarchy"
         super().__init__()
         self.editor_context.tools.subscribe(self._on_runtime_tool_changed)
 
@@ -236,17 +237,20 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.hierarchy_tabs = QTabWidget()
         self.hierarchy_tabs.addTab(self.hierarchy, "Hierarchy")
         self.hierarchy_tabs.addTab(self.create_panel, "Criar")
-        self.hierarchy_tabs.setMinimumHeight(120)
+        self.hierarchy_tabs.setMinimumHeight(90)
+        self.hierarchy_tabs.currentChanged.connect(lambda index: self.focus_hierarchy_panel())
 
-        asset_tabs = QTabWidget()
-        asset_tabs.addTab(self.resources, "Assets")
-        asset_tabs.addTab(self.prefabs, "Adicionar Prefabs")
+        self.asset_tabs = QTabWidget()
+        self.asset_tabs.addTab(self.resources, "Assets")
+        self.asset_tabs.addTab(self.prefabs, "Adicionar Prefabs")
+        self.asset_tabs.setMinimumHeight(90)
+        self.asset_tabs.currentChanged.connect(lambda index: self.focus_assets_panel())
 
         left = QSplitter(Qt.Vertical)
         left.setChildrenCollapsible(False)
         left.addWidget(self.hierarchy_tabs)
-        left.addWidget(asset_tabs)
-        left.setSizes([150, 590])
+        left.addWidget(self.asset_tabs)
+        left.setSizes([180, 560])
         left.setMinimumWidth(240)
         left.setMaximumWidth(320)
         self.left_splitter = left
@@ -281,6 +285,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.setCentralWidget(main)
 
         self.refresh_hierarchy_from_viewport()
+        self.focus_hierarchy_panel()
 
     def _connect(self) -> None:
         self.hierarchy.selected.connect(self.select_object)
@@ -420,11 +425,23 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
     def _sync_hierarchy_panel_height(self, object_count: int) -> None:
         if not hasattr(self, "left_splitter"):
             return
-        target = max(140, min(340, 108 + int(object_count) * 24))
+        if self._left_panel_focus == "assets":
+            self.left_splitter.setSizes([96, 644])
+            return
+        target = max(150, min(390, 108 + int(object_count) * 24))
         sizes = self.left_splitter.sizes()
         total = sum(sizes) if sizes else 740
-        bottom = max(180, total - target)
+        bottom = max(96, total - target)
         self.left_splitter.setSizes([target, bottom])
+
+    def focus_hierarchy_panel(self) -> None:
+        self._left_panel_focus = "hierarchy"
+        self._sync_hierarchy_panel_height(getattr(self, "object_count", 0))
+
+    def focus_assets_panel(self) -> None:
+        self._left_panel_focus = "assets"
+        if hasattr(self, "left_splitter"):
+            self.left_splitter.setSizes([96, 644])
 
     def select_object(self, obj: Any) -> None:
         self.editor_context.selection.set_selected(obj)
@@ -671,11 +688,11 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.refresh_hierarchy_from_viewport()
         if created is not None:
             self.select_object(created)
+            self.focus_hierarchy_panel()
 
         self.console.add("INFO", f"Objeto criado: {name}")
 
     def create_prefab_from_selected(self) -> None:
-        """Salva o objeto selecionado como um Prefab (.zprefab)."""
         selected = self.editor_context.selection.selected
         if selected is None:
             QMessageBox.warning(self, "Aviso", "Selecione um objeto na cena antes de criar um Prefab.")
@@ -703,7 +720,6 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             QMessageBox.critical(self, "Erro", f"Falha ao criar prefab: {str(e)}")
 
     def instantiate_prefab_ui(self) -> None:
-        """Abre caixa de diálogo para escolher um prefab (.zprefab) e instanciá-lo na cena."""
         if self.editor_context.runtime.is_playing:
             self.stop()
         if not self.viewport or not self._editor_scene():
@@ -742,6 +758,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             self.viewport.active_scene = scene
             self.viewport._sync_model_from_scene()
             self.select_object(obj)
+            self.focus_hierarchy_panel()
 
             self.console.add("INFO", f"Prefab instanciado: {obj.name} a partir de {Path(file_path).name}")
         except Exception as e:
