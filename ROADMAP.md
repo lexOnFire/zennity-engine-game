@@ -6,6 +6,13 @@
 
 ## Versões e Objetivos
 
+### v0.5.0-alpha — Export Foundation (Milestone 5) 🔄
+- [x] Export configuration foundation com BuildConfig, BuildTarget, validação e testes iniciais (Fase 31)
+- [ ] Export Profiles
+- [ ] Desktop Packaging
+- [ ] Build Report UI
+- [ ] Release Candidate Stabilization
+
 ### v0.4.0-alpha — Editor Polish (Milestone 4) ✅
 - [x] Hierarchy Improvements com drag & drop, reparent, ordenação, duplicate, delete, rename e menu de contexto (Fase 26)
 - [x] Project Browser avançado com thumbnails, lista/grade, contexto, favoritos, busca e operações preservando GUIDs (Fase 27)
@@ -50,32 +57,3 @@
 - [x] Editor 2D (viewport, hierarchy, inspector)
 - [x] Editor 3D (gizmo interativo)
 - [x] Demos funcionando
-
----
-
-### v0.2 — Core Modular ✅
-- [x] Application como root owner de todos os subsistemas
-- [x] Time com scale, pause, frame counter
-- [x] Logger estruturado com níveis e cores
-- [x] System + SystemRegistry
-- [x] EventBus com deferred dispatch e once()
-- [x] GameObject com UUID + tag
-- [x] `engine/core/` como pacote canônico (FASE 1 concluída)
-- [x] Shims de retrocompatibilidade para todos os módulos legados
-- [ ] AssetManager migrado para `engine/core/`
-- [x] Testes automáticos (pytest)
-- [ ] GitHub Actions CI
-
----
-
-### v0.3 — Pipeline 2D Completo 🔄
-- [ ] ParallaxRenderer
-- [ ] Lights 2D (point light, ambient)
-- [ ] Sistema de partículas (emitter, burst, loop)
-- [ ] Câmera 2D com follow, bounds e shake
-- [ ] Camadas de render (z-order)
-- [ ] Documentação da API 2D
-
----
-
-### v0.4 — Editor com Workspaces ✅
