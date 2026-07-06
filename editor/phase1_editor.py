@@ -32,14 +32,7 @@ from engine.scene import load_scene, save_scene
 
 
 class ZennityPhase1Editor(ZennityPremiumEditor):
-    """Editor Premium com Fase 1 ativada.
-
-    Primeira entrega funcional:
-    - Hierarchy usa objetos reais da Viewport.
-    - Inspector mostra Transform real.
-    - Criar objeto sincroniza Viewport, Hierarchy e Inspector.
-    - Selecionar na Hierarchy seleciona o objeto real na cena.
-    """
+    """Editor Premium com Fase 1 ativada."""
 
     def __init__(self) -> None:
         self.editor_context = EditorContext()
@@ -94,7 +87,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.act_create_prefab = QAction("Create Prefab From Selected", self)
         self.act_create_prefab.triggered.connect(self.create_prefab_from_selected)
         prefab_menu.addAction(self.act_create_prefab)
-        
+
         self.act_instantiate_prefab = QAction("Instantiate Prefab", self)
         self.act_instantiate_prefab.triggered.connect(self.instantiate_prefab_ui)
         prefab_menu.addAction(self.act_instantiate_prefab)
@@ -212,6 +205,10 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.prefabs = PrefabsPanel()
         self.inspector = RealInspectorPanel()
         self.inspector.set_command_manager(self.editor_context.commands)
+        if hasattr(self.inspector, "name"):
+            self.inspector.name.setVisible(False)
+        self.inspector.setMinimumWidth(300)
+        self.inspector.setMaximumWidth(360)
         self.console = ConsolePanel()
         self.preview = AssetPreviewPanel()
         self.profiler = SimplePanel("Profiler", "FPS, CPU, memoria")
@@ -236,18 +233,23 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.game_viewport.set_runtime_manager(self.editor_context.runtime)
         self.game_viewport.active_scene = self.editor_scene
 
-        hierarchy_tabs = QTabWidget()
-        hierarchy_tabs.addTab(self.hierarchy, "Hierarchy")
-        hierarchy_tabs.addTab(self.create_panel, "Criar")
+        self.hierarchy_tabs = QTabWidget()
+        self.hierarchy_tabs.addTab(self.hierarchy, "Hierarchy")
+        self.hierarchy_tabs.addTab(self.create_panel, "Criar")
+        self.hierarchy_tabs.setMinimumHeight(120)
 
         asset_tabs = QTabWidget()
         asset_tabs.addTab(self.resources, "Assets")
         asset_tabs.addTab(self.prefabs, "Adicionar Prefabs")
 
         left = QSplitter(Qt.Vertical)
-        left.addWidget(hierarchy_tabs)
+        left.setChildrenCollapsible(False)
+        left.addWidget(self.hierarchy_tabs)
         left.addWidget(asset_tabs)
-        left.setSizes([380, 360])
+        left.setSizes([150, 590])
+        left.setMinimumWidth(240)
+        left.setMaximumWidth(320)
+        self.left_splitter = left
 
         self.viewport_tabs = QTabWidget()
         self.viewport_tabs.setObjectName("SceneGameTabs")
@@ -255,8 +257,10 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.viewport_tabs.addTab(self.game_viewport, "Game")
 
         center = QSplitter(Qt.Vertical)
+        center.setChildrenCollapsible(False)
         center.addWidget(self.viewport_tabs)
         console_row = QSplitter(Qt.Horizontal)
+        console_row.setChildrenCollapsible(False)
         console_row.addWidget(self.console)
         console_row.addWidget(self.profiler)
         console_row.setSizes([640, 220])
@@ -265,10 +269,15 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         center.setSizes([560, 150, 170])
 
         main = QSplitter(Qt.Horizontal)
+        main.setChildrenCollapsible(False)
         main.addWidget(left)
         main.addWidget(center)
         main.addWidget(self.inspector)
-        main.setSizes([260, 850, 300])
+        main.setStretchFactor(0, 0)
+        main.setStretchFactor(1, 1)
+        main.setStretchFactor(2, 0)
+        main.setSizes([260, 850, 320])
+        self.main_splitter = main
         self.setCentralWidget(main)
 
         self.refresh_hierarchy_from_viewport()
@@ -404,8 +413,18 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
                 scene_selected = self.viewport._selected_from_scene()
             self.select_object(scene_selected if scene_selected in objects else None)
         self.hierarchy.refresh_objects(objects)
+        self._sync_hierarchy_panel_height(self.object_count)
         if hasattr(self, "stats"):
             self.stats.setText(f"FPS: 60 | Memoria: 512 MB | Objetos: {self.object_count}")
+
+    def _sync_hierarchy_panel_height(self, object_count: int) -> None:
+        if not hasattr(self, "left_splitter"):
+            return
+        target = max(140, min(340, 108 + int(object_count) * 24))
+        sizes = self.left_splitter.sizes()
+        total = sum(sizes) if sizes else 740
+        bottom = max(180, total - target)
+        self.left_splitter.setSizes([target, bottom])
 
     def select_object(self, obj: Any) -> None:
         self.editor_context.selection.set_selected(obj)
