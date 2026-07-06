@@ -1,13 +1,18 @@
 # GettingStarted
 
-Projeto exemplo oficial da Beta 0.1 da Zennity Engine.
+Projeto exemplo oficial da v0.3.0-alpha da Zennity Engine.
 
 Ele demonstra:
 
 * um `GameObject` chamado `Player`;
 * componentes `RigidBody`, `BoxCollider` e `Script`;
 * script Python com `ScriptBehaviour`;
-* leitura de Input durante Play Mode.
+* leitura de Input durante Play Mode;
+* câmera principal e `AudioSource`;
+* Tilemap básico;
+* UI Runtime com Canvas, Label e Button;
+* Animator com keyframes simples;
+* pacote local instalado em `Packages/com.zennity.gettingstarted`.
 
 ## Como testar
 
@@ -25,3 +30,4 @@ python -m editor.phase1_main
 7. Pressione Stop para voltar ao Editor World original.
 
 O script fica em `examples/GettingStarted/Assets/Scripts/player_controller.py`.
+O pacote de exemplo fica em `examples/GettingStarted/Packages/com.zennity.gettingstarted/package.json`.

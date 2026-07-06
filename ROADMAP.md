@@ -6,6 +6,15 @@
 
 ## Versões e Objetivos
 
+### v0.3.0-alpha — Production Tools (Milestone 3) ✅
+- [x] Animation Runtime Foundation estabilizada no fluxo Play/Stop
+- [x] UI Runtime Foundation com Canvas, Label, Image, Button e UIRenderer
+- [x] Tilemap System com componentes de dados/render e suporte a multicamadas
+- [x] Asset Pipeline com ImporterRegistry, metadados e UUIDs estáveis
+- [x] Package Manager local com Package, PackageRegistry e PackageManager
+- [x] Teste de integração cobrindo Assets, Package Manager, Tilemap, UI, Animation, Play/Stop e serialização
+- [x] Projeto exemplo `examples/GettingStarted` atualizado para v0.3.0-alpha
+
 ### v0.2.0-alpha — Gameplay Foundation (Milestone 2) ✅
 - [x] Time System com delta/time escalado e frame counter (Fase 16)
 - [x] Physics Runtime Foundation com PhysicsWorld isolado e triggers (Fase 17)
@@ -98,6 +107,9 @@
 - [x] Scene Gizmos Avançados com GizmoRegistry e renderizadores especializados (Fase 20)
 - [x] Animation Runtime Foundation com Animator serializável e Time.delta_time (Fase 21)
 - [x] UI Runtime Foundation com componentes serializáveis e renderer desacoplado (Fase 22)
+- [x] Tilemap System com componentes desacoplados de render/dados e suporte a multicamadas (Fase 23)
+- [x] Asset Pipeline com ImporterRegistry, importadores especialistas e UUIDs estáveis (Fase 24)
+- [x] Package Manager com Package, PackageRegistry, PackageManager e suporte local (Fase 25)
 - [ ] Hierarchy com drag & drop e parentesco
 - [x] Undo/Redo no editor (Fase 7)
 

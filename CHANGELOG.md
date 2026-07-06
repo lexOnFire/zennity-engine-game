@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.3.0-alpha — Production Tools (Julho 2026)
+
+### Added
+* **Tilemap System**: Estrutura `Tileset` e componentes `Tilemap` e `TilemapRenderer`, com layers esparsos, serialização e registro no `ComponentRegistry`.
+* **Asset Pipeline**: `ImporterRegistry` com importadores especializados, metadados `.meta`, UUIDs estáveis, `import_settings` e dependências.
+* **Package Manager**: Infraestrutura local em `Packages/` com `Package`, `PackageRegistry` e `PackageManager` para instalação, remoção e atualização de pacotes locais.
+* **Projeto exemplo v0.3**: `examples/GettingStarted` agora demonstra Script, Input, Camera, Audio, Animation, UI Runtime, Tilemap e pacote local.
+* **Teste de integração v0.3**: Fluxo completo cobrindo Package Manager, Asset Pipeline, Tilemap, UI, Animation, Play/Stop e serialização.
+
+### Fixed & Stabilized
+* `Tilemap` e `TilemapRenderer` agora possuem `component_type` oficial e serialização compatível com o `ComponentRegistry`.
+* `ComponentRegistry.create(...)` aceita componentes legados com `deserialize` de instância, preservando compatibilidade.
+* `ARCHITECTURE.md` foi normalizado para texto Markdown válido.
+
+---
+
 ## v0.2.0-alpha — Gameplay Foundation (Julho 2026)
 
 ### Added
@@ -10,7 +26,6 @@
 * **UI Runtime Foundation**: Componentes `Canvas`, `Label`, `Image` e `Button` com `UIRenderer` desacoplado da câmera e serialização por `ComponentRegistry`.
 * **Inspector Colapsável & Persistente**: Tópicos de componentes do Inspector podem ser contraídos ou expandidos e seus estados são lembrados durante alterações de propriedades.
 * **Teste de Integração**: Suíte de testes `tests/integration/test_gameplay_foundation.py` validando o ciclo completo do Gameplay Milestone.
-
 ### Fixed & Stabilized
 * **Correção de Fallbacks**: Ajustada a lógica do `RuntimeScene` que insere Câmera e Listener padrão para verificar o array de componentes antes de instanciar redundâncias.
 * **Registros de Câmera**: Implementado `on_runtime_start` no componente `Camera` garantindo que ela se registre no manager ao iniciar simulações de runtime.

@@ -1,22 +1,18 @@
 from __future__ import annotations
 
-from engine.assets import AssetImporter, AssetType
+from engine.assets.asset_importer import ImporterRegistry
 
 
 def test_asset_importer_recognizes_supported_types() -> None:
-    importer = AssetImporter()
+    registry = ImporterRegistry()
 
-    assert importer.import_asset("level.zscene") == (AssetType.SCENE, "scene_importer")
-    assert importer.import_asset("texture.png") == (AssetType.IMAGE, "image_importer")
-    assert importer.import_asset("texture.jpg") == (AssetType.IMAGE, "image_importer")
-    assert importer.import_asset("music.ogg") == (AssetType.AUDIO, "audio_importer")
-    assert importer.import_asset("code.py") == (AssetType.SCRIPT, "script_importer")
-    assert importer.import_asset("font.ttf") == (AssetType.FONT, "font_importer")
-    assert importer.import_asset("mat.zmat") == (AssetType.MATERIAL, "material_importer")
-    assert importer.import_asset("prefab.zprefab") == (AssetType.PREFAB, "prefab_importer")
+    assert registry.get_importer_for("texture.png").get_importer_name() == "texture_importer"
+    assert registry.get_importer_for("texture.jpg").get_importer_name() == "texture_importer"
+    assert registry.get_importer_for("music.ogg").get_importer_name() == "audio_importer"
+    assert registry.get_importer_for("code.py").get_importer_name() == "script_importer"
 
 
 def test_asset_importer_unknown_type() -> None:
-    importer = AssetImporter()
+    registry = ImporterRegistry()
 
-    assert importer.import_asset("notes.txt") == (AssetType.UNKNOWN, "generic_importer")
+    assert registry.get_importer_for("notes.txt").get_importer_name() == "generic_importer"

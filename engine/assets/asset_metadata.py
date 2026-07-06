@@ -27,6 +27,7 @@ class AssetMeta:
     importer: str
     source_path: str
     import_settings: dict[str, Any] = field(default_factory=dict)
+    dependencies: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -35,6 +36,7 @@ class AssetMeta:
             "importer": self.importer,
             "source_path": self.source_path,
             "import_settings": self.import_settings,
+            "dependencies": self.dependencies,
         }
 
     @classmethod
@@ -45,4 +47,5 @@ class AssetMeta:
             importer=str(data.get("importer", "generic")),
             source_path=str(data.get("source_path", "")),
             import_settings=dict(data.get("import_settings", {}) or {}),
+            dependencies=list(data.get("dependencies", []) or []),
         )

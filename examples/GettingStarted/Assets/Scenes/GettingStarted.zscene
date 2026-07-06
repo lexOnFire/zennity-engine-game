@@ -1,7 +1,7 @@
 {
   "format_version": 1,
   "scene_name": "GettingStarted",
-  "engine_version": "0.2.0",
+  "engine_version": "0.3.0-alpha",
   "objects": [
     {
       "id": "getting-started-player",
@@ -167,6 +167,245 @@
             "type": "AudioListener",
             "enabled": true,
             "properties": {}
+          }
+        ]
+      }
+    },
+    {
+      "id": "getting-started-tilemap",
+      "uuid": "getting-started-tilemap",
+      "prefab_uuid": null,
+      "name": "GroundTilemap",
+      "tag": "Environment",
+      "layer": 0,
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          -64.0,
+          64.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": null,
+        "sprite_path": null,
+        "asset_uuid": null,
+        "color": null,
+        "material": null
+      },
+      "components": {
+        "items": [
+          {
+            "id": "getting-started-tilemap-comp",
+            "type": "Tilemap",
+            "enabled": true,
+            "properties": {
+              "width": 6,
+              "height": 3,
+              "tile_size": 32,
+              "layers": [
+                {
+                  "0,0": 1,
+                  "1,0": 1,
+                  "2,0": 1,
+                  "3,0": 1,
+                  "4,0": 1,
+                  "5,0": 1
+                }
+              ]
+            }
+          },
+          {
+            "id": "getting-started-tilemap-renderer",
+            "type": "TilemapRenderer",
+            "enabled": true,
+            "properties": {}
+          }
+        ]
+      }
+    },
+    {
+      "id": "getting-started-ui",
+      "uuid": "getting-started-ui",
+      "prefab_uuid": null,
+      "name": "RuntimeHUD",
+      "tag": "UI",
+      "layer": 0,
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": null,
+        "sprite_path": null,
+        "asset_uuid": null,
+        "color": null,
+        "material": null
+      },
+      "components": {
+        "items": [
+          {
+            "id": "getting-started-canvas",
+            "type": "Canvas",
+            "enabled": true,
+            "properties": {
+              "x": 0.0,
+              "y": 0.0,
+              "width": 0.0,
+              "height": 0.0,
+              "visible": true,
+              "z_order": 0
+            }
+          },
+          {
+            "id": "getting-started-label",
+            "type": "Label",
+            "enabled": true,
+            "properties": {
+              "x": 16.0,
+              "y": 16.0,
+              "width": 0.0,
+              "height": 0.0,
+              "visible": true,
+              "z_order": 1,
+              "text": "Zennity v0.3",
+              "font_size": 20,
+              "color": [
+                255,
+                255,
+                255
+              ]
+            }
+          },
+          {
+            "id": "getting-started-button",
+            "type": "Button",
+            "enabled": true,
+            "properties": {
+              "x": 16.0,
+              "y": 48.0,
+              "width": 140.0,
+              "height": 38.0,
+              "visible": true,
+              "z_order": 2,
+              "text": "Play",
+              "interactable": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "getting-started-animated",
+      "uuid": "getting-started-animated",
+      "prefab_uuid": null,
+      "name": "AnimatedMarker",
+      "tag": "Environment",
+      "layer": 0,
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          -48.0,
+          -48.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          16.0,
+          16.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Retângulo",
+        "sprite_path": null,
+        "asset_uuid": null,
+        "color": [
+          255,
+          200,
+          80
+        ],
+        "material": null
+      },
+      "components": {
+        "items": [
+          {
+            "id": "getting-started-animator",
+            "type": "Animator",
+            "enabled": true,
+            "properties": {
+              "default_clip": "bounce",
+              "current_clip": "bounce",
+              "speed": 1.0,
+              "playing": true,
+              "paused": false,
+              "clip_time": 0.0,
+              "clips": [
+                {
+                  "name": "bounce",
+                  "duration": 1.0,
+                  "loop": true,
+                  "fps": 10.0,
+                  "properties": [
+                    "position"
+                  ],
+                  "keyframes": [
+                    {
+                      "time": 0.0,
+                      "property": "position",
+                      "value": [
+                        -48.0,
+                        -48.0,
+                        0.0
+                      ]
+                    },
+                    {
+                      "time": 1.0,
+                      "property": "position",
+                      "value": [
+                        48.0,
+                        -48.0,
+                        0.0
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
           }
         ]
       }

@@ -836,3 +836,39 @@ A v0.2.0-alpha consolida a Gameplay Foundation através de uma série de correç
 * **Segurança na Viewport contra Mocks**: Ajustada a função `_get_screen_pos` de desenho de gizmos para detectar dinamicamente objetos mock do pytest, evitando falhas de desempacotamento de coordenadas de tela.
 * **Isolamento de Estado em Mocks globais**: Configurada a restauração e limpeza explícita dos stubs de áudio e pygame em `tests/test_audio.py` para prevenir efeitos colaterais em outros módulos da suíte de testes.
 
+
+## v0.3.0-alpha — Production Tools
+
+A v0.3.0-alpha estabiliza o Milestone 3 sem adicionar sistemas fora de escopo. O foco é consolidar Animation Runtime, UI Runtime, Tilemap, Asset Pipeline e Package Manager em um fluxo contínuo.
+
+### Tilemap System
+
+`engine.graphics.tilemap.Tilemap` é o componente de dados: largura, altura, tamanho de tile e layers esparsos. `TilemapRenderer` é o componente de desenho e fica separado do armazenamento para manter a arquitetura modular.
+
+Ambos são registrados no `ComponentRegistry`. `Tilemap` preserva compatibilidade com o formato inicial de serialização e também expõe propriedades no formato oficial de componentes.
+
+### Asset Pipeline
+
+O Asset Pipeline centraliza a classificação e importação de arquivos em `engine.assets`. `AssetDatabase` continua responsável por varrer `Assets/`, enquanto `ImporterRegistry` resolve importadores especializados por extensão:
+
+* `TextureImporter`
+* `AudioImporter`
+* `ScriptImporter`
+* `TilemapImporter`
+* `GenericImporter`
+
+Cada importador gera ou atualiza um `.meta` persistente, preservando UUID, `import_settings` e dependências futuras.
+
+### Package Manager
+
+`engine.packages` fornece a base local de pacotes:
+
+* `Package`: carrega e valida `package.json`.
+* `PackageRegistry`: indexa pacotes instalados em `Packages/`.
+* `PackageManager`: instala, remove e atualiza pacotes locais.
+
+Nesta fase não há marketplace, downloads remotos, resolução avançada de dependências ou build pipeline.
+
+### Integração
+
+`tests/integration/test_v030_stabilization.py` valida o fluxo Projeto -> Assets -> Package Manager -> Runtime -> UI -> Tilemap -> Animation -> Play -> Stop -> serialização. O projeto `examples/GettingStarted` acompanha esse fluxo com recursos sem depender de assets externos.

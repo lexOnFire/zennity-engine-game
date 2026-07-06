@@ -25,7 +25,12 @@ class ComponentRegistry:
         if component_type is None:
             component_type = Component
         if hasattr(component_type, "deserialize"):
-            return component_type.deserialize(data)
+            try:
+                return component_type.deserialize(data)
+            except TypeError:
+                component = component_type()
+                component.deserialize(data)
+                return component
         return component_type()
 
     def registered_types(self) -> tuple[str, ...]:
@@ -59,6 +64,7 @@ from engine.graphics.camera import Camera
 from engine.audio import AudioSource, AudioListener
 from engine.animation.animator import Animator
 from engine.ui.runtime_components import Canvas, LabelComponent, ImageComponent, ButtonComponent
+from engine.graphics.tilemap import Tilemap, TilemapRenderer
 
 component_registry.register(Component)
 component_registry.register(Transform)
@@ -70,3 +76,5 @@ component_registry.register(Canvas)
 component_registry.register(LabelComponent)
 component_registry.register(ImageComponent)
 component_registry.register(ButtonComponent)
+component_registry.register(Tilemap)
+component_registry.register(TilemapRenderer)

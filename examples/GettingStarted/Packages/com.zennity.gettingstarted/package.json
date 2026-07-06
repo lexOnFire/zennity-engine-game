@@ -1,0 +1,10 @@
+{
+  "name": "com.zennity.gettingstarted",
+  "version": "0.3.0",
+  "author": "Zennity",
+  "description": "Example local package used by the v0.3.0-alpha GettingStarted project.",
+  "components": [],
+  "inspector_plugins": [],
+  "importers": [],
+  "gizmos": []
+}

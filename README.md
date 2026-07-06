@@ -19,7 +19,7 @@ Criar cena -> Criar GameObject -> Adicionar componentes -> Adicionar script -> P
 
 O projeto exemplo oficial fica em `examples/GettingStarted`. Ele não depende de assets externos e demonstra `GameObject`, componentes, `ScriptBehaviour`, `Input` e Play Mode.
 
-Limites da Beta: ainda não há Input Mapping, gamepad, touch, Physics avançada, áudio integrado ao Play Mode, animação, networking, Package Manager ou Build System final. Alguns módulos legados continuam presentes para compatibilidade.
+Limites da Beta: ainda não há Input Mapping, gamepad, touch, Physics avançada, áudio integrado ao Play Mode, animação, networking ou Build System final. Alguns módulos legados continuam presentes para compatibilidade.
 
 ## 🖥️ O Novo Zennity Editor (PySide6)
 
@@ -304,6 +304,17 @@ label = game_object.add_component(LabelComponent(text="Start", x=24, y=20))
 
 Durante Play, o `UIRenderer` desenha componentes de UI depois da cena e de forma independente da câmera. Elementos de UI pertencem ao Runtime World, são ocultos da renderização normal da cena e não modificam o Editor World. Nesta fase ainda não há editor visual, layout automático, eventos complexos, temas ou animações de UI.
 
+### Production Tools v0.3.0-alpha
+
+A v0.3.0-alpha consolida o Milestone 3 com Tilemap, Asset Pipeline e Package Manager local.
+
+* `engine.graphics.tilemap.Tilemap`: componente de dados com layers esparsos e serialização.
+* `engine.graphics.tilemap.TilemapRenderer`: renderizador separado do armazenamento de tiles.
+* `engine.assets.ImporterRegistry`: resolve importadores especializados por extensão e preserva UUIDs em `.meta`.
+* `engine.packages.PackageManager`: instala, remove, atualiza e indexa pacotes locais em `Packages/`.
+
+O teste `tests/integration/test_v030_stabilization.py` cobre o fluxo principal: pacote local, assets, cena com Tilemap, UI Runtime, Animation, Play/Stop e serialização completa.
+
 ### Criando Scripts
 
 Crie um arquivo `.py` dentro de `Assets/Scripts` e anexe um `ScriptComponent` ao GameObject apontando para esse caminho. Um script mínimo:
@@ -330,6 +341,7 @@ zennity-engine-game/
 │   ├── runtime/           # RuntimeScene, RuntimeManager, ScriptRuntime, InputManager e clone profundo do Play Mode
 │   ├── physics/           # RigidBody, Box/Circle Colliders
 │   ├── ui/                # UI Runtime: Canvas, componentes básicos e UIRenderer
+│   ├── packages/          # Package Manager local e registro de pacotes
 │   └── graphics/          # Renderers 3D, Câmera e Matrizes
 ├── editor/                # O Novo Zennity Editor modular (PySide6)
 │   ├── core/              # EventBus do editor e exportador

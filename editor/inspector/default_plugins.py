@@ -920,6 +920,145 @@ class ButtonInspectorPlugin(InspectorPlugin):
         return widget
 
 
+class TilemapInspectorPlugin(InspectorPlugin):
+    component_type = "Tilemap"
+
+    def create_widget(
+        self,
+        component: Any,
+        command_manager: CommandManager | None,
+        refresh: callable | None = None,
+    ) -> QWidget:
+        widget, layout = _section("Tilemap")
+        
+        # Width
+        width_spin = QSpinBox()
+        width_spin.setRange(1, 1000)
+        width_spin.setValue(int(getattr(component, "width", 10)))
+        width_spin.valueChanged.connect(
+            lambda: self.set_property(component, "width", width_spin.value(), command_manager, refresh)
+        )
+        layout.addWidget(_property_row("Width", width_spin))
+        
+        # Height
+        height_spin = QSpinBox()
+        height_spin.setRange(1, 1000)
+        height_spin.setValue(int(getattr(component, "height", 10)))
+        height_spin.valueChanged.connect(
+            lambda: self.set_property(component, "height", height_spin.value(), command_manager, refresh)
+        )
+        layout.addWidget(_property_row("Height", height_spin))
+        
+        # Tile Size
+        size_spin = QSpinBox()
+        size_spin.setRange(1, 256)
+        size_spin.setValue(int(getattr(component, "tile_size", 32)))
+        size_spin.valueChanged.connect(
+            lambda: self.set_property(component, "tile_size", size_spin.value(), command_manager, refresh)
+        )
+        layout.addWidget(_property_row("Tile Size", size_spin))
+
+        # Layers info
+        layers_count = len(getattr(component, "layers", []))
+        layout.addWidget(_property_row("Layers", QLabel(str(layers_count))))
+        
+        widget.setProperty("component_type", self.component_type)
+        return widget
+
+
+class TilemapRendererInspectorPlugin(InspectorPlugin):
+    component_type = "TilemapRenderer"
+
+    def create_widget(
+        self,
+        component: Any,
+        command_manager: CommandManager | None,
+        refresh: callable | None = None,
+    ) -> QWidget:
+        widget, layout = _section("Tilemap Renderer")
+        
+        info = QLabel("Requires a Tilemap component on the same GameObject.")
+        info.setWordWrap(True)
+        info.setStyleSheet("color: gray;")
+        layout.addWidget(info)
+        
+        widget.setProperty("component_type", self.component_type)
+        return widget
+
+
+class AssetInspectorPlugin(InspectorPlugin):
+    component_type = "AssetInfo" # We map this pseudo-component name for the asset inspector
+
+    def create_widget(
+        self,
+        component: Any,
+        command_manager: CommandManager | None,
+        refresh: callable | None = None,
+    ) -> QWidget:
+        widget, layout = _section("Asset Import Settings")
+        
+        layout.addWidget(_property_row("UUID", QLabel(getattr(component, "uuid", ""))))
+        layout.addWidget(_property_row("Name", QLabel(getattr(component, "name", ""))))
+        layout.addWidget(_property_row("Path", QLabel(getattr(component, "path", ""))))
+        layout.addWidget(_property_row("Type", QLabel(str(getattr(component, "type", "")))))
+        
+        # Read the meta file if possible
+        try:
+            import json
+            meta_path = getattr(component, "metadata_path", None)
+            if meta_path and meta_path.exists():
+                data = json.loads(meta_path.read_text(encoding="utf-8"))
+                importer = data.get("importer", "unknown")
+                layout.addWidget(_property_row("Importer", QLabel(importer)))
+                
+                settings = data.get("import_settings", {})
+                if settings:
+                    layout.addWidget(QLabel("Settings:"))
+                    for k, v in settings.items():
+                        layout.addWidget(_property_row(f"  {k}", QLabel(str(v))))
+                        
+                deps = data.get("dependencies", [])
+                if deps:
+                    layout.addWidget(QLabel("Dependencies:"))
+                    for d in deps:
+                        layout.addWidget(QLabel(f"  - {d}"))
+        except Exception:
+            layout.addWidget(QLabel("Error reading .meta file."))
+            
+        widget.setProperty("component_type", self.component_type)
+        return widget
+
+
+class PackageInspectorPlugin(InspectorPlugin):
+    component_type = "PackageManager"
+
+    def create_widget(
+        self,
+        component: Any,
+        command_manager: CommandManager | None,
+        refresh: callable | None = None,
+    ) -> QWidget:
+        widget, layout = _section("Package Manager")
+        
+        try:
+            packages = component.registry.list_packages()
+            if not packages:
+                layout.addWidget(QLabel("No packages installed."))
+            else:
+                for pkg in packages:
+                    layout.addWidget(QLabel(f"<b>{pkg.name}</b> v{pkg.version}"))
+                    if pkg.description:
+                        layout.addWidget(QLabel(f"  <i>{pkg.description}</i>"))
+                    if pkg.author:
+                        layout.addWidget(QLabel(f"  Author: {pkg.author}"))
+                    layout.addWidget(QLabel("---"))
+        except Exception as e:
+            layout.addWidget(QLabel(f"Error reading packages: {e}"))
+            
+        widget.setProperty("component_type", self.component_type)
+        return widget
+
+
 def register_default_inspector_plugins() -> None:
     inspector_plugin_registry.register(TransformInspectorPlugin)
     inspector_plugin_registry.register(RigidBodyInspectorPlugin)
@@ -933,6 +1072,10 @@ def register_default_inspector_plugins() -> None:
     inspector_plugin_registry.register(LabelInspectorPlugin)
     inspector_plugin_registry.register(ImageInspectorPlugin)
     inspector_plugin_registry.register(ButtonInspectorPlugin)
+    inspector_plugin_registry.register(TilemapInspectorPlugin)
+    inspector_plugin_registry.register(TilemapRendererInspectorPlugin)
+    inspector_plugin_registry.register(AssetInspectorPlugin)
+    inspector_plugin_registry.register(PackageInspectorPlugin)
 
 
 register_default_inspector_plugins()

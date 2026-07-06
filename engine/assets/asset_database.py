@@ -5,7 +5,7 @@ import uuid
 from pathlib import Path
 from typing import Iterable
 
-from engine.assets.asset_importer import AssetImporter
+from engine.assets.asset_importer import ImporterRegistry
 from engine.assets.asset_metadata import AssetInfo, AssetMeta
 from engine.assets.asset_types import AssetType
 
@@ -27,7 +27,7 @@ class AssetDatabase:
     def __init__(self, project_root: str | Path | None = None, assets_dir: str = "Assets") -> None:
         self.project_root = Path(project_root or Path.cwd()).resolve()
         self.assets_root = (self.project_root / assets_dir).resolve()
-        self.importer = AssetImporter()
+        self.importer_registry = ImporterRegistry()
         self._assets_by_uuid: dict[str, AssetInfo] = {}
         self._assets_by_path: dict[str, AssetInfo] = {}
 
@@ -98,27 +98,22 @@ class AssetDatabase:
 
     def ensure_meta(self, asset_path: str | Path) -> AssetMeta:
         absolute_path = self._absolute_asset_path(asset_path)
-        asset_type, importer_name = self.importer.import_asset(absolute_path)
-        source_path = self._relative_asset_path(absolute_path)
         metadata_path = self._metadata_path(absolute_path)
-
+        source_path = self._relative_asset_path(absolute_path)
+        
+        importer = self.importer_registry.get_importer_for(absolute_path)
+        
+        existing_meta = None
         if metadata_path.exists():
-            data = json.loads(metadata_path.read_text(encoding="utf-8"))
-            meta = AssetMeta.from_dict(data)
-            if meta.source_path != source_path or meta.type != asset_type or meta.importer != importer_name:
-                meta.source_path = source_path
-                meta.type = asset_type
-                meta.importer = importer_name
-                self._write_meta(metadata_path, meta)
-            return meta
+            try:
+                data = json.loads(metadata_path.read_text(encoding="utf-8"))
+                existing_meta = AssetMeta.from_dict(data)
+            except Exception:
+                pass
 
-        meta = AssetMeta(
-            uuid=str(uuid.uuid4()),
-            type=asset_type,
-            importer=importer_name,
-            source_path=source_path,
-            import_settings={},
-        )
+        meta = importer.import_asset(absolute_path, existing_meta)
+        meta.source_path = source_path
+        
         self._write_meta(metadata_path, meta)
         return meta
 
