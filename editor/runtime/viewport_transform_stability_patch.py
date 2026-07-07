@@ -19,6 +19,50 @@ def _sync_camera_to_engine(viewport: Any) -> None:
     camera2d.transform.position[1] = float(getattr(camera, "position", [0.0, 0.0])[1])
 
 
+def _selected_or_scene_object(viewport: Any) -> Any | None:
+    obj = None
+    try:
+        obj = viewport.selected_object()
+    except Exception:
+        obj = None
+    if obj is not None and hasattr(obj, "transform"):
+        return obj
+    scene = getattr(viewport, "active_scene", None)
+    if scene is None:
+        return None
+    objects = list(getattr(scene, "editable_objects", []))
+    idx = int(getattr(scene, "selected_index", -1))
+    if 0 <= idx < len(objects):
+        return objects[idx]
+    for candidate in objects:
+        if getattr(candidate, "name", "") != "EditorCamera" and hasattr(candidate, "transform"):
+            return candidate
+    return None
+
+
+def _activate_gizmo_reference(viewport: Any) -> None:
+    obj = _selected_or_scene_object(viewport)
+    if obj is None:
+        return
+    try:
+        viewport.select_object(obj)
+    except Exception:
+        pass
+    scene = getattr(viewport, "active_scene", None)
+    objects = list(getattr(scene, "editable_objects", [])) if scene is not None else []
+    if obj in objects and hasattr(scene, "selected_index"):
+        scene.selected_index = objects.index(obj)
+    try:
+        x, y = viewport.world_to_viewport(obj.transform.position)
+        viewport._update_hover_cursor(float(x), float(y))
+    except Exception:
+        pass
+    try:
+        viewport.update()
+    except Exception:
+        pass
+
+
 def _sync_collider_size(viewport: Any, obj: Any) -> None:
     if obj is None or not hasattr(obj, "transform"):
         return
@@ -67,11 +111,27 @@ def apply_viewport_transform_stability_patch() -> bool:
     if getattr(Phase1ViewportWidget, "_zennity_transform_stability_patch_applied", False):
         return True
 
+    original_set_tool_manager = Phase1ViewportWidget.set_tool_manager
     original_wheel_event = Phase1ViewportWidget.wheelEvent
     original_mouse_move_event = Phase1ViewportWidget.mouseMoveEvent
     original_mouse_press_event = Phase1ViewportWidget.mousePressEvent
     original_resize_gl = Phase1ViewportWidget.resizeGL
     original_update_move_drag = Phase1ViewportWidget._update_move_drag
+
+    def on_tool_changed(self, tool):
+        if tool in (EditorTool.MOVE, EditorTool.ROTATE, EditorTool.SCALE):
+            _activate_gizmo_reference(self)
+
+    def set_tool_manager(self, tool_manager):
+        original_set_tool_manager(self, tool_manager)
+        try:
+            tool_manager.subscribe(lambda tool, vp=self: on_tool_changed(vp, tool))
+        except Exception:
+            pass
+        try:
+            on_tool_changed(self, tool_manager.active_tool)
+        except Exception:
+            pass
 
     def wheel_event(self, event):
         original_wheel_event(self, event)
@@ -196,6 +256,7 @@ def apply_viewport_transform_stability_patch() -> bool:
         obj.transform.scale[1] = float(next_scale[1])
         _emit_transform_changed(self, obj)
 
+    Phase1ViewportWidget.set_tool_manager = set_tool_manager
     Phase1ViewportWidget.wheelEvent = wheel_event
     Phase1ViewportWidget.mouseMoveEvent = mouse_move_event
     Phase1ViewportWidget.mousePressEvent = mouse_press_event
