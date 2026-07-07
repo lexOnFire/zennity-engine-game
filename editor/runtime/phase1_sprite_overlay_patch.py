@@ -3,11 +3,13 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QRectF
-from PySide6.QtGui import QPixmap
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QColor, QPen, QPixmap
 
 
 _IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"}
+_VIEWPORT_BG = QColor(28, 29, 36)
+_EDITOR_BOX = QColor(80, 160, 255, 80)
 
 
 def _candidate_roots() -> list[Path]:
@@ -99,6 +101,7 @@ def apply_phase1_sprite_overlay_patch() -> bool:
 
         painter = QPainter(self)
         try:
+            is_editor_view = not bool(getattr(self, "is_game_view", lambda: False)()) and not bool(getattr(self, "_is_playing", lambda: False)())
             for obj in objects:
                 image = _image_component(obj)
                 if image is None or not bool(getattr(image, "visible", True)):
@@ -119,9 +122,15 @@ def apply_phase1_sprite_overlay_patch() -> bool:
                 w = max(1.0, abs(float(scale[0])) * zoom)
                 h = max(1.0, abs(float(scale[1])) * zoom)
                 alpha = max(0.0, min(1.0, float(getattr(image, "alpha", 255)) / 255.0))
-                painter.save()
-                painter.setOpacity(alpha)
                 rect = QRectF(float(x) - w / 2.0, float(y) - h / 2.0, w, h)
+
+                painter.save()
+                painter.fillRect(rect, _VIEWPORT_BG)
+                if is_editor_view:
+                    painter.setPen(QPen(_EDITOR_BOX, 1, Qt.DotLine))
+                    painter.setBrush(Qt.NoBrush)
+                    painter.drawRect(rect)
+                painter.setOpacity(alpha)
                 painter.drawPixmap(rect, pixmap, pixmap.rect())
                 painter.restore()
         finally:
