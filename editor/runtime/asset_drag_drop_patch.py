@@ -3,10 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QEvent, QObject, Qt
+from PySide6.QtCore import QEvent, QMimeData, QObject, QTimer, Qt
 from PySide6.QtGui import QDrag
-from PySide6.QtCore import QMimeData
-from PySide6.QtWidgets import QAbstractItemView, QTreeWidgetItem
+from PySide6.QtWidgets import QApplication, QAbstractItemView, QTreeWidgetItem, QWidget
 
 
 _ASSET_MIME = "application/x-zennity-asset-path"
@@ -25,11 +24,6 @@ def _asset_path_from_item(item: QTreeWidgetItem | None) -> str:
     if asset is not None:
         return str(getattr(asset, "path", "") or "")
     return str(item.data(0, Qt.UserRole + 1) or "")
-
-
-def _asset_name_from_path(path: str) -> str:
-    stem = Path(path).stem.strip()
-    return stem or "Asset"
 
 
 def _is_image(path: str) -> bool:
@@ -75,12 +69,16 @@ def _apply_asset_to_object(editor: Any, obj: Any, asset_path: str) -> bool:
             editor.select_object(obj)
         if hasattr(editor, "inspector"):
             editor.inspector.load_object(obj)
-        viewport = getattr(editor, "viewport", None)
-        if viewport is not None:
-            try:
-                viewport.update()
-            except Exception:
-                pass
+        for attr in ("viewport", "game_viewport"):
+            viewport = getattr(editor, attr, None)
+            if viewport is not None:
+                try:
+                    viewport.update()
+                    viewport.repaint()
+                except Exception:
+                    pass
+        if hasattr(editor, "status_msg"):
+            editor.status_msg.setText(f"Asset aplicado: {asset_path}")
         return True
     if _is_script(asset_path):
         script = _get_or_add_script_component(obj)
@@ -94,6 +92,8 @@ def _apply_asset_to_object(editor: Any, obj: Any, asset_path: str) -> bool:
             editor.select_object(obj)
         if hasattr(editor, "inspector"):
             editor.inspector.load_object(obj)
+        if hasattr(editor, "status_msg"):
+            editor.status_msg.setText(f"Script aplicado: {asset_path}")
         return True
     return False
 
@@ -111,10 +111,14 @@ class _AssetDragFilter(QObject):
         if event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
             self.start_pos = _event_pos(event)
             return False
+        if event.type() == QEvent.MouseButtonRelease:
+            self.start_pos = None
+            return False
         if event.type() == QEvent.MouseMove and self.start_pos is not None and event.buttons() & Qt.LeftButton:
-            if (event.position().toPoint() - self.start_pos).manhattanLength() < 6 if hasattr(event, "position") else (event.pos() - self.start_pos).manhattanLength() < 6:
+            current_pos = _event_pos(event)
+            if (current_pos - self.start_pos).manhattanLength() < 6:
                 return False
-            item = tree.currentItem() or tree.itemAt(self.start_pos)
+            item = tree.itemAt(self.start_pos)
             path = _asset_path_from_item(item)
             asset = item.data(0, Qt.UserRole) if item is not None else None
             if not path or asset is None:
@@ -125,6 +129,7 @@ class _AssetDragFilter(QObject):
             drag = QDrag(tree)
             drag.setMimeData(mime)
             drag.exec(Qt.CopyAction)
+            self.start_pos = None
             return True
         return False
 
@@ -152,7 +157,18 @@ class _AssetDropFilter(QObject):
                         return obj
                 except Exception:
                     pass
-        return getattr(getattr(self.editor, "editor_context", None), "selection", None).selected if getattr(self.editor, "editor_context", None) is not None else None
+        context = getattr(self.editor, "editor_context", None)
+        selection = getattr(context, "selection", None)
+        selected = getattr(selection, "selected", None)
+        if selected is not None:
+            return selected
+        viewport = getattr(self.editor, "viewport", None)
+        scene = getattr(viewport, "active_scene", None)
+        objects = list(getattr(scene, "editable_objects", [])) if scene is not None else []
+        idx = int(getattr(scene, "selected_index", -1)) if scene is not None else -1
+        if 0 <= idx < len(objects):
+            return objects[idx]
+        return None
 
     def eventFilter(self, obj, event) -> bool:
         if event.type() in (QEvent.DragEnter, QEvent.DragMove):
@@ -174,7 +190,6 @@ def _enable_asset_rename(panel: Any) -> None:
     if tree is None or getattr(panel, "_zennity_asset_rename_enabled", False):
         return
     panel._zennity_asset_rename_enabled = True
-    panel._renaming_asset_item = None
     tree.setEditTriggers(QAbstractItemView.DoubleClicked | QAbstractItemView.EditKeyPressed)
 
     def mark_editable(item: QTreeWidgetItem | None) -> None:
@@ -185,8 +200,7 @@ def _enable_asset_rename(panel: Any) -> None:
             mark_editable(item.child(i))
 
     def refresh_flags() -> None:
-        root = tree.topLevelItem(0)
-        mark_editable(root)
+        mark_editable(tree.topLevelItem(0))
 
     original_refresh = panel.refresh_assets
 
@@ -197,15 +211,14 @@ def _enable_asset_rename(panel: Any) -> None:
     def begin_rename(item: QTreeWidgetItem, column: int) -> None:
         if item is None or item.parent() is None:
             return
-        panel._renaming_asset_item = item
         tree.editItem(item, 0)
 
     def finish_rename(item: QTreeWidgetItem, column: int) -> None:
         if column != 0 or item is None or item.parent() is None:
             return
         old_path = str(item.data(0, Qt.UserRole + 1) or "")
+        asset = item.data(0, Qt.UserRole)
         if not old_path:
-            asset = item.data(0, Qt.UserRole)
             old_path = str(getattr(asset, "path", "") or "")
         new_name = item.text(0).strip()
         if not old_path or not new_name or new_name == Path(old_path).name:
@@ -221,6 +234,20 @@ def _enable_asset_rename(panel: Any) -> None:
     refresh_flags()
 
 
+def _install_filter_on_widget(widget: QWidget, drop_filter: QObject) -> None:
+    widget.setAcceptDrops(True)
+    widget.installEventFilter(drop_filter)
+    viewport = getattr(widget, "viewport", None)
+    if callable(viewport):
+        child = viewport()
+        if child is not None:
+            child.setAcceptDrops(True)
+            child.installEventFilter(drop_filter)
+    for child in widget.findChildren(QWidget):
+        child.setAcceptDrops(True)
+        child.installEventFilter(drop_filter)
+
+
 def apply_asset_drag_drop_patch(editor: Any) -> bool:
     resources = getattr(editor, "resources", None)
     viewport = getattr(editor, "viewport", None)
@@ -234,21 +261,46 @@ def apply_asset_drag_drop_patch(editor: Any) -> bool:
     tree = getattr(resources, "tree", None)
     if tree is not None:
         tree.setDragEnabled(True)
+        tree.setAcceptDrops(False)
         tree.setDragDropMode(QAbstractItemView.DragOnly)
+        tree.setDefaultDropAction(Qt.CopyAction)
         drag_filter = _AssetDragFilter(resources)
+        tree.installEventFilter(drag_filter)
         tree.viewport().installEventFilter(drag_filter)
         resources._zennity_asset_drag_filter = drag_filter
     _enable_asset_rename(resources)
 
     for widget, name in ((viewport, "viewport"), (inspector, "inspector")):
-        widget.setAcceptDrops(True)
         drop_filter = _AssetDropFilter(editor, name)
-        widget.installEventFilter(drop_filter)
+        _install_filter_on_widget(widget, drop_filter)
         setattr(editor, f"_zennity_asset_drop_filter_{name}", drop_filter)
+    if hasattr(editor, "status_msg"):
+        editor.status_msg.setText("Drag/drop de Assets ativado")
+    return True
+
+
+def _scan_and_apply() -> bool:
+    app = QApplication.instance()
+    if app is None:
+        return False
+    applied = False
+    for widget in app.topLevelWidgets():
+        if all(hasattr(widget, attr) for attr in ("resources", "viewport", "inspector")):
+            applied = apply_asset_drag_drop_patch(widget) or applied
+    return applied
+
+
+def install_asset_drag_drop_runtime_watch() -> bool:
+    app = QApplication.instance()
+    if app is None:
+        return False
+    for delay in (0, 200, 600, 1200):
+        QTimer.singleShot(delay, _scan_and_apply)
     return True
 
 
 def patch_phase1_editor_asset_drag_drop() -> bool:
+    install_asset_drag_drop_runtime_watch()
     try:
         from editor.phase1_editor import ZennityPhase1Editor
     except Exception:
