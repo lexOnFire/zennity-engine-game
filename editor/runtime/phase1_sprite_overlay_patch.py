@@ -121,16 +121,19 @@ def apply_phase1_sprite_overlay_patch() -> bool:
                 w = max(1.0, abs(float(scale[0])) * zoom)
                 h = max(1.0, abs(float(scale[1])) * zoom)
                 alpha = max(0.0, min(1.0, float(getattr(image, "alpha", 255)) / 255.0))
-                rect = QRectF(float(x) - w / 2.0, float(y) - h / 2.0, w, h)
+                rz = float(getattr(transform, "rz", 0.0))
+                local_rect = QRectF(-w / 2.0, -h / 2.0, w, h)
 
                 painter.save()
+                painter.translate(float(x), float(y))
+                painter.rotate(rz)
                 painter.setOpacity(alpha)
-                painter.drawPixmap(rect, pixmap, pixmap.rect())
+                painter.drawPixmap(local_rect, pixmap, pixmap.rect())
                 painter.setOpacity(1.0)
                 if is_editor_view:
                     painter.setPen(QPen(_EDITOR_BOX, 1, Qt.DotLine))
                     painter.setBrush(Qt.NoBrush)
-                    painter.drawRect(rect)
+                    painter.drawRect(local_rect)
                 painter.restore()
         finally:
             painter.end()
