@@ -49,17 +49,37 @@ def _image_component(obj: Any) -> Any | None:
     return None
 
 
-def apply_phase1_sprite_overlay_patch() -> bool:
-    """Desenha ImageComponent por cima da viewport Qt da Fase 1.
+def _patch_sprite_selection_overlay() -> None:
+    try:
+        from editor.viewport.viewport_renderer import ViewportRenderer
+    except Exception:
+        return
+    if getattr(ViewportRenderer, "_zennity_sprite_selection_patch_applied", False):
+        return
+    original = ViewportRenderer.render_qt_overlays
 
-    A viewport atual usa QWidget/OpenGL e o desenho dos objetos vem do editor 2D
-    legado. Este patch garante que sprites selecionados no Inspector apareçam na
-    Scene/Game mesmo quando o desenho legado ainda renderiza o quadrado base.
-    """
+    def render_qt_overlays(self, *args, **kwargs):
+        selected = kwargs.get("selected")
+        active_tool_name = str(kwargs.get("active_tool_name", "")).lower()
+        if selected is None and len(args) >= 3:
+            selected = args[2]
+        if active_tool_name == "" and len(args) >= 4:
+            active_tool_name = str(args[3]).lower()
+        if _image_component(selected) is not None and active_tool_name != "scale":
+            kwargs["selection_visible"] = False
+        return original(self, *args, **kwargs)
+
+    ViewportRenderer.render_qt_overlays = render_qt_overlays
+    ViewportRenderer._zennity_sprite_selection_patch_applied = True
+
+
+def apply_phase1_sprite_overlay_patch() -> bool:
     try:
         from editor.widgets.phase1_viewport import Phase1ViewportWidget
     except Exception:
         return False
+
+    _patch_sprite_selection_overlay()
 
     if getattr(Phase1ViewportWidget, "_zennity_sprite_overlay_patch_applied", False):
         return True
