@@ -9,27 +9,40 @@ from PySide6.QtGui import QColor, QPen, QPixmap
 
 _IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"}
 _EDITOR_BOX = QColor(80, 160, 255, 90)
+_PATH_CACHE: dict[str, Path | None] = {}
+_PIXMAP_CACHE: dict[str, QPixmap] = {}
+_ROOTS_CACHE: list[Path] | None = None
 
 
 def _candidate_roots() -> list[Path]:
+    global _ROOTS_CACHE
+    if _ROOTS_CACHE is not None:
+        return _ROOTS_CACHE
     roots: list[Path] = []
     cwd = Path.cwd()
     roots.append(cwd)
     roots.extend(cwd.parents)
     here = Path(__file__).resolve()
     roots.append(here.parents[2])
-    return list(dict.fromkeys(roots))
+    _ROOTS_CACHE = list(dict.fromkeys(roots))
+    return _ROOTS_CACHE
 
 
 def _resolve_sprite_path(path_value: str) -> Path | None:
-    if not path_value:
+    key = str(path_value or "").strip().replace("\\", "/")
+    if not key:
         return None
-    raw = Path(str(path_value).strip().replace("\\", "/"))
+    if key in _PATH_CACHE:
+        return _PATH_CACHE[key]
+    raw = Path(key)
     if raw.is_absolute():
-        return raw if raw.exists() else None
+        result = raw if raw.exists() else None
+        _PATH_CACHE[key] = result
+        return result
     for root in _candidate_roots():
         candidate = root / raw
         if candidate.exists() and candidate.is_file():
+            _PATH_CACHE[key] = candidate
             return candidate
     name = raw.name.lower()
     for root in _candidate_roots():
@@ -38,8 +51,21 @@ def _resolve_sprite_path(path_value: str) -> Path | None:
                 continue
             for candidate in base.rglob("*"):
                 if candidate.is_file() and candidate.name.lower() == name and candidate.suffix.lower() in _IMAGE_EXTENSIONS:
+                    _PATH_CACHE[key] = candidate
                     return candidate
+    _PATH_CACHE[key] = None
     return None
+
+
+def _cached_pixmap(path: Path) -> QPixmap | None:
+    key = str(path.resolve())
+    pixmap = _PIXMAP_CACHE.get(key)
+    if pixmap is None:
+        pixmap = QPixmap(str(path))
+        if pixmap.isNull():
+            return None
+        _PIXMAP_CACHE[key] = pixmap
+    return pixmap
 
 
 def _image_component(obj: Any) -> Any | None:
@@ -48,6 +74,11 @@ def _image_component(obj: Any) -> Any | None:
             if str(getattr(component, "sprite_path", "") or "").strip():
                 return component
     return None
+
+
+def _call_or_value(obj: Any, name: str, default: bool = False) -> Any:
+    value = getattr(obj, name, default)
+    return value() if callable(value) else value
 
 
 def _patch_sprite_selection_overlay() -> None:
@@ -100,7 +131,8 @@ def apply_phase1_sprite_overlay_patch() -> bool:
 
         painter = QPainter(self)
         try:
-            is_editor_view = not bool(getattr(self, "is_game_view", lambda: False)()) and not bool(getattr(self, "_is_playing", lambda: False)())
+            is_editor_view = not bool(_call_or_value(self, "is_game_view", False)) and not bool(_call_or_value(self, "_is_playing", False))
+            zoom = float(getattr(getattr(self, "camera", None), "zoom", 1.0))
             for obj in objects:
                 image = _image_component(obj)
                 if image is None or not bool(getattr(image, "visible", True)):
@@ -108,8 +140,8 @@ def apply_phase1_sprite_overlay_patch() -> bool:
                 path = _resolve_sprite_path(str(getattr(image, "sprite_path", "") or ""))
                 if path is None:
                     continue
-                pixmap = QPixmap(str(path))
-                if pixmap.isNull():
+                pixmap = _cached_pixmap(path)
+                if pixmap is None:
                     continue
                 transform = getattr(obj, "transform", None)
                 if transform is None:
@@ -117,7 +149,6 @@ def apply_phase1_sprite_overlay_patch() -> bool:
                 pos = getattr(transform, "position", [0, 0, 0])
                 scale = getattr(transform, "scale", [64, 64, 1])
                 x, y = self.world_to_viewport(pos)
-                zoom = float(getattr(getattr(self, "camera", None), "zoom", 1.0))
                 w = max(1.0, abs(float(scale[0])) * zoom)
                 h = max(1.0, abs(float(scale[1])) * zoom)
                 alpha = max(0.0, min(1.0, float(getattr(image, "alpha", 255)) / 255.0))
