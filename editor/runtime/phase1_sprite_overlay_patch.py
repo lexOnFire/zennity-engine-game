@@ -1,0 +1,112 @@
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+from PySide6.QtCore import QRectF
+from PySide6.QtGui import QPixmap
+
+
+_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"}
+
+
+def _candidate_roots() -> list[Path]:
+    roots: list[Path] = []
+    cwd = Path.cwd()
+    roots.append(cwd)
+    roots.extend(cwd.parents)
+    here = Path(__file__).resolve()
+    roots.append(here.parents[2])
+    return list(dict.fromkeys(roots))
+
+
+def _resolve_sprite_path(path_value: str) -> Path | None:
+    if not path_value:
+        return None
+    raw = Path(str(path_value).strip().replace("\\", "/"))
+    if raw.is_absolute():
+        return raw if raw.exists() else None
+    for root in _candidate_roots():
+        candidate = root / raw
+        if candidate.exists() and candidate.is_file():
+            return candidate
+    name = raw.name.lower()
+    for root in _candidate_roots():
+        for base in (root / "Assets", root / "examples"):
+            if not base.exists():
+                continue
+            for candidate in base.rglob("*"):
+                if candidate.is_file() and candidate.name.lower() == name and candidate.suffix.lower() in _IMAGE_EXTENSIONS:
+                    return candidate
+    return None
+
+
+def _image_component(obj: Any) -> Any | None:
+    for component in getattr(obj, "components", []):
+        if getattr(component, "type_name", type(component).__name__) == "Image":
+            if str(getattr(component, "sprite_path", "") or "").strip():
+                return component
+    return None
+
+
+def apply_phase1_sprite_overlay_patch() -> bool:
+    """Desenha ImageComponent por cima da viewport Qt da Fase 1.
+
+    A viewport atual usa QWidget/OpenGL e o desenho dos objetos vem do editor 2D
+    legado. Este patch garante que sprites selecionados no Inspector apareçam na
+    Scene/Game mesmo quando o desenho legado ainda renderiza o quadrado base.
+    """
+    try:
+        from editor.widgets.phase1_viewport import Phase1ViewportWidget
+    except Exception:
+        return False
+
+    if getattr(Phase1ViewportWidget, "_zennity_sprite_overlay_patch_applied", False):
+        return True
+
+    original_paint_gl = Phase1ViewportWidget.paintGL
+
+    def patched_paint_gl(self) -> None:
+        original_paint_gl(self)
+        scene = getattr(self, "active_scene", None)
+        if scene is None:
+            return
+        objects = getattr(scene, "editable_objects", getattr(scene, "game_objects", []))
+        if not objects:
+            return
+
+        from PySide6.QtGui import QPainter
+
+        painter = QPainter(self)
+        try:
+            for obj in objects:
+                image = _image_component(obj)
+                if image is None or not bool(getattr(image, "visible", True)):
+                    continue
+                path = _resolve_sprite_path(str(getattr(image, "sprite_path", "") or ""))
+                if path is None:
+                    continue
+                pixmap = QPixmap(str(path))
+                if pixmap.isNull():
+                    continue
+                transform = getattr(obj, "transform", None)
+                if transform is None:
+                    continue
+                pos = getattr(transform, "position", [0, 0, 0])
+                scale = getattr(transform, "scale", [64, 64, 1])
+                x, y = self.world_to_viewport(pos)
+                zoom = float(getattr(getattr(self, "camera", None), "zoom", 1.0))
+                w = max(1.0, abs(float(scale[0])) * zoom)
+                h = max(1.0, abs(float(scale[1])) * zoom)
+                alpha = max(0.0, min(1.0, float(getattr(image, "alpha", 255)) / 255.0))
+                painter.save()
+                painter.setOpacity(alpha)
+                rect = QRectF(float(x) - w / 2.0, float(y) - h / 2.0, w, h)
+                painter.drawPixmap(rect, pixmap, pixmap.rect())
+                painter.restore()
+        finally:
+            painter.end()
+
+    Phase1ViewportWidget.paintGL = patched_paint_gl
+    Phase1ViewportWidget._zennity_sprite_overlay_patch_applied = True
+    return True
