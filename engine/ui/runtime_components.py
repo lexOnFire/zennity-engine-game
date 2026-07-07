@@ -28,15 +28,32 @@ class UIElement(Component):
         self.z_order = int(z_order)
 
     def on_runtime_start(self) -> None:
-        """Mantem o GameObject intacto quando a UI entra em Runtime.
+        """Isola objetos puramente UI do world draw sem esconder objetos mistos.
 
-        A versao anterior marcava ``game_object.runtime_hidden = True``. Isso
-        fazia objetos como Player sumirem ao apertar Play depois de adicionar
-        componentes de UI como Button, Label ou Image. Componentes de UI devem
-        controlar apenas a propria renderizacao de tela, nao esconder ou mutar
-        o GameObject dono.
+        Objetos criados apenas para UI devem continuar escondidos da renderizacao
+        de mundo para serem desenhados pelo UIRenderer. Ja objetos de gameplay,
+        como Player, nao devem sumir ao receber Button, Label ou Image no
+        Inspector. Para isso, so marcamos runtime_hidden quando o dono contem
+        apenas Transform e componentes UI.
         """
+        if self.game_object is None:
+            return None
+        if self._owner_is_pure_ui():
+            self.game_object.runtime_hidden = True
+        elif hasattr(self.game_object, "runtime_hidden"):
+            delattr(self.game_object, "runtime_hidden")
         return None
+
+    def _owner_is_pure_ui(self) -> bool:
+        if self.game_object is None:
+            return False
+        for component in getattr(self.game_object, "components", []):
+            if component is self or isinstance(component, UIElement):
+                continue
+            if getattr(component, "required", False) or getattr(component, "type_name", "") == "Transform":
+                continue
+            return False
+        return True
 
     def serialize_properties(self) -> dict[str, Any]:
         return {
