@@ -10,6 +10,7 @@ from editor.inspector.plugin import InspectorPlugin
 from editor.inspector.plugin_registry import inspector_plugin_registry
 from editor.runtime.command_manager import CommandManager
 from editor.runtime.editor2d_sprite_patch import apply_editor2d_sprite_patch
+from editor.runtime.phase1_sprite_overlay_patch import apply_phase1_sprite_overlay_patch
 
 
 _IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"}
@@ -171,6 +172,7 @@ def register_asset_component_plugins() -> None:
     inspector_plugin_registry.register(AssetAwareImageInspectorPlugin)
     inspector_plugin_registry.register(AssetAwareAnimatorInspectorPlugin)
     apply_editor2d_sprite_patch()
+    apply_phase1_sprite_overlay_patch()
 
 
 register_asset_component_plugins()
