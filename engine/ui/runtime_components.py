@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
+
+import pygame
 
 from engine.core.component import Component
 
@@ -28,14 +31,7 @@ class UIElement(Component):
         self.z_order = int(z_order)
 
     def on_runtime_start(self) -> None:
-        """Isola objetos puramente UI do world draw sem esconder objetos mistos.
-
-        Objetos criados apenas para UI devem continuar escondidos da renderizacao
-        de mundo para serem desenhados pelo UIRenderer. Ja objetos de gameplay,
-        como Player, nao devem sumir ao receber Button, Label ou Image no
-        Inspector. Para isso, so marcamos runtime_hidden quando o dono contem
-        apenas Transform e componentes UI.
-        """
+        """Isola objetos puramente UI do world draw sem esconder objetos mistos."""
         if self.game_object is None:
             return None
         if self._owner_is_pure_ui():
@@ -116,6 +112,7 @@ class LabelComponent(UIElement):
 
 class ImageComponent(UIElement):
     component_type = "Image"
+    _surface_cache: dict[str, pygame.Surface] = {}
 
     def __init__(
         self,
@@ -133,6 +130,44 @@ class ImageComponent(UIElement):
         self.sprite_path = str(sprite_path)
         self.color = tuple(color)
         self.alpha = int(alpha)
+
+    def draw(self, screen: pygame.Surface) -> None:
+        if not self.visible or self._owner_is_pure_ui():
+            return
+        surface = self.load_surface(self.sprite_path)
+        if surface is None or self.game_object is None:
+            return
+        transform = self.game_object.transform
+        width = max(1, int(abs(float(transform.scale[0]))))
+        height = max(1, int(abs(float(transform.scale[1]))))
+        if surface.get_size() != (width, height):
+            surface = pygame.transform.scale(surface, (width, height))
+        if self.alpha < 255:
+            surface = surface.copy()
+            surface.set_alpha(max(0, min(255, int(self.alpha))))
+        world_pos = transform.get_world_position()
+        x, y = float(world_pos[0]), float(world_pos[1])
+        rect = surface.get_rect(center=(int(x), int(y)))
+        screen.blit(surface, rect.topleft)
+
+    @classmethod
+    def load_surface(cls, sprite_path: str) -> pygame.Surface | None:
+        if not sprite_path:
+            return None
+        resolved = Path(sprite_path)
+        if not resolved.is_absolute():
+            resolved = Path.cwd() / resolved
+        key = str(resolved.resolve())
+        if key in cls._surface_cache:
+            return cls._surface_cache[key]
+        if not resolved.exists():
+            return None
+        try:
+            surface = pygame.image.load(str(resolved)).convert_alpha()
+        except Exception:
+            return None
+        cls._surface_cache[key] = surface
+        return surface
 
     def serialize_properties(self) -> dict[str, Any]:
         data = super().serialize_properties()
