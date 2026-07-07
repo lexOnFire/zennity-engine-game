@@ -1,5 +1,16 @@
 # Changelog
 
+## Pre-Beta Stabilization
+
+### Fixed & Stabilized
+* Corrigido consumo excessivo de memoria nos testes de Input usando estados de tecla esparsos em vez de listas gigantes.
+* `engine.input.Input` agora aceita estados de teclado do tipo dict, lista ou ScancodeWrapper.
+* Ambiente de testes padronizado para Qt/Pygame headless via `tests/conftest.py`.
+* Estado global de Input passa a ser resetado automaticamente entre testes.
+* Adicionado workflow de CI para executar pytest com dependencias Qt em Linux.
+
+---
+
 ## v0.5.0-alpha - Export Foundation em desenvolvimento
 
 ### Added
