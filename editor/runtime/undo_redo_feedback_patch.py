@@ -20,14 +20,37 @@ def _current_selected(editor: Any) -> Any | None:
         return None
 
 
+def _hard_refresh_viewport(viewport: Any) -> None:
+    if viewport is None:
+        return
+    try:
+        viewport._apply_qt_shims()
+    except Exception:
+        pass
+    try:
+        viewport._sync_model_from_scene()
+    except Exception:
+        pass
+    try:
+        viewport._sync_selection_to_model()
+    except Exception:
+        pass
+    try:
+        viewport.resizeGL(max(32, viewport.width()), max(32, viewport.height()))
+    except Exception:
+        pass
+    try:
+        viewport.update()
+        viewport.repaint()
+    except Exception:
+        pass
+
+
 def _refresh_editor_after_history(editor: Any, action_name: str) -> None:
     selected = _current_selected(editor)
 
-    try:
-        if hasattr(editor.viewport, "_sync_model_from_scene"):
-            editor.viewport._sync_model_from_scene()
-    except Exception:
-        pass
+    for attr in ("viewport", "game_viewport"):
+        _hard_refresh_viewport(getattr(editor, attr, None))
 
     try:
         editor.refresh_hierarchy_from_viewport()
@@ -48,20 +71,6 @@ def _refresh_editor_after_history(editor: Any, action_name: str) -> None:
         except Exception:
             pass
 
-    for attr in ("viewport", "game_viewport"):
-        viewport = getattr(editor, attr, None)
-        if viewport is None:
-            continue
-        try:
-            viewport._sync_selection_to_model()
-        except Exception:
-            pass
-        try:
-            viewport.update()
-            viewport.repaint()
-        except Exception:
-            pass
-
     try:
         editor._update_undo_redo_states()
     except Exception:
@@ -76,6 +85,11 @@ def _refresh_editor_after_history(editor: Any, action_name: str) -> None:
     app = QApplication.instance()
     if app is not None:
         app.processEvents()
+
+    # QOpenGLWidget pode adiar o repaint. Agenda alguns updates curtos para evitar
+    # a sensacao de que o undo/redo so aparece depois de zoom/pan.
+    for delay in (0, 16, 33, 80):
+        QTimer.singleShot(delay, lambda e=editor: [_hard_refresh_viewport(getattr(e, a, None)) for a in ("viewport", "game_viewport")])
 
 
 def _undo_now(editor: Any) -> None:
@@ -107,6 +121,16 @@ def _safe_disconnect(action: Any) -> None:
 
 def _install_instance_shortcuts(editor: Any) -> bool:
     if getattr(editor, "_zennity_undo_redo_instance_patched", False):
+        # Mesmo se ja foi instalado, garante que os botoes apontem para o novo metodo.
+        try:
+            if getattr(editor, "act_undo", None) is not None:
+                _safe_disconnect(editor.act_undo)
+                editor.act_undo.triggered.connect(lambda checked=False, e=editor: _undo_now(e))
+            if getattr(editor, "act_redo", None) is not None:
+                _safe_disconnect(editor.act_redo)
+                editor.act_redo.triggered.connect(lambda checked=False, e=editor: _redo_now(e))
+        except Exception:
+            pass
         return True
     editor._zennity_undo_redo_instance_patched = True
 
@@ -165,7 +189,6 @@ def apply_undo_redo_feedback_patch() -> bool:
     try:
         from editor.phase1_editor import ZennityPhase1Editor
     except Exception:
-        # Se o editor ainda esta carregando, instala por varredura quando a janela existir.
         app = QApplication.instance()
         if app is not None:
             for delay in (0, 200, 600, 1200):
@@ -192,6 +215,6 @@ def apply_undo_redo_feedback_patch() -> bool:
 
     app = QApplication.instance()
     if app is not None:
-        for delay in (0, 200, 600, 1200):
+        for delay in (0, 200, 600, 1200, 2400):
             QTimer.singleShot(delay, _scan_and_install_instances)
     return True
