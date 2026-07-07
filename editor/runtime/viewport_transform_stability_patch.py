@@ -63,6 +63,28 @@ def _activate_gizmo_reference(viewport: Any) -> None:
         pass
 
 
+def _move_axis_at(viewport: Any, x: float, y: float, selected: Any) -> str | None:
+    if selected is None or not hasattr(selected, "transform"):
+        return None
+    try:
+        cx, cy = viewport.world_to_viewport(selected.transform.position)
+        length = float(getattr(getattr(viewport, "move_gizmo_overlay", None), "axis_length", 72))
+    except Exception:
+        return None
+    near_center = ((float(x) - cx) ** 2 + (float(y) - cy) ** 2) ** 0.5 <= 10.0
+    if near_center:
+        return None
+    near_x = cx <= float(x) <= cx + length + 18 and abs(float(y) - cy) <= 12.0
+    near_z = cy - length - 18 <= float(y) <= cy and abs(float(x) - cx) <= 12.0
+    if near_x and near_z:
+        return "x" if abs(float(y) - cy) <= abs(float(x) - cx) else "z"
+    if near_x:
+        return "x"
+    if near_z:
+        return "z"
+    return None
+
+
 def _sync_collider_size(viewport: Any, obj: Any) -> None:
     if obj is None or not hasattr(obj, "transform"):
         return
@@ -104,7 +126,8 @@ def apply_viewport_transform_stability_patch() -> bool:
     try:
         from editor.widgets.phase1_viewport import Phase1ViewportWidget
         from editor.runtime.tool_manager import EditorTool
-        from PySide6.QtCore import Qt
+        from PySide6.QtCore import Qt, QRectF, QPointF
+        from PySide6.QtGui import QColor, QPainter, QPen, QBrush
     except Exception:
         return False
 
@@ -116,6 +139,7 @@ def apply_viewport_transform_stability_patch() -> bool:
     original_mouse_move_event = Phase1ViewportWidget.mouseMoveEvent
     original_mouse_press_event = Phase1ViewportWidget.mousePressEvent
     original_resize_gl = Phase1ViewportWidget.resizeGL
+    original_paint_gl = Phase1ViewportWidget.paintGL
     original_update_move_drag = Phase1ViewportWidget._update_move_drag
 
     def on_tool_changed(self, tool):
@@ -147,8 +171,15 @@ def apply_viewport_transform_stability_patch() -> bool:
         if self.is_game_view() or self._is_playing() or event.button() != Qt.LeftButton:
             original_mouse_press_event(self, event)
             return
+        x, y = float(event.x()), float(event.y())
+        if self._active_tool() == EditorTool.MOVE:
+            selected = self._selected_transform_object()
+            axis = _move_axis_at(self, x, y, selected)
+            if selected is not None and axis is not None and self._begin_move_drag(selected, x, y):
+                self._move_axis_lock = axis
+                event.accept()
+                return
         if self._active_tool() == EditorTool.SCALE:
-            x, y = float(event.x()), float(event.y())
             selected = self._selected_transform_object()
             handle_idx = self._scale_handle_at_viewport_point(x, y, selected)
             if selected is not None and handle_idx is not None and self._begin_scale_drag(selected, x, y, handle_idx):
@@ -175,6 +206,43 @@ def apply_viewport_transform_stability_patch() -> bool:
             pass
         _sync_camera_to_engine(self)
 
+    def paint_gl(self) -> None:
+        original_paint_gl(self)
+        if self.is_game_view() or self._is_playing():
+            return
+        selected = self._selected_transform_object()
+        if selected is None or not hasattr(selected, "transform"):
+            return
+        tool = self._active_tool()
+        if tool not in (EditorTool.SCALE, EditorTool.MOVE):
+            return
+        painter = QPainter(self)
+        try:
+            painter.setRenderHint(QPainter.Antialiasing, True)
+            cx, cy = self.world_to_viewport(selected.transform.position)
+            if tool == EditorTool.SCALE:
+                painter.setPen(QPen(QColor(80, 160, 255, 190), 2, Qt.SolidLine, Qt.RoundCap))
+                painter.setBrush(Qt.NoBrush)
+                painter.drawLine(QPointF(cx - 42, cy), QPointF(cx + 42, cy))
+                painter.drawLine(QPointF(cx, cy - 42), QPointF(cx, cy + 42))
+                painter.setBrush(QBrush(QColor(80, 160, 255, 220)))
+                for px, py in self._scale_handle_positions(selected):
+                    painter.drawRect(QRectF(px - 4, py - 4, 8, 8))
+                painter.setPen(QPen(QColor(80, 160, 255), 1))
+                painter.drawText(QPointF(cx + 48, cy - 6), "SCALE X")
+                painter.drawText(QPointF(cx + 8, cy - 48), "SCALE Z")
+            elif tool == EditorTool.MOVE:
+                axis = getattr(self, "_move_axis_lock", None)
+                if axis in ("x", "z"):
+                    color = QColor(230, 70, 70, 120) if axis == "x" else QColor(70, 210, 90, 120)
+                    painter.setPen(QPen(color, 5, Qt.SolidLine, Qt.RoundCap))
+                    if axis == "x":
+                        painter.drawLine(QPointF(cx - 9999, cy), QPointF(cx + 9999, cy))
+                    else:
+                        painter.drawLine(QPointF(cx, cy - 9999), QPointF(cx, cy + 9999))
+        finally:
+            painter.end()
+
     def update_move_drag(self, x: float, y: float) -> None:
         obj = getattr(self, "_move_drag_object", None)
         if obj is None or not hasattr(obj, "transform"):
@@ -182,6 +250,11 @@ def apply_viewport_transform_stability_patch() -> bool:
             return
         world = self.viewport_to_world((float(x), float(y)))
         delta = world - getattr(self, "_move_start_world", np.zeros(3, dtype=np.float32))
+        axis = getattr(self, "_move_axis_lock", None)
+        if axis == "x":
+            delta[1] = 0.0
+        elif axis == "z":
+            delta[0] = 0.0
         start_position = getattr(self, "_move_start_position", obj.transform.position).copy()
         next_position = start_position + delta
         next_position = self._apply_snap(next_position)
@@ -195,6 +268,7 @@ def apply_viewport_transform_stability_patch() -> bool:
         if obj is None or not hasattr(obj, "transform"):
             return False
         self._move_drag_object = obj
+        self._move_axis_lock = _move_axis_at(self, float(x), float(y), obj)
         self._move_start_world = self.viewport_to_world((float(x), float(y))).copy()
         self._move_start_position = obj.transform.position.copy()
         self.select_object(obj)
@@ -261,6 +335,7 @@ def apply_viewport_transform_stability_patch() -> bool:
     Phase1ViewportWidget.mouseMoveEvent = mouse_move_event
     Phase1ViewportWidget.mousePressEvent = mouse_press_event
     Phase1ViewportWidget.resizeGL = resize_gl
+    Phase1ViewportWidget.paintGL = paint_gl
     Phase1ViewportWidget._begin_move_drag = begin_move_drag
     Phase1ViewportWidget._update_move_drag = update_move_drag
     Phase1ViewportWidget._update_rotate_drag = update_rotate_drag
