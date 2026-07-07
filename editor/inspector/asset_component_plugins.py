@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QComboBox, QDoubleSpinBox, QLabel, QPushButton
 from editor.inspector.default_plugins import _property_row, _section
 from editor.inspector.plugin import InspectorPlugin
 from editor.inspector.plugin_registry import inspector_plugin_registry
+from editor.runtime.asset_drag_drop_patch import patch_phase1_editor_asset_drag_drop
 from editor.runtime.command_manager import CommandManager
 from editor.runtime.editor2d_sprite_no_border_patch import apply_editor2d_sprite_no_border_patch
 from editor.runtime.editor2d_sprite_patch import apply_editor2d_sprite_patch
@@ -179,6 +180,7 @@ def register_asset_component_plugins() -> None:
     apply_phase1_sprite_overlay_patch()
     apply_viewport_transform_stability_patch()
     apply_tool_selection_stability_patch()
+    patch_phase1_editor_asset_drag_drop()
 
 
 register_asset_component_plugins()
