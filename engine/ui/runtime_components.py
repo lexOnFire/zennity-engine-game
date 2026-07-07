@@ -338,6 +338,9 @@ class ButtonComponent(UIElement):
         self.interactable = bool(data.get("interactable", self.interactable))
 
 
+from engine.ui.sprite_performance_patch import apply_sprite_performance_patch
+apply_sprite_performance_patch(ImageComponent, InfiniteBackground)
+
 from engine.core.component_registry import register_component
 
 register_component(Canvas)
