@@ -43,27 +43,6 @@ class InfiniteBackgroundInspectorPlugin(InspectorPlugin):
     ):
         widget, layout = _section("Infinite Background")
 
-        def set_value(prop: str, value: Any) -> None:
-            old_value = getattr(component, prop, None)
-            if old_value == value:
-                return
-
-            def apply() -> None:
-                setattr(component, prop, value)
-                if refresh is not None:
-                    refresh()
-
-            def undo() -> None:
-                setattr(component, prop, old_value)
-                if refresh is not None:
-                    refresh()
-
-            if command_manager is None:
-                apply()
-            else:
-                command_manager.execute(CommandManager.FunctionCommand(f"Set InfiniteBackground.{prop}", apply, undo))
-
-        # Evita depender da classe interna FunctionCommand quando testes carregam parcial.
         def set_direct(prop: str, value: Any) -> None:
             setattr(component, prop, value)
             if refresh is not None:
