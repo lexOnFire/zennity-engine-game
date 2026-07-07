@@ -138,15 +138,32 @@ class ImageComponent(UIElement):
         if surface is None or self.game_object is None:
             return
         transform = self.game_object.transform
-        width = max(1, int(abs(float(transform.scale[0]))))
-        height = max(1, int(abs(float(transform.scale[1]))))
+        zoom = 1.0
+        world_pos = transform.get_world_position()
+        try:
+            from engine.graphics.camera import Camera
+            from engine.graphics.camera2d import Camera2D
+            main_cam = Camera.main
+            if main_cam:
+                x, y = main_cam.world_to_screen(world_pos, screen.get_width(), screen.get_height())
+                zoom = float(getattr(main_cam, "zoom", 1.0))
+            elif Camera2D.main:
+                x, y = Camera2D.main.world_to_screen(world_pos, screen.get_width(), screen.get_height())
+                zoom = float(getattr(Camera2D.main, "zoom", 1.0))
+            else:
+                x, y = float(world_pos[0]), float(world_pos[1])
+        except Exception:
+            x, y = float(world_pos[0]), float(world_pos[1])
+        width = max(1, int(abs(float(transform.scale[0]) * zoom)))
+        height = max(1, int(abs(float(transform.scale[1]) * zoom)))
         if surface.get_size() != (width, height):
             surface = pygame.transform.scale(surface, (width, height))
         if self.alpha < 255:
             surface = surface.copy()
             surface.set_alpha(max(0, min(255, int(self.alpha))))
-        world_pos = transform.get_world_position()
-        x, y = float(world_pos[0]), float(world_pos[1])
+        rz = getattr(transform, "rz", 0.0)
+        if rz != 0.0:
+            surface = pygame.transform.rotate(surface, -rz)
         rect = surface.get_rect(center=(int(x), int(y)))
         screen.blit(surface, rect.topleft)
 
