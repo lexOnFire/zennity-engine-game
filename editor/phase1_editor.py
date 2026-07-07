@@ -127,15 +127,17 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
 
         self.act_undo = QAction("Undo", self)
         self.act_undo.setShortcut("Ctrl+Z")
-        self.act_undo.triggered.connect(self.undo)
         self.addAction(self.act_undo)
         toolbar.addAction(self.act_undo)
 
         self.act_redo = QAction("Redo", self)
         self.act_redo.setShortcut("Ctrl+Y")
-        self.act_redo.triggered.connect(self.redo)
         self.addAction(self.act_redo)
         toolbar.addAction(self.act_redo)
+
+        # Nota: os connects reais de undo/redo sao feitos pelo
+        # apply_undo_redo_feedback_patch() chamado em _connect().
+        # NAO conecte self.undo / self.redo aqui para evitar duplicacao.
 
         spacer = QWidget()
         spacer.setMinimumWidth(180)
@@ -308,11 +310,44 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self._sync_play_controls()
         self._update_undo_redo_states()
 
+        # -----------------------------------------------------------------
+        # Patches de runtime: ativados aqui, depois que toda a UI existe.
+        # -----------------------------------------------------------------
+        self._apply_runtime_patches()
+
+    def _apply_runtime_patches(self) -> None:
+        """Ativa todos os patches de runtime apos a UI estar montada.
+
+        Centralizar aqui garante que nao haja patches sendo chamados
+        em lugares aleatorios ou nunca chamados (o bug original).
+        """
+        # 1. Undo/redo com refresh correto da UI (sem QTimers dispersos)
+        try:
+            from editor.runtime.undo_redo_feedback_patch import (
+                _install_instance_shortcuts,
+            )
+            _install_instance_shortcuts(self)
+        except Exception as exc:
+            if hasattr(self, "console"):
+                self.console.add("WARN", f"undo_redo_feedback_patch falhou: {exc}")
+
+        # 2. Drag-and-drop de assets (Viewport + Inspector) com undo/redo
+        try:
+            from editor.runtime.asset_drag_drop_patch import (
+                apply_asset_drag_drop_patch,
+            )
+            apply_asset_drag_drop_patch(self)
+        except Exception as exc:
+            if hasattr(self, "console"):
+                self.console.add("WARN", f"asset_drag_drop_patch falhou: {exc}")
+
     def _update_undo_redo_states(self) -> None:
         if hasattr(self, "act_undo") and hasattr(self, "act_redo"):
             self.act_undo.setEnabled(self.editor_context.commands.can_undo)
             self.act_redo.setEnabled(self.editor_context.commands.can_redo)
 
+    # undo() e redo() sao sobrescritos por _install_instance_shortcuts().
+    # Estes metodos de fallback so sao chamados se o patch falhar.
     def undo(self) -> None:
         self.editor_context.commands.undo()
         self.refresh_hierarchy_from_viewport()
@@ -470,7 +505,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             return False
         if not can_reparent(obj, parent):
             if hasattr(self, "status_msg"):
-                self.status_msg.setText("Reparent inválido: ciclo de hierarquia bloqueado.")
+                self.status_msg.setText("Reparent invalido: ciclo de hierarquia bloqueado.")
             return False
         command = ReparentGameObjectCommand(scene, obj, parent, index)
 

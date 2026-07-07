@@ -2,29 +2,27 @@ from __future__ import annotations
 
 """Drag-and-drop de assets da aba Resources para Viewport e Inspector.
 
-Melhorias em relacao a versao anterior:
- - Toda aplicacao de asset passa pelo CommandManager (suporte a undo/redo).
- - Feedback visual de hover no widget alvo durante o arrasto.
- - Unifica a logica duplicada de asset_drag_drop_patch e asset_direct_drop_patch.
+Regra central: toda aplicacao de asset passa pelo CommandManager
+(suporte a undo/redo). O patch e instalado UMA unica vez por instancia
+do editor chamando apply_asset_drag_drop_patch(editor).
 """
 
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QEvent, QMimeData, QObject, QTimer, Qt
+from PySide6.QtCore import QEvent, QMimeData, QObject, Qt
 from PySide6.QtGui import QDrag
-from PySide6.QtWidgets import QApplication, QAbstractItemView, QTreeWidgetItem, QWidget
+from PySide6.QtWidgets import QAbstractItemView, QTreeWidgetItem, QWidget
 
 _ASSET_MIME = "application/x-zennity-asset-path"
 _IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"}
 _SCRIPT_EXTENSIONS = {".py"}
-
 _HOVER_STYLE_VALID = "border: 2px solid #4f98a3;"
 _HOVER_STYLE_RESET = ""
 
 
 # ---------------------------------------------------------------------------
-# Helpers de tipo e path
+# Helpers
 # ---------------------------------------------------------------------------
 
 def _event_pos(event: Any):
@@ -38,7 +36,7 @@ def _asset_path_from_mime(event: Any) -> str:
     return mime.text().strip() if mime.hasText() else ""
 
 
-def _asset_path_from_item(item: QTreeWidgetItem | None) -> str:
+def _asset_path_from_item(item) -> str:
     if item is None:
         return ""
     asset = item.data(0, Qt.UserRole)
@@ -60,338 +58,306 @@ def _is_supported(path: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Resolucao de componentes
+# Aplicacao de asset com undo
 # ---------------------------------------------------------------------------
 
-def _get_or_create_image_component(obj: Any) -> Any | None:
-    try:
-        from engine.ui.runtime_components import ImageComponent
-    except ImportError:
-        return None
-    comp = obj.get_component(ImageComponent) if hasattr(obj, "get_component") else None
-    if comp is None and hasattr(obj, "add_component"):
-        comp = obj.add_component(ImageComponent())
-    return comp
-
-
-def _get_or_create_script_component(obj: Any) -> Any | None:
-    try:
-        from engine.core.component_registry import component_registry
-        cls = component_registry.resolve("Script") or component_registry.resolve("ScriptComponent")
-    except Exception:
-        cls = None
-    if cls is None:
-        return None
-    comp = obj.get_component(cls) if hasattr(obj, "get_component") else None
-    if comp is None and hasattr(obj, "add_component"):
-        comp = obj.add_component(cls())
-    return comp
-
-
-# ---------------------------------------------------------------------------
-# Aplicacao de asset com suporte a undo/redo
-# ---------------------------------------------------------------------------
-
-def _apply_asset_with_undo(editor: Any, obj: Any, asset_path: str) -> bool:
-    """Aplica um asset ao objeto passando pelo CommandManager.
-
-    O undo restaura o valor anterior do campo (sprite_path ou script_path).
-    """
-    if obj is None or not _is_supported(asset_path):
+def _apply_asset_with_undo(editor: Any, asset_path: str, target_obj: Any) -> bool:
+    """Aplica asset ao target_obj registrando no CommandManager para undo."""
+    if target_obj is None or not asset_path:
         return False
 
     commands = getattr(getattr(editor, "editor_context", None), "commands", None)
-
-    def _refresh_after() -> None:
-        try:
-            editor.select_object(obj)
-        except Exception:
-            pass
-        try:
-            editor.inspector.load_object(obj)
-        except Exception:
-            pass
-        for name in ("viewport", "game_viewport"):
-            vp = getattr(editor, name, None)
-            if vp is not None:
-                try:
-                    vp.update()
-                except Exception:
-                    pass
-
-    if _is_image(asset_path):
-        comp = _get_or_create_image_component(obj)
-        if comp is None:
-            return False
-        old_path = getattr(comp, "sprite_path", "")
-        old_visible = getattr(comp, "visible", True)
-
-        def do() -> None:
-            comp.sprite_path = asset_path
-            comp.visible = True
-            _refresh_after()
-
-        def undo_fn() -> None:
-            comp.sprite_path = old_path
-            comp.visible = old_visible
-            _refresh_after()
-
-        desc = f"Sprite: {Path(asset_path).name} -> {getattr(obj, 'name', str(obj))}"
-
-    elif _is_script(asset_path):
-        comp = _get_or_create_script_component(obj)
-        if comp is None:
-            return False
-        script_attr = next((a for a in ("script_path", "path", "file_path") if hasattr(comp, a)), None)
-        old_val = getattr(comp, script_attr, "") if script_attr else ""
-
-        def do() -> None:
-            if script_attr:
-                setattr(comp, script_attr, asset_path)
-            _refresh_after()
-
-        def undo_fn() -> None:
-            if script_attr:
-                setattr(comp, script_attr, old_val)
-            _refresh_after()
-
-        desc = f"Script: {Path(asset_path).name} -> {getattr(obj, 'name', str(obj))}"
-
-    else:
+    if commands is None:
         return False
 
-    if commands is not None:
+    path = asset_path.strip()
+
+    if _is_image(path):
+        # Tenta SpriteRenderer, depois Image
+        comp = None
+        comp_attr = None
+        for comp_type_name, attr in (
+            ("SpriteRenderer", "sprite_path"),
+            ("Image", "source"),
+        ):
+            try:
+                from engine import components as _comps
+                comp_type = getattr(_comps, comp_type_name, None)
+                if comp_type is None:
+                    continue
+                found = target_obj.get_component(comp_type)
+                if found is not None:
+                    comp = found
+                    comp_attr = attr
+                    break
+            except Exception:
+                continue
+
+        if comp is None or comp_attr is None:
+            return False
+
+        old_val = getattr(comp, comp_attr, None)
+        new_val = path
+
+        def do_apply():
+            setattr(comp, comp_attr, new_val)
+            _post_apply(editor, target_obj)
+
+        def do_undo():
+            setattr(comp, comp_attr, old_val)
+            _post_apply(editor, target_obj)
+
         from editor.runtime.command_manager import FunctionCommand
-        cmd = FunctionCommand(description=desc, do=do, undo_action=undo_fn)
-        commands.execute(cmd)
-    else:
-        # Fallback sem undo se CommandManager nao estiver disponivel
-        do()
+        commands.execute(FunctionCommand(
+            f"Aplicar sprite '{Path(path).name}' em {target_obj.name}",
+            do_apply,
+            do_undo,
+        ))
+        return True
 
-    if hasattr(editor, "status_msg"):
-        editor.status_msg.setText(f"Asset aplicado: {Path(asset_path).name}")
-    return True
+    if _is_script(path):
+        comp = None
+        comp_attr = None
+        try:
+            from engine import components as _comps
+            script_type = getattr(_comps, "ScriptComponent", None) or getattr(_comps, "Script", None)
+            if script_type is not None:
+                found = target_obj.get_component(script_type)
+                if found is not None:
+                    comp = found
+                    comp_attr = "script_path"
+        except Exception:
+            pass
+
+        if comp is None:
+            # fallback: tenta atributo generico no objeto
+            if hasattr(target_obj, "script_path"):
+                old_val = target_obj.script_path
+
+                def do_apply_obj():
+                    target_obj.script_path = path
+                    _post_apply(editor, target_obj)
+
+                def do_undo_obj():
+                    target_obj.script_path = old_val
+                    _post_apply(editor, target_obj)
+
+                from editor.runtime.command_manager import FunctionCommand
+                commands.execute(FunctionCommand(
+                    f"Aplicar script '{Path(path).name}' em {target_obj.name}",
+                    do_apply_obj,
+                    do_undo_obj,
+                ))
+                return True
+            return False
+
+        old_val = getattr(comp, comp_attr, None)
+
+        def do_apply_comp():
+            setattr(comp, comp_attr, path)
+            _post_apply(editor, target_obj)
+
+        def do_undo_comp():
+            setattr(comp, comp_attr, old_val)
+            _post_apply(editor, target_obj)
+
+        from editor.runtime.command_manager import FunctionCommand
+        commands.execute(FunctionCommand(
+            f"Aplicar script '{Path(path).name}' em {target_obj.name}",
+            do_apply_comp,
+            do_undo_comp,
+        ))
+        return True
+
+    return False
 
 
-# ---------------------------------------------------------------------------
-# Resolucao do objeto alvo do drop
-# ---------------------------------------------------------------------------
-
-def _target_from_viewport_pos(editor: Any, event: Any) -> Any | None:
+def _post_apply(editor: Any, obj: Any) -> None:
+    """Refresh de Inspector e Viewport apos aplicar um asset."""
     try:
-        pos = _event_pos(event)
-        return editor.viewport._object_at_viewport_point(float(pos.x()), float(pos.y()))
-    except Exception:
-        return None
-
-
-def _target_selected(editor: Any) -> Any | None:
-    try:
-        return editor.editor_context.selection.selected
+        editor.inspector.load_object(obj)
     except Exception:
         pass
     try:
-        scene = editor.viewport.active_scene
-        objects = list(getattr(scene, "editable_objects", []))
-        idx = int(getattr(scene, "selected_index", -1))
-        if 0 <= idx < len(objects):
-            return objects[idx]
+        viewport = getattr(editor, "viewport", None)
+        if viewport is not None:
+            viewport.update()
     except Exception:
         pass
-    return None
 
 
 # ---------------------------------------------------------------------------
-# Event filters
+# Filtro de drag (origem: ResourcesPanel / PrefabsPanel)
 # ---------------------------------------------------------------------------
 
 class _AssetDragFilter(QObject):
-    """Inicia um QDrag quando o usuario arrasta um item da arvore de assets."""
+    """Instala drag no widget de assets (QTreeWidget da aba Resources)."""
 
-    def __init__(self, panel: Any) -> None:
-        super().__init__(panel)
-        self.panel = panel
-        self._start_pos = None
+    def __init__(self, parent: QWidget) -> None:
+        super().__init__(parent)
+        self._drag_start_item = None
 
-    def eventFilter(self, obj: Any, event: Any) -> bool:
-        tree = getattr(self.panel, "tree", None)
-        if tree is None:
-            return False
-
-        if event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
-            self._start_pos = _event_pos(event)
-            return False
-
-        if event.type() == QEvent.MouseButtonRelease:
-            self._start_pos = None
-            return False
-
-        if (
-            event.type() == QEvent.MouseMove
-            and self._start_pos is not None
-            and event.buttons() & Qt.LeftButton
-        ):
-            pos = _event_pos(event)
-            if (pos - self._start_pos).manhattanLength() < 8:
-                return False
-            item = tree.itemAt(self._start_pos)
-            path = _asset_path_from_item(item)
-            if not path or item is None:
-                return False
-            mime = QMimeData()
-            mime.setData(_ASSET_MIME, path.encode("utf-8"))
-            mime.setText(path)
-            drag = QDrag(tree)
-            drag.setMimeData(mime)
-            self._start_pos = None
-            drag.exec(Qt.CopyAction)
-            return True
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        if event.type() == QEvent.MouseButtonPress:
+            if event.button() == Qt.LeftButton:
+                if hasattr(watched, "itemAt"):
+                    self._drag_start_item = watched.itemAt(_event_pos(event))
+        elif event.type() == QEvent.MouseMove:
+            if event.buttons() & Qt.LeftButton and self._drag_start_item is not None:
+                path = _asset_path_from_item(self._drag_start_item)
+                if path and _is_supported(path):
+                    self._start_drag(path)
+                    self._drag_start_item = None
+                    return True
+        elif event.type() == QEvent.MouseButtonRelease:
+            self._drag_start_item = None
         return False
 
+    def _start_drag(self, asset_path: str) -> None:
+        mime = QMimeData()
+        mime.setData(_ASSET_MIME, asset_path.encode("utf-8"))
+        mime.setText(asset_path)
+        drag = QDrag(self.parent())
+        drag.setMimeData(mime)
+        drag.exec(Qt.CopyAction)
 
-class _AssetDropFilter(QObject):
-    """Aceita drops de assets e aplica ao objeto alvo com suporte a undo."""
 
-    def __init__(self, editor: Any, use_cursor_object: bool = False) -> None:
-        super().__init__(editor)
-        self.editor = editor
-        self.use_cursor_object = use_cursor_object
-        self._hovered_widget: QWidget | None = None
+# ---------------------------------------------------------------------------
+# Filtro de drop (destino: Viewport)
+# ---------------------------------------------------------------------------
 
-    def _get_target(self, event: Any) -> Any | None:
-        if self.use_cursor_object:
-            obj = _target_from_viewport_pos(self.editor, event)
-            if obj is not None:
-                return obj
-        return _target_selected(self.editor)
+class _ViewportDropFilter(QObject):
+    """Aceita drop de assets na Viewport, aplicando no objeto sob o cursor."""
 
-    def _set_hover(self, widget: QWidget | None, active: bool) -> None:
-        if widget is None:
-            return
+    def __init__(self, editor: Any, viewport: QWidget) -> None:
+        super().__init__(viewport)
+        self._editor = editor
+        self._viewport = viewport
+        viewport.setAcceptDrops(True)
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        if event.type() == QEvent.DragEnter:
+            if event.mimeData().hasFormat(_ASSET_MIME) or event.mimeData().hasText():
+                event.acceptProposedAction()
+                watched.setStyleSheet(_HOVER_STYLE_VALID)
+                return True
+        elif event.type() == QEvent.DragLeave:
+            watched.setStyleSheet(_HOVER_STYLE_RESET)
+        elif event.type() == QEvent.Drop:
+            watched.setStyleSheet(_HOVER_STYLE_RESET)
+            path = _asset_path_from_mime(event)
+            if path and _is_supported(path):
+                obj = self._object_at(event)
+                if obj is not None:
+                    _apply_asset_with_undo(self._editor, path, obj)
+                    event.acceptProposedAction()
+                    return True
+        return False
+
+    def _object_at(self, event: Any) -> Any:
+        """Retorna o GameObject sob o cursor na viewport."""
+        pos = _event_pos(event)
+        scene = getattr(self._viewport, "active_scene", None)
+        if scene is None:
+            return None
+        # Usa hit-test da viewport se disponivel
+        if hasattr(self._viewport, "_object_at_screen"):
+            return self._viewport._object_at_screen(pos.x(), pos.y())
+        # Fallback: objeto selecionado no editor
         try:
-            widget.setStyleSheet(_HOVER_STYLE_VALID if active else _HOVER_STYLE_RESET)
+            return self._editor.editor_context.selection.selected
         except Exception:
-            pass
+            return None
 
-    def eventFilter(self, obj: Any, event: Any) -> bool:
-        if event.type() in (QEvent.DragEnter, QEvent.DragMove):
-            path = _asset_path_from_mime(event)
-            if _is_supported(path):
+
+# ---------------------------------------------------------------------------
+# Filtro de drop (destino: Inspector)
+# ---------------------------------------------------------------------------
+
+class _InspectorDropFilter(QObject):
+    """Aceita drop de assets no Inspector, aplicando no objeto selecionado."""
+
+    def __init__(self, editor: Any, inspector: QWidget) -> None:
+        super().__init__(inspector)
+        self._editor = editor
+        self._inspector = inspector
+        inspector.setAcceptDrops(True)
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        if event.type() == QEvent.DragEnter:
+            if event.mimeData().hasFormat(_ASSET_MIME) or event.mimeData().hasText():
                 event.acceptProposedAction()
-                if isinstance(obj, QWidget):
-                    self._hovered_widget = obj
-                    self._set_hover(obj, True)
+                watched.setStyleSheet(_HOVER_STYLE_VALID)
                 return True
-            return False
-
-        if event.type() == QEvent.DragLeave:
-            self._set_hover(self._hovered_widget, False)
-            self._hovered_widget = None
-            return False
-
-        if event.type() == QEvent.Drop:
-            self._set_hover(self._hovered_widget, False)
-            self._hovered_widget = None
+        elif event.type() == QEvent.DragLeave:
+            watched.setStyleSheet(_HOVER_STYLE_RESET)
+        elif event.type() == QEvent.Drop:
+            watched.setStyleSheet(_HOVER_STYLE_RESET)
             path = _asset_path_from_mime(event)
-            target = self._get_target(event)
-            if _apply_asset_with_undo(self.editor, target, path):
-                event.acceptProposedAction()
-                return True
+            if path and _is_supported(path):
+                try:
+                    obj = self._editor.editor_context.selection.selected
+                except Exception:
+                    obj = None
+                if obj is not None:
+                    _apply_asset_with_undo(self._editor, path, obj)
+                    event.acceptProposedAction()
+                    return True
         return False
 
 
 # ---------------------------------------------------------------------------
-# Instalacao
+# Ponto de entrada publico
 # ---------------------------------------------------------------------------
 
-def _install_drop_on(widget: QWidget, drop_filter: _AssetDropFilter) -> None:
-    widget.setAcceptDrops(True)
-    widget.installEventFilter(drop_filter)
-    # Tambem instala no viewport interno (OpenGL/scroll area)
-    vp_fn = getattr(widget, "viewport", None)
-    if callable(vp_fn):
-        child = vp_fn()
-        if child is not None:
-            child.setAcceptDrops(True)
-            child.installEventFilter(drop_filter)
-    for child in widget.findChildren(QWidget):
-        child.setAcceptDrops(True)
-        child.installEventFilter(drop_filter)
+def apply_asset_drag_drop_patch(editor: Any) -> None:
+    """Instala drag-and-drop de assets no editor.
 
+    Deve ser chamado UMA vez apos a UI estar completamente montada,
+    tipicamente no final de ZennityPhase1Editor._connect().
+    """
+    if getattr(editor, "_zennity_asset_drag_drop_applied", False):
+        return
+    editor._zennity_asset_drag_drop_applied = True
 
-def apply_asset_drag_drop_patch(editor: Any) -> bool:
+    # --- Filtros de drag nos paineis de assets ---
     resources = getattr(editor, "resources", None)
+    if resources is not None:
+        tree = getattr(resources, "tree", None) or getattr(resources, "file_tree", None)
+        if tree is None:
+            # Tenta encontrar o primeiro QTreeWidget filho
+            from PySide6.QtWidgets import QTreeWidget
+            tree = resources.findChild(QTreeWidget)
+        if tree is not None:
+            drag_filter = _AssetDragFilter(tree)
+            tree.installEventFilter(drag_filter)
+            if hasattr(tree, "setDragEnabled"):
+                tree.setDragEnabled(True)
+            editor._asset_drag_filter_resources = drag_filter
+
+    prefabs = getattr(editor, "prefabs", None)
+    if prefabs is not None:
+        tree = getattr(prefabs, "tree", None) or getattr(prefabs, "file_tree", None)
+        if tree is None:
+            from PySide6.QtWidgets import QTreeWidget
+            tree = prefabs.findChild(QTreeWidget)
+        if tree is not None:
+            drag_filter_p = _AssetDragFilter(tree)
+            tree.installEventFilter(drag_filter_p)
+            if hasattr(tree, "setDragEnabled"):
+                tree.setDragEnabled(True)
+            editor._asset_drag_filter_prefabs = drag_filter_p
+
+    # --- Filtro de drop na Viewport ---
     viewport = getattr(editor, "viewport", None)
+    if viewport is not None:
+        vp_filter = _ViewportDropFilter(editor, viewport)
+        viewport.installEventFilter(vp_filter)
+        editor._asset_drop_filter_viewport = vp_filter
+
+    # --- Filtro de drop no Inspector ---
     inspector = getattr(editor, "inspector", None)
-    if not all((resources, viewport, inspector)):
-        return False
-    if getattr(editor, "_zennity_asset_drag_drop_v2_applied", False):
-        return True
-    editor._zennity_asset_drag_drop_v2_applied = True
-
-    # --- Drag na arvore de assets ---
-    tree = getattr(resources, "tree", None)
-    if tree is not None:
-        tree.setDragEnabled(True)
-        tree.setAcceptDrops(False)
-        tree.setDragDropMode(QAbstractItemView.DragOnly)
-        tree.setDefaultDropAction(Qt.CopyAction)
-        drag_filter = _AssetDragFilter(resources)
-        tree.installEventFilter(drag_filter)
-        vp = getattr(tree, "viewport", None)
-        if callable(vp) and vp() is not None:
-            vp().installEventFilter(drag_filter)
-        editor._zennity_asset_drag_filter = drag_filter
-
-    # --- Drop na viewport (usa objeto sob o cursor) ---
-    vp_drop = _AssetDropFilter(editor, use_cursor_object=True)
-    _install_drop_on(viewport, vp_drop)
-    editor._zennity_asset_drop_viewport = vp_drop
-
-    # --- Drop no inspector (usa objeto selecionado) ---
-    insp_drop = _AssetDropFilter(editor, use_cursor_object=False)
-    _install_drop_on(inspector, insp_drop)
-    editor._zennity_asset_drop_inspector = insp_drop
-
-    if hasattr(editor, "status_msg"):
-        editor.status_msg.setText("Drag/drop de Assets ativado")
-    return True
-
-
-def _scan_and_apply() -> bool:
-    app = QApplication.instance()
-    if app is None:
-        return False
-    applied = False
-    for widget in app.topLevelWidgets():
-        if all(hasattr(widget, attr) for attr in ("resources", "viewport", "inspector")):
-            applied = apply_asset_drag_drop_patch(widget) or applied
-    return applied
-
-
-def install_asset_drag_drop_runtime_watch() -> bool:
-    app = QApplication.instance()
-    if app is None:
-        return False
-    for delay in (0, 200, 600, 1200):
-        QTimer.singleShot(delay, _scan_and_apply)
-    return True
-
-
-def patch_phase1_editor_asset_drag_drop() -> bool:
-    install_asset_drag_drop_runtime_watch()
-    try:
-        from editor.phase1_editor import ZennityPhase1Editor
-    except Exception:
-        return False
-    if getattr(ZennityPhase1Editor, "_zennity_asset_drag_drop_v2_class_patched", False):
-        return True
-    original_connect = ZennityPhase1Editor._connect
-
-    def connect(self) -> None:
-        original_connect(self)
-        apply_asset_drag_drop_patch(self)
-
-    ZennityPhase1Editor._connect = connect
-    ZennityPhase1Editor._zennity_asset_drag_drop_v2_class_patched = True
-    return True
+    if inspector is not None:
+        insp_filter = _InspectorDropFilter(editor, inspector)
+        inspector.installEventFilter(insp_filter)
+        editor._asset_drop_filter_inspector = insp_filter
