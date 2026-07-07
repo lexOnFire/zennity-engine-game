@@ -8,6 +8,8 @@
 * Ambiente de testes padronizado para Qt/Pygame headless via `tests/conftest.py`.
 * Estado global de Input passa a ser resetado automaticamente entre testes.
 * Adicionado workflow de CI para executar pytest com dependencias Qt em Linux.
+* Componentes de UI (`Canvas`, `Label`, `Image`, `Button`) nao escondem mais o GameObject dono ao iniciar Runtime.
+* Adicionados testes para garantir que componentes de UI nao facam o objeto sumir no Play.
 
 ---
 
