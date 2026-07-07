@@ -19,7 +19,33 @@ def _sync_camera_to_engine(viewport: Any) -> None:
     camera2d.transform.position[1] = float(getattr(camera, "position", [0.0, 0.0])[1])
 
 
+def _sync_collider_size(viewport: Any, obj: Any) -> None:
+    if obj is None or not hasattr(obj, "transform"):
+        return
+    scene = getattr(viewport, "active_scene", None)
+    if scene is not None and hasattr(scene, "_sync_collider"):
+        try:
+            scene._sync_collider(obj)
+            return
+        except Exception:
+            pass
+    try:
+        from engine.physics.collider import BoxCollider, CircleCollider
+    except Exception:
+        return
+    scale = getattr(obj.transform, "scale", [1.0, 1.0, 1.0])
+    box = obj.get_component(BoxCollider) if hasattr(obj, "get_component") else None
+    if box is not None:
+        box.width = max(1, int(abs(float(scale[0]))))
+        box.height = max(1, int(abs(float(scale[1]))))
+        return
+    circle = obj.get_component(CircleCollider) if hasattr(obj, "get_component") else None
+    if circle is not None:
+        circle.radius = max(1, int(abs(float(scale[0])) / 2.0))
+
+
 def _emit_transform_changed(viewport: Any, obj: Any) -> None:
+    _sync_collider_size(viewport, obj)
     try:
         viewport.object_transform_changed.emit(obj)
     except Exception:
@@ -34,6 +60,7 @@ def apply_viewport_transform_stability_patch() -> bool:
     try:
         from editor.widgets.phase1_viewport import Phase1ViewportWidget
         from editor.runtime.tool_manager import EditorTool
+        from PySide6.QtCore import Qt
     except Exception:
         return False
 
@@ -42,6 +69,7 @@ def apply_viewport_transform_stability_patch() -> bool:
 
     original_wheel_event = Phase1ViewportWidget.wheelEvent
     original_mouse_move_event = Phase1ViewportWidget.mouseMoveEvent
+    original_mouse_press_event = Phase1ViewportWidget.mousePressEvent
     original_resize_gl = Phase1ViewportWidget.resizeGL
     original_update_move_drag = Phase1ViewportWidget._update_move_drag
 
@@ -54,6 +82,30 @@ def apply_viewport_transform_stability_patch() -> bool:
         original_mouse_move_event(self, event)
         if was_panning or bool(getattr(self, "_panning", False)):
             _sync_camera_to_engine(self)
+
+    def mouse_press_event(self, event):
+        if self.is_game_view() or self._is_playing() or event.button() != Qt.LeftButton:
+            original_mouse_press_event(self, event)
+            return
+        if self._active_tool() == EditorTool.SCALE:
+            x, y = float(event.x()), float(event.y())
+            selected = self._selected_transform_object()
+            handle_idx = self._scale_handle_at_viewport_point(x, y, selected)
+            if selected is not None and handle_idx is not None and self._begin_scale_drag(selected, x, y, handle_idx):
+                event.accept()
+                return
+            clicked = self._object_at_viewport_point(x, y)
+            if clicked is not None:
+                self.select_object(clicked)
+                scene = getattr(self, "active_scene", None)
+                objs = getattr(scene, "editable_objects", []) if scene is not None else []
+                if clicked in objs:
+                    scene.selected_index = objs.index(clicked)
+                self._update_hover_cursor(x, y)
+                self.update()
+                event.accept()
+                return
+        original_mouse_press_event(self, event)
 
     def resize_gl(self, w: int, h: int) -> None:
         original_resize_gl(self, w, h)
@@ -146,6 +198,7 @@ def apply_viewport_transform_stability_patch() -> bool:
 
     Phase1ViewportWidget.wheelEvent = wheel_event
     Phase1ViewportWidget.mouseMoveEvent = mouse_move_event
+    Phase1ViewportWidget.mousePressEvent = mouse_press_event
     Phase1ViewportWidget.resizeGL = resize_gl
     Phase1ViewportWidget._begin_move_drag = begin_move_drag
     Phase1ViewportWidget._update_move_drag = update_move_drag
