@@ -8,13 +8,11 @@ from PySide6.QtWidgets import QComboBox, QDoubleSpinBox, QLabel, QPushButton
 from editor.inspector.default_plugins import _property_row, _section
 from editor.inspector.plugin import InspectorPlugin
 from editor.inspector.plugin_registry import inspector_plugin_registry
-from editor.runtime.asset_drag_drop_patch import patch_phase1_editor_asset_drag_drop
 from editor.runtime.command_manager import CommandManager
 from editor.runtime.editor2d_sprite_no_border_patch import apply_editor2d_sprite_no_border_patch
 from editor.runtime.editor2d_sprite_patch import apply_editor2d_sprite_patch
 from editor.runtime.phase1_sprite_overlay_patch import apply_phase1_sprite_overlay_patch
 from editor.runtime.tool_selection_stability_patch import apply_tool_selection_stability_patch
-from editor.runtime.undo_redo_feedback_patch import apply_undo_redo_feedback_patch
 from editor.runtime.viewport_transform_stability_patch import apply_viewport_transform_stability_patch
 
 
@@ -181,8 +179,9 @@ def register_asset_component_plugins() -> None:
     apply_phase1_sprite_overlay_patch()
     apply_viewport_transform_stability_patch()
     apply_tool_selection_stability_patch()
-    patch_phase1_editor_asset_drag_drop()
-    apply_undo_redo_feedback_patch()
+    # NOTA: apply_asset_drag_drop_patch e _install_instance_shortcuts
+    # NAO sao chamados aqui porque precisam da instancia do editor.
+    # Sao aplicados em ZennityPhase1Editor._apply_runtime_patches().
 
 
 register_asset_component_plugins()
