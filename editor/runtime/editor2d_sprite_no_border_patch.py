@@ -1,14 +1,43 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 import pygame
 
 
+def _image_component(obj: Any) -> Any | None:
+    for component in getattr(obj, "components", []):
+        if getattr(component, "type_name", type(component).__name__) == "Image":
+            if str(getattr(component, "sprite_path", "") or "").strip():
+                return component
+    return None
+
+
+def _load_surface(sprite_path: str) -> pygame.Surface | None:
+    try:
+        from engine.ui.runtime_components import ImageComponent
+        surface = ImageComponent.load_surface(sprite_path)
+        if surface is not None:
+            return surface
+    except Exception:
+        pass
+
+    raw = Path(str(sprite_path).strip().replace("\\", "/"))
+    candidates = [raw] if raw.is_absolute() else [Path.cwd() / raw, Path(__file__).resolve().parents[2] / raw]
+    for path in candidates:
+        if not path.exists() or not path.is_file():
+            continue
+        try:
+            return pygame.image.load(str(path)).convert_alpha()
+        except Exception:
+            return None
+    return None
+
+
 def apply_editor2d_sprite_no_border_patch() -> bool:
     try:
         from editor_legacy.editor_2d import Editor2DScene
-        from engine.ui.runtime_components import ImageComponent
     except Exception:
         return False
 
@@ -17,14 +46,19 @@ def apply_editor2d_sprite_no_border_patch() -> bool:
 
     base_draw = getattr(Editor2DScene, "_draw_object")
 
-    def draw_without_legacy_rect(self, screen: pygame.Surface, obj: Any, idx: int, zoom: float, lay: dict) -> None:
-        image = obj.get_component(ImageComponent) if hasattr(obj, "get_component") else None
-        sprite_path = str(getattr(image, "sprite_path", "") or "") if image is not None else ""
-        surface = ImageComponent.load_surface(sprite_path) if sprite_path else None
-        if surface is None:
+    def draw_without_legacy_shape(self, screen: pygame.Surface, obj: Any, idx: int, zoom: float, lay: dict) -> None:
+        image = _image_component(obj)
+        if image is None:
             base_draw(self, screen, obj, idx, zoom, lay)
             return
         if bool(getattr(obj, "runtime_hidden", False)):
+            return
+
+        sprite_path = str(getattr(image, "sprite_path", "") or "")
+        surface = _load_surface(sprite_path)
+        if surface is None:
+            # Se existe Image com caminho, nao desenha a forma antiga. Isso evita
+            # o quadrado verde ficar por tras quando a camada Qt desenha o sprite.
             return
 
         pos = obj.transform.position
@@ -53,6 +87,6 @@ def apply_editor2d_sprite_no_border_patch() -> bool:
         label = self.font_sm.render(obj.name, True, (235, 235, 235))
         screen.blit(label, (int(sx) - label.get_width() // 2, int(sy - sh / 2) - 14))
 
-    Editor2DScene._draw_object = draw_without_legacy_rect
+    Editor2DScene._draw_object = draw_without_legacy_shape
     Editor2DScene._zennity_sprite_no_border_patch_applied = True
     return True
