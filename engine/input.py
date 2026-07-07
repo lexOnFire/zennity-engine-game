@@ -1,12 +1,13 @@
 import pygame
 from typing import Any, Tuple
 
+
 class Input:
     """Manages input states (keyboard, mouse) with support for key transitions."""
     _manager: Any | None = None
     _keys_current = pygame.key.ScancodeWrapper()
     _keys_previous = pygame.key.ScancodeWrapper()
-    
+
     _mouse_current = (False, False, False)
     _mouse_previous = (False, False, False)
     _mouse_position = (0, 0)
@@ -60,46 +61,40 @@ class Input:
     @classmethod
     def update(cls) -> None:
         """Updates keyboard and mouse states. Should be called once per frame by the engine core."""
-        # Keyboard
         cls._keys_previous = cls._keys_current
         cls._keys_current = pygame.key.get_pressed()
-        
-        # Mouse
+
         cls._mouse_previous = cls._mouse_current
         cls._mouse_current = pygame.mouse.get_pressed()
         cls._mouse_position = pygame.mouse.get_pos()
         cls._mouse_rel = pygame.mouse.get_rel()
 
+    @classmethod
+    def _read_key_state(cls, keys: Any, key: int) -> bool:
+        if not keys:
+            return False
+        try:
+            if hasattr(keys, "get"):
+                return bool(keys.get(key, False))
+            return bool(keys[key])
+        except (IndexError, KeyError, TypeError):
+            return False
+
     # Keyboard methods
     @classmethod
     def get_key(cls, key: int) -> bool:
         """Returns True if the key is currently held down."""
-        if not cls._keys_current:
-            return False
-        try:
-            return bool(cls._keys_current[key])
-        except IndexError:
-            return False
+        return cls._read_key_state(cls._keys_current, key)
 
     @classmethod
     def get_key_down(cls, key: int) -> bool:
         """Returns True only in the frame the key was pressed down."""
-        if cls._keys_current is None or cls._keys_previous is None:
-            return False
-        try:
-            return bool(cls._keys_current[key]) and not bool(cls._keys_previous[key])
-        except IndexError:
-            return False
+        return cls._read_key_state(cls._keys_current, key) and not cls._read_key_state(cls._keys_previous, key)
 
     @classmethod
     def get_key_up(cls, key: int) -> bool:
         """Returns True only in the frame the key was released."""
-        if cls._keys_current is None or cls._keys_previous is None:
-            return False
-        try:
-            return not bool(cls._keys_current[key]) and bool(cls._keys_previous[key])
-        except IndexError:
-            return False
+        return not cls._read_key_state(cls._keys_current, key) and cls._read_key_state(cls._keys_previous, key)
 
     # Mouse methods
     @classmethod
@@ -117,7 +112,7 @@ class Input:
         """Returns True if the mouse button (0: Left, 1: Middle, 2: Right) is held."""
         try:
             return bool(cls._mouse_current[button])
-        except IndexError:
+        except (IndexError, TypeError):
             return False
 
     @classmethod
@@ -125,7 +120,7 @@ class Input:
         """Returns True if the mouse button (0: Left, 1: Middle, 2: Right) was pressed this frame."""
         try:
             return bool(cls._mouse_current[button]) and not bool(cls._mouse_previous[button])
-        except IndexError:
+        except (IndexError, TypeError):
             return False
 
     @classmethod
@@ -133,7 +128,7 @@ class Input:
         """Returns True if the mouse button (0: Left, 1: Middle, 2: Right) was released this frame."""
         try:
             return not bool(cls._mouse_current[button]) and bool(cls._mouse_previous[button])
-        except IndexError:
+        except (IndexError, TypeError):
             return False
 
     # Input helpers
