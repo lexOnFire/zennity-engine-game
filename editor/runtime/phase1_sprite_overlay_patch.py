@@ -8,8 +8,7 @@ from PySide6.QtGui import QColor, QPen, QPixmap
 
 
 _IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"}
-_VIEWPORT_BG = QColor(28, 29, 36)
-_EDITOR_BOX = QColor(80, 160, 255, 80)
+_EDITOR_BOX = QColor(80, 160, 255, 90)
 
 
 def _candidate_roots() -> list[Path]:
@@ -125,13 +124,13 @@ def apply_phase1_sprite_overlay_patch() -> bool:
                 rect = QRectF(float(x) - w / 2.0, float(y) - h / 2.0, w, h)
 
                 painter.save()
-                painter.fillRect(rect, _VIEWPORT_BG)
+                painter.setOpacity(alpha)
+                painter.drawPixmap(rect, pixmap, pixmap.rect())
+                painter.setOpacity(1.0)
                 if is_editor_view:
                     painter.setPen(QPen(_EDITOR_BOX, 1, Qt.DotLine))
                     painter.setBrush(Qt.NoBrush)
                     painter.drawRect(rect)
-                painter.setOpacity(alpha)
-                painter.drawPixmap(rect, pixmap, pixmap.rect())
                 painter.restore()
         finally:
             painter.end()
