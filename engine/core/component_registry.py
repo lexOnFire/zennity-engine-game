@@ -63,7 +63,7 @@ from engine.core.component import Transform
 from engine.graphics.camera import Camera
 from engine.audio import AudioSource, AudioListener
 from engine.animation.animator import Animator
-from engine.ui.runtime_components import Canvas, LabelComponent, ImageComponent, ButtonComponent
+from engine.ui.runtime_components import Canvas, LabelComponent, ImageComponent, InfiniteBackground, ButtonComponent
 from engine.graphics.tilemap import Tilemap, TilemapRenderer
 
 component_registry.register(Component)
@@ -75,6 +75,8 @@ component_registry.register(Animator)
 component_registry.register(Canvas)
 component_registry.register(LabelComponent)
 component_registry.register(ImageComponent)
+component_registry.register(InfiniteBackground)
+component_registry.register(InfiniteBackground, "Infinite Background")
 component_registry.register(ButtonComponent)
 component_registry.register(Tilemap)
 component_registry.register(TilemapRenderer)

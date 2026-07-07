@@ -180,7 +180,8 @@ class ImageComponent(UIElement):
         if not resolved.exists():
             return None
         try:
-            surface = pygame.image.load(str(resolved)).convert_alpha()
+            loaded = pygame.image.load(str(resolved))
+            surface = loaded.convert_alpha() if pygame.display.get_surface() is not None else loaded.copy()
         except Exception:
             return None
         cls._surface_cache[key] = surface
@@ -196,6 +197,116 @@ class ImageComponent(UIElement):
         self.sprite_path = str(data.get("sprite_path", self.sprite_path))
         self.color = tuple(data.get("color", self.color))
         self.alpha = int(data.get("alpha", self.alpha))
+
+
+class InfiniteBackground(Component):
+    """Fundo infinito/tileable para jogos 2D, ideal para céu espacial em movimento."""
+
+    component_type = "InfiniteBackground"
+    unique = True
+
+    def __init__(
+        self,
+        sprite_path: str = "",
+        speed_x: float = 40.0,
+        speed_y: float = 0.0,
+        direction: str = "horizontal",
+        parallax: float = 0.0,
+        tile_scale: float = 1.0,
+        alpha: int = 255,
+        visible: bool = True,
+        scale_to_screen: bool = True,
+    ) -> None:
+        super().__init__()
+        self.sprite_path = str(sprite_path)
+        self.speed_x = float(speed_x)
+        self.speed_y = float(speed_y)
+        self.direction = str(direction or "horizontal").lower()
+        self.parallax = float(parallax)
+        self.tile_scale = max(0.01, float(tile_scale))
+        self.alpha = int(alpha)
+        self.visible = bool(visible)
+        self.scale_to_screen = bool(scale_to_screen)
+        self._offset_x = 0.0
+        self._offset_y = 0.0
+
+    def update(self, dt: float) -> None:
+        if not self.enabled or not self.visible:
+            return
+        self._offset_x = (self._offset_x + float(self.speed_x) * float(dt)) % 100000.0
+        self._offset_y = (self._offset_y + float(self.speed_y) * float(dt)) % 100000.0
+
+    def on_runtime_update(self, delta_time: float) -> None:
+        self.update(delta_time)
+
+    def draw(self, screen: pygame.Surface) -> None:
+        if not self.enabled or not self.visible:
+            return
+        surface = ImageComponent.load_surface(self.sprite_path)
+        if surface is None:
+            return
+        sw, sh = max(1, int(screen.get_width())), max(1, int(screen.get_height()))
+        if self.scale_to_screen:
+            tw, th = sw, sh
+        else:
+            tw = max(1, int(surface.get_width() * self.tile_scale))
+            th = max(1, int(surface.get_height() * self.tile_scale))
+        if surface.get_size() != (tw, th):
+            surface = pygame.transform.scale(surface, (tw, th))
+        if self.alpha < 255:
+            surface = surface.copy()
+            surface.set_alpha(max(0, min(255, int(self.alpha))))
+
+        cam_x = cam_y = 0.0
+        if self.parallax:
+            try:
+                from engine.graphics.camera import Camera
+                from engine.graphics.camera2d import Camera2D
+                cam = Camera.main or Camera2D.main
+                if cam is not None and getattr(cam, "transform", None) is not None:
+                    cam_x = float(cam.transform.position[0]) * self.parallax
+                    cam_y = float(cam.transform.position[1]) * self.parallax
+            except Exception:
+                pass
+
+        direction = self.direction.lower()
+        loop_x = direction in ("horizontal", "both", "xy", "x")
+        loop_y = direction in ("vertical", "both", "xy", "y")
+        ox = (self._offset_x + cam_x) % tw if loop_x else 0.0
+        oy = (self._offset_y + cam_y) % th if loop_y else 0.0
+        start_x = -int(ox) if loop_x else 0
+        start_y = -int(oy) if loop_y else 0
+        end_x = sw + (tw if loop_x else 0)
+        end_y = sh + (th if loop_y else 0)
+        x_values = range(start_x, end_x + 1, tw) if loop_x else range(0, 1)
+        y_values = range(start_y, end_y + 1, th) if loop_y else range(0, 1)
+        for x in x_values:
+            for y in y_values:
+                screen.blit(surface, (x, y))
+
+    def serialize_properties(self) -> dict[str, Any]:
+        return {
+            "sprite_path": self.sprite_path,
+            "speed_x": float(self.speed_x),
+            "speed_y": float(self.speed_y),
+            "direction": self.direction,
+            "parallax": float(self.parallax),
+            "tile_scale": float(self.tile_scale),
+            "alpha": int(self.alpha),
+            "visible": bool(self.visible),
+            "scale_to_screen": bool(self.scale_to_screen),
+        }
+
+    def deserialize_properties(self, data: dict[str, Any]) -> None:
+        self.sprite_path = str(data.get("sprite_path", self.sprite_path))
+        self.speed_x = float(data.get("speed_x", self.speed_x))
+        self.speed_y = float(data.get("speed_y", self.speed_y))
+        self.direction = str(data.get("direction", self.direction)).lower()
+        self.parallax = float(data.get("parallax", self.parallax))
+        self.tile_scale = max(0.01, float(data.get("tile_scale", self.tile_scale)))
+        self.alpha = int(data.get("alpha", self.alpha))
+        self.visible = bool(data.get("visible", self.visible))
+        self.scale_to_screen = bool(data.get("scale_to_screen", self.scale_to_screen))
 
 
 class ButtonComponent(UIElement):
@@ -227,6 +338,9 @@ class ButtonComponent(UIElement):
         self.interactable = bool(data.get("interactable", self.interactable))
 
 
+from engine.ui.sprite_performance_patch import apply_sprite_performance_patch
+apply_sprite_performance_patch(ImageComponent, InfiniteBackground)
+
 from engine.core.component_registry import register_component
 
 register_component(Canvas)
@@ -234,5 +348,7 @@ register_component(LabelComponent)
 register_component(LabelComponent, "UILabel")
 register_component(ImageComponent)
 register_component(ImageComponent, "UIImage")
+register_component(InfiniteBackground)
+register_component(InfiniteBackground, "Infinite Background")
 register_component(ButtonComponent)
 register_component(ButtonComponent, "UIButton")

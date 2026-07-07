@@ -45,10 +45,6 @@ class GameObject:
         self.add_component(self.transform)
         self.mesh_type: Optional[str] = None
 
-    # ------------------------------------------------------------------ #
-    # Identidade                                                          #
-    # ------------------------------------------------------------------ #
-
     @property
     def id(self) -> str:
         """UUID4 único e imutável atribuído na criação."""
@@ -58,10 +54,6 @@ class GameObject:
     def short_id(self) -> str:
         """Primeiros 8 caracteres do UUID — útil para logs e debug."""
         return self._id[:8]
-
-    # ------------------------------------------------------------------ #
-    # Cena                                                                #
-    # ------------------------------------------------------------------ #
 
     @property
     def scene(self) -> Optional['Scene']:
@@ -76,10 +68,6 @@ class GameObject:
                 comp._started = True
         for child in self.children:
             child.scene = val
-
-    # ------------------------------------------------------------------ #
-    # Components                                                          #
-    # ------------------------------------------------------------------ #
 
     def add_component(self, component: 'Component') -> 'Component':
         if getattr(component, "unique", False):
@@ -113,16 +101,10 @@ class GameObject:
 
     def get_component(self, component_type: Type[T]) -> Optional[T]:
         from .component import Component
-
-        # Transform é criado automaticamente em todo GameObject. Quando a busca
-        # é pelo tipo base Component, priorizamos componentes adicionados pelo
-        # usuário; buscas específicas como get_component(Transform) continuam
-        # retornando o Transform normalmente.
         if component_type is Component:
             for comp in self.components:
                 if comp is not self.transform and (isinstance(comp, component_type) or type(comp).__name__ == component_type.__name__):
                     return comp
-
         for comp in self.components:
             if isinstance(comp, component_type) or type(comp).__name__ == component_type.__name__:
                 return comp
@@ -142,10 +124,6 @@ class GameObject:
     def all_components(self) -> List['Component']:
         return list(self.components)
 
-    # ------------------------------------------------------------------ #
-    # Hierarquia                                                          #
-    # ------------------------------------------------------------------ #
-
     def add_child(self, child: 'GameObject') -> 'GameObject':
         if child.parent:
             child.parent.remove_child(child)
@@ -162,10 +140,6 @@ class GameObject:
 
     def _propagate_scene(self, scene: Optional['Scene']) -> None:
         self.scene = scene
-
-    # ------------------------------------------------------------------ #
-    # Ciclo de vida                                                       #
-    # ------------------------------------------------------------------ #
 
     def start(self) -> None:
         for comp in self.components:
@@ -191,6 +165,8 @@ class GameObject:
         if not self.active:
             return
         for comp in self.components:
+            if getattr(comp, "type_name", "") == "InfiniteBackground":
+                continue
             if getattr(comp, "enabled", True):
                 comp.draw(screen)
         for child in self.children:
@@ -209,10 +185,6 @@ class GameObject:
                 self.parent.children.remove(self)
             self.parent = None
         self.scene = None
-
-    # ------------------------------------------------------------------ #
-    # repr                                                                #
-    # ------------------------------------------------------------------ #
 
     def __repr__(self) -> str:
         tag_str = f" tag={self.tag}" if self.tag != "Untagged" else ""
