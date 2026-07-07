@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Drag-and-drop de assets da aba Resources para Viewport e Inspector.
+"""Drag-and-drop de assets da aba Resources para Viewport, Hierarchy e Inspector.
 
 Regra central: toda aplicacao de asset passa pelo CommandManager
 (suporte a undo/redo). O patch e instalado UMA unica vez por instancia
@@ -12,7 +12,7 @@ from typing import Any
 
 from PySide6.QtCore import QEvent, QMimeData, QObject, Qt
 from PySide6.QtGui import QDrag
-from PySide6.QtWidgets import QAbstractItemView, QTreeWidgetItem, QWidget
+from PySide6.QtWidgets import QAbstractItemView, QTreeWidget, QTreeWidgetItem, QWidget
 
 _ASSET_MIME = "application/x-zennity-asset-path"
 _IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"}
@@ -33,7 +33,17 @@ def _asset_path_from_mime(event: Any) -> str:
     mime = event.mimeData()
     if mime.hasFormat(_ASSET_MIME):
         return bytes(mime.data(_ASSET_MIME)).decode("utf-8")
-    return mime.text().strip() if mime.hasText() else ""
+    # Nao usar texto generico como fallback para a Hierarchy (evita conflito
+    # com o drag interno de reparentamento do Qt, que usa text/plain vazio)
+    text = mime.text().strip() if mime.hasText() else ""
+    if text and _is_supported(text):
+        return text
+    return ""
+
+
+def _is_asset_mime(event: Any) -> bool:
+    """True somente se o evento carrega nosso MIME proprio de asset."""
+    return event.mimeData().hasFormat(_ASSET_MIME)
 
 
 def _asset_path_from_item(item) -> str:
@@ -73,7 +83,6 @@ def _apply_asset_with_undo(editor: Any, asset_path: str, target_obj: Any) -> boo
     path = asset_path.strip()
 
     if _is_image(path):
-        # Tenta SpriteRenderer, depois Image
         comp = None
         comp_attr = None
         for comp_type_name, attr in (
@@ -130,7 +139,6 @@ def _apply_asset_with_undo(editor: Any, asset_path: str, target_obj: Any) -> boo
             pass
 
         if comp is None:
-            # fallback: tenta atributo generico no objeto
             if hasattr(target_obj, "script_path"):
                 old_val = target_obj.script_path
 
@@ -237,7 +245,7 @@ class _ViewportDropFilter(QObject):
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         if event.type() == QEvent.DragEnter:
-            if event.mimeData().hasFormat(_ASSET_MIME) or event.mimeData().hasText():
+            if _is_asset_mime(event):
                 event.acceptProposedAction()
                 watched.setStyleSheet(_HOVER_STYLE_VALID)
                 return True
@@ -245,25 +253,21 @@ class _ViewportDropFilter(QObject):
             watched.setStyleSheet(_HOVER_STYLE_RESET)
         elif event.type() == QEvent.Drop:
             watched.setStyleSheet(_HOVER_STYLE_RESET)
-            path = _asset_path_from_mime(event)
-            if path and _is_supported(path):
-                obj = self._object_at(event)
-                if obj is not None:
-                    _apply_asset_with_undo(self._editor, path, obj)
-                    event.acceptProposedAction()
-                    return True
+            if _is_asset_mime(event):
+                path = _asset_path_from_mime(event)
+                if path and _is_supported(path):
+                    obj = self._object_at(event)
+                    if obj is not None:
+                        _apply_asset_with_undo(self._editor, path, obj)
+                        event.acceptProposedAction()
+                        return True
         return False
 
     def _object_at(self, event: Any) -> Any:
-        """Retorna o GameObject sob o cursor na viewport."""
         pos = _event_pos(event)
-        scene = getattr(self._viewport, "active_scene", None)
-        if scene is None:
-            return None
-        # Usa hit-test da viewport se disponivel
-        if hasattr(self._viewport, "_object_at_screen"):
-            return self._viewport._object_at_screen(pos.x(), pos.y())
-        # Fallback: objeto selecionado no editor
+        viewport = self._viewport
+        if hasattr(viewport, "_object_at_screen"):
+            return viewport._object_at_screen(pos.x(), pos.y())
         try:
             return self._editor.editor_context.selection.selected
         except Exception:
@@ -271,21 +275,70 @@ class _ViewportDropFilter(QObject):
 
 
 # ---------------------------------------------------------------------------
+# Filtro de drop (destino: Hierarchy)
+# ---------------------------------------------------------------------------
+
+class _HierarchyDropFilter(QObject):
+    """Intercepta drops de assets na Hierarchy antes do dropEvent interno do Qt.
+
+    Quando o MIME e nosso proprio asset-path, aplica o asset no objeto
+    alvo (o item sob o cursor) e conssome o evento, impedindo que o
+    Qt trate como reparentamento.
+    """
+
+    def __init__(self, editor: Any, tree: QTreeWidget) -> None:
+        super().__init__(tree)
+        self._editor = editor
+        self._tree = tree
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        if event.type() == QEvent.DragEnter:
+            if _is_asset_mime(event):
+                event.acceptProposedAction()
+                return True
+        elif event.type() == QEvent.DragMove:
+            if _is_asset_mime(event):
+                event.acceptProposedAction()
+                return True
+        elif event.type() == QEvent.Drop:
+            if _is_asset_mime(event):
+                path = _asset_path_from_mime(event)
+                if path and _is_supported(path):
+                    pos = _event_pos(event)
+                    item = self._tree.itemAt(pos)
+                    obj = item.data(0, Qt.UserRole) if item is not None else None
+                    if obj is None:
+                        # Fallback: objeto selecionado no editor
+                        try:
+                            obj = self._editor.editor_context.selection.selected
+                        except Exception:
+                            obj = None
+                    if obj is not None:
+                        _apply_asset_with_undo(self._editor, path, obj)
+                        event.acceptProposedAction()
+                        return True  # Consome: NAO executa reparentamento
+        return False
+
+
+# ---------------------------------------------------------------------------
 # Filtro de drop (destino: Inspector)
 # ---------------------------------------------------------------------------
 
 class _InspectorDropFilter(QObject):
-    """Aceita drop de assets no Inspector, aplicando no objeto selecionado."""
+    """Aceita drop de assets em qualquer area do Inspector."""
 
     def __init__(self, editor: Any, inspector: QWidget) -> None:
         super().__init__(inspector)
         self._editor = editor
         self._inspector = inspector
         inspector.setAcceptDrops(True)
+        # Propaga acceptDrops para todos os filhos do Inspector
+        for child in inspector.findChildren(QWidget):
+            child.setAcceptDrops(True)
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         if event.type() == QEvent.DragEnter:
-            if event.mimeData().hasFormat(_ASSET_MIME) or event.mimeData().hasText():
+            if _is_asset_mime(event):
                 event.acceptProposedAction()
                 watched.setStyleSheet(_HOVER_STYLE_VALID)
                 return True
@@ -293,16 +346,17 @@ class _InspectorDropFilter(QObject):
             watched.setStyleSheet(_HOVER_STYLE_RESET)
         elif event.type() == QEvent.Drop:
             watched.setStyleSheet(_HOVER_STYLE_RESET)
-            path = _asset_path_from_mime(event)
-            if path and _is_supported(path):
-                try:
-                    obj = self._editor.editor_context.selection.selected
-                except Exception:
-                    obj = None
-                if obj is not None:
-                    _apply_asset_with_undo(self._editor, path, obj)
-                    event.acceptProposedAction()
-                    return True
+            if _is_asset_mime(event):
+                path = _asset_path_from_mime(event)
+                if path and _is_supported(path):
+                    try:
+                        obj = self._editor.editor_context.selection.selected
+                    except Exception:
+                        obj = None
+                    if obj is not None:
+                        _apply_asset_with_undo(self._editor, path, obj)
+                        event.acceptProposedAction()
+                        return True
         return False
 
 
@@ -313,40 +367,26 @@ class _InspectorDropFilter(QObject):
 def apply_asset_drag_drop_patch(editor: Any) -> None:
     """Instala drag-and-drop de assets no editor.
 
-    Deve ser chamado UMA vez apos a UI estar completamente montada,
-    tipicamente no final de ZennityPhase1Editor._connect().
+    Deve ser chamado UMA vez apos a UI estar completamente montada.
     """
     if getattr(editor, "_zennity_asset_drag_drop_applied", False):
         return
     editor._zennity_asset_drag_drop_applied = True
 
     # --- Filtros de drag nos paineis de assets ---
-    resources = getattr(editor, "resources", None)
-    if resources is not None:
-        tree = getattr(resources, "tree", None) or getattr(resources, "file_tree", None)
+    for panel_attr in ("resources", "prefabs"):
+        panel = getattr(editor, panel_attr, None)
+        if panel is None:
+            continue
+        tree = getattr(panel, "tree", None) or getattr(panel, "file_tree", None)
         if tree is None:
-            # Tenta encontrar o primeiro QTreeWidget filho
-            from PySide6.QtWidgets import QTreeWidget
-            tree = resources.findChild(QTreeWidget)
+            tree = panel.findChild(QTreeWidget)
         if tree is not None:
             drag_filter = _AssetDragFilter(tree)
             tree.installEventFilter(drag_filter)
             if hasattr(tree, "setDragEnabled"):
                 tree.setDragEnabled(True)
-            editor._asset_drag_filter_resources = drag_filter
-
-    prefabs = getattr(editor, "prefabs", None)
-    if prefabs is not None:
-        tree = getattr(prefabs, "tree", None) or getattr(prefabs, "file_tree", None)
-        if tree is None:
-            from PySide6.QtWidgets import QTreeWidget
-            tree = prefabs.findChild(QTreeWidget)
-        if tree is not None:
-            drag_filter_p = _AssetDragFilter(tree)
-            tree.installEventFilter(drag_filter_p)
-            if hasattr(tree, "setDragEnabled"):
-                tree.setDragEnabled(True)
-            editor._asset_drag_filter_prefabs = drag_filter_p
+            setattr(editor, f"_asset_drag_filter_{panel_attr}", drag_filter)
 
     # --- Filtro de drop na Viewport ---
     viewport = getattr(editor, "viewport", None)
@@ -355,9 +395,26 @@ def apply_asset_drag_drop_patch(editor: Any) -> None:
         viewport.installEventFilter(vp_filter)
         editor._asset_drop_filter_viewport = vp_filter
 
+    # --- Filtro de drop na Hierarchy (intercepta antes do dropEvent interno) ---
+    hierarchy = getattr(editor, "hierarchy", None)
+    if hierarchy is not None:
+        tree = getattr(hierarchy, "tree", None)
+        if tree is None:
+            tree = hierarchy.findChild(QTreeWidget)
+        if tree is not None:
+            tree.setAcceptDrops(True)
+            hier_filter = _HierarchyDropFilter(editor, tree)
+            # installEventFilter no viewport do tree para capturar ANTES do handler interno
+            tree.viewport().installEventFilter(hier_filter)
+            editor._asset_drop_filter_hierarchy = hier_filter
+
     # --- Filtro de drop no Inspector ---
     inspector = getattr(editor, "inspector", None)
     if inspector is not None:
         insp_filter = _InspectorDropFilter(editor, inspector)
         inspector.installEventFilter(insp_filter)
+        # Instala tambem em todos os filhos para garantir que o drop
+        # seja capturado mesmo quando o cursor esta sobre um campo interno
+        for child in inspector.findChildren(QWidget):
+            child.installEventFilter(insp_filter)
         editor._asset_drop_filter_inspector = insp_filter
