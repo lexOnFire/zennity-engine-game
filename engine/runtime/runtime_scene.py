@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 from engine.physics.physics import Physics
@@ -10,12 +11,23 @@ from engine.ui.ui_renderer import UIRenderer
 
 
 class RuntimeScene:
-    """Isolated Play Mode scene built from an editor scene."""
+    """Isolated Play Mode scene built from an editor scene.
+
+    Ciclo correto:
+        __init__  → clona objetos do editor (sem start() antecipado)
+        start_runtime() → dispara on_runtime_start nos componentes
+        update_runtime() / draw() por frame
+        stop_runtime() → on_runtime_stop + cleanup
+        destroy()  → remove todos os objetos e desbinda física
+    """
 
     def __init__(self, editor_scene: Any) -> None:
         self.editor_scene = editor_scene
-        self.scene = type(editor_scene)()
-        self.scene.start()
+        # Cria a cena runtime do mesmo tipo, porém SEM chamar start()
+        # antecipado — evita efeitos colaterais de dupla inicialização.
+        self.scene = type(editor_scene).__new__(type(editor_scene))
+        # Inicializa os atributos mínimos sem executar start()
+        type(editor_scene).__init__(self.scene)
         self.name = f"{getattr(editor_scene, 'name', 'Scene')} (Runtime)"
         self.playing = True
         self.script_runtime = ScriptRuntime(self)
@@ -29,7 +41,12 @@ class RuntimeScene:
         self._clone_editor_objects()
         self._copy_scene_state()
 
+    # ------------------------------------------------------------------
+    # Construção do mundo runtime
+    # ------------------------------------------------------------------
+
     def _clear_started_scene(self) -> None:
+        """Remove quaisquer objetos criados pelo __init__ da cena."""
         objs = getattr(self.scene, "editable_objects", None)
         if objs is None:
             objs = getattr(self.scene, "game_objects", [])
@@ -45,10 +62,12 @@ class RuntimeScene:
             self.scene.selected_index = -1
 
     def _clone_editor_objects(self) -> None:
+        """Clona todos os objetos raiz do editor para o mundo runtime."""
         objs = getattr(self.editor_scene, "editable_objects", None)
         if objs is None:
             objs = getattr(self.editor_scene, "game_objects", [])
         for editor_obj in list(objs):
+            # Sempre clona, independente de active=False no editor
             runtime_obj = clone_game_object(editor_obj)
             self.editor_to_runtime[str(editor_obj.id)] = runtime_obj
             self.runtime_to_editor[str(runtime_obj.id)] = editor_obj
@@ -64,10 +83,16 @@ class RuntimeScene:
         self.scene.name = self.name
         self.scene.playing = True
         if hasattr(self.editor_scene, "selected_index"):
-            self.scene.selected_index = int(getattr(self.editor_scene, "selected_index", -1))
+            self.scene.selected_index = int(
+                getattr(self.editor_scene, "selected_index", -1)
+            )
         for attr in ("show_grid", "grid_size", "show_scale_handles"):
             if hasattr(self.editor_scene, attr):
                 setattr(self.scene, attr, getattr(self.editor_scene, attr))
+
+    # ------------------------------------------------------------------
+    # Propriedades proxy
+    # ------------------------------------------------------------------
 
     @property
     def game_objects(self) -> list[Any]:
@@ -85,6 +110,10 @@ class RuntimeScene:
     def selected_index(self, value: int) -> None:
         self.scene.selected_index = int(value)
 
+    # ------------------------------------------------------------------
+    # Mapeamento editor ↔ runtime
+    # ------------------------------------------------------------------
+
     def runtime_for_editor(self, obj: Any) -> Any | None:
         if obj is None:
             return None
@@ -95,7 +124,12 @@ class RuntimeScene:
             return None
         return self.runtime_to_editor.get(str(getattr(obj, "id", "")))
 
+    # ------------------------------------------------------------------
+    # Iteradores internos
+    # ------------------------------------------------------------------
+
     def _iter_runtime_objects(self) -> list[Any]:
+        """Percorre toda a árvore de objetos com flag de active herdado."""
         ordered: list[Any] = []
 
         def visit(obj: Any, parent_active: bool = True) -> None:
@@ -121,15 +155,17 @@ class RuntimeScene:
                     components.append(component)
         return components
 
+    # ------------------------------------------------------------------
+    # Ciclo de vida Play / Stop
+    # ------------------------------------------------------------------
+
     def start_runtime(self) -> None:
+        """Inicializa o mundo runtime: câmera padrão, áudio, física, scripts."""
         if self._runtime_started:
             return
-        
-        # Limpa o CameraManager antes do Play para isolar câmeras de edições ou execuções passadas
+
         from engine.graphics.camera_manager import CameraManager
         CameraManager.clear()
-        
-        # Limpa o AudioManager antes do Play para isolar áudio
         from engine.audio import AudioManager
         AudioManager.clear()
 
@@ -137,68 +173,98 @@ class RuntimeScene:
         self._runtime_started_components.clear()
         components = self._iter_enabled_runtime_components()
 
-        # Se não existir nenhuma câmera, cria uma câmera padrão no runtime
+        # Câmera padrão
         from engine.graphics.camera import Camera
-        has_camera = any(self._component_type_name(comp) == "Camera" for comp in components)
+        has_camera = any(
+            self._component_type_name(comp) == "Camera" for comp in components
+        )
         if not has_camera:
             from engine.game_object import GameObject
             fallback_go = GameObject("Default Runtime Camera")
             fallback_go.runtime_hidden = True
-            fallback_cam = fallback_go.add_component(Camera())
-            if hasattr(self.scene, "_add_go"):
-                self.scene._add_go(fallback_go)
-            else:
-                self.scene.game_objects.append(fallback_go)
-                fallback_go.scene = self.scene
-            if hasattr(self.scene, "editable_objects"):
-                self.scene.editable_objects.append(fallback_go)
-                
+            fallback_go.add_component(Camera())
+            self._add_runtime_go(fallback_go)
             for comp in fallback_go.components:
                 if comp not in components:
                     components.append(comp)
 
-        # Se não existir nenhum AudioListener, cria um padrão em runtime
+        # AudioListener padrão
         from engine.audio import AudioListener
-        has_listener = any(self._component_type_name(comp) == "AudioListener" for comp in components)
+        has_listener = any(
+            self._component_type_name(comp) == "AudioListener" for comp in components
+        )
         if not has_listener:
             from engine.game_object import GameObject
-            fallback_listener_go = GameObject("Default Audio Listener")
-            fallback_listener_go.runtime_hidden = True
-            fallback_listener = fallback_listener_go.add_component(AudioListener())
-            if hasattr(self.scene, "_add_go"):
-                self.scene._add_go(fallback_listener_go)
-            else:
-                self.scene.game_objects.append(fallback_listener_go)
-                fallback_listener_go.scene = self.scene
-            if hasattr(self.scene, "editable_objects"):
-                self.scene.editable_objects.append(fallback_listener_go)
-                
-            for comp in fallback_listener_go.components:
+            fallback_go = GameObject("Default Audio Listener")
+            fallback_go.runtime_hidden = True
+            fallback_go.add_component(AudioListener())
+            self._add_runtime_go(fallback_go)
+            for comp in fallback_go.components:
                 if comp not in components:
                     components.append(comp)
 
         self.physics_world.build_from_scene(self)
         Physics.bind_world(self.physics_world)
         self.script_runtime.start(components)
+
         for component in components:
-            component.on_runtime_start()
-            self._runtime_started_components.append(component)
-        AudioManager._sources = [comp for comp in components if comp.__class__.__name__ == "AudioSource"]
-        AudioManager._listeners = [comp for comp in components if comp.__class__.__name__ == "AudioListener"]
+            try:
+                component.on_runtime_start()
+                self._runtime_started_components.append(component)
+            except Exception as exc:  # pragma: no cover
+                warnings.warn(
+                    f"[RuntimeScene] on_runtime_start falhou em "
+                    f"{getattr(component, 'type_name', type(component).__name__)}: {exc}",
+                    RuntimeWarning,
+                    stacklevel=1,
+                )
+
+        AudioManager._sources = [
+            c for c in components if c.__class__.__name__ == "AudioSource"
+        ]
+        AudioManager._listeners = [
+            c for c in components if c.__class__.__name__ == "AudioListener"
+        ]
+
+    def _add_runtime_go(self, go: Any) -> None:
+        """Adiciona um GO interno (câmera/listener padrão) ao mundo runtime."""
+        if hasattr(self.scene, "_add_go"):
+            self.scene._add_go(go)
+        else:
+            self.scene.game_objects.append(go)
+            go.scene = self.scene
+        if hasattr(self.scene, "editable_objects"):
+            self.scene.editable_objects.append(go)
 
     def update_runtime(self, delta_time: float) -> None:
         if not self._runtime_started:
             return
+        started_set = set(id(c) for c in self._runtime_started_components)
         for component in self._iter_enabled_runtime_components():
-            if component in self._runtime_started_components:
-                component.on_runtime_update(float(delta_time))
+            if id(component) in started_set:
+                try:
+                    component.on_runtime_update(float(delta_time))
+                except Exception as exc:  # pragma: no cover
+                    warnings.warn(
+                        f"[RuntimeScene] on_runtime_update erro: {exc}",
+                        RuntimeWarning,
+                        stacklevel=1,
+                    )
         self.script_runtime.update(float(delta_time))
 
     def stop_runtime(self) -> None:
+        """Para o runtime e destrói recursos — idempotente."""
         if not self._runtime_started:
             return
         for component in list(reversed(self._runtime_started_components)):
-            component.on_runtime_stop()
+            try:
+                component.on_runtime_stop()
+            except Exception as exc:  # pragma: no cover
+                warnings.warn(
+                    f"[RuntimeScene] on_runtime_stop erro: {exc}",
+                    RuntimeWarning,
+                    stacklevel=1,
+                )
         self.script_runtime.stop()
         self._runtime_started_components.clear()
         self._runtime_started = False
@@ -207,8 +273,9 @@ class RuntimeScene:
         from engine.audio import AudioManager
         AudioManager.clear()
 
-    def _component_type_name(self, component: Any) -> str:
-        return str(getattr(component, "type_name", getattr(component, "component_type", type(component).__name__)))
+    # ------------------------------------------------------------------
+    # Frame loop
+    # ------------------------------------------------------------------
 
     def update(self, dt: float) -> None:
         self.update_runtime(dt)
@@ -228,7 +295,12 @@ class RuntimeScene:
     def handle_event(self, event: Any) -> None:
         self.scene.handle_event(event)
 
+    # ------------------------------------------------------------------
+    # Destruição
+    # ------------------------------------------------------------------
+
     def destroy(self) -> None:
+        """Para o runtime e limpa toda a memória do mundo runtime."""
         self.stop_runtime()
         objs = getattr(self.scene, "editable_objects", None)
         if objs is None:
@@ -247,6 +319,19 @@ class RuntimeScene:
         self.runtime_to_editor.clear()
         self.playing = False
         self.scene.playing = False
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _component_type_name(self, component: Any) -> str:
+        return str(
+            getattr(
+                component,
+                "type_name",
+                getattr(component, "component_type", type(component).__name__),
+            )
+        )
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self.scene, name)
