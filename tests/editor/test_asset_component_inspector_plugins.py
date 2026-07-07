@@ -25,6 +25,7 @@ def test_image_inspector_has_sprite_selector(qapp) -> None:
     assert widget.property("component_type") == "Image"
     assert hasattr(widget, "cb_sprite")
     assert widget.cb_sprite.currentText() == "Assets/Character/player.png"
+    assert widget.cb_sprite.isEditable() is False
 
 
 def test_image_sprite_selector_updates_component(qapp) -> None:
@@ -32,8 +33,7 @@ def test_image_sprite_selector_updates_component(qapp) -> None:
     plugin = inspector_plugin_registry.plugin_for(component)
     widget = plugin.create_widget(component, None, None)
 
-    widget.cb_sprite.setCurrentText("Assets/Character/hero.png")
-    widget.cb_sprite.lineEdit().editingFinished.emit()
+    widget.set_sprite_path("Assets/Character/hero.png")
 
     assert component.sprite_path == "Assets/Character/hero.png"
 
