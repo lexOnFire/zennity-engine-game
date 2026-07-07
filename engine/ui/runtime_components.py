@@ -28,8 +28,15 @@ class UIElement(Component):
         self.z_order = int(z_order)
 
     def on_runtime_start(self) -> None:
-        if self.game_object is not None:
-            self.game_object.runtime_hidden = True
+        """Mantem o GameObject intacto quando a UI entra em Runtime.
+
+        A versao anterior marcava ``game_object.runtime_hidden = True``. Isso
+        fazia objetos como Player sumirem ao apertar Play depois de adicionar
+        componentes de UI como Button, Label ou Image. Componentes de UI devem
+        controlar apenas a propria renderizacao de tela, nao esconder ou mutar
+        o GameObject dono.
+        """
+        return None
 
     def serialize_properties(self) -> dict[str, Any]:
         return {
@@ -51,7 +58,7 @@ class UIElement(Component):
 
 
 class Canvas(UIElement):
-    """Agrupa elementos de UI e define a ordem de renderização do HUD."""
+    """Agrupa elementos de UI e define a ordem de renderizacao do HUD."""
 
     component_type = "Canvas"
     unique = True
