@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import Any
 
 from PySide6.QtCore import QTimer, Qt
-from PySide6.QtGui import QKeySequence
-from PySide6.QtWidgets import QApplication, QShortcut
+from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtWidgets import QApplication
 
 
 def _current_selected(editor: Any) -> Any | None:
