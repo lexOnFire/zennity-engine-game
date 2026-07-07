@@ -9,6 +9,7 @@ from editor.inspector.default_plugins import _property_row, _section
 from editor.inspector.plugin import InspectorPlugin
 from editor.inspector.plugin_registry import inspector_plugin_registry
 from editor.runtime.command_manager import CommandManager
+from editor.runtime.editor2d_sprite_patch import apply_editor2d_sprite_patch
 
 
 _IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"}
@@ -169,6 +170,7 @@ class AssetAwareAnimatorInspectorPlugin(InspectorPlugin):
 def register_asset_component_plugins() -> None:
     inspector_plugin_registry.register(AssetAwareImageInspectorPlugin)
     inspector_plugin_registry.register(AssetAwareAnimatorInspectorPlugin)
+    apply_editor2d_sprite_patch()
 
 
 register_asset_component_plugins()
