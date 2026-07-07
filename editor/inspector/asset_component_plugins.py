@@ -47,7 +47,7 @@ class AssetAwareImageInspectorPlugin(InspectorPlugin):
         widget, layout = _section("Image")
         sprite_selector = QComboBox()
         sprite_selector.setObjectName("InspectorSpriteSelector")
-        sprite_selector.setEditable(True)
+        sprite_selector.setEditable(False)
 
         current = str(getattr(component, "sprite_path", "") or "")
         sprite_selector.addItem("Nenhum")
@@ -60,10 +60,12 @@ class AssetAwareImageInspectorPlugin(InspectorPlugin):
 
         def set_sprite_path(value: str) -> None:
             next_value = "" if value == "Nenhum" else value.strip()
+            old_value = str(getattr(component, "sprite_path", "") or "")
+            if old_value == next_value:
+                return
             self.set_property(component, "sprite_path", next_value, command_manager, refresh)
 
         sprite_selector.activated.connect(lambda index: set_sprite_path(sprite_selector.itemText(index)))
-        sprite_selector.lineEdit().editingFinished.connect(lambda: set_sprite_path(sprite_selector.currentText()))
         layout.addWidget(_property_row("Sprite", sprite_selector))
 
         alpha = QDoubleSpinBox()
@@ -76,6 +78,7 @@ class AssetAwareImageInspectorPlugin(InspectorPlugin):
 
         widget.cb_sprite = sprite_selector
         widget.sb_alpha = alpha
+        widget.set_sprite_path = set_sprite_path
         widget.setProperty("component_type", self.component_type)
         return widget
 
