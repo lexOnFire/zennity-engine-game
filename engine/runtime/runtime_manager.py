@@ -15,26 +15,41 @@ class RuntimeState(str, Enum):
 
 
 class RuntimeManager:
-    """Owns the lifecycle of the isolated Play Mode world."""
+    """Owns the lifecycle of the isolated Play Mode world.
+
+    - start_play / stop_play são idempotentes.
+    - stop_play nunca lança exceção: limpa o que conseguir e garante
+      que o estado final seja STOPPED mesmo em caso de erro parcial.
+    """
 
     def __init__(self) -> None:
         self.state = RuntimeState.STOPPED
         self.runtime_scene: RuntimeScene | None = None
         self.input = InputManager()
+        self._input_bound: bool = False
 
     @property
     def is_playing(self) -> bool:
         return self.state == RuntimeState.PLAYING
 
     def start_play(self, editor_scene: Any) -> RuntimeScene:
+        """Inicia o Play Mode. Idempotente — retorna a cena existente se já iniciou."""
         if self.runtime_scene is not None:
             return self.runtime_scene
         Time._runtime_reset()
         self.input.start()
         Input.bind_manager(self.input)
-        self.runtime_scene = RuntimeScene(editor_scene)
-        self.runtime_scene.start_runtime()
-        self.state = RuntimeState.PLAYING
+        self._input_bound = True
+        try:
+            self.runtime_scene = RuntimeScene(editor_scene)
+            self.runtime_scene.start_runtime()
+            self.state = RuntimeState.PLAYING
+        except Exception:
+            # Se a criação falhar, garante cleanup para não deixar estado sujo
+            self._cleanup_input()
+            self.runtime_scene = None
+            self.state = RuntimeState.STOPPED
+            raise
         return self.runtime_scene
 
     def tick(self, delta_time: float) -> None:
@@ -45,12 +60,20 @@ class RuntimeManager:
         self.runtime_scene.update(float(scaled_delta_time))
 
     def stop_play(self) -> None:
+        """Para o Play Mode. Idempotente — seguro chamar múltiplas vezes."""
+        if self.state == RuntimeState.STOPPED and self.runtime_scene is None:
+            return
         if self.runtime_scene is not None:
-            self.runtime_scene.stop_runtime()
-            self.runtime_scene.destroy()
+            try:
+                self.runtime_scene.stop_runtime()
+            except Exception:
+                pass
+            try:
+                self.runtime_scene.destroy()
+            except Exception:
+                pass
         self.runtime_scene = None
-        Input.unbind_manager(self.input)
-        self.input.stop()
+        self._cleanup_input()
         Time._runtime_reset()
         self.state = RuntimeState.STOPPED
 
@@ -58,3 +81,16 @@ class RuntimeManager:
         if self.state != RuntimeState.PLAYING:
             return
         self.input.handle_event(event)
+
+    def _cleanup_input(self) -> None:
+        """Desbinda e para o input — seguro chamar mesmo se nunca foi bindado."""
+        if self._input_bound:
+            try:
+                Input.unbind_manager(self.input)
+            except Exception:
+                pass
+            self._input_bound = False
+        try:
+            self.input.stop()
+        except Exception:
+            pass

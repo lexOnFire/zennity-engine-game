@@ -41,6 +41,9 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.current_scene_path: Path | None = None
         self.editor_scene: Any | None = None
         self._left_panel_focus = "hierarchy"
+        # Quando True, o usuario ajustou o splitter manualmente:
+        # nao recalcular automaticamente.
+        self._hierarchy_splitter_user_resized = False
         super().__init__()
         self.editor_context.tools.subscribe(self._on_runtime_tool_changed)
 
@@ -127,13 +130,11 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
 
         self.act_undo = QAction("Undo", self)
         self.act_undo.setShortcut("Ctrl+Z")
-        self.act_undo.triggered.connect(self.undo)
         self.addAction(self.act_undo)
         toolbar.addAction(self.act_undo)
 
         self.act_redo = QAction("Redo", self)
         self.act_redo.setShortcut("Ctrl+Y")
-        self.act_redo.triggered.connect(self.redo)
         self.addAction(self.act_redo)
         toolbar.addAction(self.act_redo)
 
@@ -253,6 +254,8 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         left.setSizes([180, 560])
         left.setMinimumWidth(240)
         left.setMaximumWidth(320)
+        # Detecta quando o usuario arrasta o splitter manualmente
+        left.splitterMoved.connect(self._on_hierarchy_splitter_moved)
         self.left_splitter = left
 
         self.viewport_tabs = QTabWidget()
@@ -287,6 +290,10 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.refresh_hierarchy_from_viewport()
         self.focus_hierarchy_panel()
 
+    def _on_hierarchy_splitter_moved(self, pos: int, index: int) -> None:
+        """Marcado quando o usuario arrasta o splitter: para o auto-resize."""
+        self._hierarchy_splitter_user_resized = True
+
     def _connect(self) -> None:
         self.hierarchy.selected.connect(self.select_object)
         self.hierarchy.create_empty_requested.connect(lambda: self.create_object("Empty"))
@@ -307,6 +314,23 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.on_viewport_selection_changed(self.editor_context.selection.selected)
         self._sync_play_controls()
         self._update_undo_redo_states()
+        self._apply_runtime_patches()
+
+    def _apply_runtime_patches(self) -> None:
+        """Ativa todos os patches de runtime apos a UI estar montada."""
+        try:
+            from editor.runtime.undo_redo_feedback_patch import _install_instance_shortcuts
+            _install_instance_shortcuts(self)
+        except Exception as exc:
+            if hasattr(self, "console"):
+                self.console.add("WARN", f"undo_redo_feedback_patch falhou: {exc}")
+
+        try:
+            from editor.runtime.asset_drag_drop_patch import apply_asset_drag_drop_patch
+            apply_asset_drag_drop_patch(self)
+        except Exception as exc:
+            if hasattr(self, "console"):
+                self.console.add("WARN", f"asset_drag_drop_patch falhou: {exc}")
 
     def _update_undo_redo_states(self) -> None:
         if hasattr(self, "act_undo") and hasattr(self, "act_redo"):
@@ -315,19 +339,29 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
 
     def undo(self) -> None:
         self.editor_context.commands.undo()
-        self.refresh_hierarchy_from_viewport()
-        sel = self.editor_context.selection.selected
-        if sel is not None:
-            self.on_viewport_selection_changed(sel)
-        self._update_undo_redo_states()
+        self._refresh_after_undo_redo()
 
     def redo(self) -> None:
         self.editor_context.commands.redo()
-        self.refresh_hierarchy_from_viewport()
+        self._refresh_after_undo_redo()
+
+    def _refresh_after_undo_redo(self) -> None:
+        """Refresh minimo apos undo/redo: NAO recalcula tamanho do splitter."""
         sel = self.editor_context.selection.selected
-        if sel is not None:
+        objects = self.scene_objects()
+        # Atualiza lista da hierarquia sem mexer no splitter
+        self.hierarchy.refresh_objects(objects)
+        if hasattr(self, "stats"):
+            self.stats.setText(f"FPS: 60 | Memoria: 512 MB | Objetos: {len(objects)}")
+        if sel is not None and sel in objects:
             self.on_viewport_selection_changed(sel)
+        elif objects:
+            pass  # mantem selecao atual
         self._update_undo_redo_states()
+        try:
+            self.viewport.update()
+        except Exception:
+            pass
 
     def _on_runtime_tool_changed(self, tool: EditorTool) -> None:
         action = self._tool_actions.get(tool)
@@ -367,14 +401,12 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         scene = self._editor_scene()
         if scene is None:
             return
-
         for obj in list(getattr(scene, "editable_objects", [])):
             if hasattr(scene, "_remove_go"):
                 scene._remove_go(obj)
             elif obj in getattr(scene, "game_objects", []):
                 scene.game_objects.remove(obj)
                 obj.scene = None
-
         scene.editable_objects.clear()
         if hasattr(scene, "selected_index"):
             scene.selected_index = -1
@@ -391,10 +423,8 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         scene = self._editor_scene()
         if scene is None:
             return
-
         self._clear_scene_objects()
         scene.name = str(scene_data.get("scene_name", "Untitled"))
-
         objects = list(scene_data.get("objects", []))
         for obj in objects:
             if hasattr(scene, "_add_go"):
@@ -403,13 +433,17 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
                 scene.game_objects.append(obj)
                 obj.scene = scene
             scene.editable_objects.append(obj)
-
         selected = objects[0] if objects else None
         if hasattr(scene, "selected_index"):
             scene.selected_index = 0 if selected is not None else -1
         self._sync_scene_after_load(selected)
 
     def refresh_hierarchy_from_viewport(self) -> None:
+        """Atualiza hierarquia e ajusta tamanho do splitter.
+
+        O resize automatico so acontece se o usuario ainda nao
+        arrastou o splitter manualmente (_hierarchy_splitter_user_resized).
+        """
         objects = self.scene_objects()
         self.object_count = len(objects)
         if self.editor_context.selection.selected not in objects:
@@ -418,7 +452,9 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
                 scene_selected = self.viewport._selected_from_scene()
             self.select_object(scene_selected if scene_selected in objects else None)
         self.hierarchy.refresh_objects(objects)
-        self._sync_hierarchy_panel_height(self.object_count)
+        # So auto-redimensiona se o splitter nunca foi ajustado pelo usuario
+        if not getattr(self, "_hierarchy_splitter_user_resized", False):
+            self._sync_hierarchy_panel_height(self.object_count)
         if hasattr(self, "stats"):
             self.stats.setText(f"FPS: 60 | Memoria: 512 MB | Objetos: {self.object_count}")
 
@@ -436,6 +472,8 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
 
     def focus_hierarchy_panel(self) -> None:
         self._left_panel_focus = "hierarchy"
+        # Reset do flag: ao focar explicitamente, retoma o auto-resize
+        self._hierarchy_splitter_user_resized = False
         self._sync_hierarchy_panel_height(getattr(self, "object_count", 0))
 
     def focus_assets_panel(self) -> None:
@@ -470,7 +508,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             return False
         if not can_reparent(obj, parent):
             if hasattr(self, "status_msg"):
-                self.status_msg.setText("Reparent inválido: ciclo de hierarquia bloqueado.")
+                self.status_msg.setText("Reparent invalido: ciclo de hierarquia bloqueado.")
             return False
         command = ReparentGameObjectCommand(scene, obj, parent, index)
 
@@ -478,11 +516,11 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             command.execute()
             self._after_hierarchy_command(obj)
 
-        def undo() -> None:
+        def undo_fn() -> None:
             command.undo()
             self._after_hierarchy_command(obj)
 
-        self.editor_context.commands.execute(FunctionCommand(command.description, do, undo))
+        self.editor_context.commands.execute(FunctionCommand(command.description, do, undo_fn))
         return True
 
     def duplicate_object(self, obj: Any = None) -> Any:
@@ -496,11 +534,11 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             command.execute()
             self._after_hierarchy_command(command.clone)
 
-        def undo() -> None:
+        def undo_fn() -> None:
             command.undo()
             self._after_hierarchy_command(source)
 
-        self.editor_context.commands.execute(FunctionCommand(command.description, do, undo))
+        self.editor_context.commands.execute(FunctionCommand(command.description, do, undo_fn))
         return command.clone
 
     def delete_object(self, obj: Any = None) -> bool:
@@ -514,11 +552,11 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             command.execute()
             self._after_hierarchy_command(None)
 
-        def undo() -> None:
+        def undo_fn() -> None:
             command.undo()
             self._after_hierarchy_command(target)
 
-        self.editor_context.commands.execute(FunctionCommand(command.description, do, undo))
+        self.editor_context.commands.execute(FunctionCommand(command.description, do, undo_fn))
         return True
 
     def rename_object(self, obj: Any, new_name: str) -> bool:
@@ -531,11 +569,11 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             command.execute()
             self._after_hierarchy_command(obj)
 
-        def undo() -> None:
+        def undo_fn() -> None:
             command.undo()
             self._after_hierarchy_command(obj)
 
-        self.editor_context.commands.execute(FunctionCommand(command.description, do, undo))
+        self.editor_context.commands.execute(FunctionCommand(command.description, do, undo_fn))
         return True
 
     def on_viewport_selection_changed(self, obj: Any) -> None:
@@ -564,6 +602,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         if scene is not None:
             scene.name = "Untitled"
         self.current_scene_path = None
+        self._hierarchy_splitter_user_resized = False
         self._sync_scene_after_load(None)
         self.status_msg.setText("Nova cena criada.")
         self.console.add("INFO", "Nova cena criada.")
@@ -579,9 +618,9 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         )
         if not file_name:
             return
-
         scene_data = load_scene(file_name)
         self.current_scene_path = Path(file_name)
+        self._hierarchy_splitter_user_resized = False
         self._apply_scene_data(scene_data)
         self.status_msg.setText(f"Cena aberta: {self.current_scene_path.name}")
         self.console.add("INFO", f"Cena aberta: {self.current_scene_path}")
@@ -590,11 +629,9 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         if self.current_scene_path is None:
             self.save_scene_as()
             return
-
         scene = self._editor_scene()
         if scene is None:
             return
-
         save_scene(scene, self.current_scene_path)
         self.status_msg.setText(f"Cena salva: {self.current_scene_path.name}")
         self.console.add("INFO", f"Cena salva: {self.current_scene_path}")
@@ -608,7 +645,6 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         )
         if not file_name:
             return
-
         path = Path(file_name)
         if path.suffix.lower() != ".zscene":
             path = path.with_suffix(".zscene")
@@ -682,14 +718,14 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         }
         value = mapping.get(name, name)
         self.viewport.create_object(value)
-
         objects = self.scene_objects()
         created = objects[-1] if objects else None
+        # Criar objeto e uma acao explicita: reseta o flag de resize manual
+        self._hierarchy_splitter_user_resized = False
         self.refresh_hierarchy_from_viewport()
         if created is not None:
             self.select_object(created)
             self.focus_hierarchy_panel()
-
         self.console.add("INFO", f"Objeto criado: {name}")
 
     def create_prefab_from_selected(self) -> None:
@@ -697,21 +733,17 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         if selected is None:
             QMessageBox.warning(self, "Aviso", "Selecione um objeto na cena antes de criar um Prefab.")
             return
-
         default_name = f"{selected.name}.zprefab"
         assets_prefabs_dir = str(Path(self.editor_context.project_root) / "Assets" / "Prefabs")
         Path(assets_prefabs_dir).mkdir(parents=True, exist_ok=True)
-
         file_path, _ = QFileDialog.getSaveFileName(
             self,
             "Create Prefab From Selected",
             str(Path(assets_prefabs_dir) / default_name),
             "Prefab Files (*.zprefab)"
         )
-
         if not file_path:
             return
-
         from engine.prefabs.prefab_loader import create_prefab_from_object
         try:
             prefab_uuid = create_prefab_from_object(selected, file_path)
@@ -724,23 +756,18 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             self.stop()
         if not self.viewport or not self._editor_scene():
             return
-
         assets_prefabs_dir = str(Path(self.editor_context.project_root) / "Assets" / "Prefabs")
-
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Instantiate Prefab",
             assets_prefabs_dir,
             "Prefab Files (*.zprefab)"
         )
-
         if not file_path:
             return
-
         from engine.prefabs.prefab_loader import instantiate_prefab
         try:
             obj = instantiate_prefab(file_path)
-
             scene = self._editor_scene()
             lay = getattr(scene, "_layout", None)
             if lay is not None:
@@ -751,15 +778,12 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
                     layout_data
                 )
                 obj.transform.position = center.copy()
-
             scene._add_go(obj)
             scene.editable_objects.append(obj)
-
             self.viewport.active_scene = scene
             self.viewport._sync_model_from_scene()
             self.select_object(obj)
             self.focus_hierarchy_panel()
-
             self.console.add("INFO", f"Prefab instanciado: {obj.name} a partir de {Path(file_path).name}")
         except Exception as e:
             QMessageBox.critical(self, "Erro", f"Falha ao instanciar prefab: {str(e)}")
