@@ -20,6 +20,9 @@ from editor.viewmodels.scene_viewmodel import SceneViewModel
 from editor.models.asset_model import AssetModel
 from editor.viewmodels.asset_viewmodel import AssetViewModel
 from editor.runtime.editor_context import EditorContext
+from editor.widgets.viewport_widget_drop import apply_drop_patch
+from editor.widgets.viewport_widget import ViewportWidget
+apply_drop_patch(ViewportWidget)
 
 # Serialização
 from editor.core.serializer import save_scene_to_file, load_scene_from_file

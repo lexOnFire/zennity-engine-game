@@ -1,0 +1,10 @@
+{
+  "uuid": "d58e70d0-b6a6-4561-a787-8c9e7b425b40",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Scenes/Cenário espacial em pixel-art detalhado.png",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": []
+}
