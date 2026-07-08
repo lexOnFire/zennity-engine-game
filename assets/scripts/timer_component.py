@@ -1,3 +1,14 @@
+"""
+assets/scripts/timer_component.py
+───────────────────────────────────────────────────────────────
+Timer genérico com callback ao completar.
+
+Uso:
+    t = TimerComponent(duration=3.0, loop=False)
+    t.on_complete = lambda: print("tempo esgotado!")
+    go.add_component(t)
+    t.start_timer()  # inicia contagem
+"""
 from __future__ import annotations
 
 from typing import Any, Callable, Dict, Optional
@@ -10,33 +21,53 @@ from engine.component_registry import ComponentRegistry
 class TimerComponent(Component):
     """Timer reutilizável com suporte a loop e callback."""
 
-    def __init__(self, duration: float = 1.0, loop: bool = False, auto_start: bool = False) -> None:
+    def __init__(
+        self,
+        duration: float = 1.0,
+        loop: bool = False,
+        auto_start: bool = False,
+    ) -> None:
         super().__init__()
-        self.duration = float(duration)
-        self.loop = bool(loop)
-        self.auto_start = bool(auto_start)
+        self.duration: float = duration
+        self.loop: bool = loop
+        self.auto_start: bool = auto_start
         self.on_complete: Optional[Callable[[], None]] = None
-        self._elapsed = 0.0
-        self._running = False
+        self._elapsed: float = 0.0
+        self._running: bool = False
+
+    # ------------------------------------------------------------------ #
+    # API pública
+    # ------------------------------------------------------------------ #
 
     def start_timer(self) -> None:
+        """Inicia ou reinicia o timer."""
         self._elapsed = 0.0
         self._running = True
 
     def stop(self) -> None:
+        """Para o timer sem disparar o callback."""
         self._running = False
 
     def reset(self) -> None:
+        """Para e zera o timer."""
         self._running = False
         self._elapsed = 0.0
 
     @property
     def progress(self) -> float:
-        return 1.0 if self.duration <= 0 else min(1.0, self._elapsed / self.duration)
+        """Progresso de 0.0 a 1.0."""
+        if self.duration <= 0:
+            return 1.0
+        return min(1.0, self._elapsed / self.duration)
 
     @property
     def remaining(self) -> float:
+        """Segundos restantes."""
         return max(0.0, self.duration - self._elapsed)
+
+    # ------------------------------------------------------------------ #
+    # Ciclo de vida
+    # ------------------------------------------------------------------ #
 
     def start(self) -> None:
         if self.auto_start:
@@ -56,9 +87,17 @@ class TimerComponent(Component):
     def draw(self, screen) -> None:
         pass
 
+    # ------------------------------------------------------------------ #
+    # Serialização
+    # ------------------------------------------------------------------ #
+
     def serialize(self) -> Dict[str, Any]:
         data = super().serialize()
-        data.update({"duration": self.duration, "loop": self.loop, "auto_start": self.auto_start, "elapsed": self._elapsed, "running": self._running})
+        data["duration"] = self.duration
+        data["loop"] = self.loop
+        data["auto_start"] = self.auto_start
+        data["elapsed"] = self._elapsed
+        data["running"] = self._running
         return data
 
     def deserialize(self, data: Dict[str, Any]) -> None:
