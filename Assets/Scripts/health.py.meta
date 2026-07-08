@@ -1,0 +1,8 @@
+{
+  "uuid": "1c221485-9b7e-4f7b-a6b7-759bcd770436",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/health.py",
+  "import_settings": {},
+  "dependencies": []
+}

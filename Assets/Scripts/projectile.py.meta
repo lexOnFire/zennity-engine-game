@@ -1,0 +1,8 @@
+{
+  "uuid": "19776fb7-e46e-4b92-b3da-c61439a76d91",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/projectile.py",
+  "import_settings": {},
+  "dependencies": []
+}
