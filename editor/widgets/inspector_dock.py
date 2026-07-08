@@ -638,7 +638,7 @@ class InspectorDock(QDockWidget):
         if hasattr(component, "enabled"):
             component.enabled = bool(snapshot.get("enabled", True))
         properties = deepcopy(snapshot.get("properties", {}))
-        if hasattr(component, "deserialize_properties") and isinstance(properties, dict):
+        if hasattr(component, "deserialize_properties") and hasattr(properties, "items"):
             component.deserialize_properties(properties)
         self._refresh_selected()
 
