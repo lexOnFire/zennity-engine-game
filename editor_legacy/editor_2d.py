@@ -6,6 +6,8 @@ from engine.game_object import GameObject
 from engine.graphics.camera2d import Camera2D
 from engine.physics.rigidbody import RigidBody
 from engine.physics.collider import BoxCollider
+from engine.physics.rigidbody import RigidBody
+from engine.physics.collider import BoxCollider
 
 
 class Editor2DScene(Scene):
@@ -24,6 +26,7 @@ class Editor2DScene(Scene):
         self.cam_obj.transform.position = np.array([400.0, 300.0, 0.0], dtype=np.float32)
         self._add_go(self.cam_obj)
         Camera2D.main = self.camera
+        self.spawn_default_scene()
         self.spawn_default_scene()
 
 
