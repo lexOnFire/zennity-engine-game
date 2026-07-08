@@ -30,6 +30,17 @@ def _trim_cache(cache: dict, limit: int) -> None:
             return
 
 
+def _is_screen_rect_visible(x: float, y: float, width: int, height: int, screen: pygame.Surface) -> bool:
+    # Rotation can expand the final blit rect, so cull with a conservative radius.
+    radius = max(float(width), float(height), 32.0) * 0.75
+    return not (
+        x + radius < 0
+        or x - radius > screen.get_width()
+        or y + radius < 0
+        or y - radius > screen.get_height()
+    )
+
+
 def apply_sprite_performance_patch(ImageComponent: type, InfiniteBackground: type | None = None) -> bool:
     if getattr(ImageComponent, "_zennity_sprite_perf_patch", False):
         return True
@@ -81,6 +92,8 @@ def apply_sprite_performance_patch(ImageComponent: type, InfiniteBackground: typ
             x, y = float(world_pos[0]), float(world_pos[1])
         width = max(1, int(abs(float(transform.scale[0]) * zoom)))
         height = max(1, int(abs(float(transform.scale[1]) * zoom)))
+        if not _is_screen_rect_visible(float(x), float(y), width, height, screen):
+            return
         alpha = max(0, min(255, int(getattr(self, "alpha", 255))))
         rz = float(getattr(transform, "rz", 0.0))
         surface = ImageComponent.transformed_surface(getattr(self, "sprite_path", ""), width, height, alpha, rz)
@@ -111,8 +124,6 @@ def apply_sprite_performance_patch(ImageComponent: type, InfiniteBackground: typ
             InfiniteBackground._tile_cache[key] = surface
             _trim_cache(InfiniteBackground._tile_cache, _MAX_BACKGROUND_CACHE)
             return surface
-
-        original_draw = InfiniteBackground.draw
 
         def background_draw(self, screen: pygame.Surface) -> None:
             if not getattr(self, "enabled", True) or not getattr(self, "visible", True):
