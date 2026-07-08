@@ -1,3 +1,19 @@
+"""
+assets/scripts/player_controller.py
+───────────────────────────────────────────────────────────────
+Controle de personagem do jogador (WASD / setas + pulo).
+
+Dependências esperadas no GameObject:
+    - Transform   (adicionado automaticamente)
+    - Rigidbody   (engine.physics)
+
+Uso:
+    from assets.scripts.player_controller import PlayerController
+
+    player = GameObject("Player", tag="Player")
+    player.add_component(Rigidbody())
+    player.add_component(PlayerController(speed=200, jump_force=400))
+"""
 from __future__ import annotations
 
 from typing import Any, Dict
@@ -14,26 +30,35 @@ class PlayerController(Component):
 
     def __init__(self, speed: float = 200.0, jump_force: float = 400.0) -> None:
         super().__init__()
-        self.speed = float(speed)
-        self.jump_force = float(jump_force)
-        self._grounded = False
-        self._rb = None
+        self.speed: float = speed
+        self.jump_force: float = jump_force
+        self._grounded: bool = False
+        self._rb = None  # cache do Rigidbody
+
+    # ------------------------------------------------------------------ #
+    # Ciclo de vida
+    # ------------------------------------------------------------------ #
 
     def start(self) -> None:
+        # Tenta obter o Rigidbody do mesmo GameObject
         try:
             from engine.physics.rigidbody import Rigidbody
-            self._rb = self.game_object.get_component(Rigidbody) if self.game_object else None
-        except Exception:
+            self._rb = self.game_object.get_component(Rigidbody)
+        except ImportError:
             self._rb = None
 
     def update(self, dt: float) -> None:
         keys = pygame.key.get_pressed()
+
         dx = 0.0
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
             dx -= self.speed * dt
         if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
             dx += self.speed * dt
+
         self.transform.translate(dx, 0.0)
+
+        # Pulo
         if (keys[pygame.K_SPACE] or keys[pygame.K_UP] or keys[pygame.K_w]) and self._grounded:
             if self._rb is not None:
                 self._rb.velocity[1] = -self.jump_force
@@ -42,7 +67,11 @@ class PlayerController(Component):
             self._grounded = False
 
     def draw(self, screen) -> None:
-        pass
+        pass  # renderização feita pelo SpriteRenderer
+
+    # ------------------------------------------------------------------ #
+    # Serialização
+    # ------------------------------------------------------------------ #
 
     def serialize(self) -> Dict[str, Any]:
         data = super().serialize()

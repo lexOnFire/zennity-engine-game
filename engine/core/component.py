@@ -8,12 +8,67 @@ Conceito:
   Um Component é um bloco de comportamento que vive dentro de um
   GameObject. A engine não sabe o que cada Component faz — ela apenas
   orquestra o ciclo de vida (start → update → draw → destroy).
+
+Ciclo de vida:
+    start()        ← chamado uma única vez, quando o GO entra na cena
+    update(dt)     ← chamado todo frame (lógica)
+    draw(screen)   ← chamado todo frame (renderização)
+    destroy()      ← chamado quando o GO ou componente é removido
+
+Garantia de _started:
+    _started é False até start() ser chamado. O setter .scene do
+    GameObject garante que start() é invocado exatamente uma vez.
+    Não chame start() manualmente.
+
+Serialização (Fase 9):
+    Componentes podem implementar serialize() e deserialize() para
+    suportar save/load de cenas e prefabs.
+
+    serialize()     → Dict[str, Any]   — snapshot dos dados do componente
+    deserialize(d)  ← Dict[str, Any]   — restaura estado a partir do dict
+
+    O dict retornado por serialize() DEVE incluir a chave "type" com o
+    nome do componente (usado pelo ComponentRegistry para recriá-lo).
+
+enable/disable:
+    comp.enabled = False   → update() e draw() são ignorados pela engine
+    comp.enabled = True    → retoma o ciclo normal
+
+Uso:
+    from engine.core import Component, Transform
+
+    class Health(Component):
+        def __init__(self, max_hp: int = 100):
+            super().__init__()
+            self.hp = max_hp
+
+        def start(self):
+            Logger.info(f"{self.game_object.name} HP inicializado: {self.hp}")
+
+        def take_damage(self, amount: int):
+            self.hp -= amount
+            if self.hp <= 0:
+                self.game_object.destroy()
+
+        def serialize(self):
+            data = super().serialize()
+            data["hp"] = self.hp
+            return data
+
+        def deserialize(self, data):
+            super().deserialize(data)
+            self.hp = data.get("hp", 100)
+
+Transform:
+    Todo GO começa com um Transform já adicionado.
+    Acesse via  go.transform  ou  comp.transform  de qualquer componente.
+
+    Suporta posição, rotação e escala em 2D (z=0, rx=0, ry=0) e 3D.
+    Vetores internos são np.float32 para operações vetorizadas rápidas.
 """
 from __future__ import annotations
 
-import uuid
-from typing import Any
-from typing import Optional, TYPE_CHECKING
+from typing import Any, Dict, Optional, TYPE_CHECKING
 
 import numpy as np
 
@@ -21,26 +76,51 @@ if TYPE_CHECKING:
     from engine.game_object import GameObject
 
 
+# ============================================================== #
+#  Component — classe base                                       #
+# ============================================================== #
+
 class Component:
     """Bloco de comportamento reutilizável que vive dentro de um GameObject."""
 
-    component_type = "Component"
-    unique = False
-    required = False
+    # Subclasses com UNIQUE = True só podem existir uma vez por GameObject.
+    UNIQUE: bool = False
 
     def __init__(self) -> None:
-        self.id: str = str(uuid.uuid4())
+        #: GO ao qual este componente está anexado.
         self.game_object: Optional["GameObject"] = None
+        #: True após start() ser chamado. Não modifique manualmente.
         self._started: bool = False
-        self.enabled: bool = True
+        #: Controla se update() e draw() são chamados pela engine.
+        self._enabled: bool = True
+
+    # ------------------------------------------------------------------ #
+    # enabled                                                             #
+    # ------------------------------------------------------------------ #
 
     @property
-    def type_name(self) -> str:
-        return self.component_type or type(self).__name__
+    def enabled(self) -> bool:
+        """Se False, update() e draw() são ignorados."""
+        return self._enabled
 
-    @property
-    def name(self) -> str:
-        return self.type_name
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        prev = self._enabled
+        self._enabled = bool(value)
+        if prev and not self._enabled:
+            self.on_disable()
+        elif not prev and self._enabled:
+            self.on_enable()
+
+    def on_enable(self) -> None:
+        """Chamado ao ativar o componente. Sobrescreva se necessário."""
+
+    def on_disable(self) -> None:
+        """Chamado ao desativar o componente. Sobrescreva se necessário."""
+
+    # ------------------------------------------------------------------ #
+    # Atalhos                                                             #
+    # ------------------------------------------------------------------ #
 
     @property
     def transform(self) -> "Transform":
@@ -55,6 +135,10 @@ class Component:
         """Cena ativa do GameObject, ou None se não estiver em cena."""
         return self.game_object.scene if self.game_object else None
 
+    # ------------------------------------------------------------------ #
+    # Ciclo de vida                                                       #
+    # ------------------------------------------------------------------ #
+
     def start(self) -> None:
         """Chamado uma vez antes do primeiro update. Sobrescreva se necessário."""
 
@@ -67,60 +151,59 @@ class Component:
     def destroy(self) -> None:
         """Chamado quando o componente ou seu GO é destruído."""
 
-    def on_runtime_start(self) -> None:
-        """Chamado uma vez quando o Play Mode inicia no Runtime World."""
+    # ------------------------------------------------------------------ #
+    # Serialização (Fase 9)                                               #
+    # ------------------------------------------------------------------ #
 
-    def on_runtime_update(self, delta_time: float) -> None:
-        """Chamado a cada tick do Runtime World durante o Play Mode."""
-
-    def on_runtime_stop(self) -> None:
-        """Chamado uma vez quando o Play Mode encerra no Runtime World."""
-
-    def on_trigger_enter(self, other: Any) -> None:
-        """Chamado quando um collider trigger começa contato no Runtime World."""
-
-    def on_trigger_exit(self, other: Any) -> None:
-        """Chamado quando um collider trigger encerra contato no Runtime World."""
-
-    def on_collision_enter(self, other: Any) -> None:
-        """Preparado para colisões físicas futuras no Runtime World."""
-
-    def serialize_properties(self) -> dict[str, Any]:
-        return {}
-
-    def deserialize_properties(self, data: dict[str, Any]) -> None:
-        return None
-
-    def serialize(self) -> dict[str, Any]:
+    def serialize(self) -> Dict[str, Any]:
+        """
+        Retorna um dict com o estado serializável do componente.
+        A chave "type" é preenchida automaticamente com o nome da classe.
+        Sobrescreva para adicionar campos específicos — chame super().serialize()
+        e adicione ao dict retornado.
+        """
         return {
-            "id": self.id,
-            "type": self.type_name,
-            "enabled": bool(self.enabled),
-            "properties": self.serialize_properties(),
+            "type": type(self).__name__,
+            "enabled": self._enabled,
         }
 
-    @classmethod
-    def deserialize(cls, data: dict[str, Any]) -> "Component":
-        component = cls()
-        if data.get("id"):
-            component.id = str(data["id"])
-        component.enabled = bool(data.get("enabled", True))
-        properties = data.get("properties", {})
-        if isinstance(properties, dict):
-            component.deserialize_properties(properties)
-        return component
+    def deserialize(self, data: Dict[str, Any]) -> None:
+        """
+        Restaura o estado do componente a partir de *data*.
+        Sobrescreva para restaurar campos específicos — chame super().deserialize(data)
+        no início.
+        """
+        self._enabled = bool(data.get("enabled", True))
+
+    # ------------------------------------------------------------------ #
+    # repr                                                                #
+    # ------------------------------------------------------------------ #
 
     def __repr__(self) -> str:
         go_name = self.game_object.name if self.game_object else "<detached>"
-        return f"<{type(self).__name__} id='{self.id[:8]}' on='{go_name}' started={self._started}>"
+        enabled_str = "" if self._enabled else " disabled"
+        return f"<{type(self).__name__} on='{go_name}' started={self._started}{enabled_str}>"
 
+
+# ============================================================== #
+#  Transform — posição, rotação, escala                         #
+# ============================================================== #
 
 class Transform(Component):
-    """Componente de transformação espacial (2D e 3D)."""
+    """
+    Componente de transformação espacial (2D e 3D).
 
-    component_type = "Transform"
-    unique = True
-    required = True
+    Todo GameObject começa com um Transform já adicionado.
+    Vetores internos são np.float32 para operações rápidas.
+
+    Atalhos 2D comuns:
+        t.x, t.y           — posição
+        t.rz               — rotação em graus (eixo Z)
+        t.sx, t.sy         — escala
+        t.translate(dx, dy)
+    """
+
+    UNIQUE = True
 
     def __init__(
         self,
@@ -131,7 +214,11 @@ class Transform(Component):
         super().__init__()
         self._position = np.array([x, y, z], dtype=np.float32)
         self._rotation = np.array([rx, ry, rz], dtype=np.float32)
-        self._scale = np.array([sx, sy, sz], dtype=np.float32)
+        self._scale    = np.array([sx, sy, sz], dtype=np.float32)
+
+    # ------------------------------------------------------------------ #
+    # Position                                                            #
+    # ------------------------------------------------------------------ #
 
     @property
     def position(self) -> np.ndarray:
@@ -156,6 +243,10 @@ class Transform(Component):
     @z.setter
     def z(self, val: float) -> None: self._position[2] = val
 
+    # ------------------------------------------------------------------ #
+    # Rotation (graus)                                                    #
+    # ------------------------------------------------------------------ #
+
     @property
     def rotation(self) -> np.ndarray:
         return self._rotation
@@ -178,6 +269,10 @@ class Transform(Component):
     def rz(self) -> float: return float(self._rotation[2])
     @rz.setter
     def rz(self, val: float) -> None: self._rotation[2] = val
+
+    # ------------------------------------------------------------------ #
+    # Scale                                                               #
+    # ------------------------------------------------------------------ #
 
     @property
     def scale(self) -> np.ndarray:
@@ -202,6 +297,10 @@ class Transform(Component):
     @sz.setter
     def sz(self, val: float) -> None: self._scale[2] = val
 
+    # ------------------------------------------------------------------ #
+    # Métodos                                                             #
+    # ------------------------------------------------------------------ #
+
     def translate(self, dx: float, dy: float, dz: float = 0.0) -> None:
         """Move o transform pelos deltas fornecidos."""
         self._position += np.array([dx, dy, dz], dtype=np.float32)
@@ -215,8 +314,8 @@ class Transform(Component):
         from engine.graphics.math3d import (
             translation_matrix, rotation_matrix, scale_matrix
         )
-        pos = self._position
-        rot = self._rotation
+        pos   = self._position
+        rot   = self._rotation
         scale = self._scale
 
         local = (
@@ -226,7 +325,7 @@ class Transform(Component):
         )
 
         if self.game_object and self.game_object.parent:
-            parent_t = getattr(self.game_object.parent, "transform", None)
+            parent_t = self.game_object.parent.get_component(Transform)
             if parent_t:
                 return parent_t.get_model_matrix() @ local
 
@@ -235,8 +334,6 @@ class Transform(Component):
     @property
     def world_position(self) -> np.ndarray:
         """Posição no espaço mundo (considera hierarquia)."""
-        if not self.game_object or not self.game_object.parent:
-            return self._position.copy()
         return self.get_model_matrix()[:3, 3]
 
     @property
@@ -244,7 +341,7 @@ class Transform(Component):
         """Rotação acumulada no espaço mundo (graus)."""
         rot = self._rotation.copy()
         if self.game_object and self.game_object.parent:
-            parent_t = getattr(self.game_object.parent, "transform", None)
+            parent_t = self.game_object.parent.get_component(Transform)
             if parent_t:
                 rot += parent_t.world_rotation
         return rot
@@ -252,6 +349,26 @@ class Transform(Component):
     def get_world_position(self) -> np.ndarray:
         """Alias de world_position para compatibilidade."""
         return self.world_position
+
+    # ------------------------------------------------------------------ #
+    # Serialização                                                        #
+    # ------------------------------------------------------------------ #
+
+    def serialize(self) -> Dict[str, Any]:
+        data = super().serialize()
+        data["position"] = self._position.tolist()
+        data["rotation"] = self._rotation.tolist()
+        data["scale"]    = self._scale.tolist()
+        return data
+
+    def deserialize(self, data: Dict[str, Any]) -> None:
+        super().deserialize(data)
+        if "position" in data:
+            self._position = np.array(data["position"], dtype=np.float32)
+        if "rotation" in data:
+            self._rotation = np.array(data["rotation"], dtype=np.float32)
+        if "scale" in data:
+            self._scale = np.array(data["scale"], dtype=np.float32)
 
     def __repr__(self) -> str:
         go_name = self.game_object.name if self.game_object else "<detached>"
