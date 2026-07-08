@@ -121,14 +121,22 @@ class RuntimeScene:
                     components.append(component)
         return components
 
+    def _call_component_hook(self, component: Any, hook_name: str, *args: Any) -> bool:
+        """Call a runtime lifecycle hook only when the component supports it."""
+        hook = getattr(component, hook_name, None)
+        if not callable(hook):
+            return False
+        hook(*args)
+        return True
+
     def start_runtime(self) -> None:
         if self._runtime_started:
             return
-        
+
         # Limpa o CameraManager antes do Play para isolar câmeras de edições ou execuções passadas
         from engine.graphics.camera_manager import CameraManager
         CameraManager.clear()
-        
+
         # Limpa o AudioManager antes do Play para isolar áudio
         from engine.audio import AudioManager
         AudioManager.clear()
@@ -144,7 +152,7 @@ class RuntimeScene:
             from engine.game_object import GameObject
             fallback_go = GameObject("Default Runtime Camera")
             fallback_go.runtime_hidden = True
-            fallback_cam = fallback_go.add_component(Camera())
+            fallback_go.add_component(Camera())
             if hasattr(self.scene, "_add_go"):
                 self.scene._add_go(fallback_go)
             else:
@@ -152,7 +160,7 @@ class RuntimeScene:
                 fallback_go.scene = self.scene
             if hasattr(self.scene, "editable_objects"):
                 self.scene.editable_objects.append(fallback_go)
-                
+
             for comp in fallback_go.components:
                 if comp not in components:
                     components.append(comp)
@@ -164,7 +172,7 @@ class RuntimeScene:
             from engine.game_object import GameObject
             fallback_listener_go = GameObject("Default Audio Listener")
             fallback_listener_go.runtime_hidden = True
-            fallback_listener = fallback_listener_go.add_component(AudioListener())
+            fallback_listener_go.add_component(AudioListener())
             if hasattr(self.scene, "_add_go"):
                 self.scene._add_go(fallback_listener_go)
             else:
@@ -172,7 +180,7 @@ class RuntimeScene:
                 fallback_listener_go.scene = self.scene
             if hasattr(self.scene, "editable_objects"):
                 self.scene.editable_objects.append(fallback_listener_go)
-                
+
             for comp in fallback_listener_go.components:
                 if comp not in components:
                     components.append(comp)
@@ -181,7 +189,7 @@ class RuntimeScene:
         Physics.bind_world(self.physics_world)
         self.script_runtime.start(components)
         for component in components:
-            component.on_runtime_start()
+            self._call_component_hook(component, "on_runtime_start")
             self._runtime_started_components.append(component)
         AudioManager._sources = [comp for comp in components if comp.__class__.__name__ == "AudioSource"]
         AudioManager._listeners = [comp for comp in components if comp.__class__.__name__ == "AudioListener"]
@@ -191,14 +199,14 @@ class RuntimeScene:
             return
         for component in self._iter_enabled_runtime_components():
             if component in self._runtime_started_components:
-                component.on_runtime_update(float(delta_time))
+                self._call_component_hook(component, "on_runtime_update", float(delta_time))
         self.script_runtime.update(float(delta_time))
 
     def stop_runtime(self) -> None:
         if not self._runtime_started:
             return
         for component in list(reversed(self._runtime_started_components)):
-            component.on_runtime_stop()
+            self._call_component_hook(component, "on_runtime_stop")
         self.script_runtime.stop()
         self._runtime_started_components.clear()
         self._runtime_started = False
