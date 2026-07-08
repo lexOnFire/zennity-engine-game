@@ -4,6 +4,8 @@ import numpy as np
 from engine.core import Scene
 from engine.game_object import GameObject
 from engine.graphics.camera2d import Camera2D
+from engine.physics.rigidbody import RigidBody
+from engine.physics.collider import BoxCollider
 
 
 class Editor2DScene(Scene):
@@ -22,6 +24,30 @@ class Editor2DScene(Scene):
         self.cam_obj.transform.position = np.array([400.0, 300.0, 0.0], dtype=np.float32)
         self._add_go(self.cam_obj)
         Camera2D.main = self.camera
+        self.spawn_default_scene()
+
+
+    def spawn_default_scene(self) -> None:
+        floor = GameObject("Chao")
+        floor.transform.position = np.array([400.0, 500.0, 0.0], dtype=np.float32)
+        floor.transform.scale = np.array([600.0, 32.0, 1.0], dtype=np.float32)
+        floor.add_component(BoxCollider(width=600, height=32))
+        rb_floor = floor.add_component(RigidBody())
+        rb_floor.is_kinematic = True
+        floor.mesh_type = "Plataforma"
+        self._add_go(floor)
+        self.editable_objects.append(floor)
+
+        player = GameObject("Player")
+        player.transform.position = np.array([400.0, 200.0, 0.0], dtype=np.float32)
+        player.transform.scale = np.array([36.0, 48.0, 1.0], dtype=np.float32)
+        player.add_component(BoxCollider(width=36, height=48))
+        player.add_component(RigidBody(mass=1.0, gravity_scale=1.0))
+        player.mesh_type = "Player"
+        self._add_go(player)
+        self.editable_objects.append(player)
+
+        self.selected_index = 1
 
     def _add_go(self, go: GameObject) -> None:
         go.scene = self
