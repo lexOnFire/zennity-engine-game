@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
 
 from editor.assets import AssetBrowserModel, AssetBrowserViewModel, ProjectBrowserService
 from editor.models.scene_model import SceneModel
+from editor.runtime.assets_panel_polish_patch import apply_assets_panel_polish
 from editor.runtime.editor_context import EditorContext
 from editor.viewmodels.scene_viewmodel import SceneViewModel
 from editor.widgets.viewport_widget import ViewportWidget
@@ -129,6 +130,7 @@ class ResourcesPanel(Panel):
         self.set_view_mode(self.browser.session.view_mode)
         self.refresh_assets()
         self.tree.itemSelectionChanged.connect(self._selected)
+        apply_assets_panel_polish(self)
 
     def refresh_assets(self) -> None:
         self.browser.refresh()
