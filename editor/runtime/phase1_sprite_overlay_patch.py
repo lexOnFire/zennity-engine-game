@@ -69,6 +69,8 @@ def _cached_pixmap(path: Path) -> QPixmap | None:
 
 
 def _image_component(obj: Any) -> Any | None:
+    if obj is None:
+        return None
     for component in getattr(obj, "components", []):
         if getattr(component, "type_name", type(component).__name__) == "Image":
             if str(getattr(component, "sprite_path", "") or "").strip():
@@ -79,6 +81,27 @@ def _image_component(obj: Any) -> Any | None:
 def _call_or_value(obj: Any, name: str, default: bool = False) -> Any:
     value = getattr(obj, name, default)
     return value() if callable(value) else value
+
+
+def _selected_object(viewport: Any) -> Any | None:
+    getter = getattr(viewport, "selected_object", None)
+    if callable(getter):
+        try:
+            return getter()
+        except Exception:
+            return None
+    return getattr(viewport, "selected", None)
+
+
+def _is_rect_visible(x: float, y: float, w: float, h: float, viewport_w: int, viewport_h: int) -> bool:
+    # Use a generous margin because rotated sprites can extend past their unrotated bounds.
+    margin = max(w, h, 32.0) * 0.5
+    return not (
+        x + margin < 0
+        or x - margin > viewport_w
+        or y + margin < 0
+        or y - margin > viewport_h
+    )
 
 
 def _patch_sprite_selection_overlay() -> None:
@@ -132,16 +155,13 @@ def apply_phase1_sprite_overlay_patch() -> bool:
         painter = QPainter(self)
         try:
             is_editor_view = not bool(_call_or_value(self, "is_game_view", False)) and not bool(_call_or_value(self, "_is_playing", False))
+            selected = _selected_object(self) if is_editor_view else None
+            viewport_w = max(1, int(self.width()))
+            viewport_h = max(1, int(self.height()))
             zoom = float(getattr(getattr(self, "camera", None), "zoom", 1.0))
             for obj in objects:
                 image = _image_component(obj)
                 if image is None or not bool(getattr(image, "visible", True)):
-                    continue
-                path = _resolve_sprite_path(str(getattr(image, "sprite_path", "") or ""))
-                if path is None:
-                    continue
-                pixmap = _cached_pixmap(path)
-                if pixmap is None:
                     continue
                 transform = getattr(obj, "transform", None)
                 if transform is None:
@@ -151,6 +171,14 @@ def apply_phase1_sprite_overlay_patch() -> bool:
                 x, y = self.world_to_viewport(pos)
                 w = max(1.0, abs(float(scale[0])) * zoom)
                 h = max(1.0, abs(float(scale[1])) * zoom)
+                if not _is_rect_visible(float(x), float(y), w, h, viewport_w, viewport_h):
+                    continue
+                path = _resolve_sprite_path(str(getattr(image, "sprite_path", "") or ""))
+                if path is None:
+                    continue
+                pixmap = _cached_pixmap(path)
+                if pixmap is None:
+                    continue
                 alpha = max(0.0, min(1.0, float(getattr(image, "alpha", 255)) / 255.0))
                 rz = float(getattr(transform, "rz", 0.0))
                 local_rect = QRectF(-w / 2.0, -h / 2.0, w, h)
@@ -161,7 +189,7 @@ def apply_phase1_sprite_overlay_patch() -> bool:
                 painter.setOpacity(alpha)
                 painter.drawPixmap(local_rect, pixmap, pixmap.rect())
                 painter.setOpacity(1.0)
-                if is_editor_view:
+                if is_editor_view and obj is selected:
                     painter.setPen(QPen(_EDITOR_BOX, 1, Qt.DotLine))
                     painter.setBrush(Qt.NoBrush)
                     painter.drawRect(local_rect)
