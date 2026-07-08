@@ -247,6 +247,11 @@ class SceneManager:
             if len(self._stack) > 1:
                 self._stack.pop()
             UIManager.reset()
+            # FIX (jul/2026): restaura _ui_setup da cena anterior após pop com
+            # transição visual — antes só era chamado no pop() sem transição.
+            prev_scene = self._stack[-1] if self._stack else None
+            if prev_scene and hasattr(prev_scene, "_ui_setup"):
+                prev_scene._ui_setup()
         elif self._pending_push:
             UIManager.reset()
             scene = self._pending_scene

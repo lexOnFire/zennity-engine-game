@@ -11,7 +11,17 @@ class RigidBody(Component):
     para evitar vazamento quando forças externas e gravidade dividiam o mesmo array.
 
     Adicionado: atributo `grounded` para integração com TilemapCollider.
+
+    FIX (jul/2026): GRAVITY movida para constante de classe — era atributo de
+    instância mutável em __init__, o que tornava impossível alterar o valor
+    globalmente sem criar um novo RigidBody.
+    Para sobrescrever pontualmente: rb.GRAVITY = 500.0 (continua funcionando
+    por herança de atributo de instância sobre o de classe).
+    Para alterar globalmente: RigidBody.GRAVITY = 500.0
     """
+
+    # Constante de classe — valor padrão da gravidade em pixels/s²
+    GRAVITY: float = 980.0
 
     def __init__(
         self,
@@ -34,8 +44,6 @@ class RigidBody(Component):
 
         # Flag definida pelo TilemapCollider a cada frame
         self.grounded: bool = False
-
-        self.GRAVITY: float = 980.0
 
     # ------------------------------------------------------------------
 
@@ -79,5 +87,5 @@ class RigidBody(Component):
         transform.x += self.velocity[0] * dt
         transform.y += self.velocity[1] * dt
 
-        # Reset external forces (gravity is NOT here — it’s in velocity directly)
+        # Reset external forces (gravity is NOT here — it's in velocity directly)
         self.acceleration[:] = 0.0
