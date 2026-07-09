@@ -21,7 +21,7 @@ from unittest.mock import MagicMock, patch, call
 
 import pytest
 
-# ── stubs de módulos externos ──────────────────────────────────────────
+# ── stubs de módulos externos ──────────────────────────────────────────────────────
 
 # pygame
 if "pygame" not in sys.modules:
@@ -55,7 +55,7 @@ _ui_mod.UIManager = _UIManager
 sys.modules["engine.ui"]             = ModuleType("engine.ui")
 sys.modules["engine.ui.ui_manager"]  = _ui_mod
 
-# engine.physics.collider
+# engine.physics.collider — FIX: CollisionInfo incluído no stub
 _phys_mod = ModuleType("engine.physics.collider")
 _BC = MagicMock()
 _BC._scene_tilemaps            = {}
@@ -65,8 +65,10 @@ _BC.check_all                  = MagicMock()
 _CC = MagicMock()
 _CC._registry                  = []
 _CC.check_all                  = MagicMock()
+_CollisionInfo                 = MagicMock()  # FIX: adicionado
 _phys_mod.BoxCollider    = _BC
 _phys_mod.CircleCollider = _CC
+_phys_mod.CollisionInfo  = _CollisionInfo     # FIX: adicionado
 sys.modules["engine.physics"]          = ModuleType("engine.physics")
 sys.modules["engine.physics.collider"] = _phys_mod
 
@@ -82,7 +84,7 @@ sys.modules["engine.audio"] = _audio_mod
 from engine.core.scene_manager import SceneManager  # noqa: E402
 
 
-# ── helpers ───────────────────────────────────────────────────────────────
+# ── helpers ──────────────────────────────────────────────────────────────────────────
 
 class _FakeScene:
     def __init__(self, name="FakeScene"):
@@ -129,7 +131,7 @@ def fake_engine():
     return e
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────
 class TestSingleton:
     def test_instance_is_same_object(self):
         assert SceneManager.instance() is SceneManager.instance()
@@ -150,7 +152,7 @@ class TestSingleton:
         assert sm().is_transitioning is False
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────
 class TestBind:
     def test_bind_sets_engine_ref(self):
         e = fake_engine()
@@ -163,7 +165,7 @@ class TestBind:
         assert e.change_scene is sm().load
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────
 class TestLoad:
     def test_load_sets_current(self):
         s = _FakeScene()
@@ -214,7 +216,7 @@ class TestLoad:
         s.start.assert_not_called()
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────
 class TestPush:
     def test_push_increases_depth(self):
         m = sm()
@@ -252,7 +254,7 @@ class TestPush:
         assert m._transition is tr
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────
 class TestPop:
     def test_pop_reduces_depth(self):
         m = sm()
@@ -295,7 +297,7 @@ class TestPop:
         _UIManager.reset.assert_called()
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────
 class TestUpdate:
     def test_update_delegates_to_current(self):
         m = sm()
@@ -382,7 +384,7 @@ class TestUpdate:
         assert m.current is new
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────
 class TestDraw:
     def test_draw_delegates_to_current(self):
         m      = sm()
@@ -422,7 +424,7 @@ class TestDraw:
         tr.draw.assert_called_once_with(screen)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────
 class TestHandleEvent:
     def test_handle_event_delegates_to_current(self):
         m  = sm()
@@ -448,7 +450,7 @@ class TestHandleEvent:
         sm().handle_event(MagicMock())
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────
 class TestCallbacks:
     def test_on_transition_start_fires_on_load(self):
         cb = MagicMock()
@@ -474,7 +476,7 @@ class TestCallbacks:
         cb.assert_called_once()
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────
 class TestRepr:
     def test_repr_contains_depth(self):
         m = sm()
