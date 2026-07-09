@@ -1,22 +1,26 @@
 """
 tests/conftest.py
 ────────────────────────────────────────────────────────────────────────────
-Garante que pygame.draw.rect seja um MagicMock e que pygame.Surface retorne
-um _FakeSurface nos testes de transição.
+Garante que pygame.draw.rect e pygame.Surface sejam stubs ANTES que
+engine.transitions seja importado pelos testes.
 
-Problema raiz: CrossfadeTransition.draw() cria internamente
-    self._alpha_surf = pygame.Surface((w, h), pygame.SRCALPHA)
-e depois faz
-    self._alpha_surf.blit(snapshot, (0, 0))
-Se pygame.Surface for a classe C real, _alpha_surf é uma Surface SDL que
-rejeita _FakeSurface como argumento do blit com:
-    TypeError: argument 1 must be pygame.surface.Surface, not _FakeSurface
+Problema raiz:
+  O pytest coleta TODOS os testes antes de rodar qualquer um. Durante a
+  coleta, outro módulo de teste importa `engine` (via engine/__init__.py),
+  que por sua vez importa `engine.transitions`. Nesse momento pygame.Surface
+  e pygame.draw.rect ainda são as implementações C reais. Quando
+  test_transitions.py tenta importar SlideTransition, o módulo já está em
+  sys.modules com a referência antiga — retornando "unknown location".
 
-Solução: substituir pygame.Surface por _FakeSurface aqui no conftest,
-que é carregado pelo pytest ANTES de qualquer módulo de teste.
+Solução:
+  1. Instalar os stubs em pygame antes de qualquer coisa.
+  2. Remover engine.transitions de sys.modules para forçar reload limpo.
+  3. Reimportar engine.transitions já com os stubs ativos.
 """
 from __future__ import annotations
 
+import importlib
+import sys
 from unittest.mock import MagicMock
 
 import pygame
@@ -42,20 +46,25 @@ class _FakeSurface:
     def get_alpha(self): return self._alpha
 
 
-# ── Instalar stubs no pygame antes de qualquer import de teste ──────────────
-#
-# pygame.Surface  → _FakeSurface
-#   CrossfadeTransition cria `self._alpha_surf = pygame.Surface(...)` dentro
-#   do draw(). Se for a Surface C real, ela rejeita _FakeSurface no blit.
-#   Ao substituir por _FakeSurface, _alpha_surf também se torna um fake e
-#   aceita qualquer argumento.
-#
-# pygame.draw.rect → MagicMock
-#   WipeTransition chama pygame.draw.rect(screen, color, rect). A função C
-#   real também rejeita _FakeSurface como primeiro argumento.
+# ── 1. Instalar stubs no pygame ───────────────────────────────────────────────────
 
-pygame.Surface  = _FakeSurface          # type: ignore[assignment]
+pygame.Surface   = _FakeSurface         # type: ignore[assignment]
 pygame.draw.rect = MagicMock()
+
+# ── 2. Forçar reload de engine.transitions com stubs já ativos ────────────────
+#
+# Remove o módulo e todos os submódulos do engine que dependem de pygame,
+# para que o próximo import use pygame.Surface = _FakeSurface.
+
+_MODULES_TO_RELOAD = [
+    "engine.transitions",
+    "engine",
+]
+
+for _mod in _MODULES_TO_RELOAD:
+    sys.modules.pop(_mod, None)
+
+importlib.import_module("engine.transitions")
 
 
 # ── Fixtures ───────────────────────────────────────────────────────────────────────
