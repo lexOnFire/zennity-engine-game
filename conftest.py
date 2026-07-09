@@ -1,13 +1,12 @@
 """
 conftest.py — fixtures globais para os testes da Zennity Engine.
 
-pytest_configure() é o hook mais cedo possível — roda ANTES da coleta,
-BEFORE de qualquer import de módulo de teste, mesmo antes das fixtures.
-Por isso os stubs de pygame ficam aqui dentro desse hook.
+pytest_configure() roda ANTES de qualquer coleta ou import de módulo de teste.
+Aqui apenas instalamos os stubs de pygame — NÃO importamos engine.transitions
+para evitar import duplo / conflito de cache durante a coleta.
 """
 from __future__ import annotations
 
-import importlib
 import os
 import sys
 from unittest.mock import MagicMock
@@ -36,40 +35,36 @@ class _FakeSurface:
 
 def pytest_configure(config):
     """
-    Hook mais cedo do pytest — roda antes de qualquer coleta ou import
-    de módulo de teste.
-
-    Instala os stubs de pygame.Surface e pygame.draw.rect para que
-    CrossfadeTransition e WipeTransition funcionem com _FakeSurface
-    nos testes unitários.
+    Instala stubs de pygame antes de qualquer coleta.
+    NÃO chama importlib.import_module("engine.transitions") aqui —
+    isso causava import duplo e o erro '(unknown location)'.
     """
-    # Vars SDL antes do primeiro import de pygame
     os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
     os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
     os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
     import pygame  # noqa: PLC0415
+    pygame.init()
 
-    # Substituir Surface e draw.rect por stubs
+    # Stubs — instalados UMA vez, antes de qualquer import de engine.*
     pygame.Surface   = _FakeSurface          # type: ignore[assignment]
     pygame.draw.rect = MagicMock()
+    pygame.SRCALPHA  = 65536                 # valor real do pygame, evita AttributeError
 
-    # Limpar cache de engine.transitions para que o próximo import
-    # use os stubs recém instalados
-    for mod in ("engine.transitions", "engine"):
-        sys.modules.pop(mod, None)
-
-    importlib.import_module("engine.transitions")
+    # Garante que engine.transitions seja importado pela 1ª vez JÁ com os stubs
+    # removendo qualquer cache residual (ex: de um import acidental anterior)
+    for mod in list(sys.modules.keys()):
+        if mod.startswith("engine"):
+            del sys.modules[mod]
 
 
 # ── Inicialização do pygame ───────────────────────────────────────────────────
 
 @pytest.fixture(scope="session", autouse=True)
 def _pygame_init():
-    """Inicializa o pygame uma única vez para toda a sessão de testes."""
-    import pygame  # noqa: PLC0415
-    pygame.init()
+    """Pygame já foi inicializado em pytest_configure; apenas faz yield."""
     yield
+    import pygame  # noqa: PLC0415
     pygame.quit()
 
 
