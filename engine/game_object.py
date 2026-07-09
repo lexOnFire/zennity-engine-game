@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import uuid
 from typing import Any, Dict, List, Optional, Type, TypeVar, TYPE_CHECKING
 
@@ -10,6 +11,7 @@ if TYPE_CHECKING:
     from .core import Scene
 
 T = TypeVar('T', bound='Component')
+_log = logging.getLogger(__name__)
 
 
 class GameObject:
@@ -20,16 +22,9 @@ class GameObject:
         go.id    — UUID4 único e imutável, atribuído na criação
         go.name  — nome legível para editor e debug (mutável)
         go.tag   — agrupamento semântico ("Player", "Enemy", "Wall")
-
-    Exemplo:
-        player = GameObject("Player", tag="Player")
-        player.id    # '3f2a1c...' — UUID4 completo
-        player.name  # 'Player'
-        player.tag   # 'Player'
     """
 
     def __init__(self, name: str = "GameObject", tag: str = "Untagged") -> None:
-        # Identidade
         self._id: str = str(uuid.uuid4())
         self.name:   str  = name
         self.tag:    str  = tag
@@ -51,12 +46,10 @@ class GameObject:
 
     @property
     def id(self) -> str:
-        """UUID4 único e imutável atribuído na criação."""
         return self._id
 
     @property
     def short_id(self) -> str:
-        """Primeiros 8 caracteres do UUID — útil para logs e debug."""
         return self._id[:8]
 
     # ------------------------------------------------------------------ #
@@ -70,10 +63,16 @@ class GameObject:
     @scene.setter
     def scene(self, val: Optional['Scene']) -> None:
         self._scene = val
-        for comp in self.components:
-            if val and not comp._started:
-                comp.start()
-                comp._started = True
+        # FIX: só chama start() se a cena NÃO for None (evita start ao desacoplar)
+        if val is not None:
+            for comp in self.components:
+                if not comp._started:
+                    try:
+                        comp.start()
+                    except Exception as exc:
+                        _log.warning("[start] %s em '%s': %s", type(comp).__name__, self.name, exc)
+                    finally:
+                        comp._started = True
         for child in self.children:
             child.scene = val
 
@@ -82,13 +81,6 @@ class GameObject:
     # ------------------------------------------------------------------ #
 
     def add_component(self, component: 'Component') -> 'Component':
-        """
-        Adiciona *component* ao GameObject.
-
-        Se a classe do componente tiver UNIQUE=True e já existir uma instância
-        do mesmo tipo neste GO, levanta TypeError.
-        """
-        # Verificação UNIQUE
         if getattr(type(component), 'UNIQUE', False):
             existing = self.get_component(type(component))
             if existing is not None and existing is not component:
@@ -99,8 +91,12 @@ class GameObject:
         component.game_object = self
         self.components.append(component)
         if self.scene and not component._started:
-            component.start()
-            component._started = True
+            try:
+                component.start()
+            except Exception as exc:
+                _log.warning("[start] %s em '%s': %s", type(component).__name__, self.name, exc)
+            finally:
+                component._started = True
         return component
 
     def get_component(self, component_type: Type[T]) -> Optional[T]:
@@ -114,19 +110,18 @@ class GameObject:
 
     def remove_component(self, component: 'Component') -> None:
         if component in self.components:
-            component.destroy()
+            try:
+                component.destroy()
+            except Exception as exc:
+                _log.warning("[destroy] %s: %s", type(component).__name__, exc)
             component.game_object = None
             self.components.remove(component)
 
     # ------------------------------------------------------------------ #
-    # Serialização (Fase 9)                                               #
+    # Serialização                                                        #
     # ------------------------------------------------------------------ #
 
     def serialize(self) -> Dict[str, Any]:
-        """
-        Retorna um dict com o estado completo do GameObject:
-        nome, tag, active, lista de componentes serializados e filhos.
-        """
         return {
             "id":         self._id,
             "name":       self.name,
@@ -138,36 +133,37 @@ class GameObject:
 
     @classmethod
     def deserialize(cls, data: Dict[str, Any]) -> "GameObject":
-        """
-        Reconstrói um GameObject a partir de um dict produzido por serialize().
-
-        Usa ComponentRegistry para instanciar os componentes pelo nome.
-        O Transform já é criado pelo __init__ e atualizado via deserialize().
-        """
         from engine.component_registry import ComponentRegistry
         from engine.core.component import Transform
 
         go = cls(name=data.get("name", "GameObject"), tag=data.get("tag", "Untagged"))
         go.active = bool(data.get("active", True))
-
-        # Restaurar o _id original
         go._id = data.get("id", go._id)
 
         for comp_data in data.get("components", []):
             type_name = comp_data.get("type", "")
             if type_name == "Transform":
-                # Transform já existe — apenas deserializa
                 go.transform.deserialize(comp_data)
             else:
                 klass = ComponentRegistry.get(type_name)
                 if klass is None:
-                    continue  # componente desconhecido — ignora graciosamente
-                instance = klass.__new__(klass)
-                # Inicializa via Component.__init__ sem parâmetros
-                from engine.core.component import Component
-                Component.__init__(instance)
-                instance.deserialize(comp_data)
-                go.add_component(instance)
+                    # FIX: loga em vez de silenciosamente descartrar/travar
+                    _log.warning(
+                        "[deserialize] Componente desconhecido '%s' em '%s' — ignorado.",
+                        type_name, go.name,
+                    )
+                    continue
+                try:
+                    instance = klass.__new__(klass)
+                    from engine.core.component import Component
+                    Component.__init__(instance)
+                    instance.deserialize(comp_data)
+                    go.add_component(instance)
+                except Exception as exc:
+                    _log.error(
+                        "[deserialize] Falha ao recriar '%s' em '%s': %s",
+                        type_name, go.name, exc,
+                    )
 
         for child_data in data.get("children", []):
             child = cls.deserialize(child_data)
@@ -203,8 +199,12 @@ class GameObject:
     def start(self) -> None:
         for comp in self.components:
             if not comp._started and self.scene:
-                comp.start()
-                comp._started = True
+                try:
+                    comp.start()
+                except Exception as exc:
+                    _log.warning("[start] %s em '%s': %s", type(comp).__name__, self.name, exc)
+                finally:
+                    comp._started = True
         for child in self.children:
             child.start()
 
@@ -213,10 +213,17 @@ class GameObject:
             return
         for comp in self.components:
             if not comp._started and self.scene:
-                comp.start()
-                comp._started = True
+                try:
+                    comp.start()
+                except Exception as exc:
+                    _log.warning("[start-lazy] %s em '%s': %s", type(comp).__name__, self.name, exc)
+                finally:
+                    comp._started = True
             if comp.enabled:
-                comp.update(dt)
+                try:
+                    comp.update(dt)
+                except Exception as exc:
+                    _log.error("[update] %s em '%s': %s", type(comp).__name__, self.name, exc)
         for child in self.children:
             child.update(dt)
 
@@ -225,14 +232,21 @@ class GameObject:
             return
         for comp in self.components:
             if comp.enabled:
-                comp.draw(screen)
+                try:
+                    comp.draw(screen)
+                except Exception as exc:
+                    # FIX: falha no draw de UM componente não destrói o objeto inteiro
+                    _log.error("[draw] %s em '%s': %s", type(comp).__name__, self.name, exc)
         for child in self.children:
             child.draw(screen)
 
     def destroy(self) -> None:
         self.active = False
         for comp in self.components:
-            comp.destroy()
+            try:
+                comp.destroy()
+            except Exception:
+                pass
         self.components.clear()
         for child in list(self.children):
             child.destroy()
@@ -241,7 +255,7 @@ class GameObject:
             if self in self.parent.children:
                 self.parent.children.remove(self)
             self.parent = None
-        self.scene = None
+        self._scene = None  # FIX: não usa setter para evitar cascade ao destruir
 
     # ------------------------------------------------------------------ #
     # repr                                                                #

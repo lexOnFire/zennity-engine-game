@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Callable, Optional
 
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import (
@@ -40,10 +40,17 @@ _ADD_STYLE = (
     "QPushButton:hover{background:#252839;color:#9ca3af;border-color:#374151;}"
     "QPushButton:pressed{background:#1e2130;}"
 )
+_REMOVE_BTN_STYLE = (
+    "QPushButton{background:transparent;border:none;color:#4b5563;"
+    "font-size:14px;padding:0 4px;min-width:20px;max-width:20px;"
+    "min-height:20px;max-height:20px;border-radius:3px;}"
+    "QPushButton:hover{background:#3f1f1f;color:#f87171;}"
+    "QPushButton:pressed{background:#5a1f1f;}"
+)
 
 
 class InspectorDock(QDockWidget):
-    """Inspector redesenhado – spinboxes reais, sem texto NumPy cru."""
+    """Inspector com botão de remoção por componente e campos válidos."""
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__("Inspector", parent)
@@ -53,7 +60,6 @@ class InspectorDock(QDockWidget):
         self.viewmodel: Optional[SceneViewModel] = None
         self._block_updates = False
 
-        # Scroll area
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
         self.scroll.setFrameShape(QFrame.NoFrame)
@@ -93,7 +99,6 @@ class InspectorDock(QDockWidget):
             if item.widget():
                 item.widget().deleteLater()
 
-    # keep old names for any external callers
     def show_empty_state(self) -> None:
         self._show_empty()
 
@@ -103,7 +108,6 @@ class InspectorDock(QDockWidget):
     # ── header ──────────────────────────────────────────────────────────────
 
     def _build_header(self, obj: GameObject) -> None:
-        # Row 1 – checkbox + name + Estático badge
         r1 = QWidget(); r1.setStyleSheet("background:transparent;")
         h1 = QHBoxLayout(r1)
         h1.setContentsMargins(0, 0, 0, 2); h1.setSpacing(6)
@@ -111,6 +115,9 @@ class InspectorDock(QDockWidget):
         self.chk_active = QCheckBox()
         self.chk_active.setChecked(getattr(obj, "active", True))
         self.chk_active.setStyleSheet("QCheckBox{color:#9ca3af;}")
+        self.chk_active.toggled.connect(
+            lambda v: setattr(obj, "active", v) if self.viewmodel else None
+        )
 
         self.txt_name = QLineEdit(obj.name)
         self.txt_name.setStyleSheet(
@@ -129,7 +136,6 @@ class InspectorDock(QDockWidget):
         h1.addWidget(lbl_static)
         self.lc.addWidget(r1)
 
-        # Row 2 – Tag / Layer
         r2 = QWidget(); r2.setStyleSheet("background:transparent;")
         h2 = QHBoxLayout(r2)
         h2.setContentsMargins(0, 0, 0, 6); h2.setSpacing(6)
@@ -141,17 +147,19 @@ class InspectorDock(QDockWidget):
 
         h2.addWidget(_lbl("Tag"))
         cb_tag = QComboBox(); cb_tag.setStyleSheet(_COMBO_STYLE)
-        cb_tag.addItems(["Untagged","Player","Enemy","Ground","Trigger"])
+        cb_tag.addItems(["Untagged", "Player", "Enemy", "Ground", "Trigger"])
         tag_val = str(getattr(obj, "tag", "Untagged"))
         cb_tag.setCurrentIndex(max(0, cb_tag.findText(tag_val)))
+        cb_tag.currentTextChanged.connect(lambda v: setattr(obj, "tag", v))
         h2.addWidget(cb_tag)
 
         h2.addSpacing(10)
         h2.addWidget(_lbl("Layer"))
         cb_layer = QComboBox(); cb_layer.setStyleSheet(_COMBO_STYLE)
-        cb_layer.addItems(["Default","UI","Background","Foreground","Player"])
+        cb_layer.addItems(["Default", "UI", "Background", "Foreground", "Player"])
         layer_val = str(getattr(obj, "layer", "Default"))
         cb_layer.setCurrentIndex(max(0, cb_layer.findText(layer_val)))
+        cb_layer.currentTextChanged.connect(lambda v: setattr(obj, "layer", v))
         h2.addWidget(cb_layer)
         h2.addStretch()
         self.lc.addWidget(r2)
@@ -161,12 +169,54 @@ class InspectorDock(QDockWidget):
         sep.setStyleSheet("background:#1f2330;border:none;max-height:1px;margin:2px 0 6px 0;")
         self.lc.addWidget(sep)
 
-    # ── section builder ─────────────────────────────────────────────────────
+    # ── section builder COM botão de remoção opcional ────────────────────
 
-    def _section(self, title: str, widget: QWidget, icon: str = "") -> CollapsibleSection:
+    def _section(
+        self,
+        title: str,
+        widget: QWidget,
+        icon: str = "",
+        remove_cb: Optional[Callable] = None,
+    ) -> QWidget:
+        """
+        Cria uma seção colapsável.
+        Se *remove_cb* for fornecido, adiciona botão × no cabeçalho.
+        """
         sec = CollapsibleSection(title, icon=icon)
         sec.set_content_widget(widget)
+
+        if remove_cb is not None:
+            btn_remove = QPushButton("×")
+            btn_remove.setStyleSheet(_REMOVE_BTN_STYLE)
+            btn_remove.setToolTip(f"Remover {title}")
+            btn_remove.clicked.connect(remove_cb)
+            # Injeta o botão na barra de título da seção colapsável
+            header_layout = sec.header_bar.layout() if hasattr(sec, "header_bar") else None
+            if header_layout:
+                header_layout.addWidget(btn_remove)
+            else:
+                # fallback: coloca em row horizontal ao lado da secção
+                row = QWidget()
+                rl = QHBoxLayout(row)
+                rl.setContentsMargins(0, 0, 0, 0)
+                rl.setSpacing(0)
+                rl.addWidget(sec, 1)
+                rl.addWidget(btn_remove)
+                return row
+
         return sec
+
+    # ── _remove helpers ──────────────────────────────────────────────────────
+
+    def _remove_component(self, component) -> None:
+        """Remove o componente do objeto selecionado e recarrega o Inspector."""
+        if not self.viewmodel:
+            return
+        obj = self.viewmodel.selected_object
+        if obj and component in obj.components:
+            obj.remove_component(component)
+            # Recarrega o Inspector
+            self.on_selection_changed(obj)
 
     # ── selection changed ────────────────────────────────────────────────────
 
@@ -181,13 +231,21 @@ class InspectorDock(QDockWidget):
 
         self._build_header(obj)
 
-        # Transform
+        # Transform (obrigatório — sem botão de remoção)
         self.transform_widget = TransformComponentWidget(self.viewmodel)
         self.lc.addWidget(self._section("Transform", self.transform_widget))
 
-        # Mesh Renderer
-        self.mesh_widget = MeshRendererWidget(self.viewmodel)
-        self.lc.addWidget(self._section("Mesh Renderer", self.mesh_widget))
+        # Mesh Renderer (apenas se o objeto tiver mesh)
+        has_mesh = bool(getattr(obj, "mesh_path", None) or getattr(obj, "mesh_type", None))
+        if has_mesh:
+            self.mesh_widget = MeshRendererWidget(self.viewmodel)
+            self.lc.addWidget(
+                self._section(
+                    "Mesh Renderer",
+                    self.mesh_widget,
+                    remove_cb=lambda: self._remove_mesh(obj),
+                )
+            )
 
         # Collider
         bc = obj.get_component(BoxCollider)
@@ -196,21 +254,41 @@ class InspectorDock(QDockWidget):
             collider  = bc if bc else cc
             type_name = "Box Collider" if bc else "Circle Collider"
             self.col_widget = ColliderComponentWidget(self.viewmodel, collider)
-            self.lc.addWidget(self._section(type_name, self.col_widget))
+            self.lc.addWidget(
+                self._section(
+                    type_name,
+                    self.col_widget,
+                    remove_cb=lambda c=collider: self._remove_component(c),
+                )
+            )
 
         # RigidBody
         rb = obj.get_component(RigidBody)
         if rb:
             self.rb_widget = RigidBodyComponentWidget(self.viewmodel, rb)
-            self.lc.addWidget(self._section("RigidBody", self.rb_widget))
+            self.lc.addWidget(
+                self._section(
+                    "RigidBody",
+                    self.rb_widget,
+                    remove_cb=lambda c=rb: self._remove_component(c),
+                )
+            )
 
-        # Script
+        # Script (apenas se houver script_path)
         script_path = getattr(obj, "script_path", "") or ""
-        label = script_path.split("/")[-1].replace(".py", "") if script_path else obj.name
-        self.script_widget = ScriptComponentWidget(self.viewmodel)
-        self.lc.addWidget(self._section(f"{label} (Script)", self.script_widget, icon="📄"))
+        if script_path:
+            label = script_path.split("/")[-1].replace(".py", "")
+            self.script_widget = ScriptComponentWidget(self.viewmodel)
+            self.lc.addWidget(
+                self._section(
+                    f"{label} (Script)",
+                    self.script_widget,
+                    icon="\U0001f4c4",
+                    remove_cb=lambda: self._remove_script(obj),
+                )
+            )
 
-        # Adicionar Componente
+        # Botão Adicionar Componente
         self.btn_add = QPushButton("Adicionar Componente")
         self.btn_add.setStyleSheet(_ADD_STYLE)
         self.btn_add.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -218,6 +296,18 @@ class InspectorDock(QDockWidget):
         self.lc.addWidget(self.btn_add)
 
         self._block_updates = False
+
+    # ── remove helpers específicos ──────────────────────────────────────────
+
+    def _remove_mesh(self, obj: GameObject) -> None:
+        obj.mesh_type = None
+        if hasattr(obj, "mesh_path"):
+            obj.mesh_path = None
+        self.on_selection_changed(obj)
+
+    def _remove_script(self, obj: GameObject) -> None:
+        obj.script_path = ""
+        self.on_selection_changed(obj)
 
     # ── property_changed ─────────────────────────────────────────────────────
 
@@ -256,7 +346,6 @@ class InspectorDock(QDockWidget):
         elif comp == "Script" and hasattr(self, "script_widget"):
             self.script_widget.refresh_scripts_list()
 
-    # backward-compat aliases
     def on_name_edited(self) -> None:
         self._on_name_edited()
 
