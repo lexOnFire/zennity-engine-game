@@ -4,8 +4,7 @@ tests/test_transitions.py
 Testes unitários de engine/transitions.py.
 
 Estratégia de isolamento:
-  - pygame completo é stubado: Surface, SRCALPHA, draw.rect são
-    substituidos por MagicMock ou fake classes controladas.
+  - pygame.draw.rect é mockado pelo conftest.py antes de qualquer import.
   - _FakeSurface rastreia blit/fill/draw calls sem SDL.
   - Cada teste avalia o estado interno (phase, progress, timer) ou
     os métodos blitados na surface, não pixels reais.
@@ -13,49 +12,10 @@ Estratégia de isolamento:
 """
 from __future__ import annotations
 
-import sys
-from types import ModuleType
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
+import pygame
 import pytest
-
-# ── stub pygame ──────────────────────────────────────────────────────────────
-
-class _FakeSurface:
-    """Surface mínimo: rastreia blit/fill, responde a get_size/get_alpha/set_alpha."""
-    def __init__(self, size=(800, 600), flags=0):
-        self._size  = size
-        self._flags = flags
-        self._alpha = 255
-        self.blit   = MagicMock()
-        self.fill   = MagicMock()
-        self.set_alpha = MagicMock(side_effect=lambda a: setattr(self, "_alpha", a))
-    def get_size(self):  return self._size
-    def get_alpha(self): return self._alpha
-
-
-def _build_pygame_stub():
-    pg = ModuleType("pygame")
-    pg.SRCALPHA = 65536
-    pg.Surface  = _FakeSurface
-
-    draw_mod = ModuleType("pygame.draw")
-    draw_mod.rect = MagicMock()
-    pg.draw = draw_mod
-
-    sys.modules["pygame"]      = pg
-    sys.modules["pygame.draw"] = draw_mod
-    return pg
-
-
-if "pygame" not in sys.modules:
-    _pg = _build_pygame_stub()
-else:
-    _pg = sys.modules["pygame"]
-    _pg.SRCALPHA = getattr(_pg, "SRCALPHA", 65536)
-    if not isinstance(getattr(_pg, "Surface", None), type) or \
-       getattr(_pg.Surface, "_fake", False):
-        _pg.Surface = _FakeSurface
 
 from engine.transitions import (   # noqa: E402
     Transition, TransitionPhase,
@@ -65,7 +25,25 @@ from engine.transitions import (   # noqa: E402
 )
 
 
-# ── helpers ────────────────────────────────────────────────────────────────
+# ── _FakeSurface ──────────────────────────────────────────────────────────────────
+
+class _FakeSurface:
+    """Surface mínimo: rastreia blit/fill, responde a get_size/get_alpha/set_alpha."""
+    _fake = True
+
+    def __init__(self, size=(800, 600), flags=0):
+        self._size  = tuple(size)
+        self._flags = flags
+        self._alpha = 255
+        self.blit      = MagicMock()
+        self.fill      = MagicMock()
+        self.set_alpha = MagicMock(side_effect=lambda a: setattr(self, "_alpha", a))
+
+    def get_size(self):  return self._size
+    def get_alpha(self): return self._alpha
+
+
+# ── helpers ───────────────────────────────────────────────────────────────────────
 
 def _advance(t: Transition, dt: float, steps: int = 1):
     for _ in range(steps):
@@ -96,7 +74,8 @@ def _fake_snap(size=(800, 600)):
     return _FakeSurface(size)
 
 
-# ── TestEasing ────────────────────────────────────────────────────────────────
+# ── TestEasing ──────────────────────────────────────────────────────────────────────────
+
 class TestEasing:
     def test_linear_zero(self):      assert _linear(0.0)      == pytest.approx(0.0)
     def test_linear_half(self):      assert _linear(0.5)      == pytest.approx(0.5)
@@ -119,7 +98,8 @@ class TestEasing:
             assert callable(fn)
 
 
-# ── TestTransitionBase ────────────────────────────────────────────────────────────
+# ── TestTransitionBase ──────────────────────────────────────────────────────────────────
+
 class TestTransitionBase:
     def test_initial_phase_is_out(self):
         assert Transition().phase == TransitionPhase.OUT
@@ -174,7 +154,7 @@ class TestTransitionBase:
     def test_update_noop_when_done(self):
         t = Transition(duration_out=0.01, duration_in=0.01)
         _run_to_done(t)
-        t.update(999.0)  # não deve crashar nem mudar estado
+        t.update(999.0)
         assert t.is_done is True
 
     def test_progress_resets_to_zero_when_entering_in(self):
@@ -191,7 +171,7 @@ class TestTransitionBase:
     def test_base_draw_does_nothing(self):
         t   = Transition()
         scr = _FakeSurface()
-        t.draw(scr)  # não deve lançar
+        t.draw(scr)
         scr.blit.assert_not_called()
 
     def test_snapshot_out_none_initially(self):
@@ -207,7 +187,8 @@ class TestTransitionBase:
         assert t.progress == pytest.approx(0.3, abs=0.01)
 
 
-# ── TestFadeTransition ────────────────────────────────────────────────────────────
+# ── TestFadeTransition ──────────────────────────────────────────────────────────────────
+
 class TestFadeTransition:
     def test_default_color_black(self):
         assert FadeTransition().color == (0, 0, 0)
@@ -253,22 +234,19 @@ class TestFadeTransition:
         scr.blit.assert_not_called()
 
     def test_draw_no_overlay_when_in_progress_zero(self):
-        """alpha=0 → overlay não deve ser blitado na fase IN."""
         f = FadeTransition(duration_out=0.01, duration_in=1.0)
         scr = _FakeSurface()
         f.snapshot_out = _fake_snap()
         f.snapshot_in  = _fake_snap()
         _run_to_swap(f)
-        f.update(0.0)   # IN, progress=0
-        # Reseta blit para contar somente o draw()
+        f.update(0.0)
         scr.blit.reset_mock()
         f.draw(scr)
-        # progress=0 → alpha=255 (cobre tudo); ainda há 2 blits (snapshot+overlay)
-        # O teste só garante que não crasha
         assert scr.blit.call_count >= 1
 
 
-# ── TestSlideTransition ────────────────────────────────────────────────────────────
+# ── TestSlideTransition ──────────────────────────────────────────────────────────────────
+
 class TestSlideTransition:
     def test_default_direction_left(self):
         assert SlideTransition().direction == SlideDirection.LEFT
@@ -293,15 +271,13 @@ class TestSlideTransition:
         s.snapshot_out = _fake_snap()
         s.snapshot_in  = _fake_snap()
         _run_to_swap(s)
-        s.update(0.0)  # IN
+        s.update(0.0)
         s.update(0.1)
         s.draw(scr)
-        # Snapshot_out base + snapshot_in deslizando
         blitted = [c[0][0] for c in scr.blit.call_args_list]
         assert s.snapshot_in in blitted
 
     def test_slide_left_position_at_start_of_in(self):
-        """LEFT: snapshot_in começa em x=w e desliza até 0."""
         s = SlideTransition(direction=SlideDirection.LEFT,
                             duration_out=0.01, duration_in=1.0,
                             easing="linear")
@@ -309,9 +285,8 @@ class TestSlideTransition:
         s.snapshot_out = _fake_snap()
         s.snapshot_in  = _fake_snap()
         _run_to_swap(s)
-        s.update(0.0)   # IN, progress=0 → x=800
+        s.update(0.0)
         s.draw(scr)
-        # Último blit é o snapshot_in; pos x deve ser próximo de 800
         last_pos = scr.blit.call_args_list[-1][0][1]
         assert last_pos[0] == pytest.approx(800, abs=5)
 
@@ -323,7 +298,7 @@ class TestSlideTransition:
         s.snapshot_out = _fake_snap()
         s.snapshot_in  = _fake_snap()
         _run_to_swap(s)
-        s.update(0.0)   # IN, progress=0 → x=-800
+        s.update(0.0)
         s.draw(scr)
         last_pos = scr.blit.call_args_list[-1][0][1]
         assert last_pos[0] == pytest.approx(-800, abs=5)
@@ -362,7 +337,8 @@ class TestSlideTransition:
         scr.blit.assert_not_called()
 
 
-# ── TestWipeTransition ────────────────────────────────────────────────────────────
+# ── TestWipeTransition ──────────────────────────────────────────────────────────────────
+
 class TestWipeTransition:
     def test_default_horizontal_true(self):
         assert WipeTransition().horizontal is True
@@ -386,17 +362,17 @@ class TestWipeTransition:
         w.snapshot_out = _fake_snap()
         w.update(0.5)
         w.draw(scr)
-        _pg.draw.rect.assert_called()
+        pygame.draw.rect.assert_called()
 
     def test_wipe_rect_width_grows_horizontally(self):
         """OUT horizontal: rect.width = int(W * progress)."""
         w = WipeTransition(horizontal=True, duration_out=1.0, easing="linear")
         scr = _FakeSurface((800, 600))
         w.snapshot_out = _fake_snap()
-        w.update(0.5)   # linear → progress ≈ 0.5
-        _pg.draw.rect.reset_mock()
+        w.update(0.5)
+        pygame.draw.rect.reset_mock()
         w.draw(scr)
-        rect_arg = _pg.draw.rect.call_args[0][2]
+        rect_arg = pygame.draw.rect.call_args[0][2]
         assert rect_arg[2] == pytest.approx(400, abs=8)  # 800 * 0.5
 
     def test_wipe_rect_height_grows_vertically(self):
@@ -404,9 +380,9 @@ class TestWipeTransition:
         scr = _FakeSurface((800, 600))
         w.snapshot_out = _fake_snap()
         w.update(0.5)
-        _pg.draw.rect.reset_mock()
+        pygame.draw.rect.reset_mock()
         w.draw(scr)
-        rect_arg = _pg.draw.rect.call_args[0][2]
+        rect_arg = pygame.draw.rect.call_args[0][2]
         assert rect_arg[3] == pytest.approx(300, abs=8)  # 600 * 0.5
 
     def test_draw_during_in_blits_snapshot_in(self):
@@ -415,7 +391,7 @@ class TestWipeTransition:
         w.snapshot_out = _fake_snap()
         w.snapshot_in  = _fake_snap()
         _run_to_swap(w)
-        w.update(0.0)   # IN
+        w.update(0.0)
         w.update(0.1)
         w.draw(scr)
         blitted = [c[0][0] for c in scr.blit.call_args_list]
@@ -429,7 +405,8 @@ class TestWipeTransition:
         scr.blit.assert_not_called()
 
 
-# ── TestCrossfadeTransition ──────────────────────────────────────────────────────────
+# ── TestCrossfadeTransition ────────────────────────────────────────────────────────────────
+
 class TestCrossfadeTransition:
     def test_duration_split_equally(self):
         c = CrossfadeTransition(duration=0.6)
@@ -450,12 +427,11 @@ class TestCrossfadeTransition:
         c.snapshot_out = _fake_snap()
         c.snapshot_in  = _fake_snap()
         _run_to_swap(c)
-        c.update(0.0)  # IN
+        c.update(0.0)
         c.update(0.1)
         scr.fill.reset_mock()
         scr.blit.reset_mock()
         c.draw(scr)
-        # fill((0,0,0)) antes de blit snapshot_in
         assert scr.fill.call_count >= 1
 
     def test_draw_during_in_sets_alpha(self):
@@ -467,7 +443,6 @@ class TestCrossfadeTransition:
         c.update(0.0)
         c.update(0.2)
         c.draw(scr)
-        # _alpha_surf.set_alpha deve ter sido chamado
         assert c._alpha_surf is not None
         assert c._alpha_surf._alpha is not None
 
@@ -487,15 +462,14 @@ class TestCrossfadeTransition:
         c.snapshot_out = _fake_snap((400, 300))
         c.update(0.1)
         c.draw(scr)
-        first_surf = c._alpha_surf
         # Simula resize
         scr2 = _FakeSurface((800, 600))
         c.draw(scr2)
-        # Nova superficie criada porque tamanho mudou
         assert c._alpha_surf.get_size() == (800, 600)
 
 
-# ── TestPhaseLifecycle (integração) ──────────────────────────────────────────────────
+# ── TestPhaseLifecycle (integração) ────────────────────────────────────────────────────────
+
 class TestPhaseLifecycle:
     @pytest.mark.parametrize("cls", [
         lambda: FadeTransition(duration_out=0.1, duration_in=0.1),
