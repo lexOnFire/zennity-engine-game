@@ -1,14 +1,9 @@
 """
 conftest.py — fixtures globais para os testes da Zennity Engine.
 
-Ordem de carregamento do pytest:
-  1. conftest.py da RAIZ  ← este arquivo (carregado primeiro)
-  2. conftest.py de tests/
-  3. coleta dos módulos de teste
-
-Por isso os stubs de pygame precisam estar AQUI, instalados antes que
-qualquer módulo de teste importe engine.transitions (ou qualquer outro
-módulo que use pygame.Surface / pygame.draw.rect diretamente).
+pytest_configure() é o hook mais cedo possível — roda ANTES da coleta,
+BEFORE de qualquer import de módulo de teste, mesmo antes das fixtures.
+Por isso os stubs de pygame ficam aqui dentro desse hook.
 """
 from __future__ import annotations
 
@@ -17,23 +12,13 @@ import os
 import sys
 from unittest.mock import MagicMock
 
-# ── Vars de ambiente SDL antes do primeiro import de pygame ───────────────────
-os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
-os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
-os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
-
-import pygame
 import pytest
 
-
-# ── _FakeSurface ──────────────────────────────────────────────────────────────
 
 class _FakeSurface:
     """
     Surface mínima que rastreia blit/fill/set_alpha via MagicMock.
     Aceita qualquer argumento — sem validação de tipo SDL.
-    Usada pelos testes de transição para evitar que a Surface C real
-    rejeite _FakeSurface como argumento do blit.
     """
     _fake = True
 
@@ -49,26 +34,32 @@ class _FakeSurface:
     def get_alpha(self): return self._alpha
 
 
-# ── Instalar stubs ANTES de pygame.init() e ANTES da coleta de testes ─────────
-#
-# pygame.Surface   → _FakeSurface
-#   CrossfadeTransition cria `self._alpha_surf = pygame.Surface(...)` dentro
-#   do draw(). Se for a Surface C real, ela rejeita _FakeSurface no blit.
-#
-# pygame.draw.rect → MagicMock
-#   WipeTransition chama pygame.draw.rect(screen, color, rect). A função C
-#   real também rejeita _FakeSurface como primeiro argumento.
+def pytest_configure(config):
+    """
+    Hook mais cedo do pytest — roda antes de qualquer coleta ou import
+    de módulo de teste.
 
-pygame.Surface   = _FakeSurface          # type: ignore[assignment]
-pygame.draw.rect = MagicMock()
+    Instala os stubs de pygame.Surface e pygame.draw.rect para que
+    CrossfadeTransition e WipeTransition funcionem com _FakeSurface
+    nos testes unitários.
+    """
+    # Vars SDL antes do primeiro import de pygame
+    os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+    os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
+    os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-# Remove engine.transitions do cache para que o próximo import use os stubs.
-# Necessário porque outros conftest.py ou imports de módulo podem ter
-# pré-carregado engine.transitions com pygame real antes deste arquivo.
-for _mod in ("engine.transitions", "engine"):
-    sys.modules.pop(_mod, None)
+    import pygame  # noqa: PLC0415
 
-importlib.import_module("engine.transitions")
+    # Substituir Surface e draw.rect por stubs
+    pygame.Surface   = _FakeSurface          # type: ignore[assignment]
+    pygame.draw.rect = MagicMock()
+
+    # Limpar cache de engine.transitions para que o próximo import
+    # use os stubs recém instalados
+    for mod in ("engine.transitions", "engine"):
+        sys.modules.pop(mod, None)
+
+    importlib.import_module("engine.transitions")
 
 
 # ── Inicialização do pygame ───────────────────────────────────────────────────
@@ -76,6 +67,7 @@ importlib.import_module("engine.transitions")
 @pytest.fixture(scope="session", autouse=True)
 def _pygame_init():
     """Inicializa o pygame uma única vez para toda a sessão de testes."""
+    import pygame  # noqa: PLC0415
     pygame.init()
     yield
     pygame.quit()
@@ -112,6 +104,7 @@ def simple_go():
 @pytest.fixture(autouse=True)
 def reset_pygame_mocks():
     """Reseta mocks de pygame antes e depois de cada teste."""
+    import pygame  # noqa: PLC0415
     pygame.draw.rect.reset_mock()
     yield
     pygame.draw.rect.reset_mock()
