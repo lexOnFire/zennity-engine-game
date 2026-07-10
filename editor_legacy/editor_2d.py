@@ -8,6 +8,7 @@ from engine.physics.rigidbody import RigidBody
 from engine.physics.collider import BoxCollider
 from engine.physics.rigidbody import RigidBody
 from engine.physics.collider import BoxCollider
+from engine.graphics.camera import Camera
 
 
 class Editor2DScene(Scene):
@@ -27,8 +28,15 @@ class Editor2DScene(Scene):
         self._add_go(self.cam_obj)
         Camera2D.main = self.camera
         self.spawn_default_scene()
-        self.spawn_default_scene()
+        
 
+    def _layout(self) -> dict:
+        return {
+        "viewport_x": 0,
+        "viewport_y": 0,
+        "viewport_w": 800,
+        "viewport_h": 600,
+    }
 
     def spawn_default_scene(self) -> None:
         floor = GameObject("Chao")
@@ -52,6 +60,10 @@ class Editor2DScene(Scene):
 
         self.selected_index = 1
 
+    
+
+
+
     def _add_go(self, go: GameObject) -> None:
         go.scene = self
         if go not in self.game_objects:
@@ -64,7 +76,88 @@ class Editor2DScene(Scene):
             self.editable_objects.remove(go)
         go.scene = None
 
-    def _draw_object(self, screen, obj) -> None:
+    def spawn_object(self, shape: str) -> None:
+        """Cria um novo objeto 2D na cena."""
+
+        if self.playing:
+            return
+
+        go = GameObject(f"{shape}_{len(self.editable_objects)}")
+        go.transform.position = np.array([400.0, 300.0, 0.0], dtype=np.float32)
+
+        if shape == "Quadrado":
+            go.transform.scale = np.array([40.0, 40.0, 1.0], dtype=np.float32)
+            go.add_component(BoxCollider(width=40, height=40))
+            go.add_component(RigidBody(mass=1.0))
+
+        elif shape == "Plataforma":
+            go.transform.scale = np.array([120.0, 24.0, 1.0], dtype=np.float32)
+            go.add_component(BoxCollider(width=120, height=24))
+            rb = go.add_component(RigidBody())
+            rb.is_kinematic = True
+
+        elif shape == "Player":
+            go.transform.scale = np.array([36.0, 48.0, 1.0], dtype=np.float32)
+            go.add_component(BoxCollider(width=36, height=48))
+            go.add_component(RigidBody(mass=1.0, gravity_scale=1.0))
+
+        elif shape == "Inimigo":
+            go.transform.scale = np.array([36.0, 36.0, 1.0], dtype=np.float32)
+            go.add_component(BoxCollider(width=36, height=36))
+            go.add_component(RigidBody(mass=1.0, gravity_scale=1.0))
+
+        elif shape == "Camera 2D":
+            go.name = f"Camera2D_{len(self.editable_objects)}"
+            go.transform.scale = np.array([64.0, 40.0, 1.0], dtype=np.float32)
+
+            cam2d = go.add_component(Camera2D(zoom=1.0))
+            go.add_component(
+                Camera(
+                    zoom=1.0,
+                    clear_color=(18, 20, 27),
+                    priority=10,
+                    active=True,
+                )
+            )
+            Camera2D.main = cam2d
+
+        else:
+            go.transform.scale = np.array([40.0, 40.0, 1.0], dtype=np.float32)
+
+        go.mesh_type = shape
+
+        self._add_go(go)
+        self.editable_objects.append(go)
+        self.selected_index = len(self.editable_objects) - 1
+
+    def delete_selected(self) -> None:
+        if not (0 <= self.selected_index < len(self.editable_objects)):
+            return
+
+        obj = self.editable_objects[self.selected_index]
+
+        self._remove_go(obj)
+
+        if self.editable_objects:
+            self.selected_index = min(
+            self.selected_index,
+            len(self.editable_objects) - 1,
+        )
+        else:
+            self.selected_index = -1
+            self._remove_go(obj)
+
+    def _draw_object(
+        self,
+        screen,
+        obj,
+        idx=None,
+        zoom=1.0,
+        lay=None,
+    ) -> None:
+        if getattr(obj, "runtime_hidden", False):
+            return
+
         if hasattr(obj, "draw"):
             obj.draw(screen)
 
