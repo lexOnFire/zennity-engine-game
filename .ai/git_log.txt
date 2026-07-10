@@ -1,3 +1,4 @@
+92484ad feat(tools): add AI Toolkit and architecture documentation
 29e52be Restore legacy editor default scene for tests
 cc397e6 Restore legacy editor default scene for tests
 a17d1e8 Add legacy Editor2D draw object hook
@@ -17,4 +18,3 @@ ef52627 Optimize editor sprite overlay culling
 c52b9aa Merge Projectile script from main
 c294146 Merge Animator script from main
 ab6e3aa Merge TimerComponent script from main
-60c5b35 Merge CameraFollow script from main
