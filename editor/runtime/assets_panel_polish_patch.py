@@ -250,16 +250,12 @@ def apply_assets_panel_polish(panel: Any) -> bool:
     panel._zennity_begin_asset_rename = begin_asset_rename
     panel._zennity_finish_asset_rename = finish_asset_rename
 
-    try:
-        tree.itemDoubleClicked.disconnect()
-    except Exception:
-        pass
     tree.itemDoubleClicked.connect(begin_asset_rename)
     tree.itemChanged.connect(finish_asset_rename)
 
     panel._zennity_assets_filter = _AssetsPanelFilter(panel)
-    tree.installEventFilter(panel._zennity_assets_filter)
-    tree.viewport().installEventFilter(panel._zennity_assets_filter)
+    #tree.installEventFilter(panel._zennity_assets_filter)
+    #tree.viewport().installEventFilter(panel._zennity_assets_filter)
 
     refresh_assets()
     return True

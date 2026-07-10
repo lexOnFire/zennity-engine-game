@@ -16,7 +16,6 @@ import pygame
 import numpy as np
 from types import SimpleNamespace
 from typing import Optional, List
-from PySide6.QtOpenGLWidgets import QOpenGLWidget
 from PySide6.QtWidgets import QWidget
 from PySide6.QtCore import Qt, QTimer, Slot
 from PySide6.QtGui import QPainter, QImage, QMouseEvent, QKeyEvent, QWheelEvent
@@ -31,7 +30,7 @@ from editor.runtime.selection_manager import SelectionManager
 from editor.viewmodels.scene_viewmodel import SceneViewModel
 
 
-class ViewportWidget(QOpenGLWidget):
+class ViewportWidget(QWidget):
     """
     Viewport gráfica embarcando o loop do Pygame dentro de um QOpenGLWidget.
 
@@ -298,7 +297,16 @@ class ViewportWidget(QOpenGLWidget):
             def _qt_draw_2d(screen, _scene=scene):
                 lay = _scene._layout()
                 screen.fill((28, 29, 36))
-                _scene._draw_viewport(screen, lay)
+                if hasattr(_scene, "_draw_viewport"):
+                    _scene._draw_viewport(screen, lay)
+                    return
+                for idx, obj in enumerate(getattr(_scene, "game_objects", [])):
+                    if obj is getattr(_scene, "cam_obj", None):
+                        continue
+                    if hasattr(_scene, "_draw_object"):
+                        _scene._draw_object(screen, obj, idx, 1.0, lay)
+                    elif hasattr(obj, "draw"):
+                        obj.draw(screen)
             scene.draw = _qt_draw_2d
 
             # Guarda o original e substitui por wrapper que filtra eventos
@@ -323,7 +331,15 @@ class ViewportWidget(QOpenGLWidget):
                         lay = _scene._layout()
                         mx, my = _pg.mouse.get_pos()
                         # Só processa se o mouse está dentro da viewport completa
-                        if _scene._in_viewport(mx, my, lay):
+                        if hasattr(_scene, "_in_viewport"):
+                            inside_viewport = _scene._in_viewport(mx, my, lay)
+                        else:
+                            left = int(lay.get("vp_left", lay.get("viewport_x", 0)))
+                            top = int(lay.get("vp_top", lay.get("viewport_y", 0)))
+                            width = int(lay.get("vp_w", lay.get("viewport_w", 0)))
+                            height = int(lay.get("vp_h", lay.get("viewport_h", 0)))
+                            inside_viewport = left <= mx <= left + width and top <= my <= top + height
+                        if inside_viewport:
                             _orig(event)
                         return
                     _orig(event)
@@ -430,11 +446,26 @@ class ViewportWidget(QOpenGLWidget):
     def initializeGL(self) -> None:
         pass
 
+    def resizeEvent(self, event) -> None:
+        self.resizeGL(self.width(), self.height())
+        super().resizeEvent(event)
+
     def resizeGL(self, w: int, h: int) -> None:
         self._vp_w = max(32, w)
         self._vp_h = max(32, h)
         self.pg_surface = pygame.Surface((self._vp_w, self._vp_h), pygame.SRCALPHA)
         self._apply_qt_shims()
+
+    def paintEvent(self, event) -> None:
+        self.paintGL()
+
+    def closeEvent(self, event) -> None:
+        self.shutdown()
+        super().closeEvent(event)
+
+    def shutdown(self) -> None:
+        self._timer.stop()
+        self.pg_surface = None
 
     def paintGL(self) -> None:
         if not self.pg_surface or not self.active_scene:

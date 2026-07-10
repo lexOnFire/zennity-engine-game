@@ -27,6 +27,7 @@ from editor.runtime.hierarchy_commands import (
 )
 from editor.runtime.editor_context import EditorContext
 from editor.runtime.tool_manager import EditorTool
+from editor.widgets.game_viewport import GameViewportWidget
 from editor.widgets.phase1_viewport import Phase1ViewportWidget
 from engine.scene import load_scene, save_scene
 
@@ -225,7 +226,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.viewport.set_runtime_manager(self.editor_context.runtime)
         self.editor_scene = self.viewport.active_scene
 
-        self.game_viewport = Phase1ViewportWidget(self)
+        self.game_viewport = GameViewportWidget(self)
         self.game_viewport.setObjectName("GameViewportCanvas")
         self.game_viewport.set_view_mode("game")
         self.game_viewport.set_viewmodel(self.scene_view_model)
@@ -293,6 +294,14 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
     def _on_hierarchy_splitter_moved(self, pos: int, index: int) -> None:
         """Marcado quando o usuario arrasta o splitter: para o auto-resize."""
         self._hierarchy_splitter_user_resized = True
+
+    def closeEvent(self, event) -> None:
+        for viewport_name in ("viewport", "game_viewport"):
+            viewport = getattr(self, viewport_name, None)
+            shutdown = getattr(viewport, "shutdown", None)
+            if callable(shutdown):
+                shutdown()
+        super().closeEvent(event)
 
     def _connect(self) -> None:
         self.hierarchy.selected.connect(self.select_object)
