@@ -216,6 +216,18 @@ class ComponentFrame(QFrame):
         if self._on_remove:
             self._on_remove()
 
+    def __getattr__(self, name):
+        """ Compatibilidade com a API antiga.   Encaminha atributos não encontrados para o widget interno.
+    
+        """
+        body = self.__dict__.get("_body")
+
+        if body is not None and hasattr(body, name):
+            return getattr(body, name)
+
+        raise AttributeError(
+            f"{type(self).__name__!s} has no attribute {name!r}"
+    )
 
 class InspectorDock(QDockWidget):
     """Painel acoplável do Inspetor de Propriedades.
