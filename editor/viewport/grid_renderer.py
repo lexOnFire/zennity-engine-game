@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import math
 from typing import Any, Callable
-from PySide6.QtCore import QPointF, Qt
+from PySide6.QtCore import QLineF, Qt
 from PySide6.QtGui import QColor, QPainter, QPen
 
 
@@ -62,6 +62,12 @@ class GridRenderer:
             pen = QPen(col, 1, Qt.SolidLine)
             painter.setPen(pen)
 
+            # Todas as linhas secundárias usam o mesmo pen, então acumulamos
+            # em uma lista e desenhamos com uma única chamada a drawLines(),
+            # em vez de criar 2 QPointF + 1 chamada drawLine() por linha
+            # (isso gerava ~100 alocações Qt por frame só do grid).
+            secondary_lines: list[QLineF] = []
+
             # Linhas Verticais
             start_x = math.floor(left_w / self.grid_size) * self.grid_size
             curr_x = start_x
@@ -70,7 +76,7 @@ class GridRenderer:
                 if not is_primary:
                     sx, _ = world_to_viewport((curr_x, 0.0))
                     if 0 <= sx < vp_w:
-                        painter.drawLine(QPointF(sx, 0.0), QPointF(sx, vp_h))
+                        secondary_lines.append(QLineF(sx, 0.0, sx, vp_h))
                 curr_x += self.grid_size
 
             # Linhas Horizontais
@@ -81,16 +87,26 @@ class GridRenderer:
                 if not is_primary:
                     _, sy = world_to_viewport((0.0, curr_y))
                     if 0 <= sy < vp_h:
-                        painter.drawLine(QPointF(0.0, sy), QPointF(vp_w, sy))
+                        secondary_lines.append(QLineF(0.0, sy, vp_w, sy))
                 curr_y += self.grid_size
+
+            if secondary_lines:
+                painter.drawLines(secondary_lines)
 
         # ── 2. Grid Principal (múltiplos de 5x grid_size) + Eixos (0,0) ───────
         if alpha_prim > 0.0:
             col_p = QColor(self.primary_color)
             col_p.setAlpha(int(self.primary_color.alpha() * alpha_prim))
-            
+
             step_x = self.grid_size * 5
-            
+
+            # Linhas normais e linhas de eixo usam pens diferentes, então
+            # acumulamos cada grupo separadamente e desenhamos cada um com
+            # uma única chamada a drawLines() (no máximo 2 chamadas no total
+            # em vez de 1 chamada de drawLine() por linha do grid principal).
+            primary_lines: list[QLineF] = []
+            axis_lines: list[QLineF] = []
+
             # Linhas Verticais Principais
             start_x = math.floor(left_w / step_x) * step_x
             curr_x = start_x
@@ -98,12 +114,11 @@ class GridRenderer:
                 sx, _ = world_to_viewport((curr_x, 0.0))
                 if 0 <= sx < vp_w:
                     is_axis = abs(curr_x) < 0.1
+                    line = QLineF(sx, 0.0, sx, vp_h)
                     if is_axis:
-                        # Destaca o eixo Y central (onde X = 0)
-                        painter.setPen(QPen(self.axis_color, 2, Qt.SolidLine))
+                        axis_lines.append(line)
                     else:
-                        painter.setPen(QPen(col_p, 1, Qt.SolidLine))
-                    painter.drawLine(QPointF(sx, 0.0), QPointF(sx, vp_h))
+                        primary_lines.append(line)
                 curr_x += step_x
 
             # Linhas Horizontais Principais
@@ -114,12 +129,18 @@ class GridRenderer:
                 _, sy = world_to_viewport((0.0, curr_y))
                 if 0 <= sy < vp_h:
                     is_axis = abs(curr_y) < 0.1
+                    line = QLineF(0.0, sy, vp_w, sy)
                     if is_axis:
-                        # Destaca o eixo X central (onde Y = 0)
-                        painter.setPen(QPen(self.axis_color, 2, Qt.SolidLine))
+                        axis_lines.append(line)
                     else:
-                        painter.setPen(QPen(col_p, 1, Qt.SolidLine))
-                    painter.drawLine(QPointF(0.0, sy), QPointF(vp_w, sy))
+                        primary_lines.append(line)
                 curr_y += step_y
+
+            if primary_lines:
+                painter.setPen(QPen(col_p, 1, Qt.SolidLine))
+                painter.drawLines(primary_lines)
+            if axis_lines:
+                painter.setPen(QPen(self.axis_color, 2, Qt.SolidLine))
+                painter.drawLines(axis_lines)
 
         painter.restore()

@@ -18,9 +18,9 @@ def _is_runtime_resource(value: Any) -> bool:
     """Return True for objects that must not be copied into runtime clones."""
     module = type(value).__module__
     type_name = type(value).__name__
-    if module.startswith("pygame"):
+    if module.startswith("pygame") and type_name != "Surface":
         return True
-    if type_name in {"Surface", "Font", "Sound", "Clock"}:
+    if type_name in {"Font", "Sound", "Clock"}:
         return True
     return False
 
@@ -28,6 +28,8 @@ def _is_runtime_resource(value: Any) -> bool:
 def _safe_copy_value(value: Any) -> Any:
     if _is_runtime_resource(value):
         return None
+    if type(value).__name__ == "Surface" and type(value).__module__ == "pygame.surface":
+        return value.copy()
     if isinstance(value, np.ndarray):
         return value.copy()
     if isinstance(value, (str, int, float, bool, type(None))):
@@ -55,7 +57,14 @@ def _copy_optional_attr(source: Any, target: Any, name: str) -> None:
 
 
 def _clone_component_by_constructor(component: Any) -> Any:
-    clone = type(component)()
+    try:
+        clone = type(component)()
+    except TypeError:
+        clone = type(component).__new__(type(component))
+        from engine.core.component import Component
+        if isinstance(clone, Component):
+            Component.__init__(clone)
+            
     for name, value in vars(component).items():
         if name in _SKIP_COMPONENT_ATTRS:
             continue
@@ -73,17 +82,28 @@ def _clone_component(component: Any) -> Any:
     if hasattr(component, "serialize"):
         try:
             clone = component_registry.create(component.serialize())
+            from engine.core.component import Component
+            if type(clone) is Component and type(component) is not Component:
+                clone = None
         except Exception:
             clone = None
     if clone is None:
         try:
             clone = _clone_component_by_constructor(component)
         except Exception:
-            clone = type(component)()
+            try:
+                clone = type(component)()
+            except TypeError:
+                clone = type(component).__new__(type(component))
+                
     if hasattr(clone, "id"):
         clone.id = str(uuid.uuid4())
-    if hasattr(clone, "_started"):
-        clone._started = False
+    clone._started = False
+    if not hasattr(clone, "enabled"):
+        clone.enabled = True
+    for method_name in ("start", "update", "draw", "destroy"):
+        if not hasattr(clone, method_name):
+            setattr(clone, method_name, lambda *args, **kwargs: None)
     if hasattr(clone, "game_object"):
         clone.game_object = None
     return clone

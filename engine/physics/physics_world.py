@@ -88,6 +88,7 @@ class PhysicsWorld:
                     if pair not in self.trigger_contacts:
                         self._emit_trigger_enter(a, b)
                 else:
+                    self._resolve_collision(a, b)
                     next_contacts.add(pair)
                     if pair not in self.contacts:
                         self._emit_collision_enter(a, b)
@@ -170,6 +171,26 @@ class PhysicsWorld:
         closest_x = max(rect.left, min(cx, rect.right))
         closest_y = max(rect.top, min(cy, rect.bottom))
         return math.hypot(cx - closest_x, cy - closest_y) < circle.radius
+
+    def _resolve_collision(self, a: Any, b: Any) -> None:
+        a_type = self._collider_type(a)
+        b_type = self._collider_type(b)
+        if a_type == "BoxCollider" and b_type == "BoxCollider":
+            rect_a = a.rect
+            rect_b = b.rect
+            overlap_x = min(rect_a.right, rect_b.right) - max(rect_a.left, rect_b.left)
+            overlap_y = min(rect_a.bottom, rect_b.bottom) - max(rect_a.top, rect_b.top)
+            if overlap_x > 0 and overlap_y > 0:
+                BoxCollider._resolve(a, b, overlap_x, overlap_y)
+            return
+
+        if a_type == "CircleCollider" and b_type == "CircleCollider":
+            ax, ay = a.center
+            bx, by = b.center
+            dist = math.hypot(bx - ax, by - ay)
+            min_dist = a.radius + b.radius
+            if dist < min_dist:
+                CircleCollider._resolve(a, b, ax, ay, bx, by, dist, min_dist)
 
     def _pair_key(self, a: Any, b: Any) -> tuple[int, int]:
         return tuple(sorted((id(a), id(b))))

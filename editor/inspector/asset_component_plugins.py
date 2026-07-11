@@ -9,8 +9,6 @@ from editor.inspector.default_plugins import _property_row, _section
 from editor.inspector.plugin import InspectorPlugin
 from editor.inspector.plugin_registry import inspector_plugin_registry
 from editor.runtime.command_manager import CommandManager
-from editor.runtime.editor2d_sprite_no_border_patch import apply_editor2d_sprite_no_border_patch
-from editor.runtime.editor2d_sprite_patch import apply_editor2d_sprite_patch
 from editor.runtime.phase1_sprite_overlay_patch import apply_phase1_sprite_overlay_patch
 from editor.runtime.tool_selection_stability_patch import apply_tool_selection_stability_patch
 from editor.runtime.viewport_transform_stability_patch import apply_viewport_transform_stability_patch
@@ -174,8 +172,6 @@ class AssetAwareAnimatorInspectorPlugin(InspectorPlugin):
 def register_asset_component_plugins() -> None:
     inspector_plugin_registry.register(AssetAwareImageInspectorPlugin)
     inspector_plugin_registry.register(AssetAwareAnimatorInspectorPlugin)
-    apply_editor2d_sprite_patch()
-    apply_editor2d_sprite_no_border_patch()
     apply_phase1_sprite_overlay_patch()
     apply_viewport_transform_stability_patch()
     apply_tool_selection_stability_patch()

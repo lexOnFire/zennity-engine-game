@@ -1,11 +1,9 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 import numpy as np
 
 from engine.core import Scene
 from engine.game_object import GameObject
 from engine.graphics.camera2d import Camera2D
-from engine.physics.rigidbody import RigidBody
-from engine.physics.collider import BoxCollider
 from engine.physics.rigidbody import RigidBody
 from engine.physics.collider import BoxCollider
 from engine.graphics.camera import Camera
@@ -24,7 +22,7 @@ class Editor2DScene(Scene):
 
         self.cam_obj = GameObject("EditorCamera")
         self.camera = self.cam_obj.add_component(Camera2D(zoom=1.0))
-        self.cam_obj.transform.position = np.array([400.0, 300.0, 0.0], dtype=np.float32)
+        self.cam_obj.transform.position = np.array([0.0, 0.0, 0.0], dtype=np.float32)
         self._add_go(self.cam_obj)
         Camera2D.main = self.camera
         self.spawn_default_scene()
@@ -32,28 +30,36 @@ class Editor2DScene(Scene):
 
     def _layout(self) -> dict:
         return {
-        "viewport_x": 0,
-        "viewport_y": 0,
-        "viewport_w": 800,
-        "viewport_h": 600,
-    }
+            "viewport_x": 0,
+            "viewport_y": 0,
+            "viewport_w": 800,
+            "viewport_h": 600,
+        }
 
     def spawn_default_scene(self) -> None:
+        import pygame
+        
         floor = GameObject("Chao")
-        floor.transform.position = np.array([400.0, 500.0, 0.0], dtype=np.float32)
+        floor.transform.position = np.array([0.0, 120.0, 0.0], dtype=np.float32)
         floor.transform.scale = np.array([600.0, 32.0, 1.0], dtype=np.float32)
         floor.add_component(BoxCollider(width=600, height=32))
         rb_floor = floor.add_component(RigidBody())
         rb_floor.is_kinematic = True
+        surf_floor = pygame.Surface((1, 1))
+        surf_floor.fill((100, 200, 100))
+        self._add_sprite_renderer(floor, surf_floor)
         floor.mesh_type = "Plataforma"
         self._add_go(floor)
         self.editable_objects.append(floor)
 
         player = GameObject("Player")
-        player.transform.position = np.array([400.0, 200.0, 0.0], dtype=np.float32)
+        player.transform.position = np.array([0.0, 0.0, 0.0], dtype=np.float32)
         player.transform.scale = np.array([36.0, 48.0, 1.0], dtype=np.float32)
         player.add_component(BoxCollider(width=36, height=48))
         player.add_component(RigidBody(mass=1.0, gravity_scale=1.0))
+        surf_player = pygame.Surface((1, 1))
+        surf_player.fill((100, 100, 255))
+        self._add_sprite_renderer(player, surf_player)
         player.mesh_type = "Player"
         self._add_go(player)
         self.editable_objects.append(player)
@@ -61,6 +67,22 @@ class Editor2DScene(Scene):
         self.selected_index = 1
 
     
+    def _add_sprite_renderer(self, go: GameObject, surface) -> None:
+        from engine.graphics.renderer2d import SpriteRenderer
+        try:
+            renderer = SpriteRenderer(surface)
+        except TypeError:
+            renderer = SpriteRenderer()
+            if hasattr(renderer, "image"):
+                renderer.image = surface
+        if not hasattr(renderer, "_started"):
+            renderer._started = False
+        if not hasattr(renderer, "enabled"):
+            renderer.enabled = True
+        for method_name in ("start", "update", "draw", "destroy"):
+            if not hasattr(renderer, method_name):
+                setattr(renderer, method_name, lambda *args, **kwargs: None)
+        go.add_component(renderer)
 
 
 
@@ -83,28 +105,48 @@ class Editor2DScene(Scene):
             return
 
         go = GameObject(f"{shape}_{len(self.editable_objects)}")
-        go.transform.position = np.array([400.0, 300.0, 0.0], dtype=np.float32)
+        
+        # Tenta usar a posição da câmera como centro, fallback para 0,0
+        from engine.graphics.camera2d import Camera2D
+        if Camera2D.main:
+            go.transform.position = np.array(Camera2D.main.transform.position, dtype=np.float32)
+        else:
+            go.transform.position = np.array([0.0, 0.0, 0.0], dtype=np.float32)
+        
+        import pygame
 
         if shape == "Quadrado":
             go.transform.scale = np.array([40.0, 40.0, 1.0], dtype=np.float32)
             go.add_component(BoxCollider(width=40, height=40))
             go.add_component(RigidBody(mass=1.0))
+            surf = pygame.Surface((1, 1))
+            surf.fill((200, 200, 200))
+            self._add_sprite_renderer(go, surf)
 
         elif shape == "Plataforma":
             go.transform.scale = np.array([120.0, 24.0, 1.0], dtype=np.float32)
             go.add_component(BoxCollider(width=120, height=24))
             rb = go.add_component(RigidBody())
             rb.is_kinematic = True
+            surf = pygame.Surface((1, 1))
+            surf.fill((100, 200, 100))
+            self._add_sprite_renderer(go, surf)
 
         elif shape == "Player":
             go.transform.scale = np.array([36.0, 48.0, 1.0], dtype=np.float32)
             go.add_component(BoxCollider(width=36, height=48))
             go.add_component(RigidBody(mass=1.0, gravity_scale=1.0))
+            surf = pygame.Surface((1, 1))
+            surf.fill((100, 100, 255))
+            self._add_sprite_renderer(go, surf)
 
         elif shape == "Inimigo":
             go.transform.scale = np.array([36.0, 36.0, 1.0], dtype=np.float32)
             go.add_component(BoxCollider(width=36, height=36))
             go.add_component(RigidBody(mass=1.0, gravity_scale=1.0))
+            surf = pygame.Surface((1, 1))
+            surf.fill((255, 100, 100))
+            self._add_sprite_renderer(go, surf)
 
         elif shape == "Camera 2D":
             go.name = f"Camera2D_{len(self.editable_objects)}"
@@ -123,6 +165,9 @@ class Editor2DScene(Scene):
 
         else:
             go.transform.scale = np.array([40.0, 40.0, 1.0], dtype=np.float32)
+            surf = pygame.Surface((1, 1))
+            surf.fill((200, 200, 200))
+            self._add_sprite_renderer(go, surf)
 
         go.mesh_type = shape
 

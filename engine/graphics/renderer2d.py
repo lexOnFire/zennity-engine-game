@@ -11,10 +11,31 @@ class SpriteRenderer(Component):
     def __init__(self, image: pygame.Surface) -> None:
         super().__init__()
         self.image = image
+        # Cache do resultado de scale+rotate: evita recriar pygame.Surface
+        # todo frame quando nada mudou (mesmo width/height/rotação). Sem
+        # isso, cada frame alocava 2 Surfaces novas (scale + rotate) mesmo
+        # com o objeto parado, gerando pressão de GC visível como hitches
+        # de dezenas/centenas de ms durante drag. Ver: docs/gc_alocacao_drag.md
+        self._render_cache_key: tuple | None = None
+        self._render_cache_surface: pygame.Surface | None = None
 
     def draw(self, screen: pygame.Surface) -> None:
         if not self.image:
             return
+
+        # Evita renderização duplicada: quando o GameObject também possui um
+        # ImageComponent moderno com sprite_path válido, ele já é desenhado
+        # pelo overlay Qt do editor (phase1_sprite_overlay_patch). Sem este
+        # guard, o mesmo objeto era desenhado 2x por frame (buffer Pygame +
+        # overlay Qt por cima), dobrando o custo de renderização à toa.
+        # Ver: docs/duplicidade_renderizacao.md
+        game_object = getattr(self, "game_object", None)
+        for component in getattr(game_object, "components", []):
+            if component is self:
+                continue
+            type_name = getattr(component, "type_name", type(component).__name__)
+            if type_name == "Image" and str(getattr(component, "sprite_path", "") or "").strip():
+                return
 
         world_pos = self.transform.get_world_position()
         
@@ -42,19 +63,33 @@ class SpriteRenderer(Component):
         # Avoid scaling to 0 width/height
         new_width = max(1, int(self.image.get_width() * scale_x))
         new_height = max(1, int(self.image.get_height() * scale_y))
-        
-        scaled_img = pygame.transform.scale(self.image, (new_width, new_height))
-        
-        # Rotate (Pygame uses counter-clockwise degrees)
-        # We negate the rotation to make positive degrees clockwise
-        if self.transform.rz != 0.0:
-            rotated_img = pygame.transform.rotate(scaled_img, -self.transform.rz)
+
+        rz_rounded = round(self.transform.rz, 2)
+        cache_key = (id(self.image), new_width, new_height, rz_rounded)
+
+        if self._render_cache_key == cache_key and self._render_cache_surface is not None:
+            rotated_img = self._render_cache_surface
         else:
-            rotated_img = scaled_img
+            scaled_img = pygame.transform.scale(self.image, (new_width, new_height))
+
+            # Rotate (Pygame uses counter-clockwise degrees)
+            # We negate the rotation to make positive degrees clockwise
+            if rz_rounded != 0.0:
+                rotated_img = pygame.transform.rotate(scaled_img, -rz_rounded)
+            else:
+                rotated_img = scaled_img
+
+            self._render_cache_key = cache_key
+            self._render_cache_surface = rotated_img
             
         # Get rect centered on screen coordinates
         rect = rotated_img.get_rect()
-        rect.center = (int(screen_x), int(screen_y))
+        # round() em vez de int(): int() trunca sempre para baixo, o que
+        # cria uma assimetria perceptível ("degrau") durante arrastos lentos
+        # (o sprite fica parado por vários frames extras antes de saltar).
+        # round() ainda quantiza pra pixel inteiro (inevitável no blit do
+        # pygame), mas distribui o arredondamento de forma simétrica.
+        rect.center = (round(screen_x), round(screen_y))
         
         # Draw on screen
         screen.blit(rotated_img, rect)

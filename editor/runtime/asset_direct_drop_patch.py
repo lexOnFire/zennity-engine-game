@@ -36,11 +36,7 @@ def _selected(editor: Any) -> Any | None:
     except Exception:
         pass
     try:
-        scene = editor.viewport.active_scene
-        objects = list(getattr(scene, "editable_objects", []))
-        idx = int(getattr(scene, "selected_index", -1))
-        if 0 <= idx < len(objects):
-            return objects[idx]
+        return editor.viewport.selected_object()
     except Exception:
         pass
     return None

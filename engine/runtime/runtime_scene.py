@@ -21,6 +21,7 @@ class RuntimeScene:
         self.script_runtime = ScriptRuntime(self)
         self.physics_world = PhysicsWorld(self)
         self.ui_renderer = UIRenderer()
+        self._previous_camera2d_main = None
         self._runtime_started = False
         self._runtime_started_components: list[Any] = []
         self.editor_to_runtime: dict[str, Any] = {}
@@ -136,6 +137,9 @@ class RuntimeScene:
         # Limpa o CameraManager antes do Play para isolar câmeras de edições ou execuções passadas
         from engine.graphics.camera_manager import CameraManager
         CameraManager.clear()
+        from engine.graphics.camera2d import Camera2D
+        self._previous_camera2d_main = Camera2D.main
+        Camera2D.main = None
 
         # Limpa o AudioManager antes do Play para isolar áudio
         from engine.audio import AudioManager
@@ -152,7 +156,11 @@ class RuntimeScene:
             from engine.game_object import GameObject
             fallback_go = GameObject("Default Runtime Camera")
             fallback_go.runtime_hidden = True
-            fallback_go.add_component(Camera())
+            editor_camera = getattr(self.editor_scene, "camera", None)
+            editor_camera_go = getattr(self.editor_scene, "cam_obj", None)
+            if editor_camera_go is not None:
+                fallback_go.transform.position = editor_camera_go.transform.position.copy()
+            fallback_go.add_component(Camera(zoom=float(getattr(editor_camera, "zoom", 1.0))))
             if hasattr(self.scene, "_add_go"):
                 self.scene._add_go(fallback_go)
             else:
@@ -191,6 +199,8 @@ class RuntimeScene:
         for component in components:
             self._call_component_hook(component, "on_runtime_start")
             self._runtime_started_components.append(component)
+            if self._component_type_name(component) == "Camera2D":
+                component.make_main()
         AudioManager._sources = [comp for comp in components if comp.__class__.__name__ == "AudioSource"]
         AudioManager._listeners = [comp for comp in components if comp.__class__.__name__ == "AudioListener"]
 
@@ -212,6 +222,9 @@ class RuntimeScene:
         self._runtime_started = False
         from engine.graphics.camera_manager import CameraManager
         CameraManager.clear()
+        from engine.graphics.camera2d import Camera2D
+        Camera2D.main = self._previous_camera2d_main
+        self._previous_camera2d_main = None
         from engine.audio import AudioManager
         AudioManager.clear()
 

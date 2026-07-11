@@ -28,6 +28,13 @@ class EditorContext:
         self.tools = ToolManager()
         self.commands = CommandManager()
         self.runtime = RuntimeManager()
+        self._scene_provider = lambda: None
+
+    def set_scene_provider(self, provider) -> None:
+        self._scene_provider = provider
+
+    def current_scene(self) -> Any | None:
+        return self._scene_provider()
 
     def reset_scene_state(self) -> None:
         """Para o Play Mode e reseta todo o estado do editor para a cena.

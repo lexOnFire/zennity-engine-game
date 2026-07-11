@@ -4,15 +4,14 @@ from typing import Any
 
 
 def _current_scene_object(editor: Any) -> Any | None:
+    """Fallback: le o objeto selecionado via viewport (SelectionManager)."""
     viewport = getattr(editor, "viewport", None)
-    scene = getattr(viewport, "active_scene", None)
-    if scene is None:
+    if viewport is None:
         return None
-    selected_index = int(getattr(scene, "selected_index", -1))
-    objects = list(getattr(scene, "editable_objects", []))
-    if 0 <= selected_index < len(objects):
-        return objects[selected_index]
-    return None
+    try:
+        return viewport.selected_object()
+    except Exception:
+        return None
 
 
 def _current_runtime_object(editor: Any) -> Any | None:
@@ -41,10 +40,6 @@ def _sync_object_selection(editor: Any) -> None:
             viewport.select_object(obj)
         except Exception:
             pass
-
-    objects = list(getattr(scene, "editable_objects", []))
-    if obj in objects and hasattr(scene, "selected_index"):
-        scene.selected_index = objects.index(obj)
 
     try:
         viewport.update()

@@ -42,6 +42,8 @@ class UIRenderer:
     def _font(self, size: int, bold: bool = False) -> pygame.font.Font:
         key = (max(1, int(size)), bool(bold))
         if key not in self._font_cache:
+            if not pygame.font.get_init():
+                pygame.font.init()
             self._font_cache[key] = pygame.font.SysFont("sans", key[0], bold=key[1])
         return self._font_cache[key]
 

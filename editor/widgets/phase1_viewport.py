@@ -709,7 +709,7 @@ class Phase1ViewportWidget(ViewportWidget):
             if is_runtime_scene:
                 self.runtime_manager.tick(dt)
             elif not runtime_playing:
-                self.active_scene.update(dt)
+                # Disable scene.update in edit mode to prevent physics from falling
                 self._sync_selection_to_model()
 
         self.update()

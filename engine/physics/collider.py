@@ -293,7 +293,20 @@ class BoxCollider(Component):
 
     def draw(self, screen: pygame.Surface) -> None:
         if self.debug_draw:
-            pygame.draw.rect(screen, (0, 255, 0), self.rect, 1)
+            from engine.graphics.camera2d import Camera2D
+            rect = self.rect
+            if Camera2D.main:
+                screen_x, screen_y = Camera2D.main.world_to_screen(
+                    (rect.centerx, rect.centery), screen.get_width(), screen.get_height()
+                )
+                zoom = Camera2D.main.zoom
+                scaled_w = int(rect.width * zoom)
+                scaled_h = int(rect.height * zoom)
+                draw_rect = pygame.Rect(0, 0, scaled_w, scaled_h)
+                draw_rect.center = (int(screen_x), int(screen_y))
+                pygame.draw.rect(screen, (0, 255, 0), draw_rect, 1)
+            else:
+                pygame.draw.rect(screen, (0, 255, 0), rect, 1)
 
 
 class CircleCollider(Component):
@@ -490,8 +503,17 @@ class CircleCollider(Component):
 
     def draw(self, screen: pygame.Surface) -> None:
         if self.debug_draw:
+            from engine.graphics.camera2d import Camera2D
             cx, cy = self.center
-            pygame.draw.circle(screen, (0, 255, 128), (int(cx), int(cy)), int(self.radius), 1)
+            if Camera2D.main:
+                screen_x, screen_y = Camera2D.main.world_to_screen(
+                    (cx, cy), screen.get_width(), screen.get_height()
+                )
+                zoom = Camera2D.main.zoom
+                scaled_r = int(self.radius * zoom)
+                pygame.draw.circle(screen, (0, 255, 128), (int(screen_x), int(screen_y)), scaled_r, 1)
+            else:
+                pygame.draw.circle(screen, (0, 255, 128), (int(cx), int(cy)), int(self.radius), 1)
 
 
 from engine.core.component_registry import register_component

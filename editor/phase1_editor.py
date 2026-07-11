@@ -45,6 +45,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         # Quando True, o usuario ajustou o splitter manualmente:
         # nao recalcular automaticamente.
         self._hierarchy_splitter_user_resized = False
+        self.editor_context.set_scene_provider(lambda: getattr(self, "viewport", None) and getattr(self.viewport, "active_scene", None))
         super().__init__()
         self.editor_context.tools.subscribe(self._on_runtime_tool_changed)
 
@@ -224,7 +225,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.viewport.set_editor_state(self.editor_context.state)
         self.viewport.set_command_manager(self.editor_context.commands)
         self.viewport.set_runtime_manager(self.editor_context.runtime)
-        self.editor_scene = self.viewport.active_scene
+        self.editor_scene = self.editor_context.current_scene()
 
         self.game_viewport = GameViewportWidget(self)
         self.game_viewport.setObjectName("GameViewportCanvas")
@@ -399,7 +400,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
                         registry.append(collider)
 
     def _active_scene(self) -> Any:
-        return getattr(self.viewport, "active_scene", None)
+        return self.editor_context.current_scene()
 
     def _editor_scene(self) -> Any:
         if self.editor_scene is None:
@@ -463,7 +464,8 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.hierarchy.refresh_objects(objects)
         # So auto-redimensiona se o splitter nunca foi ajustado pelo usuario
         if not getattr(self, "_hierarchy_splitter_user_resized", False):
-            self._sync_hierarchy_panel_height(self.object_count)
+            # self._sync_hierarchy_panel_height(self.object_count)  # Desabilitado pois causa bugs visuais e tremulaçáo
+            pass
         if hasattr(self, "stats"):
             self.stats.setText(f"FPS: 60 | Memoria: 512 MB | Objetos: {self.object_count}")
 
@@ -473,7 +475,13 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         if self._left_panel_focus == "assets":
             self.left_splitter.setSizes([96, 644])
             return
-        target = max(150, min(390, 108 + int(object_count) * 24))
+            
+        if hasattr(self, "hierarchy_tabs") and self.hierarchy_tabs.currentIndex() == 1:
+            # Aba 'Criar' expande totalmente para caber os botões
+            target = 390
+        else:
+            target = max(150, min(390, 108 + int(object_count) * 24))
+            
         sizes = self.left_splitter.sizes()
         total = sum(sizes) if sizes else 740
         bottom = max(96, total - target)
@@ -591,6 +599,43 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
 
     def on_viewport_object_changed(self, obj: Any) -> None:
         if obj is self.editor_context.selection.selected:
+            # Sempre adia para o próximo tick do event loop via QTimer(0).
+            # NUNCA chamar self.inspector.load_object(obj) direto aqui:
+            # load_object() reconstrói os widgets do Inspector do zero, e
+            # rodar isso de forma síncrona dentro deste handler bloqueia o
+            # event loop (e o paintGL) por ~150ms.
+            #
+            # Antes, esse bloqueio síncrono só era evitado quando
+            # `is_mouse_down` era True — mas no mouseReleaseEvent (fim do
+            # drag) o botão já aparece solto no momento em que o Qt entrega
+            # o evento, então o commit final sempre caía no caminho síncrono
+            # e travava exatamente ao soltar o mouse. O QTimer(0) já faz o
+            # debounce correto tanto durante o drag (múltiplos .start()
+            # seguidos) quanto no commit final (um único disparo, não
+            # bloqueante), então não precisamos mais checar o estado do
+            # botão do mouse aqui.
+            if not hasattr(self, "_deferred_inspector_timer"):
+                from PySide6.QtCore import QTimer
+                self._deferred_inspector_timer = QTimer(self)
+                self._deferred_inspector_timer.setSingleShot(True)
+                self._deferred_inspector_timer.setInterval(0)
+                self._deferred_inspector_timer.timeout.connect(
+                    lambda: self._check_and_load_inspector(self.editor_context.selection.selected)
+                )
+            self._deferred_inspector_timer.start()
+
+    def _check_and_load_inspector(self, obj: Any) -> None:
+        if obj is not self.editor_context.selection.selected:
+            return
+        from PySide6.QtWidgets import QApplication
+        from PySide6.QtCore import Qt
+        is_mouse_down = bool(QApplication.mouseButtons() & Qt.MouseButton.LeftButton)
+        is_dragging = is_mouse_down and (
+            getattr(self.viewport, "_move_drag_object", None) is not None or
+            getattr(self.viewport, "_rotate_drag_object", None) is not None or
+            getattr(self.viewport, "_scale_drag_object", None) is not None
+        )
+        if not is_dragging:
             self.inspector.load_object(obj)
 
     def on_viewmodel_property_changed(self, component_name: str, property_name: str, value: object) -> None:

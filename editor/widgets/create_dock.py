@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QGridLayout,
     QFrame,
+    QScrollArea,
 )
 
 
@@ -32,6 +33,7 @@ class CreateDock(QDockWidget):
         layout = QVBoxLayout(root)
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(10)
+        layout.setSizeConstraint(QVBoxLayout.SetMinimumSize)
 
         title = QLabel("Adicionar à cena")
         title.setObjectName("PanelTitle")
@@ -69,7 +71,12 @@ class CreateDock(QDockWidget):
         ]))
 
         layout.addStretch(1)
-        self.setWidget(root)
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(root)
+        scroll_area.setMinimumWidth(250)
+        self.setWidget(scroll_area)
 
     def _section_label(self, text: str) -> QLabel:
         label = QLabel(text)
@@ -83,22 +90,28 @@ class CreateDock(QDockWidget):
         return line
 
     def _buttons_grid(self, items: list[tuple[str, str]]) -> QGridLayout:
+        from PySide6.QtWidgets import QSizePolicy
         grid = QGridLayout()
         grid.setSpacing(6)
         for index, (text, preset) in enumerate(items):
             button = QPushButton(text)
             button.setObjectName("CreatePresetButton")
+            button.setMinimumHeight(30)
+            button.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
             button.setCursor(Qt.PointingHandCursor)
             button.clicked.connect(lambda checked=False, p=preset: self.create_requested.emit(p))
             grid.addWidget(button, index // 2, index % 2)
         return grid
 
     def _template_grid(self, items: list[tuple[str, str]]) -> QGridLayout:
+        from PySide6.QtWidgets import QSizePolicy
         grid = QGridLayout()
         grid.setSpacing(6)
         for index, (text, template) in enumerate(items):
             button = QPushButton(text)
             button.setObjectName("CreateTemplateButton")
+            button.setMinimumHeight(30)
+            button.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
             button.setCursor(Qt.PointingHandCursor)
             button.clicked.connect(lambda checked=False, t=template: self.template_requested.emit(t))
             grid.addWidget(button, index, 0)

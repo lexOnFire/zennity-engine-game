@@ -28,6 +28,7 @@ from editor.core.event_bus import (
 )
 from editor.runtime.selection_manager import SelectionManager
 from editor.viewmodels.scene_viewmodel import SceneViewModel
+from editor.runtime.legacy_scene_adapter import LegacySceneAdapter
 
 
 class ViewportWidget(QWidget):
@@ -186,25 +187,22 @@ class ViewportWidget(QWidget):
         if not self.active_scene:
             return
 
-        if hasattr(self.active_scene, "spawn_object"):
-            self.active_scene.spawn_object(shape_type)
-            self._sync_model_from_scene()
+        LegacySceneAdapter.spawn_object(self.active_scene, shape_type)
+        self._sync_model_from_scene()
 
     def delete_selected_object(self) -> None:
         """Deleta o objeto selecionado na cena ativa."""
         if not self.active_scene:
             return
-        if hasattr(self.active_scene, "delete_selected"):
-            self.active_scene.delete_selected()
-            self._sync_model_from_scene()
+        LegacySceneAdapter.delete_selected(self.active_scene)
+        self._sync_model_from_scene()
 
     def duplicate_selected_object(self) -> None:
         """Duplica o objeto selecionado na cena ativa."""
         if not self.active_scene:
             return
-        if hasattr(self.active_scene, "duplicate_selected"):
-            self.active_scene.duplicate_selected()
-            self._sync_model_from_scene()
+        LegacySceneAdapter.duplicate_selected(self.active_scene)
+        self._sync_model_from_scene()
 
     # ──────────────────────────────────────────────────────────────────────────
     # Alternância de Modo 2D/3D
@@ -294,20 +292,6 @@ class ViewportWidget(QWidget):
             for btn in getattr(scene, "_all_toolbar_btns", []):
                 btn.rect.y = -9999
 
-            def _qt_draw_2d(screen, _scene=scene):
-                lay = _scene._layout()
-                screen.fill((28, 29, 36))
-                if hasattr(_scene, "_draw_viewport"):
-                    _scene._draw_viewport(screen, lay)
-                    return
-                for idx, obj in enumerate(getattr(_scene, "game_objects", [])):
-                    if obj is getattr(_scene, "cam_obj", None):
-                        continue
-                    if hasattr(_scene, "_draw_object"):
-                        _scene._draw_object(screen, obj, idx, 1.0, lay)
-                    elif hasattr(obj, "draw"):
-                        obj.draw(screen)
-            scene.draw = _qt_draw_2d
 
             # Guarda o original e substitui por wrapper que filtra eventos
             if not hasattr(scene.handle_event, "__wrapped__"):
@@ -471,12 +455,15 @@ class ViewportWidget(QWidget):
         if not self.pg_surface or not self.active_scene:
             return
 
-        self.active_scene.draw(self.pg_surface)
-
         is_playing = (
             self.runtime_manager is not None
             and getattr(self.runtime_manager, "is_playing", False)
         )
+        
+        scene_to_draw = self.runtime_manager.runtime_scene if is_playing and getattr(self.runtime_manager, "runtime_scene", None) else self.active_scene
+
+        LegacySceneAdapter.draw(scene_to_draw, self.pg_surface)
+
         if not is_playing:
             from editor.gizmos.gizmo_registry import GizmoRegistry
             objs = getattr(self.active_scene, "editable_objects", getattr(self.active_scene, "game_objects", []))
@@ -512,8 +499,6 @@ class ViewportWidget(QWidget):
                 and getattr(self.runtime_manager, "runtime_scene", None) is self.active_scene
             ):
                 self.runtime_manager.tick(dt)
-            else:
-                self.active_scene.update(dt)
 
             # Sincroniza seleção da cena legada → SelectionManager enquanto arrasta
             self._sync_selection_to_model()
@@ -632,7 +617,7 @@ class ViewportWidget(QWidget):
                 pos=self._qt_mouse_pos,
                 button=self._qt_btn_to_pg(event.button()),
             )
-            self.active_scene.handle_event(pg_ev)
+            LegacySceneAdapter.handle_event(self.active_scene, pg_ev)
             # Sincroniza seleção imediatamente após o clique
             self._sync_selection_to_model()
         event.accept()
@@ -650,7 +635,7 @@ class ViewportWidget(QWidget):
                 pos=self._qt_mouse_pos,
                 button=self._qt_btn_to_pg(event.button()),
             )
-            self.active_scene.handle_event(pg_ev)
+            LegacySceneAdapter.handle_event(self.active_scene, pg_ev)
             self._sync_selection_to_model()
         event.accept()
 
@@ -669,7 +654,7 @@ class ViewportWidget(QWidget):
                 ),
                 rel=(0, 0),
             )
-            self.active_scene.handle_event(pg_ev)
+            LegacySceneAdapter.handle_event(self.active_scene, pg_ev)
         event.accept()
 
     def wheelEvent(self, event: QWheelEvent) -> None:
@@ -679,7 +664,7 @@ class ViewportWidget(QWidget):
                 pygame.MOUSEWHEEL,
                 x=0, y=steps, flipped=False,
             )
-            self.active_scene.handle_event(pg_ev)
+            LegacySceneAdapter.handle_event(self.active_scene, pg_ev)
         event.accept()
 
     def _qt_key_to_pg(self, qt_key: Qt.Key) -> Optional[int]:
@@ -727,7 +712,7 @@ class ViewportWidget(QWidget):
                 pygame.KEYDOWN,
                 key=pg_key, mod=mod, unicode=event.text(),
             )
-            self.active_scene.handle_event(pg_ev)
+            LegacySceneAdapter.handle_event(self.active_scene, pg_ev)
             # Delete e Ctrl+D devem sincronizar o modelo
             if pg_key == pygame.K_DELETE:
                 self._sync_model_from_scene()
@@ -749,7 +734,7 @@ class ViewportWidget(QWidget):
                 pygame.KEYUP,
                 key=pg_key, mod=mod, unicode="",
             )
-            self.active_scene.handle_event(pg_ev)
+            LegacySceneAdapter.handle_event(self.active_scene, pg_ev)
             event.accept()
         else:
             super().keyReleaseEvent(event)

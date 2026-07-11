@@ -10,25 +10,32 @@ class GizmoRegistry:
     Registro centralizado de gizmos para o Zennity Editor.
     Permite registrar e consultar funções de desenho de gizmo para componentes.
     """
-    _registry: Dict[str, Callable[[Any, pygame.Surface, Any], None]] = {}
+    _registry: Dict[str, Callable[[Any, pygame.Surface, Any, Any], None]] = {}
 
     @classmethod
-    def register(cls, component_type: str, draw_func: Callable[[Any, pygame.Surface, Any], None]) -> None:
+    def register(cls, component_type: str, draw_func: Callable[[Any, pygame.Surface, Any, Any], None]) -> None:
         """Registra uma função de desenho de gizmo para um tipo de componente."""
         cls._registry[component_type] = draw_func
 
     @classmethod
-    def get_gizmo(cls, component_type: str) -> Callable[[Any, pygame.Surface, Any], None] | None:
+    def get_gizmo(cls, component_type: str) -> Callable[[Any, pygame.Surface, Any, Any], None] | None:
         """Consulta e retorna a função de desenho de gizmo registrada, ou None."""
         return cls._registry.get(component_type)
 
 
-def _get_screen_pos(component: Any, scene: Any) -> Tuple[float, float]:
+def _get_screen_pos(component: Any, scene: Any, screen: Any = None) -> Tuple[float, float]:
     """Helper para obter a posição na tela de um componente no editor."""
     obj = component.game_object
     if not obj:
         return (0.0, 0.0)
+    
     pos = obj.transform.get_world_position()
+    
+    # Aplica offsets do colisor, se existirem (para que o gizmo reflita o offset da caixa de colisão)
+    ox = getattr(component, "offset_x", 0.0)
+    oy = getattr(component, "offset_y", 0.0)
+    pos = (pos[0] + ox, pos[1] + oy)
+
     if type(scene).__name__ not in ("MagicMock", "Mock") and hasattr(scene, "_world_to_vp") and hasattr(scene, "_layout"):
         try:
             val = scene._world_to_vp(pos, scene._layout())
@@ -36,6 +43,14 @@ def _get_screen_pos(component: Any, scene: Any) -> Tuple[float, float]:
                 return float(val[0]), float(val[1])
         except Exception:
             pass
+            
+    # Se não tiver a função legada do Qt, usa o Camera2D se existir
+    if screen is not None:
+        from engine.graphics.camera2d import Camera2D
+        if Camera2D.main:
+            sx, sy = Camera2D.main.world_to_screen(pos, screen.get_width(), screen.get_height())
+            return float(sx), float(sy)
+            
     return float(pos[0]), float(pos[1])
 
 
@@ -51,13 +66,13 @@ def _get_zoom(scene: Any) -> float:
 
 # ── 1. Camera Gizmo ───────────────────────────────────────────────────────────
 
-def draw_camera_gizmo(component: Any, screen: pygame.Surface, scene: Any) -> None:
+def draw_camera_gizmo(component: Any, screen: pygame.Surface, scene: Any, selected_obj: Any = None) -> None:
     """Desenha um retângulo tracejado/fino representando a projeção e área da câmera."""
     obj = component.game_object
     if not obj or not component.enabled:
         return
 
-    cx, cy = _get_screen_pos(component, scene)
+    cx, cy = _get_screen_pos(component, scene, screen)
     zoom = _get_zoom(scene)
 
     # Cores
@@ -88,29 +103,24 @@ def draw_camera_gizmo(component: Any, screen: pygame.Surface, scene: Any) -> Non
         screen.blit(cam_rect_surf, (int(cx - w / 2), int(cy - h / 2)))
 
     # Desenha linha tracejada representando o Viewport Rect se a câmera for selecionada
-    selected_idx = getattr(scene, "selected_index", -1)
-    if isinstance(selected_idx, (int, float)) and selected_idx >= 0:
-        editable_objs = getattr(scene, "editable_objects", [])
-        if len(editable_objs) > selected_idx:
-            sel_obj = editable_objs[selected_idx]
-            if sel_obj is obj:
-                # Desenha um retângulo pontilhado indicando a área de cobertura aproximada
-                fov_w = 400.0 * zoom / component.zoom
-                fov_h = 300.0 * zoom / component.zoom
-                fov_surf = pygame.Surface((fov_w, fov_h), pygame.SRCALPHA)
-                pygame.draw.rect(fov_surf, (*color_border, 90), (0, 0, fov_w, fov_h), 1, border_radius=2)
-                screen.blit(fov_surf, (int(cx - fov_w / 2), int(cy - fov_h / 2)))
+    if selected_obj is obj:
+        # Desenha um retângulo pontilhado indicando a área de cobertura aproximada
+        fov_w = 400.0 * zoom / component.zoom
+        fov_h = 300.0 * zoom / component.zoom
+        fov_surf = pygame.Surface((fov_w, fov_h), pygame.SRCALPHA)
+        pygame.draw.rect(fov_surf, (*color_border, 90), (0, 0, fov_w, fov_h), 1, border_radius=2)
+        screen.blit(fov_surf, (int(cx - fov_w / 2), int(cy - fov_h / 2)))
 
 
 # ── 2. BoxCollider Gizmo ──────────────────────────────────────────────────────
 
-def draw_box_collider_gizmo(component: Any, screen: pygame.Surface, scene: Any) -> None:
+def draw_box_collider_gizmo(component: Any, screen: pygame.Surface, scene: Any, selected_obj: Any = None) -> None:
     """Desenha um contorno verde claro representando a caixa física do BoxCollider."""
     obj = component.game_object
     if not obj or not component.enabled:
         return
 
-    cx, cy = _get_screen_pos(component, scene)
+    cx, cy = _get_screen_pos(component, scene, screen)
     zoom = _get_zoom(scene)
     rz = getattr(obj.transform, "rz", 0.0)
 
@@ -146,13 +156,13 @@ def draw_box_collider_gizmo(component: Any, screen: pygame.Surface, scene: Any) 
 
 # ── 3. CircleCollider Gizmo ───────────────────────────────────────────────────
 
-def draw_circle_collider_gizmo(component: Any, screen: pygame.Surface, scene: Any) -> None:
+def draw_circle_collider_gizmo(component: Any, screen: pygame.Surface, scene: Any, selected_obj: Any = None) -> None:
     """Desenha um contorno circular verde claro correspondente ao raio do colisor."""
     obj = component.game_object
     if not obj or not component.enabled:
         return
 
-    cx, cy = _get_screen_pos(component, scene)
+    cx, cy = _get_screen_pos(component, scene, screen)
     zoom = _get_zoom(scene)
     
     r = float(component.radius) * zoom
@@ -163,13 +173,13 @@ def draw_circle_collider_gizmo(component: Any, screen: pygame.Surface, scene: An
 
 # ── 4. AudioSource Gizmo ──────────────────────────────────────────────────────
 
-def draw_audio_source_gizmo(component: Any, screen: pygame.Surface, scene: Any) -> None:
+def draw_audio_source_gizmo(component: Any, screen: pygame.Surface, scene: Any, selected_obj: Any = None) -> None:
     """Desenha um alto-falante e um círculo amarelo suave representando a fonte de som."""
     obj = component.game_object
     if not obj or not component.enabled:
         return
 
-    cx, cy = _get_screen_pos(component, scene)
+    cx, cy = _get_screen_pos(component, scene, screen)
     zoom = _get_zoom(scene)
 
     color_source = (255, 235, 59)  # Yellow
@@ -192,6 +202,8 @@ def draw_audio_source_gizmo(component: Any, screen: pygame.Surface, scene: Any) 
     pygame.draw.polygon(screen, color_source, poly_pts)
 
     # Rótulo de texto
+    if not pygame.font.get_init():
+        pygame.font.init()
     font = pygame.font.SysFont("monospace", int(10 * zoom))
     text_s = font.render("AudioSource", True, color_source)
     screen.blit(text_s, (int(cx - text_s.get_width()/2), int(cy - r - text_s.get_height() - 2)))
@@ -199,13 +211,13 @@ def draw_audio_source_gizmo(component: Any, screen: pygame.Surface, scene: Any) 
 
 # ── 5. AudioListener Gizmo ────────────────────────────────────────────────────
 
-def draw_audio_listener_gizmo(component: Any, screen: pygame.Surface, scene: Any) -> None:
+def draw_audio_listener_gizmo(component: Any, screen: pygame.Surface, scene: Any, selected_obj: Any = None) -> None:
     """Desenha uma representação visual magenta representando o receptor de áudio."""
     obj = component.game_object
     if not obj or not component.enabled:
         return
 
-    cx, cy = _get_screen_pos(component, scene)
+    cx, cy = _get_screen_pos(component, scene, screen)
     zoom = _get_zoom(scene)
 
     color_listener = (233, 30, 99)  # Magenta
@@ -219,6 +231,8 @@ def draw_audio_listener_gizmo(component: Any, screen: pygame.Surface, scene: Any
     pygame.draw.circle(screen, color_listener, (int(cx), int(cy)), int(r * 0.3), 1)
 
     # Rótulo de texto
+    if not pygame.font.get_init():
+        pygame.font.init()
     font = pygame.font.SysFont("monospace", int(10 * zoom))
     text_s = font.render("AudioListener", True, color_listener)
     screen.blit(text_s, (int(cx - text_s.get_width()/2), int(cy - r - text_s.get_height() - 2)))

@@ -24,6 +24,7 @@ class HierarchyDock(QDockWidget):
         
         # Conteúdo interno
         content = QWidget()
+        content.setMinimumWidth(250)
         layout = QVBoxLayout(content)
         layout.setContentsMargins(4, 4, 4, 4)
         

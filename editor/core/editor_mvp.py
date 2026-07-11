@@ -1,4 +1,26 @@
 from __future__ import annotations
+"""
+----------------------------------------------------
+
+LEGACY MODULE
+
+Este módulo foi substituído pela arquitetura baseada em:
+
+- ZennityPhase1Editor
+- EditorContext
+- SceneViewModel
+- SelectionManager
+- RuntimeManager
+
+Ele não faz parte do runtime atual.
+
+Não adicionar novas funcionalidades aqui.
+
+Antes de remover definitivamente, garantir que nenhum import externo exista.
+
+----------------------------------------------------
+"""
+
 
 import numpy as np
 from PySide6.QtCore import Qt
