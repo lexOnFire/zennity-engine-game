@@ -829,17 +829,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 field.setValue(float((collider or {}).get(key, collider_defaults[key])))
             self.collider_trigger_field.setEnabled(collider is not None)
             self.collider_trigger_field.setChecked(bool((collider or {}).get("is_trigger", False)))
-            components = ["Transform"]
-            if obj.get("mesh_type") or obj.get("color"):
-                components.append("Renderer 2D")
-            if obj.get("collider"):
-                collider_type = str(obj["collider"].get("type", "box")).title()
-                components.append(f"{collider_type} Collider")
-            if rigidbody:
-                components.append("RigidBody")
-            components.extend(str(name) for name in obj.get("component_names", []))
-            components.extend(f"Script: {Path(path).name}" for path in obj.get("scripts", []))
-            self.component_summary_label.setText("\n".join(dict.fromkeys(components)))
             self.script_selector.clear()
             for path in obj.get("scripts", []):
                 self.script_selector.addItem(Path(path).name, path)

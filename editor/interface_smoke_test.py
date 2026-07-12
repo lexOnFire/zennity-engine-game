@@ -497,9 +497,6 @@ class InterfaceSmokeTest(QMainWindow):
         script_lay = QFormLayout(self.script_widget)
         script_lay.setContentsMargins(8, 0, 8, 0)
         
-        self.component_summary_label = QLabel("Transform")
-        self.component_summary_label.setWordWrap(True)
-        script_lay.addRow("Componentes Ativos", self.component_summary_label)
         self.script_selector = QComboBox()
         self.script_selector.setObjectName("InspectorScriptSelector")
         script_lay.addRow("Script Py", self.script_selector)
