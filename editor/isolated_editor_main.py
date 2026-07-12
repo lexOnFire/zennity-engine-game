@@ -51,6 +51,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             ("Selecionar Player", {"type": "select_object", "name": "Player"}),
             ("Mover ←", {"type": "move_selected", "dx": -16}),
             ("Mover →", {"type": "move_selected", "dx": 16}),
+            ("Play", {"type": "play"}),
+            ("Stop", {"type": "stop"}),
             ("Reset", {"type": "reset_from_interface"}),
         ):
             action = QAction(label, self)
@@ -107,6 +109,15 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self.statusBar().showMessage(
                     f"Viewport: {message['name']} em X={message['x']:.1f}, Y={message['y']:.1f}"
                 )
+            elif message.get("type") == "play_state":
+                self.statusBar().showMessage(
+                    "Viewport: PLAY" if message["state"] == "play" else "Viewport: EDIT — cena restaurada"
+                )
+            elif message.get("type") == "scene_snapshot":
+                self._scene_snapshot = [dict(item) for item in message.get("objects", [])]
+                self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
+                if self._selected_name in self._objects_by_name:
+                    self._update_inspector(self._selected_name)
 
     def closeEvent(self, event) -> None:
         try:
