@@ -162,14 +162,18 @@ def run_viewport(
                     name = str(command.get("name", ""))
                     if name in objects and not playing:
                         obj = objects[name]
-                        for key in ("x", "y", "w", "h"):
+                        for key in ("x", "y", "w", "h", "rotation"):
                             if key in command:
                                 obj[key] = float(command[key])
-                        _send(events, {"type": "transform", "name": name, **{key: obj[key] for key in ("x", "y", "w", "h")}})
+                        _send(events, {"type": "transform", "name": name, **{key: obj[key] for key in ("x", "y", "w", "h", "rotation")}})
                 elif command.get("type") == "set_physics":
                     name = str(command.get("name", ""))
                     if name in objects and not playing and isinstance(command.get("rigidbody"), dict):
                         objects[name]["rigidbody"] = dict(command["rigidbody"])
+                elif command.get("type") == "set_collider":
+                    name = str(command.get("name", ""))
+                    if name in objects and not playing and isinstance(command.get("collider"), dict):
+                        objects[name]["collider"] = dict(command["collider"])
                 elif command.get("type") == "reset_scene":
                     _send(events, {"type": "snapshot_requested"})
 
@@ -274,7 +278,25 @@ def run_viewport(
             rotated = pygame.transform.rotate(object_surface, -float(obj.get("rotation", 0.0)))
             screen.blit(rotated, rotated.get_rect(center=(int(object_x), int(object_y))))
             if name == selected_name:
-                pygame.draw.rect(screen, (125, 212, 255), box.inflate(8, 8), 2, border_radius=4)
+                angle = float(obj.get("rotation", 0.0))
+                collider = obj.get("collider") if isinstance(obj.get("collider"), dict) else None
+                outline_width = float((collider or {}).get("width", obj["w"]))
+                outline_height = float((collider or {}).get("height", obj["h"]))
+                offset_x = float((collider or {}).get("offset_x", 0.0))
+                offset_y = float((collider or {}).get("offset_y", 0.0))
+                radians = math.radians(angle)
+                rotated_offset_x = offset_x * math.cos(radians) - offset_y * math.sin(radians)
+                rotated_offset_y = offset_x * math.sin(radians) + offset_y * math.cos(radians)
+                collider_x, collider_y = world_to_screen(obj["x"] + rotated_offset_x, obj["y"] + rotated_offset_y)
+                outline_color = (255, 187, 72) if (collider or {}).get("is_trigger") else (125, 212, 255)
+                if (collider or {}).get("type") == "circle":
+                    radius = max(1, int(float(collider.get("radius", min(obj["w"], obj["h"]) / 2.0)) * zoom))
+                    pygame.draw.circle(screen, outline_color, (int(collider_x), int(collider_y)), radius, 2)
+                else:
+                    collider_surface = pygame.Surface((max(1, int(outline_width * zoom) + 8), max(1, int(outline_height * zoom) + 8)), pygame.SRCALPHA)
+                    pygame.draw.rect(collider_surface, outline_color, collider_surface.get_rect().inflate(-6, -6), width=2, border_radius=4)
+                    rotated_collider = pygame.transform.rotate(collider_surface, -angle)
+                    screen.blit(rotated_collider, rotated_collider.get_rect(center=(int(collider_x), int(collider_y))))
                 if active_tool == "move":
                     pygame.draw.line(screen, (245, 78, 78), (object_x, object_y), (object_x + 92, object_y), 4)
                     pygame.draw.line(screen, (82, 211, 106), (object_x, object_y), (object_x, object_y - 92), 4)
