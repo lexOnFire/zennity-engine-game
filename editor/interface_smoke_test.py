@@ -175,6 +175,7 @@ class InterfaceSmokeTest(QMainWindow):
         self.inspector_panel = inspector
         inspector.setStyleSheet("background-color: #1c1c1c;")
         main_layout = QVBoxLayout(inspector)
+        self.inspector_layout = main_layout
         main_layout.setContentsMargins(8, 8, 8, 8)
         main_layout.setSpacing(10)
         
@@ -482,72 +483,8 @@ class InterfaceSmokeTest(QMainWindow):
         col_body_layout.addWidget(collider_widget)
         main_layout.addWidget(col_body)
 
-        # ------------------ COMPONENTE: SCRIPTS (CUSTOM) ------------------
-        self.script_header = QWidget()
-        self.script_header.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px; border-bottom: 1px solid #2b2b2b;")
-        script_h_layout = QHBoxLayout(self.script_header)
-        script_h_layout.setContentsMargins(6, 4, 6, 4)
-        script_title = QLabel("📄 Scripts / Custom")
-        script_title.setStyleSheet("font-weight: bold; color: #ffffff;")
-        script_h_layout.addWidget(script_title)
-        script_h_layout.addStretch()
-        
-        # Botões de encolher e excluir para Scripts
-        btn_collapse_script = QToolButton()
-        btn_collapse_script.setText("▼")
-        btn_collapse_script.setFixedSize(18, 18)
-        btn_collapse_script.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
-        
-        self.btn_del_script = QToolButton()
-        self.btn_del_script.setText("✕")
-        self.btn_del_script.setFixedSize(18, 18)
-        self.btn_del_script.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important; padding: 0px;")
-        
-        script_h_layout.addWidget(btn_collapse_script)
-        script_h_layout.addWidget(self.btn_del_script)
-        main_layout.addWidget(self.script_header)
-
-        self.script_widget = QWidget()
-        script_lay = QVBoxLayout(self.script_widget)
-        script_lay.setContentsMargins(8, 4, 8, 4)
-        script_lay.setSpacing(6)
-        
-        btn_collapse_script.clicked.connect(lambda: self.script_widget.setVisible(not self.script_widget.isVisible()))
-        
-        # Área de lista de scripts anexados
-        self.script_list_container = QWidget()
-        self.script_list_layout = QVBoxLayout(self.script_list_container)
-        self.script_list_layout.setContentsMargins(0, 0, 0, 0)
-        self.script_list_layout.setSpacing(4)
-        script_lay.addWidget(self.script_list_container)
-        
-        # Campo de seleção e botão de adicionar EMBUTIDO (Sem popups!)
-        embed_selector_widget = QWidget()
-        embed_sel_lay = QHBoxLayout(embed_selector_widget)
-        embed_sel_lay.setContentsMargins(0, 0, 0, 0)
-        embed_sel_lay.setSpacing(4)
-        
-        self.script_selector = QComboBox()
-        self.script_selector.setObjectName("InspectorScriptSelector")
-        embed_sel_lay.addWidget(self.script_selector)
-        
-        self.btn_add_embed_script = QPushButton("+ Add")
-        self.btn_add_embed_script.setFixedSize(50, 20)
-        self.btn_add_embed_script.setStyleSheet("background-color: #303030; color: #ffffff; border: 1px solid #444; border-radius: 2px;")
-        embed_sel_lay.addWidget(self.btn_add_embed_script)
-        
-        script_lay.addWidget(embed_selector_widget)
-        
-        script_actions = QWidget()
-        script_actions_layout = QHBoxLayout(script_actions)
-        script_actions_layout.setContentsMargins(0, 4, 0, 0)
-        self.create_script_button = QPushButton("Criar Script")
-        self.edit_script_button = QPushButton("Editar Script")
-        script_actions_layout.addWidget(self.create_script_button)
-        script_actions_layout.addWidget(self.edit_script_button)
-        script_lay.addWidget(script_actions)
-        
-        main_layout.addWidget(self.script_widget)
+        # O cabeçalho e corpo de scripts/custom agora são inseridos de forma modular dinâmica para cada script ativo
+        self.script_containers = []
         
         self.add_component_button = QPushButton("Adicionar Componente")
         self.add_component_button.setObjectName("InspectorAddComponentButton")

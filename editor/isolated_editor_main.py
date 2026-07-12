@@ -58,6 +58,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._connect_hierarchy_to_viewport()
         self._refresh_hierarchy()
         self._connect_inspector_to_viewport()
+        self.script_containers = []
         self.add_component_button.clicked.connect(self._open_add_component_menu)
         self.create_script_button.clicked.connect(self._create_script_asset)
         self.edit_script_button.clicked.connect(self._edit_selected_script)
@@ -187,20 +188,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._update_inspector(object_name)
         self._log("INFO", f"Script anexado em {object_name}: {script_path}")
 
-    def _populate_available_scripts_dropdown(self) -> None:
-        self.script_selector.clear()
+    def _get_available_scripts(self) -> list[Path]:
         scripts_dir = Path.cwd() / "Assets" / "Scripts"
         if scripts_dir.exists():
-            for p in sorted(scripts_dir.glob("*.py")):
-                if p.name != "__init__.py":
-                    self.script_selector.addItem(p.name, str(p.resolve()))
-
-    def _add_embedded_script(self) -> None:
-        if self._selected_name not in self._objects_by_name:
-            return
-        script_path_str = self.script_selector.currentData()
-        if script_path_str:
-            self._attach_script(self._selected_name, Path(script_path_str))
+            return sorted([p for p in scripts_dir.glob("*.py") if p.name != "__init__.py"])
+        return []
 
     def _remove_single_script(self, script_path: str) -> None:
         if self._selected_name not in self._objects_by_name:
@@ -215,6 +207,42 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._update_inspector(self._selected_name)
         self._log("INFO", f"Script removido: {Path(script_path).name}")
+
+    def _update_script_config_val(self, script_path: str, key: str, value: float | bool) -> None:
+        try:
+            full_p = Path.cwd() / script_path
+            if not full_p.exists():
+                return
+            content = full_p.read_text(encoding="utf-8")
+            import ast
+            tree = ast.parse(content)
+            
+            # Localiza a atribuição do CONFIG
+            config_node = None
+            for node in tree.body:
+                if isinstance(node, ast.Assign) and len(node.targets) == 1:
+                    target = node.targets[0]
+                    if isinstance(target, ast.Name) and target.id == "CONFIG" and isinstance(node.value, ast.Dict):
+                        config_node = node
+                        break
+            
+            if config_node:
+                # Modifica o valor no AST/Texto
+                for k_node, v_node in zip(config_node.value.keys, config_node.value.values):
+                    if isinstance(k_node, ast.Constant) and k_node.value == key:
+                        start_idx = v_node.col_offset
+                        end_idx = v_node.end_col_offset
+                        # Simples substituição textual baseada em linha
+                        lines = content.splitlines()
+                        target_line = config_node.lineno - 1
+                        line_str = lines[target_line]
+                        new_val_str = str(value)
+                        lines[target_line] = line_str[:start_idx] + new_val_str + line_str[end_idx:]
+                        full_p.write_text("\n".join(lines), encoding="utf-8")
+                        self._log("INFO", f"Atualizado CONFIG['{key}'] = {value} em {Path(script_path).name}")
+                        break
+        except Exception as e:
+            self._log("WARNING", f"Falha ao atualizar propriedade do script: {e}")
 
     def _remove_all_scripts(self) -> None:
         if self._selected_name not in self._objects_by_name:
@@ -245,11 +273,14 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._edit_script_path(path)
 
     def _edit_selected_script(self) -> None:
-        path_value = self.script_selector.currentData()
-        if not path_value:
-            self.statusBar().showMessage("Selecione um script no Inspector")
+        if self._selected_name not in self._objects_by_name:
             return
-        self._edit_script_path(Path(str(path_value)))
+        obj = self._objects_by_name[self._selected_name]
+        scripts = obj.get("scripts", [])
+        if not scripts:
+            self.statusBar().showMessage("Nenhum script anexado para editar")
+            return
+        self._edit_script_path(Path(scripts[0]))
 
     def _edit_script_path(self, path: Path) -> None:
         if not path.is_absolute():
@@ -737,8 +768,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.btn_del_rb.clicked.connect(lambda: self.show_rigidbody_chk.setChecked(False))
         self.btn_del_col.clicked.connect(lambda: self.show_collider_chk.setChecked(False))
         self.btn_del_script.clicked.connect(self._remove_all_scripts)
-        self.btn_add_embed_script.clicked.connect(self._add_embedded_script)
-        self._populate_available_scripts_dropdown()
 
     def _toggle_rigidbody_component(self, checked: bool) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
@@ -781,11 +810,17 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if self._selected_name not in self._objects_by_name:
             return
         if component == "script":
-            # Exibe e ativa seção de scripts para que o usuário selecione embutido
-            self.script_header.setVisible(True)
-            self.script_widget.setVisible(True)
-            self.script_selector.setFocus()
-            self.statusBar().showMessage("Selecione o script no painel e clique em + Add")
+            scripts = self._get_available_scripts()
+            chosen_script = scripts[0] if scripts else Path("Assets/Scripts/new_script.py")
+            # Encontra um script que ainda não esteja anexado para evitar duplicatas imediatas se possível
+            obj = self._objects_by_name[self._selected_name]
+            attached = obj.get("scripts", [])
+            for s in scripts:
+                rel = str(s.relative_to(Path.cwd())).replace("\\", "/")
+                if rel not in attached:
+                    chosen_script = s
+                    break
+            self._attach_script(self._selected_name, chosen_script)
             return
         self._record_history()
         obj = self._objects_by_name[self._selected_name]
@@ -870,45 +905,104 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 field.setValue(float((collider or {}).get(key, collider_defaults[key])))
             self.collider_trigger_field.setEnabled(collider is not None)
             self.collider_trigger_field.setChecked(bool((collider or {}).get("is_trigger", False)))
-            # Limpa o container da lista de scripts
-            while self.script_list_layout.count():
-                child = self.script_list_layout.takeAt(0)
-                if child.widget():
-                    child.widget().deleteLater()
+            # Limpa todos os widgets de scripts criados anteriormente
+            for h_w, b_w in self.script_containers:
+                self.inspector_layout.removeWidget(h_w)
+                self.inspector_layout.removeWidget(b_w)
+                h_w.deleteLater()
+                b_w.deleteLater()
+            self.script_containers.clear()
             
             scripts_list = obj.get("scripts", [])
             for s_path in scripts_list:
-                s_widget = QWidget()
-                s_widget.setStyleSheet("background-color: #262626; border-radius: 2px;")
-                s_lay = QHBoxLayout(s_widget)
-                s_lay.setContentsMargins(6, 4, 6, 4)
+                s_name = Path(s_path).name
                 
-                lbl = QLabel(Path(s_path).name)
-                lbl.setStyleSheet("color: #e2e2e2; font-size: 11px;")
-                s_lay.addWidget(lbl)
-                s_lay.addStretch()
+                # Cria cabeçalho dinâmico para o script: "Player (Script)" ou "Nome (Script)"
+                from PySide6.QtWidgets import QToolButton, QFrame
+                h_widget = QWidget()
+                h_widget.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px; border-bottom: 1px solid #2b2b2b;")
+                h_lay = QHBoxLayout(h_widget)
+                h_lay.setContentsMargins(6, 4, 6, 4)
                 
-                # Botão de remoção individual do script
-                from PySide6.QtWidgets import QToolButton
+                title_text = s_name.removesuffix(".py").capitalize()
+                lbl_title = QLabel(f"∨  📄 {title_text} (Script)")
+                lbl_title.setStyleSheet("font-weight: bold; color: #ffffff; font-size: 11px;")
+                h_lay.addWidget(lbl_title)
+                h_lay.addStretch()
+                
+                # Botões de controle encolher e fechar
+                btn_collapse = QToolButton()
+                btn_collapse.setText("▼")
+                btn_collapse.setFixedSize(18, 18)
+                btn_collapse.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
+                h_lay.addWidget(btn_collapse)
+                
                 btn_del = QToolButton()
                 btn_del.setText("✕")
-                btn_del.setFixedSize(14, 14)
-                btn_del.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important; font-size: 9px; padding: 0px;")
+                btn_del.setFixedSize(18, 18)
+                btn_del.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important; padding: 0px;")
                 btn_del.clicked.connect(lambda checked=False, p=s_path: self._remove_single_script(p))
-                s_lay.addWidget(btn_del)
+                h_lay.addWidget(btn_del)
                 
-                self.script_list_layout.addWidget(s_widget)
+                # Corpo do script (Exposição de variáveis/propriedades igual ao transform/collider/screenshot)
+                b_widget = QWidget()
+                b_lay = QFormLayout(b_widget)
+                b_lay.setContentsMargins(8, 4, 8, 4)
+                b_lay.setSpacing(6)
                 
-            has_scripts = len(scripts_list) > 0
-            self.create_script_button.setEnabled(True)
-            self.edit_script_button.setEnabled(has_scripts)
-            
-            # Recarrega a lista de scripts disponíveis
-            self._populate_available_scripts_dropdown()
-            
-            # Sempre mantém o container de scripts visível quando a aba/componente estiver ativo
-            self.script_header.setVisible(True)
-            self.script_widget.setVisible(True)
+                btn_collapse.clicked.connect(lambda checked=False, target=b_widget: target.setVisible(not target.isVisible()))
+                
+                # Propriedade 1: Caminho do Script (Leitura)
+                script_path_field = QLabel(s_name)
+                script_path_field.setStyleSheet("background-color: #262626; color: #d0d0d0; padding: 3px; border-radius: 2px;")
+                b_lay.addRow("Script", script_path_field)
+                
+                # Procura configurações expostas no script para renderizar (Velocidade, Pulo, etc.)
+                try:
+                    full_p = Path.cwd() / s_path
+                    if full_p.exists():
+                        import ast
+                        tree = ast.parse(full_p.read_text(encoding="utf-8"))
+                        for node in tree.body:
+                            if isinstance(node, ast.Assign) and len(node.targets) == 1:
+                                target = node.targets[0]
+                                if isinstance(target, ast.Name) and target.id == "CONFIG" and isinstance(node.value, ast.Dict):
+                                    # Extrai chaves e valores do dicionário CONFIG
+                                    for k_node, v_node in zip(node.value.keys, node.value.values):
+                                        if isinstance(k_node, ast.Constant) and isinstance(v_node, ast.Constant):
+                                            key_name = str(k_node.value)
+                                            val = v_node.value
+                                            label_name = key_name.replace("_", " ").capitalize()
+                                            # Mapeia termos comuns para português conforme screenshot
+                                            if key_name == "speed":
+                                                label_name = "Velocidade"
+                                            elif key_name == "jump_force":
+                                                label_name = "Pulo"
+                                            
+                                            if isinstance(val, (int, float)):
+                                                sb = QDoubleSpinBox()
+                                                sb.setObjectName("InspectorNumberField")
+                                                sb.setDecimals(2)
+                                                sb.setRange(-100000.0, 100000.0)
+                                                sb.setValue(float(val))
+                                                # Callback para salvar alteração de propriedade no arquivo
+                                                sb.valueChanged.connect(lambda val_new, p_script=s_path, k_prop=key_name: self._update_script_config_val(p_script, k_prop, val_new))
+                                                b_lay.addRow(label_name, sb)
+                                            elif isinstance(val, bool):
+                                                cb = QCheckBox()
+                                                cb.setObjectName("InspectorCheckBox")
+                                                cb.setChecked(val)
+                                                cb.toggled.connect(lambda checked_new, p_script=s_path, k_prop=key_name: self._update_script_config_val(p_script, k_prop, checked_new))
+                                                b_lay.addRow(label_name, cb)
+                except Exception as e:
+                    self._log("WARNING", f"Erro ao ler propriedades de {s_name}: {e}")
+                
+                # Adiciona no layout principal logo acima do botão "Adicionar Componente"
+                idx = self.inspector_layout.indexOf(self.add_component_button)
+                self.inspector_layout.insertWidget(idx, h_widget)
+                self.inspector_layout.insertWidget(idx + 1, b_widget)
+                
+                self.script_containers.append((h_widget, b_widget))
         finally:
             self._updating_inspector = False
 
