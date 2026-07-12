@@ -7,6 +7,23 @@ from engine.core.component import Component
 from engine.component_registry import ComponentRegistry
 
 
+SCRIPT_CONFIG = {"speed": 400.0, "direction_x": 1.0, "direction_y": 0.0, "lifetime": 2.0, "hit_tag": "Enemy", "hit_radius": 16.0}
+
+
+def on_update(game, dt):
+    """Move o projétil e o remove por tempo ou ao atingir o alvo."""
+    dx = float(SCRIPT_CONFIG["direction_x"])
+    dy = float(SCRIPT_CONFIG["direction_y"])
+    length = math.hypot(dx, dy) or 1.0
+    game.move(dx / length * float(SCRIPT_CONFIG["speed"]) * dt, dy / length * float(SCRIPT_CONFIG["speed"]) * dt)
+    game.state["elapsed"] = float(game.state.get("elapsed", 0.0)) + dt
+    target = game.find(SCRIPT_CONFIG["hit_tag"])
+    if game.state["elapsed"] >= float(SCRIPT_CONFIG["lifetime"]) or (
+        target is not None and game.distance_to(target) <= float(SCRIPT_CONFIG["hit_radius"])
+    ):
+        game.destroy()
+
+
 @ComponentRegistry.component
 class Projectile(Component):
     """Move-se em linha reta e se destrói após lifetime segundos."""
