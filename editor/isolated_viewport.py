@@ -142,10 +142,16 @@ def run_viewport(
                     module = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(module)
                     update = getattr(module, "isolated_update", None)
+                    update_mode = "isolated"
                     if not callable(update):
-                        raise TypeError("o script precisa definir isolated_update(obj, input_state, dt)")
+                        update = getattr(module, "update", None)
+                        update_mode = "legacy"
+                    if not callable(update):
+                        raise TypeError("defina isolated_update(obj, input_state, dt) ou update(obj, dt)")
+                    module._zennity_update_hook = update
+                    module._zennity_update_mode = update_mode
                     script_instances.setdefault(name, []).append((str(path), module))
-                    start = getattr(module, "isolated_start", None)
+                    start = getattr(module, "isolated_start", None) or getattr(module, "start", None)
                     if callable(start):
                         start(obj)
                     _send(events, {"type": "script_log", "level": "INFO", "message": f"Script iniciado em {name}: {path.name}"})
@@ -157,7 +163,7 @@ def run_viewport(
             obj = objects.get(name)
             for path, module in instances:
                 try:
-                    stop = getattr(module, "isolated_stop", None)
+                    stop = getattr(module, "isolated_stop", None) or getattr(module, "stop", None)
                     if callable(stop):
                         stop(obj)
                 except Exception as exc:
@@ -284,6 +290,11 @@ def run_viewport(
                     name = str(command.get("name", ""))
                     if name in objects and not playing and isinstance(command.get("collider"), dict):
                         objects[name]["collider"] = dict(command["collider"])
+                elif command.get("type") == "script_instruction":
+                    name = str(command.get("name", ""))
+                    instruction = command.get("instruction")
+                    if name in objects and isinstance(instruction, dict):
+                        objects[name].setdefault("script_instructions", []).append(dict(instruction))
                 elif command.get("type") == "script_drop_at" and not playing:
                     mouse_x = float(command.get("screen_x", 0.0))
                     mouse_y = float(command.get("screen_y", 0.0))
@@ -567,9 +578,18 @@ def run_viewport(
                 obj = objects.get(name)
                 if obj is None:
                     continue
+                instructions = obj.pop("script_instructions", [])
                 for path, module in list(instances):
                     try:
-                        module.isolated_update(obj, input_state, dt)
+                        instruction_hook = getattr(module, "isolated_on_instruction", None)
+                        if callable(instruction_hook):
+                            for instruction in instructions:
+                                if isinstance(instruction, dict):
+                                    instruction_hook(obj, instruction)
+                        if module._zennity_update_mode == "legacy":
+                            module._zennity_update_hook(obj, dt)
+                        else:
+                            module._zennity_update_hook(obj, input_state, dt)
                     except Exception as exc:
                         instances.remove((path, module))
                         _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}: {exc}"})
