@@ -767,7 +767,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.show_collider_chk.toggled.connect(self._toggle_collider_component)
         self.btn_del_rb.clicked.connect(lambda: self.show_rigidbody_chk.setChecked(False))
         self.btn_del_col.clicked.connect(lambda: self.show_collider_chk.setChecked(False))
-        self.btn_del_script.clicked.connect(self._remove_all_scripts)
 
     def _toggle_rigidbody_component(self, checked: bool) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
