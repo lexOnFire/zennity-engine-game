@@ -801,57 +801,14 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             field.valueChanged.connect(lambda _value: self._send_inspector_transform())
         for field in self.physics_fields.values():
             field.toggled.connect(lambda _checked: self._send_inspector_physics())
-        for field in self.physics_number_fields.values():
-            field.valueChanged.connect(lambda _value: self._send_inspector_physics())
         for field in self.collider_fields.values():
             field.valueChanged.connect(lambda _value: self._send_inspector_collider())
         self.collider_trigger_field.toggled.connect(lambda _checked: self._send_inspector_collider())
 
         self.show_rigidbody_chk.toggled.connect(self._toggle_rigidbody_component)
         self.show_collider_chk.toggled.connect(self._toggle_collider_component)
-        self.show_renderer_chk.toggled.connect(self._toggle_renderer_component)
         self.btn_del_rb.clicked.connect(lambda: self.show_rigidbody_chk.setChecked(False))
         self.btn_del_col.clicked.connect(lambda: self.show_collider_chk.setChecked(False))
-        self.btn_del_renderer.clicked.connect(lambda: self.show_renderer_chk.setChecked(False))
-        self.btn_delete_object.clicked.connect(lambda: self._selected_name and self._delete_object(self._selected_name))
-        self.btn_reset_transform.clicked.connect(self._reset_selected_transform)
-        self.object_enabled_checkbox.toggled.connect(lambda _checked: self._send_object_metadata())
-        self.static_checkbox.toggled.connect(lambda _checked: self._send_object_metadata())
-        self.tag_combo.currentTextChanged.connect(lambda _text: self._send_object_metadata())
-        self.layer_combo.currentTextChanged.connect(lambda _text: self._send_object_metadata())
-        self.renderer_material_field.editingFinished.connect(self._send_renderer_material)
-
-    def _send_object_metadata(self) -> None:
-        if self._updating_inspector or self._selected_name not in self._objects_by_name:
-            return
-        self._record_history()
-        obj = self._objects_by_name[self._selected_name]
-        obj.update({"active": self.object_enabled_checkbox.isChecked(), "static": self.static_checkbox.isChecked(), "tag": self.tag_combo.currentText(), "layer": self.layer_combo.currentText()})
-        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
-        self._commands.put({"type": "select_object", "name": self._selected_name})
-
-    def _reset_selected_transform(self) -> None:
-        if self._selected_name not in self._objects_by_name:
-            return
-        self._record_history()
-        obj = self._objects_by_name[self._selected_name]
-        obj.update({"x": 0.0, "y": 0.0, "rotation": 0.0})
-        self._commands.put({"type": "set_transform", "name": self._selected_name, **{key: obj[key] for key in ("x", "y", "w", "h", "rotation")}})
-        self._update_inspector(self._selected_name)
-
-    def _toggle_renderer_component(self, checked: bool) -> None:
-        if self._updating_inspector or self._selected_name not in self._objects_by_name:
-            return
-        self._record_history()
-        self._objects_by_name[self._selected_name]["renderer_enabled"] = bool(checked)
-        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
-        self._commands.put({"type": "select_object", "name": self._selected_name})
-
-    def _send_renderer_material(self) -> None:
-        if self._updating_inspector or self._selected_name not in self._objects_by_name:
-            return
-        self._record_history()
-        self._objects_by_name[self._selected_name]["material"] = self.renderer_material_field.text().strip() or "Default_Material"
 
     def _toggle_rigidbody_component(self, checked: bool) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
@@ -881,7 +838,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if self._selected_name not in self._objects_by_name:
             return
         menu = QMenu(self)
-        for label, component in (("Renderer 2D", "renderer"), ("RigidBody", "rigidbody"), ("Box Collider", "box"), ("Circle Collider", "circle"), ("Script", "script")):
+        for label, component in (("RigidBody", "rigidbody"), ("Box Collider", "box"), ("Circle Collider", "circle"), ("Script", "script")):
             action = menu.addAction(label)
             action.triggered.connect(lambda _checked=False, value=component: self._add_component(value))
         menu.exec(self.add_component_button.mapToGlobal(self.add_component_button.rect().bottomLeft()))
@@ -900,8 +857,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             obj.setdefault("rigidbody", {"mass": 1.0, "gravity_scale": 1.0, "use_gravity": True, "is_kinematic": False})
         elif component in {"box", "circle"}:
             obj["collider"] = {"type": component, "is_trigger": False}
-        elif component == "renderer":
-            obj["renderer_enabled"] = True
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._commands.put({"type": "select_object", "name": self._selected_name})
         self._update_inspector(self._selected_name)
@@ -917,8 +872,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._record_history()
         rigidbody["use_gravity"] = self.physics_fields["use_gravity"].isChecked()
         rigidbody["is_kinematic"] = self.physics_fields["is_kinematic"].isChecked()
-        rigidbody["mass"] = self.physics_number_fields["mass"].value()
-        rigidbody["gravity_scale"] = self.physics_number_fields["gravity_scale"].value()
         self._commands.put({"type": "set_physics", "name": self._selected_name, "rigidbody": rigidbody})
 
     def _send_inspector_transform(self) -> None:
@@ -960,26 +913,13 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._updating_inspector = True
         try:
             self.inspector_name_label.setText(name)
-            self.object_enabled_checkbox.setChecked(bool(obj.get("active", True)))
-            self.static_checkbox.setChecked(bool(obj.get("static", False)))
-            self.tag_combo.setCurrentText(str(obj.get("tag", "Player" if name.lower() == "player" else "Untagged")))
-            self.layer_combo.setCurrentText(str(obj.get("layer", "Default")))
             for key in ("x", "y", "w", "h", "rotation"):
                 self.inspector_fields[key].setValue(float(obj[key]))
-            renderer_enabled = bool(obj.get("renderer_enabled", True))
-            self.show_renderer_chk.setChecked(renderer_enabled)
-            self.renderer_mesh_field.setText(str(obj.get("mesh_type") or "Sprite2D"))
-            self.renderer_material_field.setText(str(obj.get("material") or "Default_Material"))
-            self.renderer_mesh_field.setEnabled(renderer_enabled)
-            self.renderer_material_field.setEnabled(renderer_enabled)
             rigidbody = obj.get("rigidbody")
             self.show_rigidbody_chk.setChecked(rigidbody is not None)
             for key, field in self.physics_fields.items():
                 field.setEnabled(rigidbody is not None)
                 field.setChecked(bool((rigidbody or {}).get(key, False)))
-            for key, field in self.physics_number_fields.items():
-                field.setEnabled(rigidbody is not None)
-                field.setValue(float((rigidbody or {}).get(key, 1.0)))
             collider = obj.get("collider") if isinstance(obj.get("collider"), dict) else None
             self.show_collider_chk.setChecked(collider is not None)
             collider_type = str((collider or {}).get("type", "box")).lower()
