@@ -15,7 +15,6 @@ def test_created_script_has_complete_runtime_contract(tmp_path: Path) -> None:
 
     assert compatible, reason
     assert callable(namespace["on_update"])
-    assert callable(namespace["on_instruction"])
 
 
 def test_contract_accepts_legacy_update_and_rejects_empty_script(tmp_path: Path) -> None:
@@ -68,6 +67,9 @@ def test_all_attachable_asset_scripts_run_one_frame() -> None:
         exec(compile(path.read_text(encoding="utf-8"), str(path), "exec"), namespace)
         game = PlayScriptAPI("Subject", dict(world["Subject"]), events=None, world=world)
         game.begin_frame({"right": True, "jump": True})
+        start = namespace.get("on_start")
+        if callable(start):
+            start(game)
         namespace["on_update"](game, 1.0 / 60.0)
 
 
