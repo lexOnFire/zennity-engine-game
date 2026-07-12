@@ -514,8 +514,11 @@ class MainWindow(QMainWindow):
         self.btn_pause.setEnabled(True)
         self.btn_stop.setEnabled(True)
         self.statusBar().showMessage("Simulação em execução...")
-        # Sincroniza a aba — muda para Game automaticamente
-        self.vp_container.tab_bar._switch("game")
+        # Sincroniza a aba visualmente sem acionar o callback _on_tab_changed
+        # (force_switch evita o double-emit de EVENT_PLAY_STATE_CHANGED)
+        self.vp_container.tab_bar.force_switch("game")
+        self.vp_container.viewport.set_game_mode(True)
+        self.vp_container.viewport.update()
         EventBus.emit(EVENT_PLAY_STATE_CHANGED, state="play")
 
     @Slot()
@@ -532,8 +535,10 @@ class MainWindow(QMainWindow):
         self.btn_pause.setEnabled(False)
         self.btn_stop.setEnabled(False)
         self.statusBar().showMessage("Simulação finalizada.")
-        # Volta para a aba Scene ao parar
-        self.vp_container.tab_bar._switch("scene")
+        # Sincroniza a aba visualmente sem acionar o callback _on_tab_changed
+        self.vp_container.tab_bar.force_switch("scene")
+        self.vp_container.viewport.set_game_mode(False)
+        self.vp_container.viewport.update()
         EventBus.emit(EVENT_PLAY_STATE_CHANGED, state="stop")
 
     # ── Ferramentas e grade ──────────────────────────────────────────────────
