@@ -41,6 +41,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._undo_stack: list[list[dict]] = []
         self._redo_stack: list[list[dict]] = []
         self._drag_history_snapshot: list[dict] | None = None
+        self._snap_enabled = False
         self.setWindowTitle("Zennity Engine Editor — Phase 1")
         self.statusBar().showMessage(
             "Zennity Phase 1 pronto — Viewport em processo dedicado."
@@ -118,11 +119,21 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
     def _configure_main_menus(self) -> None:
         for label in ("Novo", "Abrir", "Salvar"):
             self.editor_menus["Arquivo"].addAction(self.toolbar_actions[label])
-        for label in ("Select", "Move", "Rotate", "Scale"):
+        for label in ("Select", "Move", "Rotate", "Scale", "Snap: OFF"):
             self.editor_menus["Ferramentas"].addAction(self.toolbar_actions[label])
         for label in ("Play", "Pause", "Stop"):
             self.editor_menus["Executar"].addAction(self.toolbar_actions[label])
         self.toolbar_actions["Pause"].setEnabled(False)
+        snap_action = self.toolbar_actions["Snap: OFF"]
+        snap_action.setCheckable(True)
+        snap_action.toggled.connect(self._toggle_snap)
+
+    def _toggle_snap(self, enabled: bool) -> None:
+        self._snap_enabled = bool(enabled)
+        action = self.toolbar_actions["Snap: OFF"]
+        action.setText("Snap: ON" if enabled else "Snap: OFF")
+        self._commands.put({"type": "set_snap", "enabled": bool(enabled), "size": 16.0, "angle": 15.0})
+        self.statusBar().showMessage("Snap ativado" if enabled else "Snap desativado")
 
     def _refresh_assets(self) -> None:
         self.assets_tree.clear()
