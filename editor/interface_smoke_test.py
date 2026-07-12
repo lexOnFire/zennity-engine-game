@@ -73,6 +73,7 @@ class InterfaceSmokeTest(QMainWindow):
 
     def _build_docks(self) -> None:
         hierarchy = QTreeWidget()
+        self.hierarchy_tree = hierarchy
         hierarchy.setHeaderHidden(True)
         root = QTreeWidgetItem(["MainScene"])
         environment = QTreeWidgetItem(["Environment"])
