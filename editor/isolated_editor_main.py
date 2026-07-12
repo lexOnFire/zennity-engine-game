@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import multiprocessing as mp
 import sys
+from copy import deepcopy
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QTimer
@@ -24,11 +25,13 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._viewport_process = viewport_process
         self._commands = commands
         self._events = events
-        self._scene_snapshot = [
+        self._initial_scene_snapshot = [
             {"name": "Chao", "x": 450.0, "y": 500.0, "w": 600.0, "h": 32.0, "color": (91, 194, 100)},
             {"name": "Player", "x": 450.0, "y": 250.0, "w": 36.0, "h": 48.0, "color": (88, 117, 255)},
         ]
+        self._scene_snapshot = deepcopy(self._initial_scene_snapshot)
         self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
+        self._selected_name: str | None = None
         self.setWindowTitle("Zennity — Interface isolada (PySide6)")
         self.statusBar().showMessage(
             "Viewport Pygame está em outra janela/processo. Arraste painéis aqui sem afetá-la."
@@ -48,11 +51,21 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             ("Selecionar Player", {"type": "select_object", "name": "Player"}),
             ("Mover ←", {"type": "move_selected", "dx": -16}),
             ("Mover →", {"type": "move_selected", "dx": 16}),
-            ("Reset", {"type": "scene_snapshot", "objects": self._scene_snapshot}),
+            ("Reset", {"type": "reset_from_interface"}),
         ):
             action = QAction(label, self)
-            action.triggered.connect(lambda checked=False, message=payload: self._commands.put(message))
+            action.triggered.connect(lambda checked=False, message=payload: self._send_toolbar_command(message))
             toolbar.addAction(action)
+
+    def _send_toolbar_command(self, message: dict) -> None:
+        if message.get("type") == "reset_from_interface":
+            self._scene_snapshot = deepcopy(self._initial_scene_snapshot)
+            self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
+            self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+            if self._selected_name in self._objects_by_name:
+                self._update_inspector(self._selected_name)
+            return
+        self._commands.put(message)
 
     def _connect_hierarchy_to_viewport(self) -> None:
         for tree in self.findChildren(QTreeWidget):
@@ -62,7 +75,17 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         name = item.text(0)
         if name in self._objects_by_name:
             self._commands.put({"type": "select_object", "name": name})
+            self._selected_name = name
+            self._update_inspector(name)
             self.statusBar().showMessage(f"Interface: {name} selecionado")
+
+    def _update_inspector(self, name: str) -> None:
+        obj = self._objects_by_name.get(name)
+        if obj is None:
+            return
+        self.inspector_labels["name"].setText(name)
+        for key in ("x", "y", "w", "h"):
+            self.inspector_labels[key].setText(f"{float(obj[key]):.2f}")
 
     def _read_viewport_events(self) -> None:
         while True:
@@ -71,12 +94,16 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             except Exception:
                 return
             if message.get("type") == "selected":
-                self.statusBar().showMessage(f"Viewport: {message['name']} selecionado")
+                self._selected_name = message["name"]
+                self._update_inspector(self._selected_name)
+                self.statusBar().showMessage(f"Viewport: {self._selected_name} selecionado")
             elif message.get("type") == "transform":
                 obj = self._objects_by_name.get(message["name"])
                 if obj is not None:
                     obj["x"] = float(message["x"])
                     obj["y"] = float(message["y"])
+                    if message["name"] == self._selected_name:
+                        self._update_inspector(self._selected_name)
                 self.statusBar().showMessage(
                     f"Viewport: {message['name']} em X={message['x']:.1f}, Y={message['y']:.1f}"
                 )
