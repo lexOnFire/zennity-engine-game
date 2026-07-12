@@ -640,6 +640,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if message.get("type") == "play":
             # Comando separado: não depende do carregamento ou da presença de scripts.
             self._commands.put({"type": "start_play_audio", "audio_sources": audio_sources})
+        elif message.get("type") == "stop":
+            # Garante a interrupção mesmo que o estado de scripts já tenha mudado.
+            self._commands.put({"type": "stop_all_audio"})
 
     def _configure_create_menu(self) -> None:
         for menu_action in self.menuBar().actions():
