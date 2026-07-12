@@ -6,6 +6,20 @@ from engine.core.component import Component
 from engine.component_registry import ComponentRegistry
 
 
+SCRIPT_CONFIG = {"smoothing": 5.0, "offset_x": 0.0, "offset_y": 0.0, "target_tag": "Player"}
+
+
+def on_update(game, dt):
+    """Segue suavemente o objeto que possui a tag configurada."""
+    target = game.find(SCRIPT_CONFIG["target_tag"])
+    if target is None:
+        return
+    amount = min(1.0, float(SCRIPT_CONFIG["smoothing"]) * dt)
+    target_x = target.x + float(SCRIPT_CONFIG["offset_x"])
+    target_y = target.y + float(SCRIPT_CONFIG["offset_y"])
+    game.move((target_x - game.x) * amount, (target_y - game.y) * amount)
+
+
 @ComponentRegistry.component
 class CameraFollow(Component):
     """Segue um alvo com interpolação linear."""
