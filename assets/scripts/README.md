@@ -1,26 +1,36 @@
-# assets/scripts
+# Scripts simples do Zennity
 
-Pasta de **scripts de jogo** da Zennity Engine.
+Edite apenas a seção **CONFIGURAÇÃO** no topo de cada script.
 
-Cada arquivo aqui é um `Component` pronto para ser anexado a um `GameObject`.
+- `on_start(game)` roda uma vez quando o Play começa.
+- `on_update(game, dt)` roda em todos os frames.
+- `game.move(x, y)` move o objeto.
+- `game.find("Player")` procura um objeto pela Tag.
+- `game.key("right")` verifica uma tecla.
+- `game.key_pressed("space")` verifica o primeiro toque.
+- `game.state` guarda valores do script.
+- `game.destroy()` remove o objeto.
 
-## Regras do formato
+Eventos de Collider:
 
-1. Herda de `Component` (ou subclasse).
-2. Chama `super().__init__()` no `__init__`.
-3. Implementa os hooks necessários: `start`, `update`, `draw`, `destroy`.
-4. Implementa `serialize()` / `deserialize()` para suportar save/load.
-5. Registra-se no `ComponentRegistry` com `@ComponentRegistry.component`.
+```python
+def on_collision(game, other):
+    game.log("Colidiu com " + other.name)
 
-## Modelos disponíveis
 
-| Arquivo | Descrição |
-|---|---|
-| `player_controller.py` | Movimento WASD + pulo com Rigidbody |
-| `enemy_ai.py` | IA básica de perseguição ao player |
-| `health.py` | Sistema de vida, dano e morte |
-| `collectible.py` | Item coletável com detecção por overlap |
-| `camera_follow.py` | Câmera suave que segue um alvo |
-| `timer_component.py` | Timer reutilizável com callback |
-| `animator.py` | Troca de sprites por estado (idle/run/jump) |
-| `projectile.py` | Projétil com velocidade, lifetime e dano |
+def on_trigger(game, other):
+    game.log("Entrou no trigger " + other.name)
+```
+
+Use `on_collision_exit` e `on_trigger_exit` para detectar a saída do contato.
+
+Exemplo mínimo:
+
+```python
+VELOCIDADE = 200.0
+
+
+def on_update(game, dt):
+    direcao = game.axis("left", "right")
+    game.move(direcao * VELOCIDADE * dt)
+```

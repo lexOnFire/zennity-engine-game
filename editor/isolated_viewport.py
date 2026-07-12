@@ -128,6 +128,9 @@ class PlayScriptAPI:
     def current_animation(self) -> str:
         return str(self.obj.get("_current_animation_name", "Nenhum"))
 
+    def play_sound(self, sound_path: str) -> None:
+        self.obj.setdefault("script_instructions", []).append({"command": "play_sound", "value": str(sound_path)})
+
     def send(self, command: str, value: Any = None) -> None:
         self.obj.setdefault("script_instructions", []).append({"command": str(command), "value": value})
 
@@ -195,6 +198,10 @@ def run_viewport(
     if parent_window_id and sys.platform != "win32":
         os.environ["SDL_WINDOWID"] = str(parent_window_id)
     pygame.init()
+    try:
+        pygame.mixer.init()
+    except Exception:
+        pass
     display_flags = pygame.RESIZABLE
     if parent_window_id and sys.platform == "win32":
         display_flags |= pygame.NOFRAME
@@ -1078,6 +1085,19 @@ def run_viewport(
                                         anim["active_clip"] = str(val)
                                 elif cmd == "stop_animation":
                                     obj["_current_animation_name"] = "Nenhum"
+                                elif cmd == "play_sound" and val:
+                                    # Procura o arquivo de áudio no diretório local e reproduz
+                                    try:
+                                        p_sound = Path(str(val))
+                                        if not p_sound.is_absolute():
+                                            p_sound = Path.cwd() / p_sound
+                                        if p_sound.exists():
+                                            snd = pygame.mixer.Sound(str(p_sound.resolve()))
+                                            snd.play()
+                                        else:
+                                            _send(events, {"type": "script_log", "level": "WARNING", "message": f"Arquivo de som não encontrado: {val}"})
+                                    except Exception as err:
+                                        _send(events, {"type": "script_log", "level": "ERROR", "message": f"Erro ao tocar áudio {val}: {err}"})
 
                                 if callable(simple_instruction_hook):
                                     simple_instruction_hook(api, instruction)

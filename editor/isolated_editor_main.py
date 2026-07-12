@@ -1042,7 +1042,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.show_audio_chk.toggled.connect(self._toggle_audio_component)
         self.btn_collapse_audio.clicked.connect(lambda: self.audio_source_body.setVisible(not self.audio_source_body.isVisible()))
         self.btn_delete_audio.clicked.connect(lambda: self.show_audio_chk.setChecked(False))
-        self.audio_path_button.clicked.connect(self._choose_audio_asset)
+        self.audio_path_combo.activated.connect(lambda _idx: self._send_inspector_audio())
         self.audio_volume_field.valueChanged.connect(lambda _value: self._send_inspector_audio())
         self.audio_loop_field.toggled.connect(lambda _value: self._send_inspector_audio())
         self.audio_autoplay_field.toggled.connect(lambda _value: self._send_inspector_audio())
@@ -1117,25 +1117,19 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
         self._update_inspector(self._selected_name)
 
-    def _choose_audio_asset(self) -> None:
-        if self._selected_name not in self._objects_by_name:
-            return
-        filename, _ = QFileDialog.getOpenFileName(self, "Selecionar áudio", str(Path.cwd() / "Assets"), "Áudio (*.wav *.ogg *.mp3)")
-        if not filename:
-            return
-        source = Path(filename)
-        try:
-            audio_path = str(source.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
-        except ValueError:
-            audio_dir = Path.cwd() / "Assets" / "Audio"
-            audio_dir.mkdir(parents=True, exist_ok=True)
-            destination = audio_dir / source.name
-            if not destination.exists():
-                shutil.copy2(source, destination)
-            audio_path = str(destination.relative_to(Path.cwd())).replace("\\", "/")
-            self._refresh_assets()
-        self.audio_path_field.setText(audio_path)
-        self._send_inspector_audio()
+    def _get_available_audio_files(self) -> list[str]:
+        audio_dir = Path.cwd() / "Assets" / "Audio"
+        if not audio_dir.exists():
+            return []
+        audio_files = []
+        for file in audio_dir.rglob("*"):
+            if file.is_file() and file.suffix.lower() in {".wav", ".ogg", ".mp3"}:
+                try:
+                    rel_p = str(file.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
+                except ValueError:
+                    rel_p = str(file).replace("\\", "/")
+                audio_files.append(rel_p)
+        return sorted(audio_files, key=str.lower)
 
     def _send_inspector_audio(self) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
@@ -1144,8 +1138,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if not isinstance(obj.get("audio"), dict):
             return
         self._record_history()
+        chosen = self.audio_path_combo.currentData() or self.audio_path_combo.currentText()
+        if chosen == "Nenhum":
+            chosen = ""
         obj["audio"].update({
-            "path": self.audio_path_field.text().strip(),
+            "path": chosen,
             "volume": float(self.audio_volume_field.value()),
             "loop": self.audio_loop_field.isChecked(),
             "autoplay": self.audio_autoplay_field.isChecked(),
@@ -1319,7 +1316,22 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             audio = obj.get("audio") if isinstance(obj.get("audio"), dict) else None
             self.show_audio_chk.setChecked(audio is not None)
             self.audio_source_body.setEnabled(audio is not None)
-            self.audio_path_field.setText(str((audio or {}).get("path", "")))
+            
+            # Popula e seleciona o áudio do QComboBox
+            self.audio_path_combo.clear()
+            self.audio_path_combo.addItem("Nenhum", "")
+            current_path = str((audio or {}).get("path", ""))
+            audio_files = self._get_available_audio_files()
+            for path in audio_files:
+                name_file = Path(path).name
+                self.audio_path_combo.addItem(name_file, path)
+            if audio:
+                idx = self.audio_path_combo.findData(current_path)
+                if idx >= 0:
+                    self.audio_path_combo.setCurrentIndex(idx)
+                else:
+                    self.audio_path_combo.setCurrentIndex(0)
+            
             self.audio_volume_field.setValue(float((audio or {}).get("volume", 1.0)))
             self.audio_loop_field.setChecked(bool((audio or {}).get("loop", False)))
             self.audio_autoplay_field.setChecked(bool((audio or {}).get("autoplay", False)))

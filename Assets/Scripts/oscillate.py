@@ -2,7 +2,7 @@
 
 import math
 
-CONFIG = {"height": 40.0, "speed": 3.0}
+CONFIG = {"height": 71.0, "speed": 10.0}
 
 
 def on_update(game, dt):
