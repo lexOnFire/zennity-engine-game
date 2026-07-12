@@ -8,13 +8,14 @@ from __future__ import annotations
 import multiprocessing as mp
 import sys
 import json
+import uuid
 from copy import deepcopy
 from pathlib import Path
 
 from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import QEvent, QTimer
+from PySide6.QtCore import QEvent, Qt, QTimer
 from PySide6.QtGui import QAction
-from PySide6.QtWidgets import QFileDialog, QToolBar
+from PySide6.QtWidgets import QFileDialog, QInputDialog, QMenu, QToolBar
 from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem
 
 from editor.interface_smoke_test import InterfaceSmokeTest
@@ -28,8 +29,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._commands = commands
         self._events = events
         self._initial_scene_snapshot = [
-            {"name": "Chao", "x": 450.0, "y": 500.0, "w": 600.0, "h": 32.0, "color": (91, 194, 100)},
-            {"name": "Player", "x": 450.0, "y": 250.0, "w": 36.0, "h": 48.0, "color": (88, 117, 255)},
+            {"id": "floor", "name": "Chao", "x": 450.0, "y": 500.0, "w": 600.0, "h": 32.0, "color": (91, 194, 100)},
+            {"id": "player", "name": "Player", "x": 450.0, "y": 250.0, "w": 36.0, "h": 48.0, "color": (88, 117, 255)},
         ]
         self._scene_snapshot = deepcopy(self._initial_scene_snapshot)
         self._scene_document: dict | None = None
@@ -42,6 +43,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "Viewport Pygame está em outra janela/processo. Arraste painéis aqui sem afetá-la."
         )
         self._connect_existing_toolbar_actions()
+        self._configure_create_menu()
         self._build_viewport_link_toolbar()
         self._connect_hierarchy_to_viewport()
         self._refresh_hierarchy()
@@ -85,6 +87,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
 
     def _connect_existing_toolbar_actions(self) -> None:
         commands = {
+            "Novo": {"type": "new_scene"},
             "Abrir": {"type": "load_scene"},
             "Salvar": {"type": "save_scene"},
             "Play": {"type": "play"},
@@ -98,6 +101,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 )
 
     def _send_toolbar_command(self, message: dict) -> None:
+        if message.get("type") == "new_scene":
+            self._new_scene()
+            return
         if message.get("type") == "save_scene":
             self._save_scene_snapshot()
             return
@@ -114,6 +120,52 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             return
         self._commands.put(message)
 
+    def _configure_create_menu(self) -> None:
+        for menu_action in self.menuBar().actions():
+            menu = menu_action.menu()
+            if menu is None or menu.title() != "Criar":
+                continue
+            menu.clear()
+            for label, kind in (("Empty Object", "Empty"), ("Player 2D", "Player"), ("Platform 2D", "Platform")):
+                action = menu.addAction(label)
+                action.triggered.connect(lambda checked=False, object_kind=kind: self._create_object(object_kind))
+            break
+
+    def _new_scene(self) -> None:
+        self._scene_snapshot = []
+        self._objects_by_name = {}
+        self._scene_document = {"format_version": 1, "scene_name": "Untitled", "engine_version": "Zennity 0.1.0", "objects": []}
+        self._current_scene_path = None
+        self._selected_name = None
+        self._refresh_hierarchy()
+        self._commands.put({"type": "scene_snapshot", "objects": []})
+        self.statusBar().showMessage("Nova cena criada")
+
+    def _unique_name(self, base: str) -> str:
+        if base not in self._objects_by_name:
+            return base
+        index = 2
+        while f"{base}_{index}" in self._objects_by_name:
+            index += 1
+        return f"{base}_{index}"
+
+    def _create_object(self, kind: str) -> None:
+        presets = {
+            "Empty": ("GameObject", 40.0, 40.0, (160, 164, 174)),
+            "Player": ("Player", 36.0, 48.0, (88, 117, 255)),
+            "Platform": ("Platform", 160.0, 32.0, (91, 194, 100)),
+        }
+        base, width, height, color = presets[kind]
+        name = self._unique_name(base)
+        obj = {"id": str(uuid.uuid4()), "name": name, "x": 450.0, "y": 250.0, "w": width, "h": height, "color": color, "mesh_type": kind}
+        self._scene_snapshot.append(obj)
+        self._objects_by_name[name] = obj
+        self._selected_name = name
+        self._refresh_hierarchy()
+        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._commands.put({"type": "select_object", "name": name})
+        self._update_inspector(name)
+
     def _save_scene_snapshot(self) -> None:
         filename, _ = QFileDialog.getSaveFileName(
             self, "Salvar cena", str(self._current_scene_path or "Untitled.zscene"),
@@ -125,10 +177,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         payload = deepcopy(self._scene_document) if self._scene_document else {
             "format_version": 1, "scene_name": path.stem, "engine_version": "Zennity 0.1.0", "objects": []
         }
-        existing = {str(item.get("name")): item for item in payload.get("objects", [])}
+        existing_by_id = {str(item.get("id")): item for item in payload.get("objects", []) if item.get("id") is not None}
+        existing_by_name = {str(item.get("name")): item for item in payload.get("objects", [])}
         scene_objects = []
         for snapshot in self._scene_snapshot:
-            source = deepcopy(existing.get(snapshot["name"], {}))
+            source = deepcopy(existing_by_id.get(str(snapshot.get("id"))) or existing_by_name.get(snapshot["name"], {}))
             source.update({"name": snapshot["name"], "active": True, "enabled": True})
             source.setdefault("id", snapshot.get("id", snapshot["name"]))
             source["transform"] = {
@@ -187,6 +240,43 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
 
     def _connect_hierarchy_to_viewport(self) -> None:
         self.hierarchy_tree.itemClicked.connect(self._select_hierarchy_item)
+        self.hierarchy_tree.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.hierarchy_tree.customContextMenuRequested.connect(self._open_hierarchy_menu)
+
+    def _open_hierarchy_menu(self, position) -> None:
+        item = self.hierarchy_tree.itemAt(position)
+        if item is None or item.text(0) not in self._objects_by_name:
+            return
+        menu = QMenu(self)
+        rename_action = menu.addAction("Renomear")
+        delete_action = menu.addAction("Excluir")
+        rename_action.triggered.connect(lambda _checked=False: self._rename_object(item.text(0)))
+        delete_action.triggered.connect(lambda _checked=False: self._delete_object(item.text(0)))
+        menu.exec(self.hierarchy_tree.viewport().mapToGlobal(position))
+
+    def _rename_object(self, old_name: str) -> None:
+        new_name, accepted = QInputDialog.getText(self, "Renomear objeto", "Nome:", text=old_name)
+        new_name = new_name.strip()
+        if not accepted or not new_name or (new_name != old_name and new_name in self._objects_by_name):
+            return
+        obj = self._objects_by_name.pop(old_name)
+        obj["name"] = new_name
+        self._objects_by_name[new_name] = obj
+        if self._selected_name == old_name:
+            self._selected_name = new_name
+        self._refresh_hierarchy()
+        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._commands.put({"type": "select_object", "name": new_name})
+        self._update_inspector(new_name)
+
+    def _delete_object(self, name: str) -> None:
+        self._scene_snapshot = [obj for obj in self._scene_snapshot if obj["name"] != name]
+        self._objects_by_name.pop(name, None)
+        if self._selected_name == name:
+            self._selected_name = None
+            self.inspector_name_label.setText("—")
+        self._refresh_hierarchy()
+        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
 
     def _refresh_hierarchy(self) -> None:
         self.hierarchy_tree.clear()
