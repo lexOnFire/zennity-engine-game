@@ -1,7 +1,7 @@
 """
 engine/core/engine.py
 ────────────────────────────────────────────────────────────────
-Fonte canônica da Engine e do _builtin_physics_system.
+Fonte canônica da Engine e dos sistemas builtin.
 Migrado de engine/core.py (legado) — Sprint 1.4.
 
 Responsabilidades da Engine:
@@ -88,8 +88,11 @@ class Engine:
         self._next_scene:    Optional["Scene"] = None
         self._app: Optional["Application"] = None
 
-        # Sistemas: physics builtin sempre primeiro
-        self._update_systems: List[UpdateSystem] = [_builtin_physics_system]
+        # Sistemas: physics builtin primeiro, scripts em seguida
+        self._update_systems: List[UpdateSystem] = [
+            _builtin_physics_system,
+            _builtin_script_system,
+        ]
         self._render_systems: List[RenderSystem] = []
 
     # ------------------------------------------------------------------ #
@@ -289,5 +292,40 @@ def _builtin_physics_system(scene: "Scene", dt: float) -> None:
         from engine.physics.collider import BoxCollider, CircleCollider
         BoxCollider.check_all()
         CircleCollider.check_all()
+    except Exception:
+        traceback.print_exc()
+
+
+# ============================================================== #
+#  Sistema builtin de scripts                                    #
+# ============================================================== #
+
+def _builtin_script_system(scene: "Scene", dt: float) -> None:
+    """
+    UpdateSystem builtin: executa ScriptComponent.call_update(go, dt)
+    para cada GameObject ativo que possua um ScriptComponent habilitado.
+
+    on_start(go) é chamado automaticamente na primeira vez que o
+    componente é atualizado (flag _started no componente).
+
+    Registrado automaticamente na Engine após o physics system.
+    Para remover:
+        from engine.core.engine import _builtin_script_system
+        engine.remove_update_system(_builtin_script_system)
+    """
+    try:
+        from engine.components.script_component import ScriptComponent
+        for go in list(scene.game_objects):
+            if not getattr(go, "active", True):
+                continue
+            for comp in getattr(go, "components", []):
+                if not isinstance(comp, ScriptComponent):
+                    continue
+                if not comp.enabled or not comp.script_path:
+                    continue
+                if not getattr(comp, "_started", False):
+                    comp._started = True
+                    comp.call_start(go)
+                comp.call_update(go, dt)
     except Exception:
         traceback.print_exc()
