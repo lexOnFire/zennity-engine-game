@@ -46,16 +46,20 @@ class InterfaceSmokeTest(QMainWindow):
         self.statusBar().showMessage("Teste isolado: não há Pygame nem renderização de cena.")
 
     def _build_menu(self) -> None:
+        self.editor_menus = {}
         for name in ("Arquivo", "Editar", "Janela", "Criar", "Ferramentas", "Build", "Executar", "Ajuda"):
             menu = self.menuBar().addMenu(name)
-            menu.addAction(QAction(f"Ação de teste ({name})", self))
+            self.editor_menus[name] = menu
 
     def _build_toolbar(self) -> None:
         toolbar = QToolBar("Ferramentas")
         toolbar.setMovable(False)
         self.addToolBar(toolbar)
+        self.toolbar_actions = {}
         for label in ("Novo", "Abrir", "Salvar", "Select", "Move", "Rotate", "Scale", "Play", "Pause", "Stop"):
-            toolbar.addAction(QAction(label, self))
+            action = QAction(label, self)
+            self.toolbar_actions[label] = action
+            toolbar.addAction(action)
         toolbar.addSeparator()
         mode = QComboBox()
         mode.addItems(["2D", "3D (experimental)"])
@@ -84,6 +88,7 @@ class InterfaceSmokeTest(QMainWindow):
         hierarchy.expandAll()
 
         assets = QTreeWidget()
+        self.assets_tree = assets
         assets.setHeaderHidden(True)
         asset_root = QTreeWidgetItem(["Assets"])
         asset_root.addChildren([QTreeWidgetItem(["Scenes"]), QTreeWidgetItem(["Scripts"]), QTreeWidgetItem(["Textures"])])
@@ -127,6 +132,7 @@ class InterfaceSmokeTest(QMainWindow):
         self._dock("Inspector", inspector, Qt.RightDockWidgetArea, 300)
 
         console = QPlainTextEdit()
+        self.console_output = console
         console.setReadOnly(True)
         console.setPlainText("[INFO] Interface isolada iniciada.\n[INFO] Nenhuma cena foi carregada.\n[INFO] Nenhum frame Pygame será renderizado.")
         self._dock("Console", console, Qt.BottomDockWidgetArea, 600)
