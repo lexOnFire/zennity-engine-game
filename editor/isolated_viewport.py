@@ -264,6 +264,12 @@ def run_viewport(
     def start_scripts() -> None:
         script_instances.clear()
         script_apis.clear()
+        for obj in objects.values():
+            animator = obj.get("animator")
+            if isinstance(animator, dict):
+                obj["_current_animation_name"] = str(animator.get("active_clip", "Idle"))
+                obj["_animation_time"] = 0.0
+                obj["_animation_frame"] = 0
         declared = sum(len(obj.get("scripts", [])) for obj in objects.values())
         _send(events, {"type": "script_log", "level": "INFO", "message": f"Play Mode recebeu {len(objects)} objeto(s) e {declared} script(s)"})
         for name, obj in objects.items():
@@ -445,6 +451,28 @@ def run_viewport(
                 dispatch_contact(pair[1], pair[0], hook)
         active_contacts.clear()
         active_contacts.update(current)
+
+    def update_animations(delta_time: float) -> None:
+        for obj in objects.values():
+            animator = obj.get("animator")
+            if not isinstance(animator, dict):
+                continue
+            clips = animator.get("clips")
+            if isinstance(clips, list):
+                continue
+            if not isinstance(clips, dict):
+                continue
+            name = str(obj.get("_current_animation_name", animator.get("active_clip", "")))
+            clip = clips.get(name)
+            if not isinstance(clip, dict):
+                continue
+            count = max(1, int(clip.get("frame_count", 1)))
+            fps = max(0.01, float(clip.get("fps", 8.0))) * max(0.0, float(animator.get("speed", 1.0)))
+            elapsed = float(obj.get("_animation_time", 0.0)) + delta_time
+            raw_frame = int(elapsed * fps)
+            frame = raw_frame % count if clip.get("loop", True) else min(count - 1, raw_frame)
+            obj["_animation_time"] = elapsed
+            obj["_animation_frame"] = frame
 
     def view_transform() -> tuple[float, float, float]:
         if view_mode == "game":
@@ -1079,6 +1107,8 @@ def run_viewport(
                                 val = instruction.get("value")
                                 if cmd == "play_animation" and val:
                                     obj["_current_animation_name"] = str(val)
+                                    obj["_animation_time"] = 0.0
+                                    obj["_animation_frame"] = 0
                                     # Força o componente de animação (se houver) a trocar
                                     anim = obj.get("animator")
                                     if isinstance(anim, dict):
@@ -1141,6 +1171,7 @@ def run_viewport(
                         break
                 velocities_y[name] = velocity
             process_contacts()
+            update_animations(dt)
         # Carrega a cor de fundo definida na câmera ativa
         bg_color = (22, 24, 31)
         active_cam = game_camera()
@@ -1220,6 +1251,15 @@ def run_viewport(
             object_height = max(1, int(float(obj["h"]) * render_zoom))
             box = pygame.Rect(int(object_x - object_width / 2), int(object_y - object_height / 2), object_width, object_height)
             texture_value = str(obj.get("texture", "")).strip()
+            animation_clip = None
+            animator = obj.get("animator")
+            if isinstance(animator, dict) and str(obj.get("_current_animation_name", "")) != "Nenhum":
+                clips = animator.get("clips")
+                if isinstance(clips, dict):
+                    candidate = clips.get(str(obj.get("_current_animation_name", animator.get("active_clip", ""))))
+                    if isinstance(candidate, dict) and candidate.get("texture"):
+                        animation_clip = candidate
+                        texture_value = str(candidate["texture"])
             source_surface = None
             if texture_value:
                 texture_path = Path(texture_value)
@@ -1231,6 +1271,15 @@ def run_viewport(
                     if cached is None or cached[0] != modified:
                         texture_cache[str(texture_path)] = (modified, pygame.image.load(str(texture_path)).convert_alpha())
                     source_surface = texture_cache[str(texture_path)][1]
+                    if animation_clip is not None:
+                        frame_width = max(1, int(animation_clip.get("frame_width", source_surface.get_width())))
+                        frame_height = max(1, int(animation_clip.get("frame_height", source_surface.get_height())))
+                        columns = max(1, source_surface.get_width() // frame_width)
+                        frame_number = max(0, int(animation_clip.get("start_frame", 0))) + int(obj.get("_animation_frame", 0))
+                        frame_x = (frame_number % columns) * frame_width
+                        frame_y = (frame_number // columns) * frame_height
+                        if frame_x + frame_width <= source_surface.get_width() and frame_y + frame_height <= source_surface.get_height():
+                            source_surface = source_surface.subsurface((frame_x, frame_y, frame_width, frame_height)).copy()
                 except (OSError, pygame.error):
                     source_surface = None
             if source_surface is not None:
