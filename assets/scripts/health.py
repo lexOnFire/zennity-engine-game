@@ -6,6 +6,33 @@ from engine.core.component import Component
 from engine.component_registry import ComponentRegistry
 
 
+SCRIPT_CONFIG = {"max_hp": 100}
+
+
+def on_start(game):
+    game.state.setdefault("hp", int(SCRIPT_CONFIG["max_hp"]))
+
+
+def on_update(game, dt):
+    """Mantém a vida do objeto e o desativa quando chega a zero."""
+    hp = max(0, min(int(SCRIPT_CONFIG["max_hp"]), int(game.state.get("hp", SCRIPT_CONFIG["max_hp"]))))
+    game.state["hp"] = hp
+    if hp <= 0:
+        game.destroy()
+
+
+def on_instruction(game, instruction):
+    command = instruction.get("command")
+    value = int(instruction.get("value", 0) or 0)
+    if command == "damage":
+        game.state["hp"] = int(game.state.get("hp", SCRIPT_CONFIG["max_hp"])) - value
+    elif command == "heal":
+        game.state["hp"] = int(game.state.get("hp", SCRIPT_CONFIG["max_hp"])) + value
+    elif command == "reset_health":
+        game.state["hp"] = int(SCRIPT_CONFIG["max_hp"])
+        game.active = True
+
+
 @ComponentRegistry.component
 class Health(Component):
     """Gerencia pontos de vida de um GameObject."""
