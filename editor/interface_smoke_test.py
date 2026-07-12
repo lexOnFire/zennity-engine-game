@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QMainWindow,
     QPlainTextEdit,
+    QPushButton,
     QSplitter,
     QTabWidget,
     QToolBar,
@@ -66,15 +67,15 @@ class InterfaceSmokeTest(QMainWindow):
         toolbar.addWidget(mode)
 
     def _build_center(self) -> None:
-        tabs = QTabWidget()
+        self.viewport_tabs = QTabWidget()
+        self.viewport_tabs.setObjectName("SceneGameTabs")
         self.viewport_host = QFrame()
         self.viewport_host.setObjectName("IsolatedViewportHost")
         self.viewport_host.setFrameShape(QFrame.StyledPanel)
         self.viewport_host.setAttribute(Qt.WA_NativeWindow, True)
         self.viewport_host.setStyleSheet("#IsolatedViewportHost { background: #16181f; }")
-        tabs.addTab(self.viewport_host, "Scene")
-        tabs.addTab(self._placeholder("Game View desativada para este teste."), "Game")
-        self.setCentralWidget(tabs)
+        self.viewport_tabs.addTab(self.viewport_host, "Scene")
+        self.viewport_tabs.addTab(self._placeholder("Game View — use Play para executar a cena."), "Game")
 
     def _build_docks(self) -> None:
         hierarchy = QTreeWidget()
@@ -95,11 +96,39 @@ class InterfaceSmokeTest(QMainWindow):
         assets.addTopLevelItem(asset_root)
         assets.expandAll()
 
+        create_panel = QWidget()
+        create_layout = QVBoxLayout(create_panel)
+        create_layout.setContentsMargins(6, 6, 6, 6)
+        self.create_buttons = {}
+        for label, kind in (
+            ("Empty Object", "Empty"), ("Sprite 2D", "Sprite"),
+            ("Player 2D", "Player"), ("Platform 2D", "Platform"),
+            ("Enemy 2D", "Enemy"), ("Trigger 2D", "Trigger"),
+            ("Camera 2D", "Camera"),
+        ):
+            button = QPushButton(label)
+            button.setObjectName("CreatePresetButton")
+            self.create_buttons[kind] = button
+            create_layout.addWidget(button)
+        create_layout.addStretch(1)
+
+        hierarchy_tabs = QTabWidget()
+        hierarchy_tabs.addTab(hierarchy, "Hierarchy")
+        hierarchy_tabs.addTab(create_panel, "Criar")
+
+        prefab_tree = QTreeWidget()
+        prefab_tree.setHeaderHidden(True)
+        prefab_tree.addTopLevelItem(QTreeWidgetItem(["Prefabs disponíveis no projeto"] ))
+        asset_tabs = QTabWidget()
+        asset_tabs.addTab(assets, "Assets")
+        asset_tabs.addTab(prefab_tree, "Adicionar Prefabs")
+
         left = QSplitter(Qt.Vertical)
-        left.addWidget(hierarchy)
-        left.addWidget(assets)
-        left.setSizes([330, 300])
-        self._dock("Hierarchy / Assets", left, Qt.LeftDockWidgetArea, 260)
+        left.setChildrenCollapsible(False)
+        left.addWidget(hierarchy_tabs)
+        left.addWidget(asset_tabs)
+        left.setSizes([300, 420])
+        left.setMinimumWidth(240)
 
         inspector = QWidget()
         form = QFormLayout(inspector)
@@ -129,13 +158,51 @@ class InterfaceSmokeTest(QMainWindow):
         self.component_summary_label = QLabel("Transform")
         self.component_summary_label.setWordWrap(True)
         form.addRow("Componentes", self.component_summary_label)
-        self._dock("Inspector", inspector, Qt.RightDockWidgetArea, 300)
+        self.add_component_button = QPushButton("Adicionar Componente")
+        self.add_component_button.setObjectName("InspectorAddComponentButton")
+        form.addRow(self.add_component_button)
+        inspector.setMinimumWidth(300)
 
         console = QPlainTextEdit()
         self.console_output = console
         console.setReadOnly(True)
         console.setPlainText("[INFO] Interface isolada iniciada.\n[INFO] Nenhuma cena foi carregada.\n[INFO] Nenhum frame Pygame será renderizado.")
-        self._dock("Console", console, Qt.BottomDockWidgetArea, 600)
+        self.profiler_label = QLabel("FPS: --\nObjetos: 0\nModo: EDIT")
+        self.profiler_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        profiler = self._placeholder("")
+        profiler.layout().addWidget(self.profiler_label)
+
+        console_tabs = QTabWidget()
+        console_tabs.addTab(console, "Console")
+        console_tabs.addTab(self._placeholder("Saída da engine"), "Saída")
+        console_tabs.addTab(self._placeholder("Depurador"), "Depurador")
+
+        self.preview_label = QLabel("Selecione um asset para visualizar")
+        self.preview_label.setAlignment(Qt.AlignCenter)
+        preview = self._placeholder("")
+        preview.layout().addWidget(self.preview_label)
+
+        console_row = QSplitter(Qt.Horizontal)
+        console_row.addWidget(console_tabs)
+        console_row.addWidget(profiler)
+        console_row.setSizes([650, 240])
+
+        center = QSplitter(Qt.Vertical)
+        center.setChildrenCollapsible(False)
+        center.addWidget(self.viewport_tabs)
+        center.addWidget(console_row)
+        center.addWidget(preview)
+        center.setSizes([560, 150, 150])
+
+        main = QSplitter(Qt.Horizontal)
+        main.setChildrenCollapsible(False)
+        main.addWidget(left)
+        main.addWidget(center)
+        main.addWidget(inspector)
+        main.setStretchFactor(1, 1)
+        main.setSizes([270, 850, 320])
+        self.main_splitter = main
+        self.setCentralWidget(main)
 
     def _dock(self, title: str, widget: QWidget, area: Qt.DockWidgetArea, width: int) -> None:
         dock = QDockWidget(title, self)
