@@ -5,7 +5,10 @@ import ast
 from pathlib import Path
 
 
-REQUIRED_UPDATE_HOOKS = {"on_update", "isolated_update", "update"}
+REQUIRED_UPDATE_HOOKS = {
+    "on_update", "isolated_update", "update",
+    "on_collision", "on_collision_exit", "on_trigger", "on_trigger_exit",
+}
 
 
 def build_isolated_script_template(script_name: str) -> str:
@@ -35,5 +38,5 @@ def inspect_script_contract(path: str | Path) -> tuple[bool, str]:
         return False, str(exc)
     hooks = {node.name for node in tree.body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
     if not hooks.intersection(REQUIRED_UPDATE_HOOKS):
-        return False, "defina on_update(game, dt), isolated_update(...) ou update(obj, dt)"
+        return False, "defina on_update(game, dt), on_collision(game, other) ou on_trigger(game, other)"
     return True, ""
