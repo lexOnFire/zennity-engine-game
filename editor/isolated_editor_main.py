@@ -409,6 +409,14 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self.statusBar().showMessage(f"Não foi possível abrir o editor para {path.name}")
 
     def _change_view_mode(self, index: int) -> None:
+        animation_mode = index == 2
+        self.animation_workspace.setVisible(animation_mode)
+        self.viewport_host.setVisible(not animation_mode)
+        if animation_mode:
+            self._log("INFO", "Aba alterada para: ANIMATION")
+            if self._selected_name in self._objects_by_name:
+                self._update_inspector(self._selected_name)
+            return
         mode = "scene" if index == 0 else "game"
         self._commands.put({"type": "set_view_mode", "mode": mode})
         self._log("INFO", f"Aba alterada para: {mode.upper()}")
@@ -1483,6 +1491,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._updating_inspector = True
         try:
             self.inspector_name_label.setText(name)
+            self.animation_object_label.setText(name)
             for key in ("x", "y", "w", "h", "rotation"):
                 self.inspector_fields[key].setValue(float(obj[key]))
             renderer_enabled = bool(obj.get("renderer_enabled", True))
@@ -1539,7 +1548,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             # Atualiza valores do Animator 2D
             anim = obj.get("animator")
             self.show_animator_chk.setChecked(anim is not None)
-            self.animator_body.setEnabled(anim is not None)
+            self.animator_body.setEnabled(True)
             if anim:
                 clips = self._animation_clips(anim)
                 active_clip = str(anim.get("active_clip", next(iter(clips))))
