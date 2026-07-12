@@ -140,6 +140,7 @@ class InterfaceSmokeTest(QMainWindow):
         hierarchy_tabs.addTab(create_panel, "Criar")
 
         prefab_tree = QTreeWidget()
+        self.prefab_tree = prefab_tree
         prefab_tree.setHeaderHidden(True)
         prefab_tree.addTopLevelItem(QTreeWidgetItem(["Prefabs disponíveis no projeto"] ))
         asset_tabs = QTabWidget()
@@ -492,17 +493,34 @@ class InterfaceSmokeTest(QMainWindow):
         scroll.setWidget(inspector)
         self.inspector_dock.setWidget(scroll)
 
+        console_panel = QWidget()
+        console_layout = QVBoxLayout(console_panel)
+        console_layout.setContentsMargins(4, 4, 4, 4)
+        console_layout.setSpacing(3)
+        console_filters = QHBoxLayout()
+        self.console_level_checks = {}
+        for level in ("INFO", "WARNING", "ERROR"):
+            check = QCheckBox(level)
+            check.setChecked(True)
+            self.console_level_checks[level] = check
+            console_filters.addWidget(check)
+        console_filters.addStretch(1)
+        self.console_clear_button = QPushButton("Limpar")
+        self.console_clear_button.setFixedHeight(22)
+        console_filters.addWidget(self.console_clear_button)
+        console_layout.addLayout(console_filters)
+
         console = QPlainTextEdit()
         self.console_output = console
         console.setReadOnly(True)
-        console.setPlainText("[INFO] Interface isolada iniciada.\n[INFO] Nenhuma cena foi carregada.\n[INFO] Nenhum frame Pygame será renderizado.")
+        console_layout.addWidget(console)
         self.profiler_label = QLabel("FPS: --\nObjetos: 0\nModo: EDIT")
         self.profiler_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         profiler = self._placeholder("")
         profiler.layout().addWidget(self.profiler_label)
 
         console_tabs = QTabWidget()
-        console_tabs.addTab(console, "Console")
+        console_tabs.addTab(console_panel, "Console")
         console_tabs.addTab(self._placeholder("Saída da engine"), "Saída")
         console_tabs.addTab(self._placeholder("Depurador"), "Depurador")
 
