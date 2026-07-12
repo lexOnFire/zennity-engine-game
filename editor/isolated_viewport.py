@@ -151,8 +151,11 @@ def run_viewport(
                         dragging = True
                         selected_name = name
                         _send(events, {"type": "selected", "name": name})
+                        _send(events, {"type": "transform_begin", "name": name})
                         break
             elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                if dragging and selected_name is not None:
+                    _send(events, {"type": "transform_end", "name": selected_name})
                 dragging = False
             elif event.type == pygame.MOUSEMOTION and dragging and not playing:
                 if selected_name in objects:
