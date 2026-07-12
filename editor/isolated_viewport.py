@@ -266,6 +266,23 @@ def run_viewport(
                     if not callable(update):
                         update = getattr(module, "update", None)
                         update_mode = "legacy"
+                    # Projetos antigos podem ter copiado um Component nativo para
+                    # Assets/Scripts. Nesse caso usamos a versão compatível que vem
+                    # com a engine, sem alterar nem apagar o arquivo do usuário.
+                    if not callable(update):
+                        bundled_path = (Path.cwd() / "assets" / "scripts" / path.name).resolve()
+                        if bundled_path != path and bundled_path.is_file():
+                            bundled_spec = importlib.util.spec_from_file_location(
+                                f"zennity_bundled_{bundled_path.stem}_{digest}", bundled_path
+                            )
+                            if bundled_spec is not None and bundled_spec.loader is not None:
+                                bundled_module = importlib.util.module_from_spec(bundled_spec)
+                                bundled_spec.loader.exec_module(bundled_module)
+                                bundled_update = getattr(bundled_module, "on_update", None)
+                                if callable(bundled_update):
+                                    module = bundled_module
+                                    update = bundled_update
+                                    update_mode = "simple"
                     if not callable(update):
                         raise TypeError("defina on_update(game, dt), isolated_update(...) ou update(obj, dt)")
                     module._zennity_update_hook = update
