@@ -1,9 +1,7 @@
-# Script Pronto: Rotação Contínua
-# O objeto gira automaticamente no eixo Y.
-SPEED = 60.0  # graus por segundo
+"""Rotação contínua 2D."""
 
-def start(obj):
-    pass
+CONFIG = {"speed": 60.0}
 
-def update(obj, dt):
-    obj.transform.rotation[1] = (obj.transform.rotation[1] + SPEED * dt) % 360
+
+def on_update(game, dt):
+    game.rotation = (game.rotation + CONFIG["speed"] * dt) % 360.0
