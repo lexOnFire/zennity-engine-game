@@ -1,22 +1,9 @@
-from engine.runtime import Input, ScriptBehaviour
+"""Controle simples de jogador 2D."""
+
+CONFIG = {"speed": 240.0, "jump_force": 420.0}
 
 
-class PlayerController(ScriptBehaviour):
-    def on_start(self):
-        pass
-
-    def on_update(self, delta_time):
-        speed = 120.0
-        
-
-        if Input.is_key_down("a"):
-            self.transform.position[0] -= speed * delta_time
-
-        if Input.is_key_down("d"):
-            self.transform.position[0] += speed * delta_time
-
-        if Input.is_key_down("space"):
-            self.transform.position[1] = speed * delta_time
-
-    def on_destroy(self):
-        pass
+def on_update(game, dt):
+    game.move(game.axis("left", "right") * CONFIG["speed"] * dt)
+    if game.key_pressed("space"):
+        game.jump(CONFIG["jump_force"])
