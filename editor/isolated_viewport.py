@@ -423,6 +423,12 @@ def run_viewport(
                 pass
         audio_channels.clear()
         audio_sounds.clear()
+        if pygame.mixer.get_init():
+            pygame.mixer.stop()
+            try:
+                pygame.mixer.music.stop()
+            except pygame.error:
+                pass
 
     def collider_bounds(obj: dict[str, Any]) -> tuple[float, float, float, float]:
         collider = obj.get("collider") or {}
@@ -790,6 +796,7 @@ def run_viewport(
                         paused = not paused
                         _send(events, {"type": "play_state", "state": "pause" if paused else "play"})
                 elif command.get("type") == "stop":
+                    stop_audio_sources()
                     if playing:
                         stop_scripts()
                         objects = deepcopy(edit_snapshot)
@@ -799,6 +806,9 @@ def run_viewport(
                         grounded = {}
                         _send(events, {"type": "play_state", "state": "edit"})
                         _send(events, {"type": "scene_snapshot", "objects": list(objects.values())})
+                elif command.get("type") == "stop_all_audio":
+                    stop_audio_sources()
+                    _send(events, {"type": "script_log", "level": "INFO", "message": "Todos os áudios foram interrompidos"})
                 elif command.get("type") == "preview_audio":
                     play_audio_file(
                         "__preview__", str(command.get("path", "")),
