@@ -71,7 +71,7 @@ class InterfaceSmokeTest(QMainWindow):
         root = QTreeWidgetItem(["MainScene"])
         environment = QTreeWidgetItem(["Environment"])
         environment.addChildren([QTreeWidgetItem(["DirectionalLight"]), QTreeWidgetItem(["Terrain"])])
-        root.addChildren([environment, QTreeWidgetItem(["Player"]), QTreeWidgetItem(["Enemies"])])
+        root.addChildren([environment, QTreeWidgetItem(["Chao"]), QTreeWidgetItem(["Player"]), QTreeWidgetItem(["Enemies"])])
         hierarchy.addTopLevelItem(root)
         hierarchy.expandAll()
 
