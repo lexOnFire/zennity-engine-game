@@ -512,10 +512,10 @@ class ViewportWidget(QWidget):
                 and getattr(self.runtime_manager, "runtime_scene", None) is self.active_scene
             ):
                 self.runtime_manager.tick(dt)
-            else:
-                self.active_scene.update(dt)
 
-            # Sincroniza seleção da cena legada → SelectionManager enquanto arrasta
+            # Edit mode must not advance the scene. Calling Scene.update() here
+            # also calls RigidBody.update(), which applies gravity and makes
+            # objects fall before Play has started.
             self._sync_selection_to_model()
 
         self.update()
