@@ -30,7 +30,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._events = events
         self._initial_scene_snapshot = [
             {"id": "floor", "name": "Chao", "x": 0.0, "y": 150.0, "w": 600.0, "h": 32.0, "rotation": 0.0, "color": (91, 194, 100), "rigidbody": {"is_kinematic": True, "use_gravity": False}, "collider": {"type": "box"}},
-            {"id": "player", "name": "Player", "x": 0.0, "y": 0.0, "w": 36.0, "h": 48.0, "rotation": 0.0, "color": (88, 117, 255), "rigidbody": {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}, "collider": {"type": "box"}, "controller": {"enabled": True, "speed": 240.0, "jump_force": 420.0}},
+            {"id": "player", "name": "Player", "x": 0.0, "y": 0.0, "w": 36.0, "h": 48.0, "rotation": 0.0, "color": (88, 117, 255), "rigidbody": {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}, "collider": {"type": "box"}, "scripts": ["Assets/Scripts/player_controller_2d.py"]},
         ]
         self._scene_snapshot = deepcopy(self._initial_scene_snapshot)
         self._scene_document: dict | None = None
@@ -64,6 +64,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.assets_tree.setDragEnabled(True)
         self.viewport_host.setAcceptDrops(True)
         self.viewport_host.installEventFilter(self)
+        self.hierarchy_tree.setAcceptDrops(True)
+        self.hierarchy_tree.installEventFilter(self)
+        self.inspector_panel.setAcceptDrops(True)
+        self.inspector_panel.installEventFilter(self)
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._event_timer = QTimer(self)
         self._event_timer.timeout.connect(self._read_viewport_events)
@@ -102,34 +106,83 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         )
 
     def eventFilter(self, watched, event) -> bool:
-        if watched is self.viewport_host:
+        drop_targets = (self.viewport_host, self.hierarchy_tree, self.inspector_panel)
+        if watched in drop_targets:
             if event.type() == QEvent.Resize:
-                width, height = self.native_viewport_size()
-                self._commands.put({"type": "viewport_size", "w": width, "h": height})
+                if watched is self.viewport_host:
+                    width, height = self.native_viewport_size()
+                    self._commands.put({"type": "viewport_size", "w": width, "h": height})
             elif event.type() == QEvent.DragEnter:
-                # Aceita o drag se vier da árvore de assets
-                event.acceptProposedAction()
-                return True
+                if event.source() is not self.assets_tree:
+                    return super().eventFilter(watched, event)
+                path = self._dragged_asset_path()
+                if path is not None and path.suffix.lower() in {".py", ".png", ".jpg", ".jpeg", ".bmp", ".webp"}:
+                    event.acceptProposedAction()
+                    return True
             elif event.type() == QEvent.DragMove:
+                if event.source() is not self.assets_tree:
+                    return super().eventFilter(watched, event)
                 event.acceptProposedAction()
                 return True
             elif event.type() == QEvent.Drop:
-                # Recupera o asset arrastado
-                selected_items = self.assets_tree.selectedItems()
-                if selected_items:
-                    item = selected_items[0]
-                    path_str = item.toolTip(0)
-                    if path_str:
-                        path = Path(path_str)
-                        # Só aceita se for uma textura/imagem
-                        if path.suffix.lower() in {".png", ".jpg", ".jpeg", ".bmp", ".webp"}:
-                            pos = event.position()
-                            # Envia para a viewport instanciar na posição do cursor
-                            # Fazemos escala proporcional padrão
-                            self._create_object_at("Sprite", float(pos.x()), float(pos.y()))
-                event.acceptProposedAction()
-                return True
+                if event.source() is not self.assets_tree:
+                    return super().eventFilter(watched, event)
+                path = self._dragged_asset_path()
+                if path is not None and path.suffix.lower() == ".py":
+                    if watched is self.viewport_host:
+                        pos = event.position()
+                        scale = max(1.0, float(self.viewport_host.devicePixelRatioF()))
+                        self._commands.put({
+                            "type": "script_drop_at",
+                            "path": str(path.resolve()),
+                            "screen_x": float(pos.x()) * scale,
+                            "screen_y": float(pos.y()) * scale,
+                        })
+                        event.acceptProposedAction()
+                        return True
+                    target_name = self._selected_name
+                    if watched is self.hierarchy_tree:
+                        item = self.hierarchy_tree.itemAt(event.position().toPoint())
+                        item_name = self._hierarchy_item_name(item)
+                        if item_name in self._objects_by_name:
+                            target_name = item_name
+                    if target_name in self._objects_by_name:
+                        self._attach_script(target_name, path)
+                        event.acceptProposedAction()
+                        return True
+                elif path is not None and watched is self.viewport_host and path.suffix.lower() in {".png", ".jpg", ".jpeg", ".bmp", ".webp"}:
+                    pos = event.position()
+                    self._create_object_at("Sprite", float(pos.x()), float(pos.y()))
+                    event.acceptProposedAction()
+                    return True
         return super().eventFilter(watched, event)
+
+    def _dragged_asset_path(self) -> Path | None:
+        selected_items = self.assets_tree.selectedItems()
+        if not selected_items:
+            return None
+        path_value = selected_items[0].toolTip(0)
+        return Path(path_value) if path_value else None
+
+    def _attach_script(self, object_name: str, path: Path) -> None:
+        if object_name not in self._objects_by_name or path.suffix.lower() != ".py":
+            return
+        try:
+            script_path = str(path.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
+        except ValueError:
+            script_path = str(path.resolve())
+        obj = self._objects_by_name[object_name]
+        if script_path in obj.get("scripts", []):
+            self.statusBar().showMessage(f"Script já anexado: {path.name}")
+            return
+        self._record_history()
+        scripts = obj.setdefault("scripts", [])
+        scripts.append(script_path)
+        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._commands.put({"type": "select_object", "name": object_name})
+        self._selected_name = object_name
+        self._update_inspector(object_name)
+        self._log("INFO", f"Script anexado em {object_name}: {script_path}")
 
     def _change_view_mode(self, index: int) -> None:
         mode = "scene" if index == 0 else "game"
@@ -182,25 +235,14 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             for child in sorted(directory.iterdir(), key=lambda path: (path.is_file(), path.name.lower())):
                 if child.name.startswith(".") or child.suffix == ".meta":
                     continue
-                
-                # Escolhe o ícone de acordo com o tipo de pasta ou arquivo
                 if child.is_dir():
                     icon = "📁 "
+                elif child.suffix.lower() in (".png", ".jpg", ".jpeg"):
+                    icon = "🖼️ "
+                elif child.suffix.lower() in (".ogg", ".wav", ".mp3"):
+                    icon = "🔊 "
                 else:
-                    ext = child.suffix.lower()
-                    if ext in (".png", ".jpg", ".jpeg"):
-                        icon = "🖼️ "
-                    elif ext in (".fbx", ".obj", ".mesh"):
-                        icon = "📄 "
-                    elif ext in (".py", ".gd", ".cs"):
-                        icon = "📄 "
-                    elif ext in (".ogg", ".wav", ".mp3"):
-                        icon = "🔊 "
-                    elif ext in (".json", ".zs", ".scene"):
-                        icon = "📄 "
-                    else:
-                        icon = "📄 "
-                        
+                    icon = "📄 "
                 item = QTreeWidgetItem([icon + child.name])
                 item.setToolTip(0, str(child))
                 parent_item.addChild(item)
@@ -221,7 +263,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "Stop": {"type": "stop"},
         }
         for action in self.findChildren(QAction):
-            # Procura pelo toolTip caso o texto seja um ícone Unicode
             label = action.toolTip() if action.toolTip() else action.text()
             payload = commands.get(label)
             if payload is not None:
@@ -381,7 +422,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if kind == "Trigger":
             obj["collider"]["is_trigger"] = True
         if kind == "Player":
-            obj["controller"] = {"enabled": True, "speed": 240.0, "jump_force": 420.0}
+            obj["scripts"] = ["Assets/Scripts/player_controller_2d.py"]
         if kind == "Camera":
             obj["component_names"] = ["Camera2D"]
             obj["camera"] = {"active": True, "zoom": 1.0}
@@ -431,6 +472,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             }
             source.setdefault("visual", {"mesh_type": snapshot.get("mesh_type"), "color": snapshot.get("color")})
             components = source.setdefault("components", {})
+            components.pop("controller", None)
             if snapshot.get("rigidbody") is not None:
                 components["rigidbody"] = deepcopy(snapshot["rigidbody"])
             if snapshot.get("collider") is not None:
@@ -440,8 +482,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 components["collider"] = collider
             if snapshot.get("camera") is not None or "Camera2D" in snapshot.get("component_names", []):
                 components["camera"] = deepcopy(snapshot.get("camera") or {"active": True, "zoom": 1.0})
-            if snapshot.get("controller") is not None:
-                components["controller"] = deepcopy(snapshot["controller"])
+            if snapshot.get("scripts"):
+                components["scripts"] = list(dict.fromkeys(str(path) for path in snapshot["scripts"]))
             scene_objects.append(source)
         payload["objects"] = scene_objects
         path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -483,13 +525,12 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     snapshot["collider"] = deepcopy(components["collider"])
                 if isinstance(components.get("camera"), dict):
                     snapshot["camera"] = deepcopy(components["camera"])
-                if isinstance(components.get("controller"), dict):
-                    snapshot["controller"] = deepcopy(components["controller"])
                 component_names = ["Camera2D"] if isinstance(components.get("camera"), dict) else []
                 for component in components.get("items", []):
                     if isinstance(component, dict):
                         component_names.append(str(component.get("type") or component.get("component_type") or "Component"))
                 if components.get("scripts"):
+                    snapshot["scripts"] = [str(script) for script in components["scripts"]]
                     component_names.extend(f"Script: {script}" for script in components["scripts"])
                 if component_names:
                     snapshot["component_names"] = component_names
@@ -515,19 +556,20 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.hierarchy_tree.setAcceptDrops(True)
         self.hierarchy_tree.setDragDropMode(QTreeWidget.InternalMove)
         self.hierarchy_tree.itemClicked.connect(self._select_hierarchy_item)
-        self.hierarchy_tree.itemDoubleClicked.connect(lambda item: self._rename_object(item.text(0)))
+        self.hierarchy_tree.itemDoubleClicked.connect(lambda item: self._rename_object(self._hierarchy_item_name(item)))
         self.hierarchy_tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.hierarchy_tree.customContextMenuRequested.connect(self._open_hierarchy_menu)
 
     def _open_hierarchy_menu(self, position) -> None:
         item = self.hierarchy_tree.itemAt(position)
-        if item is None or item.text(0) not in self._objects_by_name:
+        item_name = self._hierarchy_item_name(item)
+        if item is None or item_name not in self._objects_by_name:
             return
         menu = QMenu(self)
         rename_action = menu.addAction("Renomear")
         delete_action = menu.addAction("Excluir")
-        rename_action.triggered.connect(lambda _checked=False: self._rename_object(item.text(0)))
-        delete_action.triggered.connect(lambda _checked=False: self._delete_object(item.text(0)))
+        rename_action.triggered.connect(lambda _checked=False: self._rename_object(item_name))
+        delete_action.triggered.connect(lambda _checked=False: self._delete_object(item_name))
         menu.exec(self.hierarchy_tree.viewport().mapToGlobal(position))
 
     def _rename_object(self, old_name: str) -> None:
@@ -578,35 +620,27 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         scene_name = self._scene_document.get("scene_name", "MainScene") if self._scene_document else "MainScene"
         root = QTreeWidgetItem(["🟢 " + str(scene_name)])
         root.setExpanded(True)
-        
-        # Estrutura Environment (se houver)
-        env_item = QTreeWidgetItem(["📁 Environment"])
-        env_item.addChild(QTreeWidgetItem(["☀️ DirectionalLight"]))
-        env_item.addChild(QTreeWidgetItem(["☁️ Skybox"]))
-        env_item.addChild(QTreeWidgetItem(["🏔️ Terrain"]))
-        root.addChild(env_item)
-        
-        # Adiciona objetos dinâmicos da cena
         for obj in self._scene_snapshot:
-            name = obj["name"]
-            
-            # Iconiza conforme o nome ou tipo do objeto
+            name = str(obj["name"])
             if "player" in name.lower():
-                item = QTreeWidgetItem(["👤 " + name])
-                # Sub-componentes do Player para simular a árvore do mockup
-                item.addChild(QTreeWidgetItem(["📷 Camera"]))
-                item.addChild(QTreeWidgetItem(["🔶 Mesh"]))
-                item.addChild(QTreeWidgetItem(["💡 Light"]))
-            elif "inimigo" in name.lower() or "enemy" in name.lower():
-                item = QTreeWidgetItem(["👤 " + name])
+                icon = "👤 "
             elif "chao" in name.lower() or "floor" in name.lower():
-                item = QTreeWidgetItem(["🏔️ " + name])
+                icon = "🏔️ "
             else:
-                item = QTreeWidgetItem(["📦 " + name])
-                
+                icon = "📦 "
+            item = QTreeWidgetItem([icon + name])
+            item.setData(0, Qt.UserRole, name)
             root.addChild(item)
-            
         self.hierarchy_tree.addTopLevelItem(root)
+
+    @staticmethod
+    def _hierarchy_item_name(item: QTreeWidgetItem | None) -> str:
+        if item is None:
+            return ""
+        stored_name = item.data(0, Qt.UserRole)
+        if stored_name:
+            return str(stored_name)
+        return item.text(0).lstrip("🟢🔴🟡🔵🟣⚫⚪📁🏔️☀️☁️📷🔶💡👤📦 ").strip()
 
     def _connect_inspector_to_viewport(self) -> None:
         for field in self.inspector_fields.values():
@@ -661,16 +695,17 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
     def _add_component(self, component: str) -> None:
         if self._selected_name not in self._objects_by_name:
             return
+        if component == "script":
+            filename, _ = QFileDialog.getOpenFileName(self, "Anexar Script", str(Path.cwd() / "Assets" / "Scripts"), "Python Script (*.py)")
+            if filename:
+                self._attach_script(self._selected_name, Path(filename))
+            return
         self._record_history()
         obj = self._objects_by_name[self._selected_name]
         if component == "rigidbody":
             obj.setdefault("rigidbody", {"mass": 1.0, "gravity_scale": 1.0, "use_gravity": True, "is_kinematic": False})
         elif component in {"box", "circle"}:
             obj["collider"] = {"type": component, "is_trigger": False}
-        elif component == "script":
-            names = obj.setdefault("component_names", [])
-            if "ScriptComponent" not in names:
-                names.append("ScriptComponent")
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._commands.put({"type": "select_object", "name": self._selected_name})
         self._update_inspector(self._selected_name)
@@ -713,9 +748,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._commands.put({"type": "set_collider", "name": self._selected_name, "collider": deepcopy(collider)})
 
     def _select_hierarchy_item(self, item: QTreeWidgetItem) -> None:
-        raw_name = item.text(0)
-        # Remove ícones e espaços iniciais para obter o nome real do objeto
-        name = raw_name.lstrip("🟢🔴🟡🔵🟣⚫⚪📁🏔️☀️☁️📷🔶💡👤📦 ").strip()
+        name = self._hierarchy_item_name(item)
         if name in self._objects_by_name:
             self._commands.put({"type": "select_object", "name": name})
             self._selected_name = name
@@ -759,6 +792,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             if rigidbody:
                 components.append("RigidBody")
             components.extend(str(name) for name in obj.get("component_names", []))
+            components.extend(f"Script: {Path(path).name}" for path in obj.get("scripts", []))
             self.component_summary_label.setText("\n".join(dict.fromkeys(components)))
         finally:
             self._updating_inspector = False
@@ -813,6 +847,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             elif message.get("type") == "viewport_mode":
                 state = "embutida" if message.get("embedded") else "em janela separada (fallback)"
                 self.statusBar().showMessage(f"Viewport {state}")
+            elif message.get("type") == "script_log":
+                self._log(str(message.get("level", "INFO")), str(message.get("message", "")))
+            elif message.get("type") == "attach_script":
+                self._attach_script(str(message.get("name", "")), Path(str(message.get("path", ""))))
             elif message.get("type") == "stats":
                 self.profiler_label.setText(
                     f"FPS: {message.get('fps', 0):.0f}\n"
