@@ -145,6 +145,7 @@ class InterfaceSmokeTest(QMainWindow):
         inspector = QWidget()
         form = QFormLayout(inspector)
         self.inspector_name_label = QLabel("Player")
+        self.inspector_name_label.setObjectName("InspectorObjectName")
         self.inspector_fields: dict[str, QDoubleSpinBox] = {}
         form.addRow("Objeto", self.inspector_name_label)
         for field, value in (("Posição X", "400.00"), ("Posição Y", "200.00"), ("Rotação", "0.00"), ("Escala X", "36.00"), ("Escala Y", "48.00")):
@@ -156,6 +157,7 @@ class InterfaceSmokeTest(QMainWindow):
                 "Escala Y": "h",
             }[field]
             editor = QDoubleSpinBox()
+            editor.setObjectName("InspectorNumberField")
             editor.setDecimals(2)
             editor.setRange(1.0 if key in ("w", "h") else -100000.0, 100000.0)
             editor.setValue(float(value))
@@ -166,17 +168,21 @@ class InterfaceSmokeTest(QMainWindow):
             "use_gravity": QCheckBox(),
             "is_kinematic": QCheckBox(),
         }
+        self.physics_fields["use_gravity"].setObjectName("InspectorCheckBox")
+        self.physics_fields["is_kinematic"].setObjectName("InspectorCheckBox")
         form.addRow("Usar gravidade", self.physics_fields["use_gravity"])
         form.addRow("Cinemático", self.physics_fields["is_kinematic"])
         self.collider_fields: dict[str, QDoubleSpinBox] = {}
         for label, key in (("Collider Largura", "width"), ("Collider Altura", "height"), ("Collider Raio", "radius"), ("Collider Offset X", "offset_x"), ("Collider Offset Y", "offset_y")):
             editor = QDoubleSpinBox()
+            editor.setObjectName("InspectorNumberField")
             editor.setDecimals(2)
             editor.setRange(0.01 if key in ("width", "height", "radius") else -100000.0, 100000.0)
             editor.setKeyboardTracking(False)
             self.collider_fields[key] = editor
             form.addRow(label, editor)
         self.collider_trigger_field = QCheckBox()
+        self.collider_trigger_field.setObjectName("InspectorCheckBox")
         form.addRow("Collider Trigger", self.collider_trigger_field)
         self.component_summary_label = QLabel("Transform")
         self.component_summary_label.setWordWrap(True)

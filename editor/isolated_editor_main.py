@@ -459,6 +459,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._log("INFO", f"Cena aberta: {filename}")
 
     def _connect_hierarchy_to_viewport(self) -> None:
+        self.hierarchy_tree.setDragEnabled(True)
+        self.hierarchy_tree.setAcceptDrops(True)
+        self.hierarchy_tree.setDragDropMode(QTreeWidget.InternalMove)
         self.hierarchy_tree.itemClicked.connect(self._select_hierarchy_item)
         self.hierarchy_tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.hierarchy_tree.customContextMenuRequested.connect(self._open_hierarchy_menu)

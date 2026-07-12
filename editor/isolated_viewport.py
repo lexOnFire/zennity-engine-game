@@ -94,6 +94,7 @@ def run_viewport(
     drag_start_mouse = (0.0, 0.0)
     drag_start_object: dict[str, Any] = {}
     drag_handle: int = -1
+    move_axis: str = "" # "" para ambos, "x" para travar no X local, "y" para travar no Y local
     playing = False
     edit_snapshot = deepcopy(objects)
     velocities_y: dict[str, float] = {}
@@ -237,9 +238,41 @@ def run_viewport(
                 camera_x = world_x - mouse_x / zoom
                 camera_y = world_y - mouse_y / zoom
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not playing:
-                # 1. Se estiver na ferramenta de Scale e houver objeto selecionado, verifica clique nos handles primeiro
                 drag_handle = -1
-                if active_tool == "scale" and selected_name in objects:
+                move_axis = ""
+                
+                # 1. Se estiver na ferramenta de Move, verifica se clicou na ponta dos eixos do Gizmo
+                if active_tool == "move" and selected_name in objects:
+                    obj = objects[selected_name]
+                    object_x, object_y = world_to_screen(float(obj["x"]), float(obj["y"]))
+                    angle = float(obj.get("rotation", 0.0))
+                    radians = math.radians(angle)
+                    
+                    length = 92
+                    # Eixo X local
+                    dir_x = (math.cos(radians), math.sin(radians))
+                    # Eixo Y local
+                    dir_y = (-math.sin(radians), math.cos(radians))
+                    
+                    end_x = (object_x + dir_x[0] * length, object_y + dir_x[1] * length)
+                    end_y = (object_x - dir_y[0] * length, object_y - dir_y[1] * length)
+                    
+                    # Distância tolerância até as setas da ponta do gizmo
+                    if abs(event.pos[0] - end_x[0]) <= 15 and abs(event.pos[1] - end_x[1]) <= 15:
+                        move_axis = "x"
+                        dragging = True
+                        drag_start_mouse = (float(event.pos[0]), float(event.pos[1]))
+                        drag_start_object = deepcopy(obj)
+                        _send(events, {"type": "transform_begin", "name": selected_name})
+                    elif abs(event.pos[0] - end_y[0]) <= 15 and abs(event.pos[1] - end_y[1]) <= 15:
+                        move_axis = "y"
+                        dragging = True
+                        drag_start_mouse = (float(event.pos[0]), float(event.pos[1]))
+                        drag_start_object = deepcopy(obj)
+                        _send(events, {"type": "transform_begin", "name": selected_name})
+                
+                # 2. Se estiver na ferramenta de Scale e houver objeto selecionado, verifica clique nos handles primeiro
+                if not dragging and active_tool == "scale" and selected_name in objects:
                     obj = objects[selected_name]
                     object_x, object_y = world_to_screen(float(obj["x"]), float(obj["y"]))
                     angle = float(obj.get("rotation", 0.0))
@@ -271,8 +304,8 @@ def run_viewport(
                             _send(events, {"type": "transform_begin", "name": selected_name})
                             break
                             
-                # 2. Se não clicou em nenhum handle, faz o hit-test padrão no objeto inteiro
-                if drag_handle == -1:
+                # 3. Se não iniciou drag nos gizmos/handles, faz o hit-test padrão no objeto inteiro
+                if not dragging:
                     for name, obj in reversed(list(objects.items())):
                         object_x, object_y = world_to_screen(float(obj["x"]), float(obj["y"]))
                         angle = float(obj.get("rotation", 0.0))
@@ -309,9 +342,32 @@ def run_viewport(
                 if selected_name in objects:
                     obj = objects[selected_name]
                     if active_tool == "move":
-                        world_x, world_y = screen_to_world(float(event.pos[0]), float(event.pos[1]))
-                        obj["x"] = snapped(world_x, snap_size)
-                        obj["y"] = snapped(world_y, snap_size)
+                        # Vetor de delta no espaço global de tela
+                        dx_screen = (float(event.pos[0]) - drag_start_mouse[0]) / zoom
+                        dy_screen = (float(event.pos[1]) - drag_start_mouse[1]) / zoom
+                        
+                        # Rotaciona o delta para o espaço local do objeto
+                        angle = float(drag_start_object.get("rotation", 0.0))
+                        rad = math.radians(-angle)
+                        dx_local = dx_screen * math.cos(rad) - dy_screen * math.sin(rad)
+                        dy_local = dx_screen * math.sin(rad) + dy_screen * math.cos(rad)
+                        
+                        # Restringe conforme o eixo selecionado
+                        if move_axis == "x":
+                            dy_local = 0.0
+                        elif move_axis == "y":
+                            dx_local = 0.0
+                            
+                        # Converte o delta local restringido de volta para o espaço global de mundo
+                        rad_inv = math.radians(angle)
+                        dx_world = dx_local * math.cos(rad_inv) - dy_local * math.sin(rad_inv)
+                        dy_world = dx_local * math.sin(rad_inv) + dy_local * math.cos(rad_inv)
+                        
+                        new_x = float(drag_start_object["x"]) + dx_world
+                        new_y = float(drag_start_object["y"]) + dy_world
+                        
+                        obj["x"] = snapped(new_x, snap_size)
+                        obj["y"] = snapped(new_y, snap_size)
                     elif active_tool == "rotate":
                         object_x, object_y = world_to_screen(float(obj["x"]), float(obj["y"]))
                         angle = math.degrees(math.atan2(event.pos[1] - object_y, event.pos[0] - object_x))
