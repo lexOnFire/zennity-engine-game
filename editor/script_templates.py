@@ -5,55 +5,42 @@ import ast
 from pathlib import Path
 
 
-REQUIRED_UPDATE_HOOKS = {"isolated_update", "update"}
+REQUIRED_UPDATE_HOOKS = {"on_update", "isolated_update", "update"}
 
 
 def build_isolated_script_template(script_name: str) -> str:
     safe_name = script_name.removesuffix(".py") or "NewScript"
-    return f'''"""{safe_name} — comportamento criado pelo Zennity Editor.
+    return f'''"""{safe_name} — script criado pelo Zennity."""
 
-API disponível:
-- obj: dicionário do objeto (x, y, w, h, rotation, rigidbody, collider).
-- input_state: left, right, up, down e jump.
-- dt: tempo do frame em segundos.
-- instruction: mensagens enviadas ao script por outros sistemas.
-"""
-
-ENABLED = True
-CONFIG = {{
-    "speed": 200.0,
-}}
+CONFIG = {"speed": 200.0, "jump_force": 420.0}
 
 
-def isolated_start(obj):
-    """Executado uma vez ao entrar no Play."""
-    obj.setdefault("script_state", {{}})
+def on_start(game):
+    """Chamado uma vez quando o Play começa."""
+    game.log("iniciado")
 
 
-def isolated_update(obj, input_state, dt):
-    """Executado a cada frame enquanto o jogo não estiver pausado."""
-    if not ENABLED:
-        return
+def on_update(game, dt):
+    """Chamado a cada frame. dt é o tempo em segundos."""
+    # Exemplo simples de movimento horizontal:
+    direction = game.axis("left", "right")
+    game.move(direction * CONFIG["speed"] * dt)
 
-    # Exemplo de entrada; remova o comentário para movimentar no eixo X.
-    # direction = int(input_state["right"]) - int(input_state["left"])
-    # obj["x"] += direction * CONFIG["speed"] * dt
-
-
-def isolated_on_instruction(obj, instruction):
-    """Recebe dicts como {{"command": "...", "value": ...}}."""
-    command = str(instruction.get("command", ""))
-    value = instruction.get("value")
-
-    if command == "set_enabled":
-        obj.setdefault("script_state", {{}})["enabled"] = bool(value)
-    elif command == "set_speed":
-        CONFIG["speed"] = float(value)
+    # Executa apenas no instante em que Espaço é pressionado.
+    if game.key_pressed("space"):
+        game.jump(CONFIG["jump_force"])
 
 
-def isolated_stop(obj):
-    """Executado uma vez ao sair do Play."""
-    obj.pop("script_state", None)
+def on_instruction(game, instruction):
+    """Recebe comandos opcionais de outros sistemas."""
+    if instruction.get("command") == "teleport":
+        game.x = float(instruction.get("x", game.x))
+        game.y = float(instruction.get("y", game.y))
+
+
+def on_stop(game):
+    """Chamado uma vez quando o Play termina."""
+    pass
 '''
 
 
@@ -65,5 +52,5 @@ def inspect_script_contract(path: str | Path) -> tuple[bool, str]:
         return False, str(exc)
     hooks = {node.name for node in tree.body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
     if not hooks.intersection(REQUIRED_UPDATE_HOOKS):
-        return False, "defina isolated_update(obj, input_state, dt) ou update(obj, dt)"
+        return False, "defina on_update(game, dt), isolated_update(...) ou update(obj, dt)"
     return True, ""
