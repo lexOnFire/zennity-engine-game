@@ -25,18 +25,34 @@ def _attach_native_window(pygame: Any, parent_window_id: int | None, width: int,
         return bool(os.environ.get("SDL_WINDOWID"))
     try:
         import ctypes
+        from ctypes import wintypes
 
         hwnd = int(pygame.display.get_wm_info().get("window", 0))
         if not hwnd:
             return False
-        if hwnd == int(parent_window_id):
-            return True
         user32 = ctypes.windll.user32
+        user32.SetParent.argtypes = (wintypes.HWND, wintypes.HWND)
+        user32.SetParent.restype = wintypes.HWND
+        user32.SetWindowPos.argtypes = (
+            wintypes.HWND, wintypes.HWND, ctypes.c_int, ctypes.c_int,
+            ctypes.c_int, ctypes.c_int, wintypes.UINT,
+        )
+        user32.SetWindowPos.restype = wintypes.BOOL
+
+        long_ptr = ctypes.c_longlong if ctypes.sizeof(ctypes.c_void_p) == 8 else ctypes.c_long
+        get_style = getattr(user32, "GetWindowLongPtrW", user32.GetWindowLongW)
+        set_style = getattr(user32, "SetWindowLongPtrW", user32.SetWindowLongW)
+        get_style.argtypes = (wintypes.HWND, ctypes.c_int)
+        get_style.restype = long_ptr
+        set_style.argtypes = (wintypes.HWND, ctypes.c_int, long_ptr)
+        set_style.restype = long_ptr
+
         user32.SetParent(hwnd, int(parent_window_id))
-        style = user32.GetWindowLongW(hwnd, -16)
-        style &= ~(0x00C00000 | 0x00040000 | 0x00020000 | 0x00010000)
-        user32.SetWindowLongW(hwnd, -16, style)
-        user32.MoveWindow(hwnd, 0, 0, int(width), int(height), True)
+        style = int(get_style(hwnd, -16))
+        decorations = 0x00C00000 | 0x00080000 | 0x00040000 | 0x00020000 | 0x00010000
+        style = (style | 0x40000000) & ~(0x80000000 | decorations)
+        set_style(hwnd, -16, style)
+        user32.SetWindowPos(hwnd, 0, 0, 0, int(width), int(height), 0x0020 | 0x0040 | 0x0004)
         return True
     except Exception:
         return False
@@ -50,10 +66,13 @@ def run_viewport(
 ) -> None:
     import pygame
 
-    if parent_window_id:
+    if parent_window_id and sys.platform != "win32":
         os.environ["SDL_WINDOWID"] = str(parent_window_id)
     pygame.init()
-    screen = pygame.display.set_mode(initial_size, pygame.RESIZABLE)
+    display_flags = pygame.RESIZABLE
+    if parent_window_id and sys.platform == "win32":
+        display_flags |= pygame.NOFRAME
+    screen = pygame.display.set_mode(initial_size, display_flags)
     pygame.display.set_caption("Zennity — Viewport isolada (Pygame)")
     embedded = _attach_native_window(pygame, parent_window_id, *initial_size)
     _send(events, {"type": "viewport_mode", "embedded": embedded})
@@ -80,7 +99,7 @@ def run_viewport(
                     running = False
                 elif command.get("type") == "viewport_size":
                     new_size = (max(32, int(command.get("w", 32))), max(32, int(command.get("h", 32))))
-                    screen = pygame.display.set_mode(new_size, pygame.RESIZABLE)
+                    screen = pygame.display.set_mode(new_size, display_flags)
                     _attach_native_window(pygame, parent_window_id, *new_size)
                 elif command.get("type") == "scene_snapshot":
                     objects = {item["name"]: dict(item) for item in command.get("objects", [])}
