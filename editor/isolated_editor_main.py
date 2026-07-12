@@ -49,6 +49,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._drag_history_snapshot: list[dict] | None = None
         self._snap_enabled = False
         self._runtime_playing = False
+        self._play_edit_snapshot: list[dict] | None = None
+        self._pending_stop_snapshot: list[dict] | None = None
         self._runtime_keys = {key: False for key in ("left", "right", "up", "down", "jump")}
         self.setWindowTitle("Zennity Engine Editor — Phase 1")
         self.statusBar().showMessage(
@@ -449,12 +451,15 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self._update_inspector(self._selected_name)
             return
         if message.get("type") == "play":
+            if not self._runtime_playing:
+                self._play_edit_snapshot = deepcopy(self._scene_snapshot)
+                self._pending_stop_snapshot = None
             self.viewport_tabs.setCurrentIndex(1)
             attached = [(obj["name"], path) for obj in self._scene_snapshot for path in obj.get("scripts", [])]
             self._log("INFO", f"Play solicitado com {len(attached)} script(s) anexado(s)")
             for object_name, path in attached:
                 self._log("INFO", f"  {object_name} → {path}")
-            self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+            self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._play_edit_snapshot)})
         elif message.get("type") == "stop":
             self.viewport_tabs.setCurrentIndex(0)
         if message.get("type") == "move_selected" and self._selected_name is not None:
@@ -601,8 +606,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             return
         path = Path(filename)
         payload = deepcopy(self._scene_document) if self._scene_document else {
-            "format_version": 1, "scene_name": path.stem, "engine_version": "Zennity 0.1.0", "objects": []
+            "format_version": 2, "scene_name": path.stem, "engine_version": "Zennity 0.1.0", "objects": []
         }
+        payload["format_version"] = max(2, int(payload.get("format_version", 1)))
+        payload["scene_name"] = str(payload.get("scene_name") or path.stem)
         existing_by_id = {str(item.get("id")): item for item in payload.get("objects", []) if item.get("id") is not None}
         existing_by_name = {str(item.get("name")): item for item in payload.get("objects", [])}
         scene_objects = []
@@ -621,8 +628,13 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 source["visual"] = {"mesh_type": snapshot.get("mesh_type"), "color": snapshot.get("color")}
             source["visual"]["enabled"] = bool(snapshot.get("renderer_enabled", True))
             source["visual"]["material"] = str(snapshot.get("material", "Default_Material"))
-            components = source.setdefault("components", {})
+            components = source.get("components")
+            if not isinstance(components, dict):
+                components = {}
+                source["components"] = components
             components.pop("controller", None)
+            for key in ("rigidbody", "collider", "camera", "scripts"):
+                components.pop(key, None)
             if snapshot.get("rigidbody") is not None:
                 components["rigidbody"] = deepcopy(snapshot["rigidbody"])
             if snapshot.get("collider") is not None:
@@ -634,9 +646,24 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 components["camera"] = deepcopy(snapshot.get("camera") or {"active": True, "zoom": 1.0})
             if snapshot.get("scripts"):
                 components["scripts"] = list(dict.fromkeys(str(path) for path in snapshot["scripts"]))
+            known_keys = {
+                "id", "name", "x", "y", "w", "h", "rotation", "color", "mesh_type",
+                "renderer_enabled", "material", "active", "static", "tag", "layer",
+                "rigidbody", "collider", "camera", "scripts", "component_names",
+            }
+            editor_data = {
+                key: deepcopy(value) for key, value in snapshot.items()
+                if key not in known_keys and not str(key).startswith("_")
+            }
+            if editor_data:
+                source["editor_data"] = editor_data
+            else:
+                source.pop("editor_data", None)
             scene_objects.append(source)
         payload["objects"] = scene_objects
-        path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        temporary_path = path.with_name(path.name + ".tmp")
+        temporary_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        temporary_path.replace(path)
         self._scene_document = payload
         self._current_scene_path = path
         self.statusBar().showMessage(f"Cena salva: {filename}")
@@ -669,6 +696,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 color = visual.get("color") or ((91, 194, 100) if item["name"].lower() in {"chao", "floor"} else (88, 117, 255))
                 rotation = transform.get("rz", (transform.get("rotation") or [0.0, 0.0, 0.0])[2])
                 snapshot = {"id": item.get("id", item["name"]), "name": item["name"], "x": float(position[0]), "y": float(position[1]), "w": abs(float(scale[0])), "h": abs(float(scale[1])), "rotation": float(rotation), "color": color, "mesh_type": visual.get("mesh_type"), "renderer_enabled": bool(visual.get("enabled", True)), "material": str(visual.get("material", "Default_Material")), "active": bool(item.get("active", item.get("enabled", True))), "static": bool(item.get("static", False)), "tag": str(item.get("tag", "Untagged")), "layer": str(item.get("layer", "Default"))}
+                if isinstance(item.get("editor_data"), dict):
+                    snapshot.update(deepcopy(item["editor_data"]))
                 if isinstance(components.get("rigidbody"), dict):
                     snapshot["rigidbody"] = deepcopy(components["rigidbody"])
                 if isinstance(components.get("collider"), dict):
@@ -689,6 +718,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 snapshots.append(dict(item))
         if not snapshots and objects:
             self.statusBar().showMessage("Falha ao abrir cena: nenhum objeto compatível")
+            return
+        names = [str(item["name"]) for item in snapshots]
+        if len(names) != len(set(names)):
+            self.statusBar().showMessage("Falha ao abrir cena: existem objetos com nomes duplicados")
             return
         self._record_history()
         self._scene_snapshot = snapshots
@@ -1117,7 +1150,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self._drag_history_snapshot = None
             elif message.get("type") == "transform":
                 obj = self._objects_by_name.get(message["name"])
-                if obj is not None:
+                if obj is not None and not self._runtime_playing:
                     obj["x"] = float(message["x"])
                     obj["y"] = float(message["y"])
                     if "w" in message:
@@ -1135,6 +1168,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 state = message["state"]
                 self._runtime_playing = state in {"play", "pause"}
                 if state == "edit":
+                    if self._play_edit_snapshot is not None:
+                        self._pending_stop_snapshot = deepcopy(self._play_edit_snapshot)
+                        self._scene_snapshot = deepcopy(self._play_edit_snapshot)
+                        self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
+                        self._play_edit_snapshot = None
                     self._runtime_keys = {key: False for key in self._runtime_keys}
                     self._commands.put({"type": "runtime_input", "keys": dict(self._runtime_keys)})
                 self.toolbar_actions["Play"].setEnabled(state != "play")
@@ -1145,7 +1183,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 )
                 self._log("INFO", {"play": "Play iniciado/retomado", "pause": "Play pausado", "edit": "Play finalizado; cena restaurada"}[state])
             elif message.get("type") == "scene_snapshot":
-                self._scene_snapshot = [dict(item) for item in message.get("objects", [])]
+                if self._pending_stop_snapshot is not None:
+                    self._scene_snapshot = deepcopy(self._pending_stop_snapshot)
+                    self._pending_stop_snapshot = None
+                else:
+                    self._scene_snapshot = [deepcopy(item) for item in message.get("objects", [])]
                 self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
                 self._refresh_hierarchy()
                 if self._selected_name in self._objects_by_name:
