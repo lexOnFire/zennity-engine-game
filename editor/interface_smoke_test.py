@@ -245,26 +245,54 @@ class InterfaceSmokeTest(QMainWindow):
         trans_h_layout.setContentsMargins(6, 4, 6, 4)
         
         # Símbolo expansor e ícone
-        trans_title = QLabel("∨  🏃  Transform")
+        trans_title = QLabel("🏃 Transform")
         trans_title.setStyleSheet("font-weight: bold; color: #ffffff;")
         trans_h_layout.addWidget(trans_title)
         trans_h_layout.addStretch()
         
-        # Botões de encolher e excluir no mockup do cabeçalho
-        btn_collapse_trans = QPushButton("👁️")
+        # Botões de encolher, desgrudar e excluir
+        btn_collapse_trans = QPushButton("▼")
         btn_collapse_trans.setFixedSize(18, 18)
         btn_collapse_trans.setStyleSheet("background: transparent; color: #aaaaaa; border: none; font-size: 11px;")
+        
+        btn_float_trans = QPushButton("⎋")
+        btn_float_trans.setFixedSize(18, 18)
+        btn_float_trans.setStyleSheet("background: transparent; color: #aaaaaa; border: none; font-size: 11px;")
+        
         btn_del_trans = QPushButton("✕")
         btn_del_trans.setFixedSize(18, 18)
         btn_del_trans.setStyleSheet("background: transparent; color: #ff5555; font-weight: bold; border: none;")
         
         trans_h_layout.addWidget(btn_collapse_trans)
+        trans_h_layout.addWidget(btn_float_trans)
         trans_h_layout.addWidget(btn_del_trans)
         main_layout.addWidget(trans_header)
         
+        # Widget container para as propriedades do Transform (encolhível/flutuável)
+        trans_body = QWidget()
+        trans_body_layout = QVBoxLayout(trans_body)
+        trans_body_layout.setContentsMargins(0, 0, 0, 0)
+        trans_body_layout.setSpacing(6)
+        
+        # Conecta as ações
+        btn_collapse_trans.clicked.connect(lambda: trans_body.setVisible(not trans_body.isVisible()))
+        
+        def make_trans_floating():
+            if trans_body.parent() == trans_body.window():
+                # Coloca de volta no layout
+                main_layout.insertWidget(main_layout.indexOf(trans_header) + 1, trans_body)
+                btn_float_trans.setText("⎋")
+            else:
+                # Remove do layout e exibe como janela flutuante independente
+                trans_body.setParent(None)
+                trans_body.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
+                trans_body.setWindowTitle("Transform Component")
+                trans_body.show()
+                btn_float_trans.setText("⚓")
+        btn_float_trans.clicked.connect(make_trans_floating)
+        
         self.inspector_fields: dict[str, QDoubleSpinBox] = {}
         
-        # Grid/Linhas para organizar as 3 colunas de forma extremamente alinhada (Posição, Rotação, Escala)
         # 1. Posição
         pos_widget = QWidget()
         pos_layout = QHBoxLayout(pos_widget)
@@ -273,7 +301,6 @@ class InterfaceSmokeTest(QMainWindow):
         pos_lbl.setMinimumWidth(50)
         pos_layout.addWidget(pos_lbl)
         
-        # X
         self.inspector_fields["x"] = QDoubleSpinBox()
         self.inspector_fields["x"].setObjectName("InspectorNumberField")
         self.inspector_fields["x"].setDecimals(2)
@@ -282,7 +309,6 @@ class InterfaceSmokeTest(QMainWindow):
         pos_layout.addWidget(QLabel("X"))
         pos_layout.addWidget(self.inspector_fields["x"])
         
-        # Y
         self.inspector_fields["y"] = QDoubleSpinBox()
         self.inspector_fields["y"].setObjectName("InspectorNumberField")
         self.inspector_fields["y"].setDecimals(2)
@@ -291,7 +317,6 @@ class InterfaceSmokeTest(QMainWindow):
         pos_layout.addWidget(QLabel("Y"))
         pos_layout.addWidget(self.inspector_fields["y"])
         
-        # Z (2D padrão 0.00)
         pos_z = QDoubleSpinBox()
         pos_z.setObjectName("InspectorNumberField")
         pos_z.setDecimals(2)
@@ -300,7 +325,7 @@ class InterfaceSmokeTest(QMainWindow):
         pos_layout.addWidget(QLabel("Z"))
         pos_layout.addWidget(pos_z)
         
-        main_layout.addWidget(pos_widget)
+        trans_body_layout.addWidget(pos_widget)
         
         # 2. Rotação
         rot_widget = QWidget()
@@ -310,7 +335,6 @@ class InterfaceSmokeTest(QMainWindow):
         rot_lbl.setMinimumWidth(50)
         rot_layout.addWidget(rot_lbl)
         
-        # X (2D padrão 0.00)
         rot_x = QDoubleSpinBox()
         rot_x.setObjectName("InspectorNumberField")
         rot_x.setDecimals(2)
@@ -319,7 +343,6 @@ class InterfaceSmokeTest(QMainWindow):
         rot_layout.addWidget(QLabel("X"))
         rot_layout.addWidget(rot_x)
         
-        # Y (2D padrão 0.00)
         rot_y = QDoubleSpinBox()
         rot_y.setObjectName("InspectorNumberField")
         rot_y.setDecimals(2)
@@ -328,7 +351,6 @@ class InterfaceSmokeTest(QMainWindow):
         rot_layout.addWidget(QLabel("Y"))
         rot_layout.addWidget(rot_y)
         
-        # Z (Valor da rotação 2D real)
         self.inspector_fields["rotation"] = QDoubleSpinBox()
         self.inspector_fields["rotation"].setObjectName("InspectorNumberField")
         self.inspector_fields["rotation"].setDecimals(2)
@@ -337,7 +359,7 @@ class InterfaceSmokeTest(QMainWindow):
         rot_layout.addWidget(QLabel("Z"))
         rot_layout.addWidget(self.inspector_fields["rotation"])
         
-        main_layout.addWidget(rot_widget)
+        trans_body_layout.addWidget(rot_widget)
         
         # 3. Escala
         scale_widget = QWidget()
@@ -347,7 +369,6 @@ class InterfaceSmokeTest(QMainWindow):
         scale_lbl.setMinimumWidth(50)
         scale_layout.addWidget(scale_lbl)
         
-        # X
         self.inspector_fields["w"] = QDoubleSpinBox()
         self.inspector_fields["w"].setObjectName("InspectorNumberField")
         self.inspector_fields["w"].setDecimals(2)
@@ -356,7 +377,6 @@ class InterfaceSmokeTest(QMainWindow):
         scale_layout.addWidget(QLabel("X"))
         scale_layout.addWidget(self.inspector_fields["w"])
         
-        # Y
         self.inspector_fields["h"] = QDoubleSpinBox()
         self.inspector_fields["h"].setObjectName("InspectorNumberField")
         self.inspector_fields["h"].setDecimals(2)
@@ -365,7 +385,6 @@ class InterfaceSmokeTest(QMainWindow):
         scale_layout.addWidget(QLabel("Y"))
         scale_layout.addWidget(self.inspector_fields["h"])
         
-        # Z (2D padrão 1.00)
         scale_z = QDoubleSpinBox()
         scale_z.setObjectName("InspectorNumberField")
         scale_z.setDecimals(2)
@@ -374,7 +393,8 @@ class InterfaceSmokeTest(QMainWindow):
         scale_layout.addWidget(QLabel("Z"))
         scale_layout.addWidget(scale_z)
         
-        main_layout.addWidget(scale_widget)
+        trans_body_layout.addWidget(scale_widget)
+        main_layout.addWidget(trans_body)
 
         # ------------------ COMPONENTE: RIGIDBODY 2D ------------------
         rb_header = QWidget()
@@ -388,12 +408,42 @@ class InterfaceSmokeTest(QMainWindow):
         rb_h_layout.addWidget(self.show_rigidbody_chk)
         rb_h_layout.addStretch()
         
-        # Botão de excluir rígido
+        # Botões de encolher, desgrudar e excluir
+        btn_collapse_rb = QPushButton("▼")
+        btn_collapse_rb.setFixedSize(18, 18)
+        btn_collapse_rb.setStyleSheet("background: transparent; color: #aaaaaa; border: none; font-size: 11px;")
+        
+        btn_float_rb = QPushButton("⎋")
+        btn_float_rb.setFixedSize(18, 18)
+        btn_float_rb.setStyleSheet("background: transparent; color: #aaaaaa; border: none; font-size: 11px;")
+        
         self.btn_del_rb = QPushButton("✕")
         self.btn_del_rb.setFixedSize(18, 18)
         self.btn_del_rb.setStyleSheet("background: transparent; color: #ff5555; font-weight: bold; border: none;")
+        
+        rb_h_layout.addWidget(btn_collapse_rb)
+        rb_h_layout.addWidget(btn_float_rb)
         rb_h_layout.addWidget(self.btn_del_rb)
         main_layout.addWidget(rb_header)
+        
+        # Widget container para física
+        rb_body = QWidget()
+        rb_body_layout = QVBoxLayout(rb_body)
+        rb_body_layout.setContentsMargins(0, 0, 0, 0)
+        
+        btn_collapse_rb.clicked.connect(lambda: rb_body.setVisible(not rb_body.isVisible()))
+        
+        def make_rb_floating():
+            if rb_body.parent() == rb_body.window():
+                main_layout.insertWidget(main_layout.indexOf(rb_header) + 1, rb_body)
+                btn_float_rb.setText("⎋")
+            else:
+                rb_body.setParent(None)
+                rb_body.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
+                rb_body.setWindowTitle("RigidBody Component")
+                rb_body.show()
+                btn_float_rb.setText("⚓")
+        btn_float_rb.clicked.connect(make_rb_floating)
         
         self.physics_fields = {
             "use_gravity": QCheckBox(),
@@ -407,7 +457,8 @@ class InterfaceSmokeTest(QMainWindow):
         physics_lay.setContentsMargins(8, 0, 8, 0)
         physics_lay.addRow("Usar gravidade", self.physics_fields["use_gravity"])
         physics_lay.addRow("Cinemático", self.physics_fields["is_kinematic"])
-        main_layout.addWidget(physics_widget)
+        rb_body_layout.addWidget(physics_widget)
+        main_layout.addWidget(rb_body)
 
         # ------------------ COMPONENTE: COLLIDER 2D ------------------
         col_header = QWidget()
@@ -421,13 +472,43 @@ class InterfaceSmokeTest(QMainWindow):
         col_h_layout.addWidget(self.show_collider_chk)
         col_h_layout.addStretch()
         
-        # Botão de excluir collider
+        # Botões de encolher, desgrudar e excluir
+        btn_collapse_col = QPushButton("▼")
+        btn_collapse_col.setFixedSize(18, 18)
+        btn_collapse_col.setStyleSheet("background: transparent; color: #aaaaaa; border: none; font-size: 11px;")
+        
+        btn_float_col = QPushButton("⎋")
+        btn_float_col.setFixedSize(18, 18)
+        btn_float_col.setStyleSheet("background: transparent; color: #aaaaaa; border: none; font-size: 11px;")
+        
         self.btn_del_col = QPushButton("✕")
         self.btn_del_col.setFixedSize(18, 18)
         self.btn_del_col.setStyleSheet("background: transparent; color: #ff5555; font-weight: bold; border: none;")
+        
+        col_h_layout.addWidget(btn_collapse_col)
+        col_h_layout.addWidget(btn_float_col)
         col_h_layout.addWidget(self.btn_del_col)
         main_layout.addWidget(col_header)
-
+        
+        # Widget container para collider
+        col_body = QWidget()
+        col_body_layout = QVBoxLayout(col_body)
+        col_body_layout.setContentsMargins(0, 0, 0, 0)
+        
+        btn_collapse_col.clicked.connect(lambda: col_body.setVisible(not col_body.isVisible()))
+        
+        def make_col_floating():
+            if col_body.parent() == col_body.window():
+                main_layout.insertWidget(main_layout.indexOf(col_header) + 1, col_body)
+                btn_float_col.setText("⎋")
+            else:
+                col_body.setParent(None)
+                col_body.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
+                col_body.setWindowTitle("Collider Component")
+                col_body.show()
+                btn_float_col.setText("⚓")
+        btn_float_col.clicked.connect(make_col_floating)
+        
         collider_widget = QWidget()
         collider_lay = QFormLayout(collider_widget)
         collider_lay.setContentsMargins(8, 0, 8, 0)
@@ -444,7 +525,8 @@ class InterfaceSmokeTest(QMainWindow):
         self.collider_trigger_field = QCheckBox()
         self.collider_trigger_field.setObjectName("InspectorCheckBox")
         collider_lay.addRow("Collider Trigger", self.collider_trigger_field)
-        main_layout.addWidget(collider_widget)
+        col_body_layout.addWidget(collider_widget)
+        main_layout.addWidget(col_body)
 
         # ------------------ COMPONENTE: SCRIPTS (CUSTOM) ------------------
         script_header = QWidget()
