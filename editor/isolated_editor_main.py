@@ -14,7 +14,7 @@ from pathlib import Path
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QEvent, Qt, QTimer
-from PySide6.QtGui import QAction, QActionGroup
+from PySide6.QtGui import QAction, QActionGroup, QPixmap
 from PySide6.QtWidgets import QFileDialog, QInputDialog, QMenu, QToolBar
 from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem
 
@@ -49,16 +49,40 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._configure_main_menus()
         self._configure_tool_actions()
         self._configure_create_menu()
+        self._connect_create_panel()
         self._configure_edit_menu()
         self._refresh_assets()
+        self.assets_tree.itemClicked.connect(self._preview_asset)
         self._connect_hierarchy_to_viewport()
         self._refresh_hierarchy()
         self._connect_inspector_to_viewport()
+        self.add_component_button.clicked.connect(self._open_add_component_menu)
         self.viewport_host.installEventFilter(self)
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._event_timer = QTimer(self)
         self._event_timer.timeout.connect(self._read_viewport_events)
         self._event_timer.start(33)
+        self._log("INFO", "Zennity Phase 1 iniciado com Viewport em processo separado")
+
+    def _log(self, level: str, message: str) -> None:
+        self.console_output.appendPlainText(f"[{level}] {message}")
+
+    def _connect_create_panel(self) -> None:
+        for kind, button in self.create_buttons.items():
+            button.clicked.connect(lambda checked=False, object_kind=kind: self._create_object(object_kind))
+
+    def _preview_asset(self, item: QTreeWidgetItem) -> None:
+        path_value = item.toolTip(0)
+        if not path_value:
+            return
+        path = Path(path_value)
+        if path.suffix.lower() in {".png", ".jpg", ".jpeg", ".bmp", ".webp"}:
+            pixmap = QPixmap(str(path))
+            if not pixmap.isNull():
+                self.preview_label.setPixmap(pixmap.scaled(260, 130, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+                return
+        self.preview_label.clear()
+        self.preview_label.setText(f"{path.name}\n{path}")
 
     def attach_viewport_process(self, process: mp.Process) -> None:
         self._viewport_process = process
@@ -179,7 +203,12 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             if menu is None or menu.title() != "Criar":
                 continue
             menu.clear()
-            for label, kind in (("Empty Object", "Empty"), ("Player 2D", "Player"), ("Platform 2D", "Platform")):
+            for label, kind in (
+                ("Empty Object", "Empty"), ("Sprite 2D", "Sprite"),
+                ("Player 2D", "Player"), ("Platform 2D", "Platform"),
+                ("Enemy 2D", "Enemy"), ("Trigger 2D", "Trigger"),
+                ("Camera 2D", "Camera"),
+            ):
                 action = menu.addAction(label)
                 action.triggered.connect(lambda checked=False, object_kind=kind: self._create_object(object_kind))
             break
@@ -236,6 +265,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._refresh_hierarchy()
         self._commands.put({"type": "scene_snapshot", "objects": []})
         self.statusBar().showMessage("Nova cena criada")
+        self._log("INFO", "Nova cena criada")
 
     def _unique_name(self, base: str) -> str:
         if base not in self._objects_by_name:
@@ -249,8 +279,12 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._record_history()
         presets = {
             "Empty": ("GameObject", 40.0, 40.0, (160, 164, 174), None),
+            "Sprite": ("Sprite", 64.0, 64.0, (180, 180, 190), None),
             "Player": ("Player", 36.0, 48.0, (88, 117, 255), {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}),
             "Platform": ("Platform", 160.0, 32.0, (91, 194, 100), {"is_kinematic": True, "use_gravity": False}),
+            "Enemy": ("Enemy", 40.0, 40.0, (220, 88, 88), {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}),
+            "Trigger": ("Trigger", 80.0, 80.0, (222, 178, 72), {"is_kinematic": True, "use_gravity": False}),
+            "Camera": ("Camera2D", 96.0, 54.0, (110, 190, 210), None),
         }
         base, width, height, color, rigidbody = presets[kind]
         name = self._unique_name(base)
@@ -258,6 +292,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if rigidbody is not None:
             obj["rigidbody"] = rigidbody
             obj["collider"] = {"type": "box"}
+        if kind == "Trigger":
+            obj["collider"]["is_trigger"] = True
+        if kind == "Camera":
+            obj["component_names"] = ["Camera2D"]
         self._scene_snapshot.append(obj)
         self._objects_by_name[name] = obj
         self._selected_name = name
@@ -265,6 +303,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._commands.put({"type": "select_object", "name": name})
         self._update_inspector(name)
+        self._log("INFO", f"Objeto criado: {name}")
 
     def _save_scene_snapshot(self) -> None:
         filename, _ = QFileDialog.getSaveFileName(
@@ -305,6 +344,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._scene_document = payload
         self._current_scene_path = path
         self.statusBar().showMessage(f"Cena salva: {filename}")
+        self._log("INFO", f"Cena salva: {filename}")
 
     def _load_scene_snapshot(self) -> None:
         filename, _ = QFileDialog.getOpenFileName(
@@ -360,6 +400,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._refresh_hierarchy()
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self.statusBar().showMessage(f"Cena aberta: {filename}")
+        self._log("INFO", f"Cena aberta: {filename}")
 
     def _connect_hierarchy_to_viewport(self) -> None:
         self.hierarchy_tree.itemClicked.connect(self._select_hierarchy_item)
@@ -417,6 +458,33 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             field.valueChanged.connect(lambda _value: self._send_inspector_transform())
         for field in self.physics_fields.values():
             field.toggled.connect(lambda _checked: self._send_inspector_physics())
+
+    def _open_add_component_menu(self) -> None:
+        if self._selected_name not in self._objects_by_name:
+            return
+        menu = QMenu(self)
+        for label, component in (("RigidBody", "rigidbody"), ("Box Collider", "box"), ("Circle Collider", "circle"), ("Script", "script")):
+            action = menu.addAction(label)
+            action.triggered.connect(lambda _checked=False, value=component: self._add_component(value))
+        menu.exec(self.add_component_button.mapToGlobal(self.add_component_button.rect().bottomLeft()))
+
+    def _add_component(self, component: str) -> None:
+        if self._selected_name not in self._objects_by_name:
+            return
+        self._record_history()
+        obj = self._objects_by_name[self._selected_name]
+        if component == "rigidbody":
+            obj.setdefault("rigidbody", {"mass": 1.0, "gravity_scale": 1.0, "use_gravity": True, "is_kinematic": False})
+        elif component in {"box", "circle"}:
+            obj["collider"] = {"type": component, "is_trigger": False}
+        elif component == "script":
+            names = obj.setdefault("component_names", [])
+            if "ScriptComponent" not in names:
+                names.append("ScriptComponent")
+        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._commands.put({"type": "select_object", "name": self._selected_name})
+        self._update_inspector(self._selected_name)
+        self._log("INFO", f"Componente adicionado em {self._selected_name}: {component}")
 
     def _send_inspector_physics(self) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
@@ -509,6 +577,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self.statusBar().showMessage(
                     "Viewport: PLAY" if message["state"] == "play" else "Viewport: EDIT — cena restaurada"
                 )
+                self._log("INFO", "Play iniciado" if message["state"] == "play" else "Play finalizado; cena restaurada")
             elif message.get("type") == "scene_snapshot":
                 self._scene_snapshot = [dict(item) for item in message.get("objects", [])]
                 self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
@@ -518,6 +587,12 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             elif message.get("type") == "viewport_mode":
                 state = "embutida" if message.get("embedded") else "em janela separada (fallback)"
                 self.statusBar().showMessage(f"Viewport {state}")
+            elif message.get("type") == "stats":
+                self.profiler_label.setText(
+                    f"FPS: {message.get('fps', 0):.0f}\n"
+                    f"Objetos: {message.get('objects', 0)}\n"
+                    f"Modo: {message.get('mode', 'EDIT')}"
+                )
 
     def closeEvent(self, event) -> None:
         try:
