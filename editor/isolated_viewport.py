@@ -87,6 +87,7 @@ def run_viewport(
     playing = False
     edit_snapshot = deepcopy(objects)
     velocities_y: dict[str, float] = {}
+    last_stats_ms = 0
 
     while running:
         if commands is not None:
@@ -227,5 +228,9 @@ def run_viewport(
                         pygame.draw.rect(screen, (125, 212, 255), (point[0] - 4, point[1] - 4, 8, 8))
         pygame.display.flip()
         clock.tick(60)
+        now_ms = pygame.time.get_ticks()
+        if now_ms - last_stats_ms >= 500:
+            last_stats_ms = now_ms
+            _send(events, {"type": "stats", "fps": clock.get_fps(), "objects": len(objects), "mode": "PLAY" if playing else "EDIT"})
 
     pygame.quit()
