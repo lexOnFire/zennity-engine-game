@@ -38,12 +38,16 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
         self._selected_name: str | None = None
         self._updating_inspector = False
+        self._undo_stack: list[list[dict]] = []
+        self._redo_stack: list[list[dict]] = []
+        self._drag_history_snapshot: list[dict] | None = None
         self.setWindowTitle("Zennity — Interface isolada (PySide6)")
         self.statusBar().showMessage(
             "Viewport Pygame está em outra janela/processo. Arraste painéis aqui sem afetá-la."
         )
         self._connect_existing_toolbar_actions()
         self._configure_create_menu()
+        self._configure_edit_menu()
         self._build_viewport_link_toolbar()
         self._connect_hierarchy_to_viewport()
         self._refresh_hierarchy()
@@ -111,6 +115,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self._load_scene_snapshot()
             return
         if message.get("type") == "reset_from_interface":
+            self._record_history()
             self._scene_snapshot = deepcopy(self._initial_scene_snapshot)
             self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
             self._refresh_hierarchy()
@@ -118,6 +123,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             if self._selected_name in self._objects_by_name:
                 self._update_inspector(self._selected_name)
             return
+        if message.get("type") == "move_selected" and self._selected_name is not None:
+            self._record_history()
         self._commands.put(message)
 
     def _configure_create_menu(self) -> None:
@@ -131,7 +138,50 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 action.triggered.connect(lambda checked=False, object_kind=kind: self._create_object(object_kind))
             break
 
+    def _configure_edit_menu(self) -> None:
+        for menu_action in self.menuBar().actions():
+            menu = menu_action.menu()
+            if menu is None or menu.title() != "Editar":
+                continue
+            menu.clear()
+            undo_action = menu.addAction("Desfazer")
+            undo_action.setShortcut("Ctrl+Z")
+            undo_action.triggered.connect(self._undo)
+            redo_action = menu.addAction("Refazer")
+            redo_action.setShortcut("Ctrl+Y")
+            redo_action.triggered.connect(self._redo)
+            break
+
+    def _record_history(self, snapshot: list[dict] | None = None) -> None:
+        state = deepcopy(snapshot if snapshot is not None else self._scene_snapshot)
+        if not self._undo_stack or self._undo_stack[-1] != state:
+            self._undo_stack.append(state)
+            self._undo_stack = self._undo_stack[-100:]
+        self._redo_stack.clear()
+
+    def _restore_history(self, snapshot: list[dict]) -> None:
+        self._scene_snapshot = deepcopy(snapshot)
+        self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
+        if self._selected_name not in self._objects_by_name:
+            self._selected_name = None
+        self._refresh_hierarchy()
+        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        if self._selected_name is not None:
+            self._commands.put({"type": "select_object", "name": self._selected_name})
+            self._update_inspector(self._selected_name)
+
+    def _undo(self) -> None:
+        if self._undo_stack:
+            self._redo_stack.append(deepcopy(self._scene_snapshot))
+            self._restore_history(self._undo_stack.pop())
+
+    def _redo(self) -> None:
+        if self._redo_stack:
+            self._undo_stack.append(deepcopy(self._scene_snapshot))
+            self._restore_history(self._redo_stack.pop())
+
     def _new_scene(self) -> None:
+        self._record_history()
         self._scene_snapshot = []
         self._objects_by_name = {}
         self._scene_document = {"format_version": 1, "scene_name": "Untitled", "engine_version": "Zennity 0.1.0", "objects": []}
@@ -150,6 +200,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         return f"{base}_{index}"
 
     def _create_object(self, kind: str) -> None:
+        self._record_history()
         presets = {
             "Empty": ("GameObject", 40.0, 40.0, (160, 164, 174), None),
             "Player": ("Player", 36.0, 48.0, (88, 117, 255), {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}),
@@ -245,6 +296,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if not snapshots and objects:
             self.statusBar().showMessage("Falha ao abrir cena: nenhum objeto compatível")
             return
+        self._record_history()
         self._scene_snapshot = snapshots
         self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
         self._scene_document = payload if any("transform" in item for item in objects if isinstance(item, dict)) else None
@@ -275,6 +327,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         new_name = new_name.strip()
         if not accepted or not new_name or (new_name != old_name and new_name in self._objects_by_name):
             return
+        self._record_history()
         obj = self._objects_by_name.pop(old_name)
         obj["name"] = new_name
         self._objects_by_name[new_name] = obj
@@ -286,6 +339,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._update_inspector(new_name)
 
     def _delete_object(self, name: str) -> None:
+        self._record_history()
         self._scene_snapshot = [obj for obj in self._scene_snapshot if obj["name"] != name]
         self._objects_by_name.pop(name, None)
         if self._selected_name == name:
@@ -316,6 +370,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         rigidbody = obj.get("rigidbody")
         if rigidbody is None:
             return
+        self._record_history()
         rigidbody["use_gravity"] = self.physics_fields["use_gravity"].isChecked()
         rigidbody["is_kinematic"] = self.physics_fields["is_kinematic"].isChecked()
         self._commands.put({"type": "set_physics", "name": self._selected_name, "rigidbody": rigidbody})
@@ -324,6 +379,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
             return
         obj = self._objects_by_name[self._selected_name]
+        self._record_history()
         for key, field in self.inspector_fields.items():
             obj[key] = float(field.value())
         self._commands.put({"type": "set_transform", "name": self._selected_name, **{k: obj[k] for k in ("x", "y", "w", "h")}})
@@ -362,6 +418,12 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self._selected_name = message["name"]
                 self._update_inspector(self._selected_name)
                 self.statusBar().showMessage(f"Viewport: {self._selected_name} selecionado")
+            elif message.get("type") == "transform_begin":
+                self._drag_history_snapshot = deepcopy(self._scene_snapshot)
+            elif message.get("type") == "transform_end":
+                if self._drag_history_snapshot is not None and self._drag_history_snapshot != self._scene_snapshot:
+                    self._record_history(self._drag_history_snapshot)
+                self._drag_history_snapshot = None
             elif message.get("type") == "transform":
                 obj = self._objects_by_name.get(message["name"])
                 if obj is not None:
