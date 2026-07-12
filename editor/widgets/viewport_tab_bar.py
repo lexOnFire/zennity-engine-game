@@ -124,6 +124,15 @@ class ViewportTabBar(QWidget):
         self._refresh_styles()
         self._on_change(mode)
 
+    def force_switch(self, mode: str) -> None:
+        """
+        Força a troca visual da aba sem passar pela guarda de modo atual.
+        Usado pelo MainWindow para sincronizar a aba com o estado de play/stop
+        sem disparar o callback _on_change (que causaria double-emit).
+        """
+        self._current = mode
+        self._refresh_styles()
+
     def _refresh_styles(self) -> None:
         self._btn_scene.setStyleSheet(_btn_style(self._current == "scene"))
         self._btn_game.setStyleSheet(_btn_style(self._current == "game"))
@@ -165,18 +174,20 @@ class _GameViewport(ViewportWidget):
             return
 
         if self._game_mode:
+            # Modo Game: renderização própria sem grid, com câmera ativa
             self._render_game_view()
+            raw = pygame.image.tostring(self.pg_surface, "RGBA")
+            img = QImage(
+                raw, self._vp_w, self._vp_h,
+                self._vp_w * 4, QImage.Format_RGBA8888,
+            )
+            p = QPainter(self)
+            p.drawImage(0, 0, img)
+            p.end()
         else:
-            self.active_scene.draw(self.pg_surface)
-
-        raw = pygame.image.tostring(self.pg_surface, "RGBA")
-        img = QImage(
-            raw, self._vp_w, self._vp_h,
-            self._vp_w * 4, QImage.Format_RGBA8888,
-        )
-        p = QPainter(self)
-        p.drawImage(0, 0, img)
-        p.end()
+            # Modo Scene: delega inteiramente ao pai para respeitar os shims
+            # aplicados por _apply_qt_shims() (grid, draw monkey-patch, etc.)
+            super().paintGL()
 
     # ------------------------------------------------------------------
     # Renderização Game
@@ -423,24 +434,13 @@ class ViewportContainer(QWidget):
 
     def _on_tab_changed(self, mode: str) -> None:
         """
-        Chamado quando o usuário clica em Scene ou Game.
-          - Scene → modo normal (grid visível)
-          - Game  → modo jogo (sem grid, câmera ativa)
+        Chamado quando o usuário clica manualmente em Scene ou Game.
+
+        Responsabilidade única: atualizar o modo de renderização da viewport.
+        O controle de play/stop é responsabilidade exclusiva do MainWindow
+        via EventBus — não emitimos EVENT_PLAY_STATE_CHANGED aqui para evitar
+        double-emit com on_play_clicked / on_stop_clicked.
         """
         game = mode == "game"
         self._viewport.set_game_mode(game)
-
-        # Ativa/pausa o play da cena de acordo com a aba
-        scene = self._viewport.active_scene
-        if scene and hasattr(scene, "playing"):
-            if game and not scene.playing:
-                # Entra no playmode
-                from editor.core.event_bus import EventBus, EVENT_PLAY_STATE_CHANGED
-                EventBus.emit(EVENT_PLAY_STATE_CHANGED, state="play")
-            elif not game and scene.playing:
-                # Volta ao editor
-                from editor.core.event_bus import EventBus, EVENT_PLAY_STATE_CHANGED
-                EventBus.emit(EVENT_PLAY_STATE_CHANGED, state="stop")
-
-        # Força redesenho imediato
         self._viewport.update()
