@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import math
+import os
+import sys
 from copy import deepcopy
 from queue import Empty
 from typing import Any
@@ -16,12 +18,45 @@ def _send(events: Any, payload: dict[str, Any]) -> None:
         pass
 
 
-def run_viewport(commands: Any = None, events: Any = None) -> None:
+def _attach_native_window(pygame: Any, parent_window_id: int | None, width: int, height: int) -> bool:
+    if not parent_window_id:
+        return False
+    if sys.platform != "win32":
+        return bool(os.environ.get("SDL_WINDOWID"))
+    try:
+        import ctypes
+
+        hwnd = int(pygame.display.get_wm_info().get("window", 0))
+        if not hwnd:
+            return False
+        if hwnd == int(parent_window_id):
+            return True
+        user32 = ctypes.windll.user32
+        user32.SetParent(hwnd, int(parent_window_id))
+        style = user32.GetWindowLongW(hwnd, -16)
+        style &= ~(0x00C00000 | 0x00040000 | 0x00020000 | 0x00010000)
+        user32.SetWindowLongW(hwnd, -16, style)
+        user32.MoveWindow(hwnd, 0, 0, int(width), int(height), True)
+        return True
+    except Exception:
+        return False
+
+
+def run_viewport(
+    commands: Any = None,
+    events: Any = None,
+    parent_window_id: int | None = None,
+    initial_size: tuple[int, int] = (900, 700),
+) -> None:
     import pygame
 
+    if parent_window_id:
+        os.environ["SDL_WINDOWID"] = str(parent_window_id)
     pygame.init()
-    screen = pygame.display.set_mode((900, 700), pygame.RESIZABLE)
+    screen = pygame.display.set_mode(initial_size, pygame.RESIZABLE)
     pygame.display.set_caption("Zennity — Viewport isolada (Pygame)")
+    embedded = _attach_native_window(pygame, parent_window_id, *initial_size)
+    _send(events, {"type": "viewport_mode", "embedded": embedded})
     clock = pygame.time.Clock()
     running = True
     objects = {
@@ -43,6 +78,10 @@ def run_viewport(commands: Any = None, events: Any = None) -> None:
                     break
                 if command.get("type") == "shutdown":
                     running = False
+                elif command.get("type") == "viewport_size":
+                    new_size = (max(32, int(command.get("w", 32))), max(32, int(command.get("h", 32))))
+                    screen = pygame.display.set_mode(new_size, pygame.RESIZABLE)
+                    _attach_native_window(pygame, parent_window_id, *new_size)
                 elif command.get("type") == "scene_snapshot":
                     objects = {item["name"]: dict(item) for item in command.get("objects", [])}
                     edit_snapshot = deepcopy(objects)
