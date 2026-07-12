@@ -344,7 +344,6 @@ def run_viewport(
         loaded = sum(len(instances) for instances in script_instances.values())
         level = "INFO" if loaded else "WARNING"
         _send(events, {"type": "script_log", "level": level, "message": f"Play Mode carregou {loaded} script(s) executável(is)"})
-        start_audio_sources()
 
     def stop_scripts() -> None:
         stop_audio_sources()
@@ -778,6 +777,14 @@ def run_viewport(
                     elif paused:
                         paused = False
                         _send(events, {"type": "play_state", "state": "play"})
+                elif command.get("type") == "start_play_audio":
+                    incoming_audio = command.get("audio_sources", {})
+                    if isinstance(incoming_audio, dict):
+                        for object_name, audio_config in incoming_audio.items():
+                            if object_name in objects and isinstance(audio_config, dict):
+                                objects[object_name]["audio"] = dict(audio_config)
+                    _send(events, {"type": "script_log", "level": "INFO", "message": "Comando dedicado de áudio recebido pelo Play Mode"})
+                    start_audio_sources()
                 elif command.get("type") == "pause":
                     if playing:
                         paused = not paused
