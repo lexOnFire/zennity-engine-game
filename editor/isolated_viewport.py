@@ -81,6 +81,9 @@ def run_viewport(
     objects: dict[str, dict[str, Any]] = {}
     dragging = False
     selected_name: str | None = None
+    active_tool = "select"
+    drag_start_mouse = (0.0, 0.0)
+    drag_start_object: dict[str, Any] = {}
     playing = False
     edit_snapshot = deepcopy(objects)
     velocities_y: dict[str, float] = {}
@@ -104,6 +107,10 @@ def run_viewport(
                     selected_name = None
                     playing = False
                     velocities_y = {}
+                elif command.get("type") == "set_tool":
+                    tool = str(command.get("tool", "select")).lower()
+                    if tool in {"select", "move", "rotate", "scale"}:
+                        active_tool = tool
                 elif command.get("type") == "play":
                     if not playing:
                         edit_snapshot = deepcopy(objects)
@@ -150,8 +157,13 @@ def run_viewport(
                     if abs(event.pos[0] - obj["x"]) <= obj["w"] / 2 and abs(event.pos[1] - obj["y"]) <= obj["h"] / 2:
                         dragging = True
                         selected_name = name
+                        drag_start_mouse = (float(event.pos[0]), float(event.pos[1]))
+                        drag_start_object = deepcopy(obj)
                         _send(events, {"type": "selected", "name": name})
-                        _send(events, {"type": "transform_begin", "name": name})
+                        if active_tool != "select":
+                            _send(events, {"type": "transform_begin", "name": name})
+                        else:
+                            dragging = False
                         break
             elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 if dragging and selected_name is not None:
@@ -159,8 +171,17 @@ def run_viewport(
                 dragging = False
             elif event.type == pygame.MOUSEMOTION and dragging and not playing:
                 if selected_name in objects:
-                    objects[selected_name]["x"], objects[selected_name]["y"] = map(float, event.pos)
-                    _send(events, {"type": "transform", "name": selected_name, "x": event.pos[0], "y": event.pos[1]})
+                    obj = objects[selected_name]
+                    if active_tool == "move":
+                        obj["x"], obj["y"] = map(float, event.pos)
+                    elif active_tool == "rotate":
+                        obj["rotation"] = math.degrees(math.atan2(event.pos[1] - obj["y"], event.pos[0] - obj["x"]))
+                    elif active_tool == "scale":
+                        dx = float(event.pos[0]) - drag_start_mouse[0]
+                        dy = float(event.pos[1]) - drag_start_mouse[1]
+                        obj["w"] = max(1.0, float(drag_start_object.get("w", obj["w"])) + dx * 2.0)
+                        obj["h"] = max(1.0, float(drag_start_object.get("h", obj["h"])) + dy * 2.0)
+                    _send(events, {"type": "transform", "name": selected_name, **{key: obj.get(key, 0.0) for key in ("x", "y", "w", "h", "rotation")}})
 
         width, height = screen.get_size()
         dt = clock.get_time() / 1000.0
@@ -190,11 +211,20 @@ def run_viewport(
         pygame.draw.line(screen, (112, 120, 142), (0, height // 2), (width, height // 2), 2)
         for name, obj in objects.items():
             box = pygame.Rect(int(obj["x"] - obj["w"] / 2), int(obj["y"] - obj["h"] / 2), int(obj["w"]), int(obj["h"]))
-            pygame.draw.rect(screen, tuple(obj.get("color", (180, 180, 180))), box, border_radius=4)
+            object_surface = pygame.Surface((max(1, box.width), max(1, box.height)), pygame.SRCALPHA)
+            pygame.draw.rect(object_surface, tuple(obj.get("color", (180, 180, 180))), object_surface.get_rect(), border_radius=4)
+            rotated = pygame.transform.rotate(object_surface, -float(obj.get("rotation", 0.0)))
+            screen.blit(rotated, rotated.get_rect(center=(obj["x"], obj["y"])))
             if name == selected_name:
                 pygame.draw.rect(screen, (125, 212, 255), box.inflate(8, 8), 2, border_radius=4)
-                pygame.draw.line(screen, (245, 78, 78), (obj["x"], obj["y"]), (obj["x"] + 92, obj["y"]), 4)
-                pygame.draw.line(screen, (82, 211, 106), (obj["x"], obj["y"]), (obj["x"], obj["y"] - 92), 4)
+                if active_tool == "move":
+                    pygame.draw.line(screen, (245, 78, 78), (obj["x"], obj["y"]), (obj["x"] + 92, obj["y"]), 4)
+                    pygame.draw.line(screen, (82, 211, 106), (obj["x"], obj["y"]), (obj["x"], obj["y"] - 92), 4)
+                elif active_tool == "rotate":
+                    pygame.draw.circle(screen, (245, 194, 78), (int(obj["x"]), int(obj["y"])), int(max(obj["w"], obj["h"]) / 2 + 20), 3)
+                elif active_tool == "scale":
+                    for point in (box.topleft, box.topright, box.bottomleft, box.bottomright):
+                        pygame.draw.rect(screen, (125, 212, 255), (point[0] - 4, point[1] - 4, 8, 8))
         pygame.display.flip()
         clock.tick(60)
 
