@@ -59,21 +59,21 @@ class InterfaceSmokeTest(QMainWindow):
         self.addToolBar(toolbar)
         self.toolbar_actions = {}
         
-        # Mapeamento de rótulos originais para ícones unicode modernos baseados no layout da imagem
+        # Mapeamento de rótulos originais para ícones unicode modernos baseados no layout do motor de jogo pixel art
         icons = {
-            "Novo": "📄",
-            "Abrir": "📁",
+            "Novo": "📋",
+            "Abrir": "📂",
             "Salvar": "💾",
             "Desfazer": "↶",
             "Refazer": "↷",
             "Select": "⛶",
-            "Move": "✥",
-            "Rotate": "↻",
-            "Scale": "⤢",
-            "Snap: OFF": "🧲",
-            "Play": "▶",
-            "Pause": "❚❚",
-            "Stop": "■"
+            "Move": "✛",
+            "Rotate": "🔄",
+            "Scale": "📐",
+            "Snap: OFF": "⚙️",
+            "Play": "🎮",
+            "Pause": "⏸️",
+            "Stop": "⏹️"
         }
         
         for label, icon in icons.items():
