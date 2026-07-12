@@ -20,6 +20,7 @@ from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QWidget
 
 from editor.interface_smoke_test import InterfaceSmokeTest
 from editor.isolated_viewport import run_viewport
+from editor.script_templates import build_isolated_script_template, inspect_script_contract
 
 
 class IsolatedEditorWindow(InterfaceSmokeTest):
@@ -177,6 +178,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if script_path in obj.get("scripts", []):
             self.statusBar().showMessage(f"Script já anexado: {path.name}")
             return
+        compatible, reason = inspect_script_contract(path)
+        if not compatible:
+            self._log("WARNING", f"Script anexado, mas incompatível com Play isolado: {path.name}: {reason}")
         self._record_history()
         scripts = obj.setdefault("scripts", [])
         scripts.append(script_path)
@@ -199,19 +203,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             path = path.with_suffix(".py")
         path.parent.mkdir(parents=True, exist_ok=True)
         if not path.exists():
-            path.write_text(
-                '"""Script Zennity para a viewport isolada."""\n\n'
-                "\n"
-                "def isolated_start(obj):\n"
-                "    pass\n\n"
-                "\n"
-                "def isolated_update(obj, input_state, dt):\n"
-                "    pass\n\n"
-                "\n"
-                "def isolated_stop(obj):\n"
-                "    pass\n",
-                encoding="utf-8",
-            )
+            path.write_text(build_isolated_script_template(path.stem), encoding="utf-8")
         self._refresh_assets()
         self._attach_script(self._selected_name, path)
         self._edit_script_path(path)
@@ -706,8 +698,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         # Conecta checkboxes de habilitação de componentes
         self.show_rigidbody_chk.toggled.connect(self._toggle_rigidbody_component)
         self.show_collider_chk.toggled.connect(self._toggle_collider_component)
-        
-        # Conecta os botões "x" para exclusão rápida dos componentes
         self.btn_del_rb.clicked.connect(lambda: self.show_rigidbody_chk.setChecked(False))
         self.btn_del_col.clicked.connect(lambda: self.show_collider_chk.setChecked(False))
 
