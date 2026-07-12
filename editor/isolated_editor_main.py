@@ -805,7 +805,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 components = {}
                 source["components"] = components
             components.pop("controller", None)
-            for key in ("rigidbody", "collider", "camera", "scripts"):
+            for key in ("rigidbody", "collider", "camera", "audio", "scripts"):
                 components.pop(key, None)
             if snapshot.get("rigidbody") is not None:
                 components["rigidbody"] = deepcopy(snapshot["rigidbody"])
@@ -818,10 +818,12 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 components["camera"] = deepcopy(snapshot.get("camera") or {"active": True, "zoom": 1.0})
             if snapshot.get("scripts"):
                 components["scripts"] = list(dict.fromkeys(str(path) for path in snapshot["scripts"]))
+            if isinstance(snapshot.get("audio"), dict):
+                components["audio"] = deepcopy(snapshot["audio"])
             known_keys = {
                 "id", "name", "x", "y", "w", "h", "rotation", "color", "mesh_type",
                 "renderer_enabled", "material", "texture", "render_layer", "sort_order", "active", "static", "tag", "layer",
-                "rigidbody", "collider", "camera", "scripts", "component_names",
+                "rigidbody", "collider", "camera", "audio", "scripts", "component_names",
             }
             editor_data = {
                 key: deepcopy(value) for key, value in snapshot.items()
@@ -876,6 +878,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     snapshot["collider"] = deepcopy(components["collider"])
                 if isinstance(components.get("camera"), dict):
                     snapshot["camera"] = deepcopy(components["camera"])
+                if isinstance(components.get("audio"), dict):
+                    snapshot["audio"] = deepcopy(components["audio"])
                 component_names = ["Camera2D"] if isinstance(components.get("camera"), dict) else []
                 for component in components.get("items", []):
                     if isinstance(component, dict):
@@ -1033,6 +1037,15 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.sprite_color_button.clicked.connect(self._choose_sprite_color)
         self.sprite_layer_combo.currentTextChanged.connect(lambda _text: self._send_inspector_renderer())
         self.sprite_order_field.valueChanged.connect(lambda _value: self._send_inspector_renderer())
+        self.btn_collapse_renderer.clicked.connect(lambda: self.sprite_renderer_body.setVisible(not self.sprite_renderer_body.isVisible()))
+        self.btn_delete_renderer.clicked.connect(lambda: self.show_renderer_chk.setChecked(False))
+        self.show_audio_chk.toggled.connect(self._toggle_audio_component)
+        self.btn_collapse_audio.clicked.connect(lambda: self.audio_source_body.setVisible(not self.audio_source_body.isVisible()))
+        self.btn_delete_audio.clicked.connect(lambda: self.show_audio_chk.setChecked(False))
+        self.audio_path_button.clicked.connect(self._choose_audio_asset)
+        self.audio_volume_field.valueChanged.connect(lambda _value: self._send_inspector_audio())
+        self.audio_loop_field.toggled.connect(lambda _value: self._send_inspector_audio())
+        self.audio_autoplay_field.toggled.connect(lambda _value: self._send_inspector_audio())
         self.animator_clip_combo.currentTextChanged.connect(lambda _text: self._send_inspector_animator())
         self.animator_speed_field.valueChanged.connect(lambda _value: self._send_inspector_animator())
 
@@ -1042,6 +1055,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._record_history()
         self._objects_by_name[self._selected_name]["renderer_enabled"] = bool(checked)
         self._send_inspector_renderer(record_history=False)
+        self._update_inspector(self._selected_name)
 
     def _choose_sprite_texture(self) -> None:
         if self._selected_name not in self._objects_by_name:
@@ -1089,6 +1103,53 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         obj["texture"] = self.sprite_texture_field.text().strip()
         obj["render_layer"] = self.sprite_layer_combo.currentText()
         obj["sort_order"] = int(self.sprite_order_field.value())
+        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+
+    def _toggle_audio_component(self, checked: bool) -> None:
+        if self._updating_inspector or self._selected_name not in self._objects_by_name:
+            return
+        self._record_history()
+        obj = self._objects_by_name[self._selected_name]
+        if checked:
+            obj.setdefault("audio", {"path": "", "volume": 1.0, "loop": False, "autoplay": False})
+        else:
+            obj.pop("audio", None)
+        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._update_inspector(self._selected_name)
+
+    def _choose_audio_asset(self) -> None:
+        if self._selected_name not in self._objects_by_name:
+            return
+        filename, _ = QFileDialog.getOpenFileName(self, "Selecionar áudio", str(Path.cwd() / "Assets"), "Áudio (*.wav *.ogg *.mp3)")
+        if not filename:
+            return
+        source = Path(filename)
+        try:
+            audio_path = str(source.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
+        except ValueError:
+            audio_dir = Path.cwd() / "Assets" / "Audio"
+            audio_dir.mkdir(parents=True, exist_ok=True)
+            destination = audio_dir / source.name
+            if not destination.exists():
+                shutil.copy2(source, destination)
+            audio_path = str(destination.relative_to(Path.cwd())).replace("\\", "/")
+            self._refresh_assets()
+        self.audio_path_field.setText(audio_path)
+        self._send_inspector_audio()
+
+    def _send_inspector_audio(self) -> None:
+        if self._updating_inspector or self._selected_name not in self._objects_by_name:
+            return
+        obj = self._objects_by_name[self._selected_name]
+        if not isinstance(obj.get("audio"), dict):
+            return
+        self._record_history()
+        obj["audio"].update({
+            "path": self.audio_path_field.text().strip(),
+            "volume": float(self.audio_volume_field.value()),
+            "loop": self.audio_loop_field.isChecked(),
+            "autoplay": self.audio_autoplay_field.isChecked(),
+        })
         self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
 
     def _toggle_rigidbody_component(self, checked: bool) -> None:
@@ -1144,7 +1205,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if self._selected_name not in self._objects_by_name:
             return
         menu = QMenu(self)
-        for label, component in (("RigidBody", "rigidbody"), ("Box Collider", "box"), ("Circle Collider", "circle"), ("Script", "script"), ("Animator", "animator")):
+        for label, component in (("Sprite Renderer", "sprite"), ("Audio Source", "audio"), ("Animator 2D", "animator"), ("RigidBody", "rigidbody"), ("Box Collider", "box"), ("Circle Collider", "circle"), ("Script", "script")):
             action = menu.addAction(label)
             action.triggered.connect(lambda _checked=False, value=component: self._add_component(value))
         menu.exec(self.add_component_button.mapToGlobal(self.add_component_button.rect().bottomLeft()))
@@ -1176,7 +1237,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             return
         self._record_history()
         obj = self._objects_by_name[self._selected_name]
-        if component == "rigidbody":
+        if component == "sprite":
+            obj["renderer_enabled"] = True
+        elif component == "audio":
+            obj.setdefault("audio", {"path": "", "volume": 1.0, "loop": False, "autoplay": False})
+        elif component == "rigidbody":
             obj.setdefault("rigidbody", {"mass": 1.0, "gravity_scale": 1.0, "use_gravity": True, "is_kinematic": False})
         elif component in {"box", "circle"}:
             obj["collider"] = {"type": component, "is_trigger": False}
@@ -1251,6 +1316,13 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self.sprite_layer_combo.addItem(layer)
             self.sprite_layer_combo.setCurrentText(layer)
             self.sprite_order_field.setValue(float(obj.get("sort_order", 0)))
+            audio = obj.get("audio") if isinstance(obj.get("audio"), dict) else None
+            self.show_audio_chk.setChecked(audio is not None)
+            self.audio_source_body.setEnabled(audio is not None)
+            self.audio_path_field.setText(str((audio or {}).get("path", "")))
+            self.audio_volume_field.setValue(float((audio or {}).get("volume", 1.0)))
+            self.audio_loop_field.setChecked(bool((audio or {}).get("loop", False)))
+            self.audio_autoplay_field.setChecked(bool((audio or {}).get("autoplay", False)))
             rigidbody = obj.get("rigidbody")
             self.show_rigidbody_chk.setChecked(rigidbody is not None)
             for key, field in self.physics_fields.items():
