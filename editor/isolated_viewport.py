@@ -74,6 +74,10 @@ class PlayScriptAPI:
         self.obj["active"] = bool(value)
 
     @property
+    def tag(self) -> str:
+        return str(self.obj.get("tag", self.obj.get("name", "Untagged")))
+
+    @property
     def state(self) -> dict[str, Any]:
         return self.obj.setdefault("_script_state", {})
 
@@ -217,6 +221,7 @@ def run_viewport(
     grounded: dict[str, bool] = {}
     script_instances: dict[str, list[tuple[str, Any]]] = {}
     script_apis: dict[str, PlayScriptAPI] = {}
+    active_contacts: dict[tuple[str, str], bool] = {}
     forwarded_input = {key: False for key in ("left", "right", "up", "down", "jump")}
     last_stats_ms = 0
 
@@ -283,8 +288,20 @@ def run_viewport(
                                     module = bundled_module
                                     update = bundled_update
                                     update_mode = "simple"
+                    event_hooks = ("on_collision", "on_collision_exit", "on_trigger", "on_trigger_exit")
+                    if not callable(update) and any(callable(getattr(module, hook, None)) for hook in event_hooks):
+                        update = lambda game, dt: None
+                        update_mode = "simple"
                     if not callable(update):
                         raise TypeError("defina on_update(game, dt), isolated_update(...) ou update(obj, dt)")
+                    overrides = obj.get("script_properties", {}).get(str(script_path), {})
+                    if isinstance(overrides, dict):
+                        config = getattr(module, "CONFIG", None)
+                        for key, value in overrides.items():
+                            if isinstance(config, dict) and key in config:
+                                config[key] = value
+                            elif str(key).isupper() and hasattr(module, str(key)):
+                                setattr(module, str(key), value)
                     module._zennity_update_hook = update
                     module._zennity_update_mode = update_mode
                     api = script_apis.setdefault(name, PlayScriptAPI(name, obj, events, objects))
@@ -321,6 +338,63 @@ def run_viewport(
                     _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}: {exc}"})
         script_instances.clear()
         script_apis.clear()
+        active_contacts.clear()
+
+    def collider_bounds(obj: dict[str, Any]) -> tuple[float, float, float, float]:
+        collider = obj.get("collider") or {}
+        angle = math.radians(float(obj.get("rotation", 0.0)))
+        offset_x = float(collider.get("offset_x", 0.0))
+        offset_y = float(collider.get("offset_y", 0.0))
+        center_x = float(obj.get("x", 0.0)) + offset_x * math.cos(angle) - offset_y * math.sin(angle)
+        center_y = float(obj.get("y", 0.0)) + offset_x * math.sin(angle) + offset_y * math.cos(angle)
+        if str(collider.get("type", "box")).lower() == "circle":
+            width = height = float(collider.get("radius", min(obj.get("w", 1.0), obj.get("h", 1.0)) / 2.0)) * 2.0
+        else:
+            width = float(collider.get("width", obj.get("w", 1.0)))
+            height = float(collider.get("height", obj.get("h", 1.0)))
+            cosine, sine = abs(math.cos(angle)), abs(math.sin(angle))
+            width, height = width * cosine + height * sine, width * sine + height * cosine
+        return center_x - width / 2.0, center_y - height / 2.0, center_x + width / 2.0, center_y + height / 2.0
+
+    def dispatch_contact(name: str, other_name: str, hook_name: str) -> None:
+        obj = objects.get(name)
+        other_obj = objects.get(other_name)
+        if obj is None or other_obj is None:
+            return
+        game = script_apis.get(name) or PlayScriptAPI(name, obj, events, objects)
+        other = PlayScriptAPI(other_name, other_obj, events, objects)
+        for path, module in list(script_instances.get(name, [])):
+            hook = getattr(module, hook_name, None)
+            if not callable(hook):
+                continue
+            try:
+                hook(game, other)
+            except Exception as exc:
+                _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}:{hook_name}: {exc}"})
+
+    def process_contacts() -> None:
+        current: dict[tuple[str, str], bool] = {}
+        collidable = [(name, obj) for name, obj in objects.items() if obj.get("active", True) and isinstance(obj.get("collider"), dict)]
+        for index, (name_a, obj_a) in enumerate(collidable):
+            left_a, top_a, right_a, bottom_a = collider_bounds(obj_a)
+            for name_b, obj_b in collidable[index + 1:]:
+                left_b, top_b, right_b, bottom_b = collider_bounds(obj_b)
+                if right_a < left_b or right_b < left_a or bottom_a < top_b or bottom_b < top_a:
+                    continue
+                pair = tuple(sorted((name_a, name_b)))
+                is_trigger = bool(obj_a["collider"].get("is_trigger") or obj_b["collider"].get("is_trigger"))
+                current[pair] = is_trigger
+                if pair not in active_contacts:
+                    hook = "on_trigger" if is_trigger else "on_collision"
+                    dispatch_contact(name_a, name_b, hook)
+                    dispatch_contact(name_b, name_a, hook)
+        for pair, was_trigger in list(active_contacts.items()):
+            if pair not in current:
+                hook = "on_trigger_exit" if was_trigger else "on_collision_exit"
+                dispatch_contact(pair[0], pair[1], hook)
+                dispatch_contact(pair[1], pair[0], hook)
+        active_contacts.clear()
+        active_contacts.update(current)
 
     def view_transform() -> tuple[float, float, float]:
         if view_mode == "game":
@@ -761,7 +835,12 @@ def run_viewport(
                 if obj.pop("_jump_requested", False) and grounded.get(name, False):
                     velocities_y[name] = -float(obj.pop("_jump_force", 420.0))
                     grounded[name] = False
-            static_colliders = [obj for obj in objects.values() if obj.get("collider") and (obj.get("rigidbody") or {}).get("is_kinematic", True)]
+            static_colliders = [
+                obj for obj in objects.values()
+                if obj.get("collider")
+                and not obj["collider"].get("is_trigger", False)
+                and (obj.get("rigidbody") or {}).get("is_kinematic", True)
+            ]
             for name, obj in objects.items():
                 rigidbody = obj.get("rigidbody") or {}
                 if rigidbody.get("is_kinematic", False) or not rigidbody.get("use_gravity", False):
@@ -780,6 +859,7 @@ def run_viewport(
                         grounded[name] = True
                         break
                 velocities_y[name] = velocity
+            process_contacts()
         screen.fill((22, 24, 31))
         if view_mode == "scene":
             grid_spacing = max(8.0, 32.0 * zoom)
