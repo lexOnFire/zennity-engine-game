@@ -32,6 +32,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             {"name": "Player", "x": 450.0, "y": 250.0, "w": 36.0, "h": 48.0, "color": (88, 117, 255)},
         ]
         self._scene_snapshot = deepcopy(self._initial_scene_snapshot)
+        self._scene_document: dict | None = None
+        self._current_scene_path: Path | None = None
         self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
         self._selected_name: str | None = None
         self._updating_inspector = False
@@ -42,6 +44,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._connect_existing_toolbar_actions()
         self._build_viewport_link_toolbar()
         self._connect_hierarchy_to_viewport()
+        self._refresh_hierarchy()
         self._connect_inspector_to_viewport()
         self.viewport_host.installEventFilter(self)
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
@@ -104,6 +107,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if message.get("type") == "reset_from_interface":
             self._scene_snapshot = deepcopy(self._initial_scene_snapshot)
             self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
+            self._refresh_hierarchy()
             self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
             if self._selected_name in self._objects_by_name:
                 self._update_inspector(self._selected_name)
@@ -112,38 +116,86 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
 
     def _save_scene_snapshot(self) -> None:
         filename, _ = QFileDialog.getSaveFileName(
-            self, "Salvar cena isolada", "isolated_scene.json", "Cena JSON (*.json)"
+            self, "Salvar cena", str(self._current_scene_path or "Untitled.zscene"),
+            "Zennity Scene (*.zscene);;Cena JSON (*.json)"
         )
         if not filename:
             return
-        payload = {"version": 1, "objects": self._scene_snapshot}
-        Path(filename).write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        path = Path(filename)
+        payload = deepcopy(self._scene_document) if self._scene_document else {
+            "format_version": 1, "scene_name": path.stem, "engine_version": "Zennity 0.1.0", "objects": []
+        }
+        existing = {str(item.get("name")): item for item in payload.get("objects", [])}
+        scene_objects = []
+        for snapshot in self._scene_snapshot:
+            source = deepcopy(existing.get(snapshot["name"], {}))
+            source.update({"name": snapshot["name"], "active": True, "enabled": True})
+            source.setdefault("id", snapshot.get("id", snapshot["name"]))
+            source["transform"] = {
+                "position": [snapshot["x"], snapshot["y"], 0.0],
+                "rotation": source.get("transform", {}).get("rotation", [0.0, 0.0, 0.0]),
+                "rz": source.get("transform", {}).get("rz", 0.0),
+                "scale": [snapshot["w"], snapshot["h"], 1.0],
+            }
+            source.setdefault("visual", {"mesh_type": snapshot.get("mesh_type"), "color": snapshot.get("color")})
+            source.setdefault("components", {})
+            scene_objects.append(source)
+        payload["objects"] = scene_objects
+        path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        self._scene_document = payload
+        self._current_scene_path = path
         self.statusBar().showMessage(f"Cena salva: {filename}")
 
     def _load_scene_snapshot(self) -> None:
         filename, _ = QFileDialog.getOpenFileName(
-            self, "Abrir cena isolada", "", "Cena JSON (*.json)"
+            self, "Abrir cena", "", "Zennity Scene (*.zscene);;Cena JSON (*.json)"
         )
         if not filename:
             return
         try:
             payload = json.loads(Path(filename).read_text(encoding="utf-8"))
             objects = payload.get("objects", [])
-            required = {"name", "x", "y", "w", "h"}
-            if not isinstance(objects, list) or any(not required.issubset(item) for item in objects):
+            if not isinstance(objects, list):
                 raise ValueError("arquivo de cena inválido")
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             self.statusBar().showMessage(f"Falha ao abrir cena: {exc}")
             return
-        self._scene_snapshot = [dict(item) for item in objects]
+        snapshots = []
+        for item in objects:
+            if not isinstance(item, dict) or "name" not in item:
+                continue
+            if "transform" in item:
+                transform = item.get("transform", {})
+                position = list(transform.get("position", [0.0, 0.0, 0.0]))
+                scale = list(transform.get("scale", [32.0, 32.0, 1.0]))
+                visual = item.get("visual", {}) or {}
+                color = visual.get("color") or ((91, 194, 100) if item["name"].lower() in {"chao", "floor"} else (88, 117, 255))
+                snapshots.append({"id": item.get("id", item["name"]), "name": item["name"], "x": float(position[0]), "y": float(position[1]), "w": abs(float(scale[0])), "h": abs(float(scale[1])), "color": color, "mesh_type": visual.get("mesh_type")})
+            elif {"x", "y", "w", "h"}.issubset(item):
+                snapshots.append(dict(item))
+        if not snapshots and objects:
+            self.statusBar().showMessage("Falha ao abrir cena: nenhum objeto compatível")
+            return
+        self._scene_snapshot = snapshots
         self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
+        self._scene_document = payload if any("transform" in item for item in objects if isinstance(item, dict)) else None
+        self._current_scene_path = Path(filename)
         self._selected_name = None
+        self._refresh_hierarchy()
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self.statusBar().showMessage(f"Cena aberta: {filename}")
 
     def _connect_hierarchy_to_viewport(self) -> None:
-        for tree in self.findChildren(QTreeWidget):
-            tree.itemClicked.connect(self._select_hierarchy_item)
+        self.hierarchy_tree.itemClicked.connect(self._select_hierarchy_item)
+
+    def _refresh_hierarchy(self) -> None:
+        self.hierarchy_tree.clear()
+        scene_name = self._scene_document.get("scene_name", "MainScene") if self._scene_document else "MainScene"
+        root = QTreeWidgetItem([str(scene_name)])
+        root.setExpanded(True)
+        for obj in self._scene_snapshot:
+            root.addChild(QTreeWidgetItem([str(obj["name"])]))
+        self.hierarchy_tree.addTopLevelItem(root)
 
     def _connect_inspector_to_viewport(self) -> None:
         for field in self.inspector_fields.values():
@@ -208,6 +260,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             elif message.get("type") == "scene_snapshot":
                 self._scene_snapshot = [dict(item) for item in message.get("objects", [])]
                 self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
+                self._refresh_hierarchy()
                 if self._selected_name in self._objects_by_name:
                     self._update_inspector(self._selected_name)
             elif message.get("type") == "viewport_mode":
