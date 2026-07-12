@@ -847,9 +847,26 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if self._selected_name not in self._objects_by_name:
             return
         if component == "script":
-            filename, _ = QFileDialog.getOpenFileName(self, "Escolher Script", str(Path.cwd() / "Assets" / "Scripts"), "Python Script (*.py)")
-            if filename:
-                self._attach_script(self._selected_name, Path(filename))
+            available = self._get_available_scripts()
+            if not available:
+                self.statusBar().showMessage("Nenhum script encontrado em Assets/Scripts")
+                return
+            attached = set(self._objects_by_name[self._selected_name].get("scripts", []))
+            preferred = next((path for path in available if path.name == "player_controller_2d.py"), None)
+            ordered = ([preferred] if preferred is not None else []) + [path for path in available if path != preferred]
+            chosen = None
+            for path in ordered:
+                try:
+                    relative = str(path.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
+                except ValueError:
+                    relative = str(path.resolve())
+                if relative not in attached:
+                    chosen = path
+                    break
+            if chosen is None:
+                self.statusBar().showMessage("Todos os scripts disponíveis já estão anexados")
+                return
+            self._attach_script(self._selected_name, chosen)
             return
         self._record_history()
         obj = self._objects_by_name[self._selected_name]
