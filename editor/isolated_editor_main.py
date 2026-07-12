@@ -61,9 +61,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.add_component_button.clicked.connect(self._open_add_component_menu)
         self.create_script_button.clicked.connect(self._create_script_asset)
         self.edit_script_button.clicked.connect(self._edit_selected_script)
-        self.script_selector.setEnabled(False)
-        self.create_script_button.setEnabled(False)
-        self.edit_script_button.setEnabled(False)
         self.viewport_tabs.currentChanged.connect(self._change_view_mode)
 
         # Habilita Drag & Drop na árvore de assets e viewport_host
@@ -189,6 +186,35 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._selected_name = object_name
         self._update_inspector(object_name)
         self._log("INFO", f"Script anexado em {object_name}: {script_path}")
+
+    def _populate_available_scripts_dropdown(self) -> None:
+        self.script_selector.clear()
+        scripts_dir = Path.cwd() / "Assets" / "Scripts"
+        if scripts_dir.exists():
+            for p in sorted(scripts_dir.glob("*.py")):
+                if p.name != "__init__.py":
+                    self.script_selector.addItem(p.name, str(p.resolve()))
+
+    def _add_embedded_script(self) -> None:
+        if self._selected_name not in self._objects_by_name:
+            return
+        script_path_str = self.script_selector.currentData()
+        if script_path_str:
+            self._attach_script(self._selected_name, Path(script_path_str))
+
+    def _remove_single_script(self, script_path: str) -> None:
+        if self._selected_name not in self._objects_by_name:
+            return
+        self._record_history()
+        obj = self._objects_by_name[self._selected_name]
+        scripts = obj.get("scripts", [])
+        if script_path in scripts:
+            scripts.remove(script_path)
+        if not scripts:
+            obj.pop("scripts", None)
+        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._update_inspector(self._selected_name)
+        self._log("INFO", f"Script removido: {Path(script_path).name}")
 
     def _remove_all_scripts(self) -> None:
         if self._selected_name not in self._objects_by_name:
@@ -711,6 +737,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.btn_del_rb.clicked.connect(lambda: self.show_rigidbody_chk.setChecked(False))
         self.btn_del_col.clicked.connect(lambda: self.show_collider_chk.setChecked(False))
         self.btn_del_script.clicked.connect(self._remove_all_scripts)
+        self.btn_add_embed_script.clicked.connect(self._add_embedded_script)
+        self._populate_available_scripts_dropdown()
 
     def _toggle_rigidbody_component(self, checked: bool) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
@@ -753,21 +781,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if self._selected_name not in self._objects_by_name:
             return
         if component == "script":
-            scripts_dir = Path.cwd() / "Assets" / "Scripts"
-            if scripts_dir.exists():
-                scripts = [p.name for p in scripts_dir.glob("*.py") if p.name != "__init__.py"]
-            else:
-                scripts = []
-            if not scripts:
-                self.statusBar().showMessage("Nenhum script encontrado em Assets/Scripts")
-                return
-            
-            script_chosen, ok = QInputDialog.getItem(
-                self, "Adicionar Script", "Selecione o script para adicionar ao objeto:", scripts, 0, False
-            )
-            if ok and script_chosen:
-                full_path = scripts_dir / script_chosen
-                self._attach_script(self._selected_name, full_path)
+            # Exibe e ativa seção de scripts para que o usuário selecione embutido
+            self.script_header.setVisible(True)
+            self.script_widget.setVisible(True)
+            self.script_selector.setFocus()
+            self.statusBar().showMessage("Selecione o script no painel e clique em + Add")
             return
         self._record_history()
         obj = self._objects_by_name[self._selected_name]
@@ -852,17 +870,45 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 field.setValue(float((collider or {}).get(key, collider_defaults[key])))
             self.collider_trigger_field.setEnabled(collider is not None)
             self.collider_trigger_field.setChecked(bool((collider or {}).get("is_trigger", False)))
-            self.script_selector.clear()
-            for path in obj.get("scripts", []):
-                self.script_selector.addItem(Path(path).name, path)
-            has_scripts = self.script_selector.count() > 0
-            self.script_selector.setEnabled(has_scripts)
-            self.edit_script_button.setEnabled(has_scripts)
-            self.create_script_button.setEnabled(True)
+            # Limpa o container da lista de scripts
+            while self.script_list_layout.count():
+                child = self.script_list_layout.takeAt(0)
+                if child.widget():
+                    child.widget().deleteLater()
             
-            # Esconde ou exibe seção de Scripts dinamicamente
-            self.script_header.setVisible(has_scripts)
-            self.script_widget.setVisible(has_scripts)
+            scripts_list = obj.get("scripts", [])
+            for s_path in scripts_list:
+                s_widget = QWidget()
+                s_widget.setStyleSheet("background-color: #262626; border-radius: 2px;")
+                s_lay = QHBoxLayout(s_widget)
+                s_lay.setContentsMargins(6, 4, 6, 4)
+                
+                lbl = QLabel(Path(s_path).name)
+                lbl.setStyleSheet("color: #e2e2e2; font-size: 11px;")
+                s_lay.addWidget(lbl)
+                s_lay.addStretch()
+                
+                # Botão de remoção individual do script
+                from PySide6.QtWidgets import QToolButton
+                btn_del = QToolButton()
+                btn_del.setText("✕")
+                btn_del.setFixedSize(14, 14)
+                btn_del.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important; font-size: 9px; padding: 0px;")
+                btn_del.clicked.connect(lambda checked=False, p=s_path: self._remove_single_script(p))
+                s_lay.addWidget(btn_del)
+                
+                self.script_list_layout.addWidget(s_widget)
+                
+            has_scripts = len(scripts_list) > 0
+            self.create_script_button.setEnabled(True)
+            self.edit_script_button.setEnabled(has_scripts)
+            
+            # Recarrega a lista de scripts disponíveis
+            self._populate_available_scripts_dropdown()
+            
+            # Sempre mantém o container de scripts visível quando a aba/componente estiver ativo
+            self.script_header.setVisible(True)
+            self.script_widget.setVisible(True)
         finally:
             self._updating_inspector = False
 

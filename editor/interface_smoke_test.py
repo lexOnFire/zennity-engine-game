@@ -508,23 +508,45 @@ class InterfaceSmokeTest(QMainWindow):
         main_layout.addWidget(self.script_header)
 
         self.script_widget = QWidget()
-        script_lay = QFormLayout(self.script_widget)
-        script_lay.setContentsMargins(8, 0, 8, 0)
+        script_lay = QVBoxLayout(self.script_widget)
+        script_lay.setContentsMargins(8, 4, 8, 4)
+        script_lay.setSpacing(6)
         
         btn_collapse_script.clicked.connect(lambda: self.script_widget.setVisible(not self.script_widget.isVisible()))
         
+        # Área de lista de scripts anexados
+        self.script_list_container = QWidget()
+        self.script_list_layout = QVBoxLayout(self.script_list_container)
+        self.script_list_layout.setContentsMargins(0, 0, 0, 0)
+        self.script_list_layout.setSpacing(4)
+        script_lay.addWidget(self.script_list_container)
+        
+        # Campo de seleção e botão de adicionar EMBUTIDO (Sem popups!)
+        embed_selector_widget = QWidget()
+        embed_sel_lay = QHBoxLayout(embed_selector_widget)
+        embed_sel_lay.setContentsMargins(0, 0, 0, 0)
+        embed_sel_lay.setSpacing(4)
+        
         self.script_selector = QComboBox()
         self.script_selector.setObjectName("InspectorScriptSelector")
-        script_lay.addRow("Script Py", self.script_selector)
+        embed_sel_lay.addWidget(self.script_selector)
+        
+        self.btn_add_embed_script = QPushButton("+ Add")
+        self.btn_add_embed_script.setFixedSize(50, 20)
+        self.btn_add_embed_script.setStyleSheet("background-color: #303030; color: #ffffff; border: 1px solid #444; border-radius: 2px;")
+        embed_sel_lay.addWidget(self.btn_add_embed_script)
+        
+        script_lay.addWidget(embed_selector_widget)
         
         script_actions = QWidget()
         script_actions_layout = QHBoxLayout(script_actions)
-        script_actions_layout.setContentsMargins(0, 0, 0, 0)
-        self.create_script_button = QPushButton("Criar")
-        self.edit_script_button = QPushButton("Editar")
+        script_actions_layout.setContentsMargins(0, 4, 0, 0)
+        self.create_script_button = QPushButton("Criar Script")
+        self.edit_script_button = QPushButton("Editar Script")
         script_actions_layout.addWidget(self.create_script_button)
         script_actions_layout.addWidget(self.edit_script_button)
-        script_lay.addRow("", script_actions)
+        script_lay.addWidget(script_actions)
+        
         main_layout.addWidget(self.script_widget)
         
         self.add_component_button = QPushButton("Adicionar Componente")
