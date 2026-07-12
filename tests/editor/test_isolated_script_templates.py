@@ -71,13 +71,16 @@ def test_all_attachable_asset_scripts_run_one_frame() -> None:
         namespace["on_update"](game, 1.0 / 60.0)
 
 
-def test_native_enemy_and_timer_also_expose_play_hooks() -> None:
+def test_all_native_asset_scripts_also_expose_play_hooks() -> None:
     world = {
         "Enemy": {"name": "Enemy", "x": 0.0, "y": 0.0},
         "Player": {"name": "Player", "tag": "Player", "x": 100.0, "y": 0.0},
     }
-    for script_name in ("enemy_ai.py", "timer_component.py"):
-        path = Path("assets/scripts") / script_name
+    for path in Path("assets/scripts").glob("*.py"):
+        if path.name == "__init__.py":
+            continue
+        compatible, reason = inspect_script_contract(path)
+        assert compatible, f"{path.name}: {reason}"
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         play_nodes = [
             node for node in tree.body
