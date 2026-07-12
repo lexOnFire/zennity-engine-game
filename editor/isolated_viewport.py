@@ -100,11 +100,41 @@ def run_viewport(
     velocities_y: dict[str, float] = {}
     last_stats_ms = 0
 
+    def game_camera() -> dict[str, Any] | None:
+        return next(
+            (
+                obj for obj in objects.values()
+                if (
+                    "Camera2D" in obj.get("component_names", [])
+                    or isinstance(obj.get("camera"), dict)
+                    or obj.get("mesh_type") == "Camera"
+                )
+                and bool((obj.get("camera") or {}).get("active", True))
+            ),
+            None,
+        )
+
+    def view_transform() -> tuple[float, float, float]:
+        if view_mode == "game":
+            width, height = screen.get_size()
+            camera = game_camera()
+            if camera is not None:
+                game_zoom = max(0.1, float((camera.get("camera") or {}).get("zoom", 1.0)))
+                return (
+                    float(camera.get("x", 0.0)) - width / (2.0 * game_zoom),
+                    float(camera.get("y", 0.0)) - height / (2.0 * game_zoom),
+                    game_zoom,
+                )
+            return (-width / 2.0, -height / 2.0, 1.0)
+        return (camera_x, camera_y, zoom)
+
     def world_to_screen(x: float, y: float) -> tuple[float, float]:
-        return ((x - camera_x) * zoom, (y - camera_y) * zoom)
+        view_x, view_y, view_zoom = view_transform()
+        return ((x - view_x) * view_zoom, (y - view_y) * view_zoom)
 
     def screen_to_world(x: float, y: float) -> tuple[float, float]:
-        return (camera_x + x / zoom, camera_y + y / zoom)
+        view_x, view_y, view_zoom = view_transform()
+        return (view_x + x / view_zoom, view_y + y / view_zoom)
 
     def snapped(value: float, step: float) -> float:
         if not snap_enabled or step <= 0.0:
@@ -221,6 +251,7 @@ def run_viewport(
                         obj["collider"]["is_trigger"] = True
                     if kind == "Camera":
                         obj["component_names"] = ["Camera2D"]
+                        obj["camera"] = {"active": True, "zoom": 1.0}
 
                     objects[name] = obj
                     selected_name = name
@@ -232,18 +263,18 @@ def run_viewport(
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 2 and not playing:
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 2 and not playing and view_mode == "scene":
                 panning = True
                 pan_last = event.pos
             elif event.type == pygame.MOUSEBUTTONUP and event.button == 2:
                 panning = False
-            elif event.type == pygame.MOUSEWHEEL and not playing:
+            elif event.type == pygame.MOUSEWHEEL and not playing and view_mode == "scene":
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 world_x, world_y = screen_to_world(float(mouse_x), float(mouse_y))
                 zoom = max(0.25, min(4.0, zoom * (1.12 ** event.y)))
                 camera_x = world_x - mouse_x / zoom
                 camera_y = world_y - mouse_y / zoom
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not playing:
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not playing and view_mode == "scene":
                 drag_handle = -1
                 move_axis = ""
 
@@ -340,7 +371,7 @@ def run_viewport(
                     _send(events, {"type": "transform_end", "name": selected_name})
                 dragging = False
                 drag_handle = -1
-            elif event.type == pygame.MOUSEMOTION and panning and not playing:
+            elif event.type == pygame.MOUSEMOTION and panning and not playing and view_mode == "scene":
                 camera_x -= (event.pos[0] - pan_last[0]) / zoom
                 camera_y -= (event.pos[1] - pan_last[1]) / zoom
                 pan_last = event.pos
@@ -471,9 +502,16 @@ def run_viewport(
             if 0 <= origin_y <= height:
                 pygame.draw.line(screen, (112, 120, 142), (0, int(origin_y)), (width, int(origin_y)), 2)
         for name, obj in objects.items():
+            if view_mode == "game" and (
+                "Camera2D" in obj.get("component_names", [])
+                or isinstance(obj.get("camera"), dict)
+                or obj.get("mesh_type") == "Camera"
+            ):
+                continue
+            render_zoom = view_transform()[2]
             object_x, object_y = world_to_screen(float(obj["x"]), float(obj["y"]))
-            object_width = max(1, int(float(obj["w"]) * zoom))
-            object_height = max(1, int(float(obj["h"]) * zoom))
+            object_width = max(1, int(float(obj["w"]) * render_zoom))
+            object_height = max(1, int(float(obj["h"]) * render_zoom))
             box = pygame.Rect(int(object_x - object_width / 2), int(object_y - object_height / 2), object_width, object_height)
             object_surface = pygame.Surface((max(1, box.width), max(1, box.height)), pygame.SRCALPHA)
             pygame.draw.rect(object_surface, tuple(obj.get("color", (180, 180, 180))), object_surface.get_rect(), border_radius=4)
@@ -492,10 +530,10 @@ def run_viewport(
                 collider_x, collider_y = world_to_screen(obj["x"] + rotated_offset_x, obj["y"] + rotated_offset_y)
                 outline_color = (255, 187, 72) if (collider or {}).get("is_trigger") else (125, 212, 255)
                 if (collider or {}).get("type") == "circle":
-                    radius = max(1, int(float(collider.get("radius", min(obj["w"], obj["h"]) / 2.0)) * zoom))
+                    radius = max(1, int(float(collider.get("radius", min(obj["w"], obj["h"]) / 2.0)) * render_zoom))
                     pygame.draw.circle(screen, outline_color, (int(collider_x), int(collider_y)), radius, 2)
                 else:
-                    collider_surface = pygame.Surface((max(1, int(outline_width * zoom) + 8), max(1, int(outline_height * zoom) + 8)), pygame.SRCALPHA)
+                    collider_surface = pygame.Surface((max(1, int(outline_width * render_zoom) + 8), max(1, int(outline_height * render_zoom) + 8)), pygame.SRCALPHA)
                     pygame.draw.rect(collider_surface, outline_color, collider_surface.get_rect().inflate(-6, -6), width=2, border_radius=4)
                     rotated_collider = pygame.transform.rotate(collider_surface, -angle)
                     screen.blit(rotated_collider, rotated_collider.get_rect(center=(int(collider_x), int(collider_y))))
@@ -536,8 +574,8 @@ def run_viewport(
 
                 elif active_tool == "scale":
                     # Calcula as metades das dimensões locais rotacionadas
-                    half_w = (float(obj["w"]) * zoom) / 2.0
-                    half_h = (float(obj["h"]) * zoom) / 2.0
+                    half_w = (float(obj["w"]) * render_zoom) / 2.0
+                    half_h = (float(obj["h"]) * render_zoom) / 2.0
                     # Definimos 8 posições locais para os handles de controle de escala (TL, TC, TR, RC, BR, BC, BL, LC)
                     local_handles = [
                         (-half_w, -half_h),  # 0: TL
@@ -574,6 +612,6 @@ def run_viewport(
         now_ms = pygame.time.get_ticks()
         if now_ms - last_stats_ms >= 500:
             last_stats_ms = now_ms
-            _send(events, {"type": "stats", "fps": clock.get_fps(), "objects": len(objects), "mode": "PLAY" if playing else "EDIT", "zoom": zoom, "snap": snap_enabled})
+            _send(events, {"type": "stats", "fps": clock.get_fps(), "objects": len(objects), "mode": "PLAY" if playing else "EDIT", "view": view_mode.upper(), "zoom": view_transform()[2], "snap": snap_enabled, "camera": (game_camera() or {}).get("name") if view_mode == "game" else "Editor"})
 
     pygame.quit()
