@@ -13,10 +13,10 @@ from copy import deepcopy
 from pathlib import Path
 
 from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import QEvent, Qt, QTimer
-from PySide6.QtGui import QAction, QActionGroup, QPixmap
+from PySide6.QtCore import QEvent, Qt, QTimer, QUrl
+from PySide6.QtGui import QAction, QActionGroup, QDesktopServices, QPixmap
 from PySide6.QtWidgets import QFileDialog, QInputDialog, QMenu, QToolBar
-from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem
+from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QWidget
 
 from editor.interface_smoke_test import InterfaceSmokeTest
 from editor.isolated_viewport import run_viewport
@@ -58,16 +58,24 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._refresh_hierarchy()
         self._connect_inspector_to_viewport()
         self.add_component_button.clicked.connect(self._open_add_component_menu)
+        self.create_script_button.clicked.connect(self._create_script_asset)
+        self.edit_script_button.clicked.connect(self._edit_selected_script)
+        self.script_selector.setEnabled(False)
+        self.create_script_button.setEnabled(False)
+        self.edit_script_button.setEnabled(False)
         self.viewport_tabs.currentChanged.connect(self._change_view_mode)
 
         # Habilita Drag & Drop na árvore de assets e viewport_host
         self.assets_tree.setDragEnabled(True)
         self.viewport_host.setAcceptDrops(True)
         self.viewport_host.installEventFilter(self)
-        self.hierarchy_tree.setAcceptDrops(True)
-        self.hierarchy_tree.installEventFilter(self)
-        self.inspector_panel.setAcceptDrops(True)
-        self.inspector_panel.installEventFilter(self)
+        self._hierarchy_drop_targets = {self.hierarchy_tree, self.hierarchy_tree.viewport()}
+        self._inspector_drop_targets = {self.inspector_panel, *self.inspector_panel.findChildren(QWidget)}
+        self._scene_drop_targets = {self.scene_script_drop_zone, self.viewport_tabs, self.viewport_tabs.tabBar(), self.viewport_host}
+        self._script_drop_targets = self._hierarchy_drop_targets | self._inspector_drop_targets | self._scene_drop_targets
+        for target in self._script_drop_targets:
+            target.setAcceptDrops(True)
+            target.installEventFilter(self)
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._event_timer = QTimer(self)
         self._event_timer.timeout.connect(self._read_viewport_events)
@@ -106,13 +114,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         )
 
     def eventFilter(self, watched, event) -> bool:
-        drop_targets = (self.viewport_host, self.hierarchy_tree, self.inspector_panel)
-        if watched in drop_targets:
-            if event.type() == QEvent.Resize:
-                if watched is self.viewport_host:
-                    width, height = self.native_viewport_size()
-                    self._commands.put({"type": "viewport_size", "w": width, "h": height})
-            elif event.type() == QEvent.DragEnter:
+        if watched is self.viewport_host and event.type() == QEvent.Resize:
+            width, height = self.native_viewport_size()
+            self._commands.put({"type": "viewport_size", "w": width, "h": height})
+        if watched in self._script_drop_targets:
+            if event.type() == QEvent.DragEnter:
                 if event.source() is not self.assets_tree:
                     return super().eventFilter(watched, event)
                 path = self._dragged_asset_path()
@@ -132,17 +138,13 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     if watched is self.viewport_host:
                         pos = event.position()
                         scale = max(1.0, float(self.viewport_host.devicePixelRatioF()))
-                        self._commands.put({
-                            "type": "script_drop_at",
-                            "path": str(path.resolve()),
-                            "screen_x": float(pos.x()) * scale,
-                            "screen_y": float(pos.y()) * scale,
-                        })
+                        self._commands.put({"type": "script_drop_at", "path": str(path.resolve()), "screen_x": float(pos.x()) * scale, "screen_y": float(pos.y()) * scale})
                         event.acceptProposedAction()
                         return True
                     target_name = self._selected_name
-                    if watched is self.hierarchy_tree:
-                        item = self.hierarchy_tree.itemAt(event.position().toPoint())
+                    if watched in self._hierarchy_drop_targets:
+                        local_position = self.hierarchy_tree.viewport().mapFromGlobal(event.globalPosition().toPoint())
+                        item = self.hierarchy_tree.itemAt(local_position)
                         item_name = self._hierarchy_item_name(item)
                         if item_name in self._objects_by_name:
                             target_name = item_name
@@ -183,6 +185,52 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._selected_name = object_name
         self._update_inspector(object_name)
         self._log("INFO", f"Script anexado em {object_name}: {script_path}")
+
+    def _create_script_asset(self) -> None:
+        if self._selected_name not in self._objects_by_name:
+            self.statusBar().showMessage("Selecione um objeto antes de criar o script")
+            return
+        default_path = Path.cwd() / "Assets" / "Scripts" / "new_script.py"
+        filename, _ = QFileDialog.getSaveFileName(self, "Criar Script", str(default_path), "Python Script (*.py)")
+        if not filename:
+            return
+        path = Path(filename)
+        if path.suffix.lower() != ".py":
+            path = path.with_suffix(".py")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if not path.exists():
+            path.write_text(
+                '"""Script Zennity para a viewport isolada."""\n\n'
+                "\n"
+                "def isolated_start(obj):\n"
+                "    pass\n\n"
+                "\n"
+                "def isolated_update(obj, input_state, dt):\n"
+                "    pass\n\n"
+                "\n"
+                "def isolated_stop(obj):\n"
+                "    pass\n",
+                encoding="utf-8",
+            )
+        self._refresh_assets()
+        self._attach_script(self._selected_name, path)
+        self._edit_script_path(path)
+
+    def _edit_selected_script(self) -> None:
+        path_value = self.script_selector.currentData()
+        if not path_value:
+            self.statusBar().showMessage("Selecione um script no Inspector")
+            return
+        self._edit_script_path(Path(str(path_value)))
+
+    def _edit_script_path(self, path: Path) -> None:
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        if not path.exists():
+            self.statusBar().showMessage(f"Script não encontrado: {path}")
+            return
+        if not QDesktopServices.openUrl(QUrl.fromLocalFile(str(path.resolve()))):
+            self.statusBar().showMessage(f"Não foi possível abrir o editor para {path.name}")
 
     def _change_view_mode(self, index: int) -> None:
         mode = "scene" if index == 0 else "game"
@@ -595,6 +643,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if self._selected_name == name:
             self._selected_name = None
             self.inspector_name_label.setText("—")
+            self.script_selector.clear()
+            self.script_selector.setEnabled(False)
+            self.create_script_button.setEnabled(False)
+            self.edit_script_button.setEnabled(False)
         self._refresh_hierarchy()
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
 
@@ -794,6 +846,13 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             components.extend(str(name) for name in obj.get("component_names", []))
             components.extend(f"Script: {Path(path).name}" for path in obj.get("scripts", []))
             self.component_summary_label.setText("\n".join(dict.fromkeys(components)))
+            self.script_selector.clear()
+            for path in obj.get("scripts", []):
+                self.script_selector.addItem(Path(path).name, path)
+            has_scripts = self.script_selector.count() > 0
+            self.script_selector.setEnabled(has_scripts)
+            self.edit_script_button.setEnabled(has_scripts)
+            self.create_script_button.setEnabled(True)
         finally:
             self._updating_inspector = False
 
