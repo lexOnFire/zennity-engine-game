@@ -58,29 +58,16 @@ class InterfaceSmokeTest(QMainWindow):
         toolbar.setMovable(False)
         self.addToolBar(toolbar)
         self.toolbar_actions = {}
-        
-        # Mapeamento de rótulos originais para ícones unicode modernos baseados no layout da imagem
         icons = {
-            "Novo": "📄",
-            "Abrir": "📁",
-            "Salvar": "💾",
-            "Desfazer": "↶",
-            "Refazer": "↷",
-            "Select": "⛶",
-            "Move": "✥",
-            "Rotate": "↻",
-            "Scale": "⤢",
-            "Snap: OFF": "🧲",
-            "Play": "▶",
-            "Pause": "❚❚",
-            "Stop": "■"
+            "Novo": "📄", "Abrir": "📁", "Salvar": "💾",
+            "Desfazer": "↶", "Refazer": "↷", "Select": "⛶",
+            "Move": "✥", "Rotate": "↻", "Scale": "⤢",
+            "Snap: OFF": "🧲", "Play": "▶", "Pause": "❚❚", "Stop": "■",
         }
-        
         for label, icon in icons.items():
             action = QAction(icon, self)
             action.setStatusTip(label)
             action.setToolTip(label)
-            # Salvamos o action com a chave do label em inglês/original para manter retrocompatibilidade com connects
             self.toolbar_actions[label] = action
             toolbar.addAction(action)
         toolbar.addSeparator()
@@ -165,6 +152,7 @@ class InterfaceSmokeTest(QMainWindow):
         left.setMinimumWidth(240)
 
         inspector = QWidget()
+        self.inspector_panel = inspector
         form = QFormLayout(inspector)
         self.inspector_name_label = QLabel("Player")
         self.inspector_name_label.setObjectName("InspectorObjectName")
