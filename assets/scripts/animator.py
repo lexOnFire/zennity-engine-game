@@ -6,6 +6,20 @@ from engine.core.component import Component
 from engine.component_registry import ComponentRegistry
 
 
+SCRIPT_CONFIG = {"fps": 8.0, "frame_count": 4}
+
+
+def on_update(game, dt):
+    """Avança um índice de animação armazenado em game.state."""
+    elapsed = float(game.state.get("animation_elapsed", 0.0)) + dt
+    frame_time = 1.0 / max(float(SCRIPT_CONFIG["fps"]), 0.01)
+    if elapsed >= frame_time:
+        elapsed %= frame_time
+        count = max(1, int(SCRIPT_CONFIG["frame_count"]))
+        game.state["animation_frame"] = (int(game.state.get("animation_frame", 0)) + 1) % count
+    game.state["animation_elapsed"] = elapsed
+
+
 @ComponentRegistry.component
 class Animator(Component):
     """Gerencia animações de sprite por estado."""
