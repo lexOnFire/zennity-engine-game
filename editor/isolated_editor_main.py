@@ -120,13 +120,88 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if not path_value:
             return
         path = Path(path_value)
-        if path.suffix.lower() in {".png", ".jpg", ".jpeg", ".bmp", ".webp"}:
+        if not path.exists() or path.is_dir():
+            self.preview_label.clear()
+            self.preview_label.setText("📁 Folder")
+            self.preview_details_label.setText(f"<b>{path.name}</b><br><br>Tipo: Diretório do Projeto<br>Caminho: {path}")
+            return
+
+        import os
+        from datetime import datetime
+
+        size_bytes = os.path.getsize(path)
+        size_kb = size_bytes / 1024.0
+        size_str = f"{size_kb:.2f} KB" if size_kb < 1024.0 else f"{size_kb/1024.0:.2f} MB"
+        mtime = os.path.getmtime(path)
+        date_str = datetime.fromtimestamp(mtime).strftime("%d/%m/%Y %H:%M")
+        ext = path.suffix.lower()
+
+        if ext in {".png", ".jpg", ".jpeg", ".bmp", ".webp"}:
             pixmap = QPixmap(str(path))
             if not pixmap.isNull():
-                self.preview_label.setPixmap(pixmap.scaled(260, 130, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+                self.preview_label.setPixmap(pixmap.scaled(self.preview_label.width(), self.preview_label.height(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
+                meta = (
+                    f"<b>{path.name}</b><br><br>"
+                    f"Tipo: Textura 2D<br>"
+                    f"Tamanho: {pixmap.width()} x {pixmap.height()} px<br>"
+                    f"Formato: {ext[1:].upper()}<br>"
+                    f"Tamanho Físico: {size_str}<br>"
+                    f"Importado: {date_str}"
+                )
+                self.preview_details_label.setText(meta)
                 return
+
+        elif ext in {".wav", ".ogg", ".mp3"}:
+            self.preview_label.clear()
+            self.preview_label.setText("🔊 Audio")
+            meta = (
+                f"<b>{path.name}</b><br><br>"
+                f"Tipo: Clipe de Áudio (AudioClip)<br>"
+                f"Formato: {ext[1:].upper()}<br>"
+                f"Tamanho: {size_str}<br>"
+                f"Importado: {date_str}<br>"
+                f"<i>Dica: Arraste para o Inspector para criar um AudioSource</i>"
+            )
+            self.preview_details_label.setText(meta)
+            return
+
+        elif ext == ".py":
+            self.preview_label.clear()
+            self.preview_label.setText("🐍 Script")
+            meta = (
+                f"<b>{path.name}</b><br><br>"
+                f"Tipo: Script de Comportamento<br>"
+                f"Tamanho: {size_str}<br>"
+                f"Linguagem: Python 3<br>"
+                f"Modificado: {date_str}"
+            )
+            self.preview_details_label.setText(meta)
+            return
+
+        elif ext in {".zscene", ".json"}:
+            self.preview_label.clear()
+            self.preview_label.setText("🎬 Scene")
+            meta = (
+                f"<b>{path.name}</b><br><br>"
+                f"Tipo: Cena de Jogo<br>"
+                f"Formato: Zennity JSON<br>"
+                f"Tamanho: {size_str}<br>"
+                f"Modificado: {date_str}"
+            )
+            self.preview_details_label.setText(meta)
+            return
+
+        # Fallback
         self.preview_label.clear()
-        self.preview_label.setText(f"{path.name}\n{path}")
+        self.preview_label.setText("📄 File")
+        meta = (
+            f"<b>{path.name}</b><br><br>"
+            f"Tipo: Recurso Genérico<br>"
+            f"Formato: {ext.upper() or 'N/A'}<br>"
+            f"Tamanho: {size_str}<br>"
+            f"Modificado: {date_str}"
+        )
+        self.preview_details_label.setText(meta)
 
     def attach_viewport_process(self, process: mp.Process) -> None:
         self._viewport_process = process

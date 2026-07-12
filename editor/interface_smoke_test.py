@@ -115,7 +115,7 @@ class InterfaceSmokeTest(QMainWindow):
         self.assets_tree = assets
         assets.setHeaderHidden(True)
         asset_root = QTreeWidgetItem(["Assets"])
-        asset_root.addChildren([QTreeWidgetItem(["Scenes"]), QTreeWidgetItem(["Scripts"]), QTreeWidgetItem(["Textures"])])
+        asset_root.addChildren([QTreeWidgetItem(["Scenes"]), QTreeWidgetItem(["Scripts"]), QTreeWidgetItem(["Textures"]), QTreeWidgetItem(["Audio"])])
         assets.addTopLevelItem(asset_root)
         assets.expandAll()
 
@@ -524,10 +524,26 @@ class InterfaceSmokeTest(QMainWindow):
         console_tabs.addTab(self._placeholder("Saída da engine"), "Saída")
         console_tabs.addTab(self._placeholder("Depurador"), "Depurador")
 
-        self.preview_label = QLabel("Selecione um asset para visualizar")
+        # Asset Preview aprimorado (Layout Horizontal: Imagem/Ícone à Esquerda, Detalhes à Direita)
+        preview = QWidget()
+        preview.setObjectName("PremiumPanel")
+        preview_layout = QHBoxLayout(preview)
+        preview_layout.setContentsMargins(10, 10, 10, 10)
+        preview_layout.setSpacing(15)
+
+        # Container da miniatura (lado esquerdo)
+        self.preview_label = QLabel("Selecione um asset\npara visualizar")
         self.preview_label.setAlignment(Qt.AlignCenter)
-        preview = self._placeholder("")
-        preview.layout().addWidget(self.preview_label)
+        self.preview_label.setFixedSize(140, 120)
+        self.preview_label.setStyleSheet("background-color: #121212; border: 1px dashed #3a3a3a; border-radius: 4px; color: #888888;")
+        preview_layout.addWidget(self.preview_label)
+
+        # Container dos metadados (lado direito)
+        self.preview_details_label = QLabel()
+        self.preview_details_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.preview_details_label.setStyleSheet("color: #e2e2e2; font-size: 11px; line-height: 140%;")
+        self.preview_details_label.setText("<b>Nenhum asset selecionado</b><br><br>Selecione uma imagem, script, cena ou áudio na árvore de Assets para ver as informações detalhadas e pré-visualizar.")
+        preview_layout.addWidget(self.preview_details_label, 1)
 
         console_row = QSplitter(Qt.Horizontal)
         console_row.addWidget(console_tabs)
