@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+from copy import deepcopy
 from queue import Empty
 from typing import Any
 
@@ -29,6 +30,9 @@ def run_viewport(commands: Any = None, events: Any = None) -> None:
     }
     dragging = False
     selected_name: str | None = None
+    playing = False
+    edit_snapshot = deepcopy(objects)
+    velocity_y = 0.0
 
     while running:
         if commands is not None:
@@ -41,7 +45,23 @@ def run_viewport(commands: Any = None, events: Any = None) -> None:
                     running = False
                 elif command.get("type") == "scene_snapshot":
                     objects = {item["name"]: dict(item) for item in command.get("objects", [])}
+                    edit_snapshot = deepcopy(objects)
                     selected_name = None
+                    playing = False
+                    velocity_y = 0.0
+                elif command.get("type") == "play":
+                    if not playing:
+                        edit_snapshot = deepcopy(objects)
+                        playing = True
+                        velocity_y = 0.0
+                        _send(events, {"type": "play_state", "state": "play"})
+                elif command.get("type") == "stop":
+                    if playing:
+                        objects = deepcopy(edit_snapshot)
+                        playing = False
+                        velocity_y = 0.0
+                        _send(events, {"type": "play_state", "state": "edit"})
+                        _send(events, {"type": "scene_snapshot", "objects": list(objects.values())})
                 elif command.get("type") == "select_object":
                     name = str(command.get("name", ""))
                     if name in objects:
@@ -58,7 +78,7 @@ def run_viewport(commands: Any = None, events: Any = None) -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not playing:
                 for name, obj in reversed(list(objects.items())):
                     if abs(event.pos[0] - obj["x"]) <= obj["w"] / 2 and abs(event.pos[1] - obj["y"]) <= obj["h"] / 2:
                         dragging = True
@@ -67,12 +87,24 @@ def run_viewport(commands: Any = None, events: Any = None) -> None:
                         break
             elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 dragging = False
-            elif event.type == pygame.MOUSEMOTION and dragging:
+            elif event.type == pygame.MOUSEMOTION and dragging and not playing:
                 if selected_name in objects:
                     objects[selected_name]["x"], objects[selected_name]["y"] = map(float, event.pos)
                     _send(events, {"type": "transform", "name": selected_name, "x": event.pos[0], "y": event.pos[1]})
 
         width, height = screen.get_size()
+        dt = clock.get_time() / 1000.0
+        if playing and "Player" in objects:
+            player = objects["Player"]
+            velocity_y += 980.0 * dt
+            player["y"] += velocity_y * dt
+            floor = objects.get("Chao")
+            if floor is not None:
+                floor_top = floor["y"] - floor["h"] / 2
+                player_bottom = player["y"] + player["h"] / 2
+                if player_bottom >= floor_top:
+                    player["y"] = floor_top - player["h"] / 2
+                    velocity_y = 0.0
         screen.fill((22, 24, 31))
         for x in range(0, width, 32):
             pygame.draw.line(screen, (45, 48, 59), (x, 0), (x, height))
