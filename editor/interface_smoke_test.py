@@ -62,7 +62,12 @@ class InterfaceSmokeTest(QMainWindow):
 
     def _build_center(self) -> None:
         tabs = QTabWidget()
-        tabs.addTab(self._placeholder("Viewport isolada\n\nNenhum renderizador está ativo.\nArraste os painéis e redimensione a janela."), "Scene")
+        self.viewport_host = QFrame()
+        self.viewport_host.setObjectName("IsolatedViewportHost")
+        self.viewport_host.setFrameShape(QFrame.StyledPanel)
+        self.viewport_host.setAttribute(Qt.WA_NativeWindow, True)
+        self.viewport_host.setStyleSheet("#IsolatedViewportHost { background: #16181f; }")
+        tabs.addTab(self.viewport_host, "Scene")
         tabs.addTab(self._placeholder("Game View desativada para este teste."), "Game")
         self.setCentralWidget(tabs)
 
