@@ -23,11 +23,16 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._viewport_process = viewport_process
         self._commands = commands
         self._events = events
+        self._scene_snapshot = [
+            {"name": "Chao", "x": 450.0, "y": 500.0, "w": 600.0, "h": 32.0, "color": (91, 194, 100)},
+            {"name": "Player", "x": 450.0, "y": 250.0, "w": 36.0, "h": 48.0, "color": (88, 117, 255)},
+        ]
         self.setWindowTitle("Zennity — Interface isolada (PySide6)")
         self.statusBar().showMessage(
             "Viewport Pygame está em outra janela/processo. Arraste painéis aqui sem afetá-la."
         )
         self._build_viewport_link_toolbar()
+        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._event_timer = QTimer(self)
         self._event_timer.timeout.connect(self._read_viewport_events)
         self._event_timer.start(33)
@@ -37,10 +42,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         toolbar.setMovable(False)
         self.addToolBar(toolbar)
         for label, payload in (
-            ("Selecionar Player", {"type": "select_player"}),
-            ("Mover ←", {"type": "move_player", "dx": -16}),
-            ("Mover →", {"type": "move_player", "dx": 16}),
-            ("Reset", {"type": "reset_player"}),
+            ("Selecionar Player", {"type": "select_object", "name": "Player"}),
+            ("Mover ←", {"type": "move_selected", "dx": -16}),
+            ("Mover →", {"type": "move_selected", "dx": 16}),
+            ("Reset", {"type": "scene_snapshot", "objects": self._scene_snapshot}),
         ):
             action = QAction(label, self)
             action.triggered.connect(lambda checked=False, message=payload: self._commands.put(message))
@@ -56,7 +61,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self.statusBar().showMessage("Viewport: Player selecionado")
             elif message.get("type") == "transform":
                 self.statusBar().showMessage(
-                    f"Viewport: Player em X={message['x']:.1f}, Y={message['y']:.1f}"
+                    f"Viewport: {message['name']} em X={message['x']:.1f}, Y={message['y']:.1f}"
                 )
 
     def closeEvent(self, event) -> None:
