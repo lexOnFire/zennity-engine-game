@@ -1,15 +1,10 @@
-# Script Pronto: Andar com WASD
-# Mova o objeto com as teclas W/A/S/D no modo Play.
-import pygame
+"""Movimento 2D com WASD ou setas."""
 
-SPEED = 3.0
+CONFIG = {"speed": 200.0}
 
-def start(obj):
-    pass
 
-def update(obj, dt):
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_d]: obj.transform.position[0] += SPEED * dt
-    if keys[pygame.K_a]: obj.transform.position[0] -= SPEED * dt
-    if keys[pygame.K_w]: obj.transform.position[2] -= SPEED * dt
-    if keys[pygame.K_s]: obj.transform.position[2] += SPEED * dt
+def on_update(game, dt):
+    game.move(
+        game.axis("left", "right") * CONFIG["speed"] * dt,
+        game.axis("up", "down") * CONFIG["speed"] * dt,
+    )
