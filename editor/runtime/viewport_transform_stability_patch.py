@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+import time
 
 import numpy as np
 
@@ -116,10 +117,44 @@ def _emit_transform_changed(viewport: Any, obj: Any) -> None:
         viewport.object_transform_changed.emit(obj)
     except Exception:
         pass
+    # Mouse move events can arrive much faster than the 60 Hz editor timer.
+    # Calling QWidget.update() for every event creates a second paint stream
+    # during drag (often 150-250 FPS) on top of ViewportWidget._tick().
+    # Request at most one visual frame instead; transforms keep their full
+    # precision and the next render always observes the latest value.
+    _request_editor_frame(viewport)
+
+
+def _request_editor_frame(viewport: Any, target_fps: float = 60.0) -> None:
+    """Coalesce drag repaints so input cannot outrun the editor render loop."""
     try:
-        viewport.update()
+        from PySide6.QtCore import QTimer
     except Exception:
-        pass
+        return
+
+    now = time.monotonic()
+    interval = 1.0 / max(1.0, float(target_fps))
+    last = float(getattr(viewport, "_zennity_last_drag_repaint", 0.0))
+    elapsed = now - last
+
+    if elapsed >= interval:
+        viewport._zennity_last_drag_repaint = now
+        viewport.update()
+        return
+
+    if bool(getattr(viewport, "_zennity_drag_repaint_pending", False)):
+        return
+
+    viewport._zennity_drag_repaint_pending = True
+    delay_ms = max(1, int((interval - elapsed) * 1000.0))
+
+    def paint_latest() -> None:
+        viewport._zennity_drag_repaint_pending = False
+        viewport._zennity_last_drag_repaint = time.monotonic()
+        if not getattr(viewport, "_is_playing", lambda: True)():
+            viewport.update()
+
+    QTimer.singleShot(delay_ms, paint_latest)
 
 
 def apply_viewport_transform_stability_patch() -> bool:
@@ -162,16 +197,47 @@ def apply_viewport_transform_stability_patch() -> bool:
         _sync_camera_to_engine(self)
 
     def mouse_move_event(self, event):
-        was_panning = bool(getattr(self, "_panning", False))
-        original_mouse_move_event(self, event)
-        if was_panning or bool(getattr(self, "_panning", False)):
+        # QMouseEvent.x/y() truncate fractional device coordinates.  During a
+        # drag that truncation becomes visible as tiny jumps, especially when
+        # zoomed in.  Qt 6 exposes the precise local position through
+        # position(), so use it on the hot path.
+        if self.is_game_view() or self._is_playing():
+            original_mouse_move_event(self, event)
+            return
+
+        position = event.position()
+        x, y = float(position.x()), float(position.y())
+
+        if bool(getattr(self, "_panning", False)):
+            last_x, last_y = self._pan_last_mouse
+            self.camera.pan(x - last_x, y - last_y)
+            self._pan_last_mouse = (x, y)
             _sync_camera_to_engine(self)
+            _request_editor_frame(self)
+            event.accept()
+            return
+
+        if self._active_tool() == EditorTool.MOVE and getattr(self, "_move_drag_object", None) is not None:
+            self._update_move_drag(x, y)
+            event.accept()
+            return
+        if getattr(self, "_rotate_drag_object", None) is not None:
+            self._update_rotate_drag(x, y)
+            event.accept()
+            return
+        if getattr(self, "_scale_drag_object", None) is not None:
+            self._update_scale_drag(x, y)
+            event.accept()
+            return
+
+        original_mouse_move_event(self, event)
 
     def mouse_press_event(self, event):
         if self.is_game_view() or self._is_playing() or event.button() != Qt.LeftButton:
             original_mouse_press_event(self, event)
             return
-        x, y = float(event.x()), float(event.y())
+        position = event.position()
+        x, y = float(position.x()), float(position.y())
         if self._active_tool() == EditorTool.MOVE:
             selected = self._selected_transform_object()
             axis = _move_axis_at(self, x, y, selected)
