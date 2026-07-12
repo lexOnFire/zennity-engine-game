@@ -164,6 +164,13 @@ class InterfaceSmokeTest(QMainWindow):
             editor.setKeyboardTracking(False)
             self.inspector_fields[key] = editor
             form.addRow(field, editor)
+            
+        # Alças de Habilitação Geral de Componentes (Melhoria do Sistema de Componentes)
+        self.show_rigidbody_chk = QCheckBox("Componente: RigidBody 2D")
+        self.show_rigidbody_chk.setObjectName("InspectorCheckBox")
+        self.show_rigidbody_chk.setStyleSheet("font-weight: bold; color: #4caf50; margin-top: 10px;")
+        form.addRow(self.show_rigidbody_chk)
+        
         self.physics_fields = {
             "use_gravity": QCheckBox(),
             "is_kinematic": QCheckBox(),
@@ -172,6 +179,12 @@ class InterfaceSmokeTest(QMainWindow):
         self.physics_fields["is_kinematic"].setObjectName("InspectorCheckBox")
         form.addRow("Usar gravidade", self.physics_fields["use_gravity"])
         form.addRow("Cinemático", self.physics_fields["is_kinematic"])
+        
+        self.show_collider_chk = QCheckBox("Componente: Box/Circle Collider")
+        self.show_collider_chk.setObjectName("InspectorCheckBox")
+        self.show_collider_chk.setStyleSheet("font-weight: bold; color: #4caf50; margin-top: 10px;")
+        form.addRow(self.show_collider_chk)
+        
         self.collider_fields: dict[str, QDoubleSpinBox] = {}
         for label, key in (("Collider Largura", "width"), ("Collider Altura", "height"), ("Collider Raio", "radius"), ("Collider Offset X", "offset_x"), ("Collider Offset Y", "offset_y")):
             editor = QDoubleSpinBox()

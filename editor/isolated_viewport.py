@@ -121,9 +121,15 @@ def run_viewport(
                 if command.get("type") == "shutdown":
                     running = False
                 elif command.get("type") == "viewport_size":
-                    new_size = (max(32, int(command.get("w", 32))), max(32, int(command.get("h", 32))))
+                    w = max(32, int(command.get("w", 32)))
+                    h = max(32, int(command.get("h", 32)))
+                    new_size = (w, h)
                     screen = pygame.display.set_mode(new_size, display_flags)
                     _attach_native_window(pygame, parent_window_id, *new_size)
+                    
+                    # Centraliza a câmera de modo que o centro da tela corresponda ao ponto (0, 0) do mundo
+                    camera_x = -float(w) / 2.0 / zoom
+                    camera_y = -float(h) / 2.0 / zoom
                 elif command.get("type") == "scene_snapshot":
                     objects = {item["name"]: dict(item) for item in command.get("objects", [])}
                     edit_snapshot = deepcopy(objects)

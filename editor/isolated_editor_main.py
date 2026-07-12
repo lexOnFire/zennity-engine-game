@@ -29,8 +29,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._commands = commands
         self._events = events
         self._initial_scene_snapshot = [
-            {"id": "floor", "name": "Chao", "x": 450.0, "y": 500.0, "w": 600.0, "h": 32.0, "rotation": 0.0, "color": (91, 194, 100), "rigidbody": {"is_kinematic": True, "use_gravity": False}, "collider": {"type": "box"}},
-            {"id": "player", "name": "Player", "x": 450.0, "y": 250.0, "w": 36.0, "h": 48.0, "rotation": 0.0, "color": (88, 117, 255), "rigidbody": {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}, "collider": {"type": "box"}},
+            {"id": "floor", "name": "Chao", "x": 0.0, "y": 150.0, "w": 600.0, "h": 32.0, "rotation": 0.0, "color": (91, 194, 100), "rigidbody": {"is_kinematic": True, "use_gravity": False}, "collider": {"type": "box"}},
+            {"id": "player", "name": "Player", "x": 0.0, "y": 0.0, "w": 36.0, "h": 48.0, "rotation": 0.0, "color": (88, 117, 255), "rigidbody": {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}, "collider": {"type": "box"}},
         ]
         self._scene_snapshot = deepcopy(self._initial_scene_snapshot)
         self._scene_document: dict | None = None
@@ -463,6 +463,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.hierarchy_tree.setAcceptDrops(True)
         self.hierarchy_tree.setDragDropMode(QTreeWidget.InternalMove)
         self.hierarchy_tree.itemClicked.connect(self._select_hierarchy_item)
+        self.hierarchy_tree.itemDoubleClicked.connect(lambda item: self._rename_object(item.text(0)))
         self.hierarchy_tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.hierarchy_tree.customContextMenuRequested.connect(self._open_hierarchy_menu)
 
@@ -520,6 +521,38 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         for field in self.collider_fields.values():
             field.valueChanged.connect(lambda _value: self._send_inspector_collider())
         self.collider_trigger_field.toggled.connect(lambda _checked: self._send_inspector_collider())
+        
+        # Conecta checkboxes de habilitação de componentes
+        self.show_rigidbody_chk.toggled.connect(self._toggle_rigidbody_component)
+        self.show_collider_chk.toggled.connect(self._toggle_collider_component)
+
+    def _toggle_rigidbody_component(self, checked: bool) -> None:
+        if self._updating_inspector or self._selected_name not in self._objects_by_name:
+            return
+        self._record_history()
+        obj = self._objects_by_name[self._selected_name]
+        if checked:
+            obj.setdefault("rigidbody", {"mass": 1.0, "gravity_scale": 1.0, "use_gravity": True, "is_kinematic": False})
+        else:
+            obj.pop("rigidbody", None)
+        
+        # Envia atualização completa da cena para a viewport
+        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._update_inspector(self._selected_name)
+
+    def _toggle_collider_component(self, checked: bool) -> None:
+        if self._updating_inspector or self._selected_name not in self._objects_by_name:
+            return
+        self._record_history()
+        obj = self._objects_by_name[self._selected_name]
+        if checked:
+            obj.setdefault("collider", {"type": "box", "is_trigger": False})
+        else:
+            obj.pop("collider", None)
+            
+        # Envia atualização completa da cena para a viewport
+        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._update_inspector(self._selected_name)
 
     def _open_add_component_menu(self) -> None:
         if self._selected_name not in self._objects_by_name:
@@ -602,10 +635,12 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             for key in ("x", "y", "w", "h", "rotation"):
                 self.inspector_fields[key].setValue(float(obj[key]))
             rigidbody = obj.get("rigidbody")
+            self.show_rigidbody_chk.setChecked(rigidbody is not None)
             for key, field in self.physics_fields.items():
                 field.setEnabled(rigidbody is not None)
                 field.setChecked(bool((rigidbody or {}).get(key, False)))
             collider = obj.get("collider") if isinstance(obj.get("collider"), dict) else None
+            self.show_collider_chk.setChecked(collider is not None)
             collider_type = str((collider or {}).get("type", "box")).lower()
             collider_defaults = {
                 "width": float(obj["w"]), "height": float(obj["h"]),
