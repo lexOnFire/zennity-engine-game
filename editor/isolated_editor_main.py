@@ -624,6 +624,14 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             for object_name, path in attached:
                 self._log("INFO", f"  {object_name} → {path}")
             self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._play_edit_snapshot)})
+            audio_sources = {
+                obj["name"]: deepcopy(obj["audio"])
+                for obj in self._play_edit_snapshot
+                if isinstance(obj.get("audio"), dict)
+            }
+            enabled_audio = [name for name, audio in audio_sources.items() if audio.get("autoplay") and audio.get("path")]
+            self._log("INFO", f"Play enviando {len(audio_sources)} Audio Source(s); {len(enabled_audio)} configurado(s) para iniciar")
+            message = {**message, "audio_sources": audio_sources}
         elif message.get("type") == "stop":
             self.viewport_tabs.setCurrentIndex(0)
         if message.get("type") == "move_selected" and self._selected_name is not None:
