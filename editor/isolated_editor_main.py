@@ -59,7 +59,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._connect_inspector_to_viewport()
         self.add_component_button.clicked.connect(self._open_add_component_menu)
         self.viewport_tabs.currentChanged.connect(self._change_view_mode)
-        
+
         # Habilita Drag & Drop na árvore de assets e viewport_host
         self.assets_tree.setDragEnabled(True)
         self.viewport_host.setAcceptDrops(True)
@@ -209,11 +209,13 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
     def _configure_tool_actions(self) -> None:
         group = QActionGroup(self)
         group.setExclusive(True)
+        shortcuts = {"select": "Q", "move": "W", "rotate": "E", "scale": "R"}
         for action in self.findChildren(QAction):
             tool = action.text().lower()
             if tool not in {"select", "move", "rotate", "scale"}:
                 continue
             action.setCheckable(True)
+            action.setShortcut(shortcuts[tool])
             action.setChecked(tool == "select")
             group.addAction(action)
             action.triggered.connect(lambda checked=False, name=tool: checked and self._commands.put({"type": "set_tool", "tool": name}))
@@ -270,6 +272,15 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             redo_action = menu.addAction("Refazer")
             redo_action.setShortcut("Ctrl+Y")
             redo_action.triggered.connect(self._redo)
+            menu.addSeparator()
+            duplicate_action = menu.addAction("Duplicar")
+            duplicate_action.setShortcut("Ctrl+D")
+            duplicate_action.triggered.connect(self._duplicate_selected)
+            delete_action = menu.addAction("Excluir")
+            delete_action.setShortcut("Delete")
+            delete_action.triggered.connect(
+                lambda _checked=False: self._selected_name is not None and self._delete_object(self._selected_name)
+            )
             break
 
     def _record_history(self, snapshot: list[dict] | None = None) -> None:
@@ -504,6 +515,23 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._refresh_hierarchy()
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
 
+    def _duplicate_selected(self) -> None:
+        if self._selected_name not in self._objects_by_name:
+            return
+        self._record_history()
+        duplicate = deepcopy(self._objects_by_name[self._selected_name])
+        duplicate["id"] = str(uuid.uuid4())
+        duplicate["name"] = self._unique_name(f"{self._selected_name}_copy")
+        duplicate["x"] = float(duplicate.get("x", 0.0)) + 16.0
+        duplicate["y"] = float(duplicate.get("y", 0.0)) + 16.0
+        self._scene_snapshot.append(duplicate)
+        self._objects_by_name[duplicate["name"]] = duplicate
+        self._selected_name = duplicate["name"]
+        self._refresh_hierarchy()
+        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._commands.put({"type": "select_object", "name": self._selected_name})
+        self._update_inspector(self._selected_name)
+
     def _refresh_hierarchy(self) -> None:
         self.hierarchy_tree.clear()
         scene_name = self._scene_document.get("scene_name", "MainScene") if self._scene_document else "MainScene"
@@ -521,7 +549,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         for field in self.collider_fields.values():
             field.valueChanged.connect(lambda _value: self._send_inspector_collider())
         self.collider_trigger_field.toggled.connect(lambda _checked: self._send_inspector_collider())
-        
+
         # Conecta checkboxes de habilitação de componentes
         self.show_rigidbody_chk.toggled.connect(self._toggle_rigidbody_component)
         self.show_collider_chk.toggled.connect(self._toggle_collider_component)
@@ -535,7 +563,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             obj.setdefault("rigidbody", {"mass": 1.0, "gravity_scale": 1.0, "use_gravity": True, "is_kinematic": False})
         else:
             obj.pop("rigidbody", None)
-        
+
         # Envia atualização completa da cena para a viewport
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._update_inspector(self._selected_name)
@@ -549,7 +577,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             obj.setdefault("collider", {"type": "box", "is_trigger": False})
         else:
             obj.pop("collider", None)
-            
+
         # Envia atualização completa da cena para a viewport
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._update_inspector(self._selected_name)
