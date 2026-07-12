@@ -11,6 +11,19 @@ Edite apenas a seção **CONFIGURAÇÃO** no topo de cada script.
 - `game.state` guarda valores do script.
 - `game.destroy()` remove o objeto.
 
+Eventos de Collider:
+
+```python
+def on_collision(game, other):
+    game.log("Colidiu com " + other.name)
+
+
+def on_trigger(game, other):
+    game.log("Entrou no trigger " + other.name)
+```
+
+Use `on_collision_exit` e `on_trigger_exit` para detectar a saída do contato.
+
 Exemplo mínimo:
 
 ```python
