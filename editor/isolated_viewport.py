@@ -860,7 +860,27 @@ def run_viewport(
                         break
                 velocities_y[name] = velocity
             process_contacts()
-        screen.fill((22, 24, 31))
+        # Carrega a cor de fundo definida na câmera ativa
+        bg_color = (22, 24, 31)
+        active_cam = game_camera()
+        if active_cam:
+            cam_data = active_cam.get("camera") or {}
+            # Aceita lista, tupla ou string de cor
+            raw_color = cam_data.get("background_color", cam_data.get("color", (22, 24, 31)))
+            if isinstance(raw_color, (list, tuple)) and len(raw_color) >= 3:
+                bg_color = tuple(raw_color[:3])
+
+        # Se no modo game, faz a câmera seguir o objeto configurado (se houver follow target)
+        if playing and not paused and active_cam:
+            cam_data = active_cam.get("camera") or {}
+            target_name = cam_data.get("follow_target")
+            if target_name and target_name in objects:
+                tgt = objects[target_name]
+                # Segue o target suavizadamente ou diretamente
+                active_cam["x"] = float(tgt["x"])
+                active_cam["y"] = float(tgt["y"])
+
+        screen.fill(bg_color)
         if view_mode == "scene":
             grid_spacing = max(8.0, 32.0 * zoom)
             grid_x = (-camera_x * zoom) % grid_spacing
@@ -876,6 +896,30 @@ def run_viewport(
                 pygame.draw.line(screen, (112, 120, 142), (int(origin_x), 0), (int(origin_x), height), 2)
             if 0 <= origin_y <= height:
                 pygame.draw.line(screen, (112, 120, 142), (0, int(origin_y)), (width, int(origin_y)), 2)
+
+            # Desenha limite visual das câmeras na cena
+            for cam_name, cam_obj in objects.items():
+                if (
+                    "Camera2D" in cam_obj.get("component_names", [])
+                    or isinstance(cam_obj.get("camera"), dict)
+                    or cam_obj.get("mesh_type") == "Camera"
+                ):
+                    cam_data = cam_obj.get("camera") or {}
+                    cam_zoom = max(0.1, float(cam_data.get("zoom", 1.0)))
+                    # Resolução configurada ou padrão de viewport 800x600
+                    cam_w = float(cam_data.get("width", 800.0)) / cam_zoom
+                    cam_h = float(cam_data.get("height", 600.0)) / cam_zoom
+                    
+                    # Desenha retângulo tracejado ou colorido representando o frustum/limites
+                    cx, cy = world_to_screen(float(cam_obj["x"]), float(cam_obj["y"]))
+                    cw_s = cam_w * zoom
+                    ch_s = cam_h * zoom
+                    cam_rect = pygame.Rect(int(cx - cw_s / 2), int(cy - ch_s / 2), int(cw_s), int(ch_s))
+                    # Outline branca semitransparente para limites da câmera
+                    pygame.draw.rect(screen, (240, 240, 240), cam_rect, 1)
+                    # Desenha mini-triângulos ou ícone indicador simples nos cantos
+                    pygame.draw.rect(screen, (255, 100, 100) if cam_data.get("active", True) else (150, 150, 150), (int(cx - 4), int(cy - 4), 8, 8))
+
         for name, obj in objects.items():
             if view_mode == "game" and (
                 "Camera2D" in obj.get("component_names", [])
