@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QDoubleSpinBox,
     QFormLayout,
     QFrame,
+    QHBoxLayout,
     QLabel,
     QMainWindow,
     QPlainTextEdit,
@@ -95,6 +96,12 @@ class InterfaceSmokeTest(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         layout.addWidget(self.viewport_tabs)
+        self.scene_script_drop_zone = QLabel("Solte um script aqui → objeto selecionado")
+        self.scene_script_drop_zone.setObjectName("SceneScriptDropZone")
+        self.scene_script_drop_zone.setAlignment(Qt.AlignCenter)
+        self.scene_script_drop_zone.setFixedHeight(26)
+        self.scene_script_drop_zone.setStyleSheet("#SceneScriptDropZone { color: #9aa4b2; background: #20242c; border: 1px dashed #4d5968; }")
+        layout.addWidget(self.scene_script_drop_zone)
         layout.addWidget(self.viewport_host)
         layout.setStretchFactor(self.viewport_host, 1)
 
@@ -210,6 +217,17 @@ class InterfaceSmokeTest(QMainWindow):
         self.component_summary_label = QLabel("Transform")
         self.component_summary_label.setWordWrap(True)
         form.addRow("Componentes", self.component_summary_label)
+        self.script_selector = QComboBox()
+        self.script_selector.setObjectName("InspectorScriptSelector")
+        form.addRow("Scripts", self.script_selector)
+        script_actions = QWidget()
+        script_actions_layout = QHBoxLayout(script_actions)
+        script_actions_layout.setContentsMargins(0, 0, 0, 0)
+        self.create_script_button = QPushButton("Criar")
+        self.edit_script_button = QPushButton("Editar")
+        script_actions_layout.addWidget(self.create_script_button)
+        script_actions_layout.addWidget(self.edit_script_button)
+        form.addRow("", script_actions)
         self.add_component_button = QPushButton("Adicionar Componente")
         self.add_component_button.setObjectName("InspectorAddComponentButton")
         form.addRow(self.add_component_button)
