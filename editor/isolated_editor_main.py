@@ -60,8 +60,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._connect_inspector_to_viewport()
         self.script_containers = []
         self.add_component_button.clicked.connect(self._open_add_component_menu)
-        self.create_script_button.clicked.connect(self._create_script_asset)
-        self.edit_script_button.clicked.connect(self._edit_selected_script)
         self.viewport_tabs.currentChanged.connect(self._change_view_mode)
 
         # Habilita Drag & Drop na árvore de assets e viewport_host
