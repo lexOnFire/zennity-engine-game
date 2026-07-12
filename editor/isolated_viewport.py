@@ -72,6 +72,14 @@ def run_viewport(commands: Any = None, events: Any = None) -> None:
                     obj["x"] += float(command.get("dx", 0.0))
                     obj["y"] += float(command.get("dy", 0.0))
                     _send(events, {"type": "transform", "name": selected_name, "x": obj["x"], "y": obj["y"]})
+                elif command.get("type") == "set_transform":
+                    name = str(command.get("name", ""))
+                    if name in objects and not playing:
+                        obj = objects[name]
+                        for key in ("x", "y", "w", "h"):
+                            if key in command:
+                                obj[key] = float(command[key])
+                        _send(events, {"type": "transform", "name": name, **{key: obj[key] for key in ("x", "y", "w", "h")}})
                 elif command.get("type") == "reset_scene":
                     _send(events, {"type": "snapshot_requested"})
 
