@@ -1,0 +1,131 @@
+"""Teste isolado da interface do Zennity Editor, sem Pygame ou Viewport.
+
+Execute a partir da raiz do projeto:
+    python -m editor.interface_smoke_test
+"""
+from __future__ import annotations
+
+import sys
+
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import (
+    QApplication,
+    QComboBox,
+    QDockWidget,
+    QFormLayout,
+    QFrame,
+    QLabel,
+    QMainWindow,
+    QPlainTextEdit,
+    QSplitter,
+    QTabWidget,
+    QToolBar,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
+
+
+class InterfaceSmokeTest(QMainWindow):
+    """Shell do editor para validar dock, splitter, menu e resize do Qt."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.setWindowTitle("Zennity — Teste de Interface (sem Viewport)")
+        self.resize(1440, 900)
+        self.setMinimumSize(1000, 650)
+        self.setDockOptions(QMainWindow.AnimatedDocks | QMainWindow.AllowTabbedDocks)
+        self._build_menu()
+        self._build_toolbar()
+        self._build_center()
+        self._build_docks()
+        self.statusBar().showMessage("Teste isolado: não há Pygame nem renderização de cena.")
+
+    def _build_menu(self) -> None:
+        for name in ("Arquivo", "Editar", "Janela", "Criar", "Ferramentas", "Build", "Executar", "Ajuda"):
+            menu = self.menuBar().addMenu(name)
+            menu.addAction(QAction(f"Ação de teste ({name})", self))
+
+    def _build_toolbar(self) -> None:
+        toolbar = QToolBar("Ferramentas")
+        toolbar.setMovable(False)
+        self.addToolBar(toolbar)
+        for label in ("Novo", "Abrir", "Salvar", "Select", "Move", "Rotate", "Scale", "Play", "Pause", "Stop"):
+            toolbar.addAction(QAction(label, self))
+        toolbar.addSeparator()
+        mode = QComboBox()
+        mode.addItems(["2D", "3D (experimental)"])
+        toolbar.addWidget(mode)
+
+    def _build_center(self) -> None:
+        tabs = QTabWidget()
+        tabs.addTab(self._placeholder("Viewport isolada\n\nNenhum renderizador está ativo.\nArraste os painéis e redimensione a janela."), "Scene")
+        tabs.addTab(self._placeholder("Game View desativada para este teste."), "Game")
+        self.setCentralWidget(tabs)
+
+    def _build_docks(self) -> None:
+        hierarchy = QTreeWidget()
+        hierarchy.setHeaderHidden(True)
+        root = QTreeWidgetItem(["MainScene"])
+        environment = QTreeWidgetItem(["Environment"])
+        environment.addChildren([QTreeWidgetItem(["DirectionalLight"]), QTreeWidgetItem(["Terrain"])])
+        root.addChildren([environment, QTreeWidgetItem(["Player"]), QTreeWidgetItem(["Enemies"])])
+        hierarchy.addTopLevelItem(root)
+        hierarchy.expandAll()
+
+        assets = QTreeWidget()
+        assets.setHeaderHidden(True)
+        asset_root = QTreeWidgetItem(["Assets"])
+        asset_root.addChildren([QTreeWidgetItem(["Scenes"]), QTreeWidgetItem(["Scripts"]), QTreeWidgetItem(["Textures"])])
+        assets.addTopLevelItem(asset_root)
+        assets.expandAll()
+
+        left = QSplitter(Qt.Vertical)
+        left.addWidget(hierarchy)
+        left.addWidget(assets)
+        left.setSizes([330, 300])
+        self._dock("Hierarchy / Assets", left, Qt.LeftDockWidgetArea, 260)
+
+        inspector = QWidget()
+        form = QFormLayout(inspector)
+        form.addRow("Objeto", QLabel("Player"))
+        for field, value in (("Posição X", "400.00"), ("Posição Y", "200.00"), ("Escala X", "36.00"), ("Escala Y", "48.00")):
+            form.addRow(field, QLabel(value))
+        form.addRow(QLabel("Transform / Collider / Script"))
+        self._dock("Inspector", inspector, Qt.RightDockWidgetArea, 300)
+
+        console = QPlainTextEdit()
+        console.setReadOnly(True)
+        console.setPlainText("[INFO] Interface isolada iniciada.\n[INFO] Nenhuma cena foi carregada.\n[INFO] Nenhum frame Pygame será renderizado.")
+        self._dock("Console", console, Qt.BottomDockWidgetArea, 600)
+
+    def _dock(self, title: str, widget: QWidget, area: Qt.DockWidgetArea, width: int) -> None:
+        dock = QDockWidget(title, self)
+        dock.setObjectName(f"SmokeTest_{title}")
+        dock.setWidget(widget)
+        dock.setMinimumWidth(width if area in (Qt.LeftDockWidgetArea, Qt.RightDockWidgetArea) else 200)
+        self.addDockWidget(area, dock)
+
+    @staticmethod
+    def _placeholder(text: str) -> QWidget:
+        frame = QFrame()
+        frame.setFrameShape(QFrame.StyledPanel)
+        layout = QVBoxLayout(frame)
+        label = QLabel(text)
+        label.setAlignment(Qt.AlignCenter)
+        label.setStyleSheet("font-size: 16px; color: #aeb6c2;")
+        layout.addWidget(label)
+        return frame
+
+
+def main() -> None:
+    app = QApplication.instance() or QApplication(sys.argv)
+    window = InterfaceSmokeTest()
+    window.show()
+    sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main()
