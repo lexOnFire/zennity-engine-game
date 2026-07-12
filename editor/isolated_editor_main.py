@@ -75,7 +75,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.viewport_host.installEventFilter(self)
         self._hierarchy_drop_targets = {self.hierarchy_tree, self.hierarchy_tree.viewport()}
         self._inspector_drop_targets = {self.inspector_panel, *self.inspector_panel.findChildren(QWidget)}
-        self._scene_drop_targets = {self.scene_script_drop_zone, self.viewport_tabs, self.viewport_tabs.tabBar(), self.viewport_host}
+        self._scene_drop_targets = {self.viewport_tabs, self.viewport_tabs.tabBar(), self.viewport_host}
         self._script_drop_targets = self._hierarchy_drop_targets | self._inspector_drop_targets | self._scene_drop_targets
         for target in self._script_drop_targets:
             target.setAcceptDrops(True)
