@@ -1,19 +1,35 @@
-from editor.inspector.plugin import InspectorPlugin
-from editor.inspector.plugin_registry import InspectorPluginRegistry, inspector_plugin_registry
-from editor.inspector.default_plugins import register_default_inspector_plugins
-from editor.inspector.asset_component_plugins import register_asset_component_plugins
-from editor.inspector.infinite_background_plugin import register_infinite_background_plugin
-from editor.runtime.asset_direct_drop_patch import patch_asset_direct_drop_runtime
-from editor.runtime.rotated_scale_gizmo_patch import apply_rotated_scale_gizmo_patch
+from __future__ import annotations
 
-patch_asset_direct_drop_runtime()
-apply_rotated_scale_gizmo_patch()
-register_infinite_background_plugin()
+from editor.inspector.plugin import InspectorPlugin
+from editor.inspector.plugin_registry import InspectorPluginRegistry
+from editor.inspector.script_plugin import ScriptInspectorPlugin
+
+_registry: InspectorPluginRegistry | None = None
+
+
+def _build_registry() -> InspectorPluginRegistry:
+    from editor.inspector.asset_component_plugins import register_asset_plugins
+    from editor.inspector.default_plugins import register_default_plugins
+
+    registry = InspectorPluginRegistry()
+    register_default_plugins(registry)
+    register_asset_plugins(registry)
+    registry.register(ScriptInspectorPlugin())
+    return registry
+
+
+def _get_registry() -> InspectorPluginRegistry:
+    global _registry
+    if _registry is None:
+        _registry = _build_registry()
+    return _registry
+
+
+inspector_plugin_registry: InspectorPluginRegistry = _get_registry()  # type: ignore[assignment]
 
 __all__ = [
     "InspectorPlugin",
     "InspectorPluginRegistry",
+    "ScriptInspectorPlugin",
     "inspector_plugin_registry",
-    "register_default_inspector_plugins",
-    "register_asset_component_plugins",
 ]
