@@ -25,7 +25,15 @@ QToolBar#CommandBar {
     spacing: 5px;
     padding: 3px 5px;
 }
-QToolButton, QPushButton {
+QToolButton {
+    background-color: #252525;
+    border: 1px solid #353535;
+    border-radius: 3px;
+    color: #e2e2e2;
+    padding: 6px 12px;
+    font-size: 15px;
+}
+QPushButton {
     background-color: #252525;
     border: 1px solid #353535;
     border-radius: 3px;
