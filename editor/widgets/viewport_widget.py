@@ -505,19 +505,21 @@ class ViewportWidget(QWidget):
         dt  = min(now - self._last_time, 0.1)
         self._last_time = now
 
-        if self.active_scene:
-            if (
-                self.runtime_manager is not None
-                and getattr(self.runtime_manager, "is_playing", False)
-                and getattr(self.runtime_manager, "runtime_scene", None) is self.active_scene
-            ):
-                self.runtime_manager.tick(dt)
+        runtime_active = (
+            self.active_scene is not None
+            and self.runtime_manager is not None
+            and getattr(self.runtime_manager, "is_playing", False)
+            and getattr(self.runtime_manager, "runtime_scene", None) is self.active_scene
+        )
+        if not runtime_active:
+            # In Edit mode the Scene View is event driven: transform/camera
+            # actions and resize events explicitly request a repaint.  Forcing
+            # a full Pygame -> QImage copy every 16 ms makes Qt splitters,
+            # docks and menus hitch while they are dragged.
+            return
 
-            # Edit mode must not advance the scene. Calling Scene.update() here
-            # also calls RigidBody.update(), which applies gravity and makes
-            # objects fall before Play has started.
-            self._sync_selection_to_model()
-
+        self.runtime_manager.tick(dt)
+        self._sync_selection_to_model()
         self.update()
 
     def _sync_selection_to_model(self) -> None:
@@ -541,6 +543,7 @@ class ViewportWidget(QWidget):
             self.active_scene.toggle_play()
         elif state in ("stop", "pause") and self.active_scene.playing:
             self.active_scene.toggle_play()
+        self.update()
 
     def _on_runtime_selection_changed(self, obj) -> None:
         """Propaga seleção do runtime para a cena legada."""
