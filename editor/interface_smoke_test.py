@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QPlainTextEdit,
     QPushButton,
@@ -376,6 +377,42 @@ class InterfaceSmokeTest(QMainWindow):
         trans_body_layout.addWidget(scale_widget)
         main_layout.addWidget(trans_body)
 
+        # ------------------ COMPONENTE: SPRITE RENDERER ------------------
+        sprite_header = QWidget()
+        sprite_header.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px; border-bottom: 1px solid #2b2b2b;")
+        sprite_header_layout = QHBoxLayout(sprite_header)
+        sprite_header_layout.setContentsMargins(6, 4, 6, 4)
+        self.show_renderer_chk = QCheckBox("🖼 Sprite Renderer")
+        self.show_renderer_chk.setObjectName("InspectorCheckBox")
+        self.show_renderer_chk.setStyleSheet("font-weight: bold; color: #ffffff;")
+        sprite_header_layout.addWidget(self.show_renderer_chk)
+        sprite_header_layout.addStretch(1)
+        main_layout.addWidget(sprite_header)
+
+        self.sprite_renderer_body = QWidget()
+        sprite_form = QFormLayout(self.sprite_renderer_body)
+        sprite_form.setContentsMargins(8, 0, 8, 0)
+        texture_row = QWidget()
+        texture_layout = QHBoxLayout(texture_row)
+        texture_layout.setContentsMargins(0, 0, 0, 0)
+        self.sprite_texture_field = QLineEdit()
+        self.sprite_texture_field.setReadOnly(True)
+        self.sprite_texture_button = QPushButton("...")
+        self.sprite_texture_button.setFixedWidth(28)
+        texture_layout.addWidget(self.sprite_texture_field)
+        texture_layout.addWidget(self.sprite_texture_button)
+        sprite_form.addRow("Textura", texture_row)
+        self.sprite_color_button = QPushButton("Cor")
+        sprite_form.addRow("Cor", self.sprite_color_button)
+        self.sprite_layer_combo = QComboBox()
+        self.sprite_layer_combo.addItems(["Background", "Default", "Foreground", "UI"])
+        sprite_form.addRow("Camada", self.sprite_layer_combo)
+        self.sprite_order_field = QDoubleSpinBox()
+        self.sprite_order_field.setDecimals(0)
+        self.sprite_order_field.setRange(-10000, 10000)
+        self.sprite_order_field.setKeyboardTracking(False)
+        sprite_form.addRow("Ordem", self.sprite_order_field)
+        main_layout.addWidget(self.sprite_renderer_body)
         # ------------------ COMPONENTE: RIGIDBODY 2D ------------------
         rb_header = QWidget()
         rb_header.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px; border-bottom: 1px solid #2b2b2b;")
