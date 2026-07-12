@@ -343,13 +343,32 @@ class RealInspectorPanel(InspectorPanel):
         self.object_static.setChecked(bool(getattr(obj, "is_static", False)))
         self.object_tag.setCurrentText(str(getattr(obj, "tag", "Untagged")))
         self.object_layer.setCurrentText(str(getattr(obj, "layer", "Default")))
-        self._update_legacy_labels(getattr(obj, "components", []))
+        self._update_legacy_labels(obj, getattr(obj, "components", []))
         self._render_component_controls(obj)
 
-    def _update_legacy_labels(self, components: list[Any]) -> None:
+    def _update_legacy_labels(self, obj: Any, components: list[Any]) -> None:
         component_names = [self._component_type(comp) for comp in components if not getattr(comp, "required", False)]
         text = ", ".join(component_names) if component_names else "Sem componentes"
         self.renderer_label.setText("Components\n  " + text)
+
+        # Usa obj.transform como fonte primária — o transform nativo do
+        # GameObject vive em obj.transform, fora da lista de componentes.
+        # Fallback para componente 'Transform' em components preservado
+        # para compatibilidade com GameObjects que usam o modelo antigo.
+        transform = getattr(obj, "transform", None)
+        if transform is not None:
+            pos = getattr(transform, "position", [0, 0, 0])
+            rot = getattr(transform, "rotation", [0, 0, 0])
+            scale = getattr(transform, "scale", [1, 1, 1])
+            self.transform_label.setText(
+                "Transform\n"
+                f"  Position: X {float(pos[0]):.1f} | Y {float(pos[1]):.1f} | Z {float(pos[2]) if len(pos) > 2 else 0:.1f}\n"
+                f"  Rotation: {list(rot)}\n"
+                f"  Scale: {list(scale)}"
+            )
+            return
+
+        # Fallback: procura componente Transform na lista de componentes
         for component in components:
             if self._component_type(component) != "Transform":
                 continue
