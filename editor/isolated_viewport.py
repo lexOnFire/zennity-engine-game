@@ -17,10 +17,11 @@ class PlayScriptAPI:
 
     _KEY_ALIASES = {"a": "left", "d": "right", "w": "up", "s": "down", "space": "jump"}
 
-    def __init__(self, name: str, obj: dict[str, Any], events: Any) -> None:
+    def __init__(self, name: str, obj: dict[str, Any], events: Any, world: dict[str, dict[str, Any]] | None = None) -> None:
         self.name = name
         self.obj = obj
         self._events = events
+        self._world = world or {name: obj}
         self._input: dict[str, bool] = {}
         self._previous_input: dict[str, bool] = {}
 
@@ -48,6 +49,34 @@ class PlayScriptAPI:
     def rotation(self, value: float) -> None:
         self.obj["rotation"] = float(value)
 
+    @property
+    def width(self) -> float:
+        return float(self.obj.get("w", 1.0))
+
+    @width.setter
+    def width(self, value: float) -> None:
+        self.obj["w"] = max(1.0, float(value))
+
+    @property
+    def height(self) -> float:
+        return float(self.obj.get("h", 1.0))
+
+    @height.setter
+    def height(self, value: float) -> None:
+        self.obj["h"] = max(1.0, float(value))
+
+    @property
+    def active(self) -> bool:
+        return bool(self.obj.get("active", True))
+
+    @active.setter
+    def active(self, value: bool) -> None:
+        self.obj["active"] = bool(value)
+
+    @property
+    def state(self) -> dict[str, Any]:
+        return self.obj.setdefault("_script_state", {})
+
     def begin_frame(self, input_state: dict[str, bool]) -> None:
         self._input = dict(input_state)
 
@@ -72,6 +101,21 @@ class PlayScriptAPI:
     def jump(self, force: float = 420.0) -> None:
         self.obj["_jump_requested"] = True
         self.obj["_jump_force"] = float(force)
+
+    def find(self, tag: str) -> "PlayScriptAPI | None":
+        wanted = str(tag).lower()
+        for name, obj in self._world.items():
+            if obj is self.obj:
+                continue
+            if str(obj.get("tag", obj.get("name", ""))).lower() == wanted:
+                return PlayScriptAPI(name, obj, self._events, self._world)
+        return None
+
+    def distance_to(self, other: "PlayScriptAPI") -> float:
+        return math.hypot(other.x - self.x, other.y - self.y)
+
+    def destroy(self) -> None:
+        self.active = False
 
     def send(self, command: str, value: Any = None) -> None:
         self.obj.setdefault("script_instructions", []).append({"command": str(command), "value": value})
@@ -226,7 +270,7 @@ def run_viewport(
                         raise TypeError("defina on_update(game, dt), isolated_update(...) ou update(obj, dt)")
                     module._zennity_update_hook = update
                     module._zennity_update_mode = update_mode
-                    api = script_apis.setdefault(name, PlayScriptAPI(name, obj, events))
+                    api = script_apis.setdefault(name, PlayScriptAPI(name, obj, events, objects))
                     module._zennity_api = api
                     script_instances.setdefault(name, []).append((str(path), module))
                     start = getattr(module, "on_start", None)
