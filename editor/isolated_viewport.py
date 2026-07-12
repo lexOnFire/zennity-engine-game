@@ -118,8 +118,15 @@ class PlayScriptAPI:
     def distance_to(self, other: "PlayScriptAPI") -> float:
         return math.hypot(other.x - self.x, other.y - self.y)
 
-    def destroy(self) -> None:
-        self.active = False
+    def play_animation(self, clip_name: str) -> None:
+        self.obj.setdefault("script_instructions", []).append({"command": "play_animation", "value": clip_name})
+
+    def stop_animation(self) -> None:
+        self.obj.setdefault("script_instructions", []).append({"command": "stop_animation", "value": None})
+
+    @property
+    def current_animation(self) -> str:
+        return str(self.obj.get("_current_animation_name", "Nenhum"))
 
     def send(self, command: str, value: Any = None) -> None:
         self.obj.setdefault("script_instructions", []).append({"command": str(command), "value": value})
@@ -1026,6 +1033,17 @@ def run_viewport(
                         legacy_instruction_hook = getattr(module, "isolated_on_instruction", None)
                         for instruction in instructions:
                             if isinstance(instruction, dict):
+                                cmd = instruction.get("command")
+                                val = instruction.get("value")
+                                if cmd == "play_animation" and val:
+                                    obj["_current_animation_name"] = str(val)
+                                    # Força o componente de animação (se houver) a trocar
+                                    anim = obj.get("animator")
+                                    if isinstance(anim, dict):
+                                        anim["active_clip"] = str(val)
+                                elif cmd == "stop_animation":
+                                    obj["_current_animation_name"] = "Nenhum"
+                                
                                 if callable(simple_instruction_hook):
                                     simple_instruction_hook(api, instruction)
                                 elif callable(legacy_instruction_hook):
