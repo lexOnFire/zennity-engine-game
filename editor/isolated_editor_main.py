@@ -41,15 +41,16 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._undo_stack: list[list[dict]] = []
         self._redo_stack: list[list[dict]] = []
         self._drag_history_snapshot: list[dict] | None = None
-        self.setWindowTitle("Zennity — Interface isolada (PySide6)")
+        self.setWindowTitle("Zennity Engine Editor — Phase 1")
         self.statusBar().showMessage(
-            "Viewport Pygame está em outra janela/processo. Arraste painéis aqui sem afetá-la."
+            "Zennity Phase 1 pronto — Viewport em processo dedicado."
         )
         self._connect_existing_toolbar_actions()
+        self._configure_main_menus()
         self._configure_tool_actions()
         self._configure_create_menu()
         self._configure_edit_menu()
-        self._build_viewport_link_toolbar()
+        self._refresh_assets()
         self._connect_hierarchy_to_viewport()
         self._refresh_hierarchy()
         self._connect_inspector_to_viewport()
@@ -89,6 +90,37 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             action = QAction(label, self)
             action.triggered.connect(lambda checked=False, message=payload: self._send_toolbar_command(message))
             toolbar.addAction(action)
+
+    def _configure_main_menus(self) -> None:
+        for label in ("Novo", "Abrir", "Salvar"):
+            self.editor_menus["Arquivo"].addAction(self.toolbar_actions[label])
+        for label in ("Select", "Move", "Rotate", "Scale"):
+            self.editor_menus["Ferramentas"].addAction(self.toolbar_actions[label])
+        for label in ("Play", "Pause", "Stop"):
+            self.editor_menus["Executar"].addAction(self.toolbar_actions[label])
+        self.toolbar_actions["Pause"].setEnabled(False)
+
+    def _refresh_assets(self) -> None:
+        self.assets_tree.clear()
+        root_path = Path.cwd() / "Assets"
+        if not root_path.exists():
+            root_path = Path.cwd() / "assets"
+        root_item = QTreeWidgetItem([root_path.name if root_path.exists() else "Assets"])
+        self.assets_tree.addTopLevelItem(root_item)
+
+        def add_directory(parent_item: QTreeWidgetItem, directory: Path) -> None:
+            for child in sorted(directory.iterdir(), key=lambda path: (path.is_file(), path.name.lower())):
+                if child.name.startswith(".") or child.suffix == ".meta":
+                    continue
+                item = QTreeWidgetItem([child.name])
+                item.setToolTip(0, str(child))
+                parent_item.addChild(item)
+                if child.is_dir():
+                    add_directory(item, child)
+
+        if root_path.exists():
+            add_directory(root_item, root_path)
+        root_item.setExpanded(True)
 
     def _connect_existing_toolbar_actions(self) -> None:
         commands = {
@@ -503,6 +535,11 @@ def main() -> None:
     commands = context.Queue()
     events = context.Queue()
     app = QApplication.instance() or QApplication(sys.argv)
+    try:
+        from editor.premium_theme import PREMIUM_QSS
+        app.setStyleSheet(PREMIUM_QSS)
+    except Exception:
+        pass
     window = IsolatedEditorWindow(None, commands, events)
     window.show()
     app.processEvents()
