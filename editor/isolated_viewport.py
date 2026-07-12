@@ -96,8 +96,10 @@ def run_viewport(
     drag_handle: int = -1
     move_axis: str = "" # "" para ambos, "x" para travar no X local, "y" para travar no Y local
     playing = False
+    paused = False
     edit_snapshot = deepcopy(objects)
     velocities_y: dict[str, float] = {}
+    grounded: dict[str, bool] = {}
     last_stats_ms = 0
 
     def game_camera() -> dict[str, Any] | None:
@@ -113,6 +115,16 @@ def run_viewport(
             ),
             None,
         )
+
+    def controlled_object() -> tuple[str, dict[str, Any]] | tuple[None, None]:
+        for name, obj in objects.items():
+            if bool((obj.get("controller") or {}).get("enabled", False)):
+                return name, obj
+        for name, obj in objects.items():
+            rigidbody = obj.get("rigidbody") or {}
+            if rigidbody and not rigidbody.get("is_kinematic", False):
+                return name, obj
+        return None, None
 
     def view_transform() -> tuple[float, float, float]:
         if view_mode == "game":
@@ -165,7 +177,9 @@ def run_viewport(
                     edit_snapshot = deepcopy(objects)
                     selected_name = None
                     playing = False
+                    paused = False
                     velocities_y = {}
+                    grounded = {}
                 elif command.get("type") == "set_tool":
                     tool = str(command.get("tool", "select")).lower()
                     if tool in {"select", "move", "rotate", "scale"}:
@@ -182,13 +196,24 @@ def run_viewport(
                     if not playing:
                         edit_snapshot = deepcopy(objects)
                         playing = True
+                        paused = False
                         velocities_y = {}
+                        grounded = {}
                         _send(events, {"type": "play_state", "state": "play"})
+                    elif paused:
+                        paused = False
+                        _send(events, {"type": "play_state", "state": "play"})
+                elif command.get("type") == "pause":
+                    if playing:
+                        paused = not paused
+                        _send(events, {"type": "play_state", "state": "pause" if paused else "play"})
                 elif command.get("type") == "stop":
                     if playing:
                         objects = deepcopy(edit_snapshot)
                         playing = False
+                        paused = False
                         velocities_y = {}
+                        grounded = {}
                         _send(events, {"type": "play_state", "state": "edit"})
                         _send(events, {"type": "scene_snapshot", "objects": list(objects.values())})
                 elif command.get("type") == "select_object":
@@ -249,6 +274,8 @@ def run_viewport(
                         obj["collider"] = {"type": "box"}
                     if kind == "Trigger":
                         obj["collider"]["is_trigger"] = True
+                    if kind == "Player":
+                        obj["controller"] = {"enabled": True, "speed": 240.0, "jump_force": 420.0}
                     if kind == "Camera":
                         obj["component_names"] = ["Camera2D"]
                         obj["camera"] = {"active": True, "zoom": 1.0}
@@ -263,6 +290,11 @@ def run_viewport(
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE and playing and not paused:
+                player_name, _player = controlled_object()
+                if player_name is not None and grounded.get(player_name, False):
+                    velocities_y[player_name] = -float((_player.get("controller") or {}).get("jump_force", 420.0))
+                    grounded[player_name] = False
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 2 and not playing and view_mode == "scene":
                 panning = True
                 pan_last = event.pos
@@ -467,12 +499,19 @@ def run_viewport(
 
         width, height = screen.get_size()
         dt = clock.get_time() / 1000.0
-        if playing:
+        if playing and not paused:
+            player_name, player = controlled_object()
+            if player_name is not None and player is not None:
+                keys = pygame.key.get_pressed()
+                horizontal = int(bool(keys[pygame.K_d] or keys[pygame.K_RIGHT])) - int(bool(keys[pygame.K_a] or keys[pygame.K_LEFT]))
+                speed = float((player.get("controller") or {}).get("speed", 240.0))
+                player["x"] += horizontal * speed * dt
             static_colliders = [obj for obj in objects.values() if obj.get("collider") and (obj.get("rigidbody") or {}).get("is_kinematic", True)]
             for name, obj in objects.items():
                 rigidbody = obj.get("rigidbody") or {}
                 if rigidbody.get("is_kinematic", False) or not rigidbody.get("use_gravity", False):
                     continue
+                grounded[name] = False
                 velocity = velocities_y.get(name, 0.0) + 980.0 * float(rigidbody.get("gravity_scale", 1.0)) * dt
                 previous_bottom = obj["y"] + obj["h"] / 2
                 obj["y"] += velocity * dt
@@ -483,6 +522,7 @@ def run_viewport(
                     if overlaps_x and previous_bottom <= floor_top and player_bottom >= floor_top:
                         obj["y"] = floor_top - obj["h"] / 2
                         velocity = 0.0
+                        grounded[name] = True
                         break
                 velocities_y[name] = velocity
         screen.fill((22, 24, 31))
@@ -612,6 +652,8 @@ def run_viewport(
         now_ms = pygame.time.get_ticks()
         if now_ms - last_stats_ms >= 500:
             last_stats_ms = now_ms
-            _send(events, {"type": "stats", "fps": clock.get_fps(), "objects": len(objects), "mode": "PLAY" if playing else "EDIT", "view": view_mode.upper(), "zoom": view_transform()[2], "snap": snap_enabled, "camera": (game_camera() or {}).get("name") if view_mode == "game" else "Editor"})
+            runtime_mode = "PAUSE" if paused else ("PLAY" if playing else "EDIT")
+            player_name, _player = controlled_object()
+            _send(events, {"type": "stats", "fps": clock.get_fps(), "objects": len(objects), "mode": runtime_mode, "view": view_mode.upper(), "zoom": view_transform()[2], "snap": snap_enabled, "camera": (game_camera() or {}).get("name") if view_mode == "game" else "Editor", "player": player_name})
 
     pygame.quit()
