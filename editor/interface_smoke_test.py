@@ -164,9 +164,49 @@ class InterfaceSmokeTest(QMainWindow):
         self.inspector_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         self.addDockWidget(Qt.RightDockWidgetArea, self.inspector_dock)
         
+        # QScrollArea para evitar que a janela fique apertada e bagunçada
+        from PySide6.QtWidgets import QScrollArea
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("QScrollArea { border: none; background-color: #1c1c1c; }")
+        
         inspector = QWidget()
         self.inspector_panel = inspector
-        form = QFormLayout(inspector)
+        inspector.setStyleSheet("background-color: #1c1c1c;")
+        main_layout = QVBoxLayout(inspector)
+        main_layout.setContentsMargins(8, 8, 8, 8)
+        main_layout.setSpacing(10)
+        
+        # BARRA DE TÍTULO CUSTOMIZADA DO INSPECTOR (Com botões de encolher, desgrudar/flutuar, acoplar)
+        title_bar = QWidget()
+        title_bar.setStyleSheet("background-color: #2b2b2b; border-radius: 4px; border: 1px solid #3d3d3d;")
+        title_bar_layout = QHBoxLayout(title_bar)
+        title_bar_layout.setContentsMargins(6, 4, 6, 4)
+        
+        inspector_lbl = QLabel("🔍 INSPECTOR")
+        inspector_lbl.setStyleSheet("font-weight: bold; color: #4caf50; font-size: 11px;")
+        title_bar_layout.addWidget(inspector_lbl)
+        title_bar_layout.addStretch()
+        
+        # Botões de controle da janela
+        self.btn_collapse_dock = QPushButton("▼") # Encolher
+        self.btn_collapse_dock.setToolTip("Ocultar Painel")
+        self.btn_float_dock = QPushButton("⎋")      # Desgrudar / Flutuar
+        self.btn_float_dock.setToolTip("Desgrudar/Flutuar Janela")
+        self.btn_dock_dock = QPushButton("⚓")       # Acoplar / Travar
+        self.btn_dock_dock.setToolTip("Acoplar no Editor")
+        
+        for btn in (self.btn_collapse_dock, self.btn_float_dock, self.btn_dock_dock):
+            btn.setFixedSize(20, 20)
+            btn.setStyleSheet("background-color: #202020; color: #ffffff; border: 1px solid #444; border-radius: 2px; font-size: 10px; font-weight: bold;")
+            title_bar_layout.addWidget(btn)
+            
+        # Conecta as ações nos botões customizados
+        self.btn_collapse_dock.clicked.connect(lambda: self.inspector_panel.setVisible(not self.inspector_panel.isVisible()))
+        self.btn_float_dock.clicked.connect(lambda: self.inspector_dock.setFloating(True))
+        self.btn_dock_dock.clicked.connect(lambda: self.inspector_dock.setFloating(False))
+        
+        main_layout.addWidget(title_bar)
         
         # Cabeçalho do Objeto (Player, Estático, etc.)
         obj_header = QWidget()
@@ -175,19 +215,19 @@ class InterfaceSmokeTest(QMainWindow):
         
         self.inspector_name_label = QLabel("Player")
         self.inspector_name_label.setObjectName("InspectorObjectName")
-        self.inspector_name_label.setStyleSheet("font-weight: bold; font-size: 13px; color: #ffffff;")
+        self.inspector_name_label.setStyleSheet("font-weight: bold; font-size: 14px; color: #ffffff;")
         
         self.static_checkbox = QCheckBox("Estático")
         self.static_checkbox.setObjectName("InspectorCheckBox")
         
         obj_header_layout.addWidget(self.inspector_name_label)
         obj_header_layout.addWidget(self.static_checkbox)
-        form.addRow(obj_header)
+        main_layout.addWidget(obj_header)
         
         # Tag & Layer rows
         tag_layer = QWidget()
         tag_layer_layout = QHBoxLayout(tag_layer)
-        tag_layer_layout.setContentsMargins(0, 4, 0, 4)
+        tag_layer_layout.setContentsMargins(0, 0, 0, 0)
         tag_layer_layout.addWidget(QLabel("Tag"))
         self.tag_combo = QComboBox()
         self.tag_combo.addItems(["Player", "Untagged", "MainCamera", "Enemy"])
@@ -196,42 +236,92 @@ class InterfaceSmokeTest(QMainWindow):
         self.layer_combo = QComboBox()
         self.layer_combo.addItems(["Default", "UI", "Water", "Ignore Raycast"])
         tag_layer_layout.addWidget(self.layer_combo)
-        form.addRow(tag_layer)
+        main_layout.addWidget(tag_layer)
 
-        # ------------------ COMPONENTE: TRANSFORM ------------------
+        # ------------------ COMPONENTE: TRANSFORM (Organização Horizontal X, Y, Z) ------------------
         trans_header = QWidget()
-        trans_header.setStyleSheet("background-color: #242424; border-radius: 3px;")
+        trans_header.setStyleSheet("background-color: #242424; border-radius: 3px; border-bottom: 1px solid #2b2b2b;")
         trans_h_layout = QHBoxLayout(trans_header)
         trans_h_layout.setContentsMargins(6, 4, 6, 4)
         trans_title = QLabel("🏃 Transform")
         trans_title.setStyleSheet("font-weight: bold; color: #ffffff;")
         trans_h_layout.addWidget(trans_title)
         trans_h_layout.addStretch()
-        # Botão encolher/excluir (Transform é obrigatório, então só exibe engrenagem)
         trans_h_layout.addWidget(QLabel("⚙️"))
-        form.addRow(trans_header)
+        main_layout.addWidget(trans_header)
         
         self.inspector_fields: dict[str, QDoubleSpinBox] = {}
-        for field, value in (("Posição X", "400.00"), ("Posição Y", "200.00"), ("Rotação", "0.00"), ("Escala X", "36.00"), ("Escala Y", "48.00")):
-            key = {
-                "Posição X": "x",
-                "Posição Y": "y",
-                "Rotação": "rotation",
-                "Escala X": "w",
-                "Escala Y": "h",
-            }[field]
-            editor = QDoubleSpinBox()
-            editor.setObjectName("InspectorNumberField")
-            editor.setDecimals(2)
-            editor.setRange(1.0 if key in ("w", "h") else -100000.0, 100000.0)
-            editor.setValue(float(value))
-            editor.setKeyboardTracking(False)
-            self.inspector_fields[key] = editor
-            form.addRow(field, editor)
+        
+        # Linha Posição (X, Y)
+        pos_widget = QWidget()
+        pos_layout = QHBoxLayout(pos_widget)
+        pos_layout.setContentsMargins(8, 0, 8, 0)
+        pos_layout.addWidget(QLabel("Posição"))
+        pos_layout.addStretch()
+        
+        self.inspector_fields["x"] = QDoubleSpinBox()
+        self.inspector_fields["x"].setObjectName("InspectorNumberField")
+        self.inspector_fields["x"].setDecimals(2)
+        self.inspector_fields["x"].setRange(-100000.0, 100000.0)
+        self.inspector_fields["x"].setKeyboardTracking(False)
+        pos_layout.addWidget(QLabel("X"))
+        pos_layout.addWidget(self.inspector_fields["x"])
+        
+        self.inspector_fields["y"] = QDoubleSpinBox()
+        self.inspector_fields["y"].setObjectName("InspectorNumberField")
+        self.inspector_fields["y"].setDecimals(2)
+        self.inspector_fields["y"].setRange(-100000.0, 100000.0)
+        self.inspector_fields["y"].setKeyboardTracking(False)
+        pos_layout.addWidget(QLabel("Y"))
+        pos_layout.addWidget(self.inspector_fields["y"])
+        
+        main_layout.addWidget(pos_widget)
+        
+        # Linha Rotação
+        rot_widget = QWidget()
+        rot_layout = QHBoxLayout(rot_widget)
+        rot_layout.setContentsMargins(8, 0, 8, 0)
+        rot_layout.addWidget(QLabel("Rotação"))
+        rot_layout.addStretch()
+        
+        self.inspector_fields["rotation"] = QDoubleSpinBox()
+        self.inspector_fields["rotation"].setObjectName("InspectorNumberField")
+        self.inspector_fields["rotation"].setDecimals(2)
+        self.inspector_fields["rotation"].setRange(-100000.0, 100000.0)
+        self.inspector_fields["rotation"].setKeyboardTracking(False)
+        rot_layout.addWidget(QLabel("Z"))
+        rot_layout.addWidget(self.inspector_fields["rotation"])
+        
+        main_layout.addWidget(rot_widget)
+        
+        # Linha Escala (W, H)
+        scale_widget = QWidget()
+        scale_layout = QHBoxLayout(scale_widget)
+        scale_layout.setContentsMargins(8, 0, 8, 0)
+        scale_layout.addWidget(QLabel("Escala"))
+        scale_layout.addStretch()
+        
+        self.inspector_fields["w"] = QDoubleSpinBox()
+        self.inspector_fields["w"].setObjectName("InspectorNumberField")
+        self.inspector_fields["w"].setDecimals(2)
+        self.inspector_fields["w"].setRange(1.0, 100000.0)
+        self.inspector_fields["w"].setKeyboardTracking(False)
+        scale_layout.addWidget(QLabel("X"))
+        scale_layout.addWidget(self.inspector_fields["w"])
+        
+        self.inspector_fields["h"] = QDoubleSpinBox()
+        self.inspector_fields["h"].setObjectName("InspectorNumberField")
+        self.inspector_fields["h"].setDecimals(2)
+        self.inspector_fields["h"].setRange(1.0, 100000.0)
+        self.inspector_fields["h"].setKeyboardTracking(False)
+        scale_layout.addWidget(QLabel("Y"))
+        scale_layout.addWidget(self.inspector_fields["h"])
+        
+        main_layout.addWidget(scale_widget)
 
         # ------------------ COMPONENTE: RIGIDBODY 2D ------------------
         rb_header = QWidget()
-        rb_header.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px;")
+        rb_header.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px; border-bottom: 1px solid #2b2b2b;")
         rb_h_layout = QHBoxLayout(rb_header)
         rb_h_layout.setContentsMargins(6, 4, 6, 4)
         
@@ -246,7 +336,7 @@ class InterfaceSmokeTest(QMainWindow):
         self.btn_del_rb.setFixedSize(18, 18)
         self.btn_del_rb.setStyleSheet("background: transparent; color: #ff5555; font-weight: bold; border: none;")
         rb_h_layout.addWidget(self.btn_del_rb)
-        form.addRow(rb_header)
+        main_layout.addWidget(rb_header)
         
         self.physics_fields = {
             "use_gravity": QCheckBox(),
@@ -254,12 +344,17 @@ class InterfaceSmokeTest(QMainWindow):
         }
         self.physics_fields["use_gravity"].setObjectName("InspectorCheckBox")
         self.physics_fields["is_kinematic"].setObjectName("InspectorCheckBox")
-        form.addRow("Usar gravidade", self.physics_fields["use_gravity"])
-        form.addRow("Cinemático", self.physics_fields["is_kinematic"])
+        
+        physics_widget = QWidget()
+        physics_lay = QFormLayout(physics_widget)
+        physics_lay.setContentsMargins(8, 0, 8, 0)
+        physics_lay.addRow("Usar gravidade", self.physics_fields["use_gravity"])
+        physics_lay.addRow("Cinemático", self.physics_fields["is_kinematic"])
+        main_layout.addWidget(physics_widget)
 
         # ------------------ COMPONENTE: COLLIDER 2D ------------------
         col_header = QWidget()
-        col_header.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px;")
+        col_header.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px; border-bottom: 1px solid #2b2b2b;")
         col_h_layout = QHBoxLayout(col_header)
         col_h_layout.setContentsMargins(6, 4, 6, 4)
         
@@ -274,8 +369,12 @@ class InterfaceSmokeTest(QMainWindow):
         self.btn_del_col.setFixedSize(18, 18)
         self.btn_del_col.setStyleSheet("background: transparent; color: #ff5555; font-weight: bold; border: none;")
         col_h_layout.addWidget(self.btn_del_col)
-        form.addRow(col_header)
+        main_layout.addWidget(col_header)
 
+        collider_widget = QWidget()
+        collider_lay = QFormLayout(collider_widget)
+        collider_lay.setContentsMargins(8, 0, 8, 0)
+        
         self.collider_fields: dict[str, QDoubleSpinBox] = {}
         for label, key in (("Collider Largura", "width"), ("Collider Altura", "height"), ("Collider Raio", "radius"), ("Collider Offset X", "offset_x"), ("Collider Offset Y", "offset_y")):
             editor = QDoubleSpinBox()
@@ -284,28 +383,33 @@ class InterfaceSmokeTest(QMainWindow):
             editor.setRange(0.01 if key in ("width", "height", "radius") else -100000.0, 100000.0)
             editor.setKeyboardTracking(False)
             self.collider_fields[key] = editor
-            form.addRow(label, editor)
+            collider_lay.addRow(label, editor)
         self.collider_trigger_field = QCheckBox()
         self.collider_trigger_field.setObjectName("InspectorCheckBox")
-        form.addRow("Collider Trigger", self.collider_trigger_field)
+        collider_lay.addRow("Collider Trigger", self.collider_trigger_field)
+        main_layout.addWidget(collider_widget)
 
         # ------------------ COMPONENTE: SCRIPTS (CUSTOM) ------------------
         script_header = QWidget()
-        script_header.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px;")
+        script_header.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px; border-bottom: 1px solid #2b2b2b;")
         script_h_layout = QHBoxLayout(script_header)
         script_h_layout.setContentsMargins(6, 4, 6, 4)
         script_title = QLabel("📄 Scripts / Custom")
         script_title.setStyleSheet("font-weight: bold; color: #ffffff;")
         script_h_layout.addWidget(script_title)
         script_h_layout.addStretch()
-        form.addRow(script_header)
+        main_layout.addWidget(script_header)
 
+        script_widget = QWidget()
+        script_lay = QFormLayout(script_widget)
+        script_lay.setContentsMargins(8, 0, 8, 0)
+        
         self.component_summary_label = QLabel("Transform")
         self.component_summary_label.setWordWrap(True)
-        form.addRow("Componentes Ativos", self.component_summary_label)
+        script_lay.addRow("Componentes Ativos", self.component_summary_label)
         self.script_selector = QComboBox()
         self.script_selector.setObjectName("InspectorScriptSelector")
-        form.addRow("Script Py", self.script_selector)
+        script_lay.addRow("Script Py", self.script_selector)
         
         script_actions = QWidget()
         script_actions_layout = QHBoxLayout(script_actions)
@@ -314,14 +418,18 @@ class InterfaceSmokeTest(QMainWindow):
         self.edit_script_button = QPushButton("Editar")
         script_actions_layout.addWidget(self.create_script_button)
         script_actions_layout.addWidget(self.edit_script_button)
-        form.addRow("", script_actions)
+        script_lay.addRow("", script_actions)
+        main_layout.addWidget(script_widget)
         
         self.add_component_button = QPushButton("Adicionar Componente")
         self.add_component_button.setObjectName("InspectorAddComponentButton")
-        form.addRow(self.add_component_button)
+        main_layout.addWidget(self.add_component_button)
+        
+        main_layout.addStretch(1)
         
         inspector.setMinimumWidth(300)
-        self.inspector_dock.setWidget(inspector)
+        scroll.setWidget(inspector)
+        self.inspector_dock.setWidget(scroll)
 
         console = QPlainTextEdit()
         self.console_output = console
