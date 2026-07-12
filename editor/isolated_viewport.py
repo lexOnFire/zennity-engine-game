@@ -367,11 +367,19 @@ def run_viewport(
 
     def start_audio_sources() -> None:
         stop_audio_sources()
+        found = 0
+        enabled = 0
         for name, obj in objects.items():
             audio = obj.get("audio")
-            if not isinstance(audio, dict) or not audio.get("autoplay") or not audio.get("path"):
+            if not isinstance(audio, dict):
                 continue
+            found += 1
+            if not audio.get("autoplay") or not audio.get("path"):
+                _send(events, {"type": "script_log", "level": "INFO", "message": f"{name}: Audio Source não inicia (Ao iniciar={bool(audio.get('autoplay'))}, arquivo={bool(audio.get('path'))})"})
+                continue
+            enabled += 1
             play_audio_file(name, str(audio["path"]), float(audio.get("volume", 1.0)), bool(audio.get("loop", False)))
+        _send(events, {"type": "script_log", "level": "INFO", "message": f"Play processou {found} Audio Source(s); {enabled} iniciado(s)"})
 
     def ensure_audio_mixer() -> bool:
         try:
@@ -755,6 +763,11 @@ def run_viewport(
                         forwarded_input[key] = bool(command["keys"].get(key, False))
                 elif command.get("type") == "play":
                     if not playing:
+                        incoming_audio = command.get("audio_sources", {})
+                        if isinstance(incoming_audio, dict):
+                            for object_name, audio_config in incoming_audio.items():
+                                if object_name in objects and isinstance(audio_config, dict):
+                                    objects[object_name]["audio"] = dict(audio_config)
                         edit_snapshot = deepcopy(objects)
                         playing = True
                         paused = False
