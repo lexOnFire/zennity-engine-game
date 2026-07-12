@@ -65,6 +65,7 @@ from engine.audio import AudioSource, AudioListener
 from engine.animation.animator import Animator
 from engine.ui.runtime_components import Canvas, LabelComponent, ImageComponent, InfiniteBackground, ButtonComponent
 from engine.graphics.tilemap import Tilemap, TilemapRenderer
+from engine.components.script_component import ScriptComponent
 
 component_registry.register(Component)
 component_registry.register(Transform)
@@ -80,3 +81,4 @@ component_registry.register(InfiniteBackground, "Infinite Background")
 component_registry.register(ButtonComponent)
 component_registry.register(Tilemap)
 component_registry.register(TilemapRenderer)
+component_registry.register(ScriptComponent, "Script")
