@@ -19,7 +19,6 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QMainWindow,
     QPlainTextEdit,
     QPushButton,
@@ -216,8 +215,6 @@ class InterfaceSmokeTest(QMainWindow):
         obj_header_layout = QHBoxLayout(obj_header)
         obj_header_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.object_enabled_checkbox = QCheckBox()
-        self.object_enabled_checkbox.setChecked(True)
         self.inspector_name_label = QLabel("Player")
         self.inspector_name_label.setObjectName("InspectorObjectName")
         self.inspector_name_label.setStyleSheet("font-weight: bold; font-size: 14px; color: #ffffff;")
@@ -225,16 +222,8 @@ class InterfaceSmokeTest(QMainWindow):
         self.static_checkbox = QCheckBox("Estático")
         self.static_checkbox.setObjectName("InspectorCheckBox")
 
-        obj_header_layout.addWidget(self.object_enabled_checkbox)
         obj_header_layout.addWidget(self.inspector_name_label)
-        obj_header_layout.addStretch()
         obj_header_layout.addWidget(self.static_checkbox)
-        self.btn_delete_object = QToolButton()
-        self.btn_delete_object.setText("✕")
-        self.btn_delete_object.setToolTip("Excluir objeto")
-        self.btn_delete_object.setFixedSize(18, 18)
-        self.btn_delete_object.setStyleSheet("background: transparent !important; color: #ff5555 !important; border: none !important;")
-        obj_header_layout.addWidget(self.btn_delete_object)
         main_layout.addWidget(obj_header)
 
         # Tag & Layer rows
@@ -269,14 +258,13 @@ class InterfaceSmokeTest(QMainWindow):
         btn_collapse_trans.setFixedSize(18, 18)
         btn_collapse_trans.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
 
-        self.btn_reset_transform = QToolButton()
-        self.btn_reset_transform.setText("↺")
-        self.btn_reset_transform.setToolTip("Resetar Transform")
-        self.btn_reset_transform.setFixedSize(18, 18)
-        self.btn_reset_transform.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important;")
+        btn_del_trans = QToolButton()
+        btn_del_trans.setText("✕")
+        btn_del_trans.setFixedSize(18, 18)
+        btn_del_trans.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important; padding: 0px;")
 
         trans_h_layout.addWidget(btn_collapse_trans)
-        trans_h_layout.addWidget(self.btn_reset_transform)
+        trans_h_layout.addWidget(btn_del_trans)
         main_layout.addWidget(trans_header)
 
         # Widget container para as propriedades do Transform (encolhível)
@@ -393,32 +381,6 @@ class InterfaceSmokeTest(QMainWindow):
         trans_body_layout.addWidget(scale_widget)
         main_layout.addWidget(trans_body)
 
-        # ------------------ COMPONENTE: RENDERER 2D ------------------
-        renderer_header = QWidget()
-        renderer_header.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px; border-bottom: 1px solid #2b2b2b;")
-        renderer_header_layout = QHBoxLayout(renderer_header)
-        renderer_header_layout.setContentsMargins(6, 4, 6, 4)
-        self.show_renderer_chk = QCheckBox("🖼 Mesh Renderer 2D")
-        self.show_renderer_chk.setStyleSheet("font-weight: bold; color: #ffffff;")
-        renderer_header_layout.addWidget(self.show_renderer_chk)
-        renderer_header_layout.addStretch()
-        self.btn_del_renderer = QToolButton()
-        self.btn_del_renderer.setText("✕")
-        self.btn_del_renderer.setFixedSize(18, 18)
-        self.btn_del_renderer.setStyleSheet("background: transparent !important; color: #ff5555 !important; border: none !important;")
-        renderer_header_layout.addWidget(self.btn_del_renderer)
-        main_layout.addWidget(renderer_header)
-
-        renderer_body = QWidget()
-        renderer_layout = QFormLayout(renderer_body)
-        renderer_layout.setContentsMargins(8, 0, 8, 0)
-        self.renderer_mesh_field = QLineEdit()
-        self.renderer_mesh_field.setReadOnly(True)
-        self.renderer_material_field = QLineEdit("Default_Material")
-        renderer_layout.addRow("Mesh", self.renderer_mesh_field)
-        renderer_layout.addRow("Material", self.renderer_material_field)
-        main_layout.addWidget(renderer_body)
-
         # ------------------ COMPONENTE: RIGIDBODY 2D ------------------
         rb_header = QWidget()
         rb_header.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px; border-bottom: 1px solid #2b2b2b;")
@@ -457,19 +419,12 @@ class InterfaceSmokeTest(QMainWindow):
             "use_gravity": QCheckBox(),
             "is_kinematic": QCheckBox(),
         }
-        self.physics_number_fields = {"mass": QDoubleSpinBox(), "gravity_scale": QDoubleSpinBox()}
-        for field in self.physics_number_fields.values():
-            field.setDecimals(2)
-            field.setRange(0.0, 100000.0)
-            field.setKeyboardTracking(False)
         self.physics_fields["use_gravity"].setObjectName("InspectorCheckBox")
         self.physics_fields["is_kinematic"].setObjectName("InspectorCheckBox")
 
         physics_widget = QWidget()
         physics_lay = QFormLayout(physics_widget)
         physics_lay.setContentsMargins(8, 0, 8, 0)
-        physics_lay.addRow("Massa", self.physics_number_fields["mass"])
-        physics_lay.addRow("Escala gravidade", self.physics_number_fields["gravity_scale"])
         physics_lay.addRow("Usar gravidade", self.physics_fields["use_gravity"])
         physics_lay.addRow("Cinemático", self.physics_fields["is_kinematic"])
         rb_body_layout.addWidget(physics_widget)
