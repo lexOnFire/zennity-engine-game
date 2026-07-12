@@ -7,6 +7,24 @@ from engine.core.component import Component
 from engine.component_registry import ComponentRegistry
 
 
+# Configuração usada quando este arquivo é anexado pelo Inspector como script.
+SCRIPT_CONFIG = {"speed": 80.0, "stop_distance": 40.0, "target_tag": "Player"}
+
+
+def on_update(game, dt):
+    """Persegue o objeto com a tag configurada no Play Mode isolado."""
+    target = game.find(SCRIPT_CONFIG["target_tag"])
+    if target is None:
+        return
+    dx = target.x - game.x
+    dy = target.y - game.y
+    distance = math.hypot(dx, dy)
+    if distance <= SCRIPT_CONFIG["stop_distance"] or distance <= 0.001:
+        return
+    speed = SCRIPT_CONFIG["speed"] * dt / distance
+    game.move(dx * speed, dy * speed)
+
+
 @ComponentRegistry.component
 class EnemyAI(Component):
     """Persegue o GameObject com tag='Player' na cena."""
