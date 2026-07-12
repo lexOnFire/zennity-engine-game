@@ -825,16 +825,17 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             return
         if component == "script":
             scripts = self._get_available_scripts()
-            chosen_script = scripts[0] if scripts else Path("Assets/Scripts/new_script.py")
-            # Encontra um script que ainda não esteja anexado para evitar duplicatas imediatas se possível
-            obj = self._objects_by_name[self._selected_name]
-            attached = obj.get("scripts", [])
-            for s in scripts:
-                rel = str(s.relative_to(Path.cwd())).replace("\\", "/")
-                if rel not in attached:
-                    chosen_script = s
-                    break
-            self._attach_script(self._selected_name, chosen_script)
+            if not scripts:
+                self.statusBar().showMessage("Nenhum script encontrado em Assets/Scripts")
+                return
+            
+            script_names = [p.name for p in scripts]
+            script_chosen, ok = QInputDialog.getItem(
+                self, "Adicionar Script", "Selecione o script para adicionar:", script_names, 0, False
+            )
+            if ok and script_chosen:
+                idx = script_names.index(script_chosen)
+                self._attach_script(self._selected_name, scripts[idx])
             return
         self._record_history()
         obj = self._objects_by_name[self._selected_name]
