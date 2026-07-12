@@ -513,7 +513,58 @@ class InterfaceSmokeTest(QMainWindow):
         self.collider_trigger_field.setObjectName("InspectorCheckBox")
         collider_lay.addRow("Collider Trigger", self.collider_trigger_field)
         col_body_layout.addWidget(collider_widget)
-        main_layout.addWidget(col_body)
+        # ------------------ COMPONENTE: ANIMATOR 2D ------------------
+        anim_header = QWidget()
+        anim_header.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px; border-bottom: 1px solid #2b2b2b;")
+        anim_h_layout = QHBoxLayout(anim_header)
+        anim_h_layout.setContentsMargins(6, 4, 6, 4)
+
+        self.show_animator_chk = QCheckBox("🎬 Animator 2D")
+        self.show_animator_chk.setObjectName("InspectorCheckBox")
+        self.show_animator_chk.setStyleSheet("font-weight: bold; color: #ffffff;")
+        anim_h_layout.addWidget(self.show_animator_chk)
+        anim_h_layout.addStretch()
+
+        btn_collapse_anim = QToolButton()
+        btn_collapse_anim.setText("▼")
+        btn_collapse_anim.setFixedSize(18, 18)
+        btn_collapse_anim.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
+
+        self.btn_del_anim = QToolButton()
+        self.btn_del_anim.setText("✕")
+        self.btn_del_anim.setFixedSize(18, 18)
+        self.btn_del_anim.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important; padding: 0px;")
+
+        anim_h_layout.addWidget(btn_collapse_anim)
+        anim_h_layout.addWidget(self.btn_del_anim)
+        main_layout.addWidget(anim_header)
+
+        # Container do corpo do Animator
+        self.animator_body = QWidget()
+        anim_body_layout = QVBoxLayout(self.animator_body)
+        anim_body_layout.setContentsMargins(0, 0, 0, 0)
+        btn_collapse_anim.clicked.connect(lambda: self.animator_body.setVisible(not self.animator_body.isVisible()))
+
+        animator_widget = QWidget()
+        animator_lay = QFormLayout(animator_widget)
+        animator_lay.setContentsMargins(8, 0, 8, 0)
+
+        self.animator_clip_combo = QComboBox()
+        self.animator_clip_combo.addItems(["Idle", "Run", "Jump"])
+        animator_lay.addRow("Clip Inicial", self.animator_clip_combo)
+
+        self.animator_current_lbl = QLineEdit("Nenhum")
+        self.animator_current_lbl.setReadOnly(True)
+        animator_lay.addRow("Clip Atual", self.animator_current_lbl)
+
+        self.animator_speed_field = QDoubleSpinBox()
+        self.animator_speed_field.setObjectName("InspectorNumberField")
+        self.animator_speed_field.setRange(0.0, 100.0)
+        self.animator_speed_field.setValue(1.0)
+        animator_lay.addRow("Velocidade", self.animator_speed_field)
+
+        anim_body_layout.addWidget(animator_widget)
+        main_layout.addWidget(self.animator_body)
 
         # O cabeçalho e corpo de scripts/custom agora são inseridos de forma modular dinâmica para cada script ativo
         self.script_containers = []

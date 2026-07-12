@@ -1024,13 +1024,17 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
 
         self.show_rigidbody_chk.toggled.connect(self._toggle_rigidbody_component)
         self.show_collider_chk.toggled.connect(self._toggle_collider_component)
+        self.show_animator_chk.toggled.connect(self._toggle_animator_component)
         self.btn_del_rb.clicked.connect(lambda: self.show_rigidbody_chk.setChecked(False))
         self.btn_del_col.clicked.connect(lambda: self.show_collider_chk.setChecked(False))
+        self.btn_del_anim.clicked.connect(lambda: self.show_animator_chk.setChecked(False))
         self.show_renderer_chk.toggled.connect(self._toggle_renderer_component)
         self.sprite_texture_button.clicked.connect(self._choose_sprite_texture)
         self.sprite_color_button.clicked.connect(self._choose_sprite_color)
         self.sprite_layer_combo.currentTextChanged.connect(lambda _text: self._send_inspector_renderer())
         self.sprite_order_field.valueChanged.connect(lambda _value: self._send_inspector_renderer())
+        self.animator_clip_combo.currentTextChanged.connect(lambda _text: self._send_inspector_animator())
+        self.animator_speed_field.valueChanged.connect(lambda _value: self._send_inspector_animator())
 
     def _toggle_renderer_component(self, checked: bool) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
@@ -1111,11 +1115,36 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._update_inspector(self._selected_name)
 
+    def _toggle_animator_component(self, checked: bool) -> None:
+        if self._updating_inspector or self._selected_name not in self._objects_by_name:
+            return
+        self._record_history()
+        obj = self._objects_by_name[self._selected_name]
+        if checked:
+            obj.setdefault("animator", {"active_clip": "Idle", "speed": 1.0, "clips": ["Idle", "Run", "Jump"]})
+        else:
+            obj.pop("animator", None)
+        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._update_inspector(self._selected_name)
+
+    def _send_inspector_animator(self) -> None:
+        if self._updating_inspector or self._selected_name not in self._objects_by_name:
+            return
+        obj = self._objects_by_name[self._selected_name]
+        anim = obj.get("animator")
+        if anim is None:
+            return
+        self._record_history()
+        anim["active_clip"] = self.animator_clip_combo.currentText()
+        anim["speed"] = float(self.animator_speed_field.value())
+        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._update_inspector(self._selected_name)
+
     def _open_add_component_menu(self) -> None:
         if self._selected_name not in self._objects_by_name:
             return
         menu = QMenu(self)
-        for label, component in (("RigidBody", "rigidbody"), ("Box Collider", "box"), ("Circle Collider", "circle"), ("Script", "script")):
+        for label, component in (("RigidBody", "rigidbody"), ("Box Collider", "box"), ("Circle Collider", "circle"), ("Script", "script"), ("Animator", "animator")):
             action = menu.addAction(label)
             action.triggered.connect(lambda _checked=False, value=component: self._add_component(value))
         menu.exec(self.add_component_button.mapToGlobal(self.add_component_button.rect().bottomLeft()))
@@ -1151,6 +1180,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             obj.setdefault("rigidbody", {"mass": 1.0, "gravity_scale": 1.0, "use_gravity": True, "is_kinematic": False})
         elif component in {"box", "circle"}:
             obj["collider"] = {"type": component, "is_trigger": False}
+        elif component == "animator":
+            obj["animator"] = {"active_clip": "Idle", "speed": 1.0, "clips": ["Idle", "Run", "Jump"]}
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._commands.put({"type": "select_object", "name": self._selected_name})
         self._update_inspector(self._selected_name)
@@ -1239,6 +1270,18 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 field.setValue(float((collider or {}).get(key, collider_defaults[key])))
             self.collider_trigger_field.setEnabled(collider is not None)
             self.collider_trigger_field.setChecked(bool((collider or {}).get("is_trigger", False)))
+
+            # Atualiza valores do Animator 2D
+            anim = obj.get("animator")
+            self.show_animator_chk.setChecked(anim is not None)
+            self.animator_body.setEnabled(anim is not None)
+            if anim:
+                self.animator_clip_combo.setCurrentText(str(anim.get("active_clip", "Idle")))
+                self.animator_speed_field.setValue(float(anim.get("speed", 1.0)))
+                # Mostra o clip que está tocando no runtime (ou o ativo do inspector se parado)
+                self.animator_current_lbl.setText(str(obj.get("_current_animation_name", anim.get("active_clip", "Idle"))))
+            else:
+                self.animator_current_lbl.setText("Nenhum")
 
             # Limpa widgets de scripts anteriores
             for h_w, b_w in self.script_containers:
