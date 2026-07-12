@@ -126,7 +126,7 @@ def run_viewport(
                     new_size = (w, h)
                     screen = pygame.display.set_mode(new_size, display_flags)
                     _attach_native_window(pygame, parent_window_id, *new_size)
-                    
+
                     # Centraliza a câmera de modo que o centro da tela corresponda ao ponto (0, 0) do mundo
                     camera_x = -float(w) / 2.0 / zoom
                     camera_y = -float(h) / 2.0 / zoom
@@ -192,7 +192,7 @@ def run_viewport(
                     sx = float(command.get("screen_x", 0.0))
                     sy = float(command.get("screen_y", 0.0))
                     world_x, world_y = screen_to_world(sx, sy)
-                    
+
                     # Gera presets e nome unico
                     presets = {
                         "Empty": ("GameObject", 40.0, 40.0, (160, 164, 174), None),
@@ -204,14 +204,14 @@ def run_viewport(
                         "Camera": ("Camera2D", 96.0, 54.0, (110, 190, 210), None),
                     }
                     base, width, height, color, rigidbody = presets.get(kind, presets["Sprite"])
-                    
+
                     # Nome único local
                     index = 1
                     name = base
                     while name in objects:
                         index += 1
                         name = f"{base}_{index}"
-                        
+
                     import uuid
                     obj = {"id": str(uuid.uuid4()), "name": name, "x": world_x, "y": world_y, "w": width, "h": height, "rotation": 0.0, "color": color, "mesh_type": kind}
                     if rigidbody is not None:
@@ -221,7 +221,7 @@ def run_viewport(
                         obj["collider"]["is_trigger"] = True
                     if kind == "Camera":
                         obj["component_names"] = ["Camera2D"]
-                        
+
                     objects[name] = obj
                     selected_name = name
                     _send(events, {"type": "scene_snapshot", "objects": list(objects.values())})
@@ -246,23 +246,23 @@ def run_viewport(
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not playing:
                 drag_handle = -1
                 move_axis = ""
-                
+
                 # 1. Se estiver na ferramenta de Move, verifica se clicou na ponta dos eixos do Gizmo
                 if active_tool == "move" and selected_name in objects:
                     obj = objects[selected_name]
                     object_x, object_y = world_to_screen(float(obj["x"]), float(obj["y"]))
                     angle = float(obj.get("rotation", 0.0))
                     radians = math.radians(angle)
-                    
+
                     length = 92
                     # Eixo X local
                     dir_x = (math.cos(radians), math.sin(radians))
                     # Eixo Y local
                     dir_y = (-math.sin(radians), math.cos(radians))
-                    
+
                     end_x = (object_x + dir_x[0] * length, object_y + dir_x[1] * length)
                     end_y = (object_x - dir_y[0] * length, object_y - dir_y[1] * length)
-                    
+
                     # Distância tolerância até as setas da ponta do gizmo
                     if abs(event.pos[0] - end_x[0]) <= 15 and abs(event.pos[1] - end_x[1]) <= 15:
                         move_axis = "x"
@@ -276,7 +276,7 @@ def run_viewport(
                         drag_start_mouse = (float(event.pos[0]), float(event.pos[1]))
                         drag_start_object = deepcopy(obj)
                         _send(events, {"type": "transform_begin", "name": selected_name})
-                
+
                 # 2. Se estiver na ferramenta de Scale e houver objeto selecionado, verifica clique nos handles primeiro
                 if not dragging and active_tool == "scale" and selected_name in objects:
                     obj = objects[selected_name]
@@ -285,7 +285,7 @@ def run_viewport(
                     radians = math.radians(angle)
                     half_w = (float(obj["w"]) * zoom) / 2.0
                     half_h = (float(obj["h"]) * zoom) / 2.0
-                    
+
                     local_handles = [
                         (-half_w, -half_h),  # 0: TL
                         (0.0, -half_h),      # 1: TC
@@ -296,7 +296,7 @@ def run_viewport(
                         (-half_w, half_h),   # 6: BL
                         (-half_w, 0.0),      # 7: LC
                     ]
-                    
+
                     for idx, (hx, hy) in enumerate(local_handles):
                         rx = hx * math.cos(radians) - hy * math.sin(radians)
                         ry = hx * math.sin(radians) + hy * math.cos(radians)
@@ -309,7 +309,7 @@ def run_viewport(
                             drag_start_object = deepcopy(obj)
                             _send(events, {"type": "transform_begin", "name": selected_name})
                             break
-                            
+
                 # 3. Se não iniciou drag nos gizmos/handles, faz o hit-test padrão no objeto inteiro
                 if not dragging:
                     for name, obj in reversed(list(objects.items())):
@@ -351,27 +351,27 @@ def run_viewport(
                         # Vetor de delta no espaço global de tela
                         dx_screen = (float(event.pos[0]) - drag_start_mouse[0]) / zoom
                         dy_screen = (float(event.pos[1]) - drag_start_mouse[1]) / zoom
-                        
+
                         # Rotaciona o delta para o espaço local do objeto
                         angle = float(drag_start_object.get("rotation", 0.0))
                         rad = math.radians(-angle)
                         dx_local = dx_screen * math.cos(rad) - dy_screen * math.sin(rad)
                         dy_local = dx_screen * math.sin(rad) + dy_screen * math.cos(rad)
-                        
+
                         # Restringe conforme o eixo selecionado
                         if move_axis == "x":
                             dy_local = 0.0
                         elif move_axis == "y":
                             dx_local = 0.0
-                            
+
                         # Converte o delta local restringido de volta para o espaço global de mundo
                         rad_inv = math.radians(angle)
                         dx_world = dx_local * math.cos(rad_inv) - dy_local * math.sin(rad_inv)
                         dy_world = dx_local * math.sin(rad_inv) + dy_local * math.cos(rad_inv)
-                        
+
                         new_x = float(drag_start_object["x"]) + dx_world
                         new_y = float(drag_start_object["y"]) + dy_world
-                        
+
                         obj["x"] = snapped(new_x, snap_size)
                         obj["y"] = snapped(new_y, snap_size)
                     elif active_tool == "rotate":
@@ -393,37 +393,45 @@ def run_viewport(
                         orig_x = float(drag_start_object.get("x", obj["x"]))
                         orig_y = float(drag_start_object.get("y", obj["y"]))
 
-                        # Dependendo do handle (0 a 7), aplicamos escala direcionada e ajustamos a posição
-                        # para que o lado oposto da escala permaneça fixo.
-                        new_w, new_h = orig_w, orig_h
-                        offset_lx, offset_ly = 0.0, 0.0
+                        horizontal = {-1: (), 0: (0, 6, 7), 1: (2, 3, 4)}
+                        vertical = {-1: (0, 1, 2), 0: (3, 7), 1: (4, 5, 6)}
+                        direction_x = next((direction for direction, handles in horizontal.items() if drag_handle in handles), 0)
+                        direction_y = next((direction for direction, handles in vertical.items() if drag_handle in handles), 0)
+                        modifiers = pygame.key.get_mods()
+                        from_center = bool(modifiers & pygame.KMOD_ALT) or drag_handle == 8
+                        proportional = bool(modifiers & pygame.KMOD_SHIFT)
+                        delta_multiplier = 2.0 if from_center else 1.0
 
-                        if drag_handle == 0:  # Top-Left (TL)
-                            new_w = orig_w - dx_local * 2.0
-                            new_h = orig_h - dy_local * 2.0
-                        elif drag_handle == 1:  # Top-Center (TC)
-                            new_h = orig_h - dy_local * 2.0
-                        elif drag_handle == 2:  # Top-Right (TR)
-                            new_w = orig_w + dx_local * 2.0
-                            new_h = orig_h - dy_local * 2.0
-                        elif drag_handle == 3:  # Right-Center (RC)
-                            new_w = orig_w + dx_local * 2.0
-                        elif drag_handle == 4:  # Bottom-Right (BR)
-                            new_w = orig_w + dx_local * 2.0
-                            new_h = orig_h + dy_local * 2.0
-                        elif drag_handle == 5:  # Bottom-Center (BC)
-                            new_h = orig_h + dy_local * 2.0
-                        elif drag_handle == 6:  # Bottom-Left (BL)
-                            new_w = orig_w - dx_local * 2.0
-                            new_h = orig_h + dy_local * 2.0
-                        elif drag_handle == 7:  # Left-Center (LC)
-                            new_w = orig_w - dx_local * 2.0
-                        else:  # Caso 8 ou corpo do objeto (Escala livre proporcional)
+                        new_w = orig_w + direction_x * dx_local * delta_multiplier
+                        new_h = orig_h + direction_y * dy_local * delta_multiplier
+                        if drag_handle == 8:
                             new_w = orig_w + dx_local * 2.0
                             new_h = orig_h + dy_local * 2.0
 
-                        obj["w"] = max(1.0, snapped(new_w, snap_size))
-                        obj["h"] = max(1.0, snapped(new_h, snap_size))
+                        if proportional:
+                            width_ratio = new_w / orig_w if orig_w else 1.0
+                            height_ratio = new_h / orig_h if orig_h else 1.0
+                            if direction_x and direction_y:
+                                ratio = width_ratio if abs(width_ratio - 1.0) >= abs(height_ratio - 1.0) else height_ratio
+                            elif direction_x or drag_handle == 8:
+                                ratio = width_ratio
+                            else:
+                                ratio = height_ratio
+                            ratio = max(1.0 / max(orig_w, orig_h, 1.0), ratio)
+                            new_w, new_h = orig_w * ratio, orig_h * ratio
+
+                        final_w = max(1.0, snapped(new_w, snap_size))
+                        final_h = max(1.0, snapped(new_h, snap_size))
+                        obj["w"], obj["h"] = final_w, final_h
+
+                        if not from_center:
+                            # O centro percorre metade da alteração no espaço local; assim o
+                            # lado oposto ao handle permanece imóvel, mesmo com rotação.
+                            center_local_x = direction_x * (final_w - orig_w) / 2.0
+                            center_local_y = direction_y * (final_h - orig_h) / 2.0
+                            rotation = math.radians(angle)
+                            obj["x"] = orig_x + center_local_x * math.cos(rotation) - center_local_y * math.sin(rotation)
+                            obj["y"] = orig_y + center_local_x * math.sin(rotation) + center_local_y * math.cos(rotation)
                     _send(events, {"type": "transform", "name": selected_name, **{key: obj.get(key, 0.0) for key in ("x", "y", "w", "h", "rotation")}})
 
         width, height = screen.get_size()
@@ -541,7 +549,7 @@ def run_viewport(
                         (-half_w, half_h),   # 6: BL
                         (-half_w, 0.0),      # 7: LC
                     ]
-                    
+
                     # Rotaciona e translada os handles para coordenadas globais de tela
                     screen_handles = []
                     for hx, hy in local_handles:
