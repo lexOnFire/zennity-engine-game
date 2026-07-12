@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
     QDockWidget,
+    QDoubleSpinBox,
     QFormLayout,
     QFrame,
     QLabel,
@@ -90,9 +91,9 @@ class InterfaceSmokeTest(QMainWindow):
 
         inspector = QWidget()
         form = QFormLayout(inspector)
-        self.inspector_labels: dict[str, QLabel] = {}
-        self.inspector_labels["name"] = QLabel("Player")
-        form.addRow("Objeto", self.inspector_labels["name"])
+        self.inspector_name_label = QLabel("Player")
+        self.inspector_fields: dict[str, QDoubleSpinBox] = {}
+        form.addRow("Objeto", self.inspector_name_label)
         for field, value in (("Posição X", "400.00"), ("Posição Y", "200.00"), ("Escala X", "36.00"), ("Escala Y", "48.00")):
             key = {
                 "Posição X": "x",
@@ -100,8 +101,13 @@ class InterfaceSmokeTest(QMainWindow):
                 "Escala X": "w",
                 "Escala Y": "h",
             }[field]
-            self.inspector_labels[key] = QLabel(value)
-            form.addRow(field, self.inspector_labels[key])
+            editor = QDoubleSpinBox()
+            editor.setDecimals(2)
+            editor.setRange(1.0 if key in ("w", "h") else -100000.0, 100000.0)
+            editor.setValue(float(value))
+            editor.setKeyboardTracking(False)
+            self.inspector_fields[key] = editor
+            form.addRow(field, editor)
         form.addRow(QLabel("Transform / Collider / Script"))
         self._dock("Inspector", inspector, Qt.RightDockWidgetArea, 300)
 
