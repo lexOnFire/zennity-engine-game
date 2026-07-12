@@ -74,8 +74,20 @@ class InterfaceSmokeTest(QMainWindow):
         self.viewport_host.setFrameShape(QFrame.StyledPanel)
         self.viewport_host.setAttribute(Qt.WA_NativeWindow, True)
         self.viewport_host.setStyleSheet("#IsolatedViewportHost { background: #16181f; }")
-        self.viewport_tabs.addTab(self.viewport_host, "Scene")
-        self.viewport_tabs.addTab(self._placeholder("Game View — use Play para executar a cena."), "Game")
+        
+        # Em vez de colocar a viewport_host como widget da aba e perder o HWND parent ao alternar,
+        # fazemos a viewport_tabs atuar apenas como seletor visual e inserimos o viewport_host diretamente
+        # sob um container que o mantém ativo e visível.
+        self.viewport_tabs.addTab(QWidget(), "Scene")
+        self.viewport_tabs.addTab(QWidget(), "Game")
+        
+        self.center_container = QWidget()
+        layout = QVBoxLayout(self.center_container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(self.viewport_tabs)
+        layout.addWidget(self.viewport_host)
+        layout.setStretchFactor(self.viewport_host, 1)
 
     def _build_docks(self) -> None:
         hierarchy = QTreeWidget()
@@ -200,7 +212,7 @@ class InterfaceSmokeTest(QMainWindow):
 
         center = QSplitter(Qt.Vertical)
         center.setChildrenCollapsible(False)
-        center.addWidget(self.viewport_tabs)
+        center.addWidget(self.center_container)
         center.addWidget(console_row)
         center.addWidget(preview)
         center.setSizes([560, 150, 150])

@@ -236,8 +236,15 @@ def apply_viewport_transform_stability_patch() -> bool:
         if self.is_game_view() or self._is_playing() or event.button() != Qt.LeftButton:
             original_mouse_press_event(self, event)
             return
-        position = event.position()
-        x, y = float(position.x()), float(position.y())
+        try:
+            position = event.position()
+            x, y = float(position.x()), float(position.y())
+        except AttributeError:
+            try:
+                position = event.pos()
+                x, y = float(position.x()), float(position.y())
+            except AttributeError:
+                x, y = float(event.x()), float(event.y())
         if self._active_tool() == EditorTool.MOVE:
             selected = self._selected_transform_object()
             axis = _move_axis_at(self, x, y, selected)

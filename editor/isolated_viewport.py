@@ -85,6 +85,7 @@ def run_viewport(
     snap_enabled = False
     snap_size = 16.0
     snap_angle = 15.0
+    view_mode = "scene"
     camera_x = 0.0
     camera_y = 0.0
     zoom = 1.0
@@ -131,6 +132,10 @@ def run_viewport(
                     tool = str(command.get("tool", "select")).lower()
                     if tool in {"select", "move", "rotate", "scale"}:
                         active_tool = tool
+                elif command.get("type") == "set_view_mode":
+                    mode = str(command.get("mode", "scene")).lower()
+                    if mode in {"scene", "game"}:
+                        view_mode = mode
                 elif command.get("type") == "set_snap":
                     snap_enabled = bool(command.get("enabled", False))
                     snap_size = max(0.01, float(command.get("size", 16.0)))
@@ -254,20 +259,21 @@ def run_viewport(
                         break
                 velocities_y[name] = velocity
         screen.fill((22, 24, 31))
-        grid_spacing = max(8.0, 32.0 * zoom)
-        grid_x = (-camera_x * zoom) % grid_spacing
-        grid_y = (-camera_y * zoom) % grid_spacing
-        while grid_x < width:
-            pygame.draw.line(screen, (45, 48, 59), (int(grid_x), 0), (int(grid_x), height))
-            grid_x += grid_spacing
-        while grid_y < height:
-            pygame.draw.line(screen, (45, 48, 59), (0, int(grid_y)), (width, int(grid_y)))
-            grid_y += grid_spacing
-        origin_x, origin_y = world_to_screen(0.0, 0.0)
-        if 0 <= origin_x <= width:
-            pygame.draw.line(screen, (112, 120, 142), (int(origin_x), 0), (int(origin_x), height), 2)
-        if 0 <= origin_y <= height:
-            pygame.draw.line(screen, (112, 120, 142), (0, int(origin_y)), (width, int(origin_y)), 2)
+        if view_mode == "scene":
+            grid_spacing = max(8.0, 32.0 * zoom)
+            grid_x = (-camera_x * zoom) % grid_spacing
+            grid_y = (-camera_y * zoom) % grid_spacing
+            while grid_x < width:
+                pygame.draw.line(screen, (45, 48, 59), (int(grid_x), 0), (int(grid_x), height))
+                grid_x += grid_spacing
+            while grid_y < height:
+                pygame.draw.line(screen, (45, 48, 59), (0, int(grid_y)), (width, int(grid_y)))
+                grid_y += grid_spacing
+            origin_x, origin_y = world_to_screen(0.0, 0.0)
+            if 0 <= origin_x <= width:
+                pygame.draw.line(screen, (112, 120, 142), (int(origin_x), 0), (int(origin_x), height), 2)
+            if 0 <= origin_y <= height:
+                pygame.draw.line(screen, (112, 120, 142), (0, int(origin_y)), (width, int(origin_y)), 2)
         for name, obj in objects.items():
             object_x, object_y = world_to_screen(float(obj["x"]), float(obj["y"]))
             object_width = max(1, int(float(obj["w"]) * zoom))
@@ -277,7 +283,7 @@ def run_viewport(
             pygame.draw.rect(object_surface, tuple(obj.get("color", (180, 180, 180))), object_surface.get_rect(), border_radius=4)
             rotated = pygame.transform.rotate(object_surface, -float(obj.get("rotation", 0.0)))
             screen.blit(rotated, rotated.get_rect(center=(int(object_x), int(object_y))))
-            if name == selected_name:
+            if view_mode == "scene" and name == selected_name:
                 angle = float(obj.get("rotation", 0.0))
                 collider = obj.get("collider") if isinstance(obj.get("collider"), dict) else None
                 outline_width = float((collider or {}).get("width", obj["w"]))

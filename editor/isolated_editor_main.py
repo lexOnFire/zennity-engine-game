@@ -58,6 +58,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._refresh_hierarchy()
         self._connect_inspector_to_viewport()
         self.add_component_button.clicked.connect(self._open_add_component_menu)
+        self.viewport_tabs.currentChanged.connect(self._change_view_mode)
         self.viewport_host.installEventFilter(self)
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._event_timer = QTimer(self)
@@ -101,6 +102,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             width, height = self.native_viewport_size()
             self._commands.put({"type": "viewport_size", "w": width, "h": height})
         return super().eventFilter(watched, event)
+
+    def _change_view_mode(self, index: int) -> None:
+        mode = "scene" if index == 0 else "game"
+        self._commands.put({"type": "set_view_mode", "mode": mode})
+        self._log("INFO", f"Aba alterada para: {mode.upper()}")
 
     def _build_viewport_link_toolbar(self) -> None:
         toolbar = QToolBar("Ligação com Viewport")
