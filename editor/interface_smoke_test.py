@@ -59,10 +59,10 @@ class InterfaceSmokeTest(QMainWindow):
         self.addToolBar(toolbar)
         self.toolbar_actions = {}
         icons = {
-            "Novo": "📄", "Abrir": "📁", "Salvar": "💾",
+            "Novo": "📋", "Abrir": "📂", "Salvar": "💾",
             "Desfazer": "↶", "Refazer": "↷", "Select": "⛶",
-            "Move": "✥", "Rotate": "↻", "Scale": "⤢",
-            "Snap: OFF": "🧲", "Play": "▶", "Pause": "❚❚", "Stop": "■",
+            "Move": "✛", "Rotate": "🔄", "Scale": "📐",
+            "Snap: OFF": "⚙️", "Play": "🎮", "Pause": "⏸️", "Stop": "⏹️",
         }
         for label, icon in icons.items():
             action = QAction(icon, self)
