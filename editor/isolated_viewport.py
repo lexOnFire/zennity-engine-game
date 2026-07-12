@@ -173,6 +173,7 @@ def run_viewport(
     grounded: dict[str, bool] = {}
     script_instances: dict[str, list[tuple[str, Any]]] = {}
     script_apis: dict[str, PlayScriptAPI] = {}
+    forwarded_input = {key: False for key in ("left", "right", "up", "down", "jump")}
     last_stats_ms = 0
 
     def game_camera() -> dict[str, Any] | None:
@@ -328,6 +329,9 @@ def run_viewport(
                     snap_enabled = bool(command.get("enabled", False))
                     snap_size = max(0.01, float(command.get("size", 16.0)))
                     snap_angle = max(0.01, float(command.get("angle", 15.0)))
+                elif command.get("type") == "runtime_input" and isinstance(command.get("keys"), dict):
+                    for key in forwarded_input:
+                        forwarded_input[key] = bool(command["keys"].get(key, False))
                 elif command.get("type") == "play":
                     if not playing:
                         edit_snapshot = deepcopy(objects)
@@ -658,11 +662,11 @@ def run_viewport(
         if playing and not paused:
             keys = pygame.key.get_pressed()
             input_state = {
-                "left": bool(keys[pygame.K_a] or keys[pygame.K_LEFT]),
-                "right": bool(keys[pygame.K_d] or keys[pygame.K_RIGHT]),
-                "up": bool(keys[pygame.K_w] or keys[pygame.K_UP]),
-                "down": bool(keys[pygame.K_s] or keys[pygame.K_DOWN]),
-                "jump": bool(keys[pygame.K_SPACE]),
+                "left": bool(forwarded_input["left"] or keys[pygame.K_a] or keys[pygame.K_LEFT]),
+                "right": bool(forwarded_input["right"] or keys[pygame.K_d] or keys[pygame.K_RIGHT]),
+                "up": bool(forwarded_input["up"] or keys[pygame.K_w] or keys[pygame.K_UP]),
+                "down": bool(forwarded_input["down"] or keys[pygame.K_s] or keys[pygame.K_DOWN]),
+                "jump": bool(forwarded_input["jump"] or keys[pygame.K_SPACE]),
             }
             for name, instances in list(script_instances.items()):
                 obj = objects.get(name)
