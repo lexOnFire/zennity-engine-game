@@ -237,6 +237,7 @@ def run_viewport(
     script_apis: dict[str, PlayScriptAPI] = {}
     active_contacts: dict[tuple[str, str], bool] = {}
     audio_channels: dict[str, Any] = {}
+    audio_sounds: dict[str, Any] = {}
     forwarded_input = {key: False for key in ("left", "right", "up", "down", "jump")}
     last_stats_ms = 0
     texture_cache: dict[str, tuple[float, Any]] = {}
@@ -366,27 +367,46 @@ def run_viewport(
 
     def start_audio_sources() -> None:
         stop_audio_sources()
-        try:
-            if not pygame.mixer.get_init():
-                pygame.mixer.init()
-        except pygame.error as exc:
-            _send(events, {"type": "script_log", "level": "WARNING", "message": f"Áudio indisponível: {exc}"})
-            return
         for name, obj in objects.items():
             audio = obj.get("audio")
             if not isinstance(audio, dict) or not audio.get("autoplay") or not audio.get("path"):
                 continue
-            path = Path(str(audio["path"]))
-            if not path.is_absolute():
-                path = Path.cwd() / path
-            try:
-                sound = pygame.mixer.Sound(str(path))
-                sound.set_volume(max(0.0, min(1.0, float(audio.get("volume", 1.0)))))
-                channel = sound.play(loops=-1 if audio.get("loop") else 0)
-                if channel is not None:
-                    audio_channels[name] = channel
-            except (OSError, pygame.error) as exc:
-                _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}: áudio {path.name}: {exc}"})
+            play_audio_file(name, str(audio["path"]), float(audio.get("volume", 1.0)), bool(audio.get("loop", False)))
+
+    def ensure_audio_mixer() -> bool:
+        try:
+            if not pygame.mixer.get_init():
+                pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+            pygame.mixer.set_num_channels(max(16, pygame.mixer.get_num_channels()))
+            return True
+        except pygame.error as exc:
+            _send(events, {"type": "script_log", "level": "WARNING", "message": f"Áudio indisponível: {exc}"})
+            return False
+
+    def play_audio_file(key: str, path_value: str, volume: float = 1.0, loop: bool = False) -> None:
+        path = Path(str(path_value))
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        if not path.is_file():
+            _send(events, {"type": "script_log", "level": "ERROR", "message": f"{key}: arquivo de áudio não encontrado: {path_value}"})
+            return
+        if not ensure_audio_mixer():
+            return
+        try:
+            previous = audio_channels.pop(key, None)
+            if previous is not None:
+                previous.stop()
+            sound = pygame.mixer.Sound(str(path.resolve()))
+            sound.set_volume(max(0.0, min(1.0, float(volume))))
+            channel = sound.play(loops=-1 if loop else 0)
+            if channel is None:
+                _send(events, {"type": "script_log", "level": "WARNING", "message": f"{key}: nenhum canal de áudio disponível"})
+                return
+            audio_sounds[key] = sound
+            audio_channels[key] = channel
+            _send(events, {"type": "script_log", "level": "INFO", "message": f"Áudio tocando: {path.name} (volume {sound.get_volume():.2f})"})
+        except (OSError, pygame.error) as exc:
+            _send(events, {"type": "script_log", "level": "ERROR", "message": f"{key}: falha ao tocar {path.name}: {exc}"})
 
     def stop_audio_sources() -> None:
         for channel in audio_channels.values():
@@ -395,6 +415,7 @@ def run_viewport(
             except pygame.error:
                 pass
         audio_channels.clear()
+        audio_sounds.clear()
 
     def collider_bounds(obj: dict[str, Any]) -> tuple[float, float, float, float]:
         collider = obj.get("collider") or {}
@@ -758,6 +779,17 @@ def run_viewport(
                         grounded = {}
                         _send(events, {"type": "play_state", "state": "edit"})
                         _send(events, {"type": "scene_snapshot", "objects": list(objects.values())})
+                elif command.get("type") == "preview_audio":
+                    play_audio_file(
+                        "__preview__", str(command.get("path", "")),
+                        float(command.get("volume", 1.0)), bool(command.get("loop", False)),
+                    )
+                elif command.get("type") == "stop_audio_preview":
+                    channel = audio_channels.pop("__preview__", None)
+                    if channel is not None:
+                        channel.stop()
+                    audio_sounds.pop("__preview__", None)
+                    _send(events, {"type": "script_log", "level": "INFO", "message": "Prévia de áudio interrompida"})
                 elif command.get("type") == "select_object":
                     name = str(command.get("name", ""))
                     if name in objects:
@@ -1116,18 +1148,7 @@ def run_viewport(
                                 elif cmd == "stop_animation":
                                     obj["_current_animation_name"] = "Nenhum"
                                 elif cmd == "play_sound" and val:
-                                    # Procura o arquivo de áudio no diretório local e reproduz
-                                    try:
-                                        p_sound = Path(str(val))
-                                        if not p_sound.is_absolute():
-                                            p_sound = Path.cwd() / p_sound
-                                        if p_sound.exists():
-                                            snd = pygame.mixer.Sound(str(p_sound.resolve()))
-                                            snd.play()
-                                        else:
-                                            _send(events, {"type": "script_log", "level": "WARNING", "message": f"Arquivo de som não encontrado: {val}"})
-                                    except Exception as err:
-                                        _send(events, {"type": "script_log", "level": "ERROR", "message": f"Erro ao tocar áudio {val}: {err}"})
+                                    play_audio_file(f"script:{name}", str(val))
 
                                 if callable(simple_instruction_hook):
                                     simple_instruction_hook(api, instruction)
