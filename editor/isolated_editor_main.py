@@ -59,6 +59,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._connect_inspector_to_viewport()
         self.add_component_button.clicked.connect(self._open_add_component_menu)
         self.viewport_tabs.currentChanged.connect(self._change_view_mode)
+        
+        # Habilita Drag & Drop na árvore de assets e viewport_host
+        self.assets_tree.setDragEnabled(True)
+        self.viewport_host.setAcceptDrops(True)
         self.viewport_host.installEventFilter(self)
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._event_timer = QTimer(self)
@@ -98,9 +102,33 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         )
 
     def eventFilter(self, watched, event) -> bool:
-        if watched is self.viewport_host and event.type() == QEvent.Resize:
-            width, height = self.native_viewport_size()
-            self._commands.put({"type": "viewport_size", "w": width, "h": height})
+        if watched is self.viewport_host:
+            if event.type() == QEvent.Resize:
+                width, height = self.native_viewport_size()
+                self._commands.put({"type": "viewport_size", "w": width, "h": height})
+            elif event.type() == QEvent.DragEnter:
+                # Aceita o drag se vier da árvore de assets
+                event.acceptProposedAction()
+                return True
+            elif event.type() == QEvent.DragMove:
+                event.acceptProposedAction()
+                return True
+            elif event.type() == QEvent.Drop:
+                # Recupera o asset arrastado
+                selected_items = self.assets_tree.selectedItems()
+                if selected_items:
+                    item = selected_items[0]
+                    path_str = item.toolTip(0)
+                    if path_str:
+                        path = Path(path_str)
+                        # Só aceita se for uma textura/imagem
+                        if path.suffix.lower() in {".png", ".jpg", ".jpeg", ".bmp", ".webp"}:
+                            pos = event.position()
+                            # Envia para a viewport instanciar na posição do cursor
+                            # Fazemos escala proporcional padrão
+                            self._create_object_at("Sprite", float(pos.x()), float(pos.y()))
+                event.acceptProposedAction()
+                return True
         return super().eventFilter(watched, event)
 
     def _change_view_mode(self, index: int) -> None:
@@ -321,6 +349,17 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._commands.put({"type": "select_object", "name": name})
         self._update_inspector(name)
         self._log("INFO", f"Objeto criado: {name}")
+
+    def _create_object_at(self, kind: str, screen_x: float, screen_y: float) -> None:
+        self._record_history()
+        # Envia comando de criação em coordenadas de tela para a viewport.
+        # A viewport traduzirá as coordenadas usando a câmera/zoom atuais e devolverá a cena atualizada.
+        self._commands.put({
+            "type": "create_object_at",
+            "kind": kind,
+            "screen_x": screen_x,
+            "screen_y": screen_y
+        })
 
     def _save_scene_snapshot(self) -> None:
         filename, _ = QFileDialog.getSaveFileName(

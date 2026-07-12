@@ -180,6 +180,45 @@ def run_viewport(
                     name = str(command.get("name", ""))
                     if name in objects and not playing and isinstance(command.get("collider"), dict):
                         objects[name]["collider"] = dict(command["collider"])
+                elif command.get("type") == "create_object_at" and not playing:
+                    kind = str(command.get("kind", "Sprite"))
+                    sx = float(command.get("screen_x", 0.0))
+                    sy = float(command.get("screen_y", 0.0))
+                    world_x, world_y = screen_to_world(sx, sy)
+                    
+                    # Gera presets e nome unico
+                    presets = {
+                        "Empty": ("GameObject", 40.0, 40.0, (160, 164, 174), None),
+                        "Sprite": ("Sprite", 64.0, 64.0, (180, 180, 190), None),
+                        "Player": ("Player", 36.0, 48.0, (88, 117, 255), {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}),
+                        "Platform": ("Platform", 160.0, 32.0, (91, 194, 100), {"is_kinematic": True, "use_gravity": False}),
+                        "Enemy": ("Enemy", 40.0, 40.0, (220, 88, 88), {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}),
+                        "Trigger": ("Trigger", 80.0, 80.0, (222, 178, 72), {"is_kinematic": True, "use_gravity": False}),
+                        "Camera": ("Camera2D", 96.0, 54.0, (110, 190, 210), None),
+                    }
+                    base, width, height, color, rigidbody = presets.get(kind, presets["Sprite"])
+                    
+                    # Nome único local
+                    index = 1
+                    name = base
+                    while name in objects:
+                        index += 1
+                        name = f"{base}_{index}"
+                        
+                    import uuid
+                    obj = {"id": str(uuid.uuid4()), "name": name, "x": world_x, "y": world_y, "w": width, "h": height, "rotation": 0.0, "color": color, "mesh_type": kind}
+                    if rigidbody is not None:
+                        obj["rigidbody"] = rigidbody
+                        obj["collider"] = {"type": "box"}
+                    if kind == "Trigger":
+                        obj["collider"]["is_trigger"] = True
+                    if kind == "Camera":
+                        obj["component_names"] = ["Camera2D"]
+                        
+                    objects[name] = obj
+                    selected_name = name
+                    _send(events, {"type": "scene_snapshot", "objects": list(objects.values())})
+                    _send(events, {"type": "selected", "name": name})
                 elif command.get("type") == "reset_scene":
                     _send(events, {"type": "snapshot_requested"})
 
