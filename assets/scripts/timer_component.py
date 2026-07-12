@@ -6,6 +6,38 @@ from engine.core.component import Component
 from engine.component_registry import ComponentRegistry
 
 
+# Configuração usada quando este arquivo é anexado pelo Inspector como script.
+SCRIPT_CONFIG = {"duration": 1.0, "loop": False, "auto_start": True}
+
+
+def on_start(game):
+    game.state.update(elapsed=0.0, running=SCRIPT_CONFIG["auto_start"], completed=False)
+
+
+def on_update(game, dt):
+    """Atualiza um temporizador simples acessível por game.state."""
+    if not game.state.get("running", SCRIPT_CONFIG["auto_start"]):
+        return
+    game.state["elapsed"] = float(game.state.get("elapsed", 0.0)) + dt
+    if game.state["elapsed"] < SCRIPT_CONFIG["duration"]:
+        return
+    game.state["completed"] = True
+    game.state["running"] = bool(SCRIPT_CONFIG["loop"])
+    if SCRIPT_CONFIG["loop"]:
+        game.state["elapsed"] = 0.0
+
+
+def on_instruction(game, instruction):
+    """Aceita os comandos start_timer, stop_timer e reset_timer."""
+    command = instruction.get("command")
+    if command == "start_timer":
+        game.state.update(elapsed=0.0, running=True, completed=False)
+    elif command == "stop_timer":
+        game.state["running"] = False
+    elif command == "reset_timer":
+        game.state.update(elapsed=0.0, running=False, completed=False)
+
+
 @ComponentRegistry.component
 class TimerComponent(Component):
     """Timer reutilizável com suporte a loop e callback."""
