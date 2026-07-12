@@ -229,6 +229,7 @@ def run_viewport(
     script_instances: dict[str, list[tuple[str, Any]]] = {}
     script_apis: dict[str, PlayScriptAPI] = {}
     active_contacts: dict[tuple[str, str], bool] = {}
+    audio_channels: dict[str, Any] = {}
     forwarded_input = {key: False for key in ("left", "right", "up", "down", "jump")}
     last_stats_ms = 0
     texture_cache: dict[str, tuple[float, Any]] = {}
@@ -329,8 +330,10 @@ def run_viewport(
         loaded = sum(len(instances) for instances in script_instances.values())
         level = "INFO" if loaded else "WARNING"
         _send(events, {"type": "script_log", "level": level, "message": f"Play Mode carregou {loaded} script(s) executável(is)"})
+        start_audio_sources()
 
     def stop_scripts() -> None:
+        stop_audio_sources()
         for name, instances in list(script_instances.items()):
             obj = objects.get(name)
             for path, module in instances:
@@ -347,6 +350,38 @@ def run_viewport(
         script_instances.clear()
         script_apis.clear()
         active_contacts.clear()
+
+    def start_audio_sources() -> None:
+        stop_audio_sources()
+        try:
+            if not pygame.mixer.get_init():
+                pygame.mixer.init()
+        except pygame.error as exc:
+            _send(events, {"type": "script_log", "level": "WARNING", "message": f"Áudio indisponível: {exc}"})
+            return
+        for name, obj in objects.items():
+            audio = obj.get("audio")
+            if not isinstance(audio, dict) or not audio.get("autoplay") or not audio.get("path"):
+                continue
+            path = Path(str(audio["path"]))
+            if not path.is_absolute():
+                path = Path.cwd() / path
+            try:
+                sound = pygame.mixer.Sound(str(path))
+                sound.set_volume(max(0.0, min(1.0, float(audio.get("volume", 1.0)))))
+                channel = sound.play(loops=-1 if audio.get("loop") else 0)
+                if channel is not None:
+                    audio_channels[name] = channel
+            except (OSError, pygame.error) as exc:
+                _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}: áudio {path.name}: {exc}"})
+
+    def stop_audio_sources() -> None:
+        for channel in audio_channels.values():
+            try:
+                channel.stop()
+            except pygame.error:
+                pass
+        audio_channels.clear()
 
     def collider_bounds(obj: dict[str, Any]) -> tuple[float, float, float, float]:
         collider = obj.get("collider") or {}
@@ -1043,7 +1078,7 @@ def run_viewport(
                                         anim["active_clip"] = str(val)
                                 elif cmd == "stop_animation":
                                     obj["_current_animation_name"] = "Nenhum"
-                                
+
                                 if callable(simple_instruction_hook):
                                     simple_instruction_hook(api, instruction)
                                 elif callable(legacy_instruction_hook):
