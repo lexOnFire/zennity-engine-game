@@ -197,9 +197,18 @@ def run_viewport(
                 camera_x = world_x - mouse_x / zoom
                 camera_y = world_y - mouse_y / zoom
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not playing:
+                # Verifica primeiro se clicou no objeto selecionado (considerando a rotação dele para precisão)
+                clicked = False
                 for name, obj in reversed(list(objects.items())):
                     object_x, object_y = world_to_screen(float(obj["x"]), float(obj["y"]))
-                    if abs(event.pos[0] - object_x) <= obj["w"] * zoom / 2 and abs(event.pos[1] - object_y) <= obj["h"] * zoom / 2:
+                    angle = float(obj.get("rotation", 0.0))
+                    rad = math.radians(-angle)
+                    # Rotaciona o mouse de volta para o espaço local do objeto
+                    mx = event.pos[0] - object_x
+                    my = event.pos[1] - object_y
+                    lx = mx * math.cos(rad) - my * math.sin(rad)
+                    ly = mx * math.sin(rad) + my * math.cos(rad)
+                    if abs(lx) <= obj["w"] * zoom / 2 and abs(ly) <= obj["h"] * zoom / 2:
                         dragging = True
                         selected_name = name
                         drag_start_mouse = (float(event.pos[0]), float(event.pos[1]))
@@ -209,6 +218,7 @@ def run_viewport(
                             _send(events, {"type": "transform_begin", "name": name})
                         else:
                             dragging = False
+                        clicked = True
                         break
             elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 if dragging and selected_name is not None:
@@ -230,10 +240,17 @@ def run_viewport(
                         angle = math.degrees(math.atan2(event.pos[1] - object_y, event.pos[0] - object_x))
                         obj["rotation"] = snapped(angle, snap_angle)
                     elif active_tool == "scale":
-                        dx = (float(event.pos[0]) - drag_start_mouse[0]) / zoom
-                        dy = (float(event.pos[1]) - drag_start_mouse[1]) / zoom
-                        new_width = float(drag_start_object.get("w", obj["w"])) + dx * 2.0
-                        new_height = float(drag_start_object.get("h", obj["h"])) + dy * 2.0
+                        # Vetor de delta no espaço global de tela
+                        dx_screen = (float(event.pos[0]) - drag_start_mouse[0]) / zoom
+                        dy_screen = (float(event.pos[1]) - drag_start_mouse[1]) / zoom
+                        # Rotaciona o delta para o espaço local do objeto
+                        angle = float(drag_start_object.get("rotation", 0.0))
+                        rad = math.radians(-angle)
+                        dx_local = dx_screen * math.cos(rad) - dy_screen * math.sin(rad)
+                        dy_local = dx_screen * math.sin(rad) + dy_screen * math.cos(rad)
+
+                        new_width = float(drag_start_object.get("w", obj["w"])) + dx_local * 2.0
+                        new_height = float(drag_start_object.get("h", obj["h"])) + dy_local * 2.0
                         obj["w"] = max(1.0, snapped(new_width, snap_size))
                         obj["h"] = max(1.0, snapped(new_height, snap_size))
                     _send(events, {"type": "transform", "name": selected_name, **{key: obj.get(key, 0.0) for key in ("x", "y", "w", "h", "rotation")}})
