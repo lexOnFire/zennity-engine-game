@@ -8,15 +8,16 @@ from __future__ import annotations
 import multiprocessing as mp
 import sys
 import json
+import shutil
 import uuid
 from copy import deepcopy
 from pathlib import Path
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QEvent, Qt, QTimer, QUrl
-from PySide6.QtGui import QAction, QActionGroup, QDesktopServices, QPixmap
+from PySide6.QtGui import QAction, QActionGroup, QColor, QDesktopServices, QPixmap
 from PySide6.QtWidgets import (
-    QFileDialog, QInputDialog, QMenu, QToolBar,
+    QColorDialog, QFileDialog, QInputDialog, QMenu, QToolBar,
     QHBoxLayout, QFormLayout,
     QCheckBox, QLabel, QComboBox, QLineEdit,
     QPushButton, QDoubleSpinBox,
@@ -271,7 +272,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                         return True
                 elif path is not None and watched is self.viewport_host and path.suffix.lower() in {".png", ".jpg", ".jpeg", ".bmp", ".webp"}:
                     pos = event.position()
-                    self._create_object_at("Sprite", float(pos.x()), float(pos.y()))
+                    scale = max(1.0, float(self.viewport_host.devicePixelRatioF()))
+                    self._create_sprite_at(path, float(pos.x()) * scale, float(pos.y()) * scale)
                     event.acceptProposedAction()
                     return True
         return super().eventFilter(watched, event)
@@ -747,6 +749,21 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "screen_y": screen_y
         })
 
+    def _create_sprite_at(self, texture_path: Path, screen_x: float, screen_y: float) -> None:
+        try:
+            relative = str(texture_path.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
+        except ValueError:
+            relative = str(texture_path.resolve())
+        pixmap = QPixmap(str(texture_path))
+        width = float(pixmap.width()) if not pixmap.isNull() else 64.0
+        height = float(pixmap.height()) if not pixmap.isNull() else 64.0
+        self._record_history()
+        self._commands.put({
+            "type": "create_sprite_at", "texture": relative,
+            "screen_x": screen_x, "screen_y": screen_y,
+            "width": max(1.0, width), "height": max(1.0, height),
+        })
+
     def _save_scene_snapshot(self) -> None:
         filename, _ = QFileDialog.getSaveFileName(
             self, "Salvar cena", str(self._current_scene_path or "Untitled.zscene"),
@@ -778,6 +795,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 source["visual"] = {"mesh_type": snapshot.get("mesh_type"), "color": snapshot.get("color")}
             source["visual"]["enabled"] = bool(snapshot.get("renderer_enabled", True))
             source["visual"]["material"] = str(snapshot.get("material", "Default_Material"))
+            source["visual"]["mesh_type"] = snapshot.get("mesh_type")
+            source["visual"]["color"] = snapshot.get("color", (255, 255, 255))
+            source["visual"]["texture"] = str(snapshot.get("texture", ""))
+            source["visual"]["layer"] = str(snapshot.get("render_layer", "Default"))
+            source["visual"]["order"] = int(snapshot.get("sort_order", 0))
             components = source.get("components")
             if not isinstance(components, dict):
                 components = {}
@@ -798,7 +820,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 components["scripts"] = list(dict.fromkeys(str(path) for path in snapshot["scripts"]))
             known_keys = {
                 "id", "name", "x", "y", "w", "h", "rotation", "color", "mesh_type",
-                "renderer_enabled", "material", "active", "static", "tag", "layer",
+                "renderer_enabled", "material", "texture", "render_layer", "sort_order", "active", "static", "tag", "layer",
                 "rigidbody", "collider", "camera", "scripts", "component_names",
             }
             editor_data = {
@@ -845,7 +867,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 components = item.get("components", {}) or {}
                 color = visual.get("color") or ((91, 194, 100) if item["name"].lower() in {"chao", "floor"} else (88, 117, 255))
                 rotation = transform.get("rz", (transform.get("rotation") or [0.0, 0.0, 0.0])[2])
-                snapshot = {"id": item.get("id", item["name"]), "name": item["name"], "x": float(position[0]), "y": float(position[1]), "w": abs(float(scale[0])), "h": abs(float(scale[1])), "rotation": float(rotation), "color": color, "mesh_type": visual.get("mesh_type"), "renderer_enabled": bool(visual.get("enabled", True)), "material": str(visual.get("material", "Default_Material")), "active": bool(item.get("active", item.get("enabled", True))), "static": bool(item.get("static", False)), "tag": str(item.get("tag", "Untagged")), "layer": str(item.get("layer", "Default"))}
+                snapshot = {"id": item.get("id", item["name"]), "name": item["name"], "x": float(position[0]), "y": float(position[1]), "w": abs(float(scale[0])), "h": abs(float(scale[1])), "rotation": float(rotation), "color": color, "mesh_type": visual.get("mesh_type"), "renderer_enabled": bool(visual.get("enabled", True)), "material": str(visual.get("material", "Default_Material")), "texture": str(visual.get("texture", "")), "render_layer": str(visual.get("layer", "Default")), "sort_order": int(visual.get("order", 0)), "active": bool(item.get("active", item.get("enabled", True))), "static": bool(item.get("static", False)), "tag": str(item.get("tag", "Untagged")), "layer": str(item.get("layer", "Default"))}
                 if isinstance(item.get("editor_data"), dict):
                     snapshot.update(deepcopy(item["editor_data"]))
                 if isinstance(components.get("rigidbody"), dict):
@@ -1004,6 +1026,66 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.show_collider_chk.toggled.connect(self._toggle_collider_component)
         self.btn_del_rb.clicked.connect(lambda: self.show_rigidbody_chk.setChecked(False))
         self.btn_del_col.clicked.connect(lambda: self.show_collider_chk.setChecked(False))
+        self.show_renderer_chk.toggled.connect(self._toggle_renderer_component)
+        self.sprite_texture_button.clicked.connect(self._choose_sprite_texture)
+        self.sprite_color_button.clicked.connect(self._choose_sprite_color)
+        self.sprite_layer_combo.currentTextChanged.connect(lambda _text: self._send_inspector_renderer())
+        self.sprite_order_field.valueChanged.connect(lambda _value: self._send_inspector_renderer())
+
+    def _toggle_renderer_component(self, checked: bool) -> None:
+        if self._updating_inspector or self._selected_name not in self._objects_by_name:
+            return
+        self._record_history()
+        self._objects_by_name[self._selected_name]["renderer_enabled"] = bool(checked)
+        self._send_inspector_renderer(record_history=False)
+
+    def _choose_sprite_texture(self) -> None:
+        if self._selected_name not in self._objects_by_name:
+            return
+        filename, _ = QFileDialog.getOpenFileName(self, "Selecionar textura", str(Path.cwd() / "Assets"), "Imagens (*.png *.jpg *.jpeg *.bmp *.webp)")
+        if not filename:
+            return
+        path = Path(filename)
+        try:
+            texture = str(path.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
+        except ValueError:
+            textures_dir = Path.cwd() / "Assets" / "Textures"
+            textures_dir.mkdir(parents=True, exist_ok=True)
+            destination = textures_dir / path.name
+            index = 1
+            while destination.exists() and destination.read_bytes() != path.read_bytes():
+                destination = textures_dir / f"{path.stem}_{index}{path.suffix}"
+                index += 1
+            if not destination.exists():
+                shutil.copy2(path, destination)
+            texture = str(destination.relative_to(Path.cwd())).replace("\\", "/")
+            self._refresh_assets()
+        self.sprite_texture_field.setText(texture)
+        self._send_inspector_renderer()
+
+    def _choose_sprite_color(self) -> None:
+        if self._selected_name not in self._objects_by_name:
+            return
+        current = self._objects_by_name[self._selected_name].get("color", (255, 255, 255))
+        color = QColorDialog.getColor(QColor(*current[:3]), self, "Cor do Sprite")
+        if not color.isValid():
+            return
+        self._record_history()
+        self._objects_by_name[self._selected_name]["color"] = (color.red(), color.green(), color.blue())
+        self.sprite_color_button.setStyleSheet(f"background: rgb({color.red()}, {color.green()}, {color.blue()});")
+        self._send_inspector_renderer(record_history=False)
+
+    def _send_inspector_renderer(self, record_history: bool = True) -> None:
+        if self._updating_inspector or self._selected_name not in self._objects_by_name:
+            return
+        if record_history:
+            self._record_history()
+        obj = self._objects_by_name[self._selected_name]
+        obj["renderer_enabled"] = self.show_renderer_chk.isChecked()
+        obj["texture"] = self.sprite_texture_field.text().strip()
+        obj["render_layer"] = self.sprite_layer_combo.currentText()
+        obj["sort_order"] = int(self.sprite_order_field.value())
+        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
 
     def _toggle_rigidbody_component(self, checked: bool) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
@@ -1127,6 +1209,17 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self.inspector_name_label.setText(name)
             for key in ("x", "y", "w", "h", "rotation"):
                 self.inspector_fields[key].setValue(float(obj[key]))
+            renderer_enabled = bool(obj.get("renderer_enabled", True))
+            self.show_renderer_chk.setChecked(renderer_enabled)
+            self.sprite_renderer_body.setEnabled(renderer_enabled)
+            self.sprite_texture_field.setText(str(obj.get("texture", "")))
+            color = tuple(obj.get("color", (255, 255, 255)))
+            self.sprite_color_button.setStyleSheet(f"background: rgb({int(color[0])}, {int(color[1])}, {int(color[2])});")
+            layer = str(obj.get("render_layer", "Default"))
+            if self.sprite_layer_combo.findText(layer) < 0:
+                self.sprite_layer_combo.addItem(layer)
+            self.sprite_layer_combo.setCurrentText(layer)
+            self.sprite_order_field.setValue(float(obj.get("sort_order", 0)))
             rigidbody = obj.get("rigidbody")
             self.show_rigidbody_chk.setChecked(rigidbody is not None)
             for key, field in self.physics_fields.items():
