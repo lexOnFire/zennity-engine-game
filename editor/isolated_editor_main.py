@@ -1058,6 +1058,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.audio_volume_field.valueChanged.connect(lambda _value: self._send_inspector_audio())
         self.audio_loop_field.toggled.connect(lambda _value: self._send_inspector_audio())
         self.audio_autoplay_field.toggled.connect(lambda _value: self._send_inspector_audio())
+        self.audio_test_button.clicked.connect(self._test_selected_audio)
+        self.audio_stop_button.clicked.connect(lambda: self._commands.put({"type": "stop_audio_preview"}))
         self.animator_clip_combo.currentTextChanged.connect(lambda _text: self._send_inspector_animator())
         self.animator_speed_field.valueChanged.connect(lambda _value: self._send_inspector_animator())
         self.animator_sheet_combo.currentIndexChanged.connect(lambda _value: self._send_inspector_animator())
@@ -1175,6 +1177,19 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "autoplay": self.audio_autoplay_field.isChecked(),
         })
         self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+
+    def _test_selected_audio(self) -> None:
+        if self._selected_name not in self._objects_by_name:
+            return
+        audio = self._objects_by_name[self._selected_name].get("audio")
+        if not isinstance(audio, dict) or not audio.get("path"):
+            self._log("WARNING", "Selecione um arquivo no Audio Source antes de testar")
+            return
+        self._commands.put({
+            "type": "preview_audio", "name": self._selected_name,
+            "path": str(audio["path"]), "volume": float(audio.get("volume", 1.0)),
+            "loop": bool(audio.get("loop", False)),
+        })
 
     def _toggle_rigidbody_component(self, checked: bool) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
