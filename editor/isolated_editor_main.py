@@ -175,14 +175,33 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         root_path = Path.cwd() / "Assets"
         if not root_path.exists():
             root_path = Path.cwd() / "assets"
-        root_item = QTreeWidgetItem([root_path.name if root_path.exists() else "Assets"])
+        root_item = QTreeWidgetItem(["📁 " + (root_path.name if root_path.exists() else "Assets")])
         self.assets_tree.addTopLevelItem(root_item)
 
         def add_directory(parent_item: QTreeWidgetItem, directory: Path) -> None:
             for child in sorted(directory.iterdir(), key=lambda path: (path.is_file(), path.name.lower())):
                 if child.name.startswith(".") or child.suffix == ".meta":
                     continue
-                item = QTreeWidgetItem([child.name])
+                
+                # Escolhe o ícone de acordo com o tipo de pasta ou arquivo
+                if child.is_dir():
+                    icon = "📁 "
+                else:
+                    ext = child.suffix.lower()
+                    if ext in (".png", ".jpg", ".jpeg"):
+                        icon = "🖼️ "
+                    elif ext in (".fbx", ".obj", ".mesh"):
+                        icon = "📄 "
+                    elif ext in (".py", ".gd", ".cs"):
+                        icon = "📄 "
+                    elif ext in (".ogg", ".wav", ".mp3"):
+                        icon = "🔊 "
+                    elif ext in (".json", ".zs", ".scene"):
+                        icon = "📄 "
+                    else:
+                        icon = "📄 "
+                        
+                item = QTreeWidgetItem([icon + child.name])
                 item.setToolTip(0, str(child))
                 parent_item.addChild(item)
                 if child.is_dir():
@@ -557,10 +576,36 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
     def _refresh_hierarchy(self) -> None:
         self.hierarchy_tree.clear()
         scene_name = self._scene_document.get("scene_name", "MainScene") if self._scene_document else "MainScene"
-        root = QTreeWidgetItem([str(scene_name)])
+        root = QTreeWidgetItem(["🟢 " + str(scene_name)])
         root.setExpanded(True)
+        
+        # Estrutura Environment (se houver)
+        env_item = QTreeWidgetItem(["📁 Environment"])
+        env_item.addChild(QTreeWidgetItem(["☀️ DirectionalLight"]))
+        env_item.addChild(QTreeWidgetItem(["☁️ Skybox"]))
+        env_item.addChild(QTreeWidgetItem(["🏔️ Terrain"]))
+        root.addChild(env_item)
+        
+        # Adiciona objetos dinâmicos da cena
         for obj in self._scene_snapshot:
-            root.addChild(QTreeWidgetItem([str(obj["name"])]))
+            name = obj["name"]
+            
+            # Iconiza conforme o nome ou tipo do objeto
+            if "player" in name.lower():
+                item = QTreeWidgetItem(["👤 " + name])
+                # Sub-componentes do Player para simular a árvore do mockup
+                item.addChild(QTreeWidgetItem(["📷 Camera"]))
+                item.addChild(QTreeWidgetItem(["🔶 Mesh"]))
+                item.addChild(QTreeWidgetItem(["💡 Light"]))
+            elif "inimigo" in name.lower() or "enemy" in name.lower():
+                item = QTreeWidgetItem(["👤 " + name])
+            elif "chao" in name.lower() or "floor" in name.lower():
+                item = QTreeWidgetItem(["🏔️ " + name])
+            else:
+                item = QTreeWidgetItem(["📦 " + name])
+                
+            root.addChild(item)
+            
         self.hierarchy_tree.addTopLevelItem(root)
 
     def _connect_inspector_to_viewport(self) -> None:
@@ -668,7 +713,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._commands.put({"type": "set_collider", "name": self._selected_name, "collider": deepcopy(collider)})
 
     def _select_hierarchy_item(self, item: QTreeWidgetItem) -> None:
-        name = item.text(0)
+        raw_name = item.text(0)
+        # Remove ícones e espaços iniciais para obter o nome real do objeto
+        name = raw_name.lstrip("🟢🔴🟡🔵🟣⚫⚪📁🏔️☀️☁️📷🔶💡👤📦 ").strip()
         if name in self._objects_by_name:
             self._commands.put({"type": "select_object", "name": name})
             self._selected_name = name
