@@ -95,6 +95,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._event_timer = QTimer(self)
         self._event_timer.timeout.connect(self._read_viewport_events)
         self._event_timer.start(33)
+        self._animator_preview_index = 0
+        self._animator_preview_timer = QTimer(self)
+        self._animator_preview_timer.timeout.connect(self._tick_animation_preview)
+        self._animator_preview_timer.start(125)
         self._log("INFO", "Zennity Phase 1 iniciado com Viewport em processo separado")
 
     def _log(self, level: str, message: str) -> None:
@@ -1048,6 +1052,12 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.audio_autoplay_field.toggled.connect(lambda _value: self._send_inspector_audio())
         self.animator_clip_combo.currentTextChanged.connect(lambda _text: self._send_inspector_animator())
         self.animator_speed_field.valueChanged.connect(lambda _value: self._send_inspector_animator())
+        self.animator_sheet_combo.currentIndexChanged.connect(lambda _value: self._send_inspector_animator())
+        for field in (self.animator_frame_width, self.animator_frame_height, self.animator_start_frame, self.animator_frame_count, self.animator_fps_field):
+            field.valueChanged.connect(lambda _value: self._send_inspector_animator())
+        self.animator_loop_field.toggled.connect(lambda _value: self._send_inspector_animator())
+        self.animator_add_clip_button.clicked.connect(self._add_animation_clip)
+        self.animator_remove_clip_button.clicked.connect(self._remove_animation_clip)
         self.show_camera_chk.toggled.connect(self._toggle_camera_component)
         self.btn_collapse_camera.clicked.connect(lambda: self.camera_body.setVisible(not self.camera_body.isVisible()))
         self.btn_delete_camera.clicked.connect(lambda: self.show_camera_chk.setChecked(False))
@@ -1188,11 +1198,108 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._record_history()
         obj = self._objects_by_name[self._selected_name]
         if checked:
-            obj.setdefault("animator", {"active_clip": "Idle", "speed": 1.0, "clips": ["Idle", "Run", "Jump"]})
+            obj.setdefault("animator", {"active_clip": "Idle", "speed": 1.0, "clips": {"Idle": self._default_animation_clip()}})
         else:
             obj.pop("animator", None)
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._update_inspector(self._selected_name)
+
+    @staticmethod
+    def _default_animation_clip() -> dict:
+        return {"texture": "", "frame_width": 32, "frame_height": 32, "start_frame": 0, "frame_count": 1, "fps": 8.0, "loop": True}
+
+    def _animation_clips(self, animator: dict) -> dict[str, dict]:
+        clips = animator.get("clips")
+        if isinstance(clips, list):
+            clips = {str(name): self._default_animation_clip() for name in clips}
+            animator["clips"] = clips
+        elif not isinstance(clips, dict):
+            clips = {"Idle": self._default_animation_clip()}
+            animator["clips"] = clips
+        return clips
+
+    def _available_sprite_sheets(self) -> list[str]:
+        root = Path.cwd() / "Assets"
+        result = []
+        if root.exists():
+            for path in root.rglob("*"):
+                if path.is_file() and path.suffix.lower() in {".png", ".jpg", ".jpeg", ".bmp", ".webp"}:
+                    result.append(str(path.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/"))
+        return sorted(result, key=str.lower)
+
+    def _add_animation_clip(self) -> None:
+        if self._selected_name not in self._objects_by_name:
+            return
+        animator = self._objects_by_name[self._selected_name].get("animator")
+        if not isinstance(animator, dict):
+            return
+        name, accepted = QInputDialog.getText(self, "Novo Clip", "Nome do clip:", text="NewClip")
+        name = name.strip()
+        clips = self._animation_clips(animator)
+        if not accepted or not name or name in clips:
+            return
+        self._record_history()
+        clips[name] = self._default_animation_clip()
+        animator["active_clip"] = name
+        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._update_inspector(self._selected_name)
+
+    def _remove_animation_clip(self) -> None:
+        if self._selected_name not in self._objects_by_name:
+            return
+        animator = self._objects_by_name[self._selected_name].get("animator")
+        if not isinstance(animator, dict):
+            return
+        clips = self._animation_clips(animator)
+        name = self.animator_clip_combo.currentText()
+        if name not in clips or len(clips) <= 1:
+            return
+        self._record_history()
+        clips.pop(name)
+        animator["active_clip"] = next(iter(clips))
+        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._update_inspector(self._selected_name)
+
+    def _tick_animation_preview(self) -> None:
+        if self._selected_name not in self._objects_by_name:
+            return
+        animator = self._objects_by_name[self._selected_name].get("animator")
+        if not isinstance(animator, dict):
+            return
+        clips = self._animation_clips(animator)
+        clip = clips.get(self.animator_clip_combo.currentText())
+        if not isinstance(clip, dict):
+            return
+        count = max(1, int(clip.get("frame_count", 1)))
+        if clip.get("loop", True):
+            self._animator_preview_index = (self._animator_preview_index + 1) % count
+        else:
+            self._animator_preview_index = min(count - 1, self._animator_preview_index + 1)
+        fps = max(0.1, float(clip.get("fps", 8.0))) * max(0.01, float(animator.get("speed", 1.0)))
+        self._animator_preview_timer.setInterval(max(16, int(1000.0 / fps)))
+        self._update_animation_preview(clip, self._animator_preview_index)
+
+    def _update_animation_preview(self, clip: dict, frame_offset: int = 0) -> None:
+        texture = str(clip.get("texture", ""))
+        path = Path(texture)
+        if texture and not path.is_absolute():
+            path = Path.cwd() / path
+        pixmap = QPixmap(str(path)) if texture else QPixmap()
+        width = max(1, int(clip.get("frame_width", 32)))
+        height = max(1, int(clip.get("frame_height", 32)))
+        if pixmap.isNull() or width > pixmap.width() or height > pixmap.height():
+            self.animator_preview.clear()
+            self.animator_preview.setText("Selecione um Sprite Sheet válido")
+            return
+        columns = max(1, pixmap.width() // width)
+        frame = max(0, int(clip.get("start_frame", 0))) + max(0, int(frame_offset))
+        x = (frame % columns) * width
+        y = (frame // columns) * height
+        if x + width > pixmap.width() or y + height > pixmap.height():
+            self.animator_preview.setText("Quadro fora da imagem")
+            return
+        preview = pixmap.copy(x, y, width, height)
+        self.animator_preview.setPixmap(preview.scaled(120, 90, Qt.KeepAspectRatio, Qt.FastTransformation))
 
     def _send_inspector_animator(self) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
@@ -1202,8 +1309,21 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if anim is None:
             return
         self._record_history()
-        anim["active_clip"] = self.animator_clip_combo.currentText()
+        clip_name = self.animator_clip_combo.currentText() or "Idle"
+        clips = self._animation_clips(anim)
+        clip = clips.setdefault(clip_name, self._default_animation_clip())
+        anim["active_clip"] = clip_name
         anim["speed"] = float(self.animator_speed_field.value())
+        texture = self.animator_sheet_combo.currentData() or ""
+        clip.update({
+            "texture": str(texture),
+            "frame_width": int(self.animator_frame_width.value()),
+            "frame_height": int(self.animator_frame_height.value()),
+            "start_frame": int(self.animator_start_frame.value()),
+            "frame_count": int(self.animator_frame_count.value()),
+            "fps": float(self.animator_fps_field.value()),
+            "loop": self.animator_loop_field.isChecked(),
+        })
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._update_inspector(self._selected_name)
 
@@ -1301,7 +1421,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         elif component in {"box", "circle"}:
             obj["collider"] = {"type": component, "is_trigger": False}
         elif component == "animator":
-            obj["animator"] = {"active_clip": "Idle", "speed": 1.0, "clips": ["Idle", "Run", "Jump"]}
+            obj["animator"] = {"active_clip": "Idle", "speed": 1.0, "clips": {"Idle": self._default_animation_clip()}}
         elif component == "camera":
             obj["camera"] = {"active": True, "zoom": 1.0, "width": 1280.0, "height": 720.0, "background_color": [22, 24, 31], "follow_target": ""}
             names = obj.setdefault("component_names", [])
@@ -1421,12 +1541,33 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self.show_animator_chk.setChecked(anim is not None)
             self.animator_body.setEnabled(anim is not None)
             if anim:
-                self.animator_clip_combo.setCurrentText(str(anim.get("active_clip", "Idle")))
+                clips = self._animation_clips(anim)
+                active_clip = str(anim.get("active_clip", next(iter(clips))))
+                if active_clip not in clips:
+                    active_clip = next(iter(clips))
+                self.animator_clip_combo.clear()
+                self.animator_clip_combo.addItems(list(clips))
+                self.animator_clip_combo.setCurrentText(active_clip)
                 self.animator_speed_field.setValue(float(anim.get("speed", 1.0)))
+                clip = clips[active_clip]
+                self.animator_sheet_combo.clear()
+                self.animator_sheet_combo.addItem("Nenhum", "")
+                for sheet in self._available_sprite_sheets():
+                    self.animator_sheet_combo.addItem(Path(sheet).name, sheet)
+                sheet_index = self.animator_sheet_combo.findData(str(clip.get("texture", "")))
+                self.animator_sheet_combo.setCurrentIndex(max(0, sheet_index))
+                self.animator_frame_width.setValue(float(clip.get("frame_width", 32)))
+                self.animator_frame_height.setValue(float(clip.get("frame_height", 32)))
+                self.animator_start_frame.setValue(float(clip.get("start_frame", 0)))
+                self.animator_frame_count.setValue(float(clip.get("frame_count", 1)))
+                self.animator_fps_field.setValue(float(clip.get("fps", 8.0)))
+                self.animator_loop_field.setChecked(bool(clip.get("loop", True)))
                 # Mostra o clip que está tocando no runtime (ou o ativo do inspector se parado)
                 self.animator_current_lbl.setText(str(obj.get("_current_animation_name", anim.get("active_clip", "Idle"))))
+                self._update_animation_preview(clip)
             else:
                 self.animator_current_lbl.setText("Nenhum")
+                self.animator_preview.setText("Sem Animator")
 
             camera = obj.get("camera") if isinstance(obj.get("camera"), dict) else None
             self.show_camera_chk.setChecked(camera is not None)
