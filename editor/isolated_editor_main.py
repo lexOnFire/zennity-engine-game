@@ -637,6 +637,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if message.get("type") == "move_selected" and self._selected_name is not None:
             self._record_history()
         self._commands.put(message)
+        if message.get("type") == "play":
+            # Comando separado: não depende do carregamento ou da presença de scripts.
+            self._commands.put({"type": "start_play_audio", "audio_sources": audio_sources})
 
     def _configure_create_menu(self) -> None:
         for menu_action in self.menuBar().actions():
