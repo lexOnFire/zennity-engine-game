@@ -944,15 +944,25 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 # Corpo do script (Exposição de variáveis/propriedades igual ao transform/collider/screenshot)
                 b_widget = QWidget()
                 b_lay = QFormLayout(b_widget)
-                b_lay.setContentsMargins(8, 4, 8, 4)
+                b_lay.setContentsMargins(4, 4, 4, 4)
                 b_lay.setSpacing(6)
+                
+                # Ajusta espaçamento e alinhamento do FormLayout para evitar cortes de texto no painel estreito
+                b_lay.setLabelAlignment(Qt.AlignLeft)
+                b_lay.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
                 
                 btn_collapse.clicked.connect(lambda checked=False, target=b_widget: target.setVisible(not target.isVisible()))
                 
                 # Propriedade 1: Caminho do Script (Leitura)
-                script_path_field = QLabel(s_name)
-                script_path_field.setStyleSheet("background-color: #262626; color: #d0d0d0; padding: 3px; border-radius: 2px;")
-                b_lay.addRow("Script", script_path_field)
+                script_path_field = QLabel(f"📄 {s_name}")
+                script_path_field.setStyleSheet("background-color: #242424; color: #e0e0e0; padding: 4px 6px; border: 1px solid #333; border-radius: 2px; font-size: 11px;")
+                script_path_field.setFixedHeight(22)
+                
+                # Label estilizada com espaçamento mínimo para caber em 280px de largura
+                lbl_key = QLabel("Script")
+                lbl_key.setStyleSheet("color: #aaaaaa; font-size: 11px;")
+                lbl_key.setFixedWidth(50)
+                b_lay.addRow(lbl_key, script_path_field)
                 
                 # Procura configurações expostas no script para renderizar (Velocidade, Pulo, etc.)
                 try:
@@ -970,11 +980,15 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                                             key_name = str(k_node.value)
                                             val = v_node.value
                                             label_name = key_name.replace("_", " ").capitalize()
-                                            # Mapeia termos comuns para português conforme screenshot
                                             if key_name == "speed":
                                                 label_name = "Velocidade"
                                             elif key_name == "jump_force":
                                                 label_name = "Pulo"
+                                            
+                                            # Label estilizada uniforme com largura fixa
+                                            lbl_prop = QLabel(label_name)
+                                            lbl_prop.setStyleSheet("color: #aaaaaa; font-size: 11px;")
+                                            lbl_prop.setFixedWidth(50)
                                             
                                             if isinstance(val, (int, float)):
                                                 sb = QDoubleSpinBox()
@@ -982,15 +996,16 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                                                 sb.setDecimals(2)
                                                 sb.setRange(-100000.0, 100000.0)
                                                 sb.setValue(float(val))
+                                                sb.setFixedHeight(22)
                                                 # Callback para salvar alteração de propriedade no arquivo
                                                 sb.valueChanged.connect(lambda val_new, p_script=s_path, k_prop=key_name: self._update_script_config_val(p_script, k_prop, val_new))
-                                                b_lay.addRow(label_name, sb)
+                                                b_lay.addRow(lbl_prop, sb)
                                             elif isinstance(val, bool):
                                                 cb = QCheckBox()
                                                 cb.setObjectName("InspectorCheckBox")
                                                 cb.setChecked(val)
                                                 cb.toggled.connect(lambda checked_new, p_script=s_path, k_prop=key_name: self._update_script_config_val(p_script, k_prop, checked_new))
-                                                b_lay.addRow(label_name, cb)
+                                                b_lay.addRow(lbl_prop, cb)
                 except Exception as e:
                     self._log("WARNING", f"Erro ao ler propriedades de {s_name}: {e}")
                 
