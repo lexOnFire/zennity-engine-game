@@ -18,7 +18,7 @@ from PySide6.QtGui import QAction, QActionGroup, QDesktopServices, QPixmap
 from PySide6.QtWidgets import (
     QFileDialog, QInputDialog, QMenu, QToolBar,
     QHBoxLayout, QFormLayout,
-    QCheckBox, QLabel, QComboBox,
+    QCheckBox, QLabel, QComboBox, QLineEdit,
     QPushButton, QDoubleSpinBox,
 )
 from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QWidget
@@ -249,38 +249,17 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._update_inspector(self._selected_name)
         self._log("INFO", f"Script removido: {Path(script_path).name}")
 
-    def _update_script_config_val(self, script_path: str, key: str, value: float | bool) -> None:
-        try:
-            full_p = Path.cwd() / script_path
-            if not full_p.exists():
-                return
-            content = full_p.read_text(encoding="utf-8")
-            import ast
-            tree = ast.parse(content)
-
-            config_node = None
-            for node in tree.body:
-                if isinstance(node, ast.Assign) and len(node.targets) == 1:
-                    target = node.targets[0]
-                    if isinstance(target, ast.Name) and target.id == "CONFIG" and isinstance(node.value, ast.Dict):
-                        config_node = node
-                        break
-
-            if config_node:
-                for k_node, v_node in zip(config_node.value.keys, config_node.value.values):
-                    if isinstance(k_node, ast.Constant) and k_node.value == key:
-                        start_idx = v_node.col_offset
-                        end_idx = v_node.end_col_offset
-                        lines = content.splitlines()
-                        target_line = config_node.lineno - 1
-                        line_str = lines[target_line]
-                        new_val_str = str(value)
-                        lines[target_line] = line_str[:start_idx] + new_val_str + line_str[end_idx:]
-                        full_p.write_text("\n".join(lines), encoding="utf-8")
-                        self._log("INFO", f"Atualizado CONFIG['{key}'] = {value} em {Path(script_path).name}")
-                        break
-        except Exception as e:
-            self._log("WARNING", f"Falha ao atualizar propriedade do script: {e}")
+    def _update_script_config_val(self, script_path: str, key: str, value: float | bool | str) -> None:
+        if self._updating_inspector or self._selected_name not in self._objects_by_name:
+            return
+        obj = self._objects_by_name[self._selected_name]
+        properties = obj.setdefault("script_properties", {}).setdefault(script_path, {})
+        if properties.get(key) == value:
+            return
+        self._record_history()
+        properties[key] = value
+        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._log("INFO", f"{self._selected_name}: '{key}' = {value} em {Path(script_path).name}")
 
     def _remove_all_scripts(self) -> None:
         if self._selected_name not in self._objects_by_name:
@@ -1089,39 +1068,46 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     if full_p.exists():
                         import ast
                         tree = ast.parse(full_p.read_text(encoding="utf-8"))
+                        editable_properties = []
+                        overrides = self._objects_by_name[name].get("script_properties", {}).get(s_path, {})
                         for node in tree.body:
                             if isinstance(node, ast.Assign) and len(node.targets) == 1:
                                 target = node.targets[0]
                                 if isinstance(target, ast.Name) and target.id == "CONFIG" and isinstance(node.value, ast.Dict):
                                     for k_node, v_node in zip(node.value.keys, node.value.values):
                                         if isinstance(k_node, ast.Constant) and isinstance(v_node, ast.Constant):
-                                            key_name = str(k_node.value)
-                                            val = v_node.value
-                                            label_name = key_name.replace("_", " ").capitalize()
-                                            if key_name == "speed":
-                                                label_name = "Velocidade"
-                                            elif key_name == "jump_force":
-                                                label_name = "Pulo"
+                                            editable_properties.append((str(k_node.value), v_node.value))
+                                elif isinstance(target, ast.Name) and target.id.isupper() and isinstance(node.value, ast.Constant):
+                                    editable_properties.append((target.id, node.value.value))
 
-                                            lbl_prop = QLabel(label_name)
-                                            lbl_prop.setStyleSheet("color: #aaaaaa; font-size: 11px;")
-                                            lbl_prop.setFixedWidth(50)
+                        for key_name, default_val in editable_properties:
+                            val = overrides.get(key_name, default_val)
+                            label_name = key_name.replace("_", " ").capitalize()
+                            lbl_prop = QLabel(label_name)
+                            lbl_prop.setStyleSheet("color: #aaaaaa; font-size: 11px;")
+                            lbl_prop.setFixedWidth(72)
 
-                                            if isinstance(val, (int, float)):
-                                                sb = QDoubleSpinBox()
-                                                sb.setObjectName("InspectorNumberField")
-                                                sb.setDecimals(2)
-                                                sb.setRange(-100000.0, 100000.0)
-                                                sb.setValue(float(val))
-                                                sb.setFixedHeight(22)
-                                                sb.valueChanged.connect(lambda val_new, p_script=s_path, k_prop=key_name: self._update_script_config_val(p_script, k_prop, val_new))
-                                                b_lay.addRow(lbl_prop, sb)
-                                            elif isinstance(val, bool):
-                                                cb = QCheckBox()
-                                                cb.setObjectName("InspectorCheckBox")
-                                                cb.setChecked(val)
-                                                cb.toggled.connect(lambda checked_new, p_script=s_path, k_prop=key_name: self._update_script_config_val(p_script, k_prop, checked_new))
-                                                b_lay.addRow(lbl_prop, cb)
+                            if isinstance(val, bool):
+                                cb = QCheckBox()
+                                cb.setObjectName("InspectorCheckBox")
+                                cb.setChecked(val)
+                                cb.toggled.connect(lambda checked_new, p_script=s_path, k_prop=key_name: self._update_script_config_val(p_script, k_prop, checked_new))
+                                b_lay.addRow(lbl_prop, cb)
+                            elif isinstance(val, (int, float)):
+                                sb = QDoubleSpinBox()
+                                sb.setObjectName("InspectorNumberField")
+                                sb.setDecimals(2)
+                                sb.setRange(-100000.0, 100000.0)
+                                sb.setValue(float(val))
+                                sb.setFixedHeight(22)
+                                sb.valueChanged.connect(lambda val_new, p_script=s_path, k_prop=key_name: self._update_script_config_val(p_script, k_prop, val_new))
+                                b_lay.addRow(lbl_prop, sb)
+                            elif isinstance(val, str):
+                                text_field = QLineEdit(val)
+                                text_field.setObjectName("InspectorTextField")
+                                text_field.setFixedHeight(22)
+                                text_field.editingFinished.connect(lambda field=text_field, p_script=s_path, k_prop=key_name: self._update_script_config_val(p_script, k_prop, field.text()))
+                                b_lay.addRow(lbl_prop, text_field)
                 except Exception as e:
                     self._log("WARNING", f"Erro ao ler propriedades de {s_name}: {e}")
 
