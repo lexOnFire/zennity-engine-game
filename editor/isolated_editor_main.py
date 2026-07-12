@@ -266,12 +266,14 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             if menu is None or menu.title() != "Editar":
                 continue
             menu.clear()
-            undo_action = menu.addAction("Desfazer")
+            undo_action = self.toolbar_actions["Desfazer"]
             undo_action.setShortcut("Ctrl+Z")
             undo_action.triggered.connect(self._undo)
-            redo_action = menu.addAction("Refazer")
+            menu.addAction(undo_action)
+            redo_action = self.toolbar_actions["Refazer"]
             redo_action.setShortcut("Ctrl+Y")
             redo_action.triggered.connect(self._redo)
+            menu.addAction(redo_action)
             menu.addSeparator()
             duplicate_action = menu.addAction("Duplicar")
             duplicate_action.setShortcut("Ctrl+D")
