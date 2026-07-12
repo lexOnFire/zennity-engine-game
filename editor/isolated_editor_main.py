@@ -34,6 +34,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._scene_snapshot = deepcopy(self._initial_scene_snapshot)
         self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
         self._selected_name: str | None = None
+        self._updating_inspector = False
         self.setWindowTitle("Zennity — Interface isolada (PySide6)")
         self.statusBar().showMessage(
             "Viewport Pygame está em outra janela/processo. Arraste painéis aqui sem afetá-la."
@@ -41,6 +42,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._connect_existing_toolbar_actions()
         self._build_viewport_link_toolbar()
         self._connect_hierarchy_to_viewport()
+        self._connect_inspector_to_viewport()
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._event_timer = QTimer(self)
         self._event_timer.timeout.connect(self._read_viewport_events)
@@ -125,6 +127,18 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         for tree in self.findChildren(QTreeWidget):
             tree.itemClicked.connect(self._select_hierarchy_item)
 
+    def _connect_inspector_to_viewport(self) -> None:
+        for field in self.inspector_fields.values():
+            field.valueChanged.connect(lambda _value: self._send_inspector_transform())
+
+    def _send_inspector_transform(self) -> None:
+        if self._updating_inspector or self._selected_name not in self._objects_by_name:
+            return
+        obj = self._objects_by_name[self._selected_name]
+        for key, field in self.inspector_fields.items():
+            obj[key] = float(field.value())
+        self._commands.put({"type": "set_transform", "name": self._selected_name, **{k: obj[k] for k in ("x", "y", "w", "h")}})
+
     def _select_hierarchy_item(self, item: QTreeWidgetItem) -> None:
         name = item.text(0)
         if name in self._objects_by_name:
@@ -137,9 +151,13 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         obj = self._objects_by_name.get(name)
         if obj is None:
             return
-        self.inspector_labels["name"].setText(name)
-        for key in ("x", "y", "w", "h"):
-            self.inspector_labels[key].setText(f"{float(obj[key]):.2f}")
+        self._updating_inspector = True
+        try:
+            self.inspector_name_label.setText(name)
+            for key in ("x", "y", "w", "h"):
+                self.inspector_fields[key].setValue(float(obj[key]))
+        finally:
+            self._updating_inspector = False
 
     def _read_viewport_events(self) -> None:
         while True:
@@ -156,6 +174,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 if obj is not None:
                     obj["x"] = float(message["x"])
                     obj["y"] = float(message["y"])
+                    if "w" in message:
+                        obj["w"] = float(message["w"])
+                    if "h" in message:
+                        obj["h"] = float(message["h"])
                     if message["name"] == self._selected_name:
                         self._update_inspector(self._selected_name)
                 self.statusBar().showMessage(
