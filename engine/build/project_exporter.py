@@ -60,7 +60,7 @@ def load_objects(path):
             "texture": visual.get("texture", ""), "renderer_enabled": visual.get("enabled", True),
             "render_layer": visual.get("layer", "Default"), "sort_order": visual.get("order", 0),
         }
-        for key in ("rigidbody", "collider", "camera"):
+        for key in ("rigidbody", "collider", "camera", "audio"):
             if key in components:
                 obj[key] = components[key]
         obj.update(item.get("editor_data", {}))
