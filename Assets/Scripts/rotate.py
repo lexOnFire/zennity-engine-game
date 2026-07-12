@@ -1,2 +1,7 @@
-def update(obj, dt):
-    obj.transform.rotation[1] = (obj.transform.rotation[1] + 45.0 * dt) % 360
+"""Rotação contínua simples."""
+
+CONFIG = {"speed": 45.0}
+
+
+def on_update(game, dt):
+    game.rotation = (game.rotation + CONFIG["speed"] * dt) % 360.0
