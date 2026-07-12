@@ -57,7 +57,7 @@ class InterfaceSmokeTest(QMainWindow):
         toolbar.setMovable(False)
         self.addToolBar(toolbar)
         self.toolbar_actions = {}
-        for label in ("Novo", "Abrir", "Salvar", "Select", "Move", "Rotate", "Scale", "Snap: OFF", "Play", "Pause", "Stop"):
+        for label in ("Novo", "Abrir", "Salvar", "Desfazer", "Refazer", "Select", "Move", "Rotate", "Scale", "Snap: OFF", "Play", "Pause", "Stop"):
             action = QAction(label, self)
             self.toolbar_actions[label] = action
             toolbar.addAction(action)
@@ -74,13 +74,13 @@ class InterfaceSmokeTest(QMainWindow):
         self.viewport_host.setFrameShape(QFrame.StyledPanel)
         self.viewport_host.setAttribute(Qt.WA_NativeWindow, True)
         self.viewport_host.setStyleSheet("#IsolatedViewportHost { background: #16181f; }")
-        
+
         # Em vez de colocar a viewport_host como widget da aba e perder o HWND parent ao alternar,
         # fazemos a viewport_tabs atuar apenas como seletor visual e inserimos o viewport_host diretamente
         # sob um container que o mantém ativo e visível.
         self.viewport_tabs.addTab(QWidget(), "Scene")
         self.viewport_tabs.addTab(QWidget(), "Game")
-        
+
         self.center_container = QWidget()
         layout = QVBoxLayout(self.center_container)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -164,13 +164,13 @@ class InterfaceSmokeTest(QMainWindow):
             editor.setKeyboardTracking(False)
             self.inspector_fields[key] = editor
             form.addRow(field, editor)
-            
+
         # Alças de Habilitação Geral de Componentes (Melhoria do Sistema de Componentes)
         self.show_rigidbody_chk = QCheckBox("Componente: RigidBody 2D")
         self.show_rigidbody_chk.setObjectName("InspectorCheckBox")
         self.show_rigidbody_chk.setStyleSheet("font-weight: bold; color: #4caf50; margin-top: 10px;")
         form.addRow(self.show_rigidbody_chk)
-        
+
         self.physics_fields = {
             "use_gravity": QCheckBox(),
             "is_kinematic": QCheckBox(),
@@ -179,12 +179,12 @@ class InterfaceSmokeTest(QMainWindow):
         self.physics_fields["is_kinematic"].setObjectName("InspectorCheckBox")
         form.addRow("Usar gravidade", self.physics_fields["use_gravity"])
         form.addRow("Cinemático", self.physics_fields["is_kinematic"])
-        
+
         self.show_collider_chk = QCheckBox("Componente: Box/Circle Collider")
         self.show_collider_chk.setObjectName("InspectorCheckBox")
         self.show_collider_chk.setStyleSheet("font-weight: bold; color: #4caf50; margin-top: 10px;")
         form.addRow(self.show_collider_chk)
-        
+
         self.collider_fields: dict[str, QDoubleSpinBox] = {}
         for label, key in (("Collider Largura", "width"), ("Collider Altura", "height"), ("Collider Raio", "radius"), ("Collider Offset X", "offset_x"), ("Collider Offset Y", "offset_y")):
             editor = QDoubleSpinBox()
