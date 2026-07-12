@@ -7,12 +7,14 @@ from __future__ import annotations
 
 import multiprocessing as mp
 import sys
+import json
 from copy import deepcopy
+from pathlib import Path
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QAction
-from PySide6.QtWidgets import QToolBar
+from PySide6.QtWidgets import QFileDialog, QToolBar
 from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem
 
 from editor.interface_smoke_test import InterfaceSmokeTest
@@ -54,12 +56,20 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             ("Play", {"type": "play"}),
             ("Stop", {"type": "stop"}),
             ("Reset", {"type": "reset_from_interface"}),
+            ("Salvar Cena", {"type": "save_scene"}),
+            ("Abrir Cena", {"type": "load_scene"}),
         ):
             action = QAction(label, self)
             action.triggered.connect(lambda checked=False, message=payload: self._send_toolbar_command(message))
             toolbar.addAction(action)
 
     def _send_toolbar_command(self, message: dict) -> None:
+        if message.get("type") == "save_scene":
+            self._save_scene_snapshot()
+            return
+        if message.get("type") == "load_scene":
+            self._load_scene_snapshot()
+            return
         if message.get("type") == "reset_from_interface":
             self._scene_snapshot = deepcopy(self._initial_scene_snapshot)
             self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
@@ -68,6 +78,37 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self._update_inspector(self._selected_name)
             return
         self._commands.put(message)
+
+    def _save_scene_snapshot(self) -> None:
+        filename, _ = QFileDialog.getSaveFileName(
+            self, "Salvar cena isolada", "isolated_scene.json", "Cena JSON (*.json)"
+        )
+        if not filename:
+            return
+        payload = {"version": 1, "objects": self._scene_snapshot}
+        Path(filename).write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        self.statusBar().showMessage(f"Cena salva: {filename}")
+
+    def _load_scene_snapshot(self) -> None:
+        filename, _ = QFileDialog.getOpenFileName(
+            self, "Abrir cena isolada", "", "Cena JSON (*.json)"
+        )
+        if not filename:
+            return
+        try:
+            payload = json.loads(Path(filename).read_text(encoding="utf-8"))
+            objects = payload.get("objects", [])
+            required = {"name", "x", "y", "w", "h"}
+            if not isinstance(objects, list) or any(not required.issubset(item) for item in objects):
+                raise ValueError("arquivo de cena inválido")
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            self.statusBar().showMessage(f"Falha ao abrir cena: {exc}")
+            return
+        self._scene_snapshot = [dict(item) for item in objects]
+        self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
+        self._selected_name = None
+        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self.statusBar().showMessage(f"Cena aberta: {filename}")
 
     def _connect_hierarchy_to_viewport(self) -> None:
         for tree in self.findChildren(QTreeWidget):
