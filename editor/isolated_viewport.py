@@ -12,6 +12,74 @@ from queue import Empty
 from typing import Any
 
 
+class PlayScriptAPI:
+    """API pequena e estável entregue aos scripts no Play Mode."""
+
+    _KEY_ALIASES = {"a": "left", "d": "right", "w": "up", "s": "down", "space": "jump"}
+
+    def __init__(self, name: str, obj: dict[str, Any], events: Any) -> None:
+        self.name = name
+        self.obj = obj
+        self._events = events
+        self._input: dict[str, bool] = {}
+        self._previous_input: dict[str, bool] = {}
+
+    @property
+    def x(self) -> float:
+        return float(self.obj.get("x", 0.0))
+
+    @x.setter
+    def x(self, value: float) -> None:
+        self.obj["x"] = float(value)
+
+    @property
+    def y(self) -> float:
+        return float(self.obj.get("y", 0.0))
+
+    @y.setter
+    def y(self, value: float) -> None:
+        self.obj["y"] = float(value)
+
+    @property
+    def rotation(self) -> float:
+        return float(self.obj.get("rotation", 0.0))
+
+    @rotation.setter
+    def rotation(self, value: float) -> None:
+        self.obj["rotation"] = float(value)
+
+    def begin_frame(self, input_state: dict[str, bool]) -> None:
+        self._input = dict(input_state)
+
+    def end_frame(self) -> None:
+        self._previous_input = dict(self._input)
+
+    def key(self, name: str) -> bool:
+        key = self._KEY_ALIASES.get(name.lower(), name.lower())
+        return bool(self._input.get(key, False))
+
+    def key_pressed(self, name: str) -> bool:
+        key = self._KEY_ALIASES.get(name.lower(), name.lower())
+        return bool(self._input.get(key, False) and not self._previous_input.get(key, False))
+
+    def axis(self, negative: str, positive: str) -> int:
+        return int(self.key(positive)) - int(self.key(negative))
+
+    def move(self, dx: float, dy: float = 0.0) -> None:
+        self.x += float(dx)
+        self.y += float(dy)
+
+    def jump(self, force: float = 420.0) -> None:
+        self.obj["_jump_requested"] = True
+        self.obj["_jump_force"] = float(force)
+
+    def send(self, command: str, value: Any = None) -> None:
+        self.obj.setdefault("script_instructions", []).append({"command": str(command), "value": value})
+
+    def log(self, message: str) -> None:
+        _send(self._events, {"type": "script_log", "level": "INFO", "message": f"{self.name}: {message}"})
+
+
 def _send(events: Any, payload: dict[str, Any]) -> None:
     if events is None:
         return
@@ -104,6 +172,7 @@ def run_viewport(
     velocities_y: dict[str, float] = {}
     grounded: dict[str, bool] = {}
     script_instances: dict[str, list[tuple[str, Any]]] = {}
+    script_apis: dict[str, PlayScriptAPI] = {}
     last_stats_ms = 0
 
     def game_camera() -> dict[str, Any] | None:
@@ -128,6 +197,7 @@ def run_viewport(
 
     def start_scripts() -> None:
         script_instances.clear()
+        script_apis.clear()
         for name, obj in objects.items():
             for script_path in obj.get("scripts", []):
                 try:
@@ -141,19 +211,29 @@ def run_viewport(
                         raise ImportError(f"não foi possível carregar {path}")
                     module = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(module)
-                    update = getattr(module, "isolated_update", None)
-                    update_mode = "isolated"
+                    update = getattr(module, "on_update", None)
+                    update_mode = "simple"
+                    if not callable(update):
+                        update = getattr(module, "isolated_update", None)
+                        update_mode = "isolated"
                     if not callable(update):
                         update = getattr(module, "update", None)
                         update_mode = "legacy"
                     if not callable(update):
-                        raise TypeError("defina isolated_update(obj, input_state, dt) ou update(obj, dt)")
+                        raise TypeError("defina on_update(game, dt), isolated_update(...) ou update(obj, dt)")
                     module._zennity_update_hook = update
                     module._zennity_update_mode = update_mode
+                    api = script_apis.setdefault(name, PlayScriptAPI(name, obj, events))
+                    module._zennity_api = api
                     script_instances.setdefault(name, []).append((str(path), module))
-                    start = getattr(module, "isolated_start", None) or getattr(module, "start", None)
+                    start = getattr(module, "on_start", None)
                     if callable(start):
-                        start(obj)
+                        start(api)
+                    else:
+                        start = getattr(module, "isolated_start", None) or getattr(module, "start", None)
+                    if callable(start):
+                        if getattr(module, "on_start", None) is not start:
+                            start(obj)
                     _send(events, {"type": "script_log", "level": "INFO", "message": f"Script iniciado em {name}: {path.name}"})
                 except Exception as exc:
                     _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{script_path}: {exc}"})
@@ -163,12 +243,17 @@ def run_viewport(
             obj = objects.get(name)
             for path, module in instances:
                 try:
+                    stop = getattr(module, "on_stop", None)
+                    if callable(stop):
+                        stop(module._zennity_api)
+                        continue
                     stop = getattr(module, "isolated_stop", None) or getattr(module, "stop", None)
                     if callable(stop):
                         stop(obj)
                 except Exception as exc:
                     _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}: {exc}"})
         script_instances.clear()
+        script_apis.clear()
 
     def view_transform() -> tuple[float, float, float]:
         if view_mode == "game":
@@ -579,20 +664,28 @@ def run_viewport(
                 if obj is None:
                     continue
                 instructions = obj.pop("script_instructions", [])
+                api = script_apis[name]
+                api.begin_frame(input_state)
                 for path, module in list(instances):
                     try:
-                        instruction_hook = getattr(module, "isolated_on_instruction", None)
-                        if callable(instruction_hook):
-                            for instruction in instructions:
-                                if isinstance(instruction, dict):
-                                    instruction_hook(obj, instruction)
-                        if module._zennity_update_mode == "legacy":
+                        simple_instruction_hook = getattr(module, "on_instruction", None)
+                        legacy_instruction_hook = getattr(module, "isolated_on_instruction", None)
+                        for instruction in instructions:
+                            if isinstance(instruction, dict):
+                                if callable(simple_instruction_hook):
+                                    simple_instruction_hook(api, instruction)
+                                elif callable(legacy_instruction_hook):
+                                    legacy_instruction_hook(obj, instruction)
+                        if module._zennity_update_mode == "simple":
+                            module._zennity_update_hook(api, dt)
+                        elif module._zennity_update_mode == "legacy":
                             module._zennity_update_hook(obj, dt)
                         else:
                             module._zennity_update_hook(obj, input_state, dt)
                     except Exception as exc:
                         instances.remove((path, module))
                         _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}: {exc}"})
+                api.end_frame()
                 if obj.pop("_jump_requested", False) and grounded.get(name, False):
                     velocities_y[name] = -float(obj.pop("_jump_force", 420.0))
                     grounded[name] = False
@@ -632,6 +725,8 @@ def run_viewport(
             if 0 <= origin_y <= height:
                 pygame.draw.line(screen, (112, 120, 142), (0, int(origin_y)), (width, int(origin_y)), 2)
         for name, obj in objects.items():
+            if not bool(obj.get("active", True)) or not bool(obj.get("renderer_enabled", True)):
+                continue
             if view_mode == "game" and (
                 "Camera2D" in obj.get("component_names", [])
                 or isinstance(obj.get("camera"), dict)
