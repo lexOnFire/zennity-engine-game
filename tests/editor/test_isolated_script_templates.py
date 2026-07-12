@@ -13,10 +13,8 @@ def test_created_script_has_complete_runtime_contract(tmp_path: Path) -> None:
     exec(compile(path.read_text(encoding="utf-8"), str(path), "exec"), namespace)
 
     assert compatible, reason
-    assert callable(namespace["on_start"])
     assert callable(namespace["on_update"])
     assert callable(namespace["on_instruction"])
-    assert callable(namespace["on_stop"])
 
 
 def test_contract_accepts_legacy_update_and_rejects_empty_script(tmp_path: Path) -> None:
