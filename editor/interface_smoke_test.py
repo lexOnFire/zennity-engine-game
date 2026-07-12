@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
     QSplitter,
     QTabWidget,
     QToolBar,
+    QToolButton,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
