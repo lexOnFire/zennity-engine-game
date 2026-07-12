@@ -847,6 +847,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self.script_selector.setEnabled(has_scripts)
             self.edit_script_button.setEnabled(has_scripts)
             self.create_script_button.setEnabled(True)
+            
+            # Esconde ou exibe seção de Scripts dinamicamente
+            self.script_header.setVisible(has_scripts)
+            self.script_widget.setVisible(has_scripts)
         finally:
             self._updating_inspector = False
 

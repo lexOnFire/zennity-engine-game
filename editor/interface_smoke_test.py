@@ -250,18 +250,11 @@ class InterfaceSmokeTest(QMainWindow):
         trans_h_layout.addWidget(trans_title)
         trans_h_layout.addStretch()
         
-        # Botões de encolher, desgrudar e excluir (Utilizando QToolButton para contornar estilos QPushButton)
-        from PySide6.QtWidgets import QToolButton
-        
+        # Botões de encolher e excluir
         btn_collapse_trans = QToolButton()
         btn_collapse_trans.setText("▼")
         btn_collapse_trans.setFixedSize(18, 18)
         btn_collapse_trans.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
-        
-        btn_float_trans = QToolButton()
-        btn_float_trans.setText("⎋")
-        btn_float_trans.setFixedSize(18, 18)
-        btn_float_trans.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
         
         btn_del_trans = QToolButton()
         btn_del_trans.setText("✕")
@@ -269,11 +262,10 @@ class InterfaceSmokeTest(QMainWindow):
         btn_del_trans.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important; padding: 0px;")
         
         trans_h_layout.addWidget(btn_collapse_trans)
-        trans_h_layout.addWidget(btn_float_trans)
         trans_h_layout.addWidget(btn_del_trans)
         main_layout.addWidget(trans_header)
         
-        # Widget container para as propriedades do Transform (encolhível/flutuável)
+        # Widget container para as propriedades do Transform (encolhível)
         trans_body = QWidget()
         trans_body_layout = QVBoxLayout(trans_body)
         trans_body_layout.setContentsMargins(0, 0, 0, 0)
@@ -281,20 +273,6 @@ class InterfaceSmokeTest(QMainWindow):
         
         # Conecta as ações
         btn_collapse_trans.clicked.connect(lambda: trans_body.setVisible(not trans_body.isVisible()))
-        
-        def make_trans_floating():
-            if trans_body.parent() == trans_body.window():
-                # Coloca de volta no layout
-                main_layout.insertWidget(main_layout.indexOf(trans_header) + 1, trans_body)
-                btn_float_trans.setText("⎋")
-            else:
-                # Remove do layout e exibe como janela flutuante independente
-                trans_body.setParent(None)
-                trans_body.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
-                trans_body.setWindowTitle("Transform Component")
-                trans_body.show()
-                btn_float_trans.setText("⚓")
-        btn_float_trans.clicked.connect(make_trans_floating)
         
         self.inspector_fields: dict[str, QDoubleSpinBox] = {}
         
@@ -413,16 +391,11 @@ class InterfaceSmokeTest(QMainWindow):
         rb_h_layout.addWidget(self.show_rigidbody_chk)
         rb_h_layout.addStretch()
         
-        # Botões de encolher, desgrudar e excluir
+        # Botão de encolher e excluir
         btn_collapse_rb = QToolButton()
         btn_collapse_rb.setText("▼")
         btn_collapse_rb.setFixedSize(18, 18)
         btn_collapse_rb.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
-        
-        btn_float_rb = QToolButton()
-        btn_float_rb.setText("⎋")
-        btn_float_rb.setFixedSize(18, 18)
-        btn_float_rb.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
         
         self.btn_del_rb = QToolButton()
         self.btn_del_rb.setText("✕")
@@ -430,7 +403,6 @@ class InterfaceSmokeTest(QMainWindow):
         self.btn_del_rb.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important; padding: 0px;")
         
         rb_h_layout.addWidget(btn_collapse_rb)
-        rb_h_layout.addWidget(btn_float_rb)
         rb_h_layout.addWidget(self.btn_del_rb)
         main_layout.addWidget(rb_header)
         
@@ -440,18 +412,6 @@ class InterfaceSmokeTest(QMainWindow):
         rb_body_layout.setContentsMargins(0, 0, 0, 0)
         
         btn_collapse_rb.clicked.connect(lambda: rb_body.setVisible(not rb_body.isVisible()))
-        
-        def make_rb_floating():
-            if rb_body.parent() == rb_body.window():
-                main_layout.insertWidget(main_layout.indexOf(rb_header) + 1, rb_body)
-                btn_float_rb.setText("⎋")
-            else:
-                rb_body.setParent(None)
-                rb_body.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
-                rb_body.setWindowTitle("RigidBody Component")
-                rb_body.show()
-                btn_float_rb.setText("⚓")
-        btn_float_rb.clicked.connect(make_rb_floating)
         
         self.physics_fields = {
             "use_gravity": QCheckBox(),
@@ -480,16 +440,11 @@ class InterfaceSmokeTest(QMainWindow):
         col_h_layout.addWidget(self.show_collider_chk)
         col_h_layout.addStretch()
         
-        # Botões de encolher, desgrudar e excluir
+        # Botões de encolher e excluir
         btn_collapse_col = QToolButton()
         btn_collapse_col.setText("▼")
         btn_collapse_col.setFixedSize(18, 18)
         btn_collapse_col.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
-        
-        btn_float_col = QToolButton()
-        btn_float_col.setText("⎋")
-        btn_float_col.setFixedSize(18, 18)
-        btn_float_col.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
         
         self.btn_del_col = QToolButton()
         self.btn_del_col.setText("✕")
@@ -497,7 +452,6 @@ class InterfaceSmokeTest(QMainWindow):
         self.btn_del_col.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important; padding: 0px;")
         
         col_h_layout.addWidget(btn_collapse_col)
-        col_h_layout.addWidget(btn_float_col)
         col_h_layout.addWidget(self.btn_del_col)
         main_layout.addWidget(col_header)
         
@@ -507,18 +461,6 @@ class InterfaceSmokeTest(QMainWindow):
         col_body_layout.setContentsMargins(0, 0, 0, 0)
         
         btn_collapse_col.clicked.connect(lambda: col_body.setVisible(not col_body.isVisible()))
-        
-        def make_col_floating():
-            if col_body.parent() == col_body.window():
-                main_layout.insertWidget(main_layout.indexOf(col_header) + 1, col_body)
-                btn_float_col.setText("⎋")
-            else:
-                col_body.setParent(None)
-                col_body.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
-                col_body.setWindowTitle("Collider Component")
-                col_body.show()
-                btn_float_col.setText("⚓")
-        btn_float_col.clicked.connect(make_col_floating)
         
         collider_widget = QWidget()
         collider_lay = QFormLayout(collider_widget)
@@ -540,18 +482,18 @@ class InterfaceSmokeTest(QMainWindow):
         main_layout.addWidget(col_body)
 
         # ------------------ COMPONENTE: SCRIPTS (CUSTOM) ------------------
-        script_header = QWidget()
-        script_header.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px; border-bottom: 1px solid #2b2b2b;")
-        script_h_layout = QHBoxLayout(script_header)
+        self.script_header = QWidget()
+        self.script_header.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px; border-bottom: 1px solid #2b2b2b;")
+        script_h_layout = QHBoxLayout(self.script_header)
         script_h_layout.setContentsMargins(6, 4, 6, 4)
         script_title = QLabel("📄 Scripts / Custom")
         script_title.setStyleSheet("font-weight: bold; color: #ffffff;")
         script_h_layout.addWidget(script_title)
         script_h_layout.addStretch()
-        main_layout.addWidget(script_header)
+        main_layout.addWidget(self.script_header)
 
-        script_widget = QWidget()
-        script_lay = QFormLayout(script_widget)
+        self.script_widget = QWidget()
+        script_lay = QFormLayout(self.script_widget)
         script_lay.setContentsMargins(8, 0, 8, 0)
         
         self.component_summary_label = QLabel("Transform")
@@ -569,7 +511,7 @@ class InterfaceSmokeTest(QMainWindow):
         script_actions_layout.addWidget(self.create_script_button)
         script_actions_layout.addWidget(self.edit_script_button)
         script_lay.addRow("", script_actions)
-        main_layout.addWidget(script_widget)
+        main_layout.addWidget(self.script_widget)
         
         self.add_component_button = QPushButton("Adicionar Componente")
         self.add_component_button.setObjectName("InspectorAddComponentButton")
@@ -577,7 +519,9 @@ class InterfaceSmokeTest(QMainWindow):
         
         main_layout.addStretch(1)
         
-        inspector.setMinimumWidth(300)
+        # Tamanho máximo e mínimo fixado para manter proporção perfeita do painel lateral
+        inspector.setFixedWidth(280)
+        self.inspector_dock.setFixedWidth(290)
         scroll.setWidget(inspector)
         self.inspector_dock.setWidget(scroll)
 
