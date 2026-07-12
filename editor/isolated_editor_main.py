@@ -469,6 +469,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             field.valueChanged.connect(lambda _value: self._send_inspector_transform())
         for field in self.physics_fields.values():
             field.toggled.connect(lambda _checked: self._send_inspector_physics())
+        for field in self.collider_fields.values():
+            field.valueChanged.connect(lambda _value: self._send_inspector_collider())
+        self.collider_trigger_field.toggled.connect(lambda _checked: self._send_inspector_collider())
 
     def _open_add_component_menu(self) -> None:
         if self._selected_name not in self._objects_by_name:
@@ -516,7 +519,22 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._record_history()
         for key, field in self.inspector_fields.items():
             obj[key] = float(field.value())
-        self._commands.put({"type": "set_transform", "name": self._selected_name, **{k: obj[k] for k in ("x", "y", "w", "h")}})
+        self._commands.put({"type": "set_transform", "name": self._selected_name, **{k: obj[k] for k in ("x", "y", "w", "h", "rotation")}})
+
+    def _send_inspector_collider(self) -> None:
+        if self._updating_inspector or self._selected_name not in self._objects_by_name:
+            return
+        obj = self._objects_by_name[self._selected_name]
+        collider = obj.get("collider")
+        if not isinstance(collider, dict):
+            return
+        self._record_history()
+        collider_type = str(collider.get("type", "box")).lower()
+        keys = ("radius", "offset_x", "offset_y") if collider_type == "circle" else ("width", "height", "offset_x", "offset_y")
+        for key in keys:
+            collider[key] = float(self.collider_fields[key].value())
+        collider["is_trigger"] = self.collider_trigger_field.isChecked()
+        self._commands.put({"type": "set_collider", "name": self._selected_name, "collider": deepcopy(collider)})
 
     def _select_hierarchy_item(self, item: QTreeWidgetItem) -> None:
         name = item.text(0)
@@ -533,12 +551,25 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._updating_inspector = True
         try:
             self.inspector_name_label.setText(name)
-            for key in ("x", "y", "w", "h"):
+            for key in ("x", "y", "w", "h", "rotation"):
                 self.inspector_fields[key].setValue(float(obj[key]))
             rigidbody = obj.get("rigidbody")
             for key, field in self.physics_fields.items():
                 field.setEnabled(rigidbody is not None)
                 field.setChecked(bool((rigidbody or {}).get(key, False)))
+            collider = obj.get("collider") if isinstance(obj.get("collider"), dict) else None
+            collider_type = str((collider or {}).get("type", "box")).lower()
+            collider_defaults = {
+                "width": float(obj["w"]), "height": float(obj["h"]),
+                "radius": min(float(obj["w"]), float(obj["h"])) / 2.0,
+                "offset_x": 0.0, "offset_y": 0.0,
+            }
+            for key, field in self.collider_fields.items():
+                relevant = collider is not None and (key not in ("width", "height") or collider_type == "box") and (key != "radius" or collider_type == "circle")
+                field.setEnabled(relevant)
+                field.setValue(float((collider or {}).get(key, collider_defaults[key])))
+            self.collider_trigger_field.setEnabled(collider is not None)
+            self.collider_trigger_field.setChecked(bool((collider or {}).get("is_trigger", False)))
             components = ["Transform"]
             if obj.get("mesh_type") or obj.get("color"):
                 components.append("Renderer 2D")
