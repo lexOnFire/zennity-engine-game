@@ -26,10 +26,12 @@ from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QWidget
 from editor.interface_smoke_test import InterfaceSmokeTest
 from editor.isolated_viewport import run_viewport
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
+from engine.build import export_development_project
 
 
 class IsolatedEditorWindow(InterfaceSmokeTest):
     def __init__(self, viewport_process: mp.Process | None, commands, events) -> None:
+        self._console_records: list[tuple[str, str]] = []
         super().__init__()
         self._viewport_process = viewport_process
         self._commands = commands
@@ -63,6 +65,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._connect_create_panel()
         self._configure_edit_menu()
         self._refresh_assets()
+        self._refresh_prefabs()
+        self.prefab_tree.itemDoubleClicked.connect(self._instantiate_prefab_item)
+        for check in self.console_level_checks.values():
+            check.toggled.connect(self._refresh_console)
+        self.console_clear_button.clicked.connect(self._clear_console)
         self.assets_tree.itemClicked.connect(self._preview_asset)
         self._connect_hierarchy_to_viewport()
         self._refresh_hierarchy()
@@ -90,7 +97,19 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._log("INFO", "Zennity Phase 1 iniciado com Viewport em processo separado")
 
     def _log(self, level: str, message: str) -> None:
-        self.console_output.appendPlainText(f"[{level}] {message}")
+        normalized = str(level).upper()
+        self._console_records.append((normalized, str(message)))
+        self._console_records = self._console_records[-2000:]
+        if self.console_level_checks.get(normalized) is None or self.console_level_checks[normalized].isChecked():
+            self.console_output.appendPlainText(f"[{normalized}] {message}")
+
+    def _refresh_console(self) -> None:
+        visible = {level for level, check in self.console_level_checks.items() if check.isChecked()}
+        self.console_output.setPlainText("\n".join(f"[{level}] {message}" for level, message in self._console_records if level in visible))
+
+    def _clear_console(self) -> None:
+        self._console_records.clear()
+        self.console_output.clear()
 
     def _connect_create_panel(self) -> None:
         for kind, button in self.create_buttons.items():
@@ -334,6 +353,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self.editor_menus["Ferramentas"].addAction(self.toolbar_actions[label])
         for label in ("Play", "Pause", "Stop"):
             self.editor_menus["Executar"].addAction(self.toolbar_actions[label])
+        export_action = self.editor_menus["Build"].addAction("Exportar projeto...")
+        export_action.triggered.connect(self._export_project)
         self.toolbar_actions["Pause"].setEnabled(False)
         self.toolbar_actions["Stop"].setEnabled(False)
         snap_action = self.toolbar_actions["Snap: OFF"]
@@ -376,6 +397,81 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if root_path.exists():
             add_directory(root_item, root_path)
         root_item.setExpanded(True)
+
+    def _refresh_prefabs(self) -> None:
+        self.prefab_tree.clear()
+        root = QTreeWidgetItem(["📦 Prefabs"])
+        self.prefab_tree.addTopLevelItem(root)
+        directory = Path.cwd() / "Assets" / "Prefabs"
+        directory.mkdir(parents=True, exist_ok=True)
+        for path in sorted(directory.glob("*.zprefab"), key=lambda item: item.name.lower()):
+            item = QTreeWidgetItem(["🧩 " + path.stem])
+            item.setToolTip(0, str(path))
+            root.addChild(item)
+        root.setExpanded(True)
+
+    def _save_selected_as_prefab(self) -> None:
+        if self._selected_name not in self._objects_by_name:
+            return
+        default_name = self._selected_name
+        name, accepted = QInputDialog.getText(self, "Criar Prefab", "Nome do Prefab:", text=default_name)
+        name = "".join(char for char in name.strip() if char.isalnum() or char in "-_ ")
+        if not accepted or not name:
+            return
+        path = Path.cwd() / "Assets" / "Prefabs" / f"{name}.zprefab"
+        prefab_object = deepcopy(self._objects_by_name[self._selected_name])
+        prefab_object.pop("id", None)
+        payload = {"format_version": 1, "prefab_name": name, "object": prefab_object}
+        path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        self._refresh_prefabs()
+        self._refresh_assets()
+        self._log("INFO", f"Prefab criado: {path.name}")
+
+    def _instantiate_prefab_item(self, item: QTreeWidgetItem) -> None:
+        path_value = item.toolTip(0)
+        if not path_value:
+            return
+        try:
+            payload = json.loads(Path(path_value).read_text(encoding="utf-8"))
+            prefab_object = payload.get("object")
+            if not isinstance(prefab_object, dict):
+                raise ValueError("objeto do Prefab inválido")
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            self._log("ERROR", f"Falha ao abrir Prefab: {exc}")
+            return
+        self._record_history()
+        obj = deepcopy(prefab_object)
+        obj["id"] = str(uuid.uuid4())
+        obj["name"] = self._unique_name(str(obj.get("name") or payload.get("prefab_name") or "Prefab"))
+        obj["x"] = float(obj.get("x", 0.0)) + 16.0
+        obj["y"] = float(obj.get("y", 0.0)) + 16.0
+        self._scene_snapshot.append(obj)
+        self._objects_by_name[obj["name"]] = obj
+        self._selected_name = obj["name"]
+        self._refresh_hierarchy()
+        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._commands.put({"type": "select_object", "name": obj["name"]})
+        self._update_inspector(obj["name"])
+        self._log("INFO", f"Prefab adicionado: {obj['name']}")
+
+    def _export_project(self) -> None:
+        self._save_scene_snapshot()
+        if self._current_scene_path is None:
+            return
+        output = QFileDialog.getExistingDirectory(self, "Pasta para exportar", str(Path.cwd() / "Builds"))
+        if not output:
+            return
+        default_name = str((self._scene_document or {}).get("scene_name", "ZennityGame"))
+        project_name, accepted = QInputDialog.getText(self, "Exportar projeto", "Nome do jogo:", text=default_name)
+        if not accepted or not project_name.strip():
+            return
+        try:
+            destination = export_development_project(Path.cwd(), self._current_scene_path, Path(output), project_name)
+        except (OSError, ValueError) as exc:
+            self._log("ERROR", f"Falha na exportação: {exc}")
+            return
+        self._log("INFO", f"Projeto exportado: {destination}")
+        self.statusBar().showMessage(f"Build criado em {destination}")
 
     def _connect_existing_toolbar_actions(self) -> None:
         commands = {
@@ -729,10 +825,22 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             return
         menu = QMenu(self)
         rename_action = menu.addAction("Renomear")
+        duplicate_action = menu.addAction("Duplicar")
+        prefab_action = menu.addAction("Criar Prefab")
         delete_action = menu.addAction("Excluir")
         rename_action.triggered.connect(lambda _checked=False: self._rename_object(item_name))
+        duplicate_action.triggered.connect(lambda _checked=False: self._select_and_duplicate(item_name))
+        prefab_action.triggered.connect(lambda _checked=False: self._select_and_save_prefab(item_name))
         delete_action.triggered.connect(lambda _checked=False: self._delete_object(item_name))
         menu.exec(self.hierarchy_tree.viewport().mapToGlobal(position))
+
+    def _select_and_duplicate(self, name: str) -> None:
+        self._selected_name = name
+        self._duplicate_selected()
+
+    def _select_and_save_prefab(self, name: str) -> None:
+        self._selected_name = name
+        self._save_selected_as_prefab()
 
     def _rename_object(self, old_name: str) -> None:
         new_name, accepted = QInputDialog.getText(self, "Renomear objeto", "Nome:", text=old_name)
