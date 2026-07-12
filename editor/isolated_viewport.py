@@ -93,6 +93,7 @@ def run_viewport(
     pan_last = (0, 0)
     drag_start_mouse = (0.0, 0.0)
     drag_start_object: dict[str, Any] = {}
+    drag_handle: int = -1
     playing = False
     edit_snapshot = deepcopy(objects)
     velocities_y: dict[str, float] = {}
@@ -197,33 +198,70 @@ def run_viewport(
                 camera_x = world_x - mouse_x / zoom
                 camera_y = world_y - mouse_y / zoom
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not playing:
-                # Verifica primeiro se clicou no objeto selecionado (considerando a rotação dele para precisão)
-                clicked = False
-                for name, obj in reversed(list(objects.items())):
+                # 1. Se estiver na ferramenta de Scale e houver objeto selecionado, verifica clique nos handles primeiro
+                drag_handle = -1
+                if active_tool == "scale" and selected_name in objects:
+                    obj = objects[selected_name]
                     object_x, object_y = world_to_screen(float(obj["x"]), float(obj["y"]))
                     angle = float(obj.get("rotation", 0.0))
-                    rad = math.radians(-angle)
-                    # Rotaciona o mouse de volta para o espaço local do objeto
-                    mx = event.pos[0] - object_x
-                    my = event.pos[1] - object_y
-                    lx = mx * math.cos(rad) - my * math.sin(rad)
-                    ly = mx * math.sin(rad) + my * math.cos(rad)
-                    if abs(lx) <= obj["w"] * zoom / 2 and abs(ly) <= obj["h"] * zoom / 2:
-                        dragging = True
-                        selected_name = name
-                        drag_start_mouse = (float(event.pos[0]), float(event.pos[1]))
-                        drag_start_object = deepcopy(obj)
-                        _send(events, {"type": "selected", "name": name})
-                        if active_tool != "select":
-                            _send(events, {"type": "transform_begin", "name": name})
-                        else:
-                            dragging = False
-                        clicked = True
-                        break
+                    radians = math.radians(angle)
+                    half_w = (float(obj["w"]) * zoom) / 2.0
+                    half_h = (float(obj["h"]) * zoom) / 2.0
+                    
+                    local_handles = [
+                        (-half_w, -half_h),  # 0: TL
+                        (0.0, -half_h),      # 1: TC
+                        (half_w, -half_h),   # 2: TR
+                        (half_w, 0.0),       # 3: RC
+                        (half_w, half_h),    # 4: BR
+                        (0.0, half_h),       # 5: BC
+                        (-half_w, half_h),   # 6: BL
+                        (-half_w, 0.0),      # 7: LC
+                    ]
+                    
+                    for idx, (hx, hy) in enumerate(local_handles):
+                        rx = hx * math.cos(radians) - hy * math.sin(radians)
+                        ry = hx * math.sin(radians) + hy * math.cos(radians)
+                        hx_screen = object_x + rx
+                        hy_screen = object_y + ry
+                        if abs(event.pos[0] - hx_screen) <= 8 and abs(event.pos[1] - hy_screen) <= 8:
+                            drag_handle = idx
+                            dragging = True
+                            drag_start_mouse = (float(event.pos[0]), float(event.pos[1]))
+                            drag_start_object = deepcopy(obj)
+                            _send(events, {"type": "transform_begin", "name": selected_name})
+                            break
+                            
+                # 2. Se não clicou em nenhum handle, faz o hit-test padrão no objeto inteiro
+                if drag_handle == -1:
+                    for name, obj in reversed(list(objects.items())):
+                        object_x, object_y = world_to_screen(float(obj["x"]), float(obj["y"]))
+                        angle = float(obj.get("rotation", 0.0))
+                        rad = math.radians(-angle)
+                        # Rotaciona o mouse de volta para o espaço local do objeto
+                        mx = event.pos[0] - object_x
+                        my = event.pos[1] - object_y
+                        lx = mx * math.cos(rad) - my * math.sin(rad)
+                        ly = mx * math.sin(rad) + my * math.cos(rad)
+                        if abs(lx) <= obj["w"] * zoom / 2 and abs(ly) <= obj["h"] * zoom / 2:
+                            dragging = True
+                            selected_name = name
+                            drag_start_mouse = (float(event.pos[0]), float(event.pos[1]))
+                            drag_start_object = deepcopy(obj)
+                            _send(events, {"type": "selected", "name": name})
+                            if active_tool != "select":
+                                _send(events, {"type": "transform_begin", "name": name})
+                                if active_tool == "scale":
+                                    # Se clicou no corpo do objeto na ferramenta de escala, consideramos redimensionamento livre/geral
+                                    drag_handle = 8  # 8 representa escala uniforme pelo centro
+                            else:
+                                dragging = False
+                            break
             elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 if dragging and selected_name is not None:
                     _send(events, {"type": "transform_end", "name": selected_name})
                 dragging = False
+                drag_handle = -1
             elif event.type == pygame.MOUSEMOTION and panning and not playing:
                 camera_x -= (event.pos[0] - pan_last[0]) / zoom
                 camera_y -= (event.pos[1] - pan_last[1]) / zoom
@@ -249,10 +287,42 @@ def run_viewport(
                         dx_local = dx_screen * math.cos(rad) - dy_screen * math.sin(rad)
                         dy_local = dx_screen * math.sin(rad) + dy_screen * math.cos(rad)
 
-                        new_width = float(drag_start_object.get("w", obj["w"])) + dx_local * 2.0
-                        new_height = float(drag_start_object.get("h", obj["h"])) + dy_local * 2.0
-                        obj["w"] = max(1.0, snapped(new_width, snap_size))
-                        obj["h"] = max(1.0, snapped(new_height, snap_size))
+                        orig_w = float(drag_start_object.get("w", obj["w"]))
+                        orig_h = float(drag_start_object.get("h", obj["h"]))
+                        orig_x = float(drag_start_object.get("x", obj["x"]))
+                        orig_y = float(drag_start_object.get("y", obj["y"]))
+
+                        # Dependendo do handle (0 a 7), aplicamos escala direcionada e ajustamos a posição
+                        # para que o lado oposto da escala permaneça fixo.
+                        new_w, new_h = orig_w, orig_h
+                        offset_lx, offset_ly = 0.0, 0.0
+
+                        if drag_handle == 0:  # Top-Left (TL)
+                            new_w = orig_w - dx_local * 2.0
+                            new_h = orig_h - dy_local * 2.0
+                        elif drag_handle == 1:  # Top-Center (TC)
+                            new_h = orig_h - dy_local * 2.0
+                        elif drag_handle == 2:  # Top-Right (TR)
+                            new_w = orig_w + dx_local * 2.0
+                            new_h = orig_h - dy_local * 2.0
+                        elif drag_handle == 3:  # Right-Center (RC)
+                            new_w = orig_w + dx_local * 2.0
+                        elif drag_handle == 4:  # Bottom-Right (BR)
+                            new_w = orig_w + dx_local * 2.0
+                            new_h = orig_h + dy_local * 2.0
+                        elif drag_handle == 5:  # Bottom-Center (BC)
+                            new_h = orig_h + dy_local * 2.0
+                        elif drag_handle == 6:  # Bottom-Left (BL)
+                            new_w = orig_w - dx_local * 2.0
+                            new_h = orig_h + dy_local * 2.0
+                        elif drag_handle == 7:  # Left-Center (LC)
+                            new_w = orig_w - dx_local * 2.0
+                        else:  # Caso 8 ou corpo do objeto (Escala livre proporcional)
+                            new_w = orig_w + dx_local * 2.0
+                            new_h = orig_h + dy_local * 2.0
+
+                        obj["w"] = max(1.0, snapped(new_w, snap_size))
+                        obj["h"] = max(1.0, snapped(new_h, snap_size))
                     _send(events, {"type": "transform", "name": selected_name, **{key: obj.get(key, 0.0) for key in ("x", "y", "w", "h", "rotation")}})
 
         width, height = screen.get_size()
@@ -356,31 +426,36 @@ def run_viewport(
                     pygame.draw.line(screen, (255, 235, 150), (int(object_x), int(object_y)), ref_end, 1)
 
                 elif active_tool == "scale":
-                    # Calcula as 4 pontas da caixa delimitadora rotacionada
+                    # Calcula as metades das dimensões locais rotacionadas
                     half_w = (float(obj["w"]) * zoom) / 2.0
                     half_h = (float(obj["h"]) * zoom) / 2.0
-                    corners = [
-                        (-half_w, -half_h),  # 0: top-left local
-                        (half_w, -half_h),   # 1: top-right local
-                        (half_w, half_h),    # 2: bottom-right local
-                        (-half_w, half_h),   # 3: bottom-left local
+                    # Definimos 8 posições locais para os handles de controle de escala (TL, TC, TR, RC, BR, BC, BL, LC)
+                    local_handles = [
+                        (-half_w, -half_h),  # 0: TL
+                        (0.0, -half_h),      # 1: TC
+                        (half_w, -half_h),   # 2: TR
+                        (half_w, 0.0),       # 3: RC
+                        (half_w, half_h),    # 4: BR
+                        (0.0, half_h),       # 5: BC
+                        (-half_w, half_h),   # 6: BL
+                        (-half_w, 0.0),      # 7: LC
                     ]
-                    # Rotaciona e translada para coordenadas globais de tela
-                    screen_corners = []
-                    for cx, cy in corners:
-                        rx = cx * math.cos(radians) - cy * math.sin(radians)
-                        ry = cx * math.sin(radians) + cy * math.cos(radians)
-                        screen_corners.append((int(object_x + rx), int(object_y + ry)))
+                    
+                    # Rotaciona e translada os handles para coordenadas globais de tela
+                    screen_handles = []
+                    for hx, hy in local_handles:
+                        rx = hx * math.cos(radians) - hy * math.sin(radians)
+                        ry = hx * math.sin(radians) + hy * math.cos(radians)
+                        screen_handles.append((int(object_x + rx), int(object_y + ry)))
 
-                    # Desenha as linhas da caixa de seleção rotacionada
-                    pygame.draw.line(screen, (125, 212, 255), screen_corners[0], screen_corners[1], 1)
-                    pygame.draw.line(screen, (125, 212, 255), screen_corners[1], screen_corners[2], 1)
-                    pygame.draw.line(screen, (125, 212, 255), screen_corners[2], screen_corners[3], 1)
-                    pygame.draw.line(screen, (125, 212, 255), screen_corners[3], screen_corners[0], 1)
+                    # Desenha as linhas da caixa de seleção rotacionada unindo os cantos (0, 2, 4, 6)
+                    pygame.draw.line(screen, (125, 212, 255), screen_handles[0], screen_handles[2], 1)
+                    pygame.draw.line(screen, (125, 212, 255), screen_handles[2], screen_handles[4], 1)
+                    pygame.draw.line(screen, (125, 212, 255), screen_handles[4], screen_handles[6], 1)
+                    pygame.draw.line(screen, (125, 212, 255), screen_handles[6], screen_handles[0], 1)
 
-                    # Desenha os quadradinhos (handles) rotacionados
-                    for px, py in screen_corners:
-                        # Cria uma superfície pequena para o quadradinho para que ele acompanhe a rotação perfeitamente
+                    # Desenha os 8 quadradinhos (handles) rotacionados
+                    for px, py in screen_handles:
                         handle_surf = pygame.Surface((8, 8), pygame.SRCALPHA)
                         handle_surf.fill((125, 212, 255))
                         rotated_handle = pygame.transform.rotate(handle_surf, -angle)
