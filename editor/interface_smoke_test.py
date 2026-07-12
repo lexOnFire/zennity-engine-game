@@ -90,9 +90,18 @@ class InterfaceSmokeTest(QMainWindow):
 
         inspector = QWidget()
         form = QFormLayout(inspector)
-        form.addRow("Objeto", QLabel("Player"))
+        self.inspector_labels: dict[str, QLabel] = {}
+        self.inspector_labels["name"] = QLabel("Player")
+        form.addRow("Objeto", self.inspector_labels["name"])
         for field, value in (("Posição X", "400.00"), ("Posição Y", "200.00"), ("Escala X", "36.00"), ("Escala Y", "48.00")):
-            form.addRow(field, QLabel(value))
+            key = {
+                "Posição X": "x",
+                "Posição Y": "y",
+                "Escala X": "w",
+                "Escala Y": "h",
+            }[field]
+            self.inspector_labels[key] = QLabel(value)
+            form.addRow(field, self.inspector_labels[key])
         form.addRow(QLabel("Transform / Collider / Script"))
         self._dock("Inspector", inspector, Qt.RightDockWidgetArea, 300)
 
