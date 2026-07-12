@@ -1048,6 +1048,15 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.audio_autoplay_field.toggled.connect(lambda _value: self._send_inspector_audio())
         self.animator_clip_combo.currentTextChanged.connect(lambda _text: self._send_inspector_animator())
         self.animator_speed_field.valueChanged.connect(lambda _value: self._send_inspector_animator())
+        self.show_camera_chk.toggled.connect(self._toggle_camera_component)
+        self.btn_collapse_camera.clicked.connect(lambda: self.camera_body.setVisible(not self.camera_body.isVisible()))
+        self.btn_delete_camera.clicked.connect(lambda: self.show_camera_chk.setChecked(False))
+        self.camera_active_field.toggled.connect(lambda _value: self._send_inspector_camera())
+        self.camera_width_field.valueChanged.connect(lambda _value: self._send_inspector_camera())
+        self.camera_height_field.valueChanged.connect(lambda _value: self._send_inspector_camera())
+        self.camera_zoom_field.valueChanged.connect(lambda _value: self._send_inspector_camera())
+        self.camera_follow_combo.currentTextChanged.connect(lambda _value: self._send_inspector_camera())
+        self.camera_color_button.clicked.connect(self._choose_camera_color)
 
     def _toggle_renderer_component(self, checked: bool) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
@@ -1198,11 +1207,60 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._update_inspector(self._selected_name)
 
+    def _toggle_camera_component(self, checked: bool) -> None:
+        if self._updating_inspector or self._selected_name not in self._objects_by_name:
+            return
+        self._record_history()
+        obj = self._objects_by_name[self._selected_name]
+        if checked:
+            obj.setdefault("camera", {"active": True, "zoom": 1.0, "width": 1280.0, "height": 720.0, "background_color": [22, 24, 31], "follow_target": ""})
+            names = obj.setdefault("component_names", [])
+            if "Camera2D" not in names:
+                names.append("Camera2D")
+        else:
+            obj.pop("camera", None)
+            obj["component_names"] = [name for name in obj.get("component_names", []) if name != "Camera2D"]
+        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._update_inspector(self._selected_name)
+
+    def _send_inspector_camera(self) -> None:
+        if self._updating_inspector or self._selected_name not in self._objects_by_name:
+            return
+        obj = self._objects_by_name[self._selected_name]
+        camera = obj.get("camera")
+        if not isinstance(camera, dict):
+            return
+        self._record_history()
+        follow = self.camera_follow_combo.currentText()
+        camera.update({
+            "active": self.camera_active_field.isChecked(),
+            "width": float(self.camera_width_field.value()),
+            "height": float(self.camera_height_field.value()),
+            "zoom": float(self.camera_zoom_field.value()),
+            "follow_target": "" if follow == "Nenhum" else follow,
+        })
+        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+
+    def _choose_camera_color(self) -> None:
+        if self._selected_name not in self._objects_by_name:
+            return
+        camera = self._objects_by_name[self._selected_name].get("camera")
+        if not isinstance(camera, dict):
+            return
+        current = camera.get("background_color", [22, 24, 31])
+        color = QColorDialog.getColor(QColor(*current[:3]), self, "Cor de fundo da câmera")
+        if not color.isValid():
+            return
+        self._record_history()
+        camera["background_color"] = [color.red(), color.green(), color.blue()]
+        self.camera_color_button.setStyleSheet(f"background: rgb({color.red()}, {color.green()}, {color.blue()});")
+        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+
     def _open_add_component_menu(self) -> None:
         if self._selected_name not in self._objects_by_name:
             return
         menu = QMenu(self)
-        for label, component in (("Sprite Renderer", "sprite"), ("Audio Source", "audio"), ("Animator 2D", "animator"), ("RigidBody", "rigidbody"), ("Box Collider", "box"), ("Circle Collider", "circle"), ("Script", "script")):
+        for label, component in (("Sprite Renderer", "sprite"), ("Audio Source", "audio"), ("Animator 2D", "animator"), ("Camera 2D", "camera"), ("RigidBody", "rigidbody"), ("Box Collider", "box"), ("Circle Collider", "circle"), ("Script", "script")):
             action = menu.addAction(label)
             action.triggered.connect(lambda _checked=False, value=component: self._add_component(value))
         menu.exec(self.add_component_button.mapToGlobal(self.add_component_button.rect().bottomLeft()))
@@ -1244,6 +1302,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             obj["collider"] = {"type": component, "is_trigger": False}
         elif component == "animator":
             obj["animator"] = {"active_clip": "Idle", "speed": 1.0, "clips": ["Idle", "Run", "Jump"]}
+        elif component == "camera":
+            obj["camera"] = {"active": True, "zoom": 1.0, "width": 1280.0, "height": 720.0, "background_color": [22, 24, 31], "follow_target": ""}
+            names = obj.setdefault("component_names", [])
+            if "Camera2D" not in names:
+                names.append("Camera2D")
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._commands.put({"type": "select_object", "name": self._selected_name})
         self._update_inspector(self._selected_name)
@@ -1316,7 +1379,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             audio = obj.get("audio") if isinstance(obj.get("audio"), dict) else None
             self.show_audio_chk.setChecked(audio is not None)
             self.audio_source_body.setEnabled(audio is not None)
-            
             # Popula e seleciona o áudio do QComboBox
             self.audio_path_combo.clear()
             self.audio_path_combo.addItem("Nenhum", "")
@@ -1331,7 +1393,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     self.audio_path_combo.setCurrentIndex(idx)
                 else:
                     self.audio_path_combo.setCurrentIndex(0)
-            
             self.audio_volume_field.setValue(float((audio or {}).get("volume", 1.0)))
             self.audio_loop_field.setChecked(bool((audio or {}).get("loop", False)))
             self.audio_autoplay_field.setChecked(bool((audio or {}).get("autoplay", False)))
@@ -1366,6 +1427,23 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self.animator_current_lbl.setText(str(obj.get("_current_animation_name", anim.get("active_clip", "Idle"))))
             else:
                 self.animator_current_lbl.setText("Nenhum")
+
+            camera = obj.get("camera") if isinstance(obj.get("camera"), dict) else None
+            self.show_camera_chk.setChecked(camera is not None)
+            self.camera_body.setEnabled(camera is not None)
+            self.camera_active_field.setChecked(bool((camera or {}).get("active", True)))
+            self.camera_width_field.setValue(float((camera or {}).get("width", 1280.0)))
+            self.camera_height_field.setValue(float((camera or {}).get("height", 720.0)))
+            self.camera_zoom_field.setValue(float((camera or {}).get("zoom", 1.0)))
+            follow_target = str((camera or {}).get("follow_target", ""))
+            self.camera_follow_combo.clear()
+            self.camera_follow_combo.addItem("Nenhum")
+            for object_name in self._objects_by_name:
+                if object_name != name:
+                    self.camera_follow_combo.addItem(object_name)
+            self.camera_follow_combo.setCurrentText(follow_target if follow_target in self._objects_by_name else "Nenhum")
+            bg = (camera or {}).get("background_color", [22, 24, 31])
+            self.camera_color_button.setStyleSheet(f"background: rgb({int(bg[0])}, {int(bg[1])}, {int(bg[2])});")
 
             # Limpa widgets de scripts anteriores
             for h_w, b_w in self.script_containers:
