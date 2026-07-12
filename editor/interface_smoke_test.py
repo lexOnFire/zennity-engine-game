@@ -238,27 +238,42 @@ class InterfaceSmokeTest(QMainWindow):
         tag_layer_layout.addWidget(self.layer_combo)
         main_layout.addWidget(tag_layer)
 
-        # ------------------ COMPONENTE: TRANSFORM (Organização Horizontal X, Y, Z) ------------------
+        # ------------------ COMPONENTE: TRANSFORM (Organização Horizontal X, Y, Z Exata) ------------------
         trans_header = QWidget()
         trans_header.setStyleSheet("background-color: #242424; border-radius: 3px; border-bottom: 1px solid #2b2b2b;")
         trans_h_layout = QHBoxLayout(trans_header)
         trans_h_layout.setContentsMargins(6, 4, 6, 4)
-        trans_title = QLabel("🏃 Transform")
+        
+        # Símbolo expansor e ícone
+        trans_title = QLabel("∨  🏃  Transform")
         trans_title.setStyleSheet("font-weight: bold; color: #ffffff;")
         trans_h_layout.addWidget(trans_title)
         trans_h_layout.addStretch()
-        trans_h_layout.addWidget(QLabel("⚙️"))
+        
+        # Botões de encolher e excluir no mockup do cabeçalho
+        btn_collapse_trans = QPushButton("👁️")
+        btn_collapse_trans.setFixedSize(18, 18)
+        btn_collapse_trans.setStyleSheet("background: transparent; color: #aaaaaa; border: none; font-size: 11px;")
+        btn_del_trans = QPushButton("✕")
+        btn_del_trans.setFixedSize(18, 18)
+        btn_del_trans.setStyleSheet("background: transparent; color: #ff5555; font-weight: bold; border: none;")
+        
+        trans_h_layout.addWidget(btn_collapse_trans)
+        trans_h_layout.addWidget(btn_del_trans)
         main_layout.addWidget(trans_header)
         
         self.inspector_fields: dict[str, QDoubleSpinBox] = {}
         
-        # Linha Posição (X, Y)
+        # Grid/Linhas para organizar as 3 colunas de forma extremamente alinhada (Posição, Rotação, Escala)
+        # 1. Posição
         pos_widget = QWidget()
         pos_layout = QHBoxLayout(pos_widget)
-        pos_layout.setContentsMargins(8, 0, 8, 0)
-        pos_layout.addWidget(QLabel("Posição"))
-        pos_layout.addStretch()
+        pos_layout.setContentsMargins(4, 0, 4, 0)
+        pos_lbl = QLabel("Posição")
+        pos_lbl.setMinimumWidth(50)
+        pos_layout.addWidget(pos_lbl)
         
+        # X
         self.inspector_fields["x"] = QDoubleSpinBox()
         self.inspector_fields["x"].setObjectName("InspectorNumberField")
         self.inspector_fields["x"].setDecimals(2)
@@ -267,6 +282,7 @@ class InterfaceSmokeTest(QMainWindow):
         pos_layout.addWidget(QLabel("X"))
         pos_layout.addWidget(self.inspector_fields["x"])
         
+        # Y
         self.inspector_fields["y"] = QDoubleSpinBox()
         self.inspector_fields["y"].setObjectName("InspectorNumberField")
         self.inspector_fields["y"].setDecimals(2)
@@ -275,15 +291,44 @@ class InterfaceSmokeTest(QMainWindow):
         pos_layout.addWidget(QLabel("Y"))
         pos_layout.addWidget(self.inspector_fields["y"])
         
+        # Z (2D padrão 0.00)
+        pos_z = QDoubleSpinBox()
+        pos_z.setObjectName("InspectorNumberField")
+        pos_z.setDecimals(2)
+        pos_z.setValue(0.00)
+        pos_z.setEnabled(False)
+        pos_layout.addWidget(QLabel("Z"))
+        pos_layout.addWidget(pos_z)
+        
         main_layout.addWidget(pos_widget)
         
-        # Linha Rotação
+        # 2. Rotação
         rot_widget = QWidget()
         rot_layout = QHBoxLayout(rot_widget)
-        rot_layout.setContentsMargins(8, 0, 8, 0)
-        rot_layout.addWidget(QLabel("Rotação"))
-        rot_layout.addStretch()
+        rot_layout.setContentsMargins(4, 0, 4, 0)
+        rot_lbl = QLabel("Rotação")
+        rot_lbl.setMinimumWidth(50)
+        rot_layout.addWidget(rot_lbl)
         
+        # X (2D padrão 0.00)
+        rot_x = QDoubleSpinBox()
+        rot_x.setObjectName("InspectorNumberField")
+        rot_x.setDecimals(2)
+        rot_x.setValue(0.00)
+        rot_x.setEnabled(False)
+        rot_layout.addWidget(QLabel("X"))
+        rot_layout.addWidget(rot_x)
+        
+        # Y (2D padrão 0.00)
+        rot_y = QDoubleSpinBox()
+        rot_y.setObjectName("InspectorNumberField")
+        rot_y.setDecimals(2)
+        rot_y.setValue(0.00)
+        rot_y.setEnabled(False)
+        rot_layout.addWidget(QLabel("Y"))
+        rot_layout.addWidget(rot_y)
+        
+        # Z (Valor da rotação 2D real)
         self.inspector_fields["rotation"] = QDoubleSpinBox()
         self.inspector_fields["rotation"].setObjectName("InspectorNumberField")
         self.inspector_fields["rotation"].setDecimals(2)
@@ -294,13 +339,15 @@ class InterfaceSmokeTest(QMainWindow):
         
         main_layout.addWidget(rot_widget)
         
-        # Linha Escala (W, H)
+        # 3. Escala
         scale_widget = QWidget()
         scale_layout = QHBoxLayout(scale_widget)
-        scale_layout.setContentsMargins(8, 0, 8, 0)
-        scale_layout.addWidget(QLabel("Escala"))
-        scale_layout.addStretch()
+        scale_layout.setContentsMargins(4, 0, 4, 0)
+        scale_lbl = QLabel("Escala")
+        scale_lbl.setMinimumWidth(50)
+        scale_layout.addWidget(scale_lbl)
         
+        # X
         self.inspector_fields["w"] = QDoubleSpinBox()
         self.inspector_fields["w"].setObjectName("InspectorNumberField")
         self.inspector_fields["w"].setDecimals(2)
@@ -309,6 +356,7 @@ class InterfaceSmokeTest(QMainWindow):
         scale_layout.addWidget(QLabel("X"))
         scale_layout.addWidget(self.inspector_fields["w"])
         
+        # Y
         self.inspector_fields["h"] = QDoubleSpinBox()
         self.inspector_fields["h"].setObjectName("InspectorNumberField")
         self.inspector_fields["h"].setDecimals(2)
@@ -316,6 +364,15 @@ class InterfaceSmokeTest(QMainWindow):
         self.inspector_fields["h"].setKeyboardTracking(False)
         scale_layout.addWidget(QLabel("Y"))
         scale_layout.addWidget(self.inspector_fields["h"])
+        
+        # Z (2D padrão 1.00)
+        scale_z = QDoubleSpinBox()
+        scale_z.setObjectName("InspectorNumberField")
+        scale_z.setDecimals(2)
+        scale_z.setValue(1.00)
+        scale_z.setEnabled(False)
+        scale_layout.addWidget(QLabel("Z"))
+        scale_layout.addWidget(scale_z)
         
         main_layout.addWidget(scale_widget)
 
