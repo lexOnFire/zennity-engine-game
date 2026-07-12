@@ -360,10 +360,10 @@ def run_viewport(
                     half_w = (float(obj["w"]) * zoom) / 2.0
                     half_h = (float(obj["h"]) * zoom) / 2.0
                     corners = [
-                        (-half_w, -half_h),  # top-left local
-                        (half_w, -half_h),   # top-right local
-                        (-half_w, half_h),   # bottom-left local
-                        (half_w, half_h),    # bottom-right local
+                        (-half_w, -half_h),  # 0: top-left local
+                        (half_w, -half_h),   # 1: top-right local
+                        (half_w, half_h),    # 2: bottom-right local
+                        (-half_w, half_h),   # 3: bottom-left local
                     ]
                     # Rotaciona e translada para coordenadas globais de tela
                     screen_corners = []
@@ -374,15 +374,15 @@ def run_viewport(
 
                     # Desenha as linhas da caixa de seleção rotacionada
                     pygame.draw.line(screen, (125, 212, 255), screen_corners[0], screen_corners[1], 1)
-                    pygame.draw.line(screen, (125, 212, 255), screen_corners[1], screen_corners[3], 1)
-                    pygame.draw.line(screen, (125, 212, 255), screen_corners[3], screen_corners[2], 1)
-                    pygame.draw.line(screen, (125, 212, 255), screen_corners[2], screen_corners[0], 1)
+                    pygame.draw.line(screen, (125, 212, 255), screen_corners[1], screen_corners[2], 1)
+                    pygame.draw.line(screen, (125, 212, 255), screen_corners[2], screen_corners[3], 1)
+                    pygame.draw.line(screen, (125, 212, 255), screen_corners[3], screen_corners[0], 1)
 
                     # Desenha os quadradinhos (handles) rotacionados
                     for px, py in screen_corners:
                         # Cria uma superfície pequena para o quadradinho para que ele acompanhe a rotação perfeitamente
                         handle_surf = pygame.Surface((8, 8), pygame.SRCALPHA)
-                        pygame.draw.rect(handle_surf, (125, 212, 255), (0, 0, 8, 8))
+                        handle_surf.fill((125, 212, 255))
                         rotated_handle = pygame.transform.rotate(handle_surf, -angle)
                         screen.blit(rotated_handle, rotated_handle.get_rect(center=(px, py)))
         pygame.display.flip()
