@@ -491,11 +491,27 @@ class InterfaceSmokeTest(QMainWindow):
         script_title.setStyleSheet("font-weight: bold; color: #ffffff;")
         script_h_layout.addWidget(script_title)
         script_h_layout.addStretch()
+        
+        # Botões de encolher e excluir para Scripts
+        btn_collapse_script = QToolButton()
+        btn_collapse_script.setText("▼")
+        btn_collapse_script.setFixedSize(18, 18)
+        btn_collapse_script.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
+        
+        self.btn_del_script = QToolButton()
+        self.btn_del_script.setText("✕")
+        self.btn_del_script.setFixedSize(18, 18)
+        self.btn_del_script.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important; padding: 0px;")
+        
+        script_h_layout.addWidget(btn_collapse_script)
+        script_h_layout.addWidget(self.btn_del_script)
         main_layout.addWidget(self.script_header)
 
         self.script_widget = QWidget()
         script_lay = QFormLayout(self.script_widget)
         script_lay.setContentsMargins(8, 0, 8, 0)
+        
+        btn_collapse_script.clicked.connect(lambda: self.script_widget.setVisible(not self.script_widget.isVisible()))
         
         self.script_selector = QComboBox()
         self.script_selector.setObjectName("InspectorScriptSelector")
