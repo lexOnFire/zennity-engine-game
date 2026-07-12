@@ -38,6 +38,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.statusBar().showMessage(
             "Viewport Pygame está em outra janela/processo. Arraste painéis aqui sem afetá-la."
         )
+        self._connect_existing_toolbar_actions()
         self._build_viewport_link_toolbar()
         self._connect_hierarchy_to_viewport()
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
@@ -53,15 +54,25 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             ("Selecionar Player", {"type": "select_object", "name": "Player"}),
             ("Mover ←", {"type": "move_selected", "dx": -16}),
             ("Mover →", {"type": "move_selected", "dx": 16}),
-            ("Play", {"type": "play"}),
-            ("Stop", {"type": "stop"}),
             ("Reset", {"type": "reset_from_interface"}),
-            ("Salvar Cena", {"type": "save_scene"}),
-            ("Abrir Cena", {"type": "load_scene"}),
         ):
             action = QAction(label, self)
             action.triggered.connect(lambda checked=False, message=payload: self._send_toolbar_command(message))
             toolbar.addAction(action)
+
+    def _connect_existing_toolbar_actions(self) -> None:
+        commands = {
+            "Abrir": {"type": "load_scene"},
+            "Salvar": {"type": "save_scene"},
+            "Play": {"type": "play"},
+            "Stop": {"type": "stop"},
+        }
+        for action in self.findChildren(QAction):
+            payload = commands.get(action.text())
+            if payload is not None:
+                action.triggered.connect(
+                    lambda checked=False, message=payload: self._send_toolbar_command(message)
+                )
 
     def _send_toolbar_command(self, message: dict) -> None:
         if message.get("type") == "save_scene":
