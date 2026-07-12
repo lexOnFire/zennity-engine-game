@@ -1,26 +1,14 @@
-# Script Pronto: Seguir o Jogador
-# Coloque a tag 'player' no objeto que vai ser seguido.
-# Este objeto seguirá o jogador suavemente.
-SPEED  = 2.5
-TAG    = "player"
+"""Segue suavemente o objeto com Tag Player."""
 
-def start(obj):
-    obj._follow_target = None
+CONFIG = {"speed": 150.0, "target_tag": "Player", "stop_distance": 8.0}
 
-def update(obj, dt):
-    # busca o alvo pela tag uma vez
-    if obj._follow_target is None:
-        scene = getattr(obj, 'scene', None)
-        if scene:
-            for other in getattr(scene, 'editable_objects', []):
-                if getattr(other, 'tag', '') == TAG and other is not obj:
-                    obj._follow_target = other
-                    break
-    target = obj._follow_target
+
+def on_update(game, dt):
+    target = game.find(CONFIG["target_tag"])
     if target is None:
         return
-    import numpy as np
-    diff = target.transform.position - obj.transform.position
-    dist = float(np.linalg.norm(diff))
-    if dist > 0.05:
-        obj.transform.position += (diff / dist) * min(SPEED * dt, dist)
+    distance = game.distance_to(target)
+    if distance <= CONFIG["stop_distance"]:
+        return
+    step = min(CONFIG["speed"] * dt, distance)
+    game.move((target.x - game.x) / distance * step, (target.y - game.y) / distance * step)
