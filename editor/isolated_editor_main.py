@@ -12,7 +12,7 @@ from copy import deepcopy
 from pathlib import Path
 
 from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QEvent, QTimer
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QFileDialog, QToolBar
 from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem
@@ -22,7 +22,7 @@ from editor.isolated_viewport import run_viewport
 
 
 class IsolatedEditorWindow(InterfaceSmokeTest):
-    def __init__(self, viewport_process: mp.Process, commands, events) -> None:
+    def __init__(self, viewport_process: mp.Process | None, commands, events) -> None:
         super().__init__()
         self._viewport_process = viewport_process
         self._commands = commands
@@ -43,10 +43,20 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._build_viewport_link_toolbar()
         self._connect_hierarchy_to_viewport()
         self._connect_inspector_to_viewport()
+        self.viewport_host.installEventFilter(self)
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._event_timer = QTimer(self)
         self._event_timer.timeout.connect(self._read_viewport_events)
         self._event_timer.start(33)
+
+    def attach_viewport_process(self, process: mp.Process) -> None:
+        self._viewport_process = process
+
+    def eventFilter(self, watched, event) -> bool:
+        if watched is self.viewport_host and event.type() == QEvent.Resize:
+            size = event.size()
+            self._commands.put({"type": "viewport_size", "w": size.width(), "h": size.height()})
+        return super().eventFilter(watched, event)
 
     def _build_viewport_link_toolbar(self) -> None:
         toolbar = QToolBar("Ligação com Viewport")
@@ -192,13 +202,16 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
                 if self._selected_name in self._objects_by_name:
                     self._update_inspector(self._selected_name)
+            elif message.get("type") == "viewport_mode":
+                state = "embutida" if message.get("embedded") else "em janela separada (fallback)"
+                self.statusBar().showMessage(f"Viewport {state}")
 
     def closeEvent(self, event) -> None:
         try:
             self._commands.put_nowait({"type": "shutdown"})
         except Exception:
             pass
-        if self._viewport_process.is_alive():
+        if self._viewport_process is not None and self._viewport_process.is_alive():
             self._viewport_process.terminate()
             self._viewport_process.join(timeout=2)
         super().closeEvent(event)
@@ -208,12 +221,20 @@ def main() -> None:
     context = mp.get_context("spawn")
     commands = context.Queue()
     events = context.Queue()
-    viewport_process = context.Process(target=run_viewport, args=(commands, events), name="ZennityViewport")
-    viewport_process.start()
-
     app = QApplication.instance() or QApplication(sys.argv)
-    window = IsolatedEditorWindow(viewport_process, commands, events)
+    window = IsolatedEditorWindow(None, commands, events)
     window.show()
+    app.processEvents()
+
+    host_id = int(window.viewport_host.winId())
+    host_size = (max(32, window.viewport_host.width()), max(32, window.viewport_host.height()))
+    viewport_process = context.Process(
+        target=run_viewport,
+        args=(commands, events, host_id, host_size),
+        name="ZennityViewport",
+    )
+    window.attach_viewport_process(viewport_process)
+    viewport_process.start()
     exit_code = app.exec()
 
     if viewport_process.is_alive():
