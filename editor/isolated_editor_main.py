@@ -14,7 +14,7 @@ from pathlib import Path
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QEvent, Qt, QTimer
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QActionGroup
 from PySide6.QtWidgets import QFileDialog, QInputDialog, QMenu, QToolBar
 from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem
 
@@ -29,8 +29,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._commands = commands
         self._events = events
         self._initial_scene_snapshot = [
-            {"id": "floor", "name": "Chao", "x": 450.0, "y": 500.0, "w": 600.0, "h": 32.0, "color": (91, 194, 100), "rigidbody": {"is_kinematic": True, "use_gravity": False}, "collider": {"type": "box"}},
-            {"id": "player", "name": "Player", "x": 450.0, "y": 250.0, "w": 36.0, "h": 48.0, "color": (88, 117, 255), "rigidbody": {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}, "collider": {"type": "box"}},
+            {"id": "floor", "name": "Chao", "x": 450.0, "y": 500.0, "w": 600.0, "h": 32.0, "rotation": 0.0, "color": (91, 194, 100), "rigidbody": {"is_kinematic": True, "use_gravity": False}, "collider": {"type": "box"}},
+            {"id": "player", "name": "Player", "x": 450.0, "y": 250.0, "w": 36.0, "h": 48.0, "rotation": 0.0, "color": (88, 117, 255), "rigidbody": {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}, "collider": {"type": "box"}},
         ]
         self._scene_snapshot = deepcopy(self._initial_scene_snapshot)
         self._scene_document: dict | None = None
@@ -46,6 +46,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "Viewport Pygame está em outra janela/processo. Arraste painéis aqui sem afetá-la."
         )
         self._connect_existing_toolbar_actions()
+        self._configure_tool_actions()
         self._configure_create_menu()
         self._configure_edit_menu()
         self._build_viewport_link_toolbar()
@@ -103,6 +104,19 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 action.triggered.connect(
                     lambda checked=False, message=payload: self._send_toolbar_command(message)
                 )
+
+    def _configure_tool_actions(self) -> None:
+        group = QActionGroup(self)
+        group.setExclusive(True)
+        for action in self.findChildren(QAction):
+            tool = action.text().lower()
+            if tool not in {"select", "move", "rotate", "scale"}:
+                continue
+            action.setCheckable(True)
+            action.setChecked(tool == "select")
+            group.addAction(action)
+            action.triggered.connect(lambda checked=False, name=tool: checked and self._commands.put({"type": "set_tool", "tool": name}))
+        self._tool_action_group = group
 
     def _send_toolbar_command(self, message: dict) -> None:
         if message.get("type") == "new_scene":
@@ -208,7 +222,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         }
         base, width, height, color, rigidbody = presets[kind]
         name = self._unique_name(base)
-        obj = {"id": str(uuid.uuid4()), "name": name, "x": 450.0, "y": 250.0, "w": width, "h": height, "color": color, "mesh_type": kind}
+        obj = {"id": str(uuid.uuid4()), "name": name, "x": 450.0, "y": 250.0, "w": width, "h": height, "rotation": 0.0, "color": color, "mesh_type": kind}
         if rigidbody is not None:
             obj["rigidbody"] = rigidbody
             obj["collider"] = {"type": "box"}
@@ -240,8 +254,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             source.setdefault("id", snapshot.get("id", snapshot["name"]))
             source["transform"] = {
                 "position": [snapshot["x"], snapshot["y"], 0.0],
-                "rotation": source.get("transform", {}).get("rotation", [0.0, 0.0, 0.0]),
-                "rz": source.get("transform", {}).get("rz", 0.0),
+                "rotation": [0.0, 0.0, float(snapshot.get("rotation", 0.0))],
+                "rz": float(snapshot.get("rotation", 0.0)),
                 "scale": [snapshot["w"], snapshot["h"], 1.0],
             }
             source.setdefault("visual", {"mesh_type": snapshot.get("mesh_type"), "color": snapshot.get("color")})
@@ -285,7 +299,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 visual = item.get("visual", {}) or {}
                 components = item.get("components", {}) or {}
                 color = visual.get("color") or ((91, 194, 100) if item["name"].lower() in {"chao", "floor"} else (88, 117, 255))
-                snapshot = {"id": item.get("id", item["name"]), "name": item["name"], "x": float(position[0]), "y": float(position[1]), "w": abs(float(scale[0])), "h": abs(float(scale[1])), "color": color, "mesh_type": visual.get("mesh_type")}
+                rotation = transform.get("rz", (transform.get("rotation") or [0.0, 0.0, 0.0])[2])
+                snapshot = {"id": item.get("id", item["name"]), "name": item["name"], "x": float(position[0]), "y": float(position[1]), "w": abs(float(scale[0])), "h": abs(float(scale[1])), "rotation": float(rotation), "color": color, "mesh_type": visual.get("mesh_type")}
                 if isinstance(components.get("rigidbody"), dict):
                     snapshot["rigidbody"] = deepcopy(components["rigidbody"])
                 if isinstance(components.get("collider"), dict):
@@ -360,20 +375,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
     def _connect_inspector_to_viewport(self) -> None:
         for field in self.inspector_fields.values():
             field.valueChanged.connect(lambda _value: self._send_inspector_transform())
-        for field in self.physics_fields.values():
-            field.toggled.connect(lambda _checked: self._send_inspector_physics())
-
-    def _send_inspector_physics(self) -> None:
-        if self._updating_inspector or self._selected_name not in self._objects_by_name:
-            return
-        obj = self._objects_by_name[self._selected_name]
-        rigidbody = obj.get("rigidbody")
-        if rigidbody is None:
-            return
-        self._record_history()
-        rigidbody["use_gravity"] = self.physics_fields["use_gravity"].isChecked()
-        rigidbody["is_kinematic"] = self.physics_fields["is_kinematic"].isChecked()
-        self._commands.put({"type": "set_physics", "name": self._selected_name, "rigidbody": rigidbody})
 
     def _send_inspector_transform(self) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
@@ -401,10 +402,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self.inspector_name_label.setText(name)
             for key in ("x", "y", "w", "h"):
                 self.inspector_fields[key].setValue(float(obj[key]))
-            rigidbody = obj.get("rigidbody")
-            for key, field in self.physics_fields.items():
-                field.setEnabled(rigidbody is not None)
-                field.setChecked(bool((rigidbody or {}).get(key, False)))
         finally:
             self._updating_inspector = False
 
@@ -433,6 +430,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                         obj["w"] = float(message["w"])
                     if "h" in message:
                         obj["h"] = float(message["h"])
+                    if "rotation" in message:
+                        obj["rotation"] = float(message["rotation"])
                     if message["name"] == self._selected_name:
                         self._update_inspector(self._selected_name)
                 self.statusBar().showMessage(
