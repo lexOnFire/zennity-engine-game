@@ -198,6 +198,8 @@ def run_viewport(
     def start_scripts() -> None:
         script_instances.clear()
         script_apis.clear()
+        declared = sum(len(obj.get("scripts", [])) for obj in objects.values())
+        _send(events, {"type": "script_log", "level": "INFO", "message": f"Play Mode recebeu {len(objects)} objeto(s) e {declared} script(s)"})
         for name, obj in objects.items():
             for script_path in obj.get("scripts", []):
                 try:
@@ -237,6 +239,9 @@ def run_viewport(
                     _send(events, {"type": "script_log", "level": "INFO", "message": f"Script iniciado em {name}: {path.name}"})
                 except Exception as exc:
                     _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{script_path}: {exc}"})
+        loaded = sum(len(instances) for instances in script_instances.values())
+        level = "INFO" if loaded else "WARNING"
+        _send(events, {"type": "script_log", "level": level, "message": f"Play Mode carregou {loaded} script(s) executável(is)"})
 
     def stop_scripts() -> None:
         for name, instances in list(script_instances.items()):
