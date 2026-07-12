@@ -48,6 +48,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._redo_stack: list[list[dict]] = []
         self._drag_history_snapshot: list[dict] | None = None
         self._snap_enabled = False
+        self._runtime_playing = False
+        self._runtime_keys = {key: False for key in ("left", "right", "up", "down", "jump")}
         self.setWindowTitle("Zennity Engine Editor — Phase 1")
         self.statusBar().showMessage(
             "Zennity Phase 1 pronto — Viewport em processo dedicado."
@@ -78,6 +80,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         for target in self._script_drop_targets:
             target.setAcceptDrops(True)
             target.installEventFilter(self)
+        QApplication.instance().installEventFilter(self)
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._event_timer = QTimer(self)
         self._event_timer.timeout.connect(self._read_viewport_events)
@@ -116,6 +119,22 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         )
 
     def eventFilter(self, watched, event) -> bool:
+        key_map = {
+            Qt.Key_A: "left", Qt.Key_Left: "left",
+            Qt.Key_D: "right", Qt.Key_Right: "right",
+            Qt.Key_W: "up", Qt.Key_Up: "up",
+            Qt.Key_S: "down", Qt.Key_Down: "down",
+            Qt.Key_Space: "jump",
+        }
+        if self._runtime_playing and event.type() == QEvent.ShortcutOverride and event.key() in key_map:
+            event.accept()
+            return True
+        if self._runtime_playing and event.type() in (QEvent.KeyPress, QEvent.KeyRelease) and event.key() in key_map:
+            if not event.isAutoRepeat():
+                self._runtime_keys[key_map[event.key()]] = event.type() == QEvent.KeyPress
+                self._commands.put({"type": "runtime_input", "keys": dict(self._runtime_keys)})
+                self.statusBar().showMessage(f"Play Input: {key_map[event.key()]} {'ON' if event.type() == QEvent.KeyPress else 'OFF'}")
+            return True
         if watched is self.viewport_host and event.type() == QEvent.Resize:
             width, height = self.native_viewport_size()
             self._commands.put({"type": "viewport_size", "w": width, "h": height})
@@ -1157,6 +1176,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 )
             elif message.get("type") == "play_state":
                 state = message["state"]
+                self._runtime_playing = state in {"play", "pause"}
+                if state == "edit":
+                    self._runtime_keys = {key: False for key in self._runtime_keys}
+                    self._commands.put({"type": "runtime_input", "keys": dict(self._runtime_keys)})
                 self.toolbar_actions["Play"].setEnabled(state != "play")
                 self.toolbar_actions["Pause"].setEnabled(state in {"play", "pause"})
                 self.toolbar_actions["Stop"].setEnabled(state in {"play", "pause"})
