@@ -977,11 +977,17 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 # Popula combobox com todos os scripts disponíveis
                 available = self._get_available_scripts()
                 for p in available:
-                    rel_p = str(p.relative_to(Path.cwd())).replace("\\", "/")
+                    try:
+                        rel_p = str(p.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
+                    except ValueError:
+                        rel_p = str(p).replace("\\", "/")
                     script_sel_combo.addItem(p.name, rel_p)
                 
                 # Seleciona o script atualmente ativo neste componente
-                current_rel = str(Path(s_path).relative_to(Path.cwd())).replace("\\", "/") if not Path(s_path).is_absolute() else s_path
+                try:
+                    current_rel = str(Path(s_path).resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
+                except ValueError:
+                    current_rel = str(s_path).replace("\\", "/")
                 idx_found = script_sel_combo.findData(current_rel)
                 if idx_found >= 0:
                     script_sel_combo.setCurrentIndex(idx_found)
