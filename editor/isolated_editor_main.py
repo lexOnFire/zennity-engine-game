@@ -742,9 +742,21 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if self._selected_name not in self._objects_by_name:
             return
         if component == "script":
-            filename, _ = QFileDialog.getOpenFileName(self, "Anexar Script", str(Path.cwd() / "Assets" / "Scripts"), "Python Script (*.py)")
-            if filename:
-                self._attach_script(self._selected_name, Path(filename))
+            scripts_dir = Path.cwd() / "Assets" / "Scripts"
+            if scripts_dir.exists():
+                scripts = [p.name for p in scripts_dir.glob("*.py") if p.name != "__init__.py"]
+            else:
+                scripts = []
+            if not scripts:
+                self.statusBar().showMessage("Nenhum script encontrado em Assets/Scripts")
+                return
+            
+            script_chosen, ok = QInputDialog.getItem(
+                self, "Adicionar Script", "Selecione o script para adicionar ao objeto:", scripts, 0, False
+            )
+            if ok and script_chosen:
+                full_path = scripts_dir / script_chosen
+                self._attach_script(self._selected_name, full_path)
             return
         self._record_history()
         obj = self._objects_by_name[self._selected_name]
