@@ -1,6 +1,17 @@
 from engine.runtime import Input, ScriptBehaviour
 
 
+SCRIPT_CONFIG = {"speed": 120.0, "jump_force": 420.0}
+
+
+def on_update(game, dt):
+    """Controle 2D simples com A/D ou setas e Espaço para pular."""
+    direction = game.axis("left", "right")
+    game.move(direction * float(SCRIPT_CONFIG["speed"]) * dt)
+    if game.key_pressed("space"):
+        game.jump(float(SCRIPT_CONFIG["jump_force"]))
+
+
 class PlayerController(ScriptBehaviour):
     def on_start(self):
         print(f"[GettingStarted] {self.game_object.name} started")
