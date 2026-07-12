@@ -44,3 +44,27 @@ def test_simple_play_api_moves_reads_edges_and_requests_jump() -> None:
     assert obj["_jump_force"] == 500.0
     game.begin_frame({"right": True, "jump": True})
     assert not game.key_pressed("space")
+
+
+def test_all_attachable_asset_scripts_use_current_contract() -> None:
+    scripts_dir = Path("Assets/Scripts")
+    failures = {}
+    for path in scripts_dir.glob("*.py"):
+        compatible, reason = inspect_script_contract(path)
+        if not compatible:
+            failures[path.name] = reason
+    assert not failures
+
+
+def test_all_attachable_asset_scripts_run_one_frame() -> None:
+    world = {
+        "Subject": {"name": "Subject", "x": 0.0, "y": 0.0, "w": 32.0, "h": 32.0},
+        "Player": {"name": "Player", "tag": "Player", "x": 100.0, "y": 0.0, "w": 32.0, "h": 32.0},
+        "Danger": {"name": "Danger", "tag": "perigoso", "x": 10.0, "y": 0.0, "w": 32.0, "h": 32.0},
+    }
+    for path in Path("Assets/Scripts").glob("*.py"):
+        namespace: dict = {}
+        exec(compile(path.read_text(encoding="utf-8"), str(path), "exec"), namespace)
+        game = PlayScriptAPI("Subject", dict(world["Subject"]), events=None, world=world)
+        game.begin_frame({"right": True, "jump": True})
+        namespace["on_update"](game, 1.0 / 60.0)
