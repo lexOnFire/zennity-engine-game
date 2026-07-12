@@ -1,9 +1,16 @@
-import math
-import numpy as np
+"""Pulso de tamanho suave."""
 
-def update(obj, dt):
-    if not hasattr(obj, "scale_time"):
-        obj.scale_time = 0.0
-    obj.scale_time += dt
-    s = 1.0 + math.sin(obj.scale_time * 4.0) * 0.25
-    obj.transform.scale = np.array([s, s, s], dtype=np.float32)
+import math
+
+CONFIG = {"amount": 0.25, "speed": 4.0}
+
+
+def on_update(game, dt):
+    state = game.state
+    state.setdefault("time", 0.0)
+    state.setdefault("width", game.width)
+    state.setdefault("height", game.height)
+    state["time"] += dt
+    scale = 1.0 + math.sin(state["time"] * CONFIG["speed"]) * CONFIG["amount"]
+    game.width = state["width"] * scale
+    game.height = state["height"] * scale
