@@ -1596,6 +1596,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             camera = obj.get("camera") if isinstance(obj.get("camera"), dict) else None
             self.show_camera_chk.setChecked(camera is not None)
             self.camera_body.setEnabled(camera is not None)
+            self.camera_body.setVisible(camera is not None)
             self.camera_active_field.setChecked(bool((camera or {}).get("active", True)))
             self.camera_width_field.setValue(float((camera or {}).get("width", 1280.0)))
             self.camera_height_field.setValue(float((camera or {}).get("height", 720.0)))
