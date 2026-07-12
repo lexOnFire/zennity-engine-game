@@ -15,7 +15,7 @@ from pathlib import Path
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QEvent, Qt, QTimer, QUrl
 from PySide6.QtGui import QAction, QActionGroup, QDesktopServices, QPixmap
-from PySide6.QtWidgets import QFileDialog, QInputDialog, QMenu, QToolBar
+from PySide6.QtWidgets import QFileDialog, QInputDialog, QMenu, QToolBar, QHBoxLayout, QFormLayout, QCheckBox, QLabel
 from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QWidget
 
 from editor.interface_smoke_test import InterfaceSmokeTest
