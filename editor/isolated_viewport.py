@@ -46,6 +46,7 @@ def run_viewport(commands: Any = None, events: Any = None) -> None:
                     name = str(command.get("name", ""))
                     if name in objects:
                         selected_name = name
+                        _send(events, {"type": "selected", "name": name})
                 elif command.get("type") == "move_selected" and selected_name in objects:
                     obj = objects[selected_name]
                     obj["x"] += float(command.get("dx", 0.0))
