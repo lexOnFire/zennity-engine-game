@@ -305,6 +305,14 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     snapshot["rigidbody"] = deepcopy(components["rigidbody"])
                 if isinstance(components.get("collider"), dict):
                     snapshot["collider"] = deepcopy(components["collider"])
+                component_names = []
+                for component in components.get("items", []):
+                    if isinstance(component, dict):
+                        component_names.append(str(component.get("type") or component.get("component_type") or "Component"))
+                if components.get("scripts"):
+                    component_names.extend(f"Script: {script}" for script in components["scripts"])
+                if component_names:
+                    snapshot["component_names"] = component_names
                 snapshots.append(snapshot)
             elif {"x", "y", "w", "h"}.issubset(item):
                 snapshots.append(dict(item))
@@ -375,6 +383,20 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
     def _connect_inspector_to_viewport(self) -> None:
         for field in self.inspector_fields.values():
             field.valueChanged.connect(lambda _value: self._send_inspector_transform())
+        for field in self.physics_fields.values():
+            field.toggled.connect(lambda _checked: self._send_inspector_physics())
+
+    def _send_inspector_physics(self) -> None:
+        if self._updating_inspector or self._selected_name not in self._objects_by_name:
+            return
+        obj = self._objects_by_name[self._selected_name]
+        rigidbody = obj.get("rigidbody")
+        if rigidbody is None:
+            return
+        self._record_history()
+        rigidbody["use_gravity"] = self.physics_fields["use_gravity"].isChecked()
+        rigidbody["is_kinematic"] = self.physics_fields["is_kinematic"].isChecked()
+        self._commands.put({"type": "set_physics", "name": self._selected_name, "rigidbody": rigidbody})
 
     def _send_inspector_transform(self) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
@@ -402,6 +424,20 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self.inspector_name_label.setText(name)
             for key in ("x", "y", "w", "h"):
                 self.inspector_fields[key].setValue(float(obj[key]))
+            rigidbody = obj.get("rigidbody")
+            for key, field in self.physics_fields.items():
+                field.setEnabled(rigidbody is not None)
+                field.setChecked(bool((rigidbody or {}).get(key, False)))
+            components = ["Transform"]
+            if obj.get("mesh_type") or obj.get("color"):
+                components.append("Renderer 2D")
+            if obj.get("collider"):
+                collider_type = str(obj["collider"].get("type", "box")).title()
+                components.append(f"{collider_type} Collider")
+            if rigidbody:
+                components.append("RigidBody")
+            components.extend(str(name) for name in obj.get("component_names", []))
+            self.component_summary_label.setText("\n".join(dict.fromkeys(components)))
         finally:
             self._updating_inspector = False
 
