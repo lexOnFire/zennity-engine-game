@@ -250,18 +250,23 @@ class InterfaceSmokeTest(QMainWindow):
         trans_h_layout.addWidget(trans_title)
         trans_h_layout.addStretch()
         
-        # Botões de encolher, desgrudar e excluir
-        btn_collapse_trans = QPushButton("▼")
+        # Botões de encolher, desgrudar e excluir (Utilizando QToolButton para contornar estilos QPushButton)
+        from PySide6.QtWidgets import QToolButton
+        
+        btn_collapse_trans = QToolButton()
+        btn_collapse_trans.setText("▼")
         btn_collapse_trans.setFixedSize(18, 18)
-        btn_collapse_trans.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px;")
+        btn_collapse_trans.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
         
-        btn_float_trans = QPushButton("⎋")
+        btn_float_trans = QToolButton()
+        btn_float_trans.setText("⎋")
         btn_float_trans.setFixedSize(18, 18)
-        btn_float_trans.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px;")
+        btn_float_trans.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
         
-        btn_del_trans = QPushButton("✕")
+        btn_del_trans = QToolButton()
+        btn_del_trans.setText("✕")
         btn_del_trans.setFixedSize(18, 18)
-        btn_del_trans.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important;")
+        btn_del_trans.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important; padding: 0px;")
         
         trans_h_layout.addWidget(btn_collapse_trans)
         trans_h_layout.addWidget(btn_float_trans)
@@ -409,17 +414,20 @@ class InterfaceSmokeTest(QMainWindow):
         rb_h_layout.addStretch()
         
         # Botões de encolher, desgrudar e excluir
-        btn_collapse_rb = QPushButton("▼")
+        btn_collapse_rb = QToolButton()
+        btn_collapse_rb.setText("▼")
         btn_collapse_rb.setFixedSize(18, 18)
-        btn_collapse_rb.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px;")
+        btn_collapse_rb.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
         
-        btn_float_rb = QPushButton("⎋")
+        btn_float_rb = QToolButton()
+        btn_float_rb.setText("⎋")
         btn_float_rb.setFixedSize(18, 18)
-        btn_float_rb.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px;")
+        btn_float_rb.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
         
-        self.btn_del_rb = QPushButton("✕")
+        self.btn_del_rb = QToolButton()
+        self.btn_del_rb.setText("✕")
         self.btn_del_rb.setFixedSize(18, 18)
-        self.btn_del_rb.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important;")
+        self.btn_del_rb.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important; padding: 0px;")
         
         rb_h_layout.addWidget(btn_collapse_rb)
         rb_h_layout.addWidget(btn_float_rb)
@@ -473,17 +481,20 @@ class InterfaceSmokeTest(QMainWindow):
         col_h_layout.addStretch()
         
         # Botões de encolher, desgrudar e excluir
-        btn_collapse_col = QPushButton("▼")
+        btn_collapse_col = QToolButton()
+        btn_collapse_col.setText("▼")
         btn_collapse_col.setFixedSize(18, 18)
-        btn_collapse_col.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px;")
+        btn_collapse_col.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
         
-        btn_float_col = QPushButton("⎋")
+        btn_float_col = QToolButton()
+        btn_float_col.setText("⎋")
         btn_float_col.setFixedSize(18, 18)
-        btn_float_col.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px;")
+        btn_float_col.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
         
-        self.btn_del_col = QPushButton("✕")
+        self.btn_del_col = QToolButton()
+        self.btn_del_col.setText("✕")
         self.btn_del_col.setFixedSize(18, 18)
-        self.btn_del_col.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important;")
+        self.btn_del_col.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important; padding: 0px;")
         
         col_h_layout.addWidget(btn_collapse_col)
         col_h_layout.addWidget(btn_float_col)
