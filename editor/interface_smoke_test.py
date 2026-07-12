@@ -12,7 +12,6 @@ from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
-    QCheckBox,
     QDockWidget,
     QDoubleSpinBox,
     QFormLayout,
@@ -115,13 +114,7 @@ class InterfaceSmokeTest(QMainWindow):
             editor.setKeyboardTracking(False)
             self.inspector_fields[key] = editor
             form.addRow(field, editor)
-        self.physics_fields = {
-            "use_gravity": QCheckBox(),
-            "is_kinematic": QCheckBox(),
-        }
-        form.addRow("Usar gravidade", self.physics_fields["use_gravity"])
-        form.addRow("Cinemático", self.physics_fields["is_kinematic"])
-        form.addRow(QLabel("Transform / Collider / Script"))
+        form.addRow(QLabel("Transform"))
         self._dock("Inspector", inspector, Qt.RightDockWidgetArea, 300)
 
         console = QPlainTextEdit()
