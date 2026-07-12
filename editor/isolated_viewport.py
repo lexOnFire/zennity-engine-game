@@ -224,6 +224,192 @@ def run_viewport(
     active_contacts: dict[tuple[str, str], bool] = {}
     forwarded_input = {key: False for key in ("left", "right", "up", "down", "jump")}
     last_stats_ms = 0
+    texture_cache: dict[str, tuple[float, Any]] = {}
+
+    def game_camera() -> dict[str, Any] | None:
+        return next(
+            (
+                obj for obj in objects.values()
+                if (
+                    "Camera2D" in obj.get("component_names", [])
+                    or isinstance(obj.get("camera"), dict)
+                    or obj.get("mesh_type") == "Camera"
+                )
+                and bool((obj.get("camera") or {}).get("active", True))
+            ),
+            None,
+        )
+
+    def controlled_object() -> tuple[str, dict[str, Any]] | tuple[None, None]:
+        for name in script_instances:
+            if name in objects:
+                return name, objects[name]
+        return None, None
+
+    def start_scripts() -> None:
+        script_instances.clear()
+        script_apis.clear()
+        declared = sum(len(obj.get("scripts", [])) for obj in objects.values())
+        _send(events, {"type": "script_log", "level": "INFO", "message": f"Play Mode recebeu {len(objects)} objeto(s) e {declared} script(s)"})
+        for name, obj in objects.items():
+            for script_path in obj.get("scripts", []):
+                try:
+                    path = Path(str(script_path))
+                    if not path.is_absolute():
+                        path = Path.cwd() / path
+                    path = path.resolve()
+                    digest = hashlib.sha1(f"{name}:{path}".encode("utf-8")).hexdigest()[:12]
+                    spec = importlib.util.spec_from_file_location(f"zennity_isolated_{path.stem}_{digest}", path)
+                    if spec is None or spec.loader is None:
+                        raise ImportError(f"não foi possível carregar {path}")
+                    module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+                    update = getattr(module, "on_update", None)
+                    update_mode = "simple"
+                    if not callable(update):
+                        update = getattr(module, "isolated_update", None)
+                        update_mode = "isolated"
+                    if not callable(update):
+                        update = getattr(module, "update", None)
+                        update_mode = "legacy"
+                    # Projetos antigos podem ter copiado um Component nativo para
+                    # Assets/Scripts. Nesse caso usamos a versão compatível que vem
+                    # com a engine, sem alterar nem apagar o arquivo do usuário.
+                    if not callable(update):
+                        bundled_path = (Path.cwd() / "assets" / "scripts" / path.name).resolve()
+                        if bundled_path != path and bundled_path.is_file():
+                            bundled_spec = importlib.util.spec_from_file_location(
+                                f"zennity_bundled_{bundled_path.stem}_{digest}", bundled_path
+                            )
+                            if bundled_spec is not None and bundled_spec.loader is not None:
+                                bundled_module = importlib.util.module_from_spec(bundled_spec)
+                                bundled_spec.loader.exec_module(bundled_module)
+                                bundled_update = getattr(bundled_module, "on_update", None)
+                                if callable(bundled_update):
+                                    module = bundled_module
+                                    update = bundled_update
+                                    update_mode = "simple"
+                    event_hooks = ("on_collision", "on_collision_exit", "on_trigger", "on_trigger_exit")
+                    if not callable(update) and any(callable(getattr(module, hook, None)) for hook in event_hooks):
+                        update = lambda game, dt: None
+                        update_mode = "simple"
+                    if not callable(update):
+                        raise TypeError("defina on_update(game, dt), isolated_update(...) ou update(obj, dt)")
+                    overrides = obj.get("script_properties", {}).get(str(script_path), {})
+                    if isinstance(overrides, dict):
+                        config = getattr(module, "CONFIG", None)
+                        for key, value in overrides.items():
+                            if isinstance(config, dict) and key in config:
+                                config[key] = value
+                            elif str(key).isupper() and hasattr(module, str(key)):
+                                setattr(module, str(key), value)
+                    module._zennity_update_hook = update
+                    module._zennity_update_mode = update_mode
+                    api = script_apis.setdefault(name, PlayScriptAPI(name, obj, events, objects))
+                    module._zennity_api = api
+                    script_instances.setdefault(name, []).append((str(path), module))
+                    start = getattr(module, "on_start", None)
+                    if callable(start):
+                        start(api)
+                    else:
+                        start = getattr(module, "isolated_start", None) or getattr(module, "start", None)
+                    if callable(start):
+                        if getattr(module, "on_start", None) is not start:
+                            start(obj)
+                    _send(events, {"type": "script_log", "level": "INFO", "message": f"Script iniciado em {name}: {path.name}"})
+                except Exception as exc:
+                    _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{script_path}: {exc}"})
+        loaded = sum(len(instances) for instances in script_instances.values())
+        level = "INFO" if loaded else "WARNING"
+        _send(events, {"type": "script_log", "level": level, "message": f"Play Mode carregou {loaded} script(s) executável(is)"})
+
+    def stop_scripts() -> None:
+        for name, instances in list(script_instances.items()):
+            obj = objects.get(name)
+            for path, module in instances:
+                try:
+                    stop = getattr(module, "on_stop", None)
+                    if callable(stop):
+                        stop(module._zennity_api)
+                        continue
+                    stop = getattr(module, "isolated_stop", None) or getattr(module, "stop", None)
+                    if callable(stop):
+                        stop(obj)
+                except Exception as exc:
+                    _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}: {exc}"})
+        script_instances.clear()
+        script_apis.clear()
+        active_contacts.clear()
+
+    def collider_bounds(obj: dict[str, Any]) -> tuple[float, float, float, float]:
+        collider = obj.get("collider") or {}
+        angle = math.radians(float(obj.get("rotation", 0.0)))
+        offset_x = float(collider.get("offset_x", 0.0))
+        offset_y = float(collider.get("offset_y", 0.0))
+        center_x = float(obj.get("x", 0.0)) + offset_x * math.cos(angle) - offset_y * math.sin(angle)
+        center_y = float(obj.get("y", 0.0)) + offset_x * math.sin(angle) + offset_y * math.cos(angle)
+        if str(collider.get("type", "box")).lower() == "circle":
+            width = height = float(collider.get("radius", min(obj.get("w", 1.0), obj.get("h", 1.0)) / 2.0)) * 2.0
+        else:
+            width = float(collider.get("width", obj.get("w", 1.0)))
+            height = float(collider.get("height", obj.get("h", 1.0)))
+            cosine, sine = abs(math.cos(angle)), abs(math.sin(angle))
+            width, height = width * cosine + height * sine, width * sine + height * cosine
+        return center_x - width / 2.0, center_y - height / 2.0, center_x + width / 2.0, center_y + height / 2.0
+
+    def dispatch_contact(name: str, other_name: str, hook_name: str) -> None:
+        obj = objects.get(name)
+        other_obj = objects.get(other_name)
+        if obj is None or other_obj is None:
+            return
+        game = script_apis.get(name) or PlayScriptAPI(name, obj, events, objects)
+        other = PlayScriptAPI(other_name, other_obj, events, objects)
+        for path, module in list(script_instances.get(name, [])):
+            hook = getattr(module, hook_name, None)
+            if not callable(hook):
+                continue
+            try:
+                hook(game, other)
+            except Exception as exc:
+                _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}:{hook_name}: {exc}"})
+
+    def process_contacts() -> None:
+        current: dict[tuple[str, str], bool] = {}
+        collidable = [(name, obj) for name, obj in objects.items() if obj.get("active", True) and isinstance(obj.get("collider"), dict)]
+        for index, (name_a, obj_a) in enumerate(collidable):
+            left_a, top_a, right_a, bottom_a = collider_bounds(obj_a)
+            for name_b, obj_b in collidable[index + 1:]:
+                left_b, top_b, right_b, bottom_b = collider_bounds(obj_b)
+                if right_a < left_b or right_b < left_a or bottom_a < top_b or bottom_b < top_a:
+                    continue
+                pair = tuple(sorted((name_a, name_b)))
+                is_trigger = bool(obj_a["collider"].get("is_trigger") or obj_b["collider"].get("is_trigger"))
+                current[pair] = is_trigger
+                if pair not in active_contacts:
+                    hook = "on_trigger" if is_trigger else "on_collision"
+                    dispatch_contact(name_a, name_b, hook)
+                    dispatch_contact(name_b, name_a, hook)
+        for pair, was_trigger in list(active_contacts.items()):
+            if pair not in current:
+                hook = "on_trigger_exit" if was_trigger else "on_collision_exit"
+                dispatch_contact(pair[0], pair[1], hook)
+                dispatch_contact(pair[1], pair[0], hook)
+        active_contacts.clear()
+        active_contacts.update(current)
+
+    def view_transform() -> tuple[float, float, float]:
+        if view_mode == "game":
+            width, height = screen.get_size()
+            camera = game_camera()
+            if camera is not None:
+                game_zoom = max(0.1, float((camera.get("camera") or {}).get("zoom", 1.0)))
+                return (
+                    float(camera.get("x", 0.0)) - width / (2.0 * game_zoom),
+                    float(camera.get("y", 0.0)) - height / (2.0 * game_zoom),
+                    game_zoom,
+                )
+            return (-width / 2.0, -height / 2.0, 1.0)
+        return (camera_x, camera_y, zoom)
 
     def game_camera() -> dict[str, Any] | None:
         return next(
@@ -586,6 +772,28 @@ def run_viewport(
                     selected_name = name
                     _send(events, {"type": "scene_snapshot", "objects": list(objects.values())})
                     _send(events, {"type": "selected", "name": name})
+                elif command.get("type") == "create_sprite_at" and not playing:
+                    import uuid
+                    texture = str(command.get("texture", ""))
+                    base = Path(texture).stem or "Sprite"
+                    name = base
+                    index = 1
+                    while name in objects:
+                        index += 1
+                        name = f"{base}_{index}"
+                    world_x, world_y = screen_to_world(float(command.get("screen_x", 0.0)), float(command.get("screen_y", 0.0)))
+                    obj = {
+                        "id": str(uuid.uuid4()), "name": name,
+                        "x": world_x, "y": world_y,
+                        "w": float(command.get("width", 64.0)), "h": float(command.get("height", 64.0)),
+                        "rotation": 0.0, "color": (255, 255, 255), "mesh_type": "Sprite",
+                        "texture": texture, "renderer_enabled": True,
+                        "render_layer": "Default", "sort_order": 0,
+                    }
+                    objects[name] = obj
+                    selected_name = name
+                    _send(events, {"type": "scene_snapshot", "objects": list(objects.values())})
+                    _send(events, {"type": "selected", "name": name})
                 elif command.get("type") == "reset_scene":
                     _send(events, {"type": "snapshot_requested"})
 
@@ -896,7 +1104,6 @@ def run_viewport(
                 pygame.draw.line(screen, (112, 120, 142), (int(origin_x), 0), (int(origin_x), height), 2)
             if 0 <= origin_y <= height:
                 pygame.draw.line(screen, (112, 120, 142), (0, int(origin_y)), (width, int(origin_y)), 2)
-
             # Desenha limite visual das câmeras na cena
             for cam_name, cam_obj in objects.items():
                 if (
@@ -909,7 +1116,7 @@ def run_viewport(
                     # Resolução configurada ou padrão de viewport 800x600
                     cam_w = float(cam_data.get("width", 800.0)) / cam_zoom
                     cam_h = float(cam_data.get("height", 600.0)) / cam_zoom
-                    
+
                     # Desenha retângulo tracejado ou colorido representando o frustum/limites
                     cx, cy = world_to_screen(float(cam_obj["x"]), float(cam_obj["y"]))
                     cw_s = cam_w * zoom
@@ -920,7 +1127,14 @@ def run_viewport(
                     # Desenha mini-triângulos ou ícone indicador simples nos cantos
                     pygame.draw.rect(screen, (255, 100, 100) if cam_data.get("active", True) else (150, 150, 150), (int(cx - 4), int(cy - 4), 8, 8))
 
-        for name, obj in objects.items():
+        layer_order = {"Background": 0, "Default": 1, "Foreground": 2, "UI": 3}
+        render_objects = sorted(
+            objects.items(),
+            key=lambda item: (layer_order.get(str(item[1].get("render_layer", "Default")), 1), int(item[1].get("sort_order", 0))),
+        )
+        for name, obj in render_objects:
+            if not obj.get("active", True) or not obj.get("renderer_enabled", True):
+                continue
             if view_mode == "game" and (
                 "Camera2D" in obj.get("component_names", [])
                 or isinstance(obj.get("camera"), dict)
@@ -932,8 +1146,27 @@ def run_viewport(
             object_width = max(1, int(float(obj["w"]) * render_zoom))
             object_height = max(1, int(float(obj["h"]) * render_zoom))
             box = pygame.Rect(int(object_x - object_width / 2), int(object_y - object_height / 2), object_width, object_height)
-            object_surface = pygame.Surface((max(1, box.width), max(1, box.height)), pygame.SRCALPHA)
-            pygame.draw.rect(object_surface, tuple(obj.get("color", (180, 180, 180))), object_surface.get_rect(), border_radius=4)
+            texture_value = str(obj.get("texture", "")).strip()
+            source_surface = None
+            if texture_value:
+                texture_path = Path(texture_value)
+                if not texture_path.is_absolute():
+                    texture_path = Path.cwd() / texture_path
+                try:
+                    modified = texture_path.stat().st_mtime
+                    cached = texture_cache.get(str(texture_path))
+                    if cached is None or cached[0] != modified:
+                        texture_cache[str(texture_path)] = (modified, pygame.image.load(str(texture_path)).convert_alpha())
+                    source_surface = texture_cache[str(texture_path)][1]
+                except (OSError, pygame.error):
+                    source_surface = None
+            if source_surface is not None:
+                object_surface = pygame.transform.smoothscale(source_surface, (max(1, box.width), max(1, box.height))).copy()
+                tint = tuple(obj.get("color", (255, 255, 255)))
+                object_surface.fill((*tint[:3], 255), special_flags=pygame.BLEND_RGBA_MULT)
+            else:
+                object_surface = pygame.Surface((max(1, box.width), max(1, box.height)), pygame.SRCALPHA)
+                pygame.draw.rect(object_surface, tuple(obj.get("color", (180, 180, 180))), object_surface.get_rect(), border_radius=4)
             rotated = pygame.transform.rotate(object_surface, -float(obj.get("rotation", 0.0)))
             screen.blit(rotated, rotated.get_rect(center=(int(object_x), int(object_y))))
             if view_mode == "scene" and name == selected_name:
