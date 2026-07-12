@@ -734,8 +734,6 @@ def run_viewport(
             if 0 <= origin_y <= height:
                 pygame.draw.line(screen, (112, 120, 142), (0, int(origin_y)), (width, int(origin_y)), 2)
         for name, obj in objects.items():
-            if not bool(obj.get("active", True)) or not bool(obj.get("renderer_enabled", True)):
-                continue
             if view_mode == "game" and (
                 "Camera2D" in obj.get("component_names", [])
                 or isinstance(obj.get("camera"), dict)
