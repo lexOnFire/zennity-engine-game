@@ -202,7 +202,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "Stop": {"type": "stop"},
         }
         for action in self.findChildren(QAction):
-            payload = commands.get(action.text())
+            # Procura pelo toolTip caso o texto seja um ícone Unicode
+            label = action.toolTip() if action.toolTip() else action.text()
+            payload = commands.get(label)
             if payload is not None:
                 action.triggered.connect(
                     lambda checked=False, message=payload: self._send_toolbar_command(message)
@@ -213,7 +215,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         group.setExclusive(True)
         shortcuts = {"select": "Q", "move": "W", "rotate": "E", "scale": "R"}
         for action in self.findChildren(QAction):
-            tool = action.text().lower()
+            label = action.toolTip() if action.toolTip() else action.text()
+            tool = label.lower()
             if tool not in {"select", "move", "rotate", "scale"}:
                 continue
             action.setCheckable(True)

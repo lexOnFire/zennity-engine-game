@@ -54,11 +54,33 @@ class InterfaceSmokeTest(QMainWindow):
 
     def _build_toolbar(self) -> None:
         toolbar = QToolBar("Ferramentas")
+        toolbar.setObjectName("CommandBar")
         toolbar.setMovable(False)
         self.addToolBar(toolbar)
         self.toolbar_actions = {}
-        for label in ("Novo", "Abrir", "Salvar", "Desfazer", "Refazer", "Select", "Move", "Rotate", "Scale", "Snap: OFF", "Play", "Pause", "Stop"):
-            action = QAction(label, self)
+        
+        # Mapeamento de rótulos originais para ícones unicode modernos baseados no layout da imagem
+        icons = {
+            "Novo": "📄",
+            "Abrir": "📁",
+            "Salvar": "💾",
+            "Desfazer": "↶",
+            "Refazer": "↷",
+            "Select": "⛶",
+            "Move": "✥",
+            "Rotate": "↻",
+            "Scale": "⤢",
+            "Snap: OFF": "🧲",
+            "Play": "▶",
+            "Pause": "❚❚",
+            "Stop": "■"
+        }
+        
+        for label, icon in icons.items():
+            action = QAction(icon, self)
+            action.setStatusTip(label)
+            action.setToolTip(label)
+            # Salvamos o action com a chave do label em inglês/original para manter retrocompatibilidade com connects
             self.toolbar_actions[label] = action
             toolbar.addAction(action)
         toolbar.addSeparator()
