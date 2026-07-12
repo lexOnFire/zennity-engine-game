@@ -52,10 +52,18 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
     def attach_viewport_process(self, process: mp.Process) -> None:
         self._viewport_process = process
 
+    def native_viewport_size(self) -> tuple[int, int]:
+        """Return physical pixels expected by the native Pygame child window."""
+        scale = max(1.0, float(self.viewport_host.devicePixelRatioF()))
+        return (
+            max(32, round(self.viewport_host.width() * scale)),
+            max(32, round(self.viewport_host.height() * scale)),
+        )
+
     def eventFilter(self, watched, event) -> bool:
         if watched is self.viewport_host and event.type() == QEvent.Resize:
-            size = event.size()
-            self._commands.put({"type": "viewport_size", "w": size.width(), "h": size.height()})
+            width, height = self.native_viewport_size()
+            self._commands.put({"type": "viewport_size", "w": width, "h": height})
         return super().eventFilter(watched, event)
 
     def _build_viewport_link_toolbar(self) -> None:
@@ -227,7 +235,7 @@ def main() -> None:
     app.processEvents()
 
     host_id = int(window.viewport_host.winId())
-    host_size = (max(32, window.viewport_host.width()), max(32, window.viewport_host.height()))
+    host_size = window.native_viewport_size()
     viewport_process = context.Process(
         target=run_viewport,
         args=(commands, events, host_id, host_size),
