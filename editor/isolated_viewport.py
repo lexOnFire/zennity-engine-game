@@ -369,8 +369,10 @@ def run_viewport(
                     camera_x = -float(w) / 2.0 / zoom
                     camera_y = -float(h) / 2.0 / zoom
                 elif command.get("type") == "scene_snapshot":
+                    # A cena de edição é imutável durante o Play. Alterações do
+                    # Inspector ficam no editor e só entram na próxima execução.
                     if playing:
-                        stop_scripts()
+                        continue
                     objects = {item["name"]: dict(item) for item in command.get("objects", [])}
                     edit_snapshot = deepcopy(objects)
                     selected_name = None
