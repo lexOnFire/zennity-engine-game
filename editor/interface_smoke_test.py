@@ -97,12 +97,6 @@ class InterfaceSmokeTest(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         layout.addWidget(self.viewport_tabs)
-        self.scene_script_drop_zone = QLabel("Solte um script aqui → objeto selecionado")
-        self.scene_script_drop_zone.setObjectName("SceneScriptDropZone")
-        self.scene_script_drop_zone.setAlignment(Qt.AlignCenter)
-        self.scene_script_drop_zone.setFixedHeight(26)
-        self.scene_script_drop_zone.setStyleSheet("#SceneScriptDropZone { color: #9aa4b2; background: #20242c; border: 1px dashed #4d5968; }")
-        layout.addWidget(self.scene_script_drop_zone)
         layout.addWidget(self.viewport_host)
         layout.setStretchFactor(self.viewport_host, 1)
 
