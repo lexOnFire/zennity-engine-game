@@ -70,7 +70,14 @@ def test_all_attachable_asset_scripts_run_one_frame() -> None:
         start = namespace.get("on_start")
         if callable(start):
             start(game)
-        namespace["on_update"](game, 1.0 / 60.0)
+        update = namespace.get("on_update")
+        if callable(update):
+            update(game, 1.0 / 60.0)
+        else:
+            hook = namespace.get("on_collision") or namespace.get("on_trigger")
+            assert callable(hook)
+            other = PlayScriptAPI("Danger", world["Danger"], events=None, world=world)
+            hook(game, other)
 
 
 def test_all_native_asset_scripts_also_expose_play_hooks() -> None:
