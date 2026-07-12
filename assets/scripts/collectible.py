@@ -7,6 +7,21 @@ from engine.core.component import Component
 from engine.component_registry import ComponentRegistry
 
 
+SCRIPT_CONFIG = {"collect_radius": 24.0, "target_tag": "Player", "destroy_on_collect": True}
+
+
+def on_update(game, dt):
+    """Coleta este objeto quando o alvo entra no raio configurado."""
+    if game.state.get("collected"):
+        return
+    target = game.find(SCRIPT_CONFIG["target_tag"])
+    if target is None or game.distance_to(target) > float(SCRIPT_CONFIG["collect_radius"]):
+        return
+    game.state["collected"] = True
+    if SCRIPT_CONFIG["destroy_on_collect"]:
+        game.destroy()
+
+
 @ComponentRegistry.component
 class Collectible(Component):
     """Detecta sobreposição com o player e executa on_collect."""
