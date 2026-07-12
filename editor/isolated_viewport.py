@@ -4,7 +4,10 @@ from __future__ import annotations
 import math
 import os
 import sys
+import hashlib
+import importlib.util
 from copy import deepcopy
+from pathlib import Path
 from queue import Empty
 from typing import Any
 
@@ -100,6 +103,7 @@ def run_viewport(
     edit_snapshot = deepcopy(objects)
     velocities_y: dict[str, float] = {}
     grounded: dict[str, bool] = {}
+    script_instances: dict[str, list[tuple[str, Any]]] = {}
     last_stats_ms = 0
 
     def game_camera() -> dict[str, Any] | None:
@@ -117,14 +121,48 @@ def run_viewport(
         )
 
     def controlled_object() -> tuple[str, dict[str, Any]] | tuple[None, None]:
-        for name, obj in objects.items():
-            if bool((obj.get("controller") or {}).get("enabled", False)):
-                return name, obj
-        for name, obj in objects.items():
-            rigidbody = obj.get("rigidbody") or {}
-            if rigidbody and not rigidbody.get("is_kinematic", False):
-                return name, obj
+        for name in script_instances:
+            if name in objects:
+                return name, objects[name]
         return None, None
+
+    def start_scripts() -> None:
+        script_instances.clear()
+        for name, obj in objects.items():
+            for script_path in obj.get("scripts", []):
+                try:
+                    path = Path(str(script_path))
+                    if not path.is_absolute():
+                        path = Path.cwd() / path
+                    path = path.resolve()
+                    digest = hashlib.sha1(f"{name}:{path}".encode("utf-8")).hexdigest()[:12]
+                    spec = importlib.util.spec_from_file_location(f"zennity_isolated_{path.stem}_{digest}", path)
+                    if spec is None or spec.loader is None:
+                        raise ImportError(f"não foi possível carregar {path}")
+                    module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+                    update = getattr(module, "isolated_update", None)
+                    if not callable(update):
+                        raise TypeError("o script precisa definir isolated_update(obj, input_state, dt)")
+                    script_instances.setdefault(name, []).append((str(path), module))
+                    start = getattr(module, "isolated_start", None)
+                    if callable(start):
+                        start(obj)
+                    _send(events, {"type": "script_log", "level": "INFO", "message": f"Script iniciado em {name}: {path.name}"})
+                except Exception as exc:
+                    _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{script_path}: {exc}"})
+
+    def stop_scripts() -> None:
+        for name, instances in list(script_instances.items()):
+            obj = objects.get(name)
+            for path, module in instances:
+                try:
+                    stop = getattr(module, "isolated_stop", None)
+                    if callable(stop):
+                        stop(obj)
+                except Exception as exc:
+                    _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}: {exc}"})
+        script_instances.clear()
 
     def view_transform() -> tuple[float, float, float]:
         if view_mode == "game":
@@ -173,6 +211,8 @@ def run_viewport(
                     camera_x = -float(w) / 2.0 / zoom
                     camera_y = -float(h) / 2.0 / zoom
                 elif command.get("type") == "scene_snapshot":
+                    if playing:
+                        stop_scripts()
                     objects = {item["name"]: dict(item) for item in command.get("objects", [])}
                     edit_snapshot = deepcopy(objects)
                     selected_name = None
@@ -199,6 +239,7 @@ def run_viewport(
                         paused = False
                         velocities_y = {}
                         grounded = {}
+                        start_scripts()
                         _send(events, {"type": "play_state", "state": "play"})
                     elif paused:
                         paused = False
@@ -209,6 +250,7 @@ def run_viewport(
                         _send(events, {"type": "play_state", "state": "pause" if paused else "play"})
                 elif command.get("type") == "stop":
                     if playing:
+                        stop_scripts()
                         objects = deepcopy(edit_snapshot)
                         playing = False
                         paused = False
@@ -242,6 +284,24 @@ def run_viewport(
                     name = str(command.get("name", ""))
                     if name in objects and not playing and isinstance(command.get("collider"), dict):
                         objects[name]["collider"] = dict(command["collider"])
+                elif command.get("type") == "script_drop_at" and not playing:
+                    mouse_x = float(command.get("screen_x", 0.0))
+                    mouse_y = float(command.get("screen_y", 0.0))
+                    target_name = None
+                    for name, obj in reversed(list(objects.items())):
+                        object_x, object_y = world_to_screen(float(obj["x"]), float(obj["y"]))
+                        angle = math.radians(-float(obj.get("rotation", 0.0)))
+                        dx, dy = mouse_x - object_x, mouse_y - object_y
+                        local_x = dx * math.cos(angle) - dy * math.sin(angle)
+                        local_y = dx * math.sin(angle) + dy * math.cos(angle)
+                        view_zoom = view_transform()[2]
+                        if abs(local_x) <= float(obj["w"]) * view_zoom / 2.0 and abs(local_y) <= float(obj["h"]) * view_zoom / 2.0:
+                            target_name = name
+                            break
+                    if target_name is None:
+                        target_name = selected_name
+                    if target_name in objects:
+                        _send(events, {"type": "attach_script", "name": target_name, "path": str(command.get("path", ""))})
                 elif command.get("type") == "create_object_at" and not playing:
                     kind = str(command.get("kind", "Sprite"))
                     sx = float(command.get("screen_x", 0.0))
@@ -275,7 +335,7 @@ def run_viewport(
                     if kind == "Trigger":
                         obj["collider"]["is_trigger"] = True
                     if kind == "Player":
-                        obj["controller"] = {"enabled": True, "speed": 240.0, "jump_force": 420.0}
+                        obj["scripts"] = ["Assets/Scripts/player_controller_2d.py"]
                     if kind == "Camera":
                         obj["component_names"] = ["Camera2D"]
                         obj["camera"] = {"active": True, "zoom": 1.0}
@@ -290,11 +350,6 @@ def run_viewport(
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE and playing and not paused:
-                player_name, _player = controlled_object()
-                if player_name is not None and grounded.get(player_name, False):
-                    velocities_y[player_name] = -float((_player.get("controller") or {}).get("jump_force", 420.0))
-                    grounded[player_name] = False
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 2 and not playing and view_mode == "scene":
                 panning = True
                 pan_last = event.pos
@@ -500,12 +555,27 @@ def run_viewport(
         width, height = screen.get_size()
         dt = clock.get_time() / 1000.0
         if playing and not paused:
-            player_name, player = controlled_object()
-            if player_name is not None and player is not None:
-                keys = pygame.key.get_pressed()
-                horizontal = int(bool(keys[pygame.K_d] or keys[pygame.K_RIGHT])) - int(bool(keys[pygame.K_a] or keys[pygame.K_LEFT]))
-                speed = float((player.get("controller") or {}).get("speed", 240.0))
-                player["x"] += horizontal * speed * dt
+            keys = pygame.key.get_pressed()
+            input_state = {
+                "left": bool(keys[pygame.K_a] or keys[pygame.K_LEFT]),
+                "right": bool(keys[pygame.K_d] or keys[pygame.K_RIGHT]),
+                "up": bool(keys[pygame.K_w] or keys[pygame.K_UP]),
+                "down": bool(keys[pygame.K_s] or keys[pygame.K_DOWN]),
+                "jump": bool(keys[pygame.K_SPACE]),
+            }
+            for name, instances in list(script_instances.items()):
+                obj = objects.get(name)
+                if obj is None:
+                    continue
+                for path, module in list(instances):
+                    try:
+                        module.isolated_update(obj, input_state, dt)
+                    except Exception as exc:
+                        instances.remove((path, module))
+                        _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}: {exc}"})
+                if obj.pop("_jump_requested", False) and grounded.get(name, False):
+                    velocities_y[name] = -float(obj.pop("_jump_force", 420.0))
+                    grounded[name] = False
             static_colliders = [obj for obj in objects.values() if obj.get("collider") and (obj.get("rigidbody") or {}).get("is_kinematic", True)]
             for name, obj in objects.items():
                 rigidbody = obj.get("rigidbody") or {}
