@@ -15,7 +15,12 @@ from pathlib import Path
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QEvent, Qt, QTimer, QUrl
 from PySide6.QtGui import QAction, QActionGroup, QDesktopServices, QPixmap
-from PySide6.QtWidgets import QFileDialog, QInputDialog, QMenu, QToolBar, QHBoxLayout, QFormLayout, QCheckBox, QLabel, QComboBox
+from PySide6.QtWidgets import (
+    QFileDialog, QInputDialog, QMenu, QToolBar,
+    QHBoxLayout, QFormLayout,
+    QCheckBox, QLabel, QComboBox,
+    QPushButton, QDoubleSpinBox,
+)
 from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QWidget
 
 from editor.interface_smoke_test import InterfaceSmokeTest
@@ -231,8 +236,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             content = full_p.read_text(encoding="utf-8")
             import ast
             tree = ast.parse(content)
-            
-            # Localiza a atribuição do CONFIG
+
             config_node = None
             for node in tree.body:
                 if isinstance(node, ast.Assign) and len(node.targets) == 1:
@@ -240,14 +244,12 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     if isinstance(target, ast.Name) and target.id == "CONFIG" and isinstance(node.value, ast.Dict):
                         config_node = node
                         break
-            
+
             if config_node:
-                # Modifica o valor no AST/Texto
                 for k_node, v_node in zip(config_node.value.keys, config_node.value.values):
                     if isinstance(k_node, ast.Constant) and k_node.value == key:
                         start_idx = v_node.col_offset
                         end_idx = v_node.end_col_offset
-                        # Simples substituição textual baseada em linha
                         lines = content.splitlines()
                         target_line = config_node.lineno - 1
                         line_str = lines[target_line]
@@ -559,8 +561,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
 
     def _create_object_at(self, kind: str, screen_x: float, screen_y: float) -> None:
         self._record_history()
-        # Envia comando de criação em coordenadas de tela para a viewport.
-        # A viewport traduzirá as coordenadas usando a câmera/zoom atuais e devolverá a cena atualizada.
         self._commands.put({
             "type": "create_object_at",
             "kind": kind,
@@ -777,7 +777,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             field.valueChanged.connect(lambda _value: self._send_inspector_collider())
         self.collider_trigger_field.toggled.connect(lambda _checked: self._send_inspector_collider())
 
-        # Conecta checkboxes de habilitação de componentes
         self.show_rigidbody_chk.toggled.connect(self._toggle_rigidbody_component)
         self.show_collider_chk.toggled.connect(self._toggle_collider_component)
         self.btn_del_rb.clicked.connect(lambda: self.show_rigidbody_chk.setChecked(False))
@@ -792,8 +791,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             obj.setdefault("rigidbody", {"mass": 1.0, "gravity_scale": 1.0, "use_gravity": True, "is_kinematic": False})
         else:
             obj.pop("rigidbody", None)
-
-        # Envia atualização completa da cena para a viewport
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._update_inspector(self._selected_name)
 
@@ -806,8 +803,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             obj.setdefault("collider", {"type": "box", "is_trigger": False})
         else:
             obj.pop("collider", None)
-
-        # Envia atualização completa da cena para a viewport
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._update_inspector(self._selected_name)
 
@@ -826,7 +821,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if component == "script":
             scripts = self._get_available_scripts()
             chosen_script = scripts[0] if scripts else Path("Assets/Scripts/player_controller_2d.py")
-            # Tenta pegar um script que ainda não esteja anexado para evitar duplicatas imediatas
             obj = self._objects_by_name[self._selected_name]
             attached = obj.get("scripts", [])
             for s in scripts:
@@ -919,62 +913,58 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 field.setValue(float((collider or {}).get(key, collider_defaults[key])))
             self.collider_trigger_field.setEnabled(collider is not None)
             self.collider_trigger_field.setChecked(bool((collider or {}).get("is_trigger", False)))
-            # Limpa todos os widgets de scripts criados anteriormente
+
+            # Limpa widgets de scripts anteriores
             for h_w, b_w in self.script_containers:
                 self.inspector_layout.removeWidget(h_w)
                 self.inspector_layout.removeWidget(b_w)
                 h_w.deleteLater()
                 b_w.deleteLater()
             self.script_containers.clear()
-            
+
             scripts_list = obj.get("scripts", [])
             for s_path in scripts_list:
                 s_name = Path(s_path).name
-                
-                # Cria cabeçalho dinâmico para o script: "Player (Script)" ou "Nome (Script)"
+
                 from PySide6.QtWidgets import QToolButton, QFrame
                 h_widget = QWidget()
                 h_widget.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px; border-bottom: 1px solid #2b2b2b;")
                 h_lay = QHBoxLayout(h_widget)
                 h_lay.setContentsMargins(6, 4, 6, 4)
-                
+
                 title_text = s_name.removesuffix(".py").capitalize()
                 lbl_title = QLabel(f"∨  📄 {title_text} (Script)")
                 lbl_title.setStyleSheet("font-weight: bold; color: #ffffff; font-size: 11px;")
                 h_lay.addWidget(lbl_title)
                 h_lay.addStretch()
-                
-                # Botões de controle encolher e fechar
+
                 btn_collapse = QToolButton()
                 btn_collapse.setText("▼")
                 btn_collapse.setFixedSize(18, 18)
                 btn_collapse.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
                 h_lay.addWidget(btn_collapse)
-                
+
                 btn_del = QToolButton()
                 btn_del.setText("✕")
                 btn_del.setFixedSize(18, 18)
                 btn_del.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important; padding: 0px;")
                 btn_del.clicked.connect(lambda checked=False, p=s_path: self._remove_single_script(p))
                 h_lay.addWidget(btn_del)
-                
-                # Corpo do script (Exposição de variáveis/propriedades igual ao transform/collider/screenshot)
+
                 b_widget = QWidget()
                 b_lay = QFormLayout(b_widget)
                 b_lay.setContentsMargins(4, 4, 4, 4)
                 b_lay.setSpacing(6)
                 b_lay.setLabelAlignment(Qt.AlignLeft)
                 b_lay.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
-                
+
                 btn_collapse.clicked.connect(lambda checked=False, target=b_widget: target.setVisible(not target.isVisible()))
-                
-                # Propriedade 1: Combobox para selecionar/alterar o script deste componente
+
                 script_sel_combo = QComboBox()
                 script_sel_combo.setObjectName("InspectorScriptSelector")
                 script_sel_combo.setStyleSheet("background-color: #242424; color: #e0e0e0; font-size: 11px;")
                 script_sel_combo.setFixedHeight(22)
-                
-                # Popula combobox com todos os scripts disponíveis
+
                 available = self._get_available_scripts()
                 for p in available:
                     try:
@@ -982,8 +972,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     except ValueError:
                         rel_p = str(p).replace("\\", "/")
                     script_sel_combo.addItem(p.name, rel_p)
-                
-                # Seleciona o script atualmente ativo neste componente
+
                 try:
                     current_rel = str(Path(s_path).resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
                 except ValueError:
@@ -992,42 +981,38 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 if idx_found >= 0:
                     script_sel_combo.setCurrentIndex(idx_found)
                 else:
-                    # Tenta busca flexível por nome caso o path do snapshot seja absoluto ou relativo alternativo
                     idx_found = script_sel_combo.findText(Path(s_path).name)
                     if idx_found >= 0:
                         script_sel_combo.setCurrentIndex(idx_found)
-                
-                # Conecta mudança do combobox para trocar o script anexado no objeto
+
                 script_sel_combo.currentIndexChanged.connect(
                     lambda index, old_p=s_path, combo=script_sel_combo: self._change_attached_script(old_p, combo.itemData(index))
                 )
-                
+
                 lbl_key = QLabel("Script")
                 lbl_key.setStyleSheet("color: #aaaaaa; font-size: 11px;")
                 lbl_key.setFixedWidth(50)
                 b_lay.addRow(lbl_key, script_sel_combo)
-                
-                # Botões de Ação: Criar Script e Editar Script expostos logo abaixo da combobox
+
                 actions_panel = QWidget()
                 act_lay = QHBoxLayout(actions_panel)
-                act_lay.setContentsMargins(50, 0, 0, 0) # Alinha sob a combobox
+                act_lay.setContentsMargins(50, 0, 0, 0)
                 act_lay.setSpacing(6)
-                
+
                 btn_create = QPushButton("Criar")
                 btn_create.setFixedHeight(20)
                 btn_create.setStyleSheet("font-size: 10px; background-color: #2b2b2b; color: #ffffff; border: 1px solid #444;")
                 btn_create.clicked.connect(self._create_script_asset)
-                
+
                 btn_edit = QPushButton("Editar")
                 btn_edit.setFixedHeight(20)
                 btn_edit.setStyleSheet("font-size: 10px; background-color: #2b2b2b; color: #ffffff; border: 1px solid #444;")
                 btn_edit.clicked.connect(lambda checked=False, p_edit=s_path: self._edit_script_path(Path(p_edit)))
-                
+
                 act_lay.addWidget(btn_create)
                 act_lay.addWidget(btn_edit)
                 b_lay.addRow("", actions_panel)
-                
-                # Procura configurações expostas no script para renderizar (Velocidade, Pulo, etc.)
+
                 try:
                     full_p = Path.cwd() / s_path
                     if full_p.exists():
@@ -1037,7 +1022,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                             if isinstance(node, ast.Assign) and len(node.targets) == 1:
                                 target = node.targets[0]
                                 if isinstance(target, ast.Name) and target.id == "CONFIG" and isinstance(node.value, ast.Dict):
-                                    # Extrai chaves e valores do dicionário CONFIG
                                     for k_node, v_node in zip(node.value.keys, node.value.values):
                                         if isinstance(k_node, ast.Constant) and isinstance(v_node, ast.Constant):
                                             key_name = str(k_node.value)
@@ -1047,12 +1031,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                                                 label_name = "Velocidade"
                                             elif key_name == "jump_force":
                                                 label_name = "Pulo"
-                                            
-                                            # Label estilizada uniforme com largura fixa
+
                                             lbl_prop = QLabel(label_name)
                                             lbl_prop.setStyleSheet("color: #aaaaaa; font-size: 11px;")
                                             lbl_prop.setFixedWidth(50)
-                                            
+
                                             if isinstance(val, (int, float)):
                                                 sb = QDoubleSpinBox()
                                                 sb.setObjectName("InspectorNumberField")
@@ -1060,7 +1043,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                                                 sb.setRange(-100000.0, 100000.0)
                                                 sb.setValue(float(val))
                                                 sb.setFixedHeight(22)
-                                                # Callback para salvar alteração de propriedade no arquivo
                                                 sb.valueChanged.connect(lambda val_new, p_script=s_path, k_prop=key_name: self._update_script_config_val(p_script, k_prop, val_new))
                                                 b_lay.addRow(lbl_prop, sb)
                                             elif isinstance(val, bool):
@@ -1071,12 +1053,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                                                 b_lay.addRow(lbl_prop, cb)
                 except Exception as e:
                     self._log("WARNING", f"Erro ao ler propriedades de {s_name}: {e}")
-                
-                # Adiciona no layout principal logo acima do botão "Adicionar Componente"
+
                 idx = self.inspector_layout.indexOf(self.add_component_button)
                 self.inspector_layout.insertWidget(idx, h_widget)
                 self.inspector_layout.insertWidget(idx + 1, b_widget)
-                
                 self.script_containers.append((h_widget, b_widget))
         finally:
             self._updating_inspector = False
