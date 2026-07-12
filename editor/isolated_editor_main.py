@@ -71,7 +71,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             except Exception:
                 return
             if message.get("type") == "selected":
-                self.statusBar().showMessage("Viewport: Player selecionado")
+                self.statusBar().showMessage(f"Viewport: {message['name']} selecionado")
             elif message.get("type") == "transform":
                 obj = self._objects_by_name.get(message["name"])
                 if obj is not None:
