@@ -431,6 +431,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             return
         if message.get("type") == "play":
             self.viewport_tabs.setCurrentIndex(1)
+            attached = [(obj["name"], path) for obj in self._scene_snapshot for path in obj.get("scripts", [])]
+            self._log("INFO", f"Play solicitado com {len(attached)} script(s) anexado(s)")
+            for object_name, path in attached:
+                self._log("INFO", f"  {object_name} → {path}")
+            self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
         elif message.get("type") == "stop":
             self.viewport_tabs.setCurrentIndex(0)
         if message.get("type") == "move_selected" and self._selected_name is not None:
@@ -866,16 +871,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if self._selected_name not in self._objects_by_name:
             return
         if component == "script":
-            scripts = self._get_available_scripts()
-            chosen_script = scripts[0] if scripts else Path("Assets/Scripts/player_controller_2d.py")
-            obj = self._objects_by_name[self._selected_name]
-            attached = obj.get("scripts", [])
-            for s in scripts:
-                rel = str(s.relative_to(Path.cwd())).replace("\\", "/")
-                if rel not in attached:
-                    chosen_script = s
-                    break
-            self._attach_script(self._selected_name, chosen_script)
+            filename, _ = QFileDialog.getOpenFileName(self, "Escolher Script", str(Path.cwd() / "Assets" / "Scripts"), "Python Script (*.py)")
+            if filename:
+                self._attach_script(self._selected_name, Path(filename))
             return
         self._record_history()
         obj = self._objects_by_name[self._selected_name]
