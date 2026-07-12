@@ -128,6 +128,51 @@ def _patch_sprite_selection_overlay() -> None:
     ViewportRenderer._zennity_sprite_selection_patch_applied = True
 
 
+def _patch_legacy_sprite_draw() -> None:
+    """Avoid drawing an Image twice while the Scene View uses the Qt overlay.
+
+    ``Editor2DScene._draw_object`` is the legacy Pygame path.  The Phase 1
+    overlay is intentionally rendered after its framebuffer has been copied to
+    Qt so it can use sub-pixel coordinates.  Without this guard both paths draw
+    the same ImageComponent during a Scene View frame.
+
+    The flag is scoped to a single paint call by ``patched_paint_gl`` below; it
+    is never enabled in Game View or while playing, where Pygame remains the
+    sole renderer.
+    """
+    try:
+        from editor_legacy.editor_2d import Editor2DScene
+    except Exception:
+        return
+
+    if getattr(Editor2DScene, "_zennity_qt_sprite_skip_patch_applied", False):
+        return
+
+    original_draw_object = Editor2DScene._draw_object
+
+    def draw_object_without_qt_overlay_duplicates(self, screen, obj, idx=None, zoom=1.0, lay=None):
+        overlay_ids = getattr(self, "_zennity_qt_overlay_sprite_ids", ())
+        if id(obj) in overlay_ids:
+            return
+        return original_draw_object(self, screen, obj, idx, zoom, lay)
+
+    Editor2DScene._draw_object = draw_object_without_qt_overlay_duplicates
+    Editor2DScene._zennity_qt_sprite_skip_patch_applied = True
+
+
+def _qt_overlay_sprite_ids(objects: list[Any]) -> set[int]:
+    """Return only sprites the Qt pass can actually draw this frame."""
+    result: set[int] = set()
+    for obj in objects:
+        image = _image_component(obj)
+        if image is None or not bool(getattr(image, "visible", True)):
+            continue
+        path = _resolve_sprite_path(str(getattr(image, "sprite_path", "") or ""))
+        if path is not None and _cached_pixmap(path) is not None:
+            result.add(id(obj))
+    return result
+
+
 def apply_phase1_sprite_overlay_patch() -> bool:
     try:
         from editor.widgets.phase1_viewport import Phase1ViewportWidget
@@ -135,6 +180,7 @@ def apply_phase1_sprite_overlay_patch() -> bool:
         return False
 
     _patch_sprite_selection_overlay()
+    _patch_legacy_sprite_draw()
 
     if getattr(Phase1ViewportWidget, "_zennity_sprite_overlay_patch_applied", False):
         return True
@@ -142,20 +188,37 @@ def apply_phase1_sprite_overlay_patch() -> bool:
     original_paint_gl = Phase1ViewportWidget.paintGL
 
     def patched_paint_gl(self) -> None:
-        original_paint_gl(self)
         scene = getattr(self, "active_scene", None)
-        if scene is None:
-            return
-        objects = getattr(scene, "editable_objects", getattr(scene, "game_objects", []))
-        if not objects:
+        objects = list(getattr(scene, "editable_objects", getattr(scene, "game_objects", []))) if scene is not None else []
+        is_editor_view = (
+            scene is not None
+            and not bool(_call_or_value(self, "is_game_view", False))
+            and not bool(_call_or_value(self, "_is_playing", False))
+        )
+
+        # The legacy draw is suppressed only for objects guaranteed to be drawn
+        # by Qt immediately afterwards.  Invalid paths still use their Pygame
+        # fallback and Game/Play frames are untouched.
+        previous_ids = getattr(scene, "_zennity_qt_overlay_sprite_ids", None) if scene is not None else None
+        if is_editor_view:
+            scene._zennity_qt_overlay_sprite_ids = _qt_overlay_sprite_ids(objects)
+        try:
+            original_paint_gl(self)
+        finally:
+            if scene is not None:
+                if previous_ids is None:
+                    scene.__dict__.pop("_zennity_qt_overlay_sprite_ids", None)
+                else:
+                    scene._zennity_qt_overlay_sprite_ids = previous_ids
+
+        if not is_editor_view or not objects:
             return
 
         from PySide6.QtGui import QPainter
 
         painter = QPainter(self)
         try:
-            is_editor_view = not bool(_call_or_value(self, "is_game_view", False)) and not bool(_call_or_value(self, "_is_playing", False))
-            selected = _selected_object(self) if is_editor_view else None
+            selected = _selected_object(self)
             viewport_w = max(1, int(self.width()))
             viewport_h = max(1, int(self.height()))
             zoom = float(getattr(getattr(self, "camera", None), "zoom", 1.0))
