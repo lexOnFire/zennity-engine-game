@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QToolBar
+from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem
 
 from editor.interface_smoke_test import InterfaceSmokeTest
 from editor.isolated_viewport import run_viewport
@@ -27,11 +28,13 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             {"name": "Chao", "x": 450.0, "y": 500.0, "w": 600.0, "h": 32.0, "color": (91, 194, 100)},
             {"name": "Player", "x": 450.0, "y": 250.0, "w": 36.0, "h": 48.0, "color": (88, 117, 255)},
         ]
+        self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
         self.setWindowTitle("Zennity — Interface isolada (PySide6)")
         self.statusBar().showMessage(
             "Viewport Pygame está em outra janela/processo. Arraste painéis aqui sem afetá-la."
         )
         self._build_viewport_link_toolbar()
+        self._connect_hierarchy_to_viewport()
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._event_timer = QTimer(self)
         self._event_timer.timeout.connect(self._read_viewport_events)
@@ -51,6 +54,16 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             action.triggered.connect(lambda checked=False, message=payload: self._commands.put(message))
             toolbar.addAction(action)
 
+    def _connect_hierarchy_to_viewport(self) -> None:
+        for tree in self.findChildren(QTreeWidget):
+            tree.itemClicked.connect(self._select_hierarchy_item)
+
+    def _select_hierarchy_item(self, item: QTreeWidgetItem) -> None:
+        name = item.text(0)
+        if name in self._objects_by_name:
+            self._commands.put({"type": "select_object", "name": name})
+            self.statusBar().showMessage(f"Interface: {name} selecionado")
+
     def _read_viewport_events(self) -> None:
         while True:
             try:
@@ -60,6 +73,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             if message.get("type") == "selected":
                 self.statusBar().showMessage("Viewport: Player selecionado")
             elif message.get("type") == "transform":
+                obj = self._objects_by_name.get(message["name"])
+                if obj is not None:
+                    obj["x"] = float(message["x"])
+                    obj["y"] = float(message["y"])
                 self.statusBar().showMessage(
                     f"Viewport: {message['name']} em X={message['x']:.1f}, Y={message['y']:.1f}"
                 )
