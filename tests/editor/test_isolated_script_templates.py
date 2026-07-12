@@ -1,3 +1,4 @@
+import ast
 from pathlib import Path
 
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
@@ -67,4 +68,27 @@ def test_all_attachable_asset_scripts_run_one_frame() -> None:
         exec(compile(path.read_text(encoding="utf-8"), str(path), "exec"), namespace)
         game = PlayScriptAPI("Subject", dict(world["Subject"]), events=None, world=world)
         game.begin_frame({"right": True, "jump": True})
+        namespace["on_update"](game, 1.0 / 60.0)
+
+
+def test_native_enemy_and_timer_also_expose_play_hooks() -> None:
+    world = {
+        "Enemy": {"name": "Enemy", "x": 0.0, "y": 0.0},
+        "Player": {"name": "Player", "tag": "Player", "x": 100.0, "y": 0.0},
+    }
+    for script_name in ("enemy_ai.py", "timer_component.py"):
+        path = Path("assets/scripts") / script_name
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        play_nodes = [
+            node for node in tree.body
+            if (isinstance(node, ast.Import) and any(alias.name == "math" for alias in node.names))
+            or (isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == "SCRIPT_CONFIG" for target in node.targets))
+            or (isinstance(node, ast.FunctionDef) and node.name in {"on_start", "on_update", "on_instruction"})
+        ]
+        namespace: dict = {}
+        exec(compile(ast.Module(body=play_nodes, type_ignores=[]), str(path), "exec"), namespace)
+        game = PlayScriptAPI("Enemy", world["Enemy"], events=None, world=world)
+        start = namespace.get("on_start")
+        if callable(start):
+            start(game)
         namespace["on_update"](game, 1.0 / 60.0)
