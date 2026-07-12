@@ -78,15 +78,12 @@ def run_viewport(
     _send(events, {"type": "viewport_mode", "embedded": embedded})
     clock = pygame.time.Clock()
     running = True
-    objects = {
-        "Chao": {"x": 450.0, "y": 500.0, "w": 600.0, "h": 32.0, "color": (91, 194, 100)},
-        "Player": {"x": 450.0, "y": 250.0, "w": 36.0, "h": 48.0, "color": (88, 117, 255)},
-    }
+    objects: dict[str, dict[str, Any]] = {}
     dragging = False
     selected_name: str | None = None
     playing = False
     edit_snapshot = deepcopy(objects)
-    velocity_y = 0.0
+    velocities_y: dict[str, float] = {}
 
     while running:
         if commands is not None:
@@ -106,18 +103,18 @@ def run_viewport(
                     edit_snapshot = deepcopy(objects)
                     selected_name = None
                     playing = False
-                    velocity_y = 0.0
+                    velocities_y = {}
                 elif command.get("type") == "play":
                     if not playing:
                         edit_snapshot = deepcopy(objects)
                         playing = True
-                        velocity_y = 0.0
+                        velocities_y = {}
                         _send(events, {"type": "play_state", "state": "play"})
                 elif command.get("type") == "stop":
                     if playing:
                         objects = deepcopy(edit_snapshot)
                         playing = False
-                        velocity_y = 0.0
+                        velocities_y = {}
                         _send(events, {"type": "play_state", "state": "edit"})
                         _send(events, {"type": "scene_snapshot", "objects": list(objects.values())})
                 elif command.get("type") == "select_object":
@@ -138,6 +135,10 @@ def run_viewport(
                             if key in command:
                                 obj[key] = float(command[key])
                         _send(events, {"type": "transform", "name": name, **{key: obj[key] for key in ("x", "y", "w", "h")}})
+                elif command.get("type") == "set_physics":
+                    name = str(command.get("name", ""))
+                    if name in objects and not playing and isinstance(command.get("rigidbody"), dict):
+                        objects[name]["rigidbody"] = dict(command["rigidbody"])
                 elif command.get("type") == "reset_scene":
                     _send(events, {"type": "snapshot_requested"})
 
@@ -160,17 +161,24 @@ def run_viewport(
 
         width, height = screen.get_size()
         dt = clock.get_time() / 1000.0
-        if playing and "Player" in objects:
-            player = objects["Player"]
-            velocity_y += 980.0 * dt
-            player["y"] += velocity_y * dt
-            floor = objects.get("Chao")
-            if floor is not None:
-                floor_top = floor["y"] - floor["h"] / 2
-                player_bottom = player["y"] + player["h"] / 2
-                if player_bottom >= floor_top:
-                    player["y"] = floor_top - player["h"] / 2
-                    velocity_y = 0.0
+        if playing:
+            static_colliders = [obj for obj in objects.values() if obj.get("collider") and (obj.get("rigidbody") or {}).get("is_kinematic", True)]
+            for name, obj in objects.items():
+                rigidbody = obj.get("rigidbody") or {}
+                if rigidbody.get("is_kinematic", False) or not rigidbody.get("use_gravity", False):
+                    continue
+                velocity = velocities_y.get(name, 0.0) + 980.0 * float(rigidbody.get("gravity_scale", 1.0)) * dt
+                previous_bottom = obj["y"] + obj["h"] / 2
+                obj["y"] += velocity * dt
+                for floor in static_colliders:
+                    overlaps_x = abs(obj["x"] - floor["x"]) * 2 < obj["w"] + floor["w"]
+                    floor_top = floor["y"] - floor["h"] / 2
+                    player_bottom = obj["y"] + obj["h"] / 2
+                    if overlaps_x and previous_bottom <= floor_top and player_bottom >= floor_top:
+                        obj["y"] = floor_top - obj["h"] / 2
+                        velocity = 0.0
+                        break
+                velocities_y[name] = velocity
         screen.fill((22, 24, 31))
         for x in range(0, width, 32):
             pygame.draw.line(screen, (45, 48, 59), (x, 0), (x, height))
