@@ -303,14 +303,71 @@ def run_viewport(
                     pygame.draw.rect(collider_surface, outline_color, collider_surface.get_rect().inflate(-6, -6), width=2, border_radius=4)
                     rotated_collider = pygame.transform.rotate(collider_surface, -angle)
                     screen.blit(rotated_collider, rotated_collider.get_rect(center=(int(collider_x), int(collider_y))))
+
+                # Desenha Gizmos com rotação alinhada ao objeto
                 if active_tool == "move":
-                    pygame.draw.line(screen, (245, 78, 78), (object_x, object_y), (object_x + 92, object_y), 4)
-                    pygame.draw.line(screen, (82, 211, 106), (object_x, object_y), (object_x, object_y - 92), 4)
+                    # Eixos X (vermelho) e Y (verde) rotacionados
+                    length = 92
+                    # Eixo X local (rotacionado pelo ângulo do objeto)
+                    dir_x = (math.cos(radians), math.sin(radians))
+                    # Eixo Y local (perpendicular a X)
+                    dir_y = (-math.sin(radians), math.cos(radians))
+
+                    end_x = (int(object_x + dir_x[0] * length), int(object_y + dir_x[1] * length))
+                    end_y = (int(object_x - dir_y[0] * length), int(object_y - dir_y[1] * length))
+
+                    # Desenha eixos
+                    pygame.draw.line(screen, (245, 78, 78), (int(object_x), int(object_y)), end_x, 4)
+                    pygame.draw.line(screen, (82, 211, 106), (int(object_x), int(object_y)), end_y, 4)
+
+                    # Pequenos triângulos na ponta para dar cara de gizmo profissional
+                    from pygame import Vector2
+                    for end_pt, direction, color in [(end_x, dir_x, (245, 78, 78)), (end_y, (-dir_y[0], -dir_y[1]), (82, 211, 106))]:
+                        d = Vector2(direction)
+                        p1 = Vector2(end_pt)
+                        p2 = p1 - d * 12 + Vector2(-d.y, d.x) * 6
+                        p3 = p1 - d * 12 - Vector2(-d.y, d.x) * 6
+                        pygame.draw.polygon(screen, color, [p1, p2, p3])
+
                 elif active_tool == "rotate":
-                    pygame.draw.circle(screen, (245, 194, 78), (int(object_x), int(object_y)), int(max(object_width, object_height) / 2 + 20), 3)
+                    pygame.draw.circle(screen, (245, 194, 78), (int(object_x), int(object_y)), int(max(object_width, object_height) / 2 + 20), 2)
+                    # Desenha linha de referência até a borda
+                    ref_end = (
+                        int(object_x + math.cos(radians) * (max(object_width, object_height) / 2 + 20)),
+                        int(object_y + math.sin(radians) * (max(object_width, object_height) / 2 + 20))
+                    )
+                    pygame.draw.line(screen, (255, 235, 150), (int(object_x), int(object_y)), ref_end, 1)
+
                 elif active_tool == "scale":
-                    for point in (box.topleft, box.topright, box.bottomleft, box.bottomright):
-                        pygame.draw.rect(screen, (125, 212, 255), (point[0] - 4, point[1] - 4, 8, 8))
+                    # Calcula as 4 pontas da caixa delimitadora rotacionada
+                    half_w = (float(obj["w"]) * zoom) / 2.0
+                    half_h = (float(obj["h"]) * zoom) / 2.0
+                    corners = [
+                        (-half_w, -half_h),  # top-left local
+                        (half_w, -half_h),   # top-right local
+                        (-half_w, half_h),   # bottom-left local
+                        (half_w, half_h),    # bottom-right local
+                    ]
+                    # Rotaciona e translada para coordenadas globais de tela
+                    screen_corners = []
+                    for cx, cy in corners:
+                        rx = cx * math.cos(radians) - cy * math.sin(radians)
+                        ry = cx * math.sin(radians) + cy * math.cos(radians)
+                        screen_corners.append((int(object_x + rx), int(object_y + ry)))
+
+                    # Desenha as linhas da caixa de seleção rotacionada
+                    pygame.draw.line(screen, (125, 212, 255), screen_corners[0], screen_corners[1], 1)
+                    pygame.draw.line(screen, (125, 212, 255), screen_corners[1], screen_corners[3], 1)
+                    pygame.draw.line(screen, (125, 212, 255), screen_corners[3], screen_corners[2], 1)
+                    pygame.draw.line(screen, (125, 212, 255), screen_corners[2], screen_corners[0], 1)
+
+                    # Desenha os quadradinhos (handles) rotacionados
+                    for px, py in screen_corners:
+                        # Cria uma superfície pequena para o quadradinho para que ele acompanhe a rotação perfeitamente
+                        handle_surf = pygame.Surface((8, 8), pygame.SRCALPHA)
+                        pygame.draw.rect(handle_surf, (125, 212, 255), (0, 0, 8, 8))
+                        rotated_handle = pygame.transform.rotate(handle_surf, -angle)
+                        screen.blit(rotated_handle, rotated_handle.get_rect(center=(px, py)))
         pygame.display.flip()
         clock.tick(60)
         now_ms = pygame.time.get_ticks()
