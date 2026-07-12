@@ -16,6 +16,10 @@ class ScriptComponent:
     partir das anotações de instância da classe principal do script.
     """
 
+    # component_type é usado pelo ComponentRegistry como chave canônica.
+    # type_name é usado pelo InspectorPluginRegistry para resolver o plugin.
+    # Ambos devem ser iguais.
+    component_type: str = "Script"
     type_name: str = "Script"
     required: bool = False
     unique: bool = False
