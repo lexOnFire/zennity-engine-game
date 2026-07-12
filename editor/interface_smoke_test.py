@@ -57,7 +57,7 @@ class InterfaceSmokeTest(QMainWindow):
         toolbar.setMovable(False)
         self.addToolBar(toolbar)
         self.toolbar_actions = {}
-        for label in ("Novo", "Abrir", "Salvar", "Select", "Move", "Rotate", "Scale", "Play", "Pause", "Stop"):
+        for label in ("Novo", "Abrir", "Salvar", "Select", "Move", "Rotate", "Scale", "Snap: OFF", "Play", "Pause", "Stop"):
             action = QAction(label, self)
             self.toolbar_actions[label] = action
             toolbar.addAction(action)
