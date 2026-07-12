@@ -240,6 +240,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             if self._selected_name in self._objects_by_name:
                 self._update_inspector(self._selected_name)
             return
+        if message.get("type") == "play":
+            self.viewport_tabs.setCurrentIndex(1)
+        elif message.get("type") == "stop":
+            self.viewport_tabs.setCurrentIndex(0)
         if message.get("type") == "move_selected" and self._selected_name is not None:
             self._record_history()
         self._commands.put(message)
@@ -354,6 +358,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             obj["collider"]["is_trigger"] = True
         if kind == "Camera":
             obj["component_names"] = ["Camera2D"]
+            obj["camera"] = {"active": True, "zoom": 1.0}
         self._scene_snapshot.append(obj)
         self._objects_by_name[name] = obj
         self._selected_name = name
@@ -407,6 +412,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 collider.setdefault("width", snapshot["w"])
                 collider.setdefault("height", snapshot["h"])
                 components["collider"] = collider
+            if snapshot.get("camera") is not None or "Camera2D" in snapshot.get("component_names", []):
+                components["camera"] = deepcopy(snapshot.get("camera") or {"active": True, "zoom": 1.0})
             scene_objects.append(source)
         payload["objects"] = scene_objects
         path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -446,7 +453,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     snapshot["rigidbody"] = deepcopy(components["rigidbody"])
                 if isinstance(components.get("collider"), dict):
                     snapshot["collider"] = deepcopy(components["collider"])
-                component_names = []
+                if isinstance(components.get("camera"), dict):
+                    snapshot["camera"] = deepcopy(components["camera"])
+                component_names = ["Camera2D"] if isinstance(components.get("camera"), dict) else []
                 for component in components.get("items", []):
                     if isinstance(component, dict):
                         component_names.append(str(component.get("type") or component.get("component_type") or "Component"))
@@ -746,7 +755,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self.profiler_label.setText(
                     f"FPS: {message.get('fps', 0):.0f}\n"
                     f"Objetos: {message.get('objects', 0)}\n"
-                    f"Modo: {message.get('mode', 'EDIT')}"
+                    f"Modo: {message.get('mode', 'EDIT')} / {message.get('view', 'SCENE')}\n"
+                    f"Câmera: {message.get('camera', 'Editor')}\n"
+                    f"Zoom: {message.get('zoom', 1.0):.2f}"
                 )
 
     def closeEvent(self, event) -> None:
