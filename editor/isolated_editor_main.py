@@ -30,7 +30,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._events = events
         self._initial_scene_snapshot = [
             {"id": "floor", "name": "Chao", "x": 0.0, "y": 150.0, "w": 600.0, "h": 32.0, "rotation": 0.0, "color": (91, 194, 100), "rigidbody": {"is_kinematic": True, "use_gravity": False}, "collider": {"type": "box"}},
-            {"id": "player", "name": "Player", "x": 0.0, "y": 0.0, "w": 36.0, "h": 48.0, "rotation": 0.0, "color": (88, 117, 255), "rigidbody": {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}, "collider": {"type": "box"}},
+            {"id": "player", "name": "Player", "x": 0.0, "y": 0.0, "w": 36.0, "h": 48.0, "rotation": 0.0, "color": (88, 117, 255), "rigidbody": {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}, "collider": {"type": "box"}, "controller": {"enabled": True, "speed": 240.0, "jump_force": 420.0}},
         ]
         self._scene_snapshot = deepcopy(self._initial_scene_snapshot)
         self._scene_document: dict | None = None
@@ -158,6 +158,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         for label in ("Play", "Pause", "Stop"):
             self.editor_menus["Executar"].addAction(self.toolbar_actions[label])
         self.toolbar_actions["Pause"].setEnabled(False)
+        self.toolbar_actions["Stop"].setEnabled(False)
         snap_action = self.toolbar_actions["Snap: OFF"]
         snap_action.setCheckable(True)
         snap_action.toggled.connect(self._toggle_snap)
@@ -197,6 +198,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "Abrir": {"type": "load_scene"},
             "Salvar": {"type": "save_scene"},
             "Play": {"type": "play"},
+            "Pause": {"type": "pause"},
             "Stop": {"type": "stop"},
         }
         for action in self.findChildren(QAction):
@@ -356,6 +358,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             obj["collider"] = {"type": "box"}
         if kind == "Trigger":
             obj["collider"]["is_trigger"] = True
+        if kind == "Player":
+            obj["controller"] = {"enabled": True, "speed": 240.0, "jump_force": 420.0}
         if kind == "Camera":
             obj["component_names"] = ["Camera2D"]
             obj["camera"] = {"active": True, "zoom": 1.0}
@@ -414,6 +418,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 components["collider"] = collider
             if snapshot.get("camera") is not None or "Camera2D" in snapshot.get("component_names", []):
                 components["camera"] = deepcopy(snapshot.get("camera") or {"active": True, "zoom": 1.0})
+            if snapshot.get("controller") is not None:
+                components["controller"] = deepcopy(snapshot["controller"])
             scene_objects.append(source)
         payload["objects"] = scene_objects
         path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -455,6 +461,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     snapshot["collider"] = deepcopy(components["collider"])
                 if isinstance(components.get("camera"), dict):
                     snapshot["camera"] = deepcopy(components["camera"])
+                if isinstance(components.get("controller"), dict):
+                    snapshot["controller"] = deepcopy(components["controller"])
                 component_names = ["Camera2D"] if isinstance(components.get("camera"), dict) else []
                 for component in components.get("items", []):
                     if isinstance(component, dict):
@@ -738,10 +746,14 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     f"Viewport: {message['name']} em X={message['x']:.1f}, Y={message['y']:.1f}"
                 )
             elif message.get("type") == "play_state":
+                state = message["state"]
+                self.toolbar_actions["Play"].setEnabled(state != "play")
+                self.toolbar_actions["Pause"].setEnabled(state in {"play", "pause"})
+                self.toolbar_actions["Stop"].setEnabled(state in {"play", "pause"})
                 self.statusBar().showMessage(
-                    "Viewport: PLAY" if message["state"] == "play" else "Viewport: EDIT — cena restaurada"
+                    {"play": "Viewport: PLAY", "pause": "Viewport: PAUSE", "edit": "Viewport: EDIT — cena restaurada"}[state]
                 )
-                self._log("INFO", "Play iniciado" if message["state"] == "play" else "Play finalizado; cena restaurada")
+                self._log("INFO", {"play": "Play iniciado/retomado", "pause": "Play pausado", "edit": "Play finalizado; cena restaurada"}[state])
             elif message.get("type") == "scene_snapshot":
                 self._scene_snapshot = [dict(item) for item in message.get("objects", [])]
                 self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
@@ -757,6 +769,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     f"Objetos: {message.get('objects', 0)}\n"
                     f"Modo: {message.get('mode', 'EDIT')} / {message.get('view', 'SCENE')}\n"
                     f"Câmera: {message.get('camera', 'Editor')}\n"
+                    f"Jogador: {message.get('player') or '—'}\n"
                     f"Zoom: {message.get('zoom', 1.0):.2f}"
                 )
 
