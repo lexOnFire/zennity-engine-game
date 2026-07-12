@@ -192,6 +192,23 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             return sorted([p for p in scripts_dir.glob("*.py") if p.name != "__init__.py"])
         return []
 
+    def _change_attached_script(self, old_path: str, new_path: str) -> None:
+        if self._selected_name not in self._objects_by_name or not new_path:
+            return
+        if old_path == new_path:
+            return
+        self._record_history()
+        obj = self._objects_by_name[self._selected_name]
+        scripts = obj.get("scripts", [])
+        if old_path in scripts:
+            idx = scripts.index(old_path)
+            scripts[idx] = new_path
+        else:
+            scripts.append(new_path)
+        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._update_inspector(self._selected_name)
+        self._log("INFO", f"Script alterado de {Path(old_path).name} para {Path(new_path).name}")
+
     def _remove_single_script(self, script_path: str) -> None:
         if self._selected_name not in self._objects_by_name:
             return
@@ -946,23 +963,63 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 b_lay = QFormLayout(b_widget)
                 b_lay.setContentsMargins(4, 4, 4, 4)
                 b_lay.setSpacing(6)
-                
-                # Ajusta espaçamento e alinhamento do FormLayout para evitar cortes de texto no painel estreito
                 b_lay.setLabelAlignment(Qt.AlignLeft)
                 b_lay.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
                 
                 btn_collapse.clicked.connect(lambda checked=False, target=b_widget: target.setVisible(not target.isVisible()))
                 
-                # Propriedade 1: Caminho do Script (Leitura)
-                script_path_field = QLabel(f"📄 {s_name}")
-                script_path_field.setStyleSheet("background-color: #242424; color: #e0e0e0; padding: 4px 6px; border: 1px solid #333; border-radius: 2px; font-size: 11px;")
-                script_path_field.setFixedHeight(22)
+                # Propriedade 1: Combobox para selecionar/alterar o script deste componente
+                script_sel_combo = QComboBox()
+                script_sel_combo.setObjectName("InspectorScriptSelector")
+                script_sel_combo.setStyleSheet("background-color: #242424; color: #e0e0e0; font-size: 11px;")
+                script_sel_combo.setFixedHeight(22)
                 
-                # Label estilizada com espaçamento mínimo para caber em 280px de largura
+                # Popula combobox com todos os scripts disponíveis
+                available = self._get_available_scripts()
+                for p in available:
+                    rel_p = str(p.relative_to(Path.cwd())).replace("\\", "/")
+                    script_sel_combo.addItem(p.name, rel_p)
+                
+                # Seleciona o script atualmente ativo neste componente
+                current_rel = str(Path(s_path).relative_to(Path.cwd())).replace("\\", "/") if not Path(s_path).is_absolute() else s_path
+                idx_found = script_sel_combo.findData(current_rel)
+                if idx_found >= 0:
+                    script_sel_combo.setCurrentIndex(idx_found)
+                else:
+                    # Tenta busca flexível por nome caso o path do snapshot seja absoluto ou relativo alternativo
+                    idx_found = script_sel_combo.findText(Path(s_path).name)
+                    if idx_found >= 0:
+                        script_sel_combo.setCurrentIndex(idx_found)
+                
+                # Conecta mudança do combobox para trocar o script anexado no objeto
+                script_sel_combo.currentIndexChanged.connect(
+                    lambda index, old_p=s_path, combo=script_sel_combo: self._change_attached_script(old_p, combo.itemData(index))
+                )
+                
                 lbl_key = QLabel("Script")
                 lbl_key.setStyleSheet("color: #aaaaaa; font-size: 11px;")
                 lbl_key.setFixedWidth(50)
-                b_lay.addRow(lbl_key, script_path_field)
+                b_lay.addRow(lbl_key, script_sel_combo)
+                
+                # Botões de Ação: Criar Script e Editar Script expostos logo abaixo da combobox
+                actions_panel = QWidget()
+                act_lay = QHBoxLayout(actions_panel)
+                act_lay.setContentsMargins(50, 0, 0, 0) # Alinha sob a combobox
+                act_lay.setSpacing(6)
+                
+                btn_create = QPushButton("Criar")
+                btn_create.setFixedHeight(20)
+                btn_create.setStyleSheet("font-size: 10px; background-color: #2b2b2b; color: #ffffff; border: 1px solid #444;")
+                btn_create.clicked.connect(self._create_script_asset)
+                
+                btn_edit = QPushButton("Editar")
+                btn_edit.setFixedHeight(20)
+                btn_edit.setStyleSheet("font-size: 10px; background-color: #2b2b2b; color: #ffffff; border: 1px solid #444;")
+                btn_edit.clicked.connect(lambda checked=False, p_edit=s_path: self._edit_script_path(Path(p_edit)))
+                
+                act_lay.addWidget(btn_create)
+                act_lay.addWidget(btn_edit)
+                b_lay.addRow("", actions_panel)
                 
                 # Procura configurações expostas no script para renderizar (Velocidade, Pulo, etc.)
                 try:
