@@ -29,8 +29,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._commands = commands
         self._events = events
         self._initial_scene_snapshot = [
-            {"id": "floor", "name": "Chao", "x": 450.0, "y": 500.0, "w": 600.0, "h": 32.0, "color": (91, 194, 100)},
-            {"id": "player", "name": "Player", "x": 450.0, "y": 250.0, "w": 36.0, "h": 48.0, "color": (88, 117, 255)},
+            {"id": "floor", "name": "Chao", "x": 450.0, "y": 500.0, "w": 600.0, "h": 32.0, "color": (91, 194, 100), "rigidbody": {"is_kinematic": True, "use_gravity": False}, "collider": {"type": "box"}},
+            {"id": "player", "name": "Player", "x": 450.0, "y": 250.0, "w": 36.0, "h": 48.0, "color": (88, 117, 255), "rigidbody": {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}, "collider": {"type": "box"}},
         ]
         self._scene_snapshot = deepcopy(self._initial_scene_snapshot)
         self._scene_document: dict | None = None
@@ -151,13 +151,16 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
 
     def _create_object(self, kind: str) -> None:
         presets = {
-            "Empty": ("GameObject", 40.0, 40.0, (160, 164, 174)),
-            "Player": ("Player", 36.0, 48.0, (88, 117, 255)),
-            "Platform": ("Platform", 160.0, 32.0, (91, 194, 100)),
+            "Empty": ("GameObject", 40.0, 40.0, (160, 164, 174), None),
+            "Player": ("Player", 36.0, 48.0, (88, 117, 255), {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}),
+            "Platform": ("Platform", 160.0, 32.0, (91, 194, 100), {"is_kinematic": True, "use_gravity": False}),
         }
-        base, width, height, color = presets[kind]
+        base, width, height, color, rigidbody = presets[kind]
         name = self._unique_name(base)
         obj = {"id": str(uuid.uuid4()), "name": name, "x": 450.0, "y": 250.0, "w": width, "h": height, "color": color, "mesh_type": kind}
+        if rigidbody is not None:
+            obj["rigidbody"] = rigidbody
+            obj["collider"] = {"type": "box"}
         self._scene_snapshot.append(obj)
         self._objects_by_name[name] = obj
         self._selected_name = name
@@ -191,7 +194,14 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 "scale": [snapshot["w"], snapshot["h"], 1.0],
             }
             source.setdefault("visual", {"mesh_type": snapshot.get("mesh_type"), "color": snapshot.get("color")})
-            source.setdefault("components", {})
+            components = source.setdefault("components", {})
+            if snapshot.get("rigidbody") is not None:
+                components["rigidbody"] = deepcopy(snapshot["rigidbody"])
+            if snapshot.get("collider") is not None:
+                collider = deepcopy(snapshot["collider"])
+                collider.setdefault("width", snapshot["w"])
+                collider.setdefault("height", snapshot["h"])
+                components["collider"] = collider
             scene_objects.append(source)
         payload["objects"] = scene_objects
         path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -222,8 +232,14 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 position = list(transform.get("position", [0.0, 0.0, 0.0]))
                 scale = list(transform.get("scale", [32.0, 32.0, 1.0]))
                 visual = item.get("visual", {}) or {}
+                components = item.get("components", {}) or {}
                 color = visual.get("color") or ((91, 194, 100) if item["name"].lower() in {"chao", "floor"} else (88, 117, 255))
-                snapshots.append({"id": item.get("id", item["name"]), "name": item["name"], "x": float(position[0]), "y": float(position[1]), "w": abs(float(scale[0])), "h": abs(float(scale[1])), "color": color, "mesh_type": visual.get("mesh_type")})
+                snapshot = {"id": item.get("id", item["name"]), "name": item["name"], "x": float(position[0]), "y": float(position[1]), "w": abs(float(scale[0])), "h": abs(float(scale[1])), "color": color, "mesh_type": visual.get("mesh_type")}
+                if isinstance(components.get("rigidbody"), dict):
+                    snapshot["rigidbody"] = deepcopy(components["rigidbody"])
+                if isinstance(components.get("collider"), dict):
+                    snapshot["collider"] = deepcopy(components["collider"])
+                snapshots.append(snapshot)
             elif {"x", "y", "w", "h"}.issubset(item):
                 snapshots.append(dict(item))
         if not snapshots and objects:
@@ -290,6 +306,19 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
     def _connect_inspector_to_viewport(self) -> None:
         for field in self.inspector_fields.values():
             field.valueChanged.connect(lambda _value: self._send_inspector_transform())
+        for field in self.physics_fields.values():
+            field.toggled.connect(lambda _checked: self._send_inspector_physics())
+
+    def _send_inspector_physics(self) -> None:
+        if self._updating_inspector or self._selected_name not in self._objects_by_name:
+            return
+        obj = self._objects_by_name[self._selected_name]
+        rigidbody = obj.get("rigidbody")
+        if rigidbody is None:
+            return
+        rigidbody["use_gravity"] = self.physics_fields["use_gravity"].isChecked()
+        rigidbody["is_kinematic"] = self.physics_fields["is_kinematic"].isChecked()
+        self._commands.put({"type": "set_physics", "name": self._selected_name, "rigidbody": rigidbody})
 
     def _send_inspector_transform(self) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
@@ -316,6 +345,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self.inspector_name_label.setText(name)
             for key in ("x", "y", "w", "h"):
                 self.inspector_fields[key].setValue(float(obj[key]))
+            rigidbody = obj.get("rigidbody")
+            for key, field in self.physics_fields.items():
+                field.setEnabled(rigidbody is not None)
+                field.setChecked(bool((rigidbody or {}).get(key, False)))
         finally:
             self._updating_inspector = False
 
