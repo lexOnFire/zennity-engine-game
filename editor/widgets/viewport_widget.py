@@ -65,6 +65,11 @@ class ViewportWidget(QWidget):
         self.pg_surface: Optional[pygame.Surface] = None
         self._vp_w: int = 800
         self._vp_h: int = 600
+        self._pending_viewport_size: tuple[int, int] | None = None
+        self._resize_timer = QTimer(self)
+        self._resize_timer.setSingleShot(True)
+        self._resize_timer.setInterval(90)
+        self._resize_timer.timeout.connect(self._commit_viewport_resize)
 
         self._last_time: float = time.time()
 
@@ -447,8 +452,23 @@ class ViewportWidget(QWidget):
         pass
 
     def resizeEvent(self, event) -> None:
-        self.resizeGL(self.width(), self.height())
+        # QSplitter emits a resize for virtually every mouse pixel. Allocating
+        # a new Pygame surface and converting it to QImage for each one blocks
+        # Qt's UI thread, so defer that expensive work until the splitter rests.
+        self._pending_viewport_size = (self.width(), self.height())
+        if self.pg_surface is None:
+            self._commit_viewport_resize()
+        else:
+            self._resize_timer.start()
         super().resizeEvent(event)
+
+    def _commit_viewport_resize(self) -> None:
+        if self._pending_viewport_size is None:
+            return
+        width, height = self._pending_viewport_size
+        self._pending_viewport_size = None
+        self.resizeGL(width, height)
+        self.update()
 
     def resizeGL(self, w: int, h: int) -> None:
         self._vp_w = max(32, w)
@@ -465,6 +485,7 @@ class ViewportWidget(QWidget):
 
     def shutdown(self) -> None:
         self._timer.stop()
+        self._resize_timer.stop()
         self.pg_surface = None
 
     def paintGL(self) -> None:
