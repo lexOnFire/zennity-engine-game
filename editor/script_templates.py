@@ -10,37 +10,25 @@ REQUIRED_UPDATE_HOOKS = {"on_update", "isolated_update", "update"}
 
 def build_isolated_script_template(script_name: str) -> str:
     safe_name = script_name.removesuffix(".py") or "NewScript"
-    return f'''"""{safe_name} — script criado pelo Zennity."""
+    return f'''"""{safe_name} — script simples do Zennity."""
 
-CONFIG = {"speed": 200.0, "jump_force": 420.0}
-
-
-def on_start(game):
-    """Chamado uma vez quando o Play começa."""
-    game.log("iniciado")
+CONFIG = {{"speed": 200.0, "jump_force": 420.0}}
 
 
 def on_update(game, dt):
-    """Chamado a cada frame. dt é o tempo em segundos."""
-    # Exemplo simples de movimento horizontal:
+    """Coloque aqui o que o objeto faz durante o Play."""
     direction = game.axis("left", "right")
     game.move(direction * CONFIG["speed"] * dt)
 
-    # Executa apenas no instante em que Espaço é pressionado.
     if game.key_pressed("space"):
         game.jump(CONFIG["jump_force"])
 
 
+# Opcional: receba comandos enviados por outros scripts/sistemas.
 def on_instruction(game, instruction):
-    """Recebe comandos opcionais de outros sistemas."""
     if instruction.get("command") == "teleport":
         game.x = float(instruction.get("x", game.x))
         game.y = float(instruction.get("y", game.y))
-
-
-def on_stop(game):
-    """Chamado uma vez quando o Play termina."""
-    pass
 '''
 
 
