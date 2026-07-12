@@ -1,0 +1,10 @@
+{
+  "uuid": "21f90bb3-f570-43d7-ba77-e1d081bc95f5",
+  "type": "audio",
+  "importer": "audio_importer",
+  "source_path": "Assets/Audio/collect-points-190037.mp3",
+  "import_settings": {
+    "load_type": "decompress_on_load"
+  },
+  "dependencies": []
+}

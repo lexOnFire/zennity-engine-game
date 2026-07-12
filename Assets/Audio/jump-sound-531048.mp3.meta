@@ -1,0 +1,10 @@
+{
+  "uuid": "519befa9-8916-47fd-8880-a1912a9cc663",
+  "type": "audio",
+  "importer": "audio_importer",
+  "source_path": "Assets/Audio/jump-sound-531048.mp3",
+  "import_settings": {
+    "load_type": "decompress_on_load"
+  },
+  "dependencies": []
+}

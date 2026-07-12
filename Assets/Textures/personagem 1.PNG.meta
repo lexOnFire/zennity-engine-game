@@ -1,0 +1,10 @@
+{
+  "uuid": "5d4f536e-e085-4a9a-9bbc-c97ad34df295",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Textures/personagem 1.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": []
+}
