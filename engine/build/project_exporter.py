@@ -57,6 +57,8 @@ def load_objects(path):
             "h": abs(float(scale[1])), "rotation": float(rotation),
             "color": visual.get("color") or [180, 180, 190], "tag": item.get("tag", "Untagged"),
             "active": item.get("active", True), "scripts": components.get("scripts", []),
+            "texture": visual.get("texture", ""), "renderer_enabled": visual.get("enabled", True),
+            "render_layer": visual.get("layer", "Default"), "sort_order": visual.get("order", 0),
         }
         for key in ("rigidbody", "collider", "camera"):
             if key in components:
