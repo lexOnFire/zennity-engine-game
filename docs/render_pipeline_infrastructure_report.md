@@ -24,6 +24,11 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
   depois do `OverlayPass` para preservar sua sobreposição visual histórica.
 - Cor de limpeza e fundos infinitos agora são desenhados pelo `BackgroundPass`;
   `LegacyScenePass` recebe apenas o conteúdo das cenas que suportam separação.
+- `SpriteOverlayPass` agora desenha componentes `Image` válidos na Scene View
+  com o transform da câmera Qt; somente esses componentes são omitidos no
+  framebuffer legado durante o mesmo frame.
+- O passe de sprites é executado antes do `GridPass`, conservando a grade acima
+  da imagem como acontecia quando ela integrava o framebuffer Pygame.
 - Preparação do frame e chamadas antigas da Phase1 Viewport foram movidas para
   delegates privados usados pelos passes.
 
@@ -39,8 +44,8 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
   `Camera.clear_color`/fallback `(30, 30, 30)`.
 - Cenas que sobrescrevem somente `draw()` continuam usando-o integralmente, sem
   perda de compatibilidade.
-- Sprites continuam tendo o framebuffer Pygame como fonte única; o overlay Qt
-  moderno permanece desativado para evitar renderização duplicada.
+- Sprites sem arquivo válido, Game View, Play Mode e renderizadores antigos
+  continuam usando exclusivamente o framebuffer Pygame.
 - `TransformGizmoPass` ainda delega diretamente aos overlays Qt concretos de
   Move e Rotate mantidos pela viewport.
 - `ViewportRenderer.render_qt_overlays()` permanece como wrapper de
@@ -50,6 +55,6 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
 
 ## Próximos candidatos à migração
 
-1. Conectar o SpriteRenderer moderno ao `SpriteOverlayPass` somente depois de
-   remover, com testes visuais, a fonte equivalente no caminho legado.
+1. Expandir o `SpriteOverlayPass` gradualmente para `SpriteRenderer` baseado em
+   Surface, preservando flip, tint e sorting layers.
 2. Substituir os delegates temporários por adapters tipados por componente.
