@@ -25,6 +25,7 @@ class FakeGame:
         self.state = {}
         self.logs = []
         self.instructions = []
+        self.hud = {}
 
     def log(self, message):
         self.logs.append(message)
@@ -44,6 +45,14 @@ class FakeGame:
 
     def send(self, command, value=None):
         self.instructions.append({"command": command, "value": value})
+
+    def set_hud(self, key, text, color=(255, 255, 255), position="top-left", font_size=22):
+        self.hud[key] = {
+            "text": text, "color": color, "position": position, "font_size": font_size,
+        }
+
+    def restart(self):
+        self.state["restart_requested"] = True
 
 
 def test_scene_is_complete_and_references_existing_scripts() -> None:
@@ -70,6 +79,7 @@ def test_player_coin_damage_and_victory_flow() -> None:
 
     assert player.state == {"health": 2, "coins": 5, "status": "victory"}
     assert any("VOCÊ VENCEU" in message for message in player.logs)
+    assert "health" in player.hud and "coins" in player.hud and "result" in player.hud
 
 
 def test_coin_deactivates_and_notifies_player() -> None:
@@ -82,3 +92,18 @@ def test_coin_deactivates_and_notifies_player() -> None:
     assert not coin.active
     assert player.instructions == [{"command": "add_coin", "value": 1}]
 
+
+def test_play_api_supports_hud_destroy_and_restart() -> None:
+    from editor.isolated_viewport import PlayScriptAPI
+
+    obj = {"name": "Player", "active": True}
+    game = PlayScriptAPI("Player", obj, None)
+    game.set_hud("health", "VIDA: 3", (255, 100, 100), "top-left", 24)
+    game.remove_hud("health")
+    game.restart()
+    game.destroy()
+
+    assert not game.active
+    assert [item["command"] for item in obj["script_instructions"]] == [
+        "set_hud", "remove_hud", "restart_scene",
+    ]
