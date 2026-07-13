@@ -64,24 +64,67 @@ class ViewportRenderer:
         overlays_visible: bool = True,
         selection_visible: bool = True,
     ) -> None:
-        """Render Scene View visual overlays above the Pygame framebuffer."""
-        vp_w, vp_h = camera.vp_w, camera.vp_h
+        """Compatibility wrapper for the original combined overlay call."""
+        self.render_selection_overlays(
+            painter=painter,
+            camera=camera,
+            selected=selected,
+            active_tool_name=active_tool_name,
+            is_playing=is_playing,
+            selection_visible=selection_visible,
+        )
+        self.render_hud_overlays(
+            painter=painter,
+            camera=camera,
+            active_tool_name=active_tool_name,
+            object_count=object_count,
+            grid_size=grid_size,
+            snap_on=snap_on,
+            mouse_screen_pos=mouse_screen_pos,
+            is_playing=is_playing,
+            scene_name=scene_name,
+            view_mode=view_mode,
+            overlays_visible=overlays_visible,
+        )
 
-        if selected is not None and not is_playing and selection_visible:
-            self.outline_renderer.draw(painter, selected, camera.world_to_viewport)
+    def render_selection_overlays(
+        self,
+        painter: QPainter,
+        camera: ViewportCamera,
+        selected: Any,
+        active_tool_name: str,
+        is_playing: bool = False,
+        selection_visible: bool = True,
+    ) -> None:
+        """Draw only the selection outline and its bounding box."""
+        if selected is None or is_playing or not selection_visible:
+            return
+        self.outline_renderer.draw(painter, selected, camera.world_to_viewport)
+        self.bounding_box_renderer.draw(
+            painter,
+            selected,
+            camera.world_to_viewport,
+            show_handles=active_tool_name.lower() == "scale",
+        )
 
-        if selected is not None and not is_playing and selection_visible:
-            show_scale_handles = active_tool_name.lower() == "scale"
-            self.bounding_box_renderer.draw(
-                painter,
-                selected,
-                camera.world_to_viewport,
-                show_handles=show_scale_handles,
-            )
-
+    def render_hud_overlays(
+        self,
+        painter: QPainter,
+        camera: ViewportCamera,
+        active_tool_name: str,
+        object_count: int,
+        grid_size: int,
+        snap_on: bool,
+        mouse_screen_pos: tuple[float, float],
+        is_playing: bool = False,
+        scene_name: str = "Scene",
+        view_mode: str = "Edit",
+        overlays_visible: bool = True,
+    ) -> None:
+        """Draw only HUD, coordinates and debug information."""
         if not overlays_visible:
             return
-
+        vp_w, vp_h = camera.vp_w, camera.vp_h
         fps = self.calculate_fps()
         camera_name = "Camera 2D"
         self.overlay.draw_hud(
