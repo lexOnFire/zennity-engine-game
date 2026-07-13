@@ -18,6 +18,7 @@ from editor.gizmos.qt_gizmo_overlay import QtMoveGizmoOverlay
 from editor.gizmos.rotate_gizmo import QtRotateGizmoOverlay
 from editor.render.render_pipeline import (
     BackgroundPass,
+    FramebufferPresentPass,
     GizmoPass,
     GridPass,
     LegacySceneAdapter,
@@ -98,11 +99,11 @@ class Phase1ViewportWidget(ViewportWidget):
             # exatamente Camera.clear_color e fundos infinitos.
             BackgroundPass(self._render_background_pass),
             LegacyScenePass(LegacySceneAdapter(self._render_legacy_scene_pass)),
+            GizmoPass(self._render_gizmo_registry_pass),
+            FramebufferPresentPass(self._render_framebuffer_present_pass),
             GridPass(self._render_grid_pass),
             # O overlay moderno de sprites segue desativado por compatibilidade.
             SpriteOverlayPass(self._render_sprite_overlay_pass),
-            # Gizmos de componente ainda são produzidos pelo adaptador legado.
-            GizmoPass(self._render_gizmo_registry_pass),
             OverlayPass(self._render_overlay_pass),
         ])
 
@@ -797,7 +798,12 @@ class Phase1ViewportWidget(ViewportWidget):
             draw_content = getattr(context.active_scene, "_zennity_draw_content", None)
             if not callable(draw_content):
                 draw_content = getattr(context.active_scene, "draw_content", None)
-        self._draw_legacy_framebuffer(scene_draw=draw_content)
+        self._draw_legacy_scene_content(scene_draw=draw_content)
+
+    def _render_gizmo_registry_pass(self, context: RenderContext) -> None:
+        self._draw_legacy_gizmos()
+
+    def _render_framebuffer_present_pass(self, context: RenderContext) -> None:
         self._restore_grid_state(self._pipeline_grid_states)
         self._present_legacy_framebuffer(context.painter)
 
@@ -816,10 +822,6 @@ class Phase1ViewportWidget(ViewportWidget):
     def _render_sprite_overlay_pass(self, context: RenderContext) -> None:
         # Mantido intencionalmente sem desenho: o framebuffer Pygame continua
         # sendo a fonte única dos sprites até a migração do SpriteRenderer.
-        return None
-
-    def _render_gizmo_registry_pass(self, context: RenderContext) -> None:
-        # Gizmos de componentes ainda são chamados dentro do adaptador legado.
         return None
 
     def _render_overlay_pass(self, context: RenderContext) -> None:
