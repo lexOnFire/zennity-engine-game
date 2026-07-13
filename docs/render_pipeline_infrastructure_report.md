@@ -45,6 +45,8 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
   coleta de sprites; `FramebufferPresentRendererAdapter` assume a apresentação.
 - `SpriteRendererAdapter` liga o passe de sprites aos comandos já preparados,
   removendo o último callback de renderização mantido pela viewport.
+- `RenderPipeline` oferece métricas opt-in por passe (último, média, máximo e
+  execuções), desativadas por padrão e sem alterar a ordem de desenho.
 - Preparação do frame e chamadas antigas da Phase1 Viewport foram movidas para
   delegates privados usados pelos passes.
 
@@ -71,4 +73,4 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
 
 ## Próximos candidatos à migração
 
-1. Introduzir métricas opcionais por passe sem alterar sua execução ou desenho.
+1. Expor as métricas opcionais no painel Profiler sem ativá-las por padrão.
