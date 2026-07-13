@@ -23,11 +23,12 @@ class BackgroundRendererAdapter:
             return
         color = getattr(context.active_scene, "_zennity_background_color", None)
         if color is None and callable(getattr(context.active_scene, "draw_content", None)):
+            main_camera = None
             try:
                 from engine.graphics.camera import Camera
                 main_camera = Camera.main
-            except Exception:
-                main_camera = None
+            except ImportError:
+                pass
             color = tuple(main_camera.clear_color) if main_camera is not None else (30, 30, 30)
         self.managed = color is not None
         if self.managed:

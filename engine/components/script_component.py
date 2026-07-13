@@ -8,6 +8,7 @@ from typing import Any, Callable
 
 
 from engine.core.component import Component
+from engine.logger import Logger
 
 
 class ScriptComponent(Component):
@@ -67,7 +68,7 @@ class ScriptComponent(Component):
             spec.loader.exec_module(module)  # type: ignore[union-attr]
             self._module = module
         except Exception as exc:
-            print(f"[ScriptComponent] Erro ao carregar '{self.script_path}': {exc}")
+            Logger.error(f"[ScriptComponent] Erro ao carregar '{self.script_path}': {exc}")
 
     def _resolve_class(self) -> type | None:
         """Retorna a primeira classe concreta definida no módulo, se houver."""
@@ -107,7 +108,7 @@ class ScriptComponent(Component):
                 try:
                     fn(go)
                 except Exception as exc:
-                    print(f"[ScriptComponent] on_start error: {exc}")
+                    Logger.error(f"[ScriptComponent] on_start error: {exc}")
 
     def call_update(self, go: Any, dt: float) -> None:
         """Chama on_update(go, dt) no script, se existir."""
@@ -118,14 +119,14 @@ class ScriptComponent(Component):
                 try:
                     self._instance.on_update(go, dt)
                 except Exception as exc:
-                    print(f"[ScriptComponent] on_update error: {exc}")
+                    Logger.error(f"[ScriptComponent] on_update error: {exc}")
         else:
             fn = self._get_fn("on_update")
             if fn is not None:
                 try:
                     fn(go, dt)
                 except Exception as exc:
-                    print(f"[ScriptComponent] on_update error: {exc}")
+                    Logger.error(f"[ScriptComponent] on_update error: {exc}")
 
     def call_stop(self, go: Any) -> None:
         """Chama on_stop(go) no script, se existir."""
@@ -134,14 +135,14 @@ class ScriptComponent(Component):
                 try:
                     self._instance.on_stop(go)
                 except Exception as exc:
-                    print(f"[ScriptComponent] on_stop error: {exc}")
+                    Logger.error(f"[ScriptComponent] on_stop error: {exc}")
         else:
             fn = self._get_fn("on_stop")
             if fn is not None:
                 try:
                     fn(go)
                 except Exception as exc:
-                    print(f"[ScriptComponent] on_stop error: {exc}")
+                    Logger.error(f"[ScriptComponent] on_stop error: {exc}")
         self._instance = None
 
     # ------------------------------------------------------------------

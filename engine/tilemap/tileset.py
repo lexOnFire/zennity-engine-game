@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, Optional, Tuple
 import pygame
+from engine.logger import Logger
 
 
 @dataclass
@@ -100,7 +101,7 @@ class Tileset:
                     or rect.width  <= 0
                     or rect.height <= 0
                 ):
-                    print(
+                    Logger.error(
                         f"[Tileset] Warning: tile GID {gid} rect {rect} is outside "
                         f"sheet size {sheet_w}x{sheet_h} — skipping."
                     )

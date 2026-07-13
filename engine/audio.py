@@ -3,6 +3,7 @@ import os
 from typing import Dict, List, Optional, Any
 import pygame
 from engine.core.component import Component
+from engine.logger import Logger
 
 
 class AudioManager:
@@ -36,7 +37,7 @@ class AudioManager:
             cls._initialized = True
             return True
         except Exception as e:
-            print(f"[AudioManager] Mixer não inicializado: {e}")
+            Logger.error(f"[AudioManager] Mixer não inicializado: {e}")
             return False
 
     # ------------------------------------------------------------------
@@ -47,7 +48,7 @@ class AudioManager:
     def play_music(cls, path: str, loop: bool = True, fade_ms: int = 0) -> None:
         """Toca música de fundo com streaming. loop=True repete infinitamente."""
         if not cls._init() or not os.path.exists(path):
-            print(f"[AudioManager] Música não encontrada: {path}")
+            Logger.error(f"[AudioManager] Música não encontrada: {path}")
             return
         try:
             pygame.mixer.music.load(path)
@@ -57,7 +58,7 @@ class AudioManager:
             cls._music_path = path
             cls._music_paused = False
         except Exception as e:
-            print(f"[AudioManager] Erro ao tocar música '{path}': {e}")
+            Logger.error(f"[AudioManager] Erro ao tocar música '{path}': {e}")
 
     @classmethod
     def stop_music(cls, fade_ms: int = 0) -> None:
@@ -103,12 +104,12 @@ class AudioManager:
         """Carrega e cacheia um Sound. Retorna None se falhar."""
         if path not in cls._sound_cache:
             if not os.path.exists(path):
-                print(f"[AudioManager] SFX não encontrado: {path}")
+                Logger.error(f"[AudioManager] SFX não encontrado: {path}")
                 return None
             try:
                 cls._sound_cache[path] = pygame.mixer.Sound(path)
             except Exception as e:
-                print(f"[AudioManager] Erro ao carregar SFX '{path}': {e}")
+                Logger.error(f"[AudioManager] Erro ao carregar SFX '{path}': {e}")
                 return None
         return cls._sound_cache[path]
 
