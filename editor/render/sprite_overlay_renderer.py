@@ -161,7 +161,7 @@ class SpriteOverlayRenderer:
                 rotation = float(getattr(transform, "rz", 0.0))
 
             painter.save()
-            painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
+            
             painter.setOpacity(float(combined_alpha(command.alpha, command.tint)) / 255.0)
             painter.translate(cx, cy)
             painter.rotate(rotation)
