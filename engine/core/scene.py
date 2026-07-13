@@ -107,11 +107,19 @@ class Scene:
                 if getattr(comp, "type_name", "") == "InfiniteBackground" and getattr(comp, "enabled", True):
                     comp.draw(screen)
 
-    def draw(self, screen: pygame.Surface) -> None:
-        """Propaga draw para todos os GOs ativos, desenhando fundos infinitos primeiro."""
+    def draw_background(self, screen: pygame.Surface) -> None:
+        """Desenha somente os fundos infinitos, antes do conteúdo da cena."""
         self._draw_infinite_backgrounds(screen)
+
+    def draw_content(self, screen: pygame.Surface) -> None:
+        """Desenha somente os GameObjects, sem fundos infinitos."""
         for go in list(self.game_objects):
             go.draw(screen)
+
+    def draw(self, screen: pygame.Surface) -> None:
+        """Propaga draw para todos os GOs ativos, desenhando fundos infinitos primeiro."""
+        self.draw_background(screen)
+        self.draw_content(screen)
 
     def handle_event(self, event: pygame.event.Event) -> None:
         """Propaga eventos Pygame. Subclasses podem sobrescrever."""
