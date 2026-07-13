@@ -29,6 +29,7 @@ from editor.render.render_pipeline import (
     SpriteOverlayPass,
     TransformGizmoPass,
 )
+from editor.render.sprite_overlay_renderer import SpriteOverlayRenderer
 from editor.runtime.command_manager import CommandManager, FunctionCommand
 from editor.runtime.editor_state import EditorState
 from editor.runtime.tool_manager import EditorTool, ToolManager
@@ -92,6 +93,8 @@ class Phase1ViewportWidget(ViewportWidget):
         self._pipeline_grid_states: list[tuple[Any, bool]] = []
         self._pipeline_real_show_grid: bool = True
         self._pipeline_background_managed: bool = False
+        self._pipeline_modern_sprites: list[tuple[Any, Any, Any]] = []
+        self.sprite_overlay_renderer = SpriteOverlayRenderer()
         self.render_pipeline = self._build_render_pipeline()
 
     def _build_render_pipeline(self) -> RenderPipeline:
@@ -102,9 +105,9 @@ class Phase1ViewportWidget(ViewportWidget):
             LegacyScenePass(LegacySceneAdapter(self._render_legacy_scene_pass)),
             GizmoPass(self._render_gizmo_registry_pass),
             FramebufferPresentPass(self._render_framebuffer_present_pass),
-            GridPass(self._render_grid_pass),
-            # O overlay moderno de sprites segue desativado por compatibilidade.
+            # Mantém a grade acima dos sprites, como no framebuffer legado.
             SpriteOverlayPass(self._render_sprite_overlay_pass),
+            GridPass(self._render_grid_pass),
             OverlayPass(self._render_overlay_pass),
             # Preserva a ordem histórica acima de seleção, bounding box e HUD.
             TransformGizmoPass(self._render_transform_gizmo_pass),
@@ -756,6 +759,8 @@ class Phase1ViewportWidget(ViewportWidget):
         try:
             self.render_pipeline.render(context)
         finally:
+            if self.active_scene is not None:
+                self.active_scene._zennity_modern_sprite_component_ids = set()
             self._restore_grid_state(self._pipeline_grid_states)
             context.painter.end()
 
@@ -772,6 +777,13 @@ class Phase1ViewportWidget(ViewportWidget):
         self._pipeline_grid_states = self._capture_grid_state()
         self._pipeline_real_show_grid = self._pipeline_grid_states[0][1] if self._pipeline_grid_states else True
         self._set_grid_visible(False)
+        use_modern_sprites = not self._is_playing() and not self.is_game_view()
+        self._pipeline_modern_sprites = (
+            self.sprite_overlay_renderer.collect(self.active_scene) if use_modern_sprites else []
+        )
+        self.active_scene._zennity_modern_sprite_component_ids = {
+            id(image) for _, image, _ in self._pipeline_modern_sprites
+        }
         return RenderContext(
             viewport=self,
             painter=QPainter(self),
@@ -830,9 +842,11 @@ class Phase1ViewportWidget(ViewportWidget):
             )
 
     def _render_sprite_overlay_pass(self, context: RenderContext) -> None:
-        # Mantido intencionalmente sem desenho: o framebuffer Pygame continua
-        # sendo a fonte única dos sprites até a migração do SpriteRenderer.
-        return None
+        self.sprite_overlay_renderer.draw(
+            context.painter,
+            self.camera,
+            self._pipeline_modern_sprites,
+        )
 
     def _render_overlay_pass(self, context: RenderContext) -> None:
         selected = self._selected_transform_object()
