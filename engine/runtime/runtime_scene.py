@@ -230,6 +230,14 @@ class RuntimeScene:
             screen.fill(main_cam.clear_color)
         else:
             screen.fill((30, 30, 30))
+        self.draw_content(screen)
+
+    def draw_content(self, screen: Any) -> None:
+        """Desenha a cena sem limpar o framebuffer.
+
+        Mantém ``draw()`` totalmente compatível e permite que uma pipeline
+        externa assuma apenas a responsabilidade pelo background.
+        """
         self.scene.draw(screen)
         self.ui_renderer.render(self, screen)
 
