@@ -2,10 +2,13 @@
 
 from .adapters import (
     BackgroundRendererAdapter,
+    FramebufferPresentRendererAdapter,
+    FramePreparationAdapter,
     GizmoRendererAdapter,
     GridRendererAdapter,
     LegacySceneRendererAdapter,
     OverlayRendererAdapter,
+    SpriteRendererAdapter,
 )
 from .render_pipeline import (
     BackgroundPass,
@@ -24,8 +27,9 @@ from .render_pipeline import (
 
 __all__ = [
     "BackgroundPass", "BackgroundRendererAdapter", "FramebufferPresentPass",
+    "FramebufferPresentRendererAdapter", "FramePreparationAdapter",
     "GizmoPass", "GizmoRendererAdapter", "GridPass", "GridRendererAdapter", "LegacySceneAdapter",
-    "LegacySceneRendererAdapter", "OverlayRendererAdapter",
+    "LegacySceneRendererAdapter", "OverlayRendererAdapter", "SpriteRendererAdapter",
     "LegacyScenePass", "OverlayPass", "RenderContext", "RenderPass",
     "RenderPipeline", "SpriteOverlayPass", "TransformGizmoPass",
 ]
