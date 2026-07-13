@@ -45,3 +45,26 @@ def test_pipeline_exposes_immutable_pass_snapshot_and_supports_append() -> None:
     pipeline.add_pass(render_pass)
 
     assert pipeline.passes == (render_pass,)
+
+
+def test_optional_metrics_record_only_enabled_passes() -> None:
+    pipeline = RenderPipeline([
+        BackgroundPass(lambda context: None),
+        BackgroundPass(lambda context: None, enabled=False),
+    ])
+    assert pipeline.metrics == ()
+
+    pipeline.set_profiling_enabled(True)
+    pipeline.render(_context())
+    pipeline.render(_context())
+
+    assert len(pipeline.metrics) == 1
+    metric = pipeline.metrics[0]
+    assert metric.pass_name == "BackgroundPass"
+    assert metric.pass_index == 0
+    assert metric.executions == 2
+    assert 0.0 <= metric.last_ms <= metric.max_ms
+    assert metric.average_ms >= 0.0
+
+    pipeline.reset_metrics()
+    assert pipeline.metrics == ()
