@@ -39,6 +39,8 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
   por `Order in Layer` e pela ordem original como desempate estável.
 - Tint RGB multiplicativo e alpha combinado agora usam o contrato comum
   `engine.graphics.tint` no Qt, `Image` e nos dois `SpriteRenderer` Pygame.
+- Background, cena legada, grid, gizmos e overlays agora passam por adaptadores
+  tipados próprios; a viewport deixou de conter a implementação desses passes.
 - Preparação do frame e chamadas antigas da Phase1 Viewport foram movidas para
   delegates privados usados pelos passes.
 
@@ -57,7 +59,7 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
 - Sprites sem arquivo válido, Game View, Play Mode e renderizadores antigos
   continuam usando exclusivamente o framebuffer Pygame.
 - `TransformGizmoPass` ainda delega diretamente aos overlays Qt concretos de
-  Move e Rotate mantidos pela viewport.
+  Move e Rotate mantidos pela viewport, agora via `GizmoRendererAdapter`.
 - `ViewportRenderer.render_qt_overlays()` permanece como wrapper de
   compatibilidade, delegando para seleção e HUD independentes.
 - A captura/restauração da visibilidade do grid ainda depende da estrutura das
@@ -65,4 +67,5 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
 
 ## Próximos candidatos à migração
 
-1. Substituir os delegates restantes por adapters tipados por componente.
+1. Extrair também apresentação do framebuffer e preparação do frame para
+   adaptadores próprios, eliminando os dois callbacks restantes da viewport.
