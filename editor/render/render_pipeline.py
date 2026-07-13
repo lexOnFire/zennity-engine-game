@@ -6,6 +6,7 @@ estado de cena ou decisões visuais existentes.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from time import perf_counter_ns
 from typing import Any, Callable, Iterable
 
 
@@ -36,11 +37,37 @@ class RenderPass:
         raise NotImplementedError
 
 
+@dataclass(frozen=True, slots=True)
+class RenderPassMetrics:
+    pass_name: str
+    pass_index: int
+    executions: int
+    last_ms: float
+    average_ms: float
+    max_ms: float
+
+
+@dataclass(slots=True)
+class _MutablePassMetrics:
+    executions: int = 0
+    total_ns: int = 0
+    last_ns: int = 0
+    max_ns: int = 0
+
+    def record(self, elapsed_ns: int) -> None:
+        self.executions += 1
+        self.total_ns += elapsed_ns
+        self.last_ns = elapsed_ns
+        self.max_ns = max(self.max_ns, elapsed_ns)
+
+
 class RenderPipeline:
     """Executa RenderPass na mesma ordem em que foram registrados."""
 
     def __init__(self, passes: Iterable[RenderPass] = ()) -> None:
         self._passes = list(passes)
+        self._profiling_enabled = False
+        self._metrics: dict[int, _MutablePassMetrics] = {}
 
     @property
     def passes(self) -> tuple[RenderPass, ...]:
@@ -49,10 +76,45 @@ class RenderPipeline:
     def add_pass(self, render_pass: RenderPass) -> None:
         self._passes.append(render_pass)
 
+    @property
+    def profiling_enabled(self) -> bool:
+        return self._profiling_enabled
+
+    def set_profiling_enabled(self, enabled: bool) -> None:
+        self._profiling_enabled = bool(enabled)
+
+    def reset_metrics(self) -> None:
+        self._metrics.clear()
+
+    @property
+    def metrics(self) -> tuple[RenderPassMetrics, ...]:
+        snapshots = []
+        for index, render_pass in enumerate(self._passes):
+            metric = self._metrics.get(index)
+            if metric is None:
+                continue
+            snapshots.append(RenderPassMetrics(
+                pass_name=type(render_pass).__name__,
+                pass_index=index,
+                executions=metric.executions,
+                last_ms=metric.last_ns / 1_000_000.0,
+                average_ms=(metric.total_ns / metric.executions) / 1_000_000.0,
+                max_ms=metric.max_ns / 1_000_000.0,
+            ))
+        return tuple(snapshots)
+
     def render(self, context: RenderContext) -> None:
-        for render_pass in self._passes:
+        for index, render_pass in enumerate(self._passes):
             if render_pass.enabled():
-                render_pass.render(context)
+                if not self._profiling_enabled:
+                    render_pass.render(context)
+                    continue
+                started_ns = perf_counter_ns()
+                try:
+                    render_pass.render(context)
+                finally:
+                    elapsed_ns = perf_counter_ns() - started_ns
+                    self._metrics.setdefault(index, _MutablePassMetrics()).record(elapsed_ns)
 
 
 class _CallbackPass(RenderPass):
