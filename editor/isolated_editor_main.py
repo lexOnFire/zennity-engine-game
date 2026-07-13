@@ -54,7 +54,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._runtime_playing = False
         self._play_edit_snapshot: list[dict] | None = None
         self._pending_stop_snapshot: list[dict] | None = None
-        self._runtime_keys = {key: False for key in ("left", "right", "up", "down", "jump")}
+        self._runtime_keys = {
+            key: False for key in ("left", "right", "up", "down", "jump", "restart")
+        }
         self.setWindowTitle("Zennity Engine Editor — Phase 1")
         self.statusBar().showMessage(
             "Zennity Phase 1 pronto — Viewport em processo dedicado."
@@ -226,6 +228,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             Qt.Key_W: "up", Qt.Key_Up: "up",
             Qt.Key_S: "down", Qt.Key_Down: "down",
             Qt.Key_Space: "jump",
+            Qt.Key_R: "restart",
         }
         if self._runtime_playing and event.type() == QEvent.ShortcutOverride and event.key() in key_map:
             event.accept()
@@ -1610,7 +1613,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             camera = obj.get("camera") if isinstance(obj.get("camera"), dict) else None
             self.show_camera_chk.setChecked(camera is not None)
             self.camera_body.setEnabled(camera is not None)
-            self.camera_body.setVisible(camera is not None)
             self.camera_active_field.setChecked(bool((camera or {}).get("active", True)))
             self.camera_width_field.setValue(float((camera or {}).get("width", 1280.0)))
             self.camera_height_field.setValue(float((camera or {}).get("height", 720.0)))
