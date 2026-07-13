@@ -8,6 +8,8 @@ from typing import Any
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QImage, QPainter, QPixmap
 
+from engine.graphics.sorting import normalize_sorting_layer, sorting_key
+
 
 @dataclass(frozen=True, slots=True)
 class SpriteDrawCommand:
@@ -101,7 +103,9 @@ class SpriteOverlayRenderer:
                         pixmap=pixmap,
                         mode=mode,
                         source_order=source_order,
-                        sorting_layer=str(getattr(component, "sorting_layer", "Default")),
+                        sorting_layer=normalize_sorting_layer(
+                            getattr(component, "sorting_layer", "Default")
+                        ),
                         order_in_layer=int(getattr(component, "order_in_layer", getattr(component, "layer", 0))),
                         tint=self._normalized_tint(component),
                         alpha=max(0, min(255, int(getattr(component, "alpha", 255)))),
@@ -118,9 +122,15 @@ class SpriteOverlayRenderer:
         sprites: list[SpriteDrawCommand],
     ) -> None:
         """Desenha os sprites coletados usando o mesmo transform da viewport."""
-        # source_order continua sendo a autoridade visual nesta fase. Os campos
-        # de sorting já estão normalizados, mas ainda não alteram a composição.
-        for command in sprites:
+        ordered_sprites = sorted(
+            sprites,
+            key=lambda command: sorting_key(
+                command.sorting_layer,
+                command.order_in_layer,
+                command.source_order,
+            ),
+        )
+        for command in ordered_sprites:
             obj = command.obj
             pixmap = command.pixmap
             mode = command.mode
