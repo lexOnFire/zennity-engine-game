@@ -16,9 +16,14 @@ CONFIG = {
 def on_start(game):
     game.state.update({"health": CONFIG["max_health"], "coins": 0, "status": "playing"})
     game.log("JOGO INICIADO | A/D: mover | ESPAÇO: pular | Colete 5 moedas")
+    _refresh_hud(game)
+    game.set_hud("controls", "A/D: mover   ESPAÇO: pular   R: reiniciar", (180, 195, 220), "bottom-left", 19)
 
 
 def on_update(game, dt):
+    if game.key_pressed("r"):
+        game.restart()
+        return
     if game.state.get("status") != "playing":
         return
 
@@ -41,12 +46,14 @@ def on_instruction(game, instruction):
     if command == "add_coin" and game.state.get("status") == "playing":
         game.state["coins"] += int(value or 1)
         game.log(f"MOEDAS: {game.state['coins']}/{CONFIG['coins_to_win']}")
+        _refresh_hud(game)
     elif command == "damage" and game.state.get("status") == "playing":
         _take_damage(game, int(value or 1))
     elif command == "finish" and game.state.get("status") == "playing":
         if game.state.get("coins", 0) >= CONFIG["coins_to_win"]:
             game.state["status"] = "victory"
             game.log("VOCÊ VENCEU! Aperte Stop e Play para jogar novamente.")
+            game.set_hud("result", "VOCÊ VENCEU!  Pressione R para reiniciar", (117, 255, 151), "center", 34)
         else:
             missing = CONFIG["coins_to_win"] - game.state.get("coins", 0)
             game.log(f"A saída está bloqueada. Faltam {missing} moeda(s).")
@@ -55,7 +62,15 @@ def on_instruction(game, instruction):
 def _take_damage(game, amount):
     game.state["health"] = max(0, game.state.get("health", CONFIG["max_health"]) - amount)
     game.log(f"VIDA: {game.state['health']}/{CONFIG['max_health']}")
+    _refresh_hud(game)
     if game.state["health"] <= 0:
         game.state["status"] = "defeat"
         game.log("GAME OVER! Aperte Stop e Play para reiniciar.")
+        game.set_hud("result", "GAME OVER  |  Pressione R para reiniciar", (255, 105, 115), "center", 34)
 
+
+def _refresh_hud(game):
+    health = game.state.get("health", CONFIG["max_health"])
+    coins = game.state.get("coins", 0)
+    game.set_hud("health", f"VIDA: {health}/{CONFIG['max_health']}", (255, 115, 125), "top-left", 24)
+    game.set_hud("coins", f"MOEDAS: {coins}/{CONFIG['coins_to_win']}", (255, 218, 82), "top-right", 24)
