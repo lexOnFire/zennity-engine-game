@@ -113,7 +113,8 @@ class Scene:
 
     def draw_content(self, screen: pygame.Surface) -> None:
         """Desenha somente os GameObjects, sem fundos infinitos."""
-        for go in list(self.game_objects):
+        from engine.graphics.sorting import sorted_scene_objects
+        for go in sorted_scene_objects(self.game_objects):
             go.draw(screen)
 
     def draw(self, screen: pygame.Surface) -> None:
