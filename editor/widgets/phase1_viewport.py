@@ -829,10 +829,16 @@ class Phase1ViewportWidget(ViewportWidget):
         active_tool = self._active_tool()
         object_count = len(self.active_scene.editable_objects) if self.active_scene else 0
         if not self.is_game_view():
-            self.renderer.render_qt_overlays(
+            self.renderer.render_selection_overlays(
                 painter=context.painter,
                 camera=self.camera,
                 selected=selected,
+                active_tool_name=active_tool.value,
+                is_playing=self._is_playing(),
+            )
+            self.renderer.render_hud_overlays(
+                painter=context.painter,
+                camera=self.camera,
                 active_tool_name=active_tool.value,
                 object_count=object_count,
                 grid_size=self.renderer.grid_renderer.grid_size,
@@ -841,7 +847,7 @@ class Phase1ViewportWidget(ViewportWidget):
                 is_playing=self._is_playing(),
             )
         # Mantém a ordem visual histórica: gizmos de transformação ficam por
-        # cima do HUD/outline até serem migrados sem alteração visual.
+        # cima dos overlays de seleção e do HUD.
         if self._should_draw_gizmo(selected):
             if active_tool == EditorTool.MOVE:
                 self.move_gizmo_overlay.draw(context.painter, selected, self.world_to_viewport)
