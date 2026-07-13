@@ -93,7 +93,7 @@ class Phase1ViewportWidget(ViewportWidget):
         self._pipeline_grid_states: list[tuple[Any, bool]] = []
         self._pipeline_real_show_grid: bool = True
         self._pipeline_background_managed: bool = False
-        self._pipeline_modern_sprites: list[tuple[Any, Any, Any]] = []
+        self._pipeline_modern_sprites: list[tuple[Any, Any, Any, str]] = []
         self.sprite_overlay_renderer = SpriteOverlayRenderer()
         self.render_pipeline = self._build_render_pipeline()
 
@@ -782,7 +782,7 @@ class Phase1ViewportWidget(ViewportWidget):
             self.sprite_overlay_renderer.collect(self.active_scene) if use_modern_sprites else []
         )
         self.active_scene._zennity_modern_sprite_component_ids = {
-            id(image) for _, image, _ in self._pipeline_modern_sprites
+            id(component) for _, component, _, _ in self._pipeline_modern_sprites
         }
         return RenderContext(
             viewport=self,
