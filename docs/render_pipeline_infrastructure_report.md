@@ -24,7 +24,11 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
 
 ## Acoplamentos preservados por compatibilidade
 
-- A limpeza/cor de fundo ainda ocorre dentro do desenho da cena legada.
+- `BackgroundPass` agora limpa o framebuffer para Scene 2D, Scene 3D e
+  `RuntimeScene`, preservando respectivamente `(28, 29, 36)` e o
+  `Camera.clear_color`/fallback `(30, 30, 30)`.
+- Cenas desconhecidas continuam usando `draw()` integral como fallback, sem
+  perda de compatibilidade.
 - Sprites continuam tendo o framebuffer Pygame como fonte única; o overlay Qt
   moderno permanece desativado para evitar renderização duplicada.
 - Gizmos de componentes do `GizmoRegistry` ainda são desenhados pelo caminho
@@ -37,7 +41,7 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
 
 ## Próximos candidatos à migração
 
-1. Extrair clear color/fundos infinitos do adaptador legado para `BackgroundPass`.
+1. Migrar fundos infinitos, que continuam pertencendo ao conteúdo da cena.
 2. Criar uma apresentação explícita do framebuffer para liberar a migração dos
    gizmos de componentes para `GizmoPass` sem mudar a ordem visual.
 3. Migrar selection outline e bounding box para unidades independentes do
