@@ -26,6 +26,7 @@ from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QWidget
 
 from editor.interface_smoke_test import InterfaceSmokeTest
 from editor.isolated_viewport import run_viewport
+from editor.runtime.native_ui import normalize_ui, scene_item_to_ui, ui_to_scene_item
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from engine.build import export_development_project
 
@@ -77,6 +78,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._connect_hierarchy_to_viewport()
         self._refresh_hierarchy()
         self._connect_inspector_to_viewport()
+        self.ui_component_header.setVisible(False)
+        self.ui_component_body.setVisible(False)
         self.script_containers = []
         self.add_component_button.clicked.connect(self._open_add_component_menu)
         self.viewport_tabs.currentChanged.connect(self._change_view_mode)
@@ -849,10 +852,20 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 components["scripts"] = list(dict.fromkeys(str(path) for path in snapshot["scripts"]))
             if isinstance(snapshot.get("audio"), dict):
                 components["audio"] = deepcopy(snapshot["audio"])
+            existing_items = components.get("items") if isinstance(components.get("items"), list) else []
+            components["items"] = [
+                deepcopy(item) for item in existing_items
+                if scene_item_to_ui(item) is None
+            ]
+            ui_item = ui_to_scene_item(snapshot.get("ui"))
+            if ui_item is not None:
+                components["items"].append(ui_item)
+            if not components["items"]:
+                components.pop("items", None)
             known_keys = {
                 "id", "name", "x", "y", "w", "h", "rotation", "color", "mesh_type",
                 "renderer_enabled", "material", "texture", "render_layer", "sort_order", "active", "static", "tag", "layer",
-                "rigidbody", "collider", "camera", "audio", "scripts", "component_names",
+                "rigidbody", "collider", "camera", "audio", "scripts", "component_names", "ui",
             }
             editor_data = {
                 key: deepcopy(value) for key, value in snapshot.items()
@@ -913,6 +926,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 for component in components.get("items", []):
                     if isinstance(component, dict):
                         component_names.append(str(component.get("type") or component.get("component_type") or "Component"))
+                        parsed_ui = scene_item_to_ui(component)
+                        if parsed_ui is not None:
+                            snapshot["ui"] = parsed_ui
                 if components.get("scripts"):
                     snapshot["scripts"] = [str(script) for script in components["scripts"]]
                     component_names.extend(f"Script: {script}" for script in components["scripts"])
@@ -1094,6 +1110,17 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.camera_zoom_field.valueChanged.connect(lambda _value: self._send_inspector_camera())
         self.camera_follow_combo.currentTextChanged.connect(lambda _value: self._send_inspector_camera())
         self.camera_color_button.clicked.connect(self._choose_camera_color)
+        self.show_ui_chk.toggled.connect(self._toggle_ui_visibility)
+        self.btn_collapse_ui.clicked.connect(lambda: self.ui_component_body.setVisible(not self.ui_component_body.isVisible()))
+        self.btn_delete_ui.clicked.connect(self._delete_ui_component)
+        self.ui_text_field.editingFinished.connect(self._send_inspector_ui)
+        for field in self.ui_position_fields.values():
+            field.valueChanged.connect(lambda _value: self._send_inspector_ui())
+        self.ui_color_button.clicked.connect(self._choose_ui_color)
+        self.ui_image_button.clicked.connect(self._choose_ui_image)
+        self.ui_interactable_field.toggled.connect(lambda _value: self._send_inspector_ui())
+        self.ui_event_field.editingFinished.connect(self._send_inspector_ui)
+        self.ui_target_combo.currentTextChanged.connect(lambda _value: self._send_inspector_ui())
 
     def _toggle_renderer_component(self, checked: bool) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
@@ -1416,11 +1443,98 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.camera_color_button.setStyleSheet(f"background: rgb({color.red()}, {color.green()}, {color.blue()});")
         self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
 
+    def _toggle_ui_visibility(self, checked: bool) -> None:
+        if self._updating_inspector or self._selected_name not in self._objects_by_name:
+            return
+        ui = self._objects_by_name[self._selected_name].get("ui")
+        if not isinstance(ui, dict):
+            return
+        self._record_history()
+        ui["visible"] = bool(checked)
+        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+
+    def _delete_ui_component(self) -> None:
+        if self._selected_name not in self._objects_by_name:
+            return
+        obj = self._objects_by_name[self._selected_name]
+        if "ui" not in obj:
+            return
+        self._record_history()
+        obj.pop("ui", None)
+        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._update_inspector(self._selected_name)
+
+    def _choose_ui_color(self) -> None:
+        if self._selected_name not in self._objects_by_name:
+            return
+        ui = normalize_ui(self._objects_by_name[self._selected_name].get("ui"))
+        if ui is None:
+            return
+        current = tuple(ui.get("color", (255, 255, 255)))[:3]
+        color = QColorDialog.getColor(QColor(*current), self, "Cor da UI")
+        if not color.isValid():
+            return
+        self._record_history()
+        self._objects_by_name[self._selected_name]["ui"]["color"] = [color.red(), color.green(), color.blue()]
+        self.ui_color_button.setStyleSheet(f"background: rgb({color.red()}, {color.green()}, {color.blue()});")
+        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+
+    def _choose_ui_image(self) -> None:
+        if self._selected_name not in self._objects_by_name:
+            return
+        filename, _ = QFileDialog.getOpenFileName(
+            self, "Selecionar imagem da UI", str(Path.cwd() / "Assets"),
+            "Imagens (*.png *.jpg *.jpeg *.bmp *.webp)",
+        )
+        if not filename:
+            return
+        path = Path(filename)
+        try:
+            value = str(path.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
+        except ValueError:
+            value = str(path.resolve())
+        self.ui_image_path_field.setText(value)
+        self._send_inspector_ui()
+
+    def _send_inspector_ui(self) -> None:
+        if self._updating_inspector or self._selected_name not in self._objects_by_name:
+            return
+        obj = self._objects_by_name[self._selected_name]
+        ui = normalize_ui(obj.get("ui"))
+        if ui is None:
+            return
+        self._record_history()
+        ui.update({key: float(field.value()) for key, field in self.ui_position_fields.items()})
+        ui.update({
+            "visible": self.show_ui_chk.isChecked(),
+            "text": self.ui_text_field.text(),
+            "path": self.ui_image_path_field.text(),
+            "interactable": self.ui_interactable_field.isChecked(),
+            "event": self.ui_event_field.text().strip() or "click",
+            "target": "" if self.ui_target_combo.currentText() == "Este objeto" else self.ui_target_combo.currentText(),
+        })
+        obj["ui"] = ui
+        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+
+    def _ensure_canvas(self) -> None:
+        if any((normalize_ui(obj.get("ui")) or {}).get("type") == "canvas" for obj in self._scene_snapshot):
+            return
+        name = self._unique_name("Canvas")
+        canvas = {
+            "id": str(uuid.uuid4()), "name": name, "x": 0.0, "y": 0.0,
+            "w": 1.0, "h": 1.0, "rotation": 0.0, "color": (255, 255, 255),
+            "mesh_type": "UI", "renderer_enabled": False,
+            "ui": normalize_ui({"type": "canvas"}),
+        }
+        self._scene_snapshot.append(canvas)
+        self._objects_by_name[name] = canvas
+        self._log("INFO", "Canvas criado automaticamente para a interface do jogo")
+
     def _open_add_component_menu(self) -> None:
         if self._selected_name not in self._objects_by_name:
             return
         menu = QMenu(self)
-        for label, component in (("Sprite Renderer", "sprite"), ("Audio Source", "audio"), ("Animator 2D", "animator"), ("Camera 2D", "camera"), ("RigidBody", "rigidbody"), ("Box Collider", "box"), ("Circle Collider", "circle"), ("Script", "script")):
+        for label, component in (("Sprite Renderer", "sprite"), ("Audio Source", "audio"), ("Animator 2D", "animator"), ("Camera 2D", "camera"), ("RigidBody", "rigidbody"), ("Box Collider", "box"), ("Circle Collider", "circle"), ("UI / Canvas", "ui_canvas"), ("UI / Texto", "ui_text"), ("UI / Imagem", "ui_image"), ("UI / Botão", "ui_button"), ("Script", "script")):
             action = menu.addAction(label)
             action.triggered.connect(lambda _checked=False, value=component: self._add_component(value))
         menu.exec(self.add_component_button.mapToGlobal(self.add_component_button.rect().bottomLeft()))
@@ -1467,6 +1581,14 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             names = obj.setdefault("component_names", [])
             if "Camera2D" not in names:
                 names.append("Camera2D")
+        elif component.startswith("ui_"):
+            kind = component.removeprefix("ui_")
+            if kind != "canvas":
+                self._ensure_canvas()
+            obj["ui"] = normalize_ui({"type": kind})
+            obj["renderer_enabled"] = False
+            obj["mesh_type"] = "UI"
+            self._refresh_hierarchy()
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._commands.put({"type": "select_object", "name": self._selected_name})
         self._update_inspector(self._selected_name)
@@ -1626,6 +1748,37 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self.camera_follow_combo.setCurrentText(follow_target if follow_target in self._objects_by_name else "Nenhum")
             bg = (camera or {}).get("background_color", [22, 24, 31])
             self.camera_color_button.setStyleSheet(f"background: rgb({int(bg[0])}, {int(bg[1])}, {int(bg[2])});")
+
+            ui = normalize_ui(obj.get("ui"))
+            self.ui_component_header.setVisible(ui is not None)
+            self.ui_component_body.setVisible(ui is not None)
+            if ui is not None:
+                kind = str(ui["type"])
+                labels = {"canvas": "🖥 Canvas", "text": "🔤 UI Text", "image": "🖼 UI Image", "button": "🔘 UI Button"}
+                self.show_ui_chk.setText(labels[kind])
+                self.show_ui_chk.setChecked(bool(ui.get("visible", True)))
+                self.ui_type_field.setText({"canvas": "Canvas", "text": "Texto", "image": "Imagem", "button": "Botão"}[kind])
+                self.ui_text_field.setText(str(ui.get("text", "")))
+                self.ui_text_field.setEnabled(kind in {"text", "button"})
+                for key, field in self.ui_position_fields.items():
+                    field.setValue(float(ui.get(key, 0)))
+                    field.setEnabled(kind != "canvas" and (key != "font_size" or kind in {"text", "button"}) and (key != "alpha" or kind == "image"))
+                color = tuple(ui.get("color", (255, 255, 255)))[:3]
+                self.ui_color_button.setEnabled(kind in {"text", "image", "button"})
+                self.ui_color_button.setStyleSheet(f"background: rgb({int(color[0])}, {int(color[1])}, {int(color[2])});")
+                self.ui_image_path_field.setText(str(ui.get("path", "")))
+                self.ui_image_path_field.setEnabled(kind == "image")
+                self.ui_image_button.setEnabled(kind == "image")
+                self.ui_interactable_field.setChecked(bool(ui.get("interactable", True)))
+                self.ui_interactable_field.setEnabled(kind == "button")
+                self.ui_event_field.setText(str(ui.get("event", "click")))
+                self.ui_event_field.setEnabled(kind == "button")
+                self.ui_target_combo.clear()
+                self.ui_target_combo.addItem("Este objeto")
+                self.ui_target_combo.addItems([object_name for object_name in self._objects_by_name if object_name != name])
+                target = str(ui.get("target", ""))
+                self.ui_target_combo.setCurrentText(target if target in self._objects_by_name else "Este objeto")
+                self.ui_target_combo.setEnabled(kind == "button")
 
             # Limpa widgets de scripts anteriores
             for h_w, b_w in self.script_containers:

@@ -17,7 +17,8 @@ def on_start(game):
     game.state.update({"health": CONFIG["max_health"], "coins": 0, "status": "playing"})
     game.log("JOGO INICIADO | A/D: mover | ESPAÇO: pular | Colete 5 moedas")
     _refresh_hud(game)
-    game.set_hud("controls", "A/D: mover   ESPAÇO: pular   R: reiniciar", (180, 195, 220), "bottom-left", 19)
+    _set_ui_text(game, "HUD_Controles", "A/D: mover   ESPAÇO: pular   R: reiniciar", "controls", (180, 195, 220), "bottom-left", 19)
+    _set_ui_text(game, "HUD_Resultado", "", "result", (255, 255, 255), "center", 34)
 
 
 def on_update(game, dt):
@@ -43,7 +44,9 @@ def on_instruction(game, instruction):
     command = instruction.get("command")
     value = instruction.get("value")
 
-    if command == "add_coin" and game.state.get("status") == "playing":
+    if command == "restart_game":
+        game.restart()
+    elif command == "add_coin" and game.state.get("status") == "playing":
         game.state["coins"] += int(value or 1)
         game.log(f"MOEDAS: {game.state['coins']}/{CONFIG['coins_to_win']}")
         _refresh_hud(game)
@@ -53,7 +56,7 @@ def on_instruction(game, instruction):
         if game.state.get("coins", 0) >= CONFIG["coins_to_win"]:
             game.state["status"] = "victory"
             game.log("VOCÊ VENCEU! Aperte Stop e Play para jogar novamente.")
-            game.set_hud("result", "VOCÊ VENCEU!  Pressione R para reiniciar", (117, 255, 151), "center", 34)
+            _set_ui_text(game, "HUD_Resultado", "VOCÊ VENCEU!  Pressione R para reiniciar", "result", (117, 255, 151), "center", 34)
         else:
             missing = CONFIG["coins_to_win"] - game.state.get("coins", 0)
             game.log(f"A saída está bloqueada. Faltam {missing} moeda(s).")
@@ -66,11 +69,19 @@ def _take_damage(game, amount):
     if game.state["health"] <= 0:
         game.state["status"] = "defeat"
         game.log("GAME OVER! Aperte Stop e Play para reiniciar.")
-        game.set_hud("result", "GAME OVER  |  Pressione R para reiniciar", (255, 105, 115), "center", 34)
+        _set_ui_text(game, "HUD_Resultado", "GAME OVER  |  Pressione R para reiniciar", "result", (255, 105, 115), "center", 34)
 
 
 def _refresh_hud(game):
     health = game.state.get("health", CONFIG["max_health"])
     coins = game.state.get("coins", 0)
-    game.set_hud("health", f"VIDA: {health}/{CONFIG['max_health']}", (255, 115, 125), "top-left", 24)
-    game.set_hud("coins", f"MOEDAS: {coins}/{CONFIG['coins_to_win']}", (255, 218, 82), "top-right", 24)
+    _set_ui_text(game, "HUD_Vida", f"VIDA: {health}/{CONFIG['max_health']}", "health", (255, 115, 125), "top-left", 24)
+    _set_ui_text(game, "HUD_Moedas", f"MOEDAS: {coins}/{CONFIG['coins_to_win']}", "coins", (255, 218, 82), "top-right", 24)
+
+
+def _set_ui_text(game, object_name, text, legacy_key, color, position, font_size):
+    """Usa UI nativa e mantém scripts compatíveis com runtimes antigos."""
+    if hasattr(game, "set_ui_text"):
+        game.set_ui_text(object_name, text)
+    else:
+        game.set_hud(legacy_key, text, color, position, font_size)

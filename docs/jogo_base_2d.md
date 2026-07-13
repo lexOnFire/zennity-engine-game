@@ -10,7 +10,8 @@ Cena pronta: `Assets/Scenes/JogoBase2D.zscene`
 4. Use **A/D** ou as setas para andar, **Espaço** para pular e **R** para reiniciar.
 5. Colete as cinco moedas e alcance o portal roxo.
 
-Vida, moedas, controles, vitória e derrota aparecem no HUD da Game View. O
+Vida, moedas, controles, vitória e derrota aparecem no HUD nativo da Game View.
+O botão **Reiniciar** demonstra eventos de UI enviados ao script do Player. O
 Console continua registrando os principais eventos.
 
 ## Sistemas incluídos
@@ -22,6 +23,10 @@ Console continua registrando os principais eventos.
 - Três pontos de vida.
 - Portal com condição de vitória.
 - HUD de vida, moedas, controles e resultado.
+- Componentes nativos Canvas, UI Text, UI Image e UI Button.
+- Edição dos componentes de UI pelo Inspector e persistência na cena.
+- Atualização simples de texto pelo script com `game.set_ui_text("Objeto", "Texto")`.
+- Botão de UI com alvo e nome de evento configuráveis.
 - Reinício instantâneo com R.
 - Queda, derrota e reinício pelo Play Mode.
 - Câmera, colliders, triggers e organização por tags.

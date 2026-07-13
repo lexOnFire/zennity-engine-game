@@ -11,6 +11,8 @@ from pathlib import Path
 from queue import Empty
 from typing import Any
 
+from editor.runtime.native_ui import NativeUIRenderer, normalize_ui
+
 
 class PlayScriptAPI:
     """API pequena e estável entregue aos scripts no Play Mode."""
@@ -154,6 +156,10 @@ class PlayScriptAPI:
     def remove_hud(self, key: str) -> None:
         self.send("remove_hud", str(key))
 
+    def set_ui_text(self, object_name: str, text: str) -> None:
+        """Atualiza um componente UI Text pelo nome do objeto da Hierarchy."""
+        self.send("set_ui_text", {"object": str(object_name), "text": str(text)})
+
     def restart(self) -> None:
         """Restaura o snapshot capturado quando o Play Mode começou."""
         self.send("restart_scene")
@@ -273,6 +279,7 @@ def run_viewport(
     }
     last_stats_ms = 0
     texture_cache: dict[str, tuple[float, Any]] = {}
+    native_ui = NativeUIRenderer()
 
     def game_camera() -> dict[str, Any] | None:
         return next(
@@ -973,6 +980,19 @@ def run_viewport(
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and playing and view_mode == "game":
+                clicked = native_ui.button_at(objects, event.pos)
+                if clicked is not None:
+                    owner, ui = clicked
+                    target_name = str(ui.get("target", "")) or str(owner.get("name", ""))
+                    target = objects.get(target_name)
+                    event_name = str(ui.get("event", "click")) or "click"
+                    if target is not None:
+                        target.setdefault("script_instructions", []).append({
+                            "command": event_name,
+                            "value": {"source": owner.get("name"), "type": "ui_button"},
+                        })
+                    _send(events, {"type": "script_log", "level": "INFO", "message": f"UI Button: {owner.get('name')} → {target_name}.{event_name}"})
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 2 and not playing and view_mode == "scene":
                 panning = True
                 pan_last = event.pos
@@ -1219,6 +1239,12 @@ def run_viewport(
                                     hud_entries[hud_key] = dict(val)
                                 elif cmd == "remove_hud":
                                     hud_entries.pop(str(val), None)
+                                elif cmd == "set_ui_text" and isinstance(val, dict):
+                                    target = objects.get(str(val.get("object", "")))
+                                    target_ui = normalize_ui(target.get("ui")) if target is not None else None
+                                    if target is not None and target_ui is not None and target_ui["type"] in {"text", "button"}:
+                                        target_ui["text"] = str(val.get("text", ""))
+                                        target["ui"] = target_ui
                                 elif cmd == "restart_scene":
                                     restart_requested = True
 
@@ -1484,6 +1510,8 @@ def run_viewport(
                         handle_surf.fill((125, 212, 255))
                         rotated_handle = pygame.transform.rotate(handle_surf, -angle)
                         screen.blit(rotated_handle, rotated_handle.get_rect(center=(px, py)))
+        if view_mode == "game":
+            native_ui.draw(objects, screen)
         if playing and hud_entries:
             grouped: dict[str, list[dict[str, Any]]] = {}
             for entry in hud_entries.values():

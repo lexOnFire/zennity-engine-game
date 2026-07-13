@@ -26,6 +26,7 @@ class FakeGame:
         self.logs = []
         self.instructions = []
         self.hud = {}
+        self.ui_text = {}
 
     def log(self, message):
         self.logs.append(message)
@@ -50,6 +51,9 @@ class FakeGame:
         self.hud[key] = {
             "text": text, "color": color, "position": position, "font_size": font_size,
         }
+
+    def set_ui_text(self, object_name, text):
+        self.ui_text[object_name] = text
 
     def restart(self):
         self.state["restart_requested"] = True
@@ -79,7 +83,7 @@ def test_player_coin_damage_and_victory_flow() -> None:
 
     assert player.state == {"health": 2, "coins": 5, "status": "victory"}
     assert any("VOCÊ VENCEU" in message for message in player.logs)
-    assert "health" in player.hud and "coins" in player.hud and "result" in player.hud
+    assert {"HUD_Vida", "HUD_Moedas", "HUD_Resultado"} <= set(player.ui_text)
 
 
 def test_coin_deactivates_and_notifies_player() -> None:
@@ -99,11 +103,24 @@ def test_play_api_supports_hud_destroy_and_restart() -> None:
     obj = {"name": "Player", "active": True}
     game = PlayScriptAPI("Player", obj, None)
     game.set_hud("health", "VIDA: 3", (255, 100, 100), "top-left", 24)
+    game.set_ui_text("HUD_Vida", "VIDA: 3")
     game.remove_hud("health")
     game.restart()
     game.destroy()
 
     assert not game.active
     assert [item["command"] for item in obj["script_instructions"]] == [
-        "set_hud", "remove_hud", "restart_scene",
+        "set_hud", "set_ui_text", "remove_hud", "restart_scene",
     ]
+
+
+def test_base_scene_demonstrates_all_native_ui_components() -> None:
+    scene = json.loads(SCENE_PATH.read_text(encoding="utf-8"))
+    ui_types = {
+        component["type"]
+        for obj in scene["objects"]
+        for component in obj.get("components", {}).get("items", [])
+        if component.get("type") in {"Canvas", "Label", "Image", "Button"}
+    }
+
+    assert ui_types == {"Canvas", "Label", "Image", "Button"}
