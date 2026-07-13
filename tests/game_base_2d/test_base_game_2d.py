@@ -1,0 +1,84 @@
+import importlib.util
+import json
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[2]
+SCENE_PATH = ROOT / "Assets/Scenes/JogoBase2D.zscene"
+
+
+def _load_script(name: str):
+    path = ROOT / f"Assets/Scripts/base_game_2d/{name}.py"
+    spec = importlib.util.spec_from_file_location(f"base_game_{name}", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class FakeGame:
+    def __init__(self, tag="Player"):
+        self.tag = tag
+        self.x = 120.0
+        self.y = 590.0
+        self.rotation = 0.0
+        self.active = True
+        self.state = {}
+        self.logs = []
+        self.instructions = []
+
+    def log(self, message):
+        self.logs.append(message)
+
+    def axis(self, negative, positive):
+        return 0
+
+    def move(self, dx, dy=0.0):
+        self.x += dx
+        self.y += dy
+
+    def key_pressed(self, key):
+        return False
+
+    def jump(self, force):
+        self.state["jump_force"] = force
+
+    def send(self, command, value=None):
+        self.instructions.append({"command": command, "value": value})
+
+
+def test_scene_is_complete_and_references_existing_scripts() -> None:
+    scene = json.loads(SCENE_PATH.read_text(encoding="utf-8"))
+    objects = scene["objects"]
+    names = {obj["name"] for obj in objects}
+
+    assert {"MainCamera", "Player", "Chao", "Inimigo", "PortalFinal"} <= names
+    assert sum(obj["tag"] == "Coin" for obj in objects) == 5
+    for obj in objects:
+        for script in obj.get("components", {}).get("scripts", []):
+            assert (ROOT / script).is_file(), script
+
+
+def test_player_coin_damage_and_victory_flow() -> None:
+    player_script = _load_script("player")
+    player = FakeGame()
+    player_script.on_start(player)
+
+    for _ in range(5):
+        player_script.on_instruction(player, {"command": "add_coin", "value": 1})
+    player_script.on_instruction(player, {"command": "damage", "value": 1})
+    player_script.on_instruction(player, {"command": "finish", "value": None})
+
+    assert player.state == {"health": 2, "coins": 5, "status": "victory"}
+    assert any("VOCÊ VENCEU" in message for message in player.logs)
+
+
+def test_coin_deactivates_and_notifies_player() -> None:
+    coin_script = _load_script("coin")
+    coin = FakeGame(tag="Coin")
+    player = FakeGame()
+
+    coin_script.on_trigger(coin, player)
+
+    assert not coin.active
+    assert player.instructions == [{"command": "add_coin", "value": 1}]
+
