@@ -10,6 +10,9 @@ Edite apenas a seção **CONFIGURAÇÃO** no topo de cada script.
 - `game.key_pressed("space")` verifica o primeiro toque.
 - `game.state` guarda valores do script.
 - `game.destroy()` remove o objeto.
+- `game.set_hud("vida", "VIDA: 3")` cria ou atualiza texto na Game View.
+- `game.remove_hud("vida")` remove um texto do HUD.
+- `game.restart()` restaura a cena ao estado inicial do Play Mode.
 
 Eventos de Collider:
 
@@ -34,3 +37,13 @@ def on_update(game, dt):
     direcao = game.axis("left", "right")
     game.move(direcao * VELOCIDADE * dt)
 ```
+
+HUD simples:
+
+```python
+def on_start(game):
+    game.set_hud("objetivo", "Colete todas as moedas", (255, 220, 80), "top-left")
+```
+
+Posições disponíveis: `top-left`, `top-right`, `bottom-left`, `bottom-right` e
+`center`.
