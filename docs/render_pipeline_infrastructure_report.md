@@ -29,6 +29,9 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
   framebuffer legado durante o mesmo frame.
 - O passe de sprites é executado antes do `GridPass`, conservando a grade acima
   da imagem como acontecia quando ela integrava o framebuffer Pygame.
+- Adaptadores distintos agora aceitam `Image`, `engine.graphics.renderer` e
+  `engine.graphics.renderer2d`, preservando as regras atuais de escala, rotação,
+  alpha e flip de cada implementação.
 - Preparação do frame e chamadas antigas da Phase1 Viewport foram movidas para
   delegates privados usados pelos passes.
 
@@ -55,6 +58,6 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
 
 ## Próximos candidatos à migração
 
-1. Expandir o `SpriteOverlayPass` gradualmente para `SpriteRenderer` baseado em
-   Surface, preservando flip, tint e sorting layers.
-2. Substituir os delegates temporários por adapters tipados por componente.
+1. Consolidar sorting layers e tint em um contrato único antes de ativá-los,
+   pois os renderizadores legados ainda divergem nesses campos.
+2. Substituir os delegates restantes por adapters tipados por componente.
