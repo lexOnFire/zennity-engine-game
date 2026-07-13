@@ -37,6 +37,8 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
 - Scene View e Play Mode agora compartilham `engine.graphics.sorting`, com
   camadas `Background`, `Midground`, `Default`, `Foreground` e `UI`, seguidas
   por `Order in Layer` e pela ordem original como desempate estável.
+- Tint RGB multiplicativo e alpha combinado agora usam o contrato comum
+  `engine.graphics.tint` no Qt, `Image` e nos dois `SpriteRenderer` Pygame.
 - Preparação do frame e chamadas antigas da Phase1 Viewport foram movidas para
   delegates privados usados pelos passes.
 
@@ -63,5 +65,4 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
 
 ## Próximos candidatos à migração
 
-1. Definir composição de tint equivalente em Pygame e Qt antes de habilitá-la.
-2. Substituir os delegates restantes por adapters tipados por componente.
+1. Substituir os delegates restantes por adapters tipados por componente.
