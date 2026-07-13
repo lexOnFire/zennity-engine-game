@@ -103,7 +103,11 @@ class SpriteOverlayPass(_CallbackPass):
 
 
 class GizmoPass(_CallbackPass):
-    """Ponto de entrada do GizmoRegistry e gizmos modernos."""
+    """Ponto de entrada dos gizmos de componentes do GizmoRegistry."""
+
+
+class TransformGizmoPass(_CallbackPass):
+    """Desenha os gizmos Qt das ferramentas de transformação."""
 
 
 class OverlayPass(_CallbackPass):
