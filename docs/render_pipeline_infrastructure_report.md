@@ -20,6 +20,8 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
   delega para `GizmoRegistry.draw()` antes da apresentação do framebuffer.
 - Selection outline e bounding box agora são unidades explícitas do
   `OverlayPass`, separadas do desenho de HUD e coordenadas.
+- Gizmos Qt de Move e Rotate foram movidos para `TransformGizmoPass`, executado
+  depois do `OverlayPass` para preservar sua sobreposição visual histórica.
 - Preparação do frame e chamadas antigas da Phase1 Viewport foram movidas para
   delegates privados usados pelos passes.
 
@@ -37,8 +39,8 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
   perda de compatibilidade.
 - Sprites continuam tendo o framebuffer Pygame como fonte única; o overlay Qt
   moderno permanece desativado para evitar renderização duplicada.
-- Gizmos Qt de transformação permanecem junto ao delegate final de overlays
-  para conservar sua ordem visual histórica sobre HUD e outlines.
+- `TransformGizmoPass` ainda delega diretamente aos overlays Qt concretos de
+  Move e Rotate mantidos pela viewport.
 - `ViewportRenderer.render_qt_overlays()` permanece como wrapper de
   compatibilidade, delegando para seleção e HUD independentes.
 - A captura/restauração da visibilidade do grid ainda depende da estrutura das
@@ -49,6 +51,4 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
 1. Migrar fundos infinitos, que continuam pertencendo ao conteúdo da cena.
 2. Conectar o SpriteRenderer moderno ao `SpriteOverlayPass` somente depois de
    remover, com testes visuais, a fonte equivalente no caminho legado.
-3. Migrar os gizmos Qt de transformação para uma etapa dedicada após separar
-   HUD e selection overlays sem alterar sua ordem visual.
-4. Substituir os delegates temporários por adapters tipados por componente.
+3. Substituir os delegates temporários por adapters tipados por componente.
