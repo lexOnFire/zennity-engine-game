@@ -783,6 +783,13 @@ class Phase1ViewportWidget(ViewportWidget):
         )
 
     def _render_background_pass(self, context: RenderContext) -> None:
+        draw_background = getattr(context.active_scene, "_zennity_draw_background", None)
+        if not callable(draw_background):
+            draw_background = getattr(context.active_scene, "draw_background", None)
+        if callable(draw_background):
+            self._pipeline_background_managed = True
+            draw_background(context.pygame_surface)
+            return
         color = getattr(context.active_scene, "_zennity_background_color", None)
         if color is None and callable(getattr(context.active_scene, "draw_content", None)):
             try:
