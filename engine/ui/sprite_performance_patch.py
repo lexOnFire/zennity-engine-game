@@ -96,9 +96,13 @@ def apply_sprite_performance_patch(ImageComponent: type, InfiniteBackground: typ
             return
         alpha = max(0, min(255, int(getattr(self, "alpha", 255))))
         rz = float(getattr(transform, "rz", 0.0))
-        surface = ImageComponent.transformed_surface(getattr(self, "sprite_path", ""), width, height, alpha, rz)
+        # A cache mantém apenas transformações geométricas; tint é aplicado em
+        # uma cópia para não contaminar outros componentes que usam a imagem.
+        surface = ImageComponent.transformed_surface(getattr(self, "sprite_path", ""), width, height, 255, rz)
         if surface is None:
             return
+        from engine.graphics.tint import apply_pygame_tint
+        surface = apply_pygame_tint(surface, getattr(self, "color", (255, 255, 255)), alpha)
         rect = surface.get_rect(center=(int(x), int(y)))
         screen.blit(surface, rect.topleft)
 
