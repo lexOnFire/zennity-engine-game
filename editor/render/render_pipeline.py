@@ -90,6 +90,10 @@ class LegacyScenePass(RenderPass):
         self._adapter.draw(context)
 
 
+class FramebufferPresentPass(_CallbackPass):
+    """Apresenta no Qt o framebuffer Pygame já concluído."""
+
+
 class GridPass(_CallbackPass):
     """Delega exclusivamente para o desenho do GridRenderer."""
 
