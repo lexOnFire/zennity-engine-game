@@ -15,7 +15,10 @@ from typing import Any
 class PlayScriptAPI:
     """API pequena e estável entregue aos scripts no Play Mode."""
 
-    _KEY_ALIASES = {"a": "left", "d": "right", "w": "up", "s": "down", "space": "jump"}
+    _KEY_ALIASES = {
+        "a": "left", "d": "right", "w": "up", "s": "down",
+        "space": "jump", "r": "restart",
+    }
 
     def __init__(self, name: str, obj: dict[str, Any], events: Any, world: dict[str, dict[str, Any]] | None = None) -> None:
         self.name = name
@@ -134,6 +137,31 @@ class PlayScriptAPI:
     def send(self, command: str, value: Any = None) -> None:
         self.obj.setdefault("script_instructions", []).append({"command": str(command), "value": value})
 
+    def set_hud(
+        self,
+        key: str,
+        text: str,
+        color: tuple[int, int, int] = (255, 255, 255),
+        position: str = "top-left",
+        font_size: int = 22,
+    ) -> None:
+        """Cria ou atualiza um texto persistente na Game View."""
+        self.send("set_hud", {
+            "key": str(key), "text": str(text), "color": tuple(color[:3]),
+            "position": str(position), "font_size": int(font_size),
+        })
+
+    def remove_hud(self, key: str) -> None:
+        self.send("remove_hud", str(key))
+
+    def restart(self) -> None:
+        """Restaura o snapshot capturado quando o Play Mode começou."""
+        self.send("restart_scene")
+
+    def destroy(self) -> None:
+        """Desativa o objeto no Play Mode atual."""
+        self.active = False
+
     def log(self, message: str) -> None:
         _send(self._events, {"type": "script_log", "level": "INFO", "message": f"{self.name}: {message}"})
 
@@ -238,7 +266,11 @@ def run_viewport(
     active_contacts: dict[tuple[str, str], bool] = {}
     audio_channels: dict[str, Any] = {}
     audio_sounds: dict[str, Any] = {}
-    forwarded_input = {key: False for key in ("left", "right", "up", "down", "jump")}
+    hud_entries: dict[str, dict[str, Any]] = {}
+    restart_requested = False
+    forwarded_input = {
+        key: False for key in ("left", "right", "up", "down", "jump", "restart")
+    }
     last_stats_ms = 0
     texture_cache: dict[str, tuple[float, Any]] = {}
 
@@ -778,6 +810,7 @@ def run_viewport(
                         paused = False
                         velocities_y = {}
                         grounded = {}
+                        hud_entries.clear()
                         start_scripts()
                         _send(events, {"type": "play_state", "state": "play"})
                     elif paused:
@@ -804,6 +837,7 @@ def run_viewport(
                         paused = False
                         velocities_y = {}
                         grounded = {}
+                        hud_entries.clear()
                         _send(events, {"type": "play_state", "state": "edit"})
                         _send(events, {"type": "scene_snapshot", "objects": list(objects.values())})
                 elif command.get("type") == "stop_all_audio":
@@ -1151,6 +1185,7 @@ def run_viewport(
                 "up": bool(forwarded_input["up"] or keys[pygame.K_w] or keys[pygame.K_UP]),
                 "down": bool(forwarded_input["down"] or keys[pygame.K_s] or keys[pygame.K_DOWN]),
                 "jump": bool(forwarded_input["jump"] or keys[pygame.K_SPACE]),
+                "restart": bool(forwarded_input["restart"] or keys[pygame.K_r]),
             }
             for name, instances in list(script_instances.items()):
                 obj = objects.get(name)
@@ -1179,6 +1214,13 @@ def run_viewport(
                                     obj["_current_animation_name"] = "Nenhum"
                                 elif cmd == "play_sound" and val:
                                     play_audio_file(f"script:{name}", str(val))
+                                elif cmd == "set_hud" and isinstance(val, dict):
+                                    hud_key = str(val.get("key", "default"))
+                                    hud_entries[hud_key] = dict(val)
+                                elif cmd == "remove_hud":
+                                    hud_entries.pop(str(val), None)
+                                elif cmd == "restart_scene":
+                                    restart_requested = True
 
                                 if callable(simple_instruction_hook):
                                     simple_instruction_hook(api, instruction)
@@ -1197,6 +1239,16 @@ def run_viewport(
                 if obj.pop("_jump_requested", False) and grounded.get(name, False):
                     velocities_y[name] = -float(obj.pop("_jump_force", 420.0))
                     grounded[name] = False
+            if restart_requested:
+                stop_scripts()
+                objects.clear()
+                objects.update(deepcopy(edit_snapshot))
+                velocities_y.clear()
+                grounded.clear()
+                active_contacts.clear()
+                hud_entries.clear()
+                restart_requested = False
+                start_scripts()
             static_colliders = [
                 obj for obj in objects.values()
                 if obj.get("collider")
@@ -1432,6 +1484,40 @@ def run_viewport(
                         handle_surf.fill((125, 212, 255))
                         rotated_handle = pygame.transform.rotate(handle_surf, -angle)
                         screen.blit(rotated_handle, rotated_handle.get_rect(center=(px, py)))
+        if playing and hud_entries:
+            grouped: dict[str, list[dict[str, Any]]] = {}
+            for entry in hud_entries.values():
+                grouped.setdefault(str(entry.get("position", "top-left")), []).append(entry)
+            for position, entries in grouped.items():
+                for index, entry in enumerate(entries):
+                    font_size = max(12, min(72, int(entry.get("font_size", 22))))
+                    font = pygame.font.Font(None, font_size)
+                    color = tuple(entry.get("color", (255, 255, 255)))[:3]
+                    text_surface = font.render(str(entry.get("text", "")), True, color)
+                    padding = 10
+                    panel = pygame.Surface(
+                        (text_surface.get_width() + padding * 2, text_surface.get_height() + padding),
+                        pygame.SRCALPHA,
+                    )
+                    panel.fill((10, 14, 24, 185))
+                    panel.blit(text_surface, (padding, padding // 2))
+                    margin, gap = 14, 6
+                    if position == "top-right":
+                        px = width - panel.get_width() - margin
+                        py = margin + index * (panel.get_height() + gap)
+                    elif position == "center":
+                        px = (width - panel.get_width()) // 2
+                        py = (height - panel.get_height()) // 2 + index * (panel.get_height() + gap)
+                    elif position == "bottom-left":
+                        px = margin
+                        py = height - margin - (index + 1) * (panel.get_height() + gap)
+                    elif position == "bottom-right":
+                        px = width - panel.get_width() - margin
+                        py = height - margin - (index + 1) * (panel.get_height() + gap)
+                    else:
+                        px = margin
+                        py = margin + index * (panel.get_height() + gap)
+                    screen.blit(panel, (px, py))
         pygame.display.flip()
         clock.tick(60)
         now_ms = pygame.time.get_ticks()
