@@ -164,8 +164,11 @@ class GameObject:
     def draw(self, screen: pygame.Surface) -> None:
         if not self.active:
             return
+        modern_sprite_ids = getattr(self.scene, "_zennity_modern_sprite_component_ids", ())
         for comp in self.components:
             if getattr(comp, "type_name", "") == "InfiniteBackground":
+                continue
+            if id(comp) in modern_sprite_ids:
                 continue
             if getattr(comp, "enabled", True):
                 comp.draw(screen)
