@@ -89,6 +89,7 @@ class Phase1ViewportWidget(ViewportWidget):
         self.view_mode: str = "scene"
         self._pipeline_grid_states: list[tuple[Any, bool]] = []
         self._pipeline_real_show_grid: bool = True
+        self._pipeline_background_managed: bool = False
         self.render_pipeline = self._build_render_pipeline()
 
     def _build_render_pipeline(self) -> RenderPipeline:
@@ -778,11 +779,25 @@ class Phase1ViewportWidget(ViewportWidget):
         )
 
     def _render_background_pass(self, context: RenderContext) -> None:
-        # Compatibilidade: o clear_color ainda pertence ao draw da cena legada.
-        return None
+        color = getattr(context.active_scene, "_zennity_background_color", None)
+        if color is None and callable(getattr(context.active_scene, "draw_content", None)):
+            try:
+                from engine.graphics.camera import Camera
+                main_camera = Camera.main
+            except Exception:
+                main_camera = None
+            color = tuple(main_camera.clear_color) if main_camera is not None else (30, 30, 30)
+        self._pipeline_background_managed = color is not None
+        if self._pipeline_background_managed:
+            context.pygame_surface.fill(color)
 
     def _render_legacy_scene_pass(self, context: RenderContext) -> None:
-        self._draw_legacy_framebuffer()
+        draw_content = None
+        if self._pipeline_background_managed:
+            draw_content = getattr(context.active_scene, "_zennity_draw_content", None)
+            if not callable(draw_content):
+                draw_content = getattr(context.active_scene, "draw_content", None)
+        self._draw_legacy_framebuffer(scene_draw=draw_content)
         self._restore_grid_state(self._pipeline_grid_states)
         self._present_legacy_framebuffer(context.painter)
 
