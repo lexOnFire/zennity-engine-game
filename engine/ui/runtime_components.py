@@ -162,9 +162,8 @@ class ImageComponent(UIElement):
         height = max(1, int(abs(float(transform.scale[1]) * zoom)))
         if surface.get_size() != (width, height):
             surface = pygame.transform.scale(surface, (width, height))
-        if self.alpha < 255:
-            surface = surface.copy()
-            surface.set_alpha(max(0, min(255, int(self.alpha))))
+        from engine.graphics.tint import apply_pygame_tint
+        surface = apply_pygame_tint(surface, self.color, self.alpha)
         rz = getattr(transform, "rz", 0.0)
         if rz != 0.0:
             surface = pygame.transform.rotate(surface, -rz)
