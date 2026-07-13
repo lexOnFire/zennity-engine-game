@@ -32,6 +32,8 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
 - Adaptadores distintos agora aceitam `Image`, `engine.graphics.renderer` e
   `engine.graphics.renderer2d`, preservando as regras atuais de escala, rotação,
   alpha e flip de cada implementação.
+- `SpriteDrawCommand` normaliza sorting layer, order, tint, alpha e flip sem
+  ativar semânticas que ainda divergem entre os renderizadores legados.
 - Preparação do frame e chamadas antigas da Phase1 Viewport foram movidas para
   delegates privados usados pelos passes.
 
@@ -58,6 +60,7 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
 
 ## Próximos candidatos à migração
 
-1. Consolidar sorting layers e tint em um contrato único antes de ativá-los,
-   pois os renderizadores legados ainda divergem nesses campos.
-2. Substituir os delegates restantes por adapters tipados por componente.
+1. Definir a política oficial de sorting layers e ativá-la simultaneamente no
+   Scene View e no Play Mode.
+2. Definir composição de tint equivalente em Pygame e Qt antes de habilitá-la.
+3. Substituir os delegates restantes por adapters tipados por componente.
