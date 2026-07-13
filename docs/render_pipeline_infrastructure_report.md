@@ -41,6 +41,10 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
   `engine.graphics.tint` no Qt, `Image` e nos dois `SpriteRenderer` Pygame.
 - Background, cena legada, grid, gizmos e overlays agora passam por adaptadores
   tipados próprios; a viewport deixou de conter a implementação desses passes.
+- `FramePreparationAdapter` assume criação/limpeza do contexto, câmera, grid e
+  coleta de sprites; `FramebufferPresentRendererAdapter` assume a apresentação.
+- `SpriteRendererAdapter` liga o passe de sprites aos comandos já preparados,
+  removendo o último callback de renderização mantido pela viewport.
 - Preparação do frame e chamadas antigas da Phase1 Viewport foram movidas para
   delegates privados usados pelos passes.
 
@@ -67,5 +71,4 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
 
 ## Próximos candidatos à migração
 
-1. Extrair também apresentação do framebuffer e preparação do frame para
-   adaptadores próprios, eliminando os dois callbacks restantes da viewport.
+1. Introduzir métricas opcionais por passe sem alterar sua execução ou desenho.
