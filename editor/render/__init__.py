@@ -20,6 +20,7 @@ from .render_pipeline import (
     OverlayPass,
     RenderContext,
     RenderPass,
+    RenderPassMetrics,
     RenderPipeline,
     SpriteOverlayPass,
     TransformGizmoPass,
@@ -30,6 +31,6 @@ __all__ = [
     "FramebufferPresentRendererAdapter", "FramePreparationAdapter",
     "GizmoPass", "GizmoRendererAdapter", "GridPass", "GridRendererAdapter", "LegacySceneAdapter",
     "LegacySceneRendererAdapter", "OverlayRendererAdapter", "SpriteRendererAdapter",
-    "LegacyScenePass", "OverlayPass", "RenderContext", "RenderPass",
+    "LegacyScenePass", "OverlayPass", "RenderContext", "RenderPass", "RenderPassMetrics",
     "RenderPipeline", "SpriteOverlayPass", "TransformGizmoPass",
 ]
