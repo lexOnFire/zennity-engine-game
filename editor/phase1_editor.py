@@ -14,7 +14,6 @@ from editor.premium_editor import (
     PrefabsPanel,
     ResourcesPanel,
     ZennityPremiumEditor,
-    SimplePanel,
 )
 from editor.premium_panels import RealHierarchyPanel, RealInspectorPanel
 from editor.runtime.command_manager import FunctionCommand
@@ -29,6 +28,7 @@ from editor.runtime.editor_context import EditorContext
 from editor.runtime.tool_manager import EditorTool
 from editor.widgets.game_viewport import GameViewportWidget
 from editor.widgets.phase1_viewport import Phase1ViewportWidget
+from editor.widgets.render_pipeline_profiler import RenderPipelineProfilerPanel
 from engine.scene import load_scene, save_scene
 
 
@@ -214,7 +214,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.inspector.setMaximumWidth(360)
         self.console = ConsolePanel()
         self.preview = AssetPreviewPanel()
-        self.profiler = SimplePanel("Profiler", "FPS, CPU, memoria")
+        self.profiler = RenderPipelineProfilerPanel()
 
         self.viewport = Phase1ViewportWidget(self)
         self.viewport.setObjectName("ViewportCanvas")
@@ -235,6 +235,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.game_viewport.set_command_manager(self.editor_context.commands)
         self.game_viewport.set_runtime_manager(self.editor_context.runtime)
         self.game_viewport.active_scene = self.editor_scene
+        self.profiler.set_viewports(self.viewport, self.game_viewport)
 
         self.hierarchy_tabs = QTabWidget()
         self.hierarchy_tabs.addTab(self.hierarchy, "Hierarchy")
