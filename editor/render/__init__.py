@@ -2,6 +2,7 @@
 
 from .render_pipeline import (
     BackgroundPass,
+    FramebufferPresentPass,
     GizmoPass,
     GridPass,
     LegacySceneAdapter,
@@ -14,7 +15,7 @@ from .render_pipeline import (
 )
 
 __all__ = [
-    "BackgroundPass", "GizmoPass", "GridPass", "LegacySceneAdapter",
+    "BackgroundPass", "FramebufferPresentPass", "GizmoPass", "GridPass", "LegacySceneAdapter",
     "LegacyScenePass", "OverlayPass", "RenderContext", "RenderPass",
     "RenderPipeline", "SpriteOverlayPass",
 ]
