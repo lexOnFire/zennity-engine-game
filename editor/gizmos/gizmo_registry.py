@@ -22,6 +22,21 @@ class GizmoRegistry:
         """Consulta e retorna a função de desenho de gizmo registrada, ou None."""
         return cls._registry.get(component_type)
 
+    @classmethod
+    def draw(cls, screen: pygame.Surface, scene: Any) -> None:
+        """Desenha, na ordem legada, todos os gizmos registrados da cena."""
+        objects = getattr(scene, "editable_objects", getattr(scene, "game_objects", []))
+        for obj in objects:
+            if getattr(obj, "name", "") == "EditorCamera":
+                continue
+            for component in getattr(obj, "components", []):
+                draw_func = cls.get_gizmo(component.component_type)
+                if draw_func:
+                    try:
+                        draw_func(component, screen, scene)
+                    except Exception:
+                        pass
+
 
 def _get_screen_pos(component: Any, scene: Any) -> Tuple[float, float]:
     """Helper para obter a posição na tela de um componente no editor."""
