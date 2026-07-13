@@ -86,6 +86,8 @@ def _clone_component(component: Any) -> Any:
         clone._started = False
     if hasattr(clone, "game_object"):
         clone.game_object = None
+    for attr in ("sorting_layer", "order_in_layer"):
+        _copy_optional_attr(component, clone, attr)
     return clone
 
 
