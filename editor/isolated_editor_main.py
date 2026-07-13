@@ -27,6 +27,7 @@ from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QWidget
 from editor.interface_smoke_test import InterfaceSmokeTest
 from editor.isolated_viewport import run_viewport
 from editor.runtime.native_ui import normalize_ui, scene_item_to_ui, ui_to_scene_item
+from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from engine.build import export_development_project
 
@@ -1156,8 +1157,13 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 shutil.copy2(path, destination)
             texture = str(destination.relative_to(Path.cwd())).replace("\\", "/")
             self._refresh_assets()
+        self._record_history()
+        obj = self._objects_by_name[self._selected_name]
+        assign_sprite_texture(obj, texture)
         self.sprite_texture_field.setText(texture)
-        self._send_inspector_renderer()
+        self.sprite_color_button.setStyleSheet("background: rgb(255, 255, 255);")
+        self._send_inspector_renderer(record_history=False)
+        self._log("INFO", f"Textura aplicada sem tint: {Path(texture).name}")
 
     def _choose_sprite_color(self) -> None:
         if self._selected_name not in self._objects_by_name:

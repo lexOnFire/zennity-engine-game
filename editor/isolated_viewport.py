@@ -12,6 +12,7 @@ from queue import Empty
 from typing import Any
 
 from editor.runtime.native_ui import NativeUIRenderer, normalize_ui
+from editor.runtime.sprite_rendering import prepare_sprite_surface
 
 
 class PlayScriptAPI:
@@ -1412,9 +1413,11 @@ def run_viewport(
                 except (OSError, pygame.error):
                     source_surface = None
             if source_surface is not None:
-                object_surface = pygame.transform.smoothscale(source_surface, (max(1, box.width), max(1, box.height))).copy()
-                tint = tuple(obj.get("color", (255, 255, 255)))
-                object_surface.fill((*tint[:3], 255), special_flags=pygame.BLEND_RGBA_MULT)
+                object_surface = prepare_sprite_surface(
+                    source_surface,
+                    (box.width, box.height),
+                    obj.get("color", (255, 255, 255)),
+                )
             else:
                 object_surface = pygame.Surface((max(1, box.width), max(1, box.height)), pygame.SRCALPHA)
                 pygame.draw.rect(object_surface, tuple(obj.get("color", (180, 180, 180))), object_surface.get_rect(), border_radius=4)
