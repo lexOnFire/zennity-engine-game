@@ -1,11 +1,29 @@
 """Renderizador Qt opt-in para sprites 2D da Scene View."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QImage, QPainter, QPixmap
+
+
+@dataclass(frozen=True, slots=True)
+class SpriteDrawCommand:
+    """Descrição normalizada de um sprite, sem impor novas regras visuais."""
+
+    obj: Any
+    component: Any
+    pixmap: QPixmap
+    mode: str
+    source_order: int
+    sorting_layer: str
+    order_in_layer: int
+    tint: tuple[int, int, int, int]
+    alpha: int
+    flip_x: bool
+    flip_y: bool
 
 
 class SpriteOverlayRenderer:
@@ -54,10 +72,19 @@ class SpriteOverlayRenderer:
         mode = "renderer2d" if module.endswith("renderer2d") else "surface"
         return self._surface_pixmap(surface), mode
 
-    def collect(self, scene: Any) -> list[tuple[Any, Any, QPixmap, str]]:
+    @staticmethod
+    def _normalized_tint(component: Any) -> tuple[int, int, int, int]:
+        value = getattr(component, "color", (255, 255, 255, 255))
+        if not isinstance(value, (tuple, list)):
+            return (255, 255, 255, 255)
+        channels = list(value[:4]) + [255] * max(0, 4 - len(value))
+        return tuple(max(0, min(255, int(channel))) for channel in channels[:4])
+
+    def collect(self, scene: Any) -> list[SpriteDrawCommand]:
         """Retorna somente sprites válidos que podem sair do caminho legado."""
         objects = getattr(scene, "editable_objects", getattr(scene, "game_objects", ()))
-        sprites: list[tuple[Any, Any, QPixmap, str]] = []
+        sprites: list[SpriteDrawCommand] = []
+        source_order = 0
         for obj in objects:
             if not getattr(obj, "active", True):
                 continue
@@ -68,17 +95,35 @@ class SpriteOverlayRenderer:
                     continue
                 pixmap, mode = self._component_pixmap(component)
                 if pixmap is not None:
-                    sprites.append((obj, component, pixmap, mode))
+                    sprites.append(SpriteDrawCommand(
+                        obj=obj,
+                        component=component,
+                        pixmap=pixmap,
+                        mode=mode,
+                        source_order=source_order,
+                        sorting_layer=str(getattr(component, "sorting_layer", "Default")),
+                        order_in_layer=int(getattr(component, "order_in_layer", getattr(component, "layer", 0))),
+                        tint=self._normalized_tint(component),
+                        alpha=max(0, min(255, int(getattr(component, "alpha", 255)))),
+                        flip_x=bool(getattr(component, "flip_x", False)),
+                        flip_y=bool(getattr(component, "flip_y", False)),
+                    ))
+                    source_order += 1
         return sprites
 
     def draw(
         self,
         painter: QPainter,
         camera: Any,
-        sprites: list[tuple[Any, Any, QPixmap, str]],
+        sprites: list[SpriteDrawCommand],
     ) -> None:
         """Desenha os sprites coletados usando o mesmo transform da viewport."""
-        for obj, component, pixmap, mode in sprites:
+        # source_order continua sendo a autoridade visual nesta fase. Os campos
+        # de sorting já estão normalizados, mas ainda não alteram a composição.
+        for command in sprites:
+            obj = command.obj
+            pixmap = command.pixmap
+            mode = command.mode
             transform = getattr(obj, "transform", None)
             if transform is None:
                 continue
@@ -99,13 +144,13 @@ class SpriteOverlayRenderer:
 
             painter.save()
             painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
-            painter.setOpacity(max(0.0, min(1.0, float(getattr(component, "alpha", 255)) / 255.0)))
+            painter.setOpacity(float(command.alpha) / 255.0)
             painter.translate(cx, cy)
             painter.rotate(rotation)
             if mode == "surface":
                 painter.scale(
-                    -1.0 if bool(getattr(component, "flip_x", False)) else 1.0,
-                    -1.0 if bool(getattr(component, "flip_y", False)) else 1.0,
+                    -1.0 if command.flip_x else 1.0,
+                    -1.0 if command.flip_y else 1.0,
                 )
             target = QRectF(-width / 2.0, -height / 2.0, width, height)
             source = QRectF(pixmap.rect())
