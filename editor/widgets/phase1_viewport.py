@@ -27,6 +27,7 @@ from editor.render.render_pipeline import (
     RenderContext,
     RenderPipeline,
     SpriteOverlayPass,
+    TransformGizmoPass,
 )
 from editor.runtime.command_manager import CommandManager, FunctionCommand
 from editor.runtime.editor_state import EditorState
@@ -105,6 +106,8 @@ class Phase1ViewportWidget(ViewportWidget):
             # O overlay moderno de sprites segue desativado por compatibilidade.
             SpriteOverlayPass(self._render_sprite_overlay_pass),
             OverlayPass(self._render_overlay_pass),
+            # Preserva a ordem histórica acima de seleção, bounding box e HUD.
+            TransformGizmoPass(self._render_transform_gizmo_pass),
         ])
 
     # ── Injeção de dependências ───────────────────────────────────────────────
@@ -846,8 +849,10 @@ class Phase1ViewportWidget(ViewportWidget):
                 mouse_screen_pos=self._qt_mouse_pos,
                 is_playing=self._is_playing(),
             )
-        # Mantém a ordem visual histórica: gizmos de transformação ficam por
-        # cima dos overlays de seleção e do HUD.
+
+    def _render_transform_gizmo_pass(self, context: RenderContext) -> None:
+        selected = self._selected_transform_object()
+        active_tool = self._active_tool()
         if self._should_draw_gizmo(selected):
             if active_tool == EditorTool.MOVE:
                 self.move_gizmo_overlay.draw(context.painter, selected, self.world_to_viewport)
