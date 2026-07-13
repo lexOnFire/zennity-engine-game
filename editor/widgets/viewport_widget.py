@@ -492,6 +492,16 @@ class ViewportWidget(QWidget):
         if not self.pg_surface or not self.active_scene:
             return
 
+        self._draw_legacy_framebuffer()
+        painter = QPainter(self)
+        self._present_legacy_framebuffer(painter)
+        painter.end()
+
+    def _draw_legacy_framebuffer(self) -> None:
+        """Executa o desenho Pygame legado sem apresentar o framebuffer no Qt."""
+        if not self.pg_surface or not self.active_scene:
+            return
+
         self.active_scene.draw(self.pg_surface)
 
         is_playing = (
@@ -512,13 +522,14 @@ class ViewportWidget(QWidget):
                         except Exception:
                             pass
 
+    def _present_legacy_framebuffer(self, painter: QPainter) -> None:
+        """Copia o framebuffer Pygame já desenhado para um QPainter existente."""
+        if not self.pg_surface:
+            return
         raw = pygame.image.tostring(self.pg_surface, "RGBA")
         img = QImage(raw, self._vp_w, self._vp_h,
                      self._vp_w * 4, QImage.Format_RGBA8888)
-
-        p = QPainter(self)
-        p.drawImage(0, 0, img)
-        p.end()
+        painter.drawImage(0, 0, img)
 
     @Slot()
     def _tick(self) -> None:
