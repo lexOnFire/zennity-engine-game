@@ -224,21 +224,36 @@ class RuntimeScene:
         self.scene.update(dt)
 
     def draw(self, screen: Any) -> None:
+        self.draw_background(screen)
+        self.draw_content(screen)
+
+    def _scene_supports_split_background(self) -> bool:
+        """Só separa cenas que mantêm o contrato canônico ou o implementam."""
+        from engine.core.scene import Scene
+        scene_type = type(self.scene)
+        return scene_type.draw is Scene.draw or "draw_content" in scene_type.__dict__
+
+    def draw_background(self, screen: Any) -> None:
         from engine.graphics.camera import Camera
         main_cam = Camera.main
         if main_cam:
             screen.fill(main_cam.clear_color)
         else:
             screen.fill((30, 30, 30))
-        self.draw_content(screen)
+        if self._scene_supports_split_background():
+            self.scene.draw_background(screen)
 
     def draw_content(self, screen: Any) -> None:
-        """Desenha a cena sem limpar o framebuffer.
+        """Desenha a cena sem limpar o framebuffer nem repetir seu fundo.
 
         Mantém ``draw()`` totalmente compatível e permite que uma pipeline
-        externa assuma apenas a responsabilidade pelo background.
+        externa assuma a responsabilidade pelo background. Cenas antigas que
+        sobrescrevem apenas ``draw()`` continuam no caminho integral.
         """
-        self.scene.draw(screen)
+        if self._scene_supports_split_background():
+            self.scene.draw_content(screen)
+        else:
+            self.scene.draw(screen)
         self.ui_renderer.render(self, screen)
 
     def handle_event(self, event: Any) -> None:
