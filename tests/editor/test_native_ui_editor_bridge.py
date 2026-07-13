@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import ast
+from pathlib import Path
+
 import pygame
 
 from editor.runtime.native_ui import NativeUIRenderer, scene_item_to_ui, ui_to_scene_item
@@ -47,3 +50,21 @@ def test_native_ui_button_hit_test_keeps_script_event() -> None:
     assert owner["name"] == "Play"
     assert button["target"] == "Player"
     assert button["event"] == "start"
+
+
+def test_delete_object_does_not_access_removed_shared_script_selector() -> None:
+    source = Path("editor/isolated_editor_main.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    delete_method = next(
+        node for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == "_delete_object"
+    )
+    attributes = {
+        node.attr for node in ast.walk(delete_method)
+        if isinstance(node, ast.Attribute)
+    }
+
+    assert "script_selector" not in attributes
+    assert "create_script_button" not in attributes
+    assert "edit_script_button" not in attributes
+    assert "script_containers" in attributes

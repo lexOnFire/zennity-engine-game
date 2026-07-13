@@ -1011,10 +1011,15 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if self._selected_name == name:
             self._selected_name = None
             self.inspector_name_label.setText("—")
-            self.script_selector.clear()
-            self.script_selector.setEnabled(False)
-            self.create_script_button.setEnabled(False)
-            self.edit_script_button.setEnabled(False)
+            self.animation_object_label.setText("Nenhum objeto selecionado")
+            self.ui_component_header.setVisible(False)
+            self.ui_component_body.setVisible(False)
+            for header, body in self.script_containers:
+                self.inspector_layout.removeWidget(header)
+                self.inspector_layout.removeWidget(body)
+                header.deleteLater()
+                body.deleteLater()
+            self.script_containers.clear()
         self._refresh_hierarchy()
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
 
