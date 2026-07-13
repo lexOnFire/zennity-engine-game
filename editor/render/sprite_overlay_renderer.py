@@ -6,9 +6,10 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import QRectF, Qt
-from PySide6.QtGui import QImage, QPainter, QPixmap
+from PySide6.QtGui import QColor, QImage, QPainter, QPixmap
 
 from engine.graphics.sorting import normalize_sorting_layer, sorting_key
+from engine.graphics.tint import combined_alpha, normalize_tint
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,11 +77,18 @@ class SpriteOverlayRenderer:
 
     @staticmethod
     def _normalized_tint(component: Any) -> tuple[int, int, int, int]:
-        value = getattr(component, "color", (255, 255, 255, 255))
-        if not isinstance(value, (tuple, list)):
-            return (255, 255, 255, 255)
-        channels = list(value[:4]) + [255] * max(0, 4 - len(value))
-        return tuple(max(0, min(255, int(channel))) for channel in channels[:4])
+        return normalize_tint(getattr(component, "color", (255, 255, 255, 255)))
+
+    @staticmethod
+    def _tinted_pixmap(pixmap: QPixmap, tint: tuple[int, int, int, int]) -> QPixmap:
+        if tint[:3] == (255, 255, 255):
+            return pixmap
+        result = pixmap.copy()
+        tint_painter = QPainter(result)
+        tint_painter.setCompositionMode(QPainter.CompositionMode_Multiply)
+        tint_painter.fillRect(result.rect(), QColor(*tint[:3]))
+        tint_painter.end()
+        return result
 
     def collect(self, scene: Any) -> list[SpriteDrawCommand]:
         """Retorna somente sprites válidos que podem sair do caminho legado."""
@@ -132,7 +140,7 @@ class SpriteOverlayRenderer:
         )
         for command in ordered_sprites:
             obj = command.obj
-            pixmap = command.pixmap
+            pixmap = self._tinted_pixmap(command.pixmap, command.tint)
             mode = command.mode
             transform = getattr(obj, "transform", None)
             if transform is None:
@@ -154,7 +162,7 @@ class SpriteOverlayRenderer:
 
             painter.save()
             painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
-            painter.setOpacity(float(command.alpha) / 255.0)
+            painter.setOpacity(float(combined_alpha(command.alpha, command.tint)) / 255.0)
             painter.translate(cx, cy)
             painter.rotate(rotation)
             if mode == "surface":
