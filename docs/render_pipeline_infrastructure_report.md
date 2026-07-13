@@ -49,8 +49,8 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
   execuções), desativadas por padrão e sem alterar a ordem de desenho.
 - O painel Profiler permite ativar a coleta, alternar entre Scene/Game, zerar e
   visualizar os tempos por passe; permanece desativado ao iniciar o editor.
-- Preparação do frame e chamadas antigas da Phase1 Viewport foram movidas para
-  delegates privados usados pelos passes.
+- O contrato oficial e a checklist visual estão documentados em
+  `docs/render_pass_contract.md` e protegidos por testes estruturais headless.
 
 ## Redução de `paintGL()`
 
@@ -75,5 +75,5 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
 
 ## Próximos candidatos à migração
 
-1. Encerrar esta fase com testes de integração visual e documentar o contrato
-   estável para novos RenderPass.
+Esta fase de infraestrutura está concluída. Próximas mudanças devem ser tratadas
+como evolução de renderizadores, não como reorganização do pipeline.
