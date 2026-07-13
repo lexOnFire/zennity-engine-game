@@ -16,6 +16,17 @@ from PySide6.QtGui import QColor, QPainter, QPen, QMouseEvent, QWheelEvent
 
 from editor.gizmos.qt_gizmo_overlay import QtMoveGizmoOverlay
 from editor.gizmos.rotate_gizmo import QtRotateGizmoOverlay
+from editor.render.render_pipeline import (
+    BackgroundPass,
+    GizmoPass,
+    GridPass,
+    LegacySceneAdapter,
+    LegacyScenePass,
+    OverlayPass,
+    RenderContext,
+    RenderPipeline,
+    SpriteOverlayPass,
+)
 from editor.runtime.command_manager import CommandManager, FunctionCommand
 from editor.runtime.editor_state import EditorState
 from editor.runtime.tool_manager import EditorTool, ToolManager
@@ -76,6 +87,23 @@ class Phase1ViewportWidget(ViewportWidget):
         # Tempo do último render
         self._last_render_time: float = time.time()
         self.view_mode: str = "scene"
+        self._pipeline_grid_states: list[tuple[Any, bool]] = []
+        self._pipeline_real_show_grid: bool = True
+        self.render_pipeline = self._build_render_pipeline()
+
+    def _build_render_pipeline(self) -> RenderPipeline:
+        return RenderPipeline([
+            # O fundo permanece no legado até sua migração poder preservar
+            # exatamente Camera.clear_color e fundos infinitos.
+            BackgroundPass(self._render_background_pass),
+            LegacyScenePass(LegacySceneAdapter(self._render_legacy_scene_pass)),
+            GridPass(self._render_grid_pass),
+            # O overlay moderno de sprites segue desativado por compatibilidade.
+            SpriteOverlayPass(self._render_sprite_overlay_pass),
+            # Gizmos de componente ainda são produzidos pelo adaptador legado.
+            GizmoPass(self._render_gizmo_registry_pass),
+            OverlayPass(self._render_overlay_pass),
+        ])
 
     # ── Injeção de dependências ───────────────────────────────────────────────
 
@@ -717,68 +745,91 @@ class Phase1ViewportWidget(ViewportWidget):
     # ── Ciclo de Renderização (paintGL) ───────────────────────────────────────
 
     def paintGL(self) -> None:
-        if not self.pg_surface or not self.active_scene:
+        context = self._create_render_context()
+        if context is None:
             return
+        try:
+            self.render_pipeline.render(context)
+        finally:
+            self._restore_grid_state(self._pipeline_grid_states)
+            context.painter.end()
 
+    def _create_render_context(self) -> RenderContext | None:
+        if not self.pg_surface or not self.active_scene:
+            return None
         self._sync_legacy_scale_handles()
-
-        # Sincroniza modificações externas do Camera2D.main
         self.sync_camera_from_engine()
-
-        # Atualiza a interpolação do zoom suave apenas se não estiver em modo de jogo
         now = time.time()
         dt = min(now - self._last_render_time, 0.1)
         self._last_render_time = now
         if not self._is_playing() and not self.is_game_view():
             self.camera.update(dt)
-
-        # Salva o estado real do grid e desativa temporariamente para o blit do Pygame.
-        # RuntimeScene é um wrapper; a cena interna também precisa ser desligada
-        # para a Game View permanecer limpa durante Play.
-        grid_states = self._capture_grid_state()
-        real_show_grid = grid_states[0][1] if grid_states else True
+        self._pipeline_grid_states = self._capture_grid_state()
+        self._pipeline_real_show_grid = self._pipeline_grid_states[0][1] if self._pipeline_grid_states else True
         self._set_grid_visible(False)
+        return RenderContext(
+            viewport=self,
+            painter=QPainter(self),
+            pygame_surface=self.pg_surface,
+            active_scene=self.active_scene,
+            editor_context=self.editor_state,
+            runtime_manager=self.runtime_manager,
+            selection_manager=getattr(self, "selection_manager", None),
+        )
 
-        # Chama a renderização base (blit da superfície do pygame com os objetos)
-        super().paintGL()
+    def _render_background_pass(self, context: RenderContext) -> None:
+        # Compatibilidade: o clear_color ainda pertence ao draw da cena legada.
+        return None
 
-        # Restaura o estado real do grid na cena
-        self._restore_grid_state(grid_states)
+    def _render_legacy_scene_pass(self, context: RenderContext) -> None:
+        self._draw_legacy_framebuffer()
+        self._restore_grid_state(self._pipeline_grid_states)
+        self._present_legacy_framebuffer(context.painter)
 
-        painter = QPainter(self)
-        
-        # 1. Renderiza o Grid infinito usando QPainter por cima do fundo do Pygame
+    def _render_grid_pass(self, context: RenderContext) -> None:
         draw_editor_overlays = not self.is_game_view() and not self._is_playing()
-        self.renderer.render_grid(painter, self.camera, real_show_grid and draw_editor_overlays)
+        if self._pipeline_real_show_grid and draw_editor_overlays:
+            self.renderer.grid_renderer.draw(
+                painter=context.painter,
+                vp_w=self.camera.vp_w,
+                vp_h=self.camera.vp_h,
+                zoom=self.camera.zoom,
+                camera_pos=self.camera.position,
+                world_to_viewport=self.camera.world_to_viewport,
+            )
 
-        # 2. Renderiza overlays Qt usando QPainter (Outlines, HUD, Bounding box, coordenadas)
+    def _render_sprite_overlay_pass(self, context: RenderContext) -> None:
+        # Mantido intencionalmente sem desenho: o framebuffer Pygame continua
+        # sendo a fonte única dos sprites até a migração do SpriteRenderer.
+        return None
+
+    def _render_gizmo_registry_pass(self, context: RenderContext) -> None:
+        # Gizmos de componentes ainda são chamados dentro do adaptador legado.
+        return None
+
+    def _render_overlay_pass(self, context: RenderContext) -> None:
         selected = self._selected_transform_object()
         active_tool = self._active_tool()
         object_count = len(self.active_scene.editable_objects) if self.active_scene else 0
-        grid_size = self.renderer.grid_renderer.grid_size
-        snap_on = self._snap_enabled()
-
         if not self.is_game_view():
             self.renderer.render_qt_overlays(
-                painter=painter,
+                painter=context.painter,
                 camera=self.camera,
                 selected=selected,
                 active_tool_name=active_tool.value,
                 object_count=object_count,
-                grid_size=grid_size,
-                snap_on=snap_on,
+                grid_size=self.renderer.grid_renderer.grid_size,
+                snap_on=self._snap_enabled(),
                 mouse_screen_pos=self._qt_mouse_pos,
                 is_playing=self._is_playing(),
             )
-
-        # Renderiza os Gizmos clássicos (MOVE/ROTATE) por cima do HUD/Outlines
+        # Mantém a ordem visual histórica: gizmos de transformação ficam por
+        # cima do HUD/outline até serem migrados sem alteração visual.
         if self._should_draw_gizmo(selected):
             if active_tool == EditorTool.MOVE:
-                self.move_gizmo_overlay.draw(painter, selected, self.world_to_viewport)
+                self.move_gizmo_overlay.draw(context.painter, selected, self.world_to_viewport)
             elif active_tool == EditorTool.ROTATE:
                 mouse = self._rotate_current_mouse if self._rotate_drag_object is not None else None
                 self.rotate_gizmo_overlay.draw(
-                    painter, selected, self.world_to_viewport, current_mouse=mouse
+                    context.painter, selected, self.world_to_viewport, current_mouse=mouse
                 )
-
-        painter.end()
