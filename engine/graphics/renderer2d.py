@@ -51,6 +51,13 @@ class SpriteRenderer(Component):
             rotated_img = pygame.transform.rotate(scaled_img, -self.transform.rz)
         else:
             rotated_img = scaled_img
+
+        from engine.graphics.tint import apply_pygame_tint
+        rotated_img = apply_pygame_tint(
+            rotated_img,
+            getattr(self, "color", (255, 255, 255)),
+            getattr(self, "alpha", 255),
+        )
             
         # Get rect centered on screen coordinates
         rect = rotated_img.get_rect()
