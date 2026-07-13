@@ -125,11 +125,15 @@ class ImageComponent(UIElement):
         alpha: int = 255,
         visible: bool = True,
         z_order: int = 0,
+        sorting_layer: str = "Default",
+        order_in_layer: int = 0,
     ) -> None:
         super().__init__(x=x, y=y, width=width, height=height, visible=visible, z_order=z_order)
         self.sprite_path = str(sprite_path)
         self.color = tuple(color)
         self.alpha = int(alpha)
+        self.sorting_layer = str(sorting_layer)
+        self.order_in_layer = int(order_in_layer)
 
     def draw(self, screen: pygame.Surface) -> None:
         if not self.visible or self._owner_is_pure_ui():
@@ -189,7 +193,13 @@ class ImageComponent(UIElement):
 
     def serialize_properties(self) -> dict[str, Any]:
         data = super().serialize_properties()
-        data.update({"sprite_path": self.sprite_path, "color": list(self.color), "alpha": int(self.alpha)})
+        data.update({
+            "sprite_path": self.sprite_path,
+            "color": list(self.color),
+            "alpha": int(self.alpha),
+            "sorting_layer": self.sorting_layer,
+            "order_in_layer": int(self.order_in_layer),
+        })
         return data
 
     def deserialize_properties(self, data: dict[str, Any]) -> None:
@@ -197,6 +207,8 @@ class ImageComponent(UIElement):
         self.sprite_path = str(data.get("sprite_path", self.sprite_path))
         self.color = tuple(data.get("color", self.color))
         self.alpha = int(data.get("alpha", self.alpha))
+        self.sorting_layer = str(data.get("sorting_layer", self.sorting_layer))
+        self.order_in_layer = int(data.get("order_in_layer", self.order_in_layer))
 
 
 class InfiniteBackground(Component):
