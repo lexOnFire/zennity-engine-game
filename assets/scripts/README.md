@@ -10,6 +10,9 @@ Edite apenas a seção **CONFIGURAÇÃO** no topo de cada script.
 - `game.key_pressed("space")` verifica o primeiro toque.
 - `game.state` guarda valores do script.
 - `game.destroy()` remove o objeto.
+- `game.set_hud("vida", "VIDA: 3")` cria ou atualiza texto na Game View.
+- `game.remove_hud("vida")` remove um texto do HUD.
+- `game.restart()` restaura a cena ao estado inicial do Play Mode.
 
 Eventos de Collider:
 
