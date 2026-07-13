@@ -18,10 +18,13 @@ from editor.gizmos.qt_gizmo_overlay import QtMoveGizmoOverlay
 from editor.gizmos.rotate_gizmo import QtRotateGizmoOverlay
 from editor.render.adapters import (
     BackgroundRendererAdapter,
+    FramebufferPresentRendererAdapter,
+    FramePreparationAdapter,
     GizmoRendererAdapter,
     GridRendererAdapter,
     LegacySceneRendererAdapter,
     OverlayRendererAdapter,
+    SpriteRendererAdapter,
 )
 from editor.render.render_pipeline import (
     BackgroundPass,
@@ -31,7 +34,6 @@ from editor.render.render_pipeline import (
     LegacySceneAdapter,
     LegacyScenePass,
     OverlayPass,
-    RenderContext,
     RenderPipeline,
     SpriteOverlayPass,
     TransformGizmoPass,
@@ -108,6 +110,11 @@ class Phase1ViewportWidget(ViewportWidget):
         self.grid_renderer_adapter = GridRendererAdapter(self)
         self.gizmo_renderer_adapter = GizmoRendererAdapter(self)
         self.overlay_renderer_adapter = OverlayRendererAdapter(self)
+        self.frame_preparation_adapter = FramePreparationAdapter(
+            self, QPainter, self.sprite_overlay_renderer
+        )
+        self.framebuffer_present_renderer_adapter = FramebufferPresentRendererAdapter(self)
+        self.sprite_renderer_adapter = SpriteRendererAdapter(self, self.sprite_overlay_renderer)
         self.render_pipeline = self._build_render_pipeline()
 
     def _build_render_pipeline(self) -> RenderPipeline:
@@ -117,9 +124,9 @@ class Phase1ViewportWidget(ViewportWidget):
             BackgroundPass(self.background_renderer_adapter.render),
             LegacyScenePass(LegacySceneAdapter(self.legacy_scene_renderer_adapter.render)),
             GizmoPass(self.gizmo_renderer_adapter.render_components),
-            FramebufferPresentPass(self._render_framebuffer_present_pass),
+            FramebufferPresentPass(self.framebuffer_present_renderer_adapter.render),
             # Mantém a grade acima dos sprites, como no framebuffer legado.
-            SpriteOverlayPass(self._render_sprite_overlay_pass),
+            SpriteOverlayPass(self.sprite_renderer_adapter.render),
             GridPass(self.grid_renderer_adapter.render),
             OverlayPass(self.overlay_renderer_adapter.render),
             # Preserva a ordem histórica acima de seleção, bounding box e HUD.
@@ -766,54 +773,10 @@ class Phase1ViewportWidget(ViewportWidget):
     # ── Ciclo de Renderização (paintGL) ───────────────────────────────────────
 
     def paintGL(self) -> None:
-        context = self._create_render_context()
+        context = self.frame_preparation_adapter.create_context()
         if context is None:
             return
         try:
             self.render_pipeline.render(context)
         finally:
-            if self.active_scene is not None:
-                self.active_scene._zennity_modern_sprite_component_ids = set()
-            self._restore_grid_state(self._pipeline_grid_states)
-            context.painter.end()
-
-    def _create_render_context(self) -> RenderContext | None:
-        if not self.pg_surface or not self.active_scene:
-            return None
-        self._sync_legacy_scale_handles()
-        self.sync_camera_from_engine()
-        now = time.time()
-        dt = min(now - self._last_render_time, 0.1)
-        self._last_render_time = now
-        if not self._is_playing() and not self.is_game_view():
-            self.camera.update(dt)
-        self._pipeline_grid_states = self._capture_grid_state()
-        self._pipeline_real_show_grid = self._pipeline_grid_states[0][1] if self._pipeline_grid_states else True
-        self._set_grid_visible(False)
-        use_modern_sprites = not self._is_playing() and not self.is_game_view()
-        self._pipeline_modern_sprites = (
-            self.sprite_overlay_renderer.collect(self.active_scene) if use_modern_sprites else []
-        )
-        self.active_scene._zennity_modern_sprite_component_ids = {
-            id(command.component) for command in self._pipeline_modern_sprites
-        }
-        return RenderContext(
-            viewport=self,
-            painter=QPainter(self),
-            pygame_surface=self.pg_surface,
-            active_scene=self.active_scene,
-            editor_context=self.editor_state,
-            runtime_manager=self.runtime_manager,
-            selection_manager=getattr(self, "selection_manager", None),
-        )
-
-    def _render_framebuffer_present_pass(self, context: RenderContext) -> None:
-        self._restore_grid_state(self._pipeline_grid_states)
-        self._present_legacy_framebuffer(context.painter)
-
-    def _render_sprite_overlay_pass(self, context: RenderContext) -> None:
-        self.sprite_overlay_renderer.draw(
-            context.painter,
-            self.camera,
-            self._pipeline_modern_sprites,
-        )
+            self.frame_preparation_adapter.finish(context)
