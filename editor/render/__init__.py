@@ -12,10 +12,11 @@ from .render_pipeline import (
     RenderPass,
     RenderPipeline,
     SpriteOverlayPass,
+    TransformGizmoPass,
 )
 
 __all__ = [
     "BackgroundPass", "FramebufferPresentPass", "GizmoPass", "GridPass", "LegacySceneAdapter",
     "LegacyScenePass", "OverlayPass", "RenderContext", "RenderPass",
-    "RenderPipeline", "SpriteOverlayPass",
+    "RenderPipeline", "SpriteOverlayPass", "TransformGizmoPass",
 ]
