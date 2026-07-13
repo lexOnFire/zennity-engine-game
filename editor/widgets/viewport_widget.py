@@ -314,7 +314,10 @@ class ViewportWidget(QWidget):
             def _qt_draw_2d(screen, _content=_qt_draw_2d_content):
                 screen.fill((28, 29, 36))
                 _content(screen)
+            def _qt_draw_2d_background(screen):
+                screen.fill((28, 29, 36))
             scene._zennity_background_color = (28, 29, 36)
+            scene._zennity_draw_background = _qt_draw_2d_background
             scene._zennity_draw_content = _qt_draw_2d_content
             scene.draw = _qt_draw_2d
 
@@ -422,7 +425,11 @@ class ViewportWidget(QWidget):
                 screen.fill((28, 29, 36))
                 _content(screen)
 
+            def _qt_draw_3d_background(screen):
+                screen.fill((28, 29, 36))
+
             scene._zennity_background_color = (28, 29, 36)
+            scene._zennity_draw_background = _qt_draw_3d_background
             scene._zennity_draw_content = _qt_draw_3d_content
             scene.draw = _qt_draw_3d
 
