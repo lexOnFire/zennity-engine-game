@@ -47,6 +47,8 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
   removendo o último callback de renderização mantido pela viewport.
 - `RenderPipeline` oferece métricas opt-in por passe (último, média, máximo e
   execuções), desativadas por padrão e sem alterar a ordem de desenho.
+- O painel Profiler permite ativar a coleta, alternar entre Scene/Game, zerar e
+  visualizar os tempos por passe; permanece desativado ao iniciar o editor.
 - Preparação do frame e chamadas antigas da Phase1 Viewport foram movidas para
   delegates privados usados pelos passes.
 
@@ -73,4 +75,5 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
 
 ## Próximos candidatos à migração
 
-1. Expor as métricas opcionais no painel Profiler sem ativá-las por padrão.
+1. Encerrar esta fase com testes de integração visual e documentar o contrato
+   estável para novos RenderPass.
