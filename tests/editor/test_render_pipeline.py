@@ -1,5 +1,6 @@
 from editor.render.render_pipeline import (
     BackgroundPass,
+    FramebufferPresentPass,
     LegacySceneAdapter,
     LegacyScenePass,
     RenderContext,
@@ -20,12 +21,13 @@ def test_pipeline_executes_enabled_passes_in_registration_order() -> None:
     first = BackgroundPass(lambda context: calls.append(("background", context)))
     disabled = BackgroundPass(lambda context: calls.append(("disabled", context)), enabled=False)
     legacy = LegacyScenePass(LegacySceneAdapter(lambda context: calls.append(("legacy", context))))
+    present = FramebufferPresentPass(lambda context: calls.append(("present", context)))
     context = _context()
 
-    pipeline = RenderPipeline([first, disabled, legacy])
+    pipeline = RenderPipeline([first, disabled, legacy, present])
     pipeline.render(context)
 
-    assert calls == [("background", context), ("legacy", context)]
+    assert calls == [("background", context), ("legacy", context), ("present", context)]
 
 
 def test_pipeline_exposes_immutable_pass_snapshot_and_supports_append() -> None:
