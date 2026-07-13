@@ -29,6 +29,7 @@ from editor.isolated_viewport import run_viewport
 from editor.runtime.native_ui import normalize_ui, scene_item_to_ui, ui_to_scene_item
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
+from editor.widgets.component_picker import ComponentPickerDialog
 from engine.build import export_development_project
 
 
@@ -36,6 +37,15 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
     def __init__(self, viewport_process: mp.Process | None, commands, events) -> None:
         self._console_records: list[tuple[str, str]] = []
         super().__init__()
+        self._component_expanded = {
+            "transform": True,
+            "sprite": True,
+            "audio": False,
+            "rigidbody": False,
+            "collider": False,
+            "camera": False,
+            "ui": True,
+        }
         self._viewport_process = viewport_process
         self._commands = commands
         self._events = events
@@ -79,9 +89,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._connect_hierarchy_to_viewport()
         self._refresh_hierarchy()
         self._connect_inspector_to_viewport()
-        self.ui_component_header.setVisible(False)
-        self.ui_component_body.setVisible(False)
         self.script_containers = []
+        self._clear_inspector_view()
         self.add_component_button.clicked.connect(self._open_add_component_menu)
         self.viewport_tabs.currentChanged.connect(self._change_view_mode)
 
@@ -313,6 +322,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._record_history()
         scripts = obj.setdefault("scripts", [])
         scripts.append(script_path)
+        self._component_expanded[f"script:{script_path}"] = True
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._commands.put({"type": "select_object", "name": object_name})
         self._selected_name = object_name
@@ -1011,16 +1021,13 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._objects_by_name.pop(name, None)
         if self._selected_name == name:
             self._selected_name = None
-            self.inspector_name_label.setText("—")
-            self.animation_object_label.setText("Nenhum objeto selecionado")
-            self.ui_component_header.setVisible(False)
-            self.ui_component_body.setVisible(False)
             for header, body in self.script_containers:
                 self.inspector_layout.removeWidget(header)
                 self.inspector_layout.removeWidget(body)
                 header.deleteLater()
                 body.deleteLater()
             self.script_containers.clear()
+            self._clear_inspector_view()
         self._refresh_hierarchy()
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
 
@@ -1088,10 +1095,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.sprite_color_button.clicked.connect(self._choose_sprite_color)
         self.sprite_layer_combo.currentTextChanged.connect(lambda _text: self._send_inspector_renderer())
         self.sprite_order_field.valueChanged.connect(lambda _value: self._send_inspector_renderer())
-        self.btn_collapse_renderer.clicked.connect(lambda: self.sprite_renderer_body.setVisible(not self.sprite_renderer_body.isVisible()))
+        self.btn_collapse_transform.clicked.connect(lambda: self._toggle_inspector_card("transform"))
+        self.btn_collapse_renderer.clicked.connect(lambda: self._toggle_inspector_card("sprite"))
         self.btn_delete_renderer.clicked.connect(lambda: self.show_renderer_chk.setChecked(False))
         self.show_audio_chk.toggled.connect(self._toggle_audio_component)
-        self.btn_collapse_audio.clicked.connect(lambda: self.audio_source_body.setVisible(not self.audio_source_body.isVisible()))
+        self.btn_collapse_audio.clicked.connect(lambda: self._toggle_inspector_card("audio"))
         self.btn_delete_audio.clicked.connect(lambda: self.show_audio_chk.setChecked(False))
         self.audio_path_combo.activated.connect(lambda _idx: self._send_inspector_audio())
         self.audio_volume_field.valueChanged.connect(lambda _value: self._send_inspector_audio())
@@ -1108,7 +1116,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.animator_add_clip_button.clicked.connect(self._add_animation_clip)
         self.animator_remove_clip_button.clicked.connect(self._remove_animation_clip)
         self.show_camera_chk.toggled.connect(self._toggle_camera_component)
-        self.btn_collapse_camera.clicked.connect(lambda: self.camera_body.setVisible(not self.camera_body.isVisible()))
+        self.btn_collapse_rigidbody.clicked.connect(lambda: self._toggle_inspector_card("rigidbody"))
+        self.btn_collapse_collider.clicked.connect(lambda: self._toggle_inspector_card("collider"))
+        self.btn_collapse_camera.clicked.connect(lambda: self._toggle_inspector_card("camera"))
         self.btn_delete_camera.clicked.connect(lambda: self.show_camera_chk.setChecked(False))
         self.camera_active_field.toggled.connect(lambda _value: self._send_inspector_camera())
         self.camera_width_field.valueChanged.connect(lambda _value: self._send_inspector_camera())
@@ -1117,7 +1127,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.camera_follow_combo.currentTextChanged.connect(lambda _value: self._send_inspector_camera())
         self.camera_color_button.clicked.connect(self._choose_camera_color)
         self.show_ui_chk.toggled.connect(self._toggle_ui_visibility)
-        self.btn_collapse_ui.clicked.connect(lambda: self.ui_component_body.setVisible(not self.ui_component_body.isVisible()))
+        self.btn_collapse_ui.clicked.connect(lambda: self._toggle_inspector_card("ui"))
         self.btn_delete_ui.clicked.connect(self._delete_ui_component)
         self.ui_text_field.editingFinished.connect(self._send_inspector_ui)
         for field in self.ui_position_fields.values():
@@ -1127,6 +1137,44 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.ui_interactable_field.toggled.connect(lambda _value: self._send_inspector_ui())
         self.ui_event_field.editingFinished.connect(self._send_inspector_ui)
         self.ui_target_combo.currentTextChanged.connect(lambda _value: self._send_inspector_ui())
+
+    def _inspector_card(self, key: str):
+        return {
+            "transform": (self.transform_header, self.transform_body, self.btn_collapse_transform),
+            "sprite": (self.sprite_renderer_header, self.sprite_renderer_body, self.btn_collapse_renderer),
+            "audio": (self.audio_source_header, self.audio_source_body, self.btn_collapse_audio),
+            "rigidbody": (self.rigidbody_header, self.rigidbody_body, self.btn_collapse_rigidbody),
+            "collider": (self.collider_header, self.collider_body, self.btn_collapse_collider),
+            "camera": (self.camera_header, self.camera_body, self.btn_collapse_camera),
+            "ui": (self.ui_component_header, self.ui_component_body, self.btn_collapse_ui),
+        }[key]
+
+    def _set_inspector_card_present(self, key: str, present: bool) -> None:
+        header, body, button = self._inspector_card(key)
+        header.setVisible(bool(present))
+        expanded = bool(self._component_expanded.get(key, False))
+        body.setVisible(bool(present) and expanded)
+        button.setText("▼" if expanded else "▶")
+
+    def _toggle_inspector_card(self, key: str) -> None:
+        header, body, button = self._inspector_card(key)
+        expanded = not bool(self._component_expanded.get(key, False))
+        self._component_expanded[key] = expanded
+        body.setVisible(header.isVisible() and expanded)
+        button.setText("▼" if expanded else "▶")
+
+    def _toggle_dynamic_inspector_card(self, key: str, body: QWidget, button) -> None:
+        expanded = not bool(self._component_expanded.get(key, False))
+        self._component_expanded[key] = expanded
+        body.setVisible(expanded)
+        button.setText("▼" if expanded else "▶")
+
+    def _clear_inspector_view(self) -> None:
+        self.inspector_name_label.setText("Nenhum objeto selecionado")
+        self.animation_object_label.setText("Nenhum objeto selecionado")
+        for key in self._component_expanded:
+            self._set_inspector_card_present(key, False)
+        self.add_component_button.setEnabled(False)
 
     def _toggle_renderer_component(self, checked: bool) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
@@ -1544,11 +1592,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
     def _open_add_component_menu(self) -> None:
         if self._selected_name not in self._objects_by_name:
             return
-        menu = QMenu(self)
-        for label, component in (("Sprite Renderer", "sprite"), ("Audio Source", "audio"), ("Animator 2D", "animator"), ("Camera 2D", "camera"), ("RigidBody", "rigidbody"), ("Box Collider", "box"), ("Circle Collider", "circle"), ("UI / Canvas", "ui_canvas"), ("UI / Texto", "ui_text"), ("UI / Imagem", "ui_image"), ("UI / Botão", "ui_button"), ("Script", "script")):
-            action = menu.addAction(label)
-            action.triggered.connect(lambda _checked=False, value=component: self._add_component(value))
-        menu.exec(self.add_component_button.mapToGlobal(self.add_component_button.rect().bottomLeft()))
+        picker = ComponentPickerDialog(self)
+        if picker.exec() and picker.selected_component:
+            self._add_component(picker.selected_component)
 
     def _add_component(self, component: str) -> None:
         if self._selected_name not in self._objects_by_name:
@@ -1600,6 +1646,12 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             obj["renderer_enabled"] = False
             obj["mesh_type"] = "UI"
             self._refresh_hierarchy()
+        card_key = {
+            "sprite": "sprite", "audio": "audio", "rigidbody": "rigidbody",
+            "box": "collider", "circle": "collider", "camera": "camera",
+        }.get(component, "ui" if component.startswith("ui_") else None)
+        if card_key is not None:
+            self._component_expanded[card_key] = True
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._commands.put({"type": "select_object", "name": self._selected_name})
         self._update_inspector(self._selected_name)
@@ -1657,9 +1709,13 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         try:
             self.inspector_name_label.setText(name)
             self.animation_object_label.setText(name)
+            self.add_component_button.setEnabled(True)
+            self._set_inspector_card_present("transform", True)
             for key in ("x", "y", "w", "h", "rotation"):
                 self.inspector_fields[key].setValue(float(obj[key]))
             renderer_enabled = bool(obj.get("renderer_enabled", True))
+            renderer_present = renderer_enabled and obj.get("mesh_type") != "UI" and not isinstance(obj.get("camera"), dict)
+            self._set_inspector_card_present("sprite", renderer_present)
             self.show_renderer_chk.setChecked(renderer_enabled)
             self.sprite_renderer_body.setEnabled(renderer_enabled)
             self.sprite_texture_field.setText(str(obj.get("texture", "")))
@@ -1671,6 +1727,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self.sprite_layer_combo.setCurrentText(layer)
             self.sprite_order_field.setValue(float(obj.get("sort_order", 0)))
             audio = obj.get("audio") if isinstance(obj.get("audio"), dict) else None
+            self._set_inspector_card_present("audio", audio is not None)
             self.show_audio_chk.setChecked(audio is not None)
             self.audio_source_body.setEnabled(audio is not None)
             # Popula e seleciona o áudio do QComboBox
@@ -1691,11 +1748,13 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self.audio_loop_field.setChecked(bool((audio or {}).get("loop", False)))
             self.audio_autoplay_field.setChecked(bool((audio or {}).get("autoplay", False)))
             rigidbody = obj.get("rigidbody")
+            self._set_inspector_card_present("rigidbody", rigidbody is not None)
             self.show_rigidbody_chk.setChecked(rigidbody is not None)
             for key, field in self.physics_fields.items():
                 field.setEnabled(rigidbody is not None)
                 field.setChecked(bool((rigidbody or {}).get(key, False)))
             collider = obj.get("collider") if isinstance(obj.get("collider"), dict) else None
+            self._set_inspector_card_present("collider", collider is not None)
             self.show_collider_chk.setChecked(collider is not None)
             collider_type = str((collider or {}).get("type", "box")).lower()
             collider_defaults = {
@@ -1744,6 +1803,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self.animator_preview.setText("Sem Animator")
 
             camera = obj.get("camera") if isinstance(obj.get("camera"), dict) else None
+            self._set_inspector_card_present("camera", camera is not None)
             self.show_camera_chk.setChecked(camera is not None)
             self.camera_body.setEnabled(camera is not None)
             self.camera_active_field.setChecked(bool((camera or {}).get("active", True)))
@@ -1761,8 +1821,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self.camera_color_button.setStyleSheet(f"background: rgb({int(bg[0])}, {int(bg[1])}, {int(bg[2])});")
 
             ui = normalize_ui(obj.get("ui"))
-            self.ui_component_header.setVisible(ui is not None)
-            self.ui_component_body.setVisible(ui is not None)
+            self._set_inspector_card_present("ui", ui is not None)
             if ui is not None:
                 kind = str(ui["type"])
                 labels = {"canvas": "🖥 Canvas", "text": "🔤 UI Text", "image": "🖼 UI Image", "button": "🔘 UI Button"}
@@ -1805,7 +1864,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
 
                 from PySide6.QtWidgets import QToolButton, QFrame
                 h_widget = QWidget()
-                h_widget.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px; border-bottom: 1px solid #2b2b2b;")
+                h_widget.setStyleSheet("background-color: #24272d; border-radius: 4px; border: 1px solid #30343c;")
                 h_lay = QHBoxLayout(h_widget)
                 h_lay.setContentsMargins(6, 4, 6, 4)
 
@@ -1816,7 +1875,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 h_lay.addStretch()
 
                 btn_collapse = QToolButton()
-                btn_collapse.setText("▼")
+                script_card_key = f"script:{s_path}"
+                script_expanded = bool(self._component_expanded.setdefault(script_card_key, False))
+                btn_collapse.setText("▼" if script_expanded else "▶")
                 btn_collapse.setFixedSize(18, 18)
                 btn_collapse.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
                 h_lay.addWidget(btn_collapse)
@@ -1829,13 +1890,18 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 h_lay.addWidget(btn_del)
 
                 b_widget = QWidget()
+                b_widget.setStyleSheet("background: #202228; border-left: 1px solid #30343c; border-right: 1px solid #30343c; border-bottom: 1px solid #30343c;")
                 b_lay = QFormLayout(b_widget)
                 b_lay.setContentsMargins(4, 4, 4, 4)
                 b_lay.setSpacing(6)
                 b_lay.setLabelAlignment(Qt.AlignLeft)
                 b_lay.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
 
-                btn_collapse.clicked.connect(lambda checked=False, target=b_widget: target.setVisible(not target.isVisible()))
+                b_widget.setVisible(script_expanded)
+                btn_collapse.clicked.connect(
+                    lambda checked=False, key=script_card_key, target=b_widget, button=btn_collapse:
+                    self._toggle_dynamic_inspector_card(key, target, button)
+                )
 
                 script_sel_combo = QComboBox()
                 script_sel_combo.setObjectName("InspectorScriptSelector")

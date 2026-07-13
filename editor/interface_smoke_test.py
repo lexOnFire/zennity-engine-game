@@ -248,8 +248,8 @@ class InterfaceSmokeTest(QMainWindow):
         inspector.setStyleSheet("background-color: #1c1c1c;")
         main_layout = QVBoxLayout(inspector)
         self.inspector_layout = main_layout
-        main_layout.setContentsMargins(8, 8, 8, 8)
-        main_layout.setSpacing(10)
+        main_layout.setContentsMargins(8, 8, 8, 10)
+        main_layout.setSpacing(6)
 
         # BARRA DE TÍTULO CUSTOMIZADA DO INSPECTOR (Com botões de encolher, desgrudar/flutuar, acoplar)
         title_bar = QWidget()
@@ -313,9 +313,10 @@ class InterfaceSmokeTest(QMainWindow):
         main_layout.addWidget(tag_layer)
 
         # ------------------ COMPONENTE: TRANSFORM (Organização Horizontal X, Y, Z Exata) ------------------
-        trans_header = QWidget()
-        trans_header.setStyleSheet("background-color: #242424; border-radius: 3px; border-bottom: 1px solid #2b2b2b;")
-        trans_h_layout = QHBoxLayout(trans_header)
+        self.transform_header = QWidget()
+        self.transform_header.setObjectName("InspectorComponentHeader")
+        self.transform_header.setStyleSheet("background-color: #24272d; border-radius: 4px; border: 1px solid #30343c;")
+        trans_h_layout = QHBoxLayout(self.transform_header)
         trans_h_layout.setContentsMargins(6, 4, 6, 4)
 
         # Símbolo expansor e ícone
@@ -325,28 +326,21 @@ class InterfaceSmokeTest(QMainWindow):
         trans_h_layout.addStretch()
 
         # Botões de encolher e excluir
-        btn_collapse_trans = QToolButton()
-        btn_collapse_trans.setText("▼")
-        btn_collapse_trans.setFixedSize(18, 18)
-        btn_collapse_trans.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
+        self.btn_collapse_transform = QToolButton()
+        self.btn_collapse_transform.setText("▼")
+        self.btn_collapse_transform.setFixedSize(18, 18)
+        self.btn_collapse_transform.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
 
-        btn_del_trans = QToolButton()
-        btn_del_trans.setText("✕")
-        btn_del_trans.setFixedSize(18, 18)
-        btn_del_trans.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important; padding: 0px;")
-
-        trans_h_layout.addWidget(btn_collapse_trans)
-        trans_h_layout.addWidget(btn_del_trans)
-        main_layout.addWidget(trans_header)
+        trans_h_layout.addWidget(self.btn_collapse_transform)
+        main_layout.addWidget(self.transform_header)
 
         # Widget container para as propriedades do Transform (encolhível)
-        trans_body = QWidget()
-        trans_body_layout = QVBoxLayout(trans_body)
+        self.transform_body = QWidget()
+        trans_body_layout = QVBoxLayout(self.transform_body)
         trans_body_layout.setContentsMargins(0, 0, 0, 0)
         trans_body_layout.setSpacing(6)
 
         # Conecta as ações
-        btn_collapse_trans.clicked.connect(lambda: trans_body.setVisible(not trans_body.isVisible()))
 
         self.inspector_fields: dict[str, QDoubleSpinBox] = {}
 
@@ -451,12 +445,13 @@ class InterfaceSmokeTest(QMainWindow):
         scale_layout.addWidget(scale_z)
 
         trans_body_layout.addWidget(scale_widget)
-        main_layout.addWidget(trans_body)
+        main_layout.addWidget(self.transform_body)
 
         # ------------------ COMPONENTE: SPRITE RENDERER ------------------
-        sprite_header = QWidget()
-        sprite_header.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px; border-bottom: 1px solid #2b2b2b;")
-        sprite_header_layout = QHBoxLayout(sprite_header)
+        self.sprite_renderer_header = QWidget()
+        self.sprite_renderer_header.setObjectName("InspectorComponentHeader")
+        self.sprite_renderer_header.setStyleSheet("background-color: #24272d; border-radius: 4px; border: 1px solid #30343c;")
+        sprite_header_layout = QHBoxLayout(self.sprite_renderer_header)
         sprite_header_layout.setContentsMargins(6, 4, 6, 4)
         self.show_renderer_chk = QCheckBox("🖼 Sprite Renderer")
         self.show_renderer_chk.setObjectName("InspectorCheckBox")
@@ -473,7 +468,7 @@ class InterfaceSmokeTest(QMainWindow):
         self.btn_delete_renderer.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important; padding: 0px;")
         sprite_header_layout.addWidget(self.btn_collapse_renderer)
         sprite_header_layout.addWidget(self.btn_delete_renderer)
-        main_layout.addWidget(sprite_header)
+        main_layout.addWidget(self.sprite_renderer_header)
 
         self.sprite_renderer_body = QWidget()
         sprite_form = QFormLayout(self.sprite_renderer_body)
@@ -501,9 +496,10 @@ class InterfaceSmokeTest(QMainWindow):
         main_layout.addWidget(self.sprite_renderer_body)
 
         # ------------------ COMPONENTE: AUDIO SOURCE ------------------
-        audio_header = QWidget()
-        audio_header.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px; border-bottom: 1px solid #2b2b2b;")
-        audio_header_layout = QHBoxLayout(audio_header)
+        self.audio_source_header = QWidget()
+        self.audio_source_header.setObjectName("InspectorComponentHeader")
+        self.audio_source_header.setStyleSheet("background-color: #24272d; border-radius: 4px; border: 1px solid #30343c;")
+        audio_header_layout = QHBoxLayout(self.audio_source_header)
         audio_header_layout.setContentsMargins(6, 4, 6, 4)
         self.show_audio_chk = QCheckBox("🔊 Audio Source")
         self.show_audio_chk.setObjectName("InspectorCheckBox")
@@ -520,7 +516,7 @@ class InterfaceSmokeTest(QMainWindow):
         self.btn_delete_audio.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important; padding: 0px;")
         audio_header_layout.addWidget(self.btn_collapse_audio)
         audio_header_layout.addWidget(self.btn_delete_audio)
-        main_layout.addWidget(audio_header)
+        main_layout.addWidget(self.audio_source_header)
 
         self.audio_source_body = QWidget()
         audio_form = QFormLayout(self.audio_source_body)
@@ -549,9 +545,10 @@ class InterfaceSmokeTest(QMainWindow):
         audio_form.addRow("Controles", audio_actions)
         main_layout.addWidget(self.audio_source_body)
         # ------------------ COMPONENTE: RIGIDBODY 2D ------------------
-        rb_header = QWidget()
-        rb_header.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px; border-bottom: 1px solid #2b2b2b;")
-        rb_h_layout = QHBoxLayout(rb_header)
+        self.rigidbody_header = QWidget()
+        self.rigidbody_header.setObjectName("InspectorComponentHeader")
+        self.rigidbody_header.setStyleSheet("background-color: #24272d; border-radius: 4px; border: 1px solid #30343c;")
+        rb_h_layout = QHBoxLayout(self.rigidbody_header)
         rb_h_layout.setContentsMargins(6, 4, 6, 4)
 
         self.show_rigidbody_chk = QCheckBox("⚙️ RigidBody 2D")
@@ -560,26 +557,25 @@ class InterfaceSmokeTest(QMainWindow):
         rb_h_layout.addWidget(self.show_rigidbody_chk)
         rb_h_layout.addStretch()
 
-        btn_collapse_rb = QToolButton()
-        btn_collapse_rb.setText("▼")
-        btn_collapse_rb.setFixedSize(18, 18)
-        btn_collapse_rb.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
+        self.btn_collapse_rigidbody = QToolButton()
+        self.btn_collapse_rigidbody.setText("▼")
+        self.btn_collapse_rigidbody.setFixedSize(18, 18)
+        self.btn_collapse_rigidbody.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
 
         self.btn_del_rb = QToolButton()
         self.btn_del_rb.setText("✕")
         self.btn_del_rb.setFixedSize(18, 18)
         self.btn_del_rb.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important; padding: 0px;")
 
-        rb_h_layout.addWidget(btn_collapse_rb)
+        rb_h_layout.addWidget(self.btn_collapse_rigidbody)
         rb_h_layout.addWidget(self.btn_del_rb)
-        main_layout.addWidget(rb_header)
+        main_layout.addWidget(self.rigidbody_header)
 
         # Widget container para física
-        rb_body = QWidget()
-        rb_body_layout = QVBoxLayout(rb_body)
+        self.rigidbody_body = QWidget()
+        rb_body_layout = QVBoxLayout(self.rigidbody_body)
         rb_body_layout.setContentsMargins(0, 0, 0, 0)
 
-        btn_collapse_rb.clicked.connect(lambda: rb_body.setVisible(not rb_body.isVisible()))
 
         self.physics_fields = {
             "use_gravity": QCheckBox(),
@@ -594,12 +590,13 @@ class InterfaceSmokeTest(QMainWindow):
         physics_lay.addRow("Usar gravidade", self.physics_fields["use_gravity"])
         physics_lay.addRow("Cinemático", self.physics_fields["is_kinematic"])
         rb_body_layout.addWidget(physics_widget)
-        main_layout.addWidget(rb_body)
+        main_layout.addWidget(self.rigidbody_body)
 
         # ------------------ COMPONENTE: COLLIDER 2D ------------------
-        col_header = QWidget()
-        col_header.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px; border-bottom: 1px solid #2b2b2b;")
-        col_h_layout = QHBoxLayout(col_header)
+        self.collider_header = QWidget()
+        self.collider_header.setObjectName("InspectorComponentHeader")
+        self.collider_header.setStyleSheet("background-color: #24272d; border-radius: 4px; border: 1px solid #30343c;")
+        col_h_layout = QHBoxLayout(self.collider_header)
         col_h_layout.setContentsMargins(6, 4, 6, 4)
 
         self.show_collider_chk = QCheckBox("🟢 Box/Circle Collider")
@@ -608,26 +605,25 @@ class InterfaceSmokeTest(QMainWindow):
         col_h_layout.addWidget(self.show_collider_chk)
         col_h_layout.addStretch()
 
-        btn_collapse_col = QToolButton()
-        btn_collapse_col.setText("▼")
-        btn_collapse_col.setFixedSize(18, 18)
-        btn_collapse_col.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
+        self.btn_collapse_collider = QToolButton()
+        self.btn_collapse_collider.setText("▼")
+        self.btn_collapse_collider.setFixedSize(18, 18)
+        self.btn_collapse_collider.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
 
         self.btn_del_col = QToolButton()
         self.btn_del_col.setText("✕")
         self.btn_del_col.setFixedSize(18, 18)
         self.btn_del_col.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important; padding: 0px;")
 
-        col_h_layout.addWidget(btn_collapse_col)
+        col_h_layout.addWidget(self.btn_collapse_collider)
         col_h_layout.addWidget(self.btn_del_col)
-        main_layout.addWidget(col_header)
+        main_layout.addWidget(self.collider_header)
 
         # Widget container para collider
-        col_body = QWidget()
-        col_body_layout = QVBoxLayout(col_body)
+        self.collider_body = QWidget()
+        col_body_layout = QVBoxLayout(self.collider_body)
         col_body_layout.setContentsMargins(0, 0, 0, 0)
 
-        btn_collapse_col.clicked.connect(lambda: col_body.setVisible(not col_body.isVisible()))
 
         collider_widget = QWidget()
         collider_lay = QFormLayout(collider_widget)
@@ -646,7 +642,7 @@ class InterfaceSmokeTest(QMainWindow):
         self.collider_trigger_field.setObjectName("InspectorCheckBox")
         collider_lay.addRow("Collider Trigger", self.collider_trigger_field)
         col_body_layout.addWidget(collider_widget)
-        main_layout.addWidget(col_body)
+        main_layout.addWidget(self.collider_body)
         '''Animator 2D foi movido para a aba Animation.
         # ------------------ COMPONENTE: ANIMATOR 2D ------------------
         anim_header = QWidget()
@@ -748,9 +744,10 @@ class InterfaceSmokeTest(QMainWindow):
         '''
 
         # ------------------ COMPONENTE: CAMERA 2D ------------------
-        camera_header = QWidget()
-        camera_header.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px; border-bottom: 1px solid #2b2b2b;")
-        camera_header_layout = QHBoxLayout(camera_header)
+        self.camera_header = QWidget()
+        self.camera_header.setObjectName("InspectorComponentHeader")
+        self.camera_header.setStyleSheet("background-color: #24272d; border-radius: 4px; border: 1px solid #30343c;")
+        camera_header_layout = QHBoxLayout(self.camera_header)
         camera_header_layout.setContentsMargins(6, 4, 6, 4)
         self.show_camera_chk = QCheckBox("📷 Camera 2D")
         self.show_camera_chk.setObjectName("InspectorCheckBox")
@@ -767,7 +764,7 @@ class InterfaceSmokeTest(QMainWindow):
         self.btn_delete_camera.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important; padding: 0px;")
         camera_header_layout.addWidget(self.btn_collapse_camera)
         camera_header_layout.addWidget(self.btn_delete_camera)
-        main_layout.addWidget(camera_header)
+        main_layout.addWidget(self.camera_header)
 
         self.camera_body = QWidget()
         camera_form = QFormLayout(self.camera_body)
@@ -797,7 +794,8 @@ class InterfaceSmokeTest(QMainWindow):
 
         # ------------------ COMPONENTE: UI NATIVA ------------------
         self.ui_component_header = QWidget()
-        self.ui_component_header.setStyleSheet("background-color: #242424; border-radius: 3px; margin-top: 10px; border-bottom: 1px solid #2b2b2b;")
+        self.ui_component_header.setObjectName("InspectorComponentHeader")
+        self.ui_component_header.setStyleSheet("background-color: #24272d; border-radius: 4px; border: 1px solid #30343c;")
         ui_header_layout = QHBoxLayout(self.ui_component_header)
         ui_header_layout.setContentsMargins(6, 4, 6, 4)
         self.show_ui_chk = QCheckBox("🖥 UI")
@@ -853,18 +851,31 @@ class InterfaceSmokeTest(QMainWindow):
         self.ui_component_form.addRow("Alvo", self.ui_target_combo)
         main_layout.addWidget(self.ui_component_body)
 
+        for component_body in (
+            self.transform_body, self.sprite_renderer_body, self.audio_source_body,
+            self.rigidbody_body, self.collider_body, self.camera_body,
+            self.ui_component_body,
+        ):
+            component_body.setObjectName("InspectorComponentBody")
+            component_body.setStyleSheet(
+                "#InspectorComponentBody { background: #202228; border-left: 1px solid #30343c; "
+                "border-right: 1px solid #30343c; border-bottom: 1px solid #30343c; }"
+            )
+
         # O cabeçalho e corpo de scripts/custom agora são inseridos de forma modular dinâmica para cada script ativo
         self.script_containers = []
 
-        self.add_component_button = QPushButton("Adicionar Componente")
+        self.add_component_button = QPushButton("＋ Adicionar Componente")
         self.add_component_button.setObjectName("InspectorAddComponentButton")
+        self.add_component_button.setMinimumHeight(30)
         main_layout.addWidget(self.add_component_button)
 
         main_layout.addStretch(1)
 
-        # Tamanho máximo e mínimo fixado para manter proporção perfeita do painel lateral
-        inspector.setFixedWidth(280)
-        self.inspector_dock.setFixedWidth(290)
+        # Inspector respirável e redimensionável; não trava mais toda a interface em 290 px.
+        inspector.setMinimumWidth(310)
+        self.inspector_dock.setMinimumWidth(325)
+        self.inspector_dock.resize(350, self.inspector_dock.height())
         scroll.setWidget(inspector)
         self.inspector_dock.setWidget(scroll)
 
