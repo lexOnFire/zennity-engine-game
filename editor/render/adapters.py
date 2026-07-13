@@ -1,6 +1,7 @@
 """Adaptadores tipados entre RenderPass e os renderizadores da Scene View."""
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from editor.render.render_pipeline import RenderContext
@@ -127,4 +128,80 @@ class OverlayRendererAdapter:
             snap_on=viewport._snap_enabled(),
             mouse_screen_pos=viewport._qt_mouse_pos,
             is_playing=viewport._is_playing(),
+        )
+
+
+class FramePreparationAdapter:
+    """Prepara câmera, grid, sprites e RenderContext de um único frame."""
+
+    def __init__(self, viewport: Any, painter_factory: Any, sprite_renderer: Any) -> None:
+        self.viewport = viewport
+        self.painter_factory = painter_factory
+        self.sprite_renderer = sprite_renderer
+
+    def create_context(self) -> RenderContext | None:
+        viewport = self.viewport
+        if not viewport.pg_surface or not viewport.active_scene:
+            return None
+        viewport._sync_legacy_scale_handles()
+        viewport.sync_camera_from_engine()
+        now = time.time()
+        dt = min(now - viewport._last_render_time, 0.1)
+        viewport._last_render_time = now
+        if not viewport._is_playing() and not viewport.is_game_view():
+            viewport.camera.update(dt)
+        viewport._pipeline_grid_states = viewport._capture_grid_state()
+        viewport._pipeline_real_show_grid = (
+            viewport._pipeline_grid_states[0][1]
+            if viewport._pipeline_grid_states else True
+        )
+        viewport._set_grid_visible(False)
+        use_modern_sprites = not viewport._is_playing() and not viewport.is_game_view()
+        viewport._pipeline_modern_sprites = (
+            self.sprite_renderer.collect(viewport.active_scene) if use_modern_sprites else []
+        )
+        viewport.active_scene._zennity_modern_sprite_component_ids = {
+            id(command.component) for command in viewport._pipeline_modern_sprites
+        }
+        return RenderContext(
+            viewport=viewport,
+            painter=self.painter_factory(viewport),
+            pygame_surface=viewport.pg_surface,
+            active_scene=viewport.active_scene,
+            editor_context=viewport.editor_state,
+            runtime_manager=viewport.runtime_manager,
+            selection_manager=getattr(viewport, "selection_manager", None),
+        )
+
+    def finish(self, context: RenderContext) -> None:
+        viewport = self.viewport
+        if viewport.active_scene is not None:
+            viewport.active_scene._zennity_modern_sprite_component_ids = set()
+        viewport._restore_grid_state(viewport._pipeline_grid_states)
+        context.painter.end()
+
+
+class FramebufferPresentRendererAdapter:
+    """Restaura o grid legado e apresenta o framebuffer no QPainter atual."""
+
+    def __init__(self, viewport: Any) -> None:
+        self.viewport = viewport
+
+    def render(self, context: RenderContext) -> None:
+        self.viewport._restore_grid_state(self.viewport._pipeline_grid_states)
+        self.viewport._present_legacy_framebuffer(context.painter)
+
+
+class SpriteRendererAdapter:
+    """Liga SpriteOverlayPass ao renderizador moderno e ao frame preparado."""
+
+    def __init__(self, viewport: Any, renderer: Any) -> None:
+        self.viewport = viewport
+        self.renderer = renderer
+
+    def render(self, context: RenderContext) -> None:
+        self.renderer.draw(
+            context.painter,
+            self.viewport.camera,
+            self.viewport._pipeline_modern_sprites,
         )
