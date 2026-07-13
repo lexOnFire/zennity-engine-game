@@ -134,6 +134,10 @@ class ImageComponent(UIElement):
     def draw(self, screen: pygame.Surface) -> None:
         if not self.visible or self._owner_is_pure_ui():
             return
+        scene = getattr(self.game_object, "scene", None)
+        modern_ids = getattr(scene, "_zennity_modern_sprite_component_ids", ())
+        if id(self) in modern_ids:
+            return
         surface = self.load_surface(self.sprite_path)
         if surface is None or self.game_object is None:
             return
