@@ -22,6 +22,8 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
   `OverlayPass`, separadas do desenho de HUD e coordenadas.
 - Gizmos Qt de Move e Rotate foram movidos para `TransformGizmoPass`, executado
   depois do `OverlayPass` para preservar sua sobreposição visual histórica.
+- Cor de limpeza e fundos infinitos agora são desenhados pelo `BackgroundPass`;
+  `LegacyScenePass` recebe apenas o conteúdo das cenas que suportam separação.
 - Preparação do frame e chamadas antigas da Phase1 Viewport foram movidas para
   delegates privados usados pelos passes.
 
@@ -32,10 +34,10 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
 
 ## Acoplamentos preservados por compatibilidade
 
-- `BackgroundPass` agora limpa o framebuffer para Scene 2D, Scene 3D e
+- `BackgroundPass` limpa o framebuffer para Scene 2D, Scene 3D e
   `RuntimeScene`, preservando respectivamente `(28, 29, 36)` e o
   `Camera.clear_color`/fallback `(30, 30, 30)`.
-- Cenas desconhecidas continuam usando `draw()` integral como fallback, sem
+- Cenas que sobrescrevem somente `draw()` continuam usando-o integralmente, sem
   perda de compatibilidade.
 - Sprites continuam tendo o framebuffer Pygame como fonte única; o overlay Qt
   moderno permanece desativado para evitar renderização duplicada.
@@ -48,7 +50,6 @@ reescrito, nenhuma otimização foi aplicada e o caminho legado permanece ativo.
 
 ## Próximos candidatos à migração
 
-1. Migrar fundos infinitos, que continuam pertencendo ao conteúdo da cena.
-2. Conectar o SpriteRenderer moderno ao `SpriteOverlayPass` somente depois de
+1. Conectar o SpriteRenderer moderno ao `SpriteOverlayPass` somente depois de
    remover, com testes visuais, a fonte equivalente no caminho legado.
-3. Substituir os delegates temporários por adapters tipados por componente.
+2. Substituir os delegates temporários por adapters tipados por componente.
