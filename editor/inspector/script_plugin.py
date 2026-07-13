@@ -26,7 +26,7 @@ from editor.runtime.command_manager import CommandManager
 
 # Pasta padrão onde os scripts do jogo são buscados.
 # Pode ser sobrescrita via ScriptInspectorPlugin.scripts_root antes de usar.
-_DEFAULT_SCRIPTS_ROOT = Path("game/scripts")
+_DEFAULT_SCRIPTS_ROOT = Path("Assets/Scripts")
 
 
 def _discover_scripts(root: Path) -> list[Path]:
@@ -145,19 +145,33 @@ class _ScriptWidget(QWidget):
         scripts = _discover_scripts(self._scripts_root)
         script_combo.addItem("-- Selecionar script --", None)
         for s in scripts:
-            script_combo.addItem(s.name, str(s))
+            script_combo.addItem(str(s.relative_to(self._scripts_root) if self._scripts_root in s.parents else s.name).replace("\\", "/"), str(s).replace("\\", "/"))
 
         current_path = getattr(self._component, "script_path", "")
         if current_path:
+            current_path_clean = str(current_path).replace("\\", "/")
             for i in range(script_combo.count()):
-                if script_combo.itemData(i) == current_path:
+                if str(script_combo.itemData(i)).replace("\\", "/") == current_path_clean:
                     script_combo.setCurrentIndex(i)
                     break
 
         script_combo.currentIndexChanged.connect(
             lambda _idx, combo=script_combo: self._on_script_selected(combo)
         )
-        self._body_layout.addRow("Script", script_combo)
+
+        # -- Botões de Ação --
+        btn_edit = QPushButton("Editar")
+        btn_edit.setEnabled(bool(current_path))
+        btn_edit.clicked.connect(self.edit_script)
+
+        btn_create = QPushButton("Criar")
+        btn_create.clicked.connect(self.create_script)
+
+        row_layout = QHBoxLayout()
+        row_layout.addWidget(script_combo, 1)
+        row_layout.addWidget(btn_edit)
+        row_layout.addWidget(btn_create)
+        self._body_layout.addRow("Script", row_layout)
 
         # -- Propriedades dinâmicas --
         for prop_name, prop_value in getattr(self._component, "properties", {}).items():
@@ -216,6 +230,34 @@ class _ScriptWidget(QWidget):
         else:
             apply()
 
+    def on_script_activated(self, index: int) -> None:
+        combo = self.findChild(QComboBox, "ScriptComboBox")
+        if combo is not None:
+            combo.setCurrentIndex(index)
+            # Tenta pegar userdata primeiro, senão texto simples
+            path = combo.itemData(index) or combo.itemText(index)
+            if path:
+                old_path = self._component.script_path
+                old_props = dict(getattr(self._component, "properties", {}))
+
+                def apply() -> None:
+                    self._component.script_path = str(path)
+                    self._component.properties = {}
+                    if hasattr(self._component, "_load_defaults"):
+                        self._component._load_defaults()  # noqa: SLF001
+                    self._rebuild_body()
+
+                def undo() -> None:
+                    self._component.script_path = old_path
+                    self._component.properties = old_props
+                    self._rebuild_body()
+
+                if self._command_manager is not None:
+                    from editor.runtime.command_manager import FunctionCommand
+                    self._command_manager.execute(FunctionCommand(f"Set Script {path}", apply, undo))
+                else:
+                    apply()
+
     def _set_property(self, name: str, value: Any) -> None:
         old = self._component.properties.get(name)
 
@@ -242,6 +284,58 @@ class _ScriptWidget(QWidget):
     def _request_remove(self) -> None:
         if self._on_remove is not None:
             self._on_remove(self._component)
+
+    def edit_script(self) -> None:
+        path = self._component.script_path
+        if path:
+            win = self.window()
+            if win and hasattr(win, "dock_code_editor"):
+                win.dock_code_editor.open_file(path)
+
+    def create_script(self) -> None:
+        go = getattr(self._component, "game_object", None)
+        if not go:
+            return
+        
+        # Garante diretório Assets/Scripts existente
+        from editor.script_templates import build_isolated_script_template
+        scripts_dir = self._scripts_root
+        scripts_dir.mkdir(parents=True, exist_ok=True)
+        
+        safe_name = go.name.lower().replace(" ", "_")
+        script_file = scripts_dir / f"{safe_name}.py"
+        
+        # Grava o template de script clássico
+        script_file.write_text(
+            f'"""{go.name}Behaviour — script criado pelo Zennity Editor."""\n'
+            f'from engine.runtime import ScriptBehaviour\n\n'
+            f'class {go.name.replace(" ", "")}Behaviour(ScriptBehaviour):\n'
+            f'    def on_start(self):\n'
+            f'        pass\n\n'
+            f'    def on_update(self, delta_time):\n'
+            f'        pass\n',
+            encoding="utf-8"
+        )
+        
+        # Atualiza a referência de script do componente
+        target_path = f"Assets/Scripts/{safe_name}.py"
+        
+        def apply() -> None:
+            self._component.script_path = target_path
+            self._component.properties = {}
+            self._component._load_defaults()  # noqa: SLF001
+            self._rebuild_body()
+
+        def undo() -> None:
+            self._component.script_path = ""
+            self._component.properties = {}
+            self._rebuild_body()
+
+        if self._command_manager is not None:
+            from editor.runtime.command_manager import FunctionCommand
+            self._command_manager.execute(FunctionCommand(f"Create Script {target_path}", apply, undo))
+        else:
+            apply()
 
 
 class ScriptInspectorPlugin(InspectorPlugin):

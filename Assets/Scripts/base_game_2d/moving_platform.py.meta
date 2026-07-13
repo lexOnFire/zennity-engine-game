@@ -1,0 +1,8 @@
+{
+  "uuid": "508ebf25-2e63-429e-8304-466eb37114fb",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/base_game_2d/moving_platform.py",
+  "import_settings": {},
+  "dependencies": []
+}

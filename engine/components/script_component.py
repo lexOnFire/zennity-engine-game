@@ -7,7 +7,10 @@ from pathlib import Path
 from typing import Any, Callable
 
 
-class ScriptComponent:
+from engine.core.component import Component
+
+
+class ScriptComponent(Component):
     """Componente que associa um script Python a um GameObject.
 
     Formato esperado do script (simples, sem classe obrigatória):
@@ -35,6 +38,7 @@ class ScriptComponent:
     unique: bool = False
 
     def __init__(self, script_path: str = "") -> None:
+        super().__init__()
         self.script_path: str = script_path
         self.properties: dict[str, Any] = {}
         self.enabled: bool = True

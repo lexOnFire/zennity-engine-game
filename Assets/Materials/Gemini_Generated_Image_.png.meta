@@ -1,0 +1,10 @@
+{
+  "uuid": "342c7e54-2052-490e-8a58-77a163bce031",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/Gemini_Generated_Image_.png",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": []
+}
