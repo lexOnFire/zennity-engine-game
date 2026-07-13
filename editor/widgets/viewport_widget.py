@@ -511,26 +511,27 @@ class ViewportWidget(QWidget):
         if not self.pg_surface or not self.active_scene:
             return
 
+        self._draw_legacy_scene_content(scene_draw=scene_draw)
+        self._draw_legacy_gizmos()
+
+    def _draw_legacy_scene_content(self, scene_draw=None) -> None:
+        """Desenha somente o conteúdo da cena no framebuffer Pygame."""
+        if not self.pg_surface or not self.active_scene:
+            return
         draw = scene_draw or self.active_scene.draw
         draw(self.pg_surface)
 
+    def _draw_legacy_gizmos(self) -> None:
+        """Mantém a chamada histórica do GizmoRegistry isolada do conteúdo."""
+        if not self.pg_surface or not self.active_scene:
+            return
         is_playing = (
             self.runtime_manager is not None
             and getattr(self.runtime_manager, "is_playing", False)
         )
         if not is_playing:
             from editor.gizmos.gizmo_registry import GizmoRegistry
-            objs = getattr(self.active_scene, "editable_objects", getattr(self.active_scene, "game_objects", []))
-            for obj in objs:
-                if obj.name == "EditorCamera":
-                    continue
-                for comp in obj.components:
-                    draw_func = GizmoRegistry.get_gizmo(comp.component_type)
-                    if draw_func:
-                        try:
-                            draw_func(comp, self.pg_surface, self.active_scene)
-                        except Exception:
-                            pass
+            GizmoRegistry.draw(self.pg_surface, self.active_scene)
 
     def _present_legacy_framebuffer(self, painter: QPainter) -> None:
         """Copia o framebuffer Pygame já desenhado para um QPainter existente."""
