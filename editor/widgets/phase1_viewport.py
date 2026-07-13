@@ -16,6 +16,13 @@ from PySide6.QtGui import QColor, QPainter, QPen, QMouseEvent, QWheelEvent
 
 from editor.gizmos.qt_gizmo_overlay import QtMoveGizmoOverlay
 from editor.gizmos.rotate_gizmo import QtRotateGizmoOverlay
+from editor.render.adapters import (
+    BackgroundRendererAdapter,
+    GizmoRendererAdapter,
+    GridRendererAdapter,
+    LegacySceneRendererAdapter,
+    OverlayRendererAdapter,
+)
 from editor.render.render_pipeline import (
     BackgroundPass,
     FramebufferPresentPass,
@@ -92,25 +99,31 @@ class Phase1ViewportWidget(ViewportWidget):
         self.view_mode: str = "scene"
         self._pipeline_grid_states: list[tuple[Any, bool]] = []
         self._pipeline_real_show_grid: bool = True
-        self._pipeline_background_managed: bool = False
         self._pipeline_modern_sprites: list[SpriteDrawCommand] = []
         self.sprite_overlay_renderer = SpriteOverlayRenderer()
+        self.background_renderer_adapter = BackgroundRendererAdapter()
+        self.legacy_scene_renderer_adapter = LegacySceneRendererAdapter(
+            self, self.background_renderer_adapter
+        )
+        self.grid_renderer_adapter = GridRendererAdapter(self)
+        self.gizmo_renderer_adapter = GizmoRendererAdapter(self)
+        self.overlay_renderer_adapter = OverlayRendererAdapter(self)
         self.render_pipeline = self._build_render_pipeline()
 
     def _build_render_pipeline(self) -> RenderPipeline:
         return RenderPipeline([
             # O fundo permanece no legado até sua migração poder preservar
             # exatamente Camera.clear_color e fundos infinitos.
-            BackgroundPass(self._render_background_pass),
-            LegacyScenePass(LegacySceneAdapter(self._render_legacy_scene_pass)),
-            GizmoPass(self._render_gizmo_registry_pass),
+            BackgroundPass(self.background_renderer_adapter.render),
+            LegacyScenePass(LegacySceneAdapter(self.legacy_scene_renderer_adapter.render)),
+            GizmoPass(self.gizmo_renderer_adapter.render_components),
             FramebufferPresentPass(self._render_framebuffer_present_pass),
             # Mantém a grade acima dos sprites, como no framebuffer legado.
             SpriteOverlayPass(self._render_sprite_overlay_pass),
-            GridPass(self._render_grid_pass),
-            OverlayPass(self._render_overlay_pass),
+            GridPass(self.grid_renderer_adapter.render),
+            OverlayPass(self.overlay_renderer_adapter.render),
             # Preserva a ordem histórica acima de seleção, bounding box e HUD.
-            TransformGizmoPass(self._render_transform_gizmo_pass),
+            TransformGizmoPass(self.gizmo_renderer_adapter.render_transform),
         ])
 
     # ── Injeção de dependências ───────────────────────────────────────────────
@@ -794,52 +807,9 @@ class Phase1ViewportWidget(ViewportWidget):
             selection_manager=getattr(self, "selection_manager", None),
         )
 
-    def _render_background_pass(self, context: RenderContext) -> None:
-        draw_background = getattr(context.active_scene, "_zennity_draw_background", None)
-        if not callable(draw_background):
-            draw_background = getattr(context.active_scene, "draw_background", None)
-        if callable(draw_background):
-            self._pipeline_background_managed = True
-            draw_background(context.pygame_surface)
-            return
-        color = getattr(context.active_scene, "_zennity_background_color", None)
-        if color is None and callable(getattr(context.active_scene, "draw_content", None)):
-            try:
-                from engine.graphics.camera import Camera
-                main_camera = Camera.main
-            except Exception:
-                main_camera = None
-            color = tuple(main_camera.clear_color) if main_camera is not None else (30, 30, 30)
-        self._pipeline_background_managed = color is not None
-        if self._pipeline_background_managed:
-            context.pygame_surface.fill(color)
-
-    def _render_legacy_scene_pass(self, context: RenderContext) -> None:
-        draw_content = None
-        if self._pipeline_background_managed:
-            draw_content = getattr(context.active_scene, "_zennity_draw_content", None)
-            if not callable(draw_content):
-                draw_content = getattr(context.active_scene, "draw_content", None)
-        self._draw_legacy_scene_content(scene_draw=draw_content)
-
-    def _render_gizmo_registry_pass(self, context: RenderContext) -> None:
-        self._draw_legacy_gizmos()
-
     def _render_framebuffer_present_pass(self, context: RenderContext) -> None:
         self._restore_grid_state(self._pipeline_grid_states)
         self._present_legacy_framebuffer(context.painter)
-
-    def _render_grid_pass(self, context: RenderContext) -> None:
-        draw_editor_overlays = not self.is_game_view() and not self._is_playing()
-        if self._pipeline_real_show_grid and draw_editor_overlays:
-            self.renderer.grid_renderer.draw(
-                painter=context.painter,
-                vp_w=self.camera.vp_w,
-                vp_h=self.camera.vp_h,
-                zoom=self.camera.zoom,
-                camera_pos=self.camera.position,
-                world_to_viewport=self.camera.world_to_viewport,
-            )
 
     def _render_sprite_overlay_pass(self, context: RenderContext) -> None:
         self.sprite_overlay_renderer.draw(
@@ -847,38 +817,3 @@ class Phase1ViewportWidget(ViewportWidget):
             self.camera,
             self._pipeline_modern_sprites,
         )
-
-    def _render_overlay_pass(self, context: RenderContext) -> None:
-        selected = self._selected_transform_object()
-        active_tool = self._active_tool()
-        object_count = len(self.active_scene.editable_objects) if self.active_scene else 0
-        if not self.is_game_view():
-            self.renderer.render_selection_overlays(
-                painter=context.painter,
-                camera=self.camera,
-                selected=selected,
-                active_tool_name=active_tool.value,
-                is_playing=self._is_playing(),
-            )
-            self.renderer.render_hud_overlays(
-                painter=context.painter,
-                camera=self.camera,
-                active_tool_name=active_tool.value,
-                object_count=object_count,
-                grid_size=self.renderer.grid_renderer.grid_size,
-                snap_on=self._snap_enabled(),
-                mouse_screen_pos=self._qt_mouse_pos,
-                is_playing=self._is_playing(),
-            )
-
-    def _render_transform_gizmo_pass(self, context: RenderContext) -> None:
-        selected = self._selected_transform_object()
-        active_tool = self._active_tool()
-        if self._should_draw_gizmo(selected):
-            if active_tool == EditorTool.MOVE:
-                self.move_gizmo_overlay.draw(context.painter, selected, self.world_to_viewport)
-            elif active_tool == EditorTool.ROTATE:
-                mouse = self._rotate_current_mouse if self._rotate_drag_object is not None else None
-                self.rotate_gizmo_overlay.draw(
-                    context.painter, selected, self.world_to_viewport, current_mouse=mouse
-                )
