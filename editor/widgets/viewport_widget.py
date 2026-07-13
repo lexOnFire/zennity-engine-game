@@ -299,9 +299,8 @@ class ViewportWidget(QWidget):
             for btn in getattr(scene, "_all_toolbar_btns", []):
                 btn.rect.y = -9999
 
-            def _qt_draw_2d(screen, _scene=scene):
+            def _qt_draw_2d_content(screen, _scene=scene):
                 lay = _scene._layout()
-                screen.fill((28, 29, 36))
                 if hasattr(_scene, "_draw_viewport"):
                     _scene._draw_viewport(screen, lay)
                     return
@@ -312,6 +311,11 @@ class ViewportWidget(QWidget):
                         _scene._draw_object(screen, obj, idx, 1.0, lay)
                     elif hasattr(obj, "draw"):
                         obj.draw(screen)
+            def _qt_draw_2d(screen, _content=_qt_draw_2d_content):
+                screen.fill((28, 29, 36))
+                _content(screen)
+            scene._zennity_background_color = (28, 29, 36)
+            scene._zennity_draw_content = _qt_draw_2d_content
             scene.draw = _qt_draw_2d
 
             # Guarda o original e substitui por wrapper que filtra eventos
@@ -375,7 +379,7 @@ class ViewportWidget(QWidget):
             # Congela atualização interna de layout
             scene._lay.update = lambda sw, sh: None
 
-            def _qt_draw_3d(screen, _scene=scene, _w=widget):
+            def _qt_draw_3d_content(screen, _scene=scene, _w=widget):
                 # Sincroniza layout a cada frame (responde ao resize)
                 _sync_3d_layout()
 
@@ -399,7 +403,6 @@ class ViewportWidget(QWidget):
                 from engine.graphics.renderer3d import Camera3D, MeshRenderer3D
                 Camera3D.main = cam
 
-                screen.fill((28, 29, 36))
                 _scene._draw_floor_grid(screen)
 
                 for go in _scene.game_objects:
@@ -415,6 +418,12 @@ class ViewportWidget(QWidget):
 
                 _scene._draw_gizmo(screen)
 
+            def _qt_draw_3d(screen, _content=_qt_draw_3d_content):
+                screen.fill((28, 29, 36))
+                _content(screen)
+
+            scene._zennity_background_color = (28, 29, 36)
+            scene._zennity_draw_content = _qt_draw_3d_content
             scene.draw = _qt_draw_3d
 
     # ──────────────────────────────────────────────────────────────────────────
@@ -497,12 +506,13 @@ class ViewportWidget(QWidget):
         self._present_legacy_framebuffer(painter)
         painter.end()
 
-    def _draw_legacy_framebuffer(self) -> None:
+    def _draw_legacy_framebuffer(self, scene_draw=None) -> None:
         """Executa o desenho Pygame legado sem apresentar o framebuffer no Qt."""
         if not self.pg_surface or not self.active_scene:
             return
 
-        self.active_scene.draw(self.pg_surface)
+        draw = scene_draw or self.active_scene.draw
+        draw(self.pg_surface)
 
         is_playing = (
             self.runtime_manager is not None
