@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QPlainTextEdit,
     QPushButton,
+    QSlider,
     QSplitter,
     QTabWidget,
     QToolBar,
@@ -98,7 +99,8 @@ class InterfaceSmokeTest(QMainWindow):
         self.animation_workspace.setObjectName("AnimationWorkspace")
         self.animation_workspace.setStyleSheet("#AnimationWorkspace { background: #181a20; }")
         animation_layout = QVBoxLayout(self.animation_workspace)
-        animation_layout.setContentsMargins(12, 12, 12, 12)
+        animation_layout.setContentsMargins(8, 8, 8, 8)
+        animation_layout.setSpacing(8)
         animation_title_row = QHBoxLayout()
         animation_title = QLabel("🎬 Editor de Animação 2D")
         animation_title.setStyleSheet("font-size: 15px; font-weight: bold; color: #ffffff;")
@@ -109,19 +111,81 @@ class InterfaceSmokeTest(QMainWindow):
         animation_title_row.addWidget(self.animation_object_label)
         animation_layout.addLayout(animation_title_row)
 
+        animation_toolbar = QHBoxLayout()
+        self.animation_new_button = QPushButton("＋ Nova")
+        self.animation_open_button = QPushButton("Abrir")
+        self.animation_save_button = QPushButton("Salvar")
+        self.animation_save_as_button = QPushButton("Salvar como")
+        self.animation_duplicate_button = QPushButton("Duplicar")
+        self.animation_delete_button = QPushButton("Excluir")
+        for button in (
+            self.animation_new_button, self.animation_open_button,
+            self.animation_save_button, self.animation_save_as_button,
+            self.animation_duplicate_button, self.animation_delete_button,
+        ):
+            button.setMinimumHeight(28)
+            animation_toolbar.addWidget(button)
+        animation_toolbar.addStretch(1)
+        self.animation_asset_label = QLabel("Novo clip — ainda não salvo")
+        self.animation_asset_label.setStyleSheet("color: #8f96a8;")
+        animation_toolbar.addWidget(self.animation_asset_label)
+        animation_layout.addLayout(animation_toolbar)
+
         animation_content = QHBoxLayout()
+        animation_content.setSpacing(8)
+
+        library_panel = QFrame()
+        library_panel.setObjectName("AnimationLibraryPanel")
+        library_panel.setStyleSheet("#AnimationLibraryPanel { background: #14161c; border: 1px solid #30333c; }")
+        library_layout = QVBoxLayout(library_panel)
+        library_layout.setContentsMargins(8, 8, 8, 8)
+        library_title = QLabel("BIBLIOTECA")
+        library_title.setStyleSheet("font-weight: bold; color: #aeb5c5;")
+        library_layout.addWidget(library_title)
+        self.animation_library_tree = QTreeWidget()
+        self.animation_library_tree.setHeaderHidden(True)
+        self.animation_library_tree.setMinimumWidth(180)
+        self.animation_library_tree.setToolTip("Duplo clique para abrir uma animação salva")
+        library_layout.addWidget(self.animation_library_tree, 1)
+        library_hint = QLabel("Assets/Animations\nArquivos .zanim")
+        library_hint.setStyleSheet("color: #6f7687; font-size: 10px;")
+        library_layout.addWidget(library_hint)
+        animation_content.addWidget(library_panel, 1)
+
         preview_column = QVBoxLayout()
         self.animator_preview = QLabel("Selecione um objeto com Animator 2D")
         self.animator_preview.setAlignment(Qt.AlignCenter)
         self.animator_preview.setMinimumSize(320, 260)
         self.animator_preview.setStyleSheet("background: #111319; border: 1px solid #3a3d46; color: #888;")
         preview_column.addWidget(self.animator_preview, 1)
+        playback_row = QHBoxLayout()
+        self.animation_first_frame_button = QPushButton("|◀")
+        self.animation_previous_frame_button = QPushButton("◀")
+        self.animation_play_button = QPushButton("⏸")
+        self.animation_next_frame_button = QPushButton("▶")
+        self.animation_last_frame_button = QPushButton("▶|")
+        for button in (
+            self.animation_first_frame_button, self.animation_previous_frame_button,
+            self.animation_play_button, self.animation_next_frame_button,
+            self.animation_last_frame_button,
+        ):
+            button.setMaximumWidth(48)
+            playback_row.addWidget(button)
+        playback_row.addStretch(1)
+        self.animation_frame_label = QLabel("Frame 1 / 1")
+        playback_row.addWidget(self.animation_frame_label)
+        preview_column.addLayout(playback_row)
+        self.animation_timeline = QSlider(Qt.Horizontal)
+        self.animation_timeline.setRange(0, 0)
+        self.animation_timeline.setToolTip("Arraste para visualizar qualquer quadro")
+        preview_column.addWidget(self.animation_timeline)
         self.animator_current_lbl = QLineEdit("Nenhum")
         self.animator_current_lbl.setReadOnly(True)
         preview_column.addWidget(self.animator_current_lbl)
-        animation_content.addLayout(preview_column, 2)
+        animation_content.addLayout(preview_column, 3)
 
         self.animator_body = QWidget()
+        self.animator_body.setMinimumWidth(250)
         animator_lay = QFormLayout(self.animator_body)
         animator_lay.setContentsMargins(8, 0, 8, 0)
         self.show_animator_chk = QCheckBox("Animator 2D ativo")
@@ -164,7 +228,7 @@ class InterfaceSmokeTest(QMainWindow):
         self.animator_loop_field = QCheckBox()
         self.animator_loop_field.setChecked(True)
         animator_lay.addRow("Repetir", self.animator_loop_field)
-        animation_content.addWidget(self.animator_body, 1)
+        animation_content.addWidget(self.animator_body, 2)
         animation_layout.addLayout(animation_content, 1)
         self.animation_workspace.hide()
 

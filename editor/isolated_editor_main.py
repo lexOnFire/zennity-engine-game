@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QColorDialog, QFileDialog, QInputDialog, QMenu, QToolBar,
     QHBoxLayout, QFormLayout,
     QCheckBox, QLabel, QComboBox, QLineEdit,
-    QPushButton, QDoubleSpinBox,
+    QMessageBox, QPushButton, QDoubleSpinBox,
 )
 from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QWidget
 
@@ -30,6 +30,13 @@ from editor.runtime.native_ui import normalize_ui, scene_item_to_ui, ui_to_scene
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from editor.widgets.component_picker import ComponentPickerDialog
+from engine.animation.clip_asset import (
+    animation_asset_from_clip,
+    animation_asset_to_clip,
+    default_animation_asset,
+    load_animation_asset,
+    save_animation_asset,
+)
 from engine.build import export_development_project
 
 
@@ -37,6 +44,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
     def __init__(self, viewport_process: mp.Process | None, commands, events) -> None:
         self._console_records: list[tuple[str, str]] = []
         super().__init__()
+        self._current_animation_asset_path: Path | None = None
+        self._animation_draft_name = "NewAnimation"
+        self._animation_asset_dirty = False
+        self._animation_preview_playing = True
+        self._animation_bound_key: tuple[str, str] | None = None
         self._component_expanded = {
             "transform": True,
             "sprite": True,
@@ -89,6 +101,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._connect_hierarchy_to_viewport()
         self._refresh_hierarchy()
         self._connect_inspector_to_viewport()
+        self._configure_animation_workspace()
         self.script_containers = []
         self._clear_inspector_view()
         self.add_component_button.clicked.connect(self._open_add_component_menu)
@@ -196,6 +209,24 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 f"Modificado: {date_str}"
             )
             self.preview_details_label.setText(meta)
+            return
+
+        elif ext == ".zanim":
+            self.preview_label.clear()
+            self.preview_label.setText("🎞 Animation")
+            try:
+                animation = load_animation_asset(path)
+                details = (
+                    f"Nome: {animation['name']}<br>"
+                    f"Quadros: {len(animation['frames'])}<br>"
+                    f"FPS: {animation['fps']:g}<br>"
+                    f"Repetir: {'Sim' if animation['loop'] else 'Não'}<br>"
+                )
+            except (OSError, ValueError, json.JSONDecodeError) as exc:
+                details = f"<span style='color:#e57373'>Asset inválido: {exc}</span><br>"
+            self.preview_details_label.setText(
+                f"<b>{path.name}</b><br><br>Tipo: Clip de Animação 2D<br>{details}Tamanho: {size_str}<br>Modificado: {date_str}"
+            )
             return
 
         elif ext in {".zscene", ".json"}:
@@ -430,6 +461,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.animation_workspace.setVisible(animation_mode)
         self.viewport_host.setVisible(not animation_mode)
         if animation_mode:
+            self._refresh_animation_library()
             self._log("INFO", "Aba alterada para: ANIMATION")
             if self._selected_name in self._objects_by_name:
                 self._update_inspector(self._selected_name)
@@ -492,6 +524,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     icon = "🖼️ "
                 elif child.suffix.lower() in (".ogg", ".wav", ".mp3"):
                     icon = "🔊 "
+                elif child.suffix.lower() == ".zanim":
+                    icon = "🎞 "
                 else:
                     icon = "📄 "
                 item = QTreeWidgetItem([icon + child.name])
@@ -1353,6 +1387,251 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     result.append(str(path.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/"))
         return sorted(result, key=str.lower)
 
+    def _configure_animation_workspace(self) -> None:
+        """Conecta a biblioteca de clips sem interferir no runtime existente."""
+        self.animation_new_button.clicked.connect(self._new_animation_asset)
+        self.animation_open_button.clicked.connect(self._open_animation_asset_dialog)
+        self.animation_save_button.clicked.connect(self._save_animation_asset)
+        self.animation_save_as_button.clicked.connect(lambda: self._save_animation_asset(save_as=True))
+        self.animation_duplicate_button.clicked.connect(self._duplicate_animation_asset)
+        self.animation_delete_button.clicked.connect(self._delete_animation_asset)
+        self.animation_library_tree.itemDoubleClicked.connect(self._open_animation_library_item)
+
+        self.animation_play_button.clicked.connect(self._toggle_animation_preview_playback)
+        self.animation_first_frame_button.clicked.connect(lambda: self._set_animation_preview_frame(0))
+        self.animation_previous_frame_button.clicked.connect(lambda: self._set_animation_preview_frame(self._animator_preview_index - 1))
+        self.animation_next_frame_button.clicked.connect(lambda: self._set_animation_preview_frame(self._animator_preview_index + 1))
+        self.animation_last_frame_button.clicked.connect(lambda: self._set_animation_preview_frame(self._animation_frame_count() - 1))
+        self.animation_timeline.valueChanged.connect(self._set_animation_preview_frame)
+
+        for field_signal in (
+            self.animator_clip_combo.currentTextChanged,
+            self.animator_sheet_combo.currentIndexChanged,
+            self.animator_frame_width.valueChanged,
+            self.animator_frame_height.valueChanged,
+            self.animator_start_frame.valueChanged,
+            self.animator_frame_count.valueChanged,
+            self.animator_fps_field.valueChanged,
+            self.animator_loop_field.toggled,
+        ):
+            field_signal.connect(self._mark_animation_asset_dirty)
+        self._refresh_animation_library()
+        self._refresh_animation_timeline(self._default_animation_clip())
+
+    def _animation_assets_directory(self) -> Path:
+        return Path.cwd() / "Assets" / "Animations"
+
+    def _refresh_animation_library(self) -> None:
+        selected = self._current_animation_asset_path
+        self.animation_library_tree.clear()
+        directory = self._animation_assets_directory()
+        for path in sorted(directory.rglob("*.zanim"), key=lambda item: str(item).lower()) if directory.exists() else []:
+            item = QTreeWidgetItem([f"🎞  {path.stem}"])
+            item.setData(0, Qt.UserRole, str(path))
+            item.setToolTip(0, str(path.relative_to(Path.cwd())).replace("\\", "/"))
+            self.animation_library_tree.addTopLevelItem(item)
+            if selected and path.resolve() == selected.resolve():
+                self.animation_library_tree.setCurrentItem(item)
+        if self.animation_library_tree.topLevelItemCount() == 0:
+            empty = QTreeWidgetItem(["Nenhuma animação salva"])
+            empty.setDisabled(True)
+            self.animation_library_tree.addTopLevelItem(empty)
+
+    def _new_animation_asset(self) -> None:
+        name, accepted = QInputDialog.getText(self, "Nova Animação", "Nome da animação:", text="NewAnimation")
+        name = name.strip()
+        if not accepted or not name:
+            return
+        self._current_animation_asset_path = None
+        self._animation_draft_name = name
+        self._apply_animation_asset_to_editor(default_animation_asset(name), attach_to_object=True)
+        self._animation_asset_dirty = True
+        self._update_animation_asset_status()
+        self._log("INFO", f"Nova animação preparada: {name}")
+
+    def _open_animation_asset_dialog(self) -> None:
+        start = self._animation_assets_directory()
+        filename, _ = QFileDialog.getOpenFileName(self, "Abrir Animação", str(start), "Animação Zennity (*.zanim)")
+        if filename:
+            self._load_animation_asset_path(Path(filename))
+
+    def _open_animation_library_item(self, item: QTreeWidgetItem, _column: int = 0) -> None:
+        path = item.data(0, Qt.UserRole)
+        if path:
+            self._load_animation_asset_path(Path(str(path)))
+
+    def _load_animation_asset_path(self, path: Path) -> None:
+        try:
+            asset = load_animation_asset(path)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            QMessageBox.warning(self, "Animação inválida", f"Não foi possível abrir o arquivo.\n\n{exc}")
+            self._log("ERROR", f"Falha ao abrir animação {path.name}: {exc}")
+            return
+        self._current_animation_asset_path = path.resolve()
+        self._animation_draft_name = str(asset["name"])
+        self._apply_animation_asset_to_editor(asset, attach_to_object=True)
+        self._animation_asset_dirty = False
+        self._update_animation_asset_status()
+        self._refresh_animation_library()
+        self._log("INFO", f"Animação aberta: {path.name}")
+
+    def _save_animation_asset(self, _checked: bool = False, save_as: bool = False) -> None:
+        path = self._current_animation_asset_path
+        if save_as or path is None:
+            default_path = self._animation_assets_directory() / f"{self._animation_draft_name}.zanim"
+            filename, _ = QFileDialog.getSaveFileName(self, "Salvar Animação", str(default_path), "Animação Zennity (*.zanim)")
+            if not filename:
+                return
+            path = Path(filename)
+        if path.suffix.lower() != ".zanim":
+            path = path.with_suffix(".zanim")
+
+        asset = self._animation_asset_from_editor(path.stem)
+        try:
+            saved = save_animation_asset(path, asset)
+        except OSError as exc:
+            QMessageBox.warning(self, "Erro ao salvar", f"Não foi possível salvar a animação.\n\n{exc}")
+            self._log("ERROR", f"Falha ao salvar animação {path.name}: {exc}")
+            return
+        self._current_animation_asset_path = path.resolve()
+        self._animation_draft_name = str(saved["name"])
+        self._attach_animation_asset_to_selected_object(saved, path)
+        self._animation_asset_dirty = False
+        self._update_animation_asset_status()
+        self._refresh_animation_library()
+        self._refresh_assets()
+        self._log("INFO", f"Animação salva: {self._project_relative_path(path)}")
+
+    def _duplicate_animation_asset(self) -> None:
+        original_path = self._current_animation_asset_path
+        original_name = self._animation_draft_name
+        self._current_animation_asset_path = None
+        self._animation_draft_name = f"{original_name}_copy"
+        self._save_animation_asset(save_as=True)
+        if self._current_animation_asset_path is None:
+            self._current_animation_asset_path = original_path
+            self._animation_draft_name = original_name
+            self._update_animation_asset_status()
+
+    def _delete_animation_asset(self) -> None:
+        path = self._current_animation_asset_path
+        if path is None or not path.exists():
+            return
+        answer = QMessageBox.question(
+            self, "Excluir Animação",
+            f"Excluir '{path.name}' da biblioteca?\n\nObjetos que já usam o clip manterão uma cópia compatível.",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
+        )
+        if answer != QMessageBox.Yes:
+            return
+        try:
+            path.unlink()
+        except OSError as exc:
+            QMessageBox.warning(self, "Erro ao excluir", str(exc))
+            return
+        self._current_animation_asset_path = None
+        self._animation_asset_dirty = True
+        self._update_animation_asset_status()
+        self._refresh_animation_library()
+        self._refresh_assets()
+        self._log("INFO", f"Animação excluída da biblioteca: {path.name}")
+
+    def _animation_asset_from_editor(self, name: str | None = None) -> dict:
+        clip_name = name or self._animation_draft_name or self.animator_clip_combo.currentText() or "NewAnimation"
+        clip = {
+            "texture": self.animator_sheet_combo.currentData() or "",
+            "frame_width": int(self.animator_frame_width.value()),
+            "frame_height": int(self.animator_frame_height.value()),
+            "start_frame": int(self.animator_start_frame.value()),
+            "frame_count": int(self.animator_frame_count.value()),
+            "fps": float(self.animator_fps_field.value()),
+            "loop": self.animator_loop_field.isChecked(),
+        }
+        return animation_asset_from_clip(str(clip_name), clip)
+
+    def _apply_animation_asset_to_editor(self, asset: dict, attach_to_object: bool) -> None:
+        clip = animation_asset_to_clip(asset)
+        previous_updating = self._updating_inspector
+        self._updating_inspector = True
+        try:
+            self.animator_sheet_combo.clear()
+            self.animator_sheet_combo.addItem("Nenhum", "")
+            for sheet in self._available_sprite_sheets():
+                self.animator_sheet_combo.addItem(Path(sheet).name, sheet)
+            sheet_index = self.animator_sheet_combo.findData(str(clip.get("texture", "")))
+            self.animator_sheet_combo.setCurrentIndex(max(0, sheet_index))
+            self.animator_frame_width.setValue(float(clip["frame_width"]))
+            self.animator_frame_height.setValue(float(clip["frame_height"]))
+            self.animator_start_frame.setValue(float(clip["start_frame"]))
+            self.animator_frame_count.setValue(float(clip["frame_count"]))
+            self.animator_fps_field.setValue(float(clip["fps"]))
+            self.animator_loop_field.setChecked(bool(clip["loop"]))
+            self.animator_current_lbl.setText(str(asset["name"]))
+        finally:
+            self._updating_inspector = previous_updating
+        self._animator_preview_index = 0
+        self._refresh_animation_timeline(clip)
+        self._update_animation_preview(clip, 0)
+        if attach_to_object:
+            self._attach_animation_asset_to_selected_object(asset, self._current_animation_asset_path)
+
+    def _attach_animation_asset_to_selected_object(self, asset: dict, path: Path | None) -> None:
+        if self._selected_name not in self._objects_by_name:
+            return
+        self._record_history()
+        obj = self._objects_by_name[self._selected_name]
+        animator = obj.setdefault("animator", {"active_clip": str(asset["name"]), "speed": 1.0, "clips": {}})
+        clips = self._animation_clips(animator)
+        relative_path = self._project_relative_path(path) if path else ""
+        clips[str(asset["name"])] = animation_asset_to_clip(asset, relative_path)
+        animator["active_clip"] = str(asset["name"])
+        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._update_inspector(self._selected_name)
+
+    def _project_relative_path(self, path: Path | None) -> str:
+        if path is None:
+            return ""
+        try:
+            return str(path.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
+        except ValueError:
+            return str(path).replace("\\", "/")
+
+    def _mark_animation_asset_dirty(self, *_args) -> None:
+        if self._updating_inspector:
+            return
+        self._animation_asset_dirty = True
+        self._update_animation_asset_status()
+
+    def _update_animation_asset_status(self) -> None:
+        name = self._current_animation_asset_path.name if self._current_animation_asset_path else self._animation_draft_name
+        suffix = "  •  alterações não salvas" if self._animation_asset_dirty else "  •  salvo"
+        self.animation_asset_label.setText(name + suffix)
+
+    def _animation_frame_count(self) -> int:
+        return max(1, int(self.animator_frame_count.value()))
+
+    def _refresh_animation_timeline(self, clip: dict) -> None:
+        frames = clip.get("frames")
+        count = max(1, len(frames) if isinstance(frames, list) and frames else int(clip.get("frame_count", 1)))
+        self.animation_timeline.blockSignals(True)
+        self.animation_timeline.setRange(0, count - 1)
+        self.animation_timeline.setValue(min(self._animator_preview_index, count - 1))
+        self.animation_timeline.blockSignals(False)
+        self.animation_frame_label.setText(f"Frame {min(self._animator_preview_index, count - 1) + 1} / {count}")
+
+    def _set_animation_preview_frame(self, index: int) -> None:
+        count = self._animation_frame_count()
+        self._animator_preview_index = max(0, min(int(index), count - 1))
+        self.animation_timeline.blockSignals(True)
+        self.animation_timeline.setValue(self._animator_preview_index)
+        self.animation_timeline.blockSignals(False)
+        self.animation_frame_label.setText(f"Frame {self._animator_preview_index + 1} / {count}")
+        self._update_animation_preview(animation_asset_to_clip(self._animation_asset_from_editor()), self._animator_preview_index)
+
+    def _toggle_animation_preview_playback(self) -> None:
+        self._animation_preview_playing = not self._animation_preview_playing
+        self.animation_play_button.setText("⏸" if self._animation_preview_playing else "▶")
+
     def _add_animation_clip(self) -> None:
         if self._selected_name not in self._objects_by_name:
             return
@@ -1387,23 +1666,31 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._update_inspector(self._selected_name)
 
     def _tick_animation_preview(self) -> None:
-        if self._selected_name not in self._objects_by_name:
+        if not self._animation_preview_playing or self.viewport_tabs.currentIndex() != 2:
             return
-        animator = self._objects_by_name[self._selected_name].get("animator")
-        if not isinstance(animator, dict):
-            return
-        clips = self._animation_clips(animator)
-        clip = clips.get(self.animator_clip_combo.currentText())
+        animator = None
+        clip = None
+        if self._selected_name in self._objects_by_name:
+            animator = self._objects_by_name[self._selected_name].get("animator")
+            if isinstance(animator, dict):
+                clips = self._animation_clips(animator)
+                clip = clips.get(self.animator_clip_combo.currentText())
         if not isinstance(clip, dict):
-            return
-        count = max(1, int(clip.get("frame_count", 1)))
+            clip = animation_asset_to_clip(self._animation_asset_from_editor())
+        frames = clip.get("frames")
+        count = max(1, len(frames) if isinstance(frames, list) and frames else int(clip.get("frame_count", 1)))
         if clip.get("loop", True):
             self._animator_preview_index = (self._animator_preview_index + 1) % count
         else:
             self._animator_preview_index = min(count - 1, self._animator_preview_index + 1)
-        fps = max(0.1, float(clip.get("fps", 8.0))) * max(0.01, float(animator.get("speed", 1.0)))
+        speed = float(animator.get("speed", 1.0)) if isinstance(animator, dict) else 1.0
+        fps = max(0.1, float(clip.get("fps", 8.0))) * max(0.01, speed)
         self._animator_preview_timer.setInterval(max(16, int(1000.0 / fps)))
         self._update_animation_preview(clip, self._animator_preview_index)
+        self.animation_timeline.blockSignals(True)
+        self.animation_timeline.setValue(self._animator_preview_index)
+        self.animation_timeline.blockSignals(False)
+        self.animation_frame_label.setText(f"Frame {self._animator_preview_index + 1} / {count}")
 
     def _update_animation_preview(self, clip: dict, frame_offset: int = 0) -> None:
         texture = str(clip.get("texture", ""))
@@ -1418,7 +1705,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self.animator_preview.setText("Selecione um Sprite Sheet válido")
             return
         columns = max(1, pixmap.width() // width)
-        frame = max(0, int(clip.get("start_frame", 0))) + max(0, int(frame_offset))
+        frames = clip.get("frames")
+        if isinstance(frames, list) and frames:
+            frame = max(0, int(frames[min(max(0, int(frame_offset)), len(frames) - 1)]))
+        else:
+            frame = max(0, int(clip.get("start_frame", 0))) + max(0, int(frame_offset))
         x = (frame % columns) * width
         y = (frame // columns) * height
         if x + width > pixmap.width() or y + height > pixmap.height():
@@ -1450,6 +1741,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "fps": float(self.animator_fps_field.value()),
             "loop": self.animator_loop_field.isChecked(),
         })
+        clip["frames"] = list(range(clip["start_frame"], clip["start_frame"] + clip["frame_count"]))
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
         self._update_inspector(self._selected_name)
 
@@ -1783,6 +2075,14 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self.animator_clip_combo.setCurrentText(active_clip)
                 self.animator_speed_field.setValue(float(anim.get("speed", 1.0)))
                 clip = clips[active_clip]
+                bound_key = (str(obj.get("id", name)), active_clip)
+                if bound_key != self._animation_bound_key:
+                    self._animation_bound_key = bound_key
+                    asset_path = str(clip.get("asset_path", ""))
+                    self._current_animation_asset_path = (Path.cwd() / asset_path).resolve() if asset_path else None
+                    self._animation_draft_name = active_clip
+                    self._animation_asset_dirty = False
+                    self._update_animation_asset_status()
                 self.animator_sheet_combo.clear()
                 self.animator_sheet_combo.addItem("Nenhum", "")
                 for sheet in self._available_sprite_sheets():
@@ -1797,8 +2097,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self.animator_loop_field.setChecked(bool(clip.get("loop", True)))
                 # Mostra o clip que está tocando no runtime (ou o ativo do inspector se parado)
                 self.animator_current_lbl.setText(str(obj.get("_current_animation_name", anim.get("active_clip", "Idle"))))
+                self._animator_preview_index = min(self._animator_preview_index, max(0, int(clip.get("frame_count", 1)) - 1))
+                self._refresh_animation_timeline(clip)
                 self._update_animation_preview(clip)
             else:
+                self._animation_bound_key = None
                 self.animator_current_lbl.setText("Nenhum")
                 self.animator_preview.setText("Sem Animator")
 

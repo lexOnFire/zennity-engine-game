@@ -1,0 +1,29 @@
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_animation_workspace_exposes_library_timeline_and_asset_actions() -> None:
+    source = (ROOT / "editor" / "interface_smoke_test.py").read_text(encoding="utf-8")
+
+    for widget_name in (
+        "animation_library_tree",
+        "animation_timeline",
+        "animation_new_button",
+        "animation_open_button",
+        "animation_save_button",
+        "animation_save_as_button",
+        "animation_duplicate_button",
+        "animation_delete_button",
+    ):
+        assert f"self.{widget_name}" in source
+
+
+def test_editor_integrates_zanim_without_removing_embedded_clips() -> None:
+    source = (ROOT / "editor" / "isolated_editor_main.py").read_text(encoding="utf-8")
+
+    assert "load_animation_asset" in source
+    assert "save_animation_asset" in source
+    assert 'obj.setdefault("animator"' in source
+    assert '"asset_path"' in (ROOT / "engine" / "animation" / "clip_asset.py").read_text(encoding="utf-8")
