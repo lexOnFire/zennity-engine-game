@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
 
 COMPONENT_CATALOG = (
     ("Renderização", "Sprite Renderer", "sprite", "Textura, cor e ordem de desenho"),
-    ("Renderização", "Animator 2D", "animator", "Clipes e animações 2D"),
+    ("Renderização", "Animator 2D", "animator", "Escolha uma animação .zanim para este objeto"),
     ("Física", "RigidBody 2D", "rigidbody", "Gravidade e movimento físico"),
     ("Física", "Box Collider", "box", "Colisão retangular"),
     ("Física", "Circle Collider", "circle", "Colisão circular"),

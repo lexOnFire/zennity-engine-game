@@ -40,6 +40,10 @@ O workspace de animação usa um splitter próprio com Biblioteca, Prévia/Timel
 e Propriedades roláveis. Ações de arquivo ficam compactas e separadas das ações
 que alteram o objeto selecionado, reduzindo ambiguidades para iniciantes.
 
+Ao adicionar `Animator 2D`, o editor abre `AnimationPickerDialog` e lista os
+assets `.zanim` do projeto com miniatura e metadados. A escolha já cria o
+Animator, torna o clip ativo e aplica seu Sprite Sheet ao objeto.
+
 ## Critério de aceitação
 
 Uma nova tela precisa ser legível em estado normal, hover, foco, selecionado e

@@ -151,12 +151,26 @@ QLabel#BuildDestination { color: $TEXT; font-family: "Cascadia Mono", "Consolas"
 QLabel#BuildDetails { color: $TEXT_MUTED; }
 QTabWidget#BuildReportTabs QTreeWidget, QTabWidget#BuildReportTabs QPlainTextEdit { border: none; }
 
-QDialog#ComponentPickerDialog, QDialog#ProjectValidationDialog, QDialog#PreferencesDialog {
+QDialog#ComponentPickerDialog, QDialog#AnimationPickerDialog,
+QDialog#ProjectValidationDialog, QDialog#PreferencesDialog {
     background: $BG;
 }
 QLabel#DialogTitle { color: $TEXT; font-size: 15px; font-weight: 700; }
 QLabel#DialogDescription { color: $TEXT_MUTED; padding: 6px 2px; }
 QTreeWidget#ComponentPickerTree, QTreeWidget#ValidationIssues { border-radius: $RADIUSpx; }
+QListWidget#AnimationPickerList { border-radius: $RADIUSpx; }
+QWidget#AnimationPickerDetailsPanel {
+    background: $SURFACE_RAISED;
+    border: 1px solid $BORDER;
+    border-radius: $RADIUSpx;
+}
+QLabel#AnimationPickerPreview {
+    background: $INPUT_BG;
+    border: 1px solid $BORDER;
+    border-radius: $RADIUSpx;
+    color: $TEXT_DISABLED;
+}
+QLabel#AnimationPickerDetails { color: $TEXT_MUTED; }
 QFrame#ValidationSummary {
     background: $SURFACE_RAISED;
     border: 1px solid $BORDER_STRONG;

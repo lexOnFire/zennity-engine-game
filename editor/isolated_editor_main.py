@@ -31,6 +31,7 @@ from editor.runtime.play_session import EditorPlaySession
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from editor.widgets.component_picker import ComponentPickerDialog
+from editor.widgets.animation_picker import AnimationPickerDialog
 from editor.ui.icons import component_title, editor_icon
 from editor.ui.tokens import DEFAULT_TOKENS
 from engine.animation.clip_asset import (
@@ -2182,6 +2183,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 return
             self._attach_script(self._selected_name, chosen)
             return
+        if component == "animator":
+            self._choose_animation_component()
+            return
         self._record_history()
         obj = self._objects_by_name[self._selected_name]
         if component == "sprite":
@@ -2192,8 +2196,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             obj.setdefault("rigidbody", {"mass": 1.0, "gravity_scale": 1.0, "use_gravity": True, "is_kinematic": False})
         elif component in {"box", "circle"}:
             obj["collider"] = {"type": component, "is_trigger": False}
-        elif component == "animator":
-            obj["animator"] = {"active_clip": "Idle", "speed": 1.0, "clips": {"Idle": self._default_animation_clip()}}
         elif component == "camera":
             obj["camera"] = {"active": True, "zoom": 1.0, "width": 1280.0, "height": 720.0, "background_color": [22, 24, 31], "follow_target": ""}
             names = obj.setdefault("component_names", [])
@@ -2217,6 +2219,35 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._commands.put({"type": "select_object", "name": self._selected_name})
         self._update_inspector(self._selected_name)
         self._log("INFO", f"Componente adicionado em {self._selected_name}: {component}")
+
+    def _choose_animation_component(self) -> None:
+        """Escolhe um ``.zanim`` antes de criar o Animator no objeto."""
+        object_name = self._selected_name
+        if object_name not in self._objects_by_name:
+            return
+        picker = AnimationPickerDialog(Path.cwd(), self)
+        if not picker.exec():
+            return
+        if picker.requested_action == "create":
+            self.viewport_tabs.setCurrentIndex(2)
+            self._new_animation_asset()
+            return
+        if picker.requested_action == "empty":
+            if isinstance(self._objects_by_name[object_name].get("animator"), dict):
+                self.statusBar().showMessage(f"{object_name} já possui um Animator 2D")
+                return
+            self._record_history()
+            self._objects_by_name[object_name]["animator"] = {
+                "active_clip": "Idle", "speed": 1.0,
+                "clips": {"Idle": self._default_animation_clip()},
+            }
+            self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+            self._update_inspector(object_name)
+            self._log("INFO", f"Animator vazio adicionado em {object_name}")
+            return
+        if picker.requested_action == "select" and picker.selected_path is not None:
+            if self._apply_animation_asset_path_to_object(picker.selected_path, object_name):
+                self._log("INFO", f"Animator adicionado em {object_name} com {picker.selected_path.name}")
 
     def _send_inspector_physics(self) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:

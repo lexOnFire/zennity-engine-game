@@ -12,6 +12,7 @@
 - [x] UI Polish de diálogos, estados vazios e Asset Preview responsivo
 - [x] Pacote SVG inicial e estabilização das atualizações de resize da viewport isolada
 - [x] Reorganização responsiva do workspace de Animação com timeline e propriedades roláveis
+- [x] Seletor de animação `.zanim` integrado ao fluxo Adicionar Componente → Animator 2D
 - [x] Export configuration foundation com BuildConfig, BuildTarget, validação e testes iniciais (Fase 31)
 - [x] Export Profiles com ExportProfile, ExportProfileManager, perfis Debug/Release e persistência JSON (Fase 32)
 - [x] Desktop Packaging com DesktopPackagePlan, planner por BuildConfig/Profile e testes multiplataforma (Fase 33)
