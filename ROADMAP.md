@@ -14,6 +14,7 @@
 - [ ] Release Candidate Stabilization
   - [x] Gerar runtime de desenvolvimento autocontido e validar cena/componentes exportados
   - [x] Tornar Play/Pause/Stop determinístico, restaurar seleção/cena e pausar áudio
+  - [x] Adicionar validação de projeto integrada ao editor e bloquear exportação com erros
   - [ ] Validar o fluxo completo no Windows com Python 3.12
   - [ ] Executar a suíte de regressão completa
   - [ ] Validar Play/Pause/Stop com scripts, física, áudio, HUD e animação

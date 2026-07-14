@@ -6,6 +6,7 @@ from .desktop_package import DesktopPackagePlan, create_desktop_package_plan, cr
 from .export_profile import ExportProfile, debug_profile, release_profile
 from .export_profile_manager import ExportProfileManager
 from .project_exporter import export_development_project, export_development_project_with_report
+from .project_validator import ProjectValidationReport, ValidationIssue, validate_project
 
 __all__ = [
     "BuildConfig",
@@ -21,4 +22,7 @@ __all__ = [
     "release_profile",
     "export_development_project",
     "export_development_project_with_report",
+    "ProjectValidationReport",
+    "ValidationIssue",
+    "validate_project",
 ]

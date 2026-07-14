@@ -39,13 +39,18 @@ from engine.animation.clip_asset import (
     save_animation_asset,
 )
 from editor.widgets.build_report_dialog import BuildReportDialog
-from engine.build import BuildReport, export_development_project_with_report
+from editor.widgets.project_validation_dialog import ProjectValidationDialog
+from engine.build import (
+    BuildReport, ProjectValidationReport,
+    export_development_project_with_report, validate_project,
+)
 
 
 class IsolatedEditorWindow(InterfaceSmokeTest):
     def __init__(self, viewport_process: mp.Process | None, commands, events) -> None:
         self._console_records: list[tuple[str, str]] = []
         self._last_build_report: BuildReport | None = None
+        self._last_validation_report: ProjectValidationReport | None = None
         super().__init__()
         self._current_animation_asset_path: Path | None = None
         self._animation_draft_name = "NewAnimation"
@@ -513,6 +518,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self.editor_menus["Ferramentas"].addAction(self.toolbar_actions[label])
         for label in ("Play", "Pause", "Stop"):
             self.editor_menus["Executar"].addAction(self.toolbar_actions[label])
+        validate_action = self.editor_menus["Build"].addAction("Validar projeto...")
+        validate_action.triggered.connect(self._validate_current_project)
+        self.editor_menus["Build"].addSeparator()
         export_action = self.editor_menus["Build"].addAction("Exportar projeto...")
         export_action.triggered.connect(self._export_project)
         report_action = self.editor_menus["Build"].addAction("Último relatório...")
@@ -624,6 +632,13 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._save_scene_snapshot()
         if self._current_scene_path is None:
             return
+        validation = validate_project(Path.cwd(), self._current_scene_path)
+        self._last_validation_report = validation
+        if not validation.valid:
+            self._log("ERROR", f"Exportação bloqueada por {len(validation.errors)} erro(s) de validação")
+            self.statusBar().showMessage("Corrija os erros de validação antes de exportar")
+            ProjectValidationDialog(validation, self).exec()
+            return
         output = QFileDialog.getExistingDirectory(self, "Pasta para exportar", str(Path.cwd() / "Builds"))
         if not output:
             return
@@ -647,6 +662,20 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self._log("ERROR", f"Build não concluído: {len(report.errors)} erro(s)")
             self.statusBar().showMessage("Build não concluído — consulte o relatório")
         self._show_last_build_report()
+
+    def _validate_current_project(self) -> None:
+        self._save_scene_snapshot()
+        if self._current_scene_path is None:
+            return
+        report = validate_project(Path.cwd(), self._current_scene_path)
+        self._last_validation_report = report
+        if report.valid:
+            self._log("INFO", f"Projeto validado: {len(report.warnings)} aviso(s), nenhum erro")
+            self.statusBar().showMessage("Projeto pronto para exportar")
+        else:
+            self._log("ERROR", f"Validação encontrou {len(report.errors)} erro(s) e {len(report.warnings)} aviso(s)")
+            self.statusBar().showMessage("Projeto precisa de correções antes da exportação")
+        ProjectValidationDialog(report, self).exec()
 
     def _show_last_build_report(self) -> None:
         if self._last_build_report is None:
