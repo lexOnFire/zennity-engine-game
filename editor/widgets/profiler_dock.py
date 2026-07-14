@@ -6,8 +6,9 @@ from PySide6.QtWidgets import (
     QDockWidget, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame
 )
 from PySide6.QtCore import Qt, QTimer, Slot
-from PySide6.QtGui import QPainter, QColor, QPen, QFont, QBrush, QPolygonF
+from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QPolygonF
 from PySide6.QtCore import QPointF
+from editor.ui.tokens import DEFAULT_TOKENS
 
 
 class PerformanceChartWidget(QWidget):
@@ -24,7 +25,7 @@ class PerformanceChartWidget(QWidget):
             self.history.append(0.0)
             
         self.setMinimumHeight(120)
-        self.setStyleSheet("background-color: #111217; border-radius: 4px;")
+        self.setObjectName("ProfilerChart")
 
     def add_sample(self, value: float) -> None:
         self.history.append(value)
@@ -38,12 +39,12 @@ class PerformanceChartWidget(QWidget):
         h = self.height()
         
         # Desenha o fundo escuro
-        painter.setBrush(QBrush(QColor("#111217")))
-        painter.setPen(QPen(QColor("#323846"), 1))
+        painter.setBrush(QBrush(QColor(DEFAULT_TOKENS.input_bg)))
+        painter.setPen(QPen(QColor(DEFAULT_TOKENS.border_strong), 1))
         painter.drawRoundedRect(0, 0, w, h, 6, 6)
         
         # Desenha linhas horizontais de grade de referência (FPS 30 e 60)
-        painter.setPen(QPen(QColor("#242732"), 1, Qt.DashLine))
+        painter.setPen(QPen(QColor(DEFAULT_TOKENS.border), 1, Qt.DashLine))
         
         # Linha 60 FPS
         y_60 = h - (60.0 / 100.0) * h
@@ -78,12 +79,14 @@ class PerformanceChartWidget(QWidget):
         poly.append(QPointF(w, h))
         poly.append(QPointF(0, h))
         
-        painter.setBrush(QBrush(QColor(93, 176, 255, 40)))  # Azul mais brilhante e translúcido
+        fill_color = QColor(DEFAULT_TOKENS.accent)
+        fill_color.setAlpha(40)
+        painter.setBrush(QBrush(fill_color))
         painter.setPen(Qt.NoPen)
         painter.drawPolygon(poly)
         
         # Desenha a linha de contorno
-        pen = QPen(QColor("#5db0ff"), 2, Qt.SolidLine)
+        pen = QPen(QColor(DEFAULT_TOKENS.accent_hover), 2, Qt.SolidLine)
         painter.setPen(pen)
         for i in range(len(points) - 1):
             painter.drawLine(points[i], points[i+1])
@@ -104,12 +107,14 @@ class ProfilerDock(QDockWidget):
         
         # Conteúdo interno
         content = QWidget()
+        content.setObjectName("ProfilerPanel")
         layout = QVBoxLayout(content)
         layout.setContentsMargins(6, 6, 6, 6)
         layout.setSpacing(6)
         
         # 1. Painel de Métricas Rápidas
         metrics = QWidget()
+        metrics.setObjectName("ProfilerMetrics")
         m_layout = QHBoxLayout(metrics)
         m_layout.setContentsMargins(2, 2, 2, 2)
         m_layout.setSpacing(16)
@@ -120,7 +125,7 @@ class ProfilerDock(QDockWidget):
         self.lbl_physics = QLabel("Física: 0 corpos / 0 colisores")
         
         for lbl in (self.lbl_fps, self.lbl_frame_time, self.lbl_memory, self.lbl_physics):
-            lbl.setStyleSheet("color: #cfd4de; font-family: 'JetBrains Mono', 'Cascadia Code', monospace; font-size: 11px; font-weight: 600;")
+            lbl.setObjectName("ProfilerMetric")
             m_layout.addWidget(lbl)
             
         m_layout.addStretch()

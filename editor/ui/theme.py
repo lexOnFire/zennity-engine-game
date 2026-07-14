@@ -60,6 +60,8 @@ QToolButton[uiRole="stop"] { color: $DANGER; }
 QPushButton[uiRole="primary"] { background: $ACCENT; border-color: $ACCENT; color: #ffffff; font-weight: 600; }
 QPushButton[uiRole="primary"]:hover { background: $ACCENT_HOVER; }
 QPushButton[uiRole="danger"], QToolButton[uiRole="danger"] { background: transparent; border: none; color: $DANGER; min-height: 18px; padding: 1px 4px; }
+QPushButton[uiRole="dangerAction"] { background: $DANGER_SOFT; border-color: $DANGER; color: #ffffff; }
+QPushButton[uiRole="dangerAction"]:hover { background: $DANGER; border-color: $DANGER; }
 QPushButton[uiRole="icon"], QToolButton[uiRole="icon"] { background: transparent; border: none; min-height: 18px; padding: 1px 4px; }
 
 QTabWidget::pane { background: $SURFACE; border: 1px solid $BORDER; top: -1px; }
@@ -74,6 +76,66 @@ QTabBar::tab {
 QTabBar::tab:hover { background: $SURFACE_HOVER; color: $TEXT; }
 QTabBar::tab:selected { background: $SURFACE; border-color: $BORDER; border-bottom-color: $SURFACE; color: $TEXT; }
 QTabWidget#SceneGameTabs QTabBar::tab:selected { color: $ACCENT_HOVER; font-weight: 600; }
+QTabWidget#BottomPanelTabs QTabBar::tab { min-width: 82px; padding: 6px 12px; }
+
+QWidget#AnimationWorkspace, QWidget#ConsolePanel, QFrame#ProfilerPanel {
+    background: $SURFACE;
+}
+QWidget#AnimationToolbar, QWidget#ConsoleToolbar {
+    background: $SURFACE_RAISED;
+    border: 1px solid $BORDER;
+    border-radius: $RADIUSpx;
+}
+QLabel#WorkspaceTitle { color: $TEXT; font-size: 15px; font-weight: 700; }
+QLabel#WorkspaceContext { color: $ACCENT_HOVER; font-weight: 600; }
+QLabel#WorkspaceStatus, QLabel#PanelHint { color: $TEXT_MUTED; }
+QFrame#AnimationLibraryPanel, QWidget#AnimationPropertiesPanel {
+    background: $BG;
+    border: 1px solid $BORDER;
+    border-radius: $RADIUSpx;
+}
+QLabel#PanelSectionTitle {
+    color: $TEXT_MUTED;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+QTreeWidget#AnimationLibraryTree { background: $INPUT_BG; border: none; }
+QLabel#AnimationPreview {
+    background: $INPUT_BG;
+    border: 1px solid $BORDER;
+    border-radius: $RADIUSpx;
+    color: $TEXT_DISABLED;
+}
+QPushButton[uiRole="play"] { color: $SUCCESS; }
+QPlainTextEdit#ConsoleOutput, QTextEdit#ConsoleOutput {
+    background: $INPUT_BG;
+    border: 1px solid $BORDER;
+    border-radius: $RADIUSpx;
+    color: $TEXT;
+    font-family: "Cascadia Mono", "Consolas", monospace;
+    padding: 6px;
+}
+QLabel#ProfilerMetric {
+    color: $TEXT;
+    font-family: "Cascadia Mono", "Consolas", monospace;
+    font-weight: 600;
+}
+QWidget#ProfilerMetrics { background: transparent; }
+QWidget#ProfilerChart { background: $INPUT_BG; border-radius: $RADIUSpx; }
+
+QDialog#BuildReportDialog { background: $BG; }
+QFrame#BuildSummary {
+    background: $SURFACE_RAISED;
+    border: 1px solid $BORDER_STRONG;
+    border-radius: $RADIUSpx;
+}
+QLabel#BuildStatus { font-size: 18px; font-weight: 700; }
+QLabel#BuildStatus[uiState="success"] { color: $SUCCESS; }
+QLabel#BuildStatus[uiState="error"] { color: $DANGER; }
+QLabel#BuildDestination { color: $TEXT; font-family: "Cascadia Mono", "Consolas", monospace; }
+QLabel#BuildDetails { color: $TEXT_MUTED; }
+QTabWidget#BuildReportTabs QTreeWidget, QTabWidget#BuildReportTabs QPlainTextEdit { border: none; }
 
 QDockWidget { background: $SURFACE; color: $TEXT_MUTED; font-weight: 600; }
 QDockWidget::title { background: $SURFACE; border-bottom: 1px solid $BORDER; padding: 7px 9px; text-align: left; }
@@ -152,6 +214,7 @@ def build_editor_stylesheet(tokens: EditorThemeTokens = DEFAULT_TOKENS) -> str:
         "TEXT": tokens.text, "TEXT_MUTED": tokens.text_muted, "TEXT_DISABLED": tokens.text_disabled,
         "ACCENT": tokens.accent, "ACCENT_HOVER": tokens.accent_hover, "ACCENT_SOFT": tokens.accent_soft,
         "SUCCESS": tokens.success, "WARNING": tokens.warning, "DANGER": tokens.danger,
+        "DANGER_SOFT": tokens.danger_soft,
         "RADIUS_SMALL": str(tokens.radius_small), "RADIUS": str(tokens.radius),
         "SPACING_XS": str(tokens.spacing_xs), "SPACING_SM": str(tokens.spacing_sm),
         "FONT_SIZE": str(tokens.font_size), "CONTROL_HEIGHT": str(tokens.control_height),
@@ -217,6 +280,10 @@ def polish_editor_widgets(window: Any) -> None:
         "InspectorAddComponentButton", "InspectorRemoveComponentButton",
         "InspectorObjectName", "InspectorScriptSelector", "InspectorScrollArea",
         "InspectorPanel", "InspectorToolbar", "InspectorToolbarTitle",
+        "AnimationWorkspace", "AnimationToolbar", "AnimationLibraryPanel",
+        "AnimationLibraryTree", "AnimationPreview", "AnimationPropertiesPanel",
+        "ConsolePanel", "ConsoleToolbar", "ConsoleOutput", "ProfilerPanel",
+        "ProfilerMetrics", "ProfilerMetric", "ProfilerChart", "BottomPanelTabs",
     }
     for widget in window.findChildren(QWidget):
         if widget.objectName() in managed_names:

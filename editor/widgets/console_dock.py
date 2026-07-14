@@ -29,12 +29,14 @@ class ConsoleDock(QDockWidget):
         
         # Conteúdo interno
         content = QWidget()
+        content.setObjectName("ConsolePanel")
         layout = QVBoxLayout(content)
         layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(4)
         
         # 1. Barra de Controles Superior
         controls = QWidget()
+        controls.setObjectName("ConsoleToolbar")
         ctrl_layout = QHBoxLayout(controls)
         ctrl_layout.setContentsMargins(0, 0, 0, 2)
         
@@ -55,12 +57,9 @@ class ConsoleDock(QDockWidget):
         
         # 2. Área de Exibição de Texto Rico
         self.txt_display = QTextEdit()
+        self.txt_display.setObjectName("ConsoleOutput")
         self.txt_display.setReadOnly(True)
         self.txt_display.setFont(QFont("Consolas", 10))
-        self.txt_display.setStyleSheet(
-            "background-color: #111217; border: 1px solid #2d313f; border-radius: 4px;"
-            "padding: 6px; color: #e3e8f0;"
-        )
         layout.addWidget(self.txt_display)
         
         # 3. Terminal Interativo (Linha de Comando)
@@ -73,6 +72,7 @@ class ConsoleDock(QDockWidget):
         self.txt_input.returnPressed.connect(self.execute_command)
         
         self.btn_run = QPushButton("Executar")
+        self.btn_run.setProperty("uiRole", "primary")
         self.btn_run.clicked.connect(self.execute_command)
         self.btn_run.setFixedWidth(80)
         
@@ -103,13 +103,14 @@ class ConsoleDock(QDockWidget):
         if active_filter == "Erros" and type != "error":          return
         if active_filter == "Depuração" and type != "debug":      return
         
+        from editor.ui.tokens import DEFAULT_TOKENS
         color_map = {
-            "info": "#a3be8c",     # Verde pastel
-            "warning": "#ebcb8b",  # Amarelo mostarda
-            "error": "#bf616a",    # Vermelho escuro/terracota
-            "debug": "#88c0d0"     # Azul claro/ciano
+            "info": DEFAULT_TOKENS.success,
+            "warning": DEFAULT_TOKENS.warning,
+            "error": DEFAULT_TOKENS.danger,
+            "debug": DEFAULT_TOKENS.accent_hover,
         }
-        color = color_map.get(type, "#e3e8f0")
+        color = color_map.get(type, DEFAULT_TOKENS.text)
         
         # Limpa caracteres ANSI extras do Pygame nos logs
         clean_msg = message.replace("\033[32m", "").replace("\033[33m", "").replace("\033[31m", "").replace("\033[36m", "").replace("\033[0m", "")
