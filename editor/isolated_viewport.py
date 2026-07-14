@@ -13,6 +13,33 @@ from typing import Any
 
 from editor.runtime.native_ui import NativeUIRenderer, normalize_ui
 from editor.runtime.sprite_rendering import prepare_sprite_surface
+from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
+
+
+def hydrate_animation_asset_clips(
+    objects: dict[str, dict[str, Any]], project_root: Path
+) -> list[tuple[str, str, str]]:
+    """Atualiza os caches de clips a partir dos arquivos ``.zanim`` antes do Play."""
+    results: list[tuple[str, str, str]] = []
+    for object_name, obj in objects.items():
+        animator = obj.get("animator")
+        clips = animator.get("clips") if isinstance(animator, dict) else None
+        if not isinstance(clips, dict):
+            continue
+        for clip_name, clip in list(clips.items()):
+            asset_path = str(clip.get("asset_path", "")) if isinstance(clip, dict) else ""
+            if not asset_path:
+                continue
+            path = Path(asset_path)
+            if not path.is_absolute():
+                path = project_root / path
+            try:
+                asset = load_animation_asset(path)
+                clips[clip_name] = animation_asset_to_clip(asset, asset_path)
+                results.append(("INFO", object_name, f"animação atualizada: {path.name}"))
+            except (OSError, ValueError) as exc:
+                results.append(("ERROR", object_name, f"falha ao carregar animação {asset_path}: {exc}"))
+    return results
 
 
 class PlayScriptAPI:
@@ -305,6 +332,8 @@ def run_viewport(
     def start_scripts() -> None:
         script_instances.clear()
         script_apis.clear()
+        for level, object_name, message in hydrate_animation_asset_clips(objects, Path.cwd()):
+            _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
         for obj in objects.values():
             animator = obj.get("animator")
             if isinstance(animator, dict):
@@ -1405,7 +1434,12 @@ def run_viewport(
                         frame_width = max(1, int(animation_clip.get("frame_width", source_surface.get_width())))
                         frame_height = max(1, int(animation_clip.get("frame_height", source_surface.get_height())))
                         columns = max(1, source_surface.get_width() // frame_width)
-                        frame_number = max(0, int(animation_clip.get("start_frame", 0))) + int(obj.get("_animation_frame", 0))
+                        frame_offset = int(obj.get("_animation_frame", 0))
+                        frames = animation_clip.get("frames")
+                        if isinstance(frames, list) and frames:
+                            frame_number = max(0, int(frames[min(frame_offset, len(frames) - 1)]))
+                        else:
+                            frame_number = max(0, int(animation_clip.get("start_frame", 0))) + frame_offset
                         frame_x = (frame_number % columns) * frame_width
                         frame_y = (frame_number // columns) * frame_height
                         if frame_x + frame_width <= source_surface.get_width() and frame_y + frame_height <= source_surface.get_height():

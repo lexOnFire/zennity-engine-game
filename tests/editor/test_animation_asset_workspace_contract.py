@@ -16,6 +16,8 @@ def test_animation_workspace_exposes_library_timeline_and_asset_actions() -> Non
         "animation_save_as_button",
         "animation_duplicate_button",
         "animation_delete_button",
+        "animation_apply_button",
+        "animation_demo_button",
     ):
         assert f"self.{widget_name}" in source
 
@@ -36,3 +38,12 @@ def test_preview_index_exists_before_animation_workspace_is_configured() -> None
     configure_workspace = source.index("self._configure_animation_workspace()", init_start)
 
     assert preview_index < configure_workspace
+
+
+def test_zanim_can_be_applied_explicitly_or_dropped_on_an_object() -> None:
+    source = (ROOT / "editor" / "isolated_editor_main.py").read_text(encoding="utf-8")
+
+    assert "self.animation_apply_button.clicked.connect" in source
+    assert "self.animation_demo_button.clicked.connect" in source
+    assert 'path.suffix.lower() == ".zanim"' in source
+    assert "_apply_animation_asset_path_to_object" in source

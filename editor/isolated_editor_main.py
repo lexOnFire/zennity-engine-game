@@ -292,7 +292,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 if event.source() is not self.assets_tree:
                     return super().eventFilter(watched, event)
                 path = self._dragged_asset_path()
-                if path is not None and path.suffix.lower() in {".py", ".png", ".jpg", ".jpeg", ".bmp", ".webp"}:
+                if path is not None and path.suffix.lower() in {".py", ".zanim", ".png", ".jpg", ".jpeg", ".bmp", ".webp"}:
                     event.acceptProposedAction()
                     return True
             elif event.type() == QEvent.DragMove:
@@ -320,6 +320,18 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                             target_name = item_name
                     if target_name in self._objects_by_name:
                         self._attach_script(target_name, path)
+                        event.acceptProposedAction()
+                        return True
+                elif path is not None and path.suffix.lower() == ".zanim":
+                    target_name = self._selected_name
+                    if watched in self._hierarchy_drop_targets:
+                        local_position = self.hierarchy_tree.viewport().mapFromGlobal(event.globalPosition().toPoint())
+                        item = self.hierarchy_tree.itemAt(local_position)
+                        item_name = self._hierarchy_item_name(item)
+                        if item_name in self._objects_by_name:
+                            target_name = item_name
+                    if target_name in self._objects_by_name:
+                        self._apply_animation_asset_path_to_object(path, target_name)
                         event.acceptProposedAction()
                         return True
                 elif path is not None and watched is self.viewport_host and path.suffix.lower() in {".png", ".jpg", ".jpeg", ".bmp", ".webp"}:
@@ -1396,6 +1408,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.animation_save_as_button.clicked.connect(lambda: self._save_animation_asset(save_as=True))
         self.animation_duplicate_button.clicked.connect(self._duplicate_animation_asset)
         self.animation_delete_button.clicked.connect(self._delete_animation_asset)
+        self.animation_apply_button.clicked.connect(self._apply_current_animation_to_selected)
+        self.animation_demo_button.clicked.connect(self._run_walk_animation_demo)
         self.animation_library_tree.itemDoubleClicked.connect(self._open_animation_library_item)
 
         self.animation_play_button.clicked.connect(self._toggle_animation_preview_playback)
@@ -1445,7 +1459,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             return
         self._current_animation_asset_path = None
         self._animation_draft_name = name
-        self._apply_animation_asset_to_editor(default_animation_asset(name), attach_to_object=True)
+        self._apply_animation_asset_to_editor(default_animation_asset(name), attach_to_object=False)
         self._animation_asset_dirty = True
         self._update_animation_asset_status()
         self._log("INFO", f"Nova animação preparada: {name}")
@@ -1470,11 +1484,119 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             return
         self._current_animation_asset_path = path.resolve()
         self._animation_draft_name = str(asset["name"])
-        self._apply_animation_asset_to_editor(asset, attach_to_object=True)
+        self._apply_animation_asset_to_editor(asset, attach_to_object=False)
         self._animation_asset_dirty = False
         self._update_animation_asset_status()
         self._refresh_animation_library()
         self._log("INFO", f"Animação aberta: {path.name}")
+
+    def _current_animation_asset(self) -> tuple[dict, Path | None]:
+        path = self._current_animation_asset_path
+        if path is not None and path.is_file():
+            return load_animation_asset(path), path
+        return self._animation_asset_from_editor(), path
+
+    def _animation_play_error(self, asset: dict) -> str:
+        texture = str(asset.get("texture", "")).strip()
+        if not texture:
+            return "selecione um Sprite Sheet nas propriedades da animação e salve novamente"
+        texture_path = Path(texture)
+        if not texture_path.is_absolute():
+            texture_path = Path.cwd() / texture_path
+        if not texture_path.is_file():
+            return f"Sprite Sheet não encontrado: {texture}"
+        pixmap = QPixmap(str(texture_path))
+        if pixmap.isNull():
+            return f"não foi possível abrir o Sprite Sheet: {texture}"
+        frame_width = max(1, int(asset.get("frame_width", 1)))
+        frame_height = max(1, int(asset.get("frame_height", 1)))
+        if frame_width > pixmap.width() or frame_height > pixmap.height():
+            return "o tamanho do quadro é maior que o Sprite Sheet"
+        columns = max(1, pixmap.width() // frame_width)
+        rows = max(1, pixmap.height() // frame_height)
+        frames = asset.get("frames", [0])
+        if not isinstance(frames, list) or not frames:
+            return "a animação não possui quadros"
+        if max(int(frame) for frame in frames) >= columns * rows:
+            return f"o quadro {max(int(frame) for frame in frames)} está fora do Sprite Sheet ({columns * rows} disponíveis)"
+        return ""
+
+    def _apply_animation_asset_path_to_object(self, path: Path, object_name: str) -> bool:
+        try:
+            asset = load_animation_asset(path)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            self._log("ERROR", f"Não foi possível aplicar {path.name}: {exc}")
+            QMessageBox.warning(self, "Animação inválida", str(exc))
+            return False
+        return self._apply_animation_asset_to_object(asset, path, object_name)
+
+    def _apply_animation_asset_to_object(self, asset: dict, path: Path | None, object_name: str) -> bool:
+        if object_name not in self._objects_by_name:
+            return False
+        error = self._animation_play_error(asset)
+        if error:
+            message = f"A animação '{asset.get('name', 'Animation')}' não pode ser reproduzida: {error}."
+            self._log("ERROR", message)
+            QMessageBox.warning(self, "Animação incompleta", message)
+            return False
+
+        self._selected_name = object_name
+        self._record_history()
+        obj = self._objects_by_name[object_name]
+        animator = obj.setdefault("animator", {"active_clip": str(asset["name"]), "speed": 1.0, "clips": {}})
+        clips = self._animation_clips(animator)
+        clips[str(asset["name"])] = animation_asset_to_clip(asset, self._project_relative_path(path))
+        animator["active_clip"] = str(asset["name"])
+        assign_sprite_texture(obj, str(asset["texture"]))
+        obj["renderer_enabled"] = True
+        self._current_animation_asset_path = path.resolve() if path is not None else None
+        self._animation_draft_name = str(asset["name"])
+        self._animation_asset_dirty = False
+        self._animation_bound_key = (str(obj.get("id", object_name)), str(asset["name"]))
+        self._refresh_hierarchy()
+        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._commands.put({"type": "select_object", "name": object_name})
+        self._update_inspector(object_name)
+        self._update_animation_asset_status()
+        self._log("INFO", f"Animação '{asset['name']}' aplicada em {object_name}")
+        return True
+
+    def _apply_current_animation_to_selected(self) -> None:
+        if self._selected_name not in self._objects_by_name:
+            QMessageBox.information(self, "Aplicar Animação", "Selecione primeiro um objeto na Hierarchy.")
+            return
+        try:
+            asset, path = self._current_animation_asset()
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            QMessageBox.warning(self, "Animação inválida", str(exc))
+            return
+        self._apply_animation_asset_to_object(asset, path, self._selected_name)
+
+    def _run_walk_animation_demo(self) -> None:
+        path = self._current_animation_asset_path
+        if path is None or not path.is_file():
+            directory = self._animation_assets_directory()
+            candidates = [item for item in directory.glob("*.zanim") if item.stem.casefold() == "andar"] if directory.exists() else []
+            path = candidates[0] if candidates else None
+        if path is None:
+            message = "Salve a animação como Assets/Animations/andar.zanim antes de iniciar a demo."
+            self._log("ERROR", message)
+            QMessageBox.information(self, "Demo andar", message)
+            return
+        player_name = next(
+            (name for name, obj in self._objects_by_name.items() if name.casefold() == "player" or str(obj.get("tag", "")).casefold() == "player"),
+            None,
+        )
+        if player_name is None:
+            message = "A demo precisa de um objeto chamado Player ou com Tag Player."
+            self._log("ERROR", message)
+            QMessageBox.information(self, "Demo andar", message)
+            return
+        if not self._apply_animation_asset_path_to_object(path, player_name):
+            return
+        self._log("INFO", f"Demo iniciada: '{path.stem}' está ativa em {player_name}")
+        self.statusBar().showMessage("Demo iniciada — a animação está tocando no Player")
+        self._send_toolbar_command({"type": "play"})
 
     def _save_animation_asset(self, _checked: bool = False, save_as: bool = False) -> None:
         path = self._current_animation_asset_path
@@ -1496,12 +1618,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             return
         self._current_animation_asset_path = path.resolve()
         self._animation_draft_name = str(saved["name"])
-        self._attach_animation_asset_to_selected_object(saved, path)
         self._animation_asset_dirty = False
         self._update_animation_asset_status()
         self._refresh_animation_library()
         self._refresh_assets()
-        self._log("INFO", f"Animação salva: {self._project_relative_path(path)}")
+        self._log("INFO", f"Animação salva: {self._project_relative_path(path)} — use 'Aplicar ao selecionado' para anexá-la")
 
     def _duplicate_animation_asset(self) -> None:
         original_path = self._current_animation_asset_path

@@ -118,10 +118,13 @@ class InterfaceSmokeTest(QMainWindow):
         self.animation_save_as_button = QPushButton("Salvar como")
         self.animation_duplicate_button = QPushButton("Duplicar")
         self.animation_delete_button = QPushButton("Excluir")
+        self.animation_apply_button = QPushButton("Aplicar ao selecionado")
+        self.animation_demo_button = QPushButton("▶ Testar no Player")
         for button in (
             self.animation_new_button, self.animation_open_button,
             self.animation_save_button, self.animation_save_as_button,
             self.animation_duplicate_button, self.animation_delete_button,
+            self.animation_apply_button, self.animation_demo_button,
         ):
             button.setMinimumHeight(28)
             animation_toolbar.addWidget(button)
