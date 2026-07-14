@@ -375,6 +375,7 @@ def run_viewport(
     script_instances: dict[str, list[tuple[str, Any]]] = {}
     script_apis: dict[str, PlayScriptAPI] = {}
     animator_controllers: dict[str, AnimatorControllerRuntime] = {}
+    animator_event_signatures: dict[str, tuple[Any, ...]] = {}
     active_contacts: dict[tuple[str, str], bool] = {}
     audio_channels: dict[str, Any] = {}
     audio_sounds: dict[str, Any] = {}
@@ -665,6 +666,19 @@ def run_viewport(
                 if controller.current_state != previous:
                     obj["_animation_time"] = 0.0
                     obj["_animation_frame"] = 0
+                signature = (
+                    controller.current_state,
+                    tuple(sorted((key, repr(value)) for key, value in controller.parameters.items())),
+                )
+                if animator_event_signatures.get(object_name) != signature:
+                    animator_event_signatures[object_name] = signature
+                    _send(events, {
+                        "type": "animator_state",
+                        "name": object_name,
+                        "state": controller.current_state,
+                        "parameters": dict(controller.parameters),
+                        "controller_path": str(animator.get("controller_path", "")),
+                    })
             name = str(obj.get("_current_animation_name", animator.get("active_clip", "")))
             clip = clips.get(name)
             if not isinstance(clip, dict):
@@ -718,6 +732,26 @@ def run_viewport(
     def start_scripts() -> None:
         script_instances.clear()
         script_apis.clear()
+        animator_controllers.clear()
+        animator_event_signatures.clear()
+        for level, object_name, message in hydrate_animation_asset_clips(objects, Path.cwd()):
+            _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
+        for level, object_name, message in hydrate_animator_controllers(objects, Path.cwd()):
+            _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
+        for name, obj in objects.items():
+            animator = obj.get("animator")
+            if not isinstance(animator, dict):
+                continue
+            controller = animator.get("controller")
+            if isinstance(controller, dict):
+                runtime = AnimatorControllerRuntime(controller, animator.get("parameters", {}))
+                animator_controllers[name] = runtime
+                animator["parameters"] = dict(runtime.parameters)
+                animator["active_clip"] = runtime.current_state
+                obj["_animator_state"] = runtime.current_state
+            obj["_current_animation_name"] = str(animator.get("active_clip", "Idle"))
+            obj["_animation_time"] = 0.0
+            obj["_animation_frame"] = 0
         declared = sum(len(obj.get("scripts", [])) for obj in objects.values())
         _send(events, {"type": "script_log", "level": "INFO", "message": f"Play Mode recebeu {len(objects)} objeto(s) e {declared} script(s)"})
         for name, obj in objects.items():
@@ -808,6 +842,8 @@ def run_viewport(
                     _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}: {exc}"})
         script_instances.clear()
         script_apis.clear()
+        animator_controllers.clear()
+        animator_event_signatures.clear()
         active_contacts.clear()
 
     def collider_bounds(obj: dict[str, Any]) -> tuple[float, float, float, float]:

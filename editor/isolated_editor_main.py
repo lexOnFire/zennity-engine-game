@@ -64,6 +64,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._animation_bound_key: tuple[str, str] | None = None
         # A workspace usa este índice durante sua configuração inicial.
         self._animator_preview_index = 0
+        self._animator_controller_dialog: AnimatorControllerEditorDialog | None = None
+        self._runtime_animator_states: dict[str, dict] = {}
         self._component_expanded = {
             "transform": True,
             "sprite": True,
@@ -1648,7 +1650,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
 
     def _new_animator_controller(self) -> None:
         dialog = AnimatorControllerEditorDialog(Path.cwd(), parent=self)
-        if dialog.exec() and dialog.saved_path:
+        self._animator_controller_dialog = dialog
+        result = dialog.exec()
+        self._animator_controller_dialog = None
+        if result and dialog.saved_path:
             relative = dialog.saved_path.resolve().relative_to(Path.cwd().resolve()).as_posix()
             self._refresh_animator_controllers(relative)
             self._select_animation_controller()
@@ -1661,7 +1666,13 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             QMessageBox.information(self, "Animator Controller", "Selecione um controller para editar.")
             return
         dialog = AnimatorControllerEditorDialog(Path.cwd(), Path.cwd() / controller_path, self)
-        if dialog.exec() and dialog.saved_path:
+        runtime = self._runtime_animator_states.get(self._selected_name or "")
+        if runtime:
+            dialog.set_runtime_state(str(runtime.get("state", "")), runtime.get("parameters"))
+        self._animator_controller_dialog = dialog
+        result = dialog.exec()
+        self._animator_controller_dialog = None
+        if result and dialog.saved_path:
             self._refresh_animator_controllers(controller_path)
             self._select_animation_controller()
             self._log("INFO", f"Animator Controller atualizado: {controller_path}")
@@ -2782,6 +2793,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 if state in {"play", "pause"}:
                     self._play_session.set_runtime_state(state)
                 if state == "edit":
+                    self._runtime_animator_states.clear()
+                    if self._animator_controller_dialog is not None:
+                        self._animator_controller_dialog.set_runtime_state(None, {})
                     self._scene_snapshot, self._selected_name = self._play_session.finish()
                     self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
                     self._runtime_keys = {key: False for key in self._runtime_keys}
@@ -2814,6 +2828,15 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self.statusBar().showMessage(f"Viewport {state}")
             elif message.get("type") == "script_log":
                 self._log(str(message.get("level", "INFO")), str(message.get("message", "")))
+            elif message.get("type") == "animator_state":
+                object_name = str(message.get("name", ""))
+                self._runtime_animator_states[object_name] = dict(message)
+                if object_name == self._selected_name:
+                    state = str(message.get("state", "Nenhum"))
+                    self.animator_current_lbl.setText(state)
+                    dialog = self._animator_controller_dialog
+                    if dialog is not None:
+                        dialog.set_runtime_state(state, message.get("parameters"))
             elif message.get("type") == "attach_script":
                 self._attach_script(str(message.get("name", "")), Path(str(message.get("path", ""))))
             elif message.get("type") == "stats":

@@ -21,7 +21,7 @@ def default_animator_controller(name: str = "NewController") -> dict[str, Any]:
         "name": str(name).strip() or "NewController",
         "initial_state": "Idle",
         "parameters": {},
-        "states": {"Idle": {"animation": "", "speed": 1.0}},
+        "states": {"Idle": {"animation": "", "speed": 1.0, "position": [40.0, 40.0]}},
         "transitions": [],
     }
 
@@ -33,15 +33,19 @@ def normalize_animator_controller(data: Mapping[str, Any] | None) -> dict[str, A
     states: dict[str, dict[str, Any]] = {}
     raw_states = source.get("states", {})
     if isinstance(raw_states, Mapping):
-        for raw_name, raw_state in raw_states.items():
+        for index, (raw_name, raw_state) in enumerate(raw_states.items()):
             name = str(raw_name).strip()
             if not name or not isinstance(raw_state, Mapping):
                 continue
+            raw_position = raw_state.get("position", [40.0 + (index % 3) * 190.0, 40.0 + (index // 3) * 120.0])
+            if not isinstance(raw_position, (list, tuple)) or len(raw_position) < 2:
+                raw_position = [40.0 + (index % 3) * 190.0, 40.0 + (index // 3) * 120.0]
             states[name] = {
                 "animation": str(raw_state.get("animation", "")).replace("\\", "/"),
                 "speed": max(0.0, _safe_float(raw_state.get("speed"), 1.0)),
+                "position": [_safe_float(raw_position[0], 40.0), _safe_float(raw_position[1], 40.0)],
             }
-    result["states"] = states or {"Idle": {"animation": "", "speed": 1.0}}
+    result["states"] = states or {"Idle": {"animation": "", "speed": 1.0, "position": [40.0, 40.0]}}
     initial = str(source.get("initial_state", "")).strip()
     result["initial_state"] = initial if initial in result["states"] else next(iter(result["states"]))
 
@@ -95,6 +99,34 @@ def normalize_animator_controller(data: Mapping[str, Any] | None) -> dict[str, A
             transitions.append({"from": origin or "*", "to": target, "conditions": conditions})
     result["transitions"] = transitions
     return result
+
+
+def validate_animator_controller(
+    data: Mapping[str, Any] | None, project_root: str | Path | None = None
+) -> list[dict[str, str]]:
+    """Retorna problemas amigáveis para o editor, sem impedir assets incompletos."""
+    controller = normalize_animator_controller(data)
+    root = Path(project_root).resolve() if project_root is not None else None
+    issues: list[dict[str, str]] = []
+    for name, state in controller["states"].items():
+        animation = str(state.get("animation", ""))
+        if not animation:
+            issues.append({"level": "warning", "state": name, "message": f"{name}: nenhuma animação escolhida"})
+        elif root is not None:
+            path = Path(animation)
+            path = path if path.is_absolute() else root / path
+            if not path.is_file():
+                issues.append({"level": "error", "state": name, "message": f"{name}: animação não encontrada"})
+    seen: set[tuple[str, str, str]] = set()
+    for transition in controller["transitions"]:
+        condition_key = repr(transition.get("conditions", []))
+        key = (transition["from"], transition["to"], condition_key)
+        if key in seen:
+            issues.append({"level": "warning", "state": transition["to"], "message": f"Transição duplicada: {transition['from']} → {transition['to']}"})
+        seen.add(key)
+        if transition["from"] == transition["to"] and not transition.get("conditions"):
+            issues.append({"level": "warning", "state": transition["to"], "message": f"Loop imediato sem condição em {transition['to']}"})
+    return issues
 
 
 def load_animator_controller(path: str | Path) -> dict[str, Any]:

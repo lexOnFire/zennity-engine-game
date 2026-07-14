@@ -15,6 +15,7 @@ from .controller_asset import (
     load_animator_controller,
     normalize_animator_controller,
     save_animator_controller,
+    validate_animator_controller,
 )
 
 __all__ = [
@@ -34,4 +35,5 @@ __all__ = [
     "load_animator_controller",
     "normalize_animator_controller",
     "save_animator_controller",
+    "validate_animator_controller",
 ]

@@ -4,6 +4,7 @@ from engine.animation.controller_asset import (
     load_animator_controller,
     normalize_animator_controller,
     save_animator_controller,
+    validate_animator_controller,
 )
 
 
@@ -53,3 +54,11 @@ def test_normalization_removes_invalid_references():
     normalized = normalize_animator_controller(data)
     assert normalized["initial_state"] == "Idle"
     assert normalized["transitions"] == []
+
+
+def test_validation_reports_empty_and_missing_animations(tmp_path):
+    data = controller_data()
+    data["states"]["Idle"]["animation"] = ""
+    issues = validate_animator_controller(data, tmp_path)
+    assert any(issue["state"] == "Idle" and issue["level"] == "warning" for issue in issues)
+    assert any(issue["state"] == "Walk" and issue["level"] == "error" for issue in issues)
