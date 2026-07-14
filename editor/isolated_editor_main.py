@@ -31,6 +31,7 @@ from editor.runtime.play_session import EditorPlaySession
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from editor.widgets.component_picker import ComponentPickerDialog
+from editor.ui.icons import component_title
 from engine.animation.clip_asset import (
     animation_asset_from_clip,
     animation_asset_to_clip,
@@ -2385,13 +2386,13 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
 
                 from PySide6.QtWidgets import QToolButton, QFrame
                 h_widget = QWidget()
-                h_widget.setStyleSheet("background-color: #24272d; border-radius: 4px; border: 1px solid #30343c;")
+                h_widget.setObjectName("InspectorComponentHeader")
                 h_lay = QHBoxLayout(h_widget)
                 h_lay.setContentsMargins(6, 4, 6, 4)
 
                 title_text = s_name.removesuffix(".py").capitalize()
-                lbl_title = QLabel(f"∨  📄 {title_text} (Script)")
-                lbl_title.setStyleSheet("font-weight: bold; color: #ffffff; font-size: 11px;")
+                lbl_title = QLabel(component_title("script", f"{title_text} (Script)"))
+                lbl_title.setObjectName("InspectorComponentTitle")
                 h_lay.addWidget(lbl_title)
                 h_lay.addStretch()
 
@@ -2400,18 +2401,20 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 script_expanded = bool(self._component_expanded.setdefault(script_card_key, False))
                 btn_collapse.setText("▼" if script_expanded else "▶")
                 btn_collapse.setFixedSize(18, 18)
-                btn_collapse.setStyleSheet("background: transparent !important; color: #aaaaaa !important; border: none !important; font-size: 11px; padding: 0px;")
+                btn_collapse.setObjectName("InspectorFoldoutButton")
+                btn_collapse.setProperty("uiRole", "icon")
                 h_lay.addWidget(btn_collapse)
 
                 btn_del = QToolButton()
                 btn_del.setText("✕")
                 btn_del.setFixedSize(18, 18)
-                btn_del.setStyleSheet("background: transparent !important; color: #ff5555 !important; font-weight: bold !important; border: none !important; padding: 0px;")
+                btn_del.setObjectName("InspectorDangerButton")
+                btn_del.setProperty("uiRole", "danger")
                 btn_del.clicked.connect(lambda checked=False, p=s_path: self._remove_single_script(p))
                 h_lay.addWidget(btn_del)
 
                 b_widget = QWidget()
-                b_widget.setStyleSheet("background: #202228; border-left: 1px solid #30343c; border-right: 1px solid #30343c; border-bottom: 1px solid #30343c;")
+                b_widget.setObjectName("InspectorComponentBody")
                 b_lay = QFormLayout(b_widget)
                 b_lay.setContentsMargins(4, 4, 4, 4)
                 b_lay.setSpacing(6)
@@ -2426,7 +2429,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
 
                 script_sel_combo = QComboBox()
                 script_sel_combo.setObjectName("InspectorScriptSelector")
-                script_sel_combo.setStyleSheet("background-color: #242424; color: #e0e0e0; font-size: 11px;")
                 script_sel_combo.setFixedHeight(22)
 
                 available = self._get_available_scripts()
@@ -2629,11 +2631,8 @@ def main() -> None:
     commands = context.Queue()
     events = context.Queue()
     app = QApplication.instance() or QApplication(sys.argv)
-    try:
-        from editor.premium_theme import PREMIUM_QSS
-        app.setStyleSheet(PREMIUM_QSS)
-    except Exception:
-        pass
+    from editor.ui import apply_editor_theme
+    apply_editor_theme(app)
     window = IsolatedEditorWindow(None, commands, events)
     window.show()
     app.processEvents()

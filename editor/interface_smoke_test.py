@@ -33,6 +33,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from editor.ui.icons import TOOLBAR_GLYPHS, component_title
 
 
 class InterfaceSmokeTest(QMainWindow):
@@ -48,6 +49,8 @@ class InterfaceSmokeTest(QMainWindow):
         self._build_toolbar()
         self._build_center()
         self._build_docks()
+        from editor.ui import polish_editor_widgets
+        polish_editor_widgets(self)
         self.statusBar().showMessage("Teste isolado: não há Pygame nem renderização de cena.")
 
     def _build_menu(self) -> None:
@@ -62,13 +65,7 @@ class InterfaceSmokeTest(QMainWindow):
         toolbar.setMovable(False)
         self.addToolBar(toolbar)
         self.toolbar_actions = {}
-        icons = {
-            "Novo": "📋", "Abrir": "📂", "Salvar": "💾",
-            "Desfazer": "↶", "Refazer": "↷", "Select": "⛶",
-            "Move": "✛", "Rotate": "🔄", "Scale": "📐",
-            "Snap: OFF": "⚙️", "Play": "▶️", "Pause": "⏸️", "Stop": "⏹️",
-        }
-        for label, icon in icons.items():
+        for label, icon in TOOLBAR_GLYPHS.items():
             action = QAction(icon, self)
             action.setStatusTip(label)
             action.setToolTip(label)
@@ -76,6 +73,7 @@ class InterfaceSmokeTest(QMainWindow):
             toolbar.addAction(action)
         toolbar.addSeparator()
         mode = QComboBox()
+        mode.setObjectName("ModeSwitch")
         mode.addItems(["2D", "3D (experimental)"])
         toolbar.addWidget(mode)
 
@@ -247,6 +245,7 @@ class InterfaceSmokeTest(QMainWindow):
     def _build_docks(self) -> None:
         hierarchy = QTreeWidget()
         self.hierarchy_tree = hierarchy
+        hierarchy.setObjectName("HierarchyTree")
         hierarchy.setHeaderHidden(True)
         root = QTreeWidgetItem(["MainScene"])
         environment = QTreeWidgetItem(["Environment"])
@@ -257,6 +256,7 @@ class InterfaceSmokeTest(QMainWindow):
 
         assets = QTreeWidget()
         self.assets_tree = assets
+        assets.setObjectName("AssetsTree")
         assets.setHeaderHidden(True)
         asset_root = QTreeWidgetItem(["Assets"])
         asset_root.addChildren([QTreeWidgetItem(["Scenes"]), QTreeWidgetItem(["Scripts"]), QTreeWidgetItem(["Textures"]), QTreeWidgetItem(["Audio"])])
@@ -280,14 +280,17 @@ class InterfaceSmokeTest(QMainWindow):
         create_layout.addStretch(1)
 
         hierarchy_tabs = QTabWidget()
+        hierarchy_tabs.setObjectName("NavigationTabs")
         hierarchy_tabs.addTab(hierarchy, "Hierarchy")
         hierarchy_tabs.addTab(create_panel, "Criar")
 
         prefab_tree = QTreeWidget()
         self.prefab_tree = prefab_tree
+        prefab_tree.setObjectName("PrefabsTree")
         prefab_tree.setHeaderHidden(True)
         prefab_tree.addTopLevelItem(QTreeWidgetItem(["Prefabs disponíveis no projeto"] ))
         asset_tabs = QTabWidget()
+        asset_tabs.setObjectName("AssetTabs")
         asset_tabs.addTab(assets, "Assets")
         asset_tabs.addTab(prefab_tree, "Adicionar Prefabs")
 
@@ -307,12 +310,12 @@ class InterfaceSmokeTest(QMainWindow):
         # QScrollArea para evitar que a janela fique apertada e bagunçada
         from PySide6.QtWidgets import QScrollArea
         scroll = QScrollArea()
+        scroll.setObjectName("InspectorScrollArea")
         scroll.setWidgetResizable(True)
-        scroll.setStyleSheet("QScrollArea { border: none; background-color: #1c1c1c; }")
 
         inspector = QWidget()
         self.inspector_panel = inspector
-        inspector.setStyleSheet("background-color: #1c1c1c;")
+        inspector.setObjectName("InspectorPanel")
         main_layout = QVBoxLayout(inspector)
         self.inspector_layout = main_layout
         main_layout.setContentsMargins(8, 8, 8, 10)
@@ -320,12 +323,12 @@ class InterfaceSmokeTest(QMainWindow):
 
         # BARRA DE TÍTULO CUSTOMIZADA DO INSPECTOR (Com botões de encolher, desgrudar/flutuar, acoplar)
         title_bar = QWidget()
-        title_bar.setStyleSheet("background-color: #2b2b2b; border-radius: 4px; border: 1px solid #3d3d3d;")
+        title_bar.setObjectName("InspectorToolbar")
         title_bar_layout = QHBoxLayout(title_bar)
         title_bar_layout.setContentsMargins(6, 4, 6, 4)
 
         inspector_lbl = QLabel("🔍 INSPECTOR")
-        inspector_lbl.setStyleSheet("font-weight: bold; color: #4caf50; font-size: 11px;")
+        inspector_lbl.setObjectName("InspectorToolbarTitle")
         title_bar_layout.addWidget(inspector_lbl)
         title_bar_layout.addStretch()
 
@@ -339,7 +342,8 @@ class InterfaceSmokeTest(QMainWindow):
 
         for btn in (self.btn_collapse_dock, self.btn_float_dock, self.btn_dock_dock):
             btn.setFixedSize(20, 20)
-            btn.setStyleSheet("background-color: #202020; color: #ffffff; border: 1px solid #444; border-radius: 2px; font-size: 10px; font-weight: bold;")
+            btn.setObjectName("InspectorPanelControl")
+            btn.setProperty("uiRole", "icon")
             title_bar_layout.addWidget(btn)
 
         # Conecta as ações nos botões customizados
@@ -356,7 +360,6 @@ class InterfaceSmokeTest(QMainWindow):
 
         self.inspector_name_label = QLabel("Player")
         self.inspector_name_label.setObjectName("InspectorObjectName")
-        self.inspector_name_label.setStyleSheet("font-weight: bold; font-size: 14px; color: #ffffff;")
 
         self.static_checkbox = QCheckBox("Estático")
         self.static_checkbox.setObjectName("InspectorCheckBox")
@@ -387,7 +390,7 @@ class InterfaceSmokeTest(QMainWindow):
         trans_h_layout.setContentsMargins(6, 4, 6, 4)
 
         # Símbolo expansor e ícone
-        trans_title = QLabel("🏃 Transform")
+        trans_title = QLabel(component_title("transform", "Transform"))
         trans_title.setStyleSheet("font-weight: bold; color: #ffffff;")
         trans_h_layout.addWidget(trans_title)
         trans_h_layout.addStretch()
@@ -520,7 +523,7 @@ class InterfaceSmokeTest(QMainWindow):
         self.sprite_renderer_header.setStyleSheet("background-color: #24272d; border-radius: 4px; border: 1px solid #30343c;")
         sprite_header_layout = QHBoxLayout(self.sprite_renderer_header)
         sprite_header_layout.setContentsMargins(6, 4, 6, 4)
-        self.show_renderer_chk = QCheckBox("🖼 Sprite Renderer")
+        self.show_renderer_chk = QCheckBox(component_title("sprite", "Sprite Renderer"))
         self.show_renderer_chk.setObjectName("InspectorCheckBox")
         self.show_renderer_chk.setStyleSheet("font-weight: bold; color: #ffffff;")
         sprite_header_layout.addWidget(self.show_renderer_chk)
@@ -568,7 +571,7 @@ class InterfaceSmokeTest(QMainWindow):
         self.audio_source_header.setStyleSheet("background-color: #24272d; border-radius: 4px; border: 1px solid #30343c;")
         audio_header_layout = QHBoxLayout(self.audio_source_header)
         audio_header_layout.setContentsMargins(6, 4, 6, 4)
-        self.show_audio_chk = QCheckBox("🔊 Audio Source")
+        self.show_audio_chk = QCheckBox(component_title("audio", "Audio Source"))
         self.show_audio_chk.setObjectName("InspectorCheckBox")
         self.show_audio_chk.setStyleSheet("font-weight: bold; color: #ffffff;")
         audio_header_layout.addWidget(self.show_audio_chk)
@@ -618,7 +621,7 @@ class InterfaceSmokeTest(QMainWindow):
         rb_h_layout = QHBoxLayout(self.rigidbody_header)
         rb_h_layout.setContentsMargins(6, 4, 6, 4)
 
-        self.show_rigidbody_chk = QCheckBox("⚙️ RigidBody 2D")
+        self.show_rigidbody_chk = QCheckBox(component_title("rigidbody", "RigidBody 2D"))
         self.show_rigidbody_chk.setObjectName("InspectorCheckBox")
         self.show_rigidbody_chk.setStyleSheet("font-weight: bold; color: #ffffff;")
         rb_h_layout.addWidget(self.show_rigidbody_chk)
@@ -666,7 +669,7 @@ class InterfaceSmokeTest(QMainWindow):
         col_h_layout = QHBoxLayout(self.collider_header)
         col_h_layout.setContentsMargins(6, 4, 6, 4)
 
-        self.show_collider_chk = QCheckBox("🟢 Box/Circle Collider")
+        self.show_collider_chk = QCheckBox(component_title("collider", "Box/Circle Collider"))
         self.show_collider_chk.setObjectName("InspectorCheckBox")
         self.show_collider_chk.setStyleSheet("font-weight: bold; color: #ffffff;")
         col_h_layout.addWidget(self.show_collider_chk)
@@ -816,7 +819,7 @@ class InterfaceSmokeTest(QMainWindow):
         self.camera_header.setStyleSheet("background-color: #24272d; border-radius: 4px; border: 1px solid #30343c;")
         camera_header_layout = QHBoxLayout(self.camera_header)
         camera_header_layout.setContentsMargins(6, 4, 6, 4)
-        self.show_camera_chk = QCheckBox("📷 Camera 2D")
+        self.show_camera_chk = QCheckBox(component_title("camera", "Camera 2D"))
         self.show_camera_chk.setObjectName("InspectorCheckBox")
         self.show_camera_chk.setStyleSheet("font-weight: bold; color: #ffffff;")
         camera_header_layout.addWidget(self.show_camera_chk)
@@ -865,7 +868,7 @@ class InterfaceSmokeTest(QMainWindow):
         self.ui_component_header.setStyleSheet("background-color: #24272d; border-radius: 4px; border: 1px solid #30343c;")
         ui_header_layout = QHBoxLayout(self.ui_component_header)
         ui_header_layout.setContentsMargins(6, 4, 6, 4)
-        self.show_ui_chk = QCheckBox("🖥 UI")
+        self.show_ui_chk = QCheckBox(component_title("ui", "UI"))
         self.show_ui_chk.setObjectName("InspectorCheckBox")
         self.show_ui_chk.setStyleSheet("font-weight: bold; color: #ffffff;")
         ui_header_layout.addWidget(self.show_ui_chk)
@@ -1040,6 +1043,8 @@ class InterfaceSmokeTest(QMainWindow):
 
 def main() -> None:
     app = QApplication.instance() or QApplication(sys.argv)
+    from editor.ui import apply_editor_theme
+    apply_editor_theme(app)
     window = InterfaceSmokeTest()
     window.show()
     sys.exit(app.exec())
