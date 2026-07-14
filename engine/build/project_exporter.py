@@ -76,6 +76,7 @@ def _validate_export_inputs(project_root: Path, scene_path: Path, report: BuildR
         "editor/runtime/sprite_rendering.py",
         "engine/graphics/tint.py",
         "engine/animation/clip_asset.py",
+        "engine/animation/controller_asset.py",
         "engine/build/runtime_scene_loader.py",
     )
     for relative in runtime_sources:
@@ -118,6 +119,7 @@ def _write_development_project(project_root: Path, scene_path: Path, destination
         project_root / "editor" / "runtime" / "sprite_rendering.py": runtime_dir / "sprite_rendering.py",
         project_root / "engine" / "graphics" / "tint.py": runtime_dir / "tint.py",
         project_root / "engine" / "animation" / "clip_asset.py": runtime_dir / "clip_asset.py",
+        project_root / "engine" / "animation" / "controller_asset.py": runtime_dir / "controller_asset.py",
         project_root / "engine" / "build" / "runtime_scene_loader.py": runtime_dir / "scene_loader.py",
     }
     for source, target in runtime_sources.items():
@@ -176,6 +178,7 @@ def _validate_exported_project(destination: Path, report: BuildReport) -> None:
         "zennity_runtime/sprite_rendering.py",
         "zennity_runtime/tint.py",
         "zennity_runtime/clip_asset.py",
+        "zennity_runtime/controller_asset.py",
         "zennity_runtime/scene_loader.py",
     )
     for relative in required:

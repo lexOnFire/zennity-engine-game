@@ -46,6 +46,20 @@ def test_simple_play_api_moves_reads_edges_and_requests_jump() -> None:
     assert not game.key_pressed("space")
 
 
+def test_simple_play_api_exposes_animator_controller_commands() -> None:
+    obj = {"animator": {}}
+    game = PlayScriptAPI("Player", obj, events=None)
+
+    game.animator.set_float("velocidade", 1.0)
+    game.animator.set_bool("no_chao", True)
+    game.animator.trigger("pular")
+    game.animator.play("andar")
+
+    assert [item["command"] for item in obj["script_instructions"]] == [
+        "animator_set_float", "animator_set_bool", "animator_trigger", "animator_play",
+    ]
+
+
 def test_all_attachable_asset_scripts_use_current_contract() -> None:
     scripts_dir = Path("Assets/Scripts")
     failures = {}

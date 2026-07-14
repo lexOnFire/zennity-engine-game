@@ -11,6 +11,7 @@ RUNTIME_SOURCES = (
     "editor/runtime/sprite_rendering.py",
     "engine/graphics/tint.py",
     "engine/animation/clip_asset.py",
+    "engine/animation/controller_asset.py",
     "engine/build/runtime_scene_loader.py",
 )
 

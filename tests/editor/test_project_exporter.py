@@ -10,6 +10,7 @@ RUNTIME_SOURCES = (
     "editor/runtime/sprite_rendering.py",
     "engine/graphics/tint.py",
     "engine/animation/clip_asset.py",
+    "engine/animation/controller_asset.py",
     "engine/build/runtime_scene_loader.py",
 )
 
@@ -123,7 +124,7 @@ def test_exported_runtime_contains_all_standalone_dependencies(tmp_path: Path) -
     runtime = Path(report.destination) / "zennity_runtime"
     assert {path.name for path in runtime.glob("*.py")} == {
         "__init__.py", "viewport.py", "native_ui.py", "audio_playback_state.py", "sprite_rendering.py",
-        "tint.py", "clip_asset.py", "scene_loader.py",
+        "tint.py", "clip_asset.py", "controller_asset.py", "scene_loader.py",
     }
     launcher = (Path(report.destination) / "main.py").read_text(encoding="utf-8")
     assert "from zennity_runtime.scene_loader import load_objects" in launcher

@@ -16,11 +16,13 @@ try:
     from editor.runtime.native_ui import NativeUIRenderer, normalize_ui
     from editor.runtime.sprite_rendering import prepare_sprite_surface
     from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
+    from engine.animation.controller_asset import AnimatorControllerRuntime, load_animator_controller
 except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .audio_playback_state import set_channels_paused
     from .native_ui import NativeUIRenderer, normalize_ui
     from .sprite_rendering import prepare_sprite_surface
     from .clip_asset import animation_asset_to_clip, load_animation_asset
+    from .controller_asset import AnimatorControllerRuntime, load_animator_controller
 
 
 def hydrate_animation_asset_clips(
@@ -49,6 +51,73 @@ def hydrate_animation_asset_clips(
     return results
 
 
+def hydrate_animator_controllers(
+    objects: dict[str, dict[str, Any]], project_root: Path
+) -> list[tuple[str, str, str]]:
+    """Carrega controllers e converte seus estados para os clips do runtime atual."""
+    results: list[tuple[str, str, str]] = []
+    for object_name, obj in objects.items():
+        animator = obj.get("animator")
+        if not isinstance(animator, dict):
+            continue
+        asset_path = str(animator.get("controller_path", ""))
+        if not asset_path:
+            continue
+        path = Path(asset_path)
+        if not path.is_absolute():
+            path = project_root / path
+        try:
+            controller = load_animator_controller(path)
+            animator["controller"] = controller
+            clips = animator.setdefault("clips", {})
+            if not isinstance(clips, dict):
+                clips = {}
+                animator["clips"] = clips
+            loaded = 0
+            for state_name, state in controller["states"].items():
+                animation_path = str(state.get("animation", ""))
+                if not animation_path:
+                    continue
+                clip_path = Path(animation_path)
+                if not clip_path.is_absolute():
+                    clip_path = project_root / clip_path
+                asset = load_animation_asset(clip_path)
+                clips[state_name] = animation_asset_to_clip(asset, animation_path)
+                clips[state_name]["controller_speed"] = float(state.get("speed", 1.0))
+                loaded += 1
+            animator["active_clip"] = str(controller["initial_state"])
+            results.append(("INFO", object_name, f"controller carregado: {path.name} ({loaded} estado(s))"))
+        except (OSError, ValueError) as exc:
+            results.append(("ERROR", object_name, f"falha ao carregar controller {asset_path}: {exc}"))
+    return results
+
+
+class PlayAnimatorAPI:
+    """Comandos simples expostos como ``game.animator`` nos scripts."""
+
+    def __init__(self, obj: dict[str, Any]) -> None:
+        self._obj = obj
+
+    def _send(self, command: str, value: Any) -> None:
+        self._obj.setdefault("script_instructions", []).append({"command": command, "value": value})
+
+    def play(self, state: str) -> None:
+        self._send("animator_play", str(state))
+
+    def set_bool(self, parameter: str, value: bool) -> None:
+        self._send("animator_set_bool", {"name": str(parameter), "value": bool(value)})
+
+    def set_float(self, parameter: str, value: float) -> None:
+        self._send("animator_set_float", {"name": str(parameter), "value": float(value)})
+
+    def trigger(self, parameter: str) -> None:
+        self._send("animator_trigger", str(parameter))
+
+    @property
+    def state(self) -> str:
+        return str(self._obj.get("_animator_state", self._obj.get("_current_animation_name", "Nenhum")))
+
+
 class PlayScriptAPI:
     """API pequena e estável entregue aos scripts no Play Mode."""
 
@@ -64,6 +133,7 @@ class PlayScriptAPI:
         self._world = world or {name: obj}
         self._input: dict[str, bool] = {}
         self._previous_input: dict[str, bool] = {}
+        self.animator = PlayAnimatorAPI(obj)
 
     @property
     def x(self) -> float:
@@ -304,6 +374,7 @@ def run_viewport(
     grounded: dict[str, bool] = {}
     script_instances: dict[str, list[tuple[str, Any]]] = {}
     script_apis: dict[str, PlayScriptAPI] = {}
+    animator_controllers: dict[str, AnimatorControllerRuntime] = {}
     active_contacts: dict[tuple[str, str], bool] = {}
     audio_channels: dict[str, Any] = {}
     audio_sounds: dict[str, Any] = {}
@@ -339,11 +410,21 @@ def run_viewport(
     def start_scripts() -> None:
         script_instances.clear()
         script_apis.clear()
+        animator_controllers.clear()
         for level, object_name, message in hydrate_animation_asset_clips(objects, Path.cwd()):
             _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
-        for obj in objects.values():
+        for level, object_name, message in hydrate_animator_controllers(objects, Path.cwd()):
+            _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
+        for name, obj in objects.items():
             animator = obj.get("animator")
             if isinstance(animator, dict):
+                controller = animator.get("controller")
+                if isinstance(controller, dict):
+                    runtime = AnimatorControllerRuntime(controller, animator.get("parameters", {}))
+                    animator_controllers[name] = runtime
+                    animator["parameters"] = dict(runtime.parameters)
+                    obj["_animator_state"] = runtime.current_state
+                    animator["active_clip"] = runtime.current_state
                 obj["_current_animation_name"] = str(animator.get("active_clip", "Idle"))
                 obj["_animation_time"] = 0.0
                 obj["_animation_frame"] = 0
@@ -438,6 +519,7 @@ def run_viewport(
                     _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}: {exc}"})
         script_instances.clear()
         script_apis.clear()
+        animator_controllers.clear()
         active_contacts.clear()
 
     def start_audio_sources() -> None:
@@ -563,7 +645,7 @@ def run_viewport(
         active_contacts.update(current)
 
     def update_animations(delta_time: float) -> None:
-        for obj in objects.values():
+        for object_name, obj in objects.items():
             animator = obj.get("animator")
             if not isinstance(animator, dict):
                 continue
@@ -572,12 +654,27 @@ def run_viewport(
                 continue
             if not isinstance(clips, dict):
                 continue
+            controller = animator_controllers.get(object_name)
+            if controller is not None:
+                previous = controller.current_state
+                controller.update()
+                animator["parameters"] = dict(controller.parameters)
+                animator["active_clip"] = controller.current_state
+                obj["_animator_state"] = controller.current_state
+                obj["_current_animation_name"] = controller.current_state
+                if controller.current_state != previous:
+                    obj["_animation_time"] = 0.0
+                    obj["_animation_frame"] = 0
             name = str(obj.get("_current_animation_name", animator.get("active_clip", "")))
             clip = clips.get(name)
             if not isinstance(clip, dict):
                 continue
             count = max(1, int(clip.get("frame_count", 1)))
-            fps = max(0.01, float(clip.get("fps", 8.0))) * max(0.0, float(animator.get("speed", 1.0)))
+            fps = (
+                max(0.01, float(clip.get("fps", 8.0)))
+                * max(0.0, float(animator.get("speed", 1.0)))
+                * max(0.0, float(clip.get("controller_speed", 1.0)))
+            )
             elapsed = float(obj.get("_animation_time", 0.0)) + delta_time
             raw_frame = int(elapsed * fps)
             frame = raw_frame % count if clip.get("loop", True) else min(count - 1, raw_frame)
@@ -1269,6 +1366,25 @@ def run_viewport(
                                     anim = obj.get("animator")
                                     if isinstance(anim, dict):
                                         anim["active_clip"] = str(val)
+                                elif cmd == "animator_play" and val:
+                                    controller = animator_controllers.get(name)
+                                    if controller is not None and controller.play(str(val)):
+                                        obj["_animator_state"] = controller.current_state
+                                        obj["_current_animation_name"] = controller.current_state
+                                        obj["_animation_time"] = 0.0
+                                        obj["_animation_frame"] = 0
+                                elif cmd in {"animator_set_bool", "animator_set_float"} and isinstance(val, dict):
+                                    controller = animator_controllers.get(name)
+                                    if controller is not None:
+                                        parameter = str(val.get("name", ""))
+                                        if cmd == "animator_set_bool":
+                                            controller.set_bool(parameter, bool(val.get("value")))
+                                        else:
+                                            controller.set_float(parameter, float(val.get("value", 0.0)))
+                                elif cmd == "animator_trigger" and val:
+                                    controller = animator_controllers.get(name)
+                                    if controller is not None:
+                                        controller.trigger(str(val))
                                 elif cmd == "stop_animation":
                                     obj["_current_animation_name"] = "Nenhum"
                                 elif cmd == "play_sound" and val:

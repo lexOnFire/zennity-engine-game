@@ -14,6 +14,23 @@ Edite apenas a seção **CONFIGURAÇÃO** no topo de cada script.
 - `game.remove_hud("vida")` remove um texto do HUD.
 - `game.restart()` restaura a cena ao estado inicial do Play Mode.
 
+Animator Controller:
+
+```python
+def on_update(game, dt):
+    direcao = game.axis("left", "right")
+    game.animator.set_float("velocidade", abs(direcao))
+
+    if game.key_pressed("space"):
+        game.animator.trigger("pular")
+
+    # Também é possível trocar diretamente para um estado:
+    # game.animator.play("andar")
+```
+
+No script, use o nome do **parâmetro** ou do **estado** exatamente como aparece
+no Animator Controller. O restante é decidido pelas transições configuradas na aba Animação.
+
 Eventos de Collider:
 
 ```python

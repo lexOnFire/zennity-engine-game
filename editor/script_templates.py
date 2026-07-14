@@ -27,6 +27,11 @@ def on_update(game, dt):
 
     if game.key_pressed("space"):
         game.jump(FORCA_DO_PULO)
+
+    # Opcional: se o objeto usa Animator Controller, controle assim:
+    # game.animator.set_float("velocidade", abs(direcao))
+    # if game.key_pressed("space"):
+    #     game.animator.trigger("pular")
 '''
 
 

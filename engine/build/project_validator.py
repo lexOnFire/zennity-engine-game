@@ -21,6 +21,7 @@ RUNTIME_SOURCES = (
     "editor/runtime/sprite_rendering.py",
     "engine/graphics/tint.py",
     "engine/animation/clip_asset.py",
+    "engine/animation/controller_asset.py",
     "engine/build/runtime_scene_loader.py",
 )
 
@@ -228,12 +229,34 @@ def _validate_script(root: Path, value: Any, object_name: str, report: ProjectVa
 
 
 def _validate_animator(root: Path, animator: dict[str, Any], name: str, report: ProjectValidationReport, checked: set[str]) -> None:
+    controller_value = animator.get("controller_path")
+    controller_path = _asset_path(root, controller_value)
+    controller_states: set[str] = set()
+    if controller_path is not None:
+        _check_asset(root, controller_value, "Animator Controller", name, report, checked)
+        if controller_path.is_file():
+            try:
+                controller = json.loads(controller_path.read_text(encoding="utf-8"))
+                states = controller.get("states", {}) if isinstance(controller, dict) else {}
+                if not isinstance(states, dict) or not states:
+                    report.add("error", "Animator Controller", "Controller não possui estados.", controller_value, name)
+                else:
+                    controller_states = set(states)
+                    initial = str(controller.get("initial_state", ""))
+                    if initial not in controller_states:
+                        report.add("error", "Animator Controller", "Estado inicial não existe.", controller_value, name)
+                    for state in states.values():
+                        if isinstance(state, dict):
+                            _check_asset(root, state.get("animation"), "Animação", name, report, checked)
+            except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+                report.add("error", "Animator Controller", f"Controller inválido: {exc}", controller_value, name)
     clips = animator.get("clips")
     if not isinstance(clips, dict) or not clips:
-        report.add("warning", "Animação", "Animator não possui clips.", object_name=name)
+        if controller_path is None:
+            report.add("warning", "Animação", "Animator não possui clips.", object_name=name)
         return
     active = str(animator.get("active_clip", ""))
-    if active not in clips:
+    if active not in clips and active not in controller_states:
         report.add("error", "Animação", f"Clip ativo não existe: {active or '<vazio>'}.", object_name=name)
     for clip in clips.values():
         if not isinstance(clip, dict):

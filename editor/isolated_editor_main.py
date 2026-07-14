@@ -32,6 +32,7 @@ from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from editor.widgets.component_picker import ComponentPickerDialog
 from editor.widgets.animation_picker import AnimationPickerDialog
+from editor.widgets.animator_controller_editor import AnimatorControllerEditorDialog
 from editor.ui.icons import component_title, editor_icon
 from editor.ui.tokens import DEFAULT_TOKENS
 from engine.animation.clip_asset import (
@@ -41,6 +42,7 @@ from engine.animation.clip_asset import (
     load_animation_asset,
     save_animation_asset,
 )
+from engine.animation.controller_asset import load_animator_controller
 from editor.widgets.build_report_dialog import BuildReportDialog
 from editor.widgets.project_validation_dialog import ProjectValidationDialog
 from engine.build import (
@@ -247,6 +249,24 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             )
             return
 
+        elif ext == ".zanimator":
+            self.preview_label.clear()
+            self.preview_label.setText("◉ Animator Controller")
+            try:
+                controller = load_animator_controller(path)
+                details = (
+                    f"Nome: {controller['name']}<br>"
+                    f"Estado inicial: {controller['initial_state']}<br>"
+                    f"Estados: {len(controller['states'])}<br>"
+                    f"Transições: {len(controller['transitions'])}<br>"
+                )
+            except (OSError, ValueError, json.JSONDecodeError) as exc:
+                details = f"<span style='color:{DEFAULT_TOKENS.danger}'>Asset inválido: {exc}</span><br>"
+            self.preview_details_label.setText(
+                f"<b>{path.name}</b><br><br>Tipo: Animator Controller<br>{details}Tamanho: {size_str}<br>Modificado: {date_str}"
+            )
+            return
+
         elif ext in {".zscene", ".json"}:
             self.preview_label.clear()
             self.preview_label.setText("🎬 Scene")
@@ -320,7 +340,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 if event.source() is not self.assets_tree:
                     return super().eventFilter(watched, event)
                 path = self._dragged_asset_path()
-                if path is not None and path.suffix.lower() in {".py", ".zanim", ".png", ".jpg", ".jpeg", ".bmp", ".webp"}:
+                if path is not None and path.suffix.lower() in {".py", ".zanim", ".zanimator", ".png", ".jpg", ".jpeg", ".bmp", ".webp"}:
                     event.acceptProposedAction()
                     return True
             elif event.type() == QEvent.DragMove:
@@ -360,6 +380,18 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                             target_name = item_name
                     if target_name in self._objects_by_name:
                         self._apply_animation_asset_path_to_object(path, target_name)
+                        event.acceptProposedAction()
+                        return True
+                elif path is not None and path.suffix.lower() == ".zanimator":
+                    target_name = self._selected_name
+                    if watched in self._hierarchy_drop_targets:
+                        local_position = self.hierarchy_tree.viewport().mapFromGlobal(event.globalPosition().toPoint())
+                        item = self.hierarchy_tree.itemAt(local_position)
+                        item_name = self._hierarchy_item_name(item)
+                        if item_name in self._objects_by_name:
+                            target_name = item_name
+                    if target_name in self._objects_by_name:
+                        self._apply_animator_controller_path(path, target_name)
                         event.acceptProposedAction()
                         return True
                 elif path is not None and watched is self.viewport_host and path.suffix.lower() in {".png", ".jpg", ".jpeg", ".bmp", ".webp"}:
@@ -585,6 +617,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     icon = "🔊 "
                 elif child.suffix.lower() == ".zanim":
                     icon = "🎞 "
+                elif child.suffix.lower() == ".zanimator":
+                    icon = "◉ "
                 else:
                     icon = "📄 "
                 item = QTreeWidgetItem([icon + child.name])
@@ -1527,6 +1561,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.animation_apply_button.clicked.connect(self._apply_current_animation_to_selected)
         self.animation_demo_button.clicked.connect(self._run_walk_animation_demo)
         self.animation_library_tree.itemDoubleClicked.connect(self._open_animation_library_item)
+        self.animation_controller_combo.currentIndexChanged.connect(self._select_animation_controller)
+        self.animation_new_controller_button.clicked.connect(self._new_animator_controller)
+        self.animation_edit_controller_button.clicked.connect(self._edit_animator_controller)
 
         self.animation_play_button.clicked.connect(self._toggle_animation_preview_playback)
         self.animation_first_frame_button.clicked.connect(lambda: self._set_animation_preview_frame(0))
@@ -1547,11 +1584,103 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         ):
             field_signal.connect(self._mark_animation_asset_dirty)
         self._refresh_animation_library()
+        self._refresh_animator_controllers()
         self._refresh_animation_timeline(self._default_animation_clip())
         self._update_animation_asset_status()
 
     def _animation_assets_directory(self) -> Path:
         return Path.cwd() / "Assets" / "Animations"
+
+    def _refresh_animator_controllers(self, selected_path: str = "") -> None:
+        combo = self.animation_controller_combo
+        combo.blockSignals(True)
+        combo.clear()
+        combo.addItem("Nenhum", "")
+        directory = self._animation_assets_directory()
+        for path in sorted(directory.rglob("*.zanimator"), key=lambda item: str(item).lower()) if directory.exists() else []:
+            relative = path.resolve().relative_to(Path.cwd().resolve()).as_posix()
+            combo.addItem(path.stem, relative)
+        index = combo.findData(str(selected_path).replace("\\", "/"))
+        combo.setCurrentIndex(max(0, index))
+        combo.blockSignals(False)
+        self._update_animator_controller_summary()
+
+    def _select_animation_controller(self, _index: int = -1) -> None:
+        if self._updating_inspector or self._selected_name not in self._objects_by_name:
+            return
+        controller_path = str(self.animation_controller_combo.currentData() or "")
+        if controller_path:
+            self._apply_animator_controller_path(Path.cwd() / controller_path, self._selected_name)
+        else:
+            obj = self._objects_by_name[self._selected_name]
+            animator = obj.get("animator")
+            if not isinstance(animator, dict):
+                return
+            self._record_history()
+            animator.pop("controller_path", None)
+            animator.pop("controller", None)
+            animator.pop("parameters", None)
+            self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+            self._update_animator_controller_summary()
+
+    def _apply_animator_controller_path(self, path: Path, target_name: str) -> None:
+        try:
+            resolved = path.resolve()
+            relative = resolved.relative_to(Path.cwd().resolve()).as_posix()
+            controller = load_animator_controller(resolved)
+        except (OSError, ValueError) as exc:
+            self._log("ERROR", f"Não foi possível aplicar o controller: {exc}")
+            return
+        self._record_history()
+        obj = self._objects_by_name[target_name]
+        animator = obj.setdefault("animator", {"active_clip": controller["initial_state"], "speed": 1.0, "clips": {}})
+        animator["controller_path"] = relative
+        animator["controller"] = controller
+        animator["active_clip"] = controller["initial_state"]
+        animator["parameters"] = {
+            name: parameter["default"] for name, parameter in controller["parameters"].items()
+        }
+        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        if target_name == self._selected_name:
+            self._refresh_animator_controllers(relative)
+            self._update_inspector(target_name)
+        self._log("INFO", f"Controller aplicado em {target_name}: {resolved.name}")
+
+    def _new_animator_controller(self) -> None:
+        dialog = AnimatorControllerEditorDialog(Path.cwd(), parent=self)
+        if dialog.exec() and dialog.saved_path:
+            relative = dialog.saved_path.resolve().relative_to(Path.cwd().resolve()).as_posix()
+            self._refresh_animator_controllers(relative)
+            self._select_animation_controller()
+            self._refresh_assets()
+            self._log("INFO", f"Animator Controller criado: {relative}")
+
+    def _edit_animator_controller(self) -> None:
+        controller_path = str(self.animation_controller_combo.currentData() or "")
+        if not controller_path:
+            QMessageBox.information(self, "Animator Controller", "Selecione um controller para editar.")
+            return
+        dialog = AnimatorControllerEditorDialog(Path.cwd(), Path.cwd() / controller_path, self)
+        if dialog.exec() and dialog.saved_path:
+            self._refresh_animator_controllers(controller_path)
+            self._select_animation_controller()
+            self._log("INFO", f"Animator Controller atualizado: {controller_path}")
+
+    def _update_animator_controller_summary(self) -> None:
+        path_value = str(self.animation_controller_combo.currentData() or "")
+        if not path_value:
+            self.animation_controller_summary.setText("Use um controller para criar estados e transições.")
+            self.animation_edit_controller_button.setEnabled(False)
+            return
+        self.animation_edit_controller_button.setEnabled(True)
+        try:
+            controller = load_animator_controller(Path.cwd() / path_value)
+            self.animation_controller_summary.setText(
+                f'Inicial: {controller["initial_state"]} · {len(controller["states"])} estado(s) · '
+                f'{len(controller["transitions"])} transição(ões)'
+            )
+        except (OSError, ValueError):
+            self.animation_controller_summary.setText("Controller inválido ou não encontrado.")
 
     def _refresh_animation_library(self) -> None:
         selected = self._current_animation_asset_path
@@ -2365,6 +2494,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             anim = obj.get("animator")
             self.show_animator_chk.setChecked(anim is not None)
             self.animator_body.setEnabled(True)
+            self._refresh_animator_controllers(str((anim or {}).get("controller_path", "")))
             if anim:
                 clips = self._animation_clips(anim)
                 active_clip = str(anim.get("active_clip", next(iter(clips))))
