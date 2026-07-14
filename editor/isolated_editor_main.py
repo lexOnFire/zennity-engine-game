@@ -32,6 +32,7 @@ from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from editor.widgets.component_picker import ComponentPickerDialog
 from editor.ui.icons import component_title
+from editor.ui.tokens import DEFAULT_TOKENS
 from engine.animation.clip_asset import (
     animation_asset_from_clip,
     animation_asset_to_clip,
@@ -162,6 +163,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if not path_value:
             return
         path = Path(path_value)
+        self._set_asset_preview_state("content")
         if not path.exists() or path.is_dir():
             self.preview_label.clear()
             self.preview_label.setText("📁 Folder")
@@ -232,7 +234,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     f"Repetir: {'Sim' if animation['loop'] else 'Não'}<br>"
                 )
             except (OSError, ValueError, json.JSONDecodeError) as exc:
-                details = f"<span style='color:#e57373'>Asset inválido: {exc}</span><br>"
+                details = f"<span style='color:{DEFAULT_TOKENS.danger}'>Asset inválido: {exc}</span><br>"
             self.preview_details_label.setText(
                 f"<b>{path.name}</b><br><br>Tipo: Clip de Animação 2D<br>{details}Tamanho: {size_str}<br>Modificado: {date_str}"
             )
@@ -262,6 +264,12 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             f"Modificado: {date_str}"
         )
         self.preview_details_label.setText(meta)
+
+    def _set_asset_preview_state(self, state: str) -> None:
+        """Atualiza somente o estado visual, preservando o conteúdo da prévia."""
+        self.preview_label.setProperty("uiState", state)
+        self.preview_label.style().unpolish(self.preview_label)
+        self.preview_label.style().polish(self.preview_label)
 
     def attach_viewport_process(self, process: mp.Process) -> None:
         self._viewport_process = process

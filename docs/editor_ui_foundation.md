@@ -21,12 +21,16 @@ ou estilos completos com `setStyleSheet()`.
 
 1. ✅ Barra de comandos, Hierarchy, Assets e Inspector.
 2. ✅ Animation Workspace, Console, Profiler e Build Report.
-3. Relatórios restantes, diálogos, estados vazios e Asset Preview.
+3. ✅ Relatórios restantes, diálogos, estados vazios e Asset Preview.
 4. Pacote SVG definitivo substituindo os glifos monocromáticos.
 
 Os painéis migrados usam nomes semânticos e o tema global também durante o
 redimensionamento. Cores de status são expressas por `uiState`, sem criar uma
 folha de estilo local para cada resultado.
+
+Estados sem conteúdo usam `EmptyStateWidget`. Assim, cada painel informa o que
+está vazio e qual ação fará os dados aparecerem, sem inventar um placeholder ou
+uma paleta diferente.
 
 ## Critério de aceitação
 

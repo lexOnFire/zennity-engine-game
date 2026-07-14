@@ -13,6 +13,7 @@ class PreferencesDialog(QDialog):
     
     def __init__(self, parent: QWidget = None) -> None:
         super().__init__(parent)
+        self.setObjectName("PreferencesDialog")
         self.setWindowTitle("Preferências do Editor")
         self.resize(360, 200)
         
@@ -21,6 +22,10 @@ class PreferencesDialog(QDialog):
         # Layout vertical principal
         layout = QVBoxLayout(self)
         layout.setSpacing(12)
+
+        title = QLabel("Preferências do Editor")
+        title.setObjectName("DialogTitle")
+        layout.addWidget(title)
         
         # Painel de formulário
         form_widget = QWidget()

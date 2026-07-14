@@ -29,6 +29,7 @@ class ComponentPickerDialog(QDialog):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setObjectName("ComponentPickerDialog")
         self.setWindowTitle("Adicionar Componente")
         self.setModal(True)
         self.resize(430, 480)
@@ -38,7 +39,7 @@ class ComponentPickerDialog(QDialog):
         layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(8)
         title = QLabel("Adicionar Componente")
-        title.setStyleSheet("font-size: 15px; font-weight: 600; color: #f2f4f8;")
+        title.setObjectName("DialogTitle")
         layout.addWidget(title)
 
         self.search = QLineEdit()
@@ -47,6 +48,7 @@ class ComponentPickerDialog(QDialog):
         layout.addWidget(self.search)
 
         self.tree = QTreeWidget()
+        self.tree.setObjectName("ComponentPickerTree")
         self.tree.setHeaderHidden(True)
         self.tree.setRootIsDecorated(True)
         self.tree.setIndentation(16)
@@ -54,12 +56,13 @@ class ComponentPickerDialog(QDialog):
         layout.addWidget(self.tree, 1)
 
         self.description = QLabel("Selecione um componente para ver sua função.")
+        self.description.setObjectName("DialogDescription")
         self.description.setWordWrap(True)
-        self.description.setStyleSheet("color: #9ca3af; padding: 6px 2px;")
         layout.addWidget(self.description)
 
         self.buttons = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
         self.buttons.button(QDialogButtonBox.Ok).setText("Adicionar")
+        self.buttons.button(QDialogButtonBox.Ok).setProperty("uiRole", "primary")
         self.buttons.button(QDialogButtonBox.Cancel).setText("Cancelar")
         self.buttons.button(QDialogButtonBox.Ok).setEnabled(False)
         layout.addWidget(self.buttons)
@@ -79,6 +82,7 @@ class ComponentPickerDialog(QDialog):
     def _rebuild(self, query: str) -> None:
         normalized = query.strip().casefold()
         self.tree.clear()
+        self.description.setText("Selecione um componente para ver sua função.")
         categories: dict[str, QTreeWidgetItem] = {}
         for category, label, key, description in COMPONENT_CATALOG:
             searchable = f"{category} {label} {description}".casefold()
@@ -96,6 +100,11 @@ class ComponentPickerDialog(QDialog):
             child.setData(0, Qt.UserRole + 1, description)
             parent.addChild(child)
         self.tree.expandAll()
+        if not categories:
+            empty = QTreeWidgetItem(["Nenhum componente encontrado"])
+            empty.setDisabled(True)
+            self.tree.addTopLevelItem(empty)
+            self.description.setText("Tente pesquisar por outro nome ou categoria.")
         if normalized:
             first = next((self.tree.topLevelItem(i).child(0) for i in range(self.tree.topLevelItemCount()) if self.tree.topLevelItem(i).childCount()), None)
             if first is not None:

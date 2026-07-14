@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
     QPlainTextEdit,
     QPushButton,
     QSlider,
+    QSizePolicy,
     QSplitter,
     QTabWidget,
     QToolBar,
@@ -34,6 +35,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 from editor.ui.icons import TOOLBAR_GLYPHS, component_title
+from editor.ui.empty_state import EmptyStateWidget
 
 
 class InterfaceSmokeTest(QMainWindow):
@@ -1000,27 +1002,37 @@ class InterfaceSmokeTest(QMainWindow):
         console_tabs = QTabWidget()
         console_tabs.setObjectName("BottomPanelTabs")
         console_tabs.addTab(console_panel, "Console")
-        console_tabs.addTab(self._placeholder("Saída da engine"), "Saída")
-        console_tabs.addTab(self._placeholder("Depurador"), "Depurador")
+        console_tabs.addTab(
+            EmptyStateWidget("Nenhuma saída disponível", "Mensagens do runtime aparecerão aqui.", "▤"),
+            "Saída",
+        )
+        console_tabs.addTab(
+            EmptyStateWidget("Depurador inativo", "Inicie o Play Mode para acompanhar a execução.", "◇"),
+            "Depurador",
+        )
 
         # Asset Preview aprimorado (Layout Horizontal: Imagem/Ícone à Esquerda, Detalhes à Direita)
         preview = QWidget()
-        preview.setObjectName("PremiumPanel")
+        preview.setObjectName("AssetPreviewPanel")
         preview_layout = QHBoxLayout(preview)
         preview_layout.setContentsMargins(10, 10, 10, 10)
         preview_layout.setSpacing(15)
 
         # Container da miniatura (lado esquerdo)
         self.preview_label = QLabel("Selecione um asset\npara visualizar")
+        self.preview_label.setObjectName("AssetPreviewThumbnail")
+        self.preview_label.setProperty("uiState", "empty")
         self.preview_label.setAlignment(Qt.AlignCenter)
-        self.preview_label.setFixedSize(140, 120)
-        self.preview_label.setStyleSheet("background-color: #121212; border: 1px dashed #3a3a3a; border-radius: 4px; color: #888888;")
+        self.preview_label.setMinimumSize(128, 104)
+        self.preview_label.setMaximumWidth(180)
+        self.preview_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
         preview_layout.addWidget(self.preview_label)
 
         # Container dos metadados (lado direito)
         self.preview_details_label = QLabel()
+        self.preview_details_label.setObjectName("AssetPreviewDetails")
         self.preview_details_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.preview_details_label.setStyleSheet("color: #e2e2e2; font-size: 11px; line-height: 140%;")
+        self.preview_details_label.setWordWrap(True)
         self.preview_details_label.setText("<b>Nenhum asset selecionado</b><br><br>Selecione uma imagem, script, cena ou áudio na árvore de Assets para ver as informações detalhadas e pré-visualizar.")
         preview_layout.addWidget(self.preview_details_label, 1)
 
@@ -1054,14 +1066,7 @@ class InterfaceSmokeTest(QMainWindow):
 
     @staticmethod
     def _placeholder(text: str) -> QWidget:
-        frame = QFrame()
-        frame.setFrameShape(QFrame.StyledPanel)
-        layout = QVBoxLayout(frame)
-        label = QLabel(text)
-        label.setAlignment(Qt.AlignCenter)
-        label.setStyleSheet("font-size: 16px; color: #aeb6c2;")
-        layout.addWidget(label)
-        return frame
+        return EmptyStateWidget(text or "Nenhum conteúdo", "Este painel ainda não possui dados.")
 
 
 def main() -> None:

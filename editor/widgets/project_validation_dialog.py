@@ -7,11 +7,13 @@ from PySide6.QtWidgets import (
 )
 
 from engine.build import ProjectValidationReport
+from editor.ui.tokens import DEFAULT_TOKENS
 
 
 class ProjectValidationDialog(QDialog):
     def __init__(self, report: ProjectValidationReport, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setObjectName("ProjectValidationDialog")
         self.report = report
         self.setWindowTitle("Validação do Projeto")
         self.resize(880, 560)
@@ -24,21 +26,24 @@ class ProjectValidationDialog(QDialog):
         layout.setSpacing(12)
         summary = QFrame()
         summary.setObjectName("ValidationSummary")
-        summary.setStyleSheet("#ValidationSummary { background: #20232b; border: 1px solid #343945; border-radius: 8px; }")
         summary_layout = QVBoxLayout(summary)
         title = "Projeto pronto para exportar" if self.report.valid else "O projeto precisa de correções"
-        color = "#65d17a" if self.report.valid else "#ff6b6b"
         status = QLabel(("✓  " if self.report.valid else "✕  ") + title)
-        status.setStyleSheet(f"font-size: 18px; font-weight: 700; color: {color};")
+        status.setObjectName("ValidationStatus")
+        status.setProperty("uiState", "success" if self.report.valid else "error")
         summary_layout.addWidget(status)
-        summary_layout.addWidget(QLabel(
+        details = QLabel(
             f"Cena: {self.report.scene_name or '—'}  •  {self.report.object_count} objetos  •  "
             f"{self.report.checked_files} arquivos verificados  •  {len(self.report.warnings)} avisos  •  "
             f"{len(self.report.errors)} erros  •  {self.report.duration_seconds:.2f}s"
-        ))
+        )
+        details.setObjectName("ValidationDetails")
+        details.setWordWrap(True)
+        summary_layout.addWidget(details)
         layout.addWidget(summary)
 
         tree = QTreeWidget()
+        tree.setObjectName("ValidationIssues")
         tree.setHeaderLabels(["Tipo", "Categoria", "Objeto", "Mensagem", "Arquivo"])
         tree.setColumnWidth(0, 75)
         tree.setColumnWidth(1, 110)
@@ -46,12 +51,14 @@ class ProjectValidationDialog(QDialog):
         tree.setColumnWidth(3, 330)
         if not self.report.issues:
             item = QTreeWidgetItem(["OK", "Projeto", "", "Nenhum problema encontrado.", ""])
-            item.setForeground(0, QColor("#65d17a"))
+            item.setForeground(0, QColor(DEFAULT_TOKENS.success))
             tree.addTopLevelItem(item)
         for issue in self.report.issues:
             label = "ERRO" if issue.severity == "error" else "AVISO"
             item = QTreeWidgetItem([label, issue.category, issue.object_name, issue.message, issue.path])
-            item.setForeground(0, QColor("#ff6b6b" if issue.severity == "error" else "#f2c14e"))
+            item.setForeground(0, QColor(
+                DEFAULT_TOKENS.danger if issue.severity == "error" else DEFAULT_TOKENS.warning
+            ))
             item.setToolTip(4, issue.path)
             tree.addTopLevelItem(item)
         layout.addWidget(tree, 1)
@@ -63,4 +70,3 @@ class ProjectValidationDialog(QDialog):
         actions.addStretch(1)
         actions.addWidget(close_button)
         layout.addLayout(actions)
-

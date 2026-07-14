@@ -137,6 +137,41 @@ QLabel#BuildDestination { color: $TEXT; font-family: "Cascadia Mono", "Consolas"
 QLabel#BuildDetails { color: $TEXT_MUTED; }
 QTabWidget#BuildReportTabs QTreeWidget, QTabWidget#BuildReportTabs QPlainTextEdit { border: none; }
 
+QDialog#ComponentPickerDialog, QDialog#ProjectValidationDialog, QDialog#PreferencesDialog {
+    background: $BG;
+}
+QLabel#DialogTitle { color: $TEXT; font-size: 15px; font-weight: 700; }
+QLabel#DialogDescription { color: $TEXT_MUTED; padding: 6px 2px; }
+QTreeWidget#ComponentPickerTree, QTreeWidget#ValidationIssues { border-radius: $RADIUSpx; }
+QFrame#ValidationSummary {
+    background: $SURFACE_RAISED;
+    border: 1px solid $BORDER_STRONG;
+    border-radius: $RADIUSpx;
+}
+QLabel#ValidationStatus { font-size: 18px; font-weight: 700; }
+QLabel#ValidationStatus[uiState="success"] { color: $SUCCESS; }
+QLabel#ValidationStatus[uiState="error"] { color: $DANGER; }
+QLabel#ValidationDetails { color: $TEXT_MUTED; }
+
+QWidget#EmptyState { background: $SURFACE; }
+QLabel#EmptyStateGlyph { color: $TEXT_DISABLED; font-size: 24px; }
+QLabel#EmptyStateTitle { color: $TEXT_MUTED; font-size: 13px; font-weight: 600; }
+QLabel#EmptyStateDescription { color: $TEXT_DISABLED; }
+
+QWidget#AssetPreviewPanel { background: $SURFACE; }
+QLabel#AssetPreviewThumbnail {
+    background: $INPUT_BG;
+    border: 1px solid $BORDER;
+    border-radius: $RADIUSpx;
+    color: $TEXT_MUTED;
+    font-size: 14px;
+}
+QLabel#AssetPreviewThumbnail[uiState="empty"] {
+    border: 1px dashed $BORDER_STRONG;
+    color: $TEXT_DISABLED;
+}
+QLabel#AssetPreviewDetails { color: $TEXT; padding: 2px 4px; }
+
 QDockWidget { background: $SURFACE; color: $TEXT_MUTED; font-weight: 600; }
 QDockWidget::title { background: $SURFACE; border-bottom: 1px solid $BORDER; padding: 7px 9px; text-align: left; }
 QWidget#EditorPanel, QWidget#InspectorPanel, QFrame#PremiumPanel { background: $SURFACE; }
@@ -284,6 +319,8 @@ def polish_editor_widgets(window: Any) -> None:
         "AnimationLibraryTree", "AnimationPreview", "AnimationPropertiesPanel",
         "ConsolePanel", "ConsoleToolbar", "ConsoleOutput", "ProfilerPanel",
         "ProfilerMetrics", "ProfilerMetric", "ProfilerChart", "BottomPanelTabs",
+        "EmptyState", "EmptyStateGlyph", "EmptyStateTitle", "EmptyStateDescription",
+        "AssetPreviewPanel", "AssetPreviewThumbnail", "AssetPreviewDetails",
     }
     for widget in window.findChildren(QWidget):
         if widget.objectName() in managed_names:
