@@ -36,6 +36,10 @@ Eventos contínuos de redimensionamento da viewport são agrupados em uma janela
 curta de 24 ms. O último tamanho sempre é enviado e tamanhos repetidos são
 ignorados, evitando inundar a fila entre Qt e Pygame durante o arraste.
 
+O workspace de animação usa um splitter próprio com Biblioteca, Prévia/Timeline
+e Propriedades roláveis. Ações de arquivo ficam compactas e separadas das ações
+que alteram o objeto selecionado, reduzindo ambiguidades para iniciantes.
+
 ## Critério de aceitação
 
 Uma nova tela precisa ser legível em estado normal, hover, foco, selecionado e

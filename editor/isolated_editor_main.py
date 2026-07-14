@@ -1547,6 +1547,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             field_signal.connect(self._mark_animation_asset_dirty)
         self._refresh_animation_library()
         self._refresh_animation_timeline(self._default_animation_clip())
+        self._update_animation_asset_status()
 
     def _animation_assets_directory(self) -> Path:
         return Path.cwd() / "Assets" / "Animations"
@@ -1556,7 +1557,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.animation_library_tree.clear()
         directory = self._animation_assets_directory()
         for path in sorted(directory.rglob("*.zanim"), key=lambda item: str(item).lower()) if directory.exists() else []:
-            item = QTreeWidgetItem([f"🎞  {path.stem}"])
+            item = QTreeWidgetItem([path.stem])
             item.setData(0, Qt.UserRole, str(path))
             item.setToolTip(0, str(path.relative_to(Path.cwd())).replace("\\", "/"))
             self.animation_library_tree.addTopLevelItem(item)
@@ -1844,8 +1845,18 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
 
     def _update_animation_asset_status(self) -> None:
         name = self._current_animation_asset_path.name if self._current_animation_asset_path else self._animation_draft_name
-        suffix = "  •  alterações não salvas" if self._animation_asset_dirty else "  •  salvo"
+        if self._current_animation_asset_path is None:
+            suffix = "  •  ainda não salvo"
+        elif self._animation_asset_dirty:
+            suffix = "  •  alterações não salvas"
+        else:
+            suffix = "  •  salvo"
         self.animation_asset_label.setText(name + suffix)
+        state = "dirty" if self._animation_asset_dirty or self._current_animation_asset_path is None else "saved"
+        if self.animation_asset_label.property("uiState") != state:
+            self.animation_asset_label.setProperty("uiState", state)
+            self.animation_asset_label.style().unpolish(self.animation_asset_label)
+            self.animation_asset_label.style().polish(self.animation_asset_label)
 
     def _animation_frame_count(self) -> int:
         return max(1, int(self.animator_frame_count.value()))
@@ -1944,7 +1955,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         height = max(1, int(clip.get("frame_height", 32)))
         if pixmap.isNull() or width > pixmap.width() or height > pixmap.height():
             self.animator_preview.clear()
-            self.animator_preview.setText("Selecione um Sprite Sheet válido")
+            self._set_animation_preview_state("empty" if not texture else "error")
+            self.animator_preview.setText(
+                "Selecione um Sprite Sheet nas propriedades"
+                if not texture else "Sprite Sheet inválido ou frame maior que a imagem"
+            )
             return
         columns = max(1, pixmap.width() // width)
         frames = clip.get("frames")
@@ -1955,10 +1970,20 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         x = (frame % columns) * width
         y = (frame // columns) * height
         if x + width > pixmap.width() or y + height > pixmap.height():
+            self.animator_preview.clear()
+            self._set_animation_preview_state("error")
             self.animator_preview.setText("Quadro fora da imagem")
             return
         preview = pixmap.copy(x, y, width, height)
+        self._set_animation_preview_state("content")
         self.animator_preview.setPixmap(preview.scaled(120, 90, Qt.KeepAspectRatio, Qt.FastTransformation))
+
+    def _set_animation_preview_state(self, state: str) -> None:
+        if self.animator_preview.property("uiState") == state:
+            return
+        self.animator_preview.setProperty("uiState", state)
+        self.animator_preview.style().unpolish(self.animator_preview)
+        self.animator_preview.style().polish(self.animator_preview)
 
     def _send_inspector_animator(self) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:

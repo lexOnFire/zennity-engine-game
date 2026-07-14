@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QPlainTextEdit,
     QPushButton,
+    QScrollArea,
     QSlider,
     QSizePolicy,
     QSplitter,
@@ -104,9 +105,12 @@ class InterfaceSmokeTest(QMainWindow):
         animation_title_row = QHBoxLayout()
         animation_title = QLabel("Editor de Animação 2D")
         animation_title.setObjectName("WorkspaceTitle")
+        self.animation_asset_label = QLabel("Novo clip — ainda não salvo")
+        self.animation_asset_label.setObjectName("WorkspaceStatus")
         self.animation_object_label = QLabel("Nenhum objeto selecionado")
         self.animation_object_label.setObjectName("WorkspaceContext")
         animation_title_row.addWidget(animation_title)
+        animation_title_row.addWidget(self.animation_asset_label)
         animation_title_row.addStretch(1)
         animation_title_row.addWidget(self.animation_object_label)
         animation_layout.addLayout(animation_title_row)
@@ -116,14 +120,28 @@ class InterfaceSmokeTest(QMainWindow):
         animation_toolbar = QHBoxLayout(animation_toolbar_widget)
         animation_toolbar.setContentsMargins(6, 4, 6, 4)
         animation_toolbar.setSpacing(4)
-        self.animation_new_button = QPushButton("＋ Nova")
-        self.animation_open_button = QPushButton("Abrir")
-        self.animation_save_button = QPushButton("Salvar")
-        self.animation_save_as_button = QPushButton("Salvar como")
-        self.animation_duplicate_button = QPushButton("Duplicar")
-        self.animation_delete_button = QPushButton("Excluir")
+        asset_tools_label = QLabel("ASSET")
+        asset_tools_label.setObjectName("PanelSectionTitle")
+        animation_toolbar.addWidget(asset_tools_label)
+        self.animation_new_button = QToolButton()
+        self.animation_open_button = QToolButton()
+        self.animation_save_button = QToolButton()
+        self.animation_save_as_button = QToolButton()
+        self.animation_duplicate_button = QToolButton()
+        self.animation_delete_button = QToolButton()
+        for button, tooltip in (
+            (self.animation_new_button, "Nova animação"),
+            (self.animation_open_button, "Abrir animação"),
+            (self.animation_save_button, "Salvar animação"),
+            (self.animation_save_as_button, "Salvar animação como..."),
+            (self.animation_duplicate_button, "Duplicar animação"),
+            (self.animation_delete_button, "Excluir animação"),
+        ):
+            button.setToolTip(tooltip)
+            button.setIconSize(QSize(16, 16))
+            button.setProperty("uiRole", "icon")
         self.animation_apply_button = QPushButton("Aplicar ao selecionado")
-        self.animation_demo_button = QPushButton("▶ Testar no Player")
+        self.animation_demo_button = QPushButton("Testar no Player")
         for button, icon_name in (
             (self.animation_new_button, "new"),
             (self.animation_open_button, "open"),
@@ -135,25 +153,27 @@ class InterfaceSmokeTest(QMainWindow):
             (self.animation_demo_button, "play"),
         ):
             button.setIcon(editor_icon(icon_name))
-        self.animation_delete_button.setProperty("uiRole", "dangerAction")
+        self.animation_delete_button.setProperty("uiRole", "danger")
         self.animation_apply_button.setProperty("uiRole", "primary")
         self.animation_demo_button.setProperty("uiRole", "play")
         for button in (
             self.animation_new_button, self.animation_open_button,
             self.animation_save_button, self.animation_save_as_button,
             self.animation_duplicate_button, self.animation_delete_button,
-            self.animation_apply_button, self.animation_demo_button,
         ):
-            button.setMinimumHeight(28)
             animation_toolbar.addWidget(button)
+        animation_toolbar.addSpacing(10)
+        object_tools_label = QLabel("OBJETO")
+        object_tools_label.setObjectName("PanelSectionTitle")
+        animation_toolbar.addWidget(object_tools_label)
+        animation_toolbar.addWidget(self.animation_apply_button)
+        animation_toolbar.addWidget(self.animation_demo_button)
         animation_toolbar.addStretch(1)
-        self.animation_asset_label = QLabel("Novo clip — ainda não salvo")
-        self.animation_asset_label.setObjectName("WorkspaceStatus")
-        animation_toolbar.addWidget(self.animation_asset_label)
         animation_layout.addWidget(animation_toolbar_widget)
 
-        animation_content = QHBoxLayout()
-        animation_content.setSpacing(8)
+        self.animation_content_splitter = QSplitter(Qt.Horizontal)
+        self.animation_content_splitter.setObjectName("AnimationContentSplitter")
+        self.animation_content_splitter.setChildrenCollapsible(False)
 
         library_panel = QFrame()
         library_panel.setObjectName("AnimationLibraryPanel")
@@ -165,20 +185,41 @@ class InterfaceSmokeTest(QMainWindow):
         self.animation_library_tree = QTreeWidget()
         self.animation_library_tree.setObjectName("AnimationLibraryTree")
         self.animation_library_tree.setHeaderHidden(True)
-        self.animation_library_tree.setMinimumWidth(180)
+        self.animation_library_tree.setMinimumWidth(140)
         self.animation_library_tree.setToolTip("Duplo clique para abrir uma animação salva")
         library_layout.addWidget(self.animation_library_tree, 1)
         library_hint = QLabel("Assets/Animations\nArquivos .zanim")
         library_hint.setObjectName("PanelHint")
         library_layout.addWidget(library_hint)
-        animation_content.addWidget(library_panel, 1)
+        library_panel.setMinimumWidth(150)
+        self.animation_content_splitter.addWidget(library_panel)
 
-        preview_column = QVBoxLayout()
+        preview_panel = QWidget()
+        preview_panel.setObjectName("AnimationPreviewPanel")
+        preview_panel.setMinimumWidth(220)
+        preview_column = QVBoxLayout(preview_panel)
+        preview_column.setContentsMargins(8, 8, 8, 8)
         self.animator_preview = QLabel("Selecione um objeto com Animator 2D")
         self.animator_preview.setObjectName("AnimationPreview")
+        self.animator_preview.setProperty("uiState", "empty")
         self.animator_preview.setAlignment(Qt.AlignCenter)
-        self.animator_preview.setMinimumSize(320, 260)
+        self.animator_preview.setMinimumHeight(160)
+        self.animator_preview.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         preview_column.addWidget(self.animator_preview, 1)
+
+        timeline_panel = QFrame()
+        timeline_panel.setObjectName("AnimationTimelinePanel")
+        timeline_layout = QVBoxLayout(timeline_panel)
+        timeline_layout.setContentsMargins(8, 7, 8, 8)
+        timeline_header = QHBoxLayout()
+        timeline_title = QLabel("TIMELINE")
+        timeline_title.setObjectName("PanelSectionTitle")
+        timeline_header.addWidget(timeline_title)
+        timeline_header.addStretch(1)
+        self.animation_frame_label = QLabel("Frame 1 / 1")
+        self.animation_frame_label.setObjectName("AnimationFrameCounter")
+        timeline_header.addWidget(self.animation_frame_label)
+        timeline_layout.addLayout(timeline_header)
         playback_row = QHBoxLayout()
         self.animation_first_frame_button = QPushButton("|◀")
         self.animation_previous_frame_button = QPushButton("◀")
@@ -194,6 +235,14 @@ class InterfaceSmokeTest(QMainWindow):
         ):
             button.setText("")
             button.setIcon(editor_icon(icon_name))
+        for button, tooltip in (
+            (self.animation_first_frame_button, "Primeiro frame"),
+            (self.animation_previous_frame_button, "Frame anterior"),
+            (self.animation_play_button, "Reproduzir ou pausar prévia"),
+            (self.animation_next_frame_button, "Próximo frame"),
+            (self.animation_last_frame_button, "Último frame"),
+        ):
+            button.setToolTip(tooltip)
         for button in (
             self.animation_first_frame_button, self.animation_previous_frame_button,
             self.animation_play_button, self.animation_next_frame_button,
@@ -203,26 +252,29 @@ class InterfaceSmokeTest(QMainWindow):
             button.setProperty("uiRole", "icon")
             playback_row.addWidget(button)
         playback_row.addStretch(1)
-        self.animation_frame_label = QLabel("Frame 1 / 1")
-        playback_row.addWidget(self.animation_frame_label)
-        preview_column.addLayout(playback_row)
+        timeline_layout.addLayout(playback_row)
         self.animation_timeline = QSlider(Qt.Horizontal)
         self.animation_timeline.setRange(0, 0)
         self.animation_timeline.setToolTip("Arraste para visualizar qualquer quadro")
-        preview_column.addWidget(self.animation_timeline)
+        timeline_layout.addWidget(self.animation_timeline)
+        current_clip_row = QHBoxLayout()
+        current_clip_label = QLabel("Clip ativo")
+        current_clip_label.setObjectName("PanelHint")
+        current_clip_row.addWidget(current_clip_label)
         self.animator_current_lbl = QLineEdit("Nenhum")
         self.animator_current_lbl.setReadOnly(True)
-        preview_column.addWidget(self.animator_current_lbl)
-        animation_content.addLayout(preview_column, 3)
+        current_clip_row.addWidget(self.animator_current_lbl, 1)
+        timeline_layout.addLayout(current_clip_row)
+        preview_column.addWidget(timeline_panel)
+        self.animation_content_splitter.addWidget(preview_panel)
 
         self.animator_body = QWidget()
         self.animator_body.setObjectName("AnimationPropertiesPanel")
-        self.animator_body.setMinimumWidth(250)
         animator_lay = QFormLayout(self.animator_body)
         animator_lay.setContentsMargins(10, 10, 10, 10)
-        properties_title = QLabel("PROPRIEDADES DO CLIP")
-        properties_title.setObjectName("PanelSectionTitle")
-        animator_lay.addRow(properties_title)
+        object_section_title = QLabel("OBJETO SELECIONADO")
+        object_section_title.setObjectName("PanelSectionTitle")
+        animator_lay.addRow(object_section_title)
         self.show_animator_chk = QCheckBox("Animator 2D ativo")
         animator_lay.addRow(self.show_animator_chk)
         self.btn_del_anim = QPushButton("Excluir Animator")
@@ -242,6 +294,9 @@ class InterfaceSmokeTest(QMainWindow):
         clip_actions_layout.addWidget(self.animator_add_clip_button)
         clip_actions_layout.addWidget(self.animator_remove_clip_button)
         animator_lay.addRow("Clips", clip_actions)
+        clip_section_title = QLabel("PROPRIEDADES DO CLIP")
+        clip_section_title.setObjectName("PanelSectionTitle")
+        animator_lay.addRow(clip_section_title)
         self.animator_sheet_combo = QComboBox()
         animator_lay.addRow("Sprite Sheet", self.animator_sheet_combo)
         self.animator_frame_width = QDoubleSpinBox()
@@ -252,10 +307,10 @@ class InterfaceSmokeTest(QMainWindow):
             field.setRange(minimum, maximum)
             field.setDecimals(0)
             field.setKeyboardTracking(False)
-        animator_lay.addRow("Quadro Largura", self.animator_frame_width)
-        animator_lay.addRow("Quadro Altura", self.animator_frame_height)
-        animator_lay.addRow("Quadro Inicial", self.animator_start_frame)
-        animator_lay.addRow("Quantidade", self.animator_frame_count)
+        animator_lay.addRow("Largura do frame", self.animator_frame_width)
+        animator_lay.addRow("Altura do frame", self.animator_frame_height)
+        animator_lay.addRow("Frame inicial", self.animator_start_frame)
+        animator_lay.addRow("Nº de frames", self.animator_frame_count)
         self.animator_fps_field = QDoubleSpinBox()
         self.animator_fps_field.setRange(0.1, 240.0)
         self.animator_fps_field.setValue(8.0)
@@ -264,8 +319,24 @@ class InterfaceSmokeTest(QMainWindow):
         self.animator_loop_field = QCheckBox()
         self.animator_loop_field.setChecked(True)
         animator_lay.addRow("Repetir", self.animator_loop_field)
-        animation_content.addWidget(self.animator_body, 2)
-        animation_layout.addLayout(animation_content, 1)
+        properties_hint = QLabel("Escolha o Sprite Sheet e informe o tamanho de cada frame. Salve e aplique ao objeto selecionado.")
+        properties_hint.setObjectName("PanelHint")
+        properties_hint.setWordWrap(True)
+        animator_lay.addRow(properties_hint)
+
+        self.animation_properties_scroll = QScrollArea()
+        self.animation_properties_scroll.setObjectName("AnimationPropertiesScroll")
+        self.animation_properties_scroll.setWidgetResizable(True)
+        self.animation_properties_scroll.setFrameShape(QFrame.NoFrame)
+        self.animation_properties_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.animation_properties_scroll.setMinimumWidth(220)
+        self.animation_properties_scroll.setWidget(self.animator_body)
+        self.animation_content_splitter.addWidget(self.animation_properties_scroll)
+        self.animation_content_splitter.setStretchFactor(0, 0)
+        self.animation_content_splitter.setStretchFactor(1, 1)
+        self.animation_content_splitter.setStretchFactor(2, 0)
+        self.animation_content_splitter.setSizes([170, 430, 250])
+        animation_layout.addWidget(self.animation_content_splitter, 1)
         self.animation_workspace.hide()
 
         self.center_container = QWidget()
@@ -343,7 +414,6 @@ class InterfaceSmokeTest(QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.inspector_dock)
 
         # QScrollArea para evitar que a janela fique apertada e bagunçada
-        from PySide6.QtWidgets import QScrollArea
         scroll = QScrollArea()
         scroll.setObjectName("InspectorScrollArea")
         scroll.setWidgetResizable(True)

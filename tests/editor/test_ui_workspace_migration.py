@@ -20,7 +20,7 @@ def test_animation_workspace_uses_semantic_theme_contract() -> None:
         assert f"#{object_name}" in theme
 
     assert 'self.animation_apply_button.setProperty("uiRole", "primary")' in source
-    assert 'self.animation_delete_button.setProperty("uiRole", "dangerAction")' in source
+    assert 'self.animation_delete_button.setProperty("uiRole", "danger")' in source
     assert "#AnimationWorkspace { background:" not in source
     assert "#AnimationLibraryPanel { background:" not in source
 
@@ -60,6 +60,7 @@ def test_migrated_workspaces_do_not_introduce_fixed_panel_widths() -> None:
     center = source[source.index("def _build_center"):source.index("def _build_docks")]
 
     assert ".setFixedWidth(" not in center
-    assert "animation_content.addWidget(library_panel, 1)" in center
-    assert "animation_content.addLayout(preview_column, 3)" in center
-    assert "animation_content.addWidget(self.animator_body, 2)" in center
+    assert 'self.animation_content_splitter.setObjectName("AnimationContentSplitter")' in center
+    assert "self.animation_content_splitter.setChildrenCollapsible(False)" in center
+    assert "self.animation_content_splitter.setStretchFactor(1, 1)" in center
+    assert 'self.animation_properties_scroll.setObjectName("AnimationPropertiesScroll")' in center

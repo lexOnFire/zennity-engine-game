@@ -47,3 +47,25 @@ def test_zanim_can_be_applied_explicitly_or_dropped_on_an_object() -> None:
     assert "self.animation_demo_button.clicked.connect" in source
     assert 'path.suffix.lower() == ".zanim"' in source
     assert "_apply_animation_asset_path_to_object" in source
+
+
+def test_animation_workspace_is_resizable_and_properties_scroll() -> None:
+    source = (ROOT / "editor" / "interface_smoke_test.py").read_text(encoding="utf-8")
+
+    assert "self.animation_content_splitter = QSplitter(Qt.Horizontal)" in source
+    assert "self.animation_content_splitter.setSizes([170, 430, 250])" in source
+    assert "self.animation_properties_scroll.setWidgetResizable(True)" in source
+    assert "self.animator_preview.setMinimumHeight(160)" in source
+    assert "self.animator_preview.setMinimumSize(320, 260)" not in source
+
+
+def test_animation_workspace_separates_asset_object_timeline_and_clip_properties() -> None:
+    source = (ROOT / "editor" / "interface_smoke_test.py").read_text(encoding="utf-8")
+    runtime = (ROOT / "editor" / "isolated_editor_main.py").read_text(encoding="utf-8")
+
+    for label in ("ASSET", "OBJETO", "TIMELINE", "OBJETO SELECIONADO", "PROPRIEDADES DO CLIP"):
+        assert f'QLabel("{label}")' in source
+    assert 'self.animation_new_button = QToolButton()' in source
+    assert 'self.animation_delete_button.setProperty("uiRole", "danger")' in source
+    assert 'suffix = "  •  ainda não salvo"' in runtime
+    assert 'self._set_animation_preview_state("error")' in runtime

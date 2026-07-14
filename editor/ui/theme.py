@@ -90,6 +90,8 @@ QWidget#AnimationToolbar, QWidget#ConsoleToolbar {
 QLabel#WorkspaceTitle { color: $TEXT; font-size: 15px; font-weight: 700; }
 QLabel#WorkspaceContext { color: $ACCENT_HOVER; font-weight: 600; }
 QLabel#WorkspaceStatus, QLabel#PanelHint { color: $TEXT_MUTED; }
+QLabel#WorkspaceStatus[uiState="saved"] { color: $SUCCESS; }
+QLabel#WorkspaceStatus[uiState="dirty"] { color: $WARNING; }
 QFrame#AnimationLibraryPanel, QWidget#AnimationPropertiesPanel {
     background: $BG;
     border: 1px solid $BORDER;
@@ -102,12 +104,23 @@ QLabel#PanelSectionTitle {
     letter-spacing: 1px;
 }
 QTreeWidget#AnimationLibraryTree { background: $INPUT_BG; border: none; }
+QWidget#AnimationPreviewPanel { background: $SURFACE; }
+QFrame#AnimationTimelinePanel {
+    background: $SURFACE_RAISED;
+    border: 1px solid $BORDER;
+    border-radius: $RADIUSpx;
+}
+QLabel#AnimationFrameCounter { color: $TEXT_MUTED; font-family: "Cascadia Mono", "Consolas", monospace; }
+QScrollArea#AnimationPropertiesScroll { background: $SURFACE; border: none; }
+QScrollArea#AnimationPropertiesScroll > QWidget > QWidget { background: $SURFACE; }
 QLabel#AnimationPreview {
     background: $INPUT_BG;
     border: 1px solid $BORDER;
     border-radius: $RADIUSpx;
     color: $TEXT_DISABLED;
 }
+QLabel#AnimationPreview[uiState="empty"] { border-style: dashed; }
+QLabel#AnimationPreview[uiState="error"] { border-color: $DANGER; color: $DANGER; }
 QPushButton[uiRole="play"] { color: $SUCCESS; }
 QPlainTextEdit#ConsoleOutput, QTextEdit#ConsoleOutput {
     background: $INPUT_BG;
