@@ -19,6 +19,8 @@ htmlcov/
 
 # Build/export artifacts
 build/
+!engine/build/
+!engine/build/*.py
 dist/
 *.egg-info/
 exports/

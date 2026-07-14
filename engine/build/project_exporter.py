@@ -2,13 +2,89 @@ from __future__ import annotations
 
 import json
 import shutil
+import sys
+import time
+from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
+
+try:
+    from .build_report import BuildReport
+except ImportError:  # Suporta os testes que carregam este arquivo isoladamente.
+    _report_spec = spec_from_file_location("zennity_build_report", Path(__file__).with_name("build_report.py"))
+    if _report_spec is None or _report_spec.loader is None:
+        raise
+    _report_module = module_from_spec(_report_spec)
+    sys.modules[_report_spec.name] = _report_module
+    _report_spec.loader.exec_module(_report_module)
+    BuildReport = _report_module.BuildReport
 
 
 def export_development_project(project_root: Path, scene_path: Path, output_dir: Path, project_name: str) -> Path:
     """Cria uma pasta executável de desenvolvimento baseada no runtime Pygame."""
+    report = export_development_project_with_report(project_root, scene_path, output_dir, project_name)
+    if not report.success:
+        details = "; ".join(issue.message for issue in report.errors)
+        raise ValueError(details or "Falha desconhecida durante a exportação")
+    return Path(report.destination)
+
+
+def export_development_project_with_report(
+    project_root: Path,
+    scene_path: Path,
+    output_dir: Path,
+    project_name: str,
+) -> BuildReport:
+    """Exporta o projeto e retorna diagnóstico completo sem quebrar a API antiga."""
+    started = time.perf_counter()
+    project_root = Path(project_root).resolve()
+    scene_path = Path(scene_path).resolve()
+    output_dir = Path(output_dir).resolve()
     safe_name = "".join(char for char in project_name.strip() if char.isalnum() or char in "-_ ").strip() or "ZennityGame"
     destination = output_dir / safe_name
+    report = BuildReport(project_name=safe_name, destination=str(destination))
+
+    scene_payload = _validate_export_inputs(project_root, scene_path, report)
+    if report.errors:
+        report.duration_seconds = time.perf_counter() - started
+        return report
+
+    try:
+        _write_development_project(project_root, scene_path, destination, safe_name)
+        _validate_asset_references(project_root, scene_payload, report)
+        _collect_exported_files(destination, report)
+        report.success = not report.errors
+    except (OSError, ValueError, TypeError) as exc:
+        report.add_error(f"Falha ao gerar os arquivos: {exc}", destination)
+        report.success = False
+
+    report.duration_seconds = time.perf_counter() - started
+    _save_report(destination, report)
+    return report
+
+
+def _validate_export_inputs(project_root: Path, scene_path: Path, report: BuildReport) -> dict:
+    if not project_root.is_dir():
+        report.add_error("A pasta do projeto não existe.", project_root)
+    if not scene_path.is_file():
+        report.add_error("A cena de entrada não existe.", scene_path)
+        return {}
+    viewport_runtime = project_root / "editor" / "isolated_viewport.py"
+    if not viewport_runtime.is_file():
+        report.add_error("Runtime da viewport não encontrado.", viewport_runtime)
+    if not (project_root / "Assets").is_dir():
+        report.add_warning("A pasta Assets não existe; o build será criado sem assets.", project_root / "Assets")
+    try:
+        payload = json.loads(scene_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        report.add_error(f"A cena não contém JSON válido: {exc}", scene_path)
+        return {}
+    if not isinstance(payload, dict) or not isinstance(payload.get("objects", []), list):
+        report.add_error("A cena precisa conter uma lista 'objects'.", scene_path)
+        return {}
+    return payload
+
+
+def _write_development_project(project_root: Path, scene_path: Path, destination: Path, safe_name: str) -> None:
     destination.mkdir(parents=True, exist_ok=True)
     data_dir = destination / "Data"
     runtime_dir = destination / "zennity_runtime"
@@ -27,7 +103,47 @@ def export_development_project(project_root: Path, scene_path: Path, output_dir:
     (destination / "requirements.txt").write_text("pygame-ce>=2.5\n", encoding="utf-8")
     manifest = {"project_name": safe_name, "entry_scene": "Data/main.zscene", "runtime": "pygame", "development": True}
     (destination / "package_manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    return destination
+
+
+def _validate_asset_references(project_root: Path, payload: object, report: BuildReport) -> None:
+    references: set[str] = set()
+
+    def visit(value: object) -> None:
+        if isinstance(value, dict):
+            for child in value.values():
+                visit(child)
+        elif isinstance(value, list):
+            for child in value:
+                visit(child)
+        elif isinstance(value, str):
+            normalized = value.replace("\\", "/")
+            if normalized.lower().startswith("assets/"):
+                references.add(normalized)
+
+    visit(payload)
+    for reference in sorted(references, key=str.lower):
+        if not (project_root / Path(reference)).is_file():
+            report.add_warning("Asset referenciado pela cena não foi encontrado.", reference)
+
+
+def _collect_exported_files(destination: Path, report: BuildReport) -> None:
+    files = sorted(path for path in destination.rglob("*") if path.is_file() and path.name != "build_report.json")
+    report.files = [path.relative_to(destination).as_posix() for path in files]
+    report.file_count = len(files)
+    report.total_size_bytes = sum(path.stat().st_size for path in files)
+
+
+def _save_report(destination: Path, report: BuildReport) -> None:
+    if not destination.is_dir():
+        return
+    try:
+        (destination / "build_report.json").write_text(
+            json.dumps(report.to_dict(), indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+    except OSError:
+        # O relatório visual ainda pode ser exibido mesmo se seu arquivo não puder ser salvo.
+        pass
 
 
 def _launcher_source() -> str:

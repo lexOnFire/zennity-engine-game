@@ -37,12 +37,14 @@ from engine.animation.clip_asset import (
     load_animation_asset,
     save_animation_asset,
 )
-from engine.build import export_development_project
+from editor.widgets.build_report_dialog import BuildReportDialog
+from engine.build import BuildReport, export_development_project_with_report
 
 
 class IsolatedEditorWindow(InterfaceSmokeTest):
     def __init__(self, viewport_process: mp.Process | None, commands, events) -> None:
         self._console_records: list[tuple[str, str]] = []
+        self._last_build_report: BuildReport | None = None
         super().__init__()
         self._current_animation_asset_path: Path | None = None
         self._animation_draft_name = "NewAnimation"
@@ -506,6 +508,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self.editor_menus["Executar"].addAction(self.toolbar_actions[label])
         export_action = self.editor_menus["Build"].addAction("Exportar projeto...")
         export_action.triggered.connect(self._export_project)
+        report_action = self.editor_menus["Build"].addAction("Último relatório...")
+        report_action.setEnabled(False)
+        report_action.triggered.connect(self._show_last_build_report)
+        self._build_report_action = report_action
         self.toolbar_actions["Pause"].setEnabled(False)
         self.toolbar_actions["Stop"].setEnabled(False)
         snap_action = self.toolbar_actions["Snap: OFF"]
@@ -618,13 +624,27 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         project_name, accepted = QInputDialog.getText(self, "Exportar projeto", "Nome do jogo:", text=default_name)
         if not accepted or not project_name.strip():
             return
-        try:
-            destination = export_development_project(Path.cwd(), self._current_scene_path, Path(output), project_name)
-        except (OSError, ValueError) as exc:
-            self._log("ERROR", f"Falha na exportação: {exc}")
+        report = export_development_project_with_report(
+            Path.cwd(), self._current_scene_path, Path(output), project_name
+        )
+        self._last_build_report = report
+        self._build_report_action.setEnabled(True)
+        if report.success:
+            self._log(
+                "INFO",
+                f"Projeto exportado: {report.destination} "
+                f"({report.file_count} arquivos, {len(report.warnings)} aviso(s))",
+            )
+            self.statusBar().showMessage(f"Build criado em {report.destination}")
+        else:
+            self._log("ERROR", f"Build não concluído: {len(report.errors)} erro(s)")
+            self.statusBar().showMessage("Build não concluído — consulte o relatório")
+        self._show_last_build_report()
+
+    def _show_last_build_report(self) -> None:
+        if self._last_build_report is None:
             return
-        self._log("INFO", f"Projeto exportado: {destination}")
-        self.statusBar().showMessage(f"Build criado em {destination}")
+        BuildReportDialog(self._last_build_report, self).exec()
 
     def _connect_existing_toolbar_actions(self) -> None:
         commands = {

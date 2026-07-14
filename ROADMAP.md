@@ -1,6 +1,6 @@
 # Zennity Engine — Roadmap
 
-> Última atualização: 2026-07-05
+> Última atualização: 2026-07-14
 
 ---
 
@@ -10,8 +10,12 @@
 - [x] Export configuration foundation com BuildConfig, BuildTarget, validação e testes iniciais (Fase 31)
 - [x] Export Profiles com ExportProfile, ExportProfileManager, perfis Debug/Release e persistência JSON (Fase 32)
 - [x] Desktop Packaging com DesktopPackagePlan, planner por BuildConfig/Profile e testes multiplataforma (Fase 33)
-- [ ] Build Report UI
+- [x] Build Report UI com validação da cena, referências de assets, métricas, lista de arquivos e relatório JSON
 - [ ] Release Candidate Stabilization
+  - [ ] Validar o fluxo completo no Windows com Python 3.12
+  - [ ] Executar a suíte de regressão completa
+  - [ ] Validar Play/Pause/Stop com scripts, física, áudio, HUD e animação
+  - [ ] Executar e validar um projeto exportado fora do editor
 
 ### v0.4.0-alpha — Editor Polish (Milestone 4) ✅
 - [x] Hierarchy Improvements com drag & drop, reparent, ordenação, duplicate, delete, rename e menu de contexto (Fase 26)
