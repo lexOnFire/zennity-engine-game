@@ -12,10 +12,12 @@ from queue import Empty
 from typing import Any
 
 try:
+    from editor.runtime.audio_playback_state import set_channels_paused
     from editor.runtime.native_ui import NativeUIRenderer, normalize_ui
     from editor.runtime.sprite_rendering import prepare_sprite_surface
     from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
 except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
+    from .audio_playback_state import set_channels_paused
     from .native_ui import NativeUIRenderer, normalize_ui
     from .sprite_rendering import prepare_sprite_surface
     from .clip_asset import animation_asset_to_clip, load_animation_asset
@@ -857,6 +859,7 @@ def run_viewport(
                         _send(events, {"type": "play_state", "state": "play"})
                     elif paused:
                         paused = False
+                        set_channels_paused(audio_channels, False)
                         _send(events, {"type": "play_state", "state": "play"})
                 elif command.get("type") == "start_play_audio":
                     incoming_audio = command.get("audio_sources", {})
@@ -869,6 +872,7 @@ def run_viewport(
                 elif command.get("type") == "pause":
                     if playing:
                         paused = not paused
+                        set_channels_paused(audio_channels, paused)
                         _send(events, {"type": "play_state", "state": "pause" if paused else "play"})
                 elif command.get("type") == "stop":
                     stop_audio_sources()

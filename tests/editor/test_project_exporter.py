@@ -6,6 +6,7 @@ from pathlib import Path
 RUNTIME_SOURCES = (
     "editor/isolated_viewport.py",
     "editor/runtime/native_ui.py",
+    "editor/runtime/audio_playback_state.py",
     "editor/runtime/sprite_rendering.py",
     "engine/graphics/tint.py",
     "engine/animation/clip_asset.py",
@@ -121,7 +122,7 @@ def test_exported_runtime_contains_all_standalone_dependencies(tmp_path: Path) -
     assert report.success is True
     runtime = Path(report.destination) / "zennity_runtime"
     assert {path.name for path in runtime.glob("*.py")} == {
-        "__init__.py", "viewport.py", "native_ui.py", "sprite_rendering.py",
+        "__init__.py", "viewport.py", "native_ui.py", "audio_playback_state.py", "sprite_rendering.py",
         "tint.py", "clip_asset.py", "scene_loader.py",
     }
     launcher = (Path(report.destination) / "main.py").read_text(encoding="utf-8")

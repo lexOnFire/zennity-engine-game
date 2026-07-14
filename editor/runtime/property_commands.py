@@ -3,6 +3,9 @@ from __future__ import annotations
 from typing import Any, Callable
 
 
+_UNSET = object()
+
+
 class SetTransformPropertyCommand:
     """Comando reversivel para alterar valores numericos de propriedades do Transform."""
 
@@ -49,7 +52,7 @@ class SetPropertyCommand:
         target: Any,
         property_name: str,
         new_value: Any,
-        old_value: Any = _SENTINEL := object(),
+        old_value: Any = _UNSET,
         description: str = "",
         on_changed: Callable[[Any], None] | None = None,
     ) -> None:
@@ -57,7 +60,7 @@ class SetPropertyCommand:
         self.property_name = property_name
         self.new_value = new_value
         # Captura old_value do estado atual caso nao tenha sido passado
-        if old_value is SetPropertyCommand._SENTINEL:  # type: ignore[attr-defined]
+        if old_value is _UNSET:
             try:
                 self.old_value = getattr(target, property_name)
             except AttributeError:
@@ -66,8 +69,6 @@ class SetPropertyCommand:
             self.old_value = old_value
         self.description = description or f"Set {property_name} to {new_value}"
         self.on_changed = on_changed
-
-    _SENTINEL = object()
 
     def execute(self) -> None:
         setattr(self.target, self.property_name, self.new_value)

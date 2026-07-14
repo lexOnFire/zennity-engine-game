@@ -72,6 +72,7 @@ def _validate_export_inputs(project_root: Path, scene_path: Path, report: BuildR
     runtime_sources = (
         "editor/isolated_viewport.py",
         "editor/runtime/native_ui.py",
+        "editor/runtime/audio_playback_state.py",
         "editor/runtime/sprite_rendering.py",
         "engine/graphics/tint.py",
         "engine/animation/clip_asset.py",
@@ -113,6 +114,7 @@ def _write_development_project(project_root: Path, scene_path: Path, destination
     runtime_sources = {
         project_root / "editor" / "isolated_viewport.py": runtime_dir / "viewport.py",
         project_root / "editor" / "runtime" / "native_ui.py": runtime_dir / "native_ui.py",
+        project_root / "editor" / "runtime" / "audio_playback_state.py": runtime_dir / "audio_playback_state.py",
         project_root / "editor" / "runtime" / "sprite_rendering.py": runtime_dir / "sprite_rendering.py",
         project_root / "engine" / "graphics" / "tint.py": runtime_dir / "tint.py",
         project_root / "engine" / "animation" / "clip_asset.py": runtime_dir / "clip_asset.py",
@@ -170,6 +172,7 @@ def _validate_exported_project(destination: Path, report: BuildReport) -> None:
         "zennity_runtime/__init__.py",
         "zennity_runtime/viewport.py",
         "zennity_runtime/native_ui.py",
+        "zennity_runtime/audio_playback_state.py",
         "zennity_runtime/sprite_rendering.py",
         "zennity_runtime/tint.py",
         "zennity_runtime/clip_asset.py",
