@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import sys
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
@@ -34,7 +34,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from editor.ui.icons import TOOLBAR_GLYPHS, component_title
+from editor.ui.icons import TOOLBAR_ICONS, component_title, editor_icon
 from editor.ui.empty_state import EmptyStateWidget
 
 
@@ -65,10 +65,11 @@ class InterfaceSmokeTest(QMainWindow):
         toolbar = QToolBar("Ferramentas")
         toolbar.setObjectName("CommandBar")
         toolbar.setMovable(False)
+        toolbar.setIconSize(QSize(17, 17))
         self.addToolBar(toolbar)
         self.toolbar_actions = {}
-        for label, icon in TOOLBAR_GLYPHS.items():
-            action = QAction(icon, self)
+        for label, icon_name in TOOLBAR_ICONS.items():
+            action = QAction(editor_icon(icon_name), label, self)
             action.setStatusTip(label)
             action.setToolTip(label)
             self.toolbar_actions[label] = action
@@ -123,6 +124,17 @@ class InterfaceSmokeTest(QMainWindow):
         self.animation_delete_button = QPushButton("Excluir")
         self.animation_apply_button = QPushButton("Aplicar ao selecionado")
         self.animation_demo_button = QPushButton("▶ Testar no Player")
+        for button, icon_name in (
+            (self.animation_new_button, "new"),
+            (self.animation_open_button, "open"),
+            (self.animation_save_button, "save"),
+            (self.animation_save_as_button, "save"),
+            (self.animation_duplicate_button, "duplicate"),
+            (self.animation_delete_button, "delete"),
+            (self.animation_apply_button, "apply"),
+            (self.animation_demo_button, "play"),
+        ):
+            button.setIcon(editor_icon(icon_name))
         self.animation_delete_button.setProperty("uiRole", "dangerAction")
         self.animation_apply_button.setProperty("uiRole", "primary")
         self.animation_demo_button.setProperty("uiRole", "play")
@@ -173,6 +185,15 @@ class InterfaceSmokeTest(QMainWindow):
         self.animation_play_button = QPushButton("⏸")
         self.animation_next_frame_button = QPushButton("▶")
         self.animation_last_frame_button = QPushButton("▶|")
+        for button, icon_name in (
+            (self.animation_first_frame_button, "first"),
+            (self.animation_previous_frame_button, "previous"),
+            (self.animation_play_button, "pause"),
+            (self.animation_next_frame_button, "next"),
+            (self.animation_last_frame_button, "last"),
+        ):
+            button.setText("")
+            button.setIcon(editor_icon(icon_name))
         for button in (
             self.animation_first_frame_button, self.animation_previous_frame_button,
             self.animation_play_button, self.animation_next_frame_button,

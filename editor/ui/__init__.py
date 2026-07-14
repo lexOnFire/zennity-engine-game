@@ -2,7 +2,10 @@
 
 from .theme import EDITOR_QSS, apply_editor_theme, build_editor_stylesheet, polish_editor_widgets
 from .tokens import DEFAULT_TOKENS, EditorThemeTokens
-from .icons import COMPONENT_GLYPHS, TOOLBAR_GLYPHS, component_title
+from .icons import (
+    COMPONENT_GLYPHS, TOOLBAR_GLYPHS, TOOLBAR_ICONS,
+    component_title, editor_icon, icon_path,
+)
 
 __all__ = [
     "DEFAULT_TOKENS",
@@ -10,8 +13,11 @@ __all__ = [
     "EditorThemeTokens",
     "COMPONENT_GLYPHS",
     "TOOLBAR_GLYPHS",
+    "TOOLBAR_ICONS",
     "apply_editor_theme",
     "build_editor_stylesheet",
     "polish_editor_widgets",
     "component_title",
+    "editor_icon",
+    "icon_path",
 ]

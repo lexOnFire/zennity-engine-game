@@ -42,6 +42,7 @@ QToolBar#CommandBar {
     padding: 5px $SPACING_SMpx;
 }
 QToolBar#CommandBar::separator { background: $BORDER; width: 1px; margin: 4px 5px; }
+QToolBar#CommandBar QToolButton { qproperty-iconSize: 17px 17px; }
 QToolButton, QPushButton {
     background: $SURFACE_RAISED;
     border: 1px solid $BORDER;

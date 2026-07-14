@@ -31,7 +31,7 @@ from editor.runtime.play_session import EditorPlaySession
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from editor.widgets.component_picker import ComponentPickerDialog
-from editor.ui.icons import component_title
+from editor.ui.icons import component_title, editor_icon
 from editor.ui.tokens import DEFAULT_TOKENS
 from engine.animation.clip_asset import (
     animation_asset_from_clip,
@@ -73,6 +73,12 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._viewport_process = viewport_process
         self._commands = commands
         self._events = events
+        self._pending_viewport_size: tuple[int, int] | None = None
+        self._last_viewport_size_sent: tuple[int, int] | None = None
+        self._viewport_resize_timer = QTimer(self)
+        self._viewport_resize_timer.setSingleShot(True)
+        self._viewport_resize_timer.setInterval(24)
+        self._viewport_resize_timer.timeout.connect(self._flush_viewport_resize)
         self._initial_scene_snapshot = [
             {"id": "floor", "name": "Chao", "x": 0.0, "y": 150.0, "w": 600.0, "h": 32.0, "rotation": 0.0, "color": (91, 194, 100), "rigidbody": {"is_kinematic": True, "use_gravity": False}, "collider": {"type": "box"}},
             {"id": "player", "name": "Player", "x": 0.0, "y": 0.0, "w": 36.0, "h": 48.0, "rotation": 0.0, "color": (88, 117, 255), "rigidbody": {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}, "collider": {"type": "box"}, "scripts": ["Assets/Scripts/player_controller_2d.py"]},
@@ -301,8 +307,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self.statusBar().showMessage(f"Play Input: {key_map[event.key()]} {'ON' if event.type() == QEvent.KeyPress else 'OFF'}")
             return True
         if watched is self.viewport_host and event.type() == QEvent.Resize:
-            width, height = self.native_viewport_size()
-            self._commands.put({"type": "viewport_size", "w": width, "h": height})
+            self._pending_viewport_size = self.native_viewport_size()
+            self._viewport_resize_timer.start()
         if watched in self._script_drop_targets:
             if self._play_session.is_running and event.type() in {
                 QEvent.DragEnter, QEvent.DragMove, QEvent.Drop
@@ -362,6 +368,15 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     event.acceptProposedAction()
                     return True
         return super().eventFilter(watched, event)
+
+    def _flush_viewport_resize(self) -> None:
+        """Agrupa a rajada de Resize do Qt e envia sempre o último tamanho."""
+        size = self._pending_viewport_size
+        self._pending_viewport_size = None
+        if size is None or size == self._last_viewport_size_sent:
+            return
+        self._last_viewport_size_sent = size
+        self._commands.put({"type": "viewport_size", "w": size[0], "h": size[1]})
 
     def _dragged_asset_path(self) -> Path | None:
         selected_items = self.assets_tree.selectedItems()
@@ -1855,7 +1870,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
 
     def _toggle_animation_preview_playback(self) -> None:
         self._animation_preview_playing = not self._animation_preview_playing
-        self.animation_play_button.setText("⏸" if self._animation_preview_playing else "▶")
+        self.animation_play_button.setIcon(editor_icon(
+            "pause" if self._animation_preview_playing else "play"
+        ))
 
     def _add_animation_clip(self) -> None:
         if self._selected_name not in self._objects_by_name:

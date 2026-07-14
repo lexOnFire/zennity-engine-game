@@ -10,6 +10,7 @@
 - [x] UI Foundation com tokens, tema único, papéis semânticos e primeira migração do editor
 - [x] UI Polish da Animation Workspace, Console, Profiler e Build Report sobre o tema central
 - [x] UI Polish de diálogos, estados vazios e Asset Preview responsivo
+- [x] Pacote SVG inicial e estabilização das atualizações de resize da viewport isolada
 - [x] Export configuration foundation com BuildConfig, BuildTarget, validação e testes iniciais (Fase 31)
 - [x] Export Profiles com ExportProfile, ExportProfileManager, perfis Debug/Release e persistência JSON (Fase 32)
 - [x] Desktop Packaging com DesktopPackagePlan, planner por BuildConfig/Profile e testes multiplataforma (Fase 33)
