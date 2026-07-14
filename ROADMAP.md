@@ -12,6 +12,7 @@
 - [x] Desktop Packaging com DesktopPackagePlan, planner por BuildConfig/Profile e testes multiplataforma (Fase 33)
 - [x] Build Report UI com validação da cena, referências de assets, métricas, lista de arquivos e relatório JSON
 - [ ] Release Candidate Stabilization
+  - [x] Gerar runtime de desenvolvimento autocontido e validar cena/componentes exportados
   - [ ] Validar o fluxo completo no Windows com Python 3.12
   - [ ] Executar a suíte de regressão completa
   - [ ] Validar Play/Pause/Stop com scripts, física, áudio, HUD e animação

@@ -11,9 +11,14 @@ from pathlib import Path
 from queue import Empty
 from typing import Any
 
-from editor.runtime.native_ui import NativeUIRenderer, normalize_ui
-from editor.runtime.sprite_rendering import prepare_sprite_surface
-from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
+try:
+    from editor.runtime.native_ui import NativeUIRenderer, normalize_ui
+    from editor.runtime.sprite_rendering import prepare_sprite_surface
+    from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
+except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
+    from .native_ui import NativeUIRenderer, normalize_ui
+    from .sprite_rendering import prepare_sprite_surface
+    from .clip_asset import animation_asset_to_clip, load_animation_asset
 
 
 def hydrate_animation_asset_clips(

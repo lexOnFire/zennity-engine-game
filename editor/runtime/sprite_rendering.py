@@ -19,6 +19,9 @@ def prepare_sprite_surface(source: Any, size: tuple[int, int], tint: Any = NEUTR
 
     target_size = (max(1, int(size[0])), max(1, int(size[1])))
     surface = source.copy() if source.get_size() == target_size else pygame.transform.scale(source, target_size)
-    from engine.graphics.tint import apply_pygame_tint
+    try:
+        from engine.graphics.tint import apply_pygame_tint
+    except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
+        from .tint import apply_pygame_tint
 
     return apply_pygame_tint(surface, tint)

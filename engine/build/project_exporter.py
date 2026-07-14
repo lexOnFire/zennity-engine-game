@@ -50,7 +50,8 @@ def export_development_project_with_report(
 
     try:
         _write_development_project(project_root, scene_path, destination, safe_name)
-        _validate_asset_references(project_root, scene_payload, report)
+        _validate_asset_references(project_root, destination, scene_payload, report)
+        _validate_exported_project(destination, report)
         _collect_exported_files(destination, report)
         report.success = not report.errors
     except (OSError, ValueError, TypeError) as exc:
@@ -68,9 +69,18 @@ def _validate_export_inputs(project_root: Path, scene_path: Path, report: BuildR
     if not scene_path.is_file():
         report.add_error("A cena de entrada não existe.", scene_path)
         return {}
-    viewport_runtime = project_root / "editor" / "isolated_viewport.py"
-    if not viewport_runtime.is_file():
-        report.add_error("Runtime da viewport não encontrado.", viewport_runtime)
+    runtime_sources = (
+        "editor/isolated_viewport.py",
+        "editor/runtime/native_ui.py",
+        "editor/runtime/sprite_rendering.py",
+        "engine/graphics/tint.py",
+        "engine/animation/clip_asset.py",
+        "engine/build/runtime_scene_loader.py",
+    )
+    for relative in runtime_sources:
+        source = project_root / relative
+        if not source.is_file():
+            report.add_error("Dependência do runtime de exportação não encontrada.", source)
     if not (project_root / "Assets").is_dir():
         report.add_warning("A pasta Assets não existe; o build será criado sem assets.", project_root / "Assets")
     try:
@@ -95,7 +105,21 @@ def _write_development_project(project_root: Path, scene_path: Path, destination
     assets_source = project_root / "Assets"
     if assets_source.is_dir():
         shutil.copytree(assets_source, destination / "Assets", dirs_exist_ok=True)
-    shutil.copy2(project_root / "editor" / "isolated_viewport.py", runtime_dir / "viewport.py")
+    lowercase_assets = project_root / "assets"
+    if lowercase_assets.is_dir() and (
+        not assets_source.is_dir() or lowercase_assets.resolve() != assets_source.resolve()
+    ):
+        shutil.copytree(lowercase_assets, destination / "assets", dirs_exist_ok=True)
+    runtime_sources = {
+        project_root / "editor" / "isolated_viewport.py": runtime_dir / "viewport.py",
+        project_root / "editor" / "runtime" / "native_ui.py": runtime_dir / "native_ui.py",
+        project_root / "editor" / "runtime" / "sprite_rendering.py": runtime_dir / "sprite_rendering.py",
+        project_root / "engine" / "graphics" / "tint.py": runtime_dir / "tint.py",
+        project_root / "engine" / "animation" / "clip_asset.py": runtime_dir / "clip_asset.py",
+        project_root / "engine" / "build" / "runtime_scene_loader.py": runtime_dir / "scene_loader.py",
+    }
+    for source, target in runtime_sources.items():
+        shutil.copy2(source, target)
     (runtime_dir / "__init__.py").write_text("", encoding="utf-8")
     (destination / "main.py").write_text(_launcher_source(), encoding="utf-8")
     (destination / "executar.bat").write_text("@echo off\npython main.py\npause\n", encoding="utf-8")
@@ -105,7 +129,9 @@ def _write_development_project(project_root: Path, scene_path: Path, destination
     (destination / "package_manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
-def _validate_asset_references(project_root: Path, payload: object, report: BuildReport) -> None:
+def _validate_asset_references(
+    project_root: Path, destination: Path, payload: object, report: BuildReport
+) -> None:
     references: set[str] = set()
 
     def visit(value: object) -> None:
@@ -124,6 +150,8 @@ def _validate_asset_references(project_root: Path, payload: object, report: Buil
     for reference in sorted(references, key=str.lower):
         if not (project_root / Path(reference)).is_file():
             report.add_warning("Asset referenciado pela cena não foi encontrado.", reference)
+        elif not (destination / Path(reference)).is_file():
+            report.add_error("Asset existente não foi incluído no build.", reference)
 
 
 def _collect_exported_files(destination: Path, report: BuildReport) -> None:
@@ -131,6 +159,31 @@ def _collect_exported_files(destination: Path, report: BuildReport) -> None:
     report.files = [path.relative_to(destination).as_posix() for path in files]
     report.file_count = len(files)
     report.total_size_bytes = sum(path.stat().st_size for path in files)
+
+
+def _validate_exported_project(destination: Path, report: BuildReport) -> None:
+    required = (
+        "Data/main.zscene",
+        "main.py",
+        "package_manifest.json",
+        "requirements.txt",
+        "zennity_runtime/__init__.py",
+        "zennity_runtime/viewport.py",
+        "zennity_runtime/native_ui.py",
+        "zennity_runtime/sprite_rendering.py",
+        "zennity_runtime/tint.py",
+        "zennity_runtime/clip_asset.py",
+        "zennity_runtime/scene_loader.py",
+    )
+    for relative in required:
+        path = destination / relative
+        if not path.is_file():
+            report.add_error("Arquivo obrigatório não foi incluído no build.", relative)
+    for path in sorted(destination.rglob("*.py")):
+        try:
+            compile(path.read_text(encoding="utf-8"), str(path), "exec")
+        except (OSError, UnicodeError, SyntaxError) as exc:
+            report.add_error(f"Python inválido no build: {exc}", path.relative_to(destination))
 
 
 def _save_report(destination: Path, report: BuildReport) -> None:
@@ -149,39 +202,12 @@ def _save_report(destination: Path, report: BuildReport) -> None:
 def _launcher_source() -> str:
     return '''from __future__ import annotations
 
-import json
 import multiprocessing as mp
 import os
 from pathlib import Path
 
+from zennity_runtime.scene_loader import load_objects
 from zennity_runtime.viewport import run_viewport
-
-
-def load_objects(path):
-    payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    result = []
-    for item in payload.get("objects", []):
-        transform = item.get("transform", {})
-        position = transform.get("position", [0, 0, 0])
-        scale = transform.get("scale", [32, 32, 1])
-        rotation = transform.get("rz", transform.get("rotation", [0, 0, 0])[2])
-        visual = item.get("visual", {}) or {}
-        components = item.get("components", {}) or {}
-        obj = {
-            "id": item.get("id", item.get("name")), "name": item.get("name", "Object"),
-            "x": float(position[0]), "y": float(position[1]), "w": abs(float(scale[0])),
-            "h": abs(float(scale[1])), "rotation": float(rotation),
-            "color": visual.get("color") or [180, 180, 190], "tag": item.get("tag", "Untagged"),
-            "active": item.get("active", True), "scripts": components.get("scripts", []),
-            "texture": visual.get("texture", ""), "renderer_enabled": visual.get("enabled", True),
-            "render_layer": visual.get("layer", "Default"), "sort_order": visual.get("order", 0),
-        }
-        for key in ("rigidbody", "collider", "camera", "audio"):
-            if key in components:
-                obj[key] = components[key]
-        obj.update(item.get("editor_data", {}))
-        result.append(obj)
-    return result
 
 
 def main():
