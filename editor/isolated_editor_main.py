@@ -49,6 +49,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._animation_asset_dirty = False
         self._animation_preview_playing = True
         self._animation_bound_key: tuple[str, str] | None = None
+        # A workspace usa este índice durante sua configuração inicial.
+        self._animator_preview_index = 0
         self._component_expanded = {
             "transform": True,
             "sprite": True,
@@ -123,7 +125,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._event_timer = QTimer(self)
         self._event_timer.timeout.connect(self._read_viewport_events)
         self._event_timer.start(33)
-        self._animator_preview_index = 0
         self._animator_preview_timer = QTimer(self)
         self._animator_preview_timer.timeout.connect(self._tick_animation_preview)
         self._animator_preview_timer.start(125)

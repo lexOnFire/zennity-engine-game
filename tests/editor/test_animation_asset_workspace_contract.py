@@ -27,3 +27,12 @@ def test_editor_integrates_zanim_without_removing_embedded_clips() -> None:
     assert "save_animation_asset" in source
     assert 'obj.setdefault("animator"' in source
     assert '"asset_path"' in (ROOT / "engine" / "animation" / "clip_asset.py").read_text(encoding="utf-8")
+
+
+def test_preview_index_exists_before_animation_workspace_is_configured() -> None:
+    source = (ROOT / "editor" / "isolated_editor_main.py").read_text(encoding="utf-8")
+    init_start = source.index("def __init__")
+    preview_index = source.index("self._animator_preview_index = 0", init_start)
+    configure_workspace = source.index("self._configure_animation_workspace()", init_start)
+
+    assert preview_index < configure_workspace
