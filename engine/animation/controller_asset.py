@@ -96,7 +96,16 @@ def normalize_animator_controller(data: Mapping[str, Any] | None) -> dict[str, A
                 elif kind in {"bool", "trigger"}:
                     value = bool(value)
                 conditions.append({"parameter": parameter, "operator": operator, "value": value})
-            transitions.append({"from": origin or "*", "to": target, "conditions": conditions})
+            transitions.append({
+                "from": origin or "*",
+                "to": target,
+                "conditions": conditions,
+                "priority": _safe_int(raw_transition.get("priority"), 0),
+                "has_exit_time": bool(raw_transition.get("has_exit_time", False)),
+                "exit_time": max(0.0, min(1.0, _safe_float(raw_transition.get("exit_time"), 1.0))),
+                "duration": max(0.0, _safe_float(raw_transition.get("duration"), 0.0)),
+                "interruptible": bool(raw_transition.get("interruptible", True)),
+            })
     result["transitions"] = transitions
     return result
 
@@ -166,6 +175,9 @@ class AnimatorControllerRuntime:
         }
         for name, value in dict(parameter_values or {}).items():
             self._set(name, value)
+        self.transition_remaining = 0.0
+        self.transition_interruptible = True
+        self.active_transition: dict[str, Any] | None = None
 
     def play(self, state: str) -> bool:
         state = str(state)
@@ -173,6 +185,9 @@ class AnimatorControllerRuntime:
             return False
         changed = state != self.current_state
         self.current_state = state
+        if changed:
+            self.transition_remaining = 0.0
+            self.active_transition = None
         return changed
 
     def set_bool(self, name: str, value: bool) -> None:
@@ -184,18 +199,36 @@ class AnimatorControllerRuntime:
     def trigger(self, name: str) -> None:
         self._set_typed(name, "trigger", True)
 
-    def update(self) -> bool:
+    def update(self, normalized_time: float = 1.0, delta_time: float = 0.0) -> bool:
         changed = False
-        for transition in self.controller["transitions"]:
+        if self.transition_remaining > 0.0:
+            self.transition_remaining = max(0.0, self.transition_remaining - max(0.0, float(delta_time)))
+            if self.transition_remaining <= 0.0:
+                self.active_transition = None
+            elif not self.transition_interruptible:
+                return False
+        transitions = sorted(self.controller["transitions"], key=lambda item: int(item.get("priority", 0)), reverse=True)
+        for transition in transitions:
             if transition["from"] not in {"*", self.current_state}:
+                continue
+            if transition.get("has_exit_time") and float(normalized_time) < float(transition.get("exit_time", 1.0)):
                 continue
             if all(self._condition_matches(condition) for condition in transition["conditions"]):
                 changed = self.play(transition["to"])
+                if changed:
+                    self.transition_remaining = float(transition.get("duration", 0.0))
+                    self.transition_interruptible = bool(transition.get("interruptible", True))
+                    self.active_transition = deepcopy(transition) if self.transition_remaining > 0.0 else None
+                    self._consume_triggers(transition)
                 break
-        for name, parameter in self.controller["parameters"].items():
-            if parameter["type"] == "trigger":
-                self.parameters[name] = False
         return changed
+
+    def _consume_triggers(self, transition: Mapping[str, Any]) -> None:
+        for condition in transition.get("conditions", []):
+            name = str(condition.get("parameter", ""))
+            parameter = self.controller["parameters"].get(name)
+            if parameter and parameter["type"] == "trigger":
+                self.parameters[name] = False
 
     def _set(self, name: str, value: Any) -> None:
         parameter = self.controller["parameters"].get(str(name))
@@ -237,5 +270,12 @@ class AnimatorControllerRuntime:
 def _safe_float(value: Any, default: float) -> float:
     try:
         return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _safe_int(value: Any, default: int) -> int:
+    try:
+        return int(value)
     except (TypeError, ValueError):
         return default

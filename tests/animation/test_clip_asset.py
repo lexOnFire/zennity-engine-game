@@ -67,3 +67,17 @@ def test_asset_to_clip_preserves_current_play_mode_contract() -> None:
     assert clip["frame_count"] == 3
     assert clip["frames"] == [5, 6, 7]
     assert clip["asset_path"] == "Assets/Animations/Attack.zanim"
+
+
+def test_animation_events_are_normalized_and_preserved_in_runtime_clip() -> None:
+    asset = normalize_animation_asset({
+        "name": "Attack", "frames": [0, 1, 2],
+        "events": [
+            {"frame_index": 2, "event": "hit", "payload": {"damage": 10}},
+            {"frame": 0, "name": "start"},
+            {"frame": 1, "name": ""},
+        ],
+    })
+    assert [event["name"] for event in asset["events"]] == ["start", "hit"]
+    clip = animation_asset_to_clip(asset)
+    assert clip["events"][1] == {"frame": 2, "name": "hit", "payload": {"damage": 10}}

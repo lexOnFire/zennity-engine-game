@@ -49,7 +49,19 @@ def normalize_animation_asset(data: Mapping[str, Any] | None) -> dict[str, Any]:
     result["frames"] = normalized_frames or [0]
 
     events = source.get("events", [])
-    result["events"] = [deepcopy(event) for event in events if isinstance(event, dict)]
+    normalized_events = []
+    for event in events if isinstance(events, list) else []:
+        if not isinstance(event, dict):
+            continue
+        name = str(event.get("name", event.get("event", ""))).strip()
+        if not name:
+            continue
+        normalized_events.append({
+            "frame": min(len(result["frames"]) - 1, max(0, _safe_int(event.get("frame", event.get("frame_index", 0)), 0))),
+            "name": name,
+            "payload": deepcopy(event.get("payload")),
+        })
+    result["events"] = sorted(normalized_events, key=lambda item: (item["frame"], item["name"]))
     return result
 
 

@@ -15,6 +15,7 @@ def test_created_script_has_complete_runtime_contract(tmp_path: Path) -> None:
 
     assert compatible, reason
     assert callable(namespace["on_update"])
+    assert callable(namespace["on_animation_event"])
 
 
 def test_contract_accepts_legacy_update_and_rejects_empty_script(tmp_path: Path) -> None:

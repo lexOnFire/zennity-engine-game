@@ -62,3 +62,19 @@ def test_validation_reports_empty_and_missing_animations(tmp_path):
     issues = validate_animator_controller(data, tmp_path)
     assert any(issue["state"] == "Idle" and issue["level"] == "warning" for issue in issues)
     assert any(issue["state"] == "Walk" and issue["level"] == "error" for issue in issues)
+
+
+def test_exit_time_priority_and_non_interruptible_transition():
+    data = controller_data()
+    data["transitions"] = [
+        {"from": "Idle", "to": "Walk", "priority": 1, "has_exit_time": True, "exit_time": 0.75, "duration": 0.5, "interruptible": False, "conditions": []},
+        {"from": "*", "to": "Jump", "priority": 10, "conditions": [{"parameter": "jump", "operator": "trigger"}]},
+    ]
+    runtime = AnimatorControllerRuntime(data)
+    assert runtime.update(normalized_time=0.5) is False
+    assert runtime.update(normalized_time=0.8) is True
+    runtime.trigger("jump")
+    assert runtime.update(normalized_time=1.0, delta_time=0.1) is False
+    runtime.trigger("jump")
+    assert runtime.update(normalized_time=1.0, delta_time=0.5) is True
+    assert runtime.current_state == "Jump"

@@ -9,9 +9,9 @@ from PySide6.QtCore import QPointF, Qt, Signal
 from PySide6.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen, QPolygonF
 from PySide6.QtWidgets import (
     QComboBox, QDialog, QDialogButtonBox, QFormLayout, QHBoxLayout,
-    QGraphicsItem, QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsRectItem,
+    QCheckBox, QDoubleSpinBox, QGraphicsItem, QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsRectItem,
     QGraphicsScene, QGraphicsSimpleTextItem, QGraphicsView, QInputDialog, QLabel,
-    QLineEdit, QMessageBox, QPushButton, QSplitter, QTabWidget, QTreeWidget,
+    QLineEdit, QMessageBox, QPushButton, QSpinBox, QSplitter, QTabWidget, QTreeWidget,
     QTreeWidgetItem, QVBoxLayout, QWidget,
 )
 
@@ -26,6 +26,7 @@ class AnimatorGraphView(QGraphicsView):
 
     stateSelected = Signal(str)
     positionsChanged = Signal(dict, dict)
+    transitionSelected = Signal(int)
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -68,8 +69,8 @@ class AnimatorGraphView(QGraphicsView):
             subtitle.setPos(10, 34)
             self.scene().addItem(node)
             self._nodes[name] = node
-        for transition in controller.get("transitions", []):
-            self._draw_transition(str(transition.get("from", "")), str(transition.get("to", "")))
+        for index, transition in enumerate(controller.get("transitions", [])):
+            self._draw_transition(str(transition.get("from", "")), str(transition.get("to", "")), index)
         bounds = self.scene().itemsBoundingRect().adjusted(-80, -80, 80, 80)
         self.scene().setSceneRect(bounds if not bounds.isEmpty() else self.rect())
 
@@ -84,7 +85,7 @@ class AnimatorGraphView(QGraphicsView):
         selected = self.scene().selectedItems()
         return str(selected[0].data(0)) if selected and selected[0].data(0) else ""
 
-    def _draw_transition(self, origin: str, target: str) -> None:
+    def _draw_transition(self, origin: str, target: str, index: int) -> None:
         target_node = self._nodes.get(target)
         if target_node is None:
             return
@@ -115,6 +116,8 @@ class AnimatorGraphView(QGraphicsView):
         edge = QGraphicsPathItem(path)
         edge.setPen(QPen(QColor("#77849a"), 2))
         edge.setZValue(-2)
+        edge.setData(1, index)
+        edge.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
         self.scene().addItem(edge)
         direction = end - path.pointAtPercent(0.92)
         length = max(1.0, (direction.x() ** 2 + direction.y() ** 2) ** 0.5)
@@ -144,9 +147,100 @@ class AnimatorGraphView(QGraphicsView):
             self.positionsChanged.emit(positions, self._positions_before_drag)
 
     def _emit_selection(self) -> None:
+        selected = self.scene().selectedItems()
+        if not selected:
+            return
+        transition_index = selected[0].data(1)
+        if transition_index is not None:
+            self.transitionSelected.emit(int(transition_index))
+            return
         name = self.selected_state()
         if name:
             self.stateSelected.emit(name)
+
+
+class TransitionEditorDialog(QDialog):
+    """Inspector de uma transição e de todas as suas condições."""
+
+    def __init__(self, states: list[str], parameters: dict, transition: dict | None = None, parent=None) -> None:
+        super().__init__(parent)
+        self.parameters = parameters
+        self.transition = deepcopy(transition or {"from": "*", "to": states[0], "conditions": []})
+        self.setWindowTitle("Inspector da Transição")
+        self.resize(520, 470)
+        layout = QVBoxLayout(self)
+        form = QFormLayout()
+        self.origin_combo = QComboBox(); self.origin_combo.addItems(["*"] + states)
+        self.target_combo = QComboBox(); self.target_combo.addItems(states)
+        self.priority_field = QSpinBox(); self.priority_field.setRange(-999, 999)
+        self.exit_check = QCheckBox("Esperar o clip alcançar o Exit Time")
+        self.exit_field = QDoubleSpinBox(); self.exit_field.setRange(0.0, 1.0); self.exit_field.setSingleStep(0.05)
+        self.duration_field = QDoubleSpinBox(); self.duration_field.setRange(0.0, 10.0); self.duration_field.setSuffix(" s")
+        self.interruptible_check = QCheckBox("Pode ser interrompida")
+        form.addRow("Origem", self.origin_combo); form.addRow("Destino", self.target_combo)
+        form.addRow("Prioridade", self.priority_field); form.addRow(self.exit_check)
+        form.addRow("Exit Time", self.exit_field); form.addRow("Duração", self.duration_field)
+        form.addRow(self.interruptible_check)
+        layout.addLayout(form)
+        layout.addWidget(QLabel("CONDIÇÕES (todas precisam ser verdadeiras)"))
+        self.conditions_tree = QTreeWidget(); self.conditions_tree.setHeaderLabels(["Parâmetro", "Operador", "Valor"])
+        layout.addWidget(self.conditions_tree, 1)
+        row = QHBoxLayout(); add = QPushButton("Adicionar condição"); remove = QPushButton("Remover condição")
+        row.addWidget(add); row.addWidget(remove); row.addStretch(1); layout.addLayout(row)
+        add.clicked.connect(self._add_condition); remove.clicked.connect(self._remove_condition)
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self._accept); buttons.rejected.connect(self.reject); layout.addWidget(buttons)
+        self._load()
+
+    def _load(self) -> None:
+        self.origin_combo.setCurrentText(str(self.transition.get("from", "*")))
+        self.target_combo.setCurrentText(str(self.transition.get("to", "")))
+        self.priority_field.setValue(int(self.transition.get("priority", 0)))
+        self.exit_check.setChecked(bool(self.transition.get("has_exit_time", False)))
+        self.exit_field.setValue(float(self.transition.get("exit_time", 1.0)))
+        self.duration_field.setValue(float(self.transition.get("duration", 0.0)))
+        self.interruptible_check.setChecked(bool(self.transition.get("interruptible", True)))
+        self._refresh_conditions()
+
+    def _refresh_conditions(self) -> None:
+        self.conditions_tree.clear()
+        for condition in self.transition.get("conditions", []):
+            QTreeWidgetItem(self.conditions_tree, [str(condition["parameter"]), str(condition["operator"]), str(condition.get("value", True))])
+
+    def _add_condition(self) -> None:
+        if not self.parameters:
+            QMessageBox.information(self, "Condição", "Crie um parâmetro antes de adicionar condições.")
+            return
+        name, ok = QInputDialog.getItem(self, "Condição", "Parâmetro:", list(self.parameters), 0, False)
+        if not ok: return
+        kind = self.parameters[name]["type"]
+        operators = ["trigger"] if kind == "trigger" else ([">", ">=", "<", "<=", "==", "!="] if kind == "float" else ["==", "!="])
+        operator, ok = QInputDialog.getItem(self, "Condição", "Operador:", operators, 0, False)
+        if not ok: return
+        value: object = True
+        if kind == "float":
+            value, ok = QInputDialog.getDouble(self, "Condição", "Valor:", 0.0, -1000000, 1000000, 3)
+            if not ok: return
+        elif kind == "bool":
+            text, ok = QInputDialog.getItem(self, "Condição", "Valor:", ["True", "False"], 0, False)
+            if not ok: return
+            value = text == "True"
+        self.transition.setdefault("conditions", []).append({"parameter": name, "operator": operator, "value": value})
+        self._refresh_conditions()
+
+    def _remove_condition(self) -> None:
+        index = self.conditions_tree.indexOfTopLevelItem(self.conditions_tree.currentItem())
+        if index >= 0:
+            self.transition["conditions"].pop(index); self._refresh_conditions()
+
+    def _accept(self) -> None:
+        self.transition.update({
+            "from": self.origin_combo.currentText(), "to": self.target_combo.currentText(),
+            "priority": self.priority_field.value(), "has_exit_time": self.exit_check.isChecked(),
+            "exit_time": self.exit_field.value(), "duration": self.duration_field.value(),
+            "interruptible": self.interruptible_check.isChecked(),
+        })
+        self.accept()
 
 
 class AnimatorControllerEditorDialog(QDialog):
@@ -198,14 +292,18 @@ class AnimatorControllerEditorDialog(QDialog):
         layout.addLayout(toolbar)
 
         tabs = QTabWidget()
+        self.editor_tabs = tabs
         self.states_tree = self._tree(("Estado", "Animação", "Velocidade"))
         self.states_tree.itemDoubleClicked.connect(self._edit_state)
         tabs.addTab(self._tab(self.states_tree, self._add_state, self._remove_state), "Estados")
         self.parameters_tree = self._tree(("Parâmetro", "Tipo", "Padrão", "Runtime/Teste"))
         self.parameters_tree.itemDoubleClicked.connect(self._edit_parameter)
         tabs.addTab(self._tab(self.parameters_tree, self._add_parameter, self._remove_parameter), "Parâmetros")
-        self.transitions_tree = self._tree(("Origem", "Destino", "Condição"))
-        tabs.addTab(self._tab(self.transitions_tree, self._add_transition, self._remove_transition), "Transições")
+        self.transitions_tree = self._tree(("Origem", "Destino", "Condição", "Prioridade / Exit"))
+        transition_page = self._tab(self.transitions_tree, self._add_transition, self._remove_transition)
+        self.edit_transition_button = QPushButton("Editar transição selecionada")
+        transition_page.layout().addWidget(self.edit_transition_button)
+        tabs.addTab(transition_page, "Transições")
         self.graph = AnimatorGraphView()
         self.graph.setMinimumWidth(520)
         splitter = QSplitter(Qt.Horizontal)
@@ -231,9 +329,12 @@ class AnimatorControllerEditorDialog(QDialog):
         self.test_parameter_button.clicked.connect(self._test_selected_parameter)
         self.evaluate_button.clicked.connect(self._evaluate_preview)
         self.graph.stateSelected.connect(self._select_state_in_tree)
+        self.graph.transitionSelected.connect(self._select_transition_in_tree)
         self.graph.positionsChanged.connect(self._apply_graph_positions)
         self.states_tree.itemSelectionChanged.connect(self._select_tree_state_in_graph)
         self.initial_combo.activated.connect(self._change_initial_state)
+        self.edit_transition_button.clicked.connect(self._edit_selected_transition)
+        self.transitions_tree.itemDoubleClicked.connect(lambda _item, _column: self._edit_selected_transition())
 
     @staticmethod
     def _tree(headers: tuple[str, ...]) -> QTreeWidget:
@@ -288,7 +389,10 @@ class AnimatorControllerEditorDialog(QDialog):
             text = "Sempre" if not conditions else " e ".join(
                 f'{condition["parameter"]} {condition["operator"]} {condition.get("value", "")}' for condition in conditions
             )
-            QTreeWidgetItem(self.transitions_tree, [transition["from"], transition["to"], text])
+            exit_text = f'P{transition.get("priority", 0)}'
+            if transition.get("has_exit_time"):
+                exit_text += f' · Exit {float(transition.get("exit_time", 1.0)):.2f}'
+            QTreeWidgetItem(self.transitions_tree, [transition["from"], transition["to"], text, exit_text])
         issues = validate_animator_controller(self.data, self.project_root)
         invalid_states = {issue["state"] for issue in issues if issue.get("state")}
         active = self._active_state or self._preview_state
@@ -346,6 +450,12 @@ class AnimatorControllerEditorDialog(QDialog):
         item = self.states_tree.currentItem()
         if item is not None and self.graph.selected_state() != item.text(0):
             self.graph.select_state(item.text(0))
+
+    def _select_transition_in_tree(self, index: int) -> None:
+        item = self.transitions_tree.topLevelItem(index)
+        if item is not None:
+            self.editor_tabs.setCurrentIndex(2)
+            self.transitions_tree.setCurrentItem(item)
 
     def _apply_graph_positions(self, positions: dict, _previous: dict) -> None:
         self._remember()
@@ -454,40 +564,24 @@ class AnimatorControllerEditorDialog(QDialog):
             self._refresh_all()
 
     def _add_transition(self) -> None:
-        states = list(self.data["states"])
-        origin, ok = QInputDialog.getItem(self, "Origem", "Estado de origem:", ["*"] + states, 0, False)
-        if not ok:
+        dialog = TransitionEditorDialog(list(self.data["states"]), self.data["parameters"], parent=self)
+        if dialog.exec():
+            self._remember()
+            self.data["transitions"].append(dialog.transition)
+            self._refresh_all()
+
+    def _edit_selected_transition(self) -> None:
+        index = self.transitions_tree.indexOfTopLevelItem(self.transitions_tree.currentItem())
+        if index < 0:
             return
-        target, ok = QInputDialog.getItem(self, "Destino", "Estado de destino:", states, 0, False)
-        if not ok:
-            return
-        conditions = []
-        parameters = list(self.data["parameters"])
-        if parameters:
-            choices = ["Sem condição"] + parameters
-            parameter, ok = QInputDialog.getItem(self, "Condição", "Parâmetro:", choices, 0, False)
-            if not ok:
-                return
-            if parameter != "Sem condição":
-                kind = self.data["parameters"][parameter]["type"]
-                operators = ["trigger"] if kind == "trigger" else ([">", ">=", "<", "<=", "==", "!="] if kind == "float" else ["==", "!="])
-                operator, ok = QInputDialog.getItem(self, "Operador", "Comparação:", operators, 0, False)
-                if not ok:
-                    return
-                value = True
-                if kind == "float":
-                    value, ok = QInputDialog.getDouble(self, "Valor", "Valor:", 0.0, -1000000, 1000000, 3)
-                    if not ok:
-                        return
-                elif kind == "bool":
-                    text, ok = QInputDialog.getItem(self, "Valor", "Valor:", ["True", "False"], 0, False)
-                    if not ok:
-                        return
-                    value = text == "True"
-                conditions.append({"parameter": parameter, "operator": operator, "value": value})
-        self._remember()
-        self.data["transitions"].append({"from": origin, "to": target, "conditions": conditions})
-        self._refresh_all()
+        dialog = TransitionEditorDialog(
+            list(self.data["states"]), self.data["parameters"], self.data["transitions"][index], self
+        )
+        if dialog.exec():
+            self._remember()
+            self.data["transitions"][index] = dialog.transition
+            self._refresh_all()
+            self._select_transition_in_tree(index)
 
     def _remove_transition(self) -> None:
         index = self.transitions_tree.indexOfTopLevelItem(self.transitions_tree.currentItem())

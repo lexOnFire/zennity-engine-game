@@ -7,7 +7,7 @@ from pathlib import Path
 
 REQUIRED_UPDATE_HOOKS = {
     "on_update", "isolated_update", "update",
-    "on_collision", "on_collision_exit", "on_trigger", "on_trigger_exit",
+    "on_collision", "on_collision_exit", "on_trigger", "on_trigger_exit", "on_animation_event",
 }
 
 
@@ -32,6 +32,12 @@ def on_update(game, dt):
     # game.animator.set_float("velocidade", abs(direcao))
     # if game.key_pressed("space"):
     #     game.animator.trigger("pular")
+
+
+def on_animation_event(game, event):
+    """Opcional: recebe eventos configurados em frames da animação."""
+    if event == "passo":
+        game.log("Som de passo")
 '''
 
 

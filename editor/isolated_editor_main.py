@@ -59,6 +59,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         super().__init__()
         self._current_animation_asset_path: Path | None = None
         self._animation_draft_name = "NewAnimation"
+        self._animation_events: list[dict] = []
         self._animation_asset_dirty = False
         self._animation_preview_playing = True
         self._animation_bound_key: tuple[str, str] | None = None
@@ -1573,6 +1574,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.animation_next_frame_button.clicked.connect(lambda: self._set_animation_preview_frame(self._animator_preview_index + 1))
         self.animation_last_frame_button.clicked.connect(lambda: self._set_animation_preview_frame(self._animation_frame_count() - 1))
         self.animation_timeline.valueChanged.connect(self._set_animation_preview_frame)
+        self.animation_add_event_button.clicked.connect(self._add_animation_event)
+        self.animation_remove_event_button.clicked.connect(self._remove_animation_event)
 
         for field_signal in (
             self.animator_clip_combo.currentTextChanged,
@@ -1928,6 +1931,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "frame_count": int(self.animator_frame_count.value()),
             "fps": float(self.animator_fps_field.value()),
             "loop": self.animator_loop_field.isChecked(),
+            "events": deepcopy(self._animation_events),
         }
         return animation_asset_from_clip(str(clip_name), clip)
 
@@ -1949,6 +1953,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self.animator_fps_field.setValue(float(clip["fps"]))
             self.animator_loop_field.setChecked(bool(clip["loop"]))
             self.animator_current_lbl.setText(str(asset["name"]))
+            self._animation_events = deepcopy(asset.get("events", []))
+            self._refresh_animation_events()
         finally:
             self._updating_inspector = previous_updating
         self._animator_preview_index = 0
@@ -2019,6 +2025,41 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.animation_timeline.blockSignals(False)
         self.animation_frame_label.setText(f"Frame {self._animator_preview_index + 1} / {count}")
         self._update_animation_preview(animation_asset_to_clip(self._animation_asset_from_editor()), self._animator_preview_index)
+
+    def _refresh_animation_events(self) -> None:
+        self.animation_events_tree.clear()
+        ordered = sorted(self._animation_events, key=lambda item: (int(item.get("frame", 0)), str(item.get("name", ""))))
+        for event in ordered:
+            payload = event.get("payload")
+            QTreeWidgetItem(self.animation_events_tree, [str(int(event.get("frame", 0)) + 1), str(event.get("name", "")), "" if payload is None else str(payload)])
+        markers = ", ".join(f'F{int(event.get("frame", 0)) + 1}:{event.get("name", "")}' for event in ordered)
+        self.animation_timeline.setToolTip("Arraste para visualizar qualquer quadro" + (f"\nEventos: {markers}" if markers else "\nSem eventos"))
+
+    def _add_animation_event(self) -> None:
+        name, ok = QInputDialog.getText(self, "Evento de Animação", "Nome do evento:", text="evento")
+        name = name.strip()
+        if not ok or not name:
+            return
+        payload, ok = QInputDialog.getText(self, "Evento de Animação", "Payload opcional:")
+        if not ok:
+            return
+        self._animation_events.append({
+            "frame": int(self._animator_preview_index), "name": name,
+            "payload": payload if payload else None,
+        })
+        self._animation_asset_dirty = True
+        self._refresh_animation_events()
+        self._update_animation_asset_status()
+
+    def _remove_animation_event(self) -> None:
+        index = self.animation_events_tree.indexOfTopLevelItem(self.animation_events_tree.currentItem())
+        if index < 0:
+            return
+        ordered = sorted(range(len(self._animation_events)), key=lambda item: (int(self._animation_events[item].get("frame", 0)), str(self._animation_events[item].get("name", ""))))
+        self._animation_events.pop(ordered[index])
+        self._animation_asset_dirty = True
+        self._refresh_animation_events()
+        self._update_animation_asset_status()
 
     def _toggle_animation_preview_playback(self) -> None:
         self._animation_preview_playing = not self._animation_preview_playing
@@ -2523,6 +2564,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     self._current_animation_asset_path = (Path.cwd() / asset_path).resolve() if asset_path else None
                     self._animation_draft_name = active_clip
                     self._animation_asset_dirty = False
+                    self._animation_events = deepcopy(clip.get("events", []))
+                    self._refresh_animation_events()
                     self._update_animation_asset_status()
                 self.animator_sheet_combo.clear()
                 self.animator_sheet_combo.addItem("Nenhum", "")
@@ -2837,6 +2880,12 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     dialog = self._animator_controller_dialog
                     if dialog is not None:
                         dialog.set_runtime_state(state, message.get("parameters"))
+            elif message.get("type") == "animation_event":
+                self._log(
+                    "INFO",
+                    f"Evento de animação: {message.get('name')} → {message.get('event')} "
+                    f"(frame {int(message.get('frame', 0)) + 1})",
+                )
             elif message.get("type") == "attach_script":
                 self._attach_script(str(message.get("name", "")), Path(str(message.get("path", ""))))
             elif message.get("type") == "stats":

@@ -31,6 +31,18 @@ def on_update(game, dt):
 No script, use o nome do **parâmetro** ou do **estado** exatamente como aparece
 no Animator Controller. O restante é decidido pelas transições configuradas na aba Animação.
 
+Eventos de animação:
+
+```python
+def on_animation_event(game, event):
+    if event == "passo":
+        game.play_sound("Assets/Audio/passo.wav")
+    elif event == "ataque":
+        game.log("Ativar o dano do ataque")
+```
+
+O payload opcional fica disponível em `game.state["animation_event_payload"]`.
+
 Eventos de Collider:
 
 ```python

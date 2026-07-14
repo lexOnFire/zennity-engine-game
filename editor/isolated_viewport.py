@@ -429,6 +429,7 @@ def run_viewport(
                 obj["_current_animation_name"] = str(animator.get("active_clip", "Idle"))
                 obj["_animation_time"] = 0.0
                 obj["_animation_frame"] = 0
+                obj["_animation_raw_frame"] = -1
         declared = sum(len(obj.get("scripts", [])) for obj in objects.values())
         _send(events, {"type": "script_log", "level": "INFO", "message": f"Play Mode recebeu {len(objects)} objeto(s) e {declared} script(s)"})
         for name, obj in objects.items():
@@ -469,7 +470,7 @@ def run_viewport(
                                     module = bundled_module
                                     update = bundled_update
                                     update_mode = "simple"
-                    event_hooks = ("on_collision", "on_collision_exit", "on_trigger", "on_trigger_exit")
+                    event_hooks = ("on_collision", "on_collision_exit", "on_trigger", "on_trigger_exit", "on_animation_event")
                     if not callable(update) and any(callable(getattr(module, hook, None)) for hook in event_hooks):
                         update = lambda game, dt: None
                         update_mode = "simple"
@@ -658,7 +659,12 @@ def run_viewport(
             controller = animator_controllers.get(object_name)
             if controller is not None:
                 previous = controller.current_state
-                controller.update()
+                current_clip = clips.get(controller.current_state, {})
+                current_count = max(1, int(current_clip.get("frame_count", 1))) if isinstance(current_clip, dict) else 1
+                current_fps = max(0.01, float(current_clip.get("fps", 8.0))) if isinstance(current_clip, dict) else 8.0
+                progress = float(obj.get("_animation_time", 0.0)) * current_fps / current_count
+                normalized_time = progress % 1.0 if isinstance(current_clip, dict) and current_clip.get("loop", True) else min(1.0, progress)
+                controller.update(normalized_time=normalized_time, delta_time=delta_time)
                 animator["parameters"] = dict(controller.parameters)
                 animator["active_clip"] = controller.current_state
                 obj["_animator_state"] = controller.current_state
@@ -666,6 +672,7 @@ def run_viewport(
                 if controller.current_state != previous:
                     obj["_animation_time"] = 0.0
                     obj["_animation_frame"] = 0
+                    obj["_animation_raw_frame"] = -1
                 signature = (
                     controller.current_state,
                     tuple(sorted((key, repr(value)) for key, value in controller.parameters.items())),
@@ -692,8 +699,34 @@ def run_viewport(
             elapsed = float(obj.get("_animation_time", 0.0)) + delta_time
             raw_frame = int(elapsed * fps)
             frame = raw_frame % count if clip.get("loop", True) else min(count - 1, raw_frame)
+            previous_raw = int(obj.get("_animation_raw_frame", -1))
+            if raw_frame > previous_raw:
+                upper = min(raw_frame, previous_raw + max(1, count * 4))
+                events_by_frame: dict[int, list[dict[str, Any]]] = {}
+                for event in clip.get("events", []):
+                    if isinstance(event, dict):
+                        events_by_frame.setdefault(max(0, int(event.get("frame", 0))), []).append(event)
+                fired_frames: set[int] = set()
+                for raw_index in range(previous_raw + 1, upper + 1):
+                    event_frame = raw_index % count if clip.get("loop", True) else min(count - 1, raw_index)
+                    if not clip.get("loop", True) and event_frame in fired_frames:
+                        continue
+                    fired_frames.add(event_frame)
+                    for event in events_by_frame.get(event_frame, []):
+                        api = script_apis.get(object_name) or PlayScriptAPI(object_name, obj, events, objects)
+                        api.state["animation_event_payload"] = event.get("payload")
+                        for path, module in list(script_instances.get(object_name, [])):
+                            hook = getattr(module, "on_animation_event", None)
+                            if not callable(hook):
+                                continue
+                            try:
+                                hook(api, str(event.get("name", "")))
+                            except Exception as exc:
+                                _send(events, {"type": "script_log", "level": "ERROR", "message": f"{object_name}:{path}:on_animation_event: {exc}"})
+                        _send(events, {"type": "animation_event", "name": object_name, "state": name, "event": str(event.get("name", "")), "frame": event_frame, "payload": event.get("payload")})
             obj["_animation_time"] = elapsed
             obj["_animation_frame"] = frame
+            obj["_animation_raw_frame"] = raw_frame
 
     def view_transform() -> tuple[float, float, float]:
         if view_mode == "game":
@@ -752,6 +785,7 @@ def run_viewport(
             obj["_current_animation_name"] = str(animator.get("active_clip", "Idle"))
             obj["_animation_time"] = 0.0
             obj["_animation_frame"] = 0
+            obj["_animation_raw_frame"] = -1
         declared = sum(len(obj.get("scripts", [])) for obj in objects.values())
         _send(events, {"type": "script_log", "level": "INFO", "message": f"Play Mode recebeu {len(objects)} objeto(s) e {declared} script(s)"})
         for name, obj in objects.items():
@@ -792,7 +826,7 @@ def run_viewport(
                                     module = bundled_module
                                     update = bundled_update
                                     update_mode = "simple"
-                    event_hooks = ("on_collision", "on_collision_exit", "on_trigger", "on_trigger_exit")
+                    event_hooks = ("on_collision", "on_collision_exit", "on_trigger", "on_trigger_exit", "on_animation_event")
                     if not callable(update) and any(callable(getattr(module, hook, None)) for hook in event_hooks):
                         update = lambda game, dt: None
                         update_mode = "simple"
@@ -1398,6 +1432,7 @@ def run_viewport(
                                     obj["_current_animation_name"] = str(val)
                                     obj["_animation_time"] = 0.0
                                     obj["_animation_frame"] = 0
+                                    obj["_animation_raw_frame"] = -1
                                     # Força o componente de animação (se houver) a trocar
                                     anim = obj.get("animator")
                                     if isinstance(anim, dict):
@@ -1409,6 +1444,7 @@ def run_viewport(
                                         obj["_current_animation_name"] = controller.current_state
                                         obj["_animation_time"] = 0.0
                                         obj["_animation_frame"] = 0
+                                        obj["_animation_raw_frame"] = -1
                                 elif cmd in {"animator_set_bool", "animator_set_float"} and isinstance(val, dict):
                                     controller = animator_controllers.get(name)
                                     if controller is not None:
