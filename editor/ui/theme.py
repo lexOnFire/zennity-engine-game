@@ -79,7 +79,7 @@ QTabBar::tab:selected { background: $SURFACE; border-color: $BORDER; border-bott
 QTabWidget#SceneGameTabs QTabBar::tab:selected { color: $ACCENT_HOVER; font-weight: 600; }
 QTabWidget#BottomPanelTabs QTabBar::tab { min-width: 82px; padding: 6px 12px; }
 
-QWidget#AnimationWorkspace, QWidget#ConsolePanel, QFrame#ProfilerPanel {
+QWidget#AnimationWorkspace, QWidget#LogicWorkspace, QWidget#ConsolePanel, QFrame#ProfilerPanel {
     background: $SURFACE;
 }
 QWidget#AnimationToolbar, QWidget#ConsoleToolbar {
@@ -92,6 +92,29 @@ QLabel#WorkspaceContext { color: $ACCENT_HOVER; font-weight: 600; }
 QLabel#WorkspaceStatus, QLabel#PanelHint { color: $TEXT_MUTED; }
 QLabel#WorkspaceStatus[uiState="saved"] { color: $SUCCESS; }
 QLabel#WorkspaceStatus[uiState="dirty"] { color: $WARNING; }
+
+QWidget#LogicToolbar, QWidget#LogicCategories {
+    background: $SURFACE_RAISED;
+    border: 1px solid $BORDER;
+    border-radius: $RADIUSpx;
+}
+QWidget#LogicCategories QPushButton { min-width: 92px; padding: 7px 12px; }
+QWidget#LogicCategories QPushButton:checked {
+    background: $ACCENT_SOFT;
+    border-color: $ACCENT;
+    color: #ffffff;
+}
+QFrame#LogicPalettePanel, QFrame#LogicPropertiesPanel {
+    background: $SURFACE;
+    border: 1px solid $BORDER;
+    border-radius: $RADIUSpx;
+}
+QListWidget#LogicNodePalette, QTreeWidget#LogicPropertyTree { border: none; }
+QGraphicsView#LogicGraphView {
+    border: 1px solid $BORDER_STRONG;
+    border-radius: $RADIUSpx;
+    background: #17191f;
+}
 QFrame#AnimationLibraryPanel, QWidget#AnimationPropertiesPanel {
     background: $BG;
     border: 1px solid $BORDER;

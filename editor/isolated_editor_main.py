@@ -43,6 +43,7 @@ from engine.animation.clip_asset import (
     save_animation_asset,
 )
 from engine.animation.controller_asset import load_animator_controller
+from engine.logic.graph_asset import load_logic_graph
 from editor.widgets.build_report_dialog import BuildReportDialog
 from editor.widgets.project_validation_dialog import ProjectValidationDialog
 from engine.build import (
@@ -121,10 +122,12 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             check.toggled.connect(self._refresh_console)
         self.console_clear_button.clicked.connect(self._clear_console)
         self.assets_tree.itemClicked.connect(self._preview_asset)
+        self.assets_tree.itemDoubleClicked.connect(self._open_logic_asset_item)
         self._connect_hierarchy_to_viewport()
         self._refresh_hierarchy()
         self._connect_inspector_to_viewport()
         self._configure_animation_workspace()
+        self._configure_logic_workspace()
         self.script_containers = []
         self._clear_inspector_view()
         self.add_component_button.clicked.connect(self._open_add_component_menu)
@@ -267,6 +270,24 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 details = f"<span style='color:{DEFAULT_TOKENS.danger}'>Asset inválido: {exc}</span><br>"
             self.preview_details_label.setText(
                 f"<b>{path.name}</b><br><br>Tipo: Animator Controller<br>{details}Tamanho: {size_str}<br>Modificado: {date_str}"
+            )
+            return
+
+        elif ext == ".zlogic":
+            self.preview_label.clear()
+            self.preview_label.setText("◇ Logic Graph")
+            try:
+                graph = load_logic_graph(path)
+                details = (
+                    f"Nome: {graph['name']}<br>"
+                    f"Nós: {len(graph['nodes'])}<br>"
+                    f"Conexões: {len(graph['edges'])}<br>"
+                    f"Variáveis: {len(graph['variables'])}<br>"
+                )
+            except (OSError, ValueError, json.JSONDecodeError) as exc:
+                details = f"<span style='color:{DEFAULT_TOKENS.danger}'>Asset inválido: {exc}</span><br>"
+            self.preview_details_label.setText(
+                f"<b>{path.name}</b><br><br>Tipo: Logic Graph Visual<br>{details}Tamanho: {size_str}<br>Modificado: {date_str}<br><br><i>Duplo clique para editar</i>"
             )
             return
 
@@ -545,17 +566,26 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
 
     def _change_view_mode(self, index: int) -> None:
         animation_mode = index == 2
+        logic_mode = index == 3
         self.animation_workspace.setVisible(animation_mode)
-        self.viewport_host.setVisible(not animation_mode)
+        self.logic_workspace.setVisible(logic_mode)
+        self.viewport_host.setVisible(not animation_mode and not logic_mode)
         if animation_mode:
             self._refresh_animation_library()
             self._log("INFO", "Aba alterada para: ANIMATION")
             if self._selected_name in self._objects_by_name:
                 self._update_inspector(self._selected_name)
             return
+        if logic_mode:
+            self._log("INFO", "Aba alterada para: LOGIC")
+            return
         mode = "scene" if index == 0 else "game"
         self._commands.put({"type": "set_view_mode", "mode": mode})
         self._log("INFO", f"Aba alterada para: {mode.upper()}")
+
+    def _configure_logic_workspace(self) -> None:
+        self.logic_workspace.message.connect(self._log)
+        self.logic_workspace.asset_changed.connect(self._refresh_assets)
 
     def _build_viewport_link_toolbar(self) -> None:
         toolbar = QToolBar("Ligação com Viewport")
@@ -622,6 +652,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     icon = "🎞 "
                 elif child.suffix.lower() == ".zanimator":
                     icon = "◉ "
+                elif child.suffix.lower() == ".zlogic":
+                    icon = "◇ "
                 else:
                     icon = "📄 "
                 item = QTreeWidgetItem([icon + child.name])
@@ -633,6 +665,14 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if root_path.exists():
             add_directory(root_item, root_path)
         root_item.setExpanded(True)
+
+    def _open_logic_asset_item(self, item: QTreeWidgetItem, _column: int = 0) -> None:
+        path_value = item.toolTip(0)
+        path = Path(path_value) if path_value else None
+        if path is None or not path.is_file() or path.suffix.lower() != ".zlogic":
+            return
+        self.viewport_tabs.setCurrentIndex(3)
+        self.logic_workspace.open_path(path)
 
     def _refresh_prefabs(self) -> None:
         self.prefab_tree.clear()

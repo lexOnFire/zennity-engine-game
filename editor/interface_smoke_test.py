@@ -37,6 +37,7 @@ from PySide6.QtWidgets import (
 )
 from editor.ui.icons import TOOLBAR_ICONS, component_title, editor_icon
 from editor.ui.empty_state import EmptyStateWidget
+from editor.widgets.logic_graph_editor import LogicGraphEditor
 
 
 class InterfaceSmokeTest(QMainWindow):
@@ -96,6 +97,7 @@ class InterfaceSmokeTest(QMainWindow):
         self.viewport_tabs.addTab(QWidget(), "Scene")
         self.viewport_tabs.addTab(QWidget(), "Game")
         self.viewport_tabs.addTab(QWidget(), "Animation")
+        self.viewport_tabs.addTab(QWidget(), "Logic")
 
         self.animation_workspace = QWidget()
         self.animation_workspace.setObjectName("AnimationWorkspace")
@@ -377,12 +379,16 @@ class InterfaceSmokeTest(QMainWindow):
         animation_layout.addWidget(self.animation_content_splitter, 1)
         self.animation_workspace.hide()
 
+        self.logic_workspace = LogicGraphEditor()
+        self.logic_workspace.hide()
+
         self.center_container = QWidget()
         layout = QVBoxLayout(self.center_container)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         layout.addWidget(self.viewport_tabs)
         layout.addWidget(self.animation_workspace)
+        layout.addWidget(self.logic_workspace)
         layout.addWidget(self.viewport_host)
         layout.setStretchFactor(self.viewport_host, 1)
 
