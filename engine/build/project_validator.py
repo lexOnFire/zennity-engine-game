@@ -25,6 +25,8 @@ RUNTIME_SOURCES = (
     "engine/animation/clip_asset.py",
     "engine/animation/controller_asset.py",
     "engine/behavior/controller_asset.py",
+    "engine/logic/graph_asset.py",
+    "engine/logic/runtime.py",
     "engine/build/runtime_scene_loader.py",
 )
 
@@ -165,8 +167,6 @@ def _validate_scene(root: Path, payload: dict[str, Any], report: ProjectValidati
                 has_canvas = has_canvas or kind == "canvas"
                 _check_asset(root, properties.get("sprite_path") or properties.get("path"), "UI", name, report, checked_paths)
 
-        for script in components.get("scripts", item.get("scripts", [])):
-            _validate_script(root, script, name, report, checked_paths)
         audio = components.get("audio", item.get("audio"))
         if isinstance(audio, dict):
             path = audio.get("path") or audio.get("clip")
@@ -186,10 +186,6 @@ def _validate_scene(root: Path, payload: dict[str, Any], report: ProjectValidati
         animator = editor_data.get("animator", item.get("animator"))
         if isinstance(animator, dict):
             _validate_animator(root, animator, name, report, checked_paths)
-        behavior = editor_data.get("behavior", item.get("behavior"))
-        if isinstance(behavior, dict):
-            _validate_behavior(root, behavior, name, report, checked_paths)
-
     if not has_camera:
         report.add("warning", "Runtime", "Nenhuma câmera principal ativa foi encontrada.")
     if not has_player:

@@ -40,6 +40,22 @@ from editor.ui.empty_state import EmptyStateWidget
 from editor.widgets.logic_graph_editor import LogicGraphEditor
 
 
+class DetachedWorkspaceWindow(QMainWindow):
+    """Janela de ferramenta independente que apenas se oculta ao fechar."""
+
+    def __init__(self, title: str, workspace: QWidget, parent: QWidget | None = None) -> None:
+        super().__init__(parent, Qt.Window)
+        self.setWindowTitle(title)
+        self.resize(1180, 760)
+        self.setMinimumSize(820, 560)
+        self.setCentralWidget(workspace)
+        workspace.show()
+
+    def closeEvent(self, event) -> None:
+        event.ignore()
+        self.hide()
+
+
 class InterfaceSmokeTest(QMainWindow):
     """Shell do editor para validar dock, splitter, menu e resize do Qt."""
 
@@ -96,8 +112,6 @@ class InterfaceSmokeTest(QMainWindow):
         # sob um container que o mantém ativo e visível.
         self.viewport_tabs.addTab(QWidget(), "Scene")
         self.viewport_tabs.addTab(QWidget(), "Game")
-        self.viewport_tabs.addTab(QWidget(), "Animation")
-        self.viewport_tabs.addTab(QWidget(), "Logic")
 
         self.animation_workspace = QWidget()
         self.animation_workspace.setObjectName("AnimationWorkspace")
@@ -377,18 +391,15 @@ class InterfaceSmokeTest(QMainWindow):
         self.animation_content_splitter.setStretchFactor(2, 0)
         self.animation_content_splitter.setSizes([170, 430, 250])
         animation_layout.addWidget(self.animation_content_splitter, 1)
-        self.animation_workspace.hide()
-
         self.logic_workspace = LogicGraphEditor()
-        self.logic_workspace.hide()
+        self.animation_window = DetachedWorkspaceWindow("Zennity — Editor de Animação", self.animation_workspace, self)
+        self.logic_window = DetachedWorkspaceWindow("Zennity — Editor de Lógica Visual", self.logic_workspace, self)
 
         self.center_container = QWidget()
         layout = QVBoxLayout(self.center_container)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         layout.addWidget(self.viewport_tabs)
-        layout.addWidget(self.animation_workspace)
-        layout.addWidget(self.logic_workspace)
         layout.addWidget(self.viewport_host)
         layout.setStretchFactor(self.viewport_host, 1)
 
@@ -409,7 +420,7 @@ class InterfaceSmokeTest(QMainWindow):
         assets.setObjectName("AssetsTree")
         assets.setHeaderHidden(True)
         asset_root = QTreeWidgetItem(["Assets"])
-        asset_root.addChildren([QTreeWidgetItem(["Scenes"]), QTreeWidgetItem(["Scripts"]), QTreeWidgetItem(["Textures"]), QTreeWidgetItem(["Audio"])])
+        asset_root.addChildren([QTreeWidgetItem(["Scenes"]), QTreeWidgetItem(["Logic"]), QTreeWidgetItem(["Animations"]), QTreeWidgetItem(["Textures"]), QTreeWidgetItem(["Audio"])])
         assets.addTopLevelItem(asset_root)
         assets.expandAll()
 

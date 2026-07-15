@@ -18,6 +18,8 @@ try:
     from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
     from engine.animation.controller_asset import AnimatorControllerRuntime, load_animator_controller
     from engine.behavior.controller_asset import BehaviorControllerRunner, load_behavior_controller
+    from engine.logic.graph_asset import load_logic_graph
+    from engine.logic.runtime import LogicGraphRuntime
 except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .audio_playback_state import set_channels_paused
     from .native_ui import NativeUIRenderer, normalize_ui
@@ -25,6 +27,8 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .clip_asset import animation_asset_to_clip, load_animation_asset
     from .controller_asset import AnimatorControllerRuntime, load_animator_controller
     from .behavior_controller import BehaviorControllerRunner, load_behavior_controller
+    from .logic_graph_asset import load_logic_graph
+    from .logic_runtime import LogicGraphRuntime
 
 
 def hydrate_animation_asset_clips(
@@ -116,6 +120,37 @@ def hydrate_behavior_controllers(
             results.append(("INFO", object_name, f"behavior carregado: {path.name} ({len(controller['states'])} estado(s))"))
         except (OSError, ValueError) as exc:
             results.append(("ERROR", object_name, f"falha ao carregar behavior {asset_path}: {exc}"))
+    return results
+
+
+def hydrate_logic_graphs(
+    objects: dict[str, dict[str, Any]], project_root: Path
+) -> list[tuple[str, str, str]]:
+    """Descobre automaticamente ``.zlogic`` e associa pelo nome ou Tag alvo."""
+    results: list[tuple[str, str, str]] = []
+    for obj in objects.values():
+        obj.pop("logic_graphs", None)
+    directory = project_root / "Assets" / "Logic"
+    if not directory.is_dir():
+        return results
+    for path in sorted(directory.rglob("*.zlogic"), key=lambda item: str(item).lower()):
+        try:
+            graph = load_logic_graph(path)
+            target = graph.get("target", {})
+            target_type = str(target.get("type", "name"))
+            wanted = str(target.get("value", "Player")).casefold()
+            matched = []
+            for name, obj in objects.items():
+                candidate = name if target_type == "name" else str(obj.get("tag", ""))
+                if candidate.casefold() == wanted:
+                    obj.setdefault("logic_graphs", []).append({"path": path.relative_to(project_root).as_posix(), "graph": graph})
+                    matched.append(name)
+            if matched:
+                results.append(("INFO", ", ".join(matched), f"Logic Graph carregado: {path.name}"))
+            else:
+                results.append(("WARNING", wanted or "<sem alvo>", f"Logic Graph sem objeto alvo: {path.name}"))
+        except (OSError, ValueError) as exc:
+            results.append(("ERROR", path.stem, f"falha ao carregar Logic Graph: {exc}"))
     return results
 
 
@@ -446,6 +481,7 @@ def run_viewport(
     script_apis: dict[str, PlayScriptAPI] = {}
     animator_controllers: dict[str, AnimatorControllerRuntime] = {}
     behavior_runners: dict[str, BehaviorControllerRunner] = {}
+    logic_runtimes: dict[str, list[tuple[str, LogicGraphRuntime]]] = {}
     animator_event_signatures: dict[str, tuple[Any, ...]] = {}
     active_contacts: dict[tuple[str, str], bool] = {}
     audio_channels: dict[str, Any] = {}
@@ -474,6 +510,9 @@ def run_viewport(
         )
 
     def controlled_object() -> tuple[str, dict[str, Any]] | tuple[None, None]:
+        for name in logic_runtimes:
+            if name in objects:
+                return name, objects[name]
         for name in script_instances:
             if name in objects:
                 return name, objects[name]
@@ -484,6 +523,7 @@ def run_viewport(
         script_apis.clear()
         animator_controllers.clear()
         behavior_runners.clear()
+        logic_runtimes.clear()
         for level, object_name, message in hydrate_animation_asset_clips(objects, Path.cwd()):
             _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
         for level, object_name, message in hydrate_animator_controllers(objects, Path.cwd()):
@@ -848,6 +888,9 @@ def run_viewport(
         )
 
     def controlled_object() -> tuple[str, dict[str, Any]] | tuple[None, None]:
+        for name in logic_runtimes:
+            if name in objects:
+                return name, objects[name]
         for name in script_instances:
             if name in objects:
                 return name, objects[name]
@@ -858,12 +901,13 @@ def run_viewport(
         script_apis.clear()
         animator_controllers.clear()
         behavior_runners.clear()
+        logic_runtimes.clear()
         animator_event_signatures.clear()
         for level, object_name, message in hydrate_animation_asset_clips(objects, Path.cwd()):
             _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
         for level, object_name, message in hydrate_animator_controllers(objects, Path.cwd()):
             _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
-        for level, object_name, message in hydrate_behavior_controllers(objects, Path.cwd()):
+        for level, object_name, message in hydrate_logic_graphs(objects, Path.cwd()):
             _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
         for name, obj in objects.items():
             animator = obj.get("animator")
@@ -880,6 +924,24 @@ def run_viewport(
             obj["_animation_time"] = 0.0
             obj["_animation_frame"] = 0
             obj["_animation_raw_frame"] = -1
+        for name, obj in objects.items():
+            entries = obj.get("logic_graphs", [])
+            if not isinstance(entries, list):
+                continue
+            for entry in entries:
+                graph = entry.get("graph") if isinstance(entry, dict) else None
+                if not isinstance(graph, dict):
+                    continue
+                try:
+                    api = script_apis.setdefault(name, PlayScriptAPI(name, obj, events, objects))
+                    runtime = LogicGraphRuntime(graph)
+                    runtime.start(api)
+                    logic_runtimes.setdefault(name, []).append((str(entry.get("path", graph.get("name", "Logic Graph"))), runtime))
+                except Exception as exc:
+                    _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}: Logic Graph: {exc}"})
+        loaded_graphs = sum(len(entries) for entries in logic_runtimes.values())
+        _send(events, {"type": "script_log", "level": "INFO", "message": f"Play Mode carregou {loaded_graphs} Logic Graph(s); scripts Python estão desativados"})
+        return
         declared = sum(len(obj.get("scripts", [])) for obj in objects.values())
         _send(events, {"type": "script_log", "level": "INFO", "message": f"Play Mode recebeu {len(objects)} objeto(s) e {declared} script(s)"})
         for name, obj in objects.items():
@@ -973,6 +1035,14 @@ def run_viewport(
         _send(events, {"type": "script_log", "level": "INFO", "message": f"Play Mode carregou {loaded_behaviors} Behavior Controller(s)"})
 
     def stop_scripts() -> None:
+        logic_runtimes.clear()
+        script_instances.clear()
+        script_apis.clear()
+        animator_controllers.clear()
+        behavior_runners.clear()
+        animator_event_signatures.clear()
+        active_contacts.clear()
+        return
         for name, runner in list(behavior_runners.items()):
             try:
                 api = script_apis.get(name)
@@ -1533,6 +1603,43 @@ def run_viewport(
                 "jump": bool(forwarded_input["jump"] or keys[pygame.K_SPACE]),
                 "restart": bool(forwarded_input["restart"] or keys[pygame.K_r]),
             }
+            for name, runtimes in list(logic_runtimes.items()):
+                obj = objects.get(name)
+                api = script_apis.get(name)
+                if obj is None or api is None or not obj.get("active", True):
+                    continue
+                api.begin_frame(input_state)
+                for graph_path, runtime in list(runtimes):
+                    try:
+                        runtime.update(api, dt)
+                    except Exception as exc:
+                        runtimes.remove((graph_path, runtime))
+                        _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{graph_path}: {exc}"})
+                for instruction in obj.pop("script_instructions", []):
+                    if not isinstance(instruction, dict):
+                        continue
+                    cmd = instruction.get("command")
+                    val = instruction.get("value")
+                    if cmd == "animator_play" and val:
+                        controller = animator_controllers.get(name)
+                        if controller is not None and controller.play(str(val)):
+                            obj["_animator_state"] = controller.current_state
+                            obj["_current_animation_name"] = controller.current_state
+                            obj["_animation_time"] = 0.0
+                            obj["_animation_frame"] = 0
+                            obj["_animation_raw_frame"] = -1
+                    elif cmd == "play_sound" and val:
+                        play_audio_file(f"logic:{name}", str(val))
+                    elif cmd == "set_hud" and isinstance(val, dict):
+                        hud_entries[str(val.get("key", "logic"))] = dict(val)
+                    elif cmd == "remove_hud":
+                        hud_entries.pop(str(val), None)
+                    elif cmd == "restart_scene":
+                        restart_requested = True
+                if obj.pop("_jump_requested", False) and grounded.get(name, False):
+                    velocities_y[name] = -float(obj.pop("_jump_force", 420.0))
+                    grounded[name] = False
+                    obj["_grounded"] = False
             for name, instances in list(script_instances.items()):
                 obj = objects.get(name)
                 if obj is None:

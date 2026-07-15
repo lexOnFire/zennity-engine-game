@@ -11,6 +11,7 @@ from .graph_asset import (
     save_logic_graph,
     validate_logic_graph,
 )
+from .runtime import LogicGraphRuntime
 
 __all__ = [
     "LOGIC_GRAPH_FORMAT",
@@ -22,4 +23,5 @@ __all__ = [
     "normalize_logic_graph",
     "save_logic_graph",
     "validate_logic_graph",
+    "LogicGraphRuntime",
 ]

@@ -10,6 +10,7 @@ from engine.logic.graph_asset import (
     save_logic_graph,
     validate_logic_graph,
 )
+from engine.logic.runtime import LogicGraphRuntime
 
 
 def test_logic_graph_round_trip_uses_zlogic_extension(tmp_path):
@@ -52,3 +53,42 @@ def test_player_movement_demo_contains_expected_visual_flow():
     assert {"event_update", "input_axis", "if_else", "move", "key_pressed", "is_grounded", "jump"} <= node_types
     assert len(graph["edges"]) == 7
     assert not validate_logic_graph(graph)
+
+
+def test_player_movement_demo_executes_move_and_jump_nodes():
+    root = Path(__file__).resolve().parents[2]
+    runtime = LogicGraphRuntime(load_logic_graph(root / "Assets/Logic/PlayerMovement.zlogic"))
+
+    class Animator:
+        def __init__(self):
+            self.states = []
+
+        def play(self, state):
+            self.states.append(state)
+
+    class Game:
+        grounded = True
+
+        def __init__(self):
+            self.x = 0.0
+            self.jumps = []
+            self.animator = Animator()
+            self._pressed = True
+
+        def axis(self, negative, positive):
+            assert (negative, positive) == ("a", "d")
+            return 1
+
+        def key_pressed(self, key):
+            return self._pressed and key == "space"
+
+        def move(self, amount, _dy=0.0):
+            self.x += amount
+
+        def jump(self, force):
+            self.jumps.append(force)
+
+    game = Game()
+    runtime.update(game, 0.5)
+    assert game.x == 110.0
+    assert game.jumps == [440.0]

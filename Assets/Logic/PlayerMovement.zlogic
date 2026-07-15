@@ -2,6 +2,7 @@
   "format": "zennity.logic_graph",
   "version": 1,
   "name": "PlayerMovement",
+  "target": {"type": "name", "value": "Player"},
   "variables": {"speed": {"type": "float", "default": 220.0}},
   "nodes": [
     {"id": "update", "type": "event_update", "title": "A cada frame", "category": "Eventos", "position": [40, 180], "properties": {}},

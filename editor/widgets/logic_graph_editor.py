@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QButtonGroup,
     QFileDialog,
     QFrame,
+    QComboBox,
     QGraphicsEllipseItem,
     QGraphicsItem,
     QGraphicsPathItem,
@@ -23,6 +24,7 @@ from PySide6.QtWidgets import (
     QGraphicsView,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QMessageBox,
@@ -222,6 +224,17 @@ class LogicGraphEditor(QWidget):
         self.demo_button.setIcon(editor_icon("open"))
         self.demo_button.setProperty("uiRole", "primary")
         toolbar.addWidget(self.demo_button)
+        toolbar.addSpacing(12)
+        toolbar.addWidget(QLabel("OBJETO ALVO"))
+        self.target_type = QComboBox()
+        self.target_type.addItem("Nome", "name")
+        self.target_type.addItem("Tag", "tag")
+        self.target_type.setMaximumWidth(82)
+        self.target_value = QLineEdit("Player")
+        self.target_value.setPlaceholderText("Player")
+        self.target_value.setMaximumWidth(150)
+        toolbar.addWidget(self.target_type)
+        toolbar.addWidget(self.target_value)
         toolbar.addStretch(1)
         self.fit_button = QPushButton("Enquadrar")
         self.connect_button = QPushButton("Conectar selecionados")
@@ -319,6 +332,8 @@ class LogicGraphEditor(QWidget):
         self.fit_button.clicked.connect(self.fit_graph)
         self.connect_button.clicked.connect(self.connect_selected)
         self.delete_button.clicked.connect(self.delete_selected)
+        self.target_type.currentIndexChanged.connect(lambda _index: self.mark_dirty())
+        self.target_value.textChanged.connect(lambda _text: self.mark_dirty())
 
     def _category_clicked(self, button_id: int) -> None:
         button = self.category_group.button(button_id)
@@ -353,6 +368,13 @@ class LogicGraphEditor(QWidget):
     def set_graph(self, graph: dict[str, Any], path: Path | None = None) -> None:
         self.graph = normalize_logic_graph(graph)
         self.current_path = path
+        target = self.graph.get("target", {"type": "name", "value": "Player"})
+        self.target_type.blockSignals(True)
+        self.target_value.blockSignals(True)
+        self.target_type.setCurrentIndex(max(0, self.target_type.findData(str(target.get("type", "name")))))
+        self.target_value.setText(str(target.get("value", "Player")))
+        self.target_type.blockSignals(False)
+        self.target_value.blockSignals(False)
         self.scene.clear()
         self.node_items.clear()
         self.edge_items.clear()
@@ -471,7 +493,12 @@ class LogicGraphEditor(QWidget):
     def graph_data(self) -> dict[str, Any]:
         for node_id, item in self.node_items.items():
             item.node["position"] = [round(item.pos().x(), 2), round(item.pos().y(), 2)]
-        return normalize_logic_graph(deepcopy(self.graph))
+        data = deepcopy(self.graph)
+        data["target"] = {
+            "type": str(self.target_type.currentData() or "name"),
+            "value": self.target_value.text().strip() or "Player",
+        }
+        return normalize_logic_graph(data)
 
     def new_graph(self) -> None:
         if not self._confirm_discard():

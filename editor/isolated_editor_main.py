@@ -88,7 +88,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._viewport_resize_timer.timeout.connect(self._flush_viewport_resize)
         self._initial_scene_snapshot = [
             {"id": "floor", "name": "Chao", "x": 0.0, "y": 150.0, "w": 600.0, "h": 32.0, "rotation": 0.0, "color": (91, 194, 100), "rigidbody": {"is_kinematic": True, "use_gravity": False}, "collider": {"type": "box"}},
-            {"id": "player", "name": "Player", "x": 0.0, "y": 0.0, "w": 36.0, "h": 48.0, "rotation": 0.0, "color": (88, 117, 255), "rigidbody": {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}, "collider": {"type": "box"}, "scripts": ["Assets/Scripts/player_controller_2d.py"]},
+            {"id": "player", "name": "Player", "x": 0.0, "y": 0.0, "w": 36.0, "h": 48.0, "rotation": 0.0, "color": (88, 117, 255), "rigidbody": {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}, "collider": {"type": "box"}},
         ]
         self._scene_snapshot = deepcopy(self._initial_scene_snapshot)
         self._scene_document: dict | None = None
@@ -364,7 +364,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 if event.source() is not self.assets_tree:
                     return super().eventFilter(watched, event)
                 path = self._dragged_asset_path()
-                if path is not None and path.suffix.lower() in {".py", ".zanim", ".zanimator", ".png", ".jpg", ".jpeg", ".bmp", ".webp"}:
+                if path is not None and path.suffix.lower() in {".zanim", ".zanimator", ".zlogic", ".png", ".jpg", ".jpeg", ".bmp", ".webp"}:
                     event.acceptProposedAction()
                     return True
             elif event.type() == QEvent.DragMove:
@@ -565,20 +565,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self.statusBar().showMessage(f"Não foi possível abrir o editor para {path.name}")
 
     def _change_view_mode(self, index: int) -> None:
-        animation_mode = index == 2
-        logic_mode = index == 3
-        self.animation_workspace.setVisible(animation_mode)
-        self.logic_workspace.setVisible(logic_mode)
-        self.viewport_host.setVisible(not animation_mode and not logic_mode)
-        if animation_mode:
-            self._refresh_animation_library()
-            self._log("INFO", "Aba alterada para: ANIMATION")
-            if self._selected_name in self._objects_by_name:
-                self._update_inspector(self._selected_name)
-            return
-        if logic_mode:
-            self._log("INFO", "Aba alterada para: LOGIC")
-            return
         mode = "scene" if index == 0 else "game"
         self._commands.put({"type": "set_view_mode", "mode": mode})
         self._log("INFO", f"Aba alterada para: {mode.upper()}")
@@ -586,6 +572,26 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
     def _configure_logic_workspace(self) -> None:
         self.logic_workspace.message.connect(self._log)
         self.logic_workspace.asset_changed.connect(self._refresh_assets)
+        animation_action = QAction(editor_icon("animation"), "Editor de Animação", self)
+        animation_action.triggered.connect(self._show_animation_window)
+        logic_action = QAction(editor_icon("script"), "Editor de Lógica Visual", self)
+        logic_action.triggered.connect(self._show_logic_window)
+        self.editor_menus["Janela"].addSeparator()
+        self.editor_menus["Janela"].addAction(animation_action)
+        self.editor_menus["Janela"].addAction(logic_action)
+
+    def _show_animation_window(self) -> None:
+        self._refresh_animation_library()
+        self.animation_window.show()
+        self.animation_window.raise_()
+        self.animation_window.activateWindow()
+        self._log("INFO", "Editor de Animação aberto")
+
+    def _show_logic_window(self) -> None:
+        self.logic_window.show()
+        self.logic_window.raise_()
+        self.logic_window.activateWindow()
+        self._log("INFO", "Editor de Lógica Visual aberto")
 
     def _build_viewport_link_toolbar(self) -> None:
         toolbar = QToolBar("Ligação com Viewport")
@@ -640,7 +646,12 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
 
         def add_directory(parent_item: QTreeWidgetItem, directory: Path) -> None:
             for child in sorted(directory.iterdir(), key=lambda path: (path.is_file(), path.name.lower())):
-                if child.name.startswith(".") or child.suffix == ".meta":
+                if (
+                    child.name.startswith(".")
+                    or child.suffix == ".meta"
+                    or child.suffix.lower() in {".py", ".zbehavior"}
+                    or (child.is_dir() and child.name.casefold() in {"scripts", "behaviors"})
+                ):
                     continue
                 if child.is_dir():
                     icon = "📁 "
@@ -671,7 +682,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         path = Path(path_value) if path_value else None
         if path is None or not path.is_file() or path.suffix.lower() != ".zlogic":
             return
-        self.viewport_tabs.setCurrentIndex(3)
+        self._show_logic_window()
         self.logic_workspace.open_path(path)
 
     def _refresh_prefabs(self) -> None:
@@ -855,10 +866,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self._log("INFO", "Retomando Play pausado")
             else:
                 starting_play = True
-                attached = [(obj["name"], path) for obj in play_snapshot for path in obj.get("scripts", [])]
-                self._log("INFO", f"Play solicitado com {len(attached)} script(s) anexado(s)")
-                for object_name, path in attached:
-                    self._log("INFO", f"  {object_name} → {path}")
+                logic_directory = Path.cwd() / "Assets" / "Logic"
+                logic_assets = list(logic_directory.rglob("*.zlogic")) if logic_directory.exists() else []
+                self._log("INFO", f"Play solicitado com {len(logic_assets)} Logic Graph(s); scripts Python desativados")
                 self._commands.put({"type": "scene_snapshot", "objects": deepcopy(play_snapshot)})
                 audio_sources = {
                     obj["name"]: deepcopy(obj["audio"])
@@ -1003,8 +1013,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             obj["collider"] = {"type": "box"}
         if kind == "Trigger":
             obj["collider"]["is_trigger"] = True
-        if kind == "Player":
-            obj["scripts"] = ["Assets/Scripts/player_controller_2d.py"]
         if kind == "Camera":
             obj["component_names"] = ["Camera2D"]
             obj["camera"] = {"active": True, "zoom": 1.0}
@@ -1093,8 +1101,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 components["collider"] = collider
             if snapshot.get("camera") is not None or "Camera2D" in snapshot.get("component_names", []):
                 components["camera"] = deepcopy(snapshot.get("camera") or {"active": True, "zoom": 1.0})
-            if snapshot.get("scripts"):
-                components["scripts"] = list(dict.fromkeys(str(path) for path in snapshot["scripts"]))
             if isinstance(snapshot.get("audio"), dict):
                 components["audio"] = deepcopy(snapshot["audio"])
             existing_items = components.get("items") if isinstance(components.get("items"), list) else []
@@ -1177,9 +1183,6 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                         parsed_ui = scene_item_to_ui(component)
                         if parsed_ui is not None:
                             snapshot["ui"] = parsed_ui
-                if components.get("scripts"):
-                    snapshot["scripts"] = [str(script) for script in components["scripts"]]
-                    component_names.extend(f"Script: {script}" for script in components["scripts"])
                 if component_names:
                     snapshot["component_names"] = component_names
                 snapshots.append(snapshot)
@@ -2147,7 +2150,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._update_inspector(self._selected_name)
 
     def _tick_animation_preview(self) -> None:
-        if not self._animation_preview_playing or self.viewport_tabs.currentIndex() != 2:
+        if not self._animation_preview_playing or not self.animation_window.isVisible():
             return
         animator = None
         clip = None
@@ -2456,7 +2459,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if not picker.exec():
             return
         if picker.requested_action == "create":
-            self.viewport_tabs.setCurrentIndex(2)
+            self._show_animation_window()
             self._new_animation_asset()
             return
         if picker.requested_action == "empty":
@@ -2691,7 +2694,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 b_w.deleteLater()
             self.script_containers.clear()
 
-            scripts_list = obj.get("scripts", [])
+            scripts_list = []
             for s_path in scripts_list:
                 s_name = Path(s_path).name
 

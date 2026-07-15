@@ -78,6 +78,8 @@ def _validate_export_inputs(project_root: Path, scene_path: Path, report: BuildR
         "engine/animation/clip_asset.py",
         "engine/animation/controller_asset.py",
         "engine/behavior/controller_asset.py",
+        "engine/logic/graph_asset.py",
+        "engine/logic/runtime.py",
         "engine/build/runtime_scene_loader.py",
     )
     for relative in runtime_sources:
@@ -122,6 +124,8 @@ def _write_development_project(project_root: Path, scene_path: Path, destination
         project_root / "engine" / "animation" / "clip_asset.py": runtime_dir / "clip_asset.py",
         project_root / "engine" / "animation" / "controller_asset.py": runtime_dir / "controller_asset.py",
         project_root / "engine" / "behavior" / "controller_asset.py": runtime_dir / "behavior_controller.py",
+        project_root / "engine" / "logic" / "graph_asset.py": runtime_dir / "logic_graph_asset.py",
+        project_root / "engine" / "logic" / "runtime.py": runtime_dir / "logic_runtime.py",
         project_root / "engine" / "build" / "runtime_scene_loader.py": runtime_dir / "scene_loader.py",
     }
     for source, target in runtime_sources.items():
@@ -182,13 +186,20 @@ def _validate_exported_project(destination: Path, report: BuildReport) -> None:
         "zennity_runtime/clip_asset.py",
         "zennity_runtime/controller_asset.py",
         "zennity_runtime/behavior_controller.py",
+        "zennity_runtime/logic_graph_asset.py",
+        "zennity_runtime/logic_runtime.py",
         "zennity_runtime/scene_loader.py",
     )
     for relative in required:
         path = destination / relative
         if not path.is_file():
             report.add_error("Arquivo obrigatório não foi incluído no build.", relative)
-    for path in sorted(destination.rglob("*.py")):
+    # Somente o runtime da engine é executável. Arquivos Python antigos em
+    # Assets são preservados como backup de projeto, mas não fazem parte do jogo.
+    for relative in required:
+        path = destination / relative
+        if path.suffix.lower() != ".py" or not path.is_file():
+            continue
         try:
             compile(path.read_text(encoding="utf-8"), str(path), "exec")
         except (OSError, UnicodeError, SyntaxError) as exc:

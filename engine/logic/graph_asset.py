@@ -44,6 +44,7 @@ def default_logic_graph(name: str = "NewLogic") -> dict[str, Any]:
         "format": LOGIC_GRAPH_FORMAT,
         "version": LOGIC_GRAPH_VERSION,
         "name": str(name).strip() or "NewLogic",
+        "target": {"type": "name", "value": "Player"},
         "variables": {},
         "nodes": [],
         "edges": [],
@@ -65,6 +66,13 @@ def create_logic_node(node_type: str, position: tuple[float, float] = (0.0, 0.0)
 def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
     source = dict(data or {})
     result = default_logic_graph(str(source.get("name", "NewLogic")))
+    raw_target = source.get("target", {})
+    if isinstance(raw_target, Mapping):
+        target_type = str(raw_target.get("type", "name")).lower()
+        result["target"] = {
+            "type": target_type if target_type in {"name", "tag"} else "name",
+            "value": str(raw_target.get("value", "Player")).strip() or "Player",
+        }
     variables = source.get("variables", {})
     result["variables"] = deepcopy(variables) if isinstance(variables, Mapping) else {}
 
@@ -126,6 +134,8 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
     if not graph["nodes"]:
         issues.append({"level": "warning", "message": "O grafo não possui nós."})
         return issues
+    if not str(graph.get("target", {}).get("value", "")).strip():
+        issues.append({"level": "error", "message": "Escolha o objeto alvo do grafo."})
     event_nodes = [node for node in graph["nodes"] if node["type"].startswith("event_")]
     if not event_nodes:
         issues.append({"level": "warning", "message": "Adicione Ao iniciar ou A cada frame para executar o grafo."})

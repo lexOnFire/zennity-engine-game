@@ -11,6 +11,9 @@ RUNTIME_SOURCES = (
     "engine/graphics/tint.py",
     "engine/animation/clip_asset.py",
     "engine/animation/controller_asset.py",
+    "engine/behavior/controller_asset.py",
+    "engine/logic/graph_asset.py",
+    "engine/logic/runtime.py",
     "engine/build/runtime_scene_loader.py",
 )
 
@@ -124,7 +127,8 @@ def test_exported_runtime_contains_all_standalone_dependencies(tmp_path: Path) -
     runtime = Path(report.destination) / "zennity_runtime"
     assert {path.name for path in runtime.glob("*.py")} == {
         "__init__.py", "viewport.py", "native_ui.py", "audio_playback_state.py", "sprite_rendering.py",
-        "tint.py", "clip_asset.py", "controller_asset.py", "scene_loader.py",
+        "tint.py", "clip_asset.py", "controller_asset.py", "behavior_controller.py",
+        "logic_graph_asset.py", "logic_runtime.py", "scene_loader.py",
     }
     launcher = (Path(report.destination) / "main.py").read_text(encoding="utf-8")
     assert "from zennity_runtime.scene_loader import load_objects" in launcher
@@ -149,14 +153,14 @@ def test_runtime_scene_loader_preserves_play_mode_components(tmp_path: Path) -> 
     player = _load_runtime_scene_loader().load_objects(scene)[0]
 
     assert (player["x"], player["y"], player["w"], player["h"], player["rotation"]) == (10, 20, 36, 48, 30)
-    assert player["scripts"] == ["Assets/Scripts/player.py"]
+    assert "scripts" not in player
     assert player["audio"]["play_on_start"] is True
     assert player["ui"]["type"] == "text"
     assert player["ui"]["text"] == "VIDA: 3"
     assert player["animator"]["active_clip"] == "andar"
 
 
-def test_export_report_rejects_script_with_invalid_python(tmp_path: Path) -> None:
+def test_export_ignores_legacy_python_scripts(tmp_path: Path) -> None:
     project = tmp_path / "project"
     (project / "Assets" / "Scripts").mkdir(parents=True)
     (project / "Assets" / "Scripts" / "broken.py").write_text("def broken(:\n", encoding="utf-8")
@@ -168,8 +172,8 @@ def test_export_report_rejects_script_with_invalid_python(tmp_path: Path) -> Non
         project, scene, tmp_path / "output", "Broken Script"
     )
 
-    assert report.success is False
-    assert any("Python inválido" in issue.message and "broken.py" in issue.path for issue in report.errors)
+    assert report.success is True
+    assert not any(issue.category == "Script" for issue in report.errors)
 
 
 def test_export_preserves_distinct_uppercase_and_lowercase_asset_roots(tmp_path: Path) -> None:

@@ -48,7 +48,7 @@ def test_animation_picker_preserves_create_and_empty_compatibility_paths() -> No
     assert 'self._finish("create")' in picker
     assert 'self._finish("empty")' in picker
     assert 'picker.requested_action == "create"' in editor
-    assert "self.viewport_tabs.setCurrentIndex(2)" in editor
+    assert "self._show_animation_window()" in editor
     assert 'picker.requested_action == "empty"' in editor
     assert "já possui um Animator 2D" in editor
     assert '"active_clip": "Idle"' in editor

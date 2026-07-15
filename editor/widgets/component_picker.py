@@ -19,8 +19,7 @@ COMPONENT_CATALOG = (
     ("Interface", "Canvas", "ui_canvas", "Raiz da interface do jogo"),
     ("Interface", "UI Text", "ui_text", "Texto em screen-space"),
     ("Interface", "UI Image", "ui_image", "Imagem em screen-space"),
-    ("Interface", "UI Button", "ui_button", "Botão com evento para scripts"),
-    ("Código", "Script", "script", "Comportamento Python"),
+    ("Interface", "UI Button", "ui_button", "Botão com evento para o Logic Graph"),
 )
 
 

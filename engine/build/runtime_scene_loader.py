@@ -41,7 +41,6 @@ def _load_object(item: dict[str, Any]) -> dict[str, Any]:
         "layer": str(item.get("layer", "Default")),
         "static": bool(item.get("static", False)),
         "active": bool(item.get("active", item.get("enabled", True))),
-        "scripts": [str(script) for script in components.get("scripts", item.get("scripts", []))],
         "texture": str(visual.get("texture", item.get("texture", ""))),
         "renderer_enabled": bool(visual.get("enabled", item.get("renderer_enabled", True))),
         "render_layer": str(visual.get("layer", item.get("render_layer", "Default"))),
@@ -86,4 +85,3 @@ def _scene_item_to_ui(item: Any) -> dict[str, Any] | None:
         properties["path"] = properties.pop("sprite_path")
     properties.setdefault("visible", bool(item.get("enabled", True)))
     return properties
-

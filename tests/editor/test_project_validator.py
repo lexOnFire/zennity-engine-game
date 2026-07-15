@@ -12,6 +12,9 @@ RUNTIME_SOURCES = (
     "engine/graphics/tint.py",
     "engine/animation/clip_asset.py",
     "engine/animation/controller_asset.py",
+    "engine/behavior/controller_asset.py",
+    "engine/logic/graph_asset.py",
+    "engine/logic/runtime.py",
     "engine/build/runtime_scene_loader.py",
 )
 
@@ -40,7 +43,7 @@ def _write_scene(root: Path, objects: list[dict]) -> Path:
     return scene
 
 
-def test_valid_project_passes_with_player_camera_script_and_canvas(tmp_path: Path) -> None:
+def test_valid_project_passes_with_player_camera_and_canvas(tmp_path: Path) -> None:
     _runtime_files(tmp_path)
     script = tmp_path / "Assets" / "Scripts" / "player.py"
     script.parent.mkdir(parents=True)
@@ -68,7 +71,7 @@ def test_valid_project_passes_with_player_camera_script_and_canvas(tmp_path: Pat
     assert report.valid is True
     assert report.errors == []
     assert report.object_count == 3
-    assert report.checked_files == len(RUNTIME_SOURCES) + 2
+    assert report.checked_files == len(RUNTIME_SOURCES) + 1
 
 
 def test_validator_reports_duplicate_missing_assets_and_incomplete_runtime(tmp_path: Path) -> None:
@@ -97,7 +100,7 @@ def test_validator_reports_duplicate_missing_assets_and_incomplete_runtime(tmp_p
     assert any("nome duplicado" in message for message in messages)
     assert any("ID duplicado" in message for message in messages)
     assert any(issue.category == "Sprite" for issue in report.errors)
-    assert any(issue.category == "Script" for issue in report.errors)
+    assert not any(issue.category == "Script" for issue in report.errors)
     assert any(issue.category == "Física" for issue in report.errors)
     assert any(issue.category == "Exportação" for issue in report.errors)
     assert any("câmera" in message for message in messages)
@@ -105,7 +108,7 @@ def test_validator_reports_duplicate_missing_assets_and_incomplete_runtime(tmp_p
     assert any("Canvas" in message for message in messages)
 
 
-def test_script_without_play_hook_is_an_error(tmp_path: Path) -> None:
+def test_legacy_script_is_ignored_by_visual_logic_validator(tmp_path: Path) -> None:
     _runtime_files(tmp_path)
     script = tmp_path / "Assets" / "Scripts" / "helper.py"
     script.parent.mkdir(parents=True)
@@ -121,8 +124,8 @@ def test_script_without_play_hook_is_an_error(tmp_path: Path) -> None:
 
     report = _load_validator().validate_project(tmp_path, scene)
 
-    assert report.valid is False
-    assert any("hook compatível" in issue.message for issue in report.errors)
+    assert report.valid is True
+    assert not any(issue.category == "Script" for issue in report.errors)
 
 
 def test_validation_ui_and_export_gate_are_integrated() -> None:
