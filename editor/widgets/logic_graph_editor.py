@@ -131,6 +131,7 @@ class LogicPortItem(QGraphicsEllipseItem):
         self.base_color = PORT_COLORS.get(self.data_type, PORT_COLORS["any"])
         self.setPen(QPen(QColor("#f3f5f9"), 1.0))
         self.setBrush(QBrush(self.base_color))
+        self.setTransformOriginPoint(self.boundingRect().center())
         self.setAcceptHoverEvents(True)
         self.setAcceptedMouseButtons(Qt.LeftButton)
         self.setZValue(5)
@@ -140,14 +141,21 @@ class LogicPortItem(QGraphicsEllipseItem):
         return self.mapToScene(self.boundingRect().center())
 
     def set_connection_state(self, state: str = "normal") -> None:
-        if state == "valid":
+        if state == "candidate":
             self.setBrush(QBrush(QColor("#7ee787")))
-            self.setScale(1.28)
+            self.setPen(QPen(QColor("#ffffff"), 1.8))
+            self.setScale(1.5)
+        elif state == "compatible":
+            self.setBrush(QBrush(self.base_color.lighter(130)))
+            self.setPen(QPen(QColor("#f3f5f9"), 1.2))
+            self.setScale(1.16)
         elif state == "invalid":
             self.setBrush(QBrush(QColor("#5b606c")))
+            self.setPen(QPen(QColor("#777d89"), 1.0))
             self.setScale(0.9)
         else:
             self.setBrush(QBrush(self.base_color))
+            self.setPen(QPen(QColor("#f3f5f9"), 1.0))
             self.setScale(1.0)
 
     def hoverEnterEvent(self, event) -> None:
@@ -292,6 +300,7 @@ class LogicNodeItem(QGraphicsRectItem):
 class LogicGraphEditor(QWidget):
     message = Signal(str, str)
     asset_changed = Signal()
+    MAGNET_RADIUS_PIXELS = 42.0
 
     def __init__(self, project_root: str | Path | None = None, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -302,6 +311,7 @@ class LogicGraphEditor(QWidget):
         self.node_items: dict[str, LogicNodeItem] = {}
         self.edge_items: list[LogicEdgeItem] = []
         self._connection_origin: LogicPortItem | None = None
+        self._connection_candidate: LogicPortItem | None = None
         self._connection_preview: QGraphicsPathItem | None = None
         self._dirty = False
         self._updating_properties = False
@@ -409,7 +419,7 @@ class LogicGraphEditor(QWidget):
         self.palette.setObjectName("LogicNodePalette")
         self.palette.setToolTip("Duplo clique para adicionar um nó")
         palette_layout.addWidget(self.palette, 1)
-        hint = QLabel("Duplo clique adiciona o nó. Arraste uma porta até outra para conectar.")
+        hint = QLabel("Duplo clique adiciona o nó. Ao arrastar, o ímã encaixa na porta compatível mais próxima.")
         hint.setObjectName("PanelHint")
         hint.setWordWrap(True)
         palette_layout.addWidget(hint)
@@ -559,27 +569,58 @@ class LogicGraphEditor(QWidget):
     def begin_connection(self, port: LogicPortItem) -> None:
         self.cancel_connection()
         self._connection_origin = port
+        self._connection_candidate = None
         start = port.scene_position()
         preview = QGraphicsPathItem(self._connection_path(start, start))
         preview.setPen(QPen(port.base_color, 2.2, Qt.DashLine))
         preview.setZValue(1)
         self.scene.addItem(preview)
         self._connection_preview = preview
+        self._update_port_highlights()
+
+    def _update_port_highlights(self) -> None:
+        origin = self._connection_origin
         for item in self.node_items.values():
             for candidate in (*item.input_ports.values(), *item.output_ports.values()):
-                if candidate is port:
-                    candidate.set_connection_state("valid")
+                if candidate is origin or candidate is self._connection_candidate:
+                    candidate.set_connection_state("candidate")
                 else:
-                    candidate.set_connection_state("valid" if self._ports_compatible(port, candidate) else "invalid")
+                    compatible = origin is not None and self._ports_compatible(origin, candidate)
+                    candidate.set_connection_state("compatible" if compatible else "invalid")
+
+    def _nearest_compatible_port(self, scene_position: QPointF) -> LogicPortItem | None:
+        origin = self._connection_origin
+        if origin is None:
+            return None
+        zoom = max(abs(float(self.view.transform().m11())), 0.05)
+        radius = self.MAGNET_RADIUS_PIXELS / zoom
+        radius_squared = radius * radius
+        nearest: LogicPortItem | None = None
+        nearest_distance = radius_squared
+        for item in self.node_items.values():
+            for candidate in (*item.input_ports.values(), *item.output_ports.values()):
+                if not self._ports_compatible(origin, candidate):
+                    continue
+                delta = candidate.scene_position() - scene_position
+                distance = delta.x() * delta.x() + delta.y() * delta.y()
+                if distance <= nearest_distance:
+                    nearest = candidate
+                    nearest_distance = distance
+        return nearest
 
     def update_connection(self, scene_position: QPointF) -> None:
         if self._connection_origin is None or self._connection_preview is None:
             return
+        candidate = self._nearest_compatible_port(scene_position)
+        if candidate is not self._connection_candidate:
+            self._connection_candidate = candidate
+            self._update_port_highlights()
+        endpoint = candidate.scene_position() if candidate is not None else scene_position
         origin = self._connection_origin.scene_position()
         if self._connection_origin.direction == "output":
-            self._connection_preview.setPath(self._connection_path(origin, scene_position))
+            self._connection_preview.setPath(self._connection_path(origin, endpoint))
         else:
-            self._connection_preview.setPath(self._connection_path(scene_position, origin))
+            self._connection_preview.setPath(self._connection_path(endpoint, origin))
 
     def _port_at(self, scene_position: QPointF) -> LogicPortItem | None:
         for item in self.scene.items(scene_position):
@@ -589,7 +630,7 @@ class LogicGraphEditor(QWidget):
 
     def finish_connection(self, scene_position: QPointF) -> None:
         origin = self._connection_origin
-        target = self._port_at(scene_position)
+        target = self._connection_candidate or self._nearest_compatible_port(scene_position) or self._port_at(scene_position)
         if origin is None:
             return
         if target is None or target is origin:
@@ -635,6 +676,7 @@ class LogicGraphEditor(QWidget):
             self.scene.removeItem(self._connection_preview)
         self._connection_preview = None
         self._connection_origin = None
+        self._connection_candidate = None
         for item in self.node_items.values():
             for port in (*item.input_ports.values(), *item.output_ports.values()):
                 port.set_connection_state()

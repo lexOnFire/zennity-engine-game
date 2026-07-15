@@ -43,6 +43,10 @@ def test_logic_workspace_exposes_palette_canvas_connections_and_properties():
     assert "def begin_connection" in source
     assert "def finish_connection" in source
     assert "def cancel_connection" in source
+    assert "MAGNET_RADIUS_PIXELS" in source
+    assert "def _nearest_compatible_port" in source
+    assert "self._connection_candidate" in source
+    assert 'set_connection_state("candidate")' in source
     assert "_ports_compatible" in source
     assert "Qt.Key_Delete" in source
     assert "def duplicate_selected" in source
