@@ -38,6 +38,42 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "set_variable": {"title": "Definir variável", "category": "Variáveis", "properties": {"name": "value", "value": 0}},
 }
 
+# Portas são metadados de edição e permanecem separadas das propriedades dos
+# nós. Grafos antigos continuam válidos porque os nomes padrão são ``in`` e
+# ``next``, exatamente como antes desta infraestrutura visual.
+NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
+    "event_start": {"inputs": [], "outputs": [("next", "flow")]},
+    "event_update": {"inputs": [], "outputs": [("next", "flow")]},
+    "self_object": {"inputs": [], "outputs": [("object", "object")]},
+    "find_tag": {"inputs": [("in", "flow")], "outputs": [("next", "flow"), ("object", "object")]},
+    "input_axis": {"inputs": [("in", "flow")], "outputs": [("next", "flow"), ("value", "number")]},
+    "move": {"inputs": [("in", "flow"), ("value", "number")], "outputs": [("next", "flow")]},
+    "jump": {"inputs": [("in", "flow"), ("force", "number")], "outputs": [("next", "flow")]},
+    "if_else": {"inputs": [("in", "flow"), ("condition", "bool")], "outputs": [("true", "flow"), ("false", "flow")]},
+    "sequence": {"inputs": [("in", "flow")], "outputs": [("then_0", "flow"), ("then_1", "flow"), ("next", "flow")]},
+    "and": {"inputs": [("a", "bool"), ("b", "bool")], "outputs": [("value", "bool")]},
+    "or": {"inputs": [("a", "bool"), ("b", "bool")], "outputs": [("value", "bool")]},
+    "key_pressed": {"inputs": [("in", "flow")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
+    "is_grounded": {"inputs": [("in", "flow")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
+    "compare_number": {"inputs": [("in", "flow"), ("value", "number")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
+    "play_animation": {"inputs": [("in", "flow")], "outputs": [("next", "flow")]},
+    "play_sound": {"inputs": [("in", "flow")], "outputs": [("next", "flow")]},
+    "set_hud": {"inputs": [("in", "flow"), ("text", "text")], "outputs": [("next", "flow")]},
+    "get_variable": {"inputs": [("in", "flow")], "outputs": [("next", "flow"), ("value", "any")]},
+    "set_variable": {"inputs": [("in", "flow"), ("value", "any")], "outputs": [("next", "flow")]},
+}
+
+
+def node_port_definitions(node_type: str) -> dict[str, list[tuple[str, str]]]:
+    """Retorna cópias das portas de um tipo, com fallback compatível."""
+    definition = NODE_PORT_DEFINITIONS.get(str(node_type))
+    if definition is None:
+        return {"inputs": [("in", "flow")], "outputs": [("next", "flow")]}
+    return {
+        "inputs": list(definition.get("inputs", [])),
+        "outputs": list(definition.get("outputs", [])),
+    }
+
 
 def default_logic_graph(name: str = "NewLogic") -> dict[str, Any]:
     return {
@@ -140,9 +176,32 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
     if not event_nodes:
         issues.append({"level": "warning", "message": "Adicione Ao iniciar ou A cada frame para executar o grafo."})
     connected = {edge["from_node"] for edge in graph["edges"]} | {edge["to_node"] for edge in graph["edges"]}
+    nodes_by_id = {node["id"]: node for node in graph["nodes"]}
     for node in graph["nodes"]:
         if node["id"] not in connected and len(graph["nodes"]) > 1:
             issues.append({"level": "warning", "node": node["id"], "message": f"Nó desconectado: {node['title']}"})
+    occupied_inputs: set[tuple[str, str]] = set()
+    for edge in graph["edges"]:
+        source = nodes_by_id.get(edge["from_node"])
+        target = nodes_by_id.get(edge["to_node"])
+        if source is None or target is None:
+            continue
+        outputs = dict(node_port_definitions(source["type"])["outputs"])
+        inputs = dict(node_port_definitions(target["type"])["inputs"])
+        from_port = edge.get("from_port", "next")
+        to_port = edge.get("to_port", "in")
+        source_type = outputs.get(from_port)
+        target_type = inputs.get(to_port)
+        if source_type is None:
+            issues.append({"level": "error", "node": source["id"], "message": f"Saída inexistente: {from_port}"})
+        elif target_type is None:
+            issues.append({"level": "error", "node": target["id"], "message": f"Entrada inexistente: {to_port}"})
+        elif source_type != target_type and "any" not in {source_type, target_type}:
+            issues.append({"level": "error", "node": target["id"], "message": f"Tipos incompatíveis: {source_type} → {target_type}"})
+        input_key = (target["id"], str(to_port))
+        if input_key in occupied_inputs:
+            issues.append({"level": "error", "node": target["id"], "message": f"Entrada conectada mais de uma vez: {to_port}"})
+        occupied_inputs.add(input_key)
     return issues
 
 

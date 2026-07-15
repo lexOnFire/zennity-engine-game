@@ -7,6 +7,7 @@ from engine.logic.graph_asset import (
     default_logic_graph,
     load_logic_graph,
     normalize_logic_graph,
+    node_port_definitions,
     save_logic_graph,
     validate_logic_graph,
 )
@@ -92,3 +93,23 @@ def test_player_movement_demo_executes_move_and_jump_nodes():
     runtime.update(game, 0.5)
     assert game.x == 110.0
     assert game.jumps == [440.0]
+
+
+def test_condition_nodes_expose_named_typed_ports():
+    ports = node_port_definitions("if_else")
+    assert ("condition", "bool") in ports["inputs"]
+    assert ports["outputs"] == [("true", "flow"), ("false", "flow")]
+    assert ("value", "number") in node_port_definitions("input_axis")["outputs"]
+
+
+def test_validation_rejects_incompatible_or_unknown_ports():
+    graph = default_logic_graph("InvalidPorts")
+    event = create_logic_node("event_update")
+    move = create_logic_node("move")
+    graph["nodes"] = [event, move]
+    graph["edges"] = [{
+        "from_node": event["id"], "from_port": "missing",
+        "to_node": move["id"], "to_port": "value", "kind": "flow",
+    }]
+    messages = [issue["message"] for issue in validate_logic_graph(graph)]
+    assert any("Saída inexistente" in message for message in messages)

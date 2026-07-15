@@ -8,8 +8,8 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QPointF, QRectF, Qt, Signal
-from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QBrush
+from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal
+from PySide6.QtGui import QColor, QPainter, QPainterPath, QPainterPathStroker, QPen, QBrush
 from PySide6.QtWidgets import (
     QButtonGroup,
     QFileDialog,
@@ -44,6 +44,7 @@ from engine.logic.graph_asset import (
     default_logic_graph,
     load_logic_graph,
     normalize_logic_graph,
+    node_port_definitions,
     save_logic_graph,
     validate_logic_graph,
 )
@@ -60,10 +61,20 @@ CATEGORY_COLORS = {
     "Personalizado": QColor("#7f8b9c"),
 }
 
+PORT_COLORS = {
+    "flow": QColor("#d9dde7"),
+    "number": QColor("#58a6ff"),
+    "bool": QColor("#50c878"),
+    "text": QColor("#e6b85c"),
+    "object": QColor("#47b8c8"),
+    "any": QColor("#ae7df0"),
+}
+
 
 class LogicGraphView(QGraphicsView):
-    def __init__(self, scene: QGraphicsScene, parent: QWidget | None = None) -> None:
+    def __init__(self, scene: QGraphicsScene, editor: "LogicGraphEditor", parent: QWidget | None = None) -> None:
         super().__init__(scene, parent)
+        self.editor = editor
         self.setObjectName("LogicGraphView")
         self.setRenderHint(QPainter.Antialiasing, True)
         self.setDragMode(QGraphicsView.RubberBandDrag)
@@ -89,13 +100,113 @@ class LogicGraphView(QGraphicsView):
             return
         super().wheelEvent(event)
 
+    def keyPressEvent(self, event) -> None:
+        if event.key() == Qt.Key_D and event.modifiers() & Qt.ControlModifier:
+            self.editor.duplicate_selected()
+            event.accept()
+            return
+        if event.key() in (Qt.Key_Delete, Qt.Key_Backspace):
+            self.editor.delete_selected()
+            event.accept()
+            return
+        if event.key() == Qt.Key_Escape:
+            self.editor.cancel_connection()
+            event.accept()
+            return
+        super().keyPressEvent(event)
+
+
+class LogicPortItem(QGraphicsEllipseItem):
+    """Porta interativa que inicia e conclui uma conexão por arraste."""
+
+    SIZE = 12.0
+
+    def __init__(self, node: "LogicNodeItem", name: str, direction: str, data_type: str, y: float) -> None:
+        x = -self.SIZE / 2 if direction == "input" else node.WIDTH - self.SIZE / 2
+        super().__init__(x, y - self.SIZE / 2, self.SIZE, self.SIZE, node)
+        self.node = node
+        self.name = str(name)
+        self.direction = str(direction)
+        self.data_type = str(data_type)
+        self.base_color = PORT_COLORS.get(self.data_type, PORT_COLORS["any"])
+        self.setPen(QPen(QColor("#f3f5f9"), 1.0))
+        self.setBrush(QBrush(self.base_color))
+        self.setAcceptHoverEvents(True)
+        self.setAcceptedMouseButtons(Qt.LeftButton)
+        self.setZValue(5)
+        self.setToolTip(f"{self.name} • {self.data_type}")
+
+    def scene_position(self) -> QPointF:
+        return self.mapToScene(self.boundingRect().center())
+
+    def set_connection_state(self, state: str = "normal") -> None:
+        if state == "valid":
+            self.setBrush(QBrush(QColor("#7ee787")))
+            self.setScale(1.28)
+        elif state == "invalid":
+            self.setBrush(QBrush(QColor("#5b606c")))
+            self.setScale(0.9)
+        else:
+            self.setBrush(QBrush(self.base_color))
+            self.setScale(1.0)
+
+    def hoverEnterEvent(self, event) -> None:
+        if self.node.editor._connection_origin is None:
+            self.setScale(1.22)
+        super().hoverEnterEvent(event)
+
+    def hoverLeaveEvent(self, event) -> None:
+        if self.node.editor._connection_origin is None:
+            self.setScale(1.0)
+        super().hoverLeaveEvent(event)
+
+    def mousePressEvent(self, event) -> None:
+        self.node.editor.begin_connection(self)
+        event.accept()
+
+    def mouseMoveEvent(self, event) -> None:
+        self.node.editor.update_connection(event.scenePos())
+        event.accept()
+
+    def mouseReleaseEvent(self, event) -> None:
+        self.node.editor.finish_connection(event.scenePos())
+        event.accept()
+
+
+class LogicEdgeItem(QGraphicsPathItem):
+    """Conexão selecionável com cor determinada pelo tipo da porta."""
+
+    def __init__(self, path: QPainterPath, edge_id: str, data_type: str) -> None:
+        super().__init__(path)
+        self.edge_id = edge_id
+        self.base_color = PORT_COLORS.get(data_type, PORT_COLORS["any"])
+        self.setPen(QPen(self.base_color, 2.2))
+        self.setZValue(0)
+        self.setFlag(QGraphicsItem.ItemIsSelectable, True)
+        self.setData(0, edge_id)
+
+    def itemChange(self, change, value):
+        result = super().itemChange(change, value)
+        if change == QGraphicsItem.ItemSelectedHasChanged:
+            self.setPen(QPen(QColor("#ffffff") if bool(value) else self.base_color, 3.2 if bool(value) else 2.2))
+        return result
+
+    def shape(self) -> QPainterPath:
+        stroker = QPainterPathStroker()
+        stroker.setWidth(14.0)
+        return stroker.createStroke(self.path())
+
 
 class LogicNodeItem(QGraphicsRectItem):
-    WIDTH = 196.0
-    HEIGHT = 82.0
+    WIDTH = 210.0
+    MINIMUM_HEIGHT = 94.0
 
     def __init__(self, editor: "LogicGraphEditor", node: dict[str, Any]) -> None:
-        super().__init__(0.0, 0.0, self.WIDTH, self.HEIGHT)
+        ports = node_port_definitions(str(node.get("type", "")))
+        self.input_definitions = ports["inputs"]
+        self.output_definitions = ports["outputs"]
+        self.height = max(self.MINIMUM_HEIGHT, 62.0 + max(len(self.input_definitions), len(self.output_definitions), 1) * 22.0)
+        super().__init__(0.0, 0.0, self.WIDTH, self.height)
         self.editor = editor
         self.node = node
         self.setFlags(
@@ -124,27 +235,41 @@ class LogicNodeItem(QGraphicsRectItem):
         self.summary_item = QGraphicsTextItem("", self)
         self.summary_item.setDefaultTextColor(QColor("#b8beca"))
         self.summary_item.setTextWidth(self.WIDTH - 22.0)
-        self.summary_item.setPos(10.0, 34.0)
+        self.summary_item.setPos(10.0, self.height - 25.0)
         summary_font = self.summary_item.font()
         summary_font.setPointSizeF(8.5)
         self.summary_item.setFont(summary_font)
 
-        self.input_port = QGraphicsEllipseItem(-5.0, 36.0, 10.0, 10.0, self)
-        self.output_port = QGraphicsEllipseItem(self.WIDTH - 5.0, 36.0, 10.0, 10.0, self)
-        for port in (self.input_port, self.output_port):
-            port.setPen(QPen(QColor("#d9dde7"), 1.0))
-            port.setBrush(QBrush(color))
+        self.input_ports: dict[str, LogicPortItem] = {}
+        self.output_ports: dict[str, LogicPortItem] = {}
+        for index, (name, data_type) in enumerate(self.input_definitions):
+            y = 43.0 + index * 22.0
+            port = LogicPortItem(self, name, "input", data_type, y)
+            self.input_ports[name] = port
+            label = QGraphicsTextItem(name, self)
+            label.setDefaultTextColor(QColor("#aeb6c5"))
+            label.setPos(9.0, y - 12.0)
+        for index, (name, data_type) in enumerate(self.output_definitions):
+            y = 43.0 + index * 22.0
+            port = LogicPortItem(self, name, "output", data_type, y)
+            self.output_ports[name] = port
+            label = QGraphicsTextItem(name, self)
+            label.setDefaultTextColor(QColor("#aeb6c5"))
+            label.setTextWidth(76.0)
+            label.setPos(self.WIDTH - 84.0, y - 12.0)
         self.refresh_text()
 
     @property
     def node_id(self) -> str:
         return str(self.node["id"])
 
-    def input_position(self) -> QPointF:
-        return self.mapToScene(QPointF(0.0, 41.0))
+    def input_position(self, port_name: str = "in") -> QPointF:
+        port = self.input_ports.get(port_name) or next(iter(self.input_ports.values()), None)
+        return port.scene_position() if port is not None else self.mapToScene(QPointF(0.0, 43.0))
 
-    def output_position(self) -> QPointF:
-        return self.mapToScene(QPointF(self.WIDTH, 41.0))
+    def output_position(self, port_name: str = "next") -> QPointF:
+        port = self.output_ports.get(port_name) or next(iter(self.output_ports.values()), None)
+        return port.scene_position() if port is not None else self.mapToScene(QPointF(self.WIDTH, 43.0))
 
     def refresh_text(self) -> None:
         properties = self.node.get("properties", {})
@@ -175,9 +300,15 @@ class LogicGraphEditor(QWidget):
         self.current_path: Path | None = None
         self.graph = default_logic_graph()
         self.node_items: dict[str, LogicNodeItem] = {}
-        self.edge_items: list[QGraphicsPathItem] = []
+        self.edge_items: list[LogicEdgeItem] = []
+        self._connection_origin: LogicPortItem | None = None
+        self._connection_preview: QGraphicsPathItem | None = None
         self._dirty = False
         self._updating_properties = False
+        self._autosave_timer = QTimer(self)
+        self._autosave_timer.setSingleShot(True)
+        self._autosave_timer.setInterval(700)
+        self._autosave_timer.timeout.connect(self._autosave)
         self._build_ui()
         self._connect_ui()
         self.set_graph(self.graph)
@@ -278,7 +409,7 @@ class LogicGraphEditor(QWidget):
         self.palette.setObjectName("LogicNodePalette")
         self.palette.setToolTip("Duplo clique para adicionar um nó")
         palette_layout.addWidget(self.palette, 1)
-        hint = QLabel("Duplo clique adiciona o nó ao centro do grafo.")
+        hint = QLabel("Duplo clique adiciona o nó. Arraste uma porta até outra para conectar.")
         hint.setObjectName("PanelHint")
         hint.setWordWrap(True)
         palette_layout.addWidget(hint)
@@ -287,7 +418,7 @@ class LogicGraphEditor(QWidget):
 
         self.scene = QGraphicsScene(self)
         self.scene.setSceneRect(-2000.0, -1400.0, 4000.0, 2800.0)
-        self.view = LogicGraphView(self.scene)
+        self.view = LogicGraphView(self.scene, self)
         splitter.addWidget(self.view)
 
         properties_panel = QFrame()
@@ -306,7 +437,7 @@ class LogicGraphEditor(QWidget):
         self.property_tree.setHeaderLabels(["Propriedade", "Valor"])
         self.property_tree.setColumnWidth(0, 105)
         properties_layout.addWidget(self.property_tree, 1)
-        property_hint = QLabel("Edite a coluna Valor. Use Ctrl + roda do mouse para aproximar o grafo.")
+        property_hint = QLabel("Delete remove, Ctrl+D duplica e Esc cancela uma conexão. Ctrl + roda aproxima o grafo.")
         property_hint.setObjectName("PanelHint")
         property_hint.setWordWrap(True)
         properties_layout.addWidget(property_hint)
@@ -366,6 +497,8 @@ class LogicGraphEditor(QWidget):
         return item
 
     def set_graph(self, graph: dict[str, Any], path: Path | None = None) -> None:
+        self.cancel_connection()
+        self._autosave_timer.stop()
         self.graph = normalize_logic_graph(graph)
         self.current_path = path
         target = self.graph.get("target", {"type": "name", "value": "Player"})
@@ -397,18 +530,116 @@ class LogicGraphEditor(QWidget):
             target = self.node_items.get(str(edge.get("to_node")))
             if source is None or target is None:
                 continue
-            start = source.output_position()
-            end = target.input_position()
-            distance = max(70.0, abs(end.x() - start.x()) * 0.48)
-            path = QPainterPath(start)
-            path.cubicTo(start + QPointF(distance, 0.0), end - QPointF(distance, 0.0), end)
-            connection = QGraphicsPathItem(path)
-            connection.setPen(QPen(QColor("#aab2c2"), 2.0))
-            connection.setZValue(0)
-            connection.setFlag(QGraphicsItem.ItemIsSelectable, True)
-            connection.setData(0, str(edge.get("id")))
+            from_port = str(edge.get("from_port", "next"))
+            to_port = str(edge.get("to_port", "in"))
+            start = source.output_position(from_port)
+            end = target.input_position(to_port)
+            path = self._connection_path(start, end)
+            source_port = source.output_ports.get(from_port)
+            data_type = source_port.data_type if source_port is not None else str(edge.get("kind", "flow"))
+            connection = LogicEdgeItem(path, str(edge.get("id")), data_type)
             self.scene.addItem(connection)
             self.edge_items.append(connection)
+
+    @staticmethod
+    def _connection_path(start: QPointF, end: QPointF) -> QPainterPath:
+        distance = max(70.0, abs(end.x() - start.x()) * 0.48)
+        path = QPainterPath(start)
+        path.cubicTo(start + QPointF(distance, 0.0), end - QPointF(distance, 0.0), end)
+        return path
+
+    @staticmethod
+    def _ports_compatible(first: LogicPortItem, second: LogicPortItem) -> bool:
+        if first.node is second.node or first.direction == second.direction:
+            return False
+        source = first if first.direction == "output" else second
+        target = second if second.direction == "input" else first
+        return source.data_type == target.data_type or "any" in {source.data_type, target.data_type}
+
+    def begin_connection(self, port: LogicPortItem) -> None:
+        self.cancel_connection()
+        self._connection_origin = port
+        start = port.scene_position()
+        preview = QGraphicsPathItem(self._connection_path(start, start))
+        preview.setPen(QPen(port.base_color, 2.2, Qt.DashLine))
+        preview.setZValue(1)
+        self.scene.addItem(preview)
+        self._connection_preview = preview
+        for item in self.node_items.values():
+            for candidate in (*item.input_ports.values(), *item.output_ports.values()):
+                if candidate is port:
+                    candidate.set_connection_state("valid")
+                else:
+                    candidate.set_connection_state("valid" if self._ports_compatible(port, candidate) else "invalid")
+
+    def update_connection(self, scene_position: QPointF) -> None:
+        if self._connection_origin is None or self._connection_preview is None:
+            return
+        origin = self._connection_origin.scene_position()
+        if self._connection_origin.direction == "output":
+            self._connection_preview.setPath(self._connection_path(origin, scene_position))
+        else:
+            self._connection_preview.setPath(self._connection_path(scene_position, origin))
+
+    def _port_at(self, scene_position: QPointF) -> LogicPortItem | None:
+        for item in self.scene.items(scene_position):
+            if isinstance(item, LogicPortItem):
+                return item
+        return None
+
+    def finish_connection(self, scene_position: QPointF) -> None:
+        origin = self._connection_origin
+        target = self._port_at(scene_position)
+        if origin is None:
+            return
+        if target is None or target is origin:
+            self.cancel_connection()
+            return
+        if not self._ports_compatible(origin, target):
+            self.message.emit("WARNING", "Portas incompatíveis: conecte fluxo com fluxo e valores do mesmo tipo")
+            self.cancel_connection()
+            return
+        source = origin if origin.direction == "output" else target
+        destination = target if target.direction == "input" else origin
+        if any(
+            edge["from_node"] == source.node.node_id
+            and edge.get("from_port", "next") == source.name
+            and edge["to_node"] == destination.node.node_id
+            and edge.get("to_port", "in") == destination.name
+            for edge in self.graph["edges"]
+        ):
+            self.message.emit("WARNING", "Essa conexão já existe")
+            self.cancel_connection()
+            return
+        # Uma entrada representa uma única origem. Ao reconectar, o fio antigo
+        # é substituído, comportamento esperado em editores visuais.
+        self.graph["edges"] = [
+            edge for edge in self.graph["edges"]
+            if not (edge["to_node"] == destination.node.node_id and edge.get("to_port", "in") == destination.name)
+        ]
+        self.graph["edges"].append({
+            "id": uuid.uuid4().hex,
+            "from_node": source.node.node_id,
+            "from_port": source.name,
+            "to_node": destination.node.node_id,
+            "to_port": destination.name,
+            "kind": source.data_type,
+        })
+        self.cancel_connection(refresh=False)
+        self.refresh_connections()
+        self.mark_dirty()
+        self._update_validation()
+
+    def cancel_connection(self, refresh: bool = True) -> None:
+        if self._connection_preview is not None and self._connection_preview.scene() is self.scene:
+            self.scene.removeItem(self._connection_preview)
+        self._connection_preview = None
+        self._connection_origin = None
+        for item in self.node_items.values():
+            for port in (*item.input_ports.values(), *item.output_ports.values()):
+                port.set_connection_state()
+        if refresh:
+            self.view.viewport().update()
 
     def connect_selected(self) -> None:
         selected = [item for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)]
@@ -417,15 +648,30 @@ class LogicGraphEditor(QWidget):
             return
         selected.sort(key=lambda item: item.scenePos().x())
         source, target = selected
-        if any(edge["from_node"] == source.node_id and edge["to_node"] == target.node_id for edge in self.graph["edges"]):
+        source_port = next((port for port in source.output_ports.values() if port.data_type == "flow"), None)
+        target_port = next((port for port in target.input_ports.values() if port.data_type == "flow"), None)
+        if source_port is None or target_port is None:
+            self.message.emit("WARNING", "Esses nós não possuem portas de fluxo compatíveis; arraste as portas de valor")
+            return
+        if any(
+            edge["from_node"] == source.node_id
+            and edge.get("from_port", "next") == source_port.name
+            and edge["to_node"] == target.node_id
+            and edge.get("to_port", "in") == target_port.name
+            for edge in self.graph["edges"]
+        ):
             self.message.emit("WARNING", "Esses nós já estão conectados")
             return
+        self.graph["edges"] = [
+            edge for edge in self.graph["edges"]
+            if not (edge["to_node"] == target.node_id and edge.get("to_port", "in") == target_port.name)
+        ]
         self.graph["edges"].append({
             "id": uuid.uuid4().hex,
             "from_node": source.node_id,
-            "from_port": "next",
+            "from_port": source_port.name,
             "to_node": target.node_id,
-            "to_port": "in",
+            "to_port": target_port.name,
             "kind": "flow",
         })
         self.refresh_connections()
@@ -446,6 +692,38 @@ class LogicGraphEditor(QWidget):
             item = self.node_items.pop(node_id, None)
             if item is not None:
                 self.scene.removeItem(item)
+        self.refresh_connections()
+        self.mark_dirty()
+        self._update_validation()
+
+    def duplicate_selected(self) -> None:
+        selected = [item for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)]
+        if not selected:
+            return
+        old_ids = {item.node_id for item in selected}
+        id_map: dict[str, str] = {}
+        copies: list[dict[str, Any]] = []
+        for item in selected:
+            node = deepcopy(item.node)
+            new_id = uuid.uuid4().hex
+            id_map[item.node_id] = new_id
+            node["id"] = new_id
+            node["position"] = [float(item.pos().x()) + 32.0, float(item.pos().y()) + 32.0]
+            copies.append(node)
+        copied_edges = []
+        for edge in self.graph["edges"]:
+            if edge["from_node"] not in old_ids or edge["to_node"] not in old_ids:
+                continue
+            copied = deepcopy(edge)
+            copied["id"] = uuid.uuid4().hex
+            copied["from_node"] = id_map[edge["from_node"]]
+            copied["to_node"] = id_map[edge["to_node"]]
+            copied_edges.append(copied)
+        self.scene.clearSelection()
+        self.graph["nodes"].extend(copies)
+        self.graph["edges"].extend(copied_edges)
+        for node in copies:
+            self._create_node_item(node).setSelected(True)
         self.refresh_connections()
         self.mark_dirty()
         self._update_validation()
@@ -489,6 +767,7 @@ class LogicGraphEditor(QWidget):
             node_item.node.setdefault("properties", {})[key] = value
         node_item.refresh_text()
         self.mark_dirty()
+        self._update_validation()
 
     def graph_data(self) -> dict[str, Any]:
         for node_id, item in self.node_items.items():
@@ -558,6 +837,20 @@ class LogicGraphEditor(QWidget):
         if not self._dirty:
             self._dirty = True
             self._update_status()
+        if self.current_path is not None:
+            self._autosave_timer.start()
+
+    def _autosave(self) -> None:
+        if not self._dirty or self.current_path is None:
+            return
+        try:
+            save_logic_graph(self.current_path, self.graph_data())
+            self._dirty = False
+            self._update_status()
+            self.asset_changed.emit()
+            self.message.emit("INFO", f"Logic Graph salvo automaticamente: {self.current_path.name}")
+        except (OSError, ValueError) as exc:
+            self.message.emit("ERROR", f"Falha ao salvar automaticamente o Logic Graph: {exc}")
 
     def _update_status(self) -> None:
         name = self.current_path.name if self.current_path else str(self.graph.get("name", "NewLogic"))
@@ -570,9 +863,24 @@ class LogicGraphEditor(QWidget):
     def _update_validation(self) -> None:
         issues = validate_logic_graph(self.graph_data())
         warnings = sum(issue.get("level") == "warning" for issue in issues)
+        errors = sum(issue.get("level") == "error" for issue in issues)
+        node_levels: dict[str, str] = {}
+        for issue in issues:
+            node_id = str(issue.get("node", ""))
+            if not node_id:
+                continue
+            level = str(issue.get("level", "warning"))
+            if node_levels.get(node_id) != "error":
+                node_levels[node_id] = level
+        for node_id, item in self.node_items.items():
+            level = node_levels.get(node_id)
+            color = QColor("#ff5d62") if level == "error" else QColor("#e6b85c") if level == "warning" else QColor("#515662")
+            item.setPen(QPen(color, 2.2 if level else 1.2))
+            messages = [str(issue.get("message", "")) for issue in issues if str(issue.get("node", "")) == node_id]
+            item.setToolTip("\n".join(messages))
         self.validation_label.setText(
             f"{len(self.graph['nodes'])} nós • {len(self.graph['edges'])} conexões"
-            + (f" • {warnings} aviso(s)" if warnings else " • válido")
+            + (f" • {errors} erro(s) • {warnings} aviso(s)" if errors else f" • {warnings} aviso(s)" if warnings else " • válido")
         )
 
     def _confirm_discard(self) -> bool:

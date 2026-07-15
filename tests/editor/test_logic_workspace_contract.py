@@ -38,6 +38,16 @@ def test_logic_workspace_exposes_palette_canvas_connections_and_properties():
     source = _source("editor/widgets/logic_graph_editor.py")
     assert "class LogicGraphView(QGraphicsView)" in source
     assert "class LogicNodeItem(QGraphicsRectItem)" in source
+    assert "class LogicPortItem(QGraphicsEllipseItem)" in source
+    assert "class LogicEdgeItem(QGraphicsPathItem)" in source
+    assert "def begin_connection" in source
+    assert "def finish_connection" in source
+    assert "def cancel_connection" in source
+    assert "_ports_compatible" in source
+    assert "Qt.Key_Delete" in source
+    assert "def duplicate_selected" in source
+    assert "QPainterPathStroker" in source
+    assert "self._autosave_timer" in source
     assert "Conectar selecionados" in source
     for category in ("Movimento", "Ação", "Lógica", "Condição", "Eventos", "Objetos", "Variáveis"):
         assert category in source
