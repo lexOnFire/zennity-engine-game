@@ -13,6 +13,7 @@ SCRIPT_HOOKS = {
     "on_update", "isolated_update", "update", "on_collision",
     "on_collision_exit", "on_trigger", "on_trigger_exit", "on_animation_event",
     "on_animation_state_enter", "on_animation_state_exit",
+    "on_enter", "on_exit",
 }
 UI_TYPES = {"canvas", "label", "uilabel", "image", "uiimage", "button", "uibutton"}
 RUNTIME_SOURCES = (
@@ -23,6 +24,7 @@ RUNTIME_SOURCES = (
     "engine/graphics/tint.py",
     "engine/animation/clip_asset.py",
     "engine/animation/controller_asset.py",
+    "engine/behavior/controller_asset.py",
     "engine/build/runtime_scene_loader.py",
 )
 
@@ -184,6 +186,9 @@ def _validate_scene(root: Path, payload: dict[str, Any], report: ProjectValidati
         animator = editor_data.get("animator", item.get("animator"))
         if isinstance(animator, dict):
             _validate_animator(root, animator, name, report, checked_paths)
+        behavior = editor_data.get("behavior", item.get("behavior"))
+        if isinstance(behavior, dict):
+            _validate_behavior(root, behavior, name, report, checked_paths)
 
     if not has_camera:
         report.add("warning", "Runtime", "Nenhuma câmera principal ativa foi encontrada.")
@@ -264,6 +269,34 @@ def _validate_animator(root: Path, animator: dict[str, Any], name: str, report: 
             continue
         _check_asset(root, clip.get("asset_path"), "Animação", name, report, checked)
         _check_asset(root, clip.get("texture"), "Sprite Sheet", name, report, checked)
+
+
+def _validate_behavior(root: Path, behavior: dict[str, Any], name: str, report: ProjectValidationReport, checked: set[str]) -> None:
+    controller_value = behavior.get("controller_path")
+    controller_path = _asset_path(root, controller_value)
+    if controller_path is None:
+        report.add("warning", "Behavior Controller", "Nenhum controller foi escolhido.", object_name=name)
+        return
+    _check_asset(root, controller_value, "Behavior Controller", name, report, checked)
+    if not controller_path.is_file():
+        return
+    try:
+        controller = json.loads(controller_path.read_text(encoding="utf-8"))
+        if not isinstance(controller, dict) or controller.get("format") != "zennity.behavior_controller":
+            report.add("error", "Behavior Controller", "Formato de controller inválido.", controller_value, name)
+            return
+        states = controller.get("states", {})
+        if not isinstance(states, dict) or not states:
+            report.add("error", "Behavior Controller", "Controller não possui estados.", controller_value, name)
+            return
+        initial = str(controller.get("initial_state", ""))
+        if initial not in states:
+            report.add("error", "Behavior Controller", "Estado inicial não existe.", controller_value, name)
+        for state in states.values():
+            if isinstance(state, dict):
+                _validate_script(root, state.get("script"), name, report, checked)
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        report.add("error", "Behavior Controller", f"Controller inválido: {exc}", controller_value, name)
 
 
 def _check_asset(root: Path, value: Any, category: str, object_name: str, report: ProjectValidationReport, checked: set[str]) -> None:
