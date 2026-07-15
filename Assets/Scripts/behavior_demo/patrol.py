@@ -8,6 +8,8 @@ def on_enter(game):
 
 def on_update(game, dt):
     game.move(40.0 * game.state.get("patrol_direction", 1) * dt)
+    player = game.find("Player")
+    game.behavior.set_float("player_distance", game.distance_to(player) if player else 999.0)
 
 
 def on_exit(game):

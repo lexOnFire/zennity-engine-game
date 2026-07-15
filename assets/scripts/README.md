@@ -54,6 +54,33 @@ def on_animation_state_exit(game, state):
     game.log("Saiu de " + state)
 ```
 
+Behavior Controller:
+
+```python
+def on_update(game, dt):
+    game.behavior.set_float("distancia", 120.0)
+
+    if game.key_pressed("space"):
+        game.behavior.trigger("atacar")
+
+    game.log("Estado lógico: " + game.behavior.state)
+```
+
+Os scripts ligados aos estados de um Behavior Controller são ainda menores:
+
+```python
+def on_enter(game):
+    game.log("Começou a perseguir")
+
+
+def on_update(game, dt):
+    game.move(80 * dt)
+
+
+def on_exit(game):
+    game.log("Parou de perseguir")
+```
+
 Eventos de Collider:
 
 ```python

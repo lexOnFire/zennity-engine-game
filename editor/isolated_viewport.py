@@ -17,12 +17,14 @@ try:
     from editor.runtime.sprite_rendering import prepare_sprite_surface
     from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
     from engine.animation.controller_asset import AnimatorControllerRuntime, load_animator_controller
+    from engine.behavior.controller_asset import BehaviorControllerRunner, load_behavior_controller
 except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .audio_playback_state import set_channels_paused
     from .native_ui import NativeUIRenderer, normalize_ui
     from .sprite_rendering import prepare_sprite_surface
     from .clip_asset import animation_asset_to_clip, load_animation_asset
     from .controller_asset import AnimatorControllerRuntime, load_animator_controller
+    from .behavior_controller import BehaviorControllerRunner, load_behavior_controller
 
 
 def hydrate_animation_asset_clips(
@@ -92,6 +94,31 @@ def hydrate_animator_controllers(
     return results
 
 
+def hydrate_behavior_controllers(
+    objects: dict[str, dict[str, Any]], project_root: Path
+) -> list[tuple[str, str, str]]:
+    """Carrega os assets ``.zbehavior`` usados pelos objetos da cena."""
+    results: list[tuple[str, str, str]] = []
+    for object_name, obj in objects.items():
+        behavior = obj.get("behavior")
+        if not isinstance(behavior, dict):
+            continue
+        asset_path = str(behavior.get("controller_path", ""))
+        if not asset_path:
+            continue
+        path = Path(asset_path)
+        if not path.is_absolute():
+            path = project_root / path
+        try:
+            controller = load_behavior_controller(path)
+            behavior["controller"] = controller
+            behavior.setdefault("parameters", {})
+            results.append(("INFO", object_name, f"behavior carregado: {path.name} ({len(controller['states'])} estado(s))"))
+        except (OSError, ValueError) as exc:
+            results.append(("ERROR", object_name, f"falha ao carregar behavior {asset_path}: {exc}"))
+    return results
+
+
 class PlayAnimatorAPI:
     """Comandos simples expostos como ``game.animator`` nos scripts."""
 
@@ -118,6 +145,44 @@ class PlayAnimatorAPI:
         return str(self._obj.get("_animator_state", self._obj.get("_current_animation_name", "Nenhum")))
 
 
+class PlayBehaviorAPI:
+    """Controle simples do Behavior Controller disponível como ``game.behavior``."""
+
+    def __init__(self, obj: dict[str, Any]) -> None:
+        self._obj = obj
+        self._runner: BehaviorControllerRunner | None = None
+        self._game: PlayScriptAPI | None = None
+
+    def bind(self, runner: BehaviorControllerRunner, game: PlayScriptAPI) -> None:
+        self._runner = runner
+        self._game = game
+
+    def play(self, state: str) -> bool:
+        return bool(self._runner and self._game and self._runner.play(str(state), self._game))
+
+    def set_bool(self, parameter: str, value: bool) -> None:
+        if self._runner:
+            self._runner.set_bool(str(parameter), bool(value))
+
+    def set_float(self, parameter: str, value: float) -> None:
+        if self._runner:
+            self._runner.set_float(str(parameter), float(value))
+
+    def trigger(self, parameter: str) -> None:
+        if self._runner:
+            self._runner.trigger(str(parameter))
+
+    @property
+    def state(self) -> str:
+        if self._runner:
+            return self._runner.current_state
+        return str(self._obj.get("_behavior_state", "Nenhum"))
+
+    @property
+    def parameters(self) -> dict[str, Any]:
+        return dict(self._runner.parameters) if self._runner else {}
+
+
 class PlayScriptAPI:
     """API pequena e estável entregue aos scripts no Play Mode."""
 
@@ -134,6 +199,7 @@ class PlayScriptAPI:
         self._input: dict[str, bool] = {}
         self._previous_input: dict[str, bool] = {}
         self.animator = PlayAnimatorAPI(obj)
+        self.behavior = PlayBehaviorAPI(obj)
 
     @property
     def x(self) -> float:
@@ -379,6 +445,7 @@ def run_viewport(
     script_instances: dict[str, list[tuple[str, Any]]] = {}
     script_apis: dict[str, PlayScriptAPI] = {}
     animator_controllers: dict[str, AnimatorControllerRuntime] = {}
+    behavior_runners: dict[str, BehaviorControllerRunner] = {}
     animator_event_signatures: dict[str, tuple[Any, ...]] = {}
     active_contacts: dict[tuple[str, str], bool] = {}
     audio_channels: dict[str, Any] = {}
@@ -416,6 +483,7 @@ def run_viewport(
         script_instances.clear()
         script_apis.clear()
         animator_controllers.clear()
+        behavior_runners.clear()
         for level, object_name, message in hydrate_animation_asset_clips(objects, Path.cwd()):
             _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
         for level, object_name, message in hydrate_animator_controllers(objects, Path.cwd()):
@@ -526,6 +594,7 @@ def run_viewport(
         script_instances.clear()
         script_apis.clear()
         animator_controllers.clear()
+        behavior_runners.clear()
         active_contacts.clear()
 
     def start_audio_sources() -> None:
@@ -788,10 +857,13 @@ def run_viewport(
         script_instances.clear()
         script_apis.clear()
         animator_controllers.clear()
+        behavior_runners.clear()
         animator_event_signatures.clear()
         for level, object_name, message in hydrate_animation_asset_clips(objects, Path.cwd()):
             _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
         for level, object_name, message in hydrate_animator_controllers(objects, Path.cwd()):
+            _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
+        for level, object_name, message in hydrate_behavior_controllers(objects, Path.cwd()):
             _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
         for name, obj in objects.items():
             animator = obj.get("animator")
@@ -878,11 +950,36 @@ def run_viewport(
                     _send(events, {"type": "script_log", "level": "INFO", "message": f"Script iniciado em {name}: {path.name}"})
                 except Exception as exc:
                     _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{script_path}: {exc}"})
+        for name, obj in objects.items():
+            behavior = obj.get("behavior")
+            controller = behavior.get("controller") if isinstance(behavior, dict) else None
+            if not isinstance(controller, dict):
+                continue
+            try:
+                runner = BehaviorControllerRunner(controller, Path.cwd(), behavior.get("parameters", {}))
+                api = script_apis.setdefault(name, PlayScriptAPI(name, obj, events, objects))
+                api.behavior.bind(runner, api)
+                runner.start(api)
+                behavior_runners[name] = runner
+                behavior["parameters"] = dict(runner.parameters)
+                obj["_behavior_state"] = runner.current_state
+                _send(events, {"type": "script_log", "level": "INFO", "message": f"Behavior iniciado em {name}: {runner.current_state}"})
+            except Exception as exc:
+                _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}: Behavior Controller: {exc}"})
         loaded = sum(len(instances) for instances in script_instances.values())
-        level = "INFO" if loaded else "WARNING"
+        loaded_behaviors = len(behavior_runners)
+        level = "INFO" if loaded or loaded_behaviors else "WARNING"
         _send(events, {"type": "script_log", "level": level, "message": f"Play Mode carregou {loaded} script(s) executável(is)"})
+        _send(events, {"type": "script_log", "level": "INFO", "message": f"Play Mode carregou {loaded_behaviors} Behavior Controller(s)"})
 
     def stop_scripts() -> None:
+        for name, runner in list(behavior_runners.items()):
+            try:
+                api = script_apis.get(name)
+                if api is not None:
+                    runner.stop(api)
+            except Exception as exc:
+                _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}: Behavior Controller: {exc}"})
         for name, instances in list(script_instances.items()):
             obj = objects.get(name)
             for path, module in instances:
@@ -899,6 +996,7 @@ def run_viewport(
         script_instances.clear()
         script_apis.clear()
         animator_controllers.clear()
+        behavior_runners.clear()
         animator_event_signatures.clear()
         active_contacts.clear()
 
@@ -1513,11 +1611,36 @@ def run_viewport(
                     except Exception as exc:
                         instances.remove((path, module))
                         _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}: {exc}"})
-                api.end_frame()
                 if obj.pop("_jump_requested", False) and grounded.get(name, False):
                     velocities_y[name] = -float(obj.pop("_jump_force", 420.0))
                     grounded[name] = False
                     obj["_grounded"] = False
+            for name, runner in list(behavior_runners.items()):
+                obj = objects.get(name)
+                api = script_apis.get(name)
+                if obj is None or api is None or not obj.get("active", True):
+                    continue
+                behavior_only = name not in script_instances
+                if behavior_only:
+                    api.begin_frame(input_state)
+                previous = runner.current_state
+                try:
+                    changed = runner.update(api, dt)
+                    obj["_behavior_state"] = runner.current_state
+                    behavior = obj.get("behavior")
+                    if isinstance(behavior, dict):
+                        behavior["parameters"] = dict(runner.parameters)
+                    if changed:
+                        _send(events, {
+                            "type": "script_log",
+                            "level": "INFO",
+                            "message": f"{name}: Behavior {previous} → {runner.current_state}",
+                        })
+                except Exception as exc:
+                    behavior_runners.pop(name, None)
+                    _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}: Behavior Controller: {exc}"})
+            for api in script_apis.values():
+                api.end_frame()
             if restart_requested:
                 stop_scripts()
                 objects.clear()
