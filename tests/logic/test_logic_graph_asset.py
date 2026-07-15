@@ -113,3 +113,139 @@ def test_validation_rejects_incompatible_or_unknown_ports():
     }]
     messages = [issue["message"] for issue in validate_logic_graph(graph)]
     assert any("Saída inexistente" in message for message in messages)
+
+
+def _edge(source, source_port, target, target_port, kind="flow"):
+    return {
+        "from_node": source["id"], "from_port": source_port,
+        "to_node": target["id"], "to_port": target_port, "kind": kind,
+    }
+
+
+def test_runtime_resolves_number_wire_lazily_for_move():
+    event = create_logic_node("event_update")
+    axis = create_logic_node("input_axis")
+    move = create_logic_node("move")
+    move["properties"]["speed"] = 50.0
+    graph = default_logic_graph("TypedMove")
+    graph["nodes"] = [event, axis, move]
+    graph["edges"] = [
+        _edge(event, "next", move, "in"),
+        _edge(axis, "value", move, "value", "number"),
+    ]
+
+    class Game:
+        def __init__(self): self.x = 0.0
+        def axis(self, negative, positive): return -1
+        def move(self, amount): self.x += amount
+
+    game = Game()
+    LogicGraphRuntime(graph).update(game, 0.5)
+    assert game.x == -25.0
+
+
+def test_runtime_resolves_boolean_nodes_and_branch():
+    event = create_logic_node("event_update")
+    left = create_logic_node("bool_value")
+    right = create_logic_node("bool_value")
+    logic_and = create_logic_node("and")
+    branch = create_logic_node("if_else")
+    jump = create_logic_node("jump")
+    graph = default_logic_graph("TypedCondition")
+    graph["nodes"] = [event, left, right, logic_and, branch, jump]
+    graph["edges"] = [
+        _edge(event, "next", branch, "in"),
+        _edge(left, "value", logic_and, "a", "bool"),
+        _edge(right, "value", logic_and, "b", "bool"),
+        _edge(logic_and, "value", branch, "condition", "bool"),
+        _edge(branch, "true", jump, "in"),
+    ]
+
+    class Game:
+        def __init__(self): self.jumps = []
+        def jump(self, force): self.jumps.append(force)
+
+    game = Game()
+    LogicGraphRuntime(graph).update(game, 0.016)
+    assert game.jumps == [420.0]
+
+
+def test_runtime_connected_value_overrides_property_and_variable_persists():
+    event = create_logic_node("event_update")
+    number = create_logic_node("number_value")
+    number["properties"]["value"] = 3.5
+    setter = create_logic_node("set_variable")
+    setter["properties"]["name"] = "speed"
+    getter = create_logic_node("get_variable")
+    getter["properties"]["name"] = "speed"
+    move = create_logic_node("move")
+    move["properties"]["speed"] = 10.0
+    graph = default_logic_graph("Variables")
+    graph["nodes"] = [event, number, setter, getter, move]
+    graph["edges"] = [
+        _edge(event, "next", setter, "in"),
+        _edge(number, "value", setter, "value", "number"),
+        _edge(setter, "next", move, "in"),
+        _edge(getter, "value", move, "value", "any"),
+    ]
+
+    class Game:
+        def __init__(self): self.x = 0.0
+        def move(self, amount): self.x += amount
+
+    game = Game()
+    runtime = LogicGraphRuntime(graph)
+    runtime.update(game, 1.0)
+    assert game.x == 35.0
+    assert runtime.variables["speed"] == 3.5
+
+
+def test_runtime_reports_data_cycles_with_node_name():
+    event = create_logic_node("event_update")
+    first = create_logic_node("and")
+    first["title"] = "Condição circular"
+    second = create_logic_node("or")
+    branch = create_logic_node("if_else")
+    graph = default_logic_graph("Cycle")
+    graph["nodes"] = [event, first, second, branch]
+    graph["edges"] = [
+        _edge(event, "next", branch, "in"),
+        _edge(first, "value", second, "a", "bool"),
+        _edge(second, "value", first, "a", "bool"),
+        _edge(first, "value", branch, "condition", "bool"),
+    ]
+
+    try:
+        LogicGraphRuntime(graph).update(object(), 0.016)
+    except RuntimeError as exc:
+        assert "Ciclo de dados" in str(exc)
+        assert "Condição circular" in str(exc)
+    else:
+        raise AssertionError("O ciclo de dados deveria interromper a execução")
+
+
+def test_runtime_compare_and_text_wires_drive_hud_action():
+    event = create_logic_node("event_update")
+    number = create_logic_node("number_value")
+    number["properties"]["value"] = 8
+    compare = create_logic_node("compare_number")
+    compare["properties"].update({"operator": ">=", "value": 5})
+    text = create_logic_node("text_value")
+    text["properties"]["value"] = "Objetivo concluído"
+    hud = create_logic_node("set_hud")
+    graph = default_logic_graph("TypedHUD")
+    graph["nodes"] = [event, number, compare, text, hud]
+    graph["edges"] = [
+        _edge(event, "next", compare, "in"),
+        _edge(number, "value", compare, "value", "number"),
+        _edge(compare, "true", hud, "in"),
+        _edge(text, "value", hud, "text", "text"),
+    ]
+
+    class Game:
+        def __init__(self): self.hud = {}
+        def set_hud(self, key, value): self.hud[key] = value
+
+    game = Game()
+    LogicGraphRuntime(graph).update(game, 0.016)
+    assert list(game.hud.values()) == ["Objetivo concluído"]

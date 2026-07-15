@@ -36,6 +36,9 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "set_hud": {"title": "Atualizar HUD", "category": "Ação", "properties": {"text": "Texto"}},
     "get_variable": {"title": "Ler variável", "category": "Variáveis", "properties": {"name": "value"}},
     "set_variable": {"title": "Definir variável", "category": "Variáveis", "properties": {"name": "value", "value": 0}},
+    "number_value": {"title": "Número", "category": "Variáveis", "properties": {"value": 0.0}},
+    "bool_value": {"title": "Verdadeiro / Falso", "category": "Variáveis", "properties": {"value": True}},
+    "text_value": {"title": "Texto", "category": "Variáveis", "properties": {"value": "Texto"}},
 }
 
 # Portas são metadados de edição e permanecem separadas das propriedades dos
@@ -56,11 +59,14 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "key_pressed": {"inputs": [("in", "flow")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
     "is_grounded": {"inputs": [("in", "flow")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
     "compare_number": {"inputs": [("in", "flow"), ("value", "number")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
-    "play_animation": {"inputs": [("in", "flow")], "outputs": [("next", "flow")]},
-    "play_sound": {"inputs": [("in", "flow")], "outputs": [("next", "flow")]},
+    "play_animation": {"inputs": [("in", "flow"), ("state", "text")], "outputs": [("next", "flow")]},
+    "play_sound": {"inputs": [("in", "flow"), ("path", "text")], "outputs": [("next", "flow")]},
     "set_hud": {"inputs": [("in", "flow"), ("text", "text")], "outputs": [("next", "flow")]},
     "get_variable": {"inputs": [("in", "flow")], "outputs": [("next", "flow"), ("value", "any")]},
     "set_variable": {"inputs": [("in", "flow"), ("value", "any")], "outputs": [("next", "flow")]},
+    "number_value": {"inputs": [], "outputs": [("value", "number")]},
+    "bool_value": {"inputs": [], "outputs": [("value", "bool")]},
+    "text_value": {"inputs": [], "outputs": [("value", "text")]},
 }
 
 
