@@ -43,6 +43,17 @@ def on_animation_event(game, event):
 
 O payload opcional fica disponível em `game.state["animation_event_payload"]`.
 
+Entrada e saída de estados:
+
+```python
+def on_animation_state_enter(game, state):
+    game.log("Entrou em " + state)
+
+
+def on_animation_state_exit(game, state):
+    game.log("Saiu de " + state)
+```
+
 Eventos de Collider:
 
 ```python

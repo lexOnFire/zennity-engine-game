@@ -142,6 +142,7 @@ class InterfaceSmokeTest(QMainWindow):
             button.setProperty("uiRole", "icon")
         self.animation_apply_button = QPushButton("Aplicar ao selecionado")
         self.animation_demo_button = QPushButton("Testar no Player")
+        self.animation_open_demo_button = QPushButton("Abrir Demo Animator")
         for button, icon_name in (
             (self.animation_new_button, "new"),
             (self.animation_open_button, "open"),
@@ -151,11 +152,13 @@ class InterfaceSmokeTest(QMainWindow):
             (self.animation_delete_button, "delete"),
             (self.animation_apply_button, "apply"),
             (self.animation_demo_button, "play"),
+            (self.animation_open_demo_button, "open"),
         ):
             button.setIcon(editor_icon(icon_name))
         self.animation_delete_button.setProperty("uiRole", "danger")
         self.animation_apply_button.setProperty("uiRole", "primary")
         self.animation_demo_button.setProperty("uiRole", "play")
+        self.animation_open_demo_button.setProperty("uiRole", "primary")
         for button in (
             self.animation_new_button, self.animation_open_button,
             self.animation_save_button, self.animation_save_as_button,
@@ -168,6 +171,7 @@ class InterfaceSmokeTest(QMainWindow):
         animation_toolbar.addWidget(object_tools_label)
         animation_toolbar.addWidget(self.animation_apply_button)
         animation_toolbar.addWidget(self.animation_demo_button)
+        animation_toolbar.addWidget(self.animation_open_demo_button)
         animation_toolbar.addStretch(1)
         animation_layout.addWidget(animation_toolbar_widget)
 

@@ -12,6 +12,7 @@ from typing import Any
 SCRIPT_HOOKS = {
     "on_update", "isolated_update", "update", "on_collision",
     "on_collision_exit", "on_trigger", "on_trigger_exit", "on_animation_event",
+    "on_animation_state_enter", "on_animation_state_exit",
 }
 UI_TYPES = {"canvas", "label", "uilabel", "image", "uiimage", "button", "uibutton"}
 RUNTIME_SOURCES = (

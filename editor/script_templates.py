@@ -8,6 +8,7 @@ from pathlib import Path
 REQUIRED_UPDATE_HOOKS = {
     "on_update", "isolated_update", "update",
     "on_collision", "on_collision_exit", "on_trigger", "on_trigger_exit", "on_animation_event",
+    "on_animation_state_enter", "on_animation_state_exit",
 }
 
 

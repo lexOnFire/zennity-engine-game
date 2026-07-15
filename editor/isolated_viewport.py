@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 25123)
+Total output lines: 1819
+
 """Janela Pygame independente usada pelo experimento de viewport isolada."""
 from __future__ import annotations
 
@@ -190,6 +193,10 @@ class PlayScriptAPI:
     @property
     def state(self) -> dict[str, Any]:
         return self.obj.setdefault("_script_state", {})
+
+    @property
+    def grounded(self) -> bool:
+        return bool(self.obj.get("_grounded", False))
 
     def begin_frame(self, input_state: dict[str, bool]) -> None:
         self._input = dict(input_state)
@@ -470,7 +477,7 @@ def run_viewport(
                                     module = bundled_module
                                     update = bundled_update
                                     update_mode = "simple"
-                    event_hooks = ("on_collision", "on_collision_exit", "on_trigger", "on_trigger_exit", "on_animation_event")
+                    event_hooks = ("on_collision", "on_collision_exit", "on_trigger", "on_trigger_exit", "on_animation_event", "on_animation_state_enter", "on_animation_state_exit")
                     if not callable(update) and any(callable(getattr(module, hook, None)) for hook in event_hooks):
                         update = lambda game, dt: None
                         update_mode = "simple"
@@ -646,6 +653,20 @@ def run_viewport(
         active_contacts.clear()
         active_contacts.update(current)
 
+    def dispatch_animation_state_hook(object_name: str, hook_name: str, state_name: str) -> None:
+        obj = objects.get(object_name)
+        if obj is None:
+            return
+        api = script_apis.get(object_name) or PlayScriptAPI(object_name, obj, events, objects)
+        for path, module in list(script_instances.get(object_name, [])):
+            hook = getattr(module, hook_name, None)
+            if not callable(hook):
+                continue
+            try:
+                hook(api, state_name)
+            except Exception as exc:
+                _send(events, {"type": "script_log", "level": "ERROR", "message": f"{object_name}:{path}:{hook_name}: {exc}"})
+
     def update_animations(delta_time: float) -> None:
         for object_name, obj in objects.items():
             animator = obj.get("animator")
@@ -659,6 +680,8 @@ def run_viewport(
             controller = animator_controllers.get(object_name)
             if controller is not None:
                 previous = controller.current_state
+                if object_name not in animator_event_signatures:
+                    dispatch_animation_state_hook(object_name, "on_animation_state_enter", previous)
                 current_clip = clips.get(controller.current_state, {})
                 current_count = max(1, int(current_clip.get("frame_count", 1))) if isinstance(current_clip, dict) else 1
                 current_fps = max(0.01, float(current_clip.get("fps", 8.0))) if isinstance(current_clip, dict) else 8.0
@@ -670,6 +693,8 @@ def run_viewport(
                 obj["_animator_state"] = controller.current_state
                 obj["_current_animation_name"] = controller.current_state
                 if controller.current_state != previous:
+                    dispatch_animation_state_hook(object_name, "on_animation_state_exit", previous)
+                    dispatch_animation_state_hook(object_name, "on_animation_state_enter", controller.current_state)
                     obj["_animation_time"] = 0.0
                     obj["_animation_frame"] = 0
                     obj["_animation_raw_frame"] = -1
@@ -816,351 +841,7 @@ def run_viewport(
                         bundled_path = (Path.cwd() / "assets" / "scripts" / path.name).resolve()
                         if bundled_path != path and bundled_path.is_file():
                             bundled_spec = importlib.util.spec_from_file_location(
-                                f"zennity_bundled_{bundled_path.stem}_{digest}", bundled_path
-                            )
-                            if bundled_spec is not None and bundled_spec.loader is not None:
-                                bundled_module = importlib.util.module_from_spec(bundled_spec)
-                                bundled_spec.loader.exec_module(bundled_module)
-                                bundled_update = getattr(bundled_module, "on_update", None)
-                                if callable(bundled_update):
-                                    module = bundled_module
-                                    update = bundled_update
-                                    update_mode = "simple"
-                    event_hooks = ("on_collision", "on_collision_exit", "on_trigger", "on_trigger_exit", "on_animation_event")
-                    if not callable(update) and any(callable(getattr(module, hook, None)) for hook in event_hooks):
-                        update = lambda game, dt: None
-                        update_mode = "simple"
-                    if not callable(update):
-                        raise TypeError("defina on_update(game, dt), isolated_update(...) ou update(obj, dt)")
-                    overrides = obj.get("script_properties", {}).get(str(script_path), {})
-                    if isinstance(overrides, dict):
-                        config = getattr(module, "CONFIG", None)
-                        for key, value in overrides.items():
-                            if isinstance(config, dict) and key in config:
-                                config[key] = value
-                            elif str(key).isupper() and hasattr(module, str(key)):
-                                setattr(module, str(key), value)
-                    module._zennity_update_hook = update
-                    module._zennity_update_mode = update_mode
-                    api = script_apis.setdefault(name, PlayScriptAPI(name, obj, events, objects))
-                    module._zennity_api = api
-                    script_instances.setdefault(name, []).append((str(path), module))
-                    start = getattr(module, "on_start", None)
-                    if callable(start):
-                        start(api)
-                    else:
-                        start = getattr(module, "isolated_start", None) or getattr(module, "start", None)
-                    if callable(start):
-                        if getattr(module, "on_start", None) is not start:
-                            start(obj)
-                    _send(events, {"type": "script_log", "level": "INFO", "message": f"Script iniciado em {name}: {path.name}"})
-                except Exception as exc:
-                    _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{script_path}: {exc}"})
-        loaded = sum(len(instances) for instances in script_instances.values())
-        level = "INFO" if loaded else "WARNING"
-        _send(events, {"type": "script_log", "level": level, "message": f"Play Mode carregou {loaded} script(s) executável(is)"})
-
-    def stop_scripts() -> None:
-        for name, instances in list(script_instances.items()):
-            obj = objects.get(name)
-            for path, module in instances:
-                try:
-                    stop = getattr(module, "on_stop", None)
-                    if callable(stop):
-                        stop(module._zennity_api)
-                        continue
-                    stop = getattr(module, "isolated_stop", None) or getattr(module, "stop", None)
-                    if callable(stop):
-                        stop(obj)
-                except Exception as exc:
-                    _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}: {exc}"})
-        script_instances.clear()
-        script_apis.clear()
-        animator_controllers.clear()
-        animator_event_signatures.clear()
-        active_contacts.clear()
-
-    def collider_bounds(obj: dict[str, Any]) -> tuple[float, float, float, float]:
-        collider = obj.get("collider") or {}
-        angle = math.radians(float(obj.get("rotation", 0.0)))
-        offset_x = float(collider.get("offset_x", 0.0))
-        offset_y = float(collider.get("offset_y", 0.0))
-        center_x = float(obj.get("x", 0.0)) + offset_x * math.cos(angle) - offset_y * math.sin(angle)
-        center_y = float(obj.get("y", 0.0)) + offset_x * math.sin(angle) + offset_y * math.cos(angle)
-        if str(collider.get("type", "box")).lower() == "circle":
-            width = height = float(collider.get("radius", min(obj.get("w", 1.0), obj.get("h", 1.0)) / 2.0)) * 2.0
-        else:
-            width = float(collider.get("width", obj.get("w", 1.0)))
-            height = float(collider.get("height", obj.get("h", 1.0)))
-            cosine, sine = abs(math.cos(angle)), abs(math.sin(angle))
-            width, height = width * cosine + height * sine, width * sine + height * cosine
-        return center_x - width / 2.0, center_y - height / 2.0, center_x + width / 2.0, center_y + height / 2.0
-
-    def dispatch_contact(name: str, other_name: str, hook_name: str) -> None:
-        obj = objects.get(name)
-        other_obj = objects.get(other_name)
-        if obj is None or other_obj is None:
-            return
-        game = script_apis.get(name) or PlayScriptAPI(name, obj, events, objects)
-        other = PlayScriptAPI(other_name, other_obj, events, objects)
-        for path, module in list(script_instances.get(name, [])):
-            hook = getattr(module, hook_name, None)
-            if not callable(hook):
-                continue
-            try:
-                hook(game, other)
-            except Exception as exc:
-                _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}:{hook_name}: {exc}"})
-
-    def process_contacts() -> None:
-        current: dict[tuple[str, str], bool] = {}
-        collidable = [(name, obj) for name, obj in objects.items() if obj.get("active", True) and isinstance(obj.get("collider"), dict)]
-        for index, (name_a, obj_a) in enumerate(collidable):
-            left_a, top_a, right_a, bottom_a = collider_bounds(obj_a)
-            for name_b, obj_b in collidable[index + 1:]:
-                left_b, top_b, right_b, bottom_b = collider_bounds(obj_b)
-                if right_a < left_b or right_b < left_a or bottom_a < top_b or bottom_b < top_a:
-                    continue
-                pair = tuple(sorted((name_a, name_b)))
-                is_trigger = bool(obj_a["collider"].get("is_trigger") or obj_b["collider"].get("is_trigger"))
-                current[pair] = is_trigger
-                if pair not in active_contacts:
-                    hook = "on_trigger" if is_trigger else "on_collision"
-                    dispatch_contact(name_a, name_b, hook)
-                    dispatch_contact(name_b, name_a, hook)
-        for pair, was_trigger in list(active_contacts.items()):
-            if pair not in current:
-                hook = "on_trigger_exit" if was_trigger else "on_collision_exit"
-                dispatch_contact(pair[0], pair[1], hook)
-                dispatch_contact(pair[1], pair[0], hook)
-        active_contacts.clear()
-        active_contacts.update(current)
-
-    def view_transform() -> tuple[float, float, float]:
-        if view_mode == "game":
-            width, height = screen.get_size()
-            camera = game_camera()
-            if camera is not None:
-                game_zoom = max(0.1, float((camera.get("camera") or {}).get("zoom", 1.0)))
-                return (
-                    float(camera.get("x", 0.0)) - width / (2.0 * game_zoom),
-                    float(camera.get("y", 0.0)) - height / (2.0 * game_zoom),
-                    game_zoom,
-                )
-            return (-width / 2.0, -height / 2.0, 1.0)
-        return (camera_x, camera_y, zoom)
-
-    def world_to_screen(x: float, y: float) -> tuple[float, float]:
-        view_x, view_y, view_zoom = view_transform()
-        return ((x - view_x) * view_zoom, (y - view_y) * view_zoom)
-
-    def screen_to_world(x: float, y: float) -> tuple[float, float]:
-        view_x, view_y, view_zoom = view_transform()
-        return (view_x + x / view_zoom, view_y + y / view_zoom)
-
-    def snapped(value: float, step: float) -> float:
-        if not snap_enabled or step <= 0.0:
-            return value
-        return round(value / step) * step
-
-    while running:
-        if commands is not None:
-            while True:
-                try:
-                    command = commands.get_nowait()
-                except Empty:
-                    break
-                if command.get("type") == "shutdown":
-                    running = False
-                elif command.get("type") == "viewport_size":
-                    w = max(32, int(command.get("w", 32)))
-                    h = max(32, int(command.get("h", 32)))
-                    new_size = (w, h)
-                    screen = pygame.display.set_mode(new_size, display_flags)
-                    _attach_native_window(pygame, parent_window_id, *new_size)
-
-                    # Centraliza a câmera de modo que o centro da tela corresponda ao ponto (0, 0) do mundo
-                    camera_x = -float(w) / 2.0 / zoom
-                    camera_y = -float(h) / 2.0 / zoom
-                elif command.get("type") == "scene_snapshot":
-                    # A cena de edição é imutável durante o Play. Alterações do
-                    # Inspector ficam no editor e só entram na próxima execução.
-                    if playing:
-                        continue
-                    objects = {item["name"]: dict(item) for item in command.get("objects", [])}
-                    edit_snapshot = deepcopy(objects)
-                    selected_name = None
-                    playing = False
-                    paused = False
-                    velocities_y = {}
-                    grounded = {}
-                elif command.get("type") == "set_tool":
-                    tool = str(command.get("tool", "select")).lower()
-                    if tool in {"select", "move", "rotate", "scale"}:
-                        active_tool = tool
-                elif command.get("type") == "set_view_mode":
-                    mode = str(command.get("mode", "scene")).lower()
-                    if mode in {"scene", "game"}:
-                        view_mode = mode
-                elif command.get("type") == "set_snap":
-                    snap_enabled = bool(command.get("enabled", False))
-                    snap_size = max(0.01, float(command.get("size", 16.0)))
-                    snap_angle = max(0.01, float(command.get("angle", 15.0)))
-                elif command.get("type") == "runtime_input" and isinstance(command.get("keys"), dict):
-                    for key in forwarded_input:
-                        forwarded_input[key] = bool(command["keys"].get(key, False))
-                elif command.get("type") == "play":
-                    if not playing:
-                        incoming_audio = command.get("audio_sources", {})
-                        if isinstance(incoming_audio, dict):
-                            for object_name, audio_config in incoming_audio.items():
-                                if object_name in objects and isinstance(audio_config, dict):
-                                    objects[object_name]["audio"] = dict(audio_config)
-                        edit_snapshot = deepcopy(objects)
-                        playing = True
-                        paused = False
-                        velocities_y = {}
-                        grounded = {}
-                        hud_entries.clear()
-                        start_scripts()
-                        _send(events, {"type": "play_state", "state": "play"})
-                    elif paused:
-                        paused = False
-                        set_channels_paused(audio_channels, False)
-                        _send(events, {"type": "play_state", "state": "play"})
-                elif command.get("type") == "start_play_audio":
-                    incoming_audio = command.get("audio_sources", {})
-                    if isinstance(incoming_audio, dict):
-                        for object_name, audio_config in incoming_audio.items():
-                            if object_name in objects and isinstance(audio_config, dict):
-                                objects[object_name]["audio"] = dict(audio_config)
-                    _send(events, {"type": "script_log", "level": "INFO", "message": "Comando dedicado de áudio recebido pelo Play Mode"})
-                    start_audio_sources()
-                elif command.get("type") == "pause":
-                    if playing:
-                        paused = not paused
-                        set_channels_paused(audio_channels, paused)
-                        _send(events, {"type": "play_state", "state": "pause" if paused else "play"})
-                elif command.get("type") == "stop":
-                    stop_audio_sources()
-                    if playing:
-                        stop_scripts()
-                        objects = deepcopy(edit_snapshot)
-                        playing = False
-                        paused = False
-                        velocities_y = {}
-                        grounded = {}
-                        hud_entries.clear()
-                        _send(events, {"type": "play_state", "state": "edit"})
-                        _send(events, {"type": "scene_snapshot", "objects": list(objects.values())})
-                elif command.get("type") == "stop_all_audio":
-                    stop_audio_sources()
-                    _send(events, {"type": "script_log", "level": "INFO", "message": "Todos os áudios foram interrompidos"})
-                elif command.get("type") == "preview_audio":
-                    play_audio_file(
-                        "__preview__", str(command.get("path", "")),
-                        float(command.get("volume", 1.0)), bool(command.get("loop", False)),
-                    )
-                elif command.get("type") == "stop_audio_preview":
-                    channel = audio_channels.pop("__preview__", None)
-                    if channel is not None:
-                        channel.stop()
-                    audio_sounds.pop("__preview__", None)
-                    _send(events, {"type": "script_log", "level": "INFO", "message": "Prévia de áudio interrompida"})
-                elif command.get("type") == "select_object":
-                    name = str(command.get("name", ""))
-                    if name in objects:
-                        selected_name = name
-                        _send(events, {"type": "selected", "name": name})
-                elif command.get("type") == "move_selected" and selected_name in objects:
-                    obj = objects[selected_name]
-                    obj["x"] += float(command.get("dx", 0.0))
-                    obj["y"] += float(command.get("dy", 0.0))
-                    _send(events, {"type": "transform", "name": selected_name, "x": obj["x"], "y": obj["y"]})
-                elif command.get("type") == "set_transform":
-                    name = str(command.get("name", ""))
-                    if name in objects and not playing:
-                        obj = objects[name]
-                        for key in ("x", "y", "w", "h", "rotation"):
-                            if key in command:
-                                obj[key] = float(command[key])
-                        _send(events, {"type": "transform", "name": name, **{key: obj[key] for key in ("x", "y", "w", "h", "rotation")}})
-                elif command.get("type") == "set_physics":
-                    name = str(command.get("name", ""))
-                    if name in objects and not playing and isinstance(command.get("rigidbody"), dict):
-                        objects[name]["rigidbody"] = dict(command["rigidbody"])
-                elif command.get("type") == "set_collider":
-                    name = str(command.get("name", ""))
-                    if name in objects and not playing and isinstance(command.get("collider"), dict):
-                        objects[name]["collider"] = dict(command["collider"])
-                elif command.get("type") == "script_instruction":
-                    name = str(command.get("name", ""))
-                    instruction = command.get("instruction")
-                    if name in objects and isinstance(instruction, dict):
-                        objects[name].setdefault("script_instructions", []).append(dict(instruction))
-                elif command.get("type") == "script_drop_at" and not playing:
-                    mouse_x = float(command.get("screen_x", 0.0))
-                    mouse_y = float(command.get("screen_y", 0.0))
-                    target_name = None
-                    for name, obj in reversed(list(objects.items())):
-                        object_x, object_y = world_to_screen(float(obj["x"]), float(obj["y"]))
-                        angle = math.radians(-float(obj.get("rotation", 0.0)))
-                        dx, dy = mouse_x - object_x, mouse_y - object_y
-                        local_x = dx * math.cos(angle) - dy * math.sin(angle)
-                        local_y = dx * math.sin(angle) + dy * math.cos(angle)
-                        view_zoom = view_transform()[2]
-                        if abs(local_x) <= float(obj["w"]) * view_zoom / 2.0 and abs(local_y) <= float(obj["h"]) * view_zoom / 2.0:
-                            target_name = name
-                            break
-                    if target_name is None:
-                        target_name = selected_name
-                    if target_name in objects:
-                        _send(events, {"type": "attach_script", "name": target_name, "path": str(command.get("path", ""))})
-                elif command.get("type") == "create_object_at" and not playing:
-                    kind = str(command.get("kind", "Sprite"))
-                    sx = float(command.get("screen_x", 0.0))
-                    sy = float(command.get("screen_y", 0.0))
-                    world_x, world_y = screen_to_world(sx, sy)
-
-                    # Gera presets e nome unico
-                    presets = {
-                        "Empty": ("GameObject", 40.0, 40.0, (160, 164, 174), None),
-                        "Sprite": ("Sprite", 64.0, 64.0, (180, 180, 190), None),
-                        "Player": ("Player", 36.0, 48.0, (88, 117, 255), {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}),
-                        "Platform": ("Platform", 160.0, 32.0, (91, 194, 100), {"is_kinematic": True, "use_gravity": False}),
-                        "Enemy": ("Enemy", 40.0, 40.0, (220, 88, 88), {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}),
-                        "Trigger": ("Trigger", 80.0, 80.0, (222, 178, 72), {"is_kinematic": True, "use_gravity": False}),
-                        "Camera": ("Camera2D", 96.0, 54.0, (110, 190, 210), None),
-                    }
-                    base, width, height, color, rigidbody = presets.get(kind, presets["Sprite"])
-
-                    # Nome único local
-                    index = 1
-                    name = base
-                    while name in objects:
-                        index += 1
-                        name = f"{base}_{index}"
-
-                    import uuid
-                    obj = {"id": str(uuid.uuid4()), "name": name, "x": world_x, "y": world_y, "w": width, "h": height, "rotation": 0.0, "color": color, "mesh_type": kind}
-                    if rigidbody is not None:
-                        obj["rigidbody"] = rigidbody
-                        obj["collider"] = {"type": "box"}
-                    if kind == "Trigger":
-                        obj["collider"]["is_trigger"] = True
-                    if kind == "Player":
-                        obj["scripts"] = ["Assets/Scripts/player_controller_2d.py"]
-                    if kind == "Camera":
-                        obj["component_names"] = ["Camera2D"]
-                        obj["camera"] = {"active": True, "zoom": 1.0}
-
-                    objects[name] = obj
-                    selected_name = name
-                    _send(events, {"type": "scene_snapshot", "objects": list(objects.values())})
-                    _send(events, {"type": "selected", "name": name})
-                elif command.get("type") == "create_sprite_at" and not playing:
-                    import uuid
-                    texture = str(command.get("texture", ""))
+                                f"zennity_bundled_{bundled_path.stem}…5123 tokens truncated…         texture = str(command.get("texture", ""))
                     base = Path(texture).stem or "Sprite"
                     name = base
                     index = 1
@@ -1439,7 +1120,10 @@ def run_viewport(
                                         anim["active_clip"] = str(val)
                                 elif cmd == "animator_play" and val:
                                     controller = animator_controllers.get(name)
+                                    previous_state = controller.current_state if controller is not None else ""
                                     if controller is not None and controller.play(str(val)):
+                                        dispatch_animation_state_hook(name, "on_animation_state_exit", previous_state)
+                                        dispatch_animation_state_hook(name, "on_animation_state_enter", controller.current_state)
                                         obj["_animator_state"] = controller.current_state
                                         obj["_current_animation_name"] = controller.current_state
                                         obj["_animation_time"] = 0.0
@@ -1492,6 +1176,7 @@ def run_viewport(
                 if obj.pop("_jump_requested", False) and grounded.get(name, False):
                     velocities_y[name] = -float(obj.pop("_jump_force", 420.0))
                     grounded[name] = False
+                    obj["_grounded"] = False
             if restart_requested:
                 stop_scripts()
                 objects.clear()
@@ -1526,6 +1211,7 @@ def run_viewport(
                         grounded[name] = True
                         break
                 velocities_y[name] = velocity
+                obj["_grounded"] = bool(grounded.get(name, False))
             process_contacts()
             update_animations(dt)
         # Carrega a cor de fundo definida na câmera ativa
