@@ -572,9 +572,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
     def _configure_logic_workspace(self) -> None:
         self.logic_workspace.message.connect(self._log)
         self.logic_workspace.asset_changed.connect(self._refresh_assets)
-        animation_action = QAction(editor_icon("animation"), "Editor de Animação", self)
+        animation_action = QAction(editor_icon("play"), "Editor de Animação", self)
         animation_action.triggered.connect(self._show_animation_window)
-        logic_action = QAction(editor_icon("script"), "Editor de Lógica Visual", self)
+        logic_action = QAction(editor_icon("snap"), "Editor de Lógica Visual", self)
         logic_action.triggered.connect(self._show_logic_window)
         self.editor_menus["Janela"].addSeparator()
         self.editor_menus["Janela"].addAction(animation_action)

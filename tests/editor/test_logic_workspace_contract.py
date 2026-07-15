@@ -19,6 +19,10 @@ def test_logic_and_animation_use_independent_windows_not_viewport_tabs():
     assert "self.logic_workspace = LogicGraphEditor()" in interface
     assert "def _show_logic_window" in editor
     assert "def _show_animation_window" in editor
+    assert 'editor_icon("play")' in editor
+    assert 'editor_icon("snap")' in editor
+    assert 'editor_icon("animation")' not in editor
+    assert 'editor_icon("script")' not in editor
     assert 'component == "logic"' not in editor
 
 
