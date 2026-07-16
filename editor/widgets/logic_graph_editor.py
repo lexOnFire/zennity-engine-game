@@ -12,6 +12,7 @@ from typing import Any
 from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPainterPathStroker, QPen, QBrush
 from PySide6.QtWidgets import (
+    QCheckBox,
     QFileDialog,
     QFrame,
     QComboBox,
