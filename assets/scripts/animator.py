@@ -8,11 +8,13 @@ TOTAL_DE_QUADROS = 4
 def on_start(game):
     game.state["quadro"] = 0
     game.state["tempo"] = 0.0
+    game.play_animation("andar")
 
 
 def on_update(game, dt):
     game.state["tempo"] += dt
     tempo_por_quadro = 1.0 / FPS_DA_ANIMACAO
+    game.play_animation("andar")
 
     if game.state["tempo"] >= tempo_por_quadro:
         game.state["tempo"] = 0.0
