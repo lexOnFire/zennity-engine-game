@@ -52,6 +52,7 @@ from engine.logic.graph_asset import (
     validate_logic_graph,
 )
 from engine.logic.blackboard import coerce_variable_value, save_blackboard_asset
+from engine.logic.code_preview import node_code_preview
 from engine.logic.recipes import build_logic_recipe, find_logic_recipes, logic_recipe
 
 
@@ -87,6 +88,7 @@ NODE_DESCRIPTIONS = {
     "event_timer": "Espera a quantidade de segundos e pode repetir automaticamente.",
     "get_position": "Lê as coordenadas X e Y atuais do objeto.",
     "move_by": "Move X e Y continuamente em unidades por segundo, sem exigir teclado.",
+    "patrol_axis": "Move entre dois limites e inverte automaticamente a direção ao alcançá-los.",
     "set_sprite": "Troca a imagem principal do objeto durante o Play Mode.",
     "play_animation_asset": "Carrega e toca diretamente um arquivo de animação .zanim.",
     "stop_animation": "Interrompe a animação atual do objeto.",
@@ -117,6 +119,7 @@ PROPERTY_LABELS = {
 NODE_PROPERTY_LABELS = {
     "move_by": {"x": "Velocidade X", "y": "Velocidade Y"},
     "set_position": {"x": "Posição X", "y": "Posição Y"},
+    "patrol_axis": {"axis": "Eixo", "minimum": "Limite mínimo", "maximum": "Limite máximo", "speed": "Velocidade"},
 }
 
 
@@ -265,9 +268,29 @@ class LogicEdgeItem(QGraphicsPathItem):
         return stroker.createStroke(self.path())
 
 
+class LogicFlipControl(QGraphicsTextItem):
+    """Controle pequeno que alterna frente e pseudocódigo do bloco."""
+
+    def __init__(self, node: "LogicNodeItem") -> None:
+        super().__init__("</>", node)
+        self.node = node
+        self.setDefaultTextColor(QColor("#dce6f2"))
+        font = self.font()
+        font.setBold(True)
+        font.setPointSizeF(8.0)
+        self.setFont(font)
+        self.setPos(node.WIDTH - 52.0, 2.0)
+        self.setToolTip("Virar bloco e mostrar o código equivalente")
+        self.setCursor(Qt.PointingHandCursor)
+
+    def mousePressEvent(self, event) -> None:
+        self.node.toggle_code_preview()
+        event.accept()
+
+
 class LogicNodeItem(QGraphicsRectItem):
     WIDTH = 210.0
-    MINIMUM_HEIGHT = 94.0
+    MINIMUM_HEIGHT = 116.0
 
     def __init__(self, editor: "LogicGraphEditor", node: dict[str, Any]) -> None:
         ports = node_port_definitions(node)
@@ -277,6 +300,8 @@ class LogicNodeItem(QGraphicsRectItem):
         super().__init__(0.0, 0.0, self.WIDTH, self.height)
         self.editor = editor
         self.node = node
+        self._show_code = False
+        self._runtime_display: tuple[bool, dict[str, Any] | None, str, bool] = (False, None, "", False)
         self.setFlags(
             QGraphicsItem.ItemIsMovable
             | QGraphicsItem.ItemIsSelectable
@@ -304,6 +329,7 @@ class LogicNodeItem(QGraphicsRectItem):
         font.setBold(True)
         font.setPointSizeF(9.5)
         self.title_item.setFont(font)
+        self.flip_control = LogicFlipControl(self)
 
         self.summary_item = QGraphicsTextItem("", self)
         self.summary_item.setDefaultTextColor(QColor("#b8beca"))
@@ -317,9 +343,19 @@ class LogicNodeItem(QGraphicsRectItem):
         self.debug_item.setTextWidth(self.WIDTH - 22.0)
         self.debug_item.setPos(10.0, self.height - 25.0)
         self.debug_item.setVisible(False)
+        self.code_item = QGraphicsTextItem("", self)
+        self.code_item.setDefaultTextColor(QColor("#b9e3c6"))
+        self.code_item.setTextWidth(self.WIDTH - 18.0)
+        self.code_item.setPos(8.0, 32.0)
+        code_font = self.code_item.font()
+        code_font.setFamily("Consolas")
+        code_font.setPointSizeF(7.8)
+        self.code_item.setFont(code_font)
+        self.code_item.setVisible(False)
 
         self.input_ports: dict[str, LogicPortItem] = {}
         self.output_ports: dict[str, LogicPortItem] = {}
+        self.port_labels: list[QGraphicsTextItem] = []
         for index, (name, data_type) in enumerate(self.input_definitions):
             y = 43.0 + index * 22.0
             port = LogicPortItem(self, name, "input", data_type, y)
@@ -327,6 +363,7 @@ class LogicNodeItem(QGraphicsRectItem):
             label = QGraphicsTextItem(name, self)
             label.setDefaultTextColor(QColor("#aeb6c5"))
             label.setPos(9.0, y - 12.0)
+            self.port_labels.append(label)
         for index, (name, data_type) in enumerate(self.output_definitions):
             y = 43.0 + index * 22.0
             port = LogicPortItem(self, name, "output", data_type, y)
@@ -335,6 +372,7 @@ class LogicNodeItem(QGraphicsRectItem):
             label.setDefaultTextColor(QColor("#aeb6c5"))
             label.setTextWidth(76.0)
             label.setPos(self.WIDTH - 84.0, y - 12.0)
+            self.port_labels.append(label)
         self.refresh_text()
 
     @property
@@ -356,6 +394,26 @@ class LogicNodeItem(QGraphicsRectItem):
         else:
             summary = str(self.node.get("category", ""))
         self.summary_item.setPlainText(summary)
+        self.code_item.setPlainText(node_code_preview(self.node))
+
+    def toggle_code_preview(self) -> None:
+        self._show_code = not self._show_code
+        for port in (*self.input_ports.values(), *self.output_ports.values()):
+            port.setVisible(not self._show_code)
+        for label in self.port_labels:
+            label.setVisible(not self._show_code)
+        self.code_item.setVisible(self._show_code)
+        self.flip_control.setToolTip(
+            "Voltar para as portas do bloco" if self._show_code else "Virar bloco e mostrar o código equivalente"
+        )
+        if self._show_code:
+            self.refresh_text()
+            self.summary_item.hide()
+            self.debug_item.hide()
+            self.setBrush(QBrush(QColor("#17221c")))
+        else:
+            self.setBrush(QBrush(QColor("#22242a")))
+            self.set_runtime_state(*self._runtime_display)
 
     def set_runtime_state(
         self,
@@ -364,6 +422,11 @@ class LogicNodeItem(QGraphicsRectItem):
         error: str = "",
         paused: bool = False,
     ) -> None:
+        self._runtime_display = (bool(active), values, str(error), bool(paused))
+        if self._show_code:
+            self.summary_item.hide()
+            self.debug_item.hide()
+            return
         visible = bool(active or error or paused)
         self.summary_item.setVisible(not visible)
         self.debug_item.setVisible(visible)

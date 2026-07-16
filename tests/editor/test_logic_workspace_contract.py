@@ -259,3 +259,23 @@ def test_recipe_topics_and_project_asset_picker_cover_visual_gameplay():
     assert '"sprite_on_start"' in recipes
     assert '"animation_asset_on_start"' in recipes
     assert '"sound_on_collision"' in recipes
+
+
+def test_nodes_flip_to_code_and_patrol_recipe_is_discoverable():
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    preview = _source("engine/logic/code_preview.py")
+    graph = _source("engine/logic/graph_asset.py")
+    runtime = _source("engine/logic/runtime.py")
+    viewport = _source("editor/isolated_viewport.py")
+    recipes = _source("engine/logic/recipes.py")
+    assert "class LogicFlipControl" in editor
+    assert 'super().__init__("</>", node)' in editor
+    assert "toggle_code_preview" in editor
+    assert "node_code_preview(self.node)" in editor
+    assert "def node_code_preview" in preview
+    assert '"patrol_axis"' in graph
+    assert 'node_type == "patrol_axis"' in runtime
+    assert "override_physics_axis" in runtime
+    assert "def override_physics_axis" in viewport
+    assert '"patrol_y_between_limits"' in recipes
+    assert "Patrulhar no Y entre -100 e 100" in recipes

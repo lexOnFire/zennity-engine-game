@@ -341,6 +341,10 @@ class PlayScriptAPI:
         self.x += float(dx)
         self.y += float(dy)
 
+    def override_physics_axis(self, axis: str) -> None:
+        """Evita que a gravidade desfaça um movimento visual controlado neste frame."""
+        self.obj.setdefault("_logic_motion_axes", set()).add(str(axis).lower())
+
     def jump(self, force: float = 420.0) -> None:
         self.obj["_jump_requested"] = True
         self.obj["_jump_force"] = float(force)
@@ -1994,8 +1998,12 @@ def run_viewport(
                 and (obj.get("rigidbody") or {}).get("is_kinematic", True)
             ]
             for name, obj in objects.items():
+                logic_motion_axes = obj.pop("_logic_motion_axes", set())
                 rigidbody = obj.get("rigidbody") or {}
                 if rigidbody.get("is_kinematic", False) or not rigidbody.get("use_gravity", False):
+                    continue
+                if "y" in logic_motion_axes:
+                    velocities_y[name] = 0.0
                     continue
                 grounded[name] = False
                 velocity = velocities_y.get(name, 0.0) + 980.0 * float(rigidbody.get("gravity_scale", 1.0)) * dt

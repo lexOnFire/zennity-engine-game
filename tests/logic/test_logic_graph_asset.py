@@ -16,6 +16,7 @@ from engine.logic.runtime import LogicGraphRuntime
 from engine.logic.blackboard import BlackboardStore, load_blackboard_asset, save_blackboard_asset
 from engine.logic.event_bus import LogicEventBus
 from engine.logic.recipes import LOGIC_RECIPES, build_logic_recipe, find_logic_recipes
+from engine.logic.code_preview import node_code_preview
 
 
 def test_logic_graph_round_trip_uses_zlogic_extension(tmp_path):
@@ -842,3 +843,36 @@ def test_visual_asset_actions_call_image_animation_and_sound_apis():
         ("animation", "Assets/Animations/walk.zanim"),
         ("audio", "Assets/Audio/step.ogg"),
     ]
+
+
+def test_patrol_y_recipe_reverses_at_positive_and_negative_limits():
+    recipe = next(recipe for recipe in LOGIC_RECIPES if recipe["id"] == "patrol_y_between_limits")
+    fragment = build_logic_recipe(str(recipe["id"]))
+    graph = default_logic_graph("PatrolY")
+    graph["nodes"], graph["edges"] = fragment["nodes"], fragment["edges"]
+
+    class Game:
+        def __init__(self): self.x, self.y, self.overridden = 0.0, 0.0, []
+        def move(self, dx, dy=0.0): self.x += dx; self.y += dy
+        def override_physics_axis(self, axis): self.overridden.append(axis)
+
+    game = Game()
+    runtime = LogicGraphRuntime(graph)
+    positions = []
+    for _ in range(7):
+        runtime.update(game, 0.5)
+        positions.append(game.y)
+    assert positions == [50.0, 100.0, 50.0, 0.0, -50.0, -100.0, -50.0]
+    assert game.overridden == ["y"] * 7
+
+
+def test_every_visual_node_has_a_readable_code_backside():
+    patrol = create_logic_node("patrol_axis")
+    patrol["properties"].update({"axis": "Y", "minimum": -100, "maximum": 100, "speed": 80})
+    code = node_code_preview(patrol)
+    assert "pos >= 100" in code
+    assert "pos <= -100" in code
+    assert "direção" in code
+    assert "dt" in code
+    assert node_code_preview(create_logic_node("event_update")).startswith("a_cada_frame")
+    assert node_code_preview(create_logic_node("set_sprite"))

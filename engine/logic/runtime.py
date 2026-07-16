@@ -70,6 +70,7 @@ class LogicGraphRuntime:
         self._subgraph_outputs: dict[str, Any] = {}
         self._timer_elapsed: dict[str, float] = {}
         self._timer_fired: set[str] = set()
+        self._node_state: dict[str, dict[str, Any]] = {}
         self.started = False
         for node in self.nodes.values() if not self.call_stack else ():
             if node.get("type") != "event_custom":
@@ -235,6 +236,7 @@ class LogicGraphRuntime:
         self._pending_custom_events.clear()
         self._timer_elapsed.clear()
         self._timer_fired.clear()
+        self._node_state.clear()
         self.started = False
         self.start(game)
         if not self.debug_paused:
@@ -477,6 +479,35 @@ class LogicGraphRuntime:
             else:
                 target.x = float(target.x) + delta_x
                 target.y = float(target.y) + delta_y
+            return ["next"]
+        if node_type == "patrol_axis":
+            target = self._read_target(node_id, game, dt, set())
+            axis = str(properties.get("axis", "Y")).strip().lower()
+            axis = "x" if axis == "x" else "y"
+            minimum = float(self._read_input(node_id, "minimum", properties.get("minimum", -100.0), game, dt, set()))
+            maximum = float(self._read_input(node_id, "maximum", properties.get("maximum", 100.0), game, dt, set()))
+            if minimum > maximum:
+                minimum, maximum = maximum, minimum
+            speed = abs(float(self._read_input(node_id, "speed", properties.get("speed", 100.0), game, dt, set())))
+            current = float(getattr(target, axis))
+            state = self._node_state.setdefault(node_id, {"direction": 1.0})
+            direction = float(state.get("direction", 1.0))
+            if current >= maximum:
+                direction = -1.0
+            elif current <= minimum:
+                direction = 1.0
+            next_position = max(minimum, min(maximum, current + direction * speed * dt))
+            delta = next_position - current
+            if callable(getattr(target, "move", None)):
+                target.move(delta if axis == "x" else 0.0, delta if axis == "y" else 0.0)
+            else:
+                setattr(target, axis, next_position)
+            override_physics = getattr(target, "override_physics_axis", None)
+            if callable(override_physics):
+                override_physics(axis)
+            state["direction"] = direction
+            self._store(node_id, "direction", direction)
+            self._store(node_id, "position", next_position)
             return ["next"]
         if node_type == "jump":
             force = float(self._read_input(node_id, "force", properties.get("force", 420.0), game, dt, set()))
