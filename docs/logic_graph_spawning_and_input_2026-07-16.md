@@ -14,6 +14,12 @@ propriedades públicas são copiados. Listas e dicionários não são compartilh
 alterar a cópia não modifica o original. A saída `object` permite continuar o
 fluxo manipulando especificamente o novo objeto.
 
+O fio de fluxo também carrega um **alvo implícito**. Portanto, a sequência
+`Criar objeto → Iniciar movimento permanente` já aplica o movimento ao objeto
+criado, mesmo sem desenhar um segundo fio entre `object` e `target`. Uma conexão
+explícita em `target` continua tendo prioridade quando for necessário agir em
+outro objeto.
+
 Desmarcar **Copiar objeto original** mantém o modo antigo, que cria uma forma
 simples usando tamanho, cor, textura e tag configurados no bloco.
 
@@ -40,4 +46,3 @@ A receita **Apertar D uma vez e continuar andando** cria o fluxo:
 
 O estado é descartado ao parar ou reiniciar o Play Mode e nunca altera a cena
 salva no modo de edição.
-

@@ -74,6 +74,7 @@ class LogicGraphRuntime:
         self._timer_fired: set[str] = set()
         self._node_state: dict[str, dict[str, Any]] = {}
         self._persistent_motion: dict[str, dict[str, Any]] = {}
+        self._implicit_target: Any = None
         self.started = False
         for node in self.nodes.values() if not self.call_stack else ():
             if node.get("type") != "event_custom":
@@ -272,6 +273,7 @@ class LogicGraphRuntime:
         self._timer_fired.clear()
         self._node_state.clear()
         self._persistent_motion.clear()
+        self._implicit_target = None
         self.started = False
         self.start(game)
         if not self.debug_paused:
@@ -407,19 +409,24 @@ class LogicGraphRuntime:
             edge_id = str(edge.get("id", ""))
             if edge_id and edge_id not in self.executed_edges:
                 self.executed_edges.append(edge_id)
-            yield target_id
-            if target_id not in self.executed_nodes:
-                self.executed_nodes.append(target_id)
+            previous_target = self._implicit_target
+            self._implicit_target = self._node_state.get(node_id, {}).get("flow_target", previous_target)
             try:
-                next_ports = self._execute(target, game, dt)
-            except RuntimeError:
-                raise
-            except Exception as exc:
-                raise RuntimeError(f"Nó '{target.get('title', target_id)}': {exc}") from exc
-            next_branch = set(branch)
-            next_branch.add(target_id)
-            for next_port in next_ports:
-                yield from self._follow_debug(target_id, next_port, game, dt, budget, next_branch)
+                yield target_id
+                if target_id not in self.executed_nodes:
+                    self.executed_nodes.append(target_id)
+                try:
+                    next_ports = self._execute(target, game, dt)
+                except RuntimeError:
+                    raise
+                except Exception as exc:
+                    raise RuntimeError(f"Nó '{target.get('title', target_id)}': {exc}") from exc
+                next_branch = set(branch)
+                next_branch.add(target_id)
+                for next_port in next_ports:
+                    yield from self._follow_debug(target_id, next_port, game, dt, budget, next_branch)
+            finally:
+                self._implicit_target = previous_target
 
     def _run_event(self, event_type: str, game: Any, dt: float, payload: Any = None) -> None:
         budget = [self.MAX_STEPS]
@@ -465,17 +472,22 @@ class LogicGraphRuntime:
             edge_id = str(edge.get("id", ""))
             if edge_id and edge_id not in self.executed_edges:
                 self.executed_edges.append(edge_id)
-            self.executed_nodes.append(target_id)
+            previous_target = self._implicit_target
+            self._implicit_target = self._node_state.get(node_id, {}).get("flow_target", previous_target)
             try:
-                next_ports = self._execute(target, game, dt)
-            except RuntimeError:
-                raise
-            except Exception as exc:
-                raise RuntimeError(f"Nó '{target.get('title', target_id)}': {exc}") from exc
-            next_branch = set(branch)
-            next_branch.add(target_id)
-            for next_port in next_ports:
-                self._follow(target_id, next_port, game, dt, budget, next_branch)
+                self.executed_nodes.append(target_id)
+                try:
+                    next_ports = self._execute(target, game, dt)
+                except RuntimeError:
+                    raise
+                except Exception as exc:
+                    raise RuntimeError(f"Nó '{target.get('title', target_id)}': {exc}") from exc
+                next_branch = set(branch)
+                next_branch.add(target_id)
+                for next_port in next_ports:
+                    self._follow(target_id, next_port, game, dt, budget, next_branch)
+            finally:
+                self._implicit_target = previous_target
 
     def _execute(self, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
         node_type = str(node["type"])
@@ -622,6 +634,7 @@ class LogicGraphRuntime:
                     tag=str(properties.get("tag", "Untagged")),
                 )
             self._store(node_id, "object", created)
+            self._node_state.setdefault(node_id, {})["flow_target"] = created
             return ["next"]
         if node_type == "create_prefab":
             path = str(properties.get("path", "")).strip()
@@ -634,12 +647,14 @@ class LogicGraphRuntime:
                 y += float(game.y)
             created = game.create_prefab(path, x, y)
             self._store(node_id, "object", created)
+            self._node_state.setdefault(node_id, {})["flow_target"] = created
             return ["next"]
         if node_type == "clone_object":
             target = self._read_target(node_id, game, dt, set())
             name = str(self._read_input(node_id, "name", properties.get("name", ""), game, dt, set()))
             created = game.clone_object(target, name)
             self._store(node_id, "object", created)
+            self._node_state.setdefault(node_id, {})["flow_target"] = created
             return ["next"]
         if node_type == "add_component":
             target = self._read_target(node_id, game, dt, set())
@@ -777,7 +792,7 @@ class LogicGraphRuntime:
     def _read_target(self, node_id: str, game: Any, dt: float, resolving: set[tuple[str, str]]) -> Any:
         """Resolve uma porta de objeto sem copiar o objeto atual por engano."""
         if (node_id, "target") not in self.incoming:
-            return game
+            return self._implicit_target or game
         return self._read_input(node_id, "target", game, game, dt, resolving) or game
 
     def _evaluate_output(

@@ -1081,6 +1081,47 @@ def test_key_event_starts_motion_once_and_motion_continues_after_release():
     assert runtime._persistent_motion
 
 
+def test_created_object_becomes_implicit_target_for_following_actions():
+    key_event = create_logic_node("event_key_pressed")
+    key_event["properties"]["key"] = "D"
+    create = create_logic_node("create_object")
+    create["properties"].update({"name": "Projectile", "x": 10.0, "y": 20.0})
+    motion = create_logic_node("start_continuous_motion")
+    motion["properties"].update({"x": 100.0, "y": 0.0})
+    graph = default_logic_graph("SpawnAndMove")
+    graph["nodes"] = [key_event, create, motion]
+    # Somente os fios de fluxo: a referência criada é carregada implicitamente.
+    graph["edges"] = [
+        _edge(key_event, "next", create, "in"),
+        _edge(create, "next", motion, "in"),
+    ]
+
+    class Created:
+        active = True
+        def __init__(self): self.x = 0.0; self.y = 0.0
+        def move(self, dx, dy=0.0): self.x += dx; self.y += dy
+
+    class Game:
+        active = True
+        x = y = 0.0
+        def __init__(self): self.created = Created(); self.pressed = True
+        def key_pressed(self, _key):
+            value = self.pressed
+            self.pressed = False
+            return value
+        def clone_object(self, _source, _name): return self.created
+        def move(self, dx, dy=0.0): self.x += dx; self.y += dy
+
+    game = Game()
+    runtime = LogicGraphRuntime(graph)
+    runtime.update(game, 0.1)
+    runtime.update(game, 0.1)
+
+    assert game.x == 0.0
+    assert (game.created.x, game.created.y) == (30.0, 20.0)
+    assert next(iter(runtime._persistent_motion.values()))["target"] is game.created
+
+
 def test_held_and_just_pressed_keys_are_distinct_conditions():
     pressed = create_logic_node("key_pressed")
     held = create_logic_node("key_held")

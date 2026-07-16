@@ -92,7 +92,7 @@ NODE_DESCRIPTIONS = {
     "event_trigger_exit": "Executa ao sair de uma área/trigger.",
     "event_timer": "Espera a quantidade de segundos e pode repetir automaticamente.",
     "event_key_pressed": "Executa uma única vez no instante em que a tecla é apertada.",
-    "create_object": "Cria uma cópia profunda e independente do objeto original, preservando visual e componentes.",
+    "create_object": "Cria uma cópia profunda e independente; ações conectadas depois recebem automaticamente o novo objeto.",
     "create_prefab": "Cria uma cópia completa de um Prefab com visual e componentes configurados.",
     "clone_object": "Duplica um objeto existente durante o Play Mode.",
     "add_component": "Adiciona e configura um componente no objeto alvo.",

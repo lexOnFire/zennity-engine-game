@@ -5,6 +5,7 @@
 - Física fixa, áudio, animação e HUD da Viewport passaram a usar serviços independentes e exportáveis; foi adicionada uma ponte explícita para o ECS oficial.
 - Criar objeto pela Lógica Visual agora pode copiar profundamente o objeto original sem compartilhar componentes; Logic Graphs da cópia ficam desligados por padrão para evitar criação recursiva.
 - Adicionados o evento de tecla acionada uma vez, a condição de tecla mantida e os blocos para iniciar/parar movimento permanente.
+- Ações encadeadas depois de Criar/Clonar/Instanciar Prefab agora recebem o novo objeto como alvo implícito, evitando que o movimento seja aplicado por engano ao Player.
 
 ## Pre-Beta Stabilization
 
