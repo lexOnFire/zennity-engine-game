@@ -43,9 +43,12 @@ from editor.ui.icons import editor_icon
 from editor.widgets.logic_asset_picker import LogicAssetPickerDialog
 from engine.logic.graph_asset import (
     NODE_DEFINITIONS,
+    UNIQUE_EVENT_TYPES,
+    consolidate_logic_events,
     create_logic_node,
     default_logic_graph,
     load_logic_graph,
+    merge_logic_fragment,
     normalize_logic_graph,
     node_port_definitions,
     save_logic_graph,
@@ -302,6 +305,7 @@ class LogicNodeItem(QGraphicsRectItem):
         self.editor = editor
         self.node = node
         self._show_code = False
+        self._fanout_count = 0
         self._runtime_display: tuple[bool, dict[str, Any] | None, str, bool] = (False, None, "", False)
         self.setFlags(
             QGraphicsItem.ItemIsMovable
@@ -390,12 +394,18 @@ class LogicNodeItem(QGraphicsRectItem):
 
     def refresh_text(self) -> None:
         properties = self.node.get("properties", {})
-        if properties:
+        if str(self.node.get("type", "")).startswith("event_") and self._fanout_count:
+            summary = f"{self._fanout_count} ação(ões) conectada(s) • arraste para adicionar"
+        elif properties:
             summary = "  •  ".join(f"{key}: {value}" for key, value in list(properties.items())[:2])
         else:
             summary = str(self.node.get("category", ""))
         self.summary_item.setPlainText(summary)
         self.code_item.setPlainText(node_code_preview(self.node))
+
+    def set_fanout_count(self, count: int) -> None:
+        self._fanout_count = max(0, int(count))
+        self.refresh_text()
 
     def toggle_code_preview(self) -> None:
         self._show_code = not self._show_code
@@ -856,6 +866,20 @@ class LogicGraphEditor(QWidget):
 
     def _add_palette_item(self, item: QListWidgetItem) -> None:
         node_type = str(item.data(Qt.UserRole))
+        if node_type in UNIQUE_EVENT_TYPES:
+            existing = next(
+                (node_item for node_item in self.node_items.values() if node_item.node.get("type") == node_type),
+                None,
+            )
+            if existing is not None:
+                self.scene.clearSelection()
+                existing.setSelected(True)
+                self.view.centerOn(existing)
+                self.message.emit(
+                    "INFO",
+                    "Esse evento já existe; conecte outra ação usando a mesma saída",
+                )
+                return
         center = self.view.mapToScene(self.view.viewport().rect().center())
         offset = len(self.node_items) * 18.0
         node = create_logic_node(node_type, (center.x() + offset, center.y() + offset))
@@ -902,15 +926,13 @@ class LogicGraphEditor(QWidget):
             return
         center = self.view.mapToScene(self.view.viewport().rect().center())
         fragment = build_logic_recipe(recipe_id, (center.x(), center.y()))
-        self.graph["nodes"].extend(fragment["nodes"])
-        self.graph["edges"].extend(fragment["edges"])
-        for node in fragment["nodes"]:
-            self._create_node_item(node)
-        self.refresh_connections()
+        merged, reused_events = merge_logic_fragment(self.graph_data(), fragment)
+        current_path = self.current_path
+        self.set_graph(merged, current_path)
         self.mark_dirty()
-        self._update_validation()
         recipe = logic_recipe(recipe_id)
-        self.message.emit("INFO", f"Receita inserida: {recipe['title']}")
+        reused_message = f" • {reused_events} evento(s) reutilizado(s)" if reused_events else ""
+        self.message.emit("INFO", f"Receita inserida: {recipe['title']}{reused_message}")
 
     def _refresh_subgraph_assets(self) -> None:
         self.subgraph_list.clear()
@@ -984,7 +1006,7 @@ class LogicGraphEditor(QWidget):
         self.clear_runtime_trace()
         self.cancel_connection()
         self._autosave_timer.stop()
-        self.graph = normalize_logic_graph(graph)
+        self.graph, consolidated_events = consolidate_logic_events(graph)
         self._sync_subgraph_call_interfaces(self.graph)
         self.graph_enabled_check.blockSignals(True)
         self.graph_enabled_check.setChecked(bool(self.graph.get("enabled", True)))
@@ -1010,10 +1032,15 @@ class LogicGraphEditor(QWidget):
         self._refresh_blackboard_variables()
         self._refresh_subgraph_assets()
         self.refresh_connections()
-        self._dirty = False
+        self._dirty = bool(consolidated_events and path is not None)
         self._update_status()
         self._update_validation()
         self.fit_graph()
+        if consolidated_events:
+            self.message.emit(
+                "INFO",
+                f"{consolidated_events} evento(s) duplicado(s) unificado(s); conexões preservadas",
+            )
 
     def apply_runtime_trace(self, trace: dict[str, Any]) -> None:
         """Aplica um snapshot limitado enviado pelo processo da Viewport."""
@@ -1149,6 +1176,24 @@ class LogicGraphEditor(QWidget):
             connection = LogicEdgeItem(path, str(edge.get("id")), data_type)
             self.scene.addItem(connection)
             self.edge_items.append(connection)
+        fanout_counts: dict[str, int] = {}
+        port_counts: dict[tuple[str, str], int] = {}
+        for edge in self.graph.get("edges", []):
+            node_id = str(edge.get("from_node", ""))
+            port_name = str(edge.get("from_port", "next"))
+            port_counts[(node_id, port_name)] = port_counts.get((node_id, port_name), 0) + 1
+            if str(edge.get("kind", "flow")) == "flow":
+                fanout_counts[node_id] = fanout_counts.get(node_id, 0) + 1
+        for node_id, item in self.node_items.items():
+            item.set_fanout_count(fanout_counts.get(node_id, 0))
+            for port_name, port in item.output_ports.items():
+                count = port_counts.get((node_id, port_name), 0)
+                if port.data_type == "flow":
+                    port.setToolTip(
+                        f"{count} conexão(ões) • arraste novamente para adicionar outra ação"
+                        if count
+                        else "Arraste para conectar uma ou várias ações"
+                    )
 
     @staticmethod
     def _connection_path(start: QPointF, end: QPointF) -> QPainterPath:

@@ -293,3 +293,16 @@ def test_logic_editor_opens_in_selected_hierarchy_object_context():
     assert 'setWindowTitle(f"Zennity — Lógica Visual — {selected}")' in main
     assert 'Lógica Visual: {selected}' in main
     assert "preferred_path=path" in main
+
+
+def test_frame_event_is_reused_and_visibly_supports_multiple_actions():
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    graph = _source("engine/logic/graph_asset.py")
+    assert "merge_logic_fragment(self.graph_data(), fragment)" in editor
+    assert "consolidate_logic_events(graph)" in editor
+    assert "set_fanout_count" in editor
+    assert "arraste novamente para adicionar outra ação" in editor
+    assert "Esse evento já existe; conecte outra ação usando a mesma saída" in editor
+    assert "node_type in UNIQUE_EVENT_TYPES" in editor
+    assert "def merge_logic_fragment" in graph
+    assert "def consolidate_logic_events" in graph

@@ -21,6 +21,11 @@ except ImportError:  # Runtime autocontido exportado.
 LOGIC_GRAPH_FORMAT = "zennity.logic_graph"
 LOGIC_GRAPH_VERSION = 1
 
+UNIQUE_EVENT_TYPES = {
+    "event_start", "event_update", "event_collision_enter", "event_collision_exit",
+    "event_trigger_enter", "event_trigger_exit",
+}
+
 NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "event_start": {"title": "Ao iniciar", "category": "Eventos", "properties": {}},
     "event_update": {"title": "A cada frame", "category": "Eventos", "properties": {}},
@@ -300,6 +305,103 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
     return result
 
 
+def _event_identity(node: Mapping[str, Any]) -> tuple[str, str] | None:
+    node_type = str(node.get("type", ""))
+    if node_type in UNIQUE_EVENT_TYPES:
+        return node_type, ""
+    if node_type == "event_custom":
+        return node_type, str(node.get("properties", {}).get("name", "evento")).strip().casefold()
+    return None
+
+
+def consolidate_logic_events(data: Mapping[str, Any] | None) -> tuple[dict[str, Any], int]:
+    """Unifica eventos equivalentes e preserva todas as ramificações de saída."""
+    graph = normalize_logic_graph(data)
+    canonical: dict[tuple[str, str], str] = {}
+    remap: dict[str, str] = {}
+    nodes: list[dict[str, Any]] = []
+    removed = 0
+    for node in graph["nodes"]:
+        identity = _event_identity(node)
+        if identity is not None and identity in canonical:
+            remap[str(node["id"])] = canonical[identity]
+            removed += 1
+            continue
+        if identity is not None:
+            canonical[identity] = str(node["id"])
+        nodes.append(node)
+    graph["nodes"] = nodes
+    debug = graph.setdefault("debug", {})
+    debug["breakpoints"] = list(dict.fromkeys(
+        remap.get(str(node_id), str(node_id)) for node_id in debug.get("breakpoints", [])
+    ))
+    conditions = debug.get("breakpoint_conditions", {})
+    if isinstance(conditions, Mapping):
+        debug["breakpoint_conditions"] = {
+            remap.get(str(node_id), str(node_id)): str(expression)
+            for node_id, expression in conditions.items()
+        }
+    signatures: set[tuple[str, str, str, str, str]] = set()
+    edges: list[dict[str, Any]] = []
+    for source in graph["edges"]:
+        edge = deepcopy(source)
+        edge["from_node"] = remap.get(str(edge["from_node"]), str(edge["from_node"]))
+        edge["to_node"] = remap.get(str(edge["to_node"]), str(edge["to_node"]))
+        if edge["from_node"] == edge["to_node"]:
+            continue
+        signature = (
+            str(edge["from_node"]), str(edge.get("from_port", "next")),
+            str(edge["to_node"]), str(edge.get("to_port", "in")), str(edge.get("kind", "flow")),
+        )
+        if signature in signatures:
+            continue
+        signatures.add(signature)
+        edges.append(edge)
+    graph["edges"] = edges
+    return normalize_logic_graph(graph), removed
+
+
+def merge_logic_fragment(
+    data: Mapping[str, Any] | None,
+    fragment: Mapping[str, Any],
+) -> tuple[dict[str, Any], int]:
+    """Insere uma receita reutilizando eventos únicos que já existem no grafo."""
+    graph, consolidated = consolidate_logic_events(data)
+    identities = {
+        identity: str(node["id"])
+        for node in graph["nodes"]
+        if (identity := _event_identity(node)) is not None
+    }
+    remap: dict[str, str] = {}
+    reused = consolidated
+    for source in fragment.get("nodes", []):
+        node = deepcopy(source)
+        identity = _event_identity(node)
+        if identity is not None and identity in identities:
+            remap[str(node["id"])] = identities[identity]
+            reused += 1
+            continue
+        graph["nodes"].append(node)
+        if identity is not None:
+            identities[identity] = str(node["id"])
+    signatures = {
+        (str(edge["from_node"]), str(edge.get("from_port", "next")), str(edge["to_node"]), str(edge.get("to_port", "in")), str(edge.get("kind", "flow")))
+        for edge in graph["edges"]
+    }
+    for source in fragment.get("edges", []):
+        edge = deepcopy(source)
+        edge["from_node"] = remap.get(str(edge["from_node"]), str(edge["from_node"]))
+        edge["to_node"] = remap.get(str(edge["to_node"]), str(edge["to_node"]))
+        signature = (
+            str(edge["from_node"]), str(edge.get("from_port", "next")),
+            str(edge["to_node"]), str(edge.get("to_port", "in")), str(edge.get("kind", "flow")),
+        )
+        if edge["from_node"] != edge["to_node"] and signature not in signatures:
+            signatures.add(signature)
+            graph["edges"].append(edge)
+    return normalize_logic_graph(graph), reused
+
+
 def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]:
     graph = normalize_logic_graph(data)
     issues: list[dict[str, str]] = []
@@ -317,7 +419,13 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
     connected = {edge["from_node"] for edge in graph["edges"]} | {edge["to_node"] for edge in graph["edges"]}
     connected_inputs = {(edge["to_node"], edge.get("to_port", "in")) for edge in graph["edges"]}
     nodes_by_id = {node["id"]: node for node in graph["nodes"]}
+    event_identities: dict[tuple[str, str], str] = {}
     for node in graph["nodes"]:
+        identity = _event_identity(node)
+        if identity is not None and identity in event_identities:
+            issues.append({"level": "warning", "node": node["id"], "message": "Evento duplicado: conecte as ações ao evento existente."})
+        elif identity is not None:
+            event_identities[identity] = str(node["id"])
         if node["type"] in {"event_custom", "emit_event"} and not str(node.get("properties", {}).get("name", "")).strip():
             issues.append({"level": "error", "node": node["id"], "message": "Informe o nome do evento."})
         if node["type"] in {"subgraph_input", "subgraph_return"} and not str(node.get("properties", {}).get("name", "")).strip():

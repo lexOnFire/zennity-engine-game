@@ -3,9 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 
 from engine.logic.graph_asset import (
+    consolidate_logic_events,
     create_logic_node,
     default_logic_graph,
     load_logic_graph,
+    merge_logic_fragment,
     normalize_logic_graph,
     node_port_definitions,
     save_logic_graph,
@@ -65,6 +67,57 @@ def test_normalization_preserves_only_breakpoints_for_existing_nodes():
     assert normalized["debug"]["breakpoints"] == [event["id"]]
     assert normalized["debug"]["breakpoint_conditions"] == {event["id"]: "x > 10"}
     assert normalized["debug"]["watches"] == ["x", "vida"]
+
+
+def test_consolidate_duplicate_frame_events_preserves_every_branch():
+    first_event = create_logic_node("event_update")
+    duplicate_event = create_logic_node("event_update")
+    move_x = create_logic_node("move_by")
+    move_y = create_logic_node("move_by")
+    graph = default_logic_graph("FanOut")
+    graph["nodes"] = [first_event, duplicate_event, move_x, move_y]
+    graph["edges"] = [
+        _edge(first_event, "next", move_x, "in"),
+        _edge(duplicate_event, "next", move_y, "in"),
+    ]
+    graph["debug"]["breakpoints"] = [duplicate_event["id"]]
+
+    consolidated, removed = consolidate_logic_events(graph)
+
+    events = [node for node in consolidated["nodes"] if node["type"] == "event_update"]
+    outgoing = [edge for edge in consolidated["edges"] if edge["from_node"] == events[0]["id"]]
+    assert removed == 1
+    assert len(events) == 1
+    assert len(outgoing) == 2
+    assert consolidated["debug"]["breakpoints"] == [events[0]["id"]]
+
+
+def test_recipe_merge_reuses_frame_event_and_executes_parallel_actions():
+    base = build_logic_recipe("move_x_every_frame")
+    graph = default_logic_graph("ParallelRecipes")
+    graph["nodes"], graph["edges"] = base["nodes"], base["edges"]
+
+    merged, reused = merge_logic_fragment(graph, build_logic_recipe("patrol_y_between_limits"))
+    events = [node for node in merged["nodes"] if node["type"] == "event_update"]
+    outgoing = [edge for edge in merged["edges"] if edge["from_node"] == events[0]["id"]]
+
+    class Game:
+        def __init__(self): self.x, self.y = 0.0, 0.0
+        def move(self, dx, dy=0.0): self.x += dx; self.y += dy
+
+    game = Game()
+    LogicGraphRuntime(merged).update(game, 0.5)
+    assert reused == 1
+    assert len(events) == 1
+    assert len(outgoing) == 2
+    assert (game.x, game.y) == (60.0, 50.0)
+    assert not any("Evento duplicado" in issue["message"] for issue in validate_logic_graph(merged))
+
+
+def test_validation_explains_duplicate_frame_event():
+    graph = default_logic_graph("DuplicateEvent")
+    graph["nodes"] = [create_logic_node("event_update"), create_logic_node("event_update")]
+    assert any("Evento duplicado" in issue["message"] for issue in validate_logic_graph(graph))
 
 
 def test_validation_reports_missing_event_and_disconnected_node():
