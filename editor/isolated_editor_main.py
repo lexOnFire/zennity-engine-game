@@ -633,11 +633,26 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.animation_window.activateWindow()
         self._log("INFO", "Editor de Animação aberto")
 
-    def _show_logic_window(self) -> None:
+    def _show_logic_window(self, _checked: bool = False, *, preferred_path: Path | None = None) -> None:
+        selected = self._selected_name if self._selected_name in self._objects_by_name else None
+        if selected is not None:
+            bindings = self._logic_graphs_for_object(selected)
+            context_path = preferred_path or (bindings[0][0] if bindings else None)
+            if not self.logic_workspace.open_for_object(selected, context_path):
+                return
+            self.logic_window.setWindowTitle(f"Zennity — Lógica Visual — {selected}")
+            source = context_path.name if context_path is not None else "novo rascunho"
+            self.statusBar().showMessage(f"Lógica Visual: {selected} • {source}")
+        elif preferred_path is not None:
+            if not self.logic_workspace.open_asset(preferred_path):
+                return
+            self.logic_window.setWindowTitle("Zennity — Editor de Lógica Visual")
+        else:
+            self.statusBar().showMessage("Selecione um objeto na Hierarchy para definir o alvo da lógica")
         self.logic_window.show()
         self.logic_window.raise_()
         self.logic_window.activateWindow()
-        self._log("INFO", "Editor de Lógica Visual aberto")
+        self._log("INFO", f"Editor de Lógica Visual aberto{f' para {selected}' if selected else ''}")
 
     def _logic_assets(self) -> list[tuple[Path, dict]]:
         directory = Path.cwd() / "Assets" / "Logic"
@@ -718,8 +733,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._component_expanded["logic"] = True
         self._refresh_assets()
         self._update_inspector(self._selected_name)
-        self._show_logic_window()
-        self.logic_workspace.open_path(path)
+        self._show_logic_window(preferred_path=path)
         self._log("INFO", f"Logic Graph criado para {self._selected_name}: {path.name}")
 
     def _selected_logic_path(self) -> Path | None:
@@ -730,8 +744,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         path = self._selected_logic_path()
         if path is None or not path.is_file():
             return
-        self._show_logic_window()
-        self.logic_workspace.open_path(path)
+        self._show_logic_window(preferred_path=path)
 
     def _detach_selected_logic_graph(self) -> None:
         path = self._selected_logic_path()
@@ -874,8 +887,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         path = Path(path_value) if path_value else None
         if path is None or not path.is_file() or path.suffix.lower() != ".zlogic":
             return
-        self._show_logic_window()
-        self.logic_workspace.open_path(path)
+        self._show_logic_window(preferred_path=path)
 
     def _refresh_prefabs(self) -> None:
         self.prefab_tree.clear()

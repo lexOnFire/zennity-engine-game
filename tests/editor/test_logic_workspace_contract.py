@@ -279,3 +279,17 @@ def test_nodes_flip_to_code_and_patrol_recipe_is_discoverable():
     assert "def override_physics_axis" in viewport
     assert '"patrol_y_between_limits"' in recipes
     assert "Patrulhar no Y entre -100 e 100" in recipes
+
+
+def test_logic_editor_opens_in_selected_hierarchy_object_context():
+    main = _source("editor/isolated_editor_main.py")
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    assert "def open_for_object" in editor
+    assert "def open_asset" in editor
+    assert 'graph["target"] = {"type": "name", "value": target_name}' in editor
+    assert 'create_logic_node("event_start"' in editor
+    assert "bindings = self._logic_graphs_for_object(selected)" in main
+    assert "self.logic_workspace.open_for_object(selected, context_path)" in main
+    assert 'setWindowTitle(f"Zennity — Lógica Visual — {selected}")' in main
+    assert 'Lógica Visual: {selected}' in main
+    assert "preferred_path=path" in main

@@ -1714,6 +1714,47 @@ class LogicGraphEditor(QWidget):
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             self.message.emit("ERROR", f"Não foi possível abrir o Logic Graph: {exc}")
 
+    def open_asset(self, path: str | Path) -> bool:
+        """Abre um asset respeitando alterações não salvas no grafo atual."""
+        resolved = Path(path).resolve()
+        if self.current_path is not None:
+            try:
+                if resolved == self.current_path.resolve():
+                    return True
+            except OSError:
+                pass
+        if not self._confirm_discard():
+            return False
+        self.open_path(resolved)
+        return self.current_path is not None and self.current_path.resolve() == resolved
+
+    def open_for_object(self, object_name: str, path: str | Path | None = None) -> bool:
+        """Abre um asset existente ou prepara um rascunho para o objeto da Hierarchy."""
+        target_name = str(object_name).strip()
+        if not target_name:
+            return False
+        resolved = Path(path).resolve() if path is not None else None
+        if resolved is not None:
+            return self.open_asset(resolved)
+        current_target = self.graph.get("target", {})
+        already_contextual = (
+            resolved is None
+            and self.current_path is None
+            and str(current_target.get("type", "name")) == "name"
+            and str(current_target.get("value", "")).casefold() == target_name.casefold()
+        )
+        if already_contextual:
+            return True
+        if not self._confirm_discard():
+            return False
+        safe_name = "".join(character if character.isalnum() else "_" for character in target_name).strip("_") or "Object"
+        graph = default_logic_graph(f"{safe_name}Logic")
+        graph["target"] = {"type": "name", "value": target_name}
+        graph["nodes"] = [create_logic_node("event_start", (80.0, 100.0))]
+        self.set_graph(graph)
+        self.message.emit("INFO", f"Novo Logic Graph preparado para: {target_name}")
+        return True
+
     def open_demo(self) -> None:
         if not self._confirm_discard():
             return
