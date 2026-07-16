@@ -51,7 +51,7 @@ def test_add_component_uses_searchable_picker_instead_of_flat_menu() -> None:
     assert "ComponentPickerDialog" in method_source
     assert "QMenu(" not in method_source
     assert "Pesquisar componente..." in picker_source
-    for category in ("Renderização", "Física", "Câmera e áudio", "Interface", "Código"):
+    for category in ("Programação visual", "Renderização", "Física", "Câmera e áudio", "Interface"):
         assert category in picker_source
 
 

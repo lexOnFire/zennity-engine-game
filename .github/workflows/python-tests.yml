@@ -2,11 +2,23 @@ name: Python Tests
 
 on:
   push:
-    branches: [main]
+    branches: [main, zen/fix-phase1-tests]
   pull_request:
     branches: [main]
 
 jobs:
+  lint:
+    name: Ruff / Python 3.12
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install ruff
+      - run: ruff check engine editor tests --select E9,F63,F7,F82
+
   tests:
     name: pytest / Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
@@ -35,6 +47,11 @@ jobs:
             requirements.txt
             requirements-dev.txt
 
+      - name: Install Qt headless system libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libegl1 libegl-mesa0 libgl1 libgl1-mesa-dri libxkbcommon0 libxkbcommon-x11-0 libxcb-cursor0 libxcb-xinerama0
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -42,3 +59,24 @@ jobs:
 
       - name: Run tests
         run: python -m pytest
+
+  windows-release-candidate:
+    name: Windows / Python 3.12 / Export smoke
+    runs-on: windows-latest
+    env:
+      SDL_VIDEODRIVER: dummy
+      SDL_AUDIODRIVER: dummy
+      PYGAME_HIDE_SUPPORT_PROMPT: "1"
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r requirements.txt -r requirements-dev.txt
+      - run: python -m pytest tests/editor/test_project_exporter.py tests/editor/test_play_session_stability.py tests/logic tests/runtime -v

@@ -313,11 +313,17 @@ def test_logic_workspace_can_create_runtime_objects_and_pick_their_sprite():
     graph = _source("engine/logic/graph_asset.py")
     runtime = _source("engine/logic/runtime.py")
     viewport = _source("editor/isolated_viewport.py")
+    world = _source("engine/runtime/runtime_world.py")
+    picker = _source("editor/widgets/logic_asset_picker.py")
     recipes = _source("engine/logic/recipes.py")
     assert '"create_object"' in graph
     assert 'node_type == "create_object"' in runtime
     assert "def create_object(" in viewport
-    assert '"spawned_by_logic": True' in viewport
+    assert '"spawned_by_logic"' in world
     assert '"create_object": "image"' in editor
     assert 'property_name = "texture"' in editor
     assert '"create_object_on_start"' in recipes
+    assert '"create_prefab": "prefab"' in editor
+    assert '"prefab": ("Prefab", {".zprefab"})' in picker
+    for node_type in ("create_prefab", "clone_object", "add_component", "remove_component", "once", "cooldown", "restart_scene"):
+        assert f'"{node_type}"' in graph

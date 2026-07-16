@@ -29,6 +29,7 @@ RUNTIME_SOURCES = (
     "engine/logic/blackboard.py",
     "engine/logic/event_bus.py",
     "engine/logic/runtime.py",
+    "engine/runtime/runtime_world.py",
     "engine/build/runtime_scene_loader.py",
 )
 
@@ -92,6 +93,7 @@ def validate_project(project_root: str | Path, scene_path: str | Path) -> Projec
         payload = _load_scene(scene, report)
         if payload is not None:
             _validate_scene(root, payload, report)
+        _validate_logic_assets(root, report)
         _validate_runtime_sources(root, report)
     except (OSError, TypeError, ValueError, OverflowError) as exc:
         report.add("error", "Validação", f"Não foi possível analisar o projeto: {exc}", scene)
@@ -341,3 +343,53 @@ def _validate_runtime_sources(root: Path, report: ProjectValidationReport) -> No
         report.checked_files += 1
         if not path.is_file():
             report.add("error", "Exportação", "Dependência do runtime não encontrada.", relative)
+
+
+def _validate_logic_assets(root: Path, report: ProjectValidationReport) -> None:
+    directory = root / "Assets" / "Logic"
+    if not directory.is_dir():
+        return
+    unique_events = {
+        "event_start", "event_update", "event_collision_enter", "event_collision_exit",
+        "event_trigger_enter", "event_trigger_exit",
+    }
+    for path in sorted(directory.rglob("*.zlogic"), key=lambda item: str(item).casefold()):
+        report.checked_files += 1
+        try:
+            graph = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            report.add("error", "Logic Graph", f"Arquivo inválido: {exc}", path)
+            continue
+        if not isinstance(graph, dict) or graph.get("format") != "zennity.logic_graph":
+            report.add("error", "Logic Graph", "Formato de grafo inválido.", path)
+            continue
+        nodes = graph.get("nodes", [])
+        edges = graph.get("edges", [])
+        if not isinstance(nodes, list) or not isinstance(edges, list):
+            report.add("error", "Logic Graph", "Nodes e edges precisam ser listas.", path)
+            continue
+        ids = {str(node.get("id", "")) for node in nodes if isinstance(node, dict) and node.get("id")}
+        seen_events: set[tuple[str, str]] = set()
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+            node_type = str(node.get("type", ""))
+            properties = node.get("properties") if isinstance(node.get("properties"), dict) else {}
+            identity = (node_type, "") if node_type in unique_events else None
+            if node_type == "event_custom":
+                identity = (node_type, str(properties.get("name", "")).strip().casefold())
+            if identity is not None and identity in seen_events:
+                report.add("warning", "Logic Graph", f"Evento duplicado: {node_type}.", path)
+            elif identity is not None:
+                seen_events.add(identity)
+            asset_key = {
+                "create_prefab": "path", "set_sprite": "path", "play_sound": "path",
+                "play_animation_asset": "path",
+            }.get(node_type)
+            if asset_key and properties.get(asset_key):
+                _check_asset(root, properties[asset_key], "Logic Graph", path.stem, report, set())
+        for edge in edges:
+            if not isinstance(edge, dict):
+                continue
+            if str(edge.get("from_node", "")) not in ids or str(edge.get("to_node", "")) not in ids:
+                report.add("error", "Logic Graph", "Conexão aponta para um bloco inexistente.", path)

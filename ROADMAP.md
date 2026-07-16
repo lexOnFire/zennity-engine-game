@@ -1,6 +1,6 @@
 # Zennity Engine — Roadmap
 
-> Última atualização: 2026-07-14
+> Última atualização: 2026-07-16
 
 ---
 
@@ -21,10 +21,15 @@
   - [x] Gerar runtime de desenvolvimento autocontido e validar cena/componentes exportados
   - [x] Tornar Play/Pause/Stop determinístico, restaurar seleção/cena e pausar áudio
   - [x] Adicionar validação de projeto integrada ao editor e bloquear exportação com erros
+  - [x] Unificar criação, clonagem, Prefabs, componentes e destruição no Runtime World da Viewport
+  - [x] Estabilizar física com passo fixo e limitar recuperação de frames atrasados
+  - [x] Ordenar fan-out dos Logic Graphs e adicionar Once, Cooldown, Prefab e operações de componentes
+  - [x] Tornar salvamento de cena atômico, com backup automático da versão anterior
+  - [x] Consolidar os workflows de CI e adicionar matriz Linux 3.10–3.12 e gate Windows 3.12
   - [ ] Validar o fluxo completo no Windows com Python 3.12
-  - [ ] Executar a suíte de regressão completa
-  - [ ] Validar Play/Pause/Stop com scripts, física, áudio, HUD e animação
-  - [ ] Executar e validar um projeto exportado fora do editor
+  - [x] Executar regressão headless completa disponível no ambiente de desenvolvimento
+  - [x] Validar Play/Pause/Stop com Logic Graph, física, áudio, HUD e animação
+  - [x] Executar a validação do projeto exportado em processo separado do editor
 
 ### v0.4.0-alpha — Editor Polish (Milestone 4) ✅
 - [x] Hierarchy Improvements com drag & drop, reparent, ordenação, duplicate, delete, rename e menu de contexto (Fase 26)

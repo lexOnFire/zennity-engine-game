@@ -115,3 +115,26 @@ def test_generic_property_command_captures_old_value_without_invalid_syntax() ->
     assert target.value == 9
     command.undo()
     assert target.value == 3
+
+
+def test_runtime_restart_resets_physics_and_restarts_autoplay_audio() -> None:
+    viewport_source = Path("editor/isolated_viewport.py").read_text(encoding="utf-8")
+    restart_block = viewport_source.split("if restart_requested:", 1)[1].split(
+        "physics_accumulator = min", 1
+    )[0]
+
+    assert "stop_audio_sources()" in restart_block
+    assert "physics_accumulator = 0.0" in restart_block
+    assert "start_audio_sources()" in restart_block
+
+
+def test_viewport_has_one_runtime_lifecycle_and_initializes_spawned_prefabs() -> None:
+    viewport_source = Path("editor/isolated_viewport.py").read_text(encoding="utf-8")
+
+    assert viewport_source.count("    def start_scripts()") == 1
+    assert viewport_source.count("    def stop_scripts()") == 1
+    assert viewport_source.count("    def game_camera()") == 1
+    assert "def start_spawned_objects()" in viewport_source
+    assert "for hydrator in (hydrate_animation_asset_clips, hydrate_animator_controllers, hydrate_logic_graphs)" in viewport_source
+    assert "hydrator({name: obj}, Path.cwd())" in viewport_source
+    assert "start_spawned_objects()\n            trace_now" in viewport_source

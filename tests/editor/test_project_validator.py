@@ -17,6 +17,7 @@ RUNTIME_SOURCES = (
     "engine/logic/blackboard.py",
     "engine/logic/event_bus.py",
     "engine/logic/runtime.py",
+    "engine/runtime/runtime_world.py",
     "engine/build/runtime_scene_loader.py",
 )
 
@@ -127,6 +128,26 @@ def test_legacy_script_is_ignored_by_visual_logic_validator(tmp_path: Path) -> N
     report = _load_validator().validate_project(tmp_path, scene)
 
     assert report.valid is True
+
+
+def test_validator_reports_broken_logic_graph_connections(tmp_path: Path) -> None:
+    _runtime_files(tmp_path)
+    scene = _write_scene(tmp_path, [{
+        "name": "Player", "tag": "Player",
+        "transform": {"position": [0, 0, 0], "scale": [32, 32, 1]},
+        "components": {"camera": {"active": True}},
+    }])
+    logic = tmp_path / "Assets" / "Logic" / "broken.zlogic"
+    logic.parent.mkdir(parents=True)
+    logic.write_text(json.dumps({
+        "format": "zennity.logic_graph", "nodes": [{"id": "start", "type": "event_start"}],
+        "edges": [{"from_node": "start", "to_node": "missing"}],
+    }), encoding="utf-8")
+
+    report = _load_validator().validate_project(tmp_path, scene)
+
+    assert report.valid is False
+    assert any(issue.category == "Logic Graph" and "inexistente" in issue.message for issue in report.errors)
     assert not any(issue.category == "Script" for issue in report.errors)
 
 

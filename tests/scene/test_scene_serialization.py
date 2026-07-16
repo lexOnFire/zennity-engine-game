@@ -38,6 +38,17 @@ def test_serialize_and_load_empty_scene(tmp_path) -> None:
     assert loaded["objects"] == []
 
 
+def test_save_scene_keeps_previous_version_as_backup(tmp_path) -> None:
+    path = tmp_path / "level.zscene"
+    save_scene(SimpleNamespace(name="Before", editable_objects=[]), path)
+    save_scene(SimpleNamespace(name="After", editable_objects=[]), path)
+
+    backup = path.with_suffix(".zscene.bak")
+    assert json.loads(backup.read_text(encoding="utf-8"))["scene_name"] == "Before"
+    assert json.loads(path.read_text(encoding="utf-8"))["scene_name"] == "After"
+    assert not path.with_suffix(".zscene.tmp").exists()
+
+
 def test_serialize_scene_with_object_transform() -> None:
     obj = GameObject("Player", tag="Player")
     obj._id = "player-id"

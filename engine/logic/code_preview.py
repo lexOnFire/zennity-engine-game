@@ -45,6 +45,13 @@ def node_code_preview(node: Mapping[str, Any]) -> str:
             f"novo = criar_objeto('{_value(properties, 'name', 'NovoObjeto')}',\n"
             f"  x={_value(properties, 'x', 0)}, y={_value(properties, 'y', 0)})"
         ),
+        "create_prefab": f"novo = criar_prefab('{_value(properties, 'path', 'selecione .zprefab')}')",
+        "clone_object": "cópia = clonar(alvo)",
+        "add_component": f"alvo.adicionar_componente('{_value(properties, 'component', 'BoxCollider')}')",
+        "remove_component": f"alvo.remover_componente('{_value(properties, 'component', 'BoxCollider')}')",
+        "once": "se ainda_não_executou:\n    executar próximo",
+        "cooldown": f"se passou({_value(properties, 'seconds', 1.0)}s):\n    executar próximo",
+        "restart_scene": "reiniciar_cena()",
         "get_variable": f"valor = ler('{_value(properties, 'name', 'value')}')",
         "set_variable": f"definir('{_value(properties, 'name', 'value')}', entrada)",
         "number_value": f"valor = {_value(properties, 'value', 0)}",

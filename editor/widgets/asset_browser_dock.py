@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from PySide6.QtWidgets import (
     QDockWidget, QWidget, QVBoxLayout, QHBoxLayout, QSplitter,
     QTreeView, QListView, QLineEdit, QPushButton, QLabel

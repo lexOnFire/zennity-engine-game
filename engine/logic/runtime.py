@@ -45,6 +45,8 @@ class LogicGraphRuntime:
         for edge in self.graph["edges"]:
             self.outgoing.setdefault(edge["from_node"], []).append(edge)
             self.incoming[(str(edge["to_node"]), str(edge.get("to_port", "in")))] = edge
+        for edges in self.outgoing.values():
+            edges.sort(key=lambda edge: (int(edge.get("order", 0)), str(edge.get("id", ""))))
         self.variables = self.blackboard.values_for_object(self.object_key)
         self.values: dict[Any, Any] = {}
         self.executed_nodes: list[str] = []
@@ -555,6 +557,36 @@ class LogicGraphRuntime:
             )
             self._store(node_id, "object", created)
             return ["next"]
+        if node_type == "create_prefab":
+            path = str(properties.get("path", "")).strip()
+            if not path:
+                raise RuntimeError("Escolha um arquivo .zprefab.")
+            x = float(self._read_input(node_id, "x", properties.get("x", 0.0), game, dt, set()))
+            y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
+            if bool(properties.get("relative", False)):
+                x += float(game.x)
+                y += float(game.y)
+            created = game.create_prefab(path, x, y)
+            self._store(node_id, "object", created)
+            return ["next"]
+        if node_type == "clone_object":
+            target = self._read_target(node_id, game, dt, set())
+            name = str(self._read_input(node_id, "name", properties.get("name", ""), game, dt, set()))
+            created = game.clone_object(target, name)
+            self._store(node_id, "object", created)
+            return ["next"]
+        if node_type == "add_component":
+            target = self._read_target(node_id, game, dt, set())
+            component_properties = properties.get("properties", {})
+            target.add_component(
+                str(properties.get("component", "BoxCollider")),
+                component_properties if isinstance(component_properties, Mapping) else {},
+            )
+            return ["next"]
+        if node_type == "remove_component":
+            target = self._read_target(node_id, game, dt, set())
+            target.remove_component(str(properties.get("component", "BoxCollider")))
+            return ["next"]
         if node_type == "set_hud":
             text = self._read_input(node_id, "text", properties.get("text", "Texto"), game, dt, set())
             game.set_hud(f"logic:{node_id}", str(text))
@@ -581,6 +613,9 @@ class LogicGraphRuntime:
         if node_type == "destroy_object":
             target = self._read_target(node_id, game, dt, set())
             target.destroy()
+            return []
+        if node_type == "restart_scene":
+            game.restart()
             return []
         if node_type == "log_message":
             text = self._read_input(node_id, "text", properties.get("text", "Mensagem"), game, dt, set())
@@ -637,6 +672,21 @@ class LogicGraphRuntime:
         if node_type == "sequence":
             outputs = max(1, int(properties.get("outputs", 2)))
             return [f"then_{index}" for index in range(outputs)] + ["next"]
+        if node_type == "once":
+            state = self._node_state.setdefault(node_id, {"executed": False})
+            if bool(state["executed"]):
+                return ["blocked"]
+            state["executed"] = True
+            return ["next"]
+        if node_type == "cooldown":
+            seconds = max(0.0, float(self._read_input(node_id, "seconds", properties.get("seconds", 1.0), game, dt, set())))
+            state = self._node_state.setdefault(node_id, {"remaining": 0.0})
+            remaining = max(0.0, float(state.get("remaining", 0.0)) - max(0.0, float(dt)))
+            if remaining > 0.0:
+                state["remaining"] = remaining
+                return ["blocked"]
+            state["remaining"] = seconds
+            return ["next"]
         return ["next"]
 
     def _read_input(
@@ -767,7 +817,7 @@ class LogicGraphRuntime:
             value = float(target.x if port == "x" else target.y)
         elif node_type == "find_tag":
             value = game.find(str(properties.get("tag", "Player")))
-        elif node_type == "create_object":
+        elif node_type in {"create_object", "create_prefab", "clone_object"}:
             value = self.values.get((node_id, "object"))
         elif node_type == "if_else":
             raw = self._read_input(node_id, "condition", properties.get("condition", False), game, dt, resolving)

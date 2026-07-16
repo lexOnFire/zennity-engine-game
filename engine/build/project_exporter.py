@@ -82,6 +82,7 @@ def _validate_export_inputs(project_root: Path, scene_path: Path, report: BuildR
         "engine/logic/blackboard.py",
         "engine/logic/event_bus.py",
         "engine/logic/runtime.py",
+        "engine/runtime/runtime_world.py",
         "engine/build/runtime_scene_loader.py",
     )
     for relative in runtime_sources:
@@ -130,6 +131,7 @@ def _write_development_project(project_root: Path, scene_path: Path, destination
         project_root / "engine" / "logic" / "blackboard.py": runtime_dir / "logic_blackboard.py",
         project_root / "engine" / "logic" / "event_bus.py": runtime_dir / "logic_event_bus.py",
         project_root / "engine" / "logic" / "runtime.py": runtime_dir / "logic_runtime.py",
+        project_root / "engine" / "runtime" / "runtime_world.py": runtime_dir / "runtime_world.py",
         project_root / "engine" / "build" / "runtime_scene_loader.py": runtime_dir / "scene_loader.py",
     }
     for source, target in runtime_sources.items():
@@ -194,6 +196,7 @@ def _validate_exported_project(destination: Path, report: BuildReport) -> None:
         "zennity_runtime/logic_blackboard.py",
         "zennity_runtime/logic_event_bus.py",
         "zennity_runtime/logic_runtime.py",
+        "zennity_runtime/runtime_world.py",
         "zennity_runtime/scene_loader.py",
     )
     for relative in required:
@@ -230,6 +233,7 @@ def _launcher_source() -> str:
 
 import multiprocessing as mp
 import os
+import sys
 from pathlib import Path
 
 from zennity_runtime.scene_loader import load_objects
@@ -238,10 +242,14 @@ from zennity_runtime.viewport import run_viewport
 
 def main():
     os.chdir(Path(__file__).resolve().parent)
+    objects = load_objects("Data/main.zscene")
+    if "--validate-only" in sys.argv:
+        print(f"Zennity export válido: {len(objects)} objeto(s)")
+        return
     commands, events = mp.Queue(), mp.Queue()
     process = mp.Process(target=run_viewport, args=(commands, events, None, (1280, 720)), daemon=False)
     process.start()
-    commands.put({"type": "scene_snapshot", "objects": load_objects("Data/main.zscene")})
+    commands.put({"type": "scene_snapshot", "objects": objects})
     commands.put({"type": "set_view_mode", "mode": "game"})
     commands.put({"type": "play"})
     process.join()

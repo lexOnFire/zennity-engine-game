@@ -84,6 +84,29 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
         "edges": (("start", "next", "create", "in", "flow"),),
     },
     {
+        "id": "spawn_prefab_on_key",
+        "topics": ("Objetos", "Criação", "Input"),
+        "title": "Criar Prefab ao apertar Espaço",
+        "category": "Objetos e cena",
+        "summary": "Instancia um Prefab completo sempre que a tecla Espaço é acionada.",
+        "keywords": "criar prefab spawn projetil tiro tecla espaço instanciar componente",
+        "steps": (
+            "A cada frame verifica a entrada.",
+            "Tecla pressionada libera o fluxo apenas no instante do clique.",
+            "Criar Prefab preserva visual, collider, rigidbody, áudio e UI do arquivo.",
+            "Escolha o arquivo .zprefab e marque posição relativa quando necessário.",
+        ),
+        "nodes": (
+            {"key": "update", "type": "event_update", "position": (0.0, 0.0)},
+            {"key": "key", "type": "key_pressed", "position": (270.0, 0.0), "properties": {"key": "SPACE"}},
+            {"key": "prefab", "type": "create_prefab", "position": (540.0, 0.0), "properties": {"path": "Assets/Prefabs/Projectile.zprefab", "relative": True}},
+        ),
+        "edges": (
+            ("update", "next", "key", "in", "flow"),
+            ("key", "true", "prefab", "in", "flow"),
+        ),
+    },
+    {
         "id": "patrol_y_between_limits",
         "topics": ("Movimento", "Posição"),
         "title": "Patrulhar no Y entre -100 e 100",

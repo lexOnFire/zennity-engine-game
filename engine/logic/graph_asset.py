@@ -46,6 +46,10 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
             "texture": "", "tag": "Untagged", "relative": False,
         },
     },
+    "create_prefab": {"title": "Criar Prefab", "category": "Objetos", "properties": {"path": "", "x": 0.0, "y": 0.0, "relative": False}},
+    "clone_object": {"title": "Clonar objeto", "category": "Objetos", "properties": {"name": ""}},
+    "add_component": {"title": "Adicionar componente", "category": "Objetos", "properties": {"component": "BoxCollider", "properties": {"type": "box"}}},
+    "remove_component": {"title": "Remover componente", "category": "Objetos", "properties": {"component": "BoxCollider"}},
     "input_axis": {"title": "Ler movimento", "category": "Movimento", "properties": {"negative": "A", "positive": "D"}},
     "move": {"title": "Mover", "category": "Movimento", "properties": {"speed": 200.0}},
     "jump": {"title": "Pular", "category": "Movimento", "properties": {"force": 420.0}},
@@ -54,6 +58,8 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "patrol_axis": {"title": "Patrulhar entre limites", "category": "Posição", "properties": {"axis": "Y", "minimum": -100.0, "maximum": 100.0, "speed": 100.0}},
     "if_else": {"title": "If / Else", "category": "Lógica", "properties": {"condition": True}},
     "sequence": {"title": "Sequência", "category": "Lógica", "properties": {"outputs": 2}},
+    "once": {"title": "Executar uma vez", "category": "Lógica", "properties": {}},
+    "cooldown": {"title": "Intervalo / Cooldown", "category": "Lógica", "properties": {"seconds": 1.0}},
     "and": {"title": "AND", "category": "Lógica", "properties": {}},
     "or": {"title": "OR", "category": "Lógica", "properties": {}},
     "not": {"title": "NÃO", "category": "Lógica", "properties": {}},
@@ -71,6 +77,7 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "rotate": {"title": "Girar", "category": "Ação", "properties": {"degrees": 90.0}},
     "set_active": {"title": "Ativar / Desativar", "category": "Ação", "properties": {"active": True}},
     "destroy_object": {"title": "Destruir objeto", "category": "Ação", "properties": {}},
+    "restart_scene": {"title": "Reiniciar cena", "category": "Ação", "properties": {}},
     "log_message": {"title": "Mostrar no Console", "category": "Ação", "properties": {"text": "Mensagem"}},
     "subgraph_start": {"title": "Início do subgrafo", "category": "Subgrafos", "properties": {}},
     "subgraph_input": {"title": "Entrada do subgrafo", "category": "Subgrafos", "properties": {"name": "entrada", "type": "number", "default": 0.0}},
@@ -111,6 +118,10 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
         "inputs": [("in", "flow"), ("name", "text"), ("x", "number"), ("y", "number")],
         "outputs": [("next", "flow"), ("object", "object")],
     },
+    "create_prefab": {"inputs": [("in", "flow"), ("x", "number"), ("y", "number")], "outputs": [("next", "flow"), ("object", "object")]},
+    "clone_object": {"inputs": [("in", "flow"), ("target", "object"), ("name", "text")], "outputs": [("next", "flow"), ("object", "object")]},
+    "add_component": {"inputs": [("in", "flow"), ("target", "object")], "outputs": [("next", "flow")]},
+    "remove_component": {"inputs": [("in", "flow"), ("target", "object")], "outputs": [("next", "flow")]},
     "input_axis": {"inputs": [("in", "flow")], "outputs": [("next", "flow"), ("value", "number")]},
     "move": {"inputs": [("in", "flow"), ("value", "number")], "outputs": [("next", "flow")]},
     "jump": {"inputs": [("in", "flow"), ("force", "number")], "outputs": [("next", "flow")]},
@@ -119,6 +130,8 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "patrol_axis": {"inputs": [("in", "flow"), ("target", "object"), ("minimum", "number"), ("maximum", "number"), ("speed", "number")], "outputs": [("next", "flow"), ("direction", "number"), ("position", "number")]},
     "if_else": {"inputs": [("in", "flow"), ("condition", "bool")], "outputs": [("true", "flow"), ("false", "flow")]},
     "sequence": {"inputs": [("in", "flow")], "outputs": [("then_0", "flow"), ("then_1", "flow"), ("next", "flow")]},
+    "once": {"inputs": [("in", "flow")], "outputs": [("next", "flow"), ("blocked", "flow")]},
+    "cooldown": {"inputs": [("in", "flow"), ("seconds", "number")], "outputs": [("next", "flow"), ("blocked", "flow")]},
     "and": {"inputs": [("a", "bool"), ("b", "bool")], "outputs": [("value", "bool")]},
     "or": {"inputs": [("a", "bool"), ("b", "bool")], "outputs": [("value", "bool")]},
     "not": {"inputs": [("value", "bool")], "outputs": [("value", "bool")]},
@@ -136,6 +149,7 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "rotate": {"inputs": [("in", "flow"), ("target", "object"), ("degrees", "number")], "outputs": [("next", "flow")]},
     "set_active": {"inputs": [("in", "flow"), ("target", "object"), ("active", "bool")], "outputs": [("next", "flow")]},
     "destroy_object": {"inputs": [("in", "flow"), ("target", "object")], "outputs": []},
+    "restart_scene": {"inputs": [("in", "flow")], "outputs": []},
     "log_message": {"inputs": [("in", "flow"), ("text", "text")], "outputs": [("next", "flow")]},
     "subgraph_start": {"inputs": [], "outputs": [("next", "flow")]},
     "subgraph_input": {"inputs": [], "outputs": [("value", "any")]},
@@ -299,7 +313,7 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
     edges: list[dict[str, Any]] = []
     raw_edges = source.get("edges", [])
     if isinstance(raw_edges, list):
-        for raw_edge in raw_edges:
+        for edge_index, raw_edge in enumerate(raw_edges):
             if not isinstance(raw_edge, Mapping):
                 continue
             source_node = str(raw_edge.get("from_node", ""))
@@ -313,6 +327,7 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
                 "to_node": target_node,
                 "to_port": str(raw_edge.get("to_port", "in")),
                 "kind": str(raw_edge.get("kind", "flow")),
+                "order": _safe_int(raw_edge.get("order", edge_index), edge_index),
             })
     result["edges"] = edges
     return result
@@ -445,6 +460,8 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
             issues.append({"level": "error", "node": node["id"], "message": "Informe o nome da porta do subgrafo."})
         if node["type"] == "call_subgraph" and not str(node.get("properties", {}).get("path", "")).strip():
             issues.append({"level": "error", "node": node["id"], "message": "Escolha o arquivo do subgrafo."})
+        if node["type"] == "create_prefab" and not str(node.get("properties", {}).get("path", "")).strip():
+            issues.append({"level": "error", "node": node["id"], "message": "Escolha o arquivo .zprefab."})
         if node["type"] in {"set_sprite", "play_animation_asset", "play_sound"}:
             has_path = bool(str(node.get("properties", {}).get("path", "")).strip())
             if not has_path and (node["id"], "path") not in connected_inputs:
@@ -513,6 +530,13 @@ def _safe_float(value: Any) -> float:
         return float(value)
     except (TypeError, ValueError):
         return 0.0
+
+
+def _safe_int(value: Any, fallback: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return int(fallback)
 
 
 def _safe_port_type(value: Any) -> str:

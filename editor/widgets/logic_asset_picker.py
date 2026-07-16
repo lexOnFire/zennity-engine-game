@@ -15,6 +15,7 @@ ASSET_KINDS = {
     "image": ("Imagem", {".png", ".jpg", ".jpeg", ".bmp", ".webp"}),
     "animation": ("Animação", {".zanim"}),
     "audio": ("Áudio", {".wav", ".ogg", ".mp3", ".flac"}),
+    "prefab": ("Prefab", {".zprefab"}),
 }
 
 

@@ -91,6 +91,13 @@ NODE_DESCRIPTIONS = {
     "event_trigger_exit": "Executa ao sair de uma área/trigger.",
     "event_timer": "Espera a quantidade de segundos e pode repetir automaticamente.",
     "create_object": "Cria um objeto temporário no Play Mode e fornece sua referência para outros blocos.",
+    "create_prefab": "Cria uma cópia completa de um Prefab com visual e componentes configurados.",
+    "clone_object": "Duplica um objeto existente durante o Play Mode.",
+    "add_component": "Adiciona e configura um componente no objeto alvo.",
+    "remove_component": "Remove um componente opcional do objeto alvo.",
+    "once": "Libera o fluxo somente na primeira execução.",
+    "cooldown": "Libera o fluxo novamente após o intervalo configurado.",
+    "restart_scene": "Restaura a cena ao estado capturado no início do Play Mode.",
     "get_position": "Lê as coordenadas X e Y atuais do objeto.",
     "move_by": "Move X e Y continuamente em unidades por segundo, sem exigir teclado.",
     "patrol_axis": "Move entre dois limites e inverte automaticamente a direção ao alcançá-los.",
@@ -1496,6 +1503,7 @@ class LogicGraphEditor(QWidget):
         return {
             "set_sprite": "image",
             "create_object": "image",
+            "create_prefab": "prefab",
             "play_animation_asset": "animation",
             "play_sound": "audio",
         }.get(str(node_type))

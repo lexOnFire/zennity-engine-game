@@ -12,6 +12,7 @@ import shutil
 import uuid
 from copy import deepcopy
 from pathlib import Path
+from typing import Any
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QEvent, Qt, QTimer, QUrl
@@ -28,6 +29,7 @@ from editor.interface_smoke_test import InterfaceSmokeTest
 from editor.isolated_viewport import run_viewport
 from editor.runtime.native_ui import normalize_ui, scene_item_to_ui, ui_to_scene_item
 from editor.runtime.play_session import EditorPlaySession
+from editor.runtime.viewport_command_bus import ViewportCommandBus
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from editor.widgets.component_picker import ComponentPickerDialog
@@ -85,7 +87,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "ui": True,
         }
         self._viewport_process = viewport_process
-        self._commands = commands
+        self._commands = ViewportCommandBus(commands)
         self._events = events
         self._pending_viewport_size: tuple[int, int] | None = None
         self._last_viewport_size_sent: tuple[int, int] | None = None
@@ -1337,6 +1339,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         payload["objects"] = scene_objects
         temporary_path = path.with_name(path.name + ".tmp")
         temporary_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        if path.is_file():
+            shutil.copy2(path, path.with_suffix(path.suffix + ".bak"))
         temporary_path.replace(path)
         self._scene_document = payload
         self._current_scene_path = path
@@ -3195,13 +3199,18 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             elif message.get("type") == "attach_script":
                 self._attach_script(str(message.get("name", "")), Path(str(message.get("path", ""))))
             elif message.get("type") == "stats":
+                command_stats = self._commands.stats()
                 self.profiler_label.setText(
                     f"FPS: {message.get('fps', 0):.0f}\n"
                     f"Objetos: {message.get('objects', 0)}\n"
                     f"Modo: {message.get('mode', 'EDIT')} / {message.get('view', 'SCENE')}\n"
                     f"Câmera: {message.get('camera', 'Editor')}\n"
                     f"Jogador: {message.get('player') or '—'}\n"
-                    f"Zoom: {message.get('zoom', 1.0):.2f}"
+                    f"Zoom: {message.get('zoom', 1.0):.2f}\n"
+                    f"Spawn: {message.get('spawned', 0)} • Reuso: {message.get('reused', 0)} • "
+                    f"Pool: {message.get('pooled', 0)} • "
+                    f"Removidos: {message.get('destroyed', 0)}\n"
+                    f"IPC: {command_stats['sent']} enviados • {command_stats['coalesced']} unidos"
                 )
 
     def closeEvent(self, event) -> None:
@@ -3210,8 +3219,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         except Exception:
             pass
         if self._viewport_process is not None and self._viewport_process.is_alive():
-            self._viewport_process.terminate()
-            self._viewport_process.join(timeout=2)
+            self._viewport_process.join(timeout=1.5)
+            if self._viewport_process.is_alive():
+                self._viewport_process.terminate()
+                self._viewport_process.join(timeout=2)
         super().closeEvent(event)
 
 
@@ -3238,8 +3249,11 @@ def main() -> None:
     exit_code = app.exec()
 
     if viewport_process.is_alive():
-        viewport_process.terminate()
-        viewport_process.join(timeout=2)
+        commands.put({"type": "shutdown"})
+        viewport_process.join(timeout=1.5)
+        if viewport_process.is_alive():
+            viewport_process.terminate()
+            viewport_process.join(timeout=2)
     raise SystemExit(exit_code)
 
 

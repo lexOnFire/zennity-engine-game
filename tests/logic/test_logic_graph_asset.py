@@ -971,3 +971,129 @@ def test_create_object_recipe_is_available_for_beginners():
     recipe = next(item for item in LOGIC_RECIPES if item["id"] == "create_object_on_start")
     fragment = build_logic_recipe(str(recipe["id"]))
     assert [node["type"] for node in fragment["nodes"]] == ["event_start", "create_object"]
+
+
+def test_once_and_cooldown_control_repeated_frame_flow():
+    event = create_logic_node("event_update")
+    once = create_logic_node("once")
+    cooldown = create_logic_node("cooldown")
+    cooldown["properties"]["seconds"] = 1.0
+    once_log = create_logic_node("log_message")
+    once_log["properties"]["text"] = "once"
+    cooldown_log = create_logic_node("log_message")
+    cooldown_log["properties"]["text"] = "cooldown"
+    graph = default_logic_graph("FlowControl")
+    graph["nodes"] = [event, once, cooldown, once_log, cooldown_log]
+    graph["edges"] = [
+        _edge(event, "next", once, "in"),
+        _edge(event, "next", cooldown, "in"),
+        _edge(once, "next", once_log, "in"),
+        _edge(cooldown, "next", cooldown_log, "in"),
+    ]
+
+    class Game:
+        def __init__(self): self.messages = []
+        def log(self, message): self.messages.append(message)
+
+    game = Game()
+    runtime = LogicGraphRuntime(graph)
+    runtime.update(game, 0.25)
+    runtime.update(game, 0.25)
+    runtime.update(game, 0.75)
+    assert game.messages == ["once", "cooldown", "cooldown"]
+
+
+def test_prefab_and_component_nodes_share_created_object_reference():
+    event = create_logic_node("event_start")
+    prefab = create_logic_node("create_prefab")
+    prefab["properties"]["path"] = "Assets/Prefabs/Enemy.zprefab"
+    component = create_logic_node("add_component")
+    component["properties"].update({"component": "RigidBody2D", "properties": {"gravity_scale": 2}})
+    graph = default_logic_graph("PrefabSpawner")
+    graph["nodes"] = [event, prefab, component]
+    graph["edges"] = [
+        _edge(event, "next", prefab, "in"),
+        _edge(prefab, "next", component, "in"),
+        _edge(prefab, "object", component, "target", "object"),
+    ]
+
+    class Created:
+        def __init__(self): self.components = []
+        def add_component(self, name, properties): self.components.append((name, properties))
+
+    class Game:
+        x = y = 0
+        def __init__(self): self.created = Created()
+        def create_prefab(self, path, x, y):
+            assert (path, x, y) == ("Assets/Prefabs/Enemy.zprefab", 0.0, 0.0)
+            return self.created
+
+    game = Game()
+    LogicGraphRuntime(graph).start(game)
+    assert game.created.components == [("RigidBody2D", {"gravity_scale": 2})]
+    assert not validate_logic_graph(graph)
+
+
+def test_prefab_node_requires_an_asset():
+    graph = default_logic_graph("InvalidPrefab")
+    graph["nodes"] = [create_logic_node("event_start"), create_logic_node("create_prefab")]
+    assert any(".zprefab" in issue["message"] for issue in validate_logic_graph(graph))
+
+
+def test_fan_out_uses_explicit_stable_order_and_tolerates_invalid_order():
+    event = create_logic_node("event_start")
+    first = create_logic_node("log_message")
+    first["properties"]["text"] = "first"
+    second = create_logic_node("log_message")
+    second["properties"]["text"] = "second"
+    graph = default_logic_graph("OrderedFanOut")
+    graph["nodes"] = [event, first, second]
+    graph["edges"] = [
+        {**_edge(event, "next", second, "in"), "order": 20},
+        {**_edge(event, "next", first, "in"), "order": 10},
+    ]
+
+    class Game:
+        def __init__(self): self.messages = []
+        def log(self, message): self.messages.append(message)
+
+    game = Game()
+    LogicGraphRuntime(graph).start(game)
+    assert game.messages == ["first", "second"]
+
+    graph["edges"][0]["order"] = "inválida"
+    normalized = normalize_logic_graph(graph)
+    assert isinstance(normalized["edges"][0]["order"], int)
+
+
+def test_clone_remove_component_and_restart_scene_nodes_execute_together():
+    event = create_logic_node("event_start")
+    clone = create_logic_node("clone_object")
+    clone["properties"]["name"] = "Clone"
+    remove = create_logic_node("remove_component")
+    remove["properties"]["component"] = "BoxCollider"
+    restart = create_logic_node("restart_scene")
+    graph = default_logic_graph("CloneAndRestart")
+    graph["nodes"] = [event, clone, remove, restart]
+    graph["edges"] = [
+        _edge(event, "next", clone, "in"),
+        _edge(clone, "next", remove, "in"),
+        _edge(clone, "object", remove, "target", "object"),
+        _edge(remove, "next", restart, "in"),
+    ]
+
+    class Created:
+        def __init__(self): self.removed = []
+        def remove_component(self, name): self.removed.append(name)
+
+    class Game:
+        def __init__(self): self.created = Created(); self.restarted = False
+        def clone_object(self, source, name):
+            assert source is self and name == "Clone"
+            return self.created
+        def restart(self): self.restarted = True
+
+    game = Game()
+    LogicGraphRuntime(graph).start(game)
+    assert game.created.removed == ["BoxCollider"]
+    assert game.restarted is True

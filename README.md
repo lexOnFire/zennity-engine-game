@@ -9,17 +9,24 @@
 
 ---
 
-## Beta 0.1
+## Fluxo atual do editor
 
-A Beta 0.1 estabiliza o fluxo principal da Zennity:
+A interface principal usa a Viewport Pygame em um processo separado e o Logic
+Graph como fluxo visual de gameplay. O caminho recomendado é:
 
 ```text
-Criar cena -> Criar GameObject -> Adicionar componentes -> Adicionar script -> Play -> Input -> Stop
+Criar cena -> Criar objeto -> Adicionar componentes -> Vincular .zlogic -> Play -> Stop
 ```
 
-O projeto exemplo oficial fica em `examples/GettingStarted`. Ele não depende de assets externos e demonstra `GameObject`, componentes, `ScriptBehaviour`, `Input` e Play Mode.
+O editor inicia com `python -m editor.phase1_main`. A aba/janela de Lógica
+Visual oferece pesquisa, receitas, conexões tipadas, criação de objetos e
+Prefabs, animação, áudio, HUD e controle de componentes. Scripts Python antigos
+continuam no núcleo somente para abrir projetos legados; o editor isolado não
+os executa no fluxo novo.
 
-Limites da Beta: ainda não há Input Mapping, gamepad, touch, Physics avançada, áudio integrado ao Play Mode, animação, networking ou Build System final. Alguns módulos legados continuam presentes para compatibilidade.
+O projeto exemplo oficial continua em `examples/GettingStarted`. O pipeline de
+exportação gera um runtime autocontido e pode ser verificado sem abrir uma
+janela com `python main.py --validate-only` dentro da pasta exportada.
 
 ## 🖥️ O Novo Zennity Editor (PySide6)
 
@@ -33,7 +40,8 @@ O Zennity Editor é um ambiente integrado de desenvolvimento rico, responsivo e 
 * **Component System (Fase 9):** Base oficial de componentes com UUID, `enabled`, registro central, serialização explícita e integração com `GameObject`, cenas, prefabs e Inspector.
 * **Add/Remove Components (Fase 10):** O Inspector adiciona e remove componentes através do `ComponentRegistry`, sempre com comandos reversíveis no `CommandManager`.
 * **Inspector Plugin System (Fase 11/11.1):** O Inspector é apenas um host desacoplado; todos os editores de componente são resolvidos via `InspectorPluginRegistry`.
-* **Play Mode Foundation (Fase 12-15):** Play cria um Runtime World isolado; `RuntimeManager.tick(delta_time)` atualiza Input, lifecycle de componentes e scripts Python somente nessa cópia.
+* **Play Mode isolado:** Play cria um Runtime World independente; criação, clonagem, Prefabs e remoção de objetos não alteram a cena do editor.
+* **Lógica Visual:** grafos `.zlogic` com eventos, condições, variáveis, movimento, objetos, Prefabs, componentes, animação, áudio e HUD.
 * **Viewport Acelerada (OpenGL):** Renderização direta do framebuffer do Pygame no Qt em 60 FPS com suporte a atalho de foco (`F`) e alternância em tempo real entre projeções 2D e 3D.
 * **Terminal Python & Console:** Console de mensagens do sistema colorido por severidade com interpretador interativo integrado para executar scripts no contexto do editor.
 * **Ferramentas da Fase 1:** Seleção centralizada, Move Tool funcional com gizmo de translação, Snap opcional e modos Rotate/Scale preparados para implementação futura.
