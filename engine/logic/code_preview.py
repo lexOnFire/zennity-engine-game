@@ -41,6 +41,10 @@ def node_code_preview(node: Mapping[str, Any]) -> str:
         "set_hud": f"hud.texto = '{_value(properties, 'text', 'Texto')}'",
         "log_message": f"console('{_value(properties, 'text', 'Mensagem')}')",
         "find_tag": f"objeto = procurar_tag('{_value(properties, 'tag', 'Player')}')",
+        "create_object": (
+            f"novo = criar_objeto('{_value(properties, 'name', 'NovoObjeto')}',\n"
+            f"  x={_value(properties, 'x', 0)}, y={_value(properties, 'y', 0)})"
+        ),
         "get_variable": f"valor = ler('{_value(properties, 'name', 'value')}')",
         "set_variable": f"definir('{_value(properties, 'name', 'value')}', entrada)",
         "number_value": f"valor = {_value(properties, 'value', 0)}",

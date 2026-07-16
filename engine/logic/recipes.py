@@ -65,6 +65,25 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
         "edges": (("start", "next", "position", "in", "flow"),),
     },
     {
+        "id": "create_object_on_start",
+        "topics": ("Objetos", "Criação"),
+        "title": "Criar um objeto ao iniciar",
+        "category": "Objetos e cena",
+        "summary": "Cria um novo objeto quando o Play começa e permite reutilizá-lo em outros blocos.",
+        "keywords": "criar objeto spawn instanciar novo imagem posição tamanho cor",
+        "steps": (
+            "Ao iniciar executa apenas uma vez.",
+            "Criar objeto define nome, posição, tamanho, cor, imagem e tag.",
+            "A saída Objeto pode ser ligada a Mover, Girar, Trocar imagem ou Destruir.",
+            "Marque Posição relativa para usar X e Y como deslocamento do objeto atual.",
+        ),
+        "nodes": (
+            {"key": "start", "type": "event_start", "position": (0.0, 0.0)},
+            {"key": "create", "type": "create_object", "position": (270.0, 0.0)},
+        ),
+        "edges": (("start", "next", "create", "in", "flow"),),
+    },
+    {
         "id": "patrol_y_between_limits",
         "topics": ("Movimento", "Posição"),
         "title": "Patrulhar no Y entre -100 e 100",

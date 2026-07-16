@@ -37,6 +37,15 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "event_timer": {"title": "Após um tempo", "category": "Eventos", "properties": {"seconds": 1.0, "repeat": False}},
     "self_object": {"title": "Este objeto", "category": "Objetos", "properties": {}},
     "find_tag": {"title": "Procurar por Tag", "category": "Objetos", "properties": {"tag": "Player"}},
+    "create_object": {
+        "title": "Criar objeto",
+        "category": "Objetos",
+        "properties": {
+            "name": "NovoObjeto", "x": 0.0, "y": 0.0,
+            "width": 64.0, "height": 64.0, "color": "#58a6ff",
+            "texture": "", "tag": "Untagged", "relative": False,
+        },
+    },
     "input_axis": {"title": "Ler movimento", "category": "Movimento", "properties": {"negative": "A", "positive": "D"}},
     "move": {"title": "Mover", "category": "Movimento", "properties": {"speed": 200.0}},
     "jump": {"title": "Pular", "category": "Movimento", "properties": {"force": 420.0}},
@@ -98,6 +107,10 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "event_timer": {"inputs": [], "outputs": [("next", "flow")]},
     "self_object": {"inputs": [], "outputs": [("object", "object")]},
     "find_tag": {"inputs": [("in", "flow")], "outputs": [("next", "flow"), ("object", "object")]},
+    "create_object": {
+        "inputs": [("in", "flow"), ("name", "text"), ("x", "number"), ("y", "number")],
+        "outputs": [("next", "flow"), ("object", "object")],
+    },
     "input_axis": {"inputs": [("in", "flow")], "outputs": [("next", "flow"), ("value", "number")]},
     "move": {"inputs": [("in", "flow"), ("value", "number")], "outputs": [("next", "flow")]},
     "jump": {"inputs": [("in", "flow"), ("force", "number")], "outputs": [("next", "flow")]},

@@ -90,6 +90,7 @@ NODE_DESCRIPTIONS = {
     "event_trigger_enter": "Executa ao entrar em um collider marcado como área/trigger.",
     "event_trigger_exit": "Executa ao sair de uma área/trigger.",
     "event_timer": "Espera a quantidade de segundos e pode repetir automaticamente.",
+    "create_object": "Cria um objeto temporário no Play Mode e fornece sua referência para outros blocos.",
     "get_position": "Lê as coordenadas X e Y atuais do objeto.",
     "move_by": "Move X e Y continuamente em unidades por segundo, sem exigir teclado.",
     "patrol_axis": "Move entre dois limites e inverte automaticamente a direção ao alcançá-los.",
@@ -118,12 +119,15 @@ PROPERTY_LABELS = {
     "degrees": "Graus", "active": "Ativo", "text": "Texto", "value": "Valor",
     "default": "Valor inicial", "type": "Tipo", "name": "Nome", "path": "Arquivo",
     "speed": "Velocidade", "force": "Força", "condition": "Condição",
+    "width": "Largura", "height": "Altura", "color": "Cor", "texture": "Imagem",
+    "tag": "Tag", "relative": "Posição relativa",
 }
 
 NODE_PROPERTY_LABELS = {
     "move_by": {"x": "Velocidade X", "y": "Velocidade Y"},
     "set_position": {"x": "Posição X", "y": "Posição Y"},
     "patrol_axis": {"axis": "Eixo", "minimum": "Limite mínimo", "maximum": "Limite máximo", "speed": "Velocidade"},
+    "create_object": {"x": "Posição X", "y": "Posição Y"},
 }
 
 
@@ -1491,6 +1495,7 @@ class LogicGraphEditor(QWidget):
     def _asset_kind_for_node(node_type: str) -> str | None:
         return {
             "set_sprite": "image",
+            "create_object": "image",
             "play_animation_asset": "animation",
             "play_sound": "audio",
         }.get(str(node_type))
@@ -1506,7 +1511,8 @@ class LogicGraphEditor(QWidget):
         picker = LogicAssetPickerDialog(self.project_root, kind, self)
         if not picker.exec() or not picker.selected_path:
             return
-        node.setdefault("properties", {})["path"] = picker.selected_path
+        property_name = "texture" if str(node.get("type", "")) == "create_object" else "path"
+        node.setdefault("properties", {})[property_name] = picker.selected_path
         selected[0].refresh_text()
         self._selection_changed()
         self.mark_dirty()

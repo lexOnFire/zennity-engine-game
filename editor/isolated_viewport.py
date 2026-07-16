@@ -7,6 +7,7 @@ import sys
 import time
 import hashlib
 import importlib.util
+import uuid
 from copy import deepcopy
 from pathlib import Path
 from queue import Empty
@@ -357,6 +358,50 @@ class PlayScriptAPI:
             if str(obj.get("tag", obj.get("name", ""))).lower() == wanted:
                 return PlayScriptAPI(name, obj, self._events, self._world)
         return None
+
+    def create_object(
+        self,
+        name: str = "NovoObjeto",
+        x: float = 0.0,
+        y: float = 0.0,
+        width: float = 64.0,
+        height: float = 64.0,
+        color: str = "#58a6ff",
+        texture: str = "",
+        tag: str = "Untagged",
+    ) -> "PlayScriptAPI":
+        """Cria um objeto temporário na cena atual e devolve sua referência."""
+        base_name = str(name).strip() or "NovoObjeto"
+        unique_name = base_name
+        suffix = 2
+        while unique_name in self._world:
+            unique_name = f"{base_name}_{suffix}"
+            suffix += 1
+        raw_color = str(color).strip().lstrip("#")
+        try:
+            rgb = tuple(int(raw_color[index:index + 2], 16) for index in (0, 2, 4))
+            if len(raw_color) != 6:
+                raise ValueError
+        except (TypeError, ValueError):
+            rgb = (88, 166, 255)
+        obj: dict[str, Any] = {
+            "id": str(uuid.uuid4()),
+            "name": unique_name,
+            "x": float(x), "y": float(y),
+            "w": max(1.0, float(width)), "h": max(1.0, float(height)),
+            "rotation": 0.0,
+            "color": rgb,
+            "tag": str(tag).strip() or "Untagged",
+            "mesh_type": "Sprite",
+            "active": True,
+            "renderer_enabled": True,
+            "spawned_by_logic": True,
+        }
+        if str(texture).strip():
+            obj["texture"] = str(texture).strip()
+        self._world[unique_name] = obj
+        self.log(f"objeto criado: {unique_name}")
+        return PlayScriptAPI(unique_name, obj, self._events, self._world)
 
     def distance_to(self, other: "PlayScriptAPI") -> float:
         return math.hypot(other.x - self.x, other.y - self.y)

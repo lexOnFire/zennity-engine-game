@@ -929,3 +929,45 @@ def test_every_visual_node_has_a_readable_code_backside():
     assert "dt" in code
     assert node_code_preview(create_logic_node("event_update")).startswith("a_cada_frame")
     assert node_code_preview(create_logic_node("set_sprite"))
+
+
+def test_create_object_node_returns_reference_for_following_actions():
+    event = create_logic_node("event_start")
+    create = create_logic_node("create_object")
+    create["properties"].update({"name": "Moeda", "x": 10, "y": 20, "relative": True})
+    position = create_logic_node("set_position")
+    position["properties"].update({"x": 80, "y": 90})
+    graph = default_logic_graph("Spawner")
+    graph["nodes"] = [event, create, position]
+    graph["edges"] = [
+        _edge(event, "next", create, "in"),
+        _edge(create, "next", position, "in"),
+        _edge(create, "object", position, "target", "object"),
+    ]
+
+    class Created:
+        def __init__(self, x, y): self.x, self.y = x, y
+
+    class Game:
+        x, y = 100.0, 200.0
+        def __init__(self): self.created = []; self.last = None
+        def create_object(self, **values):
+            self.created.append(values)
+            self.last = Created(values["x"], values["y"])
+            return self.last
+
+    game = Game()
+    LogicGraphRuntime(graph).start(game)
+    assert game.created[0]["name"] == "Moeda"
+    assert (game.created[0]["x"], game.created[0]["y"]) == (110.0, 220.0)
+    assert (game.last.x, game.last.y) == (80.0, 90.0)
+    result = game.created[0]
+    assert result["width"] == 64.0 and result["height"] == 64.0
+    assert node_port_definitions("create_object")["outputs"] == [("next", "flow"), ("object", "object")]
+    assert "criar_objeto" in node_code_preview(create)
+
+
+def test_create_object_recipe_is_available_for_beginners():
+    recipe = next(item for item in LOGIC_RECIPES if item["id"] == "create_object_on_start")
+    fragment = build_logic_recipe(str(recipe["id"]))
+    assert [node["type"] for node in fragment["nodes"]] == ["event_start", "create_object"]

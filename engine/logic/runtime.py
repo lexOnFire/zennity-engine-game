@@ -536,6 +536,25 @@ class LogicGraphRuntime:
             if path:
                 target.set_sprite(path)
             return ["next"]
+        if node_type == "create_object":
+            name = str(self._read_input(node_id, "name", properties.get("name", "NovoObjeto"), game, dt, set()))
+            x = float(self._read_input(node_id, "x", properties.get("x", 0.0), game, dt, set()))
+            y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
+            if bool(properties.get("relative", False)):
+                x += float(game.x)
+                y += float(game.y)
+            created = game.create_object(
+                name=name,
+                x=x,
+                y=y,
+                width=float(properties.get("width", 64.0)),
+                height=float(properties.get("height", 64.0)),
+                color=str(properties.get("color", "#58a6ff")),
+                texture=str(properties.get("texture", "")),
+                tag=str(properties.get("tag", "Untagged")),
+            )
+            self._store(node_id, "object", created)
+            return ["next"]
         if node_type == "set_hud":
             text = self._read_input(node_id, "text", properties.get("text", "Texto"), game, dt, set())
             game.set_hud(f"logic:{node_id}", str(text))
@@ -748,6 +767,8 @@ class LogicGraphRuntime:
             value = float(target.x if port == "x" else target.y)
         elif node_type == "find_tag":
             value = game.find(str(properties.get("tag", "Player")))
+        elif node_type == "create_object":
+            value = self.values.get((node_id, "object"))
         elif node_type == "if_else":
             raw = self._read_input(node_id, "condition", properties.get("condition", False), game, dt, resolving)
             value = self._condition(raw)

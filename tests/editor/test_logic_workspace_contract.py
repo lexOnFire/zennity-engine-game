@@ -306,3 +306,18 @@ def test_frame_event_is_reused_and_visibly_supports_multiple_actions():
     assert "node_type in UNIQUE_EVENT_TYPES" in editor
     assert "def merge_logic_fragment" in graph
     assert "def consolidate_logic_events" in graph
+
+
+def test_logic_workspace_can_create_runtime_objects_and_pick_their_sprite():
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    graph = _source("engine/logic/graph_asset.py")
+    runtime = _source("engine/logic/runtime.py")
+    viewport = _source("editor/isolated_viewport.py")
+    recipes = _source("engine/logic/recipes.py")
+    assert '"create_object"' in graph
+    assert 'node_type == "create_object"' in runtime
+    assert "def create_object(" in viewport
+    assert '"spawned_by_logic": True' in viewport
+    assert '"create_object": "image"' in editor
+    assert 'property_name = "texture"' in editor
+    assert '"create_object_on_start"' in recipes
