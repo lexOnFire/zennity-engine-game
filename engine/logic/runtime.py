@@ -486,10 +486,24 @@ class LogicGraphRuntime:
             state = self._read_input(node_id, "state", properties.get("state", "Idle"), game, dt, set())
             game.animator.play(str(state))
             return ["next"]
+        if node_type == "play_animation_asset":
+            path = str(self._read_input(node_id, "path", properties.get("path", ""), game, dt, set()))
+            if path:
+                game.play_animation_asset(path)
+            return ["next"]
+        if node_type == "stop_animation":
+            game.stop_animation()
+            return ["next"]
         if node_type == "play_sound":
             path = str(self._read_input(node_id, "path", properties.get("path", ""), game, dt, set()))
             if path:
                 game.play_sound(path)
+            return ["next"]
+        if node_type == "set_sprite":
+            target = self._read_target(node_id, game, dt, set())
+            path = str(self._read_input(node_id, "path", properties.get("path", ""), game, dt, set()))
+            if path:
+                target.set_sprite(path)
             return ["next"]
         if node_type == "set_hud":
             text = self._read_input(node_id, "text", properties.get("text", "Texto"), game, dt, set())

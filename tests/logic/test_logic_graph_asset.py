@@ -15,7 +15,7 @@ from engine.logic.graph_asset import (
 from engine.logic.runtime import LogicGraphRuntime
 from engine.logic.blackboard import BlackboardStore, load_blackboard_asset, save_blackboard_asset
 from engine.logic.event_bus import LogicEventBus
-from engine.logic.recipes import build_logic_recipe, find_logic_recipes
+from engine.logic.recipes import LOGIC_RECIPES, build_logic_recipe, find_logic_recipes
 
 
 def test_logic_graph_round_trip_uses_zlogic_extension(tmp_path):
@@ -797,3 +797,48 @@ def test_unconnected_action_target_means_current_object_without_copying_it():
     game = Game()
     LogicGraphRuntime(graph).update(game, 0.016)
     assert (game.x, game.y, game.rotation, game.active) == (25.0, 40.0, 15.0, False)
+
+
+def test_recipe_catalog_filters_by_topic_and_keeps_every_recipe_valid():
+    action_ids = {recipe["id"] for recipe in find_logic_recipes("", "Ação")}
+    assert {"sprite_on_start", "animation_asset_on_start", "sound_on_start"} <= action_ids
+    assert "move_x_every_frame" not in action_ids
+    assert len(LOGIC_RECIPES) >= 14
+    for recipe in LOGIC_RECIPES:
+        fragment = build_logic_recipe(str(recipe["id"]))
+        graph = default_logic_graph(str(recipe["id"]))
+        graph["nodes"] = fragment["nodes"]
+        graph["edges"] = fragment["edges"]
+        errors = [issue for issue in validate_logic_graph(graph) if issue["level"] == "error"]
+        assert not errors, recipe["id"]
+
+
+def test_visual_asset_actions_call_image_animation_and_sound_apis():
+    start = create_logic_node("event_start")
+    sprite = create_logic_node("set_sprite")
+    sprite["properties"]["path"] = "Assets/Textures/player.png"
+    animation = create_logic_node("play_animation_asset")
+    animation["properties"]["path"] = "Assets/Animations/walk.zanim"
+    sound = create_logic_node("play_sound")
+    sound["properties"]["path"] = "Assets/Audio/step.ogg"
+    graph = default_logic_graph("VisualAssets")
+    graph["nodes"] = [start, sprite, animation, sound]
+    graph["edges"] = [
+        _edge(start, "next", sprite, "in"),
+        _edge(sprite, "next", animation, "in"),
+        _edge(animation, "next", sound, "in"),
+    ]
+
+    class Game:
+        def __init__(self): self.calls = []
+        def set_sprite(self, path): self.calls.append(("image", path))
+        def play_animation_asset(self, path): self.calls.append(("animation", path))
+        def play_sound(self, path): self.calls.append(("audio", path))
+
+    game = Game()
+    LogicGraphRuntime(graph).start(game)
+    assert game.calls == [
+        ("image", "Assets/Textures/player.png"),
+        ("animation", "Assets/Animations/walk.zanim"),
+        ("audio", "Assets/Audio/step.ogg"),
+    ]

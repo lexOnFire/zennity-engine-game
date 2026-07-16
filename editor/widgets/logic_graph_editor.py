@@ -39,6 +39,7 @@ from PySide6.QtWidgets import (
 )
 
 from editor.ui.icons import editor_icon
+from editor.widgets.logic_asset_picker import LogicAssetPickerDialog
 from engine.logic.graph_asset import (
     NODE_DEFINITIONS,
     create_logic_node,
@@ -86,6 +87,9 @@ NODE_DESCRIPTIONS = {
     "event_timer": "Espera a quantidade de segundos e pode repetir automaticamente.",
     "get_position": "Lê as coordenadas X e Y atuais do objeto.",
     "move_by": "Move X e Y continuamente em unidades por segundo, sem exigir teclado.",
+    "set_sprite": "Troca a imagem principal do objeto durante o Play Mode.",
+    "play_animation_asset": "Carrega e toca diretamente um arquivo de animação .zanim.",
+    "stop_animation": "Interrompe a animação atual do objeto.",
     "set_position": "Move imediatamente o objeto para uma posição X e Y.",
     "rotate": "Acrescenta graus à rotação atual do objeto.",
     "set_active": "Mostra/ativa ou oculta/desativa o objeto.",
@@ -522,7 +526,7 @@ class LogicGraphEditor(QWidget):
         categories.setSpacing(6)
         categories.addWidget(QLabel("Categoria"))
         self.category_combo = QComboBox()
-        self.category_combo.addItems(("Movimento", "Posição", "Ação", "Lógica", "Condição", "Eventos", "Objetos", "Variáveis", "Matemática", "Texto", "Subgrafos"))
+        self.category_combo.addItems(("Movimento", "Posição", "Ação", "Lógica", "Condição", "Eventos", "Objetos", "Variáveis", "Matemática", "Texto", "Subgrafos", "Todos"))
         self.category_combo.setMinimumWidth(150)
         self.category_combo.setToolTip("Filtra a biblioteca de blocos por categoria")
         categories.addWidget(self.category_combo)
@@ -566,6 +570,9 @@ class LogicGraphEditor(QWidget):
         recipes_layout = QVBoxLayout(recipes_page)
         recipes_layout.setContentsMargins(5, 6, 5, 6)
         recipes_layout.setSpacing(6)
+        self.recipe_topic_label = QLabel("Receitas de Movimento")
+        self.recipe_topic_label.setObjectName("PanelSectionTitle")
+        recipes_layout.addWidget(self.recipe_topic_label)
         self.recipe_search = QLineEdit()
         self.recipe_search.setPlaceholderText("O que você quer fazer? ex.: mover sozinho")
         self.recipe_search.setClearButtonEnabled(True)
@@ -660,6 +667,10 @@ class LogicGraphEditor(QWidget):
         self.property_tree.setHeaderLabels(["Propriedade", "Valor"])
         self.property_tree.setColumnWidth(0, 105)
         properties_layout.addWidget(self.property_tree, 1)
+        self.property_asset_button = QPushButton("Selecionar asset do projeto...")
+        self.property_asset_button.setToolTip("Vincula uma imagem, animação ou som da pasta Assets")
+        self.property_asset_button.hide()
+        properties_layout.addWidget(self.property_asset_button)
         self.breakpoint_condition_label = QLabel("CONDIÇÃO DO BREAKPOINT")
         self.breakpoint_condition_label.setObjectName("PanelSectionTitle")
         properties_layout.addWidget(self.breakpoint_condition_label)
@@ -709,16 +720,17 @@ class LogicGraphEditor(QWidget):
         self._refresh_recipes("")
 
     def _connect_ui(self) -> None:
-        self.category_combo.currentTextChanged.connect(self._refresh_palette)
+        self.category_combo.currentTextChanged.connect(self._category_changed)
         self.node_search.textChanged.connect(lambda _text: self._refresh_palette())
         self.palette.itemDoubleClicked.connect(self._add_palette_item)
-        self.recipe_search.textChanged.connect(self._refresh_recipes)
+        self.recipe_search.textChanged.connect(lambda text: self._refresh_recipes(text))
         self.recipe_list.currentItemChanged.connect(self._recipe_selection_changed)
         self.recipe_list.itemDoubleClicked.connect(lambda _item: self._insert_selected_recipe())
         self.recipe_apply_button.clicked.connect(self._insert_selected_recipe)
         self.subgraph_list.itemDoubleClicked.connect(self._add_subgraph_asset)
         self.scene.selectionChanged.connect(self._selection_changed)
         self.property_tree.itemChanged.connect(self._property_changed)
+        self.property_asset_button.clicked.connect(self._choose_selected_node_asset)
         self.new_button.clicked.connect(self.new_graph)
         self.new_subgraph_button.clicked.connect(self.new_subgraph)
         self.open_button.clicked.connect(self.open_dialog)
@@ -766,7 +778,7 @@ class LogicGraphEditor(QWidget):
             if query:
                 if query not in searchable:
                     continue
-            elif node_category != self._palette_category:
+            elif self._palette_category != "Todos" and node_category != self._palette_category:
                 continue
             label = str(definition["title"])
             if query:
@@ -788,9 +800,15 @@ class LogicGraphEditor(QWidget):
         self.mark_dirty()
         self._update_validation()
 
-    def _refresh_recipes(self, query: str = "") -> None:
+    def _category_changed(self, category: str) -> None:
+        self._refresh_palette(category)
+        self._refresh_recipes(self.recipe_search.text(), category)
+
+    def _refresh_recipes(self, query: str = "", topic: str | None = None) -> None:
+        selected_topic = str(topic or self.category_combo.currentText() or "Movimento")
+        self.recipe_topic_label.setText(f"Receitas de {selected_topic}")
         self.recipe_list.clear()
-        for recipe in find_logic_recipes(query):
+        for recipe in find_logic_recipes(query, "" if selected_topic == "Todos" else selected_topic):
             item = QListWidgetItem(str(recipe["title"]))
             item.setData(Qt.UserRole, str(recipe["id"]))
             item.setToolTip(f"{recipe['category']} • {recipe['summary']}")
@@ -798,7 +816,9 @@ class LogicGraphEditor(QWidget):
         if self.recipe_list.count():
             self.recipe_list.setCurrentRow(0)
         else:
-            self.recipe_summary.setText("Nenhuma receita encontrada. Tente descrever a ação com outras palavras.")
+            self.recipe_summary.setText(
+                f"Nenhuma receita de {selected_topic} encontrada. Tente outra busca ou escolha outro tópico."
+            )
             self.recipe_apply_button.setEnabled(False)
 
     def _recipe_selection_changed(self, current: QListWidgetItem | None, _previous: QListWidgetItem | None) -> None:
@@ -1328,11 +1348,14 @@ class LogicGraphEditor(QWidget):
         self.property_tree.clear()
         if len(selected) != 1:
             self.selected_label.setText("Selecione um nó para editar seus valores")
+            self.property_asset_button.hide()
             self.breakpoint_condition_edit.clear()
             self.breakpoint_condition_edit.setEnabled(False)
             self._updating_properties = False
             return
         node = selected[0].node
+        asset_kind = self._asset_kind_for_node(str(node.get("type", "")))
+        self.property_asset_button.setVisible(asset_kind is not None)
         self.selected_label.setText(f"{node['title']}\n{node['category']} • {node['type']}")
         breakpoints = self.graph.get("debug", {}).get("breakpoints", [])
         has_breakpoint = str(node["id"]) in breakpoints
@@ -1354,6 +1377,32 @@ class LogicGraphEditor(QWidget):
             item.setFlags(item.flags() | Qt.ItemIsEditable)
             self.property_tree.addTopLevelItem(item)
         self._updating_properties = False
+
+    @staticmethod
+    def _asset_kind_for_node(node_type: str) -> str | None:
+        return {
+            "set_sprite": "image",
+            "play_animation_asset": "animation",
+            "play_sound": "audio",
+        }.get(str(node_type))
+
+    def _choose_selected_node_asset(self) -> None:
+        selected = [item for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)]
+        if len(selected) != 1:
+            return
+        node = selected[0].node
+        kind = self._asset_kind_for_node(str(node.get("type", "")))
+        if kind is None:
+            return
+        picker = LogicAssetPickerDialog(self.project_root, kind, self)
+        if not picker.exec() or not picker.selected_path:
+            return
+        node.setdefault("properties", {})["path"] = picker.selected_path
+        selected[0].refresh_text()
+        self._selection_changed()
+        self.mark_dirty()
+        self._update_validation()
+        self.message.emit("INFO", f"Asset vinculado ao bloco: {picker.selected_path}")
 
     def _update_breakpoint_condition(self) -> None:
         selected = [item for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)]

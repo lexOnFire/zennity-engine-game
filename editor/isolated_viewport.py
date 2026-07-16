@@ -360,6 +360,23 @@ class PlayScriptAPI:
     def play_animation(self, clip_name: str) -> None:
         self.obj.setdefault("script_instructions", []).append({"command": "play_animation", "value": clip_name})
 
+    def play_animation_asset(self, asset_path: str) -> None:
+        """Carrega e inicia um ``.zanim`` durante o Play Mode."""
+        path = Path(str(asset_path))
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        asset = load_animation_asset(path)
+        relative = path.relative_to(Path.cwd()).as_posix() if path.is_relative_to(Path.cwd()) else str(path)
+        clip = animation_asset_to_clip(asset, relative)
+        name = str(asset.get("name", path.stem))
+        animator = self.obj.setdefault("animator", {"active_clip": name, "speed": 1.0, "clips": {}})
+        animator.setdefault("clips", {})[name] = clip
+        animator["active_clip"] = name
+        self.obj["_current_animation_name"] = name
+        self.obj["_animation_time"] = 0.0
+        self.obj["_animation_frame"] = 0
+        self.obj["_animation_raw_frame"] = -1
+
     def stop_animation(self) -> None:
         self.obj.setdefault("script_instructions", []).append({"command": "stop_animation", "value": None})
 
@@ -369,6 +386,11 @@ class PlayScriptAPI:
 
     def play_sound(self, sound_path: str) -> None:
         self.obj.setdefault("script_instructions", []).append({"command": "play_sound", "value": str(sound_path)})
+
+    def set_sprite(self, image_path: str) -> None:
+        """Troca a textura principal do objeto sem recriá-lo."""
+        self.obj["texture"] = str(image_path)
+        self.obj["renderer_enabled"] = True
 
     def send(self, command: str, value: Any = None) -> None:
         self.obj.setdefault("script_instructions", []).append({"command": str(command), "value": value})

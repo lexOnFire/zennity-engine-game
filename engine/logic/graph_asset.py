@@ -46,7 +46,10 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "is_grounded": {"title": "Está no chão", "category": "Condição", "properties": {}},
     "compare_number": {"title": "Comparar número", "category": "Condição", "properties": {"operator": ">", "value": 0.0}},
     "play_animation": {"title": "Tocar animação", "category": "Ação", "properties": {"state": "Idle"}},
+    "play_animation_asset": {"title": "Tocar arquivo de animação", "category": "Ação", "properties": {"path": ""}},
+    "stop_animation": {"title": "Parar animação", "category": "Ação", "properties": {}},
     "play_sound": {"title": "Tocar som", "category": "Ação", "properties": {"path": ""}},
+    "set_sprite": {"title": "Trocar imagem do objeto", "category": "Ação", "properties": {"path": ""}},
     "set_hud": {"title": "Atualizar HUD", "category": "Ação", "properties": {"text": "Texto"}},
     "emit_event": {"title": "Emitir evento", "category": "Ação", "properties": {"name": "evento", "payload": None}},
     "set_position": {"title": "Definir posição", "category": "Ação", "properties": {"x": 0.0, "y": 0.0}},
@@ -103,7 +106,10 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "is_grounded": {"inputs": [("in", "flow")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
     "compare_number": {"inputs": [("in", "flow"), ("value", "number")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
     "play_animation": {"inputs": [("in", "flow"), ("state", "text")], "outputs": [("next", "flow")]},
+    "play_animation_asset": {"inputs": [("in", "flow"), ("path", "text")], "outputs": [("next", "flow")]},
+    "stop_animation": {"inputs": [("in", "flow")], "outputs": [("next", "flow")]},
     "play_sound": {"inputs": [("in", "flow"), ("path", "text")], "outputs": [("next", "flow")]},
+    "set_sprite": {"inputs": [("in", "flow"), ("target", "object"), ("path", "text")], "outputs": [("next", "flow")]},
     "set_hud": {"inputs": [("in", "flow"), ("text", "text")], "outputs": [("next", "flow")]},
     "emit_event": {"inputs": [("in", "flow"), ("payload", "any")], "outputs": [("next", "flow")]},
     "set_position": {"inputs": [("in", "flow"), ("target", "object"), ("x", "number"), ("y", "number")], "outputs": [("next", "flow")]},
@@ -307,6 +313,7 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
     if not event_nodes:
         issues.append({"level": "warning", "message": "Adicione Ao iniciar, A cada frame ou Ao receber evento para executar o grafo."})
     connected = {edge["from_node"] for edge in graph["edges"]} | {edge["to_node"] for edge in graph["edges"]}
+    connected_inputs = {(edge["to_node"], edge.get("to_port", "in")) for edge in graph["edges"]}
     nodes_by_id = {node["id"]: node for node in graph["nodes"]}
     for node in graph["nodes"]:
         if node["type"] in {"event_custom", "emit_event"} and not str(node.get("properties", {}).get("name", "")).strip():
@@ -315,6 +322,10 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
             issues.append({"level": "error", "node": node["id"], "message": "Informe o nome da porta do subgrafo."})
         if node["type"] == "call_subgraph" and not str(node.get("properties", {}).get("path", "")).strip():
             issues.append({"level": "error", "node": node["id"], "message": "Escolha o arquivo do subgrafo."})
+        if node["type"] in {"set_sprite", "play_animation_asset", "play_sound"}:
+            has_path = bool(str(node.get("properties", {}).get("path", "")).strip())
+            if not has_path and (node["id"], "path") not in connected_inputs:
+                issues.append({"level": "warning", "node": node["id"], "message": "Vincule um asset do projeto a este bloco."})
         if node["id"] not in connected and len(graph["nodes"]) > 1:
             issues.append({"level": "warning", "node": node["id"], "message": f"Nó desconectado: {node['title']}"})
     interface = subgraph_interface(graph)

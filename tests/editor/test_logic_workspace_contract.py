@@ -234,3 +234,28 @@ def test_logic_workspace_teaches_searchable_position_recipes():
     assert '"move_x_every_frame"' in recipes
     assert "def find_logic_recipes" in recipes
     assert "def build_logic_recipe" in recipes
+
+
+def test_recipe_topics_and_project_asset_picker_cover_visual_gameplay():
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    picker = _source("editor/widgets/logic_asset_picker.py")
+    graph = _source("engine/logic/graph_asset.py")
+    runtime = _source("engine/logic/runtime.py")
+    viewport = _source("editor/isolated_viewport.py")
+    recipes = _source("engine/logic/recipes.py")
+    assert "_category_changed" in editor
+    assert "Receitas de {selected_topic}" in editor
+    assert 'selected_topic == "Todos"' in editor
+    assert "find_logic_recipes(query" in editor
+    assert "Selecionar asset do projeto" in editor
+    assert "class LogicAssetPickerDialog" in picker
+    assert '"image"' in picker and '"animation"' in picker and '"audio"' in picker
+    assert '"set_sprite"' in graph
+    assert '"play_animation_asset"' in graph
+    assert 'node_type == "set_sprite"' in runtime
+    assert 'node_type == "play_animation_asset"' in runtime
+    assert "def set_sprite" in viewport
+    assert "def play_animation_asset" in viewport
+    assert '"sprite_on_start"' in recipes
+    assert '"animation_asset_on_start"' in recipes
+    assert '"sound_on_collision"' in recipes
