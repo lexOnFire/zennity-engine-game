@@ -633,3 +633,97 @@ def test_runtime_rejects_recursive_subgraph_references():
         assert "Referência circular entre subgrafos" in str(exc)
     else:
         raise AssertionError("Uma referência circular deveria ser rejeitada")
+
+
+def test_collision_and_trigger_events_receive_other_object():
+    collision = create_logic_node("event_collision_enter")
+    destroy = create_logic_node("destroy_object")
+    graph = default_logic_graph("Collision")
+    graph["nodes"] = [collision, destroy]
+    graph["edges"] = [
+        _edge(collision, "next", destroy, "in"),
+        _edge(collision, "other", destroy, "target", "object"),
+    ]
+
+    class Game: pass
+
+    class Other:
+        active = True
+        def destroy(self): self.active = False
+
+    game = Game()
+    other = Other()
+    runtime = LogicGraphRuntime(graph)
+    runtime.trigger_event("event_collision_enter", game, payload=other)
+    assert other.active is False
+    assert runtime.values[(collision["id"], "other")] is other
+
+
+def test_repeating_timer_updates_blackboard_after_interval():
+    timer = create_logic_node("event_timer")
+    timer["properties"].update({"seconds": 1.0, "repeat": True})
+    current = create_logic_node("get_variable")
+    current["properties"].update({"scope": "object", "name": "ticks"})
+    one = create_logic_node("number_value")
+    one["properties"]["value"] = 1
+    add = create_logic_node("add_number")
+    setter = create_logic_node("set_variable")
+    setter["properties"].update({"scope": "object", "name": "ticks"})
+    graph = default_logic_graph("Timer")
+    graph["variables"] = {"ticks": {"type": "number", "scope": "object", "default": 0}}
+    graph["nodes"] = [timer, current, one, add, setter]
+    graph["edges"] = [
+        _edge(timer, "next", setter, "in"),
+        _edge(current, "value", add, "a", "number"),
+        _edge(one, "value", add, "b", "number"),
+        _edge(add, "value", setter, "value", "number"),
+    ]
+
+    runtime = LogicGraphRuntime(graph)
+    for _ in range(3):
+        runtime.update(object(), 0.4)
+    assert runtime.blackboard.get("object", "ticks", "Object") == 1.0
+    runtime.update(object(), 1.0)
+    assert runtime.blackboard.get("object", "ticks", "Object") == 2.0
+
+
+def test_math_and_text_library_drives_hud_without_python():
+    update = create_logic_node("event_update")
+    add = create_logic_node("add_number")
+    add["properties"].update({"a": 2, "b": 3})
+    convert = create_logic_node("to_text")
+    join = create_logic_node("join_text")
+    join["properties"]["b"] = " pontos"
+    hud = create_logic_node("set_hud")
+    graph = default_logic_graph("MathText")
+    graph["nodes"] = [update, add, convert, join, hud]
+    graph["edges"] = [
+        _edge(update, "next", hud, "in"),
+        _edge(add, "value", convert, "value", "number"),
+        _edge(convert, "value", join, "a", "text"),
+        _edge(join, "value", hud, "text", "text"),
+    ]
+
+    class Game:
+        def __init__(self): self.text = ""
+        def set_hud(self, _key, text): self.text = text
+
+    game = Game()
+    LogicGraphRuntime(graph).update(game, 0.016)
+    assert game.text == "5.0 pontos"
+
+
+def test_gameplay_block_library_exposes_expected_typed_ports():
+    assert ("other", "object") in node_port_definitions("event_trigger_enter")["outputs"]
+    assert ("degrees", "number") in node_port_definitions("rotate")["inputs"]
+    assert node_port_definitions("destroy_object")["outputs"] == []
+    assert ("value", "number") in node_port_definitions("clamp_number")["outputs"]
+    assert ("value", "text") in node_port_definitions("join_text")["outputs"]
+
+
+def test_score_library_demo_is_reusable_and_executable():
+    root = Path(__file__).resolve().parents[2]
+    asset = load_logic_graph(root / "Assets/Logic/CalcularPontuacao.zlogic")
+    assert not validate_logic_graph(asset)
+    runtime = LogicGraphRuntime(asset, call_stack=("demo",))
+    assert runtime.run_subgraph(object(), 0.0, {"pontos_base": 75}) == {"pontuacao_final": 150.0}

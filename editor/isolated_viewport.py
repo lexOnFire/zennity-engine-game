@@ -768,6 +768,25 @@ def run_viewport(
                 hook(game, other)
             except Exception as exc:
                 _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}:{hook_name}: {exc}"})
+        logic_event = {
+            "on_collision": "event_collision_enter",
+            "on_collision_exit": "event_collision_exit",
+            "on_trigger": "event_trigger_enter",
+            "on_trigger_exit": "event_trigger_exit",
+        }.get(hook_name)
+        if logic_event:
+            for graph_path, runtime in list(logic_runtimes.get(name, [])):
+                try:
+                    runtime.trigger_event(logic_event, game, 0.0, other)
+                    _send(events, {
+                        "type": "logic_trace", "object": name, "graph": graph_path,
+                        **runtime.debug_snapshot(),
+                    })
+                except Exception as exc:
+                    _send(events, {
+                        "type": "script_log", "level": "ERROR",
+                        "message": f"{name}:{graph_path}:{logic_event}: {exc}",
+                    })
 
     def process_contacts() -> None:
         current: dict[tuple[str, str], bool] = {}
@@ -1142,6 +1161,26 @@ def run_viewport(
                 hook(game, other)
             except Exception as exc:
                 _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}:{hook_name}: {exc}"})
+
+        logic_event = {
+            "on_collision": "event_collision_enter",
+            "on_collision_exit": "event_collision_exit",
+            "on_trigger": "event_trigger_enter",
+            "on_trigger_exit": "event_trigger_exit",
+        }.get(hook_name)
+        if logic_event:
+            for graph_path, runtime in list(logic_runtimes.get(name, [])):
+                try:
+                    runtime.trigger_event(logic_event, game, 0.0, other)
+                    _send(events, {
+                        "type": "logic_trace", "object": name, "graph": graph_path,
+                        **runtime.debug_snapshot(),
+                    })
+                except Exception as exc:
+                    _send(events, {
+                        "type": "script_log", "level": "ERROR",
+                        "message": f"{name}:{graph_path}:{logic_event}: {exc}",
+                    })
 
     def process_contacts() -> None:
         current: dict[tuple[str, str], bool] = {}

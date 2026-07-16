@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import unicodedata
 import uuid
 from copy import deepcopy
 from pathlib import Path
@@ -61,6 +62,8 @@ CATEGORY_COLORS = {
     "Objetos": QColor("#47b8c8"),
     "Variáveis": QColor("#d5b84b"),
     "Subgrafos": QColor("#b48ead"),
+    "Matemática": QColor("#e07a5f"),
+    "Texto": QColor("#81b29a"),
     "Personalizado": QColor("#7f8b9c"),
 }
 
@@ -71,6 +74,36 @@ PORT_COLORS = {
     "text": QColor("#e6b85c"),
     "object": QColor("#47b8c8"),
     "any": QColor("#ae7df0"),
+}
+
+NODE_DESCRIPTIONS = {
+    "event_collision_enter": "Executa quando este objeto começa uma colisão física.",
+    "event_collision_exit": "Executa quando os objetos deixam de colidir.",
+    "event_trigger_enter": "Executa ao entrar em um collider marcado como área/trigger.",
+    "event_trigger_exit": "Executa ao sair de uma área/trigger.",
+    "event_timer": "Espera a quantidade de segundos e pode repetir automaticamente.",
+    "set_position": "Move imediatamente o objeto para uma posição X e Y.",
+    "rotate": "Acrescenta graus à rotação atual do objeto.",
+    "set_active": "Mostra/ativa ou oculta/desativa o objeto.",
+    "destroy_object": "Desativa o objeto durante o Play Mode.",
+    "log_message": "Escreve uma mensagem no console do editor.",
+    "add_number": "Soma dois números.",
+    "subtract_number": "Subtrai B de A.",
+    "multiply_number": "Multiplica dois números.",
+    "divide_number": "Divide A por B e avisa se B for zero.",
+    "absolute_number": "Remove o sinal negativo de um número.",
+    "clamp_number": "Mantém o número entre um mínimo e um máximo.",
+    "random_number": "Gera um número aleatório dentro do intervalo.",
+    "delta_time": "Tempo transcorrido desde o último frame.",
+    "join_text": "Junta dois valores em um único texto.",
+    "to_text": "Converte número, booleano ou objeto em texto.",
+}
+
+PROPERTY_LABELS = {
+    "seconds": "Segundos", "repeat": "Repetir", "minimum": "Mínimo", "maximum": "Máximo",
+    "degrees": "Graus", "active": "Ativo", "text": "Texto", "value": "Valor",
+    "default": "Valor inicial", "type": "Tipo", "name": "Nome", "path": "Arquivo",
+    "speed": "Velocidade", "force": "Força", "condition": "Condição",
 }
 
 
@@ -376,6 +409,7 @@ class LogicGraphEditor(QWidget):
         self._connection_candidate: LogicPortItem | None = None
         self._connection_preview: QGraphicsPathItem | None = None
         self._runtime_trace_active = False
+        self._palette_category = "Movimento"
         self._blackboard_selected_name = ""
         self._dirty = False
         self._updating_properties = False
@@ -475,7 +509,7 @@ class LogicGraphEditor(QWidget):
         categories.setSpacing(6)
         self.category_group = QButtonGroup(self)
         self.category_group.setExclusive(True)
-        for index, category in enumerate(("Movimento", "Ação", "Lógica", "Condição", "Eventos", "Objetos", "Variáveis", "Subgrafos")):
+        for index, category in enumerate(("Movimento", "Ação", "Lógica", "Condição", "Eventos", "Objetos", "Variáveis", "Matemática", "Texto", "Subgrafos")):
             button = QPushButton(category)
             button.setCheckable(True)
             button.setProperty("logicCategory", category)
@@ -497,10 +531,17 @@ class LogicGraphEditor(QWidget):
         palette_title = QLabel("NÓS")
         palette_title.setObjectName("PanelSectionTitle")
         palette_layout.addWidget(palette_title)
+        self.node_search = QLineEdit()
+        self.node_search.setPlaceholderText("Pesquisar blocos...  ex.: colisão, som, somar")
+        self.node_search.setClearButtonEnabled(True)
+        palette_layout.addWidget(self.node_search)
         self.palette = QListWidget()
         self.palette.setObjectName("LogicNodePalette")
         self.palette.setToolTip("Duplo clique para adicionar um nó")
         palette_layout.addWidget(self.palette, 1)
+        self.palette_count = QLabel()
+        self.palette_count.setObjectName("PanelHint")
+        palette_layout.addWidget(self.palette_count)
         subgraph_title = QLabel("SUBGRAFOS REUTILIZÁVEIS")
         subgraph_title.setObjectName("PanelSectionTitle")
         palette_layout.addWidget(subgraph_title)
@@ -620,6 +661,7 @@ class LogicGraphEditor(QWidget):
 
     def _connect_ui(self) -> None:
         self.category_group.idClicked.connect(self._category_clicked)
+        self.node_search.textChanged.connect(lambda _text: self._refresh_palette())
         self.palette.itemDoubleClicked.connect(self._add_palette_item)
         self.subgraph_list.itemDoubleClicked.connect(self._add_subgraph_asset)
         self.scene.selectionChanged.connect(self._selection_changed)
@@ -654,15 +696,37 @@ class LogicGraphEditor(QWidget):
         button = self.category_group.button(button_id)
         self._refresh_palette(str(button.property("logicCategory")) if button else "Movimento")
 
-    def _refresh_palette(self, category: str) -> None:
+    @staticmethod
+    def _search_key(value: Any) -> str:
+        normalized = unicodedata.normalize("NFKD", str(value).casefold())
+        return "".join(character for character in normalized if not unicodedata.combining(character))
+
+    def _refresh_palette(self, category: str | None = None) -> None:
+        if category is not None:
+            self._palette_category = category
+        query = self._search_key(self.node_search.text()).strip()
         self.palette.clear()
         for node_type, definition in NODE_DEFINITIONS.items():
-            if definition.get("category") != category:
+            node_category = str(definition.get("category", "Personalizado"))
+            searchable = self._search_key(
+                f"{definition.get('title', '')} {node_category} {node_type} "
+                f"{' '.join(str(key) for key in definition.get('properties', {}))} "
+                f"{NODE_DESCRIPTIONS.get(node_type, '')}"
+            )
+            if query:
+                if query not in searchable:
+                    continue
+            elif node_category != self._palette_category:
                 continue
-            item = QListWidgetItem(str(definition["title"]))
+            label = str(definition["title"])
+            if query:
+                label = f"{label}  —  {node_category}"
+            item = QListWidgetItem(label)
             item.setData(Qt.UserRole, node_type)
-            item.setToolTip(f"{category} • {node_type}")
+            description = NODE_DESCRIPTIONS.get(node_type, "Arraste as portas para conectar este bloco ao fluxo.")
+            item.setToolTip(f"{node_category} • {description}")
             self.palette.addItem(item)
+        self.palette_count.setText(f"{self.palette.count()} bloco(s)" + (" encontrados" if query else " nesta categoria"))
 
     def _add_palette_item(self, item: QListWidgetItem) -> None:
         node_type = str(item.data(Qt.UserRole))
@@ -1183,10 +1247,15 @@ class LogicGraphEditor(QWidget):
         self.breakpoint_condition_edit.setEnabled(has_breakpoint)
         self.breakpoint_condition_edit.setText(str(condition))
         title_item = QTreeWidgetItem(["title", str(node["title"])])
+        title_item.setData(0, Qt.UserRole, "title")
         title_item.setFlags(title_item.flags() | Qt.ItemIsEditable)
         self.property_tree.addTopLevelItem(title_item)
         for key, value in node.get("properties", {}).items():
-            item = QTreeWidgetItem([str(key), json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value])
+            item = QTreeWidgetItem([
+                PROPERTY_LABELS.get(str(key), str(key)),
+                json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value,
+            ])
+            item.setData(0, Qt.UserRole, str(key))
             item.setFlags(item.flags() | Qt.ItemIsEditable)
             self.property_tree.addTopLevelItem(item)
         self._updating_properties = False
@@ -1357,7 +1426,7 @@ class LogicGraphEditor(QWidget):
         if len(selected) != 1:
             return
         node_item = selected[0]
-        key = item.text(0)
+        key = str(item.data(0, Qt.UserRole) or item.text(0))
         text = item.text(1)
         try:
             value = json.loads(text)

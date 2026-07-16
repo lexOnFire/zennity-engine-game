@@ -166,3 +166,22 @@ def test_reusable_subgraphs_are_discoverable_typed_and_safe():
     assert "_add_subgraph_asset" in editor
     assert "_sync_subgraph_call_interfaces" in editor
     assert "load_project_subgraph" in viewport
+
+
+def test_gameplay_event_library_and_search_are_available():
+    graph = _source("engine/logic/graph_asset.py")
+    runtime = _source("engine/logic/runtime.py")
+    viewport = _source("editor/isolated_viewport.py")
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    for node_type in (
+        "event_collision_enter", "event_collision_exit", "event_trigger_enter",
+        "event_trigger_exit", "event_timer", "add_number", "multiply_number",
+        "clamp_number", "join_text", "set_position", "destroy_object",
+    ):
+        assert f'"{node_type}"' in graph
+    assert "def trigger_event" in runtime
+    assert "def _update_timers" in runtime
+    assert "runtime.trigger_event(logic_event" in viewport
+    assert "Pesquisar blocos" in editor
+    assert "def _search_key" in editor
+    assert "self.node_search.textChanged.connect" in editor

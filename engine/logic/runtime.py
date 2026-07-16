@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import random
 import re
 from copy import deepcopy
 from typing import Any, Callable, Iterator, Mapping
@@ -67,6 +68,8 @@ class LogicGraphRuntime:
         self._pending_custom_events: list[tuple[str, LogicEvent]] = []
         self._event_trace_pending = False
         self._subgraph_outputs: dict[str, Any] = {}
+        self._timer_elapsed: dict[str, float] = {}
+        self._timer_fired: set[str] = set()
         self.started = False
         for node in self.nodes.values() if not self.call_stack else ():
             if node.get("type") != "event_custom":
@@ -118,6 +121,7 @@ class LogicGraphRuntime:
             self.start(game)
         if self.debug_paused:
             return
+        self._update_timers(game, float(dt))
         if self.breakpoints:
             if self._debug_generator is None:
                 self.values.clear()
@@ -135,6 +139,40 @@ class LogicGraphRuntime:
         self.executed_nodes.clear()
         self.executed_edges.clear()
         self._run_event("event_update", game, float(dt))
+
+    def trigger_event(self, event_type: str, game: Any, dt: float = 0.0, payload: Any = None) -> None:
+        """Dispara um evento físico enviado pelo Play Mode."""
+        if not self.started:
+            self.start(game)
+        self._last_game = game
+        self._last_dt = float(dt)
+        if self.debug_paused:
+            return
+        self.values.clear()
+        self.executed_nodes.clear()
+        self.executed_edges.clear()
+        if self.breakpoints:
+            self._begin_debug_event(str(event_type), game, float(dt), payload)
+        else:
+            self._run_event(str(event_type), game, float(dt), payload)
+
+    def _update_timers(self, game: Any, dt: float) -> None:
+        for node in self.nodes.values():
+            if node.get("type") != "event_timer":
+                continue
+            node_id = str(node["id"])
+            properties = node.get("properties", {})
+            repeat = bool(properties.get("repeat", False))
+            if node_id in self._timer_fired and not repeat:
+                continue
+            seconds = max(0.001, float(properties.get("seconds", 1.0)))
+            elapsed = self._timer_elapsed.get(node_id, 0.0) + max(0.0, float(dt))
+            if elapsed < seconds:
+                self._timer_elapsed[node_id] = elapsed
+                continue
+            self._timer_elapsed[node_id] = elapsed % seconds if repeat else seconds
+            self._timer_fired.add(node_id)
+            self._run_event_node(node, game, dt)
 
     def configure_breakpoints(
         self,
@@ -195,15 +233,17 @@ class LogicGraphRuntime:
         self._debug_waiting_node = None
         self._debug_bypass_node = ""
         self._pending_custom_events.clear()
+        self._timer_elapsed.clear()
+        self._timer_fired.clear()
         self.started = False
         self.start(game)
         if not self.debug_paused:
             self.update(game, float(dt))
 
-    def _begin_debug_event(self, event_type: str, game: Any, dt: float) -> None:
+    def _begin_debug_event(self, event_type: str, game: Any, dt: float, payload: Any = None) -> None:
         self._debug_game = game
         self._debug_dt = float(dt)
-        self._debug_generator = self._debug_event_generator(event_type, game, dt)
+        self._debug_generator = self._debug_event_generator(event_type, game, dt, payload)
         self._debug_waiting_node = None
         self._drive_debug()
 
@@ -260,7 +300,7 @@ class LogicGraphRuntime:
         self.debug_paused = bool(keep_paused)
         self.pause_node = ""
 
-    def _debug_event_generator(self, event_type: str, game: Any, dt: float) -> Iterator[str]:
+    def _debug_event_generator(self, event_type: str, game: Any, dt: float, payload: Any = None) -> Iterator[str]:
         budget = [self.MAX_STEPS]
         for node in self.nodes.values():
             if node["type"] != event_type:
@@ -269,6 +309,8 @@ class LogicGraphRuntime:
             yield node_id
             if node_id not in self.executed_nodes:
                 self.executed_nodes.append(node_id)
+            if payload is not None:
+                self._store(node_id, "other", payload)
             yield from self._follow_debug(node_id, "next", game, dt, budget, set())
 
     def _debug_custom_event_generator(self, node_id: str, event: LogicEvent) -> Iterator[str]:
@@ -342,12 +384,25 @@ class LogicGraphRuntime:
             for next_port in next_ports:
                 yield from self._follow_debug(target_id, next_port, game, dt, budget, next_branch)
 
-    def _run_event(self, event_type: str, game: Any, dt: float) -> None:
+    def _run_event(self, event_type: str, game: Any, dt: float, payload: Any = None) -> None:
         budget = [self.MAX_STEPS]
         for node in self.nodes.values():
             if node["type"] == event_type:
-                self.executed_nodes.append(str(node["id"]))
-                self._follow(str(node["id"]), "next", game, dt, budget, set())
+                if payload is not None:
+                    self._store(str(node["id"]), "other", payload)
+                self._run_event_node(node, game, dt, budget)
+
+    def _run_event_node(
+        self,
+        node: Mapping[str, Any],
+        game: Any,
+        dt: float,
+        budget: list[int] | None = None,
+    ) -> None:
+        node_id = str(node["id"])
+        if node_id not in self.executed_nodes:
+            self.executed_nodes.append(node_id)
+        self._follow(node_id, "next", game, dt, budget or [self.MAX_STEPS], set())
 
     def _follow(
         self,
@@ -433,6 +488,28 @@ class LogicGraphRuntime:
             name = str(properties.get("name", "evento")).strip()
             payload = self._read_input(node_id, "payload", properties.get("payload"), game, dt, set())
             self.event_bus.emit(name, payload, self.object_key)
+            return ["next"]
+        if node_type == "set_position":
+            target = self._read_input(node_id, "target", game, game, dt, set()) or game
+            target.x = float(self._read_input(node_id, "x", properties.get("x", 0.0), game, dt, set()))
+            target.y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
+            return ["next"]
+        if node_type == "rotate":
+            target = self._read_input(node_id, "target", game, game, dt, set()) or game
+            degrees = float(self._read_input(node_id, "degrees", properties.get("degrees", 90.0), game, dt, set()))
+            target.rotation += degrees
+            return ["next"]
+        if node_type == "set_active":
+            target = self._read_input(node_id, "target", game, game, dt, set()) or game
+            target.active = bool(self._read_input(node_id, "active", properties.get("active", True), game, dt, set()))
+            return ["next"]
+        if node_type == "destroy_object":
+            target = self._read_input(node_id, "target", game, game, dt, set()) or game
+            target.destroy()
+            return []
+        if node_type == "log_message":
+            text = self._read_input(node_id, "text", properties.get("text", "Mensagem"), game, dt, set())
+            game.log(str(text))
             return ["next"]
         if node_type == "call_subgraph":
             path = str(properties.get("path", "")).strip()
@@ -530,7 +607,9 @@ class LogicGraphRuntime:
         properties = node.get("properties", {}) if isinstance(node.get("properties"), Mapping) else {}
         node_type = str(node.get("type", ""))
 
-        if node_type == "subgraph_input":
+        if node_type in {"event_collision_enter", "event_collision_exit", "event_trigger_enter", "event_trigger_exit"}:
+            value = deepcopy(self.values.get((node_id, "other")))
+        elif node_type == "subgraph_input":
             value = deepcopy(self.values.get((node_id, "value"), properties.get("default")))
         elif node_type == "call_subgraph":
             value = deepcopy(self.values.get((node_id, port)))
@@ -556,6 +635,42 @@ class LogicGraphRuntime:
             left = bool(self._read_input(node_id, "a", False, game, dt, resolving))
             right = bool(self._read_input(node_id, "b", False, game, dt, resolving))
             value = left or right
+        elif node_type == "not":
+            value = not bool(self._read_input(node_id, "value", False, game, dt, resolving))
+        elif node_type in {"add_number", "subtract_number", "multiply_number", "divide_number"}:
+            left = float(self._read_input(node_id, "a", properties.get("a", 0.0), game, dt, resolving))
+            right = float(self._read_input(node_id, "b", properties.get("b", 0.0), game, dt, resolving))
+            if node_type == "add_number":
+                value = left + right
+            elif node_type == "subtract_number":
+                value = left - right
+            elif node_type == "multiply_number":
+                value = left * right
+            else:
+                if right == 0.0:
+                    raise RuntimeError("Divisão por zero.")
+                value = left / right
+        elif node_type == "absolute_number":
+            value = abs(float(self._read_input(node_id, "value", properties.get("value", 0.0), game, dt, resolving)))
+        elif node_type == "clamp_number":
+            raw = float(self._read_input(node_id, "value", properties.get("value", 0.0), game, dt, resolving))
+            minimum = float(self._read_input(node_id, "minimum", properties.get("minimum", 0.0), game, dt, resolving))
+            maximum = float(self._read_input(node_id, "maximum", properties.get("maximum", 1.0), game, dt, resolving))
+            if minimum > maximum:
+                minimum, maximum = maximum, minimum
+            value = max(minimum, min(maximum, raw))
+        elif node_type == "random_number":
+            minimum = float(self._read_input(node_id, "minimum", properties.get("minimum", 0.0), game, dt, resolving))
+            maximum = float(self._read_input(node_id, "maximum", properties.get("maximum", 1.0), game, dt, resolving))
+            value = random.uniform(minimum, maximum)
+        elif node_type == "delta_time":
+            value = float(dt)
+        elif node_type == "join_text":
+            left = self._read_input(node_id, "a", properties.get("a", ""), game, dt, resolving)
+            right = self._read_input(node_id, "b", properties.get("b", ""), game, dt, resolving)
+            value = f"{left}{right}"
+        elif node_type == "to_text":
+            value = str(self._read_input(node_id, "value", properties.get("value", ""), game, dt, resolving))
         elif node_type == "get_variable":
             value = self.blackboard.get(
                 str(properties.get("scope", "object")).lower(),
