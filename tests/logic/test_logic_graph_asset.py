@@ -15,6 +15,7 @@ from engine.logic.graph_asset import (
 from engine.logic.runtime import LogicGraphRuntime
 from engine.logic.blackboard import BlackboardStore, load_blackboard_asset, save_blackboard_asset
 from engine.logic.event_bus import LogicEventBus
+from engine.logic.recipes import build_logic_recipe, find_logic_recipes
 
 
 def test_logic_graph_round_trip_uses_zlogic_extension(tmp_path):
@@ -735,3 +736,64 @@ def test_score_library_demo_is_reusable_and_executable():
     assert not validate_logic_graph(asset)
     runtime = LogicGraphRuntime(asset, call_stack=("demo",))
     assert runtime.run_subgraph(object(), 0.0, {"pontos_base": 75}) == {"pontuacao_final": 150.0}
+
+
+def test_beginner_recipe_search_builds_move_x_flow():
+    matches = find_logic_recipes("mover sozinho x")
+    assert matches[0]["id"] == "move_x_every_frame"
+    fragment = build_logic_recipe("move_x_every_frame", (50.0, 80.0))
+    assert [node["type"] for node in fragment["nodes"]] == ["event_update", "move_by"]
+    assert fragment["nodes"][1]["properties"] == {"x": 120.0, "y": 0.0}
+    assert fragment["edges"][0]["kind"] == "flow"
+    assert fragment["nodes"][0]["position"] == [50.0, 80.0]
+
+
+def test_position_nodes_move_per_second_and_read_current_coordinates():
+    update = create_logic_node("event_update")
+    move = create_logic_node("move_by")
+    move["properties"].update({"x": 120.0, "y": -40.0})
+    position = create_logic_node("get_position")
+    convert = create_logic_node("to_text")
+    hud = create_logic_node("set_hud")
+    graph = default_logic_graph("AutomaticPosition")
+    graph["nodes"] = [update, move, position, convert, hud]
+    graph["edges"] = [
+        _edge(update, "next", move, "in"),
+        _edge(move, "next", hud, "in"),
+        _edge(position, "x", convert, "value", "number"),
+        _edge(convert, "value", hud, "text", "text"),
+    ]
+
+    class Game:
+        def __init__(self): self.x, self.y, self.text = 10.0, 20.0, ""
+        def move(self, dx, dy=0.0): self.x += dx; self.y += dy
+        def set_hud(self, _key, text): self.text = text
+
+    game = Game()
+    LogicGraphRuntime(graph).update(game, 0.5)
+    assert (game.x, game.y) == (70.0, 0.0)
+    assert game.text == "70.0"
+
+
+def test_unconnected_action_target_means_current_object_without_copying_it():
+    update = create_logic_node("event_update")
+    position = create_logic_node("set_position")
+    position["properties"].update({"x": 25.0, "y": 40.0})
+    rotate = create_logic_node("rotate")
+    rotate["properties"]["degrees"] = 15.0
+    active = create_logic_node("set_active")
+    active["properties"]["active"] = False
+    graph = default_logic_graph("CurrentObjectTarget")
+    graph["nodes"] = [update, position, rotate, active]
+    graph["edges"] = [
+        _edge(update, "next", position, "in"),
+        _edge(position, "next", rotate, "in"),
+        _edge(rotate, "next", active, "in"),
+    ]
+
+    class Game:
+        x, y, rotation, active = 0.0, 0.0, 0.0, True
+
+    game = Game()
+    LogicGraphRuntime(graph).update(game, 0.016)
+    assert (game.x, game.y, game.rotation, game.active) == (25.0, 40.0, 15.0, False)

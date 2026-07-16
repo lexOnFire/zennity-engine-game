@@ -467,6 +467,17 @@ class LogicGraphRuntime:
             amount = float(self._read_input(node_id, "value", fallback, game, dt, set()))
             game.move(amount * float(properties.get("speed", 200.0)) * dt)
             return ["next"]
+        if node_type == "move_by":
+            target = self._read_target(node_id, game, dt, set())
+            velocity_x = float(self._read_input(node_id, "x", properties.get("x", 100.0), game, dt, set()))
+            velocity_y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
+            delta_x, delta_y = velocity_x * dt, velocity_y * dt
+            if callable(getattr(target, "move", None)):
+                target.move(delta_x, delta_y)
+            else:
+                target.x = float(target.x) + delta_x
+                target.y = float(target.y) + delta_y
+            return ["next"]
         if node_type == "jump":
             force = float(self._read_input(node_id, "force", properties.get("force", 420.0), game, dt, set()))
             game.jump(force)
@@ -490,21 +501,21 @@ class LogicGraphRuntime:
             self.event_bus.emit(name, payload, self.object_key)
             return ["next"]
         if node_type == "set_position":
-            target = self._read_input(node_id, "target", game, game, dt, set()) or game
+            target = self._read_target(node_id, game, dt, set())
             target.x = float(self._read_input(node_id, "x", properties.get("x", 0.0), game, dt, set()))
             target.y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
             return ["next"]
         if node_type == "rotate":
-            target = self._read_input(node_id, "target", game, game, dt, set()) or game
+            target = self._read_target(node_id, game, dt, set())
             degrees = float(self._read_input(node_id, "degrees", properties.get("degrees", 90.0), game, dt, set()))
             target.rotation += degrees
             return ["next"]
         if node_type == "set_active":
-            target = self._read_input(node_id, "target", game, game, dt, set()) or game
+            target = self._read_target(node_id, game, dt, set())
             target.active = bool(self._read_input(node_id, "active", properties.get("active", True), game, dt, set()))
             return ["next"]
         if node_type == "destroy_object":
-            target = self._read_input(node_id, "target", game, game, dt, set()) or game
+            target = self._read_target(node_id, game, dt, set())
             target.destroy()
             return []
         if node_type == "log_message":
@@ -582,6 +593,12 @@ class LogicGraphRuntime:
         return self._evaluate_output(
             str(edge["from_node"]), str(edge.get("from_port", "value")), game, dt, resolving
         )
+
+    def _read_target(self, node_id: str, game: Any, dt: float, resolving: set[tuple[str, str]]) -> Any:
+        """Resolve uma porta de objeto sem copiar o objeto atual por engano."""
+        if (node_id, "target") not in self.incoming:
+            return game
+        return self._read_input(node_id, "target", game, game, dt, resolving) or game
 
     def _evaluate_output(
         self,
@@ -681,6 +698,9 @@ class LogicGraphRuntime:
             value = deepcopy(properties.get("value"))
         elif node_type == "self_object":
             value = game
+        elif node_type == "get_position":
+            target = self._read_target(node_id, game, dt, resolving)
+            value = float(target.x if port == "x" else target.y)
         elif node_type == "find_tag":
             value = game.find(str(properties.get("tag", "Player")))
         elif node_type == "if_else":

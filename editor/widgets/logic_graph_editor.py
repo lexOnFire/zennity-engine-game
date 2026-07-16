@@ -51,11 +51,13 @@ from engine.logic.graph_asset import (
     validate_logic_graph,
 )
 from engine.logic.blackboard import coerce_variable_value, save_blackboard_asset
+from engine.logic.recipes import build_logic_recipe, find_logic_recipes, logic_recipe
 
 
 CATEGORY_COLORS = {
     "Eventos": QColor("#d66ba0"),
     "Movimento": QColor("#4c9aff"),
+    "Posição": QColor("#3fb6a8"),
     "Ação": QColor("#ae7df0"),
     "Lógica": QColor("#f0a64b"),
     "Condição": QColor("#50c878"),
@@ -82,6 +84,8 @@ NODE_DESCRIPTIONS = {
     "event_trigger_enter": "Executa ao entrar em um collider marcado como área/trigger.",
     "event_trigger_exit": "Executa ao sair de uma área/trigger.",
     "event_timer": "Espera a quantidade de segundos e pode repetir automaticamente.",
+    "get_position": "Lê as coordenadas X e Y atuais do objeto.",
+    "move_by": "Move X e Y continuamente em unidades por segundo, sem exigir teclado.",
     "set_position": "Move imediatamente o objeto para uma posição X e Y.",
     "rotate": "Acrescenta graus à rotação atual do objeto.",
     "set_active": "Mostra/ativa ou oculta/desativa o objeto.",
@@ -104,6 +108,11 @@ PROPERTY_LABELS = {
     "degrees": "Graus", "active": "Ativo", "text": "Texto", "value": "Valor",
     "default": "Valor inicial", "type": "Tipo", "name": "Nome", "path": "Arquivo",
     "speed": "Velocidade", "force": "Força", "condition": "Condição",
+}
+
+NODE_PROPERTY_LABELS = {
+    "move_by": {"x": "Velocidade X", "y": "Velocidade Y"},
+    "set_position": {"x": "Posição X", "y": "Posição Y"},
 }
 
 
@@ -513,7 +522,7 @@ class LogicGraphEditor(QWidget):
         categories.setSpacing(6)
         categories.addWidget(QLabel("Categoria"))
         self.category_combo = QComboBox()
-        self.category_combo.addItems(("Movimento", "Ação", "Lógica", "Condição", "Eventos", "Objetos", "Variáveis", "Matemática", "Texto", "Subgrafos"))
+        self.category_combo.addItems(("Movimento", "Posição", "Ação", "Lógica", "Condição", "Eventos", "Objetos", "Variáveis", "Matemática", "Texto", "Subgrafos"))
         self.category_combo.setMinimumWidth(150)
         self.category_combo.setToolTip("Filtra a biblioteca de blocos por categoria")
         categories.addWidget(self.category_combo)
@@ -552,6 +561,27 @@ class LogicGraphEditor(QWidget):
         blocks_hint.setWordWrap(True)
         blocks_layout.addWidget(blocks_hint)
         self.library_tabs.addTab(blocks_page, "Blocos")
+
+        recipes_page = QWidget()
+        recipes_layout = QVBoxLayout(recipes_page)
+        recipes_layout.setContentsMargins(5, 6, 5, 6)
+        recipes_layout.setSpacing(6)
+        self.recipe_search = QLineEdit()
+        self.recipe_search.setPlaceholderText("O que você quer fazer? ex.: mover sozinho")
+        self.recipe_search.setClearButtonEnabled(True)
+        recipes_layout.addWidget(self.recipe_search)
+        self.recipe_list = QListWidget()
+        self.recipe_list.setToolTip("Escolha uma lógica pronta para aprender e inserir")
+        recipes_layout.addWidget(self.recipe_list, 1)
+        self.recipe_summary = QLabel("Escolha uma receita para ver como ela funciona.")
+        self.recipe_summary.setObjectName("PanelHint")
+        self.recipe_summary.setWordWrap(True)
+        recipes_layout.addWidget(self.recipe_summary)
+        self.recipe_apply_button = QPushButton("Inserir receita no grafo")
+        self.recipe_apply_button.setProperty("uiRole", "primary")
+        self.recipe_apply_button.setEnabled(False)
+        recipes_layout.addWidget(self.recipe_apply_button)
+        self.library_tabs.addTab(recipes_page, "Receitas")
 
         subgraphs_page = QWidget()
         subgraphs_layout = QVBoxLayout(subgraphs_page)
@@ -676,11 +706,16 @@ class LogicGraphEditor(QWidget):
         splitter.setSizes([190, 700, 240])
         root.addWidget(splitter, 1)
         self._refresh_palette("Movimento")
+        self._refresh_recipes("")
 
     def _connect_ui(self) -> None:
         self.category_combo.currentTextChanged.connect(self._refresh_palette)
         self.node_search.textChanged.connect(lambda _text: self._refresh_palette())
         self.palette.itemDoubleClicked.connect(self._add_palette_item)
+        self.recipe_search.textChanged.connect(self._refresh_recipes)
+        self.recipe_list.currentItemChanged.connect(self._recipe_selection_changed)
+        self.recipe_list.itemDoubleClicked.connect(lambda _item: self._insert_selected_recipe())
+        self.recipe_apply_button.clicked.connect(self._insert_selected_recipe)
         self.subgraph_list.itemDoubleClicked.connect(self._add_subgraph_asset)
         self.scene.selectionChanged.connect(self._selection_changed)
         self.property_tree.itemChanged.connect(self._property_changed)
@@ -752,6 +787,46 @@ class LogicGraphEditor(QWidget):
         self._create_node_item(node)
         self.mark_dirty()
         self._update_validation()
+
+    def _refresh_recipes(self, query: str = "") -> None:
+        self.recipe_list.clear()
+        for recipe in find_logic_recipes(query):
+            item = QListWidgetItem(str(recipe["title"]))
+            item.setData(Qt.UserRole, str(recipe["id"]))
+            item.setToolTip(f"{recipe['category']} • {recipe['summary']}")
+            self.recipe_list.addItem(item)
+        if self.recipe_list.count():
+            self.recipe_list.setCurrentRow(0)
+        else:
+            self.recipe_summary.setText("Nenhuma receita encontrada. Tente descrever a ação com outras palavras.")
+            self.recipe_apply_button.setEnabled(False)
+
+    def _recipe_selection_changed(self, current: QListWidgetItem | None, _previous: QListWidgetItem | None) -> None:
+        recipe_id = str(current.data(Qt.UserRole)) if current is not None else ""
+        if not recipe_id:
+            self.recipe_apply_button.setEnabled(False)
+            return
+        recipe = logic_recipe(recipe_id)
+        steps = "\n".join(f"{index}. {step}" for index, step in enumerate(recipe["steps"], 1))
+        self.recipe_summary.setText(f"{recipe['summary']}\n\n{steps}")
+        self.recipe_apply_button.setEnabled(True)
+
+    def _insert_selected_recipe(self) -> None:
+        current = self.recipe_list.currentItem()
+        recipe_id = str(current.data(Qt.UserRole)) if current is not None else ""
+        if not recipe_id:
+            return
+        center = self.view.mapToScene(self.view.viewport().rect().center())
+        fragment = build_logic_recipe(recipe_id, (center.x(), center.y()))
+        self.graph["nodes"].extend(fragment["nodes"])
+        self.graph["edges"].extend(fragment["edges"])
+        for node in fragment["nodes"]:
+            self._create_node_item(node)
+        self.refresh_connections()
+        self.mark_dirty()
+        self._update_validation()
+        recipe = logic_recipe(recipe_id)
+        self.message.emit("INFO", f"Receita inserida: {recipe['title']}")
 
     def _refresh_subgraph_assets(self) -> None:
         self.subgraph_list.clear()
@@ -1270,7 +1345,9 @@ class LogicGraphEditor(QWidget):
         self.property_tree.addTopLevelItem(title_item)
         for key, value in node.get("properties", {}).items():
             item = QTreeWidgetItem([
-                PROPERTY_LABELS.get(str(key), str(key)),
+                NODE_PROPERTY_LABELS.get(str(node.get("type", "")), {}).get(
+                    str(key), PROPERTY_LABELS.get(str(key), str(key))
+                ),
                 json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value,
             ])
             item.setData(0, Qt.UserRole, str(key))

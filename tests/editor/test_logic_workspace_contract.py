@@ -215,3 +215,22 @@ def test_visual_logic_is_cleanly_managed_from_inspector():
     assert 'addTab(blocks_page, "Blocos")' in editor
     assert 'addTab(data_page, "Dados")' in editor
     assert 'addTab(subgraphs_page, "Subgrafos")' in editor
+
+
+def test_logic_workspace_teaches_searchable_position_recipes():
+    interface = _source("editor/interface_smoke_test.py")
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    graph = _source("engine/logic/graph_asset.py")
+    runtime = _source("engine/logic/runtime.py")
+    recipes = _source("engine/logic/recipes.py")
+    assert 'addTab(recipes_page, "Receitas")' in editor
+    assert "Editar / Receitas" in interface
+    assert "O que você quer fazer?" in editor
+    assert "_insert_selected_recipe" in editor
+    assert '"get_position"' in graph
+    assert '"move_by"' in graph
+    assert 'node_type == "move_by"' in runtime
+    assert 'node_type == "get_position"' in runtime
+    assert '"move_x_every_frame"' in recipes
+    assert "def find_logic_recipes" in recipes
+    assert "def build_logic_recipe" in recipes

@@ -17,6 +17,7 @@ from .graph_asset import (
 from .runtime import LogicGraphRuntime
 from .blackboard import BlackboardStore
 from .event_bus import LogicEventBus
+from .recipes import LOGIC_RECIPES, build_logic_recipe, find_logic_recipes, logic_recipe
 
 __all__ = [
     "LOGIC_GRAPH_FORMAT",
@@ -34,4 +35,8 @@ __all__ = [
     "LogicGraphRuntime",
     "BlackboardStore",
     "LogicEventBus",
+    "LOGIC_RECIPES",
+    "build_logic_recipe",
+    "find_logic_recipes",
+    "logic_recipe",
 ]
