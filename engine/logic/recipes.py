@@ -29,6 +29,25 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
         "edges": (("update", "next", "move", "in", "flow"),),
     },
     {
+        "id": "press_d_start_permanent_x",
+        "topics": ("Movimento", "Posição", "Input"),
+        "title": "Apertar D uma vez e continuar andando",
+        "category": "Entrada e movimento",
+        "summary": "Ao apertar D uma única vez, inicia um movimento permanente no eixo X que continua após soltar a tecla.",
+        "keywords": "d apertar uma vez movimento permanente infinito continuar andar x tecla soltar",
+        "steps": (
+            "Ao apertar tecla dispara somente na transição de solta para pressionada.",
+            "Iniciar movimento permanente guarda a velocidade X no runtime.",
+            "O objeto continua andando depois que D é solta.",
+            "Use Parar movimento permanente em outro evento para interromper.",
+        ),
+        "nodes": (
+            {"key": "key", "type": "event_key_pressed", "position": (0.0, 0.0), "properties": {"key": "D"}},
+            {"key": "motion", "type": "start_continuous_motion", "position": (300.0, 0.0), "properties": {"x": 120.0, "y": 0.0}},
+        ),
+        "edges": (("key", "next", "motion", "in", "flow"),),
+    },
+    {
         "id": "move_y_every_frame",
         "topics": ("Movimento", "Posição"),
         "title": "Mover sozinho no eixo Y",
@@ -73,7 +92,8 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
         "keywords": "criar objeto spawn instanciar novo imagem posição tamanho cor",
         "steps": (
             "Ao iniciar executa apenas uma vez.",
-            "Criar objeto define nome, posição, tamanho, cor, imagem e tag.",
+            "Criar objeto copia profundamente visual, componentes e propriedades do objeto original.",
+            "A cópia é independente: mudanças nela não alteram o objeto original.",
             "A saída Objeto pode ser ligada a Mover, Girar, Trocar imagem ou Destruir.",
             "Marque Posição relativa para usar X e Y como deslocamento do objeto atual.",
         ),

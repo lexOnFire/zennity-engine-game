@@ -90,13 +90,20 @@ class RuntimeWorld:
         return obj
 
     def clone_object(self, source: Mapping[str, Any], name: str = "") -> dict[str, Any]:
+        """Cria uma cópia profunda e independente, preservando componentes e visual."""
         clone = deepcopy(dict(source))
-        clone.pop("id", None)
-        clone.pop("name", None)
-        clone.pop("_script_state", None)
-        clone["name"] = name or f"{source.get('name', 'Objeto')}_Copia"
+        for key in tuple(clone):
+            if str(key).startswith("_"):
+                clone.pop(key, None)
+        clone.pop("destroyed", None)
+        clone.pop("pool_key", None)
+        clone["id"] = str(uuid.uuid4())
+        clone["name"] = self.unique_name(name or f"{source.get('name', 'Objeto')}_Copia")
+        clone["active"] = True
         clone["spawned_by_logic"] = True
-        return self.create_object(**clone)
+        self.objects[str(clone["name"])] = clone
+        self.created_count += 1
+        return clone
 
     def instantiate_prefab(self, path: str | Path, *, x: float | None = None, y: float | None = None, project_root: str | Path | None = None) -> dict[str, Any]:
         prefab_path = Path(path)

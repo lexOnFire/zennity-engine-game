@@ -73,6 +73,7 @@ class LogicGraphRuntime:
         self._timer_elapsed: dict[str, float] = {}
         self._timer_fired: set[str] = set()
         self._node_state: dict[str, dict[str, Any]] = {}
+        self._persistent_motion: dict[str, dict[str, Any]] = {}
         self.started = False
         for node in self.nodes.values() if not self.call_stack else ():
             if node.get("type") != "event_custom":
@@ -125,6 +126,8 @@ class LogicGraphRuntime:
         if self.debug_paused:
             return
         self._update_timers(game, float(dt))
+        self._apply_persistent_motion(float(dt))
+        self._run_key_pressed_events(game, float(dt))
         if self.breakpoints:
             if self._debug_generator is None:
                 self.values.clear()
@@ -142,6 +145,35 @@ class LogicGraphRuntime:
         self.executed_nodes.clear()
         self.executed_edges.clear()
         self._run_event("event_update", game, float(dt))
+
+    def _run_key_pressed_events(self, game: Any, dt: float) -> None:
+        for node in self.nodes.values():
+            if node.get("type") != "event_key_pressed":
+                continue
+            key = str(node.get("properties", {}).get("key", "D")).strip().lower()
+            if game.key_pressed(key):
+                self._run_event_node(node, game, dt)
+
+    def _move_target(self, target: Any, velocity_x: float, velocity_y: float, dt: float) -> None:
+        delta_x, delta_y = velocity_x * dt, velocity_y * dt
+        if callable(getattr(target, "move", None)):
+            target.move(delta_x, delta_y)
+        else:
+            target.x = float(target.x) + delta_x
+            target.y = float(target.y) + delta_y
+        override_physics = getattr(target, "override_physics_axis", None)
+        if callable(override_physics):
+            if velocity_x:
+                override_physics("x")
+            if velocity_y:
+                override_physics("y")
+
+    def _apply_persistent_motion(self, dt: float) -> None:
+        for state in list(self._persistent_motion.values()):
+            target = state.get("target")
+            if target is None or not bool(getattr(target, "active", True)):
+                continue
+            self._move_target(target, float(state.get("x", 0.0)), float(state.get("y", 0.0)), dt)
 
     def trigger_event(self, event_type: str, game: Any, dt: float = 0.0, payload: Any = None) -> None:
         """Dispara um evento físico enviado pelo Play Mode."""
@@ -239,6 +271,7 @@ class LogicGraphRuntime:
         self._timer_elapsed.clear()
         self._timer_fired.clear()
         self._node_state.clear()
+        self._persistent_motion.clear()
         self.started = False
         self.start(game)
         if not self.debug_paused:
@@ -455,6 +488,9 @@ class LogicGraphRuntime:
         if node_type == "key_pressed":
             pressed = bool(self._evaluate_output(node_id, "value", game, dt, set()))
             return ["true" if pressed else "false"]
+        if node_type == "key_held":
+            pressed = bool(self._evaluate_output(node_id, "value", game, dt, set()))
+            return ["true" if pressed else "false"]
         if node_type == "is_grounded":
             grounded = bool(self._evaluate_output(node_id, "value", game, dt, set()))
             return ["true" if grounded else "false"]
@@ -481,6 +517,22 @@ class LogicGraphRuntime:
             else:
                 target.x = float(target.x) + delta_x
                 target.y = float(target.y) + delta_y
+            return ["next"]
+        if node_type == "start_continuous_motion":
+            target = self._read_target(node_id, game, dt, set())
+            velocity_x = float(self._read_input(node_id, "x", properties.get("x", 100.0), game, dt, set()))
+            velocity_y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
+            was_active = node_id in self._persistent_motion
+            self._persistent_motion[node_id] = {"target": target, "x": velocity_x, "y": velocity_y}
+            if not was_active:
+                self._move_target(target, velocity_x, velocity_y, dt)
+            return ["next"]
+        if node_type == "stop_continuous_motion":
+            target = self._read_target(node_id, game, dt, set())
+            self._persistent_motion = {
+                key: state for key, state in self._persistent_motion.items()
+                if state.get("target") is not target
+            }
             return ["next"]
         if node_type == "patrol_axis":
             target = self._read_target(node_id, game, dt, set())
@@ -545,16 +597,30 @@ class LogicGraphRuntime:
             if bool(properties.get("relative", False)):
                 x += float(game.x)
                 y += float(game.y)
-            created = game.create_object(
-                name=name,
-                x=x,
-                y=y,
-                width=float(properties.get("width", 64.0)),
-                height=float(properties.get("height", 64.0)),
-                color=str(properties.get("color", "#58a6ff")),
-                texture=str(properties.get("texture", "")),
-                tag=str(properties.get("tag", "Untagged")),
-            )
+            inherit_source = bool(properties.get("inherit_source", True))
+            if inherit_source and callable(getattr(game, "clone_object", None)):
+                source = (
+                    self._read_input(node_id, "source", game, game, dt, set())
+                    if (node_id, "source") in self.incoming
+                    else game
+                )
+                created = game.clone_object(source, name)
+                created.x = x
+                created.y = y
+                created_data = getattr(created, "obj", None)
+                if isinstance(created_data, dict) and not bool(properties.get("inherit_logic", False)):
+                    created_data["logic_graphs"] = []
+            else:
+                created = game.create_object(
+                    name=name,
+                    x=x,
+                    y=y,
+                    width=float(properties.get("width", 64.0)),
+                    height=float(properties.get("height", 64.0)),
+                    color=str(properties.get("color", "#58a6ff")),
+                    texture=str(properties.get("texture", "")),
+                    tag=str(properties.get("tag", "Untagged")),
+                )
             self._store(node_id, "object", created)
             return ["next"]
         if node_type == "create_prefab":
@@ -753,6 +819,8 @@ class LogicGraphRuntime:
             self.values["axis"] = value
         elif node_type == "key_pressed":
             value = bool(game.key_pressed(str(properties.get("key", "space")).lower()))
+        elif node_type == "key_held":
+            value = bool(game.key(str(properties.get("key", "space")).lower()))
         elif node_type == "is_grounded":
             value = bool(game.grounded)
         elif node_type == "compare_number":

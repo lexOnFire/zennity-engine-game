@@ -35,6 +35,7 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "event_trigger_enter": {"title": "Ao entrar na área", "category": "Eventos", "properties": {}},
     "event_trigger_exit": {"title": "Ao sair da área", "category": "Eventos", "properties": {}},
     "event_timer": {"title": "Após um tempo", "category": "Eventos", "properties": {"seconds": 1.0, "repeat": False}},
+    "event_key_pressed": {"title": "Ao apertar tecla (uma vez)", "category": "Eventos", "properties": {"key": "D"}},
     "self_object": {"title": "Este objeto", "category": "Objetos", "properties": {}},
     "find_tag": {"title": "Procurar por Tag", "category": "Objetos", "properties": {"tag": "Player"}},
     "create_object": {
@@ -44,6 +45,7 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
             "name": "NovoObjeto", "x": 0.0, "y": 0.0,
             "width": 64.0, "height": 64.0, "color": "#58a6ff",
             "texture": "", "tag": "Untagged", "relative": False,
+            "inherit_source": True, "inherit_logic": False,
         },
     },
     "create_prefab": {"title": "Criar Prefab", "category": "Objetos", "properties": {"path": "", "x": 0.0, "y": 0.0, "relative": False}},
@@ -55,6 +57,8 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "jump": {"title": "Pular", "category": "Movimento", "properties": {"force": 420.0}},
     "get_position": {"title": "Ler posição", "category": "Posição", "properties": {}},
     "move_by": {"title": "Mover continuamente", "category": "Posição", "properties": {"x": 100.0, "y": 0.0}},
+    "start_continuous_motion": {"title": "Iniciar movimento permanente", "category": "Posição", "properties": {"x": 100.0, "y": 0.0}},
+    "stop_continuous_motion": {"title": "Parar movimento permanente", "category": "Posição", "properties": {}},
     "patrol_axis": {"title": "Patrulhar entre limites", "category": "Posição", "properties": {"axis": "Y", "minimum": -100.0, "maximum": 100.0, "speed": 100.0}},
     "if_else": {"title": "If / Else", "category": "Lógica", "properties": {"condition": True}},
     "sequence": {"title": "Sequência", "category": "Lógica", "properties": {"outputs": 2}},
@@ -63,7 +67,8 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "and": {"title": "AND", "category": "Lógica", "properties": {}},
     "or": {"title": "OR", "category": "Lógica", "properties": {}},
     "not": {"title": "NÃO", "category": "Lógica", "properties": {}},
-    "key_pressed": {"title": "Tecla pressionada", "category": "Condição", "properties": {"key": "SPACE"}},
+    "key_pressed": {"title": "Tecla apertada agora?", "category": "Condição", "properties": {"key": "SPACE"}},
+    "key_held": {"title": "Tecla está segurada?", "category": "Condição", "properties": {"key": "SPACE"}},
     "is_grounded": {"title": "Está no chão", "category": "Condição", "properties": {}},
     "compare_number": {"title": "Comparar número", "category": "Condição", "properties": {"operator": ">", "value": 0.0}},
     "play_animation": {"title": "Tocar animação", "category": "Ação", "properties": {"state": "Idle"}},
@@ -112,10 +117,11 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "event_trigger_enter": {"inputs": [], "outputs": [("next", "flow"), ("other", "object")]},
     "event_trigger_exit": {"inputs": [], "outputs": [("next", "flow"), ("other", "object")]},
     "event_timer": {"inputs": [], "outputs": [("next", "flow")]},
+    "event_key_pressed": {"inputs": [], "outputs": [("next", "flow")]},
     "self_object": {"inputs": [], "outputs": [("object", "object")]},
     "find_tag": {"inputs": [("in", "flow")], "outputs": [("next", "flow"), ("object", "object")]},
     "create_object": {
-        "inputs": [("in", "flow"), ("name", "text"), ("x", "number"), ("y", "number")],
+        "inputs": [("in", "flow"), ("source", "object"), ("name", "text"), ("x", "number"), ("y", "number")],
         "outputs": [("next", "flow"), ("object", "object")],
     },
     "create_prefab": {"inputs": [("in", "flow"), ("x", "number"), ("y", "number")], "outputs": [("next", "flow"), ("object", "object")]},
@@ -127,6 +133,8 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "jump": {"inputs": [("in", "flow"), ("force", "number")], "outputs": [("next", "flow")]},
     "get_position": {"inputs": [("target", "object")], "outputs": [("x", "number"), ("y", "number")]},
     "move_by": {"inputs": [("in", "flow"), ("target", "object"), ("x", "number"), ("y", "number")], "outputs": [("next", "flow")]},
+    "start_continuous_motion": {"inputs": [("in", "flow"), ("target", "object"), ("x", "number"), ("y", "number")], "outputs": [("next", "flow")]},
+    "stop_continuous_motion": {"inputs": [("in", "flow"), ("target", "object")], "outputs": [("next", "flow")]},
     "patrol_axis": {"inputs": [("in", "flow"), ("target", "object"), ("minimum", "number"), ("maximum", "number"), ("speed", "number")], "outputs": [("next", "flow"), ("direction", "number"), ("position", "number")]},
     "if_else": {"inputs": [("in", "flow"), ("condition", "bool")], "outputs": [("true", "flow"), ("false", "flow")]},
     "sequence": {"inputs": [("in", "flow")], "outputs": [("then_0", "flow"), ("then_1", "flow"), ("next", "flow")]},
@@ -136,6 +144,7 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "or": {"inputs": [("a", "bool"), ("b", "bool")], "outputs": [("value", "bool")]},
     "not": {"inputs": [("value", "bool")], "outputs": [("value", "bool")]},
     "key_pressed": {"inputs": [("in", "flow")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
+    "key_held": {"inputs": [("in", "flow")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
     "is_grounded": {"inputs": [("in", "flow")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
     "compare_number": {"inputs": [("in", "flow"), ("value", "number")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
     "play_animation": {"inputs": [("in", "flow"), ("state", "text")], "outputs": [("next", "flow")]},
@@ -389,6 +398,8 @@ def _event_identity(node: Mapping[str, Any]) -> tuple[str, str] | None:
         return node_type, ""
     if node_type == "event_custom":
         return node_type, str(node.get("properties", {}).get("name", "evento")).strip().casefold()
+    if node_type == "event_key_pressed":
+        return node_type, str(node.get("properties", {}).get("key", "D")).strip().casefold()
     return None
 
 

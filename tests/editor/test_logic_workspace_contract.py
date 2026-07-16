@@ -72,6 +72,23 @@ def test_logic_workspace_exposes_palette_canvas_connections_and_properties():
     assert "def redo(self)" in source
 
 
+def test_visual_logic_supports_independent_clones_and_one_shot_permanent_motion():
+    graph = _source("engine/logic/graph_asset.py")
+    runtime = _source("engine/logic/runtime.py")
+    world = _source("engine/runtime/runtime_world.py")
+    recipes = _source("engine/logic/recipes.py")
+    assert '"inherit_source": True' in graph
+    assert '"inherit_logic": False' in graph
+    assert '"event_key_pressed"' in graph
+    assert '"start_continuous_motion"' in graph
+    assert '"stop_continuous_motion"' in graph
+    assert "def _run_key_pressed_events" in runtime
+    assert "def _apply_persistent_motion" in runtime
+    assert "game.clone_object(source, name)" in runtime
+    assert "Cria uma cópia profunda e independente" in world
+    assert '"press_d_start_permanent_x"' in recipes
+
+
 def test_logic_workspace_can_create_open_save_and_load_demo():
     source = _source("editor/widgets/logic_graph_editor.py")
     assert "default_logic_graph" in source

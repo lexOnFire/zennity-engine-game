@@ -33,6 +33,28 @@ def test_runtime_world_clones_components_without_sharing_state():
     assert world.remove_component(clone, "RigidBody2D") is True
 
 
+def test_runtime_world_clone_preserves_every_public_property_independently():
+    objects = {}
+    world = RuntimeWorld(objects)
+    source = world.create_object(
+        name="Player",
+        animator={"active_clip": "Idle", "parameters": {"speed": 0}},
+        logic_graphs=[{"path": "Assets/Logic/Player.zlogic", "enabled": True}],
+    )
+    source["custom_gameplay"] = {"inventory": ["key"], "score": 10}
+
+    clone = world.clone_object(source, "PlayerClone")
+    clone["animator"]["parameters"]["speed"] = 5
+    clone["logic_graphs"][0]["enabled"] = False
+    clone["custom_gameplay"]["inventory"].append("coin")
+
+    assert clone["name"] == "PlayerClone"
+    assert clone["id"] != source["id"]
+    assert source["animator"]["parameters"]["speed"] == 0
+    assert source["logic_graphs"][0]["enabled"] is True
+    assert source["custom_gameplay"]["inventory"] == ["key"]
+
+
 def test_runtime_world_instantiates_prefab_with_runtime_components(tmp_path):
     prefab = tmp_path / "enemy.zprefab"
     prefab.write_text(json.dumps({

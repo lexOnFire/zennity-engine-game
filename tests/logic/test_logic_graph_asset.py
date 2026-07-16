@@ -1025,6 +1025,71 @@ def test_create_object_node_returns_reference_for_following_actions():
     assert "criar_objeto" in node_code_preview(create)
 
 
+def test_create_object_can_inherit_original_as_an_independent_clone():
+    event = create_logic_node("event_start")
+    create = create_logic_node("create_object")
+    create["properties"].update({"name": "PlayerClone", "x": 40, "y": 50})
+    graph = default_logic_graph("CloneSpawner")
+    graph["nodes"] = [event, create]
+    graph["edges"] = [_edge(event, "next", create, "in")]
+
+    class Created:
+        x = y = 0.0
+
+    class Game:
+        x = y = 0.0
+        def __init__(self): self.clone = Created(); self.source = None
+        def clone_object(self, source, name):
+            self.source = source
+            assert name == "PlayerClone"
+            return self.clone
+
+    game = Game()
+    LogicGraphRuntime(graph).start(game)
+    assert game.source is game
+    assert (game.clone.x, game.clone.y) == (40.0, 50.0)
+
+
+def test_key_event_starts_motion_once_and_motion_continues_after_release():
+    key_event = create_logic_node("event_key_pressed")
+    key_event["properties"]["key"] = "D"
+    motion = create_logic_node("start_continuous_motion")
+    motion["properties"].update({"x": 120.0, "y": 0.0})
+    graph = default_logic_graph("PermanentMovement")
+    graph["nodes"] = [key_event, motion]
+    graph["edges"] = [_edge(key_event, "next", motion, "in")]
+
+    class Game:
+        active = True
+        def __init__(self): self.x = 0.0; self.y = 0.0; self.just_pressed = True
+        def key_pressed(self, key):
+            assert key == "d"
+            value = self.just_pressed
+            self.just_pressed = False
+            return value
+        def move(self, dx, dy=0.0): self.x += dx; self.y += dy
+
+    game = Game()
+    runtime = LogicGraphRuntime(graph)
+    runtime.update(game, 0.1)
+    first_position = game.x
+    runtime.update(game, 0.1)
+    runtime.update(game, 0.1)
+
+    assert first_position == 12.0
+    assert game.x == 36.0
+    assert runtime._persistent_motion
+
+
+def test_held_and_just_pressed_keys_are_distinct_conditions():
+    pressed = create_logic_node("key_pressed")
+    held = create_logic_node("key_held")
+    assert pressed["title"] == "Tecla apertada agora?"
+    assert held["title"] == "Tecla está segurada?"
+    assert "tecla_acionada" in node_code_preview(pressed)
+    assert "tecla_ativa" in node_code_preview(held)
+
+
 def test_create_object_recipe_is_available_for_beginners():
     recipe = next(item for item in LOGIC_RECIPES if item["id"] == "create_object_on_start")
     fragment = build_logic_recipe(str(recipe["id"]))

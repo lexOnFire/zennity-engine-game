@@ -16,9 +16,12 @@ def node_code_preview(node: Mapping[str, Any]) -> str:
         "event_start": "ao_iniciar():\n    executar próximo",
         "event_update": "a_cada_frame(dt):\n    executar próximo",
         "event_timer": f"a_cada({_value(properties, 'seconds', 1.0)}s):\n    executar próximo",
+        "event_key_pressed": f"ao_apertar_uma_vez('{_value(properties, 'key', 'D')}'):\n    executar próximo",
         "input_axis": f"eixo = tecla({_value(properties, 'positive', 'D')})\n     - tecla({_value(properties, 'negative', 'A')})",
         "move": f"obj.x += entrada\n         * {_value(properties, 'speed', 200)} * dt",
         "move_by": f"obj.x += {_value(properties, 'x', 100)} * dt\nobj.y += {_value(properties, 'y', 0)} * dt",
+        "start_continuous_motion": f"movimento_permanente(x={_value(properties, 'x', 100)}, y={_value(properties, 'y', 0)})",
+        "stop_continuous_motion": "parar_movimento_permanente(alvo)",
         "get_position": "x = alvo.x\ny = alvo.y",
         "patrol_axis": (
             f"se pos >= {_value(properties, 'maximum', 100)}: direção = -1\n"
@@ -28,6 +31,7 @@ def node_code_preview(node: Mapping[str, Any]) -> str:
         "jump": f"se no_chão:\n    pular({_value(properties, 'force', 420)})",
         "if_else": f"se {_value(properties, 'condition', True)}:\n    saída verdadeiro\nsenão: saída falso",
         "key_pressed": f"pressionou = tecla_acionada('{_value(properties, 'key', 'SPACE')}')",
+        "key_held": f"segurando = tecla_ativa('{_value(properties, 'key', 'SPACE')}')",
         "compare_number": f"resultado = entrada {_value(properties, 'operator', '>')} {_value(properties, 'value', 0)}",
         "set_position": f"alvo.x = {_value(properties, 'x', 0)}\nalvo.y = {_value(properties, 'y', 0)}",
         "rotate": f"alvo.rotação += {_value(properties, 'degrees', 90)}",
@@ -42,7 +46,7 @@ def node_code_preview(node: Mapping[str, Any]) -> str:
         "log_message": f"console('{_value(properties, 'text', 'Mensagem')}')",
         "find_tag": f"objeto = procurar_tag('{_value(properties, 'tag', 'Player')}')",
         "create_object": (
-            f"novo = criar_objeto('{_value(properties, 'name', 'NovoObjeto')}',\n"
+            f"novo = criar_objeto_independente('{_value(properties, 'name', 'NovoObjeto')}',\n"
             f"  x={_value(properties, 'x', 0)}, y={_value(properties, 'y', 0)})"
         ),
         "create_prefab": f"novo = criar_prefab('{_value(properties, 'path', 'selecione .zprefab')}')",
