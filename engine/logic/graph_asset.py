@@ -228,6 +228,7 @@ def default_logic_graph(name: str = "NewLogic") -> dict[str, Any]:
         "target": {"type": "name", "value": "Player"},
         "debug": {"breakpoints": [], "breakpoint_conditions": {}, "watches": []},
         "variables": {},
+        "editor": {"groups": [], "comments": []},
         "nodes": [],
         "edges": [],
     }
@@ -258,6 +259,44 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
             "value": str(raw_target.get("value", "Player")).strip() or "Player",
         }
     result["variables"] = normalize_variable_definitions(source.get("variables", {}))
+    raw_editor_layout = source.get("editor", {})
+    if not isinstance(raw_editor_layout, Mapping):
+        raw_editor_layout = {}
+    groups: list[dict[str, Any]] = []
+    for raw_group in raw_editor_layout.get("groups", []):
+        if not isinstance(raw_group, Mapping):
+            continue
+        position = raw_group.get("position", [0.0, 0.0])
+        size = raw_group.get("size", [460.0, 280.0])
+        if not isinstance(position, (list, tuple)) or len(position) < 2:
+            position = [0.0, 0.0]
+        if not isinstance(size, (list, tuple)) or len(size) < 2:
+            size = [460.0, 280.0]
+        groups.append({
+            "id": str(raw_group.get("id", "")).strip() or uuid.uuid4().hex,
+            "title": str(raw_group.get("title", "Grupo")).strip() or "Grupo",
+            "position": [_safe_float(position[0]), _safe_float(position[1])],
+            "size": [
+                max(240.0, min(1600.0, _safe_float(size[0]) or 460.0)),
+                max(140.0, min(1200.0, _safe_float(size[1]) or 280.0)),
+            ],
+            "color": str(raw_group.get("color", "#35506b")),
+        })
+    comments: list[dict[str, Any]] = []
+    for raw_comment in raw_editor_layout.get("comments", []):
+        if not isinstance(raw_comment, Mapping):
+            continue
+        position = raw_comment.get("position", [0.0, 0.0])
+        if not isinstance(position, (list, tuple)) or len(position) < 2:
+            position = [0.0, 0.0]
+        comments.append({
+            "id": str(raw_comment.get("id", "")).strip() or uuid.uuid4().hex,
+            "text": str(raw_comment.get("text", "Comentário")),
+            "position": [_safe_float(position[0]), _safe_float(position[1])],
+            "width": max(160.0, min(720.0, _safe_float(raw_comment.get("width", 260.0)) or 260.0)),
+            "color": str(raw_comment.get("color", "#6b5b2f")),
+        })
+    result["editor"] = {"groups": groups, "comments": comments}
     raw_debug = source.get("debug", {})
     raw_breakpoints = raw_debug.get("breakpoints", []) if isinstance(raw_debug, Mapping) else []
     raw_conditions = raw_debug.get("breakpoint_conditions", {}) if isinstance(raw_debug, Mapping) else {}
@@ -502,15 +541,65 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
         source_type = outputs.get(from_port)
         target_type = inputs.get(to_port)
         if source_type is None:
-            issues.append({"level": "error", "node": source["id"], "message": f"Saída inexistente: {from_port}"})
+            issues.append({"level": "error", "node": source["id"], "edge": edge["id"], "message": f"Saída inexistente: {from_port}"})
         elif target_type is None:
-            issues.append({"level": "error", "node": target["id"], "message": f"Entrada inexistente: {to_port}"})
+            issues.append({"level": "error", "node": target["id"], "edge": edge["id"], "message": f"Entrada inexistente: {to_port}"})
         elif source_type != target_type and "any" not in {source_type, target_type}:
-            issues.append({"level": "error", "node": target["id"], "message": f"Tipos incompatíveis: {source_type} → {target_type}"})
+            issues.append({"level": "error", "node": target["id"], "edge": edge["id"], "message": f"Tipos incompatíveis: {source_type} → {target_type}"})
         input_key = (target["id"], str(to_port))
         if input_key in occupied_inputs:
             issues.append({"level": "error", "node": target["id"], "message": f"Entrada conectada mais de uma vez: {to_port}"})
         occupied_inputs.add(input_key)
+
+    flow_adjacency: dict[str, list[str]] = {node_id: [] for node_id in nodes_by_id}
+    for edge in graph["edges"]:
+        if str(edge.get("kind", "flow")) == "flow":
+            flow_adjacency.get(str(edge["from_node"]), []).append(str(edge["to_node"]))
+    reachable: set[str] = set()
+    pending = [str(node["id"]) for node in event_nodes]
+    while pending:
+        node_id = pending.pop()
+        if node_id in reachable:
+            continue
+        reachable.add(node_id)
+        pending.extend(flow_adjacency.get(node_id, []))
+    for node in graph["nodes"]:
+        ports = node_port_definitions(node)
+        has_flow = any(kind == "flow" for _name, kind in ports["inputs"] + ports["outputs"])
+        if has_flow and node["id"] not in reachable and node["id"] in connected:
+            issues.append({
+                "level": "warning",
+                "node": node["id"],
+                "message": f"Fluxo inalcançável a partir de um evento: {node['title']}",
+            })
+
+    visiting: set[str] = set()
+    visited: set[str] = set()
+    cycle_nodes: set[str] = set()
+
+    def visit(node_id: str) -> None:
+        if node_id in visiting:
+            cycle_nodes.add(node_id)
+            return
+        if node_id in visited:
+            return
+        visiting.add(node_id)
+        for target_id in flow_adjacency.get(node_id, []):
+            if target_id in visiting:
+                cycle_nodes.update({node_id, target_id})
+            else:
+                visit(target_id)
+        visiting.discard(node_id)
+        visited.add(node_id)
+
+    for node_id in flow_adjacency:
+        visit(node_id)
+    for node_id in sorted(cycle_nodes):
+        issues.append({
+            "level": "warning",
+            "node": node_id,
+            "message": "Ciclo de execução detectado; use Intervalo/Cooldown para evitar repetição perigosa.",
+        })
     return issues
 
 

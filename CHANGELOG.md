@@ -1,5 +1,9 @@
 # Changelog
 
+- Logic Graphs agora possuem grupos redimensionáveis, comentários, minimapa, alinhamento, distribuição, organização automática e histórico de desfazer/refazer.
+- A validação visual destaca conexões inválidas, fluxos inalcançáveis e ciclos de execução perigosos antes do Play.
+- Física fixa, áudio, animação e HUD da Viewport passaram a usar serviços independentes e exportáveis; foi adicionada uma ponte explícita para o ECS oficial.
+
 ## Pre-Beta Stabilization
 
 ### Fixed & Stabilized

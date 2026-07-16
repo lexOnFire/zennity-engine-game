@@ -10,6 +10,7 @@ RUNTIME_SOURCES = (
     "editor/runtime/native_ui.py",
     "editor/runtime/audio_playback_state.py",
     "editor/runtime/sprite_rendering.py",
+    "editor/runtime/viewport_systems.py",
     "engine/graphics/tint.py",
     "engine/animation/clip_asset.py",
     "engine/animation/controller_asset.py",
@@ -149,6 +150,7 @@ def test_exported_runtime_contains_all_standalone_dependencies(tmp_path: Path) -
     runtime = Path(report.destination) / "zennity_runtime"
     assert {path.name for path in runtime.glob("*.py")} == {
         "__init__.py", "viewport.py", "native_ui.py", "audio_playback_state.py", "sprite_rendering.py",
+        "viewport_systems.py",
         "tint.py", "clip_asset.py", "controller_asset.py", "behavior_controller.py",
         "logic_graph_asset.py", "logic_blackboard.py", "logic_event_bus.py", "logic_runtime.py", "runtime_world.py", "scene_loader.py",
     }

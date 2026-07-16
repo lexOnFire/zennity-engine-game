@@ -30,6 +30,11 @@
   - [x] Executar regressão headless completa disponível no ambiente de desenvolvimento
   - [x] Validar Play/Pause/Stop com Logic Graph, física, áudio, HUD e animação
   - [x] Executar a validação do projeto exportado em processo separado do editor
+  - [x] Organizar Logic Graphs com grupos, comentários, minimapa, alinhamento e layout automático
+  - [x] Adicionar histórico desfazer/refazer e diagnóstico visual de fluxos inválidos
+  - [x] Extrair scheduler físico e sistemas testáveis de áudio, animação e HUD da Viewport
+  - [x] Criar adaptador explícito entre Runtime World e o ECS oficial
+  - [x] Extrair descoberta e vinculação de Logic Graphs da janela principal
 
 ### v0.4.0-alpha — Editor Polish (Milestone 4) ✅
 - [x] Hierarchy Improvements com drag & drop, reparent, ordenação, duplicate, delete, rename e menu de contexto (Fase 26)

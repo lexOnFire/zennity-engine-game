@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QWidget
 
 from editor.interface_smoke_test import InterfaceSmokeTest
+from editor.controllers.logic_assets import LogicAssetRepository
 from editor.isolated_viewport import run_viewport
 from editor.runtime.native_ui import normalize_ui, scene_item_to_ui, ui_to_scene_item
 from editor.runtime.play_session import EditorPlaySession
@@ -64,7 +65,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._console_records: list[tuple[str, str]] = []
         self._last_build_report: BuildReport | None = None
         self._last_validation_report: ProjectValidationReport | None = None
-        self._logic_graph_cache: dict[Path, tuple[int, dict]] = {}
+        self._logic_assets_repository = LogicAssetRepository(Path.cwd())
         super().__init__()
         self._current_animation_asset_path: Path | None = None
         self._animation_draft_name = "NewAnimation"
@@ -657,44 +658,14 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._log("INFO", f"Editor de Lógica Visual aberto{f' para {selected}' if selected else ''}")
 
     def _logic_assets(self) -> list[tuple[Path, dict]]:
-        directory = Path.cwd() / "Assets" / "Logic"
-        if not directory.is_dir():
-            return []
-        assets: list[tuple[Path, dict]] = []
-        for path in sorted(directory.rglob("*.zlogic"), key=lambda entry: str(entry).casefold()):
-            try:
-                resolved = path.resolve()
-                stamp = resolved.stat().st_mtime_ns
-                cached = self._logic_graph_cache.get(resolved)
-                if cached is None or cached[0] != stamp:
-                    graph = load_logic_graph(resolved)
-                    self._logic_graph_cache[resolved] = (stamp, graph)
-                else:
-                    graph = cached[1]
-            except (OSError, ValueError, json.JSONDecodeError):
-                continue
-            if any(node.get("type") == "subgraph_start" for node in graph.get("nodes", [])):
-                continue
-            assets.append((resolved, graph))
-        return assets
+        return self._logic_assets_repository.assets()
 
     def _logic_graphs_for_object(self, object_name: str) -> list[tuple[Path, dict]]:
         obj = self._objects_by_name.get(object_name, {})
-        tag = str(obj.get("tag", obj.get("name", object_name))).casefold()
-        result: list[tuple[Path, dict]] = []
-        for path, graph in self._logic_assets():
-            if not bool(graph.get("enabled", True)):
-                continue
-            target = graph.get("target", {})
-            target_type = str(target.get("type", "name"))
-            wanted = str(target.get("value", "")).casefold()
-            if (target_type == "name" and wanted == object_name.casefold()) or (target_type == "tag" and wanted == tag):
-                result.append((path, graph))
-        return result
+        return self._logic_assets_repository.for_object(object_name, obj)
 
     def _save_logic_binding(self, path: Path, graph: dict) -> None:
-        save_logic_graph(path, graph)
-        self._logic_graph_cache.pop(path.resolve(), None)
+        self._logic_assets_repository.save(path, graph)
         self._refresh_assets()
         if self._selected_name in self._objects_by_name:
             self._update_inspector(self._selected_name)
@@ -731,7 +702,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         graph["target"] = {"type": "name", "value": self._selected_name}
         graph["nodes"] = [create_logic_node("event_start", (80.0, 100.0))]
         save_logic_graph(path, graph)
-        self._logic_graph_cache.pop(path.resolve(), None)
+        self._logic_assets_repository.invalidate(path)
         self._component_expanded["logic"] = True
         self._refresh_assets()
         self._update_inspector(self._selected_name)
@@ -773,7 +744,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             graph = deepcopy(source)
             graph["enabled"] = False
             save_logic_graph(path, graph)
-            self._logic_graph_cache.pop(path.resolve(), None)
+            self._logic_assets_repository.invalidate(path)
         self._refresh_assets()
         self._update_inspector(self._selected_name)
         self._log("INFO", f"Lógica Visual desvinculada de {self._selected_name}")

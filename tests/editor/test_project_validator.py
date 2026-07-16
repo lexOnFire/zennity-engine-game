@@ -9,6 +9,7 @@ RUNTIME_SOURCES = (
     "editor/runtime/native_ui.py",
     "editor/runtime/audio_playback_state.py",
     "editor/runtime/sprite_rendering.py",
+    "editor/runtime/viewport_systems.py",
     "engine/graphics/tint.py",
     "engine/animation/clip_asset.py",
     "engine/animation/controller_asset.py",

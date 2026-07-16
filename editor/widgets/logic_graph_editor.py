@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QInputDialog,
     QListWidget,
     QListWidgetItem,
     QMessageBox,
@@ -168,6 +169,17 @@ class LogicGraphView(QGraphicsView):
         super().wheelEvent(event)
 
     def keyPressEvent(self, event) -> None:
+        if event.key() == Qt.Key_Z and event.modifiers() & Qt.ControlModifier:
+            if event.modifiers() & Qt.ShiftModifier:
+                self.editor.redo()
+            else:
+                self.editor.undo()
+            event.accept()
+            return
+        if event.key() == Qt.Key_Y and event.modifiers() & Qt.ControlModifier:
+            self.editor.redo()
+            event.accept()
+            return
         if event.key() == Qt.Key_D and event.modifiers() & Qt.ControlModifier:
             self.editor.duplicate_selected()
             event.accept()
@@ -256,6 +268,7 @@ class LogicEdgeItem(QGraphicsPathItem):
         self.edge_id = edge_id
         self.base_color = PORT_COLORS.get(data_type, PORT_COLORS["any"])
         self._runtime_active = False
+        self._validation_level = ""
         self.setPen(QPen(self.base_color, 2.2))
         self.setZValue(0)
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
@@ -271,9 +284,18 @@ class LogicEdgeItem(QGraphicsPathItem):
         self._runtime_active = bool(active)
         self._refresh_pen(self.isSelected())
 
+    def set_validation_state(self, level: str = "", message: str = "") -> None:
+        self._validation_level = str(level)
+        self.setToolTip(str(message))
+        self._refresh_pen(self.isSelected())
+
     def _refresh_pen(self, selected: bool) -> None:
         if self._runtime_active:
             self.setPen(QPen(QColor("#7ee787"), 4.2))
+        elif self._validation_level == "error":
+            self.setPen(QPen(QColor("#ff5d62"), 3.4, Qt.DashLine))
+        elif self._validation_level == "warning":
+            self.setPen(QPen(QColor("#e6b85c"), 3.0, Qt.DashLine))
         else:
             self.setPen(QPen(QColor("#ffffff") if selected else self.base_color, 3.2 if selected else 2.2))
 
@@ -281,6 +303,148 @@ class LogicEdgeItem(QGraphicsPathItem):
         stroker = QPainterPathStroker()
         stroker.setWidth(14.0)
         return stroker.createStroke(self.path())
+
+
+class LogicGroupResizeHandle(QGraphicsRectItem):
+    SIZE = 14.0
+
+    def __init__(self, group: "LogicGroupItem") -> None:
+        super().__init__(0.0, 0.0, self.SIZE, self.SIZE, group)
+        self.group = group
+        self._origin = QPointF()
+        self._initial_size = (group.rect().width(), group.rect().height())
+        self.setBrush(QBrush(QColor("#55789b")))
+        self.setPen(Qt.NoPen)
+        self.setCursor(Qt.SizeFDiagCursor)
+        self.setZValue(3)
+
+    def mousePressEvent(self, event) -> None:
+        self._origin = event.scenePos()
+        self._initial_size = (self.group.rect().width(), self.group.rect().height())
+        event.accept()
+
+    def mouseMoveEvent(self, event) -> None:
+        delta = event.scenePos() - self._origin
+        self.group.resize_to(self._initial_size[0] + delta.x(), self._initial_size[1] + delta.y())
+        event.accept()
+
+    def mouseReleaseEvent(self, event) -> None:
+        self.group.editor.mark_dirty()
+        event.accept()
+
+
+class LogicGroupItem(QGraphicsRectItem):
+    """Área visual persistente usada para organizar partes de um grafo."""
+
+    def __init__(self, editor: "LogicGraphEditor", data: dict[str, Any]) -> None:
+        size = data.get("size", [460.0, 280.0])
+        super().__init__(0.0, 0.0, float(size[0]), float(size[1]))
+        self.editor = editor
+        self.data = data
+        self.group_id = str(data["id"])
+        self.setPos(*data.get("position", [0.0, 0.0]))
+        self.setZValue(-4)
+        self.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemSendsGeometryChanges)
+        color = QColor(str(data.get("color", "#35506b")))
+        color.setAlpha(48)
+        self.setBrush(QBrush(color))
+        self.setPen(QPen(QColor(str(data.get("color", "#35506b"))), 2.0, Qt.DashLine))
+        self.title_item = QGraphicsTextItem(str(data.get("title", "Grupo")), self)
+        self.title_item.setDefaultTextColor(QColor("#dbeafe"))
+        font = self.title_item.font()
+        font.setBold(True)
+        self.title_item.setFont(font)
+        self.title_item.setPos(8.0, 4.0)
+        self.resize_handle = LogicGroupResizeHandle(self)
+        self.resize_handle.setPos(self.rect().width() - 17.0, self.rect().height() - 17.0)
+        self.setToolTip("Duplo clique renomeia o grupo")
+
+    def resize_to(self, width: float, height: float) -> None:
+        width = max(240.0, min(1600.0, float(width)))
+        height = max(140.0, min(1200.0, float(height)))
+        self.setRect(0.0, 0.0, width, height)
+        self.resize_handle.setPos(width - 17.0, height - 17.0)
+        self.data["size"] = [round(width, 2), round(height, 2)]
+
+    def mouseDoubleClickEvent(self, event) -> None:
+        title, accepted = QInputDialog.getText(None, "Renomear grupo", "Nome", text=str(self.data.get("title", "Grupo")))
+        if accepted and title.strip():
+            self.data["title"] = title.strip()
+            self.title_item.setPlainText(title.strip())
+            self.editor.mark_dirty()
+        event.accept()
+
+    def itemChange(self, change, value):
+        result = super().itemChange(change, value)
+        if change == QGraphicsItem.ItemPositionHasChanged and hasattr(self, "editor"):
+            position = value if isinstance(value, QPointF) else self.pos()
+            self.data["position"] = [round(position.x(), 2), round(position.y(), 2)]
+            self.editor.mark_dirty()
+        return result
+
+
+class LogicCommentItem(QGraphicsRectItem):
+    """Nota persistente que explica uma região do grafo sem afetar o runtime."""
+
+    def __init__(self, editor: "LogicGraphEditor", data: dict[str, Any]) -> None:
+        width = float(data.get("width", 260.0))
+        super().__init__(0.0, 0.0, width, 78.0)
+        self.editor = editor
+        self.data = data
+        self.comment_id = str(data["id"])
+        self.setPos(*data.get("position", [0.0, 0.0]))
+        self.setZValue(1)
+        self.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemSendsGeometryChanges)
+        color = QColor(str(data.get("color", "#6b5b2f")))
+        color.setAlpha(190)
+        self.setBrush(QBrush(color))
+        self.setPen(QPen(QColor("#d9b85f"), 1.4))
+        self.text_item = QGraphicsTextItem(str(data.get("text", "Comentário")), self)
+        self.text_item.setDefaultTextColor(QColor("#fff3c4"))
+        self.text_item.setTextWidth(width - 16.0)
+        self.text_item.setPos(8.0, 7.0)
+        self.setToolTip("Duplo clique edita o comentário")
+
+    def mouseDoubleClickEvent(self, event) -> None:
+        text_value, accepted = QInputDialog.getMultiLineText(
+            None, "Editar comentário", "Texto", str(self.data.get("text", "Comentário"))
+        )
+        if accepted:
+            self.data["text"] = text_value
+            self.text_item.setPlainText(text_value)
+            self.editor.mark_dirty()
+        event.accept()
+
+    def itemChange(self, change, value):
+        result = super().itemChange(change, value)
+        if change == QGraphicsItem.ItemPositionHasChanged and hasattr(self, "editor"):
+            position = value if isinstance(value, QPointF) else self.pos()
+            self.data["position"] = [round(position.x(), 2), round(position.y(), 2)]
+            self.editor.mark_dirty()
+        return result
+
+
+class LogicMiniMapView(QGraphicsView):
+    """Visão geral compacta; clicar recentraliza o canvas principal."""
+
+    def __init__(self, scene: QGraphicsScene, editor: "LogicGraphEditor") -> None:
+        super().__init__(scene)
+        self.editor = editor
+        self.setObjectName("LogicMiniMap")
+        self.setFixedSize(190, 120)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setInteractive(False)
+        self.setStyleSheet("border: 1px solid #454a56; background: #111318;")
+
+    def refresh(self) -> None:
+        bounds = self.scene().itemsBoundingRect().adjusted(-60.0, -60.0, 60.0, 60.0)
+        if not bounds.isEmpty():
+            self.fitInView(bounds, Qt.KeepAspectRatio)
+
+    def mousePressEvent(self, event) -> None:
+        self.editor.view.centerOn(self.mapToScene(event.position().toPoint()))
+        event.accept()
 
 
 class LogicFlipControl(QGraphicsTextItem):
@@ -649,6 +813,8 @@ class LogicGraphEditor(QWidget):
         self.graph = default_logic_graph()
         self.node_items: dict[str, LogicNodeItem] = {}
         self.edge_items: list[LogicEdgeItem] = []
+        self.group_items: dict[str, LogicGroupItem] = {}
+        self.comment_items: dict[str, LogicCommentItem] = {}
         self._connection_origin: LogicPortItem | None = None
         self._connection_candidate: LogicPortItem | None = None
         self._connection_preview: QGraphicsPathItem | None = None
@@ -657,6 +823,13 @@ class LogicGraphEditor(QWidget):
         self._blackboard_selected_name = ""
         self._dirty = False
         self._updating_properties = False
+        self._history: list[dict[str, Any]] = []
+        self._history_index = -1
+        self._restoring_history = False
+        self._history_timer = QTimer(self)
+        self._history_timer.setSingleShot(True)
+        self._history_timer.setInterval(180)
+        self._history_timer.timeout.connect(self._capture_history)
         self._autosave_timer = QTimer(self)
         self._autosave_timer.setSingleShot(True)
         self._autosave_timer.setInterval(700)
@@ -730,6 +903,12 @@ class LogicGraphEditor(QWidget):
         toolbar.addWidget(self.target_value)
         toolbar.addStretch(1)
         self.fit_button = QPushButton("Enquadrar")
+        self.undo_button = QPushButton("Desfazer")
+        self.redo_button = QPushButton("Refazer")
+        self.undo_button.setShortcut("Ctrl+Z")
+        self.redo_button.setShortcut("Ctrl+Y")
+        self.undo_button.setEnabled(False)
+        self.redo_button.setEnabled(False)
         self.breakpoint_button = QPushButton("● Breakpoint")
         self.breakpoint_button.setToolTip("Alterna um breakpoint no nó selecionado (duplo clique também funciona)")
         self.continue_debug_button = QPushButton("Continuar")
@@ -742,6 +921,8 @@ class LogicGraphEditor(QWidget):
         self.delete_button = QPushButton("Excluir selecionado")
         self.delete_button.setProperty("uiRole", "danger")
         toolbar.addWidget(self.fit_button)
+        toolbar.addWidget(self.undo_button)
+        toolbar.addWidget(self.redo_button)
         toolbar.addWidget(self.breakpoint_button)
         toolbar.addWidget(self.continue_debug_button)
         toolbar.addWidget(self.step_debug_button)
@@ -761,6 +942,16 @@ class LogicGraphEditor(QWidget):
         self.category_combo.setMinimumWidth(150)
         self.category_combo.setToolTip("Filtra a biblioteca de blocos por categoria")
         categories.addWidget(self.category_combo)
+        self.add_group_button = QPushButton("+ Grupo")
+        self.add_comment_button = QPushButton("+ Comentário")
+        self.organize_button = QPushButton("Organizar grafo")
+        self.align_button = QPushButton("Alinhar")
+        self.distribute_button = QPushButton("Distribuir")
+        categories.addWidget(self.add_group_button)
+        categories.addWidget(self.add_comment_button)
+        categories.addWidget(self.organize_button)
+        categories.addWidget(self.align_button)
+        categories.addWidget(self.distribute_button)
         categories.addStretch(1)
         root.addWidget(category_widget)
 
@@ -879,8 +1070,18 @@ class LogicGraphEditor(QWidget):
 
         self.scene = QGraphicsScene(self)
         self.scene.setSceneRect(-2000.0, -1400.0, 4000.0, 2800.0)
+        canvas_panel = QWidget()
+        canvas_layout = QVBoxLayout(canvas_panel)
+        canvas_layout.setContentsMargins(0, 0, 0, 0)
+        canvas_layout.setSpacing(3)
         self.view = LogicGraphView(self.scene, self)
-        splitter.addWidget(self.view)
+        canvas_layout.addWidget(self.view, 1)
+        minimap_row = QHBoxLayout()
+        minimap_row.addStretch(1)
+        self.minimap = LogicMiniMapView(self.scene, self)
+        minimap_row.addWidget(self.minimap)
+        canvas_layout.addLayout(minimap_row)
+        splitter.addWidget(canvas_panel)
 
         properties_panel = QFrame()
         properties_panel.setObjectName("LogicPropertiesPanel")
@@ -972,6 +1173,13 @@ class LogicGraphEditor(QWidget):
         self.save_as_button.clicked.connect(lambda: self.save(save_as=True))
         self.demo_button.clicked.connect(self.open_demo)
         self.fit_button.clicked.connect(self.fit_graph)
+        self.undo_button.clicked.connect(self.undo)
+        self.redo_button.clicked.connect(self.redo)
+        self.add_group_button.clicked.connect(self.add_group)
+        self.add_comment_button.clicked.connect(self.add_comment)
+        self.organize_button.clicked.connect(self.organize_graph)
+        self.align_button.clicked.connect(self.align_selected)
+        self.distribute_button.clicked.connect(self.distribute_selected)
         self.breakpoint_button.clicked.connect(self.toggle_selected_breakpoint)
         self.continue_debug_button.clicked.connect(lambda: self.debug_command.emit("continue"))
         self.step_debug_button.clicked.connect(lambda: self.debug_command.emit("step"))
@@ -1162,7 +1370,19 @@ class LogicGraphEditor(QWidget):
         self.node_items[item.node_id] = item
         return item
 
-    def set_graph(self, graph: dict[str, Any], path: Path | None = None) -> None:
+    def _create_group_item(self, data: dict[str, Any]) -> LogicGroupItem:
+        item = LogicGroupItem(self, data)
+        self.scene.addItem(item)
+        self.group_items[item.group_id] = item
+        return item
+
+    def _create_comment_item(self, data: dict[str, Any]) -> LogicCommentItem:
+        item = LogicCommentItem(self, data)
+        self.scene.addItem(item)
+        self.comment_items[item.comment_id] = item
+        return item
+
+    def set_graph(self, graph: dict[str, Any], path: Path | None = None, *, reset_history: bool = True) -> None:
         self.clear_runtime_trace()
         self.cancel_connection()
         self._autosave_timer.stop()
@@ -1183,6 +1403,13 @@ class LogicGraphEditor(QWidget):
         self.scene.clear()
         self.node_items.clear()
         self.edge_items.clear()
+        self.group_items.clear()
+        self.comment_items.clear()
+        editor_layout = self.graph.get("editor", {})
+        for group in editor_layout.get("groups", []):
+            self._create_group_item(group)
+        for comment in editor_layout.get("comments", []):
+            self._create_comment_item(comment)
         for node in self.graph["nodes"]:
             self._create_node_item(node)
         for node_id in self.graph.get("debug", {}).get("breakpoints", []):
@@ -1196,6 +1423,9 @@ class LogicGraphEditor(QWidget):
         self._update_status()
         self._update_validation()
         self.fit_graph()
+        self.minimap.refresh()
+        if reset_history:
+            self._reset_history()
         if consolidated_events:
             self.message.emit(
                 "INFO",
@@ -1354,6 +1584,8 @@ class LogicGraphEditor(QWidget):
                         if count
                         else "Arraste para conectar uma ou várias ações"
                     )
+        if hasattr(self, "minimap"):
+            self.minimap.refresh()
 
     @staticmethod
     def _connection_path(start: QPointF, end: QPointF) -> QPainterPath:
@@ -1526,8 +1758,10 @@ class LogicGraphEditor(QWidget):
 
     def delete_selected(self) -> None:
         node_ids = {item.node_id for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)}
-        edge_ids = {str(item.data(0)) for item in self.scene.selectedItems() if isinstance(item, QGraphicsPathItem)}
-        if not node_ids and not edge_ids:
+        edge_ids = {str(item.data(0)) for item in self.scene.selectedItems() if isinstance(item, LogicEdgeItem)}
+        group_ids = {item.group_id for item in self.scene.selectedItems() if isinstance(item, LogicGroupItem)}
+        comment_ids = {item.comment_id for item in self.scene.selectedItems() if isinstance(item, LogicCommentItem)}
+        if not node_ids and not edge_ids and not group_ids and not comment_ids:
             return
         self.graph["nodes"] = [node for node in self.graph["nodes"] if node["id"] not in node_ids]
         self.graph["edges"] = [
@@ -1536,6 +1770,17 @@ class LogicGraphEditor(QWidget):
         ]
         for node_id in node_ids:
             item = self.node_items.pop(node_id, None)
+            if item is not None:
+                self.scene.removeItem(item)
+        layout = self.graph.setdefault("editor", {"groups": [], "comments": []})
+        layout["groups"] = [group for group in layout.get("groups", []) if str(group.get("id")) not in group_ids]
+        layout["comments"] = [comment for comment in layout.get("comments", []) if str(comment.get("id")) not in comment_ids]
+        for group_id in group_ids:
+            item = self.group_items.pop(group_id, None)
+            if item is not None:
+                self.scene.removeItem(item)
+        for comment_id in comment_ids:
+            item = self.comment_items.pop(comment_id, None)
             if item is not None:
                 self.scene.removeItem(item)
         self.refresh_connections()
@@ -1865,9 +2110,161 @@ class LogicGraphEditor(QWidget):
         self.mark_dirty()
         self._update_validation()
 
+    def add_group(self) -> None:
+        center = self.view.mapToScene(self.view.viewport().rect().center())
+        data = {
+            "id": uuid.uuid4().hex,
+            "title": "Novo grupo",
+            "position": [center.x() - 230.0, center.y() - 140.0],
+            "size": [460.0, 280.0],
+            "color": "#35506b",
+        }
+        self.graph.setdefault("editor", {}).setdefault("groups", []).append(data)
+        self.scene.clearSelection()
+        self._create_group_item(data).setSelected(True)
+        self.mark_dirty()
+        self.minimap.refresh()
+
+    def add_comment(self) -> None:
+        center = self.view.mapToScene(self.view.viewport().rect().center())
+        text_value, accepted = QInputDialog.getMultiLineText(self, "Novo comentário", "Texto", "Explique esta parte do grafo")
+        if not accepted:
+            return
+        data = {
+            "id": uuid.uuid4().hex,
+            "text": text_value,
+            "position": [center.x() - 130.0, center.y() - 40.0],
+            "width": 260.0,
+            "color": "#6b5b2f",
+        }
+        self.graph.setdefault("editor", {}).setdefault("comments", []).append(data)
+        self.scene.clearSelection()
+        self._create_comment_item(data).setSelected(True)
+        self.mark_dirty()
+        self.minimap.refresh()
+
+    def organize_graph(self) -> None:
+        """Organiza o fluxo em colunas estáveis sem alterar a lógica."""
+        if not self.graph.get("nodes"):
+            return
+        node_ids = [str(node["id"]) for node in self.graph["nodes"]]
+        incoming = {node_id: 0 for node_id in node_ids}
+        outgoing: dict[str, list[str]] = {node_id: [] for node_id in node_ids}
+        for edge in self.graph.get("edges", []):
+            source = str(edge.get("from_node", ""))
+            target = str(edge.get("to_node", ""))
+            if source in outgoing and target in incoming:
+                outgoing[source].append(target)
+                incoming[target] += 1
+        queue = [node_id for node_id in node_ids if incoming[node_id] == 0]
+        levels = {node_id: 0 for node_id in queue}
+        visited: list[str] = []
+        while queue:
+            node_id = queue.pop(0)
+            visited.append(node_id)
+            for target in outgoing[node_id]:
+                levels[target] = max(levels.get(target, 0), levels[node_id] + 1)
+                incoming[target] -= 1
+                if incoming[target] == 0:
+                    queue.append(target)
+        for node_id in node_ids:
+            if node_id not in visited:
+                levels[node_id] = max(levels.values(), default=0) + 1
+        rows: dict[int, list[str]] = {}
+        for node_id in node_ids:
+            rows.setdefault(levels.get(node_id, 0), []).append(node_id)
+        for level, ids in sorted(rows.items()):
+            for row, node_id in enumerate(ids):
+                self.node_items[node_id].setPos(80.0 + level * 290.0, 80.0 + row * 170.0)
+        self.refresh_connections()
+        self.mark_dirty()
+        self.fit_graph()
+        self.message.emit("INFO", "Grafo organizado por ordem de execução")
+
+    def align_selected(self) -> None:
+        selected = [item for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)]
+        if len(selected) < 2:
+            self.message.emit("WARNING", "Selecione dois ou mais blocos para alinhar")
+            return
+        x = min(item.pos().x() for item in selected)
+        for item in selected:
+            item.setPos(x, item.pos().y())
+        self.mark_dirty()
+
+    def distribute_selected(self) -> None:
+        selected = sorted(
+            (item for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)),
+            key=lambda item: item.pos().y(),
+        )
+        if len(selected) < 3:
+            self.message.emit("WARNING", "Selecione três ou mais blocos para distribuir")
+            return
+        top, bottom = selected[0].pos().y(), selected[-1].pos().y()
+        spacing = (bottom - top) / (len(selected) - 1)
+        for index, item in enumerate(selected):
+            item.setPos(item.pos().x(), top + index * spacing)
+        self.mark_dirty()
+
+    def _reset_history(self) -> None:
+        if self._restoring_history:
+            return
+        self._history_timer.stop()
+        self._history = [self.graph_data()]
+        self._history_index = 0
+        self._update_history_actions()
+
+    def _capture_history(self) -> None:
+        if self._restoring_history:
+            return
+        snapshot = self.graph_data()
+        if self._history and snapshot == self._history[self._history_index]:
+            return
+        self._history = self._history[: self._history_index + 1]
+        self._history.append(snapshot)
+        if len(self._history) > 80:
+            self._history.pop(0)
+        self._history_index = len(self._history) - 1
+        self._update_history_actions()
+
+    def _update_history_actions(self) -> None:
+        if hasattr(self, "undo_button"):
+            self.undo_button.setEnabled(self._history_index > 0)
+            self.redo_button.setEnabled(0 <= self._history_index < len(self._history) - 1)
+
+    def undo(self) -> None:
+        self._capture_history()
+        if self._history_index <= 0:
+            return
+        self._history_index -= 1
+        self._restore_history_snapshot()
+
+    def redo(self) -> None:
+        self._capture_history()
+        if self._history_index >= len(self._history) - 1:
+            return
+        self._history_index += 1
+        self._restore_history_snapshot()
+
+    def _restore_history_snapshot(self) -> None:
+        snapshot = deepcopy(self._history[self._history_index])
+        self._restoring_history = True
+        try:
+            self.set_graph(snapshot, self.current_path, reset_history=False)
+            self._dirty = True
+            self._update_status()
+            self._autosave_timer.start()
+        finally:
+            self._restoring_history = False
+        self._update_history_actions()
+        self.message.emit("INFO", "Histórico do grafo restaurado")
+
     def graph_data(self) -> dict[str, Any]:
         for node_id, item in self.node_items.items():
             item.node["position"] = [round(item.pos().x(), 2), round(item.pos().y(), 2)]
+        for item in self.group_items.values():
+            item.data["position"] = [round(item.pos().x(), 2), round(item.pos().y(), 2)]
+        for item in self.comment_items.values():
+            item.data["position"] = [round(item.pos().x(), 2), round(item.pos().y(), 2)]
         data = deepcopy(self.graph)
         data["enabled"] = self.graph_enabled_check.isChecked()
         data["target"] = {
@@ -1996,6 +2393,8 @@ class LogicGraphEditor(QWidget):
         self.view.fitInView(bounds, Qt.KeepAspectRatio)
 
     def mark_dirty(self) -> None:
+        if not self._restoring_history:
+            self._history_timer.start()
         if not self._dirty:
             self._dirty = True
             self._update_status()
@@ -2041,6 +2440,15 @@ class LogicGraphEditor(QWidget):
             item.setPen(QPen(color, 2.2 if level else 1.2))
             messages = [str(issue.get("message", "")) for issue in issues if str(issue.get("node", "")) == node_id]
             item.setToolTip("\n".join(messages))
+        edge_issues: dict[str, list[dict[str, str]]] = {}
+        for issue in issues:
+            edge_id = str(issue.get("edge", ""))
+            if edge_id:
+                edge_issues.setdefault(edge_id, []).append(issue)
+        for edge_item in self.edge_items:
+            related = edge_issues.get(edge_item.edge_id, [])
+            level = "error" if any(issue.get("level") == "error" for issue in related) else "warning" if related else ""
+            edge_item.set_validation_state(level, "\n".join(str(issue.get("message", "")) for issue in related))
         self.validation_label.setText(
             f"{len(self.graph['nodes'])} nós • {len(self.graph['edges'])} conexões"
             + (f" • {errors} erro(s) • {warnings} aviso(s)" if errors else f" • {warnings} aviso(s)" if warnings else " • válido")

@@ -120,11 +120,11 @@ def test_generic_property_command_captures_old_value_without_invalid_syntax() ->
 def test_runtime_restart_resets_physics_and_restarts_autoplay_audio() -> None:
     viewport_source = Path("editor/isolated_viewport.py").read_text(encoding="utf-8")
     restart_block = viewport_source.split("if restart_requested:", 1)[1].split(
-        "physics_accumulator = min", 1
+        "physics_steps = physics_scheduler.consume", 1
     )[0]
 
     assert "stop_audio_sources()" in restart_block
-    assert "physics_accumulator = 0.0" in restart_block
+    assert "physics_scheduler.reset()" in restart_block
     assert "start_audio_sources()" in restart_block
 
 

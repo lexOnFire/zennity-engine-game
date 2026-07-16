@@ -62,6 +62,14 @@ def test_logic_workspace_exposes_palette_canvas_connections_and_properties():
         assert category in source
     assert "QPainterPath" in source
     assert "self.property_tree.itemChanged.connect" in source
+    assert "class LogicGroupItem(QGraphicsRectItem)" in source
+    assert "class LogicCommentItem(QGraphicsRectItem)" in source
+    assert "class LogicMiniMapView(QGraphicsView)" in source
+    assert "def organize_graph(self)" in source
+    assert "def align_selected(self)" in source
+    assert "def distribute_selected(self)" in source
+    assert "def undo(self)" in source
+    assert "def redo(self)" in source
 
 
 def test_logic_workspace_can_create_open_save_and_load_demo():

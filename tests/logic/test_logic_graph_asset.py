@@ -75,6 +75,35 @@ def test_old_nodes_receive_default_editor_layout():
     assert editor_state == {"collapsed": False, "width": 210.0, "height": 0.0}
 
 
+def test_graph_annotations_are_persistent_and_clamped(tmp_path):
+    graph = default_logic_graph("Organized")
+    graph["editor"] = {
+        "groups": [{"id": "g", "title": "Movimento", "position": [10, 20], "size": [10, 9999]}],
+        "comments": [{"id": "c", "text": "Explicação", "position": [30, 40], "width": 9999}],
+    }
+    saved = save_logic_graph(tmp_path / "organized.zlogic", graph)
+    assert saved["editor"]["groups"][0]["size"] == [240.0, 1200.0]
+    assert saved["editor"]["comments"][0]["width"] == 720.0
+
+
+def test_validation_reports_unreachable_flow_and_execution_cycle():
+    event = create_logic_node("event_start")
+    first = create_logic_node("log_message")
+    second = create_logic_node("log_message")
+    detached = create_logic_node("log_message")
+    graph = default_logic_graph("Unsafe")
+    graph["nodes"] = [event, first, second, detached]
+    graph["edges"] = [
+        _edge(event, "next", first, "in"),
+        _edge(first, "next", second, "in"),
+        _edge(second, "next", first, "in"),
+    ]
+    issues = validate_logic_graph(graph)
+    messages = [issue["message"] for issue in issues]
+    assert any("Ciclo de execução" in message for message in messages)
+    assert any("Nó desconectado" in message for message in messages)
+
+
 def test_normalization_removes_edges_with_missing_nodes():
     graph = default_logic_graph()
     graph["nodes"] = [{"id": "start", "type": "event_start"}]

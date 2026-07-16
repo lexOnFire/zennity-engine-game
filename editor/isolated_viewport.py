@@ -17,6 +17,12 @@ try:
     from editor.runtime.audio_playback_state import set_channels_paused
     from editor.runtime.native_ui import NativeUIRenderer, normalize_ui
     from editor.runtime.sprite_rendering import prepare_sprite_surface
+    from editor.runtime.viewport_systems import (
+        AnimationPlaybackSystem,
+        AudioPlaybackSystem,
+        FixedStepScheduler,
+        HudRuntimeSystem,
+    )
     from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
     from engine.animation.controller_asset import AnimatorControllerRuntime, load_animator_controller
     from engine.behavior.controller_asset import BehaviorControllerRunner, load_behavior_controller
@@ -29,6 +35,7 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .audio_playback_state import set_channels_paused
     from .native_ui import NativeUIRenderer, normalize_ui
     from .sprite_rendering import prepare_sprite_surface
+    from .viewport_systems import AnimationPlaybackSystem, AudioPlaybackSystem, FixedStepScheduler, HudRuntimeSystem
     from .clip_asset import animation_asset_to_clip, load_animation_asset
     from .controller_asset import AnimatorControllerRuntime, load_animator_controller
     from .behavior_controller import BehaviorControllerRunner, load_behavior_controller
@@ -579,12 +586,17 @@ def run_viewport(
     logic_trace_last_sent = 0.0
     animator_event_signatures: dict[str, tuple[Any, ...]] = {}
     active_contacts: dict[tuple[str, str], bool] = {}
-    audio_channels: dict[str, Any] = {}
-    audio_sounds: dict[str, Any] = {}
-    hud_entries: dict[str, dict[str, Any]] = {}
+    def runtime_log(level: str, message: str) -> None:
+        _send(events, {"type": "script_log", "level": level, "message": message})
+
+    audio_system = AudioPlaybackSystem(pygame, Path.cwd(), runtime_log)
+    audio_channels = audio_system.channels
+    audio_sounds = audio_system.sounds
+    hud_entries = HudRuntimeSystem()
+    animation_system = AnimationPlaybackSystem()
     restart_requested = False
-    physics_accumulator = 0.0
-    fixed_physics_dt = 1.0 / 60.0
+    physics_scheduler = FixedStepScheduler(1.0 / 60.0, maximum_steps=5)
+    fixed_physics_dt = physics_scheduler.step
     forwarded_input = {
         key: False for key in ("left", "right", "up", "down", "jump", "restart")
     }
@@ -609,54 +621,13 @@ def run_viewport(
         _send(events, {"type": "script_log", "level": "INFO", "message": f"Play processou {found} Audio Source(s); {enabled} iniciado(s)"})
 
     def ensure_audio_mixer() -> bool:
-        try:
-            if not pygame.mixer.get_init():
-                pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
-            pygame.mixer.set_num_channels(max(16, pygame.mixer.get_num_channels()))
-            return True
-        except pygame.error as exc:
-            _send(events, {"type": "script_log", "level": "WARNING", "message": f"Áudio indisponível: {exc}"})
-            return False
+        return audio_system.ensure_mixer()
 
     def play_audio_file(key: str, path_value: str, volume: float = 1.0, loop: bool = False) -> None:
-        path = Path(str(path_value))
-        if not path.is_absolute():
-            path = Path.cwd() / path
-        if not path.is_file():
-            _send(events, {"type": "script_log", "level": "ERROR", "message": f"{key}: arquivo de áudio não encontrado: {path_value}"})
-            return
-        if not ensure_audio_mixer():
-            return
-        try:
-            previous = audio_channels.pop(key, None)
-            if previous is not None:
-                previous.stop()
-            sound = pygame.mixer.Sound(str(path.resolve()))
-            sound.set_volume(max(0.0, min(1.0, float(volume))))
-            channel = sound.play(loops=-1 if loop else 0)
-            if channel is None:
-                _send(events, {"type": "script_log", "level": "WARNING", "message": f"{key}: nenhum canal de áudio disponível"})
-                return
-            audio_sounds[key] = sound
-            audio_channels[key] = channel
-            _send(events, {"type": "script_log", "level": "INFO", "message": f"Áudio tocando: {path.name} (volume {sound.get_volume():.2f})"})
-        except (OSError, pygame.error) as exc:
-            _send(events, {"type": "script_log", "level": "ERROR", "message": f"{key}: falha ao tocar {path.name}: {exc}"})
+        audio_system.play(key, path_value, volume, loop)
 
     def stop_audio_sources() -> None:
-        for channel in audio_channels.values():
-            try:
-                channel.stop()
-            except pygame.error:
-                pass
-        audio_channels.clear()
-        audio_sounds.clear()
-        if pygame.mixer.get_init():
-            pygame.mixer.stop()
-            try:
-                pygame.mixer.music.stop()
-            except pygame.error:
-                pass
+        audio_system.stop_all()
 
     def dispatch_animation_state_hook(object_name: str, hook_name: str, state_name: str) -> None:
         obj = objects.get(object_name)
@@ -726,22 +697,21 @@ def run_viewport(
                 * max(0.0, float(animator.get("speed", 1.0)))
                 * max(0.0, float(clip.get("controller_speed", 1.0)))
             )
-            elapsed = float(obj.get("_animation_time", 0.0)) + delta_time
-            raw_frame = int(elapsed * fps)
-            frame = raw_frame % count if clip.get("loop", True) else min(count - 1, raw_frame)
             previous_raw = int(obj.get("_animation_raw_frame", -1))
-            if raw_frame > previous_raw:
-                upper = min(raw_frame, previous_raw + max(1, count * 4))
+            frame_result = animation_system.advance(
+                float(obj.get("_animation_time", 0.0)),
+                previous_raw,
+                delta_time,
+                count,
+                fps,
+                bool(clip.get("loop", True)),
+            )
+            if frame_result.crossed_frames:
                 events_by_frame: dict[int, list[dict[str, Any]]] = {}
                 for event in clip.get("events", []):
                     if isinstance(event, dict):
                         events_by_frame.setdefault(max(0, int(event.get("frame", 0))), []).append(event)
-                fired_frames: set[int] = set()
-                for raw_index in range(previous_raw + 1, upper + 1):
-                    event_frame = raw_index % count if clip.get("loop", True) else min(count - 1, raw_index)
-                    if not clip.get("loop", True) and event_frame in fired_frames:
-                        continue
-                    fired_frames.add(event_frame)
+                for event_frame in frame_result.crossed_frames:
                     for event in events_by_frame.get(event_frame, []):
                         api = script_apis.get(object_name) or PlayScriptAPI(object_name, obj, events, objects, runtime_world)
                         api.state["animation_event_payload"] = event.get("payload")
@@ -754,9 +724,9 @@ def run_viewport(
                             except Exception as exc:
                                 _send(events, {"type": "script_log", "level": "ERROR", "message": f"{object_name}:{path}:on_animation_event: {exc}"})
                         _send(events, {"type": "animation_event", "name": object_name, "state": name, "event": str(event.get("name", "")), "frame": event_frame, "payload": event.get("payload")})
-            obj["_animation_time"] = elapsed
-            obj["_animation_frame"] = frame
-            obj["_animation_raw_frame"] = raw_frame
+            obj["_animation_time"] = frame_result.elapsed
+            obj["_animation_frame"] = frame_result.frame
+            obj["_animation_raw_frame"] = frame_result.raw_frame
 
     def game_camera() -> dict[str, Any] | None:
         return next(
@@ -1149,7 +1119,7 @@ def run_viewport(
                         paused = False
                         velocities_y = {}
                         grounded = {}
-                        physics_accumulator = 0.0
+                        physics_scheduler.reset()
                         hud_entries.clear()
                         start_scripts()
                         _send(events, {"type": "play_state", "state": "play"})
@@ -1180,7 +1150,7 @@ def run_viewport(
                         paused = False
                         velocities_y = {}
                         grounded = {}
-                        physics_accumulator = 0.0
+                        physics_scheduler.reset()
                         hud_entries.clear()
                         _send(events, {"type": "play_state", "state": "edit"})
                         _send(events, {"type": "scene_snapshot", "objects": list(objects.values())})
@@ -1613,9 +1583,9 @@ def run_viewport(
                     elif cmd == "play_sound" and val:
                         play_audio_file(f"logic:{name}", str(val))
                     elif cmd == "set_hud" and isinstance(val, dict):
-                        hud_entries[str(val.get("key", "logic"))] = dict(val)
+                        hud_entries.set_entry(dict(val))
                     elif cmd == "remove_hud":
-                        hud_entries.pop(str(val), None)
+                        hud_entries.remove_entry(str(val))
                     elif cmd == "restart_scene":
                         restart_requested = True
                 if obj.pop("_jump_requested", False) and grounded.get(name, False):
@@ -1678,10 +1648,9 @@ def run_viewport(
                                 elif cmd == "play_sound" and val:
                                     play_audio_file(f"script:{name}", str(val))
                                 elif cmd == "set_hud" and isinstance(val, dict):
-                                    hud_key = str(val.get("key", "default"))
-                                    hud_entries[hud_key] = dict(val)
+                                    hud_entries.set_entry(dict(val))
                                 elif cmd == "remove_hud":
-                                    hud_entries.pop(str(val), None)
+                                    hud_entries.remove_entry(str(val))
                                 elif cmd == "set_ui_text" and isinstance(val, dict):
                                     target = objects.get(str(val.get("object", "")))
                                     target_ui = normalize_ui(target.get("ui")) if target is not None else None
@@ -1744,14 +1713,14 @@ def run_viewport(
                 active_contacts.clear()
                 hud_entries.clear()
                 restart_requested = False
-                physics_accumulator = 0.0
+                physics_scheduler.reset()
                 start_scripts()
                 start_audio_sources()
-            physics_accumulator = min(physics_accumulator + max(0.0, dt), fixed_physics_dt * 5.0)
+            physics_steps = physics_scheduler.consume(dt)
             motion_axes_by_name = {
                 name: obj.pop("_logic_motion_axes", set()) for name, obj in objects.items()
             }
-            while physics_accumulator >= fixed_physics_dt:
+            for _physics_step in range(physics_steps):
                 static_colliders = [
                     obj for obj in objects.values()
                     if obj.get("active", True)
@@ -1786,7 +1755,6 @@ def run_viewport(
                             break
                     velocities_y[name] = velocity
                     obj["_grounded"] = bool(grounded.get(name, False))
-                physics_accumulator -= fixed_physics_dt
             process_contacts()
             update_animations(dt)
         # Carrega a cor de fundo definida na câmera ativa
@@ -2008,10 +1976,7 @@ def run_viewport(
         if view_mode == "game":
             native_ui.draw(objects, screen)
         if playing and hud_entries:
-            grouped: dict[str, list[dict[str, Any]]] = {}
-            for entry in hud_entries.values():
-                grouped.setdefault(str(entry.get("position", "top-left")), []).append(entry)
-            for position, entries in grouped.items():
+            for position, entries in hud_entries.grouped().items():
                 for index, entry in enumerate(entries):
                     font_size = max(12, min(72, int(entry.get("font_size", 22))))
                     font = pygame.font.Font(None, font_size)
