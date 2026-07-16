@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any, Mapping
+from typing import Any, Iterator, Mapping
 
 try:
     from .graph_asset import normalize_logic_graph
@@ -31,6 +31,12 @@ class LogicGraphRuntime:
         self.values: dict[Any, Any] = {}
         self.executed_nodes: list[str] = []
         self.executed_edges: list[str] = []
+        self.breakpoints = {str(value) for value in self.graph.get("debug", {}).get("breakpoints", [])}
+        self.debug_paused = False
+        self.pause_node = ""
+        self._debug_generator: Iterator[str] | None = None
+        self._debug_waiting_node: str | None = None
+        self._debug_bypass_node = ""
         self.started = False
 
     def start(self, game: Any) -> None:
@@ -40,15 +46,143 @@ class LogicGraphRuntime:
         self.values.clear()
         self.executed_nodes.clear()
         self.executed_edges.clear()
-        self._run_event("event_start", game, 0.0)
+        if self.breakpoints:
+            self._begin_debug_event("event_start", game, 0.0)
+        else:
+            self._run_event("event_start", game, 0.0)
 
     def update(self, game: Any, dt: float) -> None:
         if not self.started:
             self.start(game)
+        if self.debug_paused:
+            return
+        if self.breakpoints:
+            if self._debug_generator is None:
+                self.values.clear()
+                self.executed_nodes.clear()
+                self.executed_edges.clear()
+                self._begin_debug_event("event_update", game, float(dt))
+            else:
+                self._drive_debug()
+            return
         self.values.clear()
         self.executed_nodes.clear()
         self.executed_edges.clear()
         self._run_event("event_update", game, float(dt))
+
+    def configure_breakpoints(self, node_ids: list[str] | set[str] | tuple[str, ...]) -> None:
+        self.breakpoints = {str(node_id) for node_id in node_ids if str(node_id) in self.nodes}
+        if not self.breakpoints:
+            self.debug_paused = False
+            self.pause_node = ""
+            self._debug_generator = None
+            self._debug_waiting_node = None
+            self._debug_bypass_node = ""
+
+    def continue_execution(self) -> None:
+        if not self.debug_paused:
+            return
+        self._debug_bypass_node = self.pause_node
+        self.debug_paused = False
+        self.pause_node = ""
+
+    def step(self) -> None:
+        if not self.debug_paused or self._debug_generator is None:
+            return
+        self._debug_bypass_node = self.pause_node
+        self.debug_paused = False
+        self.pause_node = ""
+        self._drive_debug(step_once=True)
+
+    def _begin_debug_event(self, event_type: str, game: Any, dt: float) -> None:
+        self._debug_generator = self._debug_event_generator(event_type, game, dt)
+        self._debug_waiting_node = None
+        self._drive_debug()
+
+    def _drive_debug(self, step_once: bool = False) -> None:
+        executed = 0
+        while self._debug_generator is not None:
+            if self._debug_waiting_node is None:
+                try:
+                    self._debug_waiting_node = next(self._debug_generator)
+                except StopIteration:
+                    self._finish_debug_flow(step_once)
+                    return
+            if step_once and executed >= 1:
+                self.debug_paused = True
+                self.pause_node = str(self._debug_waiting_node or "")
+                return
+            waiting = str(self._debug_waiting_node)
+            if waiting in self.breakpoints and self._debug_bypass_node != waiting:
+                self.debug_paused = True
+                self.pause_node = waiting
+                return
+            self._debug_waiting_node = None
+            if self._debug_bypass_node == waiting:
+                self._debug_bypass_node = ""
+            try:
+                self._debug_waiting_node = next(self._debug_generator)
+                executed += 1
+            except StopIteration:
+                executed += 1
+                self._finish_debug_flow(step_once)
+                return
+
+    def _finish_debug_flow(self, keep_paused: bool) -> None:
+        self._debug_generator = None
+        self._debug_waiting_node = None
+        self._debug_bypass_node = ""
+        self.debug_paused = bool(keep_paused)
+        self.pause_node = ""
+
+    def _debug_event_generator(self, event_type: str, game: Any, dt: float) -> Iterator[str]:
+        budget = [self.MAX_STEPS]
+        for node in self.nodes.values():
+            if node["type"] != event_type:
+                continue
+            node_id = str(node["id"])
+            yield node_id
+            if node_id not in self.executed_nodes:
+                self.executed_nodes.append(node_id)
+            yield from self._follow_debug(node_id, "next", game, dt, budget, set())
+
+    def _follow_debug(
+        self,
+        node_id: str,
+        port: str,
+        game: Any,
+        dt: float,
+        budget: list[int],
+        branch: set[str],
+    ) -> Iterator[str]:
+        if budget[0] <= 0:
+            raise RuntimeError("Logic Graph excedeu o limite de execução; verifique loops no grafo.")
+        for edge in self.outgoing.get(node_id, []):
+            if str(edge.get("from_port", "next")) != port:
+                continue
+            target_id = str(edge["to_node"])
+            if target_id in branch:
+                raise RuntimeError("Logic Graph contém um loop de execução sem espera.")
+            target = self.nodes.get(target_id)
+            if target is None:
+                continue
+            budget[0] -= 1
+            edge_id = str(edge.get("id", ""))
+            if edge_id and edge_id not in self.executed_edges:
+                self.executed_edges.append(edge_id)
+            yield target_id
+            if target_id not in self.executed_nodes:
+                self.executed_nodes.append(target_id)
+            try:
+                next_ports = self._execute(target, game, dt)
+            except RuntimeError:
+                raise
+            except Exception as exc:
+                raise RuntimeError(f"Nó '{target.get('title', target_id)}': {exc}") from exc
+            next_branch = set(branch)
+            next_branch.add(target_id)
+            for next_port in next_ports:
+                yield from self._follow_debug(target_id, next_port, game, dt, budget, next_branch)
 
     def _run_event(self, event_type: str, game: Any, dt: float) -> None:
         budget = [self.MAX_STEPS]
@@ -243,10 +377,13 @@ class LogicGraphRuntime:
             node_id, port = str(key[0]), str(key[1])
             values.setdefault(node_id, {})[port] = self._debug_value(value)
         return {
-            "nodes": list(dict.fromkeys(self.executed_nodes)),
+            "nodes": list(dict.fromkeys([*self.executed_nodes, *([self.pause_node] if self.pause_node else [])])),
             "edges": list(dict.fromkeys(self.executed_edges)),
             "values": values,
             "variables": {str(name): self._debug_value(value) for name, value in self.variables.items()},
+            "paused": self.debug_paused,
+            "pause_node": self.pause_node,
+            "breakpoints": sorted(self.breakpoints),
         }
 
     @staticmethod

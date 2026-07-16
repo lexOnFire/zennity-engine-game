@@ -79,3 +79,22 @@ def test_logic_workspace_receives_throttled_runtime_debug_traces():
     assert "trace_now - logic_trace_last_sent >= 0.10" in viewport
     assert '"type": "logic_trace"' in viewport
     assert 'message.get("type") == "logic_trace"' in bridge
+
+
+def test_logic_workspace_supports_breakpoints_continue_and_single_step():
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    viewport = _source("editor/isolated_viewport.py")
+    bridge = _source("editor/isolated_editor_main.py")
+    runtime = _source("engine/logic/runtime.py")
+    assert "def toggle_breakpoint" in editor
+    assert "● Breakpoint" in editor
+    assert "Próximo nó" in editor
+    assert 'self.debug_command.emit("continue")' in editor
+    assert 'self.debug_command.emit("step")' in editor
+    assert "self.logic_workspace.debug_command.connect" in bridge
+    assert 'command.get("type") == "logic_debug_command"' in viewport
+    assert "runtime.continue_execution()" in viewport
+    assert "runtime.step()" in viewport
+    assert "def continue_execution" in runtime
+    assert "def step" in runtime
+    assert "runtime.debug_paused" in viewport

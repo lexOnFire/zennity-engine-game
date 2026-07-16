@@ -39,6 +39,15 @@ def test_normalization_removes_edges_with_missing_nodes():
     assert normalized["edges"] == []
 
 
+def test_normalization_preserves_only_breakpoints_for_existing_nodes():
+    graph = default_logic_graph()
+    event = create_logic_node("event_update")
+    graph["nodes"] = [event]
+    graph["debug"] = {"breakpoints": [event["id"], "missing", event["id"]]}
+    normalized = normalize_logic_graph(graph)
+    assert normalized["debug"]["breakpoints"] == [event["id"]]
+
+
 def test_validation_reports_missing_event_and_disconnected_node():
     graph = default_logic_graph()
     graph["nodes"] = [create_logic_node("move"), create_logic_node("jump")]
@@ -272,3 +281,58 @@ def test_runtime_debug_snapshot_is_small_and_serializable():
     assert {edge["id"] for edge in runtime.graph["edges"]} == set(snapshot["edges"])
     assert snapshot["values"][number["id"]]["value"] == 0.0
     assert all(isinstance(key, str) for key in snapshot["values"])
+
+
+def test_runtime_breakpoint_and_step_keep_exact_flow_continuation():
+    event = create_logic_node("event_update")
+    setter = create_logic_node("set_variable")
+    setter["properties"].update({"name": "frames", "value": 1})
+    amount = create_logic_node("number_value")
+    amount["properties"]["value"] = 1.0
+    move = create_logic_node("move")
+    jump = create_logic_node("jump")
+    graph = default_logic_graph("BreakpointFlow")
+    graph["nodes"] = [event, setter, amount, move, jump]
+    graph["edges"] = [
+        _edge(event, "next", setter, "in"),
+        _edge(setter, "next", move, "in"),
+        _edge(amount, "value", move, "value", "number"),
+        _edge(move, "next", jump, "in"),
+    ]
+    graph["debug"]["breakpoints"] = [move["id"]]
+
+    class Game:
+        def __init__(self):
+            self.x = 0.0
+            self.jumps = []
+
+        def move(self, amount):
+            self.x += amount
+
+        def jump(self, force):
+            self.jumps.append(force)
+
+    game = Game()
+    runtime = LogicGraphRuntime(graph)
+    runtime.update(game, 0.5)
+    assert runtime.debug_paused is True
+    assert runtime.pause_node == move["id"]
+    assert runtime.variables["frames"] == 1
+    assert game.x == 0.0
+
+    runtime.step()
+    assert runtime.debug_paused is True
+    assert runtime.pause_node == jump["id"]
+    assert game.x == 100.0
+    assert game.jumps == []
+
+    runtime.step()
+    assert runtime.debug_paused is True
+    assert runtime.pause_node == ""
+    assert game.x == 100.0
+    assert game.jumps == [420.0]
+
+    runtime.continue_execution()
+    runtime.update(game, 0.5)
+    assert runtime.pause_node == move["id"]
+    assert game.x == 100.0

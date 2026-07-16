@@ -572,6 +572,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
     def _configure_logic_workspace(self) -> None:
         self.logic_workspace.message.connect(self._log)
         self.logic_workspace.asset_changed.connect(self._refresh_assets)
+        self.logic_workspace.debug_command.connect(self._send_logic_debug_command)
         animation_action = QAction(editor_icon("play"), "Editor de Animação", self)
         animation_action.triggered.connect(self._show_animation_window)
         logic_action = QAction(editor_icon("snap"), "Editor de Lógica Visual", self)
@@ -579,6 +580,24 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.editor_menus["Janela"].addSeparator()
         self.editor_menus["Janela"].addAction(animation_action)
         self.editor_menus["Janela"].addAction(logic_action)
+
+    def _send_logic_debug_command(self, command: str) -> None:
+        """Sincroniza breakpoints e controles do depurador com a Viewport."""
+        path = self.logic_workspace.current_path
+        if path is None:
+            self._log("WARNING", "Abra ou salve um Logic Graph antes de depurar")
+            return
+        graph = self.logic_workspace.graph_data()
+        try:
+            graph_path = path.resolve().relative_to(Path.cwd().resolve()).as_posix()
+        except (OSError, ValueError):
+            graph_path = str(path)
+        self._commands.put({
+            "type": "logic_debug_command",
+            "command": str(command),
+            "graph": graph_path,
+            "breakpoints": list(graph.get("debug", {}).get("breakpoints", [])),
+        })
 
     def _show_animation_window(self) -> None:
         self._refresh_animation_library()

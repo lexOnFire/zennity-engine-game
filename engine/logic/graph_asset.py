@@ -87,6 +87,7 @@ def default_logic_graph(name: str = "NewLogic") -> dict[str, Any]:
         "version": LOGIC_GRAPH_VERSION,
         "name": str(name).strip() or "NewLogic",
         "target": {"type": "name", "value": "Player"},
+        "debug": {"breakpoints": []},
         "variables": {},
         "nodes": [],
         "edges": [],
@@ -117,6 +118,12 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
         }
     variables = source.get("variables", {})
     result["variables"] = deepcopy(variables) if isinstance(variables, Mapping) else {}
+    raw_debug = source.get("debug", {})
+    raw_breakpoints = raw_debug.get("breakpoints", []) if isinstance(raw_debug, Mapping) else []
+    result["debug"] = {
+        "breakpoints": list(dict.fromkeys(str(value) for value in raw_breakpoints if str(value).strip()))
+        if isinstance(raw_breakpoints, (list, tuple, set)) else []
+    }
 
     nodes: list[dict[str, Any]] = []
     node_ids: set[str] = set()
@@ -147,6 +154,7 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
                 "properties": properties,
             })
     result["nodes"] = nodes
+    result["debug"]["breakpoints"] = [node_id for node_id in result["debug"]["breakpoints"] if node_id in node_ids]
 
     edges: list[dict[str, Any]] = []
     raw_edges = source.get("edges", [])

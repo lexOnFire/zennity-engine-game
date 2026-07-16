@@ -1202,6 +1202,49 @@ def run_viewport(
                 elif command.get("type") == "runtime_input" and isinstance(command.get("keys"), dict):
                     for key in forwarded_input:
                         forwarded_input[key] = bool(command["keys"].get(key, False))
+                elif command.get("type") == "logic_debug_command":
+                    requested_graph = Path(str(command.get("graph", ""))).as_posix().casefold()
+                    requested_name = Path(requested_graph).name.casefold()
+                    debug_action = str(command.get("command", "sync")).lower()
+                    breakpoints = command.get("breakpoints", [])
+                    matched: list[tuple[str, str, LogicGraphRuntime]] = []
+                    for object_name, runtimes in logic_runtimes.items():
+                        for graph_path, runtime in runtimes:
+                            current_graph = Path(str(graph_path)).as_posix().casefold()
+                            if current_graph == requested_graph or Path(current_graph).name.casefold() == requested_name:
+                                runtime.configure_breakpoints(breakpoints if isinstance(breakpoints, list) else [])
+                                matched.append((object_name, graph_path, runtime))
+                    if debug_action == "continue" and matched:
+                        for _object_name, _graph_path, runtime in matched:
+                            runtime.continue_execution()
+                        paused = False
+                        set_channels_paused(audio_channels, False)
+                        _send(events, {"type": "play_state", "state": "play"})
+                    elif debug_action == "step" and matched:
+                        for object_name, graph_path, runtime in matched:
+                            try:
+                                runtime.step()
+                                _send(events, {
+                                    "type": "logic_trace",
+                                    "object": object_name,
+                                    "graph": graph_path,
+                                    **runtime.debug_snapshot(),
+                                })
+                            except Exception as exc:
+                                _send(events, {
+                                    "type": "logic_trace",
+                                    "object": object_name,
+                                    "graph": graph_path,
+                                    "error": str(exc),
+                                    **runtime.debug_snapshot(),
+                                })
+                                _send(events, {
+                                    "type": "script_log",
+                                    "level": "ERROR",
+                                    "message": f"{object_name}:{graph_path}: {exc}",
+                                })
+                        paused = True
+                        set_channels_paused(audio_channels, True)
                 elif command.get("type") == "play":
                     if not playing:
                         incoming_audio = command.get("audio_sources", {})
@@ -1599,6 +1642,7 @@ def run_viewport(
         if playing and not paused:
             trace_now = time.monotonic()
             trace_due = trace_now - logic_trace_last_sent >= 0.10
+            debug_pause_requested = False
             keys = pygame.key.get_pressed()
             input_state = {
                 "left": bool(forwarded_input["left"] or keys[pygame.K_a] or keys[pygame.K_LEFT]),
@@ -1617,7 +1661,15 @@ def run_viewport(
                 for graph_path, runtime in list(runtimes):
                     try:
                         runtime.update(api, dt)
-                        if trace_due:
+                        if runtime.debug_paused:
+                            debug_pause_requested = True
+                            _send(events, {
+                                "type": "logic_trace",
+                                "object": name,
+                                "graph": graph_path,
+                                **runtime.debug_snapshot(),
+                            })
+                        elif trace_due:
                             _send(events, {
                                 "type": "logic_trace",
                                 "object": name,
@@ -1661,6 +1713,10 @@ def run_viewport(
                     velocities_y[name] = -float(obj.pop("_jump_force", 420.0))
                     grounded[name] = False
                     obj["_grounded"] = False
+            if debug_pause_requested:
+                paused = True
+                set_channels_paused(audio_channels, True)
+                _send(events, {"type": "play_state", "state": "pause"})
             for name, instances in list(script_instances.items()):
                 obj = objects.get(name)
                 if obj is None:

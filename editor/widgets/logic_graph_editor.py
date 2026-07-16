@@ -242,6 +242,11 @@ class LogicNodeItem(QGraphicsRectItem):
         self.header = QGraphicsRectItem(0.0, 0.0, self.WIDTH, 28.0, self)
         self.header.setPen(Qt.NoPen)
         self.header.setBrush(QBrush(color.darker(155)))
+        self.breakpoint_item = QGraphicsEllipseItem(self.WIDTH - 20.0, 8.0, 10.0, 10.0, self)
+        self.breakpoint_item.setPen(QPen(QColor("#ffd7d9"), 1.0))
+        self.breakpoint_item.setBrush(QBrush(QColor("#ff4d55")))
+        self.breakpoint_item.setToolTip("Breakpoint")
+        self.breakpoint_item.setVisible(False)
 
         self.title_item = QGraphicsTextItem(str(node.get("title", "Nó")), self)
         self.title_item.setDefaultTextColor(QColor("#f2f4f8"))
@@ -321,6 +326,13 @@ class LogicNodeItem(QGraphicsRectItem):
         self.debug_item.setPlainText(text)
         self.setPen(QPen(QColor("#7ee787"), 3.0))
 
+    def set_breakpoint(self, enabled: bool) -> None:
+        self.breakpoint_item.setVisible(bool(enabled))
+
+    def mouseDoubleClickEvent(self, event) -> None:
+        self.editor.toggle_breakpoint(self.node_id)
+        event.accept()
+
     def itemChange(self, change, value):
         result = super().itemChange(change, value)
         if change == QGraphicsItem.ItemPositionHasChanged and hasattr(self, "editor"):
@@ -334,6 +346,7 @@ class LogicNodeItem(QGraphicsRectItem):
 class LogicGraphEditor(QWidget):
     message = Signal(str, str)
     asset_changed = Signal()
+    debug_command = Signal(str)
     MAGNET_RADIUS_PIXELS = 42.0
 
     def __init__(self, project_root: str | Path | None = None, parent: QWidget | None = None) -> None:
@@ -416,10 +429,19 @@ class LogicGraphEditor(QWidget):
         toolbar.addWidget(self.target_value)
         toolbar.addStretch(1)
         self.fit_button = QPushButton("Enquadrar")
+        self.breakpoint_button = QPushButton("● Breakpoint")
+        self.breakpoint_button.setToolTip("Alterna um breakpoint no nó selecionado (duplo clique também funciona)")
+        self.continue_debug_button = QPushButton("Continuar")
+        self.step_debug_button = QPushButton("Próximo nó")
+        self.continue_debug_button.setEnabled(False)
+        self.step_debug_button.setEnabled(False)
         self.connect_button = QPushButton("Conectar selecionados")
         self.delete_button = QPushButton("Excluir selecionado")
         self.delete_button.setProperty("uiRole", "danger")
         toolbar.addWidget(self.fit_button)
+        toolbar.addWidget(self.breakpoint_button)
+        toolbar.addWidget(self.continue_debug_button)
+        toolbar.addWidget(self.step_debug_button)
         toolbar.addWidget(self.connect_button)
         toolbar.addWidget(self.delete_button)
         root.addWidget(toolbar_widget)
@@ -518,6 +540,9 @@ class LogicGraphEditor(QWidget):
         self.save_as_button.clicked.connect(lambda: self.save(save_as=True))
         self.demo_button.clicked.connect(self.open_demo)
         self.fit_button.clicked.connect(self.fit_graph)
+        self.breakpoint_button.clicked.connect(self.toggle_selected_breakpoint)
+        self.continue_debug_button.clicked.connect(lambda: self.debug_command.emit("continue"))
+        self.step_debug_button.clicked.connect(lambda: self.debug_command.emit("step"))
         self.connect_button.clicked.connect(self.connect_selected)
         self.delete_button.clicked.connect(self.delete_selected)
         self.target_type.currentIndexChanged.connect(lambda _index: self.mark_dirty())
@@ -571,6 +596,9 @@ class LogicGraphEditor(QWidget):
         self.edge_items.clear()
         for node in self.graph["nodes"]:
             self._create_node_item(node)
+        for node_id in self.graph.get("debug", {}).get("breakpoints", []):
+            if node_id in self.node_items:
+                self.node_items[node_id].set_breakpoint(True)
         self.refresh_connections()
         self._dirty = False
         self._update_status()
@@ -599,11 +627,15 @@ class LogicGraphEditor(QWidget):
         active_edges = {str(edge_id) for edge_id in trace.get("edges", [])}
         values = trace.get("values", {}) if isinstance(trace.get("values"), dict) else {}
         variables = trace.get("variables", {}) if isinstance(trace.get("variables"), dict) else {}
+        paused = bool(trace.get("paused", False))
+        pause_node = str(trace.get("pause_node", ""))
+        breakpoints = {str(node_id) for node_id in trace.get("breakpoints", [])}
         error = str(trace.get("error", ""))
         error_node = active_node_list[-1] if error and active_node_list else ""
         self._runtime_trace_active = True
         self._update_validation()
         for node_id, item in self.node_items.items():
+            item.set_breakpoint(node_id in breakpoints or node_id in self.graph.get("debug", {}).get("breakpoints", []))
             item.set_runtime_state(
                 node_id in active_nodes,
                 values.get(node_id) if isinstance(values.get(node_id), dict) else {},
@@ -616,9 +648,16 @@ class LogicGraphEditor(QWidget):
         if error:
             self.debug_status_label.setText(f"● ERRO • {object_name}")
             self.debug_status_label.setStyleSheet("color: #ff6b70; font-weight: 700;")
+        elif paused:
+            paused_item = self.node_items.get(pause_node)
+            paused_title = str(paused_item.node.get("title", pause_node)) if paused_item is not None else pause_node
+            self.debug_status_label.setText(f"● PAUSADO • {object_name} • {paused_title}")
+            self.debug_status_label.setStyleSheet("color: #e6b85c; font-weight: 700;")
         else:
             self.debug_status_label.setText(f"● PLAY • {object_name} • {len(active_nodes)} nó(s)")
             self.debug_status_label.setStyleSheet("color: #7ee787; font-weight: 700;")
+        self.continue_debug_button.setEnabled(paused)
+        self.step_debug_button.setEnabled(paused)
 
         self.runtime_values_tree.clear()
         for node_id, port_values in values.items():
@@ -643,6 +682,9 @@ class LogicGraphEditor(QWidget):
             self.runtime_values_tree.clear()
             self.runtime_values_tree.hide()
             self.runtime_values_title.hide()
+        if hasattr(self, "continue_debug_button"):
+            self.continue_debug_button.setEnabled(False)
+            self.step_debug_button.setEnabled(False)
         for item in self.node_items.values():
             item.set_runtime_state(False)
         for edge in self.edge_items:
@@ -890,6 +932,39 @@ class LogicGraphEditor(QWidget):
         self.refresh_connections()
         self.mark_dirty()
         self._update_validation()
+
+    def toggle_selected_breakpoint(self) -> None:
+        selected = [item for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)]
+        if len(selected) != 1:
+            self.message.emit("WARNING", "Selecione um único nó para alternar o breakpoint")
+            return
+        self.toggle_breakpoint(selected[0].node_id)
+
+    def toggle_breakpoint(self, node_id: str) -> None:
+        item = self.node_items.get(str(node_id))
+        if item is None:
+            return
+        ports = node_port_definitions(str(item.node.get("type", "")))
+        supports_flow = str(item.node.get("type", "")).startswith("event_") or any(
+            data_type == "flow" for _name, data_type in ports["inputs"]
+        )
+        if not supports_flow:
+            self.message.emit("WARNING", "Breakpoints são permitidos em nós do fluxo; valores aparecem no painel de execução")
+            return
+        debug = self.graph.setdefault("debug", {"breakpoints": []})
+        breakpoints = [str(value) for value in debug.setdefault("breakpoints", [])]
+        if item.node_id in breakpoints:
+            breakpoints.remove(item.node_id)
+            enabled = False
+        else:
+            breakpoints.append(item.node_id)
+            enabled = True
+        debug["breakpoints"] = breakpoints
+        item.set_breakpoint(enabled)
+        self.mark_dirty()
+        self._autosave()
+        self.debug_command.emit("sync")
+        self.message.emit("INFO", f"Breakpoint {'adicionado' if enabled else 'removido'}: {item.node.get('title', item.node_id)}")
 
     def _selection_changed(self) -> None:
         selected = [item for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)]
