@@ -46,6 +46,35 @@ def test_logic_graph_enabled_state_can_preserve_detached_assets(tmp_path):
     assert load_logic_graph(tmp_path / "detached.zlogic")["enabled"] is False
 
 
+def test_node_editor_layout_is_persistent_and_safely_clamped(tmp_path):
+    graph = default_logic_graph("Layout")
+    node = create_logic_node("move")
+    node["editor"] = {"collapsed": True, "width": 9999, "height": 640}
+    graph["nodes"] = [node]
+
+    saved = save_logic_graph(tmp_path / "layout.zlogic", graph)
+    restored = load_logic_graph(tmp_path / "layout.zlogic")
+
+    assert saved["nodes"][0]["editor"] == {
+        "collapsed": True,
+        "width": 520.0,
+        "height": 640.0,
+    }
+    assert restored["nodes"][0]["editor"] == saved["nodes"][0]["editor"]
+
+
+def test_old_nodes_receive_default_editor_layout():
+    graph = default_logic_graph("LegacyLayout")
+    graph["nodes"] = [{
+        "id": "legacy", "type": "event_start", "title": "Ao iniciar",
+        "category": "Eventos", "position": [0, 0], "properties": {},
+    }]
+
+    editor_state = normalize_logic_graph(graph)["nodes"][0]["editor"]
+
+    assert editor_state == {"collapsed": False, "width": 210.0, "height": 0.0}
+
+
 def test_normalization_removes_edges_with_missing_nodes():
     graph = default_logic_graph()
     graph["nodes"] = [{"id": "start", "type": "event_start"}]

@@ -241,6 +241,7 @@ def create_logic_node(node_type: str, position: tuple[float, float] = (0.0, 0.0)
         "title": str(definition.get("title", node_type)),
         "category": str(definition.get("category", "Personalizado")),
         "position": [float(position[0]), float(position[1])],
+        "editor": {"collapsed": False, "width": 210.0, "height": 0.0},
         "properties": deepcopy(definition.get("properties", {})),
     }
 
@@ -294,12 +295,22 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
             raw_properties = raw_node.get("properties", {})
             if isinstance(raw_properties, Mapping):
                 properties.update(deepcopy(raw_properties))
+            raw_editor = raw_node.get("editor", {})
+            if not isinstance(raw_editor, Mapping):
+                raw_editor = {}
+            editor_width = max(170.0, min(520.0, _safe_float(raw_editor.get("width", 210.0)) or 210.0))
+            editor_height = max(0.0, min(720.0, _safe_float(raw_editor.get("height", 0.0))))
             nodes.append({
                 "id": node_id,
                 "type": node_type,
                 "title": str(raw_node.get("title", definition.get("title", node_type))),
                 "category": str(raw_node.get("category", definition.get("category", "Personalizado"))),
                 "position": [_safe_float(position[0]), _safe_float(position[1])],
+                "editor": {
+                    "collapsed": bool(raw_editor.get("collapsed", False)),
+                    "width": editor_width,
+                    "height": editor_height,
+                },
                 "properties": properties,
             })
     result["nodes"] = nodes

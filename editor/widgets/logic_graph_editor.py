@@ -189,7 +189,7 @@ class LogicPortItem(QGraphicsEllipseItem):
     SIZE = 12.0
 
     def __init__(self, node: "LogicNodeItem", name: str, direction: str, data_type: str, y: float) -> None:
-        x = -self.SIZE / 2 if direction == "input" else node.WIDTH - self.SIZE / 2
+        x = -self.SIZE / 2 if direction == "input" else node.width - self.SIZE / 2
         super().__init__(x, y - self.SIZE / 2, self.SIZE, self.SIZE, node)
         self.node = node
         self.name = str(name)
@@ -294,7 +294,7 @@ class LogicFlipControl(QGraphicsTextItem):
         font.setBold(True)
         font.setPointSizeF(8.0)
         self.setFont(font)
-        self.setPos(node.WIDTH - 52.0, 2.0)
+        self.setPos(node.width - 52.0, 2.0)
         self.setToolTip("Virar bloco e mostrar o código equivalente")
         self.setCursor(Qt.PointingHandCursor)
 
@@ -303,16 +303,83 @@ class LogicFlipControl(QGraphicsTextItem):
         event.accept()
 
 
+class LogicCollapseControl(QGraphicsTextItem):
+    """Recolhe o corpo do bloco sem perder suas conexões."""
+
+    def __init__(self, node: "LogicNodeItem") -> None:
+        super().__init__("−", node)
+        self.node = node
+        self.setDefaultTextColor(QColor("#dce6f2"))
+        font = self.font()
+        font.setBold(True)
+        font.setPointSizeF(10.0)
+        self.setFont(font)
+        self.setCursor(Qt.PointingHandCursor)
+        self.setToolTip("Recolher bloco")
+
+    def refresh(self) -> None:
+        self.setPlainText("+" if self.node.collapsed else "−")
+        self.setToolTip("Expandir bloco" if self.node.collapsed else "Recolher bloco")
+        self.setPos(self.node.width - 76.0, 1.0)
+
+    def mousePressEvent(self, event) -> None:
+        self.node.toggle_collapsed()
+        event.accept()
+
+
+class LogicResizeHandle(QGraphicsRectItem):
+    """Alça inferior direita para redimensionar um bloco expandido."""
+
+    SIZE = 14.0
+
+    def __init__(self, node: "LogicNodeItem") -> None:
+        super().__init__(0.0, 0.0, self.SIZE, self.SIZE, node)
+        self.node = node
+        self._origin = QPointF()
+        self._initial_size = (node.width, node.height)
+        self.setPen(QPen(QColor("#7f8796"), 1.0))
+        self.setBrush(QBrush(QColor("#353943")))
+        self.setCursor(Qt.SizeFDiagCursor)
+        self.setAcceptedMouseButtons(Qt.LeftButton)
+        self.setZValue(8)
+        self.setToolTip("Arraste para redimensionar")
+
+    def mousePressEvent(self, event) -> None:
+        self._origin = event.scenePos()
+        self._initial_size = (self.node.width, self.node.expanded_height)
+        event.accept()
+
+    def mouseMoveEvent(self, event) -> None:
+        delta = event.scenePos() - self._origin
+        self.node.resize_to(self._initial_size[0] + delta.x(), self._initial_size[1] + delta.y())
+        event.accept()
+
+    def mouseReleaseEvent(self, event) -> None:
+        self.node.editor.mark_dirty()
+        event.accept()
+
+
 class LogicNodeItem(QGraphicsRectItem):
     WIDTH = 210.0
+    MINIMUM_WIDTH = 170.0
+    MAXIMUM_WIDTH = 520.0
     MINIMUM_HEIGHT = 116.0
+    MAXIMUM_HEIGHT = 720.0
+    COLLAPSED_HEIGHT = 32.0
 
     def __init__(self, editor: "LogicGraphEditor", node: dict[str, Any]) -> None:
         ports = node_port_definitions(node)
         self.input_definitions = ports["inputs"]
         self.output_definitions = ports["outputs"]
-        self.height = max(self.MINIMUM_HEIGHT, 62.0 + max(len(self.input_definitions), len(self.output_definitions), 1) * 22.0)
-        super().__init__(0.0, 0.0, self.WIDTH, self.height)
+        self.natural_height = max(self.MINIMUM_HEIGHT, 62.0 + max(len(self.input_definitions), len(self.output_definitions), 1) * 22.0)
+        editor_state = node.setdefault("editor", {})
+        self.width = max(self.MINIMUM_WIDTH, min(self.MAXIMUM_WIDTH, float(editor_state.get("width", self.WIDTH))))
+        stored_height = float(editor_state.get("height", 0.0))
+        self.expanded_height = max(self.natural_height, min(self.MAXIMUM_HEIGHT, stored_height or self.natural_height))
+        self.collapsed = bool(editor_state.get("collapsed", False))
+        self.height = self.COLLAPSED_HEIGHT if self.collapsed else self.expanded_height
+        editor_state.update({"collapsed": self.collapsed, "width": self.width, "height": self.expanded_height})
+        super().__init__(0.0, 0.0, self.width, self.height)
         self.editor = editor
         self.node = node
         self._show_code = False
@@ -329,10 +396,10 @@ class LogicNodeItem(QGraphicsRectItem):
         self.setBrush(QBrush(QColor("#22242a")))
 
         color = CATEGORY_COLORS.get(str(node.get("category")), CATEGORY_COLORS["Personalizado"])
-        self.header = QGraphicsRectItem(0.0, 0.0, self.WIDTH, 28.0, self)
+        self.header = QGraphicsRectItem(0.0, 0.0, self.width, 28.0, self)
         self.header.setPen(Qt.NoPen)
         self.header.setBrush(QBrush(color.darker(155)))
-        self.breakpoint_item = QGraphicsEllipseItem(self.WIDTH - 20.0, 8.0, 10.0, 10.0, self)
+        self.breakpoint_item = QGraphicsEllipseItem(self.width - 20.0, 8.0, 10.0, 10.0, self)
         self.breakpoint_item.setPen(QPen(QColor("#ffd7d9"), 1.0))
         self.breakpoint_item.setBrush(QBrush(QColor("#ff4d55")))
         self.breakpoint_item.setToolTip("Breakpoint")
@@ -346,22 +413,23 @@ class LogicNodeItem(QGraphicsRectItem):
         font.setPointSizeF(9.5)
         self.title_item.setFont(font)
         self.flip_control = LogicFlipControl(self)
+        self.collapse_control = LogicCollapseControl(self)
 
         self.summary_item = QGraphicsTextItem("", self)
         self.summary_item.setDefaultTextColor(QColor("#b8beca"))
-        self.summary_item.setTextWidth(self.WIDTH - 22.0)
+        self.summary_item.setTextWidth(self.width - 22.0)
         self.summary_item.setPos(10.0, self.height - 25.0)
         summary_font = self.summary_item.font()
         summary_font.setPointSizeF(8.5)
         self.summary_item.setFont(summary_font)
         self.debug_item = QGraphicsTextItem("", self)
         self.debug_item.setDefaultTextColor(QColor("#7ee787"))
-        self.debug_item.setTextWidth(self.WIDTH - 22.0)
+        self.debug_item.setTextWidth(self.width - 22.0)
         self.debug_item.setPos(10.0, self.height - 25.0)
         self.debug_item.setVisible(False)
         self.code_item = QGraphicsTextItem("", self)
         self.code_item.setDefaultTextColor(QColor("#b9e3c6"))
-        self.code_item.setTextWidth(self.WIDTH - 18.0)
+        self.code_item.setTextWidth(self.width - 18.0)
         self.code_item.setPos(8.0, 32.0)
         code_font = self.code_item.font()
         code_font.setFamily("Consolas")
@@ -387,21 +455,95 @@ class LogicNodeItem(QGraphicsRectItem):
             label = QGraphicsTextItem(name, self)
             label.setDefaultTextColor(QColor("#aeb6c5"))
             label.setTextWidth(76.0)
-            label.setPos(self.WIDTH - 84.0, y - 12.0)
+            label.setPos(self.width - 84.0, y - 12.0)
             self.port_labels.append(label)
+        self.resize_handle = LogicResizeHandle(self)
         self.refresh_text()
+        self._apply_geometry(notify=False)
 
     @property
     def node_id(self) -> str:
         return str(self.node["id"])
 
     def input_position(self, port_name: str = "in") -> QPointF:
+        if self.collapsed:
+            return self.mapToScene(QPointF(0.0, self.COLLAPSED_HEIGHT / 2.0))
         port = self.input_ports.get(port_name) or next(iter(self.input_ports.values()), None)
         return port.scene_position() if port is not None else self.mapToScene(QPointF(0.0, 43.0))
 
     def output_position(self, port_name: str = "next") -> QPointF:
+        if self.collapsed:
+            return self.mapToScene(QPointF(self.width, self.COLLAPSED_HEIGHT / 2.0))
         port = self.output_ports.get(port_name) or next(iter(self.output_ports.values()), None)
-        return port.scene_position() if port is not None else self.mapToScene(QPointF(self.WIDTH, 43.0))
+        return port.scene_position() if port is not None else self.mapToScene(QPointF(self.width, 43.0))
+
+    def resize_to(self, width: float, height: float) -> None:
+        self.width = max(self.MINIMUM_WIDTH, min(self.MAXIMUM_WIDTH, float(width)))
+        self.expanded_height = max(self.natural_height, min(self.MAXIMUM_HEIGHT, float(height)))
+        self.node.setdefault("editor", {}).update({
+            "collapsed": self.collapsed,
+            "width": round(self.width, 2),
+            "height": round(self.expanded_height, 2),
+        })
+        self._apply_geometry()
+
+    def toggle_collapsed(self) -> None:
+        self.collapsed = not self.collapsed
+        self.node.setdefault("editor", {}).update({
+            "collapsed": self.collapsed,
+            "width": round(self.width, 2),
+            "height": round(self.expanded_height, 2),
+        })
+        self._apply_geometry()
+        self.editor.mark_dirty()
+
+    def _apply_geometry(self, notify: bool = True) -> None:
+        self.height = self.COLLAPSED_HEIGHT if self.collapsed else self.expanded_height
+        self.setRect(0.0, 0.0, self.width, self.height)
+        self.header.setRect(0.0, 0.0, self.width, 28.0)
+        self.breakpoint_item.setRect(self.width - 20.0, 8.0, 10.0, 10.0)
+        self.flip_control.setPos(self.width - 52.0, 2.0)
+        self.collapse_control.refresh()
+        self.summary_item.setTextWidth(self.width - 22.0)
+        self.summary_item.setPos(10.0, self.expanded_height - 25.0)
+        self.debug_item.setTextWidth(self.width - 22.0)
+        self.debug_item.setPos(10.0, self.expanded_height - 25.0)
+        self.code_item.setTextWidth(self.width - 18.0)
+        self.resize_handle.setPos(
+            self.width - self.resize_handle.SIZE - 3.0,
+            self.expanded_height - self.resize_handle.SIZE - 3.0,
+        )
+        for index, (name, _data_type) in enumerate(self.input_definitions):
+            y = 43.0 + index * 22.0
+            port = self.input_ports[name]
+            port.setRect(-LogicPortItem.SIZE / 2, y - LogicPortItem.SIZE / 2, LogicPortItem.SIZE, LogicPortItem.SIZE)
+            port.setTransformOriginPoint(port.boundingRect().center())
+            self.port_labels[index].setPos(9.0, y - 12.0)
+        output_label_offset = len(self.input_definitions)
+        for index, (name, _data_type) in enumerate(self.output_definitions):
+            y = 43.0 + index * 22.0
+            port = self.output_ports[name]
+            port.setRect(self.width - LogicPortItem.SIZE / 2, y - LogicPortItem.SIZE / 2, LogicPortItem.SIZE, LogicPortItem.SIZE)
+            port.setTransformOriginPoint(port.boundingRect().center())
+            label = self.port_labels[output_label_offset + index]
+            label.setTextWidth(min(110.0, self.width * 0.45))
+            label.setPos(self.width - min(118.0, self.width * 0.48), y - 12.0)
+        body_visible = not self.collapsed
+        self.flip_control.setVisible(body_visible)
+        self.resize_handle.setVisible(body_visible)
+        for port in (*self.input_ports.values(), *self.output_ports.values()):
+            port.setVisible(body_visible and not self._show_code)
+        for label in self.port_labels:
+            label.setVisible(body_visible and not self._show_code)
+        self.code_item.setVisible(body_visible and self._show_code)
+        if self.collapsed:
+            self.summary_item.hide()
+            self.debug_item.hide()
+        else:
+            self.set_runtime_state(*self._runtime_display)
+        if notify:
+            self.editor.refresh_connections()
+            self.update()
 
     def refresh_text(self) -> None:
         properties = self.node.get("properties", {})
@@ -421,10 +563,10 @@ class LogicNodeItem(QGraphicsRectItem):
     def toggle_code_preview(self) -> None:
         self._show_code = not self._show_code
         for port in (*self.input_ports.values(), *self.output_ports.values()):
-            port.setVisible(not self._show_code)
+            port.setVisible(not self._show_code and not self.collapsed)
         for label in self.port_labels:
-            label.setVisible(not self._show_code)
-        self.code_item.setVisible(self._show_code)
+            label.setVisible(not self._show_code and not self.collapsed)
+        self.code_item.setVisible(self._show_code and not self.collapsed)
         self.flip_control.setToolTip(
             "Voltar para as portas do bloco" if self._show_code else "Virar bloco e mostrar o código equivalente"
         )
@@ -445,6 +587,10 @@ class LogicNodeItem(QGraphicsRectItem):
         paused: bool = False,
     ) -> None:
         self._runtime_display = (bool(active), values, str(error), bool(paused))
+        if self.collapsed:
+            self.summary_item.hide()
+            self.debug_item.hide()
+            return
         if self._show_code:
             self.summary_item.hide()
             self.debug_item.hide()
@@ -790,7 +936,10 @@ class LogicGraphEditor(QWidget):
         watch_row.addWidget(self.add_watch_button)
         watch_row.addWidget(self.remove_watch_button)
         properties_layout.addLayout(watch_row)
-        property_hint = QLabel("Delete remove, Ctrl+D duplica e Esc cancela uma conexão. Ctrl + roda aproxima o grafo.")
+        property_hint = QLabel(
+            "Delete remove, Ctrl+D duplica e Esc cancela uma conexão. "
+            "Use −/+ no bloco para recolher e a alça inferior para redimensionar."
+        )
         property_hint.setObjectName("PanelHint")
         property_hint.setWordWrap(True)
         properties_layout.addWidget(property_hint)

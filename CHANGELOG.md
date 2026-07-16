@@ -16,6 +16,7 @@
 ## v0.5.0-alpha - Export Foundation em desenvolvimento
 
 ### Added
+* Logic Graph: blocos podem ser recolhidos/expandidos e redimensionados pela alça inferior; largura, altura e estado visual são salvos no `.zlogic`.
 * Export Configuration Foundation Fase 31: Adicionado engine.build.build_config com BuildConfig, BuildTarget, validacao, serializacao e calculo de pasta de saida.
 * Export Profiles Fase 32: Adicionado ExportProfile e ExportProfileManager com perfis Debug/Release, integracao com BuildConfig e persistencia JSON.
 * Desktop Packaging Fase 33: Adicionado DesktopPackagePlan e planner multiplataforma a partir de BuildConfig ou ExportProfile.

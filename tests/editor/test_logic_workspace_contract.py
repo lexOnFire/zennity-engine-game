@@ -40,6 +40,11 @@ def test_logic_workspace_exposes_palette_canvas_connections_and_properties():
     assert "class LogicNodeItem(QGraphicsRectItem)" in source
     assert "class LogicPortItem(QGraphicsEllipseItem)" in source
     assert "class LogicEdgeItem(QGraphicsPathItem)" in source
+    assert "class LogicCollapseControl(QGraphicsTextItem)" in source
+    assert "class LogicResizeHandle(QGraphicsRectItem)" in source
+    assert "def toggle_collapsed(self)" in source
+    assert "def resize_to(self, width: float, height: float)" in source
+    assert '"collapsed": self.collapsed' in source
     assert "def begin_connection" in source
     assert "def finish_connection" in source
     assert "def cancel_connection" in source
