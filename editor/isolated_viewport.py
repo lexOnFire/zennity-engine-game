@@ -22,6 +22,7 @@ try:
     from engine.logic.graph_asset import load_logic_graph
     from engine.logic.runtime import LogicGraphRuntime
     from engine.logic.blackboard import BlackboardStore, load_blackboard_asset
+    from engine.logic.event_bus import LogicEventBus
 except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .audio_playback_state import set_channels_paused
     from .native_ui import NativeUIRenderer, normalize_ui
@@ -32,6 +33,7 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .logic_graph_asset import load_logic_graph
     from .logic_runtime import LogicGraphRuntime
     from .logic_blackboard import BlackboardStore, load_blackboard_asset
+    from .logic_event_bus import LogicEventBus
 
 
 def hydrate_animation_asset_clips(
@@ -486,6 +488,7 @@ def run_viewport(
     behavior_runners: dict[str, BehaviorControllerRunner] = {}
     logic_runtimes: dict[str, list[tuple[str, LogicGraphRuntime]]] = {}
     logic_blackboard = BlackboardStore()
+    logic_event_bus = LogicEventBus()
     scene_blackboard_config: dict[str, Any] = {}
     logic_trace_last_sent = 0.0
     animator_event_signatures: dict[str, tuple[Any, ...]] = {}
@@ -525,7 +528,7 @@ def run_viewport(
         return None, None
 
     def start_scripts() -> None:
-        nonlocal logic_blackboard
+        nonlocal logic_blackboard, logic_event_bus
         script_instances.clear()
         script_apis.clear()
         animator_controllers.clear()
@@ -537,6 +540,7 @@ def run_viewport(
         except (OSError, ValueError):
             project_blackboard = {}
         logic_blackboard = BlackboardStore(scene_blackboard_config, project_blackboard)
+        logic_event_bus = LogicEventBus()
         for level, object_name, message in hydrate_animation_asset_clips(objects, Path.cwd()):
             _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
         for level, object_name, message in hydrate_animator_controllers(objects, Path.cwd()):
@@ -947,7 +951,7 @@ def run_viewport(
                     continue
                 try:
                     api = script_apis.setdefault(name, PlayScriptAPI(name, obj, events, objects))
-                    runtime = LogicGraphRuntime(graph, logic_blackboard, name)
+                    runtime = LogicGraphRuntime(graph, logic_blackboard, name, logic_event_bus)
                     runtime.start(api)
                     logic_runtimes.setdefault(name, []).append((str(entry.get("path", graph.get("name", "Logic Graph"))), runtime))
                 except Exception as exc:
@@ -1710,6 +1714,19 @@ def run_viewport(
                 for graph_path, runtime in list(runtimes):
                     try:
                         runtime.update(api, dt)
+                        delivered_events = logic_event_bus.dispatch()
+                        if delivered_events:
+                            for trace_name, trace_runtimes in logic_runtimes.items():
+                                for trace_path, trace_runtime in trace_runtimes:
+                                    if not trace_runtime.consume_event_trace():
+                                        continue
+                                    debug_pause_requested = debug_pause_requested or trace_runtime.debug_paused
+                                    _send(events, {
+                                        "type": "logic_trace",
+                                        "object": trace_name,
+                                        "graph": trace_path,
+                                        **trace_runtime.debug_snapshot(),
+                                    })
                         if runtime.debug_paused:
                             debug_pause_requested = True
                             _send(events, {

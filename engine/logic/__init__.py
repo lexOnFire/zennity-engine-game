@@ -15,6 +15,7 @@ from .graph_asset import (
 )
 from .runtime import LogicGraphRuntime
 from .blackboard import BlackboardStore
+from .event_bus import LogicEventBus
 
 __all__ = [
     "LOGIC_GRAPH_FORMAT",
@@ -30,4 +31,5 @@ __all__ = [
     "validate_logic_graph",
     "LogicGraphRuntime",
     "BlackboardStore",
+    "LogicEventBus",
 ]

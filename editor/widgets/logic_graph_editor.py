@@ -719,6 +719,7 @@ class LogicGraphEditor(QWidget):
         values = trace.get("values", {}) if isinstance(trace.get("values"), dict) else {}
         variables = trace.get("variables", {}) if isinstance(trace.get("variables"), dict) else {}
         blackboard = trace.get("blackboard", {}) if isinstance(trace.get("blackboard"), dict) else {}
+        events = trace.get("events", []) if isinstance(trace.get("events"), list) else []
         watches = trace.get("watches", {}) if isinstance(trace.get("watches"), dict) else {}
         paused = bool(trace.get("paused", False))
         pause_node = str(trace.get("pause_node", ""))
@@ -776,6 +777,11 @@ class LogicGraphEditor(QWidget):
         else:
             for name, value in variables.items():
                 self.runtime_values_tree.addTopLevelItem(QTreeWidgetItem([f"${name}", str(value)]))
+        for event in events[-4:]:
+            if isinstance(event, dict):
+                source = str(event.get("source", ""))
+                label = f"evento:{event.get('name', '')}" + (f" ({source})" if source else "")
+                self.runtime_values_tree.addTopLevelItem(QTreeWidgetItem([label, str(event.get("payload"))]))
         has_values = self.runtime_values_tree.topLevelItemCount() > 0
         self.runtime_values_title.setVisible(has_values)
         self.runtime_values_tree.setVisible(has_values)

@@ -24,6 +24,7 @@ LOGIC_GRAPH_VERSION = 1
 NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "event_start": {"title": "Ao iniciar", "category": "Eventos", "properties": {}},
     "event_update": {"title": "A cada frame", "category": "Eventos", "properties": {}},
+    "event_custom": {"title": "Ao receber evento", "category": "Eventos", "properties": {"name": "evento"}},
     "self_object": {"title": "Este objeto", "category": "Objetos", "properties": {}},
     "find_tag": {"title": "Procurar por Tag", "category": "Objetos", "properties": {"tag": "Player"}},
     "input_axis": {"title": "Ler movimento", "category": "Movimento", "properties": {"negative": "A", "positive": "D"}},
@@ -39,6 +40,7 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "play_animation": {"title": "Tocar animação", "category": "Ação", "properties": {"state": "Idle"}},
     "play_sound": {"title": "Tocar som", "category": "Ação", "properties": {"path": ""}},
     "set_hud": {"title": "Atualizar HUD", "category": "Ação", "properties": {"text": "Texto"}},
+    "emit_event": {"title": "Emitir evento", "category": "Ação", "properties": {"name": "evento", "payload": None}},
     "get_variable": {"title": "Ler variável", "category": "Variáveis", "properties": {"scope": "object", "name": "value"}},
     "set_variable": {"title": "Definir variável", "category": "Variáveis", "properties": {"scope": "object", "name": "value", "value": 0}},
     "number_value": {"title": "Número", "category": "Variáveis", "properties": {"value": 0.0}},
@@ -52,6 +54,7 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
 NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "event_start": {"inputs": [], "outputs": [("next", "flow")]},
     "event_update": {"inputs": [], "outputs": [("next", "flow")]},
+    "event_custom": {"inputs": [], "outputs": [("next", "flow"), ("payload", "any")]},
     "self_object": {"inputs": [], "outputs": [("object", "object")]},
     "find_tag": {"inputs": [("in", "flow")], "outputs": [("next", "flow"), ("object", "object")]},
     "input_axis": {"inputs": [("in", "flow")], "outputs": [("next", "flow"), ("value", "number")]},
@@ -67,6 +70,7 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "play_animation": {"inputs": [("in", "flow"), ("state", "text")], "outputs": [("next", "flow")]},
     "play_sound": {"inputs": [("in", "flow"), ("path", "text")], "outputs": [("next", "flow")]},
     "set_hud": {"inputs": [("in", "flow"), ("text", "text")], "outputs": [("next", "flow")]},
+    "emit_event": {"inputs": [("in", "flow"), ("payload", "any")], "outputs": [("next", "flow")]},
     "get_variable": {"inputs": [("in", "flow")], "outputs": [("next", "flow"), ("value", "any")]},
     "set_variable": {"inputs": [("in", "flow"), ("value", "any")], "outputs": [("next", "flow")]},
     "number_value": {"inputs": [], "outputs": [("value", "number")]},
@@ -207,10 +211,12 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
         issues.append({"level": "error", "message": "Escolha o objeto alvo do grafo."})
     event_nodes = [node for node in graph["nodes"] if node["type"].startswith("event_")]
     if not event_nodes:
-        issues.append({"level": "warning", "message": "Adicione Ao iniciar ou A cada frame para executar o grafo."})
+        issues.append({"level": "warning", "message": "Adicione Ao iniciar, A cada frame ou Ao receber evento para executar o grafo."})
     connected = {edge["from_node"] for edge in graph["edges"]} | {edge["to_node"] for edge in graph["edges"]}
     nodes_by_id = {node["id"]: node for node in graph["nodes"]}
     for node in graph["nodes"]:
+        if node["type"] in {"event_custom", "emit_event"} and not str(node.get("properties", {}).get("name", "")).strip():
+            issues.append({"level": "error", "node": node["id"], "message": "Informe o nome do evento."})
         if node["id"] not in connected and len(graph["nodes"]) > 1:
             issues.append({"level": "warning", "node": node["id"], "message": f"Nó desconectado: {node['title']}"})
     occupied_inputs: set[tuple[str, str]] = set()

@@ -131,3 +131,17 @@ def test_logic_workspace_exposes_typed_scoped_blackboard_panel():
     assert "BlackboardStore" in viewport
     assert "scene_blackboard" in viewport
     assert 'self._collect_logic_variables("scene")' in bridge
+
+
+def test_visual_event_nodes_are_shared_debuggable_and_exportable():
+    graph = _source("engine/logic/graph_asset.py")
+    runtime = _source("engine/logic/runtime.py")
+    viewport = _source("editor/isolated_viewport.py")
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    assert '"event_custom"' in graph
+    assert '"emit_event"' in graph
+    assert "LogicEventBus" in runtime
+    assert "_receive_custom_event" in runtime
+    assert '"events": list(self.event_bus.recent' in runtime
+    assert "logic_event_bus.dispatch()" in viewport
+    assert 'f"evento:{event.get' in editor

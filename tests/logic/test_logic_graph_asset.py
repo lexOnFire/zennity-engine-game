@@ -13,6 +13,7 @@ from engine.logic.graph_asset import (
 )
 from engine.logic.runtime import LogicGraphRuntime
 from engine.logic.blackboard import BlackboardStore, load_blackboard_asset, save_blackboard_asset
+from engine.logic.event_bus import LogicEventBus
 
 
 def test_logic_graph_round_trip_uses_zlogic_extension(tmp_path):
@@ -469,3 +470,82 @@ def test_get_and_set_variable_nodes_respect_selected_scope():
     runtime.update(game, 1.0)
     assert game.x == 1400.0
     assert runtime.debug_snapshot()["blackboard"]["scene"]["score"] == 7.0
+
+
+def test_visual_events_communicate_between_graphs_with_payload():
+    bus = LogicEventBus()
+    store = BlackboardStore({"variables": {
+        "score": {"type": "number", "scope": "scene", "default": 0},
+    }})
+    update = create_logic_node("event_update")
+    payload = create_logic_node("number_value")
+    payload["properties"]["value"] = 3
+    emit = create_logic_node("emit_event")
+    emit["properties"]["name"] = "moeda_coletada"
+    sender_graph = default_logic_graph("Coin")
+    sender_graph["nodes"] = [update, payload, emit]
+    sender_graph["edges"] = [
+        _edge(update, "next", emit, "in"),
+        _edge(payload, "value", emit, "payload", "any"),
+    ]
+
+    receive = create_logic_node("event_custom")
+    receive["properties"]["name"] = "Moeda_Coletada"
+    setter = create_logic_node("set_variable")
+    setter["properties"].update({"scope": "scene", "name": "score"})
+    receiver_graph = default_logic_graph("HUD")
+    receiver_graph["variables"] = {"score": {"type": "number", "scope": "scene", "default": 0}}
+    receiver_graph["nodes"] = [receive, setter]
+    receiver_graph["edges"] = [
+        _edge(receive, "next", setter, "in"),
+        _edge(receive, "payload", setter, "value", "any"),
+    ]
+
+    class Game: pass
+
+    receiver = LogicGraphRuntime(receiver_graph, store, "HUD", bus)
+    sender = LogicGraphRuntime(sender_graph, store, "Coin", bus)
+    receiver.start(Game())
+    sender.update(Game(), 0.016)
+    assert store.get("scene", "score", "HUD") == 0.0
+    assert bus.dispatch() == 1
+    assert store.get("scene", "score", "HUD") == 3.0
+    assert receiver.debug_snapshot()["events"][-1]["name"] == "moeda_coletada"
+    assert receiver.debug_snapshot()["values"][receive["id"]]["payload"] == 3.0
+
+
+def test_visual_event_breakpoint_pauses_before_receiver_node():
+    bus = LogicEventBus()
+    receive = create_logic_node("event_custom")
+    receive["properties"]["name"] = "dano"
+    graph = default_logic_graph("Damage")
+    graph["nodes"] = [receive]
+    graph["debug"]["breakpoints"] = [receive["id"]]
+
+    runtime = LogicGraphRuntime(graph, BlackboardStore(), "Player", bus)
+    runtime.start(object())
+    bus.emit("dano", 5, "Enemy")
+    bus.dispatch()
+    assert runtime.debug_paused is True
+    assert runtime.pause_node == receive["id"]
+    assert runtime.debug_snapshot()["events"][-1]["payload"] == 5
+
+
+def test_visual_event_bus_stops_recursive_event_storm():
+    bus = LogicEventBus()
+    receive = create_logic_node("event_custom")
+    receive["properties"]["name"] = "loop"
+    emit = create_logic_node("emit_event")
+    emit["properties"]["name"] = "loop"
+    graph = default_logic_graph("LoopGuard")
+    graph["nodes"] = [receive, emit]
+    graph["edges"] = [_edge(receive, "next", emit, "in")]
+    runtime = LogicGraphRuntime(graph, BlackboardStore(), "Looper", bus)
+    runtime.start(object())
+    bus.emit("loop")
+    try:
+        bus.dispatch()
+    except RuntimeError as exc:
+        assert "Limite de eventos excedido" in str(exc)
+    else:
+        raise AssertionError("Uma cascata recursiva deveria ser interrompida")

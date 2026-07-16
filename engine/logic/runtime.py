@@ -10,9 +10,11 @@ from typing import Any, Iterator, Mapping
 try:
     from .graph_asset import normalize_logic_graph
     from .blackboard import BlackboardStore
+    from .event_bus import LogicEvent, LogicEventBus
 except ImportError:  # Runtime autocontido exportado.
     from .logic_graph_asset import normalize_logic_graph
     from .logic_blackboard import BlackboardStore
+    from .logic_event_bus import LogicEvent, LogicEventBus
 
 
 class LogicGraphRuntime:
@@ -25,11 +27,13 @@ class LogicGraphRuntime:
         graph: Mapping[str, Any],
         blackboard: BlackboardStore | None = None,
         object_key: str = "Object",
+        event_bus: LogicEventBus | None = None,
     ) -> None:
         self.graph = normalize_logic_graph(graph)
         self.object_key = str(object_key)
         self.blackboard = blackboard or BlackboardStore()
         self.blackboard.register(self.graph.get("variables", {}), self.object_key)
+        self.event_bus = event_bus or LogicEventBus()
         self.nodes = {node["id"]: node for node in self.graph["nodes"]}
         self.outgoing: dict[str, list[dict[str, Any]]] = {}
         self.incoming: dict[tuple[str, str], dict[str, Any]] = {}
@@ -54,12 +58,24 @@ class LogicGraphRuntime:
         self._debug_bypass_node = ""
         self._debug_game: Any = None
         self._debug_dt = 0.0
+        self._last_game: Any = None
+        self._last_dt = 0.0
+        self._pending_custom_events: list[tuple[str, LogicEvent]] = []
+        self._event_trace_pending = False
         self.started = False
+        for node in self.nodes.values():
+            if node.get("type") != "event_custom":
+                continue
+            event_name = str(node.get("properties", {}).get("name", "evento")).strip()
+            node_id = str(node["id"])
+            self.event_bus.subscribe(event_name, lambda event, wanted=node_id: self._receive_custom_event(wanted, event))
 
     def start(self, game: Any) -> None:
         if self.started:
             return
         self.started = True
+        self._last_game = game
+        self._last_dt = 0.0
         self.values.clear()
         self.executed_nodes.clear()
         self.executed_edges.clear()
@@ -69,6 +85,8 @@ class LogicGraphRuntime:
             self._run_event("event_start", game, 0.0)
 
     def update(self, game: Any, dt: float) -> None:
+        self._last_game = game
+        self._last_dt = float(dt)
         if not self.started:
             self.start(game)
         if self.debug_paused:
@@ -78,7 +96,11 @@ class LogicGraphRuntime:
                 self.values.clear()
                 self.executed_nodes.clear()
                 self.executed_edges.clear()
-                self._begin_debug_event("event_update", game, float(dt))
+                if self._pending_custom_events:
+                    node_id, event = self._pending_custom_events.pop(0)
+                    self._begin_debug_custom_event(node_id, event)
+                else:
+                    self._begin_debug_event("event_update", game, float(dt))
             else:
                 self._drive_debug()
             return
@@ -145,6 +167,7 @@ class LogicGraphRuntime:
         self._debug_generator = None
         self._debug_waiting_node = None
         self._debug_bypass_node = ""
+        self._pending_custom_events.clear()
         self.started = False
         self.start(game)
         if not self.debug_paused:
@@ -154,6 +177,15 @@ class LogicGraphRuntime:
         self._debug_game = game
         self._debug_dt = float(dt)
         self._debug_generator = self._debug_event_generator(event_type, game, dt)
+        self._debug_waiting_node = None
+        self._drive_debug()
+
+    def _begin_debug_custom_event(self, node_id: str, event: LogicEvent) -> None:
+        if self._last_game is None:
+            return
+        self._debug_game = self._last_game
+        self._debug_dt = self._last_dt
+        self._debug_generator = self._debug_custom_event_generator(node_id, event)
         self._debug_waiting_node = None
         self._drive_debug()
 
@@ -211,6 +243,39 @@ class LogicGraphRuntime:
             if node_id not in self.executed_nodes:
                 self.executed_nodes.append(node_id)
             yield from self._follow_debug(node_id, "next", game, dt, budget, set())
+
+    def _debug_custom_event_generator(self, node_id: str, event: LogicEvent) -> Iterator[str]:
+        node = self.nodes.get(str(node_id))
+        if node is None or self._last_game is None:
+            return
+        yield str(node_id)
+        if node_id not in self.executed_nodes:
+            self.executed_nodes.append(str(node_id))
+        self._store(str(node_id), "payload", deepcopy(event.payload))
+        yield from self._follow_debug(str(node_id), "next", self._last_game, self._last_dt, [self.MAX_STEPS], set())
+
+    def _receive_custom_event(self, node_id: str, event: LogicEvent) -> None:
+        self._event_trace_pending = True
+        if self._last_game is None or self.debug_paused or self._debug_generator is not None:
+            self._pending_custom_events.append((str(node_id), event))
+            return
+        if self.breakpoints:
+            self._begin_debug_custom_event(str(node_id), event)
+            return
+        self._run_custom_event(str(node_id), event)
+
+    def consume_event_trace(self) -> bool:
+        pending = self._event_trace_pending
+        self._event_trace_pending = False
+        return pending
+
+    def _run_custom_event(self, node_id: str, event: LogicEvent) -> None:
+        if self._last_game is None or node_id not in self.nodes:
+            return
+        if node_id not in self.executed_nodes:
+            self.executed_nodes.append(node_id)
+        self._store(node_id, "payload", deepcopy(event.payload))
+        self._follow(node_id, "next", self._last_game, self._last_dt, [self.MAX_STEPS], set())
 
     def _follow_debug(
         self,
@@ -337,6 +402,11 @@ class LogicGraphRuntime:
             text = self._read_input(node_id, "text", properties.get("text", "Texto"), game, dt, set())
             game.set_hud(f"logic:{node_id}", str(text))
             return ["next"]
+        if node_type == "emit_event":
+            name = str(properties.get("name", "evento")).strip()
+            payload = self._read_input(node_id, "payload", properties.get("payload"), game, dt, set())
+            self.event_bus.emit(name, payload, self.object_key)
+            return ["next"]
         if node_type == "set_variable":
             name = str(properties.get("name", "value"))
             scope = str(properties.get("scope", "object")).lower()
@@ -396,7 +466,9 @@ class LogicGraphRuntime:
         properties = node.get("properties", {}) if isinstance(node.get("properties"), Mapping) else {}
         node_type = str(node.get("type", ""))
 
-        if node_type == "input_axis":
+        if node_type == "event_custom":
+            value = deepcopy(self.values.get((node_id, "payload")))
+        elif node_type == "input_axis":
             negative = str(properties.get("negative", "A")).lower()
             positive = str(properties.get("positive", "D")).lower()
             value = float(game.axis(negative, positive))
@@ -464,6 +536,7 @@ class LogicGraphRuntime:
             "breakpoint_conditions": dict(self.breakpoint_conditions),
             "condition_error": self.debug_condition_error,
             "watches": self._watch_snapshot(),
+            "events": list(self.event_bus.recent[-8:]),
         }
 
     def _watch_snapshot(self) -> dict[str, Any]:

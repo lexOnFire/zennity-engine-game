@@ -80,6 +80,7 @@ def _validate_export_inputs(project_root: Path, scene_path: Path, report: BuildR
         "engine/behavior/controller_asset.py",
         "engine/logic/graph_asset.py",
         "engine/logic/blackboard.py",
+        "engine/logic/event_bus.py",
         "engine/logic/runtime.py",
         "engine/build/runtime_scene_loader.py",
     )
@@ -127,6 +128,7 @@ def _write_development_project(project_root: Path, scene_path: Path, destination
         project_root / "engine" / "behavior" / "controller_asset.py": runtime_dir / "behavior_controller.py",
         project_root / "engine" / "logic" / "graph_asset.py": runtime_dir / "logic_graph_asset.py",
         project_root / "engine" / "logic" / "blackboard.py": runtime_dir / "logic_blackboard.py",
+        project_root / "engine" / "logic" / "event_bus.py": runtime_dir / "logic_event_bus.py",
         project_root / "engine" / "logic" / "runtime.py": runtime_dir / "logic_runtime.py",
         project_root / "engine" / "build" / "runtime_scene_loader.py": runtime_dir / "scene_loader.py",
     }
@@ -190,6 +192,7 @@ def _validate_exported_project(destination: Path, report: BuildReport) -> None:
         "zennity_runtime/behavior_controller.py",
         "zennity_runtime/logic_graph_asset.py",
         "zennity_runtime/logic_blackboard.py",
+        "zennity_runtime/logic_event_bus.py",
         "zennity_runtime/logic_runtime.py",
         "zennity_runtime/scene_loader.py",
     )
