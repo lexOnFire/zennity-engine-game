@@ -41,6 +41,10 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "play_sound": {"title": "Tocar som", "category": "Ação", "properties": {"path": ""}},
     "set_hud": {"title": "Atualizar HUD", "category": "Ação", "properties": {"text": "Texto"}},
     "emit_event": {"title": "Emitir evento", "category": "Ação", "properties": {"name": "evento", "payload": None}},
+    "subgraph_start": {"title": "Início do subgrafo", "category": "Subgrafos", "properties": {}},
+    "subgraph_input": {"title": "Entrada do subgrafo", "category": "Subgrafos", "properties": {"name": "entrada", "type": "number", "default": 0.0}},
+    "subgraph_return": {"title": "Retorno do subgrafo", "category": "Subgrafos", "properties": {"name": "resultado", "type": "number"}},
+    "call_subgraph": {"title": "Executar subgrafo", "category": "Subgrafos", "properties": {"path": "", "inputs": [], "outputs": []}},
     "get_variable": {"title": "Ler variável", "category": "Variáveis", "properties": {"scope": "object", "name": "value"}},
     "set_variable": {"title": "Definir variável", "category": "Variáveis", "properties": {"scope": "object", "name": "value", "value": 0}},
     "number_value": {"title": "Número", "category": "Variáveis", "properties": {"value": 0.0}},
@@ -71,6 +75,10 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "play_sound": {"inputs": [("in", "flow"), ("path", "text")], "outputs": [("next", "flow")]},
     "set_hud": {"inputs": [("in", "flow"), ("text", "text")], "outputs": [("next", "flow")]},
     "emit_event": {"inputs": [("in", "flow"), ("payload", "any")], "outputs": [("next", "flow")]},
+    "subgraph_start": {"inputs": [], "outputs": [("next", "flow")]},
+    "subgraph_input": {"inputs": [], "outputs": [("value", "any")]},
+    "subgraph_return": {"inputs": [("in", "flow"), ("value", "any")], "outputs": []},
+    "call_subgraph": {"inputs": [("in", "flow")], "outputs": [("next", "flow")]},
     "get_variable": {"inputs": [("in", "flow")], "outputs": [("next", "flow"), ("value", "any")]},
     "set_variable": {"inputs": [("in", "flow"), ("value", "any")], "outputs": [("next", "flow")]},
     "number_value": {"inputs": [], "outputs": [("value", "number")]},
@@ -79,15 +87,50 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
 }
 
 
-def node_port_definitions(node_type: str) -> dict[str, list[tuple[str, str]]]:
+def node_port_definitions(node_type: str | Mapping[str, Any]) -> dict[str, list[tuple[str, str]]]:
     """Retorna cópias das portas de um tipo, com fallback compatível."""
-    definition = NODE_PORT_DEFINITIONS.get(str(node_type))
+    node = node_type if isinstance(node_type, Mapping) else None
+    type_name = str(node.get("type", "")) if node is not None else str(node_type)
+    definition = NODE_PORT_DEFINITIONS.get(type_name)
     if definition is None:
         return {"inputs": [("in", "flow")], "outputs": [("next", "flow")]}
-    return {
+    ports = {
         "inputs": list(definition.get("inputs", [])),
         "outputs": list(definition.get("outputs", [])),
     }
+    if node is None:
+        return ports
+    properties = node.get("properties", {}) if isinstance(node.get("properties"), Mapping) else {}
+    value_type = _safe_port_type(properties.get("type", "any"))
+    if type_name == "subgraph_input":
+        ports["outputs"] = [("value", value_type)]
+    elif type_name == "subgraph_return":
+        ports["inputs"] = [("in", "flow"), ("value", value_type)]
+    elif type_name == "call_subgraph":
+        ports["inputs"].extend(_declared_interface_ports(properties.get("inputs")))
+        ports["outputs"].extend(_declared_interface_ports(properties.get("outputs")))
+    return ports
+
+
+def subgraph_interface(data: Mapping[str, Any] | None) -> dict[str, list[dict[str, Any]]]:
+    """Deriva a interface pública a partir dos nós de entrada e retorno."""
+    graph = normalize_logic_graph(data)
+    inputs: list[dict[str, Any]] = []
+    outputs: list[dict[str, Any]] = []
+    for node in graph["nodes"]:
+        properties = node.get("properties", {})
+        if node["type"] == "subgraph_input":
+            inputs.append({
+                "name": str(properties.get("name", "entrada")).strip(),
+                "type": _safe_port_type(properties.get("type", "any")),
+                "default": deepcopy(properties.get("default")),
+            })
+        elif node["type"] == "subgraph_return":
+            outputs.append({
+                "name": str(properties.get("name", "resultado")).strip(),
+                "type": _safe_port_type(properties.get("type", "any")),
+            })
+    return {"inputs": inputs, "outputs": outputs}
 
 
 def default_logic_graph(name: str = "NewLogic") -> dict[str, Any]:
@@ -209,7 +252,10 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
         return issues
     if not str(graph.get("target", {}).get("value", "")).strip():
         issues.append({"level": "error", "message": "Escolha o objeto alvo do grafo."})
-    event_nodes = [node for node in graph["nodes"] if node["type"].startswith("event_")]
+    event_nodes = [
+        node for node in graph["nodes"]
+        if node["type"].startswith("event_") or node["type"] == "subgraph_start"
+    ]
     if not event_nodes:
         issues.append({"level": "warning", "message": "Adicione Ao iniciar, A cada frame ou Ao receber evento para executar o grafo."})
     connected = {edge["from_node"] for edge in graph["edges"]} | {edge["to_node"] for edge in graph["edges"]}
@@ -217,16 +263,30 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
     for node in graph["nodes"]:
         if node["type"] in {"event_custom", "emit_event"} and not str(node.get("properties", {}).get("name", "")).strip():
             issues.append({"level": "error", "node": node["id"], "message": "Informe o nome do evento."})
+        if node["type"] in {"subgraph_input", "subgraph_return"} and not str(node.get("properties", {}).get("name", "")).strip():
+            issues.append({"level": "error", "node": node["id"], "message": "Informe o nome da porta do subgrafo."})
+        if node["type"] == "call_subgraph" and not str(node.get("properties", {}).get("path", "")).strip():
+            issues.append({"level": "error", "node": node["id"], "message": "Escolha o arquivo do subgrafo."})
         if node["id"] not in connected and len(graph["nodes"]) > 1:
             issues.append({"level": "warning", "node": node["id"], "message": f"Nó desconectado: {node['title']}"})
+    interface = subgraph_interface(graph)
+    for interface_side, definitions in (("entrada", interface["inputs"]), ("saída", interface["outputs"])):
+        names = [str(definition.get("name", "")).strip() for definition in definitions]
+        for name in names:
+            if name in {"in", "next"}:
+                issues.append({"level": "error", "message": f"'{name}' é um nome reservado para porta de {interface_side}."})
+            elif name and names.count(name) > 1:
+                message = f"Porta de {interface_side} duplicada: {name}"
+                if not any(issue.get("message") == message for issue in issues):
+                    issues.append({"level": "error", "message": message})
     occupied_inputs: set[tuple[str, str]] = set()
     for edge in graph["edges"]:
         source = nodes_by_id.get(edge["from_node"])
         target = nodes_by_id.get(edge["to_node"])
         if source is None or target is None:
             continue
-        outputs = dict(node_port_definitions(source["type"])["outputs"])
-        inputs = dict(node_port_definitions(target["type"])["inputs"])
+        outputs = dict(node_port_definitions(source)["outputs"])
+        inputs = dict(node_port_definitions(target)["inputs"])
         from_port = edge.get("from_port", "next")
         to_port = edge.get("to_port", "in")
         source_type = outputs.get(from_port)
@@ -271,3 +331,24 @@ def _safe_float(value: Any) -> float:
         return float(value)
     except (TypeError, ValueError):
         return 0.0
+
+
+def _safe_port_type(value: Any) -> str:
+    port_type = str(value).strip().lower()
+    return port_type if port_type in {"any", "number", "bool", "text", "object"} else "any"
+
+
+def _declared_interface_ports(value: Any) -> list[tuple[str, str]]:
+    ports: list[tuple[str, str]] = []
+    used: set[str] = set()
+    if not isinstance(value, list):
+        return ports
+    for entry in value:
+        if not isinstance(entry, Mapping):
+            continue
+        name = str(entry.get("name", "")).strip()
+        if not name or name in {"in", "next"} or name in used:
+            continue
+        used.add(name)
+        ports.append((name, _safe_port_type(entry.get("type", "any"))))
+    return ports

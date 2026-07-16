@@ -11,6 +11,7 @@ from .graph_asset import (
     normalize_logic_graph,
     node_port_definitions,
     save_logic_graph,
+    subgraph_interface,
     validate_logic_graph,
 )
 from .runtime import LogicGraphRuntime
@@ -28,6 +29,7 @@ __all__ = [
     "normalize_logic_graph",
     "node_port_definitions",
     "save_logic_graph",
+    "subgraph_interface",
     "validate_logic_graph",
     "LogicGraphRuntime",
     "BlackboardStore",

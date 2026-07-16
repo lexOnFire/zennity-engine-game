@@ -141,6 +141,8 @@ def hydrate_logic_graphs(
     for path in sorted(directory.rglob("*.zlogic"), key=lambda item: str(item).lower()):
         try:
             graph = load_logic_graph(path)
+            if any(node.get("type") == "subgraph_start" for node in graph.get("nodes", [])):
+                continue
             target = graph.get("target", {})
             target_type = str(target.get("type", "name"))
             wanted = str(target.get("value", "Player")).casefold()
@@ -157,6 +159,21 @@ def hydrate_logic_graphs(
         except (OSError, ValueError) as exc:
             results.append(("ERROR", path.stem, f"falha ao carregar Logic Graph: {exc}"))
     return results
+
+
+def load_project_subgraph(asset_path: str, project_root: Path) -> dict[str, Any]:
+    """Carrega somente subgrafos que pertencem ao projeto atual."""
+    path = Path(str(asset_path))
+    if not path.is_absolute():
+        path = project_root / path
+    resolved = path.resolve()
+    root = project_root.resolve()
+    if not resolved.is_relative_to(root):
+        raise ValueError("O subgrafo precisa estar dentro do projeto.")
+    graph = load_logic_graph(resolved)
+    if not any(node.get("type") == "subgraph_start" for node in graph.get("nodes", [])):
+        raise ValueError(f"'{resolved.name}' não possui Início do subgrafo.")
+    return graph
 
 
 class PlayAnimatorAPI:
@@ -951,7 +968,13 @@ def run_viewport(
                     continue
                 try:
                     api = script_apis.setdefault(name, PlayScriptAPI(name, obj, events, objects))
-                    runtime = LogicGraphRuntime(graph, logic_blackboard, name, logic_event_bus)
+                    runtime = LogicGraphRuntime(
+                        graph,
+                        logic_blackboard,
+                        name,
+                        logic_event_bus,
+                        lambda path: load_project_subgraph(path, Path.cwd()),
+                    )
                     runtime.start(api)
                     logic_runtimes.setdefault(name, []).append((str(entry.get("path", graph.get("name", "Logic Graph"))), runtime))
                 except Exception as exc:

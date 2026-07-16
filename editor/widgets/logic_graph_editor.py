@@ -46,6 +46,7 @@ from engine.logic.graph_asset import (
     normalize_logic_graph,
     node_port_definitions,
     save_logic_graph,
+    subgraph_interface,
     validate_logic_graph,
 )
 from engine.logic.blackboard import coerce_variable_value, save_blackboard_asset
@@ -59,6 +60,7 @@ CATEGORY_COLORS = {
     "Condição": QColor("#50c878"),
     "Objetos": QColor("#47b8c8"),
     "Variáveis": QColor("#d5b84b"),
+    "Subgrafos": QColor("#b48ead"),
     "Personalizado": QColor("#7f8b9c"),
 }
 
@@ -222,7 +224,7 @@ class LogicNodeItem(QGraphicsRectItem):
     MINIMUM_HEIGHT = 94.0
 
     def __init__(self, editor: "LogicGraphEditor", node: dict[str, Any]) -> None:
-        ports = node_port_definitions(str(node.get("type", "")))
+        ports = node_port_definitions(node)
         self.input_definitions = ports["inputs"]
         self.output_definitions = ports["outputs"]
         self.height = max(self.MINIMUM_HEIGHT, 62.0 + max(len(self.input_definitions), len(self.output_definitions), 1) * 22.0)
@@ -426,6 +428,9 @@ class LogicGraphEditor(QWidget):
             button.setProperty("uiRole", "icon")
             toolbar.addWidget(button)
         toolbar.addSpacing(8)
+        self.new_subgraph_button = QPushButton("Novo subgrafo")
+        self.new_subgraph_button.setToolTip("Cria uma função visual reutilizável com entrada e retorno")
+        toolbar.addWidget(self.new_subgraph_button)
         self.demo_button = QPushButton("Abrir exemplo Player")
         self.demo_button.setIcon(editor_icon("open"))
         self.demo_button.setProperty("uiRole", "primary")
@@ -470,7 +475,7 @@ class LogicGraphEditor(QWidget):
         categories.setSpacing(6)
         self.category_group = QButtonGroup(self)
         self.category_group.setExclusive(True)
-        for index, category in enumerate(("Movimento", "Ação", "Lógica", "Condição", "Eventos", "Objetos", "Variáveis")):
+        for index, category in enumerate(("Movimento", "Ação", "Lógica", "Condição", "Eventos", "Objetos", "Variáveis", "Subgrafos")):
             button = QPushButton(category)
             button.setCheckable(True)
             button.setProperty("logicCategory", category)
@@ -496,6 +501,13 @@ class LogicGraphEditor(QWidget):
         self.palette.setObjectName("LogicNodePalette")
         self.palette.setToolTip("Duplo clique para adicionar um nó")
         palette_layout.addWidget(self.palette, 1)
+        subgraph_title = QLabel("SUBGRAFOS REUTILIZÁVEIS")
+        subgraph_title.setObjectName("PanelSectionTitle")
+        palette_layout.addWidget(subgraph_title)
+        self.subgraph_list = QListWidget()
+        self.subgraph_list.setMaximumHeight(120)
+        self.subgraph_list.setToolTip("Duplo clique adiciona uma chamada ao subgrafo")
+        palette_layout.addWidget(self.subgraph_list)
         blackboard_title = QLabel("BLACKBOARD")
         blackboard_title.setObjectName("PanelSectionTitle")
         palette_layout.addWidget(blackboard_title)
@@ -609,9 +621,11 @@ class LogicGraphEditor(QWidget):
     def _connect_ui(self) -> None:
         self.category_group.idClicked.connect(self._category_clicked)
         self.palette.itemDoubleClicked.connect(self._add_palette_item)
+        self.subgraph_list.itemDoubleClicked.connect(self._add_subgraph_asset)
         self.scene.selectionChanged.connect(self._selection_changed)
         self.property_tree.itemChanged.connect(self._property_changed)
         self.new_button.clicked.connect(self.new_graph)
+        self.new_subgraph_button.clicked.connect(self.new_subgraph)
         self.open_button.clicked.connect(self.open_dialog)
         self.save_button.clicked.connect(self.save)
         self.save_as_button.clicked.connect(lambda: self.save(save_as=True))
@@ -660,6 +674,68 @@ class LogicGraphEditor(QWidget):
         self.mark_dirty()
         self._update_validation()
 
+    def _refresh_subgraph_assets(self) -> None:
+        self.subgraph_list.clear()
+        directory = self.project_root / "Assets" / "Logic"
+        if not directory.is_dir():
+            return
+        for path in sorted(directory.rglob("*.zlogic"), key=lambda entry: str(entry).casefold()):
+            try:
+                if self.current_path is not None and path.resolve() == self.current_path.resolve():
+                    continue
+                graph = load_logic_graph(path)
+            except (OSError, ValueError, json.JSONDecodeError):
+                continue
+            if not any(node.get("type") == "subgraph_start" for node in graph.get("nodes", [])):
+                continue
+            interface = subgraph_interface(graph)
+            item = QListWidgetItem(
+                f"{graph.get('name', path.stem)}  ·  {len(interface['inputs'])} entrada(s) / {len(interface['outputs'])} saída(s)"
+            )
+            item.setData(Qt.UserRole, path.relative_to(self.project_root).as_posix())
+            item.setData(Qt.UserRole + 1, interface)
+            item.setToolTip(path.relative_to(self.project_root).as_posix())
+            self.subgraph_list.addItem(item)
+
+    def _add_subgraph_asset(self, item: QListWidgetItem) -> None:
+        path = str(item.data(Qt.UserRole) or "").strip()
+        interface = item.data(Qt.UserRole + 1)
+        if not path or not isinstance(interface, dict):
+            return
+        center = self.view.mapToScene(self.view.viewport().rect().center())
+        node = create_logic_node("call_subgraph", (center.x(), center.y()))
+        node["title"] = f"Executar {Path(path).stem}"
+        node["properties"] = {
+            "path": path,
+            "inputs": deepcopy(interface.get("inputs", [])),
+            "outputs": deepcopy(interface.get("outputs", [])),
+        }
+        self.graph["nodes"].append(node)
+        self.scene.clearSelection()
+        self._create_node_item(node).setSelected(True)
+        self.mark_dirty()
+        self._update_validation()
+        self.message.emit("INFO", f"Subgrafo adicionado: {Path(path).stem}")
+
+    def _sync_subgraph_call_interfaces(self, graph: dict[str, Any]) -> None:
+        """Mantém chamadas existentes alinhadas ao asset reutilizável salvo."""
+        for node in graph.get("nodes", []):
+            if node.get("type") != "call_subgraph":
+                continue
+            properties = node.setdefault("properties", {})
+            path = Path(str(properties.get("path", "")))
+            if not path.is_absolute():
+                path = self.project_root / path
+            try:
+                resolved = path.resolve()
+                if not resolved.is_relative_to(self.project_root) or not resolved.is_file():
+                    continue
+                interface = subgraph_interface(load_logic_graph(resolved))
+            except (OSError, ValueError, json.JSONDecodeError):
+                continue
+            properties["inputs"] = deepcopy(interface["inputs"])
+            properties["outputs"] = deepcopy(interface["outputs"])
+
     def _create_node_item(self, node: dict[str, Any]) -> LogicNodeItem:
         item = LogicNodeItem(self, node)
         self.scene.addItem(item)
@@ -671,6 +747,7 @@ class LogicGraphEditor(QWidget):
         self.cancel_connection()
         self._autosave_timer.stop()
         self.graph = normalize_logic_graph(graph)
+        self._sync_subgraph_call_interfaces(self.graph)
         self._blackboard_selected_name = ""
         self.current_path = path
         target = self.graph.get("target", {"type": "name", "value": "Player"})
@@ -690,6 +767,7 @@ class LogicGraphEditor(QWidget):
                 self.node_items[node_id].set_breakpoint(True)
         self._refresh_watch_values()
         self._refresh_blackboard_variables()
+        self._refresh_subgraph_assets()
         self.refresh_connections()
         self._dirty = False
         self._update_status()
@@ -1061,7 +1139,7 @@ class LogicGraphEditor(QWidget):
         item = self.node_items.get(str(node_id))
         if item is None:
             return
-        ports = node_port_definitions(str(item.node.get("type", "")))
+        ports = node_port_definitions(item.node)
         supports_flow = str(item.node.get("type", "")).startswith("event_") or any(
             data_type == "flow" for _name, data_type in ports["inputs"]
         )
@@ -1290,7 +1368,15 @@ class LogicGraphEditor(QWidget):
             node_item.title_item.setPlainText(str(value))
         else:
             node_item.node.setdefault("properties", {})[key] = value
-        node_item.refresh_text()
+        if key == "type" and node_item.node.get("type") in {"subgraph_input", "subgraph_return"}:
+            node = node_item.node
+            self.scene.removeItem(node_item)
+            self.node_items.pop(node_item.node_id, None)
+            self.scene.clearSelection()
+            self._create_node_item(node).setSelected(True)
+            self.refresh_connections()
+        else:
+            node_item.refresh_text()
         self.mark_dirty()
         self._update_validation()
 
@@ -1309,6 +1395,29 @@ class LogicGraphEditor(QWidget):
             return
         self.set_graph(default_logic_graph())
         self.message.emit("INFO", "Novo Logic Graph criado")
+
+    def new_subgraph(self) -> None:
+        if not self._confirm_discard():
+            return
+        start = create_logic_node("subgraph_start", (80.0, 100.0))
+        entry = create_logic_node("subgraph_input", (80.0, 260.0))
+        result = create_logic_node("subgraph_return", (390.0, 100.0))
+        graph = default_logic_graph("NovoSubgrafo")
+        graph["nodes"] = [start, entry, result]
+        graph["edges"] = [
+            {
+                "id": uuid.uuid4().hex,
+                "from_node": start["id"], "from_port": "next",
+                "to_node": result["id"], "to_port": "in", "kind": "flow",
+            },
+            {
+                "id": uuid.uuid4().hex,
+                "from_node": entry["id"], "from_port": "value",
+                "to_node": result["id"], "to_port": "value", "kind": "number",
+            },
+        ]
+        self.set_graph(graph)
+        self.message.emit("INFO", "Subgrafo criado; edite a entrada, o retorno e salve em Assets/Logic")
 
     def open_dialog(self) -> None:
         if not self._confirm_discard():

@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 import re
 from copy import deepcopy
-from typing import Any, Iterator, Mapping
+from typing import Any, Callable, Iterator, Mapping
 
 try:
     from .graph_asset import normalize_logic_graph
@@ -28,12 +28,16 @@ class LogicGraphRuntime:
         blackboard: BlackboardStore | None = None,
         object_key: str = "Object",
         event_bus: LogicEventBus | None = None,
+        subgraph_loader: Callable[[str], Mapping[str, Any]] | None = None,
+        call_stack: tuple[str, ...] = (),
     ) -> None:
         self.graph = normalize_logic_graph(graph)
         self.object_key = str(object_key)
         self.blackboard = blackboard or BlackboardStore()
         self.blackboard.register(self.graph.get("variables", {}), self.object_key)
         self.event_bus = event_bus or LogicEventBus()
+        self.subgraph_loader = subgraph_loader
+        self.call_stack = tuple(str(path).casefold() for path in call_stack)
         self.nodes = {node["id"]: node for node in self.graph["nodes"]}
         self.outgoing: dict[str, list[dict[str, Any]]] = {}
         self.incoming: dict[tuple[str, str], dict[str, Any]] = {}
@@ -62,13 +66,36 @@ class LogicGraphRuntime:
         self._last_dt = 0.0
         self._pending_custom_events: list[tuple[str, LogicEvent]] = []
         self._event_trace_pending = False
+        self._subgraph_outputs: dict[str, Any] = {}
         self.started = False
-        for node in self.nodes.values():
+        for node in self.nodes.values() if not self.call_stack else ():
             if node.get("type") != "event_custom":
                 continue
             event_name = str(node.get("properties", {}).get("name", "evento")).strip()
             node_id = str(node["id"])
             self.event_bus.subscribe(event_name, lambda event, wanted=node_id: self._receive_custom_event(wanted, event))
+
+    def run_subgraph(self, game: Any, dt: float, inputs: Mapping[str, Any]) -> dict[str, Any]:
+        """Executa uma chamada reutilizável sem iniciar eventos de frame."""
+        self.started = True
+        self._last_game = game
+        self._last_dt = float(dt)
+        self.values.clear()
+        self.executed_nodes.clear()
+        self.executed_edges.clear()
+        self._subgraph_outputs.clear()
+        for node in self.nodes.values():
+            if node.get("type") != "subgraph_input":
+                continue
+            properties = node.get("properties", {})
+            name = str(properties.get("name", "entrada")).strip()
+            self._store(str(node["id"]), "value", deepcopy(inputs.get(name, properties.get("default"))))
+        budget = [self.MAX_STEPS]
+        for node in self.nodes.values():
+            if node.get("type") == "subgraph_start":
+                self.executed_nodes.append(str(node["id"]))
+                self._follow(str(node["id"]), "next", game, float(dt), budget, set())
+        return deepcopy(self._subgraph_outputs)
 
     def start(self, game: Any) -> None:
         if self.started:
@@ -407,6 +434,43 @@ class LogicGraphRuntime:
             payload = self._read_input(node_id, "payload", properties.get("payload"), game, dt, set())
             self.event_bus.emit(name, payload, self.object_key)
             return ["next"]
+        if node_type == "call_subgraph":
+            path = str(properties.get("path", "")).strip()
+            if not path or self.subgraph_loader is None:
+                raise RuntimeError("Subgrafo não configurado.")
+            identity = path.casefold()
+            if identity in self.call_stack:
+                chain = " → ".join((*self.call_stack, identity))
+                raise RuntimeError(f"Referência circular entre subgrafos: {chain}")
+            graph = self.subgraph_loader(path)
+            declared_inputs = properties.get("inputs", []) if isinstance(properties.get("inputs"), list) else []
+            input_values: dict[str, Any] = {}
+            for definition in declared_inputs:
+                if not isinstance(definition, Mapping):
+                    continue
+                name = str(definition.get("name", "")).strip()
+                if name:
+                    input_values[name] = self._read_input(
+                        node_id, name, definition.get("default"), game, dt, set()
+                    )
+            child = LogicGraphRuntime(
+                graph,
+                self.blackboard,
+                self.object_key,
+                self.event_bus,
+                self.subgraph_loader,
+                (*self.call_stack, identity),
+            )
+            outputs = child.run_subgraph(game, dt, input_values)
+            for name, value in outputs.items():
+                self._store(node_id, str(name), value)
+            return ["next"]
+        if node_type == "subgraph_return":
+            name = str(properties.get("name", "resultado")).strip()
+            value = self._read_input(node_id, "value", properties.get("default"), game, dt, set())
+            self._subgraph_outputs[name] = deepcopy(value)
+            self._store(node_id, "value", value)
+            return []
         if node_type == "set_variable":
             name = str(properties.get("name", "value"))
             scope = str(properties.get("scope", "object")).lower()
@@ -466,7 +530,11 @@ class LogicGraphRuntime:
         properties = node.get("properties", {}) if isinstance(node.get("properties"), Mapping) else {}
         node_type = str(node.get("type", ""))
 
-        if node_type == "event_custom":
+        if node_type == "subgraph_input":
+            value = deepcopy(self.values.get((node_id, "value"), properties.get("default")))
+        elif node_type == "call_subgraph":
+            value = deepcopy(self.values.get((node_id, port)))
+        elif node_type == "event_custom":
             value = deepcopy(self.values.get((node_id, "payload")))
         elif node_type == "input_axis":
             negative = str(properties.get("negative", "A")).lower()

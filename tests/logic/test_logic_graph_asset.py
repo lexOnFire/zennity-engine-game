@@ -9,6 +9,7 @@ from engine.logic.graph_asset import (
     normalize_logic_graph,
     node_port_definitions,
     save_logic_graph,
+    subgraph_interface,
     validate_logic_graph,
 )
 from engine.logic.runtime import LogicGraphRuntime
@@ -549,3 +550,86 @@ def test_visual_event_bus_stops_recursive_event_storm():
         assert "Limite de eventos excedido" in str(exc)
     else:
         raise AssertionError("Uma cascata recursiva deveria ser interrompida")
+
+
+def test_subgraph_interface_creates_typed_dynamic_ports():
+    start = create_logic_node("subgraph_start")
+    entry = create_logic_node("subgraph_input")
+    entry["properties"].update({"name": "velocidade", "type": "number", "default": 2})
+    result = create_logic_node("subgraph_return")
+    result["properties"].update({"name": "movimento", "type": "number"})
+    graph = default_logic_graph("CalcularMovimento")
+    graph["nodes"] = [start, entry, result]
+    graph["edges"] = [
+        _edge(start, "next", result, "in"),
+        _edge(entry, "value", result, "value", "number"),
+    ]
+    interface = subgraph_interface(graph)
+    assert interface["inputs"] == [{"name": "velocidade", "type": "number", "default": 2}]
+    assert interface["outputs"] == [{"name": "movimento", "type": "number"}]
+
+    call = create_logic_node("call_subgraph")
+    call["properties"].update(interface)
+    assert ("velocidade", "number") in node_port_definitions(call)["inputs"]
+    assert ("movimento", "number") in node_port_definitions(call)["outputs"]
+    assert not validate_logic_graph(graph)
+
+
+def test_runtime_executes_reusable_subgraph_with_input_and_output():
+    start = create_logic_node("subgraph_start")
+    entry = create_logic_node("subgraph_input")
+    entry["properties"].update({"name": "valor", "type": "number", "default": 3})
+    result = create_logic_node("subgraph_return")
+    result["properties"].update({"name": "resultado", "type": "number"})
+    reusable = default_logic_graph("Reutilizavel")
+    reusable["nodes"] = [start, entry, result]
+    reusable["edges"] = [
+        _edge(start, "next", result, "in"),
+        _edge(entry, "value", result, "value", "number"),
+    ]
+
+    update = create_logic_node("event_update")
+    call = create_logic_node("call_subgraph")
+    call["properties"].update({"path": "Assets/Logic/Reutilizavel.zlogic", **subgraph_interface(reusable)})
+    move = create_logic_node("move")
+    move["properties"]["speed"] = 10
+    parent = default_logic_graph("Player")
+    parent["nodes"] = [update, call, move]
+    parent["edges"] = [
+        _edge(update, "next", call, "in"),
+        _edge(call, "next", move, "in"),
+        _edge(call, "resultado", move, "value", "number"),
+    ]
+
+    class Game:
+        def __init__(self): self.x = 0.0
+        def move(self, amount): self.x += amount
+
+    game = Game()
+    runtime = LogicGraphRuntime(parent, subgraph_loader=lambda _path: reusable)
+    runtime.update(game, 0.5)
+    assert game.x == 15.0
+    assert runtime.debug_snapshot()["values"][call["id"]]["resultado"] == 3.0
+
+
+def test_runtime_rejects_recursive_subgraph_references():
+    start = create_logic_node("subgraph_start")
+    recursive_call = create_logic_node("call_subgraph")
+    recursive_call["properties"]["path"] = "Assets/Logic/A.zlogic"
+    reusable = default_logic_graph("A")
+    reusable["nodes"] = [start, recursive_call]
+    reusable["edges"] = [_edge(start, "next", recursive_call, "in")]
+
+    update = create_logic_node("event_update")
+    parent_call = create_logic_node("call_subgraph")
+    parent_call["properties"]["path"] = "Assets/Logic/A.zlogic"
+    parent = default_logic_graph("Parent")
+    parent["nodes"] = [update, parent_call]
+    parent["edges"] = [_edge(update, "next", parent_call, "in")]
+    runtime = LogicGraphRuntime(parent, subgraph_loader=lambda _path: reusable)
+    try:
+        runtime.update(object(), 0.016)
+    except RuntimeError as exc:
+        assert "Referência circular entre subgrafos" in str(exc)
+    else:
+        raise AssertionError("Uma referência circular deveria ser rejeitada")

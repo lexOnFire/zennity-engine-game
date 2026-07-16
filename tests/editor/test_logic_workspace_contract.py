@@ -145,3 +145,24 @@ def test_visual_event_nodes_are_shared_debuggable_and_exportable():
     assert '"events": list(self.event_bus.recent' in runtime
     assert "logic_event_bus.dispatch()" in viewport
     assert 'f"evento:{event.get' in editor
+
+
+def test_reusable_subgraphs_are_discoverable_typed_and_safe():
+    graph = _source("engine/logic/graph_asset.py")
+    runtime = _source("engine/logic/runtime.py")
+    viewport = _source("editor/isolated_viewport.py")
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    assert '"subgraph_start"' in graph
+    assert '"subgraph_input"' in graph
+    assert '"subgraph_return"' in graph
+    assert '"call_subgraph"' in graph
+    assert "def subgraph_interface" in graph
+    assert "def run_subgraph" in runtime
+    assert "Referência circular entre subgrafos" in runtime
+    assert "SUBGRAFOS REUTILIZÁVEIS" in editor
+    assert "Novo subgrafo" in editor
+    assert "def new_subgraph" in editor
+    assert "_refresh_subgraph_assets" in editor
+    assert "_add_subgraph_asset" in editor
+    assert "_sync_subgraph_call_interfaces" in editor
+    assert "load_project_subgraph" in viewport
