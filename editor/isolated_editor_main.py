@@ -597,6 +597,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "command": str(command),
             "graph": graph_path,
             "breakpoints": list(graph.get("debug", {}).get("breakpoints", [])),
+            "breakpoint_conditions": dict(graph.get("debug", {}).get("breakpoint_conditions", {})),
+            "watches": list(graph.get("debug", {}).get("watches", [])),
         })
 
     def _show_animation_window(self) -> None:

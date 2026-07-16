@@ -98,3 +98,21 @@ def test_logic_workspace_supports_breakpoints_continue_and_single_step():
     assert "def continue_execution" in runtime
     assert "def step" in runtime
     assert "runtime.debug_paused" in viewport
+
+
+def test_logic_debugger_exposes_conditions_watches_highlight_and_restart():
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    viewport = _source("editor/isolated_viewport.py")
+    bridge = _source("editor/isolated_editor_main.py")
+    runtime = _source("engine/logic/runtime.py")
+    assert "CONDIÇÃO DO BREAKPOINT" in editor
+    assert "OBSERVADORES" in editor
+    assert "PAUSADO ANTES DE EXECUTAR" in editor
+    assert 'self.debug_command.emit("restart")' in editor
+    assert "_update_breakpoint_condition" in editor
+    assert "_refresh_watch_values" in editor
+    assert 'debug_action == "restart"' in viewport
+    assert '"breakpoint_conditions"' in bridge
+    assert '"watches"' in bridge
+    assert "def _evaluate_debug_expression" in runtime
+    assert "def restart" in runtime

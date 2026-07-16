@@ -1207,12 +1207,18 @@ def run_viewport(
                     requested_name = Path(requested_graph).name.casefold()
                     debug_action = str(command.get("command", "sync")).lower()
                     breakpoints = command.get("breakpoints", [])
+                    breakpoint_conditions = command.get("breakpoint_conditions", {})
+                    watches = command.get("watches", [])
                     matched: list[tuple[str, str, LogicGraphRuntime]] = []
                     for object_name, runtimes in logic_runtimes.items():
                         for graph_path, runtime in runtimes:
                             current_graph = Path(str(graph_path)).as_posix().casefold()
                             if current_graph == requested_graph or Path(current_graph).name.casefold() == requested_name:
-                                runtime.configure_breakpoints(breakpoints if isinstance(breakpoints, list) else [])
+                                runtime.configure_breakpoints(
+                                    breakpoints if isinstance(breakpoints, list) else [],
+                                    breakpoint_conditions if isinstance(breakpoint_conditions, dict) else {},
+                                    watches if isinstance(watches, list) else [],
+                                )
                                 matched.append((object_name, graph_path, runtime))
                     if debug_action == "continue" and matched:
                         for _object_name, _graph_path, runtime in matched:
@@ -1245,6 +1251,32 @@ def run_viewport(
                                 })
                         paused = True
                         set_channels_paused(audio_channels, True)
+                    elif debug_action == "restart" and matched:
+                        any_paused = False
+                        for object_name, graph_path, runtime in matched:
+                            api = script_apis.get(object_name)
+                            if api is None:
+                                continue
+                            try:
+                                runtime.restart(api)
+                                any_paused = any_paused or runtime.debug_paused
+                                _send(events, {
+                                    "type": "logic_trace",
+                                    "object": object_name,
+                                    "graph": graph_path,
+                                    **runtime.debug_snapshot(),
+                                })
+                            except Exception as exc:
+                                _send(events, {
+                                    "type": "logic_trace",
+                                    "object": object_name,
+                                    "graph": graph_path,
+                                    "error": str(exc),
+                                    **runtime.debug_snapshot(),
+                                })
+                        paused = any_paused
+                        set_channels_paused(audio_channels, paused)
+                        _send(events, {"type": "play_state", "state": "pause" if paused else "play"})
                 elif command.get("type") == "play":
                     if not playing:
                         incoming_audio = command.get("audio_sources", {})

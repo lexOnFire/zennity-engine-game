@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import ast
+import re
 from copy import deepcopy
 from typing import Any, Iterator, Mapping
 
@@ -32,11 +34,19 @@ class LogicGraphRuntime:
         self.executed_nodes: list[str] = []
         self.executed_edges: list[str] = []
         self.breakpoints = {str(value) for value in self.graph.get("debug", {}).get("breakpoints", [])}
+        self.breakpoint_conditions = {
+            str(node_id): str(expression)
+            for node_id, expression in self.graph.get("debug", {}).get("breakpoint_conditions", {}).items()
+        }
+        self.watch_expressions = [str(value) for value in self.graph.get("debug", {}).get("watches", [])]
         self.debug_paused = False
         self.pause_node = ""
+        self.debug_condition_error = ""
         self._debug_generator: Iterator[str] | None = None
         self._debug_waiting_node: str | None = None
         self._debug_bypass_node = ""
+        self._debug_game: Any = None
+        self._debug_dt = 0.0
         self.started = False
 
     def start(self, game: Any) -> None:
@@ -70,14 +80,28 @@ class LogicGraphRuntime:
         self.executed_edges.clear()
         self._run_event("event_update", game, float(dt))
 
-    def configure_breakpoints(self, node_ids: list[str] | set[str] | tuple[str, ...]) -> None:
+    def configure_breakpoints(
+        self,
+        node_ids: list[str] | set[str] | tuple[str, ...],
+        conditions: Mapping[str, Any] | None = None,
+        watches: list[str] | tuple[str, ...] | set[str] | None = None,
+    ) -> None:
         self.breakpoints = {str(node_id) for node_id in node_ids if str(node_id) in self.nodes}
+        if conditions is not None:
+            self.breakpoint_conditions = {
+                str(node_id): str(expression).strip()
+                for node_id, expression in conditions.items()
+                if str(node_id) in self.breakpoints and str(expression).strip()
+            }
+        if watches is not None:
+            self.watch_expressions = list(dict.fromkeys(str(value).strip() for value in watches if str(value).strip()))
         if not self.breakpoints:
             self.debug_paused = False
             self.pause_node = ""
             self._debug_generator = None
             self._debug_waiting_node = None
             self._debug_bypass_node = ""
+            self.debug_condition_error = ""
 
     def continue_execution(self) -> None:
         if not self.debug_paused:
@@ -85,6 +109,7 @@ class LogicGraphRuntime:
         self._debug_bypass_node = self.pause_node
         self.debug_paused = False
         self.pause_node = ""
+        self.debug_condition_error = ""
 
     def step(self) -> None:
         if not self.debug_paused or self._debug_generator is None:
@@ -94,7 +119,29 @@ class LogicGraphRuntime:
         self.pause_node = ""
         self._drive_debug(step_once=True)
 
+    def restart(self, game: Any, dt: float = 0.0) -> None:
+        """Reinicia variáveis e fluxo, avançando novamente até o primeiro breakpoint."""
+        self.variables = {
+            name: deepcopy(value.get("default")) if isinstance(value, Mapping) else deepcopy(value)
+            for name, value in self.graph.get("variables", {}).items()
+        }
+        self.values.clear()
+        self.executed_nodes.clear()
+        self.executed_edges.clear()
+        self.debug_paused = False
+        self.pause_node = ""
+        self.debug_condition_error = ""
+        self._debug_generator = None
+        self._debug_waiting_node = None
+        self._debug_bypass_node = ""
+        self.started = False
+        self.start(game)
+        if not self.debug_paused:
+            self.update(game, float(dt))
+
     def _begin_debug_event(self, event_type: str, game: Any, dt: float) -> None:
+        self._debug_game = game
+        self._debug_dt = float(dt)
         self._debug_generator = self._debug_event_generator(event_type, game, dt)
         self._debug_waiting_node = None
         self._drive_debug()
@@ -114,9 +161,17 @@ class LogicGraphRuntime:
                 return
             waiting = str(self._debug_waiting_node)
             if waiting in self.breakpoints and self._debug_bypass_node != waiting:
-                self.debug_paused = True
-                self.pause_node = waiting
-                return
+                condition = self.breakpoint_conditions.get(waiting, "").strip()
+                try:
+                    should_pause = not condition or bool(self._evaluate_debug_expression(condition))
+                    self.debug_condition_error = ""
+                except ValueError as exc:
+                    should_pause = True
+                    self.debug_condition_error = f"Condição inválida em '{condition}': {exc}"
+                if should_pause:
+                    self.debug_paused = True
+                    self.pause_node = waiting
+                    return
             self._debug_waiting_node = None
             if self._debug_bypass_node == waiting:
                 self._debug_bypass_node = ""
@@ -384,7 +439,78 @@ class LogicGraphRuntime:
             "paused": self.debug_paused,
             "pause_node": self.pause_node,
             "breakpoints": sorted(self.breakpoints),
+            "breakpoint_conditions": dict(self.breakpoint_conditions),
+            "condition_error": self.debug_condition_error,
+            "watches": self._watch_snapshot(),
         }
+
+    def _watch_snapshot(self) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for expression in self.watch_expressions:
+            try:
+                result[expression] = self._debug_value(self._evaluate_debug_expression(expression))
+            except ValueError as exc:
+                result[expression] = f"Erro: {exc}"
+        return result
+
+    def _evaluate_debug_expression(self, expression: str) -> Any:
+        text = str(expression).strip()
+        if not text:
+            return True
+        parts = re.split(r"\s+(?:ou|or)\s+", text, flags=re.IGNORECASE)
+        if len(parts) > 1:
+            return any(bool(self._evaluate_debug_expression(part)) for part in parts)
+        parts = re.split(r"\s+(?:e|and)\s+", text, flags=re.IGNORECASE)
+        if len(parts) > 1:
+            return all(bool(self._evaluate_debug_expression(part)) for part in parts)
+        if text.lower().startswith("não "):
+            return not bool(self._evaluate_debug_expression(text[4:]))
+        if text.lower().startswith("not "):
+            return not bool(self._evaluate_debug_expression(text[4:]))
+        match = re.fullmatch(r"(.+?)\s*(==|!=|>=|<=|>|<)\s*(.+)", text)
+        if match:
+            left = self._debug_operand(match.group(1))
+            right = self._debug_operand(match.group(3), bare_text=True)
+            operator = match.group(2)
+            try:
+                if operator == "==":
+                    return left == right
+                if operator == "!=":
+                    return left != right
+                if operator == ">":
+                    return left > right
+                if operator == ">=":
+                    return left >= right
+                if operator == "<":
+                    return left < right
+                return left <= right
+            except TypeError as exc:
+                raise ValueError("os valores comparados têm tipos incompatíveis") from exc
+        return self._debug_operand(text)
+
+    def _debug_operand(self, token: str, bare_text: bool = False) -> Any:
+        value = str(token).strip()
+        lowered = value.lower()
+        if value in self.variables:
+            return self.variables[value]
+        if lowered in {"true", "verdadeiro"}:
+            return True
+        if lowered in {"false", "falso"}:
+            return False
+        if lowered in {"none", "null", "nenhum"}:
+            return None
+        if lowered == "dt":
+            return self._debug_dt
+        if lowered in {"x", "y", "w", "h", "rotation", "grounded", "name"}:
+            if self._debug_game is None or not hasattr(self._debug_game, lowered):
+                raise ValueError(f"'{value}' não está disponível neste objeto")
+            return getattr(self._debug_game, lowered)
+        try:
+            return ast.literal_eval(value)
+        except (SyntaxError, ValueError):
+            if bare_text:
+                return value
+            raise ValueError(f"variável '{value}' não encontrada") from None
 
     @staticmethod
     def _debug_value(value: Any) -> Any:

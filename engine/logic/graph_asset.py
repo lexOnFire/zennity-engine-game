@@ -87,7 +87,7 @@ def default_logic_graph(name: str = "NewLogic") -> dict[str, Any]:
         "version": LOGIC_GRAPH_VERSION,
         "name": str(name).strip() or "NewLogic",
         "target": {"type": "name", "value": "Player"},
-        "debug": {"breakpoints": []},
+        "debug": {"breakpoints": [], "breakpoint_conditions": {}, "watches": []},
         "variables": {},
         "nodes": [],
         "edges": [],
@@ -120,9 +120,19 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
     result["variables"] = deepcopy(variables) if isinstance(variables, Mapping) else {}
     raw_debug = source.get("debug", {})
     raw_breakpoints = raw_debug.get("breakpoints", []) if isinstance(raw_debug, Mapping) else []
+    raw_conditions = raw_debug.get("breakpoint_conditions", {}) if isinstance(raw_debug, Mapping) else {}
+    raw_watches = raw_debug.get("watches", []) if isinstance(raw_debug, Mapping) else []
     result["debug"] = {
         "breakpoints": list(dict.fromkeys(str(value) for value in raw_breakpoints if str(value).strip()))
-        if isinstance(raw_breakpoints, (list, tuple, set)) else []
+        if isinstance(raw_breakpoints, (list, tuple, set)) else [],
+        "breakpoint_conditions": {
+            str(node_id): str(expression).strip()
+            for node_id, expression in raw_conditions.items()
+            if str(node_id).strip() and str(expression).strip()
+        } if isinstance(raw_conditions, Mapping) else {},
+        "watches": list(dict.fromkeys(
+            str(expression).strip() for expression in raw_watches if str(expression).strip()
+        )) if isinstance(raw_watches, (list, tuple, set)) else [],
     }
 
     nodes: list[dict[str, Any]] = []
@@ -155,6 +165,11 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
             })
     result["nodes"] = nodes
     result["debug"]["breakpoints"] = [node_id for node_id in result["debug"]["breakpoints"] if node_id in node_ids]
+    result["debug"]["breakpoint_conditions"] = {
+        node_id: expression
+        for node_id, expression in result["debug"]["breakpoint_conditions"].items()
+        if node_id in node_ids
+    }
 
     edges: list[dict[str, Any]] = []
     raw_edges = source.get("edges", [])

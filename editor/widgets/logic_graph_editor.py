@@ -308,17 +308,29 @@ class LogicNodeItem(QGraphicsRectItem):
             summary = str(self.node.get("category", ""))
         self.summary_item.setPlainText(summary)
 
-    def set_runtime_state(self, active: bool, values: dict[str, Any] | None = None, error: str = "") -> None:
-        visible = bool(active or error)
+    def set_runtime_state(
+        self,
+        active: bool,
+        values: dict[str, Any] | None = None,
+        error: str = "",
+        paused: bool = False,
+    ) -> None:
+        visible = bool(active or error or paused)
         self.summary_item.setVisible(not visible)
         self.debug_item.setVisible(visible)
         if not visible:
             self.debug_item.setPlainText("")
+            self.setPen(QPen(QColor("#515662"), 1.2))
             return
         if error:
             self.debug_item.setDefaultTextColor(QColor("#ff6b70"))
             self.debug_item.setPlainText("ERRO • " + error[:54])
             self.setPen(QPen(QColor("#ff5d62"), 3.0))
+            return
+        if paused:
+            self.debug_item.setDefaultTextColor(QColor("#e6b85c"))
+            self.debug_item.setPlainText("PAUSADO ANTES DE EXECUTAR")
+            self.setPen(QPen(QColor("#e6b85c"), 4.0))
             return
         self.debug_item.setDefaultTextColor(QColor("#7ee787"))
         pairs = list((values or {}).items())[:2]
@@ -433,8 +445,10 @@ class LogicGraphEditor(QWidget):
         self.breakpoint_button.setToolTip("Alterna um breakpoint no nó selecionado (duplo clique também funciona)")
         self.continue_debug_button = QPushButton("Continuar")
         self.step_debug_button = QPushButton("Próximo nó")
+        self.restart_debug_button = QPushButton("Reiniciar")
         self.continue_debug_button.setEnabled(False)
         self.step_debug_button.setEnabled(False)
+        self.restart_debug_button.setEnabled(False)
         self.connect_button = QPushButton("Conectar selecionados")
         self.delete_button = QPushButton("Excluir selecionado")
         self.delete_button.setProperty("uiRole", "danger")
@@ -442,6 +456,7 @@ class LogicGraphEditor(QWidget):
         toolbar.addWidget(self.breakpoint_button)
         toolbar.addWidget(self.continue_debug_button)
         toolbar.addWidget(self.step_debug_button)
+        toolbar.addWidget(self.restart_debug_button)
         toolbar.addWidget(self.connect_button)
         toolbar.addWidget(self.delete_button)
         root.addWidget(toolbar_widget)
@@ -507,6 +522,13 @@ class LogicGraphEditor(QWidget):
         self.property_tree.setHeaderLabels(["Propriedade", "Valor"])
         self.property_tree.setColumnWidth(0, 105)
         properties_layout.addWidget(self.property_tree, 1)
+        self.breakpoint_condition_label = QLabel("CONDIÇÃO DO BREAKPOINT")
+        self.breakpoint_condition_label.setObjectName("PanelSectionTitle")
+        properties_layout.addWidget(self.breakpoint_condition_label)
+        self.breakpoint_condition_edit = QLineEdit()
+        self.breakpoint_condition_edit.setPlaceholderText("Ex.: vida <= 0 ou estado == andando")
+        self.breakpoint_condition_edit.setEnabled(False)
+        properties_layout.addWidget(self.breakpoint_condition_edit)
         self.runtime_values_title = QLabel("VALORES EM EXECUÇÃO")
         self.runtime_values_title.setObjectName("PanelSectionTitle")
         self.runtime_values_title.hide()
@@ -516,6 +538,24 @@ class LogicGraphEditor(QWidget):
         self.runtime_values_tree.setMaximumHeight(155)
         self.runtime_values_tree.hide()
         properties_layout.addWidget(self.runtime_values_tree)
+        watch_title = QLabel("OBSERVADORES")
+        watch_title.setObjectName("PanelSectionTitle")
+        properties_layout.addWidget(watch_title)
+        self.watch_values_tree = QTreeWidget()
+        self.watch_values_tree.setHeaderLabels(["Expressão", "Valor"])
+        self.watch_values_tree.setMaximumHeight(135)
+        properties_layout.addWidget(self.watch_values_tree)
+        watch_row = QHBoxLayout()
+        self.watch_expression_edit = QLineEdit()
+        self.watch_expression_edit.setPlaceholderText("vida, x, grounded...")
+        self.add_watch_button = QPushButton("+")
+        self.add_watch_button.setToolTip("Adicionar observador")
+        self.remove_watch_button = QPushButton("−")
+        self.remove_watch_button.setToolTip("Remover observador selecionado")
+        watch_row.addWidget(self.watch_expression_edit, 1)
+        watch_row.addWidget(self.add_watch_button)
+        watch_row.addWidget(self.remove_watch_button)
+        properties_layout.addLayout(watch_row)
         property_hint = QLabel("Delete remove, Ctrl+D duplica e Esc cancela uma conexão. Ctrl + roda aproxima o grafo.")
         property_hint.setObjectName("PanelHint")
         property_hint.setWordWrap(True)
@@ -543,6 +583,11 @@ class LogicGraphEditor(QWidget):
         self.breakpoint_button.clicked.connect(self.toggle_selected_breakpoint)
         self.continue_debug_button.clicked.connect(lambda: self.debug_command.emit("continue"))
         self.step_debug_button.clicked.connect(lambda: self.debug_command.emit("step"))
+        self.restart_debug_button.clicked.connect(lambda: self.debug_command.emit("restart"))
+        self.breakpoint_condition_edit.editingFinished.connect(self._update_breakpoint_condition)
+        self.add_watch_button.clicked.connect(self._add_watch)
+        self.remove_watch_button.clicked.connect(self._remove_watch)
+        self.watch_expression_edit.returnPressed.connect(self._add_watch)
         self.connect_button.clicked.connect(self.connect_selected)
         self.delete_button.clicked.connect(self.delete_selected)
         self.target_type.currentIndexChanged.connect(lambda _index: self.mark_dirty())
@@ -599,6 +644,7 @@ class LogicGraphEditor(QWidget):
         for node_id in self.graph.get("debug", {}).get("breakpoints", []):
             if node_id in self.node_items:
                 self.node_items[node_id].set_breakpoint(True)
+        self._refresh_watch_values()
         self.refresh_connections()
         self._dirty = False
         self._update_status()
@@ -627,6 +673,7 @@ class LogicGraphEditor(QWidget):
         active_edges = {str(edge_id) for edge_id in trace.get("edges", [])}
         values = trace.get("values", {}) if isinstance(trace.get("values"), dict) else {}
         variables = trace.get("variables", {}) if isinstance(trace.get("variables"), dict) else {}
+        watches = trace.get("watches", {}) if isinstance(trace.get("watches"), dict) else {}
         paused = bool(trace.get("paused", False))
         pause_node = str(trace.get("pause_node", ""))
         breakpoints = {str(node_id) for node_id in trace.get("breakpoints", [])}
@@ -640,6 +687,7 @@ class LogicGraphEditor(QWidget):
                 node_id in active_nodes,
                 values.get(node_id) if isinstance(values.get(node_id), dict) else {},
                 error if node_id == error_node else "",
+                paused=node_id == pause_node and paused,
             )
         for edge in self.edge_items:
             edge.set_runtime_active(edge.edge_id in active_edges)
@@ -651,13 +699,19 @@ class LogicGraphEditor(QWidget):
         elif paused:
             paused_item = self.node_items.get(pause_node)
             paused_title = str(paused_item.node.get("title", pause_node)) if paused_item is not None else pause_node
-            self.debug_status_label.setText(f"● PAUSADO • {object_name} • {paused_title}")
-            self.debug_status_label.setStyleSheet("color: #e6b85c; font-weight: 700;")
+            condition_error = str(trace.get("condition_error", ""))
+            if condition_error:
+                self.debug_status_label.setText(f"● CONDIÇÃO INVÁLIDA • {condition_error}")
+                self.debug_status_label.setStyleSheet("color: #ff6b70; font-weight: 700;")
+            else:
+                self.debug_status_label.setText(f"● PAUSADO • {object_name} • {paused_title}")
+                self.debug_status_label.setStyleSheet("color: #e6b85c; font-weight: 700;")
         else:
             self.debug_status_label.setText(f"● PLAY • {object_name} • {len(active_nodes)} nó(s)")
             self.debug_status_label.setStyleSheet("color: #7ee787; font-weight: 700;")
         self.continue_debug_button.setEnabled(paused)
         self.step_debug_button.setEnabled(paused)
+        self.restart_debug_button.setEnabled(paused)
 
         self.runtime_values_tree.clear()
         for node_id, port_values in values.items():
@@ -672,6 +726,7 @@ class LogicGraphEditor(QWidget):
         has_values = self.runtime_values_tree.topLevelItemCount() > 0
         self.runtime_values_title.setVisible(has_values)
         self.runtime_values_tree.setVisible(has_values)
+        self._refresh_watch_values(watches)
 
     def clear_runtime_trace(self) -> None:
         self._runtime_trace_active = False
@@ -685,6 +740,9 @@ class LogicGraphEditor(QWidget):
         if hasattr(self, "continue_debug_button"):
             self.continue_debug_button.setEnabled(False)
             self.step_debug_button.setEnabled(False)
+            self.restart_debug_button.setEnabled(False)
+        if hasattr(self, "watch_values_tree"):
+            self._refresh_watch_values()
         for item in self.node_items.values():
             item.set_runtime_state(False)
         for edge in self.edge_items:
@@ -955,12 +1013,16 @@ class LogicGraphEditor(QWidget):
         breakpoints = [str(value) for value in debug.setdefault("breakpoints", [])]
         if item.node_id in breakpoints:
             breakpoints.remove(item.node_id)
+            debug.setdefault("breakpoint_conditions", {}).pop(item.node_id, None)
             enabled = False
         else:
             breakpoints.append(item.node_id)
             enabled = True
         debug["breakpoints"] = breakpoints
         item.set_breakpoint(enabled)
+        self.breakpoint_condition_edit.setEnabled(enabled)
+        if not enabled:
+            self.breakpoint_condition_edit.clear()
         self.mark_dirty()
         self._autosave()
         self.debug_command.emit("sync")
@@ -972,10 +1034,17 @@ class LogicGraphEditor(QWidget):
         self.property_tree.clear()
         if len(selected) != 1:
             self.selected_label.setText("Selecione um nó para editar seus valores")
+            self.breakpoint_condition_edit.clear()
+            self.breakpoint_condition_edit.setEnabled(False)
             self._updating_properties = False
             return
         node = selected[0].node
         self.selected_label.setText(f"{node['title']}\n{node['category']} • {node['type']}")
+        breakpoints = self.graph.get("debug", {}).get("breakpoints", [])
+        has_breakpoint = str(node["id"]) in breakpoints
+        condition = self.graph.get("debug", {}).get("breakpoint_conditions", {}).get(str(node["id"]), "")
+        self.breakpoint_condition_edit.setEnabled(has_breakpoint)
+        self.breakpoint_condition_edit.setText(str(condition))
         title_item = QTreeWidgetItem(["title", str(node["title"])])
         title_item.setFlags(title_item.flags() | Qt.ItemIsEditable)
         self.property_tree.addTopLevelItem(title_item)
@@ -984,6 +1053,58 @@ class LogicGraphEditor(QWidget):
             item.setFlags(item.flags() | Qt.ItemIsEditable)
             self.property_tree.addTopLevelItem(item)
         self._updating_properties = False
+
+    def _update_breakpoint_condition(self) -> None:
+        selected = [item for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)]
+        if len(selected) != 1 or not self.breakpoint_condition_edit.isEnabled():
+            return
+        node_id = selected[0].node_id
+        conditions = self.graph.setdefault("debug", {}).setdefault("breakpoint_conditions", {})
+        expression = self.breakpoint_condition_edit.text().strip()
+        if expression:
+            conditions[node_id] = expression
+        else:
+            conditions.pop(node_id, None)
+        self.mark_dirty()
+        self._autosave()
+        self.debug_command.emit("sync")
+        self.message.emit("INFO", f"Condição do breakpoint atualizada: {expression or 'sempre'}")
+
+    def _add_watch(self) -> None:
+        expression = self.watch_expression_edit.text().strip()
+        if not expression:
+            return
+        watches = self.graph.setdefault("debug", {}).setdefault("watches", [])
+        if expression not in watches:
+            watches.append(expression)
+        self.watch_expression_edit.clear()
+        self._refresh_watch_values()
+        self.mark_dirty()
+        self._autosave()
+        self.debug_command.emit("sync")
+
+    def _remove_watch(self) -> None:
+        item = self.watch_values_tree.currentItem()
+        if item is None:
+            return
+        expression = item.text(0)
+        watches = self.graph.setdefault("debug", {}).setdefault("watches", [])
+        if expression in watches:
+            watches.remove(expression)
+        self._refresh_watch_values()
+        self.mark_dirty()
+        self._autosave()
+        self.debug_command.emit("sync")
+
+    def _refresh_watch_values(self, values: dict[str, Any] | None = None) -> None:
+        if not hasattr(self, "watch_values_tree"):
+            return
+        values = values or {}
+        self.watch_values_tree.clear()
+        for expression in self.graph.get("debug", {}).get("watches", []):
+            self.watch_values_tree.addTopLevelItem(
+                QTreeWidgetItem([str(expression), str(values.get(str(expression), "—"))])
+            )
 
     def _property_changed(self, item: QTreeWidgetItem, column: int) -> None:
         if self._updating_properties or column != 1:

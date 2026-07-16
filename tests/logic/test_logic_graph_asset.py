@@ -43,9 +43,15 @@ def test_normalization_preserves_only_breakpoints_for_existing_nodes():
     graph = default_logic_graph()
     event = create_logic_node("event_update")
     graph["nodes"] = [event]
-    graph["debug"] = {"breakpoints": [event["id"], "missing", event["id"]]}
+    graph["debug"] = {
+        "breakpoints": [event["id"], "missing", event["id"]],
+        "breakpoint_conditions": {event["id"]: "x > 10", "missing": "true"},
+        "watches": ["x", "vida", "x"],
+    }
     normalized = normalize_logic_graph(graph)
     assert normalized["debug"]["breakpoints"] == [event["id"]]
+    assert normalized["debug"]["breakpoint_conditions"] == {event["id"]: "x > 10"}
+    assert normalized["debug"]["watches"] == ["x", "vida"]
 
 
 def test_validation_reports_missing_event_and_disconnected_node():
@@ -336,3 +342,66 @@ def test_runtime_breakpoint_and_step_keep_exact_flow_continuation():
     runtime.update(game, 0.5)
     assert runtime.pause_node == move["id"]
     assert game.x == 100.0
+
+
+def test_conditional_breakpoint_watches_and_restart_are_beginner_safe():
+    event = create_logic_node("event_update")
+    amount = create_logic_node("number_value")
+    amount["properties"]["value"] = 1.0
+    move = create_logic_node("move")
+    graph = default_logic_graph("ConditionalDebug")
+    graph["nodes"] = [event, amount, move]
+    graph["edges"] = [
+        _edge(event, "next", move, "in"),
+        _edge(amount, "value", move, "value", "number"),
+    ]
+    graph["debug"] = {
+        "breakpoints": [move["id"]],
+        "breakpoint_conditions": {move["id"]: "x >= 100 e grounded == verdadeiro"},
+        "watches": ["x", "grounded", "x >= 100"],
+    }
+
+    class Game:
+        grounded = True
+
+        def __init__(self):
+            self.x = 0.0
+
+        def move(self, amount):
+            self.x += amount
+
+    game = Game()
+    runtime = LogicGraphRuntime(graph)
+    runtime.update(game, 0.5)
+    assert runtime.debug_paused is False
+    assert game.x == 100.0
+
+    runtime.update(game, 0.5)
+    snapshot = runtime.debug_snapshot()
+    assert runtime.debug_paused is True
+    assert runtime.pause_node == move["id"]
+    assert snapshot["watches"] == {"x": 100.0, "grounded": True, "x >= 100": True}
+
+    game.x = 350.0
+    runtime.restart(game)
+    assert runtime.debug_paused is True
+    assert runtime.pause_node == move["id"]
+    assert runtime.debug_snapshot()["watches"]["x"] == 350.0
+
+
+def test_invalid_breakpoint_condition_pauses_with_clear_error():
+    event = create_logic_node("event_update")
+    move = create_logic_node("move")
+    graph = default_logic_graph("InvalidCondition")
+    graph["nodes"] = [event, move]
+    graph["edges"] = [_edge(event, "next", move, "in")]
+    graph["debug"]["breakpoints"] = [move["id"]]
+    graph["debug"]["breakpoint_conditions"] = {move["id"]: "variavel_que_nao_existe > 2"}
+
+    class Game:
+        def move(self, amount): pass
+
+    runtime = LogicGraphRuntime(graph)
+    runtime.update(Game(), 0.1)
+    assert runtime.debug_paused is True
+    assert "variável 'variavel_que_nao_existe' não encontrada" in runtime.debug_snapshot()["condition_error"]
