@@ -48,6 +48,7 @@ from engine.logic.graph_asset import (
     save_logic_graph,
     validate_logic_graph,
 )
+from engine.logic.blackboard import coerce_variable_value, save_blackboard_asset
 
 
 CATEGORY_COLORS = {
@@ -373,6 +374,7 @@ class LogicGraphEditor(QWidget):
         self._connection_candidate: LogicPortItem | None = None
         self._connection_preview: QGraphicsPathItem | None = None
         self._runtime_trace_active = False
+        self._blackboard_selected_name = ""
         self._dirty = False
         self._updating_properties = False
         self._autosave_timer = QTimer(self)
@@ -494,6 +496,41 @@ class LogicGraphEditor(QWidget):
         self.palette.setObjectName("LogicNodePalette")
         self.palette.setToolTip("Duplo clique para adicionar um nó")
         palette_layout.addWidget(self.palette, 1)
+        blackboard_title = QLabel("BLACKBOARD")
+        blackboard_title.setObjectName("PanelSectionTitle")
+        palette_layout.addWidget(blackboard_title)
+        self.blackboard_tree = QTreeWidget()
+        self.blackboard_tree.setHeaderLabels(["Nome", "Tipo", "Escopo"])
+        self.blackboard_tree.setMaximumHeight(150)
+        palette_layout.addWidget(self.blackboard_tree)
+        self.blackboard_name_edit = QLineEdit()
+        self.blackboard_name_edit.setPlaceholderText("nome_da_variável")
+        palette_layout.addWidget(self.blackboard_name_edit)
+        blackboard_options = QHBoxLayout()
+        self.blackboard_type_combo = QComboBox()
+        for label, value in (("Número", "number"), ("Booleano", "bool"), ("Texto", "text"), ("Objeto", "object")):
+            self.blackboard_type_combo.addItem(label, value)
+        self.blackboard_scope_combo = QComboBox()
+        for label, value in (("Objeto", "object"), ("Cena", "scene"), ("Projeto", "project")):
+            self.blackboard_scope_combo.addItem(label, value)
+        blackboard_options.addWidget(self.blackboard_type_combo)
+        blackboard_options.addWidget(self.blackboard_scope_combo)
+        palette_layout.addLayout(blackboard_options)
+        self.blackboard_default_edit = QLineEdit("0")
+        self.blackboard_default_edit.setPlaceholderText("Valor inicial")
+        palette_layout.addWidget(self.blackboard_default_edit)
+        blackboard_edit_actions = QHBoxLayout()
+        self.blackboard_save_button = QPushButton("Adicionar")
+        self.blackboard_remove_button = QPushButton("Excluir")
+        blackboard_edit_actions.addWidget(self.blackboard_save_button)
+        blackboard_edit_actions.addWidget(self.blackboard_remove_button)
+        palette_layout.addLayout(blackboard_edit_actions)
+        blackboard_node_actions = QHBoxLayout()
+        self.blackboard_get_button = QPushButton("Ler")
+        self.blackboard_set_button = QPushButton("Definir")
+        blackboard_node_actions.addWidget(self.blackboard_get_button)
+        blackboard_node_actions.addWidget(self.blackboard_set_button)
+        palette_layout.addLayout(blackboard_node_actions)
         hint = QLabel("Duplo clique adiciona o nó. Ao arrastar, o ímã encaixa na porta compatível mais próxima.")
         hint.setObjectName("PanelHint")
         hint.setWordWrap(True)
@@ -588,6 +625,12 @@ class LogicGraphEditor(QWidget):
         self.add_watch_button.clicked.connect(self._add_watch)
         self.remove_watch_button.clicked.connect(self._remove_watch)
         self.watch_expression_edit.returnPressed.connect(self._add_watch)
+        self.blackboard_tree.itemSelectionChanged.connect(self._select_blackboard_variable)
+        self.blackboard_tree.itemDoubleClicked.connect(lambda _item, _column: self._add_blackboard_node("get_variable"))
+        self.blackboard_save_button.clicked.connect(self._save_blackboard_variable)
+        self.blackboard_remove_button.clicked.connect(self._remove_blackboard_variable)
+        self.blackboard_get_button.clicked.connect(lambda: self._add_blackboard_node("get_variable"))
+        self.blackboard_set_button.clicked.connect(lambda: self._add_blackboard_node("set_variable"))
         self.connect_button.clicked.connect(self.connect_selected)
         self.delete_button.clicked.connect(self.delete_selected)
         self.target_type.currentIndexChanged.connect(lambda _index: self.mark_dirty())
@@ -628,6 +671,7 @@ class LogicGraphEditor(QWidget):
         self.cancel_connection()
         self._autosave_timer.stop()
         self.graph = normalize_logic_graph(graph)
+        self._blackboard_selected_name = ""
         self.current_path = path
         target = self.graph.get("target", {"type": "name", "value": "Player"})
         self.target_type.blockSignals(True)
@@ -645,6 +689,7 @@ class LogicGraphEditor(QWidget):
             if node_id in self.node_items:
                 self.node_items[node_id].set_breakpoint(True)
         self._refresh_watch_values()
+        self._refresh_blackboard_variables()
         self.refresh_connections()
         self._dirty = False
         self._update_status()
@@ -673,6 +718,7 @@ class LogicGraphEditor(QWidget):
         active_edges = {str(edge_id) for edge_id in trace.get("edges", [])}
         values = trace.get("values", {}) if isinstance(trace.get("values"), dict) else {}
         variables = trace.get("variables", {}) if isinstance(trace.get("variables"), dict) else {}
+        blackboard = trace.get("blackboard", {}) if isinstance(trace.get("blackboard"), dict) else {}
         watches = trace.get("watches", {}) if isinstance(trace.get("watches"), dict) else {}
         paused = bool(trace.get("paused", False))
         pause_node = str(trace.get("pause_node", ""))
@@ -721,8 +767,15 @@ class LogicGraphEditor(QWidget):
                 continue
             for port, value in port_values.items():
                 self.runtime_values_tree.addTopLevelItem(QTreeWidgetItem([f"{title}.{port}", str(value)]))
-        for name, value in variables.items():
-            self.runtime_values_tree.addTopLevelItem(QTreeWidgetItem([f"${name}", str(value)]))
+        if blackboard:
+            for scope, scope_values in blackboard.items():
+                if not isinstance(scope_values, dict):
+                    continue
+                for name, value in scope_values.items():
+                    self.runtime_values_tree.addTopLevelItem(QTreeWidgetItem([f"{scope}.{name}", str(value)]))
+        else:
+            for name, value in variables.items():
+                self.runtime_values_tree.addTopLevelItem(QTreeWidgetItem([f"${name}", str(value)]))
         has_values = self.runtime_values_tree.topLevelItemCount() > 0
         self.runtime_values_title.setVisible(has_values)
         self.runtime_values_tree.setVisible(has_values)
@@ -1106,6 +1159,113 @@ class LogicGraphEditor(QWidget):
                 QTreeWidgetItem([str(expression), str(values.get(str(expression), "—"))])
             )
 
+    def _refresh_blackboard_variables(self) -> None:
+        if not hasattr(self, "blackboard_tree"):
+            return
+        self.blackboard_tree.clear()
+        labels = {"number": "Número", "bool": "Booleano", "text": "Texto", "object": "Objeto"}
+        scopes = {"object": "Objeto", "scene": "Cena", "project": "Projeto"}
+        for name, definition in self.graph.get("variables", {}).items():
+            item = QTreeWidgetItem([
+                str(name),
+                labels.get(str(definition.get("type")), str(definition.get("type"))),
+                scopes.get(str(definition.get("scope")), str(definition.get("scope"))),
+            ])
+            item.setData(0, Qt.UserRole, str(name))
+            self.blackboard_tree.addTopLevelItem(item)
+
+    def _select_blackboard_variable(self) -> None:
+        item = self.blackboard_tree.currentItem()
+        if item is None:
+            return
+        name = str(item.data(0, Qt.UserRole) or item.text(0))
+        self._blackboard_selected_name = name
+        definition = self.graph.get("variables", {}).get(name, {})
+        self.blackboard_name_edit.setText(name)
+        self.blackboard_type_combo.setCurrentIndex(max(0, self.blackboard_type_combo.findData(definition.get("type", "number"))))
+        self.blackboard_scope_combo.setCurrentIndex(max(0, self.blackboard_scope_combo.findData(definition.get("scope", "object"))))
+        default = definition.get("default")
+        self.blackboard_default_edit.setText(json.dumps(default, ensure_ascii=False) if not isinstance(default, str) else default)
+        self.blackboard_save_button.setText("Atualizar")
+
+    def _save_blackboard_variable(self) -> None:
+        name = self.blackboard_name_edit.text().strip()
+        if not name:
+            self.message.emit("WARNING", "Informe um nome para a variável")
+            return
+        raw_default = self.blackboard_default_edit.text().strip()
+        try:
+            default = json.loads(raw_default)
+        except json.JSONDecodeError:
+            default = raw_default
+        variable_type = str(self.blackboard_type_combo.currentData() or "number")
+        scope = str(self.blackboard_scope_combo.currentData() or "object")
+        if self._blackboard_selected_name and self._blackboard_selected_name != name:
+            self.graph.setdefault("variables", {}).pop(self._blackboard_selected_name, None)
+        self.graph.setdefault("variables", {})[name] = {
+            "type": variable_type,
+            "scope": scope,
+            "default": coerce_variable_value(default, variable_type),
+        }
+        self._refresh_blackboard_variables()
+        self.blackboard_name_edit.clear()
+        self.blackboard_default_edit.setText("0")
+        self.blackboard_save_button.setText("Adicionar")
+        self._blackboard_selected_name = ""
+        self.mark_dirty()
+        self._autosave()
+        self.debug_command.emit("sync")
+        self.message.emit("INFO", f"Variável criada: {scope}.{name}")
+
+    def _remove_blackboard_variable(self) -> None:
+        item = self.blackboard_tree.currentItem()
+        if item is None:
+            return
+        name = str(item.data(0, Qt.UserRole) or item.text(0))
+        self.graph.setdefault("variables", {}).pop(name, None)
+        self._refresh_blackboard_variables()
+        self.blackboard_name_edit.clear()
+        self.blackboard_save_button.setText("Adicionar")
+        self._blackboard_selected_name = ""
+        self.mark_dirty()
+        self._autosave()
+        self.debug_command.emit("sync")
+        self.message.emit("INFO", f"Variável excluída: {name}")
+
+    def _add_blackboard_node(self, node_type: str) -> None:
+        item = self.blackboard_tree.currentItem()
+        if item is None:
+            self.message.emit("WARNING", "Selecione uma variável do Blackboard")
+            return
+        name = str(item.data(0, Qt.UserRole) or item.text(0))
+        definition = self.graph.get("variables", {}).get(name, {})
+        center = self.view.mapToScene(self.view.viewport().rect().center())
+        node = create_logic_node(node_type, (center.x(), center.y()))
+        node.setdefault("properties", {}).update({"name": name, "scope": definition.get("scope", "object")})
+        if node_type == "set_variable":
+            node["properties"]["value"] = deepcopy(definition.get("default"))
+        self.graph["nodes"].append(node)
+        self.scene.clearSelection()
+        self._create_node_item(node).setSelected(True)
+        self.mark_dirty()
+        self._update_validation()
+
+    def _sync_project_blackboard(self) -> None:
+        variables: dict[str, dict[str, Any]] = {}
+        directory = self.project_root / "Assets" / "Logic"
+        if directory.is_dir():
+            for graph_path in sorted(directory.rglob("*.zlogic"), key=lambda item: str(item).casefold()):
+                try:
+                    graph = load_logic_graph(graph_path)
+                except (OSError, ValueError, json.JSONDecodeError):
+                    continue
+                for name, definition in graph.get("variables", {}).items():
+                    if isinstance(definition, dict) and definition.get("scope") == "project":
+                        variables[str(name)] = deepcopy(definition)
+        target = directory / "ProjectBlackboard.zblackboard"
+        if variables or target.exists():
+            save_blackboard_asset(target, {"variables": variables})
+
     def _property_changed(self, item: QTreeWidgetItem, column: int) -> None:
         if self._updating_properties or column != 1:
             return
@@ -1177,6 +1337,7 @@ class LogicGraphEditor(QWidget):
             path = Path(filename)
         try:
             saved = save_logic_graph(path, self.graph_data())
+            self._sync_project_blackboard()
             saved_path = Path(path).with_suffix(".zlogic")
             self.set_graph(saved, saved_path)
             self.asset_changed.emit()
@@ -1204,6 +1365,7 @@ class LogicGraphEditor(QWidget):
             return
         try:
             save_logic_graph(self.current_path, self.graph_data())
+            self._sync_project_blackboard()
             self._dirty = False
             self._update_status()
             self.asset_changed.emit()

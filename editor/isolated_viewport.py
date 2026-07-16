@@ -21,6 +21,7 @@ try:
     from engine.behavior.controller_asset import BehaviorControllerRunner, load_behavior_controller
     from engine.logic.graph_asset import load_logic_graph
     from engine.logic.runtime import LogicGraphRuntime
+    from engine.logic.blackboard import BlackboardStore, load_blackboard_asset
 except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .audio_playback_state import set_channels_paused
     from .native_ui import NativeUIRenderer, normalize_ui
@@ -30,6 +31,7 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .behavior_controller import BehaviorControllerRunner, load_behavior_controller
     from .logic_graph_asset import load_logic_graph
     from .logic_runtime import LogicGraphRuntime
+    from .logic_blackboard import BlackboardStore, load_blackboard_asset
 
 
 def hydrate_animation_asset_clips(
@@ -483,6 +485,8 @@ def run_viewport(
     animator_controllers: dict[str, AnimatorControllerRuntime] = {}
     behavior_runners: dict[str, BehaviorControllerRunner] = {}
     logic_runtimes: dict[str, list[tuple[str, LogicGraphRuntime]]] = {}
+    logic_blackboard = BlackboardStore()
+    scene_blackboard_config: dict[str, Any] = {}
     logic_trace_last_sent = 0.0
     animator_event_signatures: dict[str, tuple[Any, ...]] = {}
     active_contacts: dict[tuple[str, str], bool] = {}
@@ -521,11 +525,18 @@ def run_viewport(
         return None, None
 
     def start_scripts() -> None:
+        nonlocal logic_blackboard
         script_instances.clear()
         script_apis.clear()
         animator_controllers.clear()
         behavior_runners.clear()
         logic_runtimes.clear()
+        project_blackboard_path = Path.cwd() / "Assets" / "Logic" / "ProjectBlackboard.zblackboard"
+        try:
+            project_blackboard = load_blackboard_asset(project_blackboard_path) if project_blackboard_path.is_file() else {}
+        except (OSError, ValueError):
+            project_blackboard = {}
+        logic_blackboard = BlackboardStore(scene_blackboard_config, project_blackboard)
         for level, object_name, message in hydrate_animation_asset_clips(objects, Path.cwd()):
             _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
         for level, object_name, message in hydrate_animator_controllers(objects, Path.cwd()):
@@ -936,7 +947,7 @@ def run_viewport(
                     continue
                 try:
                     api = script_apis.setdefault(name, PlayScriptAPI(name, obj, events, objects))
-                    runtime = LogicGraphRuntime(graph)
+                    runtime = LogicGraphRuntime(graph, logic_blackboard, name)
                     runtime.start(api)
                     logic_runtimes.setdefault(name, []).append((str(entry.get("path", graph.get("name", "Logic Graph"))), runtime))
                 except Exception as exc:
@@ -1209,6 +1220,7 @@ def run_viewport(
                     breakpoints = command.get("breakpoints", [])
                     breakpoint_conditions = command.get("breakpoint_conditions", {})
                     watches = command.get("watches", [])
+                    variables = command.get("variables", {})
                     matched: list[tuple[str, str, LogicGraphRuntime]] = []
                     for object_name, runtimes in logic_runtimes.items():
                         for graph_path, runtime in runtimes:
@@ -1219,6 +1231,8 @@ def run_viewport(
                                     breakpoint_conditions if isinstance(breakpoint_conditions, dict) else {},
                                     watches if isinstance(watches, list) else [],
                                 )
+                                if isinstance(variables, dict):
+                                    runtime.configure_variables(variables)
                                 matched.append((object_name, graph_path, runtime))
                     if debug_action == "continue" and matched:
                         for _object_name, _graph_path, runtime in matched:
@@ -1279,6 +1293,9 @@ def run_viewport(
                         _send(events, {"type": "play_state", "state": "pause" if paused else "play"})
                 elif command.get("type") == "play":
                     if not playing:
+                        incoming_blackboard = command.get("scene_blackboard", {})
+                        if isinstance(incoming_blackboard, dict):
+                            scene_blackboard_config = deepcopy(incoming_blackboard)
                         incoming_audio = command.get("audio_sources", {})
                         if isinstance(incoming_audio, dict):
                             for object_name, audio_config in incoming_audio.items():

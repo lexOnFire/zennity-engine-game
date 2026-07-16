@@ -44,6 +44,7 @@ from engine.animation.clip_asset import (
 )
 from engine.animation.controller_asset import load_animator_controller
 from engine.logic.graph_asset import load_logic_graph
+from engine.logic.blackboard import load_blackboard_asset
 from editor.widgets.build_report_dialog import BuildReportDialog
 from editor.widgets.project_validation_dialog import ProjectValidationDialog
 from engine.build import (
@@ -288,6 +289,20 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 details = f"<span style='color:{DEFAULT_TOKENS.danger}'>Asset inválido: {exc}</span><br>"
             self.preview_details_label.setText(
                 f"<b>{path.name}</b><br><br>Tipo: Logic Graph Visual<br>{details}Tamanho: {size_str}<br>Modificado: {date_str}<br><br><i>Duplo clique para editar</i>"
+            )
+            return
+
+        elif ext == ".zblackboard":
+            self.preview_label.clear()
+            self.preview_label.setText("▦ Blackboard")
+            try:
+                blackboard = load_blackboard_asset(path)
+                variables = blackboard.get("variables", {})
+                details = f"Variáveis de projeto: {len(variables)}<br>"
+            except (OSError, ValueError, json.JSONDecodeError) as exc:
+                details = f"<span style='color:{DEFAULT_TOKENS.danger}'>Asset inválido: {exc}</span><br>"
+            self.preview_details_label.setText(
+                f"<b>{path.name}</b><br><br>Tipo: Blackboard do Projeto<br>{details}Tamanho: {size_str}<br>Modificado: {date_str}"
             )
             return
 
@@ -599,6 +614,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "breakpoints": list(graph.get("debug", {}).get("breakpoints", [])),
             "breakpoint_conditions": dict(graph.get("debug", {}).get("breakpoint_conditions", {})),
             "watches": list(graph.get("debug", {}).get("watches", [])),
+            "variables": deepcopy(graph.get("variables", {})),
         })
 
     def _show_animation_window(self) -> None:
@@ -898,7 +914,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 }
                 enabled_audio = [name for name, audio in audio_sources.items() if audio.get("autoplay") and audio.get("path")]
                 self._log("INFO", f"Play enviando {len(audio_sources)} Audio Source(s); {len(enabled_audio)} configurado(s) para iniciar")
-                message = {**message, "audio_sources": audio_sources}
+                scene_blackboard = deepcopy((self._scene_document or {}).get("blackboard", {}))
+                message = {**message, "audio_sources": audio_sources, "scene_blackboard": scene_blackboard}
         elif message.get("type") == "stop":
             self.viewport_tabs.setCurrentIndex(0)
         if message.get("type") == "move_selected" and self._selected_name is not None:
@@ -1083,6 +1100,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         }
         payload["format_version"] = max(2, int(payload.get("format_version", 1)))
         payload["scene_name"] = str(payload.get("scene_name") or path.stem)
+        scene_variables = self._collect_logic_variables("scene")
+        payload["blackboard"] = {"variables": scene_variables}
         existing_by_id = {str(item.get("id")): item for item in payload.get("objects", []) if item.get("id") is not None}
         existing_by_name = {str(item.get("name")): item for item in payload.get("objects", [])}
         scene_objects = []
@@ -1156,6 +1175,22 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._current_scene_path = path
         self.statusBar().showMessage(f"Cena salva: {filename}")
         self._log("INFO", f"Cena salva: {filename}")
+
+    @staticmethod
+    def _collect_logic_variables(scope: str) -> dict[str, dict[str, Any]]:
+        variables: dict[str, dict[str, Any]] = {}
+        directory = Path.cwd() / "Assets" / "Logic"
+        if not directory.is_dir():
+            return variables
+        for graph_path in sorted(directory.rglob("*.zlogic"), key=lambda item: str(item).casefold()):
+            try:
+                graph = load_logic_graph(graph_path)
+            except (OSError, ValueError, json.JSONDecodeError):
+                continue
+            for name, definition in graph.get("variables", {}).items():
+                if isinstance(definition, dict) and definition.get("scope") == scope:
+                    variables[str(name)] = deepcopy(definition)
+        return variables
 
     def _load_scene_snapshot(self, _checked: bool = False, scene_path: Path | None = None) -> None:
         if scene_path is not None:

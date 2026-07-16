@@ -12,6 +12,7 @@ from engine.logic.graph_asset import (
     validate_logic_graph,
 )
 from engine.logic.runtime import LogicGraphRuntime
+from engine.logic.blackboard import BlackboardStore, load_blackboard_asset, save_blackboard_asset
 
 
 def test_logic_graph_round_trip_uses_zlogic_extension(tmp_path):
@@ -405,3 +406,66 @@ def test_invalid_breakpoint_condition_pauses_with_clear_error():
     runtime.update(Game(), 0.1)
     assert runtime.debug_paused is True
     assert "variável 'variavel_que_nao_existe' não encontrada" in runtime.debug_snapshot()["condition_error"]
+
+
+def test_blackboard_asset_round_trip_preserves_typed_scopes(tmp_path):
+    saved = save_blackboard_asset(tmp_path / "ProjectBlackboard", {"variables": {
+        "score": {"type": "number", "scope": "project", "default": 10},
+        "tutorial": {"type": "bool", "scope": "project", "default": "verdadeiro"},
+    }})
+    loaded = load_blackboard_asset(tmp_path / "ProjectBlackboard.zblackboard")
+    assert loaded == saved
+    assert loaded["variables"]["score"]["default"] == 10.0
+    assert loaded["variables"]["tutorial"]["default"] is True
+
+
+def test_blackboard_shares_scene_and_project_but_isolates_objects():
+    store = BlackboardStore(
+        {"variables": {"score": {"type": "number", "scope": "scene", "default": 0}}},
+        {"variables": {"record": {"type": "number", "scope": "project", "default": 50}}},
+    )
+    graph = default_logic_graph("Blackboard")
+    graph["variables"] = {
+        "life": {"type": "number", "scope": "object", "default": 3},
+        "score": {"type": "number", "scope": "scene", "default": 0},
+        "record": {"type": "number", "scope": "project", "default": 50},
+    }
+    player = LogicGraphRuntime(graph, store, "Player")
+    enemy = LogicGraphRuntime(graph, store, "Enemy")
+
+    store.set("object", "life", 1, "Player")
+    store.set("scene", "score", 25, "Player")
+    store.set("project", "record", 100, "Enemy")
+
+    assert player.blackboard.get("object", "life", "Player") == 1.0
+    assert enemy.blackboard.get("object", "life", "Enemy") == 3.0
+    assert enemy.blackboard.get("scene", "score", "Enemy") == 25.0
+    assert player.blackboard.get("project", "record", "Player") == 100.0
+    assert player.debug_snapshot()["blackboard"]["scene"]["score"] == 25.0
+
+
+def test_get_and_set_variable_nodes_respect_selected_scope():
+    event = create_logic_node("event_update")
+    setter = create_logic_node("set_variable")
+    setter["properties"].update({"scope": "scene", "name": "score", "value": 7})
+    getter = create_logic_node("get_variable")
+    getter["properties"].update({"scope": "scene", "name": "score"})
+    move = create_logic_node("move")
+    graph = default_logic_graph("ScopedNodes")
+    graph["variables"] = {"score": {"type": "number", "scope": "scene", "default": 0}}
+    graph["nodes"] = [event, setter, getter, move]
+    graph["edges"] = [
+        _edge(event, "next", setter, "in"),
+        _edge(setter, "next", move, "in"),
+        _edge(getter, "value", move, "value", "any"),
+    ]
+
+    class Game:
+        def __init__(self): self.x = 0.0
+        def move(self, value): self.x += value
+
+    game = Game()
+    runtime = LogicGraphRuntime(graph, BlackboardStore(), "Player")
+    runtime.update(game, 1.0)
+    assert game.x == 1400.0
+    assert runtime.debug_snapshot()["blackboard"]["scene"]["score"] == 7.0

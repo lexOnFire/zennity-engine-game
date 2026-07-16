@@ -116,3 +116,18 @@ def test_logic_debugger_exposes_conditions_watches_highlight_and_restart():
     assert '"watches"' in bridge
     assert "def _evaluate_debug_expression" in runtime
     assert "def restart" in runtime
+
+
+def test_logic_workspace_exposes_typed_scoped_blackboard_panel():
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    viewport = _source("editor/isolated_viewport.py")
+    bridge = _source("editor/isolated_editor_main.py")
+    assert "BLACKBOARD" in editor
+    assert "blackboard_scope_combo" in editor
+    assert "blackboard_type_combo" in editor
+    assert "_save_blackboard_variable" in editor
+    assert "_add_blackboard_node" in editor
+    assert "ProjectBlackboard.zblackboard" in editor
+    assert "BlackboardStore" in viewport
+    assert "scene_blackboard" in viewport
+    assert 'self._collect_logic_variables("scene")' in bridge

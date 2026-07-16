@@ -26,6 +26,7 @@ RUNTIME_SOURCES = (
     "engine/animation/controller_asset.py",
     "engine/behavior/controller_asset.py",
     "engine/logic/graph_asset.py",
+    "engine/logic/blackboard.py",
     "engine/logic/runtime.py",
     "engine/build/runtime_scene_loader.py",
 )

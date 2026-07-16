@@ -12,6 +12,11 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Mapping
 
+try:
+    from .blackboard import normalize_variable_definitions
+except ImportError:  # Runtime autocontido exportado.
+    from .logic_blackboard import normalize_variable_definitions
+
 
 LOGIC_GRAPH_FORMAT = "zennity.logic_graph"
 LOGIC_GRAPH_VERSION = 1
@@ -34,8 +39,8 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "play_animation": {"title": "Tocar animação", "category": "Ação", "properties": {"state": "Idle"}},
     "play_sound": {"title": "Tocar som", "category": "Ação", "properties": {"path": ""}},
     "set_hud": {"title": "Atualizar HUD", "category": "Ação", "properties": {"text": "Texto"}},
-    "get_variable": {"title": "Ler variável", "category": "Variáveis", "properties": {"name": "value"}},
-    "set_variable": {"title": "Definir variável", "category": "Variáveis", "properties": {"name": "value", "value": 0}},
+    "get_variable": {"title": "Ler variável", "category": "Variáveis", "properties": {"scope": "object", "name": "value"}},
+    "set_variable": {"title": "Definir variável", "category": "Variáveis", "properties": {"scope": "object", "name": "value", "value": 0}},
     "number_value": {"title": "Número", "category": "Variáveis", "properties": {"value": 0.0}},
     "bool_value": {"title": "Verdadeiro / Falso", "category": "Variáveis", "properties": {"value": True}},
     "text_value": {"title": "Texto", "category": "Variáveis", "properties": {"value": "Texto"}},
@@ -116,8 +121,7 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
             "type": target_type if target_type in {"name", "tag"} else "name",
             "value": str(raw_target.get("value", "Player")).strip() or "Player",
         }
-    variables = source.get("variables", {})
-    result["variables"] = deepcopy(variables) if isinstance(variables, Mapping) else {}
+    result["variables"] = normalize_variable_definitions(source.get("variables", {}))
     raw_debug = source.get("debug", {})
     raw_breakpoints = raw_debug.get("breakpoints", []) if isinstance(raw_debug, Mapping) else []
     raw_conditions = raw_debug.get("breakpoint_conditions", {}) if isinstance(raw_debug, Mapping) else {}

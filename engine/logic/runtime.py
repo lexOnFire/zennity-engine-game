@@ -9,8 +9,10 @@ from typing import Any, Iterator, Mapping
 
 try:
     from .graph_asset import normalize_logic_graph
+    from .blackboard import BlackboardStore
 except ImportError:  # Runtime autocontido exportado.
     from .logic_graph_asset import normalize_logic_graph
+    from .logic_blackboard import BlackboardStore
 
 
 class LogicGraphRuntime:
@@ -18,18 +20,23 @@ class LogicGraphRuntime:
 
     MAX_STEPS = 256
 
-    def __init__(self, graph: Mapping[str, Any]) -> None:
+    def __init__(
+        self,
+        graph: Mapping[str, Any],
+        blackboard: BlackboardStore | None = None,
+        object_key: str = "Object",
+    ) -> None:
         self.graph = normalize_logic_graph(graph)
+        self.object_key = str(object_key)
+        self.blackboard = blackboard or BlackboardStore()
+        self.blackboard.register(self.graph.get("variables", {}), self.object_key)
         self.nodes = {node["id"]: node for node in self.graph["nodes"]}
         self.outgoing: dict[str, list[dict[str, Any]]] = {}
         self.incoming: dict[tuple[str, str], dict[str, Any]] = {}
         for edge in self.graph["edges"]:
             self.outgoing.setdefault(edge["from_node"], []).append(edge)
             self.incoming[(str(edge["to_node"]), str(edge.get("to_port", "in")))] = edge
-        self.variables = {
-            name: deepcopy(value.get("default")) if isinstance(value, Mapping) else deepcopy(value)
-            for name, value in self.graph.get("variables", {}).items()
-        }
+        self.variables = self.blackboard.values_for_object(self.object_key)
         self.values: dict[Any, Any] = {}
         self.executed_nodes: list[str] = []
         self.executed_edges: list[str] = []
@@ -103,6 +110,12 @@ class LogicGraphRuntime:
             self._debug_bypass_node = ""
             self.debug_condition_error = ""
 
+    def configure_variables(self, definitions: Mapping[str, Any]) -> None:
+        """Registra alterações do painel Blackboard sem reiniciar o Play Mode."""
+        self.graph["variables"] = deepcopy(dict(definitions))
+        self.blackboard.register(self.graph["variables"], self.object_key)
+        self.variables = self.blackboard.values_for_object(self.object_key)
+
     def continue_execution(self) -> None:
         if not self.debug_paused:
             return
@@ -121,10 +134,8 @@ class LogicGraphRuntime:
 
     def restart(self, game: Any, dt: float = 0.0) -> None:
         """Reinicia variáveis e fluxo, avançando novamente até o primeiro breakpoint."""
-        self.variables = {
-            name: deepcopy(value.get("default")) if isinstance(value, Mapping) else deepcopy(value)
-            for name, value in self.graph.get("variables", {}).items()
-        }
+        self.blackboard.reset_object(self.object_key)
+        self.variables = self.blackboard.values_for_object(self.object_key)
         self.values.clear()
         self.executed_nodes.clear()
         self.executed_edges.clear()
@@ -328,8 +339,10 @@ class LogicGraphRuntime:
             return ["next"]
         if node_type == "set_variable":
             name = str(properties.get("name", "value"))
+            scope = str(properties.get("scope", "object")).lower()
             value = self._read_input(node_id, "value", properties.get("value"), game, dt, set())
-            self.variables[name] = deepcopy(value)
+            value = self.blackboard.set(scope, name, value, self.object_key)
+            self.variables = self.blackboard.values_for_object(self.object_key)
             self._store(node_id, "value", value)
             return ["next"]
         if node_type == "get_variable":
@@ -404,7 +417,11 @@ class LogicGraphRuntime:
             right = bool(self._read_input(node_id, "b", False, game, dt, resolving))
             value = left or right
         elif node_type == "get_variable":
-            value = deepcopy(self.variables.get(str(properties.get("name", "value"))))
+            value = self.blackboard.get(
+                str(properties.get("scope", "object")).lower(),
+                str(properties.get("name", "value")),
+                self.object_key,
+            )
         elif node_type in {"number_value", "bool_value", "text_value"}:
             value = deepcopy(properties.get("value"))
         elif node_type == "self_object":
@@ -431,11 +448,16 @@ class LogicGraphRuntime:
                 continue
             node_id, port = str(key[0]), str(key[1])
             values.setdefault(node_id, {})[port] = self._debug_value(value)
+        blackboard = {
+            scope: {str(name): self._debug_value(value) for name, value in values.items()}
+            for scope, values in self.blackboard.snapshot(self.object_key).items()
+        }
         return {
             "nodes": list(dict.fromkeys([*self.executed_nodes, *([self.pause_node] if self.pause_node else [])])),
             "edges": list(dict.fromkeys(self.executed_edges)),
             "values": values,
             "variables": {str(name): self._debug_value(value) for name, value in self.variables.items()},
+            "blackboard": blackboard,
             "paused": self.debug_paused,
             "pause_node": self.pause_node,
             "breakpoints": sorted(self.breakpoints),
@@ -491,8 +513,20 @@ class LogicGraphRuntime:
     def _debug_operand(self, token: str, bare_text: bool = False) -> Any:
         value = str(token).strip()
         lowered = value.lower()
-        if value in self.variables:
-            return self.variables[value]
+        if "." in value:
+            scope, name = value.split(".", 1)
+            if scope.lower() in {"object", "objeto", "scene", "cena", "project", "projeto"}:
+                normalized_scope = {
+                    "objeto": "object", "cena": "scene", "projeto": "project",
+                }.get(scope.lower(), scope.lower())
+                scoped_value = self.blackboard.get(normalized_scope, name, self.object_key)
+                scoped_snapshot = self.blackboard.snapshot(self.object_key).get(normalized_scope, {})
+                if name not in scoped_snapshot:
+                    raise ValueError(f"variável '{value}' não encontrada")
+                return scoped_value
+        found = self.blackboard.find(value, self.object_key)
+        if found is not None:
+            return found[1]
         if lowered in {"true", "verdadeiro"}:
             return True
         if lowered in {"false", "falso"}:
