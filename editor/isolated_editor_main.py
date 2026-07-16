@@ -12,6 +12,7 @@ import shutil
 import uuid
 from copy import deepcopy
 from pathlib import Path
+from typing import Any
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QEvent, Qt, QTimer, QUrl
@@ -25,12 +26,15 @@ from PySide6.QtWidgets import (
 from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QWidget
 
 from editor.interface_smoke_test import InterfaceSmokeTest
+from editor.controllers.logic_assets import LogicAssetRepository
 from editor.isolated_viewport import run_viewport
 from editor.runtime.native_ui import normalize_ui, scene_item_to_ui, ui_to_scene_item
 from editor.runtime.play_session import EditorPlaySession
+from editor.runtime.viewport_command_bus import ViewportCommandBus
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from editor.widgets.component_picker import ComponentPickerDialog
+from editor.widgets.logic_graph_picker import LogicGraphPickerDialog
 from editor.widgets.animation_picker import AnimationPickerDialog
 from editor.widgets.animator_controller_editor import AnimatorControllerEditorDialog
 from editor.ui.icons import component_title, editor_icon
@@ -43,7 +47,10 @@ from engine.animation.clip_asset import (
     save_animation_asset,
 )
 from engine.animation.controller_asset import load_animator_controller
-from engine.logic.graph_asset import load_logic_graph
+from engine.logic.graph_asset import (
+    create_logic_node, default_logic_graph, load_logic_graph,
+    save_logic_graph, validate_logic_graph,
+)
 from engine.logic.blackboard import load_blackboard_asset
 from editor.widgets.build_report_dialog import BuildReportDialog
 from editor.widgets.project_validation_dialog import ProjectValidationDialog
@@ -58,6 +65,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._console_records: list[tuple[str, str]] = []
         self._last_build_report: BuildReport | None = None
         self._last_validation_report: ProjectValidationReport | None = None
+        self._logic_assets_repository = LogicAssetRepository(Path.cwd())
         super().__init__()
         self._current_animation_asset_path: Path | None = None
         self._animation_draft_name = "NewAnimation"
@@ -73,13 +81,14 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "transform": True,
             "sprite": True,
             "audio": False,
+            "logic": False,
             "rigidbody": False,
             "collider": False,
             "camera": False,
             "ui": True,
         }
         self._viewport_process = viewport_process
-        self._commands = commands
+        self._commands = ViewportCommandBus(commands)
         self._events = events
         self._pending_viewport_size: tuple[int, int] | None = None
         self._last_viewport_size_sent: tuple[int, int] | None = None
@@ -279,8 +288,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self.preview_label.setText("◇ Logic Graph")
             try:
                 graph = load_logic_graph(path)
+                target = graph.get("target", {})
                 details = (
                     f"Nome: {graph['name']}<br>"
+                    f"Status: {'Ativo' if graph.get('enabled', True) else 'Desvinculado'}<br>"
+                    f"Alvo: {target.get('value', 'Nenhum')} ({target.get('type', 'name')})<br>"
                     f"Nós: {len(graph['nodes'])}<br>"
                     f"Conexões: {len(graph['edges'])}<br>"
                     f"Variáveis: {len(graph['variables'])}<br>"
@@ -624,11 +636,140 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.animation_window.activateWindow()
         self._log("INFO", "Editor de Animação aberto")
 
-    def _show_logic_window(self) -> None:
+    def _show_logic_window(self, _checked: bool = False, *, preferred_path: Path | None = None) -> None:
+        selected = self._selected_name if self._selected_name in self._objects_by_name else None
+        if selected is not None:
+            bindings = self._logic_graphs_for_object(selected)
+            context_path = preferred_path or (bindings[0][0] if bindings else None)
+            if not self.logic_workspace.open_for_object(selected, context_path):
+                return
+            self.logic_window.setWindowTitle(f"Zennity — Lógica Visual — {selected}")
+            source = context_path.name if context_path is not None else "novo rascunho"
+            self.statusBar().showMessage(f"Lógica Visual: {selected} • {source}")
+        elif preferred_path is not None:
+            if not self.logic_workspace.open_asset(preferred_path):
+                return
+            self.logic_window.setWindowTitle("Zennity — Editor de Lógica Visual")
+        else:
+            self.statusBar().showMessage("Selecione um objeto na Hierarchy para definir o alvo da lógica")
         self.logic_window.show()
         self.logic_window.raise_()
         self.logic_window.activateWindow()
-        self._log("INFO", "Editor de Lógica Visual aberto")
+        self._log("INFO", f"Editor de Lógica Visual aberto{f' para {selected}' if selected else ''}")
+
+    def _logic_assets(self) -> list[tuple[Path, dict]]:
+        return self._logic_assets_repository.assets()
+
+    def _logic_graphs_for_object(self, object_name: str) -> list[tuple[Path, dict]]:
+        obj = self._objects_by_name.get(object_name, {})
+        return self._logic_assets_repository.for_object(object_name, obj)
+
+    def _save_logic_binding(self, path: Path, graph: dict) -> None:
+        self._logic_assets_repository.save(path, graph)
+        self._refresh_assets()
+        if self._selected_name in self._objects_by_name:
+            self._update_inspector(self._selected_name)
+
+    def _choose_logic_graph_component(self) -> None:
+        if self._selected_name not in self._objects_by_name:
+            return
+        assets = self._logic_assets()
+        if not assets:
+            self.statusBar().showMessage("Nenhum Logic Graph disponível; use Criar novo")
+            self._create_logic_graph_for_selected()
+            return
+        picker = LogicGraphPickerDialog(assets, self)
+        if picker.exec() and picker.selected_path is not None:
+            graph = deepcopy(load_logic_graph(picker.selected_path))
+            graph["enabled"] = True
+            graph["target"] = {"type": "name", "value": self._selected_name}
+            self._component_expanded["logic"] = True
+            self._save_logic_binding(picker.selected_path, graph)
+            self._log("INFO", f"{picker.selected_path.name} vinculado a {self._selected_name}")
+
+    def _create_logic_graph_for_selected(self) -> None:
+        if self._selected_name not in self._objects_by_name:
+            return
+        directory = Path.cwd() / "Assets" / "Logic"
+        directory.mkdir(parents=True, exist_ok=True)
+        safe_name = "".join(character if character.isalnum() else "_" for character in self._selected_name).strip("_") or "Object"
+        path = directory / f"{safe_name}Logic.zlogic"
+        suffix = 2
+        while path.exists():
+            path = directory / f"{safe_name}Logic{suffix}.zlogic"
+            suffix += 1
+        graph = default_logic_graph(path.stem)
+        graph["target"] = {"type": "name", "value": self._selected_name}
+        graph["nodes"] = [create_logic_node("event_start", (80.0, 100.0))]
+        save_logic_graph(path, graph)
+        self._logic_assets_repository.invalidate(path)
+        self._component_expanded["logic"] = True
+        self._refresh_assets()
+        self._update_inspector(self._selected_name)
+        self._show_logic_window(preferred_path=path)
+        self._log("INFO", f"Logic Graph criado para {self._selected_name}: {path.name}")
+
+    def _selected_logic_path(self) -> Path | None:
+        value = self.logic_graph_combo.currentData()
+        return Path(str(value)).resolve() if value else None
+
+    def _open_selected_logic_graph(self) -> None:
+        path = self._selected_logic_path()
+        if path is None or not path.is_file():
+            return
+        self._show_logic_window(preferred_path=path)
+
+    def _detach_selected_logic_graph(self) -> None:
+        path = self._selected_logic_path()
+        if path is None or not path.is_file():
+            return
+        graph = deepcopy(load_logic_graph(path))
+        graph["enabled"] = False
+        self._save_logic_binding(path, graph)
+        self._log("INFO", f"Logic Graph desvinculado: {path.name}")
+
+    def _remove_all_logic_graphs(self) -> None:
+        if self._selected_name not in self._objects_by_name:
+            return
+        bindings = self._logic_graphs_for_object(self._selected_name)
+        if not bindings:
+            return
+        answer = QMessageBox.question(
+            self, "Desvincular lógica",
+            f"Desvincular {len(bindings)} Logic Graph(s) de {self._selected_name}? Os arquivos serão preservados.",
+        )
+        if answer != QMessageBox.Yes:
+            return
+        for path, source in bindings:
+            graph = deepcopy(source)
+            graph["enabled"] = False
+            save_logic_graph(path, graph)
+            self._logic_assets_repository.invalidate(path)
+        self._refresh_assets()
+        self._update_inspector(self._selected_name)
+        self._log("INFO", f"Lógica Visual desvinculada de {self._selected_name}")
+
+    def _update_logic_graph_summary(self, _index: int = -1) -> None:
+        path = self._selected_logic_path()
+        if path is None or not path.is_file():
+            self.logic_summary_label.setText("Nenhum Logic Graph selecionado.")
+            self.logic_open_button.setEnabled(False)
+            self.logic_unlink_button.setEnabled(False)
+            return
+        try:
+            graph = load_logic_graph(path)
+            events = [node.get("title", "Evento") for node in graph.get("nodes", []) if str(node.get("type", "")).startswith("event_")]
+            issues = validate_logic_graph(graph)
+            problem_count = len([issue for issue in issues if issue.get("level") == "error"])
+            summary = f"{len(graph.get('nodes', []))} blocos • {len(events)} eventos"
+            if events:
+                summary += f"\n{', '.join(str(event) for event in events[:3])}"
+            summary += f"\n{'Pronto para executar' if not problem_count else f'{problem_count} erro(s) de validação'}"
+            self.logic_summary_label.setText(summary)
+            self.logic_open_button.setEnabled(True)
+            self.logic_unlink_button.setEnabled(True)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            self.logic_summary_label.setText(f"Asset inválido: {exc}")
 
     def _build_viewport_link_toolbar(self) -> None:
         toolbar = QToolBar("Ligação com Viewport")
@@ -719,8 +860,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         path = Path(path_value) if path_value else None
         if path is None or not path.is_file() or path.suffix.lower() != ".zlogic":
             return
-        self._show_logic_window()
-        self.logic_workspace.open_path(path)
+        self._show_logic_window(preferred_path=path)
 
     def _refresh_prefabs(self) -> None:
         self.prefab_tree.clear()
@@ -1170,6 +1310,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         payload["objects"] = scene_objects
         temporary_path = path.with_name(path.name + ".tmp")
         temporary_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        if path.is_file():
+            shutil.copy2(path, path.with_suffix(path.suffix + ".bak"))
         temporary_path.replace(path)
         self._scene_document = payload
         self._current_scene_path = path
@@ -1439,6 +1581,13 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.ui_interactable_field.toggled.connect(lambda _value: self._send_inspector_ui())
         self.ui_event_field.editingFinished.connect(self._send_inspector_ui)
         self.ui_target_combo.currentTextChanged.connect(lambda _value: self._send_inspector_ui())
+        self.btn_collapse_logic.clicked.connect(lambda: self._toggle_inspector_card("logic"))
+        self.btn_delete_logic.clicked.connect(self._remove_all_logic_graphs)
+        self.logic_graph_combo.currentIndexChanged.connect(self._update_logic_graph_summary)
+        self.logic_open_button.clicked.connect(self._open_selected_logic_graph)
+        self.logic_link_button.clicked.connect(self._choose_logic_graph_component)
+        self.logic_new_button.clicked.connect(self._create_logic_graph_for_selected)
+        self.logic_unlink_button.clicked.connect(self._detach_selected_logic_graph)
 
     def _inspector_card(self, key: str):
         return {
@@ -1449,6 +1598,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "collider": (self.collider_header, self.collider_body, self.btn_collapse_collider),
             "camera": (self.camera_header, self.camera_body, self.btn_collapse_camera),
             "ui": (self.ui_component_header, self.ui_component_body, self.btn_collapse_ui),
+            "logic": (self.logic_component_header, self.logic_component_body, self.btn_collapse_logic),
         }[key]
 
     def _set_inspector_card_present(self, key: str, present: bool) -> None:
@@ -1474,7 +1624,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
     def _clear_inspector_view(self) -> None:
         self.inspector_name_label.setText("Nenhum objeto selecionado")
         self.animation_object_label.setText("Nenhum objeto selecionado")
-        for key in self._component_expanded:
+        for key in ("transform", "sprite", "audio", "logic", "rigidbody", "collider", "camera", "ui"):
             self._set_inspector_card_present(key, False)
         self.add_component_button.setEnabled(False)
 
@@ -2472,6 +2622,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if component == "animator":
             self._choose_animation_component()
             return
+        if component == "logic":
+            self._choose_logic_graph_component()
+            return
         self._record_history()
         obj = self._objects_by_name[self._selected_name]
         if component == "sprite":
@@ -2742,6 +2895,24 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self.ui_target_combo.setCurrentText(target if target in self._objects_by_name else "Este objeto")
                 self.ui_target_combo.setEnabled(kind == "button")
 
+            logic_bindings = self._logic_graphs_for_object(name)
+            self._set_inspector_card_present("logic", bool(logic_bindings))
+            self.logic_graph_combo.clear()
+            total_nodes = 0
+            for path, graph in logic_bindings:
+                total_nodes += len(graph.get("nodes", []))
+                target_type = str(graph.get("target", {}).get("type", "name"))
+                suffix = " • via Tag" if target_type == "tag" else ""
+                self.logic_graph_combo.addItem(f"{graph.get('name', path.stem)}{suffix}", str(path))
+            if logic_bindings:
+                self.logic_status_label.setText(
+                    f"{len(logic_bindings)} grafo(s) ativo(s) • {total_nodes} blocos"
+                )
+                self._update_logic_graph_summary()
+            else:
+                self.logic_status_label.setText("Nenhum Logic Graph vinculado")
+                self.logic_summary_label.setText("Adicione Lógica Visual para controlar este objeto sem scripts.")
+
             # Limpa widgets de scripts anteriores
             for h_w, b_w in self.script_containers:
                 self.inspector_layout.removeWidget(h_w)
@@ -2999,13 +3170,18 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             elif message.get("type") == "attach_script":
                 self._attach_script(str(message.get("name", "")), Path(str(message.get("path", ""))))
             elif message.get("type") == "stats":
+                command_stats = self._commands.stats()
                 self.profiler_label.setText(
                     f"FPS: {message.get('fps', 0):.0f}\n"
                     f"Objetos: {message.get('objects', 0)}\n"
                     f"Modo: {message.get('mode', 'EDIT')} / {message.get('view', 'SCENE')}\n"
                     f"Câmera: {message.get('camera', 'Editor')}\n"
                     f"Jogador: {message.get('player') or '—'}\n"
-                    f"Zoom: {message.get('zoom', 1.0):.2f}"
+                    f"Zoom: {message.get('zoom', 1.0):.2f}\n"
+                    f"Spawn: {message.get('spawned', 0)} • Reuso: {message.get('reused', 0)} • "
+                    f"Pool: {message.get('pooled', 0)} • "
+                    f"Removidos: {message.get('destroyed', 0)}\n"
+                    f"IPC: {command_stats['sent']} enviados • {command_stats['coalesced']} unidos"
                 )
 
     def closeEvent(self, event) -> None:
@@ -3014,8 +3190,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         except Exception:
             pass
         if self._viewport_process is not None and self._viewport_process.is_alive():
-            self._viewport_process.terminate()
-            self._viewport_process.join(timeout=2)
+            self._viewport_process.join(timeout=1.5)
+            if self._viewport_process.is_alive():
+                self._viewport_process.terminate()
+                self._viewport_process.join(timeout=2)
         super().closeEvent(event)
 
 
@@ -3042,8 +3220,11 @@ def main() -> None:
     exit_code = app.exec()
 
     if viewport_process.is_alive():
-        viewport_process.terminate()
-        viewport_process.join(timeout=2)
+        commands.put({"type": "shutdown"})
+        viewport_process.join(timeout=1.5)
+        if viewport_process.is_alive():
+            viewport_process.terminate()
+            viewport_process.join(timeout=2)
     raise SystemExit(exit_code)
 
 

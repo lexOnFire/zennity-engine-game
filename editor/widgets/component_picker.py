@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
 
 
 COMPONENT_CATALOG = (
+    ("Programação visual", "Lógica Visual", "logic", "Vincule blocos .zlogic sem usar scripts Python"),
     ("Renderização", "Sprite Renderer", "sprite", "Textura, cor e ordem de desenho"),
     ("Renderização", "Animator 2D", "animator", "Escolha uma animação .zanim para este objeto"),
     ("Física", "RigidBody 2D", "rigidbody", "Gravidade e movimento físico"),

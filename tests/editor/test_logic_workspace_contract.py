@@ -23,7 +23,7 @@ def test_logic_and_animation_use_independent_windows_not_viewport_tabs():
     assert 'editor_icon("snap")' in editor
     assert 'editor_icon("animation")' not in editor
     assert 'editor_icon("script")' not in editor
-    assert 'component == "logic"' not in editor
+    assert 'component == "logic"' in editor
 
 
 def test_python_script_component_is_not_offered_or_executed() -> None:
@@ -40,6 +40,11 @@ def test_logic_workspace_exposes_palette_canvas_connections_and_properties():
     assert "class LogicNodeItem(QGraphicsRectItem)" in source
     assert "class LogicPortItem(QGraphicsEllipseItem)" in source
     assert "class LogicEdgeItem(QGraphicsPathItem)" in source
+    assert "class LogicCollapseControl(QGraphicsTextItem)" in source
+    assert "class LogicResizeHandle(QGraphicsRectItem)" in source
+    assert "def toggle_collapsed(self)" in source
+    assert "def resize_to(self, width: float, height: float)" in source
+    assert '"collapsed": self.collapsed' in source
     assert "def begin_connection" in source
     assert "def finish_connection" in source
     assert "def cancel_connection" in source
@@ -57,6 +62,31 @@ def test_logic_workspace_exposes_palette_canvas_connections_and_properties():
         assert category in source
     assert "QPainterPath" in source
     assert "self.property_tree.itemChanged.connect" in source
+    assert "class LogicGroupItem(QGraphicsRectItem)" in source
+    assert "class LogicCommentItem(QGraphicsRectItem)" in source
+    assert "class LogicMiniMapView(QGraphicsView)" in source
+    assert "def organize_graph(self)" in source
+    assert "def align_selected(self)" in source
+    assert "def distribute_selected(self)" in source
+    assert "def undo(self)" in source
+    assert "def redo(self)" in source
+
+
+def test_visual_logic_supports_independent_clones_and_one_shot_permanent_motion():
+    graph = _source("engine/logic/graph_asset.py")
+    runtime = _source("engine/logic/runtime.py")
+    world = _source("engine/runtime/runtime_world.py")
+    recipes = _source("engine/logic/recipes.py")
+    assert '"inherit_source": True' in graph
+    assert '"inherit_logic": False' in graph
+    assert '"event_key_pressed"' in graph
+    assert '"start_continuous_motion"' in graph
+    assert '"stop_continuous_motion"' in graph
+    assert "def _run_key_pressed_events" in runtime
+    assert "def _apply_persistent_motion" in runtime
+    assert "game.clone_object(source, name)" in runtime
+    assert "Cria uma cópia profunda e independente" in world
+    assert '"press_d_start_permanent_x"' in recipes
 
 
 def test_logic_workspace_can_create_open_save_and_load_demo():
@@ -122,7 +152,7 @@ def test_logic_workspace_exposes_typed_scoped_blackboard_panel():
     editor = _source("editor/widgets/logic_graph_editor.py")
     viewport = _source("editor/isolated_viewport.py")
     bridge = _source("editor/isolated_editor_main.py")
-    assert "BLACKBOARD" in editor
+    assert 'addTab(data_page, "Dados")' in editor
     assert "blackboard_scope_combo" in editor
     assert "blackboard_type_combo" in editor
     assert "_save_blackboard_variable" in editor
@@ -159,7 +189,7 @@ def test_reusable_subgraphs_are_discoverable_typed_and_safe():
     assert "def subgraph_interface" in graph
     assert "def run_subgraph" in runtime
     assert "Referência circular entre subgrafos" in runtime
-    assert "SUBGRAFOS REUTILIZÁVEIS" in editor
+    assert 'addTab(subgraphs_page, "Subgrafos")' in editor
     assert "Novo subgrafo" in editor
     assert "def new_subgraph" in editor
     assert "_refresh_subgraph_assets" in editor
@@ -185,3 +215,145 @@ def test_gameplay_event_library_and_search_are_available():
     assert "Pesquisar blocos" in editor
     assert "def _search_key" in editor
     assert "self.node_search.textChanged.connect" in editor
+
+
+def test_visual_logic_is_cleanly_managed_from_inspector():
+    interface = _source("editor/interface_smoke_test.py")
+    main = _source("editor/isolated_editor_main.py")
+    picker = _source("editor/widgets/logic_graph_picker.py")
+    components = _source("editor/widgets/component_picker.py")
+    graph = _source("engine/logic/graph_asset.py")
+    viewport = _source("editor/isolated_viewport.py")
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    assert "Lógica Visual" in interface
+    assert "logic_graph_combo" in interface
+    assert "logic_summary_label" in interface
+    assert '"logic": (self.logic_component_header' in main
+    assert "_logic_graphs_for_object" in main
+    assert "_choose_logic_graph_component" in main
+    assert "_detach_selected_logic_graph" in main
+    assert "_create_logic_graph_for_selected" in main
+    assert "class LogicGraphPickerDialog" in picker
+    assert '"Lógica Visual", "logic"' in components
+    assert '"enabled": True' in graph
+    assert 'graph.get("enabled", True)' in viewport
+    assert "LogicLibraryTabs" in editor
+    assert "category_combo" in editor
+    assert "graph_enabled_check" in editor
+    assert "Ativo no Play" in editor
+    assert "category_group" not in editor
+    assert 'addTab(blocks_page, "Blocos")' in editor
+    assert 'addTab(data_page, "Dados")' in editor
+    assert 'addTab(subgraphs_page, "Subgrafos")' in editor
+
+
+def test_logic_workspace_teaches_searchable_position_recipes():
+    interface = _source("editor/interface_smoke_test.py")
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    graph = _source("engine/logic/graph_asset.py")
+    runtime = _source("engine/logic/runtime.py")
+    recipes = _source("engine/logic/recipes.py")
+    assert 'addTab(recipes_page, "Receitas")' in editor
+    assert "Editar / Receitas" in interface
+    assert "O que você quer fazer?" in editor
+    assert "_insert_selected_recipe" in editor
+    assert '"get_position"' in graph
+    assert '"move_by"' in graph
+    assert 'node_type == "move_by"' in runtime
+    assert 'node_type == "get_position"' in runtime
+    assert '"move_x_every_frame"' in recipes
+    assert "def find_logic_recipes" in recipes
+    assert "def build_logic_recipe" in recipes
+
+
+def test_recipe_topics_and_project_asset_picker_cover_visual_gameplay():
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    picker = _source("editor/widgets/logic_asset_picker.py")
+    graph = _source("engine/logic/graph_asset.py")
+    runtime = _source("engine/logic/runtime.py")
+    viewport = _source("editor/isolated_viewport.py")
+    recipes = _source("engine/logic/recipes.py")
+    assert "_category_changed" in editor
+    assert "Receitas de {selected_topic}" in editor
+    assert 'selected_topic == "Todos"' in editor
+    assert "find_logic_recipes(query" in editor
+    assert "Selecionar asset do projeto" in editor
+    assert "class LogicAssetPickerDialog" in picker
+    assert '"image"' in picker and '"animation"' in picker and '"audio"' in picker
+    assert '"set_sprite"' in graph
+    assert '"play_animation_asset"' in graph
+    assert 'node_type == "set_sprite"' in runtime
+    assert 'node_type == "play_animation_asset"' in runtime
+    assert "def set_sprite" in viewport
+    assert "def play_animation_asset" in viewport
+    assert '"sprite_on_start"' in recipes
+    assert '"animation_asset_on_start"' in recipes
+    assert '"sound_on_collision"' in recipes
+
+
+def test_nodes_flip_to_code_and_patrol_recipe_is_discoverable():
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    preview = _source("engine/logic/code_preview.py")
+    graph = _source("engine/logic/graph_asset.py")
+    runtime = _source("engine/logic/runtime.py")
+    viewport = _source("editor/isolated_viewport.py")
+    recipes = _source("engine/logic/recipes.py")
+    assert "class LogicFlipControl" in editor
+    assert 'super().__init__("</>", node)' in editor
+    assert "toggle_code_preview" in editor
+    assert "node_code_preview(self.node)" in editor
+    assert "def node_code_preview" in preview
+    assert '"patrol_axis"' in graph
+    assert 'node_type == "patrol_axis"' in runtime
+    assert "override_physics_axis" in runtime
+    assert "def override_physics_axis" in viewport
+    assert '"patrol_y_between_limits"' in recipes
+    assert "Patrulhar no Y entre -100 e 100" in recipes
+
+
+def test_logic_editor_opens_in_selected_hierarchy_object_context():
+    main = _source("editor/isolated_editor_main.py")
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    assert "def open_for_object" in editor
+    assert "def open_asset" in editor
+    assert 'graph["target"] = {"type": "name", "value": target_name}' in editor
+    assert 'create_logic_node("event_start"' in editor
+    assert "bindings = self._logic_graphs_for_object(selected)" in main
+    assert "self.logic_workspace.open_for_object(selected, context_path)" in main
+    assert 'setWindowTitle(f"Zennity — Lógica Visual — {selected}")' in main
+    assert 'Lógica Visual: {selected}' in main
+    assert "preferred_path=path" in main
+
+
+def test_frame_event_is_reused_and_visibly_supports_multiple_actions():
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    graph = _source("engine/logic/graph_asset.py")
+    assert "merge_logic_fragment(self.graph_data(), fragment)" in editor
+    assert "consolidate_logic_events(graph)" in editor
+    assert "set_fanout_count" in editor
+    assert "arraste novamente para adicionar outra ação" in editor
+    assert "Esse evento já existe; conecte outra ação usando a mesma saída" in editor
+    assert "node_type in UNIQUE_EVENT_TYPES" in editor
+    assert "def merge_logic_fragment" in graph
+    assert "def consolidate_logic_events" in graph
+
+
+def test_logic_workspace_can_create_runtime_objects_and_pick_their_sprite():
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    graph = _source("engine/logic/graph_asset.py")
+    runtime = _source("engine/logic/runtime.py")
+    viewport = _source("editor/isolated_viewport.py")
+    world = _source("engine/runtime/runtime_world.py")
+    picker = _source("editor/widgets/logic_asset_picker.py")
+    recipes = _source("engine/logic/recipes.py")
+    assert '"create_object"' in graph
+    assert 'node_type == "create_object"' in runtime
+    assert "def create_object(" in viewport
+    assert '"spawned_by_logic"' in world
+    assert '"create_object": "image"' in editor
+    assert 'property_name = "texture"' in editor
+    assert '"create_object_on_start"' in recipes
+    assert '"create_prefab": "prefab"' in editor
+    assert '"prefab": ("Prefab", {".zprefab"})' in picker
+    for node_type in ("create_prefab", "clone_object", "add_component", "remove_component", "once", "cooldown", "restart_scene"):
+        assert f'"{node_type}"' in graph

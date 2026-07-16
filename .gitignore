@@ -29,6 +29,7 @@ release/
 # Runtime logs and local scenes
 *.log
 *.zscene.bak
+*.tmp
 
 # IDE / OS files
 .vscode/

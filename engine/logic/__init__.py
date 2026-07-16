@@ -6,8 +6,10 @@ from .graph_asset import (
     NODE_DEFINITIONS,
     NODE_PORT_DEFINITIONS,
     create_logic_node,
+    consolidate_logic_events,
     default_logic_graph,
     load_logic_graph,
+    merge_logic_fragment,
     normalize_logic_graph,
     node_port_definitions,
     save_logic_graph,
@@ -17,6 +19,8 @@ from .graph_asset import (
 from .runtime import LogicGraphRuntime
 from .blackboard import BlackboardStore
 from .event_bus import LogicEventBus
+from .recipes import LOGIC_RECIPES, build_logic_recipe, find_logic_recipes, logic_recipe
+from .code_preview import node_code_preview
 
 __all__ = [
     "LOGIC_GRAPH_FORMAT",
@@ -24,8 +28,10 @@ __all__ = [
     "NODE_DEFINITIONS",
     "NODE_PORT_DEFINITIONS",
     "create_logic_node",
+    "consolidate_logic_events",
     "default_logic_graph",
     "load_logic_graph",
+    "merge_logic_fragment",
     "normalize_logic_graph",
     "node_port_definitions",
     "save_logic_graph",
@@ -34,4 +40,9 @@ __all__ = [
     "LogicGraphRuntime",
     "BlackboardStore",
     "LogicEventBus",
+    "LOGIC_RECIPES",
+    "build_logic_recipe",
+    "find_logic_recipes",
+    "logic_recipe",
+    "node_code_preview",
 ]

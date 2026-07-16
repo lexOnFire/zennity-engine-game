@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -283,8 +284,12 @@ def save_scene(scene: Any, path: str | Path) -> Path:
     """Save a scene-like object as a .zscene JSON file."""
     output = Path(path)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(
+    temporary = output.with_suffix(output.suffix + ".tmp")
+    temporary.write_text(
         json.dumps(serialize_scene(scene), indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
+    if output.is_file():
+        shutil.copy2(output, output.with_suffix(output.suffix + ".bak"))
+    temporary.replace(output)
     return output

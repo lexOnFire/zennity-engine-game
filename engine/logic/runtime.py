@@ -45,6 +45,8 @@ class LogicGraphRuntime:
         for edge in self.graph["edges"]:
             self.outgoing.setdefault(edge["from_node"], []).append(edge)
             self.incoming[(str(edge["to_node"]), str(edge.get("to_port", "in")))] = edge
+        for edges in self.outgoing.values():
+            edges.sort(key=lambda edge: (int(edge.get("order", 0)), str(edge.get("id", ""))))
         self.variables = self.blackboard.values_for_object(self.object_key)
         self.values: dict[Any, Any] = {}
         self.executed_nodes: list[str] = []
@@ -70,6 +72,9 @@ class LogicGraphRuntime:
         self._subgraph_outputs: dict[str, Any] = {}
         self._timer_elapsed: dict[str, float] = {}
         self._timer_fired: set[str] = set()
+        self._node_state: dict[str, dict[str, Any]] = {}
+        self._persistent_motion: dict[str, dict[str, Any]] = {}
+        self._implicit_target: Any = None
         self.started = False
         for node in self.nodes.values() if not self.call_stack else ():
             if node.get("type") != "event_custom":
@@ -122,6 +127,8 @@ class LogicGraphRuntime:
         if self.debug_paused:
             return
         self._update_timers(game, float(dt))
+        self._apply_persistent_motion(float(dt))
+        self._run_key_pressed_events(game, float(dt))
         if self.breakpoints:
             if self._debug_generator is None:
                 self.values.clear()
@@ -139,6 +146,35 @@ class LogicGraphRuntime:
         self.executed_nodes.clear()
         self.executed_edges.clear()
         self._run_event("event_update", game, float(dt))
+
+    def _run_key_pressed_events(self, game: Any, dt: float) -> None:
+        for node in self.nodes.values():
+            if node.get("type") != "event_key_pressed":
+                continue
+            key = str(node.get("properties", {}).get("key", "D")).strip().lower()
+            if game.key_pressed(key):
+                self._run_event_node(node, game, dt)
+
+    def _move_target(self, target: Any, velocity_x: float, velocity_y: float, dt: float) -> None:
+        delta_x, delta_y = velocity_x * dt, velocity_y * dt
+        if callable(getattr(target, "move", None)):
+            target.move(delta_x, delta_y)
+        else:
+            target.x = float(target.x) + delta_x
+            target.y = float(target.y) + delta_y
+        override_physics = getattr(target, "override_physics_axis", None)
+        if callable(override_physics):
+            if velocity_x:
+                override_physics("x")
+            if velocity_y:
+                override_physics("y")
+
+    def _apply_persistent_motion(self, dt: float) -> None:
+        for state in list(self._persistent_motion.values()):
+            target = state.get("target")
+            if target is None or not bool(getattr(target, "active", True)):
+                continue
+            self._move_target(target, float(state.get("x", 0.0)), float(state.get("y", 0.0)), dt)
 
     def trigger_event(self, event_type: str, game: Any, dt: float = 0.0, payload: Any = None) -> None:
         """Dispara um evento físico enviado pelo Play Mode."""
@@ -235,6 +271,9 @@ class LogicGraphRuntime:
         self._pending_custom_events.clear()
         self._timer_elapsed.clear()
         self._timer_fired.clear()
+        self._node_state.clear()
+        self._persistent_motion.clear()
+        self._implicit_target = None
         self.started = False
         self.start(game)
         if not self.debug_paused:
@@ -370,19 +409,24 @@ class LogicGraphRuntime:
             edge_id = str(edge.get("id", ""))
             if edge_id and edge_id not in self.executed_edges:
                 self.executed_edges.append(edge_id)
-            yield target_id
-            if target_id not in self.executed_nodes:
-                self.executed_nodes.append(target_id)
+            previous_target = self._implicit_target
+            self._implicit_target = self._node_state.get(node_id, {}).get("flow_target", previous_target)
             try:
-                next_ports = self._execute(target, game, dt)
-            except RuntimeError:
-                raise
-            except Exception as exc:
-                raise RuntimeError(f"Nó '{target.get('title', target_id)}': {exc}") from exc
-            next_branch = set(branch)
-            next_branch.add(target_id)
-            for next_port in next_ports:
-                yield from self._follow_debug(target_id, next_port, game, dt, budget, next_branch)
+                yield target_id
+                if target_id not in self.executed_nodes:
+                    self.executed_nodes.append(target_id)
+                try:
+                    next_ports = self._execute(target, game, dt)
+                except RuntimeError:
+                    raise
+                except Exception as exc:
+                    raise RuntimeError(f"Nó '{target.get('title', target_id)}': {exc}") from exc
+                next_branch = set(branch)
+                next_branch.add(target_id)
+                for next_port in next_ports:
+                    yield from self._follow_debug(target_id, next_port, game, dt, budget, next_branch)
+            finally:
+                self._implicit_target = previous_target
 
     def _run_event(self, event_type: str, game: Any, dt: float, payload: Any = None) -> None:
         budget = [self.MAX_STEPS]
@@ -428,17 +472,22 @@ class LogicGraphRuntime:
             edge_id = str(edge.get("id", ""))
             if edge_id and edge_id not in self.executed_edges:
                 self.executed_edges.append(edge_id)
-            self.executed_nodes.append(target_id)
+            previous_target = self._implicit_target
+            self._implicit_target = self._node_state.get(node_id, {}).get("flow_target", previous_target)
             try:
-                next_ports = self._execute(target, game, dt)
-            except RuntimeError:
-                raise
-            except Exception as exc:
-                raise RuntimeError(f"Nó '{target.get('title', target_id)}': {exc}") from exc
-            next_branch = set(branch)
-            next_branch.add(target_id)
-            for next_port in next_ports:
-                self._follow(target_id, next_port, game, dt, budget, next_branch)
+                self.executed_nodes.append(target_id)
+                try:
+                    next_ports = self._execute(target, game, dt)
+                except RuntimeError:
+                    raise
+                except Exception as exc:
+                    raise RuntimeError(f"Nó '{target.get('title', target_id)}': {exc}") from exc
+                next_branch = set(branch)
+                next_branch.add(target_id)
+                for next_port in next_ports:
+                    self._follow(target_id, next_port, game, dt, budget, next_branch)
+            finally:
+                self._implicit_target = previous_target
 
     def _execute(self, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
         node_type = str(node["type"])
@@ -449,6 +498,9 @@ class LogicGraphRuntime:
             self._evaluate_output(node_id, "value", game, dt, set())
             return ["next"]
         if node_type == "key_pressed":
+            pressed = bool(self._evaluate_output(node_id, "value", game, dt, set()))
+            return ["true" if pressed else "false"]
+        if node_type == "key_held":
             pressed = bool(self._evaluate_output(node_id, "value", game, dt, set()))
             return ["true" if pressed else "false"]
         if node_type == "is_grounded":
@@ -467,6 +519,62 @@ class LogicGraphRuntime:
             amount = float(self._read_input(node_id, "value", fallback, game, dt, set()))
             game.move(amount * float(properties.get("speed", 200.0)) * dt)
             return ["next"]
+        if node_type == "move_by":
+            target = self._read_target(node_id, game, dt, set())
+            velocity_x = float(self._read_input(node_id, "x", properties.get("x", 100.0), game, dt, set()))
+            velocity_y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
+            delta_x, delta_y = velocity_x * dt, velocity_y * dt
+            if callable(getattr(target, "move", None)):
+                target.move(delta_x, delta_y)
+            else:
+                target.x = float(target.x) + delta_x
+                target.y = float(target.y) + delta_y
+            return ["next"]
+        if node_type == "start_continuous_motion":
+            target = self._read_target(node_id, game, dt, set())
+            velocity_x = float(self._read_input(node_id, "x", properties.get("x", 100.0), game, dt, set()))
+            velocity_y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
+            was_active = node_id in self._persistent_motion
+            self._persistent_motion[node_id] = {"target": target, "x": velocity_x, "y": velocity_y}
+            if not was_active:
+                self._move_target(target, velocity_x, velocity_y, dt)
+            return ["next"]
+        if node_type == "stop_continuous_motion":
+            target = self._read_target(node_id, game, dt, set())
+            self._persistent_motion = {
+                key: state for key, state in self._persistent_motion.items()
+                if state.get("target") is not target
+            }
+            return ["next"]
+        if node_type == "patrol_axis":
+            target = self._read_target(node_id, game, dt, set())
+            axis = str(properties.get("axis", "Y")).strip().lower()
+            axis = "x" if axis == "x" else "y"
+            minimum = float(self._read_input(node_id, "minimum", properties.get("minimum", -100.0), game, dt, set()))
+            maximum = float(self._read_input(node_id, "maximum", properties.get("maximum", 100.0), game, dt, set()))
+            if minimum > maximum:
+                minimum, maximum = maximum, minimum
+            speed = abs(float(self._read_input(node_id, "speed", properties.get("speed", 100.0), game, dt, set())))
+            current = float(getattr(target, axis))
+            state = self._node_state.setdefault(node_id, {"direction": 1.0})
+            direction = float(state.get("direction", 1.0))
+            if current >= maximum:
+                direction = -1.0
+            elif current <= minimum:
+                direction = 1.0
+            next_position = max(minimum, min(maximum, current + direction * speed * dt))
+            delta = next_position - current
+            if callable(getattr(target, "move", None)):
+                target.move(delta if axis == "x" else 0.0, delta if axis == "y" else 0.0)
+            else:
+                setattr(target, axis, next_position)
+            override_physics = getattr(target, "override_physics_axis", None)
+            if callable(override_physics):
+                override_physics(axis)
+            state["direction"] = direction
+            self._store(node_id, "direction", direction)
+            self._store(node_id, "position", next_position)
+            return ["next"]
         if node_type == "jump":
             force = float(self._read_input(node_id, "force", properties.get("force", 420.0), game, dt, set()))
             game.jump(force)
@@ -475,10 +583,90 @@ class LogicGraphRuntime:
             state = self._read_input(node_id, "state", properties.get("state", "Idle"), game, dt, set())
             game.animator.play(str(state))
             return ["next"]
+        if node_type == "play_animation_asset":
+            path = str(self._read_input(node_id, "path", properties.get("path", ""), game, dt, set()))
+            if path:
+                game.play_animation_asset(path)
+            return ["next"]
+        if node_type == "stop_animation":
+            game.stop_animation()
+            return ["next"]
         if node_type == "play_sound":
             path = str(self._read_input(node_id, "path", properties.get("path", ""), game, dt, set()))
             if path:
                 game.play_sound(path)
+            return ["next"]
+        if node_type == "set_sprite":
+            target = self._read_target(node_id, game, dt, set())
+            path = str(self._read_input(node_id, "path", properties.get("path", ""), game, dt, set()))
+            if path:
+                target.set_sprite(path)
+            return ["next"]
+        if node_type == "create_object":
+            name = str(self._read_input(node_id, "name", properties.get("name", "NovoObjeto"), game, dt, set()))
+            x = float(self._read_input(node_id, "x", properties.get("x", 0.0), game, dt, set()))
+            y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
+            if bool(properties.get("relative", False)):
+                x += float(game.x)
+                y += float(game.y)
+            inherit_source = bool(properties.get("inherit_source", True))
+            if inherit_source and callable(getattr(game, "clone_object", None)):
+                source = (
+                    self._read_input(node_id, "source", game, game, dt, set())
+                    if (node_id, "source") in self.incoming
+                    else game
+                )
+                created = game.clone_object(source, name)
+                created.x = x
+                created.y = y
+                created_data = getattr(created, "obj", None)
+                if isinstance(created_data, dict) and not bool(properties.get("inherit_logic", False)):
+                    created_data["logic_graphs"] = []
+            else:
+                created = game.create_object(
+                    name=name,
+                    x=x,
+                    y=y,
+                    width=float(properties.get("width", 64.0)),
+                    height=float(properties.get("height", 64.0)),
+                    color=str(properties.get("color", "#58a6ff")),
+                    texture=str(properties.get("texture", "")),
+                    tag=str(properties.get("tag", "Untagged")),
+                )
+            self._store(node_id, "object", created)
+            self._node_state.setdefault(node_id, {})["flow_target"] = created
+            return ["next"]
+        if node_type == "create_prefab":
+            path = str(properties.get("path", "")).strip()
+            if not path:
+                raise RuntimeError("Escolha um arquivo .zprefab.")
+            x = float(self._read_input(node_id, "x", properties.get("x", 0.0), game, dt, set()))
+            y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
+            if bool(properties.get("relative", False)):
+                x += float(game.x)
+                y += float(game.y)
+            created = game.create_prefab(path, x, y)
+            self._store(node_id, "object", created)
+            self._node_state.setdefault(node_id, {})["flow_target"] = created
+            return ["next"]
+        if node_type == "clone_object":
+            target = self._read_target(node_id, game, dt, set())
+            name = str(self._read_input(node_id, "name", properties.get("name", ""), game, dt, set()))
+            created = game.clone_object(target, name)
+            self._store(node_id, "object", created)
+            self._node_state.setdefault(node_id, {})["flow_target"] = created
+            return ["next"]
+        if node_type == "add_component":
+            target = self._read_target(node_id, game, dt, set())
+            component_properties = properties.get("properties", {})
+            target.add_component(
+                str(properties.get("component", "BoxCollider")),
+                component_properties if isinstance(component_properties, Mapping) else {},
+            )
+            return ["next"]
+        if node_type == "remove_component":
+            target = self._read_target(node_id, game, dt, set())
+            target.remove_component(str(properties.get("component", "BoxCollider")))
             return ["next"]
         if node_type == "set_hud":
             text = self._read_input(node_id, "text", properties.get("text", "Texto"), game, dt, set())
@@ -490,22 +678,25 @@ class LogicGraphRuntime:
             self.event_bus.emit(name, payload, self.object_key)
             return ["next"]
         if node_type == "set_position":
-            target = self._read_input(node_id, "target", game, game, dt, set()) or game
+            target = self._read_target(node_id, game, dt, set())
             target.x = float(self._read_input(node_id, "x", properties.get("x", 0.0), game, dt, set()))
             target.y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
             return ["next"]
         if node_type == "rotate":
-            target = self._read_input(node_id, "target", game, game, dt, set()) or game
+            target = self._read_target(node_id, game, dt, set())
             degrees = float(self._read_input(node_id, "degrees", properties.get("degrees", 90.0), game, dt, set()))
             target.rotation += degrees
             return ["next"]
         if node_type == "set_active":
-            target = self._read_input(node_id, "target", game, game, dt, set()) or game
+            target = self._read_target(node_id, game, dt, set())
             target.active = bool(self._read_input(node_id, "active", properties.get("active", True), game, dt, set()))
             return ["next"]
         if node_type == "destroy_object":
-            target = self._read_input(node_id, "target", game, game, dt, set()) or game
+            target = self._read_target(node_id, game, dt, set())
             target.destroy()
+            return []
+        if node_type == "restart_scene":
+            game.restart()
             return []
         if node_type == "log_message":
             text = self._read_input(node_id, "text", properties.get("text", "Mensagem"), game, dt, set())
@@ -562,6 +753,21 @@ class LogicGraphRuntime:
         if node_type == "sequence":
             outputs = max(1, int(properties.get("outputs", 2)))
             return [f"then_{index}" for index in range(outputs)] + ["next"]
+        if node_type == "once":
+            state = self._node_state.setdefault(node_id, {"executed": False})
+            if bool(state["executed"]):
+                return ["blocked"]
+            state["executed"] = True
+            return ["next"]
+        if node_type == "cooldown":
+            seconds = max(0.0, float(self._read_input(node_id, "seconds", properties.get("seconds", 1.0), game, dt, set())))
+            state = self._node_state.setdefault(node_id, {"remaining": 0.0})
+            remaining = max(0.0, float(state.get("remaining", 0.0)) - max(0.0, float(dt)))
+            if remaining > 0.0:
+                state["remaining"] = remaining
+                return ["blocked"]
+            state["remaining"] = seconds
+            return ["next"]
         return ["next"]
 
     def _read_input(
@@ -582,6 +788,12 @@ class LogicGraphRuntime:
         return self._evaluate_output(
             str(edge["from_node"]), str(edge.get("from_port", "value")), game, dt, resolving
         )
+
+    def _read_target(self, node_id: str, game: Any, dt: float, resolving: set[tuple[str, str]]) -> Any:
+        """Resolve uma porta de objeto sem copiar o objeto atual por engano."""
+        if (node_id, "target") not in self.incoming:
+            return self._implicit_target or game
+        return self._read_input(node_id, "target", game, game, dt, resolving) or game
 
     def _evaluate_output(
         self,
@@ -622,6 +834,8 @@ class LogicGraphRuntime:
             self.values["axis"] = value
         elif node_type == "key_pressed":
             value = bool(game.key_pressed(str(properties.get("key", "space")).lower()))
+        elif node_type == "key_held":
+            value = bool(game.key(str(properties.get("key", "space")).lower()))
         elif node_type == "is_grounded":
             value = bool(game.grounded)
         elif node_type == "compare_number":
@@ -681,8 +895,13 @@ class LogicGraphRuntime:
             value = deepcopy(properties.get("value"))
         elif node_type == "self_object":
             value = game
+        elif node_type == "get_position":
+            target = self._read_target(node_id, game, dt, resolving)
+            value = float(target.x if port == "x" else target.y)
         elif node_type == "find_tag":
             value = game.find(str(properties.get("tag", "Player")))
+        elif node_type in {"create_object", "create_prefab", "clone_object"}:
+            value = self.values.get((node_id, "object"))
         elif node_type == "if_else":
             raw = self._read_input(node_id, "condition", properties.get("condition", False), game, dt, resolving)
             value = self._condition(raw)

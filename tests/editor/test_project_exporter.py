@@ -1,5 +1,7 @@
 import importlib.util
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 
@@ -8,6 +10,7 @@ RUNTIME_SOURCES = (
     "editor/runtime/native_ui.py",
     "editor/runtime/audio_playback_state.py",
     "editor/runtime/sprite_rendering.py",
+    "editor/runtime/viewport_systems.py",
     "engine/graphics/tint.py",
     "engine/animation/clip_asset.py",
     "engine/animation/controller_asset.py",
@@ -16,6 +19,7 @@ RUNTIME_SOURCES = (
     "engine/logic/blackboard.py",
     "engine/logic/event_bus.py",
     "engine/logic/runtime.py",
+    "engine/runtime/runtime_world.py",
     "engine/build/runtime_scene_loader.py",
 )
 
@@ -62,6 +66,23 @@ def test_development_export_contains_scene_assets_and_launchers(tmp_path: Path) 
     assert (destination / "main.py").is_file()
     assert (destination / "executar.bat").is_file()
     assert json.loads((destination / "package_manifest.json").read_text(encoding="utf-8"))["project_name"] == "Meu Jogo"
+
+
+def test_exported_game_validates_outside_the_editor(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    (project / "Assets").mkdir(parents=True)
+    _install_runtime_sources(project)
+    scene = project / "main.zscene"
+    scene.write_text(json.dumps({"objects": [{"name": "Player"}]}), encoding="utf-8")
+    destination = _load_exporter().export_development_project(project, scene, tmp_path / "output", "Smoke")
+
+    result = subprocess.run(
+        [sys.executable, "main.py", "--validate-only"], cwd=destination,
+        capture_output=True, text=True, timeout=15, check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "1 objeto(s)" in result.stdout
 
 
 def test_export_report_contains_metrics_and_is_saved(tmp_path: Path) -> None:
@@ -129,8 +150,9 @@ def test_exported_runtime_contains_all_standalone_dependencies(tmp_path: Path) -
     runtime = Path(report.destination) / "zennity_runtime"
     assert {path.name for path in runtime.glob("*.py")} == {
         "__init__.py", "viewport.py", "native_ui.py", "audio_playback_state.py", "sprite_rendering.py",
+        "viewport_systems.py",
         "tint.py", "clip_asset.py", "controller_asset.py", "behavior_controller.py",
-        "logic_graph_asset.py", "logic_blackboard.py", "logic_event_bus.py", "logic_runtime.py", "scene_loader.py",
+        "logic_graph_asset.py", "logic_blackboard.py", "logic_event_bus.py", "logic_runtime.py", "runtime_world.py", "scene_loader.py",
     }
     launcher = (Path(report.destination) / "main.py").read_text(encoding="utf-8")
     assert "from zennity_runtime.scene_loader import load_objects" in launcher

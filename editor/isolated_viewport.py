@@ -7,6 +7,7 @@ import sys
 import time
 import hashlib
 import importlib.util
+import uuid
 from copy import deepcopy
 from pathlib import Path
 from queue import Empty
@@ -16,6 +17,12 @@ try:
     from editor.runtime.audio_playback_state import set_channels_paused
     from editor.runtime.native_ui import NativeUIRenderer, normalize_ui
     from editor.runtime.sprite_rendering import prepare_sprite_surface
+    from editor.runtime.viewport_systems import (
+        AnimationPlaybackSystem,
+        AudioPlaybackSystem,
+        FixedStepScheduler,
+        HudRuntimeSystem,
+    )
     from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
     from engine.animation.controller_asset import AnimatorControllerRuntime, load_animator_controller
     from engine.behavior.controller_asset import BehaviorControllerRunner, load_behavior_controller
@@ -23,10 +30,12 @@ try:
     from engine.logic.runtime import LogicGraphRuntime
     from engine.logic.blackboard import BlackboardStore, load_blackboard_asset
     from engine.logic.event_bus import LogicEventBus
+    from engine.runtime.runtime_world import RuntimeWorld
 except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .audio_playback_state import set_channels_paused
     from .native_ui import NativeUIRenderer, normalize_ui
     from .sprite_rendering import prepare_sprite_surface
+    from .viewport_systems import AnimationPlaybackSystem, AudioPlaybackSystem, FixedStepScheduler, HudRuntimeSystem
     from .clip_asset import animation_asset_to_clip, load_animation_asset
     from .controller_asset import AnimatorControllerRuntime, load_animator_controller
     from .behavior_controller import BehaviorControllerRunner, load_behavior_controller
@@ -34,6 +43,7 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .logic_runtime import LogicGraphRuntime
     from .logic_blackboard import BlackboardStore, load_blackboard_asset
     from .logic_event_bus import LogicEventBus
+    from .runtime_world import RuntimeWorld
 
 
 def hydrate_animation_asset_clips(
@@ -141,6 +151,8 @@ def hydrate_logic_graphs(
     for path in sorted(directory.rglob("*.zlogic"), key=lambda item: str(item).lower()):
         try:
             graph = load_logic_graph(path)
+            if not bool(graph.get("enabled", True)):
+                continue
             if any(node.get("type") == "subgraph_start" for node in graph.get("nodes", [])):
                 continue
             target = graph.get("target", {})
@@ -248,11 +260,12 @@ class PlayScriptAPI:
         "space": "jump", "r": "restart",
     }
 
-    def __init__(self, name: str, obj: dict[str, Any], events: Any, world: dict[str, dict[str, Any]] | None = None) -> None:
+    def __init__(self, name: str, obj: dict[str, Any], events: Any, world: dict[str, dict[str, Any]] | None = None, runtime_world: RuntimeWorld | None = None) -> None:
         self.name = name
         self.obj = obj
         self._events = events
-        self._world = world or {name: obj}
+        self._world = world if world is not None else {name: obj}
+        self.runtime_world = runtime_world or RuntimeWorld(self._world)
         self._input: dict[str, bool] = {}
         self._previous_input: dict[str, bool] = {}
         self.animator = PlayAnimatorAPI(obj)
@@ -339,6 +352,10 @@ class PlayScriptAPI:
         self.x += float(dx)
         self.y += float(dy)
 
+    def override_physics_axis(self, axis: str) -> None:
+        """Evita que a gravidade desfaça um movimento visual controlado neste frame."""
+        self.obj.setdefault("_logic_motion_axes", set()).add(str(axis).lower())
+
     def jump(self, force: float = 420.0) -> None:
         self.obj["_jump_requested"] = True
         self.obj["_jump_force"] = float(force)
@@ -349,14 +366,66 @@ class PlayScriptAPI:
             if obj is self.obj:
                 continue
             if str(obj.get("tag", obj.get("name", ""))).lower() == wanted:
-                return PlayScriptAPI(name, obj, self._events, self._world)
+                return PlayScriptAPI(name, obj, self._events, self._world, self.runtime_world)
         return None
+
+    def create_object(
+        self,
+        name: str = "NovoObjeto",
+        x: float = 0.0,
+        y: float = 0.0,
+        width: float = 64.0,
+        height: float = 64.0,
+        color: str = "#58a6ff",
+        texture: str = "",
+        tag: str = "Untagged",
+    ) -> "PlayScriptAPI":
+        """Cria um objeto temporário na cena atual e devolve sua referência."""
+        obj = self.runtime_world.create_object(
+            name=name, x=x, y=y, width=width, height=height,
+            color=color, texture=texture, tag=tag,
+        )
+        self.log(f"objeto criado: {obj['name']}")
+        return PlayScriptAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
+
+    def create_prefab(self, path: str, x: float | None = None, y: float | None = None) -> "PlayScriptAPI":
+        obj = self.runtime_world.instantiate_prefab(path, x=x, y=y)
+        self.log(f"prefab criado: {obj['name']}")
+        return PlayScriptAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
+
+    def clone_object(self, other: "PlayScriptAPI", name: str = "") -> "PlayScriptAPI":
+        source = other.obj if isinstance(other, PlayScriptAPI) else self.obj
+        obj = self.runtime_world.clone_object(source, name)
+        return PlayScriptAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
+
+    def add_component(self, component: str, properties: dict[str, Any] | None = None) -> None:
+        self.runtime_world.add_component(self.obj, component, properties)
+
+    def remove_component(self, component: str) -> bool:
+        return self.runtime_world.remove_component(self.obj, component)
 
     def distance_to(self, other: "PlayScriptAPI") -> float:
         return math.hypot(other.x - self.x, other.y - self.y)
 
     def play_animation(self, clip_name: str) -> None:
         self.obj.setdefault("script_instructions", []).append({"command": "play_animation", "value": clip_name})
+
+    def play_animation_asset(self, asset_path: str) -> None:
+        """Carrega e inicia um ``.zanim`` durante o Play Mode."""
+        path = Path(str(asset_path))
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        asset = load_animation_asset(path)
+        relative = path.relative_to(Path.cwd()).as_posix() if path.is_relative_to(Path.cwd()) else str(path)
+        clip = animation_asset_to_clip(asset, relative)
+        name = str(asset.get("name", path.stem))
+        animator = self.obj.setdefault("animator", {"active_clip": name, "speed": 1.0, "clips": {}})
+        animator.setdefault("clips", {})[name] = clip
+        animator["active_clip"] = name
+        self.obj["_current_animation_name"] = name
+        self.obj["_animation_time"] = 0.0
+        self.obj["_animation_frame"] = 0
+        self.obj["_animation_raw_frame"] = -1
 
     def stop_animation(self) -> None:
         self.obj.setdefault("script_instructions", []).append({"command": "stop_animation", "value": None})
@@ -367,6 +436,11 @@ class PlayScriptAPI:
 
     def play_sound(self, sound_path: str) -> None:
         self.obj.setdefault("script_instructions", []).append({"command": "play_sound", "value": str(sound_path)})
+
+    def set_sprite(self, image_path: str) -> None:
+        """Troca a textura principal do objeto sem recriá-lo."""
+        self.obj["texture"] = str(image_path)
+        self.obj["renderer_enabled"] = True
 
     def send(self, command: str, value: Any = None) -> None:
         self.obj.setdefault("script_instructions", []).append({"command": str(command), "value": value})
@@ -398,7 +472,7 @@ class PlayScriptAPI:
 
     def destroy(self) -> None:
         """Desativa o objeto no Play Mode atual."""
-        self.active = False
+        self.runtime_world.destroy_object(self.obj)
 
     def log(self, message: str) -> None:
         _send(self._events, {"type": "script_log", "level": "INFO", "message": f"{self.name}: {message}"})
@@ -478,6 +552,7 @@ def run_viewport(
     clock = pygame.time.Clock()
     running = True
     objects: dict[str, dict[str, Any]] = {}
+    runtime_world = RuntimeWorld(objects)
     dragging = False
     selected_name: str | None = None
     active_tool = "select"
@@ -504,172 +579,30 @@ def run_viewport(
     animator_controllers: dict[str, AnimatorControllerRuntime] = {}
     behavior_runners: dict[str, BehaviorControllerRunner] = {}
     logic_runtimes: dict[str, list[tuple[str, LogicGraphRuntime]]] = {}
+    initialized_runtime_ids: set[str] = set()
     logic_blackboard = BlackboardStore()
     logic_event_bus = LogicEventBus()
     scene_blackboard_config: dict[str, Any] = {}
     logic_trace_last_sent = 0.0
     animator_event_signatures: dict[str, tuple[Any, ...]] = {}
     active_contacts: dict[tuple[str, str], bool] = {}
-    audio_channels: dict[str, Any] = {}
-    audio_sounds: dict[str, Any] = {}
-    hud_entries: dict[str, dict[str, Any]] = {}
+    def runtime_log(level: str, message: str) -> None:
+        _send(events, {"type": "script_log", "level": level, "message": message})
+
+    audio_system = AudioPlaybackSystem(pygame, Path.cwd(), runtime_log)
+    audio_channels = audio_system.channels
+    audio_sounds = audio_system.sounds
+    hud_entries = HudRuntimeSystem()
+    animation_system = AnimationPlaybackSystem()
     restart_requested = False
+    physics_scheduler = FixedStepScheduler(1.0 / 60.0, maximum_steps=5)
+    fixed_physics_dt = physics_scheduler.step
     forwarded_input = {
         key: False for key in ("left", "right", "up", "down", "jump", "restart")
     }
     last_stats_ms = 0
     texture_cache: dict[str, tuple[float, Any]] = {}
     native_ui = NativeUIRenderer()
-
-    def game_camera() -> dict[str, Any] | None:
-        return next(
-            (
-                obj for obj in objects.values()
-                if (
-                    "Camera2D" in obj.get("component_names", [])
-                    or isinstance(obj.get("camera"), dict)
-                    or obj.get("mesh_type") == "Camera"
-                )
-                and bool((obj.get("camera") or {}).get("active", True))
-            ),
-            None,
-        )
-
-    def controlled_object() -> tuple[str, dict[str, Any]] | tuple[None, None]:
-        for name in logic_runtimes:
-            if name in objects:
-                return name, objects[name]
-        for name in script_instances:
-            if name in objects:
-                return name, objects[name]
-        return None, None
-
-    def start_scripts() -> None:
-        nonlocal logic_blackboard, logic_event_bus
-        script_instances.clear()
-        script_apis.clear()
-        animator_controllers.clear()
-        behavior_runners.clear()
-        logic_runtimes.clear()
-        project_blackboard_path = Path.cwd() / "Assets" / "Logic" / "ProjectBlackboard.zblackboard"
-        try:
-            project_blackboard = load_blackboard_asset(project_blackboard_path) if project_blackboard_path.is_file() else {}
-        except (OSError, ValueError):
-            project_blackboard = {}
-        logic_blackboard = BlackboardStore(scene_blackboard_config, project_blackboard)
-        logic_event_bus = LogicEventBus()
-        for level, object_name, message in hydrate_animation_asset_clips(objects, Path.cwd()):
-            _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
-        for level, object_name, message in hydrate_animator_controllers(objects, Path.cwd()):
-            _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
-        for name, obj in objects.items():
-            animator = obj.get("animator")
-            if isinstance(animator, dict):
-                controller = animator.get("controller")
-                if isinstance(controller, dict):
-                    runtime = AnimatorControllerRuntime(controller, animator.get("parameters", {}))
-                    animator_controllers[name] = runtime
-                    animator["parameters"] = dict(runtime.parameters)
-                    obj["_animator_state"] = runtime.current_state
-                    animator["active_clip"] = runtime.current_state
-                obj["_current_animation_name"] = str(animator.get("active_clip", "Idle"))
-                obj["_animation_time"] = 0.0
-                obj["_animation_frame"] = 0
-                obj["_animation_raw_frame"] = -1
-        declared = sum(len(obj.get("scripts", [])) for obj in objects.values())
-        _send(events, {"type": "script_log", "level": "INFO", "message": f"Play Mode recebeu {len(objects)} objeto(s) e {declared} script(s)"})
-        for name, obj in objects.items():
-            for script_path in obj.get("scripts", []):
-                try:
-                    path = Path(str(script_path))
-                    if not path.is_absolute():
-                        path = Path.cwd() / path
-                    path = path.resolve()
-                    digest = hashlib.sha1(f"{name}:{path}".encode("utf-8")).hexdigest()[:12]
-                    spec = importlib.util.spec_from_file_location(f"zennity_isolated_{path.stem}_{digest}", path)
-                    if spec is None or spec.loader is None:
-                        raise ImportError(f"não foi possível carregar {path}")
-                    module = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(module)
-                    update = getattr(module, "on_update", None)
-                    update_mode = "simple"
-                    if not callable(update):
-                        update = getattr(module, "isolated_update", None)
-                        update_mode = "isolated"
-                    if not callable(update):
-                        update = getattr(module, "update", None)
-                        update_mode = "legacy"
-                    # Projetos antigos podem ter copiado um Component nativo para
-                    # Assets/Scripts. Nesse caso usamos a versão compatível que vem
-                    # com a engine, sem alterar nem apagar o arquivo do usuário.
-                    if not callable(update):
-                        bundled_path = (Path.cwd() / "assets" / "scripts" / path.name).resolve()
-                        if bundled_path != path and bundled_path.is_file():
-                            bundled_spec = importlib.util.spec_from_file_location(
-                                f"zennity_bundled_{bundled_path.stem}_{digest}", bundled_path
-                            )
-                            if bundled_spec is not None and bundled_spec.loader is not None:
-                                bundled_module = importlib.util.module_from_spec(bundled_spec)
-                                bundled_spec.loader.exec_module(bundled_module)
-                                bundled_update = getattr(bundled_module, "on_update", None)
-                                if callable(bundled_update):
-                                    module = bundled_module
-                                    update = bundled_update
-                                    update_mode = "simple"
-                    event_hooks = ("on_collision", "on_collision_exit", "on_trigger", "on_trigger_exit", "on_animation_event", "on_animation_state_enter", "on_animation_state_exit")
-                    if not callable(update) and any(callable(getattr(module, hook, None)) for hook in event_hooks):
-                        update = lambda game, dt: None
-                        update_mode = "simple"
-                    if not callable(update):
-                        raise TypeError("defina on_update(game, dt), isolated_update(...) ou update(obj, dt)")
-                    overrides = obj.get("script_properties", {}).get(str(script_path), {})
-                    if isinstance(overrides, dict):
-                        config = getattr(module, "CONFIG", None)
-                        for key, value in overrides.items():
-                            if isinstance(config, dict) and key in config:
-                                config[key] = value
-                            elif str(key).isupper() and hasattr(module, str(key)):
-                                setattr(module, str(key), value)
-                    module._zennity_update_hook = update
-                    module._zennity_update_mode = update_mode
-                    api = script_apis.setdefault(name, PlayScriptAPI(name, obj, events, objects))
-                    module._zennity_api = api
-                    script_instances.setdefault(name, []).append((str(path), module))
-                    start = getattr(module, "on_start", None)
-                    if callable(start):
-                        start(api)
-                    else:
-                        start = getattr(module, "isolated_start", None) or getattr(module, "start", None)
-                    if callable(start):
-                        if getattr(module, "on_start", None) is not start:
-                            start(obj)
-                    _send(events, {"type": "script_log", "level": "INFO", "message": f"Script iniciado em {name}: {path.name}"})
-                except Exception as exc:
-                    _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{script_path}: {exc}"})
-        loaded = sum(len(instances) for instances in script_instances.values())
-        level = "INFO" if loaded else "WARNING"
-        _send(events, {"type": "script_log", "level": level, "message": f"Play Mode carregou {loaded} script(s) executável(is)"})
-
-    def stop_scripts() -> None:
-        stop_audio_sources()
-        for name, instances in list(script_instances.items()):
-            obj = objects.get(name)
-            for path, module in instances:
-                try:
-                    stop = getattr(module, "on_stop", None)
-                    if callable(stop):
-                        stop(module._zennity_api)
-                        continue
-                    stop = getattr(module, "isolated_stop", None) or getattr(module, "stop", None)
-                    if callable(stop):
-                        stop(obj)
-                except Exception as exc:
-                    _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}: {exc}"})
-        script_instances.clear()
-        script_apis.clear()
-        animator_controllers.clear()
-        behavior_runners.clear()
-        active_contacts.clear()
 
     def start_audio_sources() -> None:
         stop_audio_sources()
@@ -688,135 +621,19 @@ def run_viewport(
         _send(events, {"type": "script_log", "level": "INFO", "message": f"Play processou {found} Audio Source(s); {enabled} iniciado(s)"})
 
     def ensure_audio_mixer() -> bool:
-        try:
-            if not pygame.mixer.get_init():
-                pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
-            pygame.mixer.set_num_channels(max(16, pygame.mixer.get_num_channels()))
-            return True
-        except pygame.error as exc:
-            _send(events, {"type": "script_log", "level": "WARNING", "message": f"Áudio indisponível: {exc}"})
-            return False
+        return audio_system.ensure_mixer()
 
     def play_audio_file(key: str, path_value: str, volume: float = 1.0, loop: bool = False) -> None:
-        path = Path(str(path_value))
-        if not path.is_absolute():
-            path = Path.cwd() / path
-        if not path.is_file():
-            _send(events, {"type": "script_log", "level": "ERROR", "message": f"{key}: arquivo de áudio não encontrado: {path_value}"})
-            return
-        if not ensure_audio_mixer():
-            return
-        try:
-            previous = audio_channels.pop(key, None)
-            if previous is not None:
-                previous.stop()
-            sound = pygame.mixer.Sound(str(path.resolve()))
-            sound.set_volume(max(0.0, min(1.0, float(volume))))
-            channel = sound.play(loops=-1 if loop else 0)
-            if channel is None:
-                _send(events, {"type": "script_log", "level": "WARNING", "message": f"{key}: nenhum canal de áudio disponível"})
-                return
-            audio_sounds[key] = sound
-            audio_channels[key] = channel
-            _send(events, {"type": "script_log", "level": "INFO", "message": f"Áudio tocando: {path.name} (volume {sound.get_volume():.2f})"})
-        except (OSError, pygame.error) as exc:
-            _send(events, {"type": "script_log", "level": "ERROR", "message": f"{key}: falha ao tocar {path.name}: {exc}"})
+        audio_system.play(key, path_value, volume, loop)
 
     def stop_audio_sources() -> None:
-        for channel in audio_channels.values():
-            try:
-                channel.stop()
-            except pygame.error:
-                pass
-        audio_channels.clear()
-        audio_sounds.clear()
-        if pygame.mixer.get_init():
-            pygame.mixer.stop()
-            try:
-                pygame.mixer.music.stop()
-            except pygame.error:
-                pass
-
-    def collider_bounds(obj: dict[str, Any]) -> tuple[float, float, float, float]:
-        collider = obj.get("collider") or {}
-        angle = math.radians(float(obj.get("rotation", 0.0)))
-        offset_x = float(collider.get("offset_x", 0.0))
-        offset_y = float(collider.get("offset_y", 0.0))
-        center_x = float(obj.get("x", 0.0)) + offset_x * math.cos(angle) - offset_y * math.sin(angle)
-        center_y = float(obj.get("y", 0.0)) + offset_x * math.sin(angle) + offset_y * math.cos(angle)
-        if str(collider.get("type", "box")).lower() == "circle":
-            width = height = float(collider.get("radius", min(obj.get("w", 1.0), obj.get("h", 1.0)) / 2.0)) * 2.0
-        else:
-            width = float(collider.get("width", obj.get("w", 1.0)))
-            height = float(collider.get("height", obj.get("h", 1.0)))
-            cosine, sine = abs(math.cos(angle)), abs(math.sin(angle))
-            width, height = width * cosine + height * sine, width * sine + height * cosine
-        return center_x - width / 2.0, center_y - height / 2.0, center_x + width / 2.0, center_y + height / 2.0
-
-    def dispatch_contact(name: str, other_name: str, hook_name: str) -> None:
-        obj = objects.get(name)
-        other_obj = objects.get(other_name)
-        if obj is None or other_obj is None:
-            return
-        game = script_apis.get(name) or PlayScriptAPI(name, obj, events, objects)
-        other = PlayScriptAPI(other_name, other_obj, events, objects)
-        for path, module in list(script_instances.get(name, [])):
-            hook = getattr(module, hook_name, None)
-            if not callable(hook):
-                continue
-            try:
-                hook(game, other)
-            except Exception as exc:
-                _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}:{hook_name}: {exc}"})
-        logic_event = {
-            "on_collision": "event_collision_enter",
-            "on_collision_exit": "event_collision_exit",
-            "on_trigger": "event_trigger_enter",
-            "on_trigger_exit": "event_trigger_exit",
-        }.get(hook_name)
-        if logic_event:
-            for graph_path, runtime in list(logic_runtimes.get(name, [])):
-                try:
-                    runtime.trigger_event(logic_event, game, 0.0, other)
-                    _send(events, {
-                        "type": "logic_trace", "object": name, "graph": graph_path,
-                        **runtime.debug_snapshot(),
-                    })
-                except Exception as exc:
-                    _send(events, {
-                        "type": "script_log", "level": "ERROR",
-                        "message": f"{name}:{graph_path}:{logic_event}: {exc}",
-                    })
-
-    def process_contacts() -> None:
-        current: dict[tuple[str, str], bool] = {}
-        collidable = [(name, obj) for name, obj in objects.items() if obj.get("active", True) and isinstance(obj.get("collider"), dict)]
-        for index, (name_a, obj_a) in enumerate(collidable):
-            left_a, top_a, right_a, bottom_a = collider_bounds(obj_a)
-            for name_b, obj_b in collidable[index + 1:]:
-                left_b, top_b, right_b, bottom_b = collider_bounds(obj_b)
-                if right_a < left_b or right_b < left_a or bottom_a < top_b or bottom_b < top_a:
-                    continue
-                pair = tuple(sorted((name_a, name_b)))
-                is_trigger = bool(obj_a["collider"].get("is_trigger") or obj_b["collider"].get("is_trigger"))
-                current[pair] = is_trigger
-                if pair not in active_contacts:
-                    hook = "on_trigger" if is_trigger else "on_collision"
-                    dispatch_contact(name_a, name_b, hook)
-                    dispatch_contact(name_b, name_a, hook)
-        for pair, was_trigger in list(active_contacts.items()):
-            if pair not in current:
-                hook = "on_trigger_exit" if was_trigger else "on_collision_exit"
-                dispatch_contact(pair[0], pair[1], hook)
-                dispatch_contact(pair[1], pair[0], hook)
-        active_contacts.clear()
-        active_contacts.update(current)
+        audio_system.stop_all()
 
     def dispatch_animation_state_hook(object_name: str, hook_name: str, state_name: str) -> None:
         obj = objects.get(object_name)
         if obj is None:
             return
-        api = script_apis.get(object_name) or PlayScriptAPI(object_name, obj, events, objects)
+        api = script_apis.get(object_name) or PlayScriptAPI(object_name, obj, events, objects, runtime_world)
         for path, module in list(script_instances.get(object_name, [])):
             hook = getattr(module, hook_name, None)
             if not callable(hook):
@@ -880,24 +697,23 @@ def run_viewport(
                 * max(0.0, float(animator.get("speed", 1.0)))
                 * max(0.0, float(clip.get("controller_speed", 1.0)))
             )
-            elapsed = float(obj.get("_animation_time", 0.0)) + delta_time
-            raw_frame = int(elapsed * fps)
-            frame = raw_frame % count if clip.get("loop", True) else min(count - 1, raw_frame)
             previous_raw = int(obj.get("_animation_raw_frame", -1))
-            if raw_frame > previous_raw:
-                upper = min(raw_frame, previous_raw + max(1, count * 4))
+            frame_result = animation_system.advance(
+                float(obj.get("_animation_time", 0.0)),
+                previous_raw,
+                delta_time,
+                count,
+                fps,
+                bool(clip.get("loop", True)),
+            )
+            if frame_result.crossed_frames:
                 events_by_frame: dict[int, list[dict[str, Any]]] = {}
                 for event in clip.get("events", []):
                     if isinstance(event, dict):
                         events_by_frame.setdefault(max(0, int(event.get("frame", 0))), []).append(event)
-                fired_frames: set[int] = set()
-                for raw_index in range(previous_raw + 1, upper + 1):
-                    event_frame = raw_index % count if clip.get("loop", True) else min(count - 1, raw_index)
-                    if not clip.get("loop", True) and event_frame in fired_frames:
-                        continue
-                    fired_frames.add(event_frame)
+                for event_frame in frame_result.crossed_frames:
                     for event in events_by_frame.get(event_frame, []):
-                        api = script_apis.get(object_name) or PlayScriptAPI(object_name, obj, events, objects)
+                        api = script_apis.get(object_name) or PlayScriptAPI(object_name, obj, events, objects, runtime_world)
                         api.state["animation_event_payload"] = event.get("payload")
                         for path, module in list(script_instances.get(object_name, [])):
                             hook = getattr(module, "on_animation_event", None)
@@ -908,23 +724,9 @@ def run_viewport(
                             except Exception as exc:
                                 _send(events, {"type": "script_log", "level": "ERROR", "message": f"{object_name}:{path}:on_animation_event: {exc}"})
                         _send(events, {"type": "animation_event", "name": object_name, "state": name, "event": str(event.get("name", "")), "frame": event_frame, "payload": event.get("payload")})
-            obj["_animation_time"] = elapsed
-            obj["_animation_frame"] = frame
-            obj["_animation_raw_frame"] = raw_frame
-
-    def view_transform() -> tuple[float, float, float]:
-        if view_mode == "game":
-            width, height = screen.get_size()
-            camera = game_camera()
-            if camera is not None:
-                game_zoom = max(0.1, float((camera.get("camera") or {}).get("zoom", 1.0)))
-                return (
-                    float(camera.get("x", 0.0)) - width / (2.0 * game_zoom),
-                    float(camera.get("y", 0.0)) - height / (2.0 * game_zoom),
-                    game_zoom,
-                )
-            return (-width / 2.0, -height / 2.0, 1.0)
-        return (camera_x, camera_y, zoom)
+            obj["_animation_time"] = frame_result.elapsed
+            obj["_animation_frame"] = frame_result.frame
+            obj["_animation_raw_frame"] = frame_result.raw_frame
 
     def game_camera() -> dict[str, Any] | None:
         return next(
@@ -950,19 +752,30 @@ def run_viewport(
         return None, None
 
     def start_scripts() -> None:
+        nonlocal logic_blackboard, logic_event_bus
         script_instances.clear()
         script_apis.clear()
         animator_controllers.clear()
         behavior_runners.clear()
         logic_runtimes.clear()
+        initialized_runtime_ids.clear()
         animator_event_signatures.clear()
+        runtime_world.reset_session()
+        project_blackboard_path = Path.cwd() / "Assets" / "Logic" / "ProjectBlackboard.zblackboard"
+        try:
+            project_blackboard = load_blackboard_asset(project_blackboard_path) if project_blackboard_path.is_file() else {}
+        except (OSError, ValueError):
+            project_blackboard = {}
+        logic_blackboard = BlackboardStore(scene_blackboard_config, project_blackboard)
+        logic_event_bus = LogicEventBus()
+        initial_objects = list(objects.items())
         for level, object_name, message in hydrate_animation_asset_clips(objects, Path.cwd()):
             _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
         for level, object_name, message in hydrate_animator_controllers(objects, Path.cwd()):
             _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
         for level, object_name, message in hydrate_logic_graphs(objects, Path.cwd()):
             _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
-        for name, obj in objects.items():
+        for name, obj in initial_objects:
             animator = obj.get("animator")
             if not isinstance(animator, dict):
                 continue
@@ -977,7 +790,7 @@ def run_viewport(
             obj["_animation_time"] = 0.0
             obj["_animation_frame"] = 0
             obj["_animation_raw_frame"] = -1
-        for name, obj in objects.items():
+        for name, obj in initial_objects:
             entries = obj.get("logic_graphs", [])
             if not isinstance(entries, list):
                 continue
@@ -986,7 +799,7 @@ def run_viewport(
                 if not isinstance(graph, dict):
                     continue
                 try:
-                    api = script_apis.setdefault(name, PlayScriptAPI(name, obj, events, objects))
+                    api = script_apis.setdefault(name, PlayScriptAPI(name, obj, events, objects, runtime_world))
                     runtime = LogicGraphRuntime(
                         graph,
                         logic_blackboard,
@@ -999,99 +812,9 @@ def run_viewport(
                 except Exception as exc:
                     _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}: Logic Graph: {exc}"})
         loaded_graphs = sum(len(entries) for entries in logic_runtimes.values())
+        initialized_runtime_ids.update(str(obj.get("id", name)) for name, obj in initial_objects)
+        start_spawned_objects()
         _send(events, {"type": "script_log", "level": "INFO", "message": f"Play Mode carregou {loaded_graphs} Logic Graph(s); scripts Python estão desativados"})
-        return
-        declared = sum(len(obj.get("scripts", [])) for obj in objects.values())
-        _send(events, {"type": "script_log", "level": "INFO", "message": f"Play Mode recebeu {len(objects)} objeto(s) e {declared} script(s)"})
-        for name, obj in objects.items():
-            for script_path in obj.get("scripts", []):
-                try:
-                    path = Path(str(script_path))
-                    if not path.is_absolute():
-                        path = Path.cwd() / path
-                    path = path.resolve()
-                    digest = hashlib.sha1(f"{name}:{path}".encode("utf-8")).hexdigest()[:12]
-                    spec = importlib.util.spec_from_file_location(f"zennity_isolated_{path.stem}_{digest}", path)
-                    if spec is None or spec.loader is None:
-                        raise ImportError(f"não foi possível carregar {path}")
-                    module = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(module)
-                    update = getattr(module, "on_update", None)
-                    update_mode = "simple"
-                    if not callable(update):
-                        update = getattr(module, "isolated_update", None)
-                        update_mode = "isolated"
-                    if not callable(update):
-                        update = getattr(module, "update", None)
-                        update_mode = "legacy"
-                    # Projetos antigos podem ter copiado um Component nativo para
-                    # Assets/Scripts. Nesse caso usamos a versão compatível que vem
-                    # com a engine, sem alterar nem apagar o arquivo do usuário.
-                    if not callable(update):
-                        bundled_path = (Path.cwd() / "assets" / "scripts" / path.name).resolve()
-                        if bundled_path != path and bundled_path.is_file():
-                            bundled_spec = importlib.util.spec_from_file_location(
-                                f"zennity_bundled_{bundled_path.stem}_{digest}", bundled_path
-                            )
-                            if bundled_spec is not None and bundled_spec.loader is not None:
-                                bundled_module = importlib.util.module_from_spec(bundled_spec)
-                                bundled_spec.loader.exec_module(bundled_module)
-                                bundled_update = getattr(bundled_module, "on_update", None)
-                                if callable(bundled_update):
-                                    module = bundled_module
-                                    update = bundled_update
-                                    update_mode = "simple"
-                    event_hooks = ("on_collision", "on_collision_exit", "on_trigger", "on_trigger_exit", "on_animation_event", "on_animation_state_enter", "on_animation_state_exit")
-                    if not callable(update) and any(callable(getattr(module, hook, None)) for hook in event_hooks):
-                        update = lambda game, dt: None
-                        update_mode = "simple"
-                    if not callable(update):
-                        raise TypeError("defina on_update(game, dt), isolated_update(...) ou update(obj, dt)")
-                    overrides = obj.get("script_properties", {}).get(str(script_path), {})
-                    if isinstance(overrides, dict):
-                        config = getattr(module, "CONFIG", None)
-                        for key, value in overrides.items():
-                            if isinstance(config, dict) and key in config:
-                                config[key] = value
-                            elif str(key).isupper() and hasattr(module, str(key)):
-                                setattr(module, str(key), value)
-                    module._zennity_update_hook = update
-                    module._zennity_update_mode = update_mode
-                    api = script_apis.setdefault(name, PlayScriptAPI(name, obj, events, objects))
-                    module._zennity_api = api
-                    script_instances.setdefault(name, []).append((str(path), module))
-                    start = getattr(module, "on_start", None)
-                    if callable(start):
-                        start(api)
-                    else:
-                        start = getattr(module, "isolated_start", None) or getattr(module, "start", None)
-                    if callable(start):
-                        if getattr(module, "on_start", None) is not start:
-                            start(obj)
-                    _send(events, {"type": "script_log", "level": "INFO", "message": f"Script iniciado em {name}: {path.name}"})
-                except Exception as exc:
-                    _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{script_path}: {exc}"})
-        for name, obj in objects.items():
-            behavior = obj.get("behavior")
-            controller = behavior.get("controller") if isinstance(behavior, dict) else None
-            if not isinstance(controller, dict):
-                continue
-            try:
-                runner = BehaviorControllerRunner(controller, Path.cwd(), behavior.get("parameters", {}))
-                api = script_apis.setdefault(name, PlayScriptAPI(name, obj, events, objects))
-                api.behavior.bind(runner, api)
-                runner.start(api)
-                behavior_runners[name] = runner
-                behavior["parameters"] = dict(runner.parameters)
-                obj["_behavior_state"] = runner.current_state
-                _send(events, {"type": "script_log", "level": "INFO", "message": f"Behavior iniciado em {name}: {runner.current_state}"})
-            except Exception as exc:
-                _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}: Behavior Controller: {exc}"})
-        loaded = sum(len(instances) for instances in script_instances.values())
-        loaded_behaviors = len(behavior_runners)
-        level = "INFO" if loaded or loaded_behaviors else "WARNING"
-        _send(events, {"type": "script_log", "level": level, "message": f"Play Mode carregou {loaded} script(s) executável(is)"})
-        _send(events, {"type": "script_log", "level": "INFO", "message": f"Play Mode carregou {loaded_behaviors} Behavior Controller(s)"})
 
     def stop_scripts() -> None:
         logic_runtimes.clear()
@@ -1099,36 +822,59 @@ def run_viewport(
         script_apis.clear()
         animator_controllers.clear()
         behavior_runners.clear()
+        initialized_runtime_ids.clear()
         animator_event_signatures.clear()
         active_contacts.clear()
         _send(events, {"type": "logic_trace_clear"})
-        return
-        for name, runner in list(behavior_runners.items()):
-            try:
-                api = script_apis.get(name)
-                if api is not None:
-                    runner.stop(api)
-            except Exception as exc:
-                _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}: Behavior Controller: {exc}"})
-        for name, instances in list(script_instances.items()):
-            obj = objects.get(name)
-            for path, module in instances:
-                try:
-                    stop = getattr(module, "on_stop", None)
-                    if callable(stop):
-                        stop(module._zennity_api)
+
+    def start_spawned_objects() -> None:
+        active_names = set(objects)
+        for stale_name in set(logic_runtimes) - active_names:
+            logic_runtimes.pop(stale_name, None)
+            script_apis.pop(stale_name, None)
+            animator_controllers.pop(stale_name, None)
+        pending = [
+            (name, obj) for name, obj in list(objects.items())
+            if str(obj.get("id", name)) not in initialized_runtime_ids
+        ]
+        for name, obj in pending:
+            object_id = str(obj.get("id", name))
+            initialized_runtime_ids.add(object_id)
+            for hydrator in (hydrate_animation_asset_clips, hydrate_animator_controllers, hydrate_logic_graphs):
+                for level, object_name, message in hydrator({name: obj}, Path.cwd()):
+                    _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
+            animator = obj.get("animator")
+            if isinstance(animator, dict):
+                controller = animator.get("controller")
+                if isinstance(controller, dict):
+                    controller_runtime = AnimatorControllerRuntime(controller, animator.get("parameters", {}))
+                    animator_controllers[name] = controller_runtime
+                    animator["parameters"] = dict(controller_runtime.parameters)
+                    animator["active_clip"] = controller_runtime.current_state
+                    obj["_animator_state"] = controller_runtime.current_state
+                obj["_current_animation_name"] = str(animator.get("active_clip", "Idle"))
+                obj["_animation_time"] = 0.0
+                obj["_animation_frame"] = 0
+                obj["_animation_raw_frame"] = -1
+            entries = obj.get("logic_graphs", [])
+            if isinstance(entries, list):
+                for entry in entries:
+                    graph = entry.get("graph") if isinstance(entry, dict) else None
+                    if not isinstance(graph, dict):
                         continue
-                    stop = getattr(module, "isolated_stop", None) or getattr(module, "stop", None)
-                    if callable(stop):
-                        stop(obj)
-                except Exception as exc:
-                    _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}: {exc}"})
-        script_instances.clear()
-        script_apis.clear()
-        animator_controllers.clear()
-        behavior_runners.clear()
-        animator_event_signatures.clear()
-        active_contacts.clear()
+                    try:
+                        api = script_apis.setdefault(name, PlayScriptAPI(name, obj, events, objects, runtime_world))
+                        graph_runtime = LogicGraphRuntime(
+                            graph, logic_blackboard, name, logic_event_bus,
+                            lambda path: load_project_subgraph(path, Path.cwd()),
+                        )
+                        graph_runtime.start(api)
+                        logic_runtimes.setdefault(name, []).append((str(entry.get("path", graph.get("name", "Logic Graph"))), graph_runtime))
+                    except Exception as exc:
+                        _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}: Logic Graph: {exc}"})
+            audio = obj.get("audio")
+            if isinstance(audio, dict) and audio.get("autoplay") and audio.get("path"):
+                play_audio_file(name, str(audio["path"]), float(audio.get("volume", 1.0)), bool(audio.get("loop", False)))
 
     def collider_bounds(obj: dict[str, Any]) -> tuple[float, float, float, float]:
         collider = obj.get("collider") or {}
@@ -1151,8 +897,8 @@ def run_viewport(
         other_obj = objects.get(other_name)
         if obj is None or other_obj is None:
             return
-        game = script_apis.get(name) or PlayScriptAPI(name, obj, events, objects)
-        other = PlayScriptAPI(other_name, other_obj, events, objects)
+        game = script_apis.get(name) or PlayScriptAPI(name, obj, events, objects, runtime_world)
+        other = PlayScriptAPI(other_name, other_obj, events, objects, runtime_world)
         for path, module in list(script_instances.get(name, [])):
             hook = getattr(module, hook_name, None)
             if not callable(hook):
@@ -1257,7 +1003,8 @@ def run_viewport(
                     # Inspector ficam no editor e só entram na próxima execução.
                     if playing:
                         continue
-                    objects = {item["name"]: dict(item) for item in command.get("objects", [])}
+                    objects.clear()
+                    objects.update({item["name"]: dict(item) for item in command.get("objects", [])})
                     edit_snapshot = deepcopy(objects)
                     selected_name = None
                     playing = False
@@ -1372,6 +1119,7 @@ def run_viewport(
                         paused = False
                         velocities_y = {}
                         grounded = {}
+                        physics_scheduler.reset()
                         hud_entries.clear()
                         start_scripts()
                         _send(events, {"type": "play_state", "state": "play"})
@@ -1396,11 +1144,13 @@ def run_viewport(
                     stop_audio_sources()
                     if playing:
                         stop_scripts()
-                        objects = deepcopy(edit_snapshot)
+                        objects.clear()
+                        objects.update(deepcopy(edit_snapshot))
                         playing = False
                         paused = False
                         velocities_y = {}
                         grounded = {}
+                        physics_scheduler.reset()
                         hud_entries.clear()
                         _send(events, {"type": "play_state", "state": "edit"})
                         _send(events, {"type": "scene_snapshot", "objects": list(objects.values())})
@@ -1755,6 +1505,7 @@ def run_viewport(
         width, height = screen.get_size()
         dt = clock.get_time() / 1000.0
         if playing and not paused:
+            start_spawned_objects()
             trace_now = time.monotonic()
             trace_due = trace_now - logic_trace_last_sent >= 0.10
             debug_pause_requested = False
@@ -1832,9 +1583,9 @@ def run_viewport(
                     elif cmd == "play_sound" and val:
                         play_audio_file(f"logic:{name}", str(val))
                     elif cmd == "set_hud" and isinstance(val, dict):
-                        hud_entries[str(val.get("key", "logic"))] = dict(val)
+                        hud_entries.set_entry(dict(val))
                     elif cmd == "remove_hud":
-                        hud_entries.pop(str(val), None)
+                        hud_entries.remove_entry(str(val))
                     elif cmd == "restart_scene":
                         restart_requested = True
                 if obj.pop("_jump_requested", False) and grounded.get(name, False):
@@ -1897,10 +1648,9 @@ def run_viewport(
                                 elif cmd == "play_sound" and val:
                                     play_audio_file(f"script:{name}", str(val))
                                 elif cmd == "set_hud" and isinstance(val, dict):
-                                    hud_key = str(val.get("key", "default"))
-                                    hud_entries[hud_key] = dict(val)
+                                    hud_entries.set_entry(dict(val))
                                 elif cmd == "remove_hud":
-                                    hud_entries.pop(str(val), None)
+                                    hud_entries.remove_entry(str(val))
                                 elif cmd == "set_ui_text" and isinstance(val, dict):
                                     target = objects.get(str(val.get("object", "")))
                                     target_ui = normalize_ui(target.get("ui")) if target is not None else None
@@ -1954,6 +1704,7 @@ def run_viewport(
             for api in script_apis.values():
                 api.end_frame()
             if restart_requested:
+                stop_audio_sources()
                 stop_scripts()
                 objects.clear()
                 objects.update(deepcopy(edit_snapshot))
@@ -1962,32 +1713,48 @@ def run_viewport(
                 active_contacts.clear()
                 hud_entries.clear()
                 restart_requested = False
+                physics_scheduler.reset()
                 start_scripts()
-            static_colliders = [
-                obj for obj in objects.values()
-                if obj.get("collider")
-                and not obj["collider"].get("is_trigger", False)
-                and (obj.get("rigidbody") or {}).get("is_kinematic", True)
-            ]
-            for name, obj in objects.items():
-                rigidbody = obj.get("rigidbody") or {}
-                if rigidbody.get("is_kinematic", False) or not rigidbody.get("use_gravity", False):
-                    continue
-                grounded[name] = False
-                velocity = velocities_y.get(name, 0.0) + 980.0 * float(rigidbody.get("gravity_scale", 1.0)) * dt
-                previous_bottom = obj["y"] + obj["h"] / 2
-                obj["y"] += velocity * dt
-                for floor in static_colliders:
-                    overlaps_x = abs(obj["x"] - floor["x"]) * 2 < obj["w"] + floor["w"]
-                    floor_top = floor["y"] - floor["h"] / 2
-                    player_bottom = obj["y"] + obj["h"] / 2
-                    if overlaps_x and previous_bottom <= floor_top and player_bottom >= floor_top:
-                        obj["y"] = floor_top - obj["h"] / 2
-                        velocity = 0.0
-                        grounded[name] = True
-                        break
-                velocities_y[name] = velocity
-                obj["_grounded"] = bool(grounded.get(name, False))
+                start_audio_sources()
+            physics_steps = physics_scheduler.consume(dt)
+            motion_axes_by_name = {
+                name: obj.pop("_logic_motion_axes", set()) for name, obj in objects.items()
+            }
+            for _physics_step in range(physics_steps):
+                static_colliders = [
+                    obj for obj in objects.values()
+                    if obj.get("active", True)
+                    and obj.get("collider")
+                    and not obj["collider"].get("is_trigger", False)
+                    and (obj.get("rigidbody") or {}).get("is_kinematic", True)
+                ]
+                for name, obj in list(objects.items()):
+                    if not obj.get("active", True):
+                        continue
+                    logic_motion_axes = motion_axes_by_name.get(name, set())
+                    rigidbody = obj.get("rigidbody") or {}
+                    if rigidbody.get("is_kinematic", False) or not rigidbody.get("use_gravity", False):
+                        continue
+                    if "y" in logic_motion_axes:
+                        velocities_y[name] = 0.0
+                        continue
+                    grounded[name] = False
+                    velocity = velocities_y.get(name, 0.0) + 980.0 * float(rigidbody.get("gravity_scale", 1.0)) * fixed_physics_dt
+                    previous_bottom = obj["y"] + obj["h"] / 2
+                    obj["y"] += velocity * fixed_physics_dt
+                    for floor in static_colliders:
+                        if floor is obj:
+                            continue
+                        overlaps_x = abs(obj["x"] - floor["x"]) * 2 < obj["w"] + floor["w"]
+                        floor_top = floor["y"] - floor["h"] / 2
+                        player_bottom = obj["y"] + obj["h"] / 2
+                        if overlaps_x and previous_bottom <= floor_top and player_bottom >= floor_top:
+                            obj["y"] = floor_top - obj["h"] / 2
+                            velocity = 0.0
+                            grounded[name] = True
+                            break
+                    velocities_y[name] = velocity
+                    obj["_grounded"] = bool(grounded.get(name, False))
             process_contacts()
             update_animations(dt)
         # Carrega a cor de fundo definida na câmera ativa
@@ -2209,10 +1976,7 @@ def run_viewport(
         if view_mode == "game":
             native_ui.draw(objects, screen)
         if playing and hud_entries:
-            grouped: dict[str, list[dict[str, Any]]] = {}
-            for entry in hud_entries.values():
-                grouped.setdefault(str(entry.get("position", "top-left")), []).append(entry)
-            for position, entries in grouped.items():
+            for position, entries in hud_entries.grouped().items():
                 for index, entry in enumerate(entries):
                     font_size = max(12, min(72, int(entry.get("font_size", 22))))
                     font = pygame.font.Font(None, font_size)
@@ -2249,6 +2013,7 @@ def run_viewport(
             last_stats_ms = now_ms
             runtime_mode = "PAUSE" if paused else ("PLAY" if playing else "EDIT")
             player_name, _player = controlled_object()
-            _send(events, {"type": "stats", "fps": clock.get_fps(), "objects": len(objects), "mode": runtime_mode, "view": view_mode.upper(), "zoom": view_transform()[2], "snap": snap_enabled, "camera": (game_camera() or {}).get("name") if view_mode == "game" else "Editor", "player": player_name})
+            world_stats = runtime_world.stats()
+            _send(events, {"type": "stats", "fps": clock.get_fps(), "objects": len(objects), "mode": runtime_mode, "view": view_mode.upper(), "zoom": view_transform()[2], "snap": snap_enabled, "camera": (game_camera() or {}).get("name") if view_mode == "game" else "Editor", "player": player_name, "spawned": world_stats["created"], "reused": world_stats["reused"], "destroyed": world_stats["destroyed"], "pooled": world_stats["pooled"]})
 
     pygame.quit()

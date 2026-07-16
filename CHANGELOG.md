@@ -1,5 +1,12 @@
 # Changelog
 
+- Logic Graphs agora possuem grupos redimensionáveis, comentários, minimapa, alinhamento, distribuição, organização automática e histórico de desfazer/refazer.
+- A validação visual destaca conexões inválidas, fluxos inalcançáveis e ciclos de execução perigosos antes do Play.
+- Física fixa, áudio, animação e HUD da Viewport passaram a usar serviços independentes e exportáveis; foi adicionada uma ponte explícita para o ECS oficial.
+- Criar objeto pela Lógica Visual agora pode copiar profundamente o objeto original sem compartilhar componentes; Logic Graphs da cópia ficam desligados por padrão para evitar criação recursiva.
+- Adicionados o evento de tecla acionada uma vez, a condição de tecla mantida e os blocos para iniciar/parar movimento permanente.
+- Ações encadeadas depois de Criar/Clonar/Instanciar Prefab agora recebem o novo objeto como alvo implícito, evitando que o movimento seja aplicado por engano ao Player.
+
 ## Pre-Beta Stabilization
 
 ### Fixed & Stabilized
@@ -16,6 +23,7 @@
 ## v0.5.0-alpha - Export Foundation em desenvolvimento
 
 ### Added
+* Logic Graph: blocos podem ser recolhidos/expandidos e redimensionados pela alça inferior; largura, altura e estado visual são salvos no `.zlogic`.
 * Export Configuration Foundation Fase 31: Adicionado engine.build.build_config com BuildConfig, BuildTarget, validacao, serializacao e calculo de pasta de saida.
 * Export Profiles Fase 32: Adicionado ExportProfile e ExportProfileManager com perfis Debug/Release, integracao com BuildConfig e persistencia JSON.
 * Desktop Packaging Fase 33: Adicionado DesktopPackagePlan e planner multiplataforma a partir de BuildConfig ou ExportProfile.

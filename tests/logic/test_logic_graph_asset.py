@@ -3,9 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 
 from engine.logic.graph_asset import (
+    consolidate_logic_events,
     create_logic_node,
     default_logic_graph,
     load_logic_graph,
+    merge_logic_fragment,
     normalize_logic_graph,
     node_port_definitions,
     save_logic_graph,
@@ -15,6 +17,8 @@ from engine.logic.graph_asset import (
 from engine.logic.runtime import LogicGraphRuntime
 from engine.logic.blackboard import BlackboardStore, load_blackboard_asset, save_blackboard_asset
 from engine.logic.event_bus import LogicEventBus
+from engine.logic.recipes import LOGIC_RECIPES, build_logic_recipe, find_logic_recipes
+from engine.logic.code_preview import node_code_preview
 
 
 def test_logic_graph_round_trip_uses_zlogic_extension(tmp_path):
@@ -32,6 +36,72 @@ def test_logic_graph_round_trip_uses_zlogic_extension(tmp_path):
     assert path.is_file()
     assert saved == load_logic_graph(path)
     assert saved["format"] == "zennity.logic_graph"
+
+
+def test_logic_graph_enabled_state_can_preserve_detached_assets(tmp_path):
+    graph = default_logic_graph("Detached")
+    graph["enabled"] = False
+    saved = save_logic_graph(tmp_path / "detached", graph)
+    assert saved["enabled"] is False
+    assert load_logic_graph(tmp_path / "detached.zlogic")["enabled"] is False
+
+
+def test_node_editor_layout_is_persistent_and_safely_clamped(tmp_path):
+    graph = default_logic_graph("Layout")
+    node = create_logic_node("move")
+    node["editor"] = {"collapsed": True, "width": 9999, "height": 640}
+    graph["nodes"] = [node]
+
+    saved = save_logic_graph(tmp_path / "layout.zlogic", graph)
+    restored = load_logic_graph(tmp_path / "layout.zlogic")
+
+    assert saved["nodes"][0]["editor"] == {
+        "collapsed": True,
+        "width": 520.0,
+        "height": 640.0,
+    }
+    assert restored["nodes"][0]["editor"] == saved["nodes"][0]["editor"]
+
+
+def test_old_nodes_receive_default_editor_layout():
+    graph = default_logic_graph("LegacyLayout")
+    graph["nodes"] = [{
+        "id": "legacy", "type": "event_start", "title": "Ao iniciar",
+        "category": "Eventos", "position": [0, 0], "properties": {},
+    }]
+
+    editor_state = normalize_logic_graph(graph)["nodes"][0]["editor"]
+
+    assert editor_state == {"collapsed": False, "width": 210.0, "height": 0.0}
+
+
+def test_graph_annotations_are_persistent_and_clamped(tmp_path):
+    graph = default_logic_graph("Organized")
+    graph["editor"] = {
+        "groups": [{"id": "g", "title": "Movimento", "position": [10, 20], "size": [10, 9999]}],
+        "comments": [{"id": "c", "text": "Explicação", "position": [30, 40], "width": 9999}],
+    }
+    saved = save_logic_graph(tmp_path / "organized.zlogic", graph)
+    assert saved["editor"]["groups"][0]["size"] == [240.0, 1200.0]
+    assert saved["editor"]["comments"][0]["width"] == 720.0
+
+
+def test_validation_reports_unreachable_flow_and_execution_cycle():
+    event = create_logic_node("event_start")
+    first = create_logic_node("log_message")
+    second = create_logic_node("log_message")
+    detached = create_logic_node("log_message")
+    graph = default_logic_graph("Unsafe")
+    graph["nodes"] = [event, first, second, detached]
+    graph["edges"] = [
+        _edge(event, "next", first, "in"),
+        _edge(first, "next", second, "in"),
+        _edge(second, "next", first, "in"),
+    ]
+    issues = validate_logic_graph(graph)
+    messages = [issue["message"] for issue in issues]
+    assert any("Ciclo de execução" in message for message in messages)
+    assert any("Nó desconectado" in message for message in messages)
 
 
 def test_normalization_removes_edges_with_missing_nodes():
@@ -55,6 +125,57 @@ def test_normalization_preserves_only_breakpoints_for_existing_nodes():
     assert normalized["debug"]["breakpoints"] == [event["id"]]
     assert normalized["debug"]["breakpoint_conditions"] == {event["id"]: "x > 10"}
     assert normalized["debug"]["watches"] == ["x", "vida"]
+
+
+def test_consolidate_duplicate_frame_events_preserves_every_branch():
+    first_event = create_logic_node("event_update")
+    duplicate_event = create_logic_node("event_update")
+    move_x = create_logic_node("move_by")
+    move_y = create_logic_node("move_by")
+    graph = default_logic_graph("FanOut")
+    graph["nodes"] = [first_event, duplicate_event, move_x, move_y]
+    graph["edges"] = [
+        _edge(first_event, "next", move_x, "in"),
+        _edge(duplicate_event, "next", move_y, "in"),
+    ]
+    graph["debug"]["breakpoints"] = [duplicate_event["id"]]
+
+    consolidated, removed = consolidate_logic_events(graph)
+
+    events = [node for node in consolidated["nodes"] if node["type"] == "event_update"]
+    outgoing = [edge for edge in consolidated["edges"] if edge["from_node"] == events[0]["id"]]
+    assert removed == 1
+    assert len(events) == 1
+    assert len(outgoing) == 2
+    assert consolidated["debug"]["breakpoints"] == [events[0]["id"]]
+
+
+def test_recipe_merge_reuses_frame_event_and_executes_parallel_actions():
+    base = build_logic_recipe("move_x_every_frame")
+    graph = default_logic_graph("ParallelRecipes")
+    graph["nodes"], graph["edges"] = base["nodes"], base["edges"]
+
+    merged, reused = merge_logic_fragment(graph, build_logic_recipe("patrol_y_between_limits"))
+    events = [node for node in merged["nodes"] if node["type"] == "event_update"]
+    outgoing = [edge for edge in merged["edges"] if edge["from_node"] == events[0]["id"]]
+
+    class Game:
+        def __init__(self): self.x, self.y = 0.0, 0.0
+        def move(self, dx, dy=0.0): self.x += dx; self.y += dy
+
+    game = Game()
+    LogicGraphRuntime(merged).update(game, 0.5)
+    assert reused == 1
+    assert len(events) == 1
+    assert len(outgoing) == 2
+    assert (game.x, game.y) == (60.0, 50.0)
+    assert not any("Evento duplicado" in issue["message"] for issue in validate_logic_graph(merged))
+
+
+def test_validation_explains_duplicate_frame_event():
+    graph = default_logic_graph("DuplicateEvent")
+    graph["nodes"] = [create_logic_node("event_update"), create_logic_node("event_update")]
+    assert any("Evento duplicado" in issue["message"] for issue in validate_logic_graph(graph))
 
 
 def test_validation_reports_missing_event_and_disconnected_node():
@@ -727,3 +848,416 @@ def test_score_library_demo_is_reusable_and_executable():
     assert not validate_logic_graph(asset)
     runtime = LogicGraphRuntime(asset, call_stack=("demo",))
     assert runtime.run_subgraph(object(), 0.0, {"pontos_base": 75}) == {"pontuacao_final": 150.0}
+
+
+def test_beginner_recipe_search_builds_move_x_flow():
+    matches = find_logic_recipes("mover sozinho x")
+    assert matches[0]["id"] == "move_x_every_frame"
+    fragment = build_logic_recipe("move_x_every_frame", (50.0, 80.0))
+    assert [node["type"] for node in fragment["nodes"]] == ["event_update", "move_by"]
+    assert fragment["nodes"][1]["properties"] == {"x": 120.0, "y": 0.0}
+    assert fragment["edges"][0]["kind"] == "flow"
+    assert fragment["nodes"][0]["position"] == [50.0, 80.0]
+
+
+def test_position_nodes_move_per_second_and_read_current_coordinates():
+    update = create_logic_node("event_update")
+    move = create_logic_node("move_by")
+    move["properties"].update({"x": 120.0, "y": -40.0})
+    position = create_logic_node("get_position")
+    convert = create_logic_node("to_text")
+    hud = create_logic_node("set_hud")
+    graph = default_logic_graph("AutomaticPosition")
+    graph["nodes"] = [update, move, position, convert, hud]
+    graph["edges"] = [
+        _edge(update, "next", move, "in"),
+        _edge(move, "next", hud, "in"),
+        _edge(position, "x", convert, "value", "number"),
+        _edge(convert, "value", hud, "text", "text"),
+    ]
+
+    class Game:
+        def __init__(self): self.x, self.y, self.text = 10.0, 20.0, ""
+        def move(self, dx, dy=0.0): self.x += dx; self.y += dy
+        def set_hud(self, _key, text): self.text = text
+
+    game = Game()
+    LogicGraphRuntime(graph).update(game, 0.5)
+    assert (game.x, game.y) == (70.0, 0.0)
+    assert game.text == "70.0"
+
+
+def test_unconnected_action_target_means_current_object_without_copying_it():
+    update = create_logic_node("event_update")
+    position = create_logic_node("set_position")
+    position["properties"].update({"x": 25.0, "y": 40.0})
+    rotate = create_logic_node("rotate")
+    rotate["properties"]["degrees"] = 15.0
+    active = create_logic_node("set_active")
+    active["properties"]["active"] = False
+    graph = default_logic_graph("CurrentObjectTarget")
+    graph["nodes"] = [update, position, rotate, active]
+    graph["edges"] = [
+        _edge(update, "next", position, "in"),
+        _edge(position, "next", rotate, "in"),
+        _edge(rotate, "next", active, "in"),
+    ]
+
+    class Game:
+        x, y, rotation, active = 0.0, 0.0, 0.0, True
+
+    game = Game()
+    LogicGraphRuntime(graph).update(game, 0.016)
+    assert (game.x, game.y, game.rotation, game.active) == (25.0, 40.0, 15.0, False)
+
+
+def test_recipe_catalog_filters_by_topic_and_keeps_every_recipe_valid():
+    action_ids = {recipe["id"] for recipe in find_logic_recipes("", "Ação")}
+    assert {"sprite_on_start", "animation_asset_on_start", "sound_on_start"} <= action_ids
+    assert "move_x_every_frame" not in action_ids
+    assert len(LOGIC_RECIPES) >= 14
+    for recipe in LOGIC_RECIPES:
+        fragment = build_logic_recipe(str(recipe["id"]))
+        graph = default_logic_graph(str(recipe["id"]))
+        graph["nodes"] = fragment["nodes"]
+        graph["edges"] = fragment["edges"]
+        errors = [issue for issue in validate_logic_graph(graph) if issue["level"] == "error"]
+        assert not errors, recipe["id"]
+
+
+def test_visual_asset_actions_call_image_animation_and_sound_apis():
+    start = create_logic_node("event_start")
+    sprite = create_logic_node("set_sprite")
+    sprite["properties"]["path"] = "Assets/Textures/player.png"
+    animation = create_logic_node("play_animation_asset")
+    animation["properties"]["path"] = "Assets/Animations/walk.zanim"
+    sound = create_logic_node("play_sound")
+    sound["properties"]["path"] = "Assets/Audio/step.ogg"
+    graph = default_logic_graph("VisualAssets")
+    graph["nodes"] = [start, sprite, animation, sound]
+    graph["edges"] = [
+        _edge(start, "next", sprite, "in"),
+        _edge(sprite, "next", animation, "in"),
+        _edge(animation, "next", sound, "in"),
+    ]
+
+    class Game:
+        def __init__(self): self.calls = []
+        def set_sprite(self, path): self.calls.append(("image", path))
+        def play_animation_asset(self, path): self.calls.append(("animation", path))
+        def play_sound(self, path): self.calls.append(("audio", path))
+
+    game = Game()
+    LogicGraphRuntime(graph).start(game)
+    assert game.calls == [
+        ("image", "Assets/Textures/player.png"),
+        ("animation", "Assets/Animations/walk.zanim"),
+        ("audio", "Assets/Audio/step.ogg"),
+    ]
+
+
+def test_patrol_y_recipe_reverses_at_positive_and_negative_limits():
+    recipe = next(recipe for recipe in LOGIC_RECIPES if recipe["id"] == "patrol_y_between_limits")
+    fragment = build_logic_recipe(str(recipe["id"]))
+    graph = default_logic_graph("PatrolY")
+    graph["nodes"], graph["edges"] = fragment["nodes"], fragment["edges"]
+
+    class Game:
+        def __init__(self): self.x, self.y, self.overridden = 0.0, 0.0, []
+        def move(self, dx, dy=0.0): self.x += dx; self.y += dy
+        def override_physics_axis(self, axis): self.overridden.append(axis)
+
+    game = Game()
+    runtime = LogicGraphRuntime(graph)
+    positions = []
+    for _ in range(7):
+        runtime.update(game, 0.5)
+        positions.append(game.y)
+    assert positions == [50.0, 100.0, 50.0, 0.0, -50.0, -100.0, -50.0]
+    assert game.overridden == ["y"] * 7
+
+
+def test_every_visual_node_has_a_readable_code_backside():
+    patrol = create_logic_node("patrol_axis")
+    patrol["properties"].update({"axis": "Y", "minimum": -100, "maximum": 100, "speed": 80})
+    code = node_code_preview(patrol)
+    assert "pos >= 100" in code
+    assert "pos <= -100" in code
+    assert "direção" in code
+    assert "dt" in code
+    assert node_code_preview(create_logic_node("event_update")).startswith("a_cada_frame")
+    assert node_code_preview(create_logic_node("set_sprite"))
+
+
+def test_create_object_node_returns_reference_for_following_actions():
+    event = create_logic_node("event_start")
+    create = create_logic_node("create_object")
+    create["properties"].update({"name": "Moeda", "x": 10, "y": 20, "relative": True})
+    position = create_logic_node("set_position")
+    position["properties"].update({"x": 80, "y": 90})
+    graph = default_logic_graph("Spawner")
+    graph["nodes"] = [event, create, position]
+    graph["edges"] = [
+        _edge(event, "next", create, "in"),
+        _edge(create, "next", position, "in"),
+        _edge(create, "object", position, "target", "object"),
+    ]
+
+    class Created:
+        def __init__(self, x, y): self.x, self.y = x, y
+
+    class Game:
+        x, y = 100.0, 200.0
+        def __init__(self): self.created = []; self.last = None
+        def create_object(self, **values):
+            self.created.append(values)
+            self.last = Created(values["x"], values["y"])
+            return self.last
+
+    game = Game()
+    LogicGraphRuntime(graph).start(game)
+    assert game.created[0]["name"] == "Moeda"
+    assert (game.created[0]["x"], game.created[0]["y"]) == (110.0, 220.0)
+    assert (game.last.x, game.last.y) == (80.0, 90.0)
+    result = game.created[0]
+    assert result["width"] == 64.0 and result["height"] == 64.0
+    assert node_port_definitions("create_object")["outputs"] == [("next", "flow"), ("object", "object")]
+    assert "criar_objeto" in node_code_preview(create)
+
+
+def test_create_object_can_inherit_original_as_an_independent_clone():
+    event = create_logic_node("event_start")
+    create = create_logic_node("create_object")
+    create["properties"].update({"name": "PlayerClone", "x": 40, "y": 50})
+    graph = default_logic_graph("CloneSpawner")
+    graph["nodes"] = [event, create]
+    graph["edges"] = [_edge(event, "next", create, "in")]
+
+    class Created:
+        x = y = 0.0
+
+    class Game:
+        x = y = 0.0
+        def __init__(self): self.clone = Created(); self.source = None
+        def clone_object(self, source, name):
+            self.source = source
+            assert name == "PlayerClone"
+            return self.clone
+
+    game = Game()
+    LogicGraphRuntime(graph).start(game)
+    assert game.source is game
+    assert (game.clone.x, game.clone.y) == (40.0, 50.0)
+
+
+def test_key_event_starts_motion_once_and_motion_continues_after_release():
+    key_event = create_logic_node("event_key_pressed")
+    key_event["properties"]["key"] = "D"
+    motion = create_logic_node("start_continuous_motion")
+    motion["properties"].update({"x": 120.0, "y": 0.0})
+    graph = default_logic_graph("PermanentMovement")
+    graph["nodes"] = [key_event, motion]
+    graph["edges"] = [_edge(key_event, "next", motion, "in")]
+
+    class Game:
+        active = True
+        def __init__(self): self.x = 0.0; self.y = 0.0; self.just_pressed = True
+        def key_pressed(self, key):
+            assert key == "d"
+            value = self.just_pressed
+            self.just_pressed = False
+            return value
+        def move(self, dx, dy=0.0): self.x += dx; self.y += dy
+
+    game = Game()
+    runtime = LogicGraphRuntime(graph)
+    runtime.update(game, 0.1)
+    first_position = game.x
+    runtime.update(game, 0.1)
+    runtime.update(game, 0.1)
+
+    assert first_position == 12.0
+    assert game.x == 36.0
+    assert runtime._persistent_motion
+
+
+def test_created_object_becomes_implicit_target_for_following_actions():
+    key_event = create_logic_node("event_key_pressed")
+    key_event["properties"]["key"] = "D"
+    create = create_logic_node("create_object")
+    create["properties"].update({"name": "Projectile", "x": 10.0, "y": 20.0})
+    motion = create_logic_node("start_continuous_motion")
+    motion["properties"].update({"x": 100.0, "y": 0.0})
+    graph = default_logic_graph("SpawnAndMove")
+    graph["nodes"] = [key_event, create, motion]
+    # Somente os fios de fluxo: a referência criada é carregada implicitamente.
+    graph["edges"] = [
+        _edge(key_event, "next", create, "in"),
+        _edge(create, "next", motion, "in"),
+    ]
+
+    class Created:
+        active = True
+        def __init__(self): self.x = 0.0; self.y = 0.0
+        def move(self, dx, dy=0.0): self.x += dx; self.y += dy
+
+    class Game:
+        active = True
+        x = y = 0.0
+        def __init__(self): self.created = Created(); self.pressed = True
+        def key_pressed(self, _key):
+            value = self.pressed
+            self.pressed = False
+            return value
+        def clone_object(self, _source, _name): return self.created
+        def move(self, dx, dy=0.0): self.x += dx; self.y += dy
+
+    game = Game()
+    runtime = LogicGraphRuntime(graph)
+    runtime.update(game, 0.1)
+    runtime.update(game, 0.1)
+
+    assert game.x == 0.0
+    assert (game.created.x, game.created.y) == (30.0, 20.0)
+    assert next(iter(runtime._persistent_motion.values()))["target"] is game.created
+
+
+def test_held_and_just_pressed_keys_are_distinct_conditions():
+    pressed = create_logic_node("key_pressed")
+    held = create_logic_node("key_held")
+    assert pressed["title"] == "Tecla apertada agora?"
+    assert held["title"] == "Tecla está segurada?"
+    assert "tecla_acionada" in node_code_preview(pressed)
+    assert "tecla_ativa" in node_code_preview(held)
+
+
+def test_create_object_recipe_is_available_for_beginners():
+    recipe = next(item for item in LOGIC_RECIPES if item["id"] == "create_object_on_start")
+    fragment = build_logic_recipe(str(recipe["id"]))
+    assert [node["type"] for node in fragment["nodes"]] == ["event_start", "create_object"]
+
+
+def test_once_and_cooldown_control_repeated_frame_flow():
+    event = create_logic_node("event_update")
+    once = create_logic_node("once")
+    cooldown = create_logic_node("cooldown")
+    cooldown["properties"]["seconds"] = 1.0
+    once_log = create_logic_node("log_message")
+    once_log["properties"]["text"] = "once"
+    cooldown_log = create_logic_node("log_message")
+    cooldown_log["properties"]["text"] = "cooldown"
+    graph = default_logic_graph("FlowControl")
+    graph["nodes"] = [event, once, cooldown, once_log, cooldown_log]
+    graph["edges"] = [
+        _edge(event, "next", once, "in"),
+        _edge(event, "next", cooldown, "in"),
+        _edge(once, "next", once_log, "in"),
+        _edge(cooldown, "next", cooldown_log, "in"),
+    ]
+
+    class Game:
+        def __init__(self): self.messages = []
+        def log(self, message): self.messages.append(message)
+
+    game = Game()
+    runtime = LogicGraphRuntime(graph)
+    runtime.update(game, 0.25)
+    runtime.update(game, 0.25)
+    runtime.update(game, 0.75)
+    assert game.messages == ["once", "cooldown", "cooldown"]
+
+
+def test_prefab_and_component_nodes_share_created_object_reference():
+    event = create_logic_node("event_start")
+    prefab = create_logic_node("create_prefab")
+    prefab["properties"]["path"] = "Assets/Prefabs/Enemy.zprefab"
+    component = create_logic_node("add_component")
+    component["properties"].update({"component": "RigidBody2D", "properties": {"gravity_scale": 2}})
+    graph = default_logic_graph("PrefabSpawner")
+    graph["nodes"] = [event, prefab, component]
+    graph["edges"] = [
+        _edge(event, "next", prefab, "in"),
+        _edge(prefab, "next", component, "in"),
+        _edge(prefab, "object", component, "target", "object"),
+    ]
+
+    class Created:
+        def __init__(self): self.components = []
+        def add_component(self, name, properties): self.components.append((name, properties))
+
+    class Game:
+        x = y = 0
+        def __init__(self): self.created = Created()
+        def create_prefab(self, path, x, y):
+            assert (path, x, y) == ("Assets/Prefabs/Enemy.zprefab", 0.0, 0.0)
+            return self.created
+
+    game = Game()
+    LogicGraphRuntime(graph).start(game)
+    assert game.created.components == [("RigidBody2D", {"gravity_scale": 2})]
+    assert not validate_logic_graph(graph)
+
+
+def test_prefab_node_requires_an_asset():
+    graph = default_logic_graph("InvalidPrefab")
+    graph["nodes"] = [create_logic_node("event_start"), create_logic_node("create_prefab")]
+    assert any(".zprefab" in issue["message"] for issue in validate_logic_graph(graph))
+
+
+def test_fan_out_uses_explicit_stable_order_and_tolerates_invalid_order():
+    event = create_logic_node("event_start")
+    first = create_logic_node("log_message")
+    first["properties"]["text"] = "first"
+    second = create_logic_node("log_message")
+    second["properties"]["text"] = "second"
+    graph = default_logic_graph("OrderedFanOut")
+    graph["nodes"] = [event, first, second]
+    graph["edges"] = [
+        {**_edge(event, "next", second, "in"), "order": 20},
+        {**_edge(event, "next", first, "in"), "order": 10},
+    ]
+
+    class Game:
+        def __init__(self): self.messages = []
+        def log(self, message): self.messages.append(message)
+
+    game = Game()
+    LogicGraphRuntime(graph).start(game)
+    assert game.messages == ["first", "second"]
+
+    graph["edges"][0]["order"] = "inválida"
+    normalized = normalize_logic_graph(graph)
+    assert isinstance(normalized["edges"][0]["order"], int)
+
+
+def test_clone_remove_component_and_restart_scene_nodes_execute_together():
+    event = create_logic_node("event_start")
+    clone = create_logic_node("clone_object")
+    clone["properties"]["name"] = "Clone"
+    remove = create_logic_node("remove_component")
+    remove["properties"]["component"] = "BoxCollider"
+    restart = create_logic_node("restart_scene")
+    graph = default_logic_graph("CloneAndRestart")
+    graph["nodes"] = [event, clone, remove, restart]
+    graph["edges"] = [
+        _edge(event, "next", clone, "in"),
+        _edge(clone, "next", remove, "in"),
+        _edge(clone, "object", remove, "target", "object"),
+        _edge(remove, "next", restart, "in"),
+    ]
+
+    class Created:
+        def __init__(self): self.removed = []
+        def remove_component(self, name): self.removed.append(name)
+
+    class Game:
+        def __init__(self): self.created = Created(); self.restarted = False
+        def clone_object(self, source, name):
+            assert source is self and name == "Clone"
+            return self.created
+        def restart(self): self.restarted = True
+
+    game = Game()
+    LogicGraphRuntime(graph).start(game)
+    assert game.created.removed == ["BoxCollider"]
+    assert game.restarted is True

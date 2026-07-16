@@ -37,31 +37,7 @@ for name in _MOCKED_MODULES:
 
 @pytest.fixture(scope="module", autouse=True)
 def restore_sys_modules_after_test_module():
-    # Re-aplica os mocks logo antes da execução do módulo (caso outra coleta tenha limpado)
-    sys.modules["engine.transitions"] = _trans_mod
-    sys.modules["engine.ui"] = sys.modules.get("engine.ui") or ModuleType("engine.ui")
-    sys.modules["engine.ui.ui_manager"] = _ui_mod
-    sys.modules["engine.physics"] = sys.modules.get("engine.physics") or ModuleType("engine.physics")
-    sys.modules["engine.physics.collider"] = _phys_mod
-    sys.modules["engine.audio"] = _audio_mod
-    
     yield
-    
-    for name in _MOCKED_MODULES:
-        sys.modules.pop(name, None)
-    
-    import importlib
-    for name in [
-        "engine.transitions",
-        "engine.ui.ui_manager",
-        "engine.physics.collider",
-        "engine.physics.rigidbody",
-        "engine.audio"
-    ]:
-        try:
-            importlib.import_module(name)
-        except Exception:
-            pass
 
 # ── stubs de módulos externos ──────────────────────────────────────────
 
@@ -127,6 +103,13 @@ sys.modules["engine.audio"] = _audio_mod
 # Agora importa o módulo real
 from engine.core.scene_manager import SceneManager  # noqa: E402
 
+# O SceneManager já capturou os stubs necessários. Restauramos sys.modules
+# ainda durante a coleta para não contaminar módulos de teste importados depois.
+for _name in _MOCKED_MODULES:
+    sys.modules.pop(_name, None)
+for _name, _module in _original_sys_modules.items():
+    sys.modules[_name] = _module
+
 
 # ── helpers ───────────────────────────────────────────────────────────────
 
@@ -161,6 +144,7 @@ def clean_sm(monkeypatch):
         "_get_collider_classes",
         staticmethod(lambda: (_BC, _CC)),
     )
+    monkeypatch.setitem(sys.modules, "engine.ui.ui_manager", _ui_mod)
     monkeypatch.setitem(sys.modules, "engine.audio", _audio_mod)
     _UIManager.reset.reset_mock()
     _BC.check_all.reset_mock()

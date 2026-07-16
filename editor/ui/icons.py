@@ -46,6 +46,7 @@ COMPONENT_GLYPHS = {
     "camera": "▣",
     "ui": "▤",
     "script": "<>",
+    "logic": "◇",
 }
 
 
