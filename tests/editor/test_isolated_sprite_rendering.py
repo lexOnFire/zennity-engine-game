@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import pygame
 
-from editor.runtime.sprite_rendering import assign_sprite_texture, prepare_sprite_surface
+from editor.runtime.sprite_rendering import (
+    assign_sprite_texture,
+    prepare_scrolling_sprite_surface,
+    prepare_sprite_surface,
+)
 
 
 def test_assigning_texture_resets_placeholder_tint_to_white() -> None:
@@ -34,3 +38,16 @@ def test_manual_sprite_tint_remains_available() -> None:
     result = prepare_sprite_surface(source, (1, 1), (80, 120, 200))
 
     assert result.get_at((0, 0)) == pygame.Color(80, 120, 200, 255)
+
+
+def test_scrolling_sprite_wraps_image_inside_plane() -> None:
+    source = pygame.Surface((2, 1), pygame.SRCALPHA)
+    source.set_at((0, 0), (255, 0, 0, 255))
+    source.set_at((1, 0), (0, 0, 255, 255))
+
+    result = prepare_scrolling_sprite_surface(
+        source, (2, 1), offset_x=1, repeat_x=True, repeat_y=False
+    )
+
+    assert result.get_at((0, 0)) == pygame.Color(0, 0, 255, 255)
+    assert result.get_at((1, 0)) == pygame.Color(255, 0, 0, 255)

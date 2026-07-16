@@ -16,7 +16,7 @@ from typing import Any
 try:
     from editor.runtime.audio_playback_state import set_channels_paused
     from editor.runtime.native_ui import NativeUIRenderer, normalize_ui
-    from editor.runtime.sprite_rendering import prepare_sprite_surface
+    from editor.runtime.sprite_rendering import prepare_scrolling_sprite_surface, prepare_sprite_surface
     from editor.runtime.viewport_systems import (
         AnimationPlaybackSystem,
         AudioPlaybackSystem,
@@ -34,7 +34,7 @@ try:
 except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .audio_playback_state import set_channels_paused
     from .native_ui import NativeUIRenderer, normalize_ui
-    from .sprite_rendering import prepare_sprite_surface
+    from .sprite_rendering import prepare_scrolling_sprite_surface, prepare_sprite_surface
     from .viewport_systems import AnimationPlaybackSystem, AudioPlaybackSystem, FixedStepScheduler, HudRuntimeSystem
     from .clip_asset import animation_asset_to_clip, load_animation_asset
     from .controller_asset import AnimatorControllerRuntime, load_animator_controller
@@ -441,6 +441,46 @@ class PlayScriptAPI:
         """Troca a textura principal do objeto sem recriá-lo."""
         self.obj["texture"] = str(image_path)
         self.obj["renderer_enabled"] = True
+
+    def start_texture_scroll(
+        self,
+        speed_x: float = 0.0,
+        speed_y: float = 80.0,
+        *,
+        repeat_x: bool = False,
+        repeat_y: bool = True,
+        parallax: float = 1.0,
+        image_path: str = "",
+        send_to_background: bool = True,
+    ) -> None:
+        """Inicia uma textura repetida no plano sem mover o objeto físico."""
+        if image_path:
+            self.set_sprite(image_path)
+        if send_to_background:
+            self.obj["render_layer"] = "Background"
+        previous = self.obj.get("_texture_scroll")
+        state = previous if isinstance(previous, dict) else {}
+        state.update({
+            "enabled": True,
+            "speed_x": float(speed_x),
+            "speed_y": float(speed_y),
+            "repeat_x": bool(repeat_x),
+            "repeat_y": bool(repeat_y),
+            "parallax": max(0.0, float(parallax)),
+        })
+        state.setdefault("offset_x", 0.0)
+        state.setdefault("offset_y", 0.0)
+        self.obj["_texture_scroll"] = state
+
+    def stop_texture_scroll(self, reset: bool = False) -> None:
+        """Interrompe o fundo rolante; opcionalmente retorna à origem."""
+        state = self.obj.get("_texture_scroll")
+        if not isinstance(state, dict):
+            return
+        state["enabled"] = False
+        if reset:
+            state["offset_x"] = 0.0
+            state["offset_y"] = 0.0
 
     def send(self, command: str, value: Any = None) -> None:
         self.obj.setdefault("script_instructions", []).append({"command": str(command), "value": value})
@@ -1757,6 +1797,13 @@ def run_viewport(
                     obj["_grounded"] = bool(grounded.get(name, False))
             process_contacts()
             update_animations(dt)
+            for obj in objects.values():
+                scroll = obj.get("_texture_scroll")
+                if not isinstance(scroll, dict) or not scroll.get("enabled", False):
+                    continue
+                factor = max(0.0, float(scroll.get("parallax", 1.0)))
+                scroll["offset_x"] = float(scroll.get("offset_x", 0.0)) + float(scroll.get("speed_x", 0.0)) * factor * dt
+                scroll["offset_y"] = float(scroll.get("offset_y", 0.0)) + float(scroll.get("speed_y", 0.0)) * factor * dt
         # Carrega a cor de fundo definida na câmera ativa
         bg_color = (22, 24, 31)
         active_cam = game_camera()
@@ -1873,11 +1920,23 @@ def run_viewport(
                 except (OSError, pygame.error):
                     source_surface = None
             if source_surface is not None:
-                object_surface = prepare_sprite_surface(
-                    source_surface,
-                    (box.width, box.height),
-                    obj.get("color", (255, 255, 255)),
-                )
+                scroll = obj.get("_texture_scroll")
+                if isinstance(scroll, dict):
+                    object_surface = prepare_scrolling_sprite_surface(
+                        source_surface,
+                        (box.width, box.height),
+                        obj.get("color", (255, 255, 255)),
+                        offset_x=float(scroll.get("offset_x", 0.0)),
+                        offset_y=float(scroll.get("offset_y", 0.0)),
+                        repeat_x=bool(scroll.get("repeat_x", False)),
+                        repeat_y=bool(scroll.get("repeat_y", True)),
+                    )
+                else:
+                    object_surface = prepare_sprite_surface(
+                        source_surface,
+                        (box.width, box.height),
+                        obj.get("color", (255, 255, 255)),
+                    )
             else:
                 object_surface = pygame.Surface((max(1, box.width), max(1, box.height)), pygame.SRCALPHA)
                 pygame.draw.rect(object_surface, tuple(obj.get("color", (180, 180, 180))), object_surface.get_rect(), border_radius=4)

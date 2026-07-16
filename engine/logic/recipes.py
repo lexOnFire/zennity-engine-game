@@ -11,6 +11,33 @@ from .graph_asset import create_logic_node
 
 LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     {
+        "id": "scrolling_road_or_sky",
+        "topics": ("Movimento", "Imagem", "Cenário"),
+        "title": "Criar pista ou céu em movimento",
+        "category": "Imagem e cenário",
+        "summary": "Repete a imagem de um plano e a desloca continuamente sem mover o objeto nem o collider.",
+        "keywords": "fundo rolante pista céu nuvem estrelas parallax imagem textura repetir cenário",
+        "steps": (
+            "Coloque um Sprite Renderer no plano e ajuste seu tamanho na Scene View.",
+            "Escolha a imagem no bloco Iniciar fundo rolante; imagens tileáveis ficam mais suaves.",
+            "Para pista, use Y=160 e repetir Y. Para céu, use X=25 e repetir X.",
+            "Parallax 0.3 cria uma camada distante; 1.0 mantém a velocidade normal.",
+            "O Transform e o collider permanecem parados: somente a imagem se desloca.",
+        ),
+        "nodes": (
+            {"key": "start", "type": "event_start", "position": (0.0, 0.0)},
+            {
+                "key": "scroll", "type": "start_texture_scroll", "position": (290.0, 0.0),
+                "properties": {
+                    "path": "", "speed_x": 0.0, "speed_y": 160.0,
+                    "repeat_x": False, "repeat_y": True, "parallax": 1.0,
+                    "send_to_background": True,
+                },
+            },
+        ),
+        "edges": (("start", "next", "scroll", "in", "flow"),),
+    },
+    {
         "id": "move_x_every_frame",
         "topics": ("Movimento", "Posição"),
         "title": "Mover sozinho no eixo X",

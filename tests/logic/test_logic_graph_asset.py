@@ -956,6 +956,38 @@ def test_visual_asset_actions_call_image_animation_and_sound_apis():
     ]
 
 
+def test_scrolling_background_action_configures_and_stops_target():
+    start = create_logic_node("event_start")
+    scroll = create_logic_node("start_texture_scroll")
+    scroll["properties"].update({
+        "path": "Assets/Textures/road.png", "speed_x": 0.0,
+        "speed_y": 160.0, "repeat_x": False, "repeat_y": True,
+        "parallax": 0.5, "send_to_background": True,
+    })
+    stop = create_logic_node("stop_texture_scroll")
+    stop["properties"]["reset"] = True
+    graph = default_logic_graph("ScrollingRoad")
+    graph["nodes"] = [start, scroll, stop]
+    graph["edges"] = [_edge(start, "next", scroll, "in"), _edge(scroll, "next", stop, "in")]
+
+    class Game:
+        def __init__(self): self.calls = []
+        def start_texture_scroll(self, x, y, **options): self.calls.append(("start", x, y, options))
+        def stop_texture_scroll(self, reset=False): self.calls.append(("stop", reset))
+
+    game = Game()
+    LogicGraphRuntime(graph).start(game)
+
+    assert game.calls == [
+        ("start", 0.0, 160.0, {
+            "repeat_x": False, "repeat_y": True, "parallax": 0.5,
+            "image_path": "Assets/Textures/road.png",
+            "send_to_background": True,
+        }),
+        ("stop", True),
+    ]
+
+
 def test_patrol_y_recipe_reverses_at_positive_and_negative_limits():
     recipe = next(recipe for recipe in LOGIC_RECIPES if recipe["id"] == "patrol_y_between_limits")
     fragment = build_logic_recipe(str(recipe["id"]))

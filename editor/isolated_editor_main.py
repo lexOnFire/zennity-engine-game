@@ -600,6 +600,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.logic_workspace.message.connect(self._log)
         self.logic_workspace.asset_changed.connect(self._refresh_assets)
         self.logic_workspace.debug_command.connect(self._send_logic_debug_command)
+        self.logic_workspace.play_requested.connect(lambda: self._send_toolbar_command({"type": "play"}))
+        self.logic_workspace.stop_requested.connect(lambda: self._send_toolbar_command({"type": "stop"}))
         animation_action = QAction(editor_icon("play"), "Editor de Animação", self)
         animation_action.triggered.connect(self._show_animation_window)
         logic_action = QAction(editor_icon("snap"), "Editor de Lógica Visual", self)
@@ -1035,6 +1037,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             play_snapshot = self._play_session.begin(self._scene_snapshot, self._selected_name)
             self._runtime_playing = True
             self._set_play_mode_editing_locked(True)
+            self.logic_workspace.set_play_state(True)
             self.toolbar_actions["Play"].setEnabled(False)
             self.toolbar_actions["Pause"].setEnabled(False)
             self.toolbar_actions["Stop"].setEnabled(True)
@@ -3129,6 +3132,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self.toolbar_actions["Play"].setEnabled(state != "play")
                 self.toolbar_actions["Pause"].setEnabled(state in {"play", "pause"})
                 self.toolbar_actions["Stop"].setEnabled(state in {"play", "pause"})
+                self.logic_workspace.set_play_state(state in {"play", "pause"})
                 self.statusBar().showMessage(
                     {"play": "Viewport: PLAY", "pause": "Viewport: PAUSE", "edit": "Viewport: EDIT — cena restaurada"}[state]
                 )

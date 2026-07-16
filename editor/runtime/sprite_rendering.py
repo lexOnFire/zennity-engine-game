@@ -25,3 +25,33 @@ def prepare_sprite_surface(source: Any, size: tuple[int, int], tint: Any = NEUTR
         from .tint import apply_pygame_tint
 
     return apply_pygame_tint(surface, tint)
+
+
+def prepare_scrolling_sprite_surface(
+    source: Any,
+    size: tuple[int, int],
+    tint: Any = NEUTRAL_SPRITE_COLOR,
+    *,
+    offset_x: float = 0.0,
+    offset_y: float = 0.0,
+    repeat_x: bool = True,
+    repeat_y: bool = False,
+) -> Any:
+    """Cria um plano texturizado repetível sem alterar o Sprite Renderer comum.
+
+    A textura ocupa uma vez o tamanho do plano. Cópias vizinhas entram pelas
+    bordas conforme o offset avança, produzindo pista, céu ou parallax contínuo.
+    """
+    import pygame
+
+    tile = prepare_sprite_surface(source, size, tint)
+    width, height = tile.get_size()
+    result = pygame.Surface((width, height), pygame.SRCALPHA)
+    start_x = -int(float(offset_x) % width) if repeat_x else 0
+    start_y = -int(float(offset_y) % height) if repeat_y else 0
+    x_positions = range(start_x, width + 1, width) if repeat_x else (0,)
+    y_positions = range(start_y, height + 1, height) if repeat_y else (0,)
+    for x in x_positions:
+        for y in y_positions:
+            result.blit(tile, (x, y))
+    return result

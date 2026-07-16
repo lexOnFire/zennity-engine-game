@@ -108,6 +108,8 @@ NODE_DESCRIPTIONS = {
     "key_held": "Verdadeiro durante todo o tempo em que a tecla fica segurada.",
     "patrol_axis": "Move entre dois limites e inverte automaticamente a direção ao alcançá-los.",
     "set_sprite": "Troca a imagem principal do objeto durante o Play Mode.",
+    "start_texture_scroll": "Repete e desloca a imagem dentro do plano sem mover collider ou Transform.",
+    "stop_texture_scroll": "Interrompe o deslocamento da imagem do plano.",
     "play_animation_asset": "Carrega e toca diretamente um arquivo de animação .zanim.",
     "stop_animation": "Interrompe a animação atual do objeto.",
     "set_position": "Move imediatamente o objeto para uma posição X e Y.",
@@ -135,6 +137,10 @@ PROPERTY_LABELS = {
     "width": "Largura", "height": "Altura", "color": "Cor", "texture": "Imagem",
     "tag": "Tag", "relative": "Posição relativa", "inherit_source": "Copiar objeto original",
     "inherit_logic": "Copiar Logic Graphs também",
+    "speed_x": "Velocidade X", "speed_y": "Velocidade Y",
+    "repeat_x": "Repetir no eixo X", "repeat_y": "Repetir no eixo Y",
+    "parallax": "Intensidade do parallax", "reset": "Voltar à origem",
+    "send_to_background": "Enviar para camada Background",
 }
 
 NODE_PROPERTY_LABELS = {
@@ -810,6 +816,8 @@ class LogicGraphEditor(QWidget):
     message = Signal(str, str)
     asset_changed = Signal()
     debug_command = Signal(str)
+    play_requested = Signal()
+    stop_requested = Signal()
     MAGNET_RADIUS_PIXELS = 42.0
 
     def __init__(self, project_root: str | Path | None = None, parent: QWidget | None = None) -> None:
@@ -893,6 +901,18 @@ class LogicGraphEditor(QWidget):
         self.demo_button.setIcon(editor_icon("open"))
         self.demo_button.setProperty("uiRole", "primary")
         toolbar.addWidget(self.demo_button)
+        toolbar.addSpacing(8)
+        self.play_button = QPushButton("Play")
+        self.play_button.setIcon(editor_icon("play"))
+        self.play_button.setProperty("uiRole", "primary")
+        self.play_button.setToolTip("Salva o grafo atual e inicia o Play Mode")
+        self.stop_button = QPushButton("Stop")
+        self.stop_button.setIcon(editor_icon("stop"))
+        self.stop_button.setProperty("uiRole", "danger")
+        self.stop_button.setToolTip("Interrompe o Play Mode e restaura a cena")
+        self.stop_button.setEnabled(False)
+        toolbar.addWidget(self.play_button)
+        toolbar.addWidget(self.stop_button)
         toolbar.addSpacing(12)
         self.graph_enabled_check = QCheckBox("Ativo no Play")
         self.graph_enabled_check.setChecked(True)
@@ -1179,6 +1199,8 @@ class LogicGraphEditor(QWidget):
         self.save_button.clicked.connect(self.save)
         self.save_as_button.clicked.connect(lambda: self.save(save_as=True))
         self.demo_button.clicked.connect(self.open_demo)
+        self.play_button.clicked.connect(self.request_play)
+        self.stop_button.clicked.connect(self.stop_requested.emit)
         self.fit_button.clicked.connect(self.fit_graph)
         self.undo_button.clicked.connect(self.undo)
         self.redo_button.clicked.connect(self.redo)
@@ -1903,6 +1925,7 @@ class LogicGraphEditor(QWidget):
     def _asset_kind_for_node(node_type: str) -> str | None:
         return {
             "set_sprite": "image",
+            "start_texture_scroll": "image",
             "create_object": "image",
             "create_prefab": "prefab",
             "play_animation_asset": "animation",
@@ -2390,6 +2413,24 @@ class LogicGraphEditor(QWidget):
             self.message.emit("INFO", f"Logic Graph salvo: {saved_path.name}")
         except (OSError, ValueError) as exc:
             self.message.emit("ERROR", f"Não foi possível salvar o Logic Graph: {exc}")
+
+    def request_play(self) -> None:
+        """Persiste o asset aberto antes de entregar o Play ao editor principal."""
+        if self.current_path is None:
+            self.save()
+            if self.current_path is None:
+                return
+        elif self._dirty:
+            self._autosave_timer.stop()
+            self._autosave()
+            if self._dirty:
+                return
+        self.play_requested.emit()
+
+    def set_play_state(self, playing: bool) -> None:
+        """Mantém os controles locais sincronizados com a Viewport isolada."""
+        self.play_button.setEnabled(not playing)
+        self.stop_button.setEnabled(playing)
 
     def fit_graph(self) -> None:
         if not self.node_items:

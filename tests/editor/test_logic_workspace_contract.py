@@ -357,3 +357,23 @@ def test_logic_workspace_can_create_runtime_objects_and_pick_their_sprite():
     assert '"prefab": ("Prefab", {".zprefab"})' in picker
     for node_type in ("create_prefab", "clone_object", "add_component", "remove_component", "once", "cooldown", "restart_scene"):
         assert f'"{node_type}"' in graph
+
+
+def test_logic_workspace_controls_play_and_builds_scrolling_image_planes():
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    main = _source("editor/isolated_editor_main.py")
+    graph = _source("engine/logic/graph_asset.py")
+    runtime = _source("engine/logic/runtime.py")
+    viewport = _source("editor/isolated_viewport.py")
+    rendering = _source("editor/runtime/sprite_rendering.py")
+    recipes = _source("engine/logic/recipes.py")
+    assert "play_requested = Signal()" in editor
+    assert "stop_requested = Signal()" in editor
+    assert "def request_play" in editor and "def set_play_state" in editor
+    assert "logic_workspace.play_requested.connect" in main
+    assert "logic_workspace.stop_requested.connect" in main
+    assert '"start_texture_scroll"' in graph
+    assert 'node_type == "start_texture_scroll"' in runtime
+    assert "def start_texture_scroll" in viewport
+    assert "def prepare_scrolling_sprite_surface" in rendering
+    assert '"scrolling_road_or_sky"' in recipes

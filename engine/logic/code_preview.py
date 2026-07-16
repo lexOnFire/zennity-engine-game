@@ -42,6 +42,11 @@ def node_code_preview(node: Mapping[str, Any]) -> str:
         "stop_animation": "parar_animação()",
         "play_sound": f"tocar_som(\n  '{_value(properties, 'path', 'selecione áudio')}'\n)",
         "set_sprite": f"alvo.imagem =\n  '{_value(properties, 'path', 'selecione imagem')}'",
+        "start_texture_scroll": (
+            f"fundo_rolante(x={_value(properties, 'speed_x', 0)}, "
+            f"y={_value(properties, 'speed_y', 80)}, parallax={_value(properties, 'parallax', 1)})"
+        ),
+        "stop_texture_scroll": f"parar_fundo(reset={_value(properties, 'reset', False)})",
         "set_hud": f"hud.texto = '{_value(properties, 'text', 'Texto')}'",
         "log_message": f"console('{_value(properties, 'text', 'Mensagem')}')",
         "find_tag": f"objeto = procurar_tag('{_value(properties, 'tag', 'Player')}')",

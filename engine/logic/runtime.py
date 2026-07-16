@@ -602,6 +602,25 @@ class LogicGraphRuntime:
             if path:
                 target.set_sprite(path)
             return ["next"]
+        if node_type == "start_texture_scroll":
+            target = self._read_target(node_id, game, dt, set())
+            path = str(self._read_input(node_id, "path", properties.get("path", ""), game, dt, set()))
+            speed_x = float(self._read_input(node_id, "speed_x", properties.get("speed_x", 0.0), game, dt, set()))
+            speed_y = float(self._read_input(node_id, "speed_y", properties.get("speed_y", 80.0), game, dt, set()))
+            target.start_texture_scroll(
+                speed_x,
+                speed_y,
+                repeat_x=bool(properties.get("repeat_x", False)),
+                repeat_y=bool(properties.get("repeat_y", True)),
+                parallax=float(properties.get("parallax", 1.0)),
+                image_path=path,
+                send_to_background=bool(properties.get("send_to_background", True)),
+            )
+            return ["next"]
+        if node_type == "stop_texture_scroll":
+            target = self._read_target(node_id, game, dt, set())
+            target.stop_texture_scroll(reset=bool(properties.get("reset", False)))
+            return ["next"]
         if node_type == "create_object":
             name = str(self._read_input(node_id, "name", properties.get("name", "NovoObjeto"), game, dt, set()))
             x = float(self._read_input(node_id, "x", properties.get("x", 0.0), game, dt, set()))

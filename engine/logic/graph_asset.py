@@ -76,6 +76,16 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "stop_animation": {"title": "Parar animação", "category": "Ação", "properties": {}},
     "play_sound": {"title": "Tocar som", "category": "Ação", "properties": {"path": ""}},
     "set_sprite": {"title": "Trocar imagem do objeto", "category": "Ação", "properties": {"path": ""}},
+    "start_texture_scroll": {
+        "title": "Iniciar fundo rolante",
+        "category": "Ação",
+        "properties": {
+            "path": "", "speed_x": 0.0, "speed_y": 80.0,
+            "repeat_x": False, "repeat_y": True, "parallax": 1.0,
+            "send_to_background": True,
+        },
+    },
+    "stop_texture_scroll": {"title": "Parar fundo rolante", "category": "Ação", "properties": {"reset": False}},
     "set_hud": {"title": "Atualizar HUD", "category": "Ação", "properties": {"text": "Texto"}},
     "emit_event": {"title": "Emitir evento", "category": "Ação", "properties": {"name": "evento", "payload": None}},
     "set_position": {"title": "Definir posição", "category": "Ação", "properties": {"x": 0.0, "y": 0.0}},
@@ -152,6 +162,14 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "stop_animation": {"inputs": [("in", "flow")], "outputs": [("next", "flow")]},
     "play_sound": {"inputs": [("in", "flow"), ("path", "text")], "outputs": [("next", "flow")]},
     "set_sprite": {"inputs": [("in", "flow"), ("target", "object"), ("path", "text")], "outputs": [("next", "flow")]},
+    "start_texture_scroll": {
+        "inputs": [
+            ("in", "flow"), ("target", "object"), ("path", "text"),
+            ("speed_x", "number"), ("speed_y", "number"),
+        ],
+        "outputs": [("next", "flow")],
+    },
+    "stop_texture_scroll": {"inputs": [("in", "flow"), ("target", "object")], "outputs": [("next", "flow")]},
     "set_hud": {"inputs": [("in", "flow"), ("text", "text")], "outputs": [("next", "flow")]},
     "emit_event": {"inputs": [("in", "flow"), ("payload", "any")], "outputs": [("next", "flow")]},
     "set_position": {"inputs": [("in", "flow"), ("target", "object"), ("x", "number"), ("y", "number")], "outputs": [("next", "flow")]},
