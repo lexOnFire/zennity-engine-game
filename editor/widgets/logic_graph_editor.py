@@ -12,7 +12,6 @@ from typing import Any
 from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPainterPathStroker, QPen, QBrush
 from PySide6.QtWidgets import (
-    QButtonGroup,
     QFileDialog,
     QFrame,
     QComboBox,
@@ -31,6 +30,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QSplitter,
+    QTabWidget,
     QToolButton,
     QTreeWidget,
     QTreeWidgetItem,
@@ -470,6 +470,10 @@ class LogicGraphEditor(QWidget):
         self.demo_button.setProperty("uiRole", "primary")
         toolbar.addWidget(self.demo_button)
         toolbar.addSpacing(12)
+        self.graph_enabled_check = QCheckBox("Ativo no Play")
+        self.graph_enabled_check.setChecked(True)
+        self.graph_enabled_check.setToolTip("Desative para preservar o asset sem executá-lo")
+        toolbar.addWidget(self.graph_enabled_check)
         toolbar.addWidget(QLabel("OBJETO ALVO"))
         self.target_type = QComboBox()
         self.target_type.addItem("Nome", "name")
@@ -507,16 +511,12 @@ class LogicGraphEditor(QWidget):
         categories = QHBoxLayout(category_widget)
         categories.setContentsMargins(4, 4, 4, 4)
         categories.setSpacing(6)
-        self.category_group = QButtonGroup(self)
-        self.category_group.setExclusive(True)
-        for index, category in enumerate(("Movimento", "Ação", "Lógica", "Condição", "Eventos", "Objetos", "Variáveis", "Matemática", "Texto", "Subgrafos")):
-            button = QPushButton(category)
-            button.setCheckable(True)
-            button.setProperty("logicCategory", category)
-            self.category_group.addButton(button, index)
-            categories.addWidget(button)
-            if index == 0:
-                button.setChecked(True)
+        categories.addWidget(QLabel("Categoria"))
+        self.category_combo = QComboBox()
+        self.category_combo.addItems(("Movimento", "Ação", "Lógica", "Condição", "Eventos", "Objetos", "Variáveis", "Matemática", "Texto", "Subgrafos"))
+        self.category_combo.setMinimumWidth(150)
+        self.category_combo.setToolTip("Filtra a biblioteca de blocos por categoria")
+        categories.addWidget(self.category_combo)
         categories.addStretch(1)
         root.addWidget(category_widget)
 
@@ -528,37 +528,54 @@ class LogicGraphEditor(QWidget):
         palette_panel.setObjectName("LogicPalettePanel")
         palette_layout = QVBoxLayout(palette_panel)
         palette_layout.setContentsMargins(8, 8, 8, 8)
-        palette_title = QLabel("NÓS")
-        palette_title.setObjectName("PanelSectionTitle")
-        palette_layout.addWidget(palette_title)
+        self.library_tabs = QTabWidget()
+        self.library_tabs.setObjectName("LogicLibraryTabs")
+        palette_layout.addWidget(self.library_tabs, 1)
+
+        blocks_page = QWidget()
+        blocks_layout = QVBoxLayout(blocks_page)
+        blocks_layout.setContentsMargins(5, 6, 5, 6)
+        blocks_layout.setSpacing(6)
         self.node_search = QLineEdit()
         self.node_search.setPlaceholderText("Pesquisar blocos...  ex.: colisão, som, somar")
         self.node_search.setClearButtonEnabled(True)
-        palette_layout.addWidget(self.node_search)
+        blocks_layout.addWidget(self.node_search)
         self.palette = QListWidget()
         self.palette.setObjectName("LogicNodePalette")
         self.palette.setToolTip("Duplo clique para adicionar um nó")
-        palette_layout.addWidget(self.palette, 1)
+        blocks_layout.addWidget(self.palette, 1)
         self.palette_count = QLabel()
         self.palette_count.setObjectName("PanelHint")
-        palette_layout.addWidget(self.palette_count)
-        subgraph_title = QLabel("SUBGRAFOS REUTILIZÁVEIS")
-        subgraph_title.setObjectName("PanelSectionTitle")
-        palette_layout.addWidget(subgraph_title)
+        blocks_layout.addWidget(self.palette_count)
+        blocks_hint = QLabel("Duplo clique adiciona o bloco. Arraste uma porta para conectar.")
+        blocks_hint.setObjectName("PanelHint")
+        blocks_hint.setWordWrap(True)
+        blocks_layout.addWidget(blocks_hint)
+        self.library_tabs.addTab(blocks_page, "Blocos")
+
+        subgraphs_page = QWidget()
+        subgraphs_layout = QVBoxLayout(subgraphs_page)
+        subgraphs_layout.setContentsMargins(5, 6, 5, 6)
+        subgraphs_layout.setSpacing(6)
         self.subgraph_list = QListWidget()
-        self.subgraph_list.setMaximumHeight(120)
         self.subgraph_list.setToolTip("Duplo clique adiciona uma chamada ao subgrafo")
-        palette_layout.addWidget(self.subgraph_list)
-        blackboard_title = QLabel("BLACKBOARD")
-        blackboard_title.setObjectName("PanelSectionTitle")
-        palette_layout.addWidget(blackboard_title)
+        subgraphs_layout.addWidget(self.subgraph_list, 1)
+        subgraph_hint = QLabel("Funções visuais reutilizáveis salvas em Assets/Logic.")
+        subgraph_hint.setObjectName("PanelHint")
+        subgraph_hint.setWordWrap(True)
+        subgraphs_layout.addWidget(subgraph_hint)
+        self.library_tabs.addTab(subgraphs_page, "Subgrafos")
+
+        data_page = QWidget()
+        data_layout = QVBoxLayout(data_page)
+        data_layout.setContentsMargins(5, 6, 5, 6)
+        data_layout.setSpacing(6)
         self.blackboard_tree = QTreeWidget()
         self.blackboard_tree.setHeaderLabels(["Nome", "Tipo", "Escopo"])
-        self.blackboard_tree.setMaximumHeight(150)
-        palette_layout.addWidget(self.blackboard_tree)
+        data_layout.addWidget(self.blackboard_tree, 1)
         self.blackboard_name_edit = QLineEdit()
         self.blackboard_name_edit.setPlaceholderText("nome_da_variável")
-        palette_layout.addWidget(self.blackboard_name_edit)
+        data_layout.addWidget(self.blackboard_name_edit)
         blackboard_options = QHBoxLayout()
         self.blackboard_type_combo = QComboBox()
         for label, value in (("Número", "number"), ("Booleano", "bool"), ("Texto", "text"), ("Objeto", "object")):
@@ -568,27 +585,28 @@ class LogicGraphEditor(QWidget):
             self.blackboard_scope_combo.addItem(label, value)
         blackboard_options.addWidget(self.blackboard_type_combo)
         blackboard_options.addWidget(self.blackboard_scope_combo)
-        palette_layout.addLayout(blackboard_options)
+        data_layout.addLayout(blackboard_options)
         self.blackboard_default_edit = QLineEdit("0")
         self.blackboard_default_edit.setPlaceholderText("Valor inicial")
-        palette_layout.addWidget(self.blackboard_default_edit)
+        data_layout.addWidget(self.blackboard_default_edit)
         blackboard_edit_actions = QHBoxLayout()
         self.blackboard_save_button = QPushButton("Adicionar")
         self.blackboard_remove_button = QPushButton("Excluir")
         blackboard_edit_actions.addWidget(self.blackboard_save_button)
         blackboard_edit_actions.addWidget(self.blackboard_remove_button)
-        palette_layout.addLayout(blackboard_edit_actions)
+        data_layout.addLayout(blackboard_edit_actions)
         blackboard_node_actions = QHBoxLayout()
         self.blackboard_get_button = QPushButton("Ler")
         self.blackboard_set_button = QPushButton("Definir")
         blackboard_node_actions.addWidget(self.blackboard_get_button)
         blackboard_node_actions.addWidget(self.blackboard_set_button)
-        palette_layout.addLayout(blackboard_node_actions)
-        hint = QLabel("Duplo clique adiciona o nó. Ao arrastar, o ímã encaixa na porta compatível mais próxima.")
-        hint.setObjectName("PanelHint")
-        hint.setWordWrap(True)
-        palette_layout.addWidget(hint)
-        palette_panel.setMinimumWidth(180)
+        data_layout.addLayout(blackboard_node_actions)
+        data_hint = QLabel("Variáveis organizadas por objeto, cena ou projeto.")
+        data_hint.setObjectName("PanelHint")
+        data_hint.setWordWrap(True)
+        data_layout.addWidget(data_hint)
+        self.library_tabs.addTab(data_page, "Dados")
+        palette_panel.setMinimumWidth(230)
         splitter.addWidget(palette_panel)
 
         self.scene = QGraphicsScene(self)
@@ -660,7 +678,7 @@ class LogicGraphEditor(QWidget):
         self._refresh_palette("Movimento")
 
     def _connect_ui(self) -> None:
-        self.category_group.idClicked.connect(self._category_clicked)
+        self.category_combo.currentTextChanged.connect(self._refresh_palette)
         self.node_search.textChanged.connect(lambda _text: self._refresh_palette())
         self.palette.itemDoubleClicked.connect(self._add_palette_item)
         self.subgraph_list.itemDoubleClicked.connect(self._add_subgraph_asset)
@@ -691,10 +709,7 @@ class LogicGraphEditor(QWidget):
         self.delete_button.clicked.connect(self.delete_selected)
         self.target_type.currentIndexChanged.connect(lambda _index: self.mark_dirty())
         self.target_value.textChanged.connect(lambda _text: self.mark_dirty())
-
-    def _category_clicked(self, button_id: int) -> None:
-        button = self.category_group.button(button_id)
-        self._refresh_palette(str(button.property("logicCategory")) if button else "Movimento")
+        self.graph_enabled_check.toggled.connect(lambda _checked: self.mark_dirty())
 
     @staticmethod
     def _search_key(value: Any) -> str:
@@ -812,6 +827,9 @@ class LogicGraphEditor(QWidget):
         self._autosave_timer.stop()
         self.graph = normalize_logic_graph(graph)
         self._sync_subgraph_call_interfaces(self.graph)
+        self.graph_enabled_check.blockSignals(True)
+        self.graph_enabled_check.setChecked(bool(self.graph.get("enabled", True)))
+        self.graph_enabled_check.blockSignals(False)
         self._blackboard_selected_name = ""
         self.current_path = path
         target = self.graph.get("target", {"type": "name", "value": "Player"})
@@ -1453,6 +1471,7 @@ class LogicGraphEditor(QWidget):
         for node_id, item in self.node_items.items():
             item.node["position"] = [round(item.pos().x(), 2), round(item.pos().y(), 2)]
         data = deepcopy(self.graph)
+        data["enabled"] = self.graph_enabled_check.isChecked()
         data["target"] = {
             "type": str(self.target_type.currentData() or "name"),
             "value": self.target_value.text().strip() or "Player",

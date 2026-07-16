@@ -23,7 +23,7 @@ def test_logic_and_animation_use_independent_windows_not_viewport_tabs():
     assert 'editor_icon("snap")' in editor
     assert 'editor_icon("animation")' not in editor
     assert 'editor_icon("script")' not in editor
-    assert 'component == "logic"' not in editor
+    assert 'component == "logic"' in editor
 
 
 def test_python_script_component_is_not_offered_or_executed() -> None:
@@ -122,7 +122,7 @@ def test_logic_workspace_exposes_typed_scoped_blackboard_panel():
     editor = _source("editor/widgets/logic_graph_editor.py")
     viewport = _source("editor/isolated_viewport.py")
     bridge = _source("editor/isolated_editor_main.py")
-    assert "BLACKBOARD" in editor
+    assert 'addTab(data_page, "Dados")' in editor
     assert "blackboard_scope_combo" in editor
     assert "blackboard_type_combo" in editor
     assert "_save_blackboard_variable" in editor
@@ -159,7 +159,7 @@ def test_reusable_subgraphs_are_discoverable_typed_and_safe():
     assert "def subgraph_interface" in graph
     assert "def run_subgraph" in runtime
     assert "Referência circular entre subgrafos" in runtime
-    assert "SUBGRAFOS REUTILIZÁVEIS" in editor
+    assert 'addTab(subgraphs_page, "Subgrafos")' in editor
     assert "Novo subgrafo" in editor
     assert "def new_subgraph" in editor
     assert "_refresh_subgraph_assets" in editor
@@ -185,3 +185,33 @@ def test_gameplay_event_library_and_search_are_available():
     assert "Pesquisar blocos" in editor
     assert "def _search_key" in editor
     assert "self.node_search.textChanged.connect" in editor
+
+
+def test_visual_logic_is_cleanly_managed_from_inspector():
+    interface = _source("editor/interface_smoke_test.py")
+    main = _source("editor/isolated_editor_main.py")
+    picker = _source("editor/widgets/logic_graph_picker.py")
+    components = _source("editor/widgets/component_picker.py")
+    graph = _source("engine/logic/graph_asset.py")
+    viewport = _source("editor/isolated_viewport.py")
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    assert "Lógica Visual" in interface
+    assert "logic_graph_combo" in interface
+    assert "logic_summary_label" in interface
+    assert '"logic": (self.logic_component_header' in main
+    assert "_logic_graphs_for_object" in main
+    assert "_choose_logic_graph_component" in main
+    assert "_detach_selected_logic_graph" in main
+    assert "_create_logic_graph_for_selected" in main
+    assert "class LogicGraphPickerDialog" in picker
+    assert '"Lógica Visual", "logic"' in components
+    assert '"enabled": True' in graph
+    assert 'graph.get("enabled", True)' in viewport
+    assert "LogicLibraryTabs" in editor
+    assert "category_combo" in editor
+    assert "graph_enabled_check" in editor
+    assert "Ativo no Play" in editor
+    assert "category_group" not in editor
+    assert 'addTab(blocks_page, "Blocos")' in editor
+    assert 'addTab(data_page, "Dados")' in editor
+    assert 'addTab(subgraphs_page, "Subgrafos")' in editor

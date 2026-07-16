@@ -179,6 +179,7 @@ def default_logic_graph(name: str = "NewLogic") -> dict[str, Any]:
     return {
         "format": LOGIC_GRAPH_FORMAT,
         "version": LOGIC_GRAPH_VERSION,
+        "enabled": True,
         "name": str(name).strip() or "NewLogic",
         "target": {"type": "name", "value": "Player"},
         "debug": {"breakpoints": [], "breakpoint_conditions": {}, "watches": []},
@@ -203,6 +204,7 @@ def create_logic_node(node_type: str, position: tuple[float, float] = (0.0, 0.0)
 def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
     source = dict(data or {})
     result = default_logic_graph(str(source.get("name", "NewLogic")))
+    result["enabled"] = bool(source.get("enabled", True))
     raw_target = source.get("target", {})
     if isinstance(raw_target, Mapping):
         target_type = str(raw_target.get("type", "name")).lower()

@@ -141,6 +141,8 @@ def hydrate_logic_graphs(
     for path in sorted(directory.rglob("*.zlogic"), key=lambda item: str(item).lower()):
         try:
             graph = load_logic_graph(path)
+            if not bool(graph.get("enabled", True)):
+                continue
             if any(node.get("type") == "subgraph_start" for node in graph.get("nodes", [])):
                 continue
             target = graph.get("target", {})

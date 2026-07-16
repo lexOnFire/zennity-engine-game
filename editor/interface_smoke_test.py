@@ -1081,10 +1081,62 @@ class InterfaceSmokeTest(QMainWindow):
         self.ui_component_form.addRow("Alvo", self.ui_target_combo)
         main_layout.addWidget(self.ui_component_body)
 
+        # ------------------ COMPONENTE: LÓGICA VISUAL ------------------
+        self.logic_component_header = QWidget()
+        self.logic_component_header.setObjectName("InspectorComponentHeader")
+        logic_header_layout = QHBoxLayout(self.logic_component_header)
+        logic_header_layout.setContentsMargins(6, 4, 6, 4)
+        logic_title = QLabel(component_title("logic", "Lógica Visual"))
+        logic_title.setObjectName("InspectorComponentTitle")
+        logic_header_layout.addWidget(logic_title)
+        logic_header_layout.addStretch(1)
+        self.btn_collapse_logic = QToolButton()
+        self.btn_collapse_logic.setText("▶")
+        self.btn_collapse_logic.setFixedSize(18, 18)
+        self.btn_collapse_logic.setObjectName("InspectorFoldoutButton")
+        self.btn_delete_logic = QToolButton()
+        self.btn_delete_logic.setText("✕")
+        self.btn_delete_logic.setFixedSize(18, 18)
+        self.btn_delete_logic.setObjectName("InspectorDangerButton")
+        self.btn_delete_logic.setToolTip("Desvincular todos os Logic Graphs deste objeto")
+        logic_header_layout.addWidget(self.btn_collapse_logic)
+        logic_header_layout.addWidget(self.btn_delete_logic)
+        main_layout.addWidget(self.logic_component_header)
+
+        self.logic_component_body = QWidget()
+        logic_body_layout = QVBoxLayout(self.logic_component_body)
+        logic_body_layout.setContentsMargins(8, 6, 8, 8)
+        logic_body_layout.setSpacing(6)
+        self.logic_status_label = QLabel("Nenhum Logic Graph vinculado")
+        self.logic_status_label.setObjectName("WorkspaceContext")
+        logic_body_layout.addWidget(self.logic_status_label)
+        self.logic_graph_combo = QComboBox()
+        self.logic_graph_combo.setToolTip("Logic Graphs que controlam o objeto selecionado")
+        logic_body_layout.addWidget(self.logic_graph_combo)
+        self.logic_summary_label = QLabel("Selecione um grafo para ver seus eventos e blocos.")
+        self.logic_summary_label.setWordWrap(True)
+        self.logic_summary_label.setObjectName("PanelHint")
+        logic_body_layout.addWidget(self.logic_summary_label)
+        logic_primary_actions = QHBoxLayout()
+        self.logic_open_button = QPushButton("Abrir editor")
+        self.logic_open_button.setProperty("uiRole", "primary")
+        self.logic_link_button = QPushButton("Vincular outro")
+        logic_primary_actions.addWidget(self.logic_open_button)
+        logic_primary_actions.addWidget(self.logic_link_button)
+        logic_body_layout.addLayout(logic_primary_actions)
+        logic_secondary_actions = QHBoxLayout()
+        self.logic_new_button = QPushButton("Criar novo")
+        self.logic_unlink_button = QPushButton("Desvincular")
+        self.logic_unlink_button.setProperty("uiRole", "danger")
+        logic_secondary_actions.addWidget(self.logic_new_button)
+        logic_secondary_actions.addWidget(self.logic_unlink_button)
+        logic_body_layout.addLayout(logic_secondary_actions)
+        main_layout.addWidget(self.logic_component_body)
+
         for component_body in (
             self.transform_body, self.sprite_renderer_body, self.audio_source_body,
             self.rigidbody_body, self.collider_body, self.camera_body,
-            self.ui_component_body,
+            self.ui_component_body, self.logic_component_body,
         ):
             component_body.setObjectName("InspectorComponentBody")
             component_body.setStyleSheet(

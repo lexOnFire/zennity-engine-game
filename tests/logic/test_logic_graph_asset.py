@@ -34,6 +34,14 @@ def test_logic_graph_round_trip_uses_zlogic_extension(tmp_path):
     assert saved["format"] == "zennity.logic_graph"
 
 
+def test_logic_graph_enabled_state_can_preserve_detached_assets(tmp_path):
+    graph = default_logic_graph("Detached")
+    graph["enabled"] = False
+    saved = save_logic_graph(tmp_path / "detached", graph)
+    assert saved["enabled"] is False
+    assert load_logic_graph(tmp_path / "detached.zlogic")["enabled"] is False
+
+
 def test_normalization_removes_edges_with_missing_nodes():
     graph = default_logic_graph()
     graph["nodes"] = [{"id": "start", "type": "event_start"}]
