@@ -30,6 +30,7 @@ class LogicGraphRuntime:
         }
         self.values: dict[Any, Any] = {}
         self.executed_nodes: list[str] = []
+        self.executed_edges: list[str] = []
         self.started = False
 
     def start(self, game: Any) -> None:
@@ -38,6 +39,7 @@ class LogicGraphRuntime:
         self.started = True
         self.values.clear()
         self.executed_nodes.clear()
+        self.executed_edges.clear()
         self._run_event("event_start", game, 0.0)
 
     def update(self, game: Any, dt: float) -> None:
@@ -45,6 +47,7 @@ class LogicGraphRuntime:
             self.start(game)
         self.values.clear()
         self.executed_nodes.clear()
+        self.executed_edges.clear()
         self._run_event("event_update", game, float(dt))
 
     def _run_event(self, event_type: str, game: Any, dt: float) -> None:
@@ -75,6 +78,9 @@ class LogicGraphRuntime:
             if target is None:
                 continue
             budget[0] -= 1
+            edge_id = str(edge.get("id", ""))
+            if edge_id and edge_id not in self.executed_edges:
+                self.executed_edges.append(edge_id)
             self.executed_nodes.append(target_id)
             try:
                 next_ports = self._execute(target, game, dt)
@@ -157,6 +163,9 @@ class LogicGraphRuntime:
         edge = self.incoming.get((node_id, port))
         if edge is None:
             return deepcopy(default)
+        edge_id = str(edge.get("id", ""))
+        if edge_id and edge_id not in self.executed_edges:
+            self.executed_edges.append(edge_id)
         return self._evaluate_output(
             str(edge["from_node"]), str(edge.get("from_port", "value")), game, dt, resolving
         )
@@ -224,6 +233,28 @@ class LogicGraphRuntime:
         self.values[(node_id, port)] = value
         self.values[node_id] = value  # Compatibilidade com extensões antigas.
         return value
+
+    def debug_snapshot(self) -> dict[str, Any]:
+        """Retorna somente dados pequenos e serializáveis para o editor Qt."""
+        values: dict[str, dict[str, Any]] = {}
+        for key, value in self.values.items():
+            if not isinstance(key, tuple) or len(key) != 2:
+                continue
+            node_id, port = str(key[0]), str(key[1])
+            values.setdefault(node_id, {})[port] = self._debug_value(value)
+        return {
+            "nodes": list(dict.fromkeys(self.executed_nodes)),
+            "edges": list(dict.fromkeys(self.executed_edges)),
+            "values": values,
+            "variables": {str(name): self._debug_value(value) for name, value in self.variables.items()},
+        }
+
+    @staticmethod
+    def _debug_value(value: Any) -> Any:
+        if value is None or isinstance(value, (bool, int, float, str)):
+            return value
+        name = getattr(value, "name", None)
+        return f"<{name or type(value).__name__}>"
 
     def _condition(self, value: Any) -> bool:
         if isinstance(value, bool):

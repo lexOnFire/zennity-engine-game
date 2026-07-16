@@ -65,3 +65,17 @@ def test_logic_workspace_can_create_open_save_and_load_demo():
     assert "load_logic_graph" in source
     assert "save_logic_graph" in source
     assert '"PlayerMovement.zlogic"' in source
+
+
+def test_logic_workspace_receives_throttled_runtime_debug_traces():
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    viewport = _source("editor/isolated_viewport.py")
+    bridge = _source("editor/isolated_editor_main.py")
+    assert "def apply_runtime_trace" in editor
+    assert "def clear_runtime_trace" in editor
+    assert "set_runtime_state" in editor
+    assert "set_runtime_active" in editor
+    assert "VALORES EM EXECUÇÃO" in editor
+    assert "trace_now - logic_trace_last_sent >= 0.10" in viewport
+    assert '"type": "logic_trace"' in viewport
+    assert 'message.get("type") == "logic_trace"' in bridge

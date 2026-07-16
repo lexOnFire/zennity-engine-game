@@ -4,6 +4,7 @@ from __future__ import annotations
 import math
 import os
 import sys
+import time
 import hashlib
 import importlib.util
 from copy import deepcopy
@@ -482,6 +483,7 @@ def run_viewport(
     animator_controllers: dict[str, AnimatorControllerRuntime] = {}
     behavior_runners: dict[str, BehaviorControllerRunner] = {}
     logic_runtimes: dict[str, list[tuple[str, LogicGraphRuntime]]] = {}
+    logic_trace_last_sent = 0.0
     animator_event_signatures: dict[str, tuple[Any, ...]] = {}
     active_contacts: dict[tuple[str, str], bool] = {}
     audio_channels: dict[str, Any] = {}
@@ -1042,6 +1044,7 @@ def run_viewport(
         behavior_runners.clear()
         animator_event_signatures.clear()
         active_contacts.clear()
+        _send(events, {"type": "logic_trace_clear"})
         return
         for name, runner in list(behavior_runners.items()):
             try:
@@ -1594,6 +1597,8 @@ def run_viewport(
         width, height = screen.get_size()
         dt = clock.get_time() / 1000.0
         if playing and not paused:
+            trace_now = time.monotonic()
+            trace_due = trace_now - logic_trace_last_sent >= 0.10
             keys = pygame.key.get_pressed()
             input_state = {
                 "left": bool(forwarded_input["left"] or keys[pygame.K_a] or keys[pygame.K_LEFT]),
@@ -1612,9 +1617,25 @@ def run_viewport(
                 for graph_path, runtime in list(runtimes):
                     try:
                         runtime.update(api, dt)
+                        if trace_due:
+                            _send(events, {
+                                "type": "logic_trace",
+                                "object": name,
+                                "graph": graph_path,
+                                **runtime.debug_snapshot(),
+                            })
                     except Exception as exc:
+                        _send(events, {
+                            "type": "logic_trace",
+                            "object": name,
+                            "graph": graph_path,
+                            "error": str(exc),
+                            **runtime.debug_snapshot(),
+                        })
                         runtimes.remove((graph_path, runtime))
                         _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{graph_path}: {exc}"})
+                if trace_due:
+                    logic_trace_last_sent = trace_now
                 for instruction in obj.pop("script_instructions", []):
                     if not isinstance(instruction, dict):
                         continue

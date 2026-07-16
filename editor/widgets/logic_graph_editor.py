@@ -188,6 +188,7 @@ class LogicEdgeItem(QGraphicsPathItem):
         super().__init__(path)
         self.edge_id = edge_id
         self.base_color = PORT_COLORS.get(data_type, PORT_COLORS["any"])
+        self._runtime_active = False
         self.setPen(QPen(self.base_color, 2.2))
         self.setZValue(0)
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
@@ -196,8 +197,18 @@ class LogicEdgeItem(QGraphicsPathItem):
     def itemChange(self, change, value):
         result = super().itemChange(change, value)
         if change == QGraphicsItem.ItemSelectedHasChanged:
-            self.setPen(QPen(QColor("#ffffff") if bool(value) else self.base_color, 3.2 if bool(value) else 2.2))
+            self._refresh_pen(bool(value))
         return result
+
+    def set_runtime_active(self, active: bool) -> None:
+        self._runtime_active = bool(active)
+        self._refresh_pen(self.isSelected())
+
+    def _refresh_pen(self, selected: bool) -> None:
+        if self._runtime_active:
+            self.setPen(QPen(QColor("#7ee787"), 4.2))
+        else:
+            self.setPen(QPen(QColor("#ffffff") if selected else self.base_color, 3.2 if selected else 2.2))
 
     def shape(self) -> QPainterPath:
         stroker = QPainterPathStroker()
@@ -247,6 +258,11 @@ class LogicNodeItem(QGraphicsRectItem):
         summary_font = self.summary_item.font()
         summary_font.setPointSizeF(8.5)
         self.summary_item.setFont(summary_font)
+        self.debug_item = QGraphicsTextItem("", self)
+        self.debug_item.setDefaultTextColor(QColor("#7ee787"))
+        self.debug_item.setTextWidth(self.WIDTH - 22.0)
+        self.debug_item.setPos(10.0, self.height - 25.0)
+        self.debug_item.setVisible(False)
 
         self.input_ports: dict[str, LogicPortItem] = {}
         self.output_ports: dict[str, LogicPortItem] = {}
@@ -287,6 +303,24 @@ class LogicNodeItem(QGraphicsRectItem):
             summary = str(self.node.get("category", ""))
         self.summary_item.setPlainText(summary)
 
+    def set_runtime_state(self, active: bool, values: dict[str, Any] | None = None, error: str = "") -> None:
+        visible = bool(active or error)
+        self.summary_item.setVisible(not visible)
+        self.debug_item.setVisible(visible)
+        if not visible:
+            self.debug_item.setPlainText("")
+            return
+        if error:
+            self.debug_item.setDefaultTextColor(QColor("#ff6b70"))
+            self.debug_item.setPlainText("ERRO • " + error[:54])
+            self.setPen(QPen(QColor("#ff5d62"), 3.0))
+            return
+        self.debug_item.setDefaultTextColor(QColor("#7ee787"))
+        pairs = list((values or {}).items())[:2]
+        text = " • ".join(f"{name}={value}" for name, value in pairs) if pairs else "EXECUTANDO"
+        self.debug_item.setPlainText(text)
+        self.setPen(QPen(QColor("#7ee787"), 3.0))
+
     def itemChange(self, change, value):
         result = super().itemChange(change, value)
         if change == QGraphicsItem.ItemPositionHasChanged and hasattr(self, "editor"):
@@ -313,6 +347,7 @@ class LogicGraphEditor(QWidget):
         self._connection_origin: LogicPortItem | None = None
         self._connection_candidate: LogicPortItem | None = None
         self._connection_preview: QGraphicsPathItem | None = None
+        self._runtime_trace_active = False
         self._dirty = False
         self._updating_properties = False
         self._autosave_timer = QTimer(self)
@@ -339,6 +374,9 @@ class LogicGraphEditor(QWidget):
         title_row.addWidget(self.asset_label)
         title_row.addStretch(1)
         title_row.addWidget(self.validation_label)
+        self.debug_status_label = QLabel("● DEBUG INATIVO")
+        self.debug_status_label.setObjectName("WorkspaceContext")
+        title_row.addWidget(self.debug_status_label)
         root.addLayout(title_row)
 
         toolbar_widget = QWidget()
@@ -447,6 +485,15 @@ class LogicGraphEditor(QWidget):
         self.property_tree.setHeaderLabels(["Propriedade", "Valor"])
         self.property_tree.setColumnWidth(0, 105)
         properties_layout.addWidget(self.property_tree, 1)
+        self.runtime_values_title = QLabel("VALORES EM EXECUÇÃO")
+        self.runtime_values_title.setObjectName("PanelSectionTitle")
+        self.runtime_values_title.hide()
+        properties_layout.addWidget(self.runtime_values_title)
+        self.runtime_values_tree = QTreeWidget()
+        self.runtime_values_tree.setHeaderLabels(["Nó / variável", "Valor"])
+        self.runtime_values_tree.setMaximumHeight(155)
+        self.runtime_values_tree.hide()
+        properties_layout.addWidget(self.runtime_values_tree)
         property_hint = QLabel("Delete remove, Ctrl+D duplica e Esc cancela uma conexão. Ctrl + roda aproxima o grafo.")
         property_hint.setObjectName("PanelHint")
         property_hint.setWordWrap(True)
@@ -507,6 +554,7 @@ class LogicGraphEditor(QWidget):
         return item
 
     def set_graph(self, graph: dict[str, Any], path: Path | None = None) -> None:
+        self.clear_runtime_trace()
         self.cancel_connection()
         self._autosave_timer.stop()
         self.graph = normalize_logic_graph(graph)
@@ -528,6 +576,79 @@ class LogicGraphEditor(QWidget):
         self._update_status()
         self._update_validation()
         self.fit_graph()
+
+    def apply_runtime_trace(self, trace: dict[str, Any]) -> None:
+        """Aplica um snapshot limitado enviado pelo processo da Viewport."""
+        if self.current_path is None or not self.isVisible():
+            return
+        graph_value = str(trace.get("graph", ""))
+        if not graph_value:
+            return
+        graph_path = Path(graph_value)
+        if not graph_path.is_absolute():
+            graph_path = self.project_root / graph_path
+        try:
+            if graph_path.resolve() != self.current_path.resolve():
+                return
+        except OSError:
+            if graph_path.name != self.current_path.name:
+                return
+
+        active_node_list = [str(node_id) for node_id in trace.get("nodes", [])]
+        active_nodes = set(active_node_list)
+        active_edges = {str(edge_id) for edge_id in trace.get("edges", [])}
+        values = trace.get("values", {}) if isinstance(trace.get("values"), dict) else {}
+        variables = trace.get("variables", {}) if isinstance(trace.get("variables"), dict) else {}
+        error = str(trace.get("error", ""))
+        error_node = active_node_list[-1] if error and active_node_list else ""
+        self._runtime_trace_active = True
+        self._update_validation()
+        for node_id, item in self.node_items.items():
+            item.set_runtime_state(
+                node_id in active_nodes,
+                values.get(node_id) if isinstance(values.get(node_id), dict) else {},
+                error if node_id == error_node else "",
+            )
+        for edge in self.edge_items:
+            edge.set_runtime_active(edge.edge_id in active_edges)
+
+        object_name = str(trace.get("object", "Objeto"))
+        if error:
+            self.debug_status_label.setText(f"● ERRO • {object_name}")
+            self.debug_status_label.setStyleSheet("color: #ff6b70; font-weight: 700;")
+        else:
+            self.debug_status_label.setText(f"● PLAY • {object_name} • {len(active_nodes)} nó(s)")
+            self.debug_status_label.setStyleSheet("color: #7ee787; font-weight: 700;")
+
+        self.runtime_values_tree.clear()
+        for node_id, port_values in values.items():
+            node = self.node_items.get(str(node_id))
+            title = str(node.node.get("title", node_id)) if node is not None else str(node_id)
+            if not isinstance(port_values, dict):
+                continue
+            for port, value in port_values.items():
+                self.runtime_values_tree.addTopLevelItem(QTreeWidgetItem([f"{title}.{port}", str(value)]))
+        for name, value in variables.items():
+            self.runtime_values_tree.addTopLevelItem(QTreeWidgetItem([f"${name}", str(value)]))
+        has_values = self.runtime_values_tree.topLevelItemCount() > 0
+        self.runtime_values_title.setVisible(has_values)
+        self.runtime_values_tree.setVisible(has_values)
+
+    def clear_runtime_trace(self) -> None:
+        self._runtime_trace_active = False
+        if hasattr(self, "debug_status_label"):
+            self.debug_status_label.setText("● DEBUG INATIVO")
+            self.debug_status_label.setStyleSheet("")
+        if hasattr(self, "runtime_values_tree"):
+            self.runtime_values_tree.clear()
+            self.runtime_values_tree.hide()
+            self.runtime_values_title.hide()
+        for item in self.node_items.values():
+            item.set_runtime_state(False)
+        for edge in self.edge_items:
+            edge.set_runtime_active(False)
+        if hasattr(self, "validation_label"):
+            self._update_validation()
 
     def refresh_connections(self) -> None:
         if not hasattr(self, "scene"):

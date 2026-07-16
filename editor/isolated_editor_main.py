@@ -2885,6 +2885,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 if state in {"play", "pause"}:
                     self._play_session.set_runtime_state(state)
                 if state == "edit":
+                    self.logic_workspace.clear_runtime_trace()
                     self._runtime_animator_states.clear()
                     if self._animator_controller_dialog is not None:
                         self._animator_controller_dialog.set_runtime_state(None, {})
@@ -2920,6 +2921,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self.statusBar().showMessage(f"Viewport {state}")
             elif message.get("type") == "script_log":
                 self._log(str(message.get("level", "INFO")), str(message.get("message", "")))
+            elif message.get("type") == "logic_trace":
+                self.logic_workspace.apply_runtime_trace(dict(message))
+            elif message.get("type") == "logic_trace_clear":
+                self.logic_workspace.clear_runtime_trace()
             elif message.get("type") == "animator_state":
                 object_name = str(message.get("name", ""))
                 self._runtime_animator_states[object_name] = dict(message)

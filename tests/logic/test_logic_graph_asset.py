@@ -249,3 +249,26 @@ def test_runtime_compare_and_text_wires_drive_hud_action():
     game = Game()
     LogicGraphRuntime(graph).update(game, 0.016)
     assert list(game.hud.values()) == ["Objetivo concluído"]
+
+
+def test_runtime_debug_snapshot_is_small_and_serializable():
+    event = create_logic_node("event_update")
+    number = create_logic_node("number_value")
+    move = create_logic_node("move")
+    graph = default_logic_graph("DebugTrace")
+    graph["nodes"] = [event, number, move]
+    graph["edges"] = [
+        _edge(event, "next", move, "in"),
+        _edge(number, "value", move, "value", "number"),
+    ]
+
+    class Game:
+        def move(self, amount): self.amount = amount
+
+    runtime = LogicGraphRuntime(graph)
+    runtime.update(Game(), 0.5)
+    snapshot = runtime.debug_snapshot()
+    assert snapshot["nodes"] == [event["id"], move["id"], number["id"]]
+    assert {edge["id"] for edge in runtime.graph["edges"]} == set(snapshot["edges"])
+    assert snapshot["values"][number["id"]]["value"] == 0.0
+    assert all(isinstance(key, str) for key in snapshot["values"])
