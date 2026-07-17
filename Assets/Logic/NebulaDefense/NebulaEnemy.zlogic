@@ -181,6 +181,26 @@
       }
     },
     {
+      "id": "get_damage",
+      "type": "get_prefab_parameter",
+      "title": "Ler parâmetro do Prefab",
+      "category": "Objetos",
+      "position": [
+        1020.0,
+        470.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "damage",
+        "type": "number",
+        "default": 1.0
+      }
+    },
+    {
       "id": "save_score",
       "type": "set_variable",
       "title": "Definir variável",
@@ -324,6 +344,24 @@
       "from_port": "value",
       "to_node": "add_score",
       "to_port": "a",
+      "kind": "number",
+      "order": 0
+    },
+    {
+      "id": "trigger_other_get_damage_target",
+      "from_node": "trigger",
+      "from_port": "other",
+      "to_node": "get_damage",
+      "to_port": "target",
+      "kind": "object",
+      "order": 0
+    },
+    {
+      "id": "get_damage_value_add_score_b",
+      "from_node": "get_damage",
+      "from_port": "value",
+      "to_node": "add_score",
+      "to_port": "b",
       "kind": "number",
       "order": 0
     },

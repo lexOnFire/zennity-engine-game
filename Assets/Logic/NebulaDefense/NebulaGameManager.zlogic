@@ -107,7 +107,7 @@
         "height": 0.0
       },
       "properties": {
-        "text": "WASD: mover  •  ESPAÇO: disparar  •  R: reiniciar"
+        "text": "WASD: mover  •  ESPAÇO: disparar  •  M: míssil  •  R: reiniciar"
       }
     },
     {

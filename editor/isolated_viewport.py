@@ -409,6 +409,11 @@ class PlayScriptAPI:
         self.log(f"prefab criado/reutilizado: {obj['name']}")
         return PlayScriptAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
 
+    def prefab_parameter(self, name: str, default: Any = None) -> Any:
+        """Lê uma propriedade exposta recebida na criação desta instância."""
+        values = self.obj.get("prefab_parameters")
+        return deepcopy(values.get(str(name), default)) if isinstance(values, dict) else deepcopy(default)
+
     def clone_object(self, other: "PlayScriptAPI", name: str = "") -> "PlayScriptAPI":
         source = other.obj if isinstance(other, PlayScriptAPI) else self.obj
         obj = self.runtime_world.clone_object(source, name)
@@ -864,6 +869,10 @@ def run_viewport(
                 "active": bool(obj.get("active", True)),
                 "spawned_by_logic": bool(obj.get("spawned_by_logic", False)),
                 "spawn_lifecycle": deepcopy(lifecycle),
+                "prefab_path": str(obj.get("prefab_path", "")),
+                "prefab_base": str(obj.get("prefab_base", "")),
+                "prefab_parameters": deepcopy(obj.get("prefab_parameters", {}))
+                if isinstance(obj.get("prefab_parameters"), dict) else {},
                 "logic_motions": [
                     {"handle": str(handle), **deepcopy(state)}
                     for handle, state in motions.items() if isinstance(state, dict)

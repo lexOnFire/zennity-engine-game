@@ -84,6 +84,8 @@
         "include_camera": false,
         "include_audio": false,
         "include_logic": false,
+        "parameters": {},
+        "exposed_properties": [],
         "lifetime": 10.0,
         "max_instances": 9,
         "max_distance": 1500.0,

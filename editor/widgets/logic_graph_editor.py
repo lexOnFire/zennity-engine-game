@@ -59,6 +59,7 @@ from engine.logic.graph_asset import (
 from engine.logic.blackboard import coerce_variable_value, save_blackboard_asset
 from engine.logic.code_preview import node_code_preview
 from engine.logic.recipes import build_logic_recipe, find_logic_recipes, logic_recipe
+from engine.prefabs.prefab_asset import load_prefab_asset, resolve_prefab_parameters
 
 
 CATEGORY_COLORS = {
@@ -96,6 +97,7 @@ NODE_DESCRIPTIONS = {
     "event_object_created": "Executa quando este grafo cria uma instância; o novo objeto vira o alvo implícito.",
     "create_object": "Cria uma cópia profunda e independente; ações conectadas depois recebem automaticamente o novo objeto.",
     "get_tag": "Lê a Tag do objeto conectado, útil para identificar colisões e triggers.",
+    "get_prefab_parameter": "Lê um valor exposto recebido quando esta instância do Prefab foi criada.",
     "create_prefab": "Cria um Prefab com overrides opcionais; câmera, áudio e lógica só são copiados quando autorizados.",
     "clone_object": "Duplica um objeto existente durante o Play Mode.",
     "destroy_after_time": "Agenda o descarte do alvo sem bloquear o restante do fluxo.",
@@ -780,6 +782,9 @@ class LogicNodeItem(QGraphicsRectItem):
         properties = self.node.get("properties", {})
         if str(self.node.get("type", "")).startswith("event_") and self._fanout_count:
             summary = f"{self._fanout_count} ação(ões) conectada(s) • arraste para adicionar"
+        elif str(self.node.get("type", "")) == "create_prefab":
+            count = len(properties.get("exposed_properties", [])) if isinstance(properties.get("exposed_properties"), list) else 0
+            summary = f"{Path(str(properties.get('path', 'Prefab'))).stem or 'Prefab'} • {count} propriedade(s) exposta(s)"
         elif properties:
             summary = "  •  ".join(f"{key}: {value}" for key, value in list(properties.items())[:2])
         else:
@@ -1262,6 +1267,7 @@ class LogicGraphEditor(QWidget):
         self.subgraph_list.itemDoubleClicked.connect(self._add_subgraph_asset)
         self.scene.selectionChanged.connect(self._selection_changed)
         self.property_tree.itemChanged.connect(self._property_changed)
+        self.property_tree.itemDoubleClicked.connect(self._choose_exposed_property_asset)
         self.property_asset_button.clicked.connect(self._choose_selected_node_asset)
         self.new_button.clicked.connect(self.new_graph)
         self.new_subgraph_button.clicked.connect(self.new_subgraph)
@@ -1487,6 +1493,8 @@ class LogicGraphEditor(QWidget):
         self._autosave_timer.stop()
         self.graph, consolidated_events = consolidate_logic_events(graph)
         self._sync_subgraph_call_interfaces(self.graph)
+        for prefab_node in self.graph.get("nodes", []):
+            self._sync_prefab_node_interface(prefab_node)
         self.graph_enabled_check.blockSignals(True)
         self.graph_enabled_check.setChecked(bool(self.graph.get("enabled", True)))
         self.graph_enabled_check.blockSignals(False)
@@ -2053,6 +2061,8 @@ class LogicGraphEditor(QWidget):
         title_item.setFlags(title_item.flags() | Qt.ItemIsEditable)
         self.property_tree.addTopLevelItem(title_item)
         for key, value in node.get("properties", {}).items():
+            if key in {"exposed_properties", "parameters"}:
+                continue
             item = QTreeWidgetItem([
                 NODE_PROPERTY_LABELS.get(str(node.get("type", "")), {}).get(
                     str(key), PROPERTY_LABELS.get(str(key), str(key))
@@ -2062,6 +2072,24 @@ class LogicGraphEditor(QWidget):
             item.setData(0, Qt.UserRole, str(key))
             item.setFlags(item.flags() | Qt.ItemIsEditable)
             self.property_tree.addTopLevelItem(item)
+        if str(node.get("type", "")) == "create_prefab":
+            exposed = node.get("properties", {}).get("exposed_properties", [])
+            parameters = node.get("properties", {}).get("parameters", {})
+            for definition in exposed if isinstance(exposed, list) else []:
+                if not isinstance(definition, dict):
+                    continue
+                name = str(definition.get("name", "")).strip()
+                if not name:
+                    continue
+                value = parameters.get(name, definition.get("default")) if isinstance(parameters, dict) else definition.get("default")
+                item = QTreeWidgetItem([
+                    f"Prefab • {definition.get('label', name)}",
+                    json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value,
+                ])
+                item.setData(0, Qt.UserRole, f"prefab_parameter:{name}")
+                item.setToolTip(0, str(definition.get("description", definition.get("target", ""))))
+                item.setFlags(item.flags() | Qt.ItemIsEditable)
+                self.property_tree.addTopLevelItem(item)
         self._updating_properties = False
 
     @staticmethod
@@ -2088,6 +2116,15 @@ class LogicGraphEditor(QWidget):
             return
         property_name = "texture" if str(node.get("type", "")) == "create_object" else "path"
         node.setdefault("properties", {})[property_name] = picker.selected_path
+        if str(node.get("type", "")) == "create_prefab":
+            self._sync_prefab_node_interface(node)
+            old_item = selected[0]
+            self.scene.removeItem(old_item)
+            self.node_items.pop(old_item.node_id, None)
+            self.scene.clearSelection()
+            selected = [self._create_node_item(node)]
+            selected[0].setSelected(True)
+            self.refresh_connections()
         selected[0].refresh_text()
         self._selection_changed()
         self.mark_dirty()
@@ -2266,11 +2303,23 @@ class LogicGraphEditor(QWidget):
             value = json.loads(text)
         except json.JSONDecodeError:
             value = text
-        if key == "title":
+        if key.startswith("prefab_parameter:"):
+            name = key.split(":", 1)[1]
+            node_item.node.setdefault("properties", {}).setdefault("parameters", {})[name] = value
+        elif key == "title":
             node_item.node["title"] = str(value)
             node_item.title_item.setPlainText(str(value))
         else:
             node_item.node.setdefault("properties", {})[key] = value
+        if key == "path" and str(node_item.node.get("type", "")) == "create_prefab":
+            self._sync_prefab_node_interface(node_item.node)
+            node = node_item.node
+            self.scene.removeItem(node_item)
+            self.node_items.pop(node_item.node_id, None)
+            self.scene.clearSelection()
+            node_item = self._create_node_item(node)
+            node_item.setSelected(True)
+            self.refresh_connections()
         if key == "type" and node_item.node.get("type") in {"subgraph_input", "subgraph_return"}:
             node = node_item.node
             self.scene.removeItem(node_item)
@@ -2282,6 +2331,57 @@ class LogicGraphEditor(QWidget):
             node_item.refresh_text()
         self.mark_dirty()
         self._update_validation()
+
+    def _choose_exposed_property_asset(self, item: QTreeWidgetItem, column: int) -> None:
+        if column not in {0, 1}:
+            return
+        key = str(item.data(0, Qt.UserRole) or "")
+        if not key.startswith("prefab_parameter:"):
+            return
+        selected = [entry for entry in self.scene.selectedItems() if isinstance(entry, LogicNodeItem)]
+        if len(selected) != 1:
+            return
+        node = selected[0].node
+        name = key.split(":", 1)[1]
+        definitions = node.get("properties", {}).get("exposed_properties", [])
+        definition = next(
+            (entry for entry in definitions if isinstance(entry, dict) and str(entry.get("name")) == name), None
+        )
+        if not isinstance(definition, dict):
+            return
+        asset_kind = str(definition.get("asset_kind", ""))
+        if asset_kind not in {"image", "animation", "audio"}:
+            return
+        picker = LogicAssetPickerDialog(self.project_root, asset_kind, self)
+        if not picker.exec() or not picker.selected_path:
+            return
+        self._updating_properties = True
+        item.setText(1, picker.selected_path)
+        self._updating_properties = False
+        node.setdefault("properties", {}).setdefault("parameters", {})[name] = picker.selected_path
+        selected[0].refresh_text()
+        self.mark_dirty()
+        self._update_validation()
+        self.message.emit("INFO", f"Asset definido em {definition.get('label', name)}: {picker.selected_path}")
+
+    def _sync_prefab_node_interface(self, node: dict[str, Any]) -> bool:
+        if str(node.get("type", "")) != "create_prefab":
+            return False
+        properties = node.setdefault("properties", {})
+        path = Path(str(properties.get("path", "")))
+        if not str(path):
+            return False
+        if not path.is_absolute():
+            path = self.project_root / path
+        try:
+            asset = load_prefab_asset(path, self.project_root)
+        except (OSError, ValueError, json.JSONDecodeError):
+            return False
+        definitions = deepcopy(asset.get("exposed_properties", []))
+        previous = properties.get("parameters", {})
+        properties["exposed_properties"] = definitions
+        properties["parameters"] = resolve_prefab_parameters(definitions, previous)
+        return True
 
     def add_group(self) -> None:
         center = self.view.mapToScene(self.view.viewport().rect().center())

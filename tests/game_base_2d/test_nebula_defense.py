@@ -8,6 +8,7 @@ from engine.build.runtime_scene_loader import load_objects
 from engine.logic.blackboard import BlackboardStore, load_blackboard_asset
 from engine.logic.graph_asset import load_logic_graph, validate_logic_graph
 from engine.logic.runtime import LogicGraphRuntime
+from engine.prefabs.prefab_asset import load_prefab_asset
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -60,6 +61,13 @@ def test_nebula_prefabs_are_safe_independent_runtime_objects() -> None:
     assert bolt["collider"]["is_trigger"] is True
     assert drone["rigidbody"]["use_gravity"] is False
     assert bolt["rigidbody"]["use_gravity"] is False
+    assert len(json.loads((PREFABS / "NebulaBolt.zprefab").read_text(encoding="utf-8"))["exposed_properties"]) == 13
+
+    missile = load_prefab_asset(PREFABS / "NebulaMissile.zprefab", ROOT)
+    defaults = {item["name"]: item["default"] for item in missile["exposed_properties"]}
+    assert missile["base_prefab"].endswith("NebulaBolt.zprefab")
+    assert defaults["damage"] == 3.0
+    assert defaults["speed"] == 420.0
 
     player = load_logic_graph(LOGIC / "NebulaPlayer.zlogic")
     spawn = next(node for node in player["nodes"] if node["type"] == "create_prefab")

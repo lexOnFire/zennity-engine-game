@@ -1484,6 +1484,7 @@ def test_prefab_and_component_nodes_share_created_object_reference():
             assert options == {
                 "rotation": None, "width": None, "height": None,
                 "include_camera": False, "include_audio": False, "include_logic": False,
+                "parameters": {},
             }
             return self.created
 
@@ -1534,6 +1535,7 @@ def test_prefab_node_can_preserve_transform_or_apply_safe_overrides():
     assert options == {
         "rotation": 90.0, "width": 20.0, "height": 8.0,
         "include_camera": False, "include_audio": True, "include_logic": False,
+        "parameters": {},
     }
     assert ("rotation", "number") in node_port_definitions("create_prefab")["inputs"]
     assert "câmera=False" in node_code_preview(prefab)
@@ -1661,3 +1663,44 @@ def test_trigger_tag_filter_keeps_live_object_reference_and_selects_matching_bra
     assert game.messages == ["enemy"]
     assert runtime.values[(trigger["id"], "other")] is other
     assert not validate_logic_graph(graph)
+
+
+def test_create_prefab_reads_typed_exposed_inputs_and_prefab_can_read_them_back():
+    event = create_logic_node("event_start")
+    value = create_logic_node("number_value")
+    value["properties"]["value"] = 640.0
+    prefab = create_logic_node("create_prefab")
+    prefab["properties"].update({
+        "path": "Assets/Prefabs/Projectile.zprefab",
+        "parameters": {"speed": 300.0},
+        "exposed_properties": [{
+            "name": "speed", "label": "Velocidade", "type": "number",
+            "default": 300.0, "target": "gameplay.speed", "port": "param_speed",
+        }],
+    })
+    graph = default_logic_graph("ParametricPrefab")
+    graph["nodes"] = [event, value, prefab]
+    graph["edges"] = [
+        _edge(event, "next", prefab, "in"),
+        _edge(value, "value", prefab, "param_speed", "number"),
+    ]
+
+    class Created:
+        active = True
+        def __init__(self): self.values = {"speed": 640.0}
+        def prefab_parameter(self, name, default=None): return self.values.get(name, default)
+
+    class Game:
+        x = y = 0.0
+        def __init__(self): self.options = None; self.created = Created()
+        def create_prefab(self, _path, _x, _y, **options): self.options = options; return self.created
+
+    game = Game()
+    LogicGraphRuntime(graph).start(game)
+
+    assert game.options["parameters"] == {"speed": 640.0}
+    assert dict(node_port_definitions(prefab)["inputs"])["param_speed"] == "number"
+
+    getter = create_logic_node("get_prefab_parameter")
+    getter["properties"].update({"name": "speed", "type": "number", "default": 0.0})
+    assert dict(node_port_definitions(getter)["outputs"])["value"] == "number"

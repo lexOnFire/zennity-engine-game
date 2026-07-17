@@ -52,6 +52,10 @@ from engine.logic.graph_asset import (
     save_logic_graph, validate_logic_graph,
 )
 from engine.logic.blackboard import load_blackboard_asset
+from engine.prefabs.prefab_asset import (
+    apply_exposed_properties, create_prefab_variant, load_prefab_asset,
+    resolve_prefab_parameters,
+)
 from editor.widgets.build_report_dialog import BuildReportDialog
 from editor.widgets.project_validation_dialog import ProjectValidationDialog
 from engine.build import (
@@ -130,6 +134,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._refresh_assets()
         self._refresh_prefabs()
         self.prefab_tree.itemDoubleClicked.connect(self._instantiate_prefab_item)
+        self.prefab_tree.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.prefab_tree.customContextMenuRequested.connect(self._open_prefab_menu)
         for check in self.console_level_checks.values():
             check.toggled.connect(self._refresh_console)
         self.console_clear_button.clicked.connect(self._clear_console)
@@ -872,8 +878,13 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.prefab_tree.addTopLevelItem(root)
         directory = Path.cwd() / "Assets" / "Prefabs"
         directory.mkdir(parents=True, exist_ok=True)
-        for path in sorted(directory.glob("*.zprefab"), key=lambda item: item.name.lower()):
-            item = QTreeWidgetItem(["🧩 " + path.stem])
+        for path in sorted(directory.rglob("*.zprefab"), key=lambda item: str(item).lower()):
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                variant = bool(payload.get("base_prefab")) if isinstance(payload, dict) else False
+            except (OSError, json.JSONDecodeError):
+                variant = False
+            item = QTreeWidgetItem([("↳ " if variant else "🧩 ") + path.stem])
             item.setToolTip(0, str(path))
             root.addChild(item)
         root.setExpanded(True)
@@ -889,7 +900,15 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         path = Path.cwd() / "Assets" / "Prefabs" / f"{name}.zprefab"
         prefab_object = deepcopy(self._objects_by_name[self._selected_name])
         prefab_object.pop("id", None)
-        payload = {"format_version": 1, "prefab_name": name, "object": prefab_object}
+        exposed = [
+            {"name": "width", "label": "Largura", "type": "number", "default": float(prefab_object.get("w", 64.0)), "target": "w"},
+            {"name": "height", "label": "Altura", "type": "number", "default": float(prefab_object.get("h", 64.0)), "target": "h"},
+            {"name": "color", "label": "Cor", "type": "color", "default": prefab_object.get("color", "#ffffff"), "target": "color"},
+            {"name": "image", "label": "Imagem", "type": "image", "default": prefab_object.get("texture", ""), "target": "texture"},
+            {"name": "tag", "label": "Tag", "type": "text", "default": prefab_object.get("tag", "Untagged"), "target": "tag"},
+            {"name": "layer", "label": "Layer", "type": "text", "default": prefab_object.get("layer", "Default"), "target": "layer"},
+        ]
+        payload = {"format_version": 2, "prefab_name": name, "object": prefab_object, "exposed_properties": exposed}
         path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         self._refresh_prefabs()
         self._refresh_assets()
@@ -900,10 +919,13 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if not path_value:
             return
         try:
-            payload = json.loads(Path(path_value).read_text(encoding="utf-8"))
-            prefab_object = payload.get("object")
-            if not isinstance(prefab_object, dict):
-                raise ValueError("objeto do Prefab inválido")
+            payload = load_prefab_asset(path_value, Path.cwd())
+            prefab_object = deepcopy(payload["object"])
+            definitions = payload.get("exposed_properties", [])
+            values = resolve_prefab_parameters(definitions, {})
+            apply_exposed_properties(prefab_object, definitions, values)
+            if any(key in prefab_object for key in ("transform", "visual", "components")):
+                raise ValueError("use o Play Mode para instanciar este formato legado")
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             self._log("ERROR", f"Falha ao abrir Prefab: {exc}")
             return
@@ -921,6 +943,37 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._commands.put({"type": "select_object", "name": obj["name"]})
         self._update_inspector(obj["name"])
         self._log("INFO", f"Prefab adicionado: {obj['name']}")
+
+    def _open_prefab_menu(self, position) -> None:
+        item = self.prefab_tree.itemAt(position)
+        path_value = item.toolTip(0) if item is not None else ""
+        if not path_value or not Path(path_value).is_file():
+            return
+        menu = QMenu(self)
+        instantiate = menu.addAction("Adicionar à cena")
+        variant = menu.addAction("Criar variante...")
+        instantiate.triggered.connect(lambda _checked=False: self._instantiate_prefab_item(item))
+        variant.triggered.connect(lambda _checked=False: self._create_prefab_variant(Path(path_value)))
+        menu.exec(self.prefab_tree.viewport().mapToGlobal(position))
+
+    def _create_prefab_variant(self, base_path: Path) -> None:
+        name, accepted = QInputDialog.getText(
+            self, "Criar variante de Prefab", "Nome da variante:", text=f"{base_path.stem}Variant"
+        )
+        safe = "".join(char for char in name.strip() if char.isalnum() or char in "-_ ")
+        if not accepted or not safe:
+            return
+        target = base_path.parent / f"{safe}.zprefab"
+        if target.exists() and QMessageBox.question(self, "Substituir variante", f"{target.name} já existe. Substituir?") != QMessageBox.Yes:
+            return
+        try:
+            create_prefab_variant(base_path, target, project_root=Path.cwd())
+        except (OSError, ValueError) as exc:
+            self._log("ERROR", f"Falha ao criar variante: {exc}")
+            return
+        self._refresh_prefabs()
+        self._refresh_assets()
+        self._log("INFO", f"Variante criada: {target.name} → {base_path.name}")
 
     def _export_project(self) -> None:
         self._save_scene_snapshot()
@@ -2940,8 +2993,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
 
             lifecycle = obj.get("spawn_lifecycle") if isinstance(obj.get("spawn_lifecycle"), dict) else {}
             motions = obj.get("logic_motions") if isinstance(obj.get("logic_motions"), list) else []
+            prefab_parameters = obj.get("prefab_parameters") if isinstance(obj.get("prefab_parameters"), dict) else {}
             runtime_present = self._runtime_playing and (
-                bool(obj.get("spawned_by_logic", False)) or bool(lifecycle) or bool(motions)
+                bool(obj.get("spawned_by_logic", False)) or bool(lifecycle) or bool(motions) or bool(prefab_parameters)
             )
             self._set_inspector_card_present("runtime", runtime_present)
             if runtime_present:
@@ -2967,6 +3021,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                         )
                 else:
                     lines.append("Movimentos ativos: nenhum")
+                if prefab_parameters:
+                    lines.append("\nParâmetros do Prefab:")
+                    for parameter_name, parameter_value in prefab_parameters.items():
+                        lines.append(f"• {parameter_name}: {parameter_value}")
                 self.runtime_debug_label.setText("\n".join(lines))
 
             # Limpa widgets de scripts anteriores

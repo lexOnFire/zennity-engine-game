@@ -18,12 +18,12 @@
     "comments": [
       {
         "id": "help-player",
-        "text": "WASD move • Espaço dispara • colisões retiram vida",
+        "text": "WASD move • Espaço dispara • M lança variante de míssil",
         "position": [
           10.0,
           -80.0
         ],
-        "width": 520.0,
+        "width": 560.0,
         "color": "#6b5b2f"
       }
     ]
@@ -239,6 +239,131 @@
         "include_camera": false,
         "include_audio": false,
         "include_logic": false,
+        "parameters": {
+          "speed": 680.0,
+          "damage": 1.0,
+          "direction_x": 1.0,
+          "direction_y": 0.0,
+          "lifetime": 2.2,
+          "image": "",
+          "animation": "",
+          "sound": "Assets/Audio/jump-sound-531048.mp3",
+          "width": 30.0,
+          "height": 10.0,
+          "color": [
+            86,
+            221,
+            255
+          ],
+          "tag": "ProjectileNebula",
+          "layer": "Default"
+        },
+        "exposed_properties": [
+          {
+            "name": "speed",
+            "label": "Velocidade",
+            "type": "number",
+            "default": 680.0,
+            "target": "gameplay.speed",
+            "minimum": 0.0
+          },
+          {
+            "name": "damage",
+            "label": "Dano",
+            "type": "number",
+            "default": 1.0,
+            "target": "gameplay.damage",
+            "minimum": 0.0
+          },
+          {
+            "name": "direction_x",
+            "label": "Direção X",
+            "type": "number",
+            "default": 1.0,
+            "target": "gameplay.direction_x"
+          },
+          {
+            "name": "direction_y",
+            "label": "Direção Y",
+            "type": "number",
+            "default": 0.0,
+            "target": "gameplay.direction_y"
+          },
+          {
+            "name": "lifetime",
+            "label": "Tempo de vida",
+            "type": "number",
+            "default": 2.2,
+            "target": "gameplay.lifetime",
+            "semantic": "lifetime",
+            "minimum": 0.0
+          },
+          {
+            "name": "image",
+            "label": "Imagem",
+            "type": "image",
+            "default": "",
+            "target": "texture",
+            "asset_kind": "image"
+          },
+          {
+            "name": "animation",
+            "label": "Animação",
+            "type": "animation",
+            "default": "",
+            "target": "animator.asset_path",
+            "asset_kind": "animation"
+          },
+          {
+            "name": "sound",
+            "label": "Som",
+            "type": "audio",
+            "default": "Assets/Audio/jump-sound-531048.mp3",
+            "target": "gameplay.sound",
+            "asset_kind": "audio"
+          },
+          {
+            "name": "width",
+            "label": "Escala X",
+            "type": "number",
+            "default": 30.0,
+            "target": "w",
+            "minimum": 1.0
+          },
+          {
+            "name": "height",
+            "label": "Escala Y",
+            "type": "number",
+            "default": 10.0,
+            "target": "h",
+            "minimum": 1.0
+          },
+          {
+            "name": "color",
+            "label": "Cor",
+            "type": "color",
+            "default": [
+              86,
+              221,
+              255
+            ],
+            "target": "color"
+          },
+          {
+            "name": "tag",
+            "label": "Tag",
+            "type": "text",
+            "default": "ProjectileNebula",
+            "target": "tag"
+          },
+          {
+            "name": "layer",
+            "label": "Layer",
+            "type": "text",
+            "default": "Default",
+            "target": "layer"
+          }
+        ],
         "lifetime": 2.2,
         "max_instances": 24,
         "max_distance": 1400.0,
@@ -246,13 +371,13 @@
       }
     },
     {
-      "id": "bolt_motion",
-      "type": "start_continuous_motion",
-      "title": "Iniciar movimento permanente",
-      "category": "Posição",
+      "id": "missile",
+      "type": "event_key_pressed",
+      "title": "Ao apertar tecla (uma vez)",
+      "category": "Eventos",
       "position": [
-        650.0,
-        610.0
+        20.0,
+        800.0
       ],
       "editor": {
         "collapsed": false,
@@ -260,22 +385,17 @@
         "height": 0.0
       },
       "properties": {
-        "movement": "Disparo",
-        "x": 680.0,
-        "y": 0.0,
-        "space": "global",
-        "acceleration": 1200.0,
-        "deceleration": 0.0
+        "key": "M"
       }
     },
     {
-      "id": "shoot_sound",
-      "type": "play_sound",
-      "title": "Tocar som",
-      "category": "Ação",
+      "id": "spawn_missile",
+      "type": "create_prefab",
+      "title": "Criar Prefab",
+      "category": "Objetos",
       "position": [
-        650.0,
-        760.0
+        300.0,
+        800.0
       ],
       "editor": {
         "collapsed": false,
@@ -283,7 +403,148 @@
         "height": 0.0
       },
       "properties": {
-        "path": "Assets/Audio/jump-sound-531048.mp3"
+        "path": "Assets/Prefabs/NebulaDefense/NebulaMissile.zprefab",
+        "override_position": true,
+        "x": 56.0,
+        "y": 0.0,
+        "relative": true,
+        "override_rotation": false,
+        "rotation": 0.0,
+        "override_scale": false,
+        "width": 64.0,
+        "height": 64.0,
+        "include_camera": false,
+        "include_audio": false,
+        "include_logic": false,
+        "parameters": {
+          "speed": 420.0,
+          "damage": 3.0,
+          "direction_x": 1.0,
+          "direction_y": 0.0,
+          "lifetime": 4.0,
+          "image": "",
+          "animation": "",
+          "sound": "Assets/Audio/jump-sound-531048.mp3",
+          "width": 48.0,
+          "height": 16.0,
+          "color": [
+            255,
+            168,
+            62
+          ],
+          "tag": "ProjectileNebula",
+          "layer": "Default"
+        },
+        "exposed_properties": [
+          {
+            "name": "speed",
+            "label": "Velocidade",
+            "type": "number",
+            "default": 680.0,
+            "target": "gameplay.speed",
+            "minimum": 0.0
+          },
+          {
+            "name": "damage",
+            "label": "Dano",
+            "type": "number",
+            "default": 1.0,
+            "target": "gameplay.damage",
+            "minimum": 0.0
+          },
+          {
+            "name": "direction_x",
+            "label": "Direção X",
+            "type": "number",
+            "default": 1.0,
+            "target": "gameplay.direction_x"
+          },
+          {
+            "name": "direction_y",
+            "label": "Direção Y",
+            "type": "number",
+            "default": 0.0,
+            "target": "gameplay.direction_y"
+          },
+          {
+            "name": "lifetime",
+            "label": "Tempo de vida",
+            "type": "number",
+            "default": 2.2,
+            "target": "gameplay.lifetime",
+            "semantic": "lifetime",
+            "minimum": 0.0
+          },
+          {
+            "name": "image",
+            "label": "Imagem",
+            "type": "image",
+            "default": "",
+            "target": "texture",
+            "asset_kind": "image"
+          },
+          {
+            "name": "animation",
+            "label": "Animação",
+            "type": "animation",
+            "default": "",
+            "target": "animator.asset_path",
+            "asset_kind": "animation"
+          },
+          {
+            "name": "sound",
+            "label": "Som",
+            "type": "audio",
+            "default": "Assets/Audio/jump-sound-531048.mp3",
+            "target": "gameplay.sound",
+            "asset_kind": "audio"
+          },
+          {
+            "name": "width",
+            "label": "Escala X",
+            "type": "number",
+            "default": 30.0,
+            "target": "w",
+            "minimum": 1.0
+          },
+          {
+            "name": "height",
+            "label": "Escala Y",
+            "type": "number",
+            "default": 10.0,
+            "target": "h",
+            "minimum": 1.0
+          },
+          {
+            "name": "color",
+            "label": "Cor",
+            "type": "color",
+            "default": [
+              86,
+              221,
+              255
+            ],
+            "target": "color"
+          },
+          {
+            "name": "tag",
+            "label": "Tag",
+            "type": "text",
+            "default": "ProjectileNebula",
+            "target": "tag"
+          },
+          {
+            "name": "layer",
+            "label": "Layer",
+            "type": "text",
+            "default": "Default",
+            "target": "layer"
+          }
+        ],
+        "lifetime": 4.0,
+        "max_instances": 8,
+        "max_distance": 1600.0,
+        "use_pool": true
       }
     },
     {
@@ -589,22 +850,13 @@
       "order": 0
     },
     {
-      "id": "spawn_bolt_next_bolt_motion_in",
-      "from_node": "spawn_bolt",
+      "id": "missile_next_spawn_missile_in",
+      "from_node": "missile",
       "from_port": "next",
-      "to_node": "bolt_motion",
+      "to_node": "spawn_missile",
       "to_port": "in",
       "kind": "flow",
       "order": 0
-    },
-    {
-      "id": "spawn_bolt_next_shoot_sound_in",
-      "from_node": "spawn_bolt",
-      "from_port": "next",
-      "to_node": "shoot_sound",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 1
     },
     {
       "id": "hit_next_is_enemy_in",

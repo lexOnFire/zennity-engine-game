@@ -836,11 +836,26 @@ class LogicGraphRuntime:
                 float(self._read_input(node_id, "height", properties.get("height", 64.0), game, dt, set()))
                 if bool(properties.get("override_scale", False)) else None
             )
+            exposed = properties.get("exposed_properties", [])
+            defaults = properties.get("parameters", {}) if isinstance(properties.get("parameters"), Mapping) else {}
+            parameters: dict[str, Any] = {}
+            if isinstance(exposed, list):
+                for definition in exposed:
+                    if not isinstance(definition, Mapping):
+                        continue
+                    name = str(definition.get("name", "")).strip()
+                    if not name:
+                        continue
+                    port = str(definition.get("port", f"param_{name}"))
+                    parameters[name] = self._read_input(
+                        node_id, port, defaults.get(name, definition.get("default")), game, dt, set()
+                    )
             prefab_options = {
                 "rotation": rotation, "width": width, "height": height,
                 "include_camera": bool(properties.get("include_camera", False)),
                 "include_audio": bool(properties.get("include_audio", False)),
                 "include_logic": bool(properties.get("include_logic", False)),
+                "parameters": parameters,
             }
             if bool(properties.get("use_pool", True)) and callable(getattr(game, "create_prefab_from_pool", None)):
                 created = game.create_prefab_from_pool(
@@ -849,8 +864,18 @@ class LogicGraphRuntime:
             else:
                 created = game.create_prefab(path, x, y, **prefab_options)
             self._store(node_id, "object", created)
+            self._store(node_id, "parameters", parameters)
             self._node_state.setdefault(node_id, {})["flow_target"] = created
-            self._configure_spawned(game, created, node_id, properties, dt)
+            lifecycle_properties = dict(properties)
+            if isinstance(exposed, list):
+                for definition in exposed:
+                    if not isinstance(definition, Mapping):
+                        continue
+                    semantic = str(definition.get("semantic", ""))
+                    name = str(definition.get("name", ""))
+                    if semantic in {"lifetime", "max_distance", "max_instances"} and name in parameters:
+                        lifecycle_properties[semantic] = parameters[name]
+            self._configure_spawned(game, created, node_id, lifecycle_properties, dt)
             return ["next"]
         if node_type == "clone_object":
             if not self._spawn_allowed(game, node_id, properties):
@@ -1178,6 +1203,11 @@ class LogicGraphRuntime:
         elif node_type == "get_tag":
             target = self._read_target(node_id, game, dt, resolving)
             value = str(getattr(target, "tag", "Untagged"))
+        elif node_type == "get_prefab_parameter":
+            target = self._read_target(node_id, game, dt, resolving)
+            getter = getattr(target, "prefab_parameter", None)
+            name = str(properties.get("name", "speed"))
+            value = getter(name, properties.get("default")) if callable(getter) else properties.get("default")
         elif node_type in {"create_object", "create_prefab", "clone_object"}:
             value = self.values.get((node_id, "object"))
         elif node_type == "if_else":

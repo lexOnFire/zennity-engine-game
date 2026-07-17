@@ -3,7 +3,7 @@
   "scene_name": "Nebula Defense",
   "engine_version": "0.1.0",
   "description": "Shooter 2D completo criado somente com Logic Graphs e Prefabs seguros.",
-  "instructions": "WASD move, Espaço dispara, R reinicia. Alcance 10 pontos.",
+  "instructions": "WASD move, Espaço dispara, M lança míssil e R reinicia. Alcance 10 pontos.",
   "blackboard": {
     "variables": {
       "score": {

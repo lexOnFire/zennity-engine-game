@@ -61,6 +61,7 @@ def node_code_preview(node: Mapping[str, Any]) -> str:
         "log_message": f"console('{_value(properties, 'text', 'Mensagem')}')",
         "find_tag": f"objeto = procurar_tag('{_value(properties, 'tag', 'Player')}')",
         "get_tag": "tag = alvo.tag",
+        "get_prefab_parameter": f"valor = alvo.parametro_prefab('{_value(properties, 'name', 'speed')}')",
         "create_object": (
             f"novo = criar_objeto_independente('{_value(properties, 'name', 'NovoObjeto')}',\n"
             f"  x={_value(properties, 'x', 0)}, y={_value(properties, 'y', 0)},\n"
@@ -73,7 +74,8 @@ def node_code_preview(node: Mapping[str, Any]) -> str:
             f"  tamanho={_value(properties, 'override_scale', False)}, "
             f"câmera={_value(properties, 'include_camera', False)}, "
             f"áudio={_value(properties, 'include_audio', False)}, "
-            f"lógica={_value(properties, 'include_logic', False)})"
+            f"lógica={_value(properties, 'include_logic', False)},\n"
+            f"  parâmetros={_value(properties, 'parameters', {})})"
         ),
         "clone_object": "cópia = clonar(alvo)",
         "add_component": f"alvo.adicionar_componente('{_value(properties, 'component', 'BoxCollider')}')",

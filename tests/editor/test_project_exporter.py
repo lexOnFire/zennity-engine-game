@@ -19,6 +19,7 @@ RUNTIME_SOURCES = (
     "engine/logic/blackboard.py",
     "engine/logic/event_bus.py",
     "engine/logic/runtime.py",
+    "engine/prefabs/prefab_asset.py",
     "engine/runtime/runtime_world.py",
     "engine/build/runtime_scene_loader.py",
 )
@@ -152,7 +153,7 @@ def test_exported_runtime_contains_all_standalone_dependencies(tmp_path: Path) -
         "__init__.py", "viewport.py", "native_ui.py", "audio_playback_state.py", "sprite_rendering.py",
         "viewport_systems.py",
         "tint.py", "clip_asset.py", "controller_asset.py", "behavior_controller.py",
-        "logic_graph_asset.py", "logic_blackboard.py", "logic_event_bus.py", "logic_runtime.py", "runtime_world.py", "scene_loader.py",
+        "logic_graph_asset.py", "logic_blackboard.py", "logic_event_bus.py", "logic_runtime.py", "prefab_asset.py", "runtime_world.py", "scene_loader.py",
     }
     launcher = (Path(report.destination) / "main.py").read_text(encoding="utf-8")
     assert "from zennity_runtime.scene_loader import load_objects" in launcher

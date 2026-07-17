@@ -94,6 +94,7 @@ def _validate_export_inputs(project_root: Path, scene_path: Path, report: BuildR
         "engine/logic/blackboard.py",
         "engine/logic/event_bus.py",
         "engine/logic/runtime.py",
+        "engine/prefabs/prefab_asset.py",
         "engine/runtime/runtime_world.py",
         "engine/build/runtime_scene_loader.py",
     )
@@ -144,6 +145,7 @@ def _write_development_project(project_root: Path, scene_path: Path, destination
         project_root / "engine" / "logic" / "blackboard.py": runtime_dir / "logic_blackboard.py",
         project_root / "engine" / "logic" / "event_bus.py": runtime_dir / "logic_event_bus.py",
         project_root / "engine" / "logic" / "runtime.py": runtime_dir / "logic_runtime.py",
+        project_root / "engine" / "prefabs" / "prefab_asset.py": runtime_dir / "prefab_asset.py",
         project_root / "engine" / "runtime" / "runtime_world.py": runtime_dir / "runtime_world.py",
         project_root / "engine" / "build" / "runtime_scene_loader.py": runtime_dir / "scene_loader.py",
     }
@@ -251,6 +253,7 @@ def _validate_exported_project(destination: Path, report: BuildReport) -> None:
         "zennity_runtime/logic_blackboard.py",
         "zennity_runtime/logic_event_bus.py",
         "zennity_runtime/logic_runtime.py",
+        "zennity_runtime/prefab_asset.py",
         "zennity_runtime/runtime_world.py",
         "zennity_runtime/scene_loader.py",
     )

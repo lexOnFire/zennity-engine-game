@@ -18,6 +18,30 @@ PREFAB_DIR = ROOT / "Assets" / "Prefabs" / "NebulaDefense"
 SCENE_PATH = ROOT / "Assets" / "Scenes" / "NebulaDefense.zscene"
 
 
+def projectile_properties() -> list[dict[str, Any]]:
+    return [
+        {"name": "speed", "label": "Velocidade", "type": "number", "default": 680.0, "target": "gameplay.speed", "minimum": 0.0},
+        {"name": "damage", "label": "Dano", "type": "number", "default": 1.0, "target": "gameplay.damage", "minimum": 0.0},
+        {"name": "direction_x", "label": "Direção X", "type": "number", "default": 1.0, "target": "gameplay.direction_x"},
+        {"name": "direction_y", "label": "Direção Y", "type": "number", "default": 0.0, "target": "gameplay.direction_y"},
+        {"name": "lifetime", "label": "Tempo de vida", "type": "number", "default": 2.2, "target": "gameplay.lifetime", "semantic": "lifetime", "minimum": 0.0},
+        {"name": "image", "label": "Imagem", "type": "image", "default": "", "target": "texture", "asset_kind": "image"},
+        {"name": "animation", "label": "Animação", "type": "animation", "default": "", "target": "animator.asset_path", "asset_kind": "animation"},
+        {"name": "sound", "label": "Som", "type": "audio", "default": "Assets/Audio/jump-sound-531048.mp3", "target": "gameplay.sound", "asset_kind": "audio"},
+        {"name": "width", "label": "Escala X", "type": "number", "default": 30.0, "target": "w", "minimum": 1.0},
+        {"name": "height", "label": "Escala Y", "type": "number", "default": 10.0, "target": "h", "minimum": 1.0},
+        {"name": "color", "label": "Cor", "type": "color", "default": [86, 221, 255], "target": "color"},
+        {"name": "tag", "label": "Tag", "type": "text", "default": "ProjectileNebula", "target": "tag"},
+        {"name": "layer", "label": "Layer", "type": "text", "default": "Default", "target": "layer"},
+    ]
+
+
+def projectile_values(**overrides: Any) -> dict[str, Any]:
+    values = {item["name"]: item["default"] for item in projectile_properties()}
+    values.update(overrides)
+    return values
+
+
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -134,13 +158,20 @@ def player_graph() -> dict[str, Any]:
             override_rotation=False, override_scale=False,
             include_camera=False, include_audio=False, include_logic=False,
             lifetime=2.2, max_instances=24, max_distance=1400.0, use_pool=True,
+            parameters=projectile_values(),
+            exposed_properties=projectile_properties(),
         ),
+        node("missile", "event_key_pressed", 20, 800, key="M"),
         node(
-            "bolt_motion", "start_continuous_motion", 650, 610,
-            movement="Disparo", x=680.0, y=0.0, space="global",
-            acceleration=1200.0, deceleration=0.0,
+            "spawn_missile", "create_prefab", 300, 800,
+            path="Assets/Prefabs/NebulaDefense/NebulaMissile.zprefab",
+            override_position=True, x=56.0, y=0.0, relative=True,
+            override_rotation=False, override_scale=False,
+            include_camera=False, include_audio=False, include_logic=False,
+            lifetime=4.0, max_instances=8, max_distance=1600.0, use_pool=True,
+            parameters=projectile_values(speed=420.0, damage=3.0, lifetime=4.0, width=48.0, height=16.0, color=[255, 168, 62]),
+            exposed_properties=projectile_properties(),
         ),
-        node("shoot_sound", "play_sound", 650, 760, path="Assets/Audio/jump-sound-531048.mp3"),
         node("hit", "event_trigger_enter", 20, 980),
         node("other_tag", "get_tag", 260, 900),
         node("is_enemy", "compare_text", 500, 980, operator="==", value="EnemyNebula"),
@@ -160,8 +191,7 @@ def player_graph() -> dict[str, Any]:
         edge("update", "up", order=2), edge("up", "move_up", source_port="true"),
         edge("update", "down", order=3), edge("down", "move_down", source_port="true"),
         edge("shoot", "spawn_bolt"),
-        edge("spawn_bolt", "bolt_motion", order=0),
-        edge("spawn_bolt", "shoot_sound", order=1),
+        edge("missile", "spawn_missile"),
         edge("hit", "is_enemy"),
         edge("hit", "other_tag", source_port="other", target_port="target", kind="object"),
         edge("other_tag", "is_enemy", source_port="value", target_port="value", kind="text"),
@@ -178,7 +208,7 @@ def player_graph() -> dict[str, Any]:
     ]
     return graph(
         "Nebula Player Controls", "name", "NebulaPilot", nodes, edges,
-        [{"id": "help-player", "text": "WASD move • Espaço dispara • colisões retiram vida", "position": [10, -80], "width": 520}],
+        [{"id": "help-player", "text": "WASD move • Espaço dispara • M lança variante de míssil", "position": [10, -80], "width": 560}],
     )
 
 
@@ -217,6 +247,7 @@ def enemy_graph() -> dict[str, Any]:
         node("destroy_enemy", "destroy_object", 1020, 220),
         node("get_score", "get_variable", 1020, 380, scope="project", name="score"),
         node("add_score", "add_number", 1260, 380, a=0.0, b=1.0),
+        node("get_damage", "get_prefab_parameter", 1020, 470, name="damage", type="number", default=1.0),
         node("save_score", "set_variable", 1500, 380, scope="project", name="score", value=1.0),
         node("score_sound", "play_sound", 1020, 540, path="Assets/Audio/collect-points-190037.mp3"),
         node("is_player", "compare_text", 760, 660, operator="==", value="Player"),
@@ -231,6 +262,8 @@ def enemy_graph() -> dict[str, Any]:
         edge("destroy_sequence", "destroy_enemy", source_port="then_0", order=0),
         edge("destroy_sequence", "save_score", source_port="then_1", order=1),
         edge("get_score", "add_score", source_port="value", target_port="a", kind="number"),
+        edge("trigger", "get_damage", source_port="other", target_port="target", kind="object"),
+        edge("get_damage", "add_score", source_port="value", target_port="b", kind="number"),
         edge("add_score", "save_score", source_port="value", target_port="value", kind="number"),
         edge("destroy_sequence", "score_sound", source_port="then_2", order=2),
         edge("is_bolt", "is_player", source_port="false"),
@@ -242,12 +275,30 @@ def enemy_graph() -> dict[str, Any]:
 
 def projectile_graph() -> dict[str, Any]:
     nodes = [
+        node("start", "event_start", 20, -260),
+        node("speed", "get_prefab_parameter", 260, -360, name="speed", type="number", default=680.0),
+        node("direction_x", "get_prefab_parameter", 260, -240, name="direction_x", type="number", default=1.0),
+        node("velocity_x", "multiply_number", 520, -320, a=680.0, b=1.0),
+        node("direction_y", "get_prefab_parameter", 260, -100, name="direction_y", type="number", default=0.0),
+        node("velocity_y", "multiply_number", 520, -140, a=680.0, b=0.0),
+        node("motion", "start_continuous_motion", 780, -260, movement="PrefabMotion", x=680.0, y=0.0, space="global", acceleration=1200.0, deceleration=0.0),
+        node("sound", "get_prefab_parameter", 520, 20, name="sound", type="audio", default="Assets/Audio/jump-sound-531048.mp3"),
+        node("play_sound", "play_sound", 780, 20, path="Assets/Audio/jump-sound-531048.mp3"),
         node("trigger", "event_trigger_enter", 20, 120),
         node("other_tag", "get_tag", 280, 20),
         node("is_enemy", "compare_text", 520, 120, operator="==", value="EnemyNebula"),
         node("destroy", "destroy_object", 780, 120),
     ]
     edges = [
+        edge("start", "motion", order=0),
+        edge("start", "play_sound", order=1),
+        edge("speed", "velocity_x", source_port="value", target_port="a", kind="number"),
+        edge("direction_x", "velocity_x", source_port="value", target_port="b", kind="number"),
+        edge("velocity_x", "motion", source_port="value", target_port="x", kind="number"),
+        edge("speed", "velocity_y", source_port="value", target_port="a", kind="number"),
+        edge("direction_y", "velocity_y", source_port="value", target_port="b", kind="number"),
+        edge("velocity_y", "motion", source_port="value", target_port="y", kind="number"),
+        edge("sound", "play_sound", source_port="value", target_port="path", kind="text"),
         edge("trigger", "is_enemy"),
         edge("trigger", "other_tag", source_port="other", target_port="target", kind="object"),
         edge("other_tag", "is_enemy", source_port="value", target_port="value", kind="text"),
@@ -262,7 +313,7 @@ def manager_graph() -> dict[str, Any]:
         node("start_sequence", "sequence", 260, 80, outputs=4),
         node("reset_score", "set_variable", 520, 0, scope="project", name="score", value=0.0),
         node("reset_lives", "set_variable", 520, 120, scope="project", name="lives", value=3.0),
-        node("help_hud", "set_hud", 520, 240, text="WASD: mover  •  ESPAÇO: disparar  •  R: reiniciar"),
+        node("help_hud", "set_hud", 520, 240, text="WASD: mover  •  ESPAÇO: disparar  •  M: míssil  •  R: reiniciar"),
         node("start_sound", "play_sound", 520, 360, path="Assets/Audio/game-start-317318.mp3"),
         node("update", "event_update", 20, 620),
         node("get_score", "get_variable", 280, 520, scope="project", name="score"),
@@ -330,8 +381,9 @@ def build_prefabs() -> None:
         },
     }
     bolt = {
-        "format_version": 1,
+        "format_version": 2,
         "prefab_name": "NebulaBolt",
+        "exposed_properties": projectile_properties(),
         "object": {
             "name": "NebulaBolt", "x": 0.0, "y": 0.0,
             "w": 30.0, "h": 10.0, "rotation": 0.0,
@@ -339,10 +391,32 @@ def build_prefabs() -> None:
             "layer": "Default", "renderer_enabled": True,
             "collider": {"type": "box", "width": 30.0, "height": 10.0, "is_trigger": True},
             "rigidbody": {"mass": 0.1, "use_gravity": False, "is_kinematic": True, "gravity_scale": 0.0},
+            "gameplay": {"speed": 680.0, "damage": 1.0, "direction_x": 1.0, "direction_y": 0.0, "lifetime": 2.2, "sound": "Assets/Audio/jump-sound-531048.mp3"},
+            "animator": {"asset_path": ""},
         },
     }
     write_json(PREFAB_DIR / "NebulaDrone.zprefab", drone)
     write_json(PREFAB_DIR / "NebulaBolt.zprefab", bolt)
+    write_json(PREFAB_DIR / "NebulaMissile.zprefab", {
+        "format_version": 2,
+        "prefab_name": "NebulaMissile",
+        "base_prefab": "Assets/Prefabs/NebulaDefense/NebulaBolt.zprefab",
+        "property_overrides": {
+            "speed": 420.0, "damage": 3.0, "lifetime": 4.0,
+            "width": 48.0, "height": 16.0, "color": [255, 168, 62],
+        },
+        "object_overrides": {"name": "NebulaMissile"},
+    })
+    write_json(PREFAB_DIR / "NebulaEnemyAttack.zprefab", {
+        "format_version": 2,
+        "prefab_name": "NebulaEnemyAttack",
+        "base_prefab": "Assets/Prefabs/NebulaDefense/NebulaBolt.zprefab",
+        "property_overrides": {
+            "speed": 360.0, "damage": 1.0, "direction_x": -1.0,
+            "lifetime": 4.0, "color": [255, 76, 116], "tag": "EnemyProjectileNebula",
+        },
+        "object_overrides": {"name": "NebulaEnemyAttack"},
+    })
 
 
 def build_scene() -> None:
@@ -393,7 +467,7 @@ def build_scene() -> None:
         "scene_name": "Nebula Defense",
         "engine_version": "0.1.0",
         "description": "Shooter 2D completo criado somente com Logic Graphs e Prefabs seguros.",
-        "instructions": "WASD move, Espaço dispara, R reinicia. Alcance 10 pontos.",
+        "instructions": "WASD move, Espaço dispara, M lança míssil e R reinicia. Alcance 10 pontos.",
         "blackboard": {
             "variables": {
                 "score": {"type": "number", "scope": "project", "default": 0.0},

@@ -1,12 +1,16 @@
 """Modelo leve e compartilhado dos objetos usados pelo Play Mode exportável."""
 from __future__ import annotations
 
-import json
 import uuid
 from copy import deepcopy
 from pathlib import Path
 import math
 from typing import Any, Mapping, MutableMapping
+
+try:
+    from .prefab_asset import apply_exposed_properties, load_prefab_asset, resolve_prefab_parameters
+except ImportError:
+    from engine.prefabs.prefab_asset import apply_exposed_properties, load_prefab_asset, resolve_prefab_parameters
 
 
 def _vector(value: Any, fallback: tuple[float, float, float]) -> list[float]:
@@ -74,6 +78,7 @@ class RuntimeWorld:
             "rigidbody", "collider", "camera", "audio", "animator", "behavior",
             "ui", "logic_graphs", "prefab_path", "prefab_uuid", "render_layer",
             "sort_order", "static",
+            "gameplay", "prefab_parameters", "prefab_exposed", "prefab_base",
         ):
             if key in values:
                 obj[key] = deepcopy(values[key])
@@ -193,18 +198,18 @@ class RuntimeWorld:
         include_camera: bool = True,
         include_audio: bool = True,
         include_logic: bool = True,
+        parameters: Mapping[str, Any] | None = None,
         project_root: str | Path | None = None,
         pool_key: str | None = None,
     ) -> dict[str, Any]:
-        prefab_path = Path(path)
-        if not prefab_path.is_absolute():
-            prefab_path = Path(project_root or Path.cwd()) / prefab_path
-        payload = json.loads(prefab_path.read_text(encoding="utf-8"))
-        if not isinstance(payload, dict):
-            raise ValueError("Prefab precisa conter um objeto JSON.")
-        isolated_object = payload.get("object")
-        if isinstance(isolated_object, dict):
-            values = deepcopy(isolated_object)
+        root = Path(project_root or Path.cwd())
+        payload = load_prefab_asset(path, root)
+        isolated_object = deepcopy(payload["object"])
+        definitions = payload.get("exposed_properties", [])
+        resolved_parameters = resolve_prefab_parameters(definitions, parameters)
+        apply_exposed_properties(isolated_object, definitions, resolved_parameters)
+        if not any(key in isolated_object for key in ("transform", "visual", "components")):
+            values = isolated_object
             values.pop("id", None)
             values.pop("uuid", None)
             values["name"] = values.get("name") or payload.get("prefab_name", "Prefab")
@@ -220,35 +225,43 @@ class RuntimeWorld:
             if height is not None:
                 values["h"] = height
                 values["height"] = height
+            values["prefab_parameters"] = resolved_parameters
+            values["prefab_exposed"] = definitions
+            values["prefab_base"] = payload.get("base_prefab", "")
             self._apply_prefab_component_policy(values, include_camera, include_audio, include_logic)
             values["prefab_path"] = str(path)
             values["pool_key"] = pool_key or f"prefab:{Path(path).as_posix().casefold()}"
             return self.create_object(**values)
-        transform = payload.get("transform") if isinstance(payload.get("transform"), dict) else {}
+        transform = isolated_object.get("transform") if isinstance(isolated_object.get("transform"), dict) else {}
         position = _vector(transform.get("position"), (0.0, 0.0, 0.0))
         scale = _vector(transform.get("scale"), (64.0, 64.0, 1.0))
         transform_rotation = _vector(transform.get("rotation"), (0.0, 0.0, 0.0))
-        visual = payload.get("visual") if isinstance(payload.get("visual"), dict) else {}
-        components = payload.get("components") if isinstance(payload.get("components"), dict) else {}
+        visual = isolated_object.get("visual") if isinstance(isolated_object.get("visual"), dict) else {}
+        components = isolated_object.get("components") if isinstance(isolated_object.get("components"), dict) else {}
         values: dict[str, Any] = {
-            "name": payload.get("source_object_name") or payload.get("name", "Prefab"),
+            "name": isolated_object.get("source_object_name") or isolated_object.get("name", payload.get("prefab_name", "Prefab")),
             "x": position[0] if x is None else x, "y": position[1] if y is None else y,
             "width": abs(scale[0]) if width is None else width,
             "height": abs(scale[1]) if height is None else height,
             "rotation": transform_rotation[2] if rotation is None else rotation,
             "color": visual.get("color", (180, 180, 190)),
             "texture": visual.get("texture", visual.get("sprite_path", "")),
-            "renderer_enabled": visual.get("enabled", True), "tag": payload.get("tag", "Untagged"),
-            "active": payload.get("active", payload.get("enabled", True)),
-            "layer": payload.get("layer", "Default"),
-            "prefab_uuid": payload.get("prefab_uuid"),
+            "renderer_enabled": visual.get("enabled", True), "tag": isolated_object.get("tag", "Untagged"),
+            "active": isolated_object.get("active", isolated_object.get("enabled", True)),
+            "layer": isolated_object.get("layer", "Default"),
+            "prefab_uuid": isolated_object.get("prefab_uuid"),
+            "prefab_parameters": resolved_parameters,
+            "prefab_exposed": definitions,
+            "prefab_base": payload.get("base_prefab", ""),
         }
+        if isinstance(isolated_object.get("gameplay"), Mapping):
+            values["gameplay"] = isolated_object["gameplay"]
         for key in ("rigidbody", "collider", "camera", "audio"):
             if isinstance(components.get(key), dict):
                 values[key] = components[key]
         if isinstance(components.get("logic_graphs"), list):
             values["logic_graphs"] = components["logic_graphs"]
-        editor_data = payload.get("editor_data") if isinstance(payload.get("editor_data"), dict) else {}
+        editor_data = isolated_object.get("editor_data") if isinstance(isolated_object.get("editor_data"), dict) else {}
         for key in ("animator", "behavior"):
             if isinstance(editor_data.get(key), dict):
                 values[key] = editor_data[key]

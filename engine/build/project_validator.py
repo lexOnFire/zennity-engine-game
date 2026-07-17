@@ -8,6 +8,8 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from engine.prefabs.prefab_asset import PREFAB_PROPERTY_TYPES, load_prefab_asset, normalize_exposed_properties
+
 
 SCRIPT_HOOKS = {
     "on_update", "isolated_update", "update", "on_collision",
@@ -30,6 +32,7 @@ RUNTIME_SOURCES = (
     "engine/logic/blackboard.py",
     "engine/logic/event_bus.py",
     "engine/logic/runtime.py",
+    "engine/prefabs/prefab_asset.py",
     "engine/runtime/runtime_world.py",
     "engine/build/runtime_scene_loader.py",
 )
@@ -390,6 +393,30 @@ def _validate_logic_assets(root: Path, report: ProjectValidationReport) -> None:
             }.get(node_type)
             if asset_key and properties.get(asset_key):
                 _check_asset(root, properties[asset_key], "Logic Graph", path.stem, report, set())
+            if node_type == "create_prefab" and properties.get("path"):
+                prefab_path = Path(str(properties["path"]))
+                if not prefab_path.is_absolute():
+                    prefab_path = root / prefab_path
+                if prefab_path.is_file():
+                    try:
+                        prefab = load_prefab_asset(prefab_path, root)
+                        known_parameters = {item["name"] for item in prefab.get("exposed_properties", [])}
+                        supplied = properties.get("parameters", {})
+                        if isinstance(supplied, dict):
+                            for name in supplied:
+                                if str(name) not in known_parameters:
+                                    report.add("warning", "Logic Graph", f"Parâmetro não existe mais no Prefab: {name}.", path)
+                        definitions = {
+                            str(item.get("name", "")): item
+                            for item in prefab.get("exposed_properties", []) if isinstance(item, dict)
+                        }
+                        if isinstance(supplied, dict):
+                            for name, value in supplied.items():
+                                definition = definitions.get(str(name), {})
+                                if definition.get("asset_kind") and value:
+                                    _check_asset(root, value, "Logic Graph", path.stem, report, set())
+                    except (OSError, ValueError, json.JSONDecodeError) as exc:
+                        report.add("error", "Logic Graph", f"Prefab parametrizável inválido: {exc}", path)
             if node_type == "create_prefab" and bool(properties.get("override_scale", False)):
                 if _float(properties.get("width")) <= 0 or _float(properties.get("height")) <= 0:
                     report.add(
@@ -421,6 +448,26 @@ def _validate_prefab_assets(root: Path, report: ProjectValidationReport) -> None
             if not isinstance(payload, dict):
                 report.add("error", "Prefab", "O arquivo precisa conter um objeto JSON.", path)
                 continue
+            try:
+                resolved = load_prefab_asset(path, root)
+            except (OSError, ValueError, json.JSONDecodeError) as exc:
+                report.add("error", "Prefab", f"Herança ou propriedades inválidas: {exc}", path)
+                continue
+            raw_exposed = payload.get("exposed_properties", [])
+            normalized_exposed = normalize_exposed_properties(raw_exposed)
+            if isinstance(raw_exposed, list) and len(normalized_exposed) != len(raw_exposed):
+                report.add("error", "Prefab", "Propriedades expostas precisam ter nomes únicos e tipos válidos.", path)
+            if isinstance(raw_exposed, list) and any(
+                isinstance(item, dict) and str(item.get("type", "text")).lower() not in PREFAB_PROPERTY_TYPES
+                for item in raw_exposed
+            ):
+                report.add("error", "Prefab", "Tipo de propriedade exposta não reconhecido.", path)
+            known = {str(item.get("name", "")) for item in resolved.get("exposed_properties", [])}
+            overrides = payload.get("property_overrides", {})
+            if isinstance(overrides, dict):
+                for name in overrides:
+                    if str(name) not in known:
+                        report.add("error", "Prefab", f"Override referencia propriedade não exposta: {name}.", path)
 
             def visit(value: Any) -> None:
                 if isinstance(value, dict):

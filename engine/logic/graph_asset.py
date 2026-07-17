@@ -13,6 +13,11 @@ from pathlib import Path
 from typing import Any, Mapping
 
 try:
+    from .prefab_asset import parameter_port, port_type
+except ImportError:
+    from engine.prefabs.prefab_asset import parameter_port, port_type
+
+try:
     from .blackboard import normalize_variable_definitions
 except ImportError:  # Runtime autocontido exportado.
     from .logic_blackboard import normalize_variable_definitions
@@ -40,6 +45,10 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "self_object": {"title": "Este objeto", "category": "Objetos", "properties": {}},
     "find_tag": {"title": "Procurar por Tag", "category": "Objetos", "properties": {"tag": "Player"}},
     "get_tag": {"title": "Ler Tag do objeto", "category": "Objetos", "properties": {}},
+    "get_prefab_parameter": {
+        "title": "Ler parâmetro do Prefab", "category": "Objetos",
+        "properties": {"name": "speed", "type": "number", "default": 0.0},
+    },
     "create_object": {
         "title": "Criar objeto",
         "category": "Objetos",
@@ -59,6 +68,7 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
             "override_rotation": False, "rotation": 0.0,
             "override_scale": False, "width": 64.0, "height": 64.0,
             "include_camera": False, "include_audio": False, "include_logic": False,
+            "parameters": {}, "exposed_properties": [],
             "lifetime": 0.0, "max_instances": 0, "max_distance": 0.0,
             "use_pool": True,
         },
@@ -179,6 +189,7 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "self_object": {"inputs": [], "outputs": [("object", "object")]},
     "find_tag": {"inputs": [("in", "flow")], "outputs": [("next", "flow"), ("object", "object")]},
     "get_tag": {"inputs": [("target", "object")], "outputs": [("value", "text")]},
+    "get_prefab_parameter": {"inputs": [("target", "object")], "outputs": [("value", "any")]},
     "create_object": {
         "inputs": [("in", "flow"), ("source", "object"), ("name", "text"), ("x", "number"), ("y", "number")],
         "outputs": [("next", "flow"), ("limit_reached", "flow"), ("object", "object")],
@@ -296,6 +307,17 @@ def node_port_definitions(node_type: str | Mapping[str, Any]) -> dict[str, list[
         output_count = max(1, min(32, output_count))
         ports["outputs"] = [(f"then_{index}", "flow") for index in range(output_count)]
         ports["outputs"].append(("next", "flow"))
+    elif type_name == "create_prefab":
+        exposed = properties.get("exposed_properties", [])
+        if isinstance(exposed, list):
+            for definition in exposed:
+                if not isinstance(definition, Mapping) or not str(definition.get("name", "")).strip():
+                    continue
+                port = str(definition.get("port", parameter_port(str(definition["name"]))))
+                if port not in {name for name, _kind in ports["inputs"]}:
+                    ports["inputs"].append((port, port_type(str(definition.get("type", "text")))))
+    elif type_name == "get_prefab_parameter":
+        ports["outputs"] = [("value", port_type(str(properties.get("type", "text"))))]
     elif type_name == "subgraph_input":
         ports["outputs"] = [("value", value_type)]
     elif type_name == "subgraph_return":
@@ -637,6 +659,19 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
                     valid_size = False
                 if not valid_size:
                     issues.append({"level": "error", "node": node["id"], "message": "Largura e altura do Prefab precisam ser maiores que zero."})
+            exposed = prefab_properties.get("exposed_properties", [])
+            parameters = prefab_properties.get("parameters", {})
+            names = {
+                str(definition.get("name", "")) for definition in exposed
+                if isinstance(definition, Mapping) and str(definition.get("name", "")).strip()
+            } if isinstance(exposed, list) else set()
+            if isinstance(parameters, Mapping):
+                for parameter_name in parameters:
+                    if str(parameter_name) not in names:
+                        issues.append({
+                            "level": "warning", "node": node["id"],
+                            "message": f"Parâmetro não exposto pelo Prefab: {parameter_name}",
+                        })
         if node["type"] in {"set_sprite", "play_animation_asset", "play_sound"}:
             has_path = bool(str(node.get("properties", {}).get("path", "")).strip())
             if not has_path and (node["id"], "path") not in connected_inputs:

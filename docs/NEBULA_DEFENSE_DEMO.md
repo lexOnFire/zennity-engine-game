@@ -7,7 +7,7 @@
 1. Inicie o editor com `python -m editor.phase1_main` na raiz do projeto.
 2. Abra `Assets/Scenes/NebulaDefense.zscene`.
 3. Pressione **Play**.
-4. Use **WASD** para mover, **Espaço** para disparar e **R** para reiniciar.
+4. Use **WASD** para mover, **Espaço** para disparar, **M** para lançar a variante de míssil e **R** para reiniciar.
 5. Destrua dez drones para vencer. O jogador começa com três vidas.
 
 ## Organização
@@ -22,7 +22,7 @@
 | Gerenciador | `Assets/Logic/NebulaDefense/NebulaGameManager.zlogic` | placar, vidas, vitória, derrota e reinício |
 | Fundo | `Assets/Logic/NebulaDefense/NebulaBackground.zlogic` | rolagem contínua da textura |
 | Blackboard | `Assets/Logic/ProjectBlackboard.zblackboard` | variáveis compartilhadas `score` e `lives` |
-| Prefabs | `Assets/Prefabs/NebulaDefense/` | drone e disparo independentes e reutilizáveis |
+| Prefabs | `Assets/Prefabs/NebulaDefense/` | disparo parametrizável, variantes de míssil/ataque inimigo e drone reutilizável |
 
 ## Decisões de segurança
 
