@@ -172,9 +172,6 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "to_text": {"title": "Converter para texto", "category": "Texto", "properties": {"value": ""}},
 }
 
-# Portas são metadados de edição e permanecem separadas das propriedades dos
-# nós. Grafos antigos continuam válidos porque os nomes padrão são ``in`` e
-# ``next``, exatamente como antes desta infraestrutura visual.
 NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "event_start": {"inputs": [], "outputs": [("next", "flow")]},
     "event_update": {"inputs": [], "outputs": [("next", "flow")]},
