@@ -12,6 +12,12 @@ class SceneViewModel(QObject):
     ViewModel que expõe a estrutura da cena, gerencia a seleção
     e publica alterações no barramento global de eventos (EventBus).
     Componente 'ViewModel' na arquitetura MVVM do editor.
+
+    Regra de identidade:
+        A seleção é comparada por UUID (go.id), nunca por igualdade de instância.
+        Painéis externos (Hierarchy, Inspector, Viewport) devem usar selected_id
+        e resolver a instância via SceneModel.find_object_by_id() quando necessário.
+        Isso evita instâncias duplicadas do mesmo objeto circulando pelos painéis.
     """
     
     # Sinais locais mantidos para compatibilidade com ligações Qt tradicionais
@@ -27,17 +33,37 @@ class SceneViewModel(QObject):
         # Conecta sinais do modelo
         self._model.object_structure_changed.connect(self.on_model_hierarchy_changed)
 
+    # ------------------------------------------------------------------ #
+    # Seleção — baseada em UUID para evitar instâncias duplicadas         #
+    # ------------------------------------------------------------------ #
+
     @property
     def selected_object(self) -> Optional[GameObject]:
+        """Instância canônica atual selecionada no editor."""
         return self._selected_object
 
     @selected_object.setter
     def selected_object(self, obj: Optional[GameObject]) -> None:
-        if self._selected_object != obj:
+        """
+        Define o objeto selecionado comparando por UUID.
+        Painéis externos nunca devem armazenar cópias independentes;
+        use selected_id + find_object_by_id() para resolver a instância.
+        """
+        current_id = self._selected_object.id if self._selected_object else None
+        new_id     = obj.id if obj else None
+        if current_id != new_id:
             self._selected_object = obj
             self.selection_changed.emit(obj)
-            # Despacha no EventBus global para desacoplamento de outros painéis
             EventBus.emit(EVENT_SELECTION_CHANGED, obj=obj)
+
+    @property
+    def selected_id(self) -> Optional[str]:
+        """
+        UUID do objeto atualmente selecionado, ou None.
+        Prefira usar este valor em painéis que não precisam da instância completa.
+        Para resolver a instância: scene_model.find_object_by_id(selected_id).
+        """
+        return self._selected_object.id if self._selected_object else None
 
     @Slot()
     def on_model_hierarchy_changed(self) -> None:
@@ -153,7 +179,6 @@ class SceneViewModel(QObject):
         elif prop_name == "rotation":
             transform.rotation[index] = value
             
-        # Emite sinal local e publica no EventBus
         prop_id = f"{prop_name}_{index}"
         self.property_changed.emit("Transform", prop_id, value)
         EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="Transform", property_name=prop_id, value=value)
@@ -205,7 +230,6 @@ class SceneViewModel(QObject):
         self.property_changed.emit("Collider", prop_name, value)
         EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="Collider", property_name=prop_name, value=value)
         
-        # Emite sinal extra para atualizar escala
         self.property_changed.emit("Transform", "scale", None)
         EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="Transform", property_name="scale", value=None)
 
