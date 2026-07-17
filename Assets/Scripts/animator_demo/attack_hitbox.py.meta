@@ -1,0 +1,8 @@
+{
+  "uuid": "a6fa98e1-cfe8-4ddd-8e38-f48804e46820",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/animator_demo/attack_hitbox.py",
+  "import_settings": {},
+  "dependencies": []
+}

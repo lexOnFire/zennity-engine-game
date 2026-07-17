@@ -1,0 +1,8 @@
+{
+  "uuid": "47459f51-e7c6-4dfc-885e-8023e40330b6",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/behavior_demo/behavior_debug.py",
+  "import_settings": {},
+  "dependencies": []
+}

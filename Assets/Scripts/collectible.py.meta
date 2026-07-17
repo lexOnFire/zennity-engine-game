@@ -1,8 +1,0 @@
-{
-  "uuid": "9c8714bd-3238-40bf-9088-041e95ae3d76",
-  "type": "script",
-  "importer": "script_importer",
-  "source_path": "Assets/Scripts/collectible.py",
-  "import_settings": {},
-  "dependencies": []
-}

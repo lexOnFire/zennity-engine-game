@@ -1,0 +1,8 @@
+{
+  "uuid": "626f06ef-3a53-4932-81a5-855aad3a3bf6",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/behavior_demo/attack.py",
+  "import_settings": {},
+  "dependencies": []
+}

@@ -1,8 +1,0 @@
-{
-  "uuid": "357b3941-defb-45af-98b2-e19b268d9fc3",
-  "type": "script",
-  "importer": "script_importer",
-  "source_path": "Assets/Scripts/timer_component.py",
-  "import_settings": {},
-  "dependencies": []
-}

@@ -1,8 +1,8 @@
 {
-  "uuid": "990c4785-54c4-42cd-889d-6266cd8ce807",
+  "uuid": "7b148f46-b488-441c-b8a6-8a1c45ce84ee",
   "type": "unknown",
   "importer": "generic_importer",
-  "source_path": "Assets/Scripts/README.md",
+  "source_path": "Assets/Logic/Movimentar2D.zlogic",
   "import_settings": {},
   "dependencies": []
 }
