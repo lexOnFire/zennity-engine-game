@@ -10,28 +10,7 @@ class Phase1ComponentCard(QFrame):
         super().__init__(parent)
         self.key = key
         self.setObjectName("Phase1ComponentCard")
-        self.setStyleSheet("""
-            QFrame#Phase1ComponentCard {
-                background-color: #222222;
-                border: 1px solid #2a2a2a;
-                border-radius: 4px;
-                margin-top: 2px;
-            }
-            QWidget#CardHeader {
-                background-color: #2a2a2a;
-                border-radius: 3px;
-            }
-            QPushButton#CardRemoveBtn {
-                background-color: transparent;
-                border: none;
-                color: #884444;
-                font-size: 13px;
-                padding: 0px 4px;
-                min-width: 18px;
-                max-width: 18px;
-            }
-            QPushButton#CardRemoveBtn:hover { color: #cc4444; }
-        """)
+        # Styles are now handled by the global theme system (editor/ui/theme.py)
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -47,7 +26,6 @@ class Phase1ComponentCard(QFrame):
         self._collapsed = Phase1ComponentCard._collapsed_states.get(key, False)
 
         self._arrow = QLabel("▶" if self._collapsed else "▼")
-        self._arrow.setStyleSheet("color: #6a6a6a; font-size: 9px;")
         self._arrow.setFixedWidth(12)
 
         self.chk_enabled = QCheckBox()
@@ -55,7 +33,7 @@ class Phase1ComponentCard(QFrame):
         self.chk_enabled.setVisible(has_enable)
 
         self._lbl_name = QLabel(display_name)
-        self._lbl_name.setStyleSheet("font-weight: bold; color: #d8d8d8; font-size: 11px;")
+        self._lbl_name.setProperty("uiRole", "bold")
 
         self.btn_remove = QPushButton("×")
         self.btn_remove.setObjectName("CardRemoveBtn")

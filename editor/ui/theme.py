@@ -88,6 +88,7 @@ QWidget#AnimationToolbar, QWidget#ConsoleToolbar {
     border-radius: $RADIUSpx;
 }
 QLabel#WorkspaceTitle { color: $TEXT; font-size: 15px; font-weight: 700; }
+QLabel[uiRole="bold"] { font-weight: bold; color: $TEXT; }
 QLabel#WorkspaceContext { color: $ACCENT_HOVER; font-weight: 600; }
 QLabel#WorkspaceStatus, QLabel#PanelHint { color: $TEXT_MUTED; }
 QLabel#WorkspaceStatus[uiState="saved"] { color: $SUCCESS; }
