@@ -17,25 +17,54 @@ import pytest
 class _FakeSurface:
     """
     Surface mínima que rastreia blit/fill/set_alpha via MagicMock.
-    Aceita qualquer argumento — sem validação de tipo SDL.
+    Suporta set_at/get_at para testes que verificam pixels (ex: flip_h).
     """
     _fake = True
+    SRCALPHA = 65536
 
     def __init__(self, size=(800, 600), flags=0):
         self._size  = tuple(size)
         self._flags = flags
         self._alpha = 255
+        w, h = self._size[0], self._size[1]
+        self._pixels: dict[tuple[int, int], tuple] = {}
         self.blit      = MagicMock()
         self.fill      = MagicMock()
         self.set_alpha = MagicMock(side_effect=lambda a: setattr(self, "_alpha", a))
 
     def get_size(self):  return self._size
+    def get_width(self): return self._size[0]
+    def get_height(self): return self._size[1]
     def get_alpha(self): return self._alpha
+
+    def set_at(self, pos: tuple[int, int], color) -> None:
+        """Armazena a cor de um pixel no buffer interno."""
+        self._pixels[pos] = tuple(color)
+
+    def get_at(self, pos: tuple[int, int]) -> tuple:
+        """Retorna a cor de um pixel (RGBA). Padrão: preto transparente."""
+        return self._pixels.get(pos, (0, 0, 0, 255))
+
+    def convert(self, *args, **kwargs):
+        return self
+
+    def convert_alpha(self, *args, **kwargs):
+        return self
+
+    def copy(self):
+        s = _FakeSurface(self._size, self._flags)
+        s._pixels = dict(self._pixels)
+        s._alpha = self._alpha
+        return s
+
+    def get_rect(self, **kwargs):
+        import pygame
+        return pygame.Rect(0, 0, self._size[0], self._size[1])
 
 
 def pytest_configure(config):
     """
-    Instala stubs de pygame antes de qualquer coleta.
+    Instala stubs de pygame antes de qualquer coleção.
     NÃO chama importlib.import_module("engine.transitions") aqui —
     isso causava import duplo e o erro '(unknown location)'.
     """
@@ -58,7 +87,7 @@ def pytest_configure(config):
             del sys.modules[mod]
 
 
-# ── Inicialização do pygame ───────────────────────────────────────────────────
+# ── Inicialização do pygame ────────────────────────────────────────────
 
 @pytest.fixture(scope="session", autouse=True)
 def _pygame_init():
@@ -68,7 +97,7 @@ def _pygame_init():
     pygame.quit()
 
 
-# ── Fixtures globais ──────────────────────────────────────────────────────────
+# ── Fixtures globais ────────────────────────────────────────────
 
 @pytest.fixture
 def fake_surface_class():
