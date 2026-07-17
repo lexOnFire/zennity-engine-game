@@ -1134,10 +1134,37 @@ class InterfaceSmokeTest(QMainWindow):
         logic_body_layout.addLayout(logic_secondary_actions)
         main_layout.addWidget(self.logic_component_body)
 
+        # ------------------ PLAY MODE: ORIGEM E MOVIMENTOS ------------------
+        self.runtime_debug_header = QWidget()
+        self.runtime_debug_header.setObjectName("InspectorComponentHeader")
+        runtime_header_layout = QHBoxLayout(self.runtime_debug_header)
+        runtime_header_layout.setContentsMargins(6, 4, 6, 4)
+        runtime_title = QLabel("▶  Runtime / Logic Debug")
+        runtime_title.setObjectName("InspectorComponentTitle")
+        runtime_header_layout.addWidget(runtime_title)
+        runtime_header_layout.addStretch(1)
+        self.btn_collapse_runtime = QToolButton()
+        self.btn_collapse_runtime.setText("▼")
+        self.btn_collapse_runtime.setFixedSize(18, 18)
+        self.btn_collapse_runtime.setObjectName("InspectorFoldoutButton")
+        runtime_header_layout.addWidget(self.btn_collapse_runtime)
+        main_layout.addWidget(self.runtime_debug_header)
+
+        self.runtime_debug_body = QWidget()
+        runtime_body_layout = QVBoxLayout(self.runtime_debug_body)
+        runtime_body_layout.setContentsMargins(8, 6, 8, 8)
+        self.runtime_debug_label = QLabel("Sem dados de execução")
+        self.runtime_debug_label.setObjectName("InspectorRuntimeDetails")
+        self.runtime_debug_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.runtime_debug_label.setWordWrap(True)
+        runtime_body_layout.addWidget(self.runtime_debug_label)
+        main_layout.addWidget(self.runtime_debug_body)
+
         for component_body in (
             self.transform_body, self.sprite_renderer_body, self.audio_source_body,
             self.rigidbody_body, self.collider_body, self.camera_body,
             self.ui_component_body, self.logic_component_body,
+            self.runtime_debug_body,
         ):
             component_body.setObjectName("InspectorComponentBody")
             component_body.setStyleSheet(

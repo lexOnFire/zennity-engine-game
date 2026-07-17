@@ -21,8 +21,16 @@ def node_code_preview(node: Mapping[str, Any]) -> str:
         "input_axis": f"eixo = tecla({_value(properties, 'positive', 'D')})\n     - tecla({_value(properties, 'negative', 'A')})",
         "move": f"obj.x += entrada\n         * {_value(properties, 'speed', 200)} * dt",
         "move_by": f"obj.x += {_value(properties, 'x', 100)} * dt\nobj.y += {_value(properties, 'y', 0)} * dt",
-        "start_continuous_motion": f"movimento_permanente(x={_value(properties, 'x', 100)}, y={_value(properties, 'y', 0)})",
-        "stop_continuous_motion": "parar_movimento_permanente(alvo)",
+        "start_continuous_motion": (
+            f"mov = iniciar_movimento('{_value(properties, 'movement', 'Movement')}', "
+            f"x={_value(properties, 'x', 100)}, y={_value(properties, 'y', 0)}, "
+            f"espaço='{_value(properties, 'space', 'global')}')"
+        ),
+        "update_continuous_motion": f"alterar_movimento('{_value(properties, 'movement', 'Movement')}', x={_value(properties, 'x', 100)}, y={_value(properties, 'y', 0)})",
+        "pause_continuous_motion": f"pausar_movimento('{_value(properties, 'movement', 'Movement')}')",
+        "resume_continuous_motion": f"continuar_movimento('{_value(properties, 'movement', 'Movement')}')",
+        "stop_continuous_motion": f"parar_movimento('{_value(properties, 'movement', 'todos')}')",
+        "get_continuous_motion": f"estado = consultar_movimento('{_value(properties, 'movement', 'Movement')}')",
         "get_position": "x = alvo.x\ny = alvo.y",
         "patrol_axis": (
             f"se pos >= {_value(properties, 'maximum', 100)}: direção = -1\n"

@@ -1089,6 +1089,162 @@ def test_same_motion_block_keeps_multiple_spawned_targets_moving():
     assert game.created[1].x == 2.0
 
 
+def test_named_permanent_movements_can_run_together_in_global_and_local_space():
+    start = create_logic_node("event_start")
+    horizontal = create_logic_node("start_continuous_motion")
+    horizontal["properties"].update({"movement": "Horizontal", "x": 10.0, "y": 0.0})
+    vertical = create_logic_node("start_continuous_motion")
+    vertical["properties"].update({"movement": "Vertical", "x": 0.0, "y": 20.0})
+    graph = default_logic_graph("TwoMotions")
+    graph["nodes"] = [start, horizontal, vertical]
+    graph["edges"] = [
+        _edge(start, "next", horizontal, "in"),
+        _edge(start, "next", vertical, "in"),
+    ]
+
+    class Game:
+        active = True
+        rotation = 0.0
+
+        def __init__(self):
+            self.x = self.y = 0.0
+
+        def move(self, dx, dy=0.0):
+            self.x += dx
+            self.y += dy
+
+    game = Game()
+    runtime = LogicGraphRuntime(graph)
+    runtime.start(game)
+    runtime.update(game, 1.0)
+
+    assert (game.x, game.y) == (10.0, 20.0)
+    assert {state["name"] for state in runtime._persistent_motion.values()} == {"Horizontal", "Vertical"}
+
+    local_graph = default_logic_graph("LocalMotion")
+    local_start = create_logic_node("event_start")
+    local_motion = create_logic_node("start_continuous_motion")
+    local_motion["properties"].update({"movement": "Frente", "x": 10.0, "y": 0.0, "space": "local"})
+    local_graph["nodes"] = [local_start, local_motion]
+    local_graph["edges"] = [_edge(local_start, "next", local_motion, "in")]
+    local_game = Game()
+    local_game.rotation = 90.0
+    local_runtime = LogicGraphRuntime(local_graph)
+    local_runtime.start(local_game)
+    local_runtime.update(local_game, 1.0)
+    assert abs(local_game.x) < 1e-6
+    assert local_game.y == 10.0
+
+
+def test_permanent_motion_can_accelerate_change_pause_resume_query_and_stop():
+    start = create_logic_node("event_start")
+    motion = create_logic_node("start_continuous_motion")
+    motion["properties"].update({
+        "movement": "Corrida", "x": 20.0, "y": 0.0,
+        "acceleration": 10.0, "deceleration": 10.0,
+    })
+    update_event = create_logic_node("event_update")
+    query = create_logic_node("get_continuous_motion")
+    query["properties"]["movement"] = "Corrida"
+    key_faster = create_logic_node("event_key_pressed")
+    key_faster["properties"]["key"] = "U"
+    faster = create_logic_node("update_continuous_motion")
+    faster["properties"].update({"movement": "Corrida", "x": 40.0, "y": 0.0, "acceleration": 20.0})
+    key_pause = create_logic_node("event_key_pressed")
+    key_pause["properties"]["key"] = "P"
+    pause = create_logic_node("pause_continuous_motion")
+    pause["properties"]["movement"] = "Corrida"
+    key_resume = create_logic_node("event_key_pressed")
+    key_resume["properties"]["key"] = "R"
+    resume = create_logic_node("resume_continuous_motion")
+    resume["properties"]["movement"] = "Corrida"
+    key_stop = create_logic_node("event_key_pressed")
+    key_stop["properties"]["key"] = "S"
+    stop = create_logic_node("stop_continuous_motion")
+    stop["properties"].update({"movement": "Corrida", "smooth": True})
+    graph = default_logic_graph("ControlledMotion")
+    graph["nodes"] = [
+        start, motion, update_event, query, key_faster, faster,
+        key_pause, pause, key_resume, resume, key_stop, stop,
+    ]
+    graph["edges"] = [
+        _edge(start, "next", motion, "in"),
+        _edge(update_event, "next", query, "in"),
+        _edge(key_faster, "next", faster, "in"),
+        _edge(key_pause, "next", pause, "in"),
+        _edge(key_resume, "next", resume, "in"),
+        _edge(key_stop, "next", stop, "in"),
+    ]
+
+    class Game:
+        active = True
+        rotation = 0.0
+
+        def __init__(self):
+            self.x = self.y = 0.0
+            self.pressed = set()
+            self.debug = {}
+
+        def move(self, dx, dy=0.0):
+            self.x += dx
+            self.y += dy
+
+        def key_pressed(self, key):
+            return key in self.pressed
+
+        def update_motion_debug(self, handle, state):
+            self.debug[handle] = state
+
+        def remove_motion_debug(self, handle):
+            self.debug.pop(handle, None)
+
+    game = Game()
+    runtime = LogicGraphRuntime(graph)
+    runtime.start(game)
+    runtime.update(game, 1.0)
+    state = next(iter(runtime._persistent_motion.values()))
+    assert state["current_x"] == 10.0
+    assert runtime.values[(query["id"], "speed")] == 10.0
+
+    game.pressed = {"u"}
+    runtime.update(game, 1.0)
+    game.pressed.clear()
+    assert state["desired_x"] == 40.0
+
+    game.pressed = {"p"}
+    runtime.update(game, 0.0)
+    game.pressed.clear()
+    runtime.update(game, 1.0)
+    assert state["paused"] is True and state["current_x"] == 10.0
+
+    game.pressed = {"r"}
+    runtime.update(game, 0.0)
+    game.pressed.clear()
+    runtime.update(game, 1.0)
+    assert state["paused"] is False and state["current_x"] == 30.0
+
+    game.pressed = {"s"}
+    runtime.update(game, 0.0)
+    game.pressed.clear()
+    for _ in range(4):
+        runtime.update(game, 1.0)
+    assert not runtime._persistent_motion
+    assert not game.debug
+
+
+def test_permanent_motion_nodes_expose_handles_and_query_outputs():
+    assert node_port_definitions("start_continuous_motion")["outputs"][-1] == ("movement", "movement")
+    for node_type in (
+        "update_continuous_motion", "pause_continuous_motion",
+        "resume_continuous_motion", "stop_continuous_motion",
+    ):
+        assert ("movement", "movement") in node_port_definitions(node_type)["inputs"]
+    outputs = node_port_definitions("get_continuous_motion")["outputs"]
+    assert {"x", "y", "speed", "paused", "active"}.issubset({name for name, _kind in outputs})
+    assert "alterar_movimento" in node_code_preview(create_logic_node("update_continuous_motion"))
+    assert any(recipe["id"] == "controlled_permanent_motion" for recipe in LOGIC_RECIPES)
+
+
 def test_patrol_y_recipe_reverses_at_positive_and_negative_limits():
     recipe = next(recipe for recipe in LOGIC_RECIPES if recipe["id"] == "patrol_y_between_limits")
     fragment = build_logic_recipe(str(recipe["id"]))

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import math
 import random
 import re
 from copy import deepcopy
@@ -175,8 +176,74 @@ class LogicGraphRuntime:
             target = state.get("target")
             if target is None or not bool(getattr(target, "active", True)):
                 self._persistent_motion.pop(key, None)
+                self._remove_motion_debug(target, key)
                 continue
-            self._move_target(target, float(state.get("x", 0.0)), float(state.get("y", 0.0)), dt)
+            paused = bool(state.get("paused", False))
+            stopping = bool(state.get("stopping", False))
+            desired_x = 0.0 if paused or stopping else float(state.get("desired_x", 0.0))
+            desired_y = 0.0 if paused or stopping else float(state.get("desired_y", 0.0))
+            rate = float(state.get("deceleration" if paused or stopping else "acceleration", 0.0))
+            current_x = self._approach(float(state.get("current_x", 0.0)), desired_x, rate, dt)
+            current_y = self._approach(float(state.get("current_y", 0.0)), desired_y, rate, dt)
+            state["current_x"], state["current_y"] = current_x, current_y
+            velocity_x, velocity_y = current_x, current_y
+            if str(state.get("space", "global")).lower() == "local":
+                radians = math.radians(float(getattr(target, "rotation", 0.0)))
+                velocity_x, velocity_y = (
+                    current_x * math.cos(radians) - current_y * math.sin(radians),
+                    current_x * math.sin(radians) + current_y * math.cos(radians),
+                )
+            if velocity_x or velocity_y:
+                self._move_target(target, velocity_x, velocity_y, dt)
+            self._sync_motion_debug(key, state)
+            if stopping and abs(current_x) < 1e-6 and abs(current_y) < 1e-6:
+                self._persistent_motion.pop(key, None)
+                self._remove_motion_debug(target, key)
+
+    @staticmethod
+    def _approach(current: float, desired: float, rate: float, dt: float) -> float:
+        if rate <= 0.0:
+            return desired
+        delta = desired - current
+        step = max(0.0, rate) * max(0.0, dt)
+        if abs(delta) <= step:
+            return desired
+        return current + math.copysign(step, delta)
+
+    @staticmethod
+    def _sync_motion_debug(handle: str, state: Mapping[str, Any]) -> None:
+        target = state.get("target")
+        update = getattr(target, "update_motion_debug", None)
+        if callable(update):
+            update(handle, {
+                "name": str(state.get("name", "Movement")),
+                "x": float(state.get("current_x", 0.0)),
+                "y": float(state.get("current_y", 0.0)),
+                "target_x": float(state.get("desired_x", 0.0)),
+                "target_y": float(state.get("desired_y", 0.0)),
+                "space": str(state.get("space", "global")),
+                "paused": bool(state.get("paused", False)),
+                "stopping": bool(state.get("stopping", False)),
+                "graph": str(state.get("graph", "")),
+            })
+
+    @staticmethod
+    def _remove_motion_debug(target: Any, handle: str) -> None:
+        remove = getattr(target, "remove_motion_debug", None)
+        if callable(remove):
+            remove(handle)
+
+    def _motions_for(self, target: Any, movement: Any = "") -> list[tuple[str, dict[str, Any]]]:
+        requested = str(movement or "").strip()
+        identity = self._target_identity(target)
+        result: list[tuple[str, dict[str, Any]]] = []
+        for handle, state in self._persistent_motion.items():
+            if self._target_identity(state.get("target")) != identity:
+                continue
+            if requested and requested not in {handle, str(state.get("name", ""))}:
+                continue
+            result.append((handle, state))
+        return result
 
     @staticmethod
     def _target_identity(target: Any) -> str:
@@ -543,18 +610,85 @@ class LogicGraphRuntime:
             target = self._read_target(node_id, game, dt, set())
             velocity_x = float(self._read_input(node_id, "x", properties.get("x", 100.0), game, dt, set()))
             velocity_y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
-            motion_key = f"{node_id}:{self._target_identity(target)}"
+            motion_name = str(properties.get("movement", "Movement")).strip() or "Movement"
+            motion_key = f"{self.object_key}:{node_id}:{self._target_identity(target)}:{motion_name}"
             was_active = motion_key in self._persistent_motion
-            self._persistent_motion[motion_key] = {"target": target, "x": velocity_x, "y": velocity_y}
+            previous = self._persistent_motion.get(motion_key, {})
+            acceleration = max(0.0, float(properties.get("acceleration", 0.0)))
+            state = {
+                "target": target,
+                "name": motion_name,
+                "desired_x": velocity_x,
+                "desired_y": velocity_y,
+                "current_x": float(previous.get("current_x", 0.0 if acceleration else velocity_x)),
+                "current_y": float(previous.get("current_y", 0.0 if acceleration else velocity_y)),
+                "space": "local" if str(properties.get("space", "global")).lower() == "local" else "global",
+                "acceleration": acceleration,
+                "deceleration": max(0.0, float(properties.get("deceleration", 0.0))),
+                "paused": False,
+                "stopping": False,
+                "graph": str(self.graph.get("name", "Logic Graph")),
+            }
+            self._persistent_motion[motion_key] = state
+            self._store(node_id, "movement", motion_key)
+            self._sync_motion_debug(motion_key, state)
             if not was_active:
-                self._move_target(target, velocity_x, velocity_y, dt)
+                initial_x, initial_y = float(state["current_x"]), float(state["current_y"])
+                if state["space"] == "local":
+                    radians = math.radians(float(getattr(target, "rotation", 0.0)))
+                    initial_x, initial_y = (
+                        initial_x * math.cos(radians) - initial_y * math.sin(radians),
+                        initial_x * math.sin(radians) + initial_y * math.cos(radians),
+                    )
+                if initial_x or initial_y:
+                    self._move_target(target, initial_x, initial_y, dt)
+            return ["next"]
+        if node_type == "update_continuous_motion":
+            target = self._read_target(node_id, game, dt, set())
+            movement = self._read_input(node_id, "movement", properties.get("movement", "Movement"), game, dt, set())
+            velocity_x = float(self._read_input(node_id, "x", properties.get("x", 100.0), game, dt, set()))
+            velocity_y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
+            for handle, state in self._motions_for(target, movement):
+                state["desired_x"], state["desired_y"] = velocity_x, velocity_y
+                state["acceleration"] = max(0.0, float(properties.get("acceleration", state.get("acceleration", 0.0))))
+                state["stopping"] = False
+                self._sync_motion_debug(handle, state)
+            return ["next"]
+        if node_type in {"pause_continuous_motion", "resume_continuous_motion"}:
+            target = self._read_target(node_id, game, dt, set())
+            movement = self._read_input(node_id, "movement", properties.get("movement", "Movement"), game, dt, set())
+            paused = node_type == "pause_continuous_motion"
+            for handle, state in self._motions_for(target, movement):
+                state["paused"] = paused
+                state["stopping"] = False
+                self._sync_motion_debug(handle, state)
             return ["next"]
         if node_type == "stop_continuous_motion":
             target = self._read_target(node_id, game, dt, set())
-            self._persistent_motion = {
-                key: state for key, state in self._persistent_motion.items()
-                if state.get("target") is not target
-            }
+            movement = self._read_input(node_id, "movement", properties.get("movement", ""), game, dt, set())
+            matches = self._motions_for(target, movement)
+            if bool(properties.get("smooth", False)):
+                for handle, state in matches:
+                    state["paused"] = False
+                    state["stopping"] = True
+                    self._sync_motion_debug(handle, state)
+            else:
+                for handle, state in matches:
+                    self._persistent_motion.pop(handle, None)
+                    self._remove_motion_debug(state.get("target"), handle)
+            return ["next"]
+        if node_type == "get_continuous_motion":
+            target = self._read_target(node_id, game, dt, set())
+            movement = self._read_input(node_id, "movement", properties.get("movement", "Movement"), game, dt, set())
+            matches = self._motions_for(target, movement)
+            state = matches[0][1] if matches else {}
+            current_x = float(state.get("current_x", 0.0))
+            current_y = float(state.get("current_y", 0.0))
+            self._store(node_id, "x", current_x)
+            self._store(node_id, "y", current_y)
+            self._store(node_id, "speed", math.hypot(current_x, current_y))
+            self._store(node_id, "paused", bool(state.get("paused", False)))
+            self._store(node_id, "active", bool(matches))
             return ["next"]
         if node_type == "patrol_axis":
             target = self._read_target(node_id, game, dt, set())

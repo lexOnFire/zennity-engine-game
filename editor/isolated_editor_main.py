@@ -86,6 +86,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "collider": False,
             "camera": False,
             "ui": True,
+            "runtime": True,
         }
         self._viewport_process = viewport_process
         self._commands = ViewportCommandBus(commands)
@@ -104,6 +105,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._scene_document: dict | None = None
         self._current_scene_path: Path | None = None
         self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
+        self._runtime_objects_by_name: dict[str, dict] = {}
         self._selected_name: str | None = None
         self._updating_inspector = False
         self._undo_stack: list[list[dict]] = []
@@ -1511,6 +1513,22 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             item = QTreeWidgetItem([icon + name])
             item.setData(0, Qt.UserRole, name)
             root.addChild(item)
+        spawned = [
+            obj for name, obj in self._runtime_objects_by_name.items()
+            if obj.get("spawned_by_logic", False) and name not in self._objects_by_name
+        ]
+        if self._runtime_playing and spawned:
+            runtime_root = QTreeWidgetItem([f"▶ Runtime ({len(spawned)})"])
+            runtime_root.setData(0, Qt.UserRole + 1, "runtime-group")
+            runtime_root.setExpanded(True)
+            for obj in sorted(spawned, key=lambda value: str(value.get("name", ""))):
+                runtime_name = str(obj.get("name", "RuntimeObject"))
+                item = QTreeWidgetItem(["⚡ " + runtime_name])
+                item.setData(0, Qt.UserRole, runtime_name)
+                item.setData(0, Qt.UserRole + 1, "runtime-object")
+                item.setToolTip(0, "Instância temporária criada durante o Play Mode")
+                runtime_root.addChild(item)
+            root.addChild(runtime_root)
         self.hierarchy_tree.addTopLevelItem(root)
 
     @staticmethod
@@ -1585,6 +1603,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.ui_event_field.editingFinished.connect(self._send_inspector_ui)
         self.ui_target_combo.currentTextChanged.connect(lambda _value: self._send_inspector_ui())
         self.btn_collapse_logic.clicked.connect(lambda: self._toggle_inspector_card("logic"))
+        self.btn_collapse_runtime.clicked.connect(lambda: self._toggle_inspector_card("runtime"))
         self.btn_delete_logic.clicked.connect(self._remove_all_logic_graphs)
         self.logic_graph_combo.currentIndexChanged.connect(self._update_logic_graph_summary)
         self.logic_open_button.clicked.connect(self._open_selected_logic_graph)
@@ -1602,6 +1621,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "camera": (self.camera_header, self.camera_body, self.btn_collapse_camera),
             "ui": (self.ui_component_header, self.ui_component_body, self.btn_collapse_ui),
             "logic": (self.logic_component_header, self.logic_component_body, self.btn_collapse_logic),
+            "runtime": (self.runtime_debug_header, self.runtime_debug_body, self.btn_collapse_runtime),
         }[key]
 
     def _set_inspector_card_present(self, key: str, present: bool) -> None:
@@ -1627,7 +1647,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
     def _clear_inspector_view(self) -> None:
         self.inspector_name_label.setText("Nenhum objeto selecionado")
         self.animation_object_label.setText("Nenhum objeto selecionado")
-        for key in ("transform", "sprite", "audio", "logic", "rigidbody", "collider", "camera", "ui"):
+        for key in ("transform", "sprite", "audio", "logic", "rigidbody", "collider", "camera", "ui", "runtime"):
             self._set_inspector_card_present(key, False)
         self.add_component_button.setEnabled(False)
 
@@ -2729,21 +2749,23 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
 
     def _select_hierarchy_item(self, item: QTreeWidgetItem) -> None:
         name = self._hierarchy_item_name(item)
-        if name in self._objects_by_name:
+        if name in self._objects_by_name or (self._runtime_playing and name in self._runtime_objects_by_name):
             self._commands.put({"type": "select_object", "name": name})
             self._selected_name = name
             self._update_inspector(name)
-            self.statusBar().showMessage(f"Interface: {name} selecionado")
+            source = "Runtime" if name in self._runtime_objects_by_name and name not in self._objects_by_name else "Interface"
+            self.statusBar().showMessage(f"{source}: {name} selecionado")
 
     def _update_inspector(self, name: str) -> None:
-        obj = self._objects_by_name.get(name)
+        obj = self._runtime_objects_by_name.get(name) if self._runtime_playing else None
+        obj = obj or self._objects_by_name.get(name)
         if obj is None:
             return
         self._updating_inspector = True
         try:
             self.inspector_name_label.setText(name)
             self.animation_object_label.setText(name)
-            self.add_component_button.setEnabled(True)
+            self.add_component_button.setEnabled(not self._runtime_playing)
             self._set_inspector_card_present("transform", True)
             for key in ("x", "y", "w", "h", "rotation"):
                 self.inspector_fields[key].setValue(float(obj[key]))
@@ -2915,6 +2937,37 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             else:
                 self.logic_status_label.setText("Nenhum Logic Graph vinculado")
                 self.logic_summary_label.setText("Adicione Lógica Visual para controlar este objeto sem scripts.")
+
+            lifecycle = obj.get("spawn_lifecycle") if isinstance(obj.get("spawn_lifecycle"), dict) else {}
+            motions = obj.get("logic_motions") if isinstance(obj.get("logic_motions"), list) else []
+            runtime_present = self._runtime_playing and (
+                bool(obj.get("spawned_by_logic", False)) or bool(lifecycle) or bool(motions)
+            )
+            self._set_inspector_card_present("runtime", runtime_present)
+            if runtime_present:
+                lines = [
+                    f"Posição: X {float(obj.get('x', 0.0)):.2f}  •  Y {float(obj.get('y', 0.0)):.2f}",
+                    f"Origem: X {float(lifecycle.get('origin_x', obj.get('x', 0.0))):.2f}  •  Y {float(lifecycle.get('origin_y', obj.get('y', 0.0))):.2f}",
+                    f"Criado por: {lifecycle.get('creator_object') or 'objeto da cena'}",
+                    f"Grafo: {lifecycle.get('creator_graph') or '—'}",
+                ]
+                if lifecycle:
+                    lines.append(
+                        f"Idade: {float(lifecycle.get('age', 0.0)):.2f}s  •  Vida: "
+                        f"{float(lifecycle.get('lifetime', 0.0)):.2f}s"
+                    )
+                if motions:
+                    lines.append("\nMovimentos ativos:")
+                    for motion in motions:
+                        lines.append(
+                            f"• {motion.get('name', 'Movement')} [{motion.get('space', 'global')}] "
+                            f"X {float(motion.get('x', 0.0)):.2f}  Y {float(motion.get('y', 0.0)):.2f}"
+                            + ("  • PAUSADO" if motion.get("paused") else "")
+                            + f"\n  Controlado por: {motion.get('graph') or '—'}"
+                        )
+                else:
+                    lines.append("Movimentos ativos: nenhum")
+                self.runtime_debug_label.setText("\n".join(lines))
 
             # Limpa widgets de scripts anteriores
             for h_w, b_w in self.script_containers:
@@ -3115,6 +3168,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 if state in {"play", "pause"}:
                     self._play_session.set_runtime_state(state)
                 if state == "edit":
+                    self._runtime_objects_by_name.clear()
                     self.logic_workspace.clear_runtime_trace()
                     self._runtime_animator_states.clear()
                     if self._animator_controller_dialog is not None:
@@ -3147,6 +3201,20 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self._refresh_hierarchy()
                 if self._selected_name in self._objects_by_name:
                     self._update_inspector(self._selected_name)
+            elif message.get("type") == "runtime_objects":
+                values = message.get("objects", [])
+                previous_names = set(self._runtime_objects_by_name)
+                self._runtime_objects_by_name = {
+                    str(item.get("name")): deepcopy(item)
+                    for item in values if isinstance(item, dict) and item.get("name")
+                }
+                if set(self._runtime_objects_by_name) != previous_names:
+                    self._refresh_hierarchy()
+                if self._selected_name in self._runtime_objects_by_name:
+                    self._update_inspector(str(self._selected_name))
+                elif self._selected_name in previous_names and self._selected_name not in self._objects_by_name:
+                    self._selected_name = None
+                    self._clear_inspector_view()
             elif message.get("type") == "viewport_mode":
                 state = "embutida" if message.get("embedded") else "em janela separada (fallback)"
                 self.statusBar().showMessage(f"Viewport {state}")

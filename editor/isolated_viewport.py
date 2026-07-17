@@ -446,6 +446,14 @@ class PlayScriptAPI:
     def destroy_after(self, seconds: float) -> None:
         self.runtime_world.destroy_after(self.obj, seconds)
 
+    def update_motion_debug(self, handle: str, state: dict[str, Any]) -> None:
+        self.obj.setdefault("_logic_motions", {})[str(handle)] = dict(state)
+
+    def remove_motion_debug(self, handle: str) -> None:
+        motions = self.obj.get("_logic_motions")
+        if isinstance(motions, dict):
+            motions.pop(str(handle), None)
+
     def add_component(self, component: str, properties: dict[str, Any] | None = None) -> None:
         self.runtime_world.add_component(self.obj, component, properties)
 
@@ -838,6 +846,28 @@ def run_viewport(
             if name in objects:
                 return name, objects[name]
         return None, None
+
+    def runtime_object_snapshot() -> list[dict[str, Any]]:
+        """Dados pequenos e serializáveis para Hierarchy/Inspector durante o Play."""
+        snapshot: list[dict[str, Any]] = []
+        for name, obj in objects.items():
+            lifecycle = obj.get("spawn_lifecycle") if isinstance(obj.get("spawn_lifecycle"), dict) else {}
+            motions = obj.get("_logic_motions") if isinstance(obj.get("_logic_motions"), dict) else {}
+            snapshot.append({
+                "id": str(obj.get("id", name)),
+                "name": str(name),
+                "x": float(obj.get("x", 0.0)), "y": float(obj.get("y", 0.0)),
+                "w": float(obj.get("w", 1.0)), "h": float(obj.get("h", 1.0)),
+                "rotation": float(obj.get("rotation", 0.0)),
+                "active": bool(obj.get("active", True)),
+                "spawned_by_logic": bool(obj.get("spawned_by_logic", False)),
+                "spawn_lifecycle": deepcopy(lifecycle),
+                "logic_motions": [
+                    {"handle": str(handle), **deepcopy(state)}
+                    for handle, state in motions.items() if isinstance(state, dict)
+                ],
+            })
+        return snapshot
 
     def start_scripts() -> None:
         nonlocal logic_blackboard, logic_event_bus
@@ -2124,6 +2154,8 @@ def run_viewport(
             runtime_mode = "PAUSE" if paused else ("PLAY" if playing else "EDIT")
             player_name, _player = controlled_object()
             world_stats = runtime_world.stats()
+            if playing:
+                _send(events, {"type": "runtime_objects", "objects": runtime_object_snapshot(), "selected": selected_name})
             _send(events, {"type": "stats", "fps": clock.get_fps(), "objects": len(objects), "mode": runtime_mode, "view": view_mode.upper(), "zoom": view_transform()[2], "snap": snap_enabled, "camera": (game_camera() or {}).get("name") if view_mode == "game" else "Editor", "player": player_name, "spawned": world_stats["created"], "reused": world_stats["reused"], "destroyed": world_stats["destroyed"], "pooled": world_stats["pooled"]})
 
     pygame.quit()

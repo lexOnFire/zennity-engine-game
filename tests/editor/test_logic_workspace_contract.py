@@ -398,3 +398,36 @@ def test_logic_workspace_explains_targets_and_controls_spawn_lifecycle():
     assert "def update_lifecycle" in world
     assert "def can_spawn" in world
     assert '"safe_pooled_projectile"' in recipes
+
+
+def test_logic_workspace_controls_named_movements_and_debugs_runtime_objects():
+    graph = _source("engine/logic/graph_asset.py")
+    runtime = _source("engine/logic/runtime.py")
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    viewport = _source("editor/isolated_viewport.py")
+    main = _source("editor/isolated_editor_main.py")
+    interface = _source("editor/interface_smoke_test.py")
+    recipes = _source("engine/logic/recipes.py")
+    for node_type in (
+        "update_continuous_motion", "pause_continuous_motion",
+        "resume_continuous_motion", "stop_continuous_motion",
+        "get_continuous_motion",
+    ):
+        assert f'"{node_type}"' in graph
+        assert f'node_type == "{node_type}"' in runtime or node_type in {"pause_continuous_motion", "resume_continuous_motion"}
+        assert f'"{node_type}"' in editor
+    assert '"movement": "Movement"' in graph
+    assert '"space": "global"' in graph
+    assert '"acceleration": 0.0' in graph and '"deceleration": 0.0' in graph
+    assert '"movement": QColor' in editor
+    assert '"controlled_permanent_motion"' in recipes
+    assert "def runtime_object_snapshot" in viewport
+    assert '"type": "runtime_objects"' in viewport
+    assert 'message.get("type") == "runtime_objects"' in main
+    assert '"▶ Runtime (' in main
+    assert "_runtime_objects_by_name" in main
+    assert "runtime_debug_header" in interface
+    assert "runtime_debug_label" in interface
+    assert "Movimentos ativos" in main
+    assert "Criado por:" in main and "Grafo:" in main
+    assert "Controlado por:" in main

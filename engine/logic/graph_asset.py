@@ -73,8 +73,33 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "jump": {"title": "Pular", "category": "Movimento", "properties": {"force": 420.0}},
     "get_position": {"title": "Ler posição", "category": "Posição", "properties": {}},
     "move_by": {"title": "Mover continuamente", "category": "Posição", "properties": {"x": 100.0, "y": 0.0}},
-    "start_continuous_motion": {"title": "Iniciar movimento permanente", "category": "Posição", "properties": {"x": 100.0, "y": 0.0}},
-    "stop_continuous_motion": {"title": "Parar movimento permanente", "category": "Posição", "properties": {}},
+    "start_continuous_motion": {
+        "title": "Iniciar movimento permanente", "category": "Posição",
+        "properties": {
+            "movement": "Movement", "x": 100.0, "y": 0.0,
+            "space": "global", "acceleration": 0.0, "deceleration": 0.0,
+        },
+    },
+    "update_continuous_motion": {
+        "title": "Alterar movimento permanente", "category": "Posição",
+        "properties": {"movement": "Movement", "x": 100.0, "y": 0.0, "acceleration": 0.0},
+    },
+    "pause_continuous_motion": {
+        "title": "Pausar movimento permanente", "category": "Posição",
+        "properties": {"movement": "Movement"},
+    },
+    "resume_continuous_motion": {
+        "title": "Continuar movimento permanente", "category": "Posição",
+        "properties": {"movement": "Movement"},
+    },
+    "stop_continuous_motion": {
+        "title": "Parar movimento permanente", "category": "Posição",
+        "properties": {"movement": "", "smooth": False},
+    },
+    "get_continuous_motion": {
+        "title": "Consultar movimento permanente", "category": "Posição",
+        "properties": {"movement": "Movement"},
+    },
     "patrol_axis": {"title": "Patrulhar entre limites", "category": "Posição", "properties": {"axis": "Y", "minimum": -100.0, "maximum": 100.0, "speed": 100.0}},
     "if_else": {"title": "If / Else", "category": "Lógica", "properties": {"condition": True}},
     "sequence": {"title": "Sequência", "category": "Lógica", "properties": {"outputs": 2}},
@@ -161,8 +186,24 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "jump": {"inputs": [("in", "flow"), ("force", "number")], "outputs": [("next", "flow")]},
     "get_position": {"inputs": [("target", "object")], "outputs": [("x", "number"), ("y", "number")]},
     "move_by": {"inputs": [("in", "flow"), ("target", "object"), ("x", "number"), ("y", "number")], "outputs": [("next", "flow")]},
-    "start_continuous_motion": {"inputs": [("in", "flow"), ("target", "object"), ("x", "number"), ("y", "number")], "outputs": [("next", "flow")]},
-    "stop_continuous_motion": {"inputs": [("in", "flow"), ("target", "object")], "outputs": [("next", "flow")]},
+    "start_continuous_motion": {
+        "inputs": [("in", "flow"), ("target", "object"), ("x", "number"), ("y", "number")],
+        "outputs": [("next", "flow"), ("movement", "movement")],
+    },
+    "update_continuous_motion": {
+        "inputs": [("in", "flow"), ("target", "object"), ("movement", "movement"), ("x", "number"), ("y", "number")],
+        "outputs": [("next", "flow")],
+    },
+    "pause_continuous_motion": {"inputs": [("in", "flow"), ("target", "object"), ("movement", "movement")], "outputs": [("next", "flow")]},
+    "resume_continuous_motion": {"inputs": [("in", "flow"), ("target", "object"), ("movement", "movement")], "outputs": [("next", "flow")]},
+    "stop_continuous_motion": {"inputs": [("in", "flow"), ("target", "object"), ("movement", "movement")], "outputs": [("next", "flow")]},
+    "get_continuous_motion": {
+        "inputs": [("in", "flow"), ("target", "object"), ("movement", "movement")],
+        "outputs": [
+            ("next", "flow"), ("x", "number"), ("y", "number"), ("speed", "number"),
+            ("paused", "bool"), ("active", "bool"),
+        ],
+    },
     "patrol_axis": {"inputs": [("in", "flow"), ("target", "object"), ("minimum", "number"), ("maximum", "number"), ("speed", "number")], "outputs": [("next", "flow"), ("direction", "number"), ("position", "number")]},
     "if_else": {"inputs": [("in", "flow"), ("condition", "bool")], "outputs": [("true", "flow"), ("false", "flow")]},
     "sequence": {"inputs": [("in", "flow")], "outputs": [("then_0", "flow"), ("then_1", "flow"), ("next", "flow")]},

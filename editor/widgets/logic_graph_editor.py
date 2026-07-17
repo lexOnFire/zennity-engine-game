@@ -82,6 +82,7 @@ PORT_COLORS = {
     "bool": QColor("#50c878"),
     "text": QColor("#e6b85c"),
     "object": QColor("#47b8c8"),
+    "movement": QColor("#ff8c69"),
     "any": QColor("#ae7df0"),
 }
 
@@ -105,7 +106,11 @@ NODE_DESCRIPTIONS = {
     "get_position": "Lê as coordenadas X e Y atuais do objeto.",
     "move_by": "Move X e Y continuamente em unidades por segundo, sem exigir teclado.",
     "start_continuous_motion": "Inicia uma velocidade que continua ativa depois que a tecla é solta.",
-    "stop_continuous_motion": "Interrompe todos os movimentos permanentes do objeto alvo.",
+    "update_continuous_motion": "Altera a velocidade desejada de um movimento já iniciado.",
+    "pause_continuous_motion": "Pausa somente o movimento indicado, usando desaceleração quando configurada.",
+    "resume_continuous_motion": "Continua um movimento pausado sem criar outro.",
+    "stop_continuous_motion": "Interrompe o movimento indicado; identificador vazio mantém compatibilidade e para todos do alvo.",
+    "get_continuous_motion": "Consulta velocidade, módulo e estado de um movimento durante o Play.",
     "key_pressed": "Verdadeiro somente no primeiro frame em que a tecla é apertada.",
     "key_held": "Verdadeiro durante todo o tempo em que a tecla fica segurada.",
     "patrol_axis": "Move entre dois limites e inverte automaticamente a direção ao alcançá-los.",
@@ -147,11 +152,17 @@ PROPERTY_LABELS = {
     "repeat_x": "Repetir no eixo X", "repeat_y": "Repetir no eixo Y",
     "parallax": "Intensidade do parallax", "reset": "Voltar à origem",
     "send_to_background": "Enviar para camada Background",
+    "movement": "Identificador do movimento",
+    "space": "Espaço (global/local)",
+    "acceleration": "Aceleração",
+    "deceleration": "Desaceleração",
+    "smooth": "Parada suave",
 }
 
 NODE_PROPERTY_LABELS = {
     "move_by": {"x": "Velocidade X", "y": "Velocidade Y"},
     "start_continuous_motion": {"x": "Velocidade permanente X", "y": "Velocidade permanente Y"},
+    "update_continuous_motion": {"x": "Nova velocidade X", "y": "Nova velocidade Y"},
     "set_position": {"x": "Posição X", "y": "Posição Y"},
     "patrol_axis": {"axis": "Eixo", "minimum": "Limite mínimo", "maximum": "Limite máximo", "speed": "Velocidade"},
     "create_object": {"x": "Posição X", "y": "Posição Y"},
