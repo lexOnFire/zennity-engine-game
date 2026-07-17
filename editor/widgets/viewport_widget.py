@@ -4,9 +4,9 @@ editor/widgets/viewport_widget.py
 Widget de Viewport gráfica PySide6/Pygame.
 
 Arquitetura:
-  - A viewport é a ÚNICA fonte de verdade para os objetos da cena física.
-  - O SceneModel/ViewModel apenas espelha o estado da cena para o Outliner.
-  - Qualquer criação/deleção de objeto passa pela cena ativa da viewport.
+  - O SceneModel/SceneViewModel define a identidade canônica dos GameObjects no editor.
+  - A viewport renderiza e interage com a cena ativa, mas delega criação/remoção/duplicação ao ViewModel.
+  - A seleção é sincronizada por UUID para evitar instâncias duplicadas entre painéis.
   - Monkey-patches silenciam os painéis legados do Pygame (toolbar, painel esq/dir, statusbar).
 """
 
@@ -34,9 +34,9 @@ class ViewportWidget(QOpenGLWidget):
     Viewport gráfica embarcando o loop do Pygame dentro de um QOpenGLWidget.
 
     Regras de sincronização:
-      1. A cena ativa (active_scene) é a fonte de verdade dos GameObjects.
-      2. O SceneModel é apenas um espelho para o Outliner — alimentado daqui.
-      3. Criar/deletar objetos: chamar sempre active_scene.spawn_object / delete_selected.
+      1. O SceneViewModel é a porta de entrada para criar, deletar e duplicar objetos no editor.
+      2. A cena ativa espelha e renderiza os GameObjects canônicos do editor.
+      3. A seleção entre viewport e painéis é sincronizada por UUID.
       4. Os painéis legados do Pygame são silenciados via monkey-patch no draw.
     """
 
@@ -46,38 +46,29 @@ class ViewportWidget(QOpenGLWidget):
         self.setFocusPolicy(Qt.StrongFocus)
         self.setMouseTracking(True)
 
-        # Pygame (display headless — janela real fica no Qt)
         pygame.init()
         pygame.font.init()
 
         self.viewmodel: Optional[SceneViewModel] = None
-        self.active_scene = None          # Editor2DScene ou EditorScene (3D)
+        self.active_scene = None
         self.editor_mode: str = "2D"
 
-        # Coordenada local do cursor dentro deste widget (substituição de pygame.mouse.get_pos)
         self._qt_mouse_pos: tuple = (0, 0)
         pygame.mouse.get_pos = lambda: self._qt_mouse_pos
 
-        # Surface de renderização Pygame (framebuffer)
         self.pg_surface: Optional[pygame.Surface] = None
         self._vp_w: int = 800
         self._vp_h: int = 600
 
         self._last_time: float = time.time()
 
-        # Assina eventos globais
         EventBus.subscribe(EVENT_PLAY_STATE_CHANGED,  self._on_play_state_changed)
         EventBus.subscribe(EVENT_SELECTION_CHANGED,   self._on_selection_changed)
         EventBus.subscribe(EVENT_PROPERTY_CHANGED,    self._on_property_changed)
 
-        # Tick a 60 FPS
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._tick)
         self._timer.start(16)
-
-    # ──────────────────────────────────────────────────────────────────────────
-    # Inicialização
-    # ──────────────────────────────────────────────────────────────────────────
 
     def set_viewmodel(self, viewmodel: SceneViewModel) -> None:
         """
@@ -86,74 +77,74 @@ class ViewportWidget(QOpenGLWidget):
         """
         self.viewmodel = viewmodel
 
-        # Cria a cena 2D inicial
         from editor_legacy.editor_2d import Editor2DScene
         self.active_scene = Editor2DScene()
         self.active_scene.start()
 
-        # Aplica shims ANTES de sincronizar o modelo
         self._apply_qt_shims()
-
-        # Espelha os objetos da cena no SceneModel (Outliner)
-        self._sync_model_from_scene()
+        self._sync_scene_from_model()
 
     # ──────────────────────────────────────────────────────────────────────────
-    # Sincronização Cena ↔ Modelo
+    # Sincronização Modelo ↔ Cena
     # ──────────────────────────────────────────────────────────────────────────
 
-    def _sync_model_from_scene(self) -> None:
+    def _sync_scene_from_model(self) -> None:
         """
-        Repopula o SceneModel com os objetos da cena ativa.
-        Deve ser chamado sempre que a lista de objetos mudar.
+        Reespelha a cena ativa a partir do SceneModel canônico do editor.
+        Deve ser chamado após criação, deleção, duplicação ou troca de modo.
         """
         if not self.viewmodel or not self.active_scene:
             return
 
-        model = self.viewmodel._model
-        model.clear()
+        root_objects = list(self.viewmodel.get_root_objects())
 
-        for obj in self.active_scene.editable_objects:
-            model.add_object(obj)
+        if hasattr(self.active_scene, "editable_objects"):
+            self.active_scene.editable_objects.clear()
+        if hasattr(self.active_scene, "game_objects"):
+            self.active_scene.game_objects.clear()
 
-        # Sincroniza seleção
-        idx = getattr(self.active_scene, "selected_index", -1)
-        objs = self.active_scene.editable_objects
-        if 0 <= idx < len(objs):
-            self.viewmodel._selected_object = objs[idx]
-            # Emite sem loop: usa o atributo direto para não re-triggar selecão na cena
-        else:
-            self.viewmodel._selected_object = None
+        for obj in root_objects:
+            if hasattr(self.active_scene, "_add_go"):
+                self.active_scene._add_go(obj)
+            if hasattr(self.active_scene, "game_objects") and obj not in self.active_scene.game_objects:
+                self.active_scene.game_objects.append(obj)
+            if hasattr(self.active_scene, "editable_objects") and obj not in self.active_scene.editable_objects:
+                self.active_scene.editable_objects.append(obj)
 
-        # Notifica Outliner e Inspector via sinal de hierarquia
-        self.viewmodel.on_model_hierarchy_changed()
+        selected_id = self.viewmodel.selected_id
+        objs = getattr(self.active_scene, "editable_objects", [])
+        self.active_scene.selected_index = -1
+        if selected_id:
+            for i, obj in enumerate(objs):
+                if obj.id == selected_id:
+                    self.active_scene.selected_index = i
+                    break
+
+        self.update()
 
     def create_object(self, shape_type: str) -> None:
         """
         Ponto de entrada único para criação de objetos via menu Criar.
-        Delega para a cena ativa e depois sincroniza o modelo.
+        Delega para o SceneViewModel e depois espelha a cena ativa.
         """
-        if not self.active_scene:
+        if not self.viewmodel:
             return
-
-        if hasattr(self.active_scene, "spawn_object"):
-            self.active_scene.spawn_object(shape_type)
-            self._sync_model_from_scene()
+        self.viewmodel.create_object(shape_type)
+        self._sync_scene_from_model()
 
     def delete_selected_object(self) -> None:
-        """Deleta o objeto selecionado na cena ativa."""
-        if not self.active_scene:
+        """Deleta o objeto selecionado via SceneViewModel."""
+        if not self.viewmodel:
             return
-        if hasattr(self.active_scene, "delete_selected"):
-            self.active_scene.delete_selected()
-            self._sync_model_from_scene()
+        self.viewmodel.delete_selected()
+        self._sync_scene_from_model()
 
     def duplicate_selected_object(self) -> None:
-        """Duplica o objeto selecionado na cena ativa."""
-        if not self.active_scene:
+        """Duplica o objeto selecionado via SceneViewModel."""
+        if not self.viewmodel:
             return
-        if hasattr(self.active_scene, "duplicate_selected"):
-            self.active_scene.duplicate_selected()
-            self._sync_model_from_scene()
+        self.viewmodel.duplicate_selected()
+        self._sync_scene_from_model()
 
     # ──────────────────────────────────────────────────────────────────────────
     # Alternância de Modo 2D/3D
@@ -163,10 +154,6 @@ class ViewportWidget(QOpenGLWidget):
         """Troca a cena ativa entre editor 2D e 3D preservando os objetos."""
         if self.editor_mode == mode or not self.active_scene:
             return
-
-        # Salva objetos e seleção atuais
-        objs = list(self.active_scene.editable_objects)
-        sel_obj = self.viewmodel.selected_object if self.viewmodel else None
 
         self.editor_mode = mode
 
@@ -178,25 +165,9 @@ class ViewportWidget(QOpenGLWidget):
             self.active_scene = EditorScene()
 
         self.active_scene.start()
-
-        # Transfere objetos (limpa os objetos padrão da nova cena e reinsere os salvos)
-        self.active_scene.editable_objects.clear()
-        self.active_scene.game_objects.clear()
-        for obj in objs:
-            self.active_scene._add_go(obj) if hasattr(self.active_scene, "_add_go") else None
-            if obj not in self.active_scene.game_objects:
-                self.active_scene.game_objects.append(obj)
-            self.active_scene.editable_objects.append(obj)
-
-        # Sincroniza seleção
-        if sel_obj in objs:
-            self.active_scene.selected_index = objs.index(sel_obj)
-        else:
-            self.active_scene.selected_index = -1
-
         self._apply_qt_shims()
         self.resizeGL(self.width(), self.height())
-        self._sync_model_from_scene()
+        self._sync_scene_from_model()
         self.update()
 
     # ──────────────────────────────────────────────────────────────────────────
@@ -204,24 +175,15 @@ class ViewportWidget(QOpenGLWidget):
     # ──────────────────────────────────────────────────────────────────────────
 
     def _apply_qt_shims(self) -> None:
-        """
-        Monkey-patch nas cenas legadas do Pygame:
-          1. Layout dinâmico: captura self._vp_w / self._vp_h em tempo de execução.
-          2. Oculta toolbar, painel esq/dir e statusbar legados do Pygame.
-          3. Editor 3D: desativa modais e configura câmera.
-        Chamado após criar/trocar a cena e a cada resize.
-        """
         if not self.active_scene:
             return
 
-        widget = self  # captura por referência — sem valores fixos
-        scene  = self.active_scene
+        widget = self
+        scene = self.active_scene
 
-        # ── Editor 2D ────────────────────────────────────────────────────────
         if hasattr(scene, "_layout") and not hasattr(scene, "_lay"):
 
             def _qt_layout_2d(_w=widget):
-                """Layout que lê dimensões reais do widget a cada frame."""
                 w, h = _w._vp_w, _w._vp_h
                 return {
                     "sw": w, "sh": h,
@@ -238,8 +200,6 @@ class ViewportWidget(QOpenGLWidget):
                 }
             scene._layout = _qt_layout_2d
 
-            # Move todos os botões legados do Pygame para fora da tela
-            # (rect com y negativo garante que collidepoint() nunca dispare)
             for btn in getattr(scene, "_all_toolbar_btns", []):
                 btn.rect.y = -9999
 
@@ -249,17 +209,10 @@ class ViewportWidget(QOpenGLWidget):
                 _scene._draw_viewport(screen, lay)
             scene.draw = _qt_draw_2d
 
-            # Guarda o original e substitui por wrapper que filtra eventos
             if not hasattr(scene.handle_event, "__wrapped__"):
                 _orig_handle = scene.handle_event
 
                 def _qt_handle_event_2d(event, _scene=scene, _orig=_orig_handle):
-                    """
-                    Wrapper que deixa passar apenas:
-                      - Eventos de teclado e scroll (sempre).
-                      - Eventos de mouse dentro da viewport (filtra a hierarquia
-                        e o inspector legados que ficavam em x < 240 e x > sw-260).
-                    """
                     import pygame as _pg
                     if event.type in (_pg.KEYDOWN, _pg.KEYUP):
                         _orig(event)
@@ -270,7 +223,6 @@ class ViewportWidget(QOpenGLWidget):
                     if event.type in (_pg.MOUSEBUTTONDOWN, _pg.MOUSEBUTTONUP, _pg.MOUSEMOTION):
                         lay = _scene._layout()
                         mx, my = _pg.mouse.get_pos()
-                        # Só processa se o mouse está dentro da viewport completa
                         if _scene._in_viewport(mx, my, lay):
                             _orig(event)
                         return
@@ -279,11 +231,9 @@ class ViewportWidget(QOpenGLWidget):
                 _qt_handle_event_2d.__wrapped__ = _orig_handle
                 scene.handle_event = _qt_handle_event_2d
 
-        # ── Editor 3D ────────────────────────────────────────────────────────
         elif hasattr(scene, "_lay"):
 
             def _sync_3d_layout(_w=widget, _lay=scene._lay):
-                """Atualiza os Rects de layout do editor 3D com dimensões reais."""
                 w, h = _w._vp_w, _w._vp_h
                 _lay.left_panel_rect    = pygame.Rect(0, 0, 0, 0)
                 _lay.right_panel_rect   = pygame.Rect(w, 0, 0, 0)
@@ -297,29 +247,23 @@ class ViewportWidget(QOpenGLWidget):
                 _lay.viewport_h = h
                 _lay.viewport_w = w
 
-            # Aplica imediatamente
             _sync_3d_layout()
-            # Congela atualização interna de layout
             scene._lay.update = lambda sw, sh: None
 
             def _qt_draw_3d(screen, _scene=scene, _w=widget):
-                # Sincroniza layout a cada frame (responde ao resize)
                 _sync_3d_layout()
 
-                # Suprime modais/painéis legados
-                _scene.showing_welcome    = False
-                _scene.showing_templates  = False
+                _scene.showing_welcome = False
+                _scene.showing_templates = False
                 _scene.showing_help_modal = False
                 if hasattr(_scene, "code_editor"):
                     _scene.code_editor.is_open = False
 
                 lay = _scene._lay
-
-                # Câmera 3D ocupa toda a viewport
                 cam = _scene.camera_comp
-                cam.viewport_x      = 0
-                cam.viewport_y      = 0
-                cam.viewport_width  = lay.viewport_rect.width
+                cam.viewport_x = 0
+                cam.viewport_y = 0
+                cam.viewport_width = lay.viewport_rect.width
                 cam.viewport_height = lay.viewport_rect.height
                 cam.update(0.0)
 
@@ -344,12 +288,7 @@ class ViewportWidget(QOpenGLWidget):
 
             scene.draw = _qt_draw_3d
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # Foco da câmera
-    # ──────────────────────────────────────────────────────────────────────────
-
     def focus_camera_on_selected(self) -> None:
-        """Tecla F — centraliza câmera no objeto selecionado."""
         if not self.active_scene or not self.viewmodel:
             return
         obj = self.viewmodel.selected_object
@@ -357,23 +296,17 @@ class ViewportWidget(QOpenGLWidget):
             return
 
         if hasattr(self.active_scene, "camera") and hasattr(self.active_scene, "cam_obj"):
-            # Editor 2D: centraliza câmera 2D
             from engine.graphics.camera2d import Camera2D
             if Camera2D.main:
                 Camera2D.main.transform.position[0] = obj.transform.position[0]
                 Camera2D.main.transform.position[1] = obj.transform.position[1]
         elif hasattr(self.active_scene, "camera_comp"):
-            # Editor 3D: orbita em torno do objeto
             ctrl = getattr(self.active_scene, "camera_controller", None)
             if ctrl:
-                ctrl.target   = obj.transform.position.copy()
+                ctrl.target = obj.transform.position.copy()
                 ctrl.distance = 5.0
 
         self.update()
-
-    # ──────────────────────────────────────────────────────────────────────────
-    # GL + Render
-    # ──────────────────────────────────────────────────────────────────────────
 
     def initializeGL(self) -> None:
         pass
@@ -401,34 +334,28 @@ class ViewportWidget(QOpenGLWidget):
     @Slot()
     def _tick(self) -> None:
         now = time.time()
-        dt  = min(now - self._last_time, 0.1)
+        dt = min(now - self._last_time, 0.1)
         self._last_time = now
 
         if self.active_scene:
             self.active_scene.update(dt)
-
-            # Sincroniza seleção da cena → ViewModel enquanto arrasta
             self._sync_selection_to_model()
 
         self.update()
 
     def _sync_selection_to_model(self) -> None:
-        """Propaga a mudança de selected_index da cena para o ViewModel."""
+        """Propaga a mudança de selected_index da cena para o ViewModel por UUID."""
         if not self.viewmodel or not self.active_scene:
             return
-        idx  = getattr(self.active_scene, "selected_index", -1)
+
+        idx = getattr(self.active_scene, "selected_index", -1)
         objs = getattr(self.active_scene, "editable_objects", [])
-        sel  = objs[idx] if 0 <= idx < len(objs) else None
+        sel = objs[idx] if 0 <= idx < len(objs) else None
 
-        if sel != self.viewmodel._selected_object:
-            # Atualiza sem emitir selection_changed (para não re-triggar selecão na cena)
-            self.viewmodel._selected_object = sel
-            self.viewmodel.selection_changed.emit(sel)
-            EventBus.emit(EVENT_SELECTION_CHANGED, obj=sel)
-
-    # ──────────────────────────────────────────────────────────────────────────
-    # Handlers de Eventos do EventBus
-    # ──────────────────────────────────────────────────────────────────────────
+        current_id = self.viewmodel.selected_id
+        new_id = sel.id if sel else None
+        if current_id != new_id:
+            self.viewmodel.selected_object = sel
 
     def _on_play_state_changed(self, state: str) -> None:
         if not self.active_scene or not hasattr(self.active_scene, "playing"):
@@ -440,14 +367,17 @@ class ViewportWidget(QOpenGLWidget):
             self.active_scene.toggle_play()
 
     def _on_selection_changed(self, obj) -> None:
-        """Propaga seleção vinda do Outliner → cena ativa."""
+        """Propaga seleção vinda do Outliner → cena ativa por UUID."""
         if not self.active_scene:
             return
         objs = getattr(self.active_scene, "editable_objects", [])
-        if obj in objs:
-            self.active_scene.selected_index = objs.index(obj)
-        else:
-            self.active_scene.selected_index = -1
+        selected_id = obj.id if obj else None
+        self.active_scene.selected_index = -1
+        if selected_id:
+            for i, candidate in enumerate(objs):
+                if candidate.id == selected_id:
+                    self.active_scene.selected_index = i
+                    break
 
     def _on_property_changed(self, component_name: str, property_name: str, value) -> None:
         if component_name != "Editor":
@@ -467,14 +397,13 @@ class ViewportWidget(QOpenGLWidget):
             if hasattr(self.active_scene, "show_grid"):
                 self.active_scene.show_grid = bool(value)
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # Mapeamento de Eventos Qt → Pygame
-    # ──────────────────────────────────────────────────────────────────────────
-
     def _qt_btn_to_pg(self, btn: Qt.MouseButton) -> int:
-        if btn == Qt.LeftButton:   return 1
-        if btn == Qt.MiddleButton: return 2
-        if btn == Qt.RightButton:  return 3
+        if btn == Qt.LeftButton:
+            return 1
+        if btn == Qt.MiddleButton:
+            return 2
+        if btn == Qt.RightButton:
+            return 3
         return 0
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
@@ -486,7 +415,6 @@ class ViewportWidget(QOpenGLWidget):
                 button=self._qt_btn_to_pg(event.button()),
             )
             self.active_scene.handle_event(pg_ev)
-            # Sincroniza seleção imediatamente após o clique
             self._sync_selection_to_model()
         event.accept()
 
@@ -510,9 +438,9 @@ class ViewportWidget(QOpenGLWidget):
                 pygame.MOUSEMOTION,
                 pos=self._qt_mouse_pos,
                 buttons=(
-                    1 if btns & Qt.LeftButton   else 0,
-                    1 if btns & Qt.MiddleButton  else 0,
-                    1 if btns & Qt.RightButton   else 0,
+                    1 if btns & Qt.LeftButton else 0,
+                    1 if btns & Qt.MiddleButton else 0,
+                    1 if btns & Qt.RightButton else 0,
                 ),
                 rel=(0, 0),
             )
@@ -530,22 +458,21 @@ class ViewportWidget(QOpenGLWidget):
         event.accept()
 
     def _qt_key_to_pg(self, qt_key: Qt.Key) -> Optional[int]:
-        """Converte tecla Qt → constante pygame.K_*"""
         _map = {
-            Qt.Key_Escape:    pygame.K_ESCAPE,
-            Qt.Key_Delete:    pygame.K_DELETE,
+            Qt.Key_Escape: pygame.K_ESCAPE,
+            Qt.Key_Delete: pygame.K_DELETE,
             Qt.Key_Backspace: pygame.K_BACKSPACE,
-            Qt.Key_Left:      pygame.K_LEFT,
-            Qt.Key_Right:     pygame.K_RIGHT,
-            Qt.Key_Up:        pygame.K_UP,
-            Qt.Key_Down:      pygame.K_DOWN,
-            Qt.Key_Space:     pygame.K_SPACE,
-            Qt.Key_Return:    pygame.K_RETURN,
-            Qt.Key_Enter:     pygame.K_KP_ENTER,
-            Qt.Key_Shift:     pygame.K_LSHIFT,
-            Qt.Key_Control:   pygame.K_LCTRL,
-            Qt.Key_Alt:       pygame.K_LALT,
-            Qt.Key_Tab:       pygame.K_TAB,
+            Qt.Key_Left: pygame.K_LEFT,
+            Qt.Key_Right: pygame.K_RIGHT,
+            Qt.Key_Up: pygame.K_UP,
+            Qt.Key_Down: pygame.K_DOWN,
+            Qt.Key_Space: pygame.K_SPACE,
+            Qt.Key_Return: pygame.K_RETURN,
+            Qt.Key_Enter: pygame.K_KP_ENTER,
+            Qt.Key_Shift: pygame.K_LSHIFT,
+            Qt.Key_Control: pygame.K_LCTRL,
+            Qt.Key_Alt: pygame.K_LALT,
+            Qt.Key_Tab: pygame.K_TAB,
             **{getattr(Qt, f"Key_F{i}"): getattr(pygame, f"K_F{i}") for i in range(1, 13)},
         }
         if Qt.Key_A <= qt_key <= Qt.Key_Z:
@@ -563,6 +490,16 @@ class ViewportWidget(QOpenGLWidget):
         if not self.active_scene:
             return
 
+        if event.key() == Qt.Key_Delete:
+            self.delete_selected_object()
+            event.accept()
+            return
+
+        if event.key() == Qt.Key_D and event.modifiers() & Qt.ControlModifier:
+            self.duplicate_selected_object()
+            event.accept()
+            return
+
         pg_key = self._qt_key_to_pg(event.key())
         if pg_key is not None:
             mod = pygame.KMOD_NONE
@@ -573,9 +510,7 @@ class ViewportWidget(QOpenGLWidget):
                 key=pg_key, mod=mod, unicode=event.text(),
             )
             self.active_scene.handle_event(pg_ev)
-            # Delete e Ctrl+D devem sincronizar o modelo
-            if pg_key == pygame.K_DELETE:
-                self._sync_model_from_scene()
+            self._sync_selection_to_model()
             event.accept()
         else:
             super().keyPressEvent(event)
