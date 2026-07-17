@@ -54,7 +54,10 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "create_prefab": {
         "title": "Criar Prefab", "category": "Objetos",
         "properties": {
-            "path": "", "x": 0.0, "y": 0.0, "relative": False,
+            "path": "", "override_position": True, "x": 0.0, "y": 0.0, "relative": False,
+            "override_rotation": False, "rotation": 0.0,
+            "override_scale": False, "width": 64.0, "height": 64.0,
+            "include_camera": False, "include_audio": False, "include_logic": False,
             "lifetime": 0.0, "max_instances": 0, "max_distance": 0.0,
             "use_pool": True,
         },
@@ -177,7 +180,13 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
         "inputs": [("in", "flow"), ("source", "object"), ("name", "text"), ("x", "number"), ("y", "number")],
         "outputs": [("next", "flow"), ("limit_reached", "flow"), ("object", "object")],
     },
-    "create_prefab": {"inputs": [("in", "flow"), ("x", "number"), ("y", "number")], "outputs": [("next", "flow"), ("limit_reached", "flow"), ("object", "object")]},
+    "create_prefab": {
+        "inputs": [
+            ("in", "flow"), ("x", "number"), ("y", "number"),
+            ("rotation", "number"), ("width", "number"), ("height", "number"),
+        ],
+        "outputs": [("next", "flow"), ("limit_reached", "flow"), ("object", "object")],
+    },
     "clone_object": {"inputs": [("in", "flow"), ("target", "object"), ("name", "text")], "outputs": [("next", "flow"), ("limit_reached", "flow"), ("object", "object")]},
     "add_component": {"inputs": [("in", "flow"), ("target", "object")], "outputs": [("next", "flow")]},
     "remove_component": {"inputs": [("in", "flow"), ("target", "object")], "outputs": [("next", "flow")]},
@@ -599,8 +608,23 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
             issues.append({"level": "error", "node": node["id"], "message": "Informe o nome da porta do subgrafo."})
         if node["type"] == "call_subgraph" and not str(node.get("properties", {}).get("path", "")).strip():
             issues.append({"level": "error", "node": node["id"], "message": "Escolha o arquivo do subgrafo."})
-        if node["type"] == "create_prefab" and not str(node.get("properties", {}).get("path", "")).strip():
-            issues.append({"level": "error", "node": node["id"], "message": "Escolha o arquivo .zprefab."})
+        if node["type"] == "create_prefab":
+            prefab_properties = node.get("properties", {})
+            prefab_path = str(prefab_properties.get("path", "")).strip()
+            if not prefab_path:
+                issues.append({"level": "error", "node": node["id"], "message": "Escolha o arquivo .zprefab."})
+            elif Path(prefab_path).suffix.lower() != ".zprefab":
+                issues.append({"level": "error", "node": node["id"], "message": "O arquivo escolhido precisa ser .zprefab."})
+            if bool(prefab_properties.get("override_scale", False)):
+                try:
+                    valid_size = (
+                        float(prefab_properties.get("width", 0.0)) > 0.0
+                        and float(prefab_properties.get("height", 0.0)) > 0.0
+                    )
+                except (TypeError, ValueError):
+                    valid_size = False
+                if not valid_size:
+                    issues.append({"level": "error", "node": node["id"], "message": "Largura e altura do Prefab precisam ser maiores que zero."})
         if node["type"] in {"set_sprite", "play_animation_asset", "play_sound"}:
             has_path = bool(str(node.get("properties", {}).get("path", "")).strip())
             if not has_path and (node["id"], "path") not in connected_inputs:

@@ -1479,8 +1479,12 @@ def test_prefab_and_component_nodes_share_created_object_reference():
     class Game:
         x = y = 0
         def __init__(self): self.created = Created()
-        def create_prefab(self, path, x, y):
+        def create_prefab(self, path, x, y, **options):
             assert (path, x, y) == ("Assets/Prefabs/Enemy.zprefab", 0.0, 0.0)
+            assert options == {
+                "rotation": None, "width": None, "height": None,
+                "include_camera": False, "include_audio": False, "include_logic": False,
+            }
             return self.created
 
     game = Game()
@@ -1493,6 +1497,60 @@ def test_prefab_node_requires_an_asset():
     graph = default_logic_graph("InvalidPrefab")
     graph["nodes"] = [create_logic_node("event_start"), create_logic_node("create_prefab")]
     assert any(".zprefab" in issue["message"] for issue in validate_logic_graph(graph))
+
+
+def test_prefab_node_can_preserve_transform_or_apply_safe_overrides():
+    event = create_logic_node("event_start")
+    prefab = create_logic_node("create_prefab")
+    prefab["properties"].update({
+        "path": "Assets/Prefabs/Bullet.zprefab",
+        "override_position": False,
+        "override_rotation": True, "rotation": 90.0,
+        "override_scale": True, "width": 20.0, "height": 8.0,
+        "include_audio": True,
+    })
+    graph = default_logic_graph("SafePrefab")
+    graph["nodes"] = [event, prefab]
+    graph["edges"] = [_edge(event, "next", prefab, "in")]
+
+    class Created:
+        active = True
+
+    class Game:
+        x = y = 50.0
+
+        def __init__(self):
+            self.options = None
+
+        def create_prefab(self, path, x, y, **options):
+            self.options = (path, x, y, options)
+            return Created()
+
+    game = Game()
+    LogicGraphRuntime(graph).start(game)
+
+    path, x, y, options = game.options
+    assert (path, x, y) == ("Assets/Prefabs/Bullet.zprefab", None, None)
+    assert options == {
+        "rotation": 90.0, "width": 20.0, "height": 8.0,
+        "include_camera": False, "include_audio": True, "include_logic": False,
+    }
+    assert ("rotation", "number") in node_port_definitions("create_prefab")["inputs"]
+    assert "câmera=False" in node_code_preview(prefab)
+
+
+def test_prefab_node_rejects_invalid_extension_and_override_size():
+    prefab = create_logic_node("create_prefab")
+    prefab["properties"].update({
+        "path": "Assets/Prefabs/Enemy.json",
+        "override_scale": True, "width": 0, "height": -1,
+    })
+    graph = default_logic_graph("InvalidPrefabOverrides")
+    graph["nodes"] = [prefab]
+
+    messages = {issue["message"] for issue in validate_logic_graph(graph)}
+    assert "O arquivo escolhido precisa ser .zprefab." in messages
+    assert "Largura e altura do Prefab precisam ser maiores que zero." in messages
 
 
 def test_fan_out_uses_explicit_stable_order_and_tolerates_invalid_order():

@@ -393,16 +393,18 @@ class PlayScriptAPI:
         self.log(f"objeto criado/reutilizado: {obj['name']}")
         return PlayScriptAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
 
-    def create_prefab(self, path: str, x: float | None = None, y: float | None = None) -> "PlayScriptAPI":
-        obj = self.runtime_world.instantiate_prefab(path, x=x, y=y)
+    def create_prefab(
+        self, path: str, x: float | None = None, y: float | None = None, **options: Any
+    ) -> "PlayScriptAPI":
+        obj = self.runtime_world.instantiate_prefab(path, x=x, y=y, **options)
         self.log(f"prefab criado: {obj['name']}")
         return PlayScriptAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
 
     def create_prefab_from_pool(
-        self, path: str, x: float | None, y: float | None, pool_key: str
+        self, path: str, x: float | None, y: float | None, pool_key: str, **options: Any
     ) -> "PlayScriptAPI":
         obj = self.runtime_world.instantiate_prefab(
-            path, x=x, y=y, pool_key=f"logic:{pool_key}"
+            path, x=x, y=y, pool_key=f"logic:{pool_key}", **options
         )
         self.log(f"prefab criado/reutilizado: {obj['name']}")
         return PlayScriptAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)

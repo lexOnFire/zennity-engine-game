@@ -95,6 +95,7 @@ def validate_project(project_root: str | Path, scene_path: str | Path) -> Projec
         if payload is not None:
             _validate_scene(root, payload, report)
         _validate_logic_assets(root, report)
+        _validate_prefab_assets(root, report)
         _validate_runtime_sources(root, report)
     except (OSError, TypeError, ValueError, OverflowError) as exc:
         report.add("error", "Validação", f"Não foi possível analisar o projeto: {exc}", scene)
@@ -389,8 +390,46 @@ def _validate_logic_assets(root: Path, report: ProjectValidationReport) -> None:
             }.get(node_type)
             if asset_key and properties.get(asset_key):
                 _check_asset(root, properties[asset_key], "Logic Graph", path.stem, report, set())
+            if node_type == "create_prefab" and bool(properties.get("override_scale", False)):
+                if _float(properties.get("width")) <= 0 or _float(properties.get("height")) <= 0:
+                    report.add(
+                        "error", "Logic Graph",
+                        "Override de tamanho do Prefab precisa ter largura e altura maiores que zero.",
+                        path,
+                    )
         for edge in edges:
             if not isinstance(edge, dict):
                 continue
             if str(edge.get("from_node", "")) not in ids or str(edge.get("to_node", "")) not in ids:
                 report.add("error", "Logic Graph", "Conexão aponta para um bloco inexistente.", path)
+
+
+def _validate_prefab_assets(root: Path, report: ProjectValidationReport) -> None:
+    """Valida JSON e referências internas de todos os Prefabs exportáveis."""
+    checked: set[str] = set()
+    for directory_name in ("Assets", "assets"):
+        directory = root / directory_name
+        if not directory.is_dir():
+            continue
+        for path in sorted(directory.rglob("*.zprefab"), key=lambda item: str(item).casefold()):
+            report.checked_files += 1
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+                report.add("error", "Prefab", f"Arquivo inválido: {exc}", path)
+                continue
+            if not isinstance(payload, dict):
+                report.add("error", "Prefab", "O arquivo precisa conter um objeto JSON.", path)
+                continue
+
+            def visit(value: Any) -> None:
+                if isinstance(value, dict):
+                    for child in value.values():
+                        visit(child)
+                elif isinstance(value, list):
+                    for child in value:
+                        visit(child)
+                elif isinstance(value, str) and value.replace("\\", "/").lower().startswith("assets/"):
+                    _check_asset(root, value, "Prefab", path.stem, report, checked)
+
+            visit(payload)

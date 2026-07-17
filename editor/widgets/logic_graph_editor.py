@@ -95,7 +95,7 @@ NODE_DESCRIPTIONS = {
     "event_key_pressed": "Executa uma única vez no instante em que a tecla é apertada.",
     "event_object_created": "Executa quando este grafo cria uma instância; o novo objeto vira o alvo implícito.",
     "create_object": "Cria uma cópia profunda e independente; ações conectadas depois recebem automaticamente o novo objeto.",
-    "create_prefab": "Cria uma cópia completa de um Prefab com visual e componentes configurados.",
+    "create_prefab": "Cria um Prefab com overrides opcionais; câmera, áudio e lógica só são copiados quando autorizados.",
     "clone_object": "Duplica um objeto existente durante o Play Mode.",
     "destroy_after_time": "Agenda o descarte do alvo sem bloquear o restante do fluxo.",
     "add_component": "Adiciona e configura um componente no objeto alvo.",
@@ -144,6 +144,12 @@ PROPERTY_LABELS = {
     "width": "Largura", "height": "Altura", "color": "Cor", "texture": "Imagem",
     "tag": "Tag", "relative": "Posição relativa", "inherit_source": "Copiar objeto original",
     "inherit_logic": "Copiar Logic Graphs também",
+    "override_position": "Sobrescrever posição",
+    "override_rotation": "Sobrescrever rotação",
+    "override_scale": "Sobrescrever tamanho",
+    "include_camera": "Copiar câmera do Prefab",
+    "include_audio": "Copiar áudio do Prefab",
+    "include_logic": "Copiar lógica do Prefab",
     "lifetime": "Destruir após (s, 0 = nunca)",
     "max_instances": "Máximo de instâncias (0 = ilimitado)",
     "max_distance": "Distância máxima (0 = ilimitada)",
@@ -166,6 +172,10 @@ NODE_PROPERTY_LABELS = {
     "set_position": {"x": "Posição X", "y": "Posição Y"},
     "patrol_axis": {"axis": "Eixo", "minimum": "Limite mínimo", "maximum": "Limite máximo", "speed": "Velocidade"},
     "create_object": {"x": "Posição X", "y": "Posição Y"},
+    "create_prefab": {
+        "x": "Posição X", "y": "Posição Y", "rotation": "Rotação",
+        "width": "Largura", "height": "Altura",
+    },
 }
 
 

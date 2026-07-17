@@ -179,3 +179,36 @@ def test_external_asset_is_rejected_because_build_would_not_be_portable(tmp_path
 
     assert report.valid is False
     assert any("fora da pasta do projeto" in issue.message for issue in report.errors)
+
+
+def test_validator_checks_prefab_json_internal_assets_and_graph_overrides(tmp_path: Path) -> None:
+    _runtime_files(tmp_path)
+    scene = _write_scene(tmp_path, [{
+        "id": "player", "name": "Player", "tag": "Player",
+        "transform": {"position": [0, 0, 0], "scale": [32, 32, 1]},
+        "components": {"camera": {"active": True}},
+    }])
+    prefab = tmp_path / "Assets" / "Prefabs" / "Broken.zprefab"
+    prefab.parent.mkdir(parents=True)
+    prefab.write_text(json.dumps({
+        "object": {"name": "Broken", "texture": "Assets/Textures/missing.png"}
+    }), encoding="utf-8")
+    logic = tmp_path / "Assets" / "Logic" / "Spawner.zlogic"
+    logic.parent.mkdir(parents=True)
+    logic.write_text(json.dumps({
+        "format": "zennity.logic_graph",
+        "nodes": [{
+            "id": "prefab", "type": "create_prefab",
+            "properties": {
+                "path": "Assets/Prefabs/Broken.zprefab",
+                "override_scale": True, "width": 0, "height": 10,
+            },
+        }],
+        "edges": [],
+    }), encoding="utf-8")
+
+    report = _load_validator().validate_project(tmp_path, scene)
+
+    assert report.valid is False
+    assert any(issue.category == "Prefab" and "não foi encontrado" in issue.message for issue in report.errors)
+    assert any(issue.category == "Logic Graph" and "maiores que zero" in issue.message for issue in report.errors)

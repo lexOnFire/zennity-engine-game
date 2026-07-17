@@ -220,3 +220,37 @@ def test_export_preserves_distinct_uppercase_and_lowercase_asset_roots(tmp_path:
     destination = Path(report.destination)
     assert (destination / "Assets/Scripts/player.py").is_file()
     assert (destination / "assets/scripts/enemy.py").is_file()
+
+
+def test_export_bundles_visual_logic_prefabs_animation_audio_and_images(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    assets = project / "Assets"
+    files = {
+        "Logic/Player.zlogic": '{"format":"zennity.logic_graph","nodes":[],"edges":[]}',
+        "Animations/Walk.zanim": "{}",
+        "Animations/Player.zanimator": "{}",
+        "Prefabs/Bullet.zprefab": "{}",
+        "Audio/shot.ogg": "audio",
+        "Textures/bullet.png": "image",
+    }
+    for relative, content in files.items():
+        path = assets / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+    _install_runtime_sources(project)
+    scene = project / "main.zscene"
+    scene.write_text(json.dumps({"objects": []}), encoding="utf-8")
+
+    report = _load_exporter().export_development_project_with_report(
+        project, scene, tmp_path / "output", "Asset Bundle"
+    )
+
+    assert report.success is True
+    destination = Path(report.destination)
+    for relative in files:
+        assert (destination / "Assets" / relative).is_file()
+    manifest = json.loads((destination / "package_manifest.json").read_text(encoding="utf-8"))
+    assert manifest["asset_roots"] == ["Assets"]
+    assert manifest["asset_counts"] == {
+        "logic": 1, "animation": 2, "prefab": 1, "audio": 1, "image": 1,
+    }

@@ -63,6 +63,25 @@ def test_repeated_play_request_does_not_replace_original_edit_snapshot() -> None
     assert second == original
 
 
+def test_stop_discards_prefabs_spawned_by_visual_logic() -> None:
+    original = [{"id": "player", "name": "Player", "x": 0.0}]
+    session = EditorPlaySession()
+    runtime = session.begin(original, "Player")
+    runtime.append({
+        "id": "runtime-projectile", "name": "Projectile",
+        "spawned_by_logic": True,
+        "prefab_path": "Assets/Prefabs/Projectile.zprefab",
+        "logic_graphs": [{"path": "Assets/Logic/Projectile.zlogic"}],
+    })
+    session.set_runtime_state("play")
+
+    restored, selected = session.finish()
+
+    assert restored == original
+    assert selected == "Player"
+    assert all(item["name"] != "Projectile" for item in restored)
+
+
 def test_selection_is_recovered_by_stable_id() -> None:
     session = EditorPlaySession()
     session.begin([{"id": "stable", "name": "Player"}], "Player")

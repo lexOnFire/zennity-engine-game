@@ -65,7 +65,15 @@ def node_code_preview(node: Mapping[str, Any]) -> str:
             f"  x={_value(properties, 'x', 0)}, y={_value(properties, 'y', 0)},\n"
             f"  limite={_value(properties, 'max_instances', 0)}, vida={_value(properties, 'lifetime', 0)}s)"
         ),
-        "create_prefab": f"novo = criar_prefab('{_value(properties, 'path', 'selecione .zprefab')}')",
+        "create_prefab": (
+            f"novo = criar_prefab('{_value(properties, 'path', 'selecione .zprefab')}',\n"
+            f"  posição={_value(properties, 'override_position', True)}, "
+            f"rotação={_value(properties, 'override_rotation', False)},\n"
+            f"  tamanho={_value(properties, 'override_scale', False)}, "
+            f"câmera={_value(properties, 'include_camera', False)}, "
+            f"áudio={_value(properties, 'include_audio', False)}, "
+            f"lógica={_value(properties, 'include_logic', False)})"
+        ),
         "clone_object": "cópia = clonar(alvo)",
         "add_component": f"alvo.adicionar_componente('{_value(properties, 'component', 'BoxCollider')}')",
         "remove_component": f"alvo.remover_componente('{_value(properties, 'component', 'BoxCollider')}')",

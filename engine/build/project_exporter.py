@@ -19,6 +19,16 @@ except ImportError:  # Suporta os testes que carregam este arquivo isoladamente.
     BuildReport = _report_module.BuildReport
 
 
+RUNTIME_ASSET_GROUPS = {
+    "logic": {".zlogic", ".zblackboard"},
+    "animation": {".zanim", ".zanimator"},
+    "prefab": {".zprefab"},
+    "audio": {".wav", ".ogg", ".mp3", ".flac"},
+    "image": {".png", ".jpg", ".jpeg", ".bmp", ".webp"},
+}
+RUNTIME_ASSET_SUFFIXES = set().union(*RUNTIME_ASSET_GROUPS.values())
+
+
 def export_development_project(project_root: Path, scene_path: Path, output_dir: Path, project_name: str) -> Path:
     """Cria uma pasta executável de desenvolvimento baseada no runtime Pygame."""
     report = export_development_project_with_report(project_root, scene_path, output_dir, project_name)
@@ -51,6 +61,7 @@ def export_development_project_with_report(
     try:
         _write_development_project(project_root, scene_path, destination, safe_name)
         _validate_asset_references(project_root, destination, scene_payload, report)
+        _validate_runtime_asset_bundle(project_root, destination, report)
         _validate_exported_project(destination, report)
         _collect_exported_files(destination, report)
         report.success = not report.errors
@@ -143,8 +154,49 @@ def _write_development_project(project_root: Path, scene_path: Path, destination
     (destination / "executar.bat").write_text("@echo off\npython main.py\npause\n", encoding="utf-8")
     (destination / "executar.sh").write_text("#!/usr/bin/env sh\npython3 main.py\n", encoding="utf-8")
     (destination / "requirements.txt").write_text("pygame-ce>=2.5\n", encoding="utf-8")
-    manifest = {"project_name": safe_name, "entry_scene": "Data/main.zscene", "runtime": "pygame", "development": True}
+    manifest = {
+        "project_name": safe_name,
+        "entry_scene": "Data/main.zscene",
+        "runtime": "pygame",
+        "development": True,
+        "asset_roots": [name for name in ("Assets", "assets") if (destination / name).is_dir()],
+        "asset_counts": _asset_inventory(destination),
+    }
     (destination / "package_manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def _asset_inventory(root: Path) -> dict[str, int]:
+    counts = {group: 0 for group in RUNTIME_ASSET_GROUPS}
+    for directory_name in ("Assets", "assets"):
+        directory = root / directory_name
+        if not directory.is_dir():
+            continue
+        for path in directory.rglob("*"):
+            if not path.is_file():
+                continue
+            suffix = path.suffix.lower()
+            for group, suffixes in RUNTIME_ASSET_GROUPS.items():
+                if suffix in suffixes:
+                    counts[group] += 1
+                    break
+    return counts
+
+
+def _validate_runtime_asset_bundle(project_root: Path, destination: Path, report: BuildReport) -> None:
+    """Confirma que assets executáveis do grafo foram copiados sem perdas."""
+    for directory_name in ("Assets", "assets"):
+        source_root = project_root / directory_name
+        if not source_root.is_dir():
+            continue
+        for source in source_root.rglob("*"):
+            if not source.is_file() or source.suffix.lower() not in RUNTIME_ASSET_SUFFIXES:
+                continue
+            relative = source.relative_to(project_root)
+            exported = destination / relative
+            if not exported.is_file():
+                report.add_error("Asset necessário ao runtime não foi incluído no build.", relative)
+            elif exported.stat().st_size != source.stat().st_size:
+                report.add_error("Asset exportado está incompleto ou corrompido.", relative)
 
 
 def _validate_asset_references(

@@ -815,15 +815,36 @@ class LogicGraphRuntime:
             path = str(properties.get("path", "")).strip()
             if not path:
                 raise RuntimeError("Escolha um arquivo .zprefab.")
-            x = float(self._read_input(node_id, "x", properties.get("x", 0.0), game, dt, set()))
-            y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
-            if bool(properties.get("relative", False)):
-                x += float(game.x)
-                y += float(game.y)
+            override_position = bool(properties.get("override_position", True))
+            x = float(self._read_input(node_id, "x", properties.get("x", 0.0), game, dt, set())) if override_position else None
+            y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set())) if override_position else None
+            if override_position and bool(properties.get("relative", False)):
+                x = float(x or 0.0) + float(game.x)
+                y = float(y or 0.0) + float(game.y)
+            rotation = (
+                float(self._read_input(node_id, "rotation", properties.get("rotation", 0.0), game, dt, set()))
+                if bool(properties.get("override_rotation", False)) else None
+            )
+            width = (
+                float(self._read_input(node_id, "width", properties.get("width", 64.0), game, dt, set()))
+                if bool(properties.get("override_scale", False)) else None
+            )
+            height = (
+                float(self._read_input(node_id, "height", properties.get("height", 64.0), game, dt, set()))
+                if bool(properties.get("override_scale", False)) else None
+            )
+            prefab_options = {
+                "rotation": rotation, "width": width, "height": height,
+                "include_camera": bool(properties.get("include_camera", False)),
+                "include_audio": bool(properties.get("include_audio", False)),
+                "include_logic": bool(properties.get("include_logic", False)),
+            }
             if bool(properties.get("use_pool", True)) and callable(getattr(game, "create_prefab_from_pool", None)):
-                created = game.create_prefab_from_pool(path, x, y, self._spawn_group(node_id))
+                created = game.create_prefab_from_pool(
+                    path, x, y, self._spawn_group(node_id), **prefab_options
+                )
             else:
-                created = game.create_prefab(path, x, y)
+                created = game.create_prefab(path, x, y, **prefab_options)
             self._store(node_id, "object", created)
             self._node_state.setdefault(node_id, {})["flow_target"] = created
             self._configure_spawned(game, created, node_id, properties, dt)

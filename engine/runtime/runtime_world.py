@@ -187,6 +187,12 @@ class RuntimeWorld:
         *,
         x: float | None = None,
         y: float | None = None,
+        rotation: float | None = None,
+        width: float | None = None,
+        height: float | None = None,
+        include_camera: bool = True,
+        include_audio: bool = True,
+        include_logic: bool = True,
         project_root: str | Path | None = None,
         pool_key: str | None = None,
     ) -> dict[str, Any]:
@@ -206,19 +212,30 @@ class RuntimeWorld:
                 values["x"] = x
             if y is not None:
                 values["y"] = y
+            if rotation is not None:
+                values["rotation"] = rotation
+            if width is not None:
+                values["w"] = width
+                values["width"] = width
+            if height is not None:
+                values["h"] = height
+                values["height"] = height
+            self._apply_prefab_component_policy(values, include_camera, include_audio, include_logic)
             values["prefab_path"] = str(path)
             values["pool_key"] = pool_key or f"prefab:{Path(path).as_posix().casefold()}"
             return self.create_object(**values)
         transform = payload.get("transform") if isinstance(payload.get("transform"), dict) else {}
         position = _vector(transform.get("position"), (0.0, 0.0, 0.0))
         scale = _vector(transform.get("scale"), (64.0, 64.0, 1.0))
-        rotation = _vector(transform.get("rotation"), (0.0, 0.0, 0.0))
+        transform_rotation = _vector(transform.get("rotation"), (0.0, 0.0, 0.0))
         visual = payload.get("visual") if isinstance(payload.get("visual"), dict) else {}
         components = payload.get("components") if isinstance(payload.get("components"), dict) else {}
         values: dict[str, Any] = {
             "name": payload.get("source_object_name") or payload.get("name", "Prefab"),
             "x": position[0] if x is None else x, "y": position[1] if y is None else y,
-            "width": abs(scale[0]), "height": abs(scale[1]), "rotation": rotation[2],
+            "width": abs(scale[0]) if width is None else width,
+            "height": abs(scale[1]) if height is None else height,
+            "rotation": transform_rotation[2] if rotation is None else rotation,
             "color": visual.get("color", (180, 180, 190)),
             "texture": visual.get("texture", visual.get("sprite_path", "")),
             "renderer_enabled": visual.get("enabled", True), "tag": payload.get("tag", "Untagged"),
@@ -229,10 +246,14 @@ class RuntimeWorld:
         for key in ("rigidbody", "collider", "camera", "audio"):
             if isinstance(components.get(key), dict):
                 values[key] = components[key]
+        if isinstance(components.get("logic_graphs"), list):
+            values["logic_graphs"] = components["logic_graphs"]
         editor_data = payload.get("editor_data") if isinstance(payload.get("editor_data"), dict) else {}
         for key in ("animator", "behavior"):
             if isinstance(editor_data.get(key), dict):
                 values[key] = editor_data[key]
+        if isinstance(editor_data.get("logic_graphs"), list):
+            values["logic_graphs"] = editor_data["logic_graphs"]
         for item in components.get("items", []):
             if not isinstance(item, dict):
                 continue
@@ -261,7 +282,23 @@ class RuntimeWorld:
             break
         values["prefab_path"] = str(path)
         values["pool_key"] = pool_key or f"prefab:{Path(path).as_posix().casefold()}"
+        self._apply_prefab_component_policy(values, include_camera, include_audio, include_logic)
         return self.create_object(**values)
+
+    @staticmethod
+    def _apply_prefab_component_policy(
+        values: MutableMapping[str, Any],
+        include_camera: bool,
+        include_audio: bool,
+        include_logic: bool,
+    ) -> None:
+        """Remove componentes globais quando o bloco não os autorizou explicitamente."""
+        if not include_camera:
+            values.pop("camera", None)
+        if not include_audio:
+            values.pop("audio", None)
+        if not include_logic:
+            values.pop("logic_graphs", None)
 
     @staticmethod
     def add_component(obj: MutableMapping[str, Any], component: str, properties: Mapping[str, Any] | None = None) -> None:

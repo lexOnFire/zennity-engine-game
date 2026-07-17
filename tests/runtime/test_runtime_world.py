@@ -105,6 +105,38 @@ def test_runtime_world_accepts_editor_prefab_wrapper(tmp_path):
     assert obj["sort_order"] == 3
 
 
+def test_prefab_overrides_transform_and_filters_global_components(tmp_path):
+    prefab = tmp_path / "projectile.zprefab"
+    prefab.write_text(json.dumps({
+        "prefab_name": "Projectile",
+        "object": {
+            "name": "Projectile", "x": 12, "y": 24, "w": 32, "h": 16, "rotation": 15,
+            "camera": {"active": True},
+            "audio": {"path": "Assets/Audio/shot.wav", "autoplay": True},
+            "logic_graphs": [{"path": "Assets/Logic/Projectile.zlogic"}],
+            "collider": {"type": "box"},
+        },
+    }), encoding="utf-8")
+    world = RuntimeWorld({})
+
+    safe = world.instantiate_prefab(
+        prefab, x=100, y=200, rotation=90, width=20, height=8,
+        include_camera=False, include_audio=False, include_logic=False,
+    )
+
+    assert (safe["x"], safe["y"], safe["w"], safe["h"], safe["rotation"]) == (100, 200, 20, 8, 90)
+    assert safe["collider"] == {"type": "box"}
+    assert "camera" not in safe and "audio" not in safe and "logic_graphs" not in safe
+
+    complete = world.instantiate_prefab(
+        prefab, include_camera=True, include_audio=True, include_logic=True,
+    )
+    assert (complete["x"], complete["y"], complete["w"], complete["h"], complete["rotation"]) == (12, 24, 32, 16, 15)
+    assert complete["camera"]["active"] is True
+    assert complete["audio"]["autoplay"] is True
+    assert complete["logic_graphs"][0]["path"].endswith("Projectile.zlogic")
+
+
 def test_prefab_instances_are_reused_after_destruction(tmp_path):
     prefab = tmp_path / "bullet.zprefab"
     prefab.write_text(json.dumps({"name": "Bullet", "transform": {"scale": [8, 8, 1]}}), encoding="utf-8")
