@@ -1,0 +1,532 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "Nebula Game Manager",
+  "target": {
+    "type": "name",
+    "value": "NebulaGameManager"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "start",
+      "type": "event_start",
+      "title": "Ao iniciar",
+      "category": "Eventos",
+      "position": [
+        20.0,
+        80.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "start_sequence",
+      "type": "sequence",
+      "title": "Sequência",
+      "category": "Lógica",
+      "position": [
+        260.0,
+        80.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "outputs": 4
+      }
+    },
+    {
+      "id": "reset_score",
+      "type": "set_variable",
+      "title": "Definir variável",
+      "category": "Variáveis",
+      "position": [
+        520.0,
+        0.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "scope": "project",
+        "name": "score",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "reset_lives",
+      "type": "set_variable",
+      "title": "Definir variável",
+      "category": "Variáveis",
+      "position": [
+        520.0,
+        120.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "scope": "project",
+        "name": "lives",
+        "value": 3.0
+      }
+    },
+    {
+      "id": "help_hud",
+      "type": "set_hud",
+      "title": "Atualizar HUD",
+      "category": "Ação",
+      "position": [
+        520.0,
+        240.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "text": "WASD: mover  •  ESPAÇO: disparar  •  R: reiniciar"
+      }
+    },
+    {
+      "id": "start_sound",
+      "type": "play_sound",
+      "title": "Tocar som",
+      "category": "Ação",
+      "position": [
+        520.0,
+        360.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "path": "Assets/Audio/game-start-317318.mp3"
+      }
+    },
+    {
+      "id": "update",
+      "type": "event_update",
+      "title": "A cada frame",
+      "category": "Eventos",
+      "position": [
+        20.0,
+        620.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "get_score",
+      "type": "get_variable",
+      "title": "Ler variável",
+      "category": "Variáveis",
+      "position": [
+        280.0,
+        520.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "scope": "project",
+        "name": "score"
+      }
+    },
+    {
+      "id": "score_text",
+      "type": "join_text",
+      "title": "Juntar textos",
+      "category": "Texto",
+      "position": [
+        520.0,
+        520.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": "PONTOS: ",
+        "b": "0"
+      }
+    },
+    {
+      "id": "score_hud",
+      "type": "set_hud",
+      "title": "Atualizar HUD",
+      "category": "Ação",
+      "position": [
+        780.0,
+        520.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "text": "PONTOS: 0"
+      }
+    },
+    {
+      "id": "get_lives",
+      "type": "get_variable",
+      "title": "Ler variável",
+      "category": "Variáveis",
+      "position": [
+        280.0,
+        680.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "scope": "project",
+        "name": "lives"
+      }
+    },
+    {
+      "id": "lives_text",
+      "type": "join_text",
+      "title": "Juntar textos",
+      "category": "Texto",
+      "position": [
+        520.0,
+        680.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": "VIDAS: ",
+        "b": "3"
+      }
+    },
+    {
+      "id": "lives_hud",
+      "type": "set_hud",
+      "title": "Atualizar HUD",
+      "category": "Ação",
+      "position": [
+        780.0,
+        680.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "text": "VIDAS: 3"
+      }
+    },
+    {
+      "id": "victory",
+      "type": "compare_number",
+      "title": "Comparar número",
+      "category": "Condição",
+      "position": [
+        520.0,
+        840.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "operator": ">=",
+        "value": 10.0
+      }
+    },
+    {
+      "id": "victory_hud",
+      "type": "set_hud",
+      "title": "Atualizar HUD",
+      "category": "Ação",
+      "position": [
+        780.0,
+        840.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "text": "VITÓRIA! A frota inimiga foi derrotada — pressione R"
+      }
+    },
+    {
+      "id": "defeat",
+      "type": "compare_number",
+      "title": "Comparar número",
+      "category": "Condição",
+      "position": [
+        520.0,
+        1000.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "operator": "<=",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "defeat_hud",
+      "type": "set_hud",
+      "title": "Atualizar HUD",
+      "category": "Ação",
+      "position": [
+        780.0,
+        1000.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "text": "FIM DE JOGO — pressione R para tentar novamente"
+      }
+    },
+    {
+      "id": "restart",
+      "type": "event_key_pressed",
+      "title": "Ao apertar tecla (uma vez)",
+      "category": "Eventos",
+      "position": [
+        20.0,
+        1200.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "key": "R"
+      }
+    },
+    {
+      "id": "restart_scene",
+      "type": "restart_scene",
+      "title": "Reiniciar cena",
+      "category": "Ação",
+      "position": [
+        300.0,
+        1200.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "start_next_start_sequence_in",
+      "from_node": "start",
+      "from_port": "next",
+      "to_node": "start_sequence",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "start_sequence_then_0_reset_score_in",
+      "from_node": "start_sequence",
+      "from_port": "then_0",
+      "to_node": "reset_score",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "start_sequence_then_1_reset_lives_in",
+      "from_node": "start_sequence",
+      "from_port": "then_1",
+      "to_node": "reset_lives",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    },
+    {
+      "id": "start_sequence_then_2_help_hud_in",
+      "from_node": "start_sequence",
+      "from_port": "then_2",
+      "to_node": "help_hud",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 2
+    },
+    {
+      "id": "start_sequence_then_3_start_sound_in",
+      "from_node": "start_sequence",
+      "from_port": "then_3",
+      "to_node": "start_sound",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 3
+    },
+    {
+      "id": "update_next_score_hud_in",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "score_hud",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "get_score_value_score_text_b",
+      "from_node": "get_score",
+      "from_port": "value",
+      "to_node": "score_text",
+      "to_port": "b",
+      "kind": "any",
+      "order": 0
+    },
+    {
+      "id": "score_text_value_score_hud_text",
+      "from_node": "score_text",
+      "from_port": "value",
+      "to_node": "score_hud",
+      "to_port": "text",
+      "kind": "text",
+      "order": 0
+    },
+    {
+      "id": "update_next_lives_hud_in",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "lives_hud",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    },
+    {
+      "id": "get_lives_value_lives_text_b",
+      "from_node": "get_lives",
+      "from_port": "value",
+      "to_node": "lives_text",
+      "to_port": "b",
+      "kind": "any",
+      "order": 0
+    },
+    {
+      "id": "lives_text_value_lives_hud_text",
+      "from_node": "lives_text",
+      "from_port": "value",
+      "to_node": "lives_hud",
+      "to_port": "text",
+      "kind": "text",
+      "order": 0
+    },
+    {
+      "id": "update_next_victory_in",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "victory",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 2
+    },
+    {
+      "id": "get_score_value_victory_value",
+      "from_node": "get_score",
+      "from_port": "value",
+      "to_node": "victory",
+      "to_port": "value",
+      "kind": "number",
+      "order": 0
+    },
+    {
+      "id": "victory_true_victory_hud_in",
+      "from_node": "victory",
+      "from_port": "true",
+      "to_node": "victory_hud",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "update_next_defeat_in",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "defeat",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 3
+    },
+    {
+      "id": "get_lives_value_defeat_value",
+      "from_node": "get_lives",
+      "from_port": "value",
+      "to_node": "defeat",
+      "to_port": "value",
+      "kind": "number",
+      "order": 0
+    },
+    {
+      "id": "defeat_true_defeat_hud_in",
+      "from_node": "defeat",
+      "from_port": "true",
+      "to_node": "defeat_hud",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "restart_next_restart_scene_in",
+      "from_node": "restart",
+      "from_port": "next",
+      "to_node": "restart_scene",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    }
+  ]
+}

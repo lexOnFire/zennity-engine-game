@@ -1610,3 +1610,54 @@ def test_clone_remove_component_and_restart_scene_nodes_execute_together():
     LogicGraphRuntime(graph).start(game)
     assert game.created.removed == ["BoxCollider"]
     assert game.restarted is True
+
+
+def test_sequence_exposes_the_number_of_outputs_configured_by_the_graph():
+    sequence = create_logic_node("sequence")
+    sequence["properties"]["outputs"] = 4
+
+    assert node_port_definitions(sequence)["outputs"] == [
+        ("then_0", "flow"),
+        ("then_1", "flow"),
+        ("then_2", "flow"),
+        ("then_3", "flow"),
+        ("next", "flow"),
+    ]
+
+
+def test_trigger_tag_filter_keeps_live_object_reference_and_selects_matching_branch():
+    trigger = create_logic_node("event_trigger_enter")
+    tag = create_logic_node("get_tag")
+    compare = create_logic_node("compare_text")
+    compare["properties"].update({"operator": "==", "value": "EnemyNebula"})
+    matching = create_logic_node("log_message")
+    matching["properties"]["text"] = "enemy"
+    ignored = create_logic_node("log_message")
+    ignored["properties"]["text"] = "ignored"
+    graph = default_logic_graph("CollisionFilter")
+    graph["nodes"] = [trigger, tag, compare, matching, ignored]
+    graph["edges"] = [
+        _edge(trigger, "next", compare, "in"),
+        _edge(trigger, "other", tag, "target", "object"),
+        _edge(tag, "value", compare, "value", "text"),
+        _edge(compare, "true", matching, "in"),
+        _edge(compare, "false", ignored, "in"),
+    ]
+
+    class Game:
+        def __init__(self): self.messages = []
+        def log(self, message): self.messages.append(message)
+
+    class Other:
+        tag = "EnemyNebula"
+        def __deepcopy__(self, _memo):
+            raise AssertionError("a referência do objeto do Play Mode não pode ser copiada")
+
+    game = Game()
+    other = Other()
+    runtime = LogicGraphRuntime(graph)
+    runtime.trigger_event("event_trigger_enter", game, payload=other)
+
+    assert game.messages == ["enemy"]
+    assert runtime.values[(trigger["id"], "other")] is other
+    assert not validate_logic_graph(graph)

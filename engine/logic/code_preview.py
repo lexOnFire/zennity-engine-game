@@ -60,6 +60,7 @@ def node_code_preview(node: Mapping[str, Any]) -> str:
         "set_hud": f"hud.texto = '{_value(properties, 'text', 'Texto')}'",
         "log_message": f"console('{_value(properties, 'text', 'Mensagem')}')",
         "find_tag": f"objeto = procurar_tag('{_value(properties, 'tag', 'Player')}')",
+        "get_tag": "tag = alvo.tag",
         "create_object": (
             f"novo = criar_objeto_independente('{_value(properties, 'name', 'NovoObjeto')}',\n"
             f"  x={_value(properties, 'x', 0)}, y={_value(properties, 'y', 0)},\n"
@@ -78,6 +79,7 @@ def node_code_preview(node: Mapping[str, Any]) -> str:
         "add_component": f"alvo.adicionar_componente('{_value(properties, 'component', 'BoxCollider')}')",
         "remove_component": f"alvo.remover_componente('{_value(properties, 'component', 'BoxCollider')}')",
         "once": "se ainda_não_executou:\n    executar próximo",
+        "compare_text": f"resultado = texto {_value(properties, 'operator', '==')} '{_value(properties, 'value', 'Texto')}'",
         "cooldown": f"se passou({_value(properties, 'seconds', 1.0)}s):\n    executar próximo",
         "restart_scene": "reiniciar_cena()",
         "get_variable": f"valor = ler('{_value(properties, 'name', 'value')}')",

@@ -39,6 +39,7 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "event_object_created": {"title": "Ao objeto ser criado", "category": "Eventos", "properties": {}},
     "self_object": {"title": "Este objeto", "category": "Objetos", "properties": {}},
     "find_tag": {"title": "Procurar por Tag", "category": "Objetos", "properties": {"tag": "Player"}},
+    "get_tag": {"title": "Ler Tag do objeto", "category": "Objetos", "properties": {}},
     "create_object": {
         "title": "Criar objeto",
         "category": "Objetos",
@@ -115,6 +116,7 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "key_held": {"title": "Tecla está segurada?", "category": "Condição", "properties": {"key": "SPACE"}},
     "is_grounded": {"title": "Está no chão", "category": "Condição", "properties": {}},
     "compare_number": {"title": "Comparar número", "category": "Condição", "properties": {"operator": ">", "value": 0.0}},
+    "compare_text": {"title": "Comparar texto", "category": "Condição", "properties": {"operator": "==", "value": "Texto"}},
     "play_animation": {"title": "Tocar animação", "category": "Ação", "properties": {"state": "Idle"}},
     "play_animation_asset": {"title": "Tocar arquivo de animação", "category": "Ação", "properties": {"path": ""}},
     "stop_animation": {"title": "Parar animação", "category": "Ação", "properties": {}},
@@ -176,6 +178,7 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "event_object_created": {"inputs": [], "outputs": [("next", "flow"), ("object", "object")]},
     "self_object": {"inputs": [], "outputs": [("object", "object")]},
     "find_tag": {"inputs": [("in", "flow")], "outputs": [("next", "flow"), ("object", "object")]},
+    "get_tag": {"inputs": [("target", "object")], "outputs": [("value", "text")]},
     "create_object": {
         "inputs": [("in", "flow"), ("source", "object"), ("name", "text"), ("x", "number"), ("y", "number")],
         "outputs": [("next", "flow"), ("limit_reached", "flow"), ("object", "object")],
@@ -225,6 +228,7 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "key_held": {"inputs": [("in", "flow")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
     "is_grounded": {"inputs": [("in", "flow")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
     "compare_number": {"inputs": [("in", "flow"), ("value", "number")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
+    "compare_text": {"inputs": [("in", "flow"), ("value", "text")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
     "play_animation": {"inputs": [("in", "flow"), ("state", "text")], "outputs": [("next", "flow")]},
     "play_animation_asset": {"inputs": [("in", "flow"), ("path", "text")], "outputs": [("next", "flow")]},
     "stop_animation": {"inputs": [("in", "flow")], "outputs": [("next", "flow")]},
@@ -284,7 +288,15 @@ def node_port_definitions(node_type: str | Mapping[str, Any]) -> dict[str, list[
         return ports
     properties = node.get("properties", {}) if isinstance(node.get("properties"), Mapping) else {}
     value_type = _safe_port_type(properties.get("type", "any"))
-    if type_name == "subgraph_input":
+    if type_name == "sequence":
+        try:
+            output_count = int(properties.get("outputs", 2))
+        except (TypeError, ValueError):
+            output_count = 2
+        output_count = max(1, min(32, output_count))
+        ports["outputs"] = [(f"then_{index}", "flow") for index in range(output_count)]
+        ports["outputs"].append(("next", "flow"))
+    elif type_name == "subgraph_input":
         ports["outputs"] = [("value", value_type)]
     elif type_name == "subgraph_return":
         ports["inputs"] = [("in", "flow"), ("value", value_type)]
@@ -676,10 +688,21 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
             continue
         reachable.add(node_id)
         pending.extend(flow_adjacency.get(node_id, []))
+    data_only_types = {
+        "get_variable", "get_tag", "number_value", "bool_value", "text_value",
+        "add_number", "subtract_number", "multiply_number", "divide_number",
+        "absolute_number", "clamp_number", "random_number", "delta_time",
+        "join_text", "to_text",
+    }
     for node in graph["nodes"]:
         ports = node_port_definitions(node)
         has_flow = any(kind == "flow" for _name, kind in ports["inputs"] + ports["outputs"])
-        if has_flow and node["id"] not in reachable and node["id"] in connected:
+        if (
+            has_flow
+            and node["type"] not in data_only_types
+            and node["id"] not in reachable
+            and node["id"] in connected
+        ):
             issues.append({
                 "level": "warning",
                 "node": node["id"],

@@ -590,6 +590,9 @@ class LogicGraphRuntime:
         if node_type == "compare_number":
             condition = bool(self._evaluate_output(node_id, "value", game, dt, set()))
             return ["true" if condition else "false"]
+        if node_type == "compare_text":
+            condition = bool(self._evaluate_output(node_id, "value", game, dt, set()))
+            return ["true" if condition else "false"]
         if node_type == "move":
             fallback = self.values.get("axis", 0.0)
             amount = float(self._read_input(node_id, "value", fallback, game, dt, set()))
@@ -1084,7 +1087,9 @@ class LogicGraphRuntime:
         node_type = str(node.get("type", ""))
 
         if node_type in {"event_collision_enter", "event_collision_exit", "event_trigger_enter", "event_trigger_exit"}:
-            value = deepcopy(self.values.get((node_id, "other")))
+            # Referências de objetos do Play Mode não podem ser copiadas: elas
+            # carregam o mundo e a fila de eventos do processo da viewport.
+            value = self.values.get((node_id, "other"))
         elif node_type == "subgraph_input":
             value = deepcopy(self.values.get((node_id, "value"), properties.get("default")))
         elif node_type == "call_subgraph":
@@ -1105,6 +1110,12 @@ class LogicGraphRuntime:
         elif node_type == "compare_number":
             left = self._read_input(node_id, "value", self.values.get("axis", 0.0), game, dt, resolving)
             value = self._compare(left, properties.get("operator", ">"), properties.get("value", 0.0))
+        elif node_type == "compare_text":
+            left = self._read_input(node_id, "value", "", game, dt, resolving)
+            right = str(properties.get("value", ""))
+            operator = str(properties.get("operator", "=="))
+            equal = str(left).casefold() == right.casefold()
+            value = not equal if operator == "!=" else equal
         elif node_type == "and":
             left = bool(self._read_input(node_id, "a", False, game, dt, resolving))
             right = bool(self._read_input(node_id, "b", False, game, dt, resolving))
@@ -1164,6 +1175,9 @@ class LogicGraphRuntime:
             value = float(target.x if port == "x" else target.y)
         elif node_type == "find_tag":
             value = game.find(str(properties.get("tag", "Player")))
+        elif node_type == "get_tag":
+            target = self._read_target(node_id, game, dt, resolving)
+            value = str(getattr(target, "tag", "Untagged"))
         elif node_type in {"create_object", "create_prefab", "clone_object"}:
             value = self.values.get((node_id, "object"))
         elif node_type == "if_else":

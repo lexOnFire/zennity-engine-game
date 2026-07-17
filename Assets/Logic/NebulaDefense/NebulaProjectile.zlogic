@@ -1,0 +1,127 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "Nebula Bolt Collision",
+  "target": {
+    "type": "tag",
+    "value": "ProjectileNebula"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "trigger",
+      "type": "event_trigger_enter",
+      "title": "Ao entrar na área",
+      "category": "Eventos",
+      "position": [
+        20.0,
+        120.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "other_tag",
+      "type": "get_tag",
+      "title": "Ler Tag do objeto",
+      "category": "Objetos",
+      "position": [
+        280.0,
+        20.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "is_enemy",
+      "type": "compare_text",
+      "title": "Comparar texto",
+      "category": "Condição",
+      "position": [
+        520.0,
+        120.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "operator": "==",
+        "value": "EnemyNebula"
+      }
+    },
+    {
+      "id": "destroy",
+      "type": "destroy_object",
+      "title": "Destruir objeto",
+      "category": "Ação",
+      "position": [
+        780.0,
+        120.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "trigger_next_is_enemy_in",
+      "from_node": "trigger",
+      "from_port": "next",
+      "to_node": "is_enemy",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "trigger_other_other_tag_target",
+      "from_node": "trigger",
+      "from_port": "other",
+      "to_node": "other_tag",
+      "to_port": "target",
+      "kind": "object",
+      "order": 0
+    },
+    {
+      "id": "other_tag_value_is_enemy_value",
+      "from_node": "other_tag",
+      "from_port": "value",
+      "to_node": "is_enemy",
+      "to_port": "value",
+      "kind": "text",
+      "order": 0
+    },
+    {
+      "id": "is_enemy_true_destroy_in",
+      "from_node": "is_enemy",
+      "from_port": "true",
+      "to_node": "destroy",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    }
+  ]
+}

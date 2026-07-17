@@ -1,0 +1,727 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "Nebula Player Controls",
+  "target": {
+    "type": "name",
+    "value": "NebulaPilot"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": [
+      {
+        "id": "help-player",
+        "text": "WASD move • Espaço dispara • colisões retiram vida",
+        "position": [
+          10.0,
+          -80.0
+        ],
+        "width": 520.0,
+        "color": "#6b5b2f"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "update",
+      "type": "event_update",
+      "title": "A cada frame",
+      "category": "Eventos",
+      "position": [
+        20.0,
+        80.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "left",
+      "type": "key_held",
+      "title": "Tecla está segurada?",
+      "category": "Condição",
+      "position": [
+        260.0,
+        20.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "key": "A"
+      }
+    },
+    {
+      "id": "move_left",
+      "type": "move_by",
+      "title": "Mover continuamente",
+      "category": "Posição",
+      "position": [
+        520.0,
+        20.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "x": -260.0,
+        "y": 0.0
+      }
+    },
+    {
+      "id": "right",
+      "type": "key_held",
+      "title": "Tecla está segurada?",
+      "category": "Condição",
+      "position": [
+        260.0,
+        160.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "key": "D"
+      }
+    },
+    {
+      "id": "move_right",
+      "type": "move_by",
+      "title": "Mover continuamente",
+      "category": "Posição",
+      "position": [
+        520.0,
+        160.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "x": 260.0,
+        "y": 0.0
+      }
+    },
+    {
+      "id": "up",
+      "type": "key_held",
+      "title": "Tecla está segurada?",
+      "category": "Condição",
+      "position": [
+        260.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "key": "W"
+      }
+    },
+    {
+      "id": "move_up",
+      "type": "move_by",
+      "title": "Mover continuamente",
+      "category": "Posição",
+      "position": [
+        520.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "x": 0.0,
+        "y": -260.0
+      }
+    },
+    {
+      "id": "down",
+      "type": "key_held",
+      "title": "Tecla está segurada?",
+      "category": "Condição",
+      "position": [
+        260.0,
+        440.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "key": "S"
+      }
+    },
+    {
+      "id": "move_down",
+      "type": "move_by",
+      "title": "Mover continuamente",
+      "category": "Posição",
+      "position": [
+        520.0,
+        440.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "x": 0.0,
+        "y": 260.0
+      }
+    },
+    {
+      "id": "shoot",
+      "type": "event_key_pressed",
+      "title": "Ao apertar tecla (uma vez)",
+      "category": "Eventos",
+      "position": [
+        20.0,
+        650.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "key": "SPACE"
+      }
+    },
+    {
+      "id": "spawn_bolt",
+      "type": "create_prefab",
+      "title": "Criar Prefab",
+      "category": "Objetos",
+      "position": [
+        300.0,
+        650.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "path": "Assets/Prefabs/NebulaDefense/NebulaBolt.zprefab",
+        "override_position": true,
+        "x": 48.0,
+        "y": 0.0,
+        "relative": true,
+        "override_rotation": false,
+        "rotation": 0.0,
+        "override_scale": false,
+        "width": 64.0,
+        "height": 64.0,
+        "include_camera": false,
+        "include_audio": false,
+        "include_logic": false,
+        "lifetime": 2.2,
+        "max_instances": 24,
+        "max_distance": 1400.0,
+        "use_pool": true
+      }
+    },
+    {
+      "id": "bolt_motion",
+      "type": "start_continuous_motion",
+      "title": "Iniciar movimento permanente",
+      "category": "Posição",
+      "position": [
+        650.0,
+        610.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "movement": "Disparo",
+        "x": 680.0,
+        "y": 0.0,
+        "space": "global",
+        "acceleration": 1200.0,
+        "deceleration": 0.0
+      }
+    },
+    {
+      "id": "shoot_sound",
+      "type": "play_sound",
+      "title": "Tocar som",
+      "category": "Ação",
+      "position": [
+        650.0,
+        760.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "path": "Assets/Audio/jump-sound-531048.mp3"
+      }
+    },
+    {
+      "id": "hit",
+      "type": "event_trigger_enter",
+      "title": "Ao entrar na área",
+      "category": "Eventos",
+      "position": [
+        20.0,
+        980.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "other_tag",
+      "type": "get_tag",
+      "title": "Ler Tag do objeto",
+      "category": "Objetos",
+      "position": [
+        260.0,
+        900.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "is_enemy",
+      "type": "compare_text",
+      "title": "Comparar texto",
+      "category": "Condição",
+      "position": [
+        500.0,
+        980.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "operator": "==",
+        "value": "EnemyNebula"
+      }
+    },
+    {
+      "id": "hit_sequence",
+      "type": "sequence",
+      "title": "Sequência",
+      "category": "Lógica",
+      "position": [
+        760.0,
+        980.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "outputs": 3
+      }
+    },
+    {
+      "id": "get_lives",
+      "type": "get_variable",
+      "title": "Ler variável",
+      "category": "Variáveis",
+      "position": [
+        1020.0,
+        860.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "scope": "project",
+        "name": "lives"
+      }
+    },
+    {
+      "id": "lose_life",
+      "type": "subtract_number",
+      "title": "Subtrair",
+      "category": "Matemática",
+      "position": [
+        1260.0,
+        860.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 1.0
+      }
+    },
+    {
+      "id": "save_lives",
+      "type": "set_variable",
+      "title": "Definir variável",
+      "category": "Variáveis",
+      "position": [
+        1500.0,
+        860.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "scope": "project",
+        "name": "lives",
+        "value": 2.0
+      }
+    },
+    {
+      "id": "is_dead",
+      "type": "compare_number",
+      "title": "Comparar número",
+      "category": "Condição",
+      "position": [
+        1740.0,
+        860.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "operator": "<=",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "disable_player",
+      "type": "set_active",
+      "title": "Ativar / Desativar",
+      "category": "Ação",
+      "position": [
+        1980.0,
+        820.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "active": false
+      }
+    },
+    {
+      "id": "death_hud",
+      "type": "set_hud",
+      "title": "Atualizar HUD",
+      "category": "Ação",
+      "position": [
+        1980.0,
+        940.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "text": "FIM DE JOGO — pressione R para reiniciar"
+      }
+    },
+    {
+      "id": "reset_position",
+      "type": "set_position",
+      "title": "Definir posição",
+      "category": "Ação",
+      "position": [
+        1020.0,
+        1040.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "x": 120.0,
+        "y": 360.0
+      }
+    },
+    {
+      "id": "hit_sound",
+      "type": "play_sound",
+      "title": "Tocar som",
+      "category": "Ação",
+      "position": [
+        1020.0,
+        1180.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "path": "Assets/Audio/freesound_community-videogame-death-sound-43894.mp3"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "update_next_left_in",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "left",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "left_true_move_left_in",
+      "from_node": "left",
+      "from_port": "true",
+      "to_node": "move_left",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "update_next_right_in",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "right",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    },
+    {
+      "id": "right_true_move_right_in",
+      "from_node": "right",
+      "from_port": "true",
+      "to_node": "move_right",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "update_next_up_in",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "up",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 2
+    },
+    {
+      "id": "up_true_move_up_in",
+      "from_node": "up",
+      "from_port": "true",
+      "to_node": "move_up",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "update_next_down_in",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "down",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 3
+    },
+    {
+      "id": "down_true_move_down_in",
+      "from_node": "down",
+      "from_port": "true",
+      "to_node": "move_down",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "shoot_next_spawn_bolt_in",
+      "from_node": "shoot",
+      "from_port": "next",
+      "to_node": "spawn_bolt",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "spawn_bolt_next_bolt_motion_in",
+      "from_node": "spawn_bolt",
+      "from_port": "next",
+      "to_node": "bolt_motion",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "spawn_bolt_next_shoot_sound_in",
+      "from_node": "spawn_bolt",
+      "from_port": "next",
+      "to_node": "shoot_sound",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    },
+    {
+      "id": "hit_next_is_enemy_in",
+      "from_node": "hit",
+      "from_port": "next",
+      "to_node": "is_enemy",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "hit_other_other_tag_target",
+      "from_node": "hit",
+      "from_port": "other",
+      "to_node": "other_tag",
+      "to_port": "target",
+      "kind": "object",
+      "order": 0
+    },
+    {
+      "id": "other_tag_value_is_enemy_value",
+      "from_node": "other_tag",
+      "from_port": "value",
+      "to_node": "is_enemy",
+      "to_port": "value",
+      "kind": "text",
+      "order": 0
+    },
+    {
+      "id": "is_enemy_true_hit_sequence_in",
+      "from_node": "is_enemy",
+      "from_port": "true",
+      "to_node": "hit_sequence",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "hit_sequence_then_0_save_lives_in",
+      "from_node": "hit_sequence",
+      "from_port": "then_0",
+      "to_node": "save_lives",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "get_lives_value_lose_life_a",
+      "from_node": "get_lives",
+      "from_port": "value",
+      "to_node": "lose_life",
+      "to_port": "a",
+      "kind": "number",
+      "order": 0
+    },
+    {
+      "id": "lose_life_value_save_lives_value",
+      "from_node": "lose_life",
+      "from_port": "value",
+      "to_node": "save_lives",
+      "to_port": "value",
+      "kind": "number",
+      "order": 0
+    },
+    {
+      "id": "save_lives_next_is_dead_in",
+      "from_node": "save_lives",
+      "from_port": "next",
+      "to_node": "is_dead",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "lose_life_value_is_dead_value",
+      "from_node": "lose_life",
+      "from_port": "value",
+      "to_node": "is_dead",
+      "to_port": "value",
+      "kind": "number",
+      "order": 0
+    },
+    {
+      "id": "is_dead_true_disable_player_in",
+      "from_node": "is_dead",
+      "from_port": "true",
+      "to_node": "disable_player",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "is_dead_true_death_hud_in",
+      "from_node": "is_dead",
+      "from_port": "true",
+      "to_node": "death_hud",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    },
+    {
+      "id": "hit_sequence_then_1_reset_position_in",
+      "from_node": "hit_sequence",
+      "from_port": "then_1",
+      "to_node": "reset_position",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    },
+    {
+      "id": "hit_sequence_then_2_hit_sound_in",
+      "from_node": "hit_sequence",
+      "from_port": "then_2",
+      "to_node": "hit_sound",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 2
+    }
+  ]
+}

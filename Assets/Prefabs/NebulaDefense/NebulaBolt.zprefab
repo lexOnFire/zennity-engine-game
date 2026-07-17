@@ -1,0 +1,32 @@
+{
+  "format_version": 1,
+  "prefab_name": "NebulaBolt",
+  "object": {
+    "name": "NebulaBolt",
+    "x": 0.0,
+    "y": 0.0,
+    "w": 30.0,
+    "h": 10.0,
+    "rotation": 0.0,
+    "color": [
+      86,
+      221,
+      255
+    ],
+    "tag": "ProjectileNebula",
+    "layer": "Default",
+    "renderer_enabled": true,
+    "collider": {
+      "type": "box",
+      "width": 30.0,
+      "height": 10.0,
+      "is_trigger": true
+    },
+    "rigidbody": {
+      "mass": 0.1,
+      "use_gravity": false,
+      "is_kinematic": true,
+      "gravity_scale": 0.0
+    }
+  }
+}
