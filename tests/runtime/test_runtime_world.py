@@ -127,3 +127,32 @@ def test_prefab_pool_has_a_memory_limit(tmp_path):
         world.destroy_object(instance)
 
     assert world.stats()["pooled"] == RuntimeWorld.MAX_POOLED_PER_PREFAB
+
+
+def test_spawn_lifecycle_enforces_time_distance_and_instance_limit():
+    world = RuntimeWorld({})
+    timed = world.create_object(name="Timed")
+    world.configure_spawned(timed, spawn_group="shots", lifetime=0.5)
+    distant = world.create_object(name="Distant")
+    world.configure_spawned(distant, spawn_group="shots", max_distance=10.0)
+
+    assert world.can_spawn("shots", 2) is False
+    distant["x"] = 11.0
+    assert world.update_lifecycle(0.25) == ["Distant"]
+    assert world.update_lifecycle(0.25) == ["Timed"]
+    assert world.can_spawn("shots", 2) is True
+
+
+def test_generic_spawn_pool_reuses_destroyed_clone_independently():
+    world = RuntimeWorld({})
+    source = world.create_object(name="Projectile", collider={"type": "box"})
+    first = world.clone_object(source, "Shot", "logic:shots")
+    world.configure_spawned(first, spawn_group="shots", pool_key="logic:shots")
+    world.destroy_object(first)
+
+    second = world.clone_object(source, "Shot", "logic:shots")
+
+    assert second is first
+    assert second["active"] is True
+    assert second["collider"] == {"type": "box"}
+    assert world.stats()["reused"] == 1

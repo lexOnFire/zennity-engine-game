@@ -23,7 +23,7 @@ LOGIC_GRAPH_VERSION = 1
 
 UNIQUE_EVENT_TYPES = {
     "event_start", "event_update", "event_collision_enter", "event_collision_exit",
-    "event_trigger_enter", "event_trigger_exit",
+    "event_trigger_enter", "event_trigger_exit", "event_object_created",
 }
 
 NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
@@ -36,6 +36,7 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "event_trigger_exit": {"title": "Ao sair da área", "category": "Eventos", "properties": {}},
     "event_timer": {"title": "Após um tempo", "category": "Eventos", "properties": {"seconds": 1.0, "repeat": False}},
     "event_key_pressed": {"title": "Ao apertar tecla (uma vez)", "category": "Eventos", "properties": {"key": "D"}},
+    "event_object_created": {"title": "Ao objeto ser criado", "category": "Eventos", "properties": {}},
     "self_object": {"title": "Este objeto", "category": "Objetos", "properties": {}},
     "find_tag": {"title": "Procurar por Tag", "category": "Objetos", "properties": {"tag": "Player"}},
     "create_object": {
@@ -46,10 +47,25 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
             "width": 64.0, "height": 64.0, "color": "#58a6ff",
             "texture": "", "tag": "Untagged", "relative": False,
             "inherit_source": True, "inherit_logic": False,
+            "lifetime": 0.0, "max_instances": 0, "max_distance": 0.0,
+            "use_pool": False,
         },
     },
-    "create_prefab": {"title": "Criar Prefab", "category": "Objetos", "properties": {"path": "", "x": 0.0, "y": 0.0, "relative": False}},
-    "clone_object": {"title": "Clonar objeto", "category": "Objetos", "properties": {"name": ""}},
+    "create_prefab": {
+        "title": "Criar Prefab", "category": "Objetos",
+        "properties": {
+            "path": "", "x": 0.0, "y": 0.0, "relative": False,
+            "lifetime": 0.0, "max_instances": 0, "max_distance": 0.0,
+            "use_pool": True,
+        },
+    },
+    "clone_object": {
+        "title": "Clonar objeto", "category": "Objetos",
+        "properties": {
+            "name": "", "lifetime": 0.0, "max_instances": 0,
+            "max_distance": 0.0, "use_pool": False,
+        },
+    },
     "add_component": {"title": "Adicionar componente", "category": "Objetos", "properties": {"component": "BoxCollider", "properties": {"type": "box"}}},
     "remove_component": {"title": "Remover componente", "category": "Objetos", "properties": {"component": "BoxCollider"}},
     "input_axis": {"title": "Ler movimento", "category": "Movimento", "properties": {"negative": "A", "positive": "D"}},
@@ -92,6 +108,7 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "rotate": {"title": "Girar", "category": "Ação", "properties": {"degrees": 90.0}},
     "set_active": {"title": "Ativar / Desativar", "category": "Ação", "properties": {"active": True}},
     "destroy_object": {"title": "Destruir objeto", "category": "Ação", "properties": {}},
+    "destroy_after_time": {"title": "Destruir depois de um tempo", "category": "Ação", "properties": {"seconds": 2.0}},
     "restart_scene": {"title": "Reiniciar cena", "category": "Ação", "properties": {}},
     "log_message": {"title": "Mostrar no Console", "category": "Ação", "properties": {"text": "Mensagem"}},
     "subgraph_start": {"title": "Início do subgrafo", "category": "Subgrafos", "properties": {}},
@@ -128,14 +145,15 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "event_trigger_exit": {"inputs": [], "outputs": [("next", "flow"), ("other", "object")]},
     "event_timer": {"inputs": [], "outputs": [("next", "flow")]},
     "event_key_pressed": {"inputs": [], "outputs": [("next", "flow")]},
+    "event_object_created": {"inputs": [], "outputs": [("next", "flow"), ("object", "object")]},
     "self_object": {"inputs": [], "outputs": [("object", "object")]},
     "find_tag": {"inputs": [("in", "flow")], "outputs": [("next", "flow"), ("object", "object")]},
     "create_object": {
         "inputs": [("in", "flow"), ("source", "object"), ("name", "text"), ("x", "number"), ("y", "number")],
-        "outputs": [("next", "flow"), ("object", "object")],
+        "outputs": [("next", "flow"), ("limit_reached", "flow"), ("object", "object")],
     },
-    "create_prefab": {"inputs": [("in", "flow"), ("x", "number"), ("y", "number")], "outputs": [("next", "flow"), ("object", "object")]},
-    "clone_object": {"inputs": [("in", "flow"), ("target", "object"), ("name", "text")], "outputs": [("next", "flow"), ("object", "object")]},
+    "create_prefab": {"inputs": [("in", "flow"), ("x", "number"), ("y", "number")], "outputs": [("next", "flow"), ("limit_reached", "flow"), ("object", "object")]},
+    "clone_object": {"inputs": [("in", "flow"), ("target", "object"), ("name", "text")], "outputs": [("next", "flow"), ("limit_reached", "flow"), ("object", "object")]},
     "add_component": {"inputs": [("in", "flow"), ("target", "object")], "outputs": [("next", "flow")]},
     "remove_component": {"inputs": [("in", "flow"), ("target", "object")], "outputs": [("next", "flow")]},
     "input_axis": {"inputs": [("in", "flow")], "outputs": [("next", "flow"), ("value", "number")]},
@@ -176,6 +194,7 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "rotate": {"inputs": [("in", "flow"), ("target", "object"), ("degrees", "number")], "outputs": [("next", "flow")]},
     "set_active": {"inputs": [("in", "flow"), ("target", "object"), ("active", "bool")], "outputs": [("next", "flow")]},
     "destroy_object": {"inputs": [("in", "flow"), ("target", "object")], "outputs": []},
+    "destroy_after_time": {"inputs": [("in", "flow"), ("target", "object"), ("seconds", "number")], "outputs": [("next", "flow")]},
     "restart_scene": {"inputs": [("in", "flow")], "outputs": []},
     "log_message": {"inputs": [("in", "flow"), ("text", "text")], "outputs": [("next", "flow")]},
     "subgraph_start": {"inputs": [], "outputs": [("next", "flow")]},

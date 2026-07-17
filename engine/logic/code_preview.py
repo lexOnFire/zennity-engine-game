@@ -17,6 +17,7 @@ def node_code_preview(node: Mapping[str, Any]) -> str:
         "event_update": "a_cada_frame(dt):\n    executar próximo",
         "event_timer": f"a_cada({_value(properties, 'seconds', 1.0)}s):\n    executar próximo",
         "event_key_pressed": f"ao_apertar_uma_vez('{_value(properties, 'key', 'D')}'):\n    executar próximo",
+        "event_object_created": "ao_criar_objeto(novo):\n    alvo_atual = novo",
         "input_axis": f"eixo = tecla({_value(properties, 'positive', 'D')})\n     - tecla({_value(properties, 'negative', 'A')})",
         "move": f"obj.x += entrada\n         * {_value(properties, 'speed', 200)} * dt",
         "move_by": f"obj.x += {_value(properties, 'x', 100)} * dt\nobj.y += {_value(properties, 'y', 0)} * dt",
@@ -37,6 +38,7 @@ def node_code_preview(node: Mapping[str, Any]) -> str:
         "rotate": f"alvo.rotação += {_value(properties, 'degrees', 90)}",
         "set_active": f"alvo.ativo = {_value(properties, 'active', True)}",
         "destroy_object": "alvo.destruir()",
+        "destroy_after_time": f"alvo.destruir_após({_value(properties, 'seconds', 2)}s)",
         "play_animation": f"animator.tocar('{_value(properties, 'state', 'Idle')}')",
         "play_animation_asset": f"tocar_animação(\n  '{_value(properties, 'path', 'selecione .zanim')}'\n)",
         "stop_animation": "parar_animação()",
@@ -52,7 +54,8 @@ def node_code_preview(node: Mapping[str, Any]) -> str:
         "find_tag": f"objeto = procurar_tag('{_value(properties, 'tag', 'Player')}')",
         "create_object": (
             f"novo = criar_objeto_independente('{_value(properties, 'name', 'NovoObjeto')}',\n"
-            f"  x={_value(properties, 'x', 0)}, y={_value(properties, 'y', 0)})"
+            f"  x={_value(properties, 'x', 0)}, y={_value(properties, 'y', 0)},\n"
+            f"  limite={_value(properties, 'max_instances', 0)}, vida={_value(properties, 'lifetime', 0)}s)"
         ),
         "create_prefab": f"novo = criar_prefab('{_value(properties, 'path', 'selecione .zprefab')}')",
         "clone_object": "cópia = clonar(alvo)",

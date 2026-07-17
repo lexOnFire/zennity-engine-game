@@ -11,6 +11,40 @@ from .graph_asset import create_logic_node
 
 LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     {
+        "id": "safe_pooled_projectile",
+        "topics": ("Objetos", "Criação", "Movimento", "Input"),
+        "title": "Disparar projétil seguro com pool",
+        "category": "Objetos e cena",
+        "summary": "Cria projéteis ao apertar Espaço, limita instâncias, move cada cópia e a reutiliza pelo pool.",
+        "keywords": "projetil tiro bala pool limite vida distância criar tecla movimento permanente",
+        "steps": (
+            "Ao apertar Espaço dispara uma vez por pressionamento.",
+            "Criar objeto produz Projectile e ele vira automaticamente o alvo do próximo bloco.",
+            "No máximo 20 projéteis permanecem ativos; cada um vive 3 segundos ou percorre 1200 unidades.",
+            "O pool reaproveita instâncias descartadas e reduz criação repetida.",
+            "Iniciar movimento permanente recebe implicitamente o Projectile recém-criado.",
+        ),
+        "nodes": (
+            {"key": "key", "type": "event_key_pressed", "position": (0.0, 0.0), "properties": {"key": "SPACE"}},
+            {
+                "key": "create", "type": "create_object", "position": (300.0, 0.0),
+                "properties": {
+                    "name": "Projectile", "x": 0.0, "y": 0.0,
+                    "width": 20.0, "height": 10.0, "color": "#ffd166",
+                    "texture": "", "tag": "Projectile", "relative": True,
+                    "inherit_source": False, "inherit_logic": False,
+                    "lifetime": 3.0, "max_instances": 20,
+                    "max_distance": 1200.0, "use_pool": True,
+                },
+            },
+            {"key": "motion", "type": "start_continuous_motion", "position": (640.0, 0.0), "properties": {"x": 420.0, "y": 0.0}},
+        ),
+        "edges": (
+            ("key", "next", "create", "in", "flow"),
+            ("create", "next", "motion", "in", "flow"),
+        ),
+    },
+    {
         "id": "scrolling_road_or_sky",
         "topics": ("Movimento", "Imagem", "Cenário"),
         "title": "Criar pista ou céu em movimento",

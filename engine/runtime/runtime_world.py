@@ -5,6 +5,7 @@ import json
 import uuid
 from copy import deepcopy
 from pathlib import Path
+import math
 from typing import Any, Mapping, MutableMapping
 
 
@@ -89,7 +90,7 @@ class RuntimeWorld:
         self.created_count += 1
         return obj
 
-    def clone_object(self, source: Mapping[str, Any], name: str = "") -> dict[str, Any]:
+    def clone_object(self, source: Mapping[str, Any], name: str = "", pool_key: str = "") -> dict[str, Any]:
         """Cria uma cópia profunda e independente, preservando componentes e visual."""
         clone = deepcopy(dict(source))
         for key in tuple(clone):
@@ -101,11 +102,94 @@ class RuntimeWorld:
         clone["name"] = self.unique_name(name or f"{source.get('name', 'Objeto')}_Copia")
         clone["active"] = True
         clone["spawned_by_logic"] = True
+        normalized_pool_key = str(pool_key).strip()
+        if normalized_pool_key and self._pool.get(normalized_pool_key):
+            reused = self._pool[normalized_pool_key].pop()
+            reused.clear()
+            reused.update(clone)
+            clone = reused
+            self.reused_count += 1
+        if normalized_pool_key:
+            clone["pool_key"] = normalized_pool_key
         self.objects[str(clone["name"])] = clone
         self.created_count += 1
         return clone
 
-    def instantiate_prefab(self, path: str | Path, *, x: float | None = None, y: float | None = None, project_root: str | Path | None = None) -> dict[str, Any]:
+    def active_spawn_count(self, spawn_group: str) -> int:
+        """Conta somente instâncias vivas criadas pelo mesmo bloco."""
+        group = str(spawn_group)
+        return sum(
+            1 for obj in self.objects.values()
+            if obj.get("active", True)
+            and str((obj.get("spawn_lifecycle") or {}).get("group", "")) == group
+        )
+
+    def can_spawn(self, spawn_group: str, maximum: int = 0) -> bool:
+        limit = max(0, int(maximum))
+        return not limit or self.active_spawn_count(spawn_group) < limit
+
+    def configure_spawned(
+        self,
+        obj: MutableMapping[str, Any],
+        *,
+        spawn_group: str,
+        lifetime: float = 0.0,
+        max_distance: float = 0.0,
+        creator_graph: str = "",
+        creator_object: str = "",
+        creator_node: str = "",
+        pool_key: str = "",
+    ) -> None:
+        """Anexa metadados de origem e descarte usados no Play Mode."""
+        if pool_key:
+            obj["pool_key"] = str(pool_key)
+        obj["spawn_lifecycle"] = {
+            "group": str(spawn_group),
+            "age": 0.0,
+            "lifetime": max(0.0, float(lifetime)),
+            "max_distance": max(0.0, float(max_distance)),
+            "origin_x": float(obj.get("x", 0.0)),
+            "origin_y": float(obj.get("y", 0.0)),
+            "creator_graph": str(creator_graph),
+            "creator_object": str(creator_object),
+            "creator_node": str(creator_node),
+        }
+
+    def destroy_after(self, obj: MutableMapping[str, Any], seconds: float) -> None:
+        lifecycle = obj.setdefault("spawn_lifecycle", {})
+        lifecycle["age"] = 0.0
+        lifecycle["lifetime"] = max(0.0, float(seconds))
+        lifecycle.setdefault("origin_x", float(obj.get("x", 0.0)))
+        lifecycle.setdefault("origin_y", float(obj.get("y", 0.0)))
+
+    def update_lifecycle(self, dt: float) -> list[str]:
+        """Descarta instâncias por tempo ou distância e devolve seus nomes."""
+        destroyed: list[str] = []
+        for name, obj in list(self.objects.items()):
+            lifecycle = obj.get("spawn_lifecycle")
+            if not isinstance(lifecycle, dict) or not obj.get("active", True):
+                continue
+            lifecycle["age"] = float(lifecycle.get("age", 0.0)) + max(0.0, float(dt))
+            lifetime = max(0.0, float(lifecycle.get("lifetime", 0.0)))
+            maximum_distance = max(0.0, float(lifecycle.get("max_distance", 0.0)))
+            distance = math.hypot(
+                float(obj.get("x", 0.0)) - float(lifecycle.get("origin_x", obj.get("x", 0.0))),
+                float(obj.get("y", 0.0)) - float(lifecycle.get("origin_y", obj.get("y", 0.0))),
+            )
+            if (lifetime and lifecycle["age"] >= lifetime) or (maximum_distance and distance >= maximum_distance):
+                destroyed.append(str(name))
+                self.destroy_object(obj)
+        return destroyed
+
+    def instantiate_prefab(
+        self,
+        path: str | Path,
+        *,
+        x: float | None = None,
+        y: float | None = None,
+        project_root: str | Path | None = None,
+        pool_key: str | None = None,
+    ) -> dict[str, Any]:
         prefab_path = Path(path)
         if not prefab_path.is_absolute():
             prefab_path = Path(project_root or Path.cwd()) / prefab_path
@@ -123,7 +207,7 @@ class RuntimeWorld:
             if y is not None:
                 values["y"] = y
             values["prefab_path"] = str(path)
-            values["pool_key"] = f"prefab:{Path(path).as_posix().casefold()}"
+            values["pool_key"] = pool_key or f"prefab:{Path(path).as_posix().casefold()}"
             return self.create_object(**values)
         transform = payload.get("transform") if isinstance(payload.get("transform"), dict) else {}
         position = _vector(transform.get("position"), (0.0, 0.0, 0.0))
@@ -176,7 +260,7 @@ class RuntimeWorld:
             values["ui"] = ui
             break
         values["prefab_path"] = str(path)
-        values["pool_key"] = f"prefab:{Path(path).as_posix().casefold()}"
+        values["pool_key"] = pool_key or f"prefab:{Path(path).as_posix().casefold()}"
         return self.create_object(**values)
 
     @staticmethod

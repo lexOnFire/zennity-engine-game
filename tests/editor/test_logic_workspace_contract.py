@@ -377,3 +377,24 @@ def test_logic_workspace_controls_play_and_builds_scrolling_image_planes():
     assert "def start_texture_scroll" in viewport
     assert "def prepare_scrolling_sprite_surface" in rendering
     assert '"scrolling_road_or_sky"' in recipes
+
+
+def test_logic_workspace_explains_targets_and_controls_spawn_lifecycle():
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    graph = _source("engine/logic/graph_asset.py")
+    runtime = _source("engine/logic/runtime.py")
+    viewport = _source("editor/isolated_viewport.py")
+    world = _source("engine/runtime/runtime_world.py")
+    recipes = _source("engine/logic/recipes.py")
+    assert "def _refresh_target_hints" in editor
+    assert "ALVO IMPLÍCITO" in editor and "ALVO ATUAL" in editor
+    assert "Referência de objeto" in editor and "Qt.DashLine" in editor
+    for node_type in ("event_object_created", "destroy_after_time"):
+        assert f'"{node_type}"' in graph
+        assert f'node_type == "{node_type}"' in runtime or node_type == "event_object_created"
+    for property_name in ("lifetime", "max_instances", "max_distance", "use_pool"):
+        assert f'"{property_name}"' in graph
+    assert "def configure_spawned" in viewport
+    assert "def update_lifecycle" in world
+    assert "def can_spawn" in world
+    assert '"safe_pooled_projectile"' in recipes

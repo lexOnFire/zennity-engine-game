@@ -388,15 +388,63 @@ class PlayScriptAPI:
         self.log(f"objeto criado: {obj['name']}")
         return PlayScriptAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
 
+    def create_object_from_pool(self, pool_key: str, **values: Any) -> "PlayScriptAPI":
+        obj = self.runtime_world.create_object(pool_key=f"logic:{pool_key}", **values)
+        self.log(f"objeto criado/reutilizado: {obj['name']}")
+        return PlayScriptAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
+
     def create_prefab(self, path: str, x: float | None = None, y: float | None = None) -> "PlayScriptAPI":
         obj = self.runtime_world.instantiate_prefab(path, x=x, y=y)
         self.log(f"prefab criado: {obj['name']}")
+        return PlayScriptAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
+
+    def create_prefab_from_pool(
+        self, path: str, x: float | None, y: float | None, pool_key: str
+    ) -> "PlayScriptAPI":
+        obj = self.runtime_world.instantiate_prefab(
+            path, x=x, y=y, pool_key=f"logic:{pool_key}"
+        )
+        self.log(f"prefab criado/reutilizado: {obj['name']}")
         return PlayScriptAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
 
     def clone_object(self, other: "PlayScriptAPI", name: str = "") -> "PlayScriptAPI":
         source = other.obj if isinstance(other, PlayScriptAPI) else self.obj
         obj = self.runtime_world.clone_object(source, name)
         return PlayScriptAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
+
+    def clone_object_from_pool(self, other: "PlayScriptAPI", name: str, pool_key: str) -> "PlayScriptAPI":
+        source = other.obj if isinstance(other, PlayScriptAPI) else self.obj
+        obj = self.runtime_world.clone_object(source, name, pool_key)
+        return PlayScriptAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
+
+    def can_spawn(self, spawn_group: str, maximum: int = 0) -> bool:
+        return self.runtime_world.can_spawn(spawn_group, maximum)
+
+    def configure_spawned(
+        self,
+        created: "PlayScriptAPI",
+        *,
+        spawn_group: str,
+        lifetime: float = 0.0,
+        max_distance: float = 0.0,
+        creator_graph: str = "",
+        creator_node: str = "",
+        use_pool: bool = False,
+    ) -> None:
+        pool_key = f"logic:{spawn_group}" if use_pool else ""
+        self.runtime_world.configure_spawned(
+            created.obj,
+            spawn_group=spawn_group,
+            lifetime=lifetime,
+            max_distance=max_distance,
+            creator_graph=creator_graph,
+            creator_object=self.name,
+            creator_node=creator_node,
+            pool_key=pool_key,
+        )
+
+    def destroy_after(self, seconds: float) -> None:
+        self.runtime_world.destroy_after(self.obj, seconds)
 
     def add_component(self, component: str, properties: dict[str, Any] | None = None) -> None:
         self.runtime_world.add_component(self.obj, component, properties)
@@ -1743,6 +1791,9 @@ def run_viewport(
                     _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}: Behavior Controller: {exc}"})
             for api in script_apis.values():
                 api.end_frame()
+            for destroyed_name in runtime_world.update_lifecycle(dt):
+                velocities_y.pop(destroyed_name, None)
+                grounded.pop(destroyed_name, None)
             if restart_requested:
                 stop_audio_sources()
                 stop_scripts()

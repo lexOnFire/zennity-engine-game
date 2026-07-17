@@ -75,6 +75,7 @@ class LogicGraphRuntime:
         self._node_state: dict[str, dict[str, Any]] = {}
         self._persistent_motion: dict[str, dict[str, Any]] = {}
         self._implicit_target: Any = None
+        self._created_event_depth = 0
         self.started = False
         for node in self.nodes.values() if not self.call_stack else ():
             if node.get("type") != "event_custom":
@@ -170,11 +171,19 @@ class LogicGraphRuntime:
                 override_physics("y")
 
     def _apply_persistent_motion(self, dt: float) -> None:
-        for state in list(self._persistent_motion.values()):
+        for key, state in list(self._persistent_motion.items()):
             target = state.get("target")
             if target is None or not bool(getattr(target, "active", True)):
+                self._persistent_motion.pop(key, None)
                 continue
             self._move_target(target, float(state.get("x", 0.0)), float(state.get("y", 0.0)), dt)
+
+    @staticmethod
+    def _target_identity(target: Any) -> str:
+        raw = getattr(target, "obj", None)
+        if isinstance(raw, Mapping):
+            return str(raw.get("id", raw.get("name", id(raw))))
+        return str(getattr(target, "name", id(target)))
 
     def trigger_event(self, event_type: str, game: Any, dt: float = 0.0, payload: Any = None) -> None:
         """Dispara um evento físico enviado pelo Play Mode."""
@@ -534,8 +543,9 @@ class LogicGraphRuntime:
             target = self._read_target(node_id, game, dt, set())
             velocity_x = float(self._read_input(node_id, "x", properties.get("x", 100.0), game, dt, set()))
             velocity_y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
-            was_active = node_id in self._persistent_motion
-            self._persistent_motion[node_id] = {"target": target, "x": velocity_x, "y": velocity_y}
+            motion_key = f"{node_id}:{self._target_identity(target)}"
+            was_active = motion_key in self._persistent_motion
+            self._persistent_motion[motion_key] = {"target": target, "x": velocity_x, "y": velocity_y}
             if not was_active:
                 self._move_target(target, velocity_x, velocity_y, dt)
             return ["next"]
@@ -622,6 +632,9 @@ class LogicGraphRuntime:
             target.stop_texture_scroll(reset=bool(properties.get("reset", False)))
             return ["next"]
         if node_type == "create_object":
+            if not self._spawn_allowed(game, node_id, properties):
+                self._store(node_id, "object", None)
+                return ["limit_reached"]
             name = str(self._read_input(node_id, "name", properties.get("name", "NovoObjeto"), game, dt, set()))
             x = float(self._read_input(node_id, "x", properties.get("x", 0.0), game, dt, set()))
             y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
@@ -635,27 +648,36 @@ class LogicGraphRuntime:
                     if (node_id, "source") in self.incoming
                     else game
                 )
-                created = game.clone_object(source, name)
+                if bool(properties.get("use_pool", False)) and callable(getattr(game, "clone_object_from_pool", None)):
+                    created = game.clone_object_from_pool(source, name, self._spawn_group(node_id))
+                else:
+                    created = game.clone_object(source, name)
                 created.x = x
                 created.y = y
                 created_data = getattr(created, "obj", None)
                 if isinstance(created_data, dict) and not bool(properties.get("inherit_logic", False)):
                     created_data["logic_graphs"] = []
             else:
-                created = game.create_object(
-                    name=name,
-                    x=x,
-                    y=y,
-                    width=float(properties.get("width", 64.0)),
-                    height=float(properties.get("height", 64.0)),
-                    color=str(properties.get("color", "#58a6ff")),
-                    texture=str(properties.get("texture", "")),
-                    tag=str(properties.get("tag", "Untagged")),
-                )
+                create_values = {
+                    "name": name, "x": x, "y": y,
+                    "width": float(properties.get("width", 64.0)),
+                    "height": float(properties.get("height", 64.0)),
+                    "color": str(properties.get("color", "#58a6ff")),
+                    "texture": str(properties.get("texture", "")),
+                    "tag": str(properties.get("tag", "Untagged")),
+                }
+                if bool(properties.get("use_pool", False)) and callable(getattr(game, "create_object_from_pool", None)):
+                    created = game.create_object_from_pool(self._spawn_group(node_id), **create_values)
+                else:
+                    created = game.create_object(**create_values)
             self._store(node_id, "object", created)
             self._node_state.setdefault(node_id, {})["flow_target"] = created
+            self._configure_spawned(game, created, node_id, properties, dt)
             return ["next"]
         if node_type == "create_prefab":
+            if not self._spawn_allowed(game, node_id, properties):
+                self._store(node_id, "object", None)
+                return ["limit_reached"]
             path = str(properties.get("path", "")).strip()
             if not path:
                 raise RuntimeError("Escolha um arquivo .zprefab.")
@@ -664,16 +686,27 @@ class LogicGraphRuntime:
             if bool(properties.get("relative", False)):
                 x += float(game.x)
                 y += float(game.y)
-            created = game.create_prefab(path, x, y)
+            if bool(properties.get("use_pool", True)) and callable(getattr(game, "create_prefab_from_pool", None)):
+                created = game.create_prefab_from_pool(path, x, y, self._spawn_group(node_id))
+            else:
+                created = game.create_prefab(path, x, y)
             self._store(node_id, "object", created)
             self._node_state.setdefault(node_id, {})["flow_target"] = created
+            self._configure_spawned(game, created, node_id, properties, dt)
             return ["next"]
         if node_type == "clone_object":
+            if not self._spawn_allowed(game, node_id, properties):
+                self._store(node_id, "object", None)
+                return ["limit_reached"]
             target = self._read_target(node_id, game, dt, set())
             name = str(self._read_input(node_id, "name", properties.get("name", ""), game, dt, set()))
-            created = game.clone_object(target, name)
+            if bool(properties.get("use_pool", False)) and callable(getattr(game, "clone_object_from_pool", None)):
+                created = game.clone_object_from_pool(target, name, self._spawn_group(node_id))
+            else:
+                created = game.clone_object(target, name)
             self._store(node_id, "object", created)
             self._node_state.setdefault(node_id, {})["flow_target"] = created
+            self._configure_spawned(game, created, node_id, properties, dt)
             return ["next"]
         if node_type == "add_component":
             target = self._read_target(node_id, game, dt, set())
@@ -714,6 +747,11 @@ class LogicGraphRuntime:
             target = self._read_target(node_id, game, dt, set())
             target.destroy()
             return []
+        if node_type == "destroy_after_time":
+            target = self._read_target(node_id, game, dt, set())
+            seconds = float(self._read_input(node_id, "seconds", properties.get("seconds", 2.0), game, dt, set()))
+            target.destroy_after(seconds)
+            return ["next"]
         if node_type == "restart_scene":
             game.restart()
             return []
@@ -811,8 +849,60 @@ class LogicGraphRuntime:
     def _read_target(self, node_id: str, game: Any, dt: float, resolving: set[tuple[str, str]]) -> Any:
         """Resolve uma porta de objeto sem copiar o objeto atual por engano."""
         if (node_id, "target") not in self.incoming:
-            return self._implicit_target or game
-        return self._read_input(node_id, "target", game, game, dt, resolving) or game
+            target = self._implicit_target or game
+        else:
+            target = self._read_input(node_id, "target", game, game, dt, resolving) or game
+        self._store(node_id, "Alvo atual", target)
+        return target
+
+    def _spawn_group(self, node_id: str) -> str:
+        return f"{self.object_key}:{self.graph.get('name', 'LogicGraph')}:{node_id}"
+
+    def _spawn_allowed(self, game: Any, node_id: str, properties: Mapping[str, Any]) -> bool:
+        checker = getattr(game, "can_spawn", None)
+        if not callable(checker):
+            return True
+        return bool(checker(self._spawn_group(node_id), int(properties.get("max_instances", 0))))
+
+    def _configure_spawned(
+        self,
+        game: Any,
+        created: Any,
+        node_id: str,
+        properties: Mapping[str, Any],
+        dt: float,
+    ) -> None:
+        configure = getattr(game, "configure_spawned", None)
+        if callable(configure):
+            configure(
+                created,
+                spawn_group=self._spawn_group(node_id),
+                lifetime=float(properties.get("lifetime", 0.0)),
+                max_distance=float(properties.get("max_distance", 0.0)),
+                creator_graph=str(self.graph.get("name", "Logic Graph")),
+                creator_node=node_id,
+                use_pool=bool(properties.get("use_pool", False)),
+            )
+        self._emit_object_created(game, created, dt)
+
+    def _emit_object_created(self, game: Any, created: Any, dt: float) -> None:
+        """Executa o evento de criação usando a nova instância como alvo implícito."""
+        if self._created_event_depth >= 16:
+            raise RuntimeError("Muitos objetos foram criados em cascata pelo evento de criação.")
+        self._created_event_depth += 1
+        previous_target = self._implicit_target
+        self._implicit_target = created
+        try:
+            for node in self.nodes.values():
+                if node.get("type") != "event_object_created":
+                    continue
+                node_id = str(node["id"])
+                self._store(node_id, "object", created)
+                self._node_state.setdefault(node_id, {})["flow_target"] = created
+                self._run_event_node(node, game, dt)
+        finally:
+            self._implicit_target = previous_target
+            self._created_event_depth -= 1
 
     def _evaluate_output(
         self,

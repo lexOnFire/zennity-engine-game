@@ -988,6 +988,107 @@ def test_scrolling_background_action_configures_and_stops_target():
     ]
 
 
+def test_created_event_uses_new_object_as_implicit_target():
+    start = create_logic_node("event_start")
+    create = create_logic_node("create_object")
+    create["properties"].update({"name": "Projectile", "inherit_source": False})
+    created_event = create_logic_node("event_object_created")
+    position = create_logic_node("set_position")
+    position["properties"].update({"x": 90.0, "y": 40.0})
+    graph = default_logic_graph("SpawnEvents")
+    graph["nodes"] = [start, create, created_event, position]
+    graph["edges"] = [
+        _edge(start, "next", create, "in"),
+        _edge(created_event, "next", position, "in"),
+    ]
+
+    class Created:
+        active = True
+        x = y = 0.0
+
+    class Game:
+        x = y = 0.0
+        def __init__(self): self.created = Created()
+        def create_object(self, **_values): return self.created
+
+    game = Game()
+    LogicGraphRuntime(graph).start(game)
+
+    assert (game.created.x, game.created.y) == (90.0, 40.0)
+
+
+def test_spawn_limit_uses_dedicated_flow_without_creating_object():
+    start = create_logic_node("event_start")
+    create = create_logic_node("create_object")
+    create["properties"].update({"inherit_source": False, "max_instances": 3})
+    blocked = create_logic_node("log_message")
+    blocked["properties"]["text"] = "limite"
+    graph = default_logic_graph("SpawnLimit")
+    graph["nodes"] = [start, create, blocked]
+    graph["edges"] = [
+        _edge(start, "next", create, "in"),
+        _edge(create, "limit_reached", blocked, "in"),
+    ]
+
+    class Game:
+        x = y = 0.0
+        def __init__(self): self.logs = []
+        def can_spawn(self, _group, maximum): return maximum < 3
+        def create_object(self, **_values): raise AssertionError("não deve criar")
+        def log(self, text): self.logs.append(text)
+
+    game = Game()
+    LogicGraphRuntime(graph).start(game)
+
+    assert game.logs == ["limite"]
+
+
+def test_same_motion_block_keeps_multiple_spawned_targets_moving():
+    key = create_logic_node("event_key_pressed")
+    key["properties"]["key"] = "D"
+    create = create_logic_node("create_object")
+    create["properties"]["name"] = "Shot"
+    motion = create_logic_node("start_continuous_motion")
+    motion["properties"].update({"x": 10.0, "y": 0.0})
+    graph = default_logic_graph("MultiShot")
+    graph["nodes"] = [key, create, motion]
+    graph["edges"] = [
+        _edge(key, "next", create, "in"),
+        _edge(create, "next", motion, "in"),
+    ]
+
+    class Created:
+        active = True
+        def __init__(self):
+            self.x = self.y = 0.0
+        def move(self, dx, dy=0.0):
+            self.x += dx
+            self.y += dy
+
+    class Game:
+        active = True
+        x = y = 0.0
+        def __init__(self):
+            self.presses = iter((True, True, False))
+            self.created = []
+        def key_pressed(self, _key): return next(self.presses)
+        def clone_object(self, _source, _name):
+            created = Created()
+            self.created.append(created)
+            return created
+        def move(self, _dx, _dy=0.0): pass
+
+    game = Game()
+    runtime = LogicGraphRuntime(graph)
+    runtime.update(game, 0.1)
+    runtime.update(game, 0.1)
+    runtime.update(game, 0.1)
+
+    assert len(game.created) == 2
+    assert game.created[0].x == 3.0
+    assert game.created[1].x == 2.0
+
+
 def test_patrol_y_recipe_reverses_at_positive_and_negative_limits():
     recipe = next(recipe for recipe in LOGIC_RECIPES if recipe["id"] == "patrol_y_between_limits")
     fragment = build_logic_recipe(str(recipe["id"]))
@@ -1053,7 +1154,9 @@ def test_create_object_node_returns_reference_for_following_actions():
     assert (game.last.x, game.last.y) == (80.0, 90.0)
     result = game.created[0]
     assert result["width"] == 64.0 and result["height"] == 64.0
-    assert node_port_definitions("create_object")["outputs"] == [("next", "flow"), ("object", "object")]
+    assert node_port_definitions("create_object")["outputs"] == [
+        ("next", "flow"), ("limit_reached", "flow"), ("object", "object")
+    ]
     assert "criar_objeto" in node_code_preview(create)
 
 

@@ -92,9 +92,11 @@ NODE_DESCRIPTIONS = {
     "event_trigger_exit": "Executa ao sair de uma área/trigger.",
     "event_timer": "Espera a quantidade de segundos e pode repetir automaticamente.",
     "event_key_pressed": "Executa uma única vez no instante em que a tecla é apertada.",
+    "event_object_created": "Executa quando este grafo cria uma instância; o novo objeto vira o alvo implícito.",
     "create_object": "Cria uma cópia profunda e independente; ações conectadas depois recebem automaticamente o novo objeto.",
     "create_prefab": "Cria uma cópia completa de um Prefab com visual e componentes configurados.",
     "clone_object": "Duplica um objeto existente durante o Play Mode.",
+    "destroy_after_time": "Agenda o descarte do alvo sem bloquear o restante do fluxo.",
     "add_component": "Adiciona e configura um componente no objeto alvo.",
     "remove_component": "Remove um componente opcional do objeto alvo.",
     "once": "Libera o fluxo somente na primeira execução.",
@@ -137,6 +139,10 @@ PROPERTY_LABELS = {
     "width": "Largura", "height": "Altura", "color": "Cor", "texture": "Imagem",
     "tag": "Tag", "relative": "Posição relativa", "inherit_source": "Copiar objeto original",
     "inherit_logic": "Copiar Logic Graphs também",
+    "lifetime": "Destruir após (s, 0 = nunca)",
+    "max_instances": "Máximo de instâncias (0 = ilimitado)",
+    "max_distance": "Distância máxima (0 = ilimitada)",
+    "use_pool": "Reutilizar por pool",
     "speed_x": "Velocidade X", "speed_y": "Velocidade Y",
     "repeat_x": "Repetir no eixo X", "repeat_y": "Repetir no eixo Y",
     "parallax": "Intensidade do parallax", "reset": "Voltar à origem",
@@ -279,6 +285,7 @@ class LogicEdgeItem(QGraphicsPathItem):
     def __init__(self, path: QPainterPath, edge_id: str, data_type: str) -> None:
         super().__init__(path)
         self.edge_id = edge_id
+        self.data_type = str(data_type)
         self.base_color = PORT_COLORS.get(data_type, PORT_COLORS["any"])
         self._runtime_active = False
         self._validation_level = ""
@@ -286,6 +293,11 @@ class LogicEdgeItem(QGraphicsPathItem):
         self.setZValue(0)
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         self.setData(0, edge_id)
+        self.setToolTip(
+            "Referência de objeto • transporta qual instância será afetada"
+            if self.data_type == "object"
+            else "Fluxo de execução" if self.data_type == "flow" else f"Valor: {self.data_type}"
+        )
 
     def itemChange(self, change, value):
         result = super().itemChange(change, value)
@@ -310,7 +322,12 @@ class LogicEdgeItem(QGraphicsPathItem):
         elif self._validation_level == "warning":
             self.setPen(QPen(QColor("#e6b85c"), 3.0, Qt.DashLine))
         else:
-            self.setPen(QPen(QColor("#ffffff") if selected else self.base_color, 3.2 if selected else 2.2))
+            style = Qt.DashLine if self.data_type == "object" else Qt.SolidLine
+            self.setPen(QPen(
+                QColor("#ffffff") if selected else self.base_color,
+                3.4 if selected else (2.8 if self.data_type == "object" else 2.2),
+                style,
+            ))
 
     def shape(self) -> QPainterPath:
         stroker = QPainterPathStroker()
@@ -548,7 +565,7 @@ class LogicNodeItem(QGraphicsRectItem):
         ports = node_port_definitions(node)
         self.input_definitions = ports["inputs"]
         self.output_definitions = ports["outputs"]
-        self.natural_height = max(self.MINIMUM_HEIGHT, 62.0 + max(len(self.input_definitions), len(self.output_definitions), 1) * 22.0)
+        self.natural_height = max(self.MINIMUM_HEIGHT + 18.0, 80.0 + max(len(self.input_definitions), len(self.output_definitions), 1) * 22.0)
         editor_state = node.setdefault("editor", {})
         self.width = max(self.MINIMUM_WIDTH, min(self.MAXIMUM_WIDTH, float(editor_state.get("width", self.WIDTH))))
         stored_height = float(editor_state.get("height", 0.0))
@@ -561,6 +578,8 @@ class LogicNodeItem(QGraphicsRectItem):
         self.node = node
         self._show_code = False
         self._fanout_count = 0
+        self._target_hint = ""
+        self._target_is_implicit = False
         self._runtime_display: tuple[bool, dict[str, Any] | None, str, bool] = (False, None, "", False)
         self.setFlags(
             QGraphicsItem.ItemIsMovable
@@ -599,6 +618,15 @@ class LogicNodeItem(QGraphicsRectItem):
         summary_font = self.summary_item.font()
         summary_font.setPointSizeF(8.5)
         self.summary_item.setFont(summary_font)
+        self.target_item = QGraphicsTextItem("", self)
+        self.target_item.setDefaultTextColor(QColor("#75d5df"))
+        self.target_item.setTextWidth(self.width - 22.0)
+        self.target_item.setPos(10.0, self.height - 45.0)
+        target_font = self.target_item.font()
+        target_font.setBold(True)
+        target_font.setPointSizeF(8.3)
+        self.target_item.setFont(target_font)
+        self.target_item.hide()
         self.debug_item = QGraphicsTextItem("", self)
         self.debug_item.setDefaultTextColor(QColor("#7ee787"))
         self.debug_item.setTextWidth(self.width - 22.0)
@@ -683,6 +711,8 @@ class LogicNodeItem(QGraphicsRectItem):
         self.collapse_control.refresh()
         self.summary_item.setTextWidth(self.width - 22.0)
         self.summary_item.setPos(10.0, self.expanded_height - 25.0)
+        self.target_item.setTextWidth(self.width - 22.0)
+        self.target_item.setPos(10.0, self.expanded_height - 45.0)
         self.debug_item.setTextWidth(self.width - 22.0)
         self.debug_item.setPos(10.0, self.expanded_height - 25.0)
         self.code_item.setTextWidth(self.width - 18.0)
@@ -715,6 +745,7 @@ class LogicNodeItem(QGraphicsRectItem):
         self.code_item.setVisible(body_visible and self._show_code)
         if self.collapsed:
             self.summary_item.hide()
+            self.target_item.hide()
             self.debug_item.hide()
         else:
             self.set_runtime_state(*self._runtime_display)
@@ -737,12 +768,25 @@ class LogicNodeItem(QGraphicsRectItem):
         self._fanout_count = max(0, int(count))
         self.refresh_text()
 
+    def set_target_hint(self, text: str = "", implicit: bool = False) -> None:
+        self._target_hint = str(text)
+        self._target_is_implicit = bool(implicit)
+        self.target_item.setPlainText(self._target_hint)
+        self.target_item.setDefaultTextColor(QColor("#e6b85c") if implicit else QColor("#75d5df"))
+        self.target_item.setToolTip(
+            "Este alvo veio automaticamente do fluxo de criação anterior. Conecte a porta target para substituí-lo."
+            if implicit else "Objeto que este bloco afetará"
+        )
+        self.target_item.setVisible(bool(text) and not self.collapsed and not self._show_code)
+        self.setToolTip(self.target_item.toolTip() if text else "")
+
     def toggle_code_preview(self) -> None:
         self._show_code = not self._show_code
         for port in (*self.input_ports.values(), *self.output_ports.values()):
             port.setVisible(not self._show_code and not self.collapsed)
         for label in self.port_labels:
             label.setVisible(not self._show_code and not self.collapsed)
+        self.target_item.setVisible(bool(self._target_hint) and not self._show_code and not self.collapsed)
         self.code_item.setVisible(self._show_code and not self.collapsed)
         self.flip_control.setToolTip(
             "Voltar para as portas do bloco" if self._show_code else "Virar bloco e mostrar o código equivalente"
@@ -750,6 +794,7 @@ class LogicNodeItem(QGraphicsRectItem):
         if self._show_code:
             self.refresh_text()
             self.summary_item.hide()
+            self.target_item.hide()
             self.debug_item.hide()
             self.setBrush(QBrush(QColor("#17221c")))
         else:
@@ -766,6 +811,7 @@ class LogicNodeItem(QGraphicsRectItem):
         self._runtime_display = (bool(active), values, str(error), bool(paused))
         if self.collapsed:
             self.summary_item.hide()
+            self.target_item.hide()
             self.debug_item.hide()
             return
         if self._show_code:
@@ -774,6 +820,7 @@ class LogicNodeItem(QGraphicsRectItem):
             return
         visible = bool(active or error or paused)
         self.summary_item.setVisible(not visible)
+        self.target_item.setVisible(bool(self._target_hint) and not visible)
         self.debug_item.setVisible(visible)
         if not visible:
             self.debug_item.setPlainText("")
@@ -1225,8 +1272,8 @@ class LogicGraphEditor(QWidget):
         self.blackboard_set_button.clicked.connect(lambda: self._add_blackboard_node("set_variable"))
         self.connect_button.clicked.connect(self.connect_selected)
         self.delete_button.clicked.connect(self.delete_selected)
-        self.target_type.currentIndexChanged.connect(lambda _index: self.mark_dirty())
-        self.target_value.textChanged.connect(lambda _text: self.mark_dirty())
+        self.target_type.currentIndexChanged.connect(lambda _index: (self.mark_dirty(), self._refresh_target_hints()))
+        self.target_value.textChanged.connect(lambda _text: (self.mark_dirty(), self._refresh_target_hints()))
         self.graph_enabled_check.toggled.connect(lambda _checked: self.mark_dirty())
 
     @staticmethod
@@ -1613,8 +1660,81 @@ class LogicGraphEditor(QWidget):
                         if count
                         else "Arraste para conectar uma ou várias ações"
                     )
+        self._refresh_target_hints()
         if hasattr(self, "minimap"):
             self.minimap.refresh()
+
+    def _refresh_target_hints(self) -> None:
+        """Explica visualmente qual referência de objeto percorre cada fluxo."""
+        creators = {"create_object", "create_prefab", "clone_object"}
+        nodes = {str(node.get("id")): node for node in self.graph.get("nodes", [])}
+        flow_next: dict[str, list[str]] = {}
+        explicit_targets: set[str] = set()
+        for edge in self.graph.get("edges", []):
+            source_id = str(edge.get("from_node", ""))
+            target_id = str(edge.get("to_node", ""))
+            source_item = self.node_items.get(source_id)
+            source_port = source_item.output_ports.get(str(edge.get("from_port", "next"))) if source_item else None
+            kind = source_port.data_type if source_port is not None else str(edge.get("kind", "flow"))
+            if kind == "flow":
+                flow_next.setdefault(source_id, []).append(target_id)
+            if kind == "object" and str(edge.get("to_port", "")) == "target":
+                explicit_targets.add(target_id)
+
+        implicit_sources: dict[str, set[str]] = {}
+
+        def spread(source_id: str, label: str) -> None:
+            pending = list(flow_next.get(source_id, []))
+            visited: set[str] = set()
+            while pending:
+                node_id = pending.pop(0)
+                if node_id in visited:
+                    continue
+                visited.add(node_id)
+                implicit_sources.setdefault(node_id, set()).add(label)
+                if str(nodes.get(node_id, {}).get("type", "")) in creators:
+                    continue
+                pending.extend(flow_next.get(node_id, []))
+
+        for node_id, node in nodes.items():
+            node_type = str(node.get("type", ""))
+            properties = node.get("properties", {})
+            if node_type == "create_object":
+                label = str(properties.get("name", "NovoObjeto"))
+                spread(node_id, label)
+            elif node_type == "create_prefab":
+                label = Path(str(properties.get("path", "Prefab"))).stem or "Prefab"
+                spread(node_id, label)
+            elif node_type == "clone_object":
+                spread(node_id, str(properties.get("name", "Cópia")) or "Cópia")
+            elif node_type == "event_object_created":
+                spread(node_id, "objeto recém-criado")
+
+        graph_target = str(self.graph.get("target", {}).get("value", "Player"))
+        for node_id, item in self.node_items.items():
+            node_type = str(nodes.get(node_id, {}).get("type", ""))
+            if node_type in creators:
+                properties = nodes[node_id].get("properties", {})
+                created_name = (
+                    Path(str(properties.get("path", ""))).stem
+                    if node_type == "create_prefab"
+                    else str(properties.get("name", ""))
+                ) or ("Prefab" if node_type == "create_prefab" else "Nova instância")
+                item.set_target_hint(f"NOVO ALVO → {created_name}", False)
+                continue
+            if "target" not in item.input_ports:
+                item.set_target_hint()
+                continue
+            if node_id in explicit_targets:
+                item.set_target_hint("ALVO → referência conectada", False)
+                continue
+            labels = implicit_sources.get(node_id, set())
+            if len(labels) == 1:
+                item.set_target_hint(f"ALVO IMPLÍCITO → {next(iter(labels))}", True)
+            elif len(labels) > 1:
+                item.set_target_hint("ALVO IMPLÍCITO → depende do fluxo", True)
+            else:
+                item.set_target_hint(f"ALVO ATUAL → {graph_target}", False)
 
     @staticmethod
     def _connection_path(start: QPointF, end: QPointF) -> QPainterPath:
