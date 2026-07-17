@@ -1,10 +1,11 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
+  "enabled": true,
   "name": "NewLogic",
   "target": {
     "type": "name",
-    "value": "Sprite"
+    "value": "Chao"
   },
   "debug": {
     "breakpoints": [],
@@ -12,6 +13,10 @@
     "watches": []
   },
   "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
   "nodes": [
     {
       "id": "68e02e0616ac4bdda8d9a09643e4c596",
@@ -19,108 +24,50 @@
       "title": "Ao iniciar",
       "category": "Eventos",
       "position": [
-        -324.0,
-        -311.0
+        -490.76,
+        -262.44
       ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 134.0
+      },
       "properties": {}
     },
     {
-      "id": "5350019295de40d6ac08b5191b3977f2",
-      "type": "set_hud",
-      "title": "Atualizar HUD",
+      "id": "828119b7c17e43f29ff0fbb57c270c30",
+      "type": "start_texture_scroll",
+      "title": "Iniciar fundo rolante",
       "category": "Ação",
       "position": [
-        -68.0,
-        -279.0
+        -197.49,
+        -200.6
       ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 190.0
+      },
       "properties": {
-        "text": "tete"
-      }
-    },
-    {
-      "id": "145ab3b46e9a49aab8665ede7dfee77f",
-      "type": "event_update",
-      "title": "A cada frame",
-      "category": "Eventos",
-      "position": [
-        -395.26,
-        -120.5
-      ],
-      "properties": {}
-    },
-    {
-      "id": "53c3b9a636b24756ade69739fc33ddb3",
-      "type": "move",
-      "title": "Mover",
-      "category": "Movimento",
-      "position": [
-        353.59,
-        -282.45
-      ],
-      "properties": {
-        "speed": 200.0
-      }
-    },
-    {
-      "id": "894e758df27b404aa9fbdce77fdc29a6",
-      "type": "input_axis",
-      "title": "Ler movimento",
-      "category": "Movimento",
-      "position": [
-        -130.69,
-        -86.01
-      ],
-      "properties": {
-        "negative": "A",
-        "positive": "D"
-      }
-    },
-    {
-      "id": "7d4451ab2a5a4d729e28b51d883dbf6f",
-      "type": "if_else",
-      "title": "If / Else",
-      "category": "Lógica",
-      "position": [
-        172.35,
-        -86.45
-      ],
-      "properties": {
-        "condition": "x!=0"
+        "path": "",
+        "speed_x": 0.0,
+        "speed_y": -80.0,
+        "repeat_x": false,
+        "repeat_y": true,
+        "parallax": 1.0,
+        "send_to_background": true
       }
     }
   ],
   "edges": [
     {
-      "id": "a7b1b639431b41e0b117eb260477cc56",
+      "id": "6cd4acfcdd9d4e9280f27ca1e2047e0c",
       "from_node": "68e02e0616ac4bdda8d9a09643e4c596",
       "from_port": "next",
-      "to_node": "5350019295de40d6ac08b5191b3977f2",
+      "to_node": "828119b7c17e43f29ff0fbb57c270c30",
       "to_port": "in",
-      "kind": "flow"
-    },
-    {
-      "id": "5dee470f51504c08b3c8a6ab6413999d",
-      "from_node": "894e758df27b404aa9fbdce77fdc29a6",
-      "from_port": "next",
-      "to_node": "7d4451ab2a5a4d729e28b51d883dbf6f",
-      "to_port": "in",
-      "kind": "flow"
-    },
-    {
-      "id": "0b20e44fa9834c50b0f0f3dc3d90abc2",
-      "from_node": "145ab3b46e9a49aab8665ede7dfee77f",
-      "from_port": "next",
-      "to_node": "894e758df27b404aa9fbdce77fdc29a6",
-      "to_port": "in",
-      "kind": "flow"
-    },
-    {
-      "id": "046ca2cbfd2949b1a2f617ba083a6ceb",
-      "from_node": "7d4451ab2a5a4d729e28b51d883dbf6f",
-      "from_port": "true",
-      "to_node": "53c3b9a636b24756ade69739fc33ddb3",
-      "to_port": "in",
-      "kind": "flow"
+      "kind": "flow",
+      "order": 0
     }
   ]
 }
