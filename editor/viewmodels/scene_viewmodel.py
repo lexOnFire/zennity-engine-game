@@ -1,9 +1,16 @@
+from __future__ import annotations
+
 from typing import Optional
+
 from PySide6.QtCore import QObject, Signal, Slot
+
 from engine.game_object import GameObject
 from editor.models.scene_model import SceneModel
 from editor.core.event_bus import (
-    EventBus, EVENT_SELECTION_CHANGED, EVENT_HIERARCHY_UPDATED, EVENT_PROPERTY_CHANGED
+    EventBus,
+    EVENT_SELECTION_CHANGED,
+    EVENT_HIERARCHY_UPDATED,
+    EVENT_PROPERTY_CHANGED,
 )
 
 
@@ -18,20 +25,50 @@ class SceneViewModel(QObject):
         Painéis externos (Hierarchy, Inspector, Viewport) devem usar selected_id
         e resolver a instância via SceneModel.find_object_by_id() quando necessário.
         Isso evita instâncias duplicadas do mesmo objeto circulando pelos painéis.
+
+    *selection_manager* (opcional):
+        Instância de :class:`~editor.runtime.selection_manager.SelectionManager`.
+        Quando fornecido, a seleção é **delegada** para o manager — o ViewModel
+        apenas sincroniza seu estado interno com as notificações do manager.
+        Isso permite que painéis externos dirijam a seleção através do manager
+        sem acoplamento direto ao ViewModel.
     """
-    
+
     # Sinais locais mantidos para compatibilidade com ligações Qt tradicionais
     selection_changed = Signal(object)
     hierarchy_updated = Signal()
     property_changed = Signal(str, str, object)
 
-    def __init__(self, model: SceneModel) -> None:
+    def __init__(
+        self,
+        model: SceneModel,
+        *,
+        selection_manager=None,
+    ) -> None:
         super().__init__()
         self._model = model
         self._selected_object: Optional[GameObject] = None
-        
+
+        # Wire up SelectionManager when provided
+        self._selection_manager = selection_manager
+        if selection_manager is not None:
+            selection_manager.add_listener(self._on_manager_selection_changed)
+
         # Conecta sinais do modelo
         self._model.object_structure_changed.connect(self.on_model_hierarchy_changed)
+
+    # ------------------------------------------------------------------ #
+    # Internal: sync from SelectionManager → ViewModel                    #
+    # ------------------------------------------------------------------ #
+
+    def _on_manager_selection_changed(self, obj: Optional[GameObject]) -> None:
+        """Called by SelectionManager when selection changes externally."""
+        current_id = self._selected_object.id if self._selected_object else None
+        new_id = obj.id if obj else None
+        if current_id != new_id:
+            self._selected_object = obj
+            self.selection_changed.emit(obj)
+            EventBus.emit(EVENT_SELECTION_CHANGED, obj=obj)
 
     # ------------------------------------------------------------------ #
     # Seleção — baseada em UUID para evitar instâncias duplicadas         #
@@ -46,11 +83,18 @@ class SceneViewModel(QObject):
     def selected_object(self, obj: Optional[GameObject]) -> None:
         """
         Define o objeto selecionado comparando por UUID.
+        Quando um SelectionManager está conectado, a mudança é delegada a ele
+        (que por sua vez notificará de volta este ViewModel via listener).
         Painéis externos nunca devem armazenar cópias independentes;
         use selected_id + find_object_by_id() para resolver a instância.
         """
+        if self._selection_manager is not None:
+            # Delegate — manager will call _on_manager_selection_changed
+            self._selection_manager.set_selected(obj)
+            return
+
         current_id = self._selected_object.id if self._selected_object else None
-        new_id     = obj.id if obj else None
+        new_id = obj.id if obj else None
         if current_id != new_id:
             self._selected_object = obj
             self.selection_changed.emit(obj)
@@ -80,16 +124,20 @@ class SceneViewModel(QObject):
         import numpy as np
         from engine.physics.rigidbody import RigidBody
         from engine.physics.collider import BoxCollider, CircleCollider
-        
+
         name = f"{shape_type}_{len(self._model.get_root_objects())}"
         go = GameObject(name)
         go.mesh_type = shape_type
-        
+
         # Componentes padrão básicos
         go.transform.position = np.array([0.0, 0.0, 0.0], dtype=np.float32)
-        go.transform.scale    = np.array([40.0, 40.0, 1.0], dtype=np.float32) if shape_type != "Plataforma" else np.array([120.0, 24.0, 1.0], dtype=np.float32)
+        go.transform.scale = (
+            np.array([120.0, 24.0, 1.0], dtype=np.float32)
+            if shape_type == "Plataforma"
+            else np.array([40.0, 40.0, 1.0], dtype=np.float32)
+        )
         go.transform.rotation = np.array([0.0, 0.0, 0.0], dtype=np.float32)
-        
+
         if shape_type == "Quadrado":
             go.add_component(BoxCollider(width=40, height=40))
             go.add_component(RigidBody(mass=1.0))
@@ -116,7 +164,7 @@ class SceneViewModel(QObject):
             go.add_component(BoxCollider(width=40, height=20))
             rb = go.add_component(RigidBody())
             rb.is_kinematic = True
-            
+
         self._model.add_object(go)
         self.selected_object = go
 
@@ -131,31 +179,43 @@ class SceneViewModel(QObject):
     def duplicate_selected(self) -> None:
         if not self._selected_object:
             return
-            
+
         src = self._selected_object
         name = f"{src.name}_cópia"
         go = GameObject(name)
         go.mesh_type = src.mesh_type
-        
+
         go.transform.position = src.transform.position.copy()
         go.transform.position[0] += 50.0
         go.transform.position[1] += 50.0
-        go.transform.scale    = src.transform.scale.copy()
+        go.transform.scale = src.transform.scale.copy()
         go.transform.rotation = src.transform.rotation.copy()
-        
+
         for comp in src.components:
             from engine.component import Transform
+
             if isinstance(comp, Transform):
                 continue
             from engine.physics.rigidbody import RigidBody
             from engine.physics.collider import BoxCollider, CircleCollider
+
             if isinstance(comp, BoxCollider):
-                go.add_component(BoxCollider(width=comp.width, height=comp.height, is_trigger=comp.is_trigger))
+                go.add_component(
+                    BoxCollider(
+                        width=comp.width,
+                        height=comp.height,
+                        is_trigger=comp.is_trigger,
+                    )
+                )
             elif isinstance(comp, CircleCollider):
-                go.add_component(CircleCollider(radius=comp.radius, is_trigger=comp.is_trigger))
+                go.add_component(
+                    CircleCollider(radius=comp.radius, is_trigger=comp.is_trigger)
+                )
             elif isinstance(comp, RigidBody):
-                go.add_component(RigidBody(mass=comp.mass, gravity_scale=comp.gravity_scale))
-                
+                go.add_component(
+                    RigidBody(mass=comp.mass, gravity_scale=comp.gravity_scale)
+                )
+
         self._model.add_object(go)
         self.selected_object = go
 
@@ -169,7 +229,7 @@ class SceneViewModel(QObject):
     def set_transform_property(self, prop_name: str, index: int, value: float) -> None:
         if not self._selected_object:
             return
-            
+
         transform = self._selected_object.transform
         if prop_name == "position":
             transform.position[index] = value
@@ -178,38 +238,50 @@ class SceneViewModel(QObject):
             self._sync_collider_dimensions(self._selected_object)
         elif prop_name == "rotation":
             transform.rotation[index] = value
-            
+
         prop_id = f"{prop_name}_{index}"
         self.property_changed.emit("Transform", prop_id, value)
-        EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="Transform", property_name=prop_id, value=value)
+        EventBus.emit(
+            EVENT_PROPERTY_CHANGED,
+            component_name="Transform",
+            property_name=prop_id,
+            value=value,
+        )
 
     def set_rigidbody_property(self, prop_name: str, value) -> None:
         if not self._selected_object:
             return
-            
+
         from engine.physics.rigidbody import RigidBody
+
         rb = self._selected_object.get_component(RigidBody)
         if not rb:
             return
-            
+
         if prop_name == "mass":
             rb.mass = float(value)
         elif prop_name == "gravity_scale":
             rb.gravity_scale = float(value)
         elif prop_name == "is_kinematic":
             rb.is_kinematic = bool(value)
-            
+
         self.property_changed.emit("RigidBody", prop_name, value)
-        EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="RigidBody", property_name=prop_name, value=value)
+        EventBus.emit(
+            EVENT_PROPERTY_CHANGED,
+            component_name="RigidBody",
+            property_name=prop_name,
+            value=value,
+        )
 
     def set_collider_property(self, prop_name: str, value) -> None:
         if not self._selected_object:
             return
-            
+
         from engine.physics.collider import BoxCollider, CircleCollider
+
         bc = self._selected_object.get_component(BoxCollider)
         cc = self._selected_object.get_component(CircleCollider)
-        
+
         if bc:
             if prop_name == "width":
                 bc.width = int(value)
@@ -226,21 +298,32 @@ class SceneViewModel(QObject):
                 self._selected_object.transform.scale[1] = float(value * 2)
             elif prop_name == "is_trigger":
                 cc.is_trigger = bool(value)
-                
+
         self.property_changed.emit("Collider", prop_name, value)
-        EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="Collider", property_name=prop_name, value=value)
-        
+        EventBus.emit(
+            EVENT_PROPERTY_CHANGED,
+            component_name="Collider",
+            property_name=prop_name,
+            value=value,
+        )
+
         self.property_changed.emit("Transform", "scale", None)
-        EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="Transform", property_name="scale", value=None)
+        EventBus.emit(
+            EVENT_PROPERTY_CHANGED,
+            component_name="Transform",
+            property_name="scale",
+            value=None,
+        )
 
     def _sync_collider_dimensions(self, obj: GameObject) -> None:
         from engine.physics.collider import BoxCollider, CircleCollider
+
         scale = obj.transform.scale
         bc = obj.get_component(BoxCollider)
         cc = obj.get_component(CircleCollider)
-        
+
         if bc:
-            bc.width  = max(1, int(scale[0]))
+            bc.width = max(1, int(scale[0]))
             bc.height = max(1, int(scale[1]))
         elif cc:
             cc.radius = max(1, int(scale[0] / 2))

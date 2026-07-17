@@ -1,49 +1,68 @@
+"""SelectionManager — single source of truth for editor object selection.
+
+Decouples selection state from SceneViewModel so that multiple panels
+(Hierarchy, Viewport, Inspector) can observe or drive selection without
+creating circular dependencies.
+
+Usage::
+
+    manager = SelectionManager()
+    viewmodel = SceneViewModel(model, selection_manager=manager)
+
+    # Drive selection from any panel:
+    manager.set_selected(game_object)
+
+    # Read selection anywhere:
+    obj = manager.selected
+"""
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Callable, Optional
 
-
-SelectionListener = Callable[[Any], None]
+from engine.game_object import GameObject
 
 
 class SelectionManager:
-    """Fonte única de verdade para seleção no editor.
-
-    A Viewport, Hierarchy, Inspector e futuros Gizmos devem consultar este
-    gerenciador em vez de manter seleção própria isolada.
-    """
+    """Holds the currently selected :class:`GameObject` and notifies listeners."""
 
     def __init__(self) -> None:
-        self._selected: Any = None
-        self._listeners: list[SelectionListener] = []
+        self._selected: Optional[GameObject] = None
+        self._listeners: list[Callable[[Optional[GameObject]], None]] = []
+
+    # ------------------------------------------------------------------ #
+    # Public API                                                           #
+    # ------------------------------------------------------------------ #
 
     @property
-    def selected(self) -> Any:
+    def selected(self) -> Optional[GameObject]:
+        """Currently selected object, or *None*."""
         return self._selected
 
-    def set_selected(self, obj: Any) -> None:
-        if obj is self._selected:
-            return
-        self._selected = obj
-        self._notify()
+    def set_selected(self, obj: Optional[GameObject]) -> None:
+        """Change the selection and notify all registered listeners."""
+        current_id = self._selected.id if self._selected else None
+        new_id = obj.id if obj else None
+        if current_id != new_id:
+            self._selected = obj
+            for cb in list(self._listeners):
+                cb(obj)
 
-    select = set_selected
+    # ------------------------------------------------------------------ #
+    # Listener registration                                                #
+    # ------------------------------------------------------------------ #
 
-    def clear(self) -> None:
-        self.set_selected(None)
+    def add_listener(self, cb: Callable[[Optional[GameObject]], None]) -> None:
+        """Register *cb* to be called whenever the selection changes."""
+        if cb not in self._listeners:
+            self._listeners.append(cb)
 
-    def subscribe(self, callback: SelectionListener) -> None:
-        if callback not in self._listeners:
-            self._listeners.append(callback)
+    def remove_listener(self, cb: Callable[[Optional[GameObject]], None]) -> None:
+        """Unregister a previously added listener (no-op if not found)."""
+        try:
+            self._listeners.remove(cb)
+        except ValueError:
+            pass
 
-    def unsubscribe(self, callback: SelectionListener) -> None:
-        if callback in self._listeners:
-            self._listeners.remove(callback)
-
-    def reset(self) -> None:
-        self._selected = None
+    def clear_listeners(self) -> None:
+        """Remove all listeners."""
         self._listeners.clear()
-
-    def _notify(self) -> None:
-        for callback in list(self._listeners):
-            callback(self._selected)
