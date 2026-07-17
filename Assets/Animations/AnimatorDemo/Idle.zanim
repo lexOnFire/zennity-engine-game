@@ -1,0 +1,12 @@
+{
+  "format": "zennity.animation_clip",
+  "version": 1,
+  "name": "Idle",
+  "texture": "Assets/Textures/formiga_2.PNG",
+  "frame_width": 115,
+  "frame_height": 115,
+  "frames": [0, 0],
+  "fps": 2.0,
+  "loop": true,
+  "events": []
+}

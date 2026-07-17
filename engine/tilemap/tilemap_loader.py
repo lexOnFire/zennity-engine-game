@@ -17,6 +17,7 @@ Usage
 import json
 import os
 from typing import Any, Dict, List, Optional
+from engine.logger import Logger
 
 import pygame
 
@@ -95,7 +96,7 @@ class TileMapLoader:
 
             image_path = os.path.join(base_dir, image_rel)
             if not os.path.isfile(image_path):
-                print(
+                Logger.error(
                     f"[TileMapLoader] Warning: tileset image '{image_path}' not found — skipping."
                 )
                 continue

@@ -48,6 +48,16 @@ class Time:
     # Referência à instância ativa (preenchida por Application)
     _current: Optional["Time"] = None
 
+    # Runtime Time API (Fase 16). Only RuntimeManager should mutate these
+    # values through _runtime_reset() and _runtime_tick().
+    delta_time: float = 0.0
+    unscaled_delta_time: float = 0.0
+    time: float = 0.0
+    unscaled_time: float = 0.0
+    frame_count: int = 0
+    time_scale: float = 1.0
+    fixed_delta_time: float = 1.0 / 60.0
+
     def __init__(self, target_fps: int = 60, dt_cap: float = 0.1) -> None:
         self._clock = pygame.time.Clock()
 
@@ -131,6 +141,34 @@ class Time:
                 "Crie uma Application antes de usar Time.current()."
             )
         return cls._current
+
+    # ------------------------------------------------------------------ #
+    # Runtime Time API — updated exclusively by RuntimeManager            #
+    # ------------------------------------------------------------------ #
+
+    @classmethod
+    def _runtime_reset(cls) -> None:
+        """Reset Play Mode time state before/after a Runtime World exists."""
+        cls.delta_time = 0.0
+        cls.unscaled_delta_time = 0.0
+        cls.time = 0.0
+        cls.unscaled_time = 0.0
+        cls.frame_count = 0
+        cls.time_scale = 1.0
+
+    @classmethod
+    def _runtime_tick(cls, unscaled_delta_time: float) -> float:
+        """Advance official Runtime time and return scaled delta_time."""
+        unscaled = max(0.0, float(unscaled_delta_time))
+        scale = max(0.0, float(cls.time_scale))
+        scaled = unscaled * scale
+        cls.unscaled_delta_time = unscaled
+        cls.delta_time = scaled
+        cls.unscaled_time += unscaled
+        cls.time += scaled
+        cls.frame_count += 1
+        cls.time_scale = scale
+        return scaled
 
     # ------------------------------------------------------------------ #
     # repr                                                                #

@@ -40,8 +40,8 @@ def export_project(dest_dir: str, root_objects: List[GameObject]) -> str:
             shutil.rmtree(dest_scripts)
         shutil.copytree(src_scripts, dest_scripts)
         
-    # 5. Copia o ScriptManager legado para o root para gerenciar scripts standalone
-    src_sm = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "editor_legacy", "script_manager.py"))
+    # 5. Copia o ScriptManager para o root para gerenciar scripts standalone
+    src_sm = os.path.abspath(os.path.join(os.path.dirname(__file__), "script_manager.py"))
     dest_sm = os.path.join(dest_dir, "script_manager.py")
     if os.path.exists(src_sm):
         shutil.copy2(src_sm, dest_sm)

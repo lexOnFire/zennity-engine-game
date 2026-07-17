@@ -1,0 +1,8 @@
+{
+  "uuid": "a968206d-1e05-40ae-9f60-b491c1895125",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/base_game_2d/coin.py",
+  "import_settings": {},
+  "dependencies": []
+}

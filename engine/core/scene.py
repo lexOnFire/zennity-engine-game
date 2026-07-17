@@ -57,10 +57,6 @@ class Scene:
         self.engine:       Optional["Engine"] = None
         self.game_objects: List["GameObject"] = []
 
-    # ------------------------------------------------------------------ #
-    # Gerenciamento de GameObjects                                        #
-    # ------------------------------------------------------------------ #
-
     def add_game_object(self, go: "GameObject") -> "GameObject":
         """
         Adiciona um GO à cena e aciona seu ciclo de inicialização.
@@ -68,8 +64,6 @@ class Scene:
         """
         if go not in self.game_objects:
             self.game_objects.append(go)
-        # O setter .scene dispara comp.start() nos componentes,
-        # garantindo exatamente uma inicialização.
         go.scene = self
         return go
 
@@ -97,10 +91,6 @@ class Scene:
                 return go
         return None
 
-    # ------------------------------------------------------------------ #
-    # Ciclo de vida                                                       #
-    # ------------------------------------------------------------------ #
-
     def start(self) -> None:
         """Chamado uma vez quando a cena se torna ativa."""
 
@@ -109,20 +99,34 @@ class Scene:
         for go in list(self.game_objects):
             go.update(dt)
 
-    def draw(self, screen: pygame.Surface) -> None:
-        """Propaga draw para todos os GOs ativos."""
+    def _draw_infinite_backgrounds(self, screen: pygame.Surface) -> None:
         for go in list(self.game_objects):
+            if not getattr(go, "active", True):
+                continue
+            for comp in getattr(go, "components", []):
+                if getattr(comp, "type_name", "") == "InfiniteBackground" and getattr(comp, "enabled", True):
+                    comp.draw(screen)
+
+    def draw_background(self, screen: pygame.Surface) -> None:
+        """Desenha somente os fundos infinitos, antes do conteúdo da cena."""
+        self._draw_infinite_backgrounds(screen)
+
+    def draw_content(self, screen: pygame.Surface) -> None:
+        """Desenha somente os GameObjects, sem fundos infinitos."""
+        from engine.graphics.sorting import sorted_scene_objects
+        for go in sorted_scene_objects(self.game_objects):
             go.draw(screen)
+
+    def draw(self, screen: pygame.Surface) -> None:
+        """Propaga draw para todos os GOs ativos, desenhando fundos infinitos primeiro."""
+        self.draw_background(screen)
+        self.draw_content(screen)
 
     def handle_event(self, event: pygame.event.Event) -> None:
         """Propaga eventos Pygame. Subclasses podem sobrescrever."""
 
     def on_exit(self) -> None:
         """Chamado quando esta cena é substituída por outra."""
-
-    # ------------------------------------------------------------------ #
-    # repr                                                                #
-    # ------------------------------------------------------------------ #
 
     def __repr__(self) -> str:
         return f"<Scene '{self.name}' objects={len(self.game_objects)}>"

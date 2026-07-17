@@ -1,0 +1,40 @@
+{
+  "format": "zennity.animator_controller",
+  "version": 1,
+  "name": "NewController",
+  "initial_state": "andando",
+  "parameters": {
+    "d": {
+      "type": "bool",
+      "default": false
+    }
+  },
+  "states": {
+    "andando": {
+      "animation": "Assets/Animations/andar.zanim",
+      "speed": 1.0,
+      "position": [
+        230.0,
+        40.0
+      ]
+    }
+  },
+  "transitions": [
+    {
+      "from": "andando",
+      "to": "andando",
+      "conditions": [
+        {
+          "parameter": "d",
+          "operator": "==",
+          "value": true
+        }
+      ],
+      "priority": 0,
+      "has_exit_time": false,
+      "exit_time": 1.0,
+      "duration": 0.0,
+      "interruptible": true
+    }
+  ]
+}

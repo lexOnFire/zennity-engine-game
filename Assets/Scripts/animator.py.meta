@@ -1,0 +1,8 @@
+{
+  "uuid": "ae0ac7b9-ae0d-40ad-bc34-657d3f249850",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/animator.py",
+  "import_settings": {},
+  "dependencies": []
+}

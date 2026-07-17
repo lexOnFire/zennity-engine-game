@@ -3,7 +3,7 @@ from typing import Optional, Callable, List, Dict, Any, TYPE_CHECKING
 from dataclasses import dataclass, field
 import math
 import pygame
-from engine.component import Component
+from engine.core.component import Component
 
 if TYPE_CHECKING:
     from engine.game_object import GameObject
@@ -28,6 +28,8 @@ class BoxCollider(Component):
         on_collision_enter(info: CollisionInfo) -> None
         on_collision_exit(other: BoxCollider)   -> None
     """
+    component_type = "BoxCollider"
+    unique = True
 
     _registry: List["BoxCollider"] = []
     _scene_tilemaps: Dict[tuple, Any] = {}
@@ -56,6 +58,31 @@ class BoxCollider(Component):
         # Callbacks — atribua funções externas a estes
         self.on_collision_enter: Optional[Callable[[CollisionInfo], None]] = None
         self.on_collision_exit: Optional[Callable[["BoxCollider"], None]] = None
+        self.on_trigger_enter: Optional[Callable[["BoxCollider"], None]] = None
+        self.on_trigger_exit: Optional[Callable[["BoxCollider"], None]] = None
+
+    def serialize_properties(self) -> dict[str, Any]:
+        return {
+            "width": float(self.width),
+            "height": float(self.height),
+            "offset_x": float(self.offset_x),
+            "offset_y": float(self.offset_y),
+            "is_trigger": bool(self.is_trigger),
+            "debug_draw": bool(self.debug_draw),
+        }
+
+    def deserialize_properties(self, data: dict[str, Any]) -> None:
+        self.width = float(data.get("width", 32.0))
+        self.height = float(data.get("height", 32.0))
+        offset = data.get("offset")
+        if isinstance(offset, (list, tuple)) and len(offset) >= 2:
+            self.offset_x = float(offset[0])
+            self.offset_y = float(offset[1])
+        else:
+            self.offset_x = float(data.get("offset_x", 0.0))
+            self.offset_y = float(data.get("offset_y", 0.0))
+        self.is_trigger = bool(data.get("is_trigger", False))
+        self.debug_draw = bool(data.get("debug_draw", False))
 
     # ------------------------------------------------------------------
     # Ciclo de vida
@@ -67,6 +94,9 @@ class BoxCollider(Component):
     def destroy(self) -> None:
         if self in BoxCollider._registry:
             BoxCollider._registry.remove(self)
+        for other in list(self._colliding_with):
+            other._colliding_with.discard(self)
+        self._colliding_with.clear()
 
     # ------------------------------------------------------------------
     # Rect utilitário
@@ -274,6 +304,8 @@ class CircleCollider(Component):
         on_collision_enter(other: CircleCollider) -> None
         on_collision_exit(other: CircleCollider)  -> None
     """
+    component_type = "CircleCollider"
+    unique = True
 
     _registry: List["CircleCollider"] = []
     _checks_count: int = 0
@@ -297,6 +329,29 @@ class CircleCollider(Component):
 
         self.on_collision_enter: Optional[Callable[["CircleCollider"], None]] = None
         self.on_collision_exit: Optional[Callable[["CircleCollider"], None]] = None
+        self.on_trigger_enter: Optional[Callable[["CircleCollider"], None]] = None
+        self.on_trigger_exit: Optional[Callable[["CircleCollider"], None]] = None
+
+    def serialize_properties(self) -> dict[str, Any]:
+        return {
+            "radius": float(self.radius),
+            "offset_x": float(self.offset_x),
+            "offset_y": float(self.offset_y),
+            "is_trigger": bool(self.is_trigger),
+            "debug_draw": bool(self.debug_draw),
+        }
+
+    def deserialize_properties(self, data: dict[str, Any]) -> None:
+        self.radius = float(data.get("radius", 16.0))
+        offset = data.get("offset")
+        if isinstance(offset, (list, tuple)) and len(offset) >= 2:
+            self.offset_x = float(offset[0])
+            self.offset_y = float(offset[1])
+        else:
+            self.offset_x = float(data.get("offset_x", 0.0))
+            self.offset_y = float(data.get("offset_y", 0.0))
+        self.is_trigger = bool(data.get("is_trigger", False))
+        self.debug_draw = bool(data.get("debug_draw", False))
 
     # ------------------------------------------------------------------
     # Ciclo de vida
@@ -308,6 +363,9 @@ class CircleCollider(Component):
     def destroy(self) -> None:
         if self in CircleCollider._registry:
             CircleCollider._registry.remove(self)
+        for other in list(self._colliding_with):
+            other._colliding_with.discard(self)
+        self._colliding_with.clear()
 
     # ------------------------------------------------------------------
     # Centro utilitário
@@ -434,3 +492,9 @@ class CircleCollider(Component):
         if self.debug_draw:
             cx, cy = self.center
             pygame.draw.circle(screen, (0, 255, 128), (int(cx), int(cy)), int(self.radius), 1)
+
+
+from engine.core.component_registry import register_component
+
+register_component(BoxCollider)
+register_component(CircleCollider)

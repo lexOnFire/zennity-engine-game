@@ -97,4 +97,10 @@ class SpriteRenderer(Component):
             draw_x = int(wx) - self._width // 2
             draw_y = int(wy) - self._height // 2
 
+        from engine.graphics.tint import apply_pygame_tint
+        surf = apply_pygame_tint(
+            surf,
+            getattr(self, "color", (255, 255, 255)),
+            getattr(self, "alpha", 255),
+        )
         screen.blit(surf, (draw_x, draw_y))

@@ -1,0 +1,8 @@
+{
+  "uuid": "94aec996-8401-4f85-895b-05a3f52c298c",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/base_game_2d/enemy.py",
+  "import_settings": {},
+  "dependencies": []
+}

@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from PySide6.QtWidgets import (
     QDockWidget, QWidget, QVBoxLayout, QHBoxLayout, QSplitter,
     QTreeView, QListView, QLineEdit, QPushButton, QLabel
@@ -195,4 +196,4 @@ class AssetBrowserDock(QDockWidget):
             self.model.setNameFilters([f"*{text}*"])
         else:
             # Reseta para as extensões padrão
-            self.model.setNameFilters(["*.py", "*.png", "*.jpg", "*.json", "*.wav", "*.ogg", "*.obj"])
+            self.model.setNameFilters(["*.png", "*.jpg", "*.json", "*.wav", "*.ogg", "*.obj", "*.zprefab", "*.zscene", "*.zmat", "*.zanim", "*.zanimator", "*.zlogic", "*.zblackboard"])

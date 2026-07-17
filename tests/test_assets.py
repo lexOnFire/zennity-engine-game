@@ -4,8 +4,9 @@ tests/test_assets.py
 Testes unitários de engine/assets.py.
 
 Estratégia de isolamento:
-  - pygame, pygame.mixer, pygame.font, pygame.image são todos stubados
-    via sys.modules antes do import. Nenhuma janela, nenhum init real.
+  - pygame, pygame.mixer, pygame.font, pygame.image são preparados
+    antes do import.
+  - loaders de pygame são mockados apenas durante cada teste via monkeypatch.
   - os.path.exists e os.path.isfile são patchados por teste para simular
     arquivos presentes ou ausentes sem tocar o disco.
   - Assets._images/_sounds/_fonts/_meshes são limpos em cada teste pelo
@@ -15,8 +16,6 @@ Estratégia de isolamento:
 from __future__ import annotations
 
 import sys
-import os
-import io
 from types import ModuleType
 from unittest.mock import MagicMock, patch, mock_open
 
@@ -37,58 +36,80 @@ class _FakeSurface:
 
 
 if "pygame" not in sys.modules:
-    _pg                     = ModuleType("pygame")
-    _pg.Surface             = _FakeSurface
-    _pg.SRCALPHA            = _FakeSurface.SRCALPHA
+    _pg = ModuleType("pygame")
+    _pg.Surface = _FakeSurface
+    _pg.SRCALPHA = _FakeSurface.SRCALPHA
 
-    # pygame.mixer
-    _mixer                  = ModuleType("pygame.mixer")
-    _mixer.Sound            = MagicMock(return_value=MagicMock())
-    _mixer.music            = MagicMock()
-    _mixer.music.load       = MagicMock()
-    _mixer.music.set_volume = MagicMock()
-    _mixer.music.play       = MagicMock()
-    _pg.mixer               = _mixer
+    _mixer = ModuleType("pygame.mixer")
+    _mixer.music = MagicMock()
+    _pg.mixer = _mixer
 
-    # pygame.image
-    _image                  = ModuleType("pygame.image")
-    _image.load             = MagicMock(return_value=_FakeSurface())
-    _pg.image               = _image
+    _image = ModuleType("pygame.image")
+    _pg.image = _image
 
-    # pygame.font
-    _font_mod               = ModuleType("pygame.font")
-    _font_mod.SysFont       = MagicMock(return_value=MagicMock())
-    _font_mod.Font          = MagicMock(return_value=MagicMock())
-    _pg.font                = _font_mod
+    _font_mod = ModuleType("pygame.font")
+    _pg.font = _font_mod
 
-    sys.modules["pygame"]         = _pg
-    sys.modules["pygame.mixer"]   = _mixer
-    sys.modules["pygame.image"]   = _image
-    sys.modules["pygame.font"]    = _font_mod
+    sys.modules["pygame"] = _pg
+    sys.modules["pygame.mixer"] = _mixer
+    sys.modules["pygame.image"] = _image
+    sys.modules["pygame.font"] = _font_mod
 else:
-    _pg      = sys.modules["pygame"]
-    _mixer   = sys.modules.get("pygame.mixer", _pg.mixer)
-    _image   = sys.modules.get("pygame.image", _pg.image)
-    _font_mod = sys.modules.get("pygame.font", _pg.font)
+    _pg = sys.modules["pygame"]
+    _mixer = sys.modules.get("pygame.mixer", getattr(_pg, "mixer", None))
+    if _mixer is None:
+        _mixer = ModuleType("pygame.mixer")
+        _pg.mixer = _mixer
+        sys.modules["pygame.mixer"] = _mixer
+
+    _image = sys.modules.get("pygame.image", getattr(_pg, "image", None))
+    if _image is None:
+        _image = ModuleType("pygame.image")
+        _pg.image = _image
+        sys.modules["pygame.image"] = _image
+
+    _font_mod = sys.modules.get("pygame.font", getattr(_pg, "font", None))
+    if _font_mod is None:
+        _font_mod = ModuleType("pygame.font")
+        _pg.font = _font_mod
+        sys.modules["pygame.font"] = _font_mod
 
 from engine.assets import Assets, Mesh  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
-def clean_cache():
+def clean_cache(monkeypatch):
     """Limpa todos os caches de classe entre testes."""
+    global _pg, _mixer, _image, _font_mod
+
+    assets_pygame = sys.modules[Assets.__module__].pygame
+    _pg = assets_pygame
+    _mixer = assets_pygame.mixer
+    _image = assets_pygame.image
+    _font_mod = assets_pygame.font
+    image_load = MagicMock(return_value=_FakeSurface())
+    sound_ctor = MagicMock(return_value=MagicMock())
+    sysfont = MagicMock(return_value=MagicMock())
+    font_ctor = MagicMock(return_value=MagicMock())
+
+    if not hasattr(_mixer, "music"):
+        _mixer.music = MagicMock()
+    music_load = MagicMock()
+    music_set_volume = MagicMock()
+    music_play = MagicMock()
+
+    monkeypatch.setattr(_image, "load", image_load, raising=False)
+    monkeypatch.setattr(_mixer, "Sound", sound_ctor, raising=False)
+    monkeypatch.setattr(_font_mod, "SysFont", sysfont, raising=False)
+    monkeypatch.setattr(_font_mod, "Font", font_ctor, raising=False)
+    monkeypatch.setattr(_mixer.music, "load", music_load, raising=False)
+    monkeypatch.setattr(_mixer.music, "set_volume", music_set_volume, raising=False)
+    monkeypatch.setattr(_mixer.music, "play", music_play, raising=False)
+
     Assets._images.clear()
     Assets._sounds.clear()
     Assets._fonts.clear()
     Assets._meshes.clear()
-    # Reset mocks
-    _image.load.reset_mock()
-    _mixer.Sound.reset_mock()
-    _font_mod.SysFont.reset_mock()
-    _font_mod.Font.reset_mock()
-    _mixer.music.load.reset_mock()
-    _mixer.music.set_volume.reset_mock()
-    _mixer.music.play.reset_mock()
     yield
     Assets._images.clear()
     Assets._sounds.clear()
@@ -96,7 +117,6 @@ def clean_cache():
     Assets._meshes.clear()
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 class TestMeshInit:
     def test_vertices_stored_as_float32(self):
         m = Mesh(np.array([[0,0,0],[1,0,0],[0,1,0]]), [[0,1,2]])
@@ -129,19 +149,16 @@ class TestMeshInit:
         assert norm == pytest.approx(1.0, abs=1e-5)
 
     def test_degenerate_face_fallback_normal(self):
-        """Face com menos de 3 vértices recebe normal (0,0,1)."""
         verts = np.array([[0,0,0],[1,0,0],[0,1,0]], dtype=np.float32)
-        m = Mesh(verts, [[0, 1]])   # face com 2 vértices
+        m = Mesh(verts, [[0, 1]])
         assert list(m.face_normals[0]) == pytest.approx([0, 0, 1])
 
     def test_zero_cross_product_fallback(self):
-        """Face colinear (produto vetorial zero) → fallback (0,0,1)."""
         verts = np.array([[0,0,0],[1,0,0],[2,0,0]], dtype=np.float32)
         m = Mesh(verts, [[0,1,2]])
         assert list(m.face_normals[0]) == pytest.approx([0, 0, 1])
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 class TestGetImage:
     def test_image_loaded_when_file_exists(self):
         with patch("os.path.exists", return_value=True):
@@ -184,12 +201,12 @@ class TestGetImage:
         fake.convert.assert_called_once()
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 class TestLoadSpriteSheet:
     def _make_sheet(self, w, h):
-        fake = _FakeSurface((w, h))
-        fake.get_size.return_value = (w, h)
-        return fake
+        sheet = _pg.Surface((w, h))
+        if hasattr(sheet, "fill"):
+            sheet.fill((255, 255, 255))
+        return sheet
 
     def test_returns_list_of_frames(self):
         sheet = self._make_sheet(64, 32)
@@ -210,7 +227,6 @@ class TestLoadSpriteSheet:
         assert len(frames) == 4
 
     def test_out_of_bounds_frames_skipped(self):
-        """Sheet 70x32 com frame 32x32 → apenas 2 frames (70 não é múltiplo de 32)."""
         sheet = self._make_sheet(70, 32)
         with patch.object(Assets, "get_image", return_value=sheet):
             frames = Assets.load_sprite_sheet("sheet.png", 32, 32)
@@ -220,12 +236,10 @@ class TestLoadSpriteSheet:
         sheet = self._make_sheet(64, 32)
         with patch.object(Assets, "get_image", return_value=sheet):
             frames = Assets.load_sprite_sheet("sheet.png", 32, 32)
-        # _FakeSurface é instanciado dentro do método; verifica que cada frame tem blit
         for f in frames:
             assert hasattr(f, "blit")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 class TestGetSound:
     def test_sound_loaded_when_file_exists(self):
         with patch("os.path.exists", return_value=True):
@@ -244,7 +258,6 @@ class TestGetSound:
         with patch("os.path.exists", return_value=False):
             snd = Assets.get_sound("missing.wav")
         _mixer.Sound.assert_not_called()
-        # NullSound é calleable
         snd.play()
         snd.stop()
         snd.set_volume(0.5)
@@ -256,7 +269,6 @@ class TestGetSound:
         assert a is b
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 class TestPlayMusic:
     def test_play_music_calls_mixer(self):
         with patch("os.path.exists", return_value=True):
@@ -281,7 +293,6 @@ class TestPlayMusic:
         _mixer.music.load.assert_not_called()
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 class TestGetFont:
     def test_sysfont_when_name_none(self):
         with patch("os.path.exists", return_value=False):
@@ -318,13 +329,12 @@ class TestGetFont:
         _font_mod.SysFont.assert_called_once()
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 class TestGetMesh:
     def test_fallback_cube_when_missing(self):
         with patch("os.path.exists", return_value=False):
             mesh = Assets.get_mesh("missing.obj")
         assert isinstance(mesh, Mesh)
-        assert len(mesh.faces) == 6   # cubo tem 6 faces
+        assert len(mesh.faces) == 6
 
     def test_mesh_cached(self):
         with patch("os.path.exists", return_value=False):
@@ -345,7 +355,7 @@ class TestGetMesh:
              patch("builtins.open", mock_open(read_data=obj_content)):
             mesh = Assets.get_mesh("tri.obj")
         assert len(mesh.faces) == 1
-        assert mesh.faces[0] == [0, 1, 2]   # 1-based → 0-based
+        assert mesh.faces[0] == [0, 1, 2]
 
     def test_load_obj_skips_comments(self):
         obj_content = "# comment\nv 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n"
@@ -363,7 +373,6 @@ class TestGetMesh:
         assert len(mesh.vertex_normals) == 1
 
     def test_load_obj_face_slash_slash_format(self):
-        """Formato v//vn (sem UV) deve ser parseado sem erro."""
         obj_content = "v 0 0 0\nv 1 0 0\nv 0 1 0\nvn 0 0 1\nf 1//1 2//1 3//1\n"
         with patch("os.path.exists", return_value=True), \
              patch("builtins.open", mock_open(read_data=obj_content)):
@@ -371,7 +380,6 @@ class TestGetMesh:
         assert len(mesh.faces) == 1
 
     def test_load_obj_face_slash_uv_format(self):
-        """Formato v/uv/vn deve ser parseado sem erro."""
         obj_content = "v 0 0 0\nv 1 0 0\nv 0 1 0\nvn 0 0 1\nf 1/1/1 2/2/1 3/3/1\n"
         with patch("os.path.exists", return_value=True), \
              patch("builtins.open", mock_open(read_data=obj_content)):
@@ -379,7 +387,6 @@ class TestGetMesh:
         assert len(mesh.faces) == 1
 
     def test_load_obj_negative_indices(self):
-        """OBJ suporta índices negativos (relativos ao final)."""
         obj_content = "v 0 0 0\nv 1 0 0\nv 0 1 0\nf -3 -2 -1\n"
         with patch("os.path.exists", return_value=True), \
              patch("builtins.open", mock_open(read_data=obj_content)):
@@ -387,7 +394,6 @@ class TestGetMesh:
         assert mesh.faces[0] == [0, 1, 2]
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 class TestCreateCubeMesh:
     def test_cube_has_8_vertices(self):
         m = Assets.create_cube_mesh()
@@ -399,7 +405,6 @@ class TestCreateCubeMesh:
 
     def test_cube_custom_size(self):
         m = Assets.create_cube_mesh(size=4.0)
-        # Todos os vértices devem ter coordenadas em [-2, 2]
         assert np.all(np.abs(m.vertices) <= 2.0 + 1e-6)
 
     def test_cube_face_normals_shape(self):

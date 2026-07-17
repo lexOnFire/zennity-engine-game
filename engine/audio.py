@@ -1,34 +1,20 @@
-"""
-AudioManager — Sistema de áudio completo para a Zennity Engine.
-
-Uso:
-    from engine.audio import AudioManager
-
-    # Música (streaming — ideal para trilhas longas)
-    AudioManager.play_music("assets/music/theme.ogg", loop=True, fade_ms=1000)
-    AudioManager.set_music_volume(0.6)
-    AudioManager.pause_music()
-    AudioManager.resume_music()
-    AudioManager.stop_music(fade_ms=500)
-
-    # SFX (cache em RAM — ideal para sons curtos)
-    AudioManager.play_sfx("assets/sfx/jump.wav", volume=0.8)
-    AudioManager.play_sfx("assets/sfx/shoot.wav")
-
-    # Volume global
-    AudioManager.set_master_volume(0.5)   # 50% em tudo
-    AudioManager.set_sfx_volume(0.8)
-    AudioManager.stop_all()
-"""
 from __future__ import annotations
 import os
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Any
 import pygame
+from engine.core.component import Component
+from engine.logger import Logger
 
 
 class AudioManager:
+    """
+    Gerenciador central de áudio da Zennity Engine.
+    Controla reprodução global, cache de sons e registro de componentes de áudio.
+    """
     _initialized: bool = False
     _sound_cache: Dict[str, pygame.mixer.Sound] = {}
+    _sources: List[AudioSource] = []
+    _listeners: List[AudioListener] = []
 
     _master_volume: float = 1.0
     _sfx_volume: float = 1.0
@@ -51,7 +37,7 @@ class AudioManager:
             cls._initialized = True
             return True
         except Exception as e:
-            print(f"[AudioManager] Mixer não inicializado: {e}")
+            Logger.error(f"[AudioManager] Mixer não inicializado: {e}")
             return False
 
     # ------------------------------------------------------------------
@@ -62,7 +48,7 @@ class AudioManager:
     def play_music(cls, path: str, loop: bool = True, fade_ms: int = 0) -> None:
         """Toca música de fundo com streaming. loop=True repete infinitamente."""
         if not cls._init() or not os.path.exists(path):
-            print(f"[AudioManager] Música não encontrada: {path}")
+            Logger.error(f"[AudioManager] Música não encontrada: {path}")
             return
         try:
             pygame.mixer.music.load(path)
@@ -72,7 +58,7 @@ class AudioManager:
             cls._music_path = path
             cls._music_paused = False
         except Exception as e:
-            print(f"[AudioManager] Erro ao tocar música '{path}': {e}")
+            Logger.error(f"[AudioManager] Erro ao tocar música '{path}': {e}")
 
     @classmethod
     def stop_music(cls, fade_ms: int = 0) -> None:
@@ -118,12 +104,12 @@ class AudioManager:
         """Carrega e cacheia um Sound. Retorna None se falhar."""
         if path not in cls._sound_cache:
             if not os.path.exists(path):
-                print(f"[AudioManager] SFX não encontrado: {path}")
+                Logger.error(f"[AudioManager] SFX não encontrado: {path}")
                 return None
             try:
                 cls._sound_cache[path] = pygame.mixer.Sound(path)
             except Exception as e:
-                print(f"[AudioManager] Erro ao carregar SFX '{path}': {e}")
+                Logger.error(f"[AudioManager] Erro ao carregar SFX '{path}': {e}")
                 return None
         return cls._sound_cache[path]
 
@@ -201,3 +187,169 @@ class AudioManager:
         for sound in cls._sound_cache.values():
             sound.stop()
         cls._sound_cache.clear()
+
+    # ------------------------------------------------------------------
+    # Component Registry
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def register_audio_source(cls, source: AudioSource) -> None:
+        """Registra um AudioSource ativo."""
+        if source not in cls._sources:
+            cls._sources.append(source)
+
+    @classmethod
+    def remove_audio_source(cls, source: AudioSource) -> None:
+        """Remove um AudioSource registrado."""
+        if source in cls._sources:
+            cls._sources.remove(source)
+
+    @classmethod
+    def register_audio_listener(cls, listener: AudioListener) -> None:
+        """Registra um AudioListener ativo."""
+        if listener not in cls._listeners:
+            cls._listeners.append(listener)
+
+    @classmethod
+    def remove_audio_listener(cls, listener: AudioListener) -> None:
+        """Remove um AudioListener registrado."""
+        if listener in cls._listeners:
+            cls._listeners.remove(listener)
+
+    @classmethod
+    def get_active_listener(cls) -> Optional[AudioListener]:
+        """Retorna o AudioListener ativo mais recentemente registrado."""
+        for listener in reversed(cls._listeners):
+            if listener.enabled:
+                return listener
+        return None
+
+    @classmethod
+    def clear(cls) -> None:
+        """Interrompe sons e limpa o registro de componentes de áudio."""
+        try:
+            cls.stop_all()
+        except Exception:
+            cls._music_path = None
+            cls._music_paused = False
+        try:
+            cls.unload_cache()
+        except Exception:
+            cls._sound_cache.clear()
+        cls._sources.clear()
+        cls._listeners.clear()
+
+
+class AudioSource(Component):
+    """
+    Componente responsável pela reprodução de clipes de áudio no runtime.
+    """
+    component_type = "AudioSource"
+
+    def __init__(
+        self,
+        audio_clip: str = "",
+        volume: float = 1.0,
+        pitch: float = 1.0,
+        loop: bool = False,
+        play_on_awake: bool = False,
+        mute: bool = False
+    ) -> None:
+        super().__init__()
+        self.audio_clip = str(audio_clip)
+        self.volume = float(volume)
+        self.pitch = float(pitch)
+        self.loop = bool(loop)
+        self.play_on_awake = bool(play_on_awake)
+        self.mute = bool(mute)
+        self._channel: Optional[pygame.mixer.Channel] = None
+        self._playing = False
+
+    def start(self) -> None:
+        """Registra o AudioSource no AudioManager."""
+        AudioManager.register_audio_source(self)
+
+    def on_runtime_start(self) -> None:
+        """Registra no AudioManager do runtime e inicia reprodução se play_on_awake."""
+        AudioManager.register_audio_source(self)
+        if self.play_on_awake and self.enabled:
+            self.play()
+
+    def play(self) -> None:
+        """Inicia a reprodução do clipe de áudio."""
+        if not self.enabled or not self.audio_clip:
+            return
+        loops = -1 if self.loop else 0
+        vol = 0.0 if self.mute else self.volume
+        self._channel = AudioManager.play_sfx(self.audio_clip, volume=vol, loops=loops)
+        self._playing = True
+
+    def stop(self) -> None:
+        """Interrompe a reprodução do áudio."""
+        if self._channel:
+            self._channel.stop()
+            self._channel = None
+        self._playing = False
+
+    def pause(self) -> None:
+        """Pausa a reprodução do canal de áudio."""
+        if self._channel:
+            self._channel.pause()
+
+    def unpause(self) -> None:
+        """Retoma a reprodução pausada do canal de áudio."""
+        if self._channel:
+            self._channel.unpause()
+
+    def is_playing(self) -> bool:
+        """Retorna True se o áudio está sendo reproduzido no momento."""
+        if self._channel:
+            return self._channel.get_busy()
+        return False
+
+    def destroy(self) -> None:
+        """Para a reprodução e desregistra o componente do AudioManager."""
+        self.stop()
+        AudioManager.remove_audio_source(self)
+        super().destroy()
+
+    def serialize_properties(self) -> dict[str, Any]:
+        """Serializa os parâmetros de áudio."""
+        return {
+            "audio_clip": self.audio_clip,
+            "volume": self.volume,
+            "pitch": self.pitch,
+            "loop": self.loop,
+            "play_on_awake": self.play_on_awake,
+            "mute": self.mute
+        }
+
+    def deserialize_properties(self, data: dict[str, Any]) -> None:
+        """Deserializa os parâmetros de áudio."""
+        self.audio_clip = str(data.get("audio_clip", self.audio_clip))
+        self.volume = float(data.get("volume", self.volume))
+        self.pitch = float(data.get("pitch", self.pitch))
+        self.loop = bool(data.get("loop", self.loop))
+        self.play_on_awake = bool(data.get("play_on_awake", self.play_on_awake))
+        self.mute = bool(data.get("mute", self.mute))
+
+
+class AudioListener(Component):
+    """
+    Componente receptor de áudio. Apenas um Listener ativo existe na cena.
+    """
+    component_type = "AudioListener"
+
+    def start(self) -> None:
+        """Registra o AudioListener no AudioManager."""
+        AudioManager.register_audio_listener(self)
+
+    def on_runtime_start(self) -> None:
+        """Registra o AudioListener no AudioManager do runtime."""
+        AudioManager.register_audio_listener(self)
+
+    def destroy(self) -> None:
+        """Desregistra o AudioListener do AudioManager."""
+        AudioManager.remove_audio_listener(self)
+        super().destroy()
+

@@ -35,6 +35,14 @@ from engine.game_object          import GameObject                # noqa: F401
 from engine.core.scene           import Scene                     # noqa: F401
 from engine.core.component       import Component                 # noqa: F401
 from engine.core.component       import Transform                 # noqa: F401
+from engine.graphics.camera      import Camera                    # noqa: F401
+from engine.graphics.camera_manager import CameraManager          # noqa: F401
+from engine.audio                import AudioSource, AudioListener, AudioManager  # noqa: F401
+from engine.core.component_registry import (                       # noqa: F401
+    ComponentRegistry,
+    component_registry,
+    register_component,
+)
 from engine.core.scene_manager   import SceneManager              # noqa: F401
 from engine.core.engine          import Engine                    # noqa: F401
 from engine.core.engine          import UpdateSystem, RenderSystem  # noqa: F401
@@ -51,7 +59,9 @@ __all__ = [
     # Utilities
     "Time", "Logger", "EventBus",
     # ECS core
-    "GameObject", "Scene", "Component", "Transform",
+    "GameObject", "Scene", "Component", "Transform", "Camera", "CameraManager",
+    "AudioSource", "AudioListener", "AudioManager",
+    "ComponentRegistry", "component_registry", "register_component",
     # Runtime
     "SceneManager", "Engine",
     "UpdateSystem", "RenderSystem",

@@ -1,0 +1,10 @@
+{
+  "uuid": "78189e1a-2c09-40e6-a3e0-19d8c0e92250",
+  "type": "audio",
+  "importer": "audio_importer",
+  "source_path": "Assets/Audio/8bit-music-for-game-68698.mp3",
+  "import_settings": {
+    "load_type": "decompress_on_load"
+  },
+  "dependencies": []
+}

@@ -1,0 +1,10 @@
+{
+  "uuid": "3000d6a4-6098-466b-8a3f-d89178932c9a",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Scenes/Cenário de nave espacial futurista.png",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": []
+}

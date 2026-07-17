@@ -1,0 +1,19 @@
+{
+  "format": "zennity.animation_clip",
+  "version": 1,
+  "name": "andar",
+  "texture": "Assets/Materials/Gemini_Generated_Image_qpp98uqpp98uqpp9.png",
+  "frame_width": 110,
+  "frame_height": 133,
+  "frames": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "fps": 5.0,
+  "loop": true,
+  "events": []
+}

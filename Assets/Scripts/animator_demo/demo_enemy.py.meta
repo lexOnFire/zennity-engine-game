@@ -1,0 +1,8 @@
+{
+  "uuid": "c0e95b8a-fb1c-4d73-87c7-58526ac8a47a",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/animator_demo/demo_enemy.py",
+  "import_settings": {},
+  "dependencies": []
+}

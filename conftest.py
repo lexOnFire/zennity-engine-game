@@ -17,20 +17,71 @@ import pytest
 class _FakeSurface:
     """
     Surface mínima que rastreia blit/fill/set_alpha via MagicMock.
-    Aceita qualquer argumento — sem validação de tipo SDL.
+    Suporta set_at/get_at para testes que verificam pixels (ex: flip_h).
     """
     _fake = True
+    SRCALPHA = 65536
 
     def __init__(self, size=(800, 600), flags=0):
         self._size  = tuple(size)
         self._flags = flags
         self._alpha = 255
+        self._pixels: dict[tuple[int, int], tuple] = {}
         self.blit      = MagicMock()
         self.fill      = MagicMock()
         self.set_alpha = MagicMock(side_effect=lambda a: setattr(self, "_alpha", a))
 
-    def get_size(self):  return self._size
-    def get_alpha(self): return self._alpha
+    def get_size(self):   return self._size
+    def get_width(self):  return self._size[0]
+    def get_height(self): return self._size[1]
+    def get_alpha(self):  return self._alpha
+
+    def set_at(self, pos: tuple[int, int], color) -> None:
+        """Armazena a cor de um pixel no buffer interno."""
+        self._pixels[pos] = tuple(color)
+
+    def get_at(self, pos: tuple[int, int]) -> tuple:
+        """Retorna a cor de um pixel (RGBA). Padrão: preto opaco."""
+        return self._pixels.get(pos, (0, 0, 0, 255))
+
+    def convert(self, *args, **kwargs):
+        return self
+
+    def convert_alpha(self, *args, **kwargs):
+        return self
+
+    def copy(self):
+        s = _FakeSurface(self._size, self._flags)
+        s._pixels = dict(self._pixels)
+        s._alpha = self._alpha
+        return s
+
+    def get_rect(self, **kwargs):
+        import pygame
+        return pygame.Rect(0, 0, self._size[0], self._size[1])
+
+
+def _make_fake_flip(fake_cls):
+    """
+    Retorna uma versão de pygame.transform.flip que:
+      - espelha o buffer de pixels de _FakeSurface corretamente;
+      - delega ao flip real do SDL para surfaces reais.
+    """
+    import pygame as _pg
+    _real_flip = _pg.transform.flip
+
+    def _fake_flip(surface, flip_x: bool, flip_y: bool):
+        if not getattr(surface, "_fake", False):
+            return _real_flip(surface, flip_x, flip_y)
+        w, h = surface.get_size()
+        out = fake_cls((w, h))
+        for (x, y), color in surface._pixels.items():
+            nx = (w - 1 - x) if flip_x else x
+            ny = (h - 1 - y) if flip_y else y
+            out._pixels[(nx, ny)] = color
+        return out
+
+    return _fake_flip
 
 
 def pytest_configure(config):
@@ -47,12 +98,12 @@ def pytest_configure(config):
     pygame.init()
 
     # Stubs — instalados UMA vez, antes de qualquer import de engine.*
-    pygame.Surface   = _FakeSurface          # type: ignore[assignment]
-    pygame.draw.rect = MagicMock()
-    pygame.SRCALPHA  = 65536                 # valor real do pygame, evita AttributeError
+    pygame.Surface         = _FakeSurface           # type: ignore[assignment]
+    pygame.draw.rect       = MagicMock()
+    pygame.SRCALPHA        = 65536
+    pygame.transform.flip  = _make_fake_flip(_FakeSurface)  # type: ignore[assignment]
 
-    # Garante que engine.transitions seja importado pela 1ª vez JÁ com os stubs
-    # removendo qualquer cache residual (ex: de um import acidental anterior)
+    # Garante que engine.* seja importado pela 1ª vez JÁ com os stubs
     for mod in list(sys.modules.keys()):
         if mod.startswith("engine"):
             del sys.modules[mod]

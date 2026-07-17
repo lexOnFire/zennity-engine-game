@@ -1,0 +1,8 @@
+{
+  "uuid": "d2970ebd-b6a4-4af8-a861-3cdb63cd36cc",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/builtin_follow_player.py",
+  "import_settings": {},
+  "dependencies": []
+}

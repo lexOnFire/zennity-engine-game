@@ -1,6 +1,6 @@
 # Zennity Engine — Architecture
 
-> **Versão:** 2.0 (Master Plan) • **Última revisão:** 2026-07-01
+> **Versão:** 2.0 (Master Plan) • **Última revisão:** 2026-07-05
 
 ## Visão Geral
 
@@ -19,6 +19,20 @@ Ela é composta por quatro produtos principais:
                   │
           Package Manager
 ```
+
+---
+
+## Estado Beta 0.1
+
+A Beta 0.1 é uma estabilização do fluxo principal, não uma fase de novos sistemas. O caminho validado é:
+
+```text
+Cena -> GameObject -> Componentes -> ScriptBehaviour -> Play Mode -> Input -> Stop
+```
+
+O projeto exemplo oficial é `examples/GettingStarted`. Ele usa apenas recursos já estabilizados: Scene Serialization, Component System, Script Runtime, Input System e Runtime World isolado.
+
+Limites mantidos intencionalmente: sem Input Mapping, gamepad, touch, Physics avançada, áudio runtime, animação, networking, Package Manager ou Build System final.
 
 ---
 
@@ -58,6 +72,7 @@ zennity-engine-game/
 │   │   ├── scene.py
 │   │   ├── scene_manager.py
 │   │   ├── component.py
+│   │   ├── component_registry.py
 │   │   ├── engine.py
 │   │   ├── game_object.py
 │   │   ├── system.py
@@ -162,3 +177,753 @@ Ver `docs/adr/` para os Architecture Decision Records completos.
 | [ADR-002](docs/adr/ADR-002.md) | Arquitetura baseada em módulos/plugins |
 | [ADR-003](docs/adr/ADR-003.md) | NumPy para matemática do Transform |
 | [ADR-004](docs/adr/ADR-004.md) | Pygame/SDL2 como backend de janela |
+
+---
+
+## Inspector & Command System (Fase 8)
+
+O Inspector é implementado usando a arquitetura MVVM do PySide6. A integração com o sistema de Undo/Redo é desenhada seguindo as seguintes diretrizes:
+
+### 1. Separação de Alterações (Interativo vs. Commit)
+* **Alteração Interativa (`valueChanged`)**: Conectada diretamente ao método `set_transform_property` do ViewModel. Aplica as mudanças no transform do objeto e notifica a Viewport imediatamente. Não gera comandos na pilha de Undo para evitar poluição visual e de performance ao arrastar/digitar.
+* **Commit de Valor (`editingFinished`)**: Disparado quando o foco do spinbox é perdido ou Return/Enter é pressionado. Compara o novo valor com o valor original (`original_value`) antes do início da alteração e, caso sejam diferentes, executa e empilha um comando de propriedade no `CommandManager`.
+
+### 2. Comandos de Propriedade
+Localizados em `editor/runtime/property_commands.py`:
+* **`SetTransformPropertyCommand`**: Modifica índices específicos (X, Y, Z) das propriedades NumPy do Transform (`position`, `rotation`, `scale`).
+* **`SetPropertyCommand`**: Lida com atribuições genéricas de atributos em GameObjects ou componentes via reflexão (`setattr`).
+
+---
+
+## Component System (Fase 9)
+
+A Fase 9 oficializa o sistema de componentes sem criar uma arquitetura paralela. `engine.core.Component` é a classe base canônica e todo `GameObject` continua sendo um container de componentes.
+
+### Component
+Todo componente possui:
+
+* `id`: UUID estável do componente.
+* `type_name`: nome serializável do tipo.
+* `game_object`: referência opcional ao dono.
+* `enabled`: controla se `update()` e `draw()` são chamados.
+* `serialize()` / `deserialize()`: contrato estável para cenas e prefabs.
+
+`Transform` continua obrigatório, criado automaticamente no `GameObject` e acessível por `game_object.transform`. Ele é tratado como seção especial do Inspector e não deve ser removido.
+
+### Registry
+`engine.core.component_registry.ComponentRegistry` registra tipos por nome e cria instâncias a partir de dados serializados. Novos componentes devem chamar:
+
+```python
+from engine.core import register_component
+
+register_component(MyComponent)
+```
+
+Componentes built-in registrados nesta fase:
+
+* `RigidBody`
+* `BoxCollider`
+* `CircleCollider`
+* `Script`
+* `Transform`
+
+### Serialização
+Cenas e prefabs preservam o formato legado (`collider`, `rigidbody`, `scripts`) e passam a gravar também `components.items`, uma lista explícita de componentes serializados. Ao carregar, o formato novo tem prioridade; cenas antigas sem `items` continuam usando o fallback legado.
+
+### Inspector
+O Inspector consome `GameObject.components`, lista componentes opcionais e mantém `Transform` visível como seção especial. Edições de propriedades de componente devem passar pelo `CommandManager` para preservar Undo/Redo.
+
+## Add / Remove Components (Fase 10)
+
+A Fase 10 fecha o ciclo de gerenciamento de componentes no Inspector sem acoplar a UI a componentes concretos.
+
+### Fluxo Add Component
+O botão **Add Component** consulta somente `ComponentRegistry.available_components()`. Ao escolher um tipo, o Inspector cria um `AddComponentCommand`, que resolve e instancia o componente via registry. Componentes `unique = True` são bloqueados quando o GameObject já possui aquele tipo.
+
+### Fluxo Remove Component
+Componentes opcionais listados no Inspector possuem ação de remoção. A remoção usa `RemoveComponentCommand`, guarda a posição original do componente e restaura a mesma instância no Undo. `Transform` e qualquer componente com `required = True` não podem ser removidos.
+
+### CommandManager
+Adicionar e remover componentes segue o mesmo pipeline do restante do editor:
+
+```text
+Inspector -> CommandManager -> AddComponentCommand / RemoveComponentCommand -> GameObject
+```
+
+Isso mantém Undo/Redo consistente e evita lógica duplicada de edição no Inspector.
+
+## Project Browser Improvements (Fase 27)
+
+O Project Browser é uma camada exclusivamente de editor sobre o `AssetDatabase`. A lógica de arquivos vive em `editor.assets.project_browser.ProjectBrowserService`; a UI apenas chama esse serviço e atualiza a árvore.
+
+Responsabilidades principais:
+
+* `ProjectBrowserService`: cria pastas, renomeia, duplica, exclui, move assets entre pastas, copia paths e chama `AssetDatabase.refresh()`.
+* `ProjectBrowserSession`: mantém estado de sessão, como modo `list`/`grid` e favoritos de pastas.
+* `AssetDatabase`: continua sendo a fonte oficial de assets, `.meta` e UUIDs.
+
+Renomear e mover assets também move o arquivo `.meta`, preservando o UUID. Duplicar não copia o `.meta`, então o asset duplicado recebe novo UUID no próximo refresh. Arquivos `.meta` continuam invisíveis como assets principais.
+
+O Project Browser não altera Runtime, Scene Serialization ou GUIDs diretamente.
+
+### Registro de novos componentes
+Para aparecer automaticamente no Inspector, um componente precisa herdar de `Component` e ser registrado:
+
+```python
+from engine.core import Component, register_component
+
+class Health(Component):
+    component_type = "Health"
+    unique = True
+
+register_component(Health)
+```
+
+O Inspector não importa `Health`; ele apenas lê o registry.
+
+## Inspector Plugin System (Fase 11 / 11.1)
+
+A Fase 11 desacopla a renderização do Inspector dos tipos concretos de componentes. A Fase 11.1 finaliza a migração removendo o caminho paralelo antigo do `InspectorDock`.
+
+`RealInspectorPanel` e `InspectorDock` atuam como hosts: eles percorrem `GameObject.components`, consultam o registry de plugins e hospedam o widget retornado. Nenhum dos dois deve importar widgets concretos como `RigidBodyComponentWidget`, `ColliderComponentWidget`, `ScriptComponentWidget` ou componentes de física.
+
+### InspectorPlugin
+`editor.inspector.plugin.InspectorPlugin` define o contrato:
+
+* `supports(component)`: informa se o plugin edita aquele componente.
+* `create_widget(component, command_manager, refresh)`: constrói a interface do componente.
+* `set_property(...)`: helper para alterações com `CommandManager`.
+* `refresh_widget(...)`: ponto de extensão para sincronização futura.
+
+Nenhum plugin deve alterar propriedades diretamente quando a ação vem da UI; alterações devem passar por `CommandManager`.
+
+### InspectorPluginRegistry
+`editor.inspector.plugin_registry.InspectorPluginRegistry` registra e resolve plugins. O Inspector chama apenas:
+
+```python
+plugin = inspector_plugin_registry.plugin_for(component)
+```
+
+Assim o Inspector não precisa importar `RigidBody`, `Collider`, `Script`, `Camera` ou futuros componentes.
+
+### Plugins padrão
+Os plugins iniciais ficam em `editor.inspector.default_plugins`:
+
+* `TransformInspectorPlugin`
+* `RigidBodyInspectorPlugin`
+* `ColliderInspectorPlugin`
+* `ScriptInspectorPlugin`
+
+Eles são registrados automaticamente no `inspector_plugin_registry`.
+
+### Criando novos editores
+Um novo componente aparece no menu Add Component ao registrar o `Component`; ele ganha UI própria ao registrar também o `InspectorPlugin`:
+
+```python
+from editor.inspector import InspectorPlugin, inspector_plugin_registry
+
+class HealthInspectorPlugin(InspectorPlugin):
+    component_type = "Health"
+
+    def create_widget(self, component, command_manager, refresh=None):
+        ...
+
+inspector_plugin_registry.register(HealthInspectorPlugin)
+```
+
+Esse fluxo permite adicionar componentes e editores sem alterar o Inspector.
+
+### Caminho oficial
+O único fluxo oficial de renderização do Inspector é:
+
+```text
+GameObject.components -> InspectorPluginRegistry.plugin_for(component) -> InspectorPlugin.create_widget(...)
+```
+
+Se nenhum plugin existir, o Inspector mostra apenas uma entrada fallback com o nome do componente e não falha.
+
+### Dívida técnica
+O cabeçalho do objeto (`active`, `name`, `tag`, `layer`, `is_static`) ainda não é um componente formal e continua fora do `InspectorPluginRegistry`. Essas propriedades devem migrar para comandos reutilizáveis ou para um futuro plugin de metadados do GameObject antes de serem consideradas totalmente integradas ao Undo/Redo.
+
+### Limites
+As Fases 9-11 não implementam Play Mode, física real adicional, scripting avançado, visual scripting ou editor visual avançado de componentes. Elas criam a base extensível para essas fases futuras.
+
+## Play Mode Foundation (Fase 12)
+
+A Fase 12 introduz a separação oficial entre dois mundos:
+
+* **Editor World:** cena persistente aberta no editor. Ela é editada pelo Inspector, salva em disco e usada como fonte para prefabs/assets.
+* **Runtime World:** cena temporária criada ao pressionar Play. Ela é descartada no Stop.
+
+`engine.runtime.RuntimeManager` controla o ciclo de vida:
+
+```text
+STOPPED -> start_play(editor_scene) -> PLAYING -> stop_play() -> STOPPED
+```
+
+`RuntimeManager.start_play(...)` cria uma `RuntimeScene`. A `RuntimeScene` recebe a cena do editor, cria uma instância de cena compatível para renderização, clona todos os objetos editáveis e mantém mapas entre objetos do editor e objetos runtime para preservar seleção.
+
+### Clone profundo
+`engine.runtime.clone.clone_game_object(...)` clona:
+
+* `GameObject`;
+* `Transform`;
+* componentes registrados;
+* filhos;
+* metadados leves como `tag`, `layer`, `active`, `mesh_type`, `sprite_path` e `prefab_uuid`.
+
+O clone não compartilha instâncias com o Editor World. Os objetos runtime recebem identidade própria e guardam `runtime_source_id` apontando para o objeto original.
+
+### Integração com Editor
+Durante Play:
+
+* `Phase1ViewportWidget.active_scene` aponta para a `RuntimeScene`;
+* Hierarchy e Inspector são sincronizados com objetos runtime;
+* gizmos e ferramentas de edição continuam bloqueados pelo estado `is_playing`;
+* alterações feitas na runtime não afetam a cena do editor.
+
+Ao parar:
+
+* a `RuntimeScene` é destruída;
+* a Viewport volta para a cena do editor;
+* a seleção volta para o objeto correspondente do Editor World;
+* alterações feitas durante Play desaparecem.
+
+### Limites
+Esta fase não adiciona física nova, input de jogo, áudio, animação, partículas, IA, hot reload ou pipeline avançado de assets. A física já existente pode atualizar objetos dentro do Runtime World, mas a Fase 12 apenas garante isolamento arquitetural.
+
+## Runtime Update Loop / Component Lifecycle (Fase 13)
+
+A Fase 13 adiciona o loop oficial de atualização do Runtime:
+
+```text
+RuntimeManager.start_play(editor_scene)
+RuntimeManager.tick(delta_time)
+RuntimeManager.stop_play()
+```
+
+`RuntimeManager.tick(delta_time)` só faz trabalho quando o estado é `PLAYING`. Se o runtime estiver `STOPPED`, o método retorna sem alterar nada.
+
+### Ordem de execução
+Ao iniciar Play:
+
+1. `RuntimeManager` cria uma `RuntimeScene`.
+2. `RuntimeScene` clona o Editor World.
+3. Componentes habilitados em objetos ativos recebem `on_runtime_start()` uma única vez.
+
+Durante Play:
+
+1. `RuntimeManager.tick(delta_time)` delega para `RuntimeScene.update(delta_time)`.
+2. `RuntimeScene` chama `on_runtime_update(delta_time)` nos componentes que receberam start.
+3. A cena runtime continua podendo executar o update legado já existente, sempre sobre objetos runtime.
+
+Ao parar:
+
+1. Componentes iniciados recebem `on_runtime_stop()` uma única vez, em ordem reversa.
+2. A `RuntimeScene` é destruída.
+3. O editor volta para o Editor World original.
+
+### Hooks de Component
+`engine.core.Component` possui hooks vazios:
+
+```python
+def on_runtime_start(self) -> None: ...
+def on_runtime_update(self, delta_time: float) -> None: ...
+def on_runtime_stop(self) -> None: ...
+```
+
+Componentes futuros podem sobrescrever esses métodos sem alterar `RuntimeManager`, `RuntimeScene` ou o Editor.
+
+### Enabled e Active
+O lifecycle respeita:
+
+* `component.enabled == False`: o componente não recebe start/update/stop.
+* `game_object.active == False`: nenhum componente desse objeto recebe lifecycle.
+* filhos de um objeto inativo também são ignorados pelo lifecycle runtime.
+
+Esta fase não implementa eventos dinâmicos para enable/disable durante Play; o estado inicial no momento do Play define quais componentes entram no lifecycle.
+
+### Segurança
+Somente clones do Runtime World recebem `on_runtime_*`. Objetos do Editor World continuam persistentes e não são atualizados pelo Runtime Loop.
+
+### Limites
+Esta fase não implementa física nova, input, áudio, animações, colisões novas, eventos complexos, pause, step frame ou hot reload.
+
+## Python Script Runtime (Fase 14)
+
+A Fase 14 introduz a execução oficial de scripts Python no Runtime World. Ela não muda o Editor World e não adiciona hot reload, debugger, sandbox, visual scripting, física ou input avançado.
+
+### ScriptBehaviour
+Scripts de usuário herdam de `engine.runtime.ScriptBehaviour`:
+
+```python
+from engine.runtime import ScriptBehaviour
+
+class PlayerController(ScriptBehaviour):
+    def on_awake(self): ...
+    def on_start(self): ...
+    def on_update(self, delta_time): ...
+    def on_destroy(self): ...
+```
+
+Cada instância recebe:
+
+* `game_object`: o `GameObject` clonado no Runtime World.
+* `transform`: atalho para `game_object.transform`.
+* `runtime`: o `ScriptRuntime` responsável pela execução.
+* `scene`: a `RuntimeScene` ativa.
+
+### ScriptRuntime
+`engine.runtime.ScriptRuntime` pertence à `RuntimeScene`. Ele carrega arquivos referenciados por `ScriptComponent.script_path`, resolve uma subclasse de `ScriptBehaviour`, cria uma instância por componente e mantém essas instâncias até o Stop.
+
+### Ordem de execução
+Ao iniciar Play:
+
+1. `RuntimeManager` cria uma `RuntimeScene`.
+2. `RuntimeScene` clona o Editor World.
+3. `ScriptRuntime` carrega scripts dos `ScriptComponent` habilitados em objetos ativos.
+4. Cada script recebe `on_awake()` e `on_start()`.
+5. Componentes continuam recebendo `on_runtime_start()`.
+
+Durante Play:
+
+1. `RuntimeManager.tick(delta_time)` delega para `RuntimeScene.update(delta_time)`.
+2. Componentes recebem `on_runtime_update(delta_time)`.
+3. Scripts habilitados recebem `on_update(delta_time)`.
+
+Ao parar:
+
+1. Componentes iniciados recebem `on_runtime_stop()`.
+2. Scripts instanciados recebem `on_destroy()`.
+3. Instâncias de script são removidas.
+4. A `RuntimeScene` é destruída.
+
+### Segurança e isolamento
+Scripts são executados somente nos clones do Runtime World. Objetos do Editor World não recebem `on_awake`, `on_start`, `on_update` ou `on_destroy`, e alterações feitas por scripts desaparecem ao parar Play.
+
+Se um script falha durante start ou update, o erro é registrado, apenas aquele `ScriptComponent` é desabilitado e o restante da cena continua rodando.
+
+## Input System (Fase 15)
+
+A Fase 15 cria a infraestrutura oficial de entrada para scripts durante Play Mode. Scripts não acessam eventos Qt/PySide ou Pygame diretamente; eles usam apenas a API pública `engine.input.Input`, também exportada por `engine.runtime`.
+
+### InputManager
+`engine.runtime.InputManager` é o backend central de estado:
+
+* teclas mantidas, pressionadas e liberadas;
+* botões de mouse mantidos, pressionados e liberados;
+* posição do mouse;
+* delta do mouse por frame;
+* limpeza completa no Stop.
+
+O manager é criado e possuído pelo `RuntimeManager`. Fora de Play, ele fica inativo e `Input` retorna estados neutros.
+
+### API pública
+Scripts consultam:
+
+```python
+Input.is_key_down("Space")
+Input.is_key_pressed("Space")
+Input.is_key_released("Space")
+Input.is_mouse_down("left")
+Input.is_mouse_pressed("left")
+Input.is_mouse_released("left")
+Input.mouse_position()
+Input.mouse_delta()
+```
+
+`pressed` e `released` duram um frame. `down` permanece verdadeiro enquanto a tecla ou botão estiver mantido.
+
+### Ciclo de atualização
+Durante Play, a ordem oficial é:
+
+```text
+Viewport encaminha eventos -> RuntimeManager.handle_input_event(...)
+RuntimeManager.tick(delta_time)
+  -> InputManager.update()
+  -> RuntimeScene.update(delta_time)
+     -> Component lifecycle
+     -> ScriptRuntime.update(delta_time)
+```
+
+Assim scripts sempre leem o estado de input já atualizado para aquele frame.
+
+### Integração com Viewport
+A Viewport traduz eventos Qt para eventos neutros do runtime somente quando o `RuntimeManager` está em `PLAYING` e a cena ativa é a `RuntimeScene`. Fora de Play, o editor mantém seu comportamento normal de seleção, gizmos, pan e atalhos.
+
+### Limites
+Esta fase não implementa Input Mapping, Input Actions, gamepad, touch, joystick, rebind de teclas, UI de jogo, rede ou qualquer sistema avançado de dispositivos.
+
+## Time System (Fase 16)
+
+A Fase 16 cria a fonte oficial de tempo do Runtime. A API pública é `engine.time.Time`, também exportada por `engine.core` e `engine.runtime` para scripts.
+
+### API pública
+
+Sistemas e scripts consultam:
+
+```python
+from engine.runtime import Time
+
+Time.delta_time
+Time.unscaled_delta_time
+Time.time
+Time.unscaled_time
+Time.frame_count
+Time.time_scale
+Time.fixed_delta_time
+```
+
+`delta_time` e `time` são valores escalados. `unscaled_delta_time` e `unscaled_time` representam o tempo bruto recebido pelo runtime, sem influência de `time_scale`.
+
+### Autoridade de atualização
+
+`RuntimeManager` é a única entidade autorizada a avançar o relógio runtime:
+
+```text
+RuntimeManager.start_play(...)
+  -> Time reset
+RuntimeManager.tick(delta_time)
+  -> Time update
+  -> InputManager.update()
+  -> RuntimeScene.update(Time.delta_time)
+RuntimeManager.stop_play()
+  -> Time reset
+```
+
+Nenhum componente, script, Viewport ou sistema de editor deve calcular ou acumular tempo próprio para o Runtime.
+
+### Time Scale
+
+`Time.time_scale` controla apenas o tempo escalado:
+
+* `1.0`: tempo normal.
+* `0.5`: metade da velocidade.
+* `2.0`: dobro da velocidade.
+* `0.0`: `delta_time` fica zero, mas o Runtime continua ativo e `frame_count` avança.
+
+### Frame Counter e Fixed Delta
+
+`Time.frame_count` incrementa somente durante Play e é resetado ao Stop. `Time.fixed_delta_time` existe como infraestrutura para Physics futura; esta fase não implementa `FixedUpdate`, acumulador fixo ou scheduler.
+
+## Physics Runtime Foundation (Fase 17)
+
+A Fase 17 cria a fundação oficial da física runtime sem substituir a física legada standalone e sem modificar o Editor World.
+
+### PhysicsWorld
+
+`engine.physics.PhysicsWorld` pertence à `RuntimeScene`. Ele é responsável por:
+
+* registrar `RigidBody`;
+* registrar `BoxCollider` e `CircleCollider`;
+* integrar corpos runtime;
+* detectar contatos básicos;
+* emitir trigger enter/exit;
+* limpar todo estado no Stop.
+
+O `PhysicsWorld` nunca usa a cena do editor como fonte de simulação. Ele trabalha apenas com clones do Runtime World.
+
+### Fluxo de atualização
+
+Durante Play, o fluxo oficial é:
+
+```text
+RuntimeManager.tick(delta_time)
+  -> Time update
+  -> InputManager.update()
+  -> RuntimeScene.update(Time.delta_time)
+     -> Component lifecycle
+     -> ScriptRuntime.update(Time.delta_time)
+     -> PhysicsWorld.step(Time.fixed_delta_time)
+     -> Scene update legado em clones runtime
+```
+
+`RigidBody` gerenciado pelo `PhysicsWorld` não é integrado novamente pelo update legado, evitando movimento duplicado.
+
+### Time System
+
+A física runtime não calcula seu próprio tempo. Ela usa `Time.fixed_delta_time` como preparação para `FixedUpdate` futuro. Nesta fase, o step físico ainda é chamado dentro do tick normal.
+
+### Colisões e Triggers
+
+A detecção inicial cobre:
+
+* Box x Box;
+* Circle x Circle;
+* Box x Circle.
+
+Esta fase detecta contatos, mas não implementa resolução completa de interpenetração, impulso, atrito ou bouncing. Triggers emitem `on_trigger_enter(other)` e `on_trigger_exit(other)` para componentes e scripts do Runtime World. `on_collision_enter(other)` fica preparado para evolução futura.
+
+### API pública
+
+Scripts não recebem acesso direto ao `PhysicsWorld`. Eles consultam a fachada:
+
+```python
+from engine.runtime import Physics
+
+Physics.contacts()
+Physics.is_colliding(collider)
+```
+
+### Limites
+
+Esta fase não implementa Character Controller, Raycast, Joint System, NavMesh, partículas, resolução física completa, veículos ou física 3D.
+
+---
+
+## Camera System (Fase 18)
+
+A Fase 18 introduz o sistema oficial de câmeras no runtime e no editor da Zennity Engine, de forma totalmente desacoplada e isolada do Editor World.
+
+### Camera Component
+
+A classe `Camera` herda de `Component` e é responsável por controlar a renderização e o espaço de tela durante o Play Mode:
+
+* `zoom`: Escala de visualização 2D.
+* `clear_color` / `background_color`: Cor de preenchimento para limpar a tela/viewport.
+* `viewport_rect`: Fração normalizada da área de tela utilizada pela câmera (X, Y, W, H).
+* `priority`: Ordem de empilhamento de renderização da câmera (maior prioridade desenha por último).
+* `active`: Sinalizador para habilitar/desabilitar a câmera.
+
+### CameraManager
+
+O `CameraManager` gerencia o ciclo de vida das câmeras em runtime, organizando o registro e a remoção das instâncias de forma a expor a câmera principal ativa via `Camera.main`:
+
+* `register_camera(camera)`: Registra uma câmera quando ela entra na cena (`start()`).
+* `remove_camera(camera)`: Remove a câmera do gerenciador quando destruída (`destroy()`).
+* `get_main_camera()`: Retorna a câmera ativa com a maior prioridade.
+* `clear()`: Limpa todo o estado no início e fim do Play Mode.
+
+### Isolamento do Runtime e Fallback
+
+A câmera de edição do Editor nunca interfere no Runtime. No início do Play, o `CameraManager` é reiniciado. Caso não exista nenhuma câmera na cena do usuário, o Runtime cria uma câmera de fallback (`Default Runtime Camera`) contendo o componente `Camera` para garantir a exibição padrão e prevenir telas pretas.
+
+---
+
+## Audio Runtime (Fase 19)
+
+A Fase 19 introduz a infraestrutura oficial de áudio na Zennity Engine, de forma modular, isolada e desacoplada do Editor.
+
+### AudioSource Component
+
+O componente `AudioSource` herda de `Component` e é anexado a GameObjects para emitir efeitos sonoros ou trilhas no espaço de jogo:
+
+* `audio_clip`: Caminho absoluto ou relativo para o arquivo de som (ex. `.wav` ou `.ogg`).
+* `volume`: Nível de volume da fonte (entre `0.0` e `1.0`).
+* `pitch`: Modulador de tom/velocidade de reprodução (preparação para futura aceleração).
+* `loop`: Sinalizador booleano; se verdadeiro, reinicia a reprodução automaticamente ao terminar.
+* `play_on_awake`: Se verdadeiro, inicia a reprodução do clipe automaticamente assim que o Play Mode começa.
+* `mute`: Muta a fonte sem interromper a execução do clipe.
+
+Métodos públicos de controle expostos:
+* `play()`: Inicia a reprodução.
+* `stop()`: Interrompe a reprodução.
+* `pause()`: Pausa o canal de áudio.
+* `unpause()`: Retoma o áudio pausado.
+* `is_playing()`: Consulta se o canal está ativo e reproduzindo.
+
+### AudioListener Component
+
+O componente `AudioListener` representa o ponto receptor de som da cena. Embora no futuro suporte cálculo posicional (3D), nesta fase serve para registrar o receptor principal ativo. Apenas um listener pode estar ativo na cena ao mesmo tempo.
+
+### AudioManager
+
+O `AudioManager` é a interface de backend que gerencia todos os recursos de áudio:
+* Mantém o cache centralizado de clipes de áudio em memória (`pygame.mixer.Sound`) para evitar carregamentos repetidos de disco.
+* Controla o registro de componentes `AudioSource` e `AudioListener`.
+* Isola o runtime do Editor: no início e fim do Play Mode, executa o método `clear()`, que interrompe toda e qualquer reprodução de som física no Pygame mixer e libera os recursos alocados.
+* Se no início do Play nenhum `AudioListener` ativo for encontrado na cena, cria e anexa automaticamente um listener padrão de fallback (`Default Audio Listener`).
+
+---
+
+## Scene Gizmos Avançados (Fase 20)
+
+A Fase 20 introduz o sistema de Scene Gizmos Avançados no Editor, oferecendo representações visuais profissionais para componentes importantes em modo de edição, com isolamento completo do Runtime.
+
+### GizmoRegistry
+
+A classe central `GizmoRegistry` (`editor/gizmos/gizmo_registry.py`) gerencia o mapeamento global de renderizadores de gizmo:
+* Permite registrar funções de desenho através de `register(component_type, draw_func)`.
+* As funções de desenho recebem a assinatura: `draw_func(component, screen, scene)` onde `screen` é a Pygame surface da Viewport e `scene` é a cena do editor correspondente.
+
+### Gizmos Implementados
+
+1. **Camera**: Desenha um corpo de câmera azul ciano (`0, 229, 255`) com lente direcional e, caso a câmera esteja selecionada, um retângulo pontilhado indicando a área de frustum/viewport proporcional ao zoom atual.
+2. **BoxCollider**: Desenha um retângulo verde (`76, 175, 80`) correspondente às dimensões físicas do colisor, aplicando rotação 2D correta com base no transform do GameObject.
+3. **CircleCollider**: Desenha uma circunferência verde indicando a abrangência de colisão correspondente ao raio.
+4. **AudioSource**: Desenha uma representação de alto-falante e raio de dispersão sonoro amarelo (`255, 235, 59`) com o rótulo `"AudioSource"`.
+5. **AudioListener**: Desenha um receptor magenta (`233, 30, 99`) com o rótulo `"AudioListener"`.
+
+### Integração com a Viewport
+
+O widget `ViewportWidget` (`editor/widgets/viewport_widget.py`) consulta o `GizmoRegistry` na `paintGL()` e realiza o desenho dos gizmos das entidades da cena somente se o modo Play estiver inativo. O Runtime World nunca recebe ou renderiza esses elementos.
+
+---
+
+## Animation Runtime Foundation (Fase 21)
+
+A Fase 21 cria a fundação oficial de animações runtime sem adicionar timeline visual, blend tree, state machine avançada ou editor de keyframes.
+
+### AnimationClip e Keyframe
+
+`engine.animation.AnimationClip` mantém compatibilidade com a API antiga baseada em frames de sprite e passa a aceitar keyframes de propriedades:
+
+* `name`: nome serializável do clip.
+* `duration`: duração total em segundos.
+* `loop`: reinicia a reprodução ao fim.
+* `keyframes`: lista de `Keyframe`.
+* `properties`: propriedades animadas como `position`, `rotation` e `scale`.
+
+`Keyframe` contém `time`, `property` e `value`, além de `serialize()` / `deserialize()` para cenas e prefabs.
+
+### Animator Component
+
+`engine.animation.Animator` é um `Component` registrado no `ComponentRegistry`. Ele armazena clips, define o clip atual e expõe:
+
+```python
+animator.play("move")
+animator.pause()
+animator.resume()
+animator.stop()
+```
+
+Durante Play, o `Animator` atualiza apenas clones do Runtime World através de `on_runtime_update(...)`. A implementação consulta exclusivamente `Time.delta_time`; nenhum cálculo próprio de tempo é permitido. O método `update(dt)` legado continua existindo para compatibilidade com animações por frames fora do Play Mode, mas é bloqueado quando o lifecycle runtime está gerenciando a animação.
+
+### Serialização
+
+O `Animator` serializa `default_clip`, `current_clip`, `speed`, estado básico de playback e todos os clips via `components.items`. Como ele é resolvido pelo `ComponentRegistry`, cenas e prefabs podem reconstruir o componente a partir de `"type": "Animator"`.
+
+### Inspector
+
+O Inspector usa `AnimatorInspectorPlugin`, resolvido pelo `InspectorPluginRegistry`. Nesta fase o plugin apenas exibe clip atual, estado de reprodução, loop e velocidade. O Inspector não edita keyframes e não conhece detalhes internos do Animator.
+
+### Limites
+
+Esta fase não implementa timeline, curvas avançadas, importador de spritesheet, blend tree, state machine visual, IK ou animação 3D complexa.
+
+---
+
+## UI Runtime Foundation (Fase 22)
+
+A Fase 22 cria a fundação oficial da interface de usuário em runtime sem adicionar editor visual, layout automático, temas, animações de UI ou eventos complexos.
+
+### Componentes
+
+`engine.ui.runtime_components` define componentes oficiais de UI:
+
+* `UIElement`: base comum com posição, tamanho, visibilidade e ordem de renderização.
+* `Canvas`: agrupador de UI, único por objeto.
+* `LabelComponent`: texto básico com tamanho de fonte e cor.
+* `ImageComponent`: imagem por `sprite_path` ou placeholder simples.
+* `ButtonComponent`: botão básico com texto e estado `interactable`.
+
+Todos são registrados no `ComponentRegistry`, serializam suas propriedades via `components.items` e podem ser usados em cenas e prefabs sem caminhos especiais.
+
+### Renderização
+
+`engine.ui.UIRenderer` pertence à `RuntimeScene` e desenha a UI depois da cena:
+
+```text
+RuntimeScene.draw(screen)
+  -> camera/background
+  -> scene.draw(screen)
+  -> UIRenderer.render(runtime_scene, screen)
+```
+
+O renderer coleta componentes UI do Runtime World, exige pelo menos um `Canvas` ativo e ordena elementos por `z_order`. A UI não participa das transformações da câmera e objetos com componentes UI são marcados como `runtime_hidden` durante Play para não aparecerem como objetos comuns da cena.
+
+### Inspector
+
+Os plugins `CanvasInspectorPlugin`, `LabelInspectorPlugin`, `ImageInspectorPlugin` e `ButtonInspectorPlugin` são resolvidos pelo `InspectorPluginRegistry`. O Inspector continua sendo apenas host: novos componentes UI devem registrar um `Component` e um `InspectorPlugin`, sem alterar o dock principal.
+
+### Limites
+
+Esta fase não implementa editor visual, auto layout, foco/hover/click runtime avançado, temas, animações ou widgets complexos. O objetivo é fornecer uma base serializável e isolada para evoluir a UI nas próximas fases.
+
+---
+
+## Estabilização da v0.2.0-alpha — Gameplay Foundation
+
+A v0.2.0-alpha consolida a Gameplay Foundation através de uma série de correções de integração:
+* **Detecção Dinâmica de Componentes de Câmera/Áudio**: A lógica do `RuntimeScene` foi corrigida para realizar a varredura do array de componentes antes de instanciar câmeras ou listeners de fallback redundantes.
+* **Ciclo de Vida de Inicialização de Câmeras**: Adicionado suporte para que o componente `Camera` registre-se no `CameraManager` durante o início do Play Mode via `on_runtime_start()`.
+* **Segurança na Viewport contra Mocks**: Ajustada a função `_get_screen_pos` de desenho de gizmos para detectar dinamicamente objetos mock do pytest, evitando falhas de desempacotamento de coordenadas de tela.
+* **Isolamento de Estado em Mocks globais**: Configurada a restauração e limpeza explícita dos stubs de áudio e pygame em `tests/test_audio.py` para prevenir efeitos colaterais em outros módulos da suíte de testes.
+
+
+## v0.3.0-alpha — Production Tools
+
+A v0.3.0-alpha estabiliza o Milestone 3 sem adicionar sistemas fora de escopo. O foco é consolidar Animation Runtime, UI Runtime, Tilemap, Asset Pipeline e Package Manager em um fluxo contínuo.
+
+### Tilemap System
+
+`engine.graphics.tilemap.Tilemap` é o componente de dados: largura, altura, tamanho de tile e layers esparsos. `TilemapRenderer` é o componente de desenho e fica separado do armazenamento para manter a arquitetura modular.
+
+Ambos são registrados no `ComponentRegistry`. `Tilemap` preserva compatibilidade com o formato inicial de serialização e também expõe propriedades no formato oficial de componentes.
+
+### Asset Pipeline
+
+O Asset Pipeline centraliza a classificação e importação de arquivos em `engine.assets`. `AssetDatabase` continua responsável por varrer `Assets/`, enquanto `ImporterRegistry` resolve importadores especializados por extensão:
+
+* `TextureImporter`
+* `AudioImporter`
+* `ScriptImporter`
+* `TilemapImporter`
+* `GenericImporter`
+
+Cada importador gera ou atualiza um `.meta` persistente, preservando UUID, `import_settings` e dependências futuras.
+
+### Package Manager
+
+`engine.packages` fornece a base local de pacotes:
+
+* `Package`: carrega e valida `package.json`.
+* `PackageRegistry`: indexa pacotes instalados em `Packages/`.
+* `PackageManager`: instala, remove e atualiza pacotes locais.
+
+Nesta fase não há marketplace, downloads remotos, resolução avançada de dependências ou build pipeline.
+
+### Integração
+
+`tests/integration/test_v030_stabilization.py` valida o fluxo Projeto -> Assets -> Package Manager -> Runtime -> UI -> Tilemap -> Animation -> Play -> Stop -> serialização. O projeto `examples/GettingStarted` acompanha esse fluxo com recursos sem depender de assets externos.
+
+---
+
+## Hierarchy Improvements (Fase 26)
+
+A Fase 26 inicia o milestone v0.4.0-alpha — Editor Polish. O escopo fica limitado ao editor e não altera Runtime, Component System ou Scene Serialization.
+
+### Responsabilidades
+
+`RealHierarchyPanel` é o host visual da árvore. Ele renderiza objetos raiz e filhos recursivamente, mantém seleção sincronizada com `SelectionManager`, aplica filtro visual e emite intenções de usuário:
+
+* criar objeto vazio;
+* duplicar;
+* excluir;
+* renomear;
+* reparent/reordenar.
+
+`ZennityPhase1Editor` recebe essas intenções e executa comandos reversíveis através de `CommandManager`.
+
+### Comandos
+
+`editor.runtime.hierarchy_commands` contém as operações de Hierarchy:
+
+* `ReparentGameObjectCommand`
+* `DuplicateGameObjectCommand`
+* `DeleteGameObjectCommand`
+* `RenameGameObjectCommand`
+
+Reparent valida ciclos com `can_reparent(...)`. Delete reversível remove o objeto da cena sem chamar `destroy()`, preservando componentes e filhos para Undo.
+
+### Atalhos e UX
+
+* `Ctrl+D`: duplicar objeto selecionado.
+* `Delete`: excluir objeto selecionado.
+* `F2`: renomear.
+* Duplo clique: renomear.
+* Menu de contexto: `Create Empty`, `Duplicate`, `Delete`, `Rename`, `Expand All`, `Collapse All`.
+
+### Limites
+
+Esta fase não implementa Project Browser avançado, nova Scene View, nova UX do Inspector, Build Pipeline ou sistemas de Runtime.

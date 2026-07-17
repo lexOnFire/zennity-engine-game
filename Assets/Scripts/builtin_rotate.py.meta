@@ -1,0 +1,8 @@
+{
+  "uuid": "b5ef5e3c-1af6-4347-9e99-1b1c34ff8905",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/builtin_rotate.py",
+  "import_settings": {},
+  "dependencies": []
+}

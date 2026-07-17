@@ -1,0 +1,8 @@
+{
+  "uuid": "f582661f-354e-47b3-883d-60b2d38728b1",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/builtin_jump.py",
+  "import_settings": {},
+  "dependencies": []
+}

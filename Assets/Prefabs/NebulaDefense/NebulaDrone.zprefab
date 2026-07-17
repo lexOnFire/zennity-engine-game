@@ -1,0 +1,33 @@
+{
+  "format_version": 1,
+  "prefab_name": "NebulaDrone",
+  "object": {
+    "name": "NebulaDrone",
+    "x": 1160.0,
+    "y": 360.0,
+    "w": 52.0,
+    "h": 42.0,
+    "rotation": 0.0,
+    "color": [
+      235,
+      74,
+      102
+    ],
+    "texture": "Assets/Textures/formiga_2.PNG",
+    "tag": "EnemyNebula",
+    "layer": "Default",
+    "renderer_enabled": true,
+    "collider": {
+      "type": "box",
+      "width": 44.0,
+      "height": 34.0,
+      "is_trigger": true
+    },
+    "rigidbody": {
+      "mass": 1.0,
+      "use_gravity": false,
+      "is_kinematic": true,
+      "gravity_scale": 0.0
+    }
+  }
+}
