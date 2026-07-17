@@ -1,7 +1,7 @@
-"""Formato persistente dos grafos visuais de lógica.
+"""Persistent format for visual logic graphs.
 
-Este módulo é deliberadamente independente de Qt e Pygame. O editor cuida da
-aparência, enquanto o runtime futuro poderá executar o mesmo documento.
+This module is deliberately independent of Qt and Pygame. The editor handles
+appearance, while the future runtime can execute the same document.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ except ImportError:
 
 try:
     from .blackboard import normalize_variable_definitions
-except ImportError:  # Runtime autocontido exportado.
+except ImportError:  # Self-contained exported runtime.
     from .logic_blackboard import normalize_variable_definitions
 
 
@@ -32,28 +32,28 @@ UNIQUE_EVENT_TYPES = {
 }
 
 NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
-    "event_start": {"title": "Ao iniciar", "category": "Eventos", "properties": {}},
-    "event_update": {"title": "A cada frame", "category": "Eventos", "properties": {}},
-    "event_custom": {"title": "Ao receber evento", "category": "Eventos", "properties": {"name": "evento"}},
-    "event_collision_enter": {"title": "Ao colidir", "category": "Eventos", "properties": {}},
-    "event_collision_exit": {"title": "Ao sair da colisão", "category": "Eventos", "properties": {}},
-    "event_trigger_enter": {"title": "Ao entrar na área", "category": "Eventos", "properties": {}},
-    "event_trigger_exit": {"title": "Ao sair da área", "category": "Eventos", "properties": {}},
-    "event_timer": {"title": "Após um tempo", "category": "Eventos", "properties": {"seconds": 1.0, "repeat": False}},
-    "event_key_pressed": {"title": "Ao apertar tecla (uma vez)", "category": "Eventos", "properties": {"key": "D"}},
-    "event_object_created": {"title": "Ao objeto ser criado", "category": "Eventos", "properties": {}},
-    "self_object": {"title": "Este objeto", "category": "Objetos", "properties": {}},
-    "find_tag": {"title": "Procurar por Tag", "category": "Objetos", "properties": {"tag": "Player"}},
-    "get_tag": {"title": "Ler Tag do objeto", "category": "Objetos", "properties": {}},
+    "event_start": {"title": "On Start", "category": "Events", "properties": {}},
+    "event_update": {"title": "On Update", "category": "Events", "properties": {}},
+    "event_custom": {"title": "On Event Received", "category": "Events", "properties": {"name": "event"}},
+    "event_collision_enter": {"title": "On Collision Enter", "category": "Events", "properties": {}},
+    "event_collision_exit": {"title": "On Collision Exit", "category": "Events", "properties": {}},
+    "event_trigger_enter": {"title": "On Trigger Enter", "category": "Events", "properties": {}},
+    "event_trigger_exit": {"title": "On Trigger Exit", "category": "Events", "properties": {}},
+    "event_timer": {"title": "After a Delay", "category": "Events", "properties": {"seconds": 1.0, "repeat": False}},
+    "event_key_pressed": {"title": "On Key Pressed (once)", "category": "Events", "properties": {"key": "D"}},
+    "event_object_created": {"title": "On Object Created", "category": "Events", "properties": {}},
+    "self_object": {"title": "This Object", "category": "Objects", "properties": {}},
+    "find_tag": {"title": "Find by Tag", "category": "Objects", "properties": {"tag": "Player"}},
+    "get_tag": {"title": "Get Object Tag", "category": "Objects", "properties": {}},
     "get_prefab_parameter": {
-        "title": "Ler parâmetro do Prefab", "category": "Objetos",
+        "title": "Get Prefab Parameter", "category": "Objects",
         "properties": {"name": "speed", "type": "number", "default": 0.0},
     },
     "create_object": {
-        "title": "Criar objeto",
-        "category": "Objetos",
+        "title": "Create Object",
+        "category": "Objects",
         "properties": {
-            "name": "NovoObjeto", "x": 0.0, "y": 0.0,
+            "name": "NewObject", "x": 0.0, "y": 0.0,
             "width": 64.0, "height": 64.0, "color": "#58a6ff",
             "texture": "", "tag": "Untagged", "relative": False,
             "inherit_source": True, "inherit_logic": False,
@@ -62,7 +62,7 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
         },
     },
     "create_prefab": {
-        "title": "Criar Prefab", "category": "Objetos",
+        "title": "Create Prefab", "category": "Objects",
         "properties": {
             "path": "", "override_position": True, "x": 0.0, "y": 0.0, "relative": False,
             "override_rotation": False, "rotation": 0.0,
@@ -74,102 +74,102 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
         },
     },
     "clone_object": {
-        "title": "Clonar objeto", "category": "Objetos",
+        "title": "Clone Object", "category": "Objects",
         "properties": {
             "name": "", "lifetime": 0.0, "max_instances": 0,
             "max_distance": 0.0, "use_pool": False,
         },
     },
-    "add_component": {"title": "Adicionar componente", "category": "Objetos", "properties": {"component": "BoxCollider", "properties": {"type": "box"}}},
-    "remove_component": {"title": "Remover componente", "category": "Objetos", "properties": {"component": "BoxCollider"}},
-    "input_axis": {"title": "Ler movimento", "category": "Movimento", "properties": {"negative": "A", "positive": "D"}},
-    "move": {"title": "Mover", "category": "Movimento", "properties": {"speed": 200.0}},
-    "jump": {"title": "Pular", "category": "Movimento", "properties": {"force": 420.0}},
-    "get_position": {"title": "Ler posição", "category": "Posição", "properties": {}},
-    "move_by": {"title": "Mover continuamente", "category": "Posição", "properties": {"x": 100.0, "y": 0.0}},
+    "add_component": {"title": "Add Component", "category": "Objects", "properties": {"component": "BoxCollider", "properties": {"type": "box"}}},
+    "remove_component": {"title": "Remove Component", "category": "Objects", "properties": {"component": "BoxCollider"}},
+    "input_axis": {"title": "Read Input Axis", "category": "Movement", "properties": {"negative": "A", "positive": "D"}},
+    "move": {"title": "Move", "category": "Movement", "properties": {"speed": 200.0}},
+    "jump": {"title": "Jump", "category": "Movement", "properties": {"force": 420.0}},
+    "get_position": {"title": "Get Position", "category": "Position", "properties": {}},
+    "move_by": {"title": "Move By", "category": "Position", "properties": {"x": 100.0, "y": 0.0}},
     "start_continuous_motion": {
-        "title": "Iniciar movimento permanente", "category": "Posição",
+        "title": "Start Continuous Motion", "category": "Position",
         "properties": {
             "movement": "Movement", "x": 100.0, "y": 0.0,
             "space": "global", "acceleration": 0.0, "deceleration": 0.0,
         },
     },
     "update_continuous_motion": {
-        "title": "Alterar movimento permanente", "category": "Posição",
+        "title": "Update Continuous Motion", "category": "Position",
         "properties": {"movement": "Movement", "x": 100.0, "y": 0.0, "acceleration": 0.0},
     },
     "pause_continuous_motion": {
-        "title": "Pausar movimento permanente", "category": "Posição",
+        "title": "Pause Continuous Motion", "category": "Position",
         "properties": {"movement": "Movement"},
     },
     "resume_continuous_motion": {
-        "title": "Continuar movimento permanente", "category": "Posição",
+        "title": "Resume Continuous Motion", "category": "Position",
         "properties": {"movement": "Movement"},
     },
     "stop_continuous_motion": {
-        "title": "Parar movimento permanente", "category": "Posição",
+        "title": "Stop Continuous Motion", "category": "Position",
         "properties": {"movement": "", "smooth": False},
     },
     "get_continuous_motion": {
-        "title": "Consultar movimento permanente", "category": "Posição",
+        "title": "Get Continuous Motion", "category": "Position",
         "properties": {"movement": "Movement"},
     },
-    "patrol_axis": {"title": "Patrulhar entre limites", "category": "Posição", "properties": {"axis": "Y", "minimum": -100.0, "maximum": 100.0, "speed": 100.0}},
-    "if_else": {"title": "If / Else", "category": "Lógica", "properties": {"condition": True}},
-    "sequence": {"title": "Sequência", "category": "Lógica", "properties": {"outputs": 2}},
-    "once": {"title": "Executar uma vez", "category": "Lógica", "properties": {}},
-    "cooldown": {"title": "Intervalo / Cooldown", "category": "Lógica", "properties": {"seconds": 1.0}},
-    "and": {"title": "AND", "category": "Lógica", "properties": {}},
-    "or": {"title": "OR", "category": "Lógica", "properties": {}},
-    "not": {"title": "NÃO", "category": "Lógica", "properties": {}},
-    "key_pressed": {"title": "Tecla apertada agora?", "category": "Condição", "properties": {"key": "SPACE"}},
-    "key_held": {"title": "Tecla está segurada?", "category": "Condição", "properties": {"key": "SPACE"}},
-    "is_grounded": {"title": "Está no chão", "category": "Condição", "properties": {}},
-    "compare_number": {"title": "Comparar número", "category": "Condição", "properties": {"operator": ">", "value": 0.0}},
-    "compare_text": {"title": "Comparar texto", "category": "Condição", "properties": {"operator": "==", "value": "Texto"}},
-    "play_animation": {"title": "Tocar animação", "category": "Ação", "properties": {"state": "Idle"}},
-    "play_animation_asset": {"title": "Tocar arquivo de animação", "category": "Ação", "properties": {"path": ""}},
-    "stop_animation": {"title": "Parar animação", "category": "Ação", "properties": {}},
-    "play_sound": {"title": "Tocar som", "category": "Ação", "properties": {"path": ""}},
-    "set_sprite": {"title": "Trocar imagem do objeto", "category": "Ação", "properties": {"path": ""}},
+    "patrol_axis": {"title": "Patrol Between Limits", "category": "Position", "properties": {"axis": "Y", "minimum": -100.0, "maximum": 100.0, "speed": 100.0}},
+    "if_else": {"title": "If / Else", "category": "Logic", "properties": {"condition": True}},
+    "sequence": {"title": "Sequence", "category": "Logic", "properties": {"outputs": 2}},
+    "once": {"title": "Run Once", "category": "Logic", "properties": {}},
+    "cooldown": {"title": "Cooldown", "category": "Logic", "properties": {"seconds": 1.0}},
+    "and": {"title": "AND", "category": "Logic", "properties": {}},
+    "or": {"title": "OR", "category": "Logic", "properties": {}},
+    "not": {"title": "NOT", "category": "Logic", "properties": {}},
+    "key_pressed": {"title": "Key Pressed Now?", "category": "Condition", "properties": {"key": "SPACE"}},
+    "key_held": {"title": "Key Held?", "category": "Condition", "properties": {"key": "SPACE"}},
+    "is_grounded": {"title": "Is Grounded?", "category": "Condition", "properties": {}},
+    "compare_number": {"title": "Compare Number", "category": "Condition", "properties": {"operator": ">", "value": 0.0}},
+    "compare_text": {"title": "Compare Text", "category": "Condition", "properties": {"operator": "==", "value": "Text"}},
+    "play_animation": {"title": "Play Animation", "category": "Action", "properties": {"state": "Idle"}},
+    "play_animation_asset": {"title": "Play Animation File", "category": "Action", "properties": {"path": ""}},
+    "stop_animation": {"title": "Stop Animation", "category": "Action", "properties": {}},
+    "play_sound": {"title": "Play Sound", "category": "Action", "properties": {"path": ""}},
+    "set_sprite": {"title": "Set Object Sprite", "category": "Action", "properties": {"path": ""}},
     "start_texture_scroll": {
-        "title": "Iniciar fundo rolante",
-        "category": "Ação",
+        "title": "Start Scrolling Background",
+        "category": "Action",
         "properties": {
             "path": "", "speed_x": 0.0, "speed_y": 80.0,
             "repeat_x": False, "repeat_y": True, "parallax": 1.0,
             "send_to_background": True,
         },
     },
-    "stop_texture_scroll": {"title": "Parar fundo rolante", "category": "Ação", "properties": {"reset": False}},
-    "set_hud": {"title": "Atualizar HUD", "category": "Ação", "properties": {"text": "Texto"}},
-    "emit_event": {"title": "Emitir evento", "category": "Ação", "properties": {"name": "evento", "payload": None}},
-    "set_position": {"title": "Definir posição", "category": "Ação", "properties": {"x": 0.0, "y": 0.0}},
-    "rotate": {"title": "Girar", "category": "Ação", "properties": {"degrees": 90.0}},
-    "set_active": {"title": "Ativar / Desativar", "category": "Ação", "properties": {"active": True}},
-    "destroy_object": {"title": "Destruir objeto", "category": "Ação", "properties": {}},
-    "destroy_after_time": {"title": "Destruir depois de um tempo", "category": "Ação", "properties": {"seconds": 2.0}},
-    "restart_scene": {"title": "Reiniciar cena", "category": "Ação", "properties": {}},
-    "log_message": {"title": "Mostrar no Console", "category": "Ação", "properties": {"text": "Mensagem"}},
-    "subgraph_start": {"title": "Início do subgrafo", "category": "Subgrafos", "properties": {}},
-    "subgraph_input": {"title": "Entrada do subgrafo", "category": "Subgrafos", "properties": {"name": "entrada", "type": "number", "default": 0.0}},
-    "subgraph_return": {"title": "Retorno do subgrafo", "category": "Subgrafos", "properties": {"name": "resultado", "type": "number"}},
-    "call_subgraph": {"title": "Executar subgrafo", "category": "Subgrafos", "properties": {"path": "", "inputs": [], "outputs": []}},
-    "get_variable": {"title": "Ler variável", "category": "Variáveis", "properties": {"scope": "object", "name": "value"}},
-    "set_variable": {"title": "Definir variável", "category": "Variáveis", "properties": {"scope": "object", "name": "value", "value": 0}},
-    "number_value": {"title": "Número", "category": "Variáveis", "properties": {"value": 0.0}},
-    "bool_value": {"title": "Verdadeiro / Falso", "category": "Variáveis", "properties": {"value": True}},
-    "text_value": {"title": "Texto", "category": "Variáveis", "properties": {"value": "Texto"}},
-    "add_number": {"title": "Somar", "category": "Matemática", "properties": {"a": 0.0, "b": 0.0}},
-    "subtract_number": {"title": "Subtrair", "category": "Matemática", "properties": {"a": 0.0, "b": 0.0}},
-    "multiply_number": {"title": "Multiplicar", "category": "Matemática", "properties": {"a": 1.0, "b": 1.0}},
-    "divide_number": {"title": "Dividir", "category": "Matemática", "properties": {"a": 1.0, "b": 1.0}},
-    "absolute_number": {"title": "Valor absoluto", "category": "Matemática", "properties": {"value": 0.0}},
-    "clamp_number": {"title": "Limitar número", "category": "Matemática", "properties": {"value": 0.0, "minimum": 0.0, "maximum": 1.0}},
-    "random_number": {"title": "Número aleatório", "category": "Matemática", "properties": {"minimum": 0.0, "maximum": 1.0}},
-    "delta_time": {"title": "Tempo do frame", "category": "Matemática", "properties": {}},
-    "join_text": {"title": "Juntar textos", "category": "Texto", "properties": {"a": "", "b": ""}},
-    "to_text": {"title": "Converter para texto", "category": "Texto", "properties": {"value": ""}},
+    "stop_texture_scroll": {"title": "Stop Scrolling Background", "category": "Action", "properties": {"reset": False}},
+    "set_hud": {"title": "Update HUD", "category": "Action", "properties": {"text": "Text"}},
+    "emit_event": {"title": "Emit Event", "category": "Action", "properties": {"name": "event", "payload": None}},
+    "set_position": {"title": "Set Position", "category": "Action", "properties": {"x": 0.0, "y": 0.0}},
+    "rotate": {"title": "Rotate", "category": "Action", "properties": {"degrees": 90.0}},
+    "set_active": {"title": "Enable / Disable", "category": "Action", "properties": {"active": True}},
+    "destroy_object": {"title": "Destroy Object", "category": "Action", "properties": {}},
+    "destroy_after_time": {"title": "Destroy After Time", "category": "Action", "properties": {"seconds": 2.0}},
+    "restart_scene": {"title": "Restart Scene", "category": "Action", "properties": {}},
+    "log_message": {"title": "Log to Console", "category": "Action", "properties": {"text": "Message"}},
+    "subgraph_start": {"title": "Subgraph Start", "category": "Subgraphs", "properties": {}},
+    "subgraph_input": {"title": "Subgraph Input", "category": "Subgraphs", "properties": {"name": "input", "type": "number", "default": 0.0}},
+    "subgraph_return": {"title": "Subgraph Return", "category": "Subgraphs", "properties": {"name": "result", "type": "number"}},
+    "call_subgraph": {"title": "Call Subgraph", "category": "Subgraphs", "properties": {"path": "", "inputs": [], "outputs": []}},
+    "get_variable": {"title": "Get Variable", "category": "Variables", "properties": {"scope": "object", "name": "value"}},
+    "set_variable": {"title": "Set Variable", "category": "Variables", "properties": {"scope": "object", "name": "value", "value": 0}},
+    "number_value": {"title": "Number", "category": "Variables", "properties": {"value": 0.0}},
+    "bool_value": {"title": "True / False", "category": "Variables", "properties": {"value": True}},
+    "text_value": {"title": "Text", "category": "Variables", "properties": {"value": "Text"}},
+    "add_number": {"title": "Add", "category": "Math", "properties": {"a": 0.0, "b": 0.0}},
+    "subtract_number": {"title": "Subtract", "category": "Math", "properties": {"a": 0.0, "b": 0.0}},
+    "multiply_number": {"title": "Multiply", "category": "Math", "properties": {"a": 1.0, "b": 1.0}},
+    "divide_number": {"title": "Divide", "category": "Math", "properties": {"a": 1.0, "b": 1.0}},
+    "absolute_number": {"title": "Absolute Value", "category": "Math", "properties": {"value": 0.0}},
+    "clamp_number": {"title": "Clamp Number", "category": "Math", "properties": {"value": 0.0, "minimum": 0.0, "maximum": 1.0}},
+    "random_number": {"title": "Random Number", "category": "Math", "properties": {"minimum": 0.0, "maximum": 1.0}},
+    "delta_time": {"title": "Delta Time", "category": "Math", "properties": {}},
+    "join_text": {"title": "Join Texts", "category": "Text", "properties": {"a": "", "b": ""}},
+    "to_text": {"title": "Convert to Text", "category": "Text", "properties": {"value": ""}},
 }
 
 NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
@@ -282,7 +282,7 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
 
 
 def node_port_definitions(node_type: str | Mapping[str, Any]) -> dict[str, list[tuple[str, str]]]:
-    """Retorna cópias das portas de um tipo, com fallback compatível."""
+    """Return copies of a node type's ports with a compatible fallback."""
     node = node_type if isinstance(node_type, Mapping) else None
     type_name = str(node.get("type", "")) if node is not None else str(node_type)
     definition = NODE_PORT_DEFINITIONS.get(type_name)
@@ -326,7 +326,7 @@ def node_port_definitions(node_type: str | Mapping[str, Any]) -> dict[str, list[
 
 
 def subgraph_interface(data: Mapping[str, Any] | None) -> dict[str, list[dict[str, Any]]]:
-    """Deriva a interface pública a partir dos nós de entrada e retorno."""
+    """Derive the public interface from input and return nodes."""
     graph = normalize_logic_graph(data)
     inputs: list[dict[str, Any]] = []
     outputs: list[dict[str, Any]] = []
@@ -334,13 +334,13 @@ def subgraph_interface(data: Mapping[str, Any] | None) -> dict[str, list[dict[st
         properties = node.get("properties", {})
         if node["type"] == "subgraph_input":
             inputs.append({
-                "name": str(properties.get("name", "entrada")).strip(),
+                "name": str(properties.get("name", "input")).strip(),
                 "type": _safe_port_type(properties.get("type", "any")),
                 "default": deepcopy(properties.get("default")),
             })
         elif node["type"] == "subgraph_return":
             outputs.append({
-                "name": str(properties.get("name", "resultado")).strip(),
+                "name": str(properties.get("name", "result")).strip(),
                 "type": _safe_port_type(properties.get("type", "any")),
             })
     return {"inputs": inputs, "outputs": outputs}
@@ -367,7 +367,7 @@ def create_logic_node(node_type: str, position: tuple[float, float] = (0.0, 0.0)
         "id": uuid.uuid4().hex,
         "type": str(node_type),
         "title": str(definition.get("title", node_type)),
-        "category": str(definition.get("category", "Personalizado")),
+        "category": str(definition.get("category", "Custom")),
         "position": [float(position[0]), float(position[1])],
         "editor": {"collapsed": False, "width": 210.0, "height": 0.0},
         "properties": deepcopy(definition.get("properties", {})),
@@ -401,7 +401,7 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
             size = [460.0, 280.0]
         groups.append({
             "id": str(raw_group.get("id", "")).strip() or uuid.uuid4().hex,
-            "title": str(raw_group.get("title", "Grupo")).strip() or "Grupo",
+            "title": str(raw_group.get("title", "Group")).strip() or "Group",
             "position": [_safe_float(position[0]), _safe_float(position[1])],
             "size": [
                 max(240.0, min(1600.0, _safe_float(size[0]) or 460.0)),
@@ -418,7 +418,7 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
             position = [0.0, 0.0]
         comments.append({
             "id": str(raw_comment.get("id", "")).strip() or uuid.uuid4().hex,
-            "text": str(raw_comment.get("text", "Comentário")),
+            "text": str(raw_comment.get("text", "Comment")),
             "position": [_safe_float(position[0]), _safe_float(position[1])],
             "width": max(160.0, min(720.0, _safe_float(raw_comment.get("width", 260.0)) or 260.0)),
             "color": str(raw_comment.get("color", "#6b5b2f")),
@@ -470,7 +470,7 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
                 "id": node_id,
                 "type": node_type,
                 "title": str(raw_node.get("title", definition.get("title", node_type))),
-                "category": str(raw_node.get("category", definition.get("category", "Personalizado"))),
+                "category": str(raw_node.get("category", definition.get("category", "Custom"))),
                 "position": [_safe_float(position[0]), _safe_float(position[1])],
                 "editor": {
                     "collapsed": bool(raw_editor.get("collapsed", False)),
@@ -515,14 +515,14 @@ def _event_identity(node: Mapping[str, Any]) -> tuple[str, str] | None:
     if node_type in UNIQUE_EVENT_TYPES:
         return node_type, ""
     if node_type == "event_custom":
-        return node_type, str(node.get("properties", {}).get("name", "evento")).strip().casefold()
+        return node_type, str(node.get("properties", {}).get("name", "event")).strip().casefold()
     if node_type == "event_key_pressed":
         return node_type, str(node.get("properties", {}).get("key", "D")).strip().casefold()
     return None
 
 
 def consolidate_logic_events(data: Mapping[str, Any] | None) -> tuple[dict[str, Any], int]:
-    """Unifica eventos equivalentes e preserva todas as ramificações de saída."""
+    """Merge equivalent events and preserve all outgoing branches."""
     graph = normalize_logic_graph(data)
     canonical: dict[tuple[str, str], str] = {}
     remap: dict[str, str] = {}
@@ -572,7 +572,7 @@ def merge_logic_fragment(
     data: Mapping[str, Any] | None,
     fragment: Mapping[str, Any],
 ) -> tuple[dict[str, Any], int]:
-    """Insere uma receita reutilizando eventos únicos que já existem no grafo."""
+    """Insert a recipe reusing unique events that already exist in the graph."""
     graph, consolidated = consolidate_logic_events(data)
     identities = {
         identity: str(node["id"])
@@ -613,16 +613,16 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
     graph = normalize_logic_graph(data)
     issues: list[dict[str, str]] = []
     if not graph["nodes"]:
-        issues.append({"level": "warning", "message": "O grafo não possui nós."})
+        issues.append({"level": "warning", "message": "The graph has no nodes."})
         return issues
     if not str(graph.get("target", {}).get("value", "")).strip():
-        issues.append({"level": "error", "message": "Escolha o objeto alvo do grafo."})
+        issues.append({"level": "error", "message": "Choose the target object for this graph."})
     event_nodes = [
         node for node in graph["nodes"]
         if node["type"].startswith("event_") or node["type"] == "subgraph_start"
     ]
     if not event_nodes:
-        issues.append({"level": "warning", "message": "Adicione Ao iniciar, A cada frame ou Ao receber evento para executar o grafo."})
+        issues.append({"level": "warning", "message": "Add On Start, On Update, or On Event Received to execute the graph."})
     connected = {edge["from_node"] for edge in graph["edges"]} | {edge["to_node"] for edge in graph["edges"]}
     connected_inputs = {(edge["to_node"], edge.get("to_port", "in")) for edge in graph["edges"]}
     nodes_by_id = {node["id"]: node for node in graph["nodes"]}
@@ -630,22 +630,22 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
     for node in graph["nodes"]:
         identity = _event_identity(node)
         if identity is not None and identity in event_identities:
-            issues.append({"level": "warning", "node": node["id"], "message": "Evento duplicado: conecte as ações ao evento existente."})
+            issues.append({"level": "warning", "node": node["id"], "message": "Duplicate event: connect actions to the existing event node."})
         elif identity is not None:
             event_identities[identity] = str(node["id"])
         if node["type"] in {"event_custom", "emit_event"} and not str(node.get("properties", {}).get("name", "")).strip():
-            issues.append({"level": "error", "node": node["id"], "message": "Informe o nome do evento."})
+            issues.append({"level": "error", "node": node["id"], "message": "Enter the event name."})
         if node["type"] in {"subgraph_input", "subgraph_return"} and not str(node.get("properties", {}).get("name", "")).strip():
-            issues.append({"level": "error", "node": node["id"], "message": "Informe o nome da porta do subgrafo."})
+            issues.append({"level": "error", "node": node["id"], "message": "Enter the subgraph port name."})
         if node["type"] == "call_subgraph" and not str(node.get("properties", {}).get("path", "")).strip():
-            issues.append({"level": "error", "node": node["id"], "message": "Escolha o arquivo do subgrafo."})
+            issues.append({"level": "error", "node": node["id"], "message": "Choose the subgraph file."})
         if node["type"] == "create_prefab":
             prefab_properties = node.get("properties", {})
             prefab_path = str(prefab_properties.get("path", "")).strip()
             if not prefab_path:
-                issues.append({"level": "error", "node": node["id"], "message": "Escolha o arquivo .zprefab."})
+                issues.append({"level": "error", "node": node["id"], "message": "Choose a .zprefab file."})
             elif Path(prefab_path).suffix.lower() != ".zprefab":
-                issues.append({"level": "error", "node": node["id"], "message": "O arquivo escolhido precisa ser .zprefab."})
+                issues.append({"level": "error", "node": node["id"], "message": "The chosen file must be a .zprefab."})
             if bool(prefab_properties.get("override_scale", False)):
                 try:
                     valid_size = (
@@ -655,7 +655,7 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
                 except (TypeError, ValueError):
                     valid_size = False
                 if not valid_size:
-                    issues.append({"level": "error", "node": node["id"], "message": "Largura e altura do Prefab precisam ser maiores que zero."})
+                    issues.append({"level": "error", "node": node["id"], "message": "Prefab width and height must be greater than zero."})
             exposed = prefab_properties.get("exposed_properties", [])
             parameters = prefab_properties.get("parameters", {})
             names = {
@@ -667,22 +667,22 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
                     if str(parameter_name) not in names:
                         issues.append({
                             "level": "warning", "node": node["id"],
-                            "message": f"Parâmetro não exposto pelo Prefab: {parameter_name}",
+                            "message": f"Parameter not exposed by Prefab: {parameter_name}",
                         })
         if node["type"] in {"set_sprite", "play_animation_asset", "play_sound"}:
             has_path = bool(str(node.get("properties", {}).get("path", "")).strip())
             if not has_path and (node["id"], "path") not in connected_inputs:
-                issues.append({"level": "warning", "node": node["id"], "message": "Vincule um asset do projeto a este bloco."})
+                issues.append({"level": "warning", "node": node["id"], "message": "Link a project asset to this node."})
         if node["id"] not in connected and len(graph["nodes"]) > 1:
-            issues.append({"level": "warning", "node": node["id"], "message": f"Nó desconectado: {node['title']}"})
+            issues.append({"level": "warning", "node": node["id"], "message": f"Disconnected node: {node['title']}"})
     interface = subgraph_interface(graph)
-    for interface_side, definitions in (("entrada", interface["inputs"]), ("saída", interface["outputs"])):
+    for interface_side, definitions in (("input", interface["inputs"]), ("output", interface["outputs"])):
         names = [str(definition.get("name", "")).strip() for definition in definitions]
         for name in names:
             if name in {"in", "next"}:
-                issues.append({"level": "error", "message": f"'{name}' é um nome reservado para porta de {interface_side}."})
+                issues.append({"level": "error", "message": f"'{name}' is a reserved port name for {interface_side}."})
             elif name and names.count(name) > 1:
-                message = f"Porta de {interface_side} duplicada: {name}"
+                message = f"Duplicate {interface_side} port: {name}"
                 if not any(issue.get("message") == message for issue in issues):
                     issues.append({"level": "error", "message": message})
     occupied_inputs: set[tuple[str, str]] = set()
@@ -698,14 +698,14 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
         source_type = outputs.get(from_port)
         target_type = inputs.get(to_port)
         if source_type is None:
-            issues.append({"level": "error", "node": source["id"], "edge": edge["id"], "message": f"Saída inexistente: {from_port}"})
+            issues.append({"level": "error", "node": source["id"], "edge": edge["id"], "message": f"Non-existent output port: {from_port}"})
         elif target_type is None:
-            issues.append({"level": "error", "node": target["id"], "edge": edge["id"], "message": f"Entrada inexistente: {to_port}"})
+            issues.append({"level": "error", "node": target["id"], "edge": edge["id"], "message": f"Non-existent input port: {to_port}"})
         elif source_type != target_type and "any" not in {source_type, target_type}:
-            issues.append({"level": "error", "node": target["id"], "edge": edge["id"], "message": f"Tipos incompatíveis: {source_type} → {target_type}"})
+            issues.append({"level": "error", "node": target["id"], "edge": edge["id"], "message": f"Incompatible types: {source_type} \u2192 {target_type}"})
         input_key = (target["id"], str(to_port))
         if input_key in occupied_inputs:
-            issues.append({"level": "error", "node": target["id"], "message": f"Entrada conectada mais de uma vez: {to_port}"})
+            issues.append({"level": "error", "node": target["id"], "message": f"Input connected more than once: {to_port}"})
         occupied_inputs.add(input_key)
 
     flow_adjacency: dict[str, list[str]] = {node_id: [] for node_id in nodes_by_id}
@@ -738,7 +738,7 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
             issues.append({
                 "level": "warning",
                 "node": node["id"],
-                "message": f"Fluxo inalcançável a partir de um evento: {node['title']}",
+                "message": f"Unreachable flow from any event: {node['title']}",
             })
 
     visiting: set[str] = set()
@@ -766,7 +766,7 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
         issues.append({
             "level": "warning",
             "node": node_id,
-            "message": "Ciclo de execução detectado; use Intervalo/Cooldown para evitar repetição perigosa.",
+            "message": "Execution cycle detected; use Cooldown to avoid dangerous repetition.",
         })
     return issues
 
@@ -775,9 +775,9 @@ def load_logic_graph(path: str | Path) -> dict[str, Any]:
     graph_path = Path(path)
     raw = json.loads(graph_path.read_text(encoding="utf-8"))
     if not isinstance(raw, dict):
-        raise ValueError("O Logic Graph deve conter um objeto JSON.")
+        raise ValueError("The Logic Graph must contain a JSON object.")
     if raw.get("format", LOGIC_GRAPH_FORMAT) != LOGIC_GRAPH_FORMAT:
-        raise ValueError("Formato de Logic Graph não reconhecido.")
+        raise ValueError("Unrecognized Logic Graph format.")
     return normalize_logic_graph(raw)
 
 
