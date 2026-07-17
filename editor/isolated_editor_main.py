@@ -3111,7 +3111,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 )
 
                 lbl_key = QLabel("Script")
-                lbl_key.setStyleSheet("color: #aaaaaa; font-size: 11px;")
+                lbl_key.setObjectName("InspectorPropertyLabel")
                 lbl_key.setFixedWidth(50)
                 b_lay.addRow(lbl_key, script_sel_combo)
 
@@ -3122,12 +3122,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
 
                 btn_create = QPushButton("Criar")
                 btn_create.setFixedHeight(20)
-                btn_create.setStyleSheet("font-size: 10px; background-color: #2b2b2b; color: #ffffff; border: 1px solid #444;")
                 btn_create.clicked.connect(self._create_script_asset)
 
                 btn_edit = QPushButton("Editar")
                 btn_edit.setFixedHeight(20)
-                btn_edit.setStyleSheet("font-size: 10px; background-color: #2b2b2b; color: #ffffff; border: 1px solid #444;")
                 btn_edit.clicked.connect(lambda checked=False, p_edit=s_path: self._edit_script_path(Path(p_edit)))
 
                 act_lay.addWidget(btn_create)
@@ -3155,7 +3153,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                             val = overrides.get(key_name, default_val)
                             label_name = key_name.replace("_", " ").capitalize()
                             lbl_prop = QLabel(label_name)
-                            lbl_prop.setStyleSheet("color: #aaaaaa; font-size: 11px;")
+                            lbl_prop.setObjectName("InspectorPropertyLabel")
                             lbl_prop.setFixedWidth(72)
 
                             if isinstance(val, bool):
