@@ -5,17 +5,35 @@ Fonte canônica do SceneManager.
 O arquivo engine/scene_manager.py é agora um shim que importa daqui.
 
 SceneManager — singleton que gerencia a pilha de cenas e transições.
+
+Funcionalidades:
+  - load(scene, transition?)  — troca de cena com transição visual
+  - push(scene, transition?)  — empilha cena (pausa a atual)
+  - pop(transition?)          — desempilha e volta à cena anterior
+  - Histórico de cenas (pilha)
+  - Callbacks: on_transition_start, on_transition_end
+  - Integração limpa com Engine via patch de change_scene()
+
+Uso:
+    from engine.core import SceneManager
+
+    sm = SceneManager.instance()
+    sm.bind(engine)
+
+    sm.load(GameScene(),
+            transition=FadeTransition(color=(0,0,0), duration_out=0.4))
+    sm.push(PauseScene())
+    sm.pop()
 """
 from __future__ import annotations
 
-import importlib
-import sys
 import traceback
 from typing import Callable, List, Optional
 
 import pygame
 
 from engine.transitions import Transition, TransitionPhase, FadeTransition  # noqa: F401
+from engine.ui.ui_manager import UIManager
 
 
 class SceneManager:
@@ -23,14 +41,18 @@ class SceneManager:
 
     def __init__(self) -> None:
         self._engine = None
-        self._stack: List = []
+        self._stack:      List = []
         self._transition: Optional[Transition] = None
         self._pending_scene = None
-        self._pending_pop: bool = False
+        self._pending_pop:  bool = False
         self._pending_push: bool = False
 
         self.on_transition_start: Optional[Callable[[str], None]] = None
-        self.on_transition_end: Optional[Callable[[str], None]] = None
+        self.on_transition_end:   Optional[Callable[[str], None]] = None
+
+    # ------------------------------------------------------------------ #
+    # Singleton                                                           #
+    # ------------------------------------------------------------------ #
 
     @classmethod
     def instance(cls) -> "SceneManager":
@@ -42,49 +64,93 @@ class SceneManager:
     def reset(cls) -> None:
         cls._inst = None
 
-    def bind(self, engine) -> None:
-        self._engine = engine
-        bound_load = self.load
-        self.load = bound_load
-        engine.change_scene = bound_load
+    # ------------------------------------------------------------------ #
+    # Bind ao Engine                                                      #
+    # ------------------------------------------------------------------ #
 
-    def load(self, new_scene, transition: Optional[Transition] = None) -> None:
+    def bind(self, engine) -> None:
+        """
+        Associa o SceneManager ao Engine e faz patch de
+        engine.change_scene → sm.load para retrocompatibilidade.
+        """
+        self._engine = engine
+        engine.change_scene = self.load
+
+    # ------------------------------------------------------------------ #
+    # API pública                                                         #
+    # ------------------------------------------------------------------ #
+
+    def load(
+        self,
+        new_scene,
+        transition: Optional[Transition] = None,
+    ) -> None:
+        """
+        Substitui toda a pilha pela nova cena.
+        Se transition=None, a troca é instantânea.
+        """
         if transition is None:
             self._do_swap_load(new_scene)
             return
         self._start_transition(transition, new_scene, pop=False)
 
-    def push(self, new_scene, transition: Optional[Transition] = None) -> None:
+    def push(
+        self,
+        new_scene,
+        transition: Optional[Transition] = None,
+    ) -> None:
+        """
+        Empilha nova cena por cima (pausa a atual).
+        A cena atual NÃO recebe update/draw enquanto a nova estiver ativa.
+        """
         if transition is None:
             self._do_swap_push(new_scene)
             return
         self._start_transition(transition, new_scene, pop=False, is_push=True)
 
-    def pop(self, transition: Optional[Transition] = None) -> None:
+    def pop(
+        self,
+        transition: Optional[Transition] = None,
+    ) -> None:
+        """
+        Remove a cena do topo e retorna à anterior.
+        Sem efeito se a pilha tiver apenas uma cena.
+        """
         if len(self._stack) <= 1:
             return
 
         prev_scene = self._stack[-2]
         if transition is None:
             self._stack.pop()
-            self._reset_ui()
+            UIManager.reset()
             if hasattr(prev_scene, "_ui_setup"):
                 prev_scene._ui_setup()
             return
 
         self._start_transition(transition, prev_scene, pop=True)
 
+    # ------------------------------------------------------------------ #
+    # Propriedades                                                        #
+    # ------------------------------------------------------------------ #
+
     @property
     def current(self):
+        """Cena no topo da pilha, ou None se vazia."""
         return self._stack[-1] if self._stack else None
 
     @property
     def stack_depth(self) -> int:
+        """Número de cenas na pilha."""
         return len(self._stack)
 
     @property
     def is_transitioning(self) -> bool:
+        """True enquanto uma transição visual estiver ativa."""
         return self._transition is not None and not self._transition.is_done
+
+    # ------------------------------------------------------------------ #
+    # Integração com o loop principal                                    #
+    # ------------------------------------------------------------------ #
 
     def update(self, dt: float) -> None:
         tr = self._transition
@@ -100,7 +166,7 @@ class SceneManager:
         if tr.should_swap:
             self._execute_pending_swap()
 
-        if self._phase_is(tr.phase, TransitionPhase.IN) or self._phase_is(tr.phase, TransitionPhase.DONE):
+        if tr.phase in (TransitionPhase.IN, TransitionPhase.DONE):
             if self.current:
                 self.current.update(dt)
                 self._run_physics()
@@ -120,17 +186,17 @@ class SceneManager:
                 self.current.draw(screen)
             return
 
-        if self._phase_is(tr.phase, TransitionPhase.OUT):
+        if tr.phase == TransitionPhase.OUT:
             if tr.snapshot_out is None and self.current:
                 snap = pygame.Surface(screen.get_size())
                 self.current.draw(snap)
                 tr.snapshot_out = snap
             tr.draw(screen)
 
-        elif self._phase_is(tr.phase, TransitionPhase.SWAP):
+        elif tr.phase == TransitionPhase.SWAP:
             tr.draw(screen)
 
-        elif self._phase_is(tr.phase, TransitionPhase.IN):
+        elif tr.phase == TransitionPhase.IN:
             if tr.snapshot_in is None and self.current:
                 snap = pygame.Surface(screen.get_size())
                 self.current.draw(snap)
@@ -138,37 +204,24 @@ class SceneManager:
             tr.draw(screen)
 
     def handle_event(self, event: pygame.event.Event) -> None:
+        """Bloqueia eventos durante transições visuais."""
         if self.is_transitioning:
             return
         if self.current:
             self.current.handle_event(event)
 
-    @staticmethod
-    def _phase_is(current, expected) -> bool:
-        if current == expected:
-            return True
-        current_name = getattr(current, "name", current)
-        expected_name = getattr(expected, "name", expected)
-        current_value = getattr(current, "value", current_name)
-        expected_value = getattr(expected, "value", expected_name)
-        return current_name == expected_name or current_value == expected_value
-
-    @staticmethod
-    def _reset_ui() -> None:
-        ui_module = importlib.import_module("engine.ui.ui_manager")
-        ui_module.UIManager.reset()
-
-    @staticmethod
-    def _get_collider_classes():
-        collider_module = sys.modules.get("engine.physics.collider")
-        if collider_module is None:
-            collider_module = importlib.import_module("engine.physics.collider")
-        return collider_module.BoxCollider, collider_module.CircleCollider
+    # ------------------------------------------------------------------ #
+    # Internos                                                            #
+    # ------------------------------------------------------------------ #
 
     @staticmethod
     def _run_physics() -> None:
+        """
+        Chama check_all() em todos os colliders registrados.
+        Invocado após scene.update(dt), com posições já atualizadas.
+        """
         try:
-            BoxCollider, CircleCollider = SceneManager._get_collider_classes()
+            from engine.physics.collider import BoxCollider, CircleCollider
             BoxCollider.check_all()
             CircleCollider.check_all()
         except Exception:
@@ -178,13 +231,13 @@ class SceneManager:
         self,
         transition: Transition,
         target_scene,
-        pop: bool = False,
+        pop:     bool = False,
         is_push: bool = False,
     ) -> None:
-        self._transition = transition
+        self._transition    = transition
         self._pending_scene = target_scene
-        self._pending_pop = pop
-        self._pending_push = is_push
+        self._pending_pop   = pop
+        self._pending_push  = is_push
 
         if self.on_transition_start:
             self.on_transition_start(target_scene.__class__.__name__)
@@ -193,9 +246,14 @@ class SceneManager:
         if self._pending_pop:
             if len(self._stack) > 1:
                 self._stack.pop()
-            self._reset_ui()
+            UIManager.reset()
+            # FIX (jul/2026): restaura _ui_setup da cena anterior após pop com
+            # transição visual — antes só era chamado no pop() sem transição.
+            prev_scene = self._stack[-1] if self._stack else None
+            if prev_scene and hasattr(prev_scene, "_ui_setup"):
+                prev_scene._ui_setup()
         elif self._pending_push:
-            self._reset_ui()
+            UIManager.reset()
             scene = self._pending_scene
             scene.engine = self._engine
             scene.start()
@@ -204,14 +262,15 @@ class SceneManager:
             self._do_swap_load(self._pending_scene)
 
         self._pending_scene = None
-        self._pending_pop = False
-        self._pending_push = False
+        self._pending_pop   = False
+        self._pending_push  = False
 
     def _do_swap_load(self, new_scene) -> None:
-        self._reset_ui()
+        """Troca imediata — limpa pilha, libera recursos e inicia nova cena."""
+        UIManager.reset()
         self._stack.clear()
         try:
-            BoxCollider, CircleCollider = self._get_collider_classes()
+            from engine.physics.collider import BoxCollider, CircleCollider
             BoxCollider._scene_tilemaps.clear()
             BoxCollider._scene_tilemap_components.clear()
             BoxCollider._registry.clear()
@@ -229,10 +288,15 @@ class SceneManager:
         self._stack.append(new_scene)
 
     def _do_swap_push(self, new_scene) -> None:
-        self._reset_ui()
+        """Push imediato."""
+        UIManager.reset()
         new_scene.engine = self._engine
         new_scene.start()
         self._stack.append(new_scene)
+
+    # ------------------------------------------------------------------ #
+    # repr                                                                #
+    # ------------------------------------------------------------------ #
 
     def __repr__(self) -> str:
         current = self.current.__class__.__name__ if self.current else "None"

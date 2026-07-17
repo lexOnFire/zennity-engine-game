@@ -244,12 +244,17 @@ class Engine:
 
             try:
                 if sm:
+                    # FIX: quando SceneManager está ativo, a física já é executada
+                    # internamente pelo sm.update() via _run_physics().
+                    # run_update_systems() NÃO é chamado aqui para evitar
+                    # check_all() duplicado por frame (bug dupla-física).
                     sm.update(dt)
                 else:
                     if self._next_scene:
                         self._perform_scene_change()
                     if self._current_scene:
                         self._current_scene.update(dt)
+                        # Só executa os sistemas quando não há SceneManager
                         self.run_update_systems(self._current_scene, dt)
             except Exception:
                 traceback.print_exc()
@@ -287,6 +292,9 @@ def _builtin_physics_system(scene: "Scene", dt: float) -> None:
     Registrado automaticamente na Engine. Para remover:
         from engine.core import Engine, _builtin_physics_system
         engine.remove_update_system(_builtin_physics_system)
+
+    NOTA: quando SceneManager está ativo, este sistema NÃO é invocado
+    pelo loop principal — a física é gerenciada por SceneManager._run_physics().
     """
     try:
         from engine.physics.collider import BoxCollider, CircleCollider

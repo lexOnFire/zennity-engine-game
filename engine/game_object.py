@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import List, Type, TypeVar, Optional, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Type, TypeVar, TYPE_CHECKING
 
 import pygame
 
@@ -45,6 +45,10 @@ class GameObject:
         self.add_component(self.transform)
         self.mesh_type: Optional[str] = None
 
+    # ------------------------------------------------------------------ #
+    # Identidade                                                          #
+    # ------------------------------------------------------------------ #
+
     @property
     def id(self) -> str:
         """UUID4 único e imutável atribuído na criação."""
@@ -54,6 +58,10 @@ class GameObject:
     def short_id(self) -> str:
         """Primeiros 8 caracteres do UUID — útil para logs e debug."""
         return self._id[:8]
+
+    # ------------------------------------------------------------------ #
+    # Cena                                                                #
+    # ------------------------------------------------------------------ #
 
     @property
     def scene(self) -> Optional['Scene']:
@@ -69,11 +77,25 @@ class GameObject:
         for child in self.children:
             child.scene = val
 
+    # ------------------------------------------------------------------ #
+    # Components                                                          #
+    # ------------------------------------------------------------------ #
+
     def add_component(self, component: 'Component') -> 'Component':
-        if getattr(component, "unique", False):
+        """
+        Adiciona *component* ao GameObject.
+
+        Se a classe do componente tiver UNIQUE=True e já existir uma instância
+        do mesmo tipo neste GO, levanta TypeError.
+        """
+        # Verificação UNIQUE
+        if getattr(type(component), 'UNIQUE', False):
             existing = self.get_component(type(component))
-            if existing is not None:
-                return existing
+            if existing is not None and existing is not component:
+                raise TypeError(
+                    f"Componente {type(component).__name__} é UNIQUE — "
+                    f"já existe um no GameObject '{self.name}'."
+                )
         component.game_object = self
         self.components.append(component)
         if self.scene and not component._started:
@@ -81,48 +103,81 @@ class GameObject:
             component._started = True
         return component
 
-    def insert_component(self, component: 'Component', index: int | None = None) -> 'Component':
-        if getattr(component, "unique", False):
-            existing = self.get_component(type(component))
-            if existing is not None and existing is not component:
-                return existing
-        if component in self.components:
-            self.components.remove(component)
-        component.game_object = self
-        if index is None:
-            self.components.append(component)
-        else:
-            safe_index = max(0, min(int(index), len(self.components)))
-            self.components.insert(safe_index, component)
-        if self.scene and not component._started:
-            component.start()
-            component._started = True
-        return component
-
     def get_component(self, component_type: Type[T]) -> Optional[T]:
-        from .component import Component
-        if component_type is Component:
-            for comp in self.components:
-                if comp is not self.transform and (isinstance(comp, component_type) or type(comp).__name__ == component_type.__name__):
-                    return comp
         for comp in self.components:
-            if isinstance(comp, component_type) or type(comp).__name__ == component_type.__name__:
-                return comp
+            if isinstance(comp, component_type):
+                return comp  # type: ignore[return-value]
         return None
 
     def get_components(self, component_type: Type[T]) -> List[T]:
-        return [comp for comp in self.components if isinstance(comp, component_type) or type(comp).__name__ == component_type.__name__]
+        return [comp for comp in self.components if isinstance(comp, component_type)]  # type: ignore[misc]
 
     def remove_component(self, component: 'Component') -> None:
-        if component is self.transform or getattr(component, "required", False):
-            raise ValueError("Transform is required and cannot be removed from a GameObject")
         if component in self.components:
             component.destroy()
             component.game_object = None
             self.components.remove(component)
 
-    def all_components(self) -> List['Component']:
-        return list(self.components)
+    # ------------------------------------------------------------------ #
+    # Serialização (Fase 9)                                               #
+    # ------------------------------------------------------------------ #
+
+    def serialize(self) -> Dict[str, Any]:
+        """
+        Retorna um dict com o estado completo do GameObject:
+        nome, tag, active, lista de componentes serializados e filhos.
+        """
+        return {
+            "id":         self._id,
+            "name":       self.name,
+            "tag":        self.tag,
+            "active":     self.active,
+            "components": [c.serialize() for c in self.components],
+            "children":   [child.serialize() for child in self.children],
+        }
+
+    @classmethod
+    def deserialize(cls, data: Dict[str, Any]) -> "GameObject":
+        """
+        Reconstrói um GameObject a partir de um dict produzido por serialize().
+
+        Usa ComponentRegistry para instanciar os componentes pelo nome.
+        O Transform já é criado pelo __init__ e atualizado via deserialize().
+        """
+        from engine.component_registry import ComponentRegistry
+        from engine.core.component import Transform
+
+        go = cls(name=data.get("name", "GameObject"), tag=data.get("tag", "Untagged"))
+        go.active = bool(data.get("active", True))
+
+        # Restaurar o _id original
+        go._id = data.get("id", go._id)
+
+        for comp_data in data.get("components", []):
+            type_name = comp_data.get("type", "")
+            if type_name == "Transform":
+                # Transform já existe — apenas deserializa
+                go.transform.deserialize(comp_data)
+            else:
+                klass = ComponentRegistry.get(type_name)
+                if klass is None:
+                    continue  # componente desconhecido — ignora graciosamente
+                instance = klass.__new__(klass)
+                # Inicializa via Component.__init__ sem parâmetros
+                from engine.core.component import Component
+                Component.__init__(instance)
+                instance.deserialize(comp_data)
+                go.add_component(instance)
+
+        for child_data in data.get("children", []):
+            child = cls.deserialize(child_data)
+            go.add_child(child)
+
+        return go
+
+    # ------------------------------------------------------------------ #
+    # Hierarquia                                                          #
+    # ------------------------------------------------------------------ #
 
     def add_child(self, child: 'GameObject') -> 'GameObject':
         if child.parent:
@@ -141,6 +196,10 @@ class GameObject:
     def _propagate_scene(self, scene: Optional['Scene']) -> None:
         self.scene = scene
 
+    # ------------------------------------------------------------------ #
+    # Ciclo de vida                                                       #
+    # ------------------------------------------------------------------ #
+
     def start(self) -> None:
         for comp in self.components:
             if not comp._started and self.scene:
@@ -156,7 +215,7 @@ class GameObject:
             if not comp._started and self.scene:
                 comp.start()
                 comp._started = True
-            if getattr(comp, "enabled", True):
+            if comp.enabled:
                 comp.update(dt)
         for child in self.children:
             child.update(dt)
@@ -164,13 +223,8 @@ class GameObject:
     def draw(self, screen: pygame.Surface) -> None:
         if not self.active:
             return
-        modern_sprite_ids = getattr(self.scene, "_zennity_modern_sprite_component_ids", ())
         for comp in self.components:
-            if getattr(comp, "type_name", "") == "InfiniteBackground":
-                continue
-            if id(comp) in modern_sprite_ids:
-                continue
-            if getattr(comp, "enabled", True):
+            if comp.enabled:
                 comp.draw(screen)
         for child in self.children:
             child.draw(screen)
@@ -188,6 +242,10 @@ class GameObject:
                 self.parent.children.remove(self)
             self.parent = None
         self.scene = None
+
+    # ------------------------------------------------------------------ #
+    # repr                                                                #
+    # ------------------------------------------------------------------ #
 
     def __repr__(self) -> str:
         tag_str = f" tag={self.tag}" if self.tag != "Untagged" else ""

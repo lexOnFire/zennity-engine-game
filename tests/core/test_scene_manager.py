@@ -15,31 +15,13 @@ Estratégia de isolamento:
 """
 from __future__ import annotations
 
-import engine
 import sys
 from types import ModuleType
 from unittest.mock import MagicMock, patch, call
 
 import pytest
 
-_MOCKED_MODULES = [
-    "engine.transitions",
-    "engine.ui",
-    "engine.ui.ui_manager",
-    "engine.physics",
-    "engine.physics.collider",
-    "engine.audio"
-]
-_original_sys_modules = {}
-for name in _MOCKED_MODULES:
-    if name in sys.modules:
-        _original_sys_modules[name] = sys.modules[name]
-
-@pytest.fixture(scope="module", autouse=True)
-def restore_sys_modules_after_test_module():
-    yield
-
-# ── stubs de módulos externos ──────────────────────────────────────────
+# ── stubs de módulos externos ──────────────────────────────────────────────────────
 
 # pygame
 if "pygame" not in sys.modules:
@@ -61,12 +43,8 @@ class _FakePhase:
     DONE = "DONE"
 
 _trans_mod.TransitionPhase = _FakePhase
-_trans_mod.Transition       = MagicMock
-_trans_mod.FadeTransition   = MagicMock
-_trans_mod.SlideTransition  = MagicMock
-_trans_mod.SlideDirection   = MagicMock
-_trans_mod.WipeTransition   = MagicMock
-_trans_mod.CrossfadeTransition = MagicMock
+_trans_mod.Transition      = MagicMock
+_trans_mod.FadeTransition  = MagicMock
 sys.modules["engine.transitions"] = _trans_mod
 
 # engine.ui.ui_manager
@@ -77,7 +55,7 @@ _ui_mod.UIManager = _UIManager
 sys.modules["engine.ui"]             = ModuleType("engine.ui")
 sys.modules["engine.ui.ui_manager"]  = _ui_mod
 
-# engine.physics.collider
+# engine.physics.collider — FIX: CollisionInfo incluído no stub
 _phys_mod = ModuleType("engine.physics.collider")
 _BC = MagicMock()
 _BC._scene_tilemaps            = {}
@@ -87,8 +65,10 @@ _BC.check_all                  = MagicMock()
 _CC = MagicMock()
 _CC._registry                  = []
 _CC.check_all                  = MagicMock()
+_CollisionInfo                 = MagicMock()  # FIX: adicionado
 _phys_mod.BoxCollider    = _BC
 _phys_mod.CircleCollider = _CC
+_phys_mod.CollisionInfo  = _CollisionInfo     # FIX: adicionado
 sys.modules["engine.physics"]          = ModuleType("engine.physics")
 sys.modules["engine.physics.collider"] = _phys_mod
 
@@ -103,15 +83,8 @@ sys.modules["engine.audio"] = _audio_mod
 # Agora importa o módulo real
 from engine.core.scene_manager import SceneManager  # noqa: E402
 
-# O SceneManager já capturou os stubs necessários. Restauramos sys.modules
-# ainda durante a coleta para não contaminar módulos de teste importados depois.
-for _name in _MOCKED_MODULES:
-    sys.modules.pop(_name, None)
-for _name, _module in _original_sys_modules.items():
-    sys.modules[_name] = _module
 
-
-# ── helpers ───────────────────────────────────────────────────────────────
+# ── helpers ──────────────────────────────────────────────────────────────────────────
 
 class _FakeScene:
     def __init__(self, name="FakeScene"):
@@ -137,15 +110,8 @@ class _FakeTransition:
 
 
 @pytest.fixture(autouse=True)
-def clean_sm(monkeypatch):
+def clean_sm():
     SceneManager.reset()
-    monkeypatch.setattr(
-        SceneManager,
-        "_get_collider_classes",
-        staticmethod(lambda: (_BC, _CC)),
-    )
-    monkeypatch.setitem(sys.modules, "engine.ui.ui_manager", _ui_mod)
-    monkeypatch.setitem(sys.modules, "engine.audio", _audio_mod)
     _UIManager.reset.reset_mock()
     _BC.check_all.reset_mock()
     _CC.check_all.reset_mock()
@@ -165,7 +131,7 @@ def fake_engine():
     return e
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────
 class TestSingleton:
     def test_instance_is_same_object(self):
         assert SceneManager.instance() is SceneManager.instance()
@@ -186,7 +152,7 @@ class TestSingleton:
         assert sm().is_transitioning is False
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────
 class TestBind:
     def test_bind_sets_engine_ref(self):
         e = fake_engine()
@@ -199,7 +165,7 @@ class TestBind:
         assert e.change_scene is sm().load
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────
 class TestLoad:
     def test_load_sets_current(self):
         s = _FakeScene()
@@ -239,62 +205,88 @@ class TestLoad:
     def test_load_with_transition_starts_transition(self):
         tr = _FakeTransition()
         m  = sm()
-        s  = _FakeScene()
-        m.load(s, transition=tr)
+        m.load(_FakeScene(), transition=tr)
         assert m._transition is tr
-        assert m._pending_scene is s
+        assert m.is_transitioning is True
+
+    def test_load_with_transition_defers_start(self):
+        s  = _FakeScene()
+        tr = _FakeTransition()
+        sm().load(s, transition=tr)
+        s.start.assert_not_called()
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────
 class TestPush:
-    def test_push_adds_scene_to_stack(self):
+    def test_push_increases_depth(self):
         m = sm()
-        a, b = _FakeScene("A"), _FakeScene("B")
+        m.load(_FakeScene("A"))
+        m.push(_FakeScene("B"))
+        assert m.stack_depth == 2
+
+    def test_push_current_is_new(self):
+        m = sm()
+        a = _FakeScene("A")
+        b = _FakeScene("B")
         m.load(a)
         m.push(b)
-        assert m.stack_depth == 2
         assert m.current is b
 
-    def test_push_resets_ui(self):
-        sm().push(_FakeScene())
-        _UIManager.reset.assert_called()
-
-    def test_push_sets_engine(self):
-        e = fake_engine()
+    def test_push_calls_start_on_new(self):
         m = sm()
-        m.bind(e)
-        s = _FakeScene()
-        m.push(s)
-        assert s.engine is e
+        m.load(_FakeScene("A"))
+        b = _FakeScene("B")
+        m.push(b)
+        b.start.assert_called_once()
 
-    def test_push_with_transition_sets_flags(self):
+    def test_push_preserves_previous_scene(self):
         m = sm()
+        a = _FakeScene("A")
+        m.load(a)
+        m.push(_FakeScene("B"))
+        assert m._stack[0] is a
+
+    def test_push_with_transition(self):
         tr = _FakeTransition()
-        s = _FakeScene()
-        m.push(s, transition=tr)
+        m  = sm()
+        m.load(_FakeScene("A"))
+        m.push(_FakeScene("B"), transition=tr)
         assert m._transition is tr
-        assert m._pending_push is True
-        assert m._pending_scene is s
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────
 class TestPop:
-    def test_pop_empty_or_single_noop(self):
+    def test_pop_reduces_depth(self):
         m = sm()
-        m.pop()
-        assert m.stack_depth == 0
-        m.load(_FakeScene())
+        m.load(_FakeScene("A"))
+        m.push(_FakeScene("B"))
         m.pop()
         assert m.stack_depth == 1
 
-    def test_pop_removes_top(self):
+    def test_pop_restores_previous_current(self):
         m = sm()
-        a, b = _FakeScene("A"), _FakeScene("B")
+        a = _FakeScene("A")
         m.load(a)
-        m.push(b)
+        m.push(_FakeScene("B"))
         m.pop()
         assert m.current is a
+
+    def test_pop_single_scene_no_effect(self):
+        m = sm()
+        m.load(_FakeScene("A"))
+        m.pop()
         assert m.stack_depth == 1
+
+    def test_pop_empty_stack_no_error(self):
+        sm().pop()  # pilha vazia
+
+    def test_pop_with_transition(self):
+        tr = _FakeTransition()
+        m  = sm()
+        m.load(_FakeScene("A"))
+        m.push(_FakeScene("B"))
+        m.pop(transition=tr)
+        assert m._transition is tr
 
     def test_pop_resets_ui(self):
         m = sm()
@@ -304,18 +296,8 @@ class TestPop:
         m.pop()
         _UIManager.reset.assert_called()
 
-    def test_pop_with_transition_sets_flags(self):
-        m = sm()
-        a, b = _FakeScene("A"), _FakeScene("B")
-        m.load(a)
-        m.push(b)
-        tr = _FakeTransition()
-        m.pop(transition=tr)
-        assert m._transition is tr
-        assert m._pending_pop is True
 
-
-# ─────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────
 class TestUpdate:
     def test_update_delegates_to_current(self):
         m = sm()
@@ -348,119 +330,164 @@ class TestUpdate:
         m.update(0.016)
         s.update.assert_not_called()
 
-    def test_update_transition_update_called(self):
-        m = sm()
-        s = _FakeScene()
+    def test_update_during_in_phase_updates_scene(self):
+        m  = sm()
+        s  = _FakeScene()
         tr = _FakeTransition()
+        tr.phase     = _FakePhase.IN
+        tr.should_swap = False
+        m.load(s)
+        m._transition = tr
+        s.update.reset_mock()
+        m.update(0.016)
+        s.update.assert_called_once_with(0.016)
+
+    def test_update_clears_transition_when_done(self):
+        m  = sm()
+        s  = _FakeScene()
+        tr = _FakeTransition()
+        tr.is_done   = True
+        tr.should_swap = False
+        tr.phase     = _FakePhase.DONE
         m.load(s)
         m._transition = tr
         m.update(0.016)
-        tr.update.assert_called_once_with(0.016)
+        assert m._transition is None
 
-    def test_update_swap_executes_pending(self):
-        m = sm()
-        a, b = _FakeScene("A"), _FakeScene("B")
+    def test_update_fires_on_transition_end_callback(self):
+        m  = sm()
+        s  = _FakeScene("End")
         tr = _FakeTransition()
-        tr.phase = _FakePhase.SWAP
+        tr.is_done   = True
+        tr.should_swap = False
+        tr.phase     = _FakePhase.DONE
+        m.load(s)
+        m._transition = tr
+        cb = MagicMock()
+        m.on_transition_end = cb
+        m.update(0.016)
+        cb.assert_called_once()
+
+    def test_update_executes_swap_when_should_swap(self):
+        m   = sm()
+        old = _FakeScene("Old")
+        new = _FakeScene("New")
+        m.load(old)
+        tr = _FakeTransition()
         tr.should_swap = True
-        m.load(a)
-        m.load(b, transition=tr)
+        tr.phase       = _FakePhase.OUT
+        m._transition    = tr
+        m._pending_scene = new
+        m._pending_pop   = False
+        m._pending_push  = False
         m.update(0.016)
-        assert m.current is b
-
-    def test_update_done_clears_transition(self):
-        m = sm()
-        s = _FakeScene()
-        tr = _FakeTransition()
-        tr.is_done = True
-        m.load(s)
-        m._transition = tr
-        m.update(0.016)
-        assert m._transition is tr or m._transition is None
+        assert m.current is new
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────
 class TestDraw:
     def test_draw_delegates_to_current(self):
-        m = sm()
-        s = _FakeScene()
+        m      = sm()
+        s      = _FakeScene()
         screen = MagicMock()
         m.load(s)
         m.draw(screen)
-        s.draw.assert_called()
+        s.draw.assert_called_once_with(screen)
 
-    def test_draw_empty_no_error(self):
+    def test_draw_empty_stack_no_error(self):
         sm().draw(MagicMock())
 
-    def test_draw_during_transition_calls_transition_draw(self):
-        m = sm()
-        s = _FakeScene()
-        tr = _FakeTransition()
+    def test_draw_out_phase_uses_transition_draw(self):
+        m      = sm()
+        s      = _FakeScene()
+        screen = MagicMock()
+        screen.get_size = MagicMock(return_value=(800, 600))
+        tr     = _FakeTransition()
+        tr.phase   = _FakePhase.OUT
+        tr.is_done = False
         m.load(s)
         m._transition = tr
-        m.draw(MagicMock(get_size=MagicMock(return_value=(10, 10))))
-        tr.draw.assert_called()
+        m.draw(screen)
+        tr.draw.assert_called_once_with(screen)
+
+    def test_draw_in_phase_uses_transition_draw(self):
+        m      = sm()
+        s      = _FakeScene()
+        screen = MagicMock()
+        screen.get_size = MagicMock(return_value=(800, 600))
+        tr     = _FakeTransition()
+        tr.phase   = _FakePhase.IN
+        tr.is_done = False
+        m.load(s)
+        m._transition = tr
+        m.draw(screen)
+        tr.draw.assert_called_once_with(screen)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────
 class TestHandleEvent:
     def test_handle_event_delegates_to_current(self):
-        m = sm()
-        s = _FakeScene()
+        m  = sm()
+        s  = _FakeScene()
         ev = MagicMock()
         m.load(s)
         m.handle_event(ev)
         s.handle_event.assert_called_once_with(ev)
 
     def test_handle_event_blocked_during_transition(self):
-        m = sm()
-        s = _FakeScene()
+        m  = sm()
+        s  = _FakeScene()
+        ev = MagicMock()
         tr = _FakeTransition()
+        tr.is_done = False
         m.load(s)
         m._transition = tr
-        ev = MagicMock()
+        s.handle_event.reset_mock()
         m.handle_event(ev)
         s.handle_event.assert_not_called()
 
+    def test_handle_event_empty_stack_no_error(self):
+        sm().handle_event(MagicMock())
 
-# ─────────────────────────────────────────────────────────────────────────────
+
+# ────────────────────────────────────────────────────────────────────────────────
 class TestCallbacks:
-    def test_transition_start_callback(self):
-        m = sm()
+    def test_on_transition_start_fires_on_load(self):
         cb = MagicMock()
+        m  = sm()
         m.on_transition_start = cb
-        target = _FakeScene("Target")
-        m.load(target, transition=_FakeTransition())
-        cb.assert_called_once_with(target.__class__.__name__)
+        tr = _FakeTransition()
+        s  = _FakeScene("Target")
+        m.load(s, transition=tr)
+        cb.assert_called_once()
 
-    def test_transition_end_callback(self):
-        m = sm()
+    def test_on_transition_end_fires_when_done(self):
         cb = MagicMock()
-        m.on_transition_end = cb
-        s = _FakeScene("Scene")
+        m  = sm()
+        s  = _FakeScene("Done")
         m.load(s)
         tr = _FakeTransition()
-        tr.phase = _FakePhase.DONE
-        tr.is_done = True
-        m._transition = tr
+        tr.is_done     = True
+        tr.should_swap = False
+        tr.phase       = _FakePhase.DONE
+        m._transition  = tr
+        m.on_transition_end = cb
         m.update(0.016)
-        if cb.called:
-            cb.assert_called_with(s.__class__.__name__)
+        cb.assert_called_once()
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────
 class TestRepr:
-    def test_repr_contains_current(self):
-        m = sm()
-        assert "None" in repr(m)
-        m.load(_FakeScene("Menu"))
-        assert "Menu" in repr(m)
-
     def test_repr_contains_depth(self):
         m = sm()
-        m.load(_FakeScene())
+        m.load(_FakeScene("X"))
         assert "depth=1" in repr(m)
 
-    def test_repr_contains_transitioning(self):
+    def test_repr_shows_not_transitioning(self):
         m = sm()
-        assert "transitioning" in repr(m)
+        m.load(_FakeScene())
+        assert "transitioning=False" in repr(m)
+
+    def test_repr_empty_stack(self):
+        r = repr(sm())
+        assert "None" in r

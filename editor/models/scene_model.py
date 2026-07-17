@@ -47,3 +47,29 @@ class SceneModel(QObject):
         """Limpa toda a cena."""
         self._root_objects.clear()
         self.object_structure_changed.emit()
+
+    # ------------------------------------------------------------------ #
+    # Busca por identidade (UUID)                                         #
+    # ------------------------------------------------------------------ #
+
+    def find_object_by_id(self, object_id: str) -> Optional[GameObject]:
+        """
+        Localiza um GameObject pelo seu UUID único.
+        Percorre raízes e filhos recursivamente.
+        Retorna None se não encontrado.
+        """
+        for obj in self._root_objects:
+            found = self._find_recursive(obj, object_id)
+            if found is not None:
+                return found
+        return None
+
+    def _find_recursive(self, obj: GameObject, object_id: str) -> Optional[GameObject]:
+        """Percurso recursivo em profundidade para localizar objeto pelo ID."""
+        if obj.id == object_id:
+            return obj
+        for child in obj.children:
+            found = self._find_recursive(child, object_id)
+            if found is not None:
+                return found
+        return None

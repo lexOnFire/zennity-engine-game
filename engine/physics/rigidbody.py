@@ -1,6 +1,6 @@
 import numpy as np
-from typing import Any, Optional
-from engine.core.component import Component
+from typing import Optional
+from engine.component import Component
 
 
 class RigidBody(Component):
@@ -11,9 +11,17 @@ class RigidBody(Component):
     para evitar vazamento quando forças externas e gravidade dividiam o mesmo array.
 
     Adicionado: atributo `grounded` para integração com TilemapCollider.
+
+    FIX (jul/2026): GRAVITY movida para constante de classe — era atributo de
+    instância mutável em __init__, o que tornava impossível alterar o valor
+    globalmente sem criar um novo RigidBody.
+    Para sobrescrever pontualmente: rb.GRAVITY = 500.0 (continua funcionando
+    por herança de atributo de instância sobre o de classe).
+    Para alterar globalmente: RigidBody.GRAVITY = 500.0
     """
-    component_type = "RigidBody"
-    unique = True
+
+    # Constante de classe — valor padrão da gravidade em pixels/s²
+    GRAVITY: float = 980.0
 
     def __init__(
         self,
@@ -33,42 +41,16 @@ class RigidBody(Component):
         self.velocity:     np.ndarray = np.zeros(2, dtype=np.float32)
         # acceleration stores only EXTERNAL forces (not gravity)
         self.acceleration: np.ndarray = np.zeros(2, dtype=np.float32)
-        self.force:        np.ndarray = np.zeros(2, dtype=np.float32)
 
         # Flag definida pelo TilemapCollider a cada frame
         self.grounded: bool = False
-
-        self.GRAVITY: float = 980.0
-
-    def serialize_properties(self) -> dict[str, Any]:
-        return {
-            "mass": float(self.mass),
-            "gravity_scale": float(self.gravity_scale),
-            "drag": float(self.drag),
-            "use_gravity": bool(self.use_gravity),
-            "is_kinematic": bool(self.is_kinematic),
-            "velocity": [float(v) for v in self.velocity],
-            "acceleration": [float(v) for v in self.acceleration],
-            "force": [float(v) for v in self.force],
-        }
-
-    def deserialize_properties(self, data: dict[str, Any]) -> None:
-        self.mass = max(float(data.get("mass", 1.0)), 0.0001)
-        self.gravity_scale = float(data.get("gravity_scale", 1.0))
-        self.drag = float(data.get("drag", 0.0))
-        self.use_gravity = bool(data.get("use_gravity", True))
-        self.is_kinematic = bool(data.get("is_kinematic", False))
-        self.velocity = np.array(data.get("velocity", [0.0, 0.0]), dtype=np.float32)
-        self.acceleration = np.array(data.get("acceleration", [0.0, 0.0]), dtype=np.float32)
-        self.force = np.array(data.get("force", [0.0, 0.0]), dtype=np.float32)
 
     # ------------------------------------------------------------------
 
     def add_force(self, fx: float, fy: float) -> None:
         if self.is_kinematic:
             return
-        self.force += np.array([fx, fy], dtype=np.float32)
-        self.acceleration = self.force / self.mass
+        self.acceleration += np.array([fx, fy], dtype=np.float32) / self.mass
 
     def add_impulse(self, ix: float, iy: float) -> None:
         if self.is_kinematic:
@@ -81,16 +63,10 @@ class RigidBody(Component):
     def stop(self) -> None:
         self.velocity[:]     = 0.0
         self.acceleration[:] = 0.0
-        self.force[:]        = 0.0
 
     # ------------------------------------------------------------------
 
     def update(self, dt: float) -> None:
-        if getattr(self, "_runtime_physics_managed", False):
-            return
-        self.integrate(dt)
-
-    def integrate(self, dt: float) -> None:
         if self.is_kinematic or self.game_object is None:
             return
 
@@ -111,12 +87,5 @@ class RigidBody(Component):
         transform.x += self.velocity[0] * dt
         transform.y += self.velocity[1] * dt
 
-        # Reset external forces (gravity is NOT here — it’s in velocity directly)
+        # Reset external forces (gravity is NOT here — it's in velocity directly)
         self.acceleration[:] = 0.0
-        self.force[:] = 0.0
-
-
-from engine.core.component_registry import register_component
-
-register_component(RigidBody)
-register_component(RigidBody, "Rigidbody")

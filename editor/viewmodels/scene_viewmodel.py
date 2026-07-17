@@ -1,11 +1,10 @@
-from typing import Optional, Any
+from typing import Optional
 from PySide6.QtCore import QObject, Signal, Slot
 from engine.game_object import GameObject
 from editor.models.scene_model import SceneModel
 from editor.core.event_bus import (
     EventBus, EVENT_SELECTION_CHANGED, EVENT_HIERARCHY_UPDATED, EVENT_PROPERTY_CHANGED
 )
-from editor.runtime.selection_manager import SelectionManager
 
 
 class SceneViewModel(QObject):
@@ -13,6 +12,12 @@ class SceneViewModel(QObject):
     ViewModel que expõe a estrutura da cena, gerencia a seleção
     e publica alterações no barramento global de eventos (EventBus).
     Componente 'ViewModel' na arquitetura MVVM do editor.
+
+    Regra de identidade:
+        A seleção é comparada por UUID (go.id), nunca por igualdade de instância.
+        Painéis externos (Hierarchy, Inspector, Viewport) devem usar selected_id
+        e resolver a instância via SceneModel.find_object_by_id() quando necessário.
+        Isso evita instâncias duplicadas do mesmo objeto circulando pelos painéis.
     """
     
     # Sinais locais mantidos para compatibilidade com ligações Qt tradicionais
@@ -20,36 +25,45 @@ class SceneViewModel(QObject):
     hierarchy_updated = Signal()
     property_changed = Signal(str, str, object)
 
-    def __init__(
-        self,
-        model: SceneModel,
-        selection_manager: Optional[SelectionManager] = None,
-        command_manager: Optional[Any] = None
-    ) -> None:
+    def __init__(self, model: SceneModel) -> None:
         super().__init__()
         self._model = model
-        self.selection_manager = selection_manager or SelectionManager()
-        self.command_manager = command_manager
         self._selected_object: Optional[GameObject] = None
         
         # Conecta sinais do modelo
         self._model.object_structure_changed.connect(self.on_model_hierarchy_changed)
-        self.selection_manager.subscribe(self._on_runtime_selection_changed)
+
+    # ------------------------------------------------------------------ #
+    # Seleção — baseada em UUID para evitar instâncias duplicadas         #
+    # ------------------------------------------------------------------ #
 
     @property
     def selected_object(self) -> Optional[GameObject]:
-        return self.selection_manager.selected
+        """Instância canônica atual selecionada no editor."""
+        return self._selected_object
 
     @selected_object.setter
     def selected_object(self, obj: Optional[GameObject]) -> None:
-        self.selection_manager.set_selected(obj)
+        """
+        Define o objeto selecionado comparando por UUID.
+        Painéis externos nunca devem armazenar cópias independentes;
+        use selected_id + find_object_by_id() para resolver a instância.
+        """
+        current_id = self._selected_object.id if self._selected_object else None
+        new_id     = obj.id if obj else None
+        if current_id != new_id:
+            self._selected_object = obj
+            self.selection_changed.emit(obj)
+            EventBus.emit(EVENT_SELECTION_CHANGED, obj=obj)
 
-    def _on_runtime_selection_changed(self, obj: Optional[GameObject]) -> None:
-        if self._selected_object is obj:
-            return
-        self._selected_object = obj
-        self.selection_changed.emit(obj)
-        EventBus.emit(EVENT_SELECTION_CHANGED, obj=obj)
+    @property
+    def selected_id(self) -> Optional[str]:
+        """
+        UUID do objeto atualmente selecionado, ou None.
+        Prefira usar este valor em painéis que não precisam da instância completa.
+        Para resolver a instância: scene_model.find_object_by_id(selected_id).
+        """
+        return self._selected_object.id if self._selected_object else None
 
     @Slot()
     def on_model_hierarchy_changed(self) -> None:
@@ -108,18 +122,17 @@ class SceneViewModel(QObject):
 
     @Slot()
     def delete_selected(self) -> None:
-        selected = self.selected_object
-        if selected:
-            obj_to_remove = selected
+        if self._selected_object:
+            obj_to_remove = self._selected_object
             self.selected_object = None
             self._model.remove_object(obj_to_remove)
 
     @Slot()
     def duplicate_selected(self) -> None:
-        src = self.selected_object
-        if not src:
+        if not self._selected_object:
             return
-
+            
+        src = self._selected_object
         name = f"{src.name}_cópia"
         go = GameObject(name)
         go.mesh_type = src.mesh_type
@@ -154,56 +167,28 @@ class SceneViewModel(QObject):
     # ── Métodos de Atualização de Propriedades ─────────────────────────────────
 
     def set_transform_property(self, prop_name: str, index: int, value: float) -> None:
-        selected = self.selected_object
-        if not selected:
+        if not self._selected_object:
             return
             
-        transform = selected.transform
+        transform = self._selected_object.transform
         if prop_name == "position":
             transform.position[index] = value
         elif prop_name == "scale":
             transform.scale[index] = value
-            self._sync_collider_dimensions(selected)
+            self._sync_collider_dimensions(self._selected_object)
         elif prop_name == "rotation":
             transform.rotation[index] = value
             
-        # Emite sinal local e publica no EventBus
         prop_id = f"{prop_name}_{index}"
         self.property_changed.emit("Transform", prop_id, value)
         EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="Transform", property_name=prop_id, value=value)
 
-    def commit_transform_property(self, prop_name: str, index: int, old_value: float, new_value: float) -> None:
-        selected = self.selected_object
-        if not selected:
-            return
-        if old_value == new_value:
-            return
-
-        from editor.runtime.property_commands import SetTransformPropertyCommand
-
-        # Callback para atualizar a propriedade e acionar as notificações MVVM/EventBus
-        def update_fn(val: float) -> None:
-            self.set_transform_property(prop_name, index, val)
-
-        cmd = SetTransformPropertyCommand(
-            target_transform=selected.transform,
-            prop_name=prop_name,
-            index=index,
-            old_value=old_value,
-            new_value=new_value,
-            on_changed=update_fn
-        )
-
-        if getattr(self, "command_manager", None) is not None:
-            self.command_manager.execute(cmd)
-
     def set_rigidbody_property(self, prop_name: str, value) -> None:
-        selected = self.selected_object
-        if not selected:
+        if not self._selected_object:
             return
             
         from engine.physics.rigidbody import RigidBody
-        rb = selected.get_component(RigidBody)
+        rb = self._selected_object.get_component(RigidBody)
         if not rb:
             return
             
@@ -218,35 +203,33 @@ class SceneViewModel(QObject):
         EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="RigidBody", property_name=prop_name, value=value)
 
     def set_collider_property(self, prop_name: str, value) -> None:
-        selected = self.selected_object
-        if not selected:
+        if not self._selected_object:
             return
             
         from engine.physics.collider import BoxCollider, CircleCollider
-        bc = selected.get_component(BoxCollider)
-        cc = selected.get_component(CircleCollider)
+        bc = self._selected_object.get_component(BoxCollider)
+        cc = self._selected_object.get_component(CircleCollider)
         
         if bc:
             if prop_name == "width":
                 bc.width = int(value)
-                selected.transform.scale[0] = float(value)
+                self._selected_object.transform.scale[0] = float(value)
             elif prop_name == "height":
                 bc.height = int(value)
-                selected.transform.scale[1] = float(value)
+                self._selected_object.transform.scale[1] = float(value)
             elif prop_name == "is_trigger":
                 bc.is_trigger = bool(value)
         elif cc:
             if prop_name == "radius":
                 cc.radius = int(value)
-                selected.transform.scale[0] = float(value * 2)
-                selected.transform.scale[1] = float(value * 2)
+                self._selected_object.transform.scale[0] = float(value * 2)
+                self._selected_object.transform.scale[1] = float(value * 2)
             elif prop_name == "is_trigger":
                 cc.is_trigger = bool(value)
                 
         self.property_changed.emit("Collider", prop_name, value)
         EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="Collider", property_name=prop_name, value=value)
         
-        # Emite sinal extra para atualizar escala
         self.property_changed.emit("Transform", "scale", None)
         EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="Transform", property_name="scale", value=None)
 
@@ -261,115 +244,3 @@ class SceneViewModel(QObject):
             bc.height = max(1, int(scale[1]))
         elif cc:
             cc.radius = max(1, int(scale[0] / 2))
-
-    def commit_rigidbody_property(self, prop_name: str, old_value: Any, new_value: Any) -> None:
-        selected = self.selected_object
-        if not selected:
-            return
-        if old_value == new_value:
-            return
-            
-        from engine.physics.rigidbody import RigidBody
-        rb = selected.get_component(RigidBody)
-        if not rb:
-            return
-
-        from editor.runtime.property_commands import SetPropertyCommand
-
-        # Callback para disparar notificações MVVM ao executar/desfazer
-        def update_fn(val: Any) -> None:
-            if prop_name in ("mass", "gravity_scale"):
-                val = float(val)
-            elif prop_name == "is_kinematic":
-                val = bool(val)
-            setattr(rb, prop_name, val)
-            self.property_changed.emit("RigidBody", prop_name, val)
-            EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="RigidBody", property_name=prop_name, value=val)
-
-        cmd = SetPropertyCommand(
-            target=rb,
-            property_name=prop_name,
-            old_value=old_value,
-            new_value=new_value,
-            on_changed=update_fn
-        )
-
-        if getattr(self, "command_manager", None) is not None:
-            self.command_manager.execute(cmd)
-
-    def commit_collider_property(self, prop_name: str, old_value: Any, new_value: Any) -> None:
-        selected = self.selected_object
-        if not selected:
-            return
-        if old_value == new_value:
-            return
-
-        from engine.physics.collider import BoxCollider, CircleCollider
-        bc = selected.get_component(BoxCollider)
-        cc = selected.get_component(CircleCollider)
-        col = bc if bc else cc
-        if not col:
-            return
-
-        from editor.runtime.property_commands import SetPropertyCommand
-
-        def update_fn(val: Any) -> None:
-            if prop_name in ("width", "height", "radius"):
-                val = int(val)
-            elif prop_name == "is_trigger":
-                val = bool(val)
-            setattr(col, prop_name, val)
-
-            # Lógica de sincronização com o Transform do GameObject
-            if bc:
-                if prop_name == "width":
-                    selected.transform.scale[0] = float(val)
-                elif prop_name == "height":
-                    selected.transform.scale[1] = float(val)
-            elif cc:
-                if prop_name == "radius":
-                    selected.transform.scale[0] = float(val * 2)
-                    selected.transform.scale[1] = float(val * 2)
-
-            self.property_changed.emit("Collider", prop_name, val)
-            EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="Collider", property_name=prop_name, value=val)
-            
-            # Sincroniza escala do Transform correspondente
-            self.property_changed.emit("Transform", "scale", None)
-            EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="Transform", property_name="scale", value=None)
-
-        cmd = SetPropertyCommand(
-            target=col,
-            property_name=prop_name,
-            old_value=old_value,
-            new_value=new_value,
-            on_changed=update_fn
-        )
-
-        if getattr(self, "command_manager", None) is not None:
-            self.command_manager.execute(cmd)
-
-    def commit_script_property(self, old_value: str, new_value: str) -> None:
-        selected = self.selected_object
-        if not selected:
-            return
-        if old_value == new_value:
-            return
-
-        from editor.runtime.property_commands import SetPropertyCommand
-
-        def update_fn(val: str) -> None:
-            selected.script_path = val
-            self.property_changed.emit("Script", "script_path", val)
-            EventBus.emit(EVENT_PROPERTY_CHANGED, component_name="Script", property_name="script_path", value=val)
-
-        cmd = SetPropertyCommand(
-            target=selected,
-            property_name="script_path",
-            old_value=old_value,
-            new_value=new_value,
-            on_changed=update_fn
-        )
-
-        if getattr(self, "command_manager", None) is not None:
-            self.command_manager.execute(cmd)
