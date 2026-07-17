@@ -105,7 +105,6 @@ class InterfaceSmokeTest(QMainWindow):
         self.viewport_host.setObjectName("IsolatedViewportHost")
         self.viewport_host.setFrameShape(QFrame.StyledPanel)
         self.viewport_host.setAttribute(Qt.WA_NativeWindow, True)
-        self.viewport_host.setStyleSheet("#IsolatedViewportHost { background: #16181f; }")
 
         # Em vez de colocar a viewport_host como widget da aba e perder o HWND parent ao alternar,
         # fazemos a viewport_tabs atuar apenas como seletor visual e inserimos o viewport_host diretamente
@@ -1167,10 +1166,6 @@ class InterfaceSmokeTest(QMainWindow):
             self.runtime_debug_body,
         ):
             component_body.setObjectName("InspectorComponentBody")
-            component_body.setStyleSheet(
-                "#InspectorComponentBody { background: #202228; border-left: 1px solid #30343c; "
-                "border-right: 1px solid #30343c; border-bottom: 1px solid #30343c; }"
-            )
 
         # O cabeçalho e corpo de scripts/custom agora são inseridos de forma modular dinâmica para cada script ativo
         self.script_containers = []
