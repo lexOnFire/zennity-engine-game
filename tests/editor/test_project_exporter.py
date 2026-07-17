@@ -204,7 +204,7 @@ def test_export_ignores_legacy_python_scripts(tmp_path: Path) -> None:
 def test_export_preserves_distinct_uppercase_and_lowercase_asset_roots(tmp_path: Path) -> None:
     project = tmp_path / "project"
     (project / "Assets" / "Scripts").mkdir(parents=True)
-    (project / "assets" / "scripts").mkdir(parents=True)
+    (project / "assets" / "scripts").mkdir(parents=True, exist_ok=True)
     (project / "Assets" / "Scripts" / "player.py").write_text("def on_update(game, dt): pass\n", encoding="utf-8")
     (project / "assets" / "scripts" / "enemy.py").write_text("def on_update(game, dt): pass\n", encoding="utf-8")
     _install_runtime_sources(project)

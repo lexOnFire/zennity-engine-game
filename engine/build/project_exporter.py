@@ -127,6 +127,9 @@ def _write_development_project(project_root: Path, scene_path: Path, destination
     if assets_source.is_dir():
         shutil.copytree(assets_source, destination / "Assets", dirs_exist_ok=True)
     lowercase_assets = project_root / "assets"
+    # Only copy the lowercase 'assets' folder when it is genuinely distinct from
+    # 'Assets'. On case-insensitive filesystems (Windows / macOS) they resolve to
+    # the same directory, so we compare resolved paths to avoid a duplicate copy.
     if lowercase_assets.is_dir() and (
         not assets_source.is_dir() or lowercase_assets.resolve() != assets_source.resolve()
     ):
@@ -156,12 +159,23 @@ def _write_development_project(project_root: Path, scene_path: Path, destination
     (destination / "executar.bat").write_text("@echo off\npython main.py\npause\n", encoding="utf-8")
     (destination / "executar.sh").write_text("#!/usr/bin/env sh\npython3 main.py\n", encoding="utf-8")
     (destination / "requirements.txt").write_text("pygame-ce>=2.5\n", encoding="utf-8")
+
+    # Build the asset_roots list without duplicates, using case-insensitive
+    # comparison so that on Windows 'Assets' and 'assets' are never both listed
+    # when they refer to the same directory.
+    seen_lower: set[str] = set()
+    asset_roots: list[str] = []
+    for name in ("Assets", "assets"):
+        if (destination / name).is_dir() and name.lower() not in seen_lower:
+            seen_lower.add(name.lower())
+            asset_roots.append(name)
+
     manifest = {
         "project_name": safe_name,
         "entry_scene": "Data/main.zscene",
         "runtime": "pygame",
         "development": True,
-        "asset_roots": [name for name in ("Assets", "assets") if (destination / name).is_dir()],
+        "asset_roots": asset_roots,
         "asset_counts": _asset_inventory(destination),
     }
     (destination / "package_manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -169,10 +183,14 @@ def _write_development_project(project_root: Path, scene_path: Path, destination
 
 def _asset_inventory(root: Path) -> dict[str, int]:
     counts = {group: 0 for group in RUNTIME_ASSET_GROUPS}
+    seen_lower: set[str] = set()
     for directory_name in ("Assets", "assets"):
+        if directory_name.lower() in seen_lower:
+            continue
         directory = root / directory_name
         if not directory.is_dir():
             continue
+        seen_lower.add(directory_name.lower())
         for path in directory.rglob("*"):
             if not path.is_file():
                 continue
