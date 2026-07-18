@@ -31,6 +31,10 @@ from editor.widgets.phase1_viewport import Phase1ViewportWidget
 from editor.widgets.render_pipeline_profiler import RenderPipelineProfilerPanel
 from engine.scene import load_scene, save_scene
 
+from engine.game_object import GameObject
+from engine.physics.collider import BoxCollider
+from engine.physics.rigidbody import RigidBody
+
 
 class ZennityPhase1Editor(ZennityPremiumEditor):
     """Editor Premium com Fase 1 ativada."""
@@ -46,7 +50,43 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         # nao recalcular automaticamente.
         self._hierarchy_splitter_user_resized = False
         super().__init__()
+        self._ensure_default_scene()
         self.editor_context.tools.subscribe(self._on_runtime_tool_changed)
+
+    def _ensure_default_scene(self) -> None:
+        if self.scene_model.get_root_objects():
+            return
+
+        platform = GameObject("Platform", tag="Ground")
+        platform.mesh_type = "rect"
+        platform.transform.position = [0.0, 160.0, 0.0]
+        platform.transform.scale = [320.0, 24.0, 1.0]
+
+        platform_collider = platform.add_component(
+            BoxCollider(width=320, height=24)
+        )
+        platform_body = platform.add_component(RigidBody())
+        platform_body.is_kinematic = True
+
+        player = GameObject("Player", tag="Player")
+        player.mesh_type = "rect"
+        player.transform.position = [0.0, 40.0, 0.0]
+        player.transform.scale = [36.0, 48.0, 1.0]
+        player.add_component(BoxCollider(width=36, height=48))
+        player.add_component(
+            RigidBody(
+                mass=1.0,
+                gravity_scale=1.0,
+            )
+        )
+
+        self.scene_model.add_object(platform)
+        self.scene_model.add_object(player)
+
+        self.viewport._sync_scene_from_model()
+        self.editor_scene = self.viewport.active_scene
+        self.game_viewport.active_scene = self.editor_scene
+        self.refresh_hierarchy_from_viewport()
 
     def _build_menu(self) -> None:
         bar = self.menuBar()
@@ -403,9 +443,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         return getattr(self.viewport, "active_scene", None)
 
     def _editor_scene(self) -> Any:
-        if self.editor_scene is None:
-            self.editor_scene = getattr(self.viewport, "active_scene", None)
-        return self.editor_scene
+        return getattr(self.viewport, "active_scene", None)
 
     def _clear_scene_objects(self) -> None:
         scene = self._editor_scene()
@@ -462,7 +500,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
                 scene_selected = self.viewport._selected_from_scene()
             self.select_object(scene_selected if scene_selected in objects else None)
         self.hierarchy.refresh_objects(objects)
-        # So auto-redimensiona se o splitter nunca foi ajustado pelo usuario
+                # So auto-redimensiona se o splitter nunca foi ajustado pelo usuario
         if not getattr(self, "_hierarchy_splitter_user_resized", False):
             self._sync_hierarchy_panel_height(self.object_count)
         if hasattr(self, "stats"):
@@ -589,6 +627,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
     def on_viewport_selection_changed(self, obj: Any) -> None:
         self.inspector.load_object(obj)
         self.hierarchy.select_object(obj)
+        self._sync_scene_selection_index(obj)
 
     def on_viewport_object_changed(self, obj: Any) -> None:
         if obj is self.editor_context.selection.selected:

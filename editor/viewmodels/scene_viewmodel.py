@@ -2,6 +2,7 @@ from typing import Optional
 from PySide6.QtCore import QObject, Signal, Slot
 from engine.game_object import GameObject
 from editor.models.scene_model import SceneModel
+from editor.runtime.selection_manager import SelectionManager
 from editor.core.event_bus import (
     EventBus, EVENT_SELECTION_CHANGED, EVENT_HIERARCHY_UPDATED, EVENT_PROPERTY_CHANGED
 )
@@ -25,14 +26,28 @@ class SceneViewModel(QObject):
     hierarchy_updated = Signal()
     property_changed = Signal(str, str, object)
 
-    def __init__(self, model: SceneModel) -> None:
+    def __init__(
+        self,
+        model: SceneModel,
+        selection_manager: Optional[SelectionManager] = None,
+    ) -> None:
         super().__init__()
         self._model = model
+        self._selection_manager = selection_manager
         self._selected_object: Optional[GameObject] = None
-        
-        # Conecta sinais do modelo
-        self._model.object_structure_changed.connect(self.on_model_hierarchy_changed)
 
+        if self._selection_manager is not None:
+            self._selected_object = self._selection_manager.selected
+            self._selection_manager.subscribe(self._on_selection_manager_changed)
+
+    # Conecta sinais do modelo
+        self._model.object_structure_changed.connect(
+            self.on_model_hierarchy_changed
+        )
+    @property
+    def selection_manager(self) -> Optional[SelectionManager]:
+        """Gerenciador central de seleção usado pelo editor."""
+        return self._selection_manager
     # ------------------------------------------------------------------ #
     # Seleção — baseada em UUID para evitar instâncias duplicadas         #
     # ------------------------------------------------------------------ #
@@ -44,17 +59,33 @@ class SceneViewModel(QObject):
 
     @selected_object.setter
     def selected_object(self, obj: Optional[GameObject]) -> None:
-        """
-        Define o objeto selecionado comparando por UUID.
-        Painéis externos nunca devem armazenar cópias independentes;
-        use selected_id + find_object_by_id() para resolver a instância.
-        """
+        """Atualiza a seleção usando o SelectionManager quando disponível."""
+        if self._selection_manager is not None:
+            self._selection_manager.set_selected(obj)
+            return
+
+        self._apply_selection(obj)
+
+
+    def _on_selection_manager_changed(
+        self,
+        obj: Optional[GameObject],
+    ) -> None:
+        """Recebe alterações feitas pela Hierarchy, Viewport ou Inspector."""
+        self._apply_selection(obj)
+
+
+    def _apply_selection(self, obj: Optional[GameObject]) -> None:
+        """Atualiza a seleção local e mantém compatibilidade com sinais antigos."""
         current_id = self._selected_object.id if self._selected_object else None
-        new_id     = obj.id if obj else None
-        if current_id != new_id:
-            self._selected_object = obj
-            self.selection_changed.emit(obj)
-            EventBus.emit(EVENT_SELECTION_CHANGED, obj=obj)
+        new_id = obj.id if obj else None
+
+        if current_id == new_id:
+            return
+
+        self._selected_object = obj
+        self.selection_changed.emit(obj)
+        EventBus.emit(EVENT_SELECTION_CHANGED, obj=obj)
 
     @property
     def selected_id(self) -> Optional[str]:
@@ -111,6 +142,11 @@ class SceneViewModel(QObject):
         elif shape_type == "Trigger":
             go.transform.scale = np.array([80.0, 80.0, 1.0], dtype=np.float32)
             go.add_component(BoxCollider(width=80, height=80, is_trigger=True))
+        elif shape_type == "Camera 2D":
+            from engine.graphics.camera import Camera
+            from engine.graphics.camera2d import Camera2D
+            go.add_component(Camera())
+            go.add_component(Camera2D())
         elif shape_type == "Mola":
             go.transform.scale = np.array([40.0, 20.0, 1.0], dtype=np.float32)
             go.add_component(BoxCollider(width=40, height=20))
@@ -119,6 +155,7 @@ class SceneViewModel(QObject):
             
         self._model.add_object(go)
         self.selected_object = go
+        self.hierarchy_updated.emit()
 
     @Slot()
     def delete_selected(self) -> None:
@@ -126,6 +163,7 @@ class SceneViewModel(QObject):
             obj_to_remove = self._selected_object
             self.selected_object = None
             self._model.remove_object(obj_to_remove)
+            self.hierarchy_updated.emit()
 
     @Slot()
     def duplicate_selected(self) -> None:
@@ -158,6 +196,7 @@ class SceneViewModel(QObject):
                 
         self._model.add_object(go)
         self.selected_object = go
+        self.hierarchy_updated.emit()
 
     def rename_object(self, obj: GameObject, new_name: str) -> None:
         if obj and new_name.strip():
