@@ -1152,8 +1152,10 @@ class LogicGraphRuntime:
         elif node_type == "not":
             value = not bool(self._read_input(node_id, "value", False, game, dt, resolving))
         elif node_type in {"add_number", "subtract_number", "multiply_number", "divide_number"}:
-            left = float(self._read_input(node_id, "a", properties.get("a", 0.0), game, dt, resolving))
-            right = float(self._read_input(node_id, "b", properties.get("b", 0.0), game, dt, resolving))
+            l_val = self._read_input(node_id, "a", properties.get("a", 0.0), game, dt, resolving)
+            r_val = self._read_input(node_id, "b", properties.get("b", 0.0), game, dt, resolving)
+            left = float(l_val) if l_val is not None else 0.0
+            right = float(r_val) if r_val is not None else 0.0
             if node_type == "add_number":
                 value = left + right
             elif node_type == "subtract_number":
@@ -1165,7 +1167,8 @@ class LogicGraphRuntime:
                     raise RuntimeError("Divisão por zero.")
                 value = left / right
         elif node_type == "absolute_number":
-            value = abs(float(self._read_input(node_id, "value", properties.get("value", 0.0), game, dt, resolving)))
+            v = self._read_input(node_id, "value", properties.get("value", 0.0), game, dt, resolving)
+            value = abs(float(v)) if v is not None else 0.0
         elif node_type == "clamp_number":
             raw = float(self._read_input(node_id, "value", properties.get("value", 0.0), game, dt, resolving))
             minimum = float(self._read_input(node_id, "minimum", properties.get("minimum", 0.0), game, dt, resolving))

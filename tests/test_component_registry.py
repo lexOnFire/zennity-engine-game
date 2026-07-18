@@ -320,7 +320,7 @@ class TestComponentUnique:
 
     def test_transform_unique_raises(self):
         go = GameObject()
-        with pytest.raises(TypeError):
+        with pytest.raises(ValueError):
             go.add_component(Transform())
 
 

@@ -90,3 +90,25 @@ class RigidBody(Component):
 
         # Reset external forces (gravity is NOT here — it's in velocity directly)
         self.acceleration[:] = 0.0
+
+    def serialize_properties(self) -> dict:
+        return {
+            "mass": float(self.mass),
+            "gravity_scale": float(self.gravity_scale),
+            "drag": float(self.drag),
+            "use_gravity": bool(self.use_gravity),
+            "is_kinematic": bool(self.is_kinematic),
+            "velocity": self.velocity.tolist(),
+            "acceleration": self.acceleration.tolist(),
+        }
+
+    def deserialize_properties(self, data: dict) -> None:
+        self.mass = float(data.get("mass", self.mass))
+        self.gravity_scale = float(data.get("gravity_scale", self.gravity_scale))
+        self.drag = float(data.get("drag", self.drag))
+        self.use_gravity = bool(data.get("use_gravity", self.use_gravity))
+        self.is_kinematic = bool(data.get("is_kinematic", self.is_kinematic))
+        if "velocity" in data:
+            self.velocity = np.array(data["velocity"], dtype=np.float32)
+        if "acceleration" in data:
+            self.acceleration = np.array(data["acceleration"], dtype=np.float32)

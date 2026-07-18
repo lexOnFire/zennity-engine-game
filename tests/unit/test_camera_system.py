@@ -132,11 +132,14 @@ def test_runtime_scene_camera_isolation_and_fallback():
     surface = pygame.Surface((100, 100))
     runtime_scene.draw(surface)
     # A cor padrão da câmera (30, 30, 30) deve ser usada para limpar a tela
-    try:
-        surface.fill.assert_any_call((30, 30, 30))
-    except AssertionError:
-        # Se assert_any_call falhar, tentamos pegar a tupla RGB que pode ter vindo como list
-        surface.fill.assert_any_call([30, 30, 30])
+    if hasattr(surface, "mock_fill"):
+        try:
+            surface.mock_fill.assert_any_call((30, 30, 30))
+        except AssertionError:
+            surface.mock_fill.assert_any_call([30, 30, 30])
+    else:
+        color = surface.get_at((0, 0))
+        assert color[0] == 30 and color[1] == 30 and color[2] == 30
 
     # Parando o runtime, o CameraManager é limpo de novo
     runtime_scene.stop_runtime()

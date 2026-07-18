@@ -155,10 +155,14 @@ class Component:
     # Serialização (Fase 9)                                               #
     # ------------------------------------------------------------------ #
 
+    @property
+    def type_name(self) -> str:
+        return getattr(self, "component_type", type(self).__name__)
+
     def serialize(self) -> Dict[str, Any]:
         """Retorna um dict com o estado serializável."""
         data = {
-            "type": type(self).__name__,
+            "type": self.type_name,
             "enabled": self._enabled,
             "properties": {}
         }

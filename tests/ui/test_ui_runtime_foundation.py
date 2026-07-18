@@ -68,8 +68,8 @@ def test_ui_renderer_draws_image_placeholder_and_button() -> None:
 
     renderer.render(scene, surface)
 
-    assert surface.get_at((4, 4)).a > 0
-    assert surface.get_at((30, 8)).a > 0
+    assert surface.get_at((4, 4))[3] > 0
+    assert surface.get_at((30, 8))[3] > 0
 
 
 def test_ui_components_serialize_and_deserialize() -> None:

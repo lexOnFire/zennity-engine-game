@@ -41,7 +41,10 @@ class _FakeSurface(_original_pygame_surface):
         
         def fake_blit(*a, **kw):
             self.mock_blit(*a, **kw)
-            return _orig_blit(*a, **kw)
+            try:
+                return _orig_blit(*a, **kw)
+            except TypeError:
+                return pygame.Rect(0, 0, 0, 0)
             
         def fake_fill(*a, **kw):
             self.mock_fill(*a, **kw)

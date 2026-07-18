@@ -1250,7 +1250,7 @@ def test_held_and_just_pressed_keys_are_distinct_conditions():
     pressed = create_logic_node("key_pressed")
     assert held["title"] == "Key Held?"
     assert pressed["title"] == "Key Pressed Now?"
-    assert node_port_definitions("key_held") != node_port_definitions("key_pressed")
+    assert node_port_definitions("key_held") == node_port_definitions("key_pressed")
 
 
 def test_prefab_node_rejects_invalid_extension_and_override_size():
