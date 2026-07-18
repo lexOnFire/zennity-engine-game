@@ -27,6 +27,7 @@ class _FakeSurface(pygame.Surface):
     enquanto preserva o funcionamento real para funções em C do PyGame.
     O blit é tolerante: se o surface fonte não for um pygame.Surface real
     (ex: _FakeSurface de teste local), não delega ao C-level.
+    Suporta set_at/get_at para testes que verificam pixels (ex: flip_h).
     """
     _fake = True
     SRCALPHA = 65536
@@ -34,6 +35,8 @@ class _FakeSurface(pygame.Surface):
     def __init__(self, size=(800, 600), flags=0):
         super().__init__(size, flags)
         self._size = tuple(size)
+        self._flags = flags
+        self._pixels: dict[tuple[int, int], tuple] = {}
         _real_blit  = super().blit
         _real_fill  = super().fill
         _real_alpha = super().set_alpha
@@ -63,6 +66,9 @@ class _FakeSurface(pygame.Surface):
     def set_alpha(self, *args, **kwargs):
         return self.set_alpha_mock(*args, **kwargs)
 
+    # set_at e get_at delegam ao C-level (pygame.Surface real)
+    # _pixels é mantido apenas para compatibilidade com _make_fake_flip
+
     def copy(self):
         new_surf = super().copy()
         # Inicializa mocks na nova instância copiada, pois o C-level copy ignora __init__
@@ -78,12 +84,30 @@ class _FakeSurface(pygame.Surface):
         new_surf.blit_mock = MagicMock(side_effect=_safe_blit_copy)
         new_surf.fill_mock = MagicMock(side_effect=_real_fill)
         new_surf.set_alpha_mock = MagicMock(side_effect=_real_alpha)
+        # _pixels pode não existir se o surf veio do C-level subsurface (ignora __init__)
+        new_surf._pixels = dict(getattr(self, "_pixels", {}))
+        new_surf._alpha = getattr(self, "_alpha", 255)
         return new_surf
 
     # Mantemos algumas propriedades esperadas por testes legados
     def get_alpha(self):
         return super().get_alpha() or 255
 
+
+def _make_fake_flip(fake_cls):
+    """
+    Retorna uma versão de pygame.transform.flip que:
+      - como _FakeSurface é subclasse real de pygame.Surface, delega ao SDL;
+      - mantém compatibilidade com surfaces que não são pygame.Surface.
+    """
+    import pygame as _pg
+    _real_flip = _pg.transform.flip
+
+    def _fake_flip(surface, flip_x: bool, flip_y: bool):
+        # _FakeSurface herda pygame.Surface — usa o flip real do SDL
+        return _real_flip(surface, flip_x, flip_y)
+
+    return _fake_flip
 
 
 def pytest_configure(config):
@@ -107,6 +131,7 @@ def pytest_configure(config):
             return pygame.Rect(0, 0, 0, 0)
     pygame.draw.rect       = MagicMock(side_effect=_safe_draw_rect)
     pygame.SRCALPHA        = 65536
+    pygame.transform.flip  = _make_fake_flip(_FakeSurface)  # type: ignore[assignment]
 
     # Garante que engine.* seja importado pela 1ª vez JÁ com os stubs
     for mod in list(sys.modules.keys()):
