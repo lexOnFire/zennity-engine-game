@@ -21,8 +21,8 @@
     {
       "id": "start",
       "type": "event_start",
-      "title": "Ao iniciar",
-      "category": "Eventos",
+      "title": "On Start",
+      "category": "Events",
       "position": [
         20.0,
         100.0
@@ -38,7 +38,7 @@
       "id": "advance",
       "type": "start_continuous_motion",
       "title": "Iniciar movimento permanente",
-      "category": "Posição",
+      "category": "Position",
       "position": [
         280.0,
         100.0
@@ -61,7 +61,7 @@
       "id": "trigger",
       "type": "event_trigger_enter",
       "title": "Ao entrar na área",
-      "category": "Eventos",
+      "category": "Events",
       "position": [
         20.0,
         360.0
@@ -77,7 +77,7 @@
       "id": "other_tag",
       "type": "get_tag",
       "title": "Ler Tag do objeto",
-      "category": "Objetos",
+      "category": "Objects",
       "position": [
         260.0,
         280.0
@@ -93,7 +93,7 @@
       "id": "is_bolt",
       "type": "compare_text",
       "title": "Comparar texto",
-      "category": "Condição",
+      "category": "Condition",
       "position": [
         500.0,
         360.0
@@ -112,7 +112,7 @@
       "id": "destroy_sequence",
       "type": "sequence",
       "title": "Sequência",
-      "category": "Lógica",
+      "category": "Logic",
       "position": [
         760.0,
         300.0
@@ -130,7 +130,7 @@
       "id": "destroy_enemy",
       "type": "destroy_object",
       "title": "Destruir objeto",
-      "category": "Ação",
+      "category": "Action",
       "position": [
         1020.0,
         220.0
@@ -146,7 +146,7 @@
       "id": "get_score",
       "type": "get_variable",
       "title": "Ler variável",
-      "category": "Variáveis",
+      "category": "Variables",
       "position": [
         1020.0,
         380.0
@@ -165,7 +165,7 @@
       "id": "add_score",
       "type": "add_number",
       "title": "Somar",
-      "category": "Matemática",
+      "category": "Math",
       "position": [
         1260.0,
         380.0
@@ -184,7 +184,7 @@
       "id": "get_damage",
       "type": "get_prefab_parameter",
       "title": "Ler parâmetro do Prefab",
-      "category": "Objetos",
+      "category": "Objects",
       "position": [
         1020.0,
         470.0
@@ -204,7 +204,7 @@
       "id": "save_score",
       "type": "set_variable",
       "title": "Definir variável",
-      "category": "Variáveis",
+      "category": "Variables",
       "position": [
         1500.0,
         380.0
@@ -224,7 +224,7 @@
       "id": "score_sound",
       "type": "play_sound",
       "title": "Tocar som",
-      "category": "Ação",
+      "category": "Action",
       "position": [
         1020.0,
         540.0
@@ -242,7 +242,7 @@
       "id": "is_player",
       "type": "compare_text",
       "title": "Comparar texto",
-      "category": "Condição",
+      "category": "Condition",
       "position": [
         760.0,
         660.0
@@ -261,7 +261,7 @@
       "id": "destroy_on_player",
       "type": "destroy_object",
       "title": "Destruir objeto",
-      "category": "Ação",
+      "category": "Action",
       "position": [
         1020.0,
         660.0

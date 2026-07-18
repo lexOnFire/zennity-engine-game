@@ -16,17 +16,23 @@
     {
       "id": "subgraph_start",
       "type": "subgraph_start",
-      "title": "Início do subgrafo",
-      "category": "Subgrafos",
-      "position": [80.0, 100.0],
+      "title": "Subgraph Start",
+      "category": "Subgraphs",
+      "position": [
+        80.0,
+        100.0
+      ],
       "properties": {}
     },
     {
       "id": "direction_input",
       "type": "subgraph_input",
-      "title": "Direção",
-      "category": "Subgrafos",
-      "position": [80.0, 280.0],
+      "title": "Subgraph Input",
+      "category": "Subgraphs",
+      "position": [
+        80.0,
+        280.0
+      ],
       "properties": {
         "name": "direcao",
         "type": "number",
@@ -36,9 +42,12 @@
     {
       "id": "move_action",
       "type": "move",
-      "title": "Mover objeto",
-      "category": "Movimento",
-      "position": [360.0, 100.0],
+      "title": "Move",
+      "category": "Movement",
+      "position": [
+        360.0,
+        100.0
+      ],
       "properties": {
         "speed": 200.0
       }
@@ -46,9 +55,12 @@
     {
       "id": "direction_output",
       "type": "subgraph_return",
-      "title": "Direção aplicada",
-      "category": "Subgrafos",
-      "position": [650.0, 100.0],
+      "title": "Subgraph Return",
+      "category": "Subgraphs",
+      "position": [
+        650.0,
+        100.0
+      ],
       "properties": {
         "name": "direcao_aplicada",
         "type": "number"

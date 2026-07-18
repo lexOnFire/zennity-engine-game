@@ -21,8 +21,8 @@
     {
       "id": "start",
       "type": "event_start",
-      "title": "Ao iniciar",
-      "category": "Eventos",
+      "title": "On Start",
+      "category": "Events",
       "position": [
         20.0,
         -260.0
@@ -38,7 +38,7 @@
       "id": "speed",
       "type": "get_prefab_parameter",
       "title": "Ler parâmetro do Prefab",
-      "category": "Objetos",
+      "category": "Objects",
       "position": [
         260.0,
         -360.0
@@ -58,7 +58,7 @@
       "id": "direction_x",
       "type": "get_prefab_parameter",
       "title": "Ler parâmetro do Prefab",
-      "category": "Objetos",
+      "category": "Objects",
       "position": [
         260.0,
         -240.0
@@ -78,7 +78,7 @@
       "id": "velocity_x",
       "type": "multiply_number",
       "title": "Multiplicar",
-      "category": "Matemática",
+      "category": "Math",
       "position": [
         520.0,
         -320.0
@@ -97,7 +97,7 @@
       "id": "direction_y",
       "type": "get_prefab_parameter",
       "title": "Ler parâmetro do Prefab",
-      "category": "Objetos",
+      "category": "Objects",
       "position": [
         260.0,
         -100.0
@@ -117,7 +117,7 @@
       "id": "velocity_y",
       "type": "multiply_number",
       "title": "Multiplicar",
-      "category": "Matemática",
+      "category": "Math",
       "position": [
         520.0,
         -140.0
@@ -136,7 +136,7 @@
       "id": "motion",
       "type": "start_continuous_motion",
       "title": "Iniciar movimento permanente",
-      "category": "Posição",
+      "category": "Position",
       "position": [
         780.0,
         -260.0
@@ -159,7 +159,7 @@
       "id": "sound",
       "type": "get_prefab_parameter",
       "title": "Ler parâmetro do Prefab",
-      "category": "Objetos",
+      "category": "Objects",
       "position": [
         520.0,
         20.0
@@ -179,7 +179,7 @@
       "id": "play_sound",
       "type": "play_sound",
       "title": "Tocar som",
-      "category": "Ação",
+      "category": "Action",
       "position": [
         780.0,
         20.0
@@ -197,7 +197,7 @@
       "id": "trigger",
       "type": "event_trigger_enter",
       "title": "Ao entrar na área",
-      "category": "Eventos",
+      "category": "Events",
       "position": [
         20.0,
         120.0
@@ -213,7 +213,7 @@
       "id": "other_tag",
       "type": "get_tag",
       "title": "Ler Tag do objeto",
-      "category": "Objetos",
+      "category": "Objects",
       "position": [
         280.0,
         20.0
@@ -229,7 +229,7 @@
       "id": "is_enemy",
       "type": "compare_text",
       "title": "Comparar texto",
-      "category": "Condição",
+      "category": "Condition",
       "position": [
         520.0,
         120.0
@@ -248,7 +248,7 @@
       "id": "destroy",
       "type": "destroy_object",
       "title": "Destruir objeto",
-      "category": "Ação",
+      "category": "Action",
       "position": [
         780.0,
         120.0

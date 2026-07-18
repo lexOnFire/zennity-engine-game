@@ -21,11 +21,11 @@
     {
       "id": "68e02e0616ac4bdda8d9a09643e4c596",
       "type": "event_start",
-      "title": "Ao iniciar",
-      "category": "Eventos",
+      "title": "On Start",
+      "category": "Events",
       "position": [
-        -490.76,
-        -262.44
+        -505.75,
+        -264.58
       ],
       "editor": {
         "collapsed": false,
@@ -37,11 +37,11 @@
     {
       "id": "828119b7c17e43f29ff0fbb57c270c30",
       "type": "start_texture_scroll",
-      "title": "Iniciar fundo rolante",
-      "category": "Ação",
+      "title": "Start Scrolling Background",
+      "category": "Action",
       "position": [
-        -197.49,
-        -200.6
+        -268.17,
+        -261.64
       ],
       "editor": {
         "collapsed": false,
@@ -49,13 +49,13 @@
         "height": 190.0
       },
       "properties": {
-        "path": "",
+        "path": "Assets/Materials/ceu1.png",
         "speed_x": 0.0,
         "speed_y": -80.0,
         "repeat_x": false,
         "repeat_y": true,
         "parallax": 1.0,
-        "send_to_background": true
+        "send_to_background": false
       }
     }
   ],

@@ -2,58 +2,140 @@
   "format": "zennity.logic_graph",
   "version": 1,
   "name": "Calcular Pontuação",
-  "target": {"type": "name", "value": "Player"},
-  "debug": {"breakpoints": [], "breakpoint_conditions": {}, "watches": []},
+  "target": {
+    "type": "name",
+    "value": "Player"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
   "variables": {},
   "nodes": [
     {
-      "id": "score_start", "type": "subgraph_start", "title": "Início do subgrafo",
-      "category": "Subgrafos", "position": [70.0, 80.0], "properties": {}
+      "id": "score_start",
+      "type": "subgraph_start",
+      "title": "Subgraph Start",
+      "category": "Subgraphs",
+      "position": [
+        70.0,
+        80.0
+      ],
+      "properties": {}
     },
     {
-      "id": "base_score", "type": "subgraph_input", "title": "Pontos base",
-      "category": "Subgrafos", "position": [70.0, 260.0],
-      "properties": {"name": "pontos_base", "type": "number", "default": 10.0}
+      "id": "base_score",
+      "type": "subgraph_input",
+      "title": "Subgraph Input",
+      "category": "Subgraphs",
+      "position": [
+        70.0,
+        260.0
+      ],
+      "properties": {
+        "name": "pontos_base",
+        "type": "number",
+        "default": 10.0
+      }
     },
     {
-      "id": "bonus_value", "type": "number_value", "title": "Multiplicador de bônus",
-      "category": "Variáveis", "position": [320.0, 300.0], "properties": {"value": 2.0}
+      "id": "bonus_value",
+      "type": "number_value",
+      "title": "Number",
+      "category": "Variables",
+      "position": [
+        320.0,
+        300.0
+      ],
+      "properties": {
+        "value": 2.0
+      }
     },
     {
-      "id": "multiply_score", "type": "multiply_number", "title": "Aplicar bônus",
-      "category": "Matemática", "position": [570.0, 240.0], "properties": {"a": 1.0, "b": 1.0}
+      "id": "multiply_score",
+      "type": "multiply_number",
+      "title": "Multiply",
+      "category": "Math",
+      "position": [
+        570.0,
+        240.0
+      ],
+      "properties": {
+        "a": 1.0,
+        "b": 1.0
+      }
     },
     {
-      "id": "limit_score", "type": "clamp_number", "title": "Limitar pontuação",
-      "category": "Matemática", "position": [820.0, 220.0],
-      "properties": {"value": 0.0, "minimum": 0.0, "maximum": 9999.0}
+      "id": "limit_score",
+      "type": "clamp_number",
+      "title": "Clamp Number",
+      "category": "Math",
+      "position": [
+        820.0,
+        220.0
+      ],
+      "properties": {
+        "value": 0.0,
+        "minimum": 0.0,
+        "maximum": 9999.0
+      }
     },
     {
-      "id": "score_result", "type": "subgraph_return", "title": "Pontuação final",
-      "category": "Subgrafos", "position": [1080.0, 80.0],
-      "properties": {"name": "pontuacao_final", "type": "number"}
+      "id": "score_result",
+      "type": "subgraph_return",
+      "title": "Subgraph Return",
+      "category": "Subgraphs",
+      "position": [
+        1080.0,
+        80.0
+      ],
+      "properties": {
+        "name": "pontuacao_final",
+        "type": "number"
+      }
     }
   ],
   "edges": [
     {
-      "id": "score_flow", "from_node": "score_start", "from_port": "next",
-      "to_node": "score_result", "to_port": "in", "kind": "flow"
+      "id": "score_flow",
+      "from_node": "score_start",
+      "from_port": "next",
+      "to_node": "score_result",
+      "to_port": "in",
+      "kind": "flow"
     },
     {
-      "id": "score_base_multiply", "from_node": "base_score", "from_port": "value",
-      "to_node": "multiply_score", "to_port": "a", "kind": "number"
+      "id": "score_base_multiply",
+      "from_node": "base_score",
+      "from_port": "value",
+      "to_node": "multiply_score",
+      "to_port": "a",
+      "kind": "number"
     },
     {
-      "id": "score_bonus_multiply", "from_node": "bonus_value", "from_port": "value",
-      "to_node": "multiply_score", "to_port": "b", "kind": "number"
+      "id": "score_bonus_multiply",
+      "from_node": "bonus_value",
+      "from_port": "value",
+      "to_node": "multiply_score",
+      "to_port": "b",
+      "kind": "number"
     },
     {
-      "id": "score_multiply_limit", "from_node": "multiply_score", "from_port": "value",
-      "to_node": "limit_score", "to_port": "value", "kind": "number"
+      "id": "score_multiply_limit",
+      "from_node": "multiply_score",
+      "from_port": "value",
+      "to_node": "limit_score",
+      "to_port": "value",
+      "kind": "number"
     },
     {
-      "id": "score_limit_result", "from_node": "limit_score", "from_port": "value",
-      "to_node": "score_result", "to_port": "value", "kind": "number"
+      "id": "score_limit_result",
+      "from_node": "limit_score",
+      "from_port": "value",
+      "to_node": "score_result",
+      "to_port": "value",
+      "kind": "number"
     }
   ]
 }
