@@ -85,6 +85,7 @@ def _section(title: str) -> tuple[QWidget, QVBoxLayout]:
 def _float_field(value: float, on_change: callable) -> QDoubleSpinBox:
     field = QDoubleSpinBox()
     field.setObjectName("InspectorNumberField")
+    field.setButtonSymbols(QDoubleSpinBox.NoButtons)
     field.setRange(-999999.0, 999999.0)
     field.setDecimals(2)
     field.setSingleStep(0.1)
@@ -581,6 +582,7 @@ class CameraInspectorPlugin(InspectorPlugin):
 
         # zoom
         sb_zoom = QDoubleSpinBox()
+        sb_zoom.setButtonSymbols(QDoubleSpinBox.NoButtons)
         sb_zoom.setRange(0.01, 100.0)
         sb_zoom.setSingleStep(0.1)
         sb_zoom.setValue(float(component.zoom))
@@ -641,21 +643,25 @@ class CameraInspectorPlugin(InspectorPlugin):
         current_rect = getattr(component, "viewport_rect", (0.0, 0.0, 1.0, 1.0))
         
         sb_x = QDoubleSpinBox()
+        sb_x.setButtonSymbols(QDoubleSpinBox.NoButtons)
         sb_x.setRange(0.0, 1.0)
         sb_x.setSingleStep(0.1)
         sb_x.setValue(current_rect[0])
         
         sb_y = QDoubleSpinBox()
+        sb_y.setButtonSymbols(QDoubleSpinBox.NoButtons)
         sb_y.setRange(0.0, 1.0)
         sb_y.setSingleStep(0.1)
         sb_y.setValue(current_rect[1])
         
         sb_w = QDoubleSpinBox()
+        sb_w.setButtonSymbols(QDoubleSpinBox.NoButtons)
         sb_w.setRange(0.0, 1.0)
         sb_w.setSingleStep(0.1)
         sb_w.setValue(current_rect[2])
         
         sb_h = QDoubleSpinBox()
+        sb_h.setButtonSymbols(QDoubleSpinBox.NoButtons)
         sb_h.setRange(0.0, 1.0)
         sb_h.setSingleStep(0.1)
         sb_h.setValue(current_rect[3])
@@ -712,6 +718,7 @@ class AudioSourceInspectorPlugin(InspectorPlugin):
 
         # volume
         sb_volume = QDoubleSpinBox()
+        sb_volume.setButtonSymbols(QDoubleSpinBox.NoButtons)
         sb_volume.setRange(0.0, 1.0)
         sb_volume.setSingleStep(0.05)
         sb_volume.setValue(float(component.volume))
@@ -722,6 +729,7 @@ class AudioSourceInspectorPlugin(InspectorPlugin):
 
         # pitch
         sb_pitch = QDoubleSpinBox()
+        sb_pitch.setButtonSymbols(QDoubleSpinBox.NoButtons)
         sb_pitch.setRange(0.1, 3.0)
         sb_pitch.setSingleStep(0.05)
         sb_pitch.setValue(float(component.pitch))
