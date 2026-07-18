@@ -39,13 +39,38 @@ def qapp() -> QApplication:
     return app
 
 
-@pytest.fixture
-def phase1_editor(qapp: QApplication) -> ZennityPhase1Editor:
+@pytest.fixture(scope="module")
+def shared_phase1_editor(qapp: QApplication) -> ZennityPhase1Editor:
     editor = ZennityPhase1Editor()
     yield editor
     editor.close()
     editor.deleteLater()
     qapp.processEvents()
+
+
+@pytest.fixture
+def phase1_editor(shared_phase1_editor: ZennityPhase1Editor) -> ZennityPhase1Editor:
+    # Reset estado
+    shared_phase1_editor.editor_context.commands.clear()
+    shared_phase1_editor._update_undo_redo_states()
+    shared_phase1_editor.editor_context.tools.set_active_tool(EditorTool.SELECT)
+    shared_phase1_editor.editor_context.state.snap_enabled = False
+    shared_phase1_editor.editor_context.state.snap_angle = 15
+    shared_phase1_editor.editor_context.selection.clear()
+    
+    for obj in shared_phase1_editor.scene_objects():
+        import numpy as np
+        obj.transform.position = np.array([0, 0, 0], dtype=np.float32)
+        obj.transform.rotation = np.array([0, 0, 0], dtype=np.float32)
+        obj.transform.scale = np.array([1, 1, 1], dtype=np.float32)
+        obj.transform.rz = 0.0
+        
+    shared_phase1_editor.viewport._rotate_drag_object = None
+    shared_phase1_editor.viewport._rotate_current_mouse = None
+    shared_phase1_editor.viewport._move_drag_object = None
+    shared_phase1_editor.viewport.active_scene.playing = False
+    
+    return shared_phase1_editor
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
