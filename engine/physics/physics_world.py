@@ -63,9 +63,20 @@ class PhysicsWorld:
 
     def step(self, delta_time: float | None = None) -> None:
         dt = Time.fixed_delta_time if delta_time is None else float(delta_time)
+
         for body in list(self.rigidbodies):
-            if self._component_active(body):
-                body.integrate(dt)
+            if not self._component_active(body):
+                continue
+
+            integrate = getattr(body, "integrate", None)
+            if callable(integrate):
+                integrate(dt)
+                continue
+
+            update = getattr(body, "update", None)
+            if callable(update):
+                update(dt)
+
         self.detect_collisions()
 
     def detect_collisions(self) -> list[PhysicsContact]:

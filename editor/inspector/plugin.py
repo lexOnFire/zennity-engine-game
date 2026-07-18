@@ -14,7 +14,8 @@ class InspectorPlugin:
     title: str | None = None
 
     def supports(self, component: Any) -> bool:
-        return getattr(component, "type_name", type(component).__name__) == self.component_type
+        comp_type = getattr(component, "component_type", getattr(component, "type_name", type(component).__name__))
+        return comp_type == self.component_type
 
     def create_widget(
         self,
@@ -47,9 +48,10 @@ class InspectorPlugin:
         if command_manager is None:
             apply()
             return
+        comp_type = getattr(component, "component_type", getattr(component, "type_name", type(component).__name__))
         command_manager.execute(
             FunctionCommand(
-                f"Set {getattr(component, 'type_name', type(component).__name__)}.{property_name}",
+                f"Set {comp_type}.{property_name}",
                 apply,
                 undo,
             )

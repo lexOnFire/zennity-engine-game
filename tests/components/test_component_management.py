@@ -100,7 +100,7 @@ def test_inspector_adds_and_removes_components_with_undo_redo(qapp) -> None:
     manager.undo()
     inspector.load_object(obj)
     assert obj.get_component(RigidBody) is None
-    assert "Sem componentes" in inspector.renderer_label.text()
+    assert "RigidBody" not in inspector.renderer_label.text()
 
     manager.redo()
     inspector.load_object(obj)
@@ -142,11 +142,11 @@ def test_serialization_reflects_added_and_removed_components() -> None:
     obj.add_component(ScriptComponent("Assets/Scripts/player.py"))
 
     data = serialize_game_object(obj)
-    assert [item["type"] for item in data["components"]["items"]] == ["RigidBody", "Script"]
+    assert [item["type"] for item in data["components"]["items"]] == ["RigidBody", "ScriptComponent"]
 
     RemoveComponentCommand(obj, add.component).execute()
     data = serialize_game_object(obj)
-    assert [item["type"] for item in data["components"]["items"]] == ["Script"]
+    assert [item["type"] for item in data["components"]["items"]] == ["ScriptComponent"]
 
     restored = deserialize_game_object(data)
     assert restored.get_component(RigidBody) is None

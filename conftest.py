@@ -14,51 +14,51 @@ from unittest.mock import MagicMock
 import pytest
 
 
-class _FakeSurface:
+import pygame
+_original_pygame_surface = pygame.Surface
+
+class _FakeSurface(_original_pygame_surface):
     """
     Surface mínima que rastreia blit/fill/set_alpha via MagicMock.
-    Suporta set_at/get_at para testes que verificam pixels (ex: flip_h).
     """
     _fake = True
     SRCALPHA = 65536
 
-    def __init__(self, size=(800, 600), flags=0):
-        self._size  = tuple(size)
-        self._flags = flags
+    def __init__(self, size=(800, 600), flags=0, *args, **kwargs):
+        super().__init__(size, flags, *args, **kwargs)
+        
+        self._fake = True
         self._alpha = 255
-        self._pixels: dict[tuple[int, int], tuple] = {}
-        self.blit      = MagicMock()
-        self.fill      = MagicMock()
-        self.set_alpha = MagicMock(side_effect=lambda a: setattr(self, "_alpha", a))
-
-    def get_size(self):   return self._size
-    def get_width(self):  return self._size[0]
-    def get_height(self): return self._size[1]
-    def get_alpha(self):  return self._alpha
-
-    def set_at(self, pos: tuple[int, int], color) -> None:
-        """Armazena a cor de um pixel no buffer interno."""
-        self._pixels[pos] = tuple(color)
-
-    def get_at(self, pos: tuple[int, int]) -> tuple:
-        """Retorna a cor de um pixel (RGBA). Padrão: preto opaco."""
-        return self._pixels.get(pos, (0, 0, 0, 255))
-
-    def convert(self, *args, **kwargs):
-        return self
-
-    def convert_alpha(self, *args, **kwargs):
-        return self
-
-    def copy(self):
-        s = _FakeSurface(self._size, self._flags)
-        s._pixels = dict(self._pixels)
-        s._alpha = self._alpha
-        return s
-
-    def get_rect(self, **kwargs):
-        import pygame
-        return pygame.Rect(0, 0, self._size[0], self._size[1])
+        self._pixels = {}
+        
+        from unittest.mock import MagicMock
+        self.mock_blit = MagicMock()
+        self.mock_fill = MagicMock()
+        
+        # Guardamos as funções originais
+        _orig_blit = self.blit
+        _orig_fill = self.fill
+        
+        def fake_blit(*a, **kw):
+            self.mock_blit(*a, **kw)
+            return _orig_blit(*a, **kw)
+            
+        def fake_fill(*a, **kw):
+            self.mock_fill(*a, **kw)
+            return _orig_fill(*a, **kw)
+            
+        self.blit = fake_blit
+        self.fill = fake_fill
+        
+        def fake_set_at(pos, color):
+            self._pixels[pos] = tuple(color)
+            _original_pygame_surface.set_at(self, pos, color)
+            
+        def fake_get_at(pos):
+            return self._pixels.get(pos, (0, 0, 0, 255))
+            
+        self.set_at = fake_set_at
+        self.get_at = fake_get_at
 
 
 def _make_fake_flip(fake_cls):

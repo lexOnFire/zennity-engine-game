@@ -304,7 +304,7 @@ class Animator(Component):
     def serialize_properties(self) -> dict[str, Any]:
         return {
             "default_clip": self._default,
-            "current_clip": self.current_clip,
+            "current_clip_name": self.current_clip,
             "speed": float(self.speed),
             "playing": bool(self._playing),
             "paused": bool(self._paused),
@@ -323,7 +323,11 @@ class Animator(Component):
             if isinstance(clip_data, dict):
                 clip = AnimationClip.deserialize(clip_data)
                 self._clips[clip.name] = clip
-        current_name = data.get("current_clip")
+        current_name = data.get("current_clip_name") or data.get("current_clip")
+        if isinstance(current_name, dict):
+            current_name = current_name.get("name")
+        elif hasattr(current_name, "name"):
+            current_name = current_name.name
         self._current = self._clips.get(current_name) if current_name else None
 
     # ------------------------------------------------------------------

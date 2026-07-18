@@ -203,14 +203,10 @@ class ScriptComponent(Component):
     # Serialização
     # ------------------------------------------------------------------
 
-    def serialize(self) -> dict[str, Any]:
+    def serialize_properties(self) -> dict[str, Any]:
         return {
-            "type": self.type_name,
-            "enabled": self.enabled,
-            "properties": {
-                "script_path": self.script_path,
-                "props": dict(self.properties),
-            },
+            "script_path": self.script_path,
+            "props": dict(self.properties),
         }
 
     def deserialize_properties(self, data: dict[str, Any]) -> None:

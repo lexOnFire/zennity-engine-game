@@ -1,0 +1,10 @@
+{
+  "uuid": "0cd0736c-c3c4-4169-a0c6-781b4d94b477",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/ceu5.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": []
+}

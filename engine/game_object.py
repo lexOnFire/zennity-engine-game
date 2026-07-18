@@ -92,12 +92,31 @@ class GameObject:
         if getattr(type(component), 'UNIQUE', False):
             existing = self.get_component(type(component))
             if existing is not None and existing is not component:
-                raise TypeError(
+                raise ValueError(
                     f"Componente {type(component).__name__} é UNIQUE — "
                     f"já existe um no GameObject '{self.name}'."
                 )
         component.game_object = self
         self.components.append(component)
+        if self.scene and not component._started:
+            component.start()
+            component._started = True
+        return component
+
+    def insert_component(self, component: 'Component', index: int) -> 'Component':
+        """
+        Insere o *component* numa posição específica. Usado primariamente pelo Undo/Redo
+        para restaurar a ordem original.
+        """
+        if getattr(type(component), 'UNIQUE', False):
+            existing = self.get_component(type(component))
+            if existing is not None and existing is not component:
+                raise ValueError(
+                    f"Componente {type(component).__name__} é UNIQUE — "
+                    f"já existe um no GameObject '{self.name}'."
+                )
+        component.game_object = self
+        self.components.insert(index, component)
         if self.scene and not component._started:
             component.start()
             component._started = True
@@ -113,6 +132,8 @@ class GameObject:
         return [comp for comp in self.components if isinstance(comp, component_type)]  # type: ignore[misc]
 
     def remove_component(self, component: 'Component') -> None:
+        if component is self.transform:
+            raise ValueError("Não é possível remover o componente Transform de um GameObject.")
         if component in self.components:
             component.destroy()
             component.game_object = None

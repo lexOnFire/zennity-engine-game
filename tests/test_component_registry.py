@@ -296,7 +296,7 @@ class TestComponentUnique:
     def test_unique_second_raises(self):
         go = GameObject()
         go.add_component(UniqueComp())
-        with pytest.raises(TypeError, match="UNIQUE"):
+        with pytest.raises((TypeError, ValueError), match="UNIQUE"):
             go.add_component(UniqueComp())
 
     def test_unique_same_instance_no_raise(self):

@@ -4,6 +4,7 @@ import pytest
 from PySide6.QtWidgets import QApplication
 
 from editor.inspector import inspector_plugin_registry
+import editor.inspector.asset_component_plugins  # noqa: F401
 from engine.animation.animator import Animator
 from engine.ui.runtime_components import ImageComponent
 

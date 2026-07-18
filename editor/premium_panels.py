@@ -450,7 +450,7 @@ class RealInspectorPanel(InspectorPanel):
         return self.component_clipboard
 
     def can_paste_component_values(self, component: Any) -> bool:
-        return self.component_clipboard is not None and self.component_clipboard.get("type") == self._component_type(component) and hasattr(component, "deserialize_properties")
+        return self.component_clipboard is not None and self.component_clipboard.get("type") == self._component_type(component)
 
     def paste_component_values(self, component: Any) -> bool:
         if not self.can_paste_component_values(component):
@@ -503,13 +503,16 @@ class RealInspectorPanel(InspectorPanel):
         return True
 
     def _apply_component_snapshot_and_reload(self, component: Any, data: dict[str, Any]) -> None:
-        if "enabled" in data:
-            component.enabled = bool(data.get("enabled", True))
-        if data.get("id"):
-            component.id = str(data["id"])
-        properties = data.get("properties", {})
-        if isinstance(properties, dict) and hasattr(component, "deserialize_properties"):
-            component.deserialize_properties(deepcopy(properties))
+        if hasattr(component, "deserialize"):
+            component.deserialize(deepcopy(data))
+        else:
+            if "enabled" in data:
+                component.enabled = bool(data.get("enabled", True))
+            if data.get("id"):
+                component.id = str(data["id"])
+            properties = data.get("properties", {})
+            if isinstance(properties, dict) and hasattr(component, "deserialize_properties"):
+                component.deserialize_properties(deepcopy(properties))
         if getattr(component, "game_object", None) is not None:
             self.load_object(component.game_object)
 
@@ -540,7 +543,7 @@ class RealInspectorPanel(InspectorPanel):
             return False
         if str(getattr(component_class, "component_type", component_class.__name__)) == "Component" or getattr(component_class, "required", False):
             return False
-        if getattr(component_class, "unique", False):
+        if getattr(component_class, "UNIQUE", False):
             return self.current_object.get_component(component_class) is None
         return True
 

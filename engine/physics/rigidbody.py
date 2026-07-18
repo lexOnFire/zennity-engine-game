@@ -22,6 +22,7 @@ class RigidBody(Component):
 
     # Constante de classe — valor padrão da gravidade em pixels/s²
     GRAVITY: float = 980.0
+    UNIQUE = True
 
     def __init__(
         self,

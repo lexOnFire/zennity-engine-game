@@ -152,10 +152,11 @@ class TestAddComponent:
 # ─────────────────────────────────────────────────────────────────
 class TestGetComponent:
     def test_get_component_returns_matching(self):
+        class MyCustomComp(Component): pass
         go   = GameObject()
-        comp = make_component()
+        comp = MyCustomComp()
         go.add_component(comp)
-        assert go.get_component(Component) is comp
+        assert go.get_component(MyCustomComp) is comp
 
     def test_get_component_returns_none_when_missing(self):
         go = GameObject()
