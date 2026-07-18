@@ -33,8 +33,8 @@ class ScriptComponent(Component):
     Também suporta o formato com classe (primeira classe concreta do módulo).
     """
 
-    component_type: str = "Script"
-    type_name: str = "Script"
+    component_type: str = "ScriptComponent"
+    type_name: str = "ScriptComponent"
     required: bool = False
     unique: bool = False
 
@@ -203,14 +203,10 @@ class ScriptComponent(Component):
     # Serialização
     # ------------------------------------------------------------------
 
-    def serialize(self) -> dict[str, Any]:
+    def serialize_properties(self) -> dict[str, Any]:
         return {
-            "type": self.type_name,
-            "enabled": self.enabled,
-            "properties": {
-                "script_path": self.script_path,
-                "props": dict(self.properties),
-            },
+            "script_path": self.script_path,
+            "props": dict(self.properties),
         }
 
     def deserialize_properties(self, data: dict[str, Any]) -> None:
