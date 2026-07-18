@@ -357,6 +357,20 @@ class ViewportWidget(QOpenGLWidget):
 
         p = QPainter(self)
         p.drawImage(0, 0, img)
+        if self.active_scene and getattr(self.active_scene, "playing", False):
+            from PySide6.QtGui import QPen, QColor, QFont
+            import math
+            # Smooth neon pulsing glow
+            opacity = int(120 + 70 * math.sin(time.time() * 5.0))
+            # Draw ciano neon border
+            pen = QPen(QColor(0, 173, 181, opacity), 3)
+            p.setPen(pen)
+            p.drawRect(1, 1, self.width() - 2, self.height() - 2)
+
+            # Draw 'PLAY MODE ACTIVE' overlay text
+            p.setFont(QFont("Segoe UI", 9, QFont.Bold))
+            p.setPen(QColor(0, 173, 181, 220))
+            p.drawText(self.width() - 130, 24, "PLAY MODE ACTIVE")
         p.end()
 
     @Slot()
