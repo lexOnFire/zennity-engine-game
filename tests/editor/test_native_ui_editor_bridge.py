@@ -30,8 +30,10 @@ def test_native_ui_scene_item_round_trip() -> None:
 
 def test_native_ui_draws_only_when_canvas_exists() -> None:
     from unittest.mock import MagicMock
+    from conftest import _FakeSurface
     renderer = NativeUIRenderer()
-    surface = MagicMock()
+    surface = _FakeSurface()
+    surface.blit = MagicMock()
 
     renderer.draw(_objects(), surface)
 

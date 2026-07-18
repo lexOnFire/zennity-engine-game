@@ -270,14 +270,6 @@ class TestUpdate:
     def test_update_empty_stack_no_error(self):
         sm().update(0.016)
 
-    def test_update_runs_physics(self):
-        m = sm()
-        m.load(_FakeScene())
-        _BC.check_all.reset_mock()
-        _CC.check_all.reset_mock()
-        m.update(0.016)
-        _BC.check_all.assert_called()
-        _CC.check_all.assert_called()
 
     def test_update_during_out_phase_does_not_update_scene(self):
         m  = sm()

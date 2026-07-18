@@ -133,10 +133,10 @@ def test_runtime_scene_camera_isolation_and_fallback():
     runtime_scene.draw(surface)
     # A cor padrão da câmera (30, 30, 30) deve ser usada para limpar a tela
     try:
-        surface.fill.assert_any_call((30, 30, 30))
+        surface.fill_mock.assert_any_call((30, 30, 30))
     except AssertionError:
         # Se assert_any_call falhar, tentamos pegar a tupla RGB que pode ter vindo como list
-        surface.fill.assert_any_call([30, 30, 30])
+        surface.fill_mock.assert_any_call([30, 30, 30])
 
     # Parando o runtime, o CameraManager é limpo de novo
     runtime_scene.stop_runtime()

@@ -165,7 +165,7 @@ class GameObject:
         Usa ComponentRegistry para instanciar os componentes pelo nome.
         O Transform já é criado pelo __init__ e atualizado via deserialize().
         """
-        from engine.component_registry import ComponentRegistry
+        from engine.core.component_registry import component_registry
         from engine.core.component import Transform
 
         go = cls(name=data.get("name", "GameObject"), tag=data.get("tag", "Untagged"))
@@ -180,14 +180,10 @@ class GameObject:
                 # Transform já existe — apenas deserializa
                 go.transform.deserialize(comp_data)
             else:
-                klass = ComponentRegistry.get(type_name)
+                klass = component_registry.resolve(type_name)
                 if klass is None:
                     continue  # componente desconhecido — ignora graciosamente
-                instance = klass.__new__(klass)
-                # Inicializa via Component.__init__ sem parâmetros
-                from engine.core.component import Component
-                Component.__init__(instance)
-                instance.deserialize(comp_data)
+                instance = component_registry.create(comp_data)
                 go.add_component(instance)
 
         for child_data in data.get("children", []):
