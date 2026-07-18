@@ -6,23 +6,23 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class EditorThemeTokens:
-    bg: str = "#eef0f4"  # Fundo levemente cinza
-    surface: str = "#ffffff"  # Fundo branco puro
-    surface_raised: str = "#f8f9fa"  # Cinza claríssimo para menus e destaques
-    surface_hover: str = "#e2e6ea"  # Cinza claro de hover
-    input_bg: str = "#ffffff"
-    border: str = "#d1d5db"  # Prata/cinza suave
-    border_strong: str = "#9ca3af"  # Prata mais forte
-    text: str = "#111827"  # Azul escuro / Navy quase preto (do logo)
-    text_muted: str = "#4b5563"
-    text_disabled: str = "#9ca3af"
-    accent: str = "#0ea5e9"  # Ciano/azul brilhante
-    accent_hover: str = "#0284c7"
-    accent_soft: str = "#e0f2fe"  # Fundo selecionado (cyan bem suave)
+    bg: str = "#121317"  # Slate dark background
+    surface: str = "#181a20"  # Dark panel background
+    surface_raised: str = "#22252e"  # Slightly raised dark grey for buttons/tabs
+    surface_hover: str = "#2c303c"  # Highlight color for hovered items
+    input_bg: str = "#0f1013"  # Deep black for input boxes
+    border: str = "#2b2e3a"  # Subtle dark borders
+    border_strong: str = "#3f4456"  # Visible boundaries
+    text: str = "#e3e6ed"  # High contrast crisp light grey text
+    text_muted: str = "#8b949e"  # Muted grey text for captions/hints
+    text_disabled: str = "#484f58"  # Dark grey for disabled actions
+    accent: str = "#00adb5"  # Vibrant neon cyan for selection highlights
+    accent_hover: str = "#00cbd3"  # Hover highlight ciano
+    accent_soft: str = "#142c33"  # Translucent neon selection overlay
     success: str = "#10b981"
     warning: str = "#f59e0b"
     danger: str = "#ef4444"
-    danger_soft: str = "#fee2e2"
+    danger_soft: str = "#3c1e22"
     radius_small: int = 4
     radius: int = 6
     spacing_xs: int = 4
