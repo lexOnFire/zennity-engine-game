@@ -7,6 +7,7 @@ appearance, while the future runtime can execute the same document.
 from __future__ import annotations
 
 import json
+import unicodedata
 import uuid
 from copy import deepcopy
 from pathlib import Path
@@ -21,6 +22,46 @@ try:
     from .blackboard import normalize_variable_definitions
 except ImportError:  # Self-contained exported runtime.
     from .logic_blackboard import normalize_variable_definitions
+
+
+# ---------------------------------------------------------------------------
+# Category migration — converts legacy Portuguese category names to English.
+# Called automatically by normalize_logic_graph so that old .zlogic files
+# are transparently updated on next save without any manual intervention.
+# ---------------------------------------------------------------------------
+
+_CATEGORY_MIGRATIONS: dict[str, str] = {
+    # Action
+    "acao": "Action", "ação": "Action",
+    # Condition
+    "condicao": "Condition", "condição": "Condition",
+    # Events
+    "eventos": "Events",
+    # Logic
+    "logica": "Logic", "lógica": "Logic",
+    # Math
+    "matematica": "Math", "matemática": "Math",
+    # Movement
+    "movimento": "Movement",
+    # Objects
+    "objetos": "Objects",
+    # Position
+    "posicao": "Position", "posição": "Position",
+    # Subgraphs
+    "subgrafos": "Subgraphs",
+    # Text
+    "texto": "Text",
+    # Variables
+    "variaveis": "Variables", "variáveis": "Variables",
+}
+
+
+def _migrate_category(raw: str) -> str:
+    """Return the canonical English category name, migrating legacy Portuguese."""
+    stripped = raw.strip()
+    # Normalize to ASCII lowercase for lookup (handles accented variants).
+    key = unicodedata.normalize("NFD", stripped).encode("ascii", "ignore").decode().lower()
+    return _CATEGORY_MIGRATIONS.get(key, stripped) or stripped
 
 
 LOGIC_GRAPH_FORMAT = "zennity.logic_graph"
@@ -470,7 +511,7 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
                 "id": node_id,
                 "type": node_type,
                 "title": str(raw_node.get("title", definition.get("title", node_type))),
-                "category": str(raw_node.get("category", definition.get("category", "Custom"))),
+                "category": _migrate_category(str(raw_node.get("category", definition.get("category", "Custom")))),
                 "position": [_safe_float(position[0]), _safe_float(position[1])],
                 "editor": {
                     "collapsed": bool(raw_editor.get("collapsed", False)),
