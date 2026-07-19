@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+
+import pytest
 
 from engine.assets import AssetDatabase, AssetPathResolver
 
@@ -33,6 +36,10 @@ def test_database_scans_canonical_and_legacy_asset_roots(tmp_path: Path) -> None
     assert database.get_asset_by_path("ASSETS/SCRIPTS/LEGACY.PY").absolute_path == legacy
 
 
+@pytest.mark.skipif(
+    os.path.normcase("Assets") == os.path.normcase("assets"),
+    reason="Requires a case-sensitive filesystem with distinct Assets and assets trees",
+)
 def test_canonical_tree_wins_case_insensitive_path_collision(tmp_path: Path) -> None:
     canonical = _write(tmp_path / "Assets" / "Scripts" / "player.py", b"canonical")
     legacy = _write(tmp_path / "assets" / "scripts" / "PLAYER.py", b"legacy")
