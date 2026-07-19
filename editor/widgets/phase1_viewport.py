@@ -155,6 +155,7 @@ class Phase1ViewportWidget(ViewportWidget):
 
     def _on_tool_changed(self, tool: EditorTool) -> None:
         activate_gizmo_reference(self, tool)
+        self.request_render("tool")
 
     def set_editor_state(self, editor_state: EditorState) -> None:
         self.editor_state = editor_state
@@ -171,6 +172,7 @@ class Phase1ViewportWidget(ViewportWidget):
 
     def set_view_mode(self, mode: str) -> None:
         self.view_mode = "game" if str(mode).lower() == "game" else "scene"
+        self.request_render("view-mode")
 
     def is_game_view(self) -> bool:
         return self.view_mode == "game"
@@ -337,6 +339,7 @@ class Phase1ViewportWidget(ViewportWidget):
     def resizeGL(self, w: int, h: int) -> None:
         super().resizeGL(w, h)
         self.camera.set_viewport_size(max(32, int(w)), max(32, int(h)))
+        self.request_render("camera-resize")
         sync_camera_to_engine(self)
 
     # ── Drag/Drop de Transformações ───────────────────────────────────────────
@@ -799,11 +802,18 @@ class Phase1ViewportWidget(ViewportWidget):
                 self.active_scene.update(dt)
                 self._sync_selection_to_model()
 
-        self.update()
+        camera_animating = not math.isclose(
+            float(self.camera.zoom), float(self.camera.target_zoom), abs_tol=0.001
+        )
+        if is_runtime_scene or self._is_playing() or camera_animating:
+            self.request_render("continuous")
+        else:
+            self._frame_invalidation.record_idle_tick()
 
     # ── Ciclo de Renderização (paintGL) ───────────────────────────────────────
 
     def paintGL(self) -> None:
+        self._frame_invalidation.consume()
         context = self.frame_preparation_adapter.create_context()
         if context is None:
             return
