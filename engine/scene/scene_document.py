@@ -7,6 +7,7 @@ and prevents older engine versions from erasing newer editor data.
 from __future__ import annotations
 
 import json
+import shutil
 from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
@@ -91,3 +92,14 @@ class SceneDocument:
             indent=indent,
             ensure_ascii=False,
         )
+
+    def save(self, path: str | Path, *, keep_backup: bool = True) -> Path:
+        """Atomically persist the document and optionally retain one backup."""
+        output = Path(path)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        temporary = output.with_suffix(output.suffix + ".tmp")
+        temporary.write_text(self.to_json() + "\n", encoding="utf-8")
+        if keep_backup and output.is_file():
+            shutil.copy2(output, output.with_suffix(output.suffix + ".bak"))
+        temporary.replace(output)
+        return output
