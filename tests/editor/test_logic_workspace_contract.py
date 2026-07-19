@@ -11,6 +11,7 @@ def _source(relative: str) -> str:
 def test_logic_and_animation_use_independent_windows_not_viewport_tabs():
     interface = _source("editor/interface_smoke_test.py")
     editor = _source("editor/isolated_editor_main.py")
+    animation = _source("editor/animation_workspace_operations.py")
     assert 'self.viewport_tabs.addTab(QWidget(), "Animation")' not in interface
     assert 'self.viewport_tabs.addTab(QWidget(), "Logic")' not in interface
     assert "class DetachedWorkspaceWindow(QMainWindow)" in interface
@@ -18,7 +19,7 @@ def test_logic_and_animation_use_independent_windows_not_viewport_tabs():
     assert "self.logic_window = DetachedWorkspaceWindow" in interface
     assert "self.logic_workspace = LogicGraphEditor()" in interface
     assert "def _show_logic_window" in editor
-    assert "def _show_animation_window" in editor
+    assert "def _show_animation_window" in animation
     assert 'editor_icon("play")' in editor
     assert 'editor_icon("snap")' in editor
     assert 'editor_icon("animation")' not in editor
@@ -378,3 +379,42 @@ def test_logic_workspace_controls_play_and_builds_scrolling_image_planes():
     assert 'node_type == "start_texture_scroll"' in runtime
     assert "def start_texture_scroll" in viewport
     assert "def prepare_scrolling_sprite_surface" in rendering
+    assert '"scrolling_road_or_sky"' in recipes
+
+
+def test_logic_workspace_explains_targets_and_controls_spawn_lifecycle():
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    graph = _source("engine/logic/graph_asset.py")
+    runtime = _source("engine/logic/runtime.py")
+    viewport = _source("editor/isolated_viewport.py")
+    world = _source("engine/runtime/runtime_world.py")
+    recipes = _source("engine/logic/recipes.py")
+    assert "def _refresh_target_hints" in editor
+    assert "ALVO IMPLÍCITO" in editor and "ALVO ATUAL" in editor
+    assert "Referência de objeto" in editor and "Qt.DashLine" in editor
+    for node_type in ("event_object_created", "destroy_after_time"):
+        assert f'"{node_type}"' in graph
+        assert f'node_type == "{node_type}"' in runtime or node_type == "event_object_created"
+    for property_name in ("lifetime", "max_instances", "max_distance", "use_pool"):
+        assert f'"{property_name}"' in graph
+    assert "def configure_spawned" in viewport
+    assert "def update_lifecycle" in world
+    assert "def can_spawn" in world
+    assert '"safe_pooled_projectile"' in recipes
+
+
+def test_logic_workspace_controls_named_movements_and_debugs_runtime_objects():
+    graph = _source("engine/logic/graph_asset.py")
+    runtime = _source("engine/logic/runtime.py")
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    viewport = _source("editor/isolated_viewport.py")
+    main = _source("editor/isolated_editor_main.py")
+    interface = _source("editor/interface_smoke_test.py")
+    recipes = _source("engine/logic/recipes.py")
+    for node_type in (
+        "update_continuous_motion", "pause_continuous_motion",
+        "resume_continuous_motion", "stop_continuous_motion",
+        "get_continuous_motion",
+    ):
+        assert f'"{node_type}"' in graph
+        assert f'node_type == "{node_type}"' in runtime or node_type in {"pause_continuous_motion", "resume_continuous_motion"}
