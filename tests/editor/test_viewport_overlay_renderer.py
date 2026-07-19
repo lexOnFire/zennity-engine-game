@@ -12,10 +12,11 @@ def test_overlay_renderer_recognizes_all_runtime_camera_shapes() -> None:
 
 def test_isolated_viewport_delegates_overlays_and_gizmos() -> None:
     source = Path("editor/isolated_viewport.py").read_text(encoding="utf-8")
+    sprite_renderer = Path("editor/runtime/viewport_sprite_renderer.py").read_text(encoding="utf-8")
     renderer = Path("editor/runtime/viewport_overlay_renderer.py").read_text(encoding="utf-8")
 
     assert "overlay_renderer.draw_scene(" in source
-    assert "overlay_renderer.draw_selection(" in source
+    assert "overlay_renderer.draw_selection(" in sprite_renderer
     assert "overlay_renderer.draw_hud(" in source
     assert "def draw_scene(" in renderer
     assert "def draw_selection(" in renderer
