@@ -19,13 +19,3 @@ zennity-editor = "editor.phase1_main:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["engine*", "editor*"]
-
-[tool.pytest.ini_options]
-pythonpath = ["."]
-env = [
-    "SDL_VIDEODRIVER=dummy",
-    "SDL_AUDIODRIVER=dummy",
-    "PYGAME_HIDE_SUPPORT_PROMPT=1",
-]
-testpaths = ["tests"]
-addopts = "-v --tb=short"
