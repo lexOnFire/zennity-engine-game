@@ -44,6 +44,14 @@ from editor.runtime.editor_state import EditorState
 from editor.runtime.tool_manager import EditorTool, ToolManager
 from editor.viewport.bounding_box import get_handle_positions, hit_test_handle
 from editor.widgets.viewport_widget import ViewportWidget
+from editor.widgets.transform_interaction import (
+    activate_gizmo_reference,
+    draw_transform_overlay,
+    emit_transform_changed,
+    move_axis_at,
+    request_editor_frame,
+    sync_camera_to_engine,
+)
 
 # Novos módulos da Fase 2
 from editor.viewport.viewport_camera import ViewportCamera
@@ -78,6 +86,7 @@ class Phase1ViewportWidget(ViewportWidget):
         self._move_drag_object: Any = None
         self._move_start_world = np.zeros(3, dtype=np.float32)
         self._move_start_position = np.zeros(3, dtype=np.float32)
+        self._move_axis_lock: str | None = None
 
         # Estado do drag de Rotate
         self._rotate_drag_object: Any = None
@@ -137,7 +146,14 @@ class Phase1ViewportWidget(ViewportWidget):
     # ── Injeção de dependências ───────────────────────────────────────────────
 
     def set_tool_manager(self, tool_manager: ToolManager) -> None:
+        if self.tool_manager is not None:
+            self.tool_manager.unsubscribe(self._on_tool_changed)
         self.tool_manager = tool_manager
+        tool_manager.subscribe(self._on_tool_changed)
+        self._on_tool_changed(tool_manager.active_tool)
+
+    def _on_tool_changed(self, tool: EditorTool) -> None:
+        activate_gizmo_reference(self, tool)
 
     def set_editor_state(self, editor_state: EditorState) -> None:
         self.editor_state = editor_state
@@ -319,7 +335,8 @@ class Phase1ViewportWidget(ViewportWidget):
 
     def resizeGL(self, w: int, h: int) -> None:
         super().resizeGL(w, h)
-        self.camera.set_viewport_size(w, h)
+        self.camera.set_viewport_size(max(32, int(w)), max(32, int(h)))
+        sync_camera_to_engine(self)
 
     # ── Drag/Drop de Transformações ───────────────────────────────────────────
 
@@ -343,6 +360,7 @@ class Phase1ViewportWidget(ViewportWidget):
             return False
         world = self.viewport_to_world((x, y))
         self._move_drag_object = obj
+        self._move_axis_lock = move_axis_at(self, float(x), float(y), obj)
         self._move_start_world = world.copy()
         self._move_start_position = obj.transform.position.copy()
         self.select_object(obj)
@@ -355,12 +373,15 @@ class Phase1ViewportWidget(ViewportWidget):
             return
         world = self.viewport_to_world((x, y))
         delta = world - self._move_start_world
+        if self._move_axis_lock == "x":
+            delta[1] = 0.0
+        elif self._move_axis_lock == "z":
+            delta[0] = 0.0
         next_position = self._move_start_position + delta
         next_position = self._apply_snap(next_position)
         obj.transform.position[0] = next_position[0]
         obj.transform.position[1] = next_position[1]
-        self.object_transform_changed.emit(obj)
-        self.update()
+        emit_transform_changed(self, obj)
 
     def _end_move_drag(self) -> None:
         obj = self._move_drag_object
@@ -388,6 +409,7 @@ class Phase1ViewportWidget(ViewportWidget):
                 )
                 self.history_changed.emit()
         self._move_drag_object = None
+        self._move_axis_lock = None
         self._update_hover_cursor(*self._qt_mouse_pos)
 
     def _rotate_gizmo_hit_at_viewport_point(self, x: float, y: float, selected: Any) -> bool:
@@ -422,8 +444,7 @@ class Phase1ViewportWidget(ViewportWidget):
         new_rz = self._apply_snap_angle(self._rotate_start_rz + delta)
         obj.transform.rz = new_rz
         self._rotate_current_mouse = (x, y)
-        self.object_transform_changed.emit(obj)
-        self.update()
+        emit_transform_changed(self, obj)
 
     def _end_rotate_drag(self) -> None:
         obj = self._rotate_drag_object
@@ -535,8 +556,7 @@ class Phase1ViewportWidget(ViewportWidget):
         obj.transform.position[1] = next_position[1]
         obj.transform.scale[0] = next_scale[0]
         obj.transform.scale[1] = next_scale[1]
-        self.object_transform_changed.emit(obj)
-        self.update()
+        emit_transform_changed(self, obj)
 
     def _end_scale_drag(self) -> None:
         obj = self._scale_drag_object
@@ -625,6 +645,7 @@ class Phase1ViewportWidget(ViewportWidget):
         
         pos = event.position()
         self.camera.zoom_to_mouse(factor, pos.x(), pos.y())
+        sync_camera_to_engine(self)
         event.accept()
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
@@ -636,7 +657,8 @@ class Phase1ViewportWidget(ViewportWidget):
             return
 
         tool = self._active_tool()
-        x, y = float(event.x()), float(event.y())
+        pos = event.position()
+        x, y = float(pos.x()), float(pos.y())
 
         # Intercepta Pan (Botão do meio)
         if event.button() == Qt.MiddleButton:
@@ -656,12 +678,11 @@ class Phase1ViewportWidget(ViewportWidget):
             return
 
         if tool == EditorTool.MOVE:
-            clicked = self._object_at_viewport_point(x, y)
             selected = self._selected_transform_object()
-            target = clicked
-            if target is None and self._gizmo_hit_at_viewport_point(x, y, selected):
-                target = selected
+            axis = move_axis_at(self, x, y, selected)
+            target = selected if axis is not None else self._object_at_viewport_point(x, y)
             if target is not None and self._begin_move_drag(target, x, y):
+                self._move_axis_lock = axis
                 event.accept()
                 return
             event.accept()
@@ -698,7 +719,8 @@ class Phase1ViewportWidget(ViewportWidget):
             super().mouseMoveEvent(event)
             return
 
-        x, y = float(event.x()), float(event.y())
+        pos = event.position()
+        x, y = float(pos.x()), float(pos.y())
 
         # Processa Pan ativo
         if self._panning:
@@ -706,6 +728,8 @@ class Phase1ViewportWidget(ViewportWidget):
             dy = y - self._pan_last_mouse[1]
             self.camera.pan(dx, dy)
             self._pan_last_mouse = (x, y)
+            sync_camera_to_engine(self)
+            request_editor_frame(self)
             event.accept()
             return
 
@@ -788,3 +812,4 @@ class Phase1ViewportWidget(ViewportWidget):
             self.render_pipeline.render(context)
         finally:
             self.frame_preparation_adapter.finish(context)
+        draw_transform_overlay(self)
