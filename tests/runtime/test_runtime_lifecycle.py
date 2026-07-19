@@ -225,3 +225,16 @@ def test_runtime_manager_notifies_state_transitions_once() -> None:
     manager.stop_play()
 
     assert states == [RuntimeState.PLAYING, RuntimeState.STOPPED]
+
+
+def test_runtime_state_listener_can_be_removed() -> None:
+    scene = _empty_editor_scene()
+    manager = RuntimeManager()
+    states = []
+    listener = states.append
+    manager.subscribe_state(listener)
+    manager.unsubscribe_state(listener)
+
+    manager.start_play(scene)
+
+    assert states == []
