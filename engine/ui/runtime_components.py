@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import OrderedDict
 from pathlib import Path
 from typing import Any
 
@@ -112,7 +113,10 @@ class LabelComponent(UIElement):
 
 class ImageComponent(UIElement):
     component_type = "Image"
-    _surface_cache: dict[str, pygame.Surface] = {}
+    _surface_cache: OrderedDict[str, tuple[tuple[int, int], pygame.Surface]] = OrderedDict()
+    _transformed_cache: OrderedDict[tuple[str, int, int, int, float], pygame.Surface] = OrderedDict()
+    _max_surface_cache = 128
+    _max_transformed_cache = 256
 
     def __init__(
         self,
@@ -129,17 +133,27 @@ class ImageComponent(UIElement):
         order_in_layer: int = 0,
     ) -> None:
         super().__init__(x=x, y=y, width=width, height=height, visible=visible, z_order=z_order)
-        self.sprite_path = str(sprite_path)
+        self._sprite_path = str(sprite_path)
         self.color = tuple(color)
         self.alpha = int(alpha)
         self.sorting_layer = str(sorting_layer)
         self.order_in_layer = int(order_in_layer)
 
+    @property
+    def sprite_path(self) -> str:
+        return self._sprite_path
+
+    @sprite_path.setter
+    def sprite_path(self, value: str) -> None:
+        previous = getattr(self, "_sprite_path", "")
+        self._sprite_path = str(value)
+        if previous and previous != self._sprite_path:
+            type(self).invalidate_path(previous)
+
     def draw(self, screen: pygame.Surface) -> None:
         if not self.visible or self._owner_is_pure_ui():
             return
-        surface = self.load_surface(self.sprite_path)
-        if surface is None or self.game_object is None:
+        if self.game_object is None:
             return
         transform = self.game_object.transform
         zoom = 1.0
@@ -160,34 +174,121 @@ class ImageComponent(UIElement):
             x, y = float(world_pos[0]), float(world_pos[1])
         width = max(1, int(abs(float(transform.scale[0]) * zoom)))
         height = max(1, int(abs(float(transform.scale[1]) * zoom)))
-        if surface.get_size() != (width, height):
-            surface = pygame.transform.scale(surface, (width, height))
+        if not self._is_screen_rect_visible(float(x), float(y), width, height, screen):
+            return
+        rz = float(getattr(transform, "rz", 0.0))
+        surface = self.transformed_surface(self.sprite_path, width, height, 255, rz)
+        if surface is None:
+            return
         from engine.graphics.tint import apply_pygame_tint
         surface = apply_pygame_tint(surface, self.color, self.alpha)
-        rz = getattr(transform, "rz", 0.0)
-        if rz != 0.0:
-            surface = pygame.transform.rotate(surface, -rz)
         rect = surface.get_rect(center=(int(x), int(y)))
         screen.blit(surface, rect.topleft)
+
+    @staticmethod
+    def _resolved_key(sprite_path: str) -> str:
+        if not sprite_path:
+            return ""
+        path = Path(str(sprite_path))
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        return str(path.resolve())
+
+    @staticmethod
+    def _file_signature(path: Path) -> tuple[int, int]:
+        stat = path.stat()
+        return int(stat.st_mtime_ns), int(stat.st_size)
+
+    @staticmethod
+    def _trim_cache(cache: OrderedDict, limit: int) -> None:
+        while len(cache) > limit:
+            cache.popitem(last=False)
+
+    @staticmethod
+    def _is_screen_rect_visible(
+        x: float,
+        y: float,
+        width: int,
+        height: int,
+        screen: pygame.Surface,
+    ) -> bool:
+        radius = max(float(width), float(height), 32.0) * 0.75
+        return not (
+            x + radius < 0
+            or x - radius > screen.get_width()
+            or y + radius < 0
+            or y - radius > screen.get_height()
+        )
+
+    @classmethod
+    def invalidate_path(cls, sprite_path: str) -> None:
+        key = cls._resolved_key(sprite_path)
+        cls._surface_cache.pop(key, None)
+        for transformed_key in tuple(cls._transformed_cache):
+            if transformed_key[0] == key:
+                cls._transformed_cache.pop(transformed_key, None)
+
+    @classmethod
+    def clear_caches(cls) -> None:
+        cls._surface_cache.clear()
+        cls._transformed_cache.clear()
 
     @classmethod
     def load_surface(cls, sprite_path: str) -> pygame.Surface | None:
         if not sprite_path:
             return None
-        resolved = Path(sprite_path)
-        if not resolved.is_absolute():
-            resolved = Path.cwd() / resolved
-        key = str(resolved.resolve())
-        if key in cls._surface_cache:
-            return cls._surface_cache[key]
+        key = cls._resolved_key(sprite_path)
+        resolved = Path(key)
         if not resolved.exists():
+            cls.invalidate_path(sprite_path)
             return None
+        signature = cls._file_signature(resolved)
+        cached = cls._surface_cache.get(key)
+        if cached is not None and cached[0] == signature:
+            cls._surface_cache.move_to_end(key)
+            return cached[1]
+        if cached is not None:
+            cls.invalidate_path(sprite_path)
         try:
             loaded = pygame.image.load(str(resolved))
             surface = loaded.convert_alpha() if pygame.display.get_surface() is not None else loaded.copy()
         except Exception:
             return None
-        cls._surface_cache[key] = surface
+        cls._surface_cache[key] = (signature, surface)
+        cls._trim_cache(cls._surface_cache, cls._max_surface_cache)
+        return surface
+
+    @classmethod
+    def transformed_surface(
+        cls,
+        sprite_path: str,
+        width: int,
+        height: int,
+        alpha: int,
+        rz: float,
+    ) -> pygame.Surface | None:
+        base = cls.load_surface(sprite_path)
+        if base is None:
+            return None
+        width = max(1, int(width))
+        height = max(1, int(height))
+        alpha = max(0, min(255, int(alpha)))
+        rotation = round(float(rz), 1)
+        key = (cls._resolved_key(sprite_path), width, height, alpha, rotation)
+        cached = cls._transformed_cache.get(key)
+        if cached is not None:
+            cls._transformed_cache.move_to_end(key)
+            return cached
+        surface = base
+        if surface.get_size() != (width, height):
+            surface = pygame.transform.smoothscale(surface, (width, height))
+        if alpha < 255:
+            surface = surface.copy()
+            surface.set_alpha(alpha)
+        if rotation != 0.0:
+            surface = pygame.transform.rotate(surface, -rotation)
+        cls._transformed_cache[key] = surface
+        cls._trim_cache(cls._transformed_cache, cls._max_transformed_cache)
         return surface
 
     def serialize_properties(self) -> dict[str, Any]:
@@ -215,6 +316,8 @@ class InfiniteBackground(Component):
 
     component_type = "InfiniteBackground"
     unique = True
+    _tile_cache: OrderedDict[tuple[str, int, int, int, int], pygame.Surface] = OrderedDict()
+    _max_tile_cache = 64
 
     def __init__(
         self,
@@ -229,7 +332,7 @@ class InfiniteBackground(Component):
         scale_to_screen: bool = True,
     ) -> None:
         super().__init__()
-        self.sprite_path = str(sprite_path)
+        self._sprite_path = str(sprite_path)
         self.speed_x = float(speed_x)
         self.speed_y = float(speed_y)
         self.direction = str(direction or "horizontal").lower()
@@ -240,6 +343,57 @@ class InfiniteBackground(Component):
         self.scale_to_screen = bool(scale_to_screen)
         self._offset_x = 0.0
         self._offset_y = 0.0
+
+    @property
+    def sprite_path(self) -> str:
+        return self._sprite_path
+
+    @sprite_path.setter
+    def sprite_path(self, value: str) -> None:
+        previous = getattr(self, "_sprite_path", "")
+        self._sprite_path = str(value)
+        if previous and previous != self._sprite_path:
+            self.invalidate_path(previous)
+
+    @classmethod
+    def invalidate_path(cls, sprite_path: str) -> None:
+        key = ImageComponent._resolved_key(sprite_path)
+        for tile_key in tuple(cls._tile_cache):
+            if tile_key[0] == key:
+                cls._tile_cache.pop(tile_key, None)
+        ImageComponent.invalidate_path(sprite_path)
+
+    @classmethod
+    def clear_cache(cls) -> None:
+        cls._tile_cache.clear()
+
+    def _background_tile(
+        self,
+        source: pygame.Surface,
+        width: int,
+        height: int,
+    ) -> pygame.Surface:
+        alpha = max(0, min(255, int(self.alpha)))
+        key = (
+            ImageComponent._resolved_key(self.sprite_path),
+            int(width),
+            int(height),
+            alpha,
+            id(source),
+        )
+        cached = self._tile_cache.get(key)
+        if cached is not None:
+            self._tile_cache.move_to_end(key)
+            return cached
+        surface = source
+        if surface.get_size() != (width, height):
+            surface = pygame.transform.smoothscale(surface, (width, height))
+        if alpha < 255:
+            surface = surface.copy()
+            surface.set_alpha(alpha)
+        self._tile_cache[key] = surface
+        ImageComponent._trim_cache(self._tile_cache, self._max_tile_cache)
+        return surface
 
     def update(self, dt: float) -> None:
         if not self.enabled or not self.visible:
@@ -262,11 +416,7 @@ class InfiniteBackground(Component):
         else:
             tw = max(1, int(surface.get_width() * self.tile_scale))
             th = max(1, int(surface.get_height() * self.tile_scale))
-        if surface.get_size() != (tw, th):
-            surface = pygame.transform.scale(surface, (tw, th))
-        if self.alpha < 255:
-            surface = surface.copy()
-            surface.set_alpha(max(0, min(255, int(self.alpha))))
+        surface = self._background_tile(surface, tw, th)
 
         cam_x = cam_y = 0.0
         if self.parallax:
@@ -348,9 +498,6 @@ class ButtonComponent(UIElement):
         self.text = str(data.get("text", self.text))
         self.interactable = bool(data.get("interactable", self.interactable))
 
-
-from engine.ui.sprite_performance_patch import apply_sprite_performance_patch
-apply_sprite_performance_patch(ImageComponent, InfiniteBackground)
 
 from engine.core.component_registry import register_component
 
