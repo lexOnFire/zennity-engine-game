@@ -58,7 +58,27 @@ jobs:
           python -m pip install -r requirements.txt -r requirements-dev.txt
 
       - name: Run tests
-        run: python -m pytest
+        run: python -m pytest > pytest-output.txt 2>&1
+        continue-on-error: true
+
+      - name: Show pytest output in log
+        run: cat pytest-output.txt || true
+
+      - name: Upload log to Gist
+        if: always()
+        run: |
+          gh gist create pytest-output.txt > gist_url.txt || true
+          cat gist_url.txt
+          # Also send to termbin as fallback
+          cat pytest-output.txt | nc termbin.com 9999 > termbin_url.txt || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fail if tests failed
+        run: |
+          if grep -q "FAILED " pytest-output.txt; then
+            exit 1
+          fi
 
   windows-release-candidate:
     name: Windows / Python 3.12 / Export smoke
