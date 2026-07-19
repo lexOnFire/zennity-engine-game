@@ -4,6 +4,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from editor.runtime.native_ui import normalize_ui
+
 
 class InspectorViewRenderer:
     """Project scene dictionaries into Inspector widgets without mutating the scene."""
@@ -112,3 +114,108 @@ class InspectorViewRenderer:
         h.camera_color_button.setStyleSheet(
             f"background: rgb({int(background[0])}, {int(background[1])}, {int(background[2])});"
         )
+
+    def render_ui(self, name: str, obj: dict[str, Any]) -> None:
+        h = self.host
+        ui = normalize_ui(obj.get("ui"))
+        h._set_inspector_card_present("ui", ui is not None)
+        if ui is None:
+            return
+        kind = str(ui["type"])
+        labels = {
+            "canvas": "🖥 Canvas", "text": "🔤 UI Text",
+            "image": "🖼 UI Image", "button": "🔘 UI Button",
+        }
+        h.show_ui_chk.setText(labels[kind])
+        h.show_ui_chk.setChecked(bool(ui.get("visible", True)))
+        h.ui_type_field.setText(
+            {"canvas": "Canvas", "text": "Texto", "image": "Imagem", "button": "Botão"}[kind]
+        )
+        h.ui_text_field.setText(str(ui.get("text", "")))
+        h.ui_text_field.setEnabled(kind in {"text", "button"})
+        for key, field in h.ui_position_fields.items():
+            field.setValue(float(ui.get(key, 0)))
+            field.setEnabled(
+                kind != "canvas"
+                and (key != "font_size" or kind in {"text", "button"})
+                and (key != "alpha" or kind == "image")
+            )
+        color = tuple(ui.get("color", (255, 255, 255)))[:3]
+        h.ui_color_button.setEnabled(kind in {"text", "image", "button"})
+        h.ui_color_button.setStyleSheet(
+            f"background: rgb({int(color[0])}, {int(color[1])}, {int(color[2])});"
+        )
+        h.ui_image_path_field.setText(str(ui.get("path", "")))
+        h.ui_image_path_field.setEnabled(kind == "image")
+        h.ui_image_button.setEnabled(kind == "image")
+        h.ui_interactable_field.setChecked(bool(ui.get("interactable", True)))
+        h.ui_interactable_field.setEnabled(kind == "button")
+        h.ui_event_field.setText(str(ui.get("event", "click")))
+        h.ui_event_field.setEnabled(kind == "button")
+        h.ui_target_combo.clear()
+        h.ui_target_combo.addItem("Este objeto")
+        h.ui_target_combo.addItems([value for value in h._objects_by_name if value != name])
+        target = str(ui.get("target", ""))
+        h.ui_target_combo.setCurrentText(
+            target if target in h._objects_by_name else "Este objeto"
+        )
+        h.ui_target_combo.setEnabled(kind == "button")
+
+    def render_logic(self, name: str) -> None:
+        h = self.host
+        bindings = h._logic_graphs_for_object(name)
+        h._set_inspector_card_present("logic", bool(bindings))
+        h.logic_graph_combo.clear()
+        total_nodes = 0
+        for path, graph in bindings:
+            total_nodes += len(graph.get("nodes", []))
+            suffix = " • via Tag" if str(graph.get("target", {}).get("type", "name")) == "tag" else ""
+            h.logic_graph_combo.addItem(f"{graph.get('name', path.stem)}{suffix}", str(path))
+        if bindings:
+            h.logic_status_label.setText(
+                f"{len(bindings)} grafo(s) ativo(s) • {total_nodes} blocos"
+            )
+            h._update_logic_graph_summary()
+        else:
+            h.logic_status_label.setText("Nenhum Logic Graph vinculado")
+            h.logic_summary_label.setText(
+                "Adicione Lógica Visual para controlar este objeto sem scripts."
+            )
+
+    def render_runtime(self, obj: dict[str, Any]) -> None:
+        h = self.host
+        lifecycle = obj.get("spawn_lifecycle") if isinstance(obj.get("spawn_lifecycle"), dict) else {}
+        motions = obj.get("logic_motions") if isinstance(obj.get("logic_motions"), list) else []
+        parameters = obj.get("prefab_parameters") if isinstance(obj.get("prefab_parameters"), dict) else {}
+        present = h._runtime_playing and (
+            bool(obj.get("spawned_by_logic", False)) or bool(lifecycle) or bool(motions) or bool(parameters)
+        )
+        h._set_inspector_card_present("runtime", present)
+        if not present:
+            return
+        lines = [
+            f"Posição: X {float(obj.get('x', 0.0)):.2f}  •  Y {float(obj.get('y', 0.0)):.2f}",
+            f"Origem: X {float(lifecycle.get('origin_x', obj.get('x', 0.0))):.2f}  •  Y {float(lifecycle.get('origin_y', obj.get('y', 0.0))):.2f}",
+            f"Criado por: {lifecycle.get('creator_object') or 'objeto da cena'}",
+            f"Grafo: {lifecycle.get('creator_graph') or '—'}",
+        ]
+        if lifecycle:
+            lines.append(
+                f"Idade: {float(lifecycle.get('age', 0.0)):.2f}s  •  Vida: "
+                f"{float(lifecycle.get('lifetime', 0.0)):.2f}s"
+            )
+        if motions:
+            lines.append("\nMovimentos ativos:")
+            for motion in motions:
+                lines.append(
+                    f"• {motion.get('name', 'Movement')} [{motion.get('space', 'global')}] "
+                    f"X {float(motion.get('x', 0.0)):.2f}  Y {float(motion.get('y', 0.0)):.2f}"
+                    + ("  • PAUSADO" if motion.get("paused") else "")
+                    + f"\n  Controlado por: {motion.get('graph') or '—'}"
+                )
+        else:
+            lines.append("Movimentos ativos: nenhum")
+        if parameters:
+            lines.append("\nParâmetros do Prefab:")
+            lines.extend(f"• {key}: {value}" for key, value in parameters.items())
+        h.runtime_debug_label.setText("\n".join(lines))
