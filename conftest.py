@@ -21,90 +21,161 @@ os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 import pygame
 pygame.init()
 
-class _FakeSurface(pygame.Surface):
-    """
-    Subclasse de Surface que rastreia chamadas de blit/fill via MagicMock,
-    enquanto preserva o funcionamento real para funções em C do PyGame.
-    O blit é tolerante: se o surface fonte não for um pygame.Surface real
-    (ex: _FakeSurface de teste local), não delega ao C-level.
-    Suporta set_at/get_at para testes que verificam pixels (ex: flip_h).
-    """
-    _fake = True
-    SRCALPHA = 65536
+# Se for Linux e estiver rodando headless (no GitHub Actions), evitamos herança real para não quebrar alocações de vídeo C-level
+IS_LINUX_HEADLESS = sys.platform.startswith("linux") and os.environ.get("SDL_VIDEODRIVER") == "dummy"
 
-    def __init__(self, size=(800, 600), flags=0):
-        super().__init__(size, flags)
-        self._size = tuple(size)
-        self._flags = flags
-        self._pixels: dict[tuple[int, int], tuple] = {}
-        _real_blit  = super().blit
-        _real_fill  = super().fill
-        _real_alpha = super().set_alpha
-        self._alpha = 255
+if IS_LINUX_HEADLESS:
+    class _FakeSurface:
+        """
+        Mock puro de Surface para o Linux Headless em CI (evita alocações gráficas via SDL).
+        """
+        _fake = True
+        SRCALPHA = 65536
 
-        # blit: delega ao C-level somente se o source é pygame.Surface real
-        def _safe_blit(source, dest, *args, **kwargs):
-            if isinstance(source, pygame.surface.Surface):
-                return _real_blit(source, dest, *args, **kwargs)
-            # Source é um fake puro (MagicMock, _FakeSurface local) — não blita de verdade
-            return pygame.Rect(0, 0, 0, 0)
+        def __init__(self, size=(800, 600), flags=0):
+            self._size = tuple(size)
+            self._flags = flags
+            self._pixels: dict[tuple[int, int], tuple] = {}
+            self._alpha = 255
+            self.blit_mock = MagicMock(return_value=pygame.Rect(0, 0, 0, 0))
+            self.fill_mock = MagicMock(return_value=pygame.Rect(0, 0, 0, 0))
+            self.set_alpha_mock = MagicMock()
 
-        def _tracking_alpha(value, *args, **kwargs):
+        def blit(self, *args, **kwargs):
+            return self.blit_mock(*args, **kwargs)
+
+        def fill(self, *args, **kwargs):
+            return self.fill_mock(*args, **kwargs)
+
+        def set_alpha(self, value, *args, **kwargs):
             self._alpha = value
-            return _real_alpha(value, *args, **kwargs)
+            return self.set_alpha_mock(value, *args, **kwargs)
 
-        self.blit_mock = MagicMock(side_effect=_safe_blit)
-        self.fill_mock = MagicMock(side_effect=_real_fill)
-        self.set_alpha_mock = MagicMock(side_effect=_tracking_alpha)
+        def get_alpha(self):
+            return self._alpha
 
-    def blit(self, *args, **kwargs):
-        return self.blit_mock(*args, **kwargs)
+        def get_width(self):
+            return self._size[0]
 
-    def fill(self, *args, **kwargs):
-        return self.fill_mock(*args, **kwargs)
+        def get_height(self):
+            return self._size[1]
 
-    def set_alpha(self, *args, **kwargs):
-        return self.set_alpha_mock(*args, **kwargs)
+        def get_size(self):
+            return self._size
 
-    # set_at e get_at delegam ao C-level (pygame.Surface real)
-    # _pixels é mantido apenas para compatibilidade com _make_fake_flip
+        def get_rect(self, **kwargs):
+            rect = pygame.Rect(0, 0, self._size[0], self._size[1])
+            for k, v in kwargs.items():
+                setattr(rect, k, v)
+            return rect
 
-    def copy(self):
-        new_surf = super().copy()
-        # Inicializa mocks na nova instância copiada, pois o C-level copy ignora __init__
-        _real_blit  = super(type(new_surf), new_surf).blit
-        _real_fill  = super(type(new_surf), new_surf).fill
-        _real_alpha = super(type(new_surf), new_surf).set_alpha
+        def subsurface(self, rect):
+            r = pygame.Rect(rect)
+            return _FakeSurface((r.width, r.height))
 
-        def _safe_blit_copy(source, dest, *args, **kwargs):
-            if isinstance(source, pygame.surface.Surface):
-                return _real_blit(source, dest, *args, **kwargs)
-            return pygame.Rect(0, 0, 0, 0)
+        def convert(self, *args, **kwargs):
+            return self
 
-        new_surf.blit_mock = MagicMock(side_effect=_safe_blit_copy)
-        new_surf.fill_mock = MagicMock(side_effect=_real_fill)
-        new_surf.set_alpha_mock = MagicMock(side_effect=_real_alpha)
-        # _pixels pode não existir se o surf veio do C-level subsurface (ignora __init__)
-        new_surf._pixels = dict(getattr(self, "_pixels", {}))
-        new_surf._alpha = getattr(self, "_alpha", 255)
-        return new_surf
+        def convert_alpha(self, *args, **kwargs):
+            return self
 
-    # Mantemos algumas propriedades esperadas por testes legados
-    def get_alpha(self):
-        return super().get_alpha() or 255
+        def copy(self):
+            new_surf = _FakeSurface(self._size, self._flags)
+            new_surf._pixels = dict(self._pixels)
+            new_surf._alpha = self._alpha
+            return new_surf
+
+        def set_at(self, pos, color):
+            self._pixels[tuple(pos)] = tuple(color)
+
+        def get_at(self, pos):
+            return self._pixels.get(tuple(pos), (0, 0, 0, 255))
+else:
+    class _FakeSurface(pygame.Surface):
+        """
+        Subclasse de Surface que rastreia chamadas de blit/fill via MagicMock,
+        preservando o funcionamento real no Windows.
+        """
+        _fake = True
+        SRCALPHA = 65536
+
+        def __init__(self, size=(800, 600), flags=0):
+            super().__init__(size, flags)
+            self._size = tuple(size)
+            self._flags = flags
+            self._pixels: dict[tuple[int, int], tuple] = {}
+            _real_blit  = super().blit
+            _real_fill  = super().fill
+            _real_alpha = super().set_alpha
+            self._alpha = 255
+
+            def _safe_blit(source, dest, *args, **kwargs):
+                if isinstance(source, pygame.surface.Surface):
+                    return _real_blit(source, dest, *args, **kwargs)
+                return pygame.Rect(0, 0, 0, 0)
+
+            def _tracking_alpha(value, *args, **kwargs):
+                self._alpha = value
+                return _real_alpha(value, *args, **kwargs)
+
+            self.blit_mock = MagicMock(side_effect=_safe_blit)
+            self.fill_mock = MagicMock(side_effect=_real_fill)
+            self.set_alpha_mock = MagicMock(side_effect=_tracking_alpha)
+
+        def blit(self, *args, **kwargs):
+            return self.blit_mock(*args, **kwargs)
+
+        def fill(self, *args, **kwargs):
+            return self.fill_mock(*args, **kwargs)
+
+        def set_alpha(self, *args, **kwargs):
+            return self.set_alpha_mock(*args, **kwargs)
+
+        def get_alpha(self):
+            return super().get_alpha() or 255
+
+        def copy(self):
+            new_surf = super().copy()
+            _real_blit  = super(type(new_surf), new_surf).blit
+            _real_fill  = super(type(new_surf), new_surf).fill
+            _real_alpha = super(type(new_surf), new_surf).set_alpha
+
+            def _safe_blit_copy(source, dest, *args, **kwargs):
+                if isinstance(source, pygame.surface.Surface):
+                    return _real_blit(source, dest, *args, **kwargs)
+                return pygame.Rect(0, 0, 0, 0)
+
+            new_surf.blit_mock = MagicMock(side_effect=_safe_blit_copy)
+            new_surf.fill_mock = MagicMock(side_effect=_real_fill)
+            new_surf.set_alpha_mock = MagicMock(side_effect=_real_alpha)
+            new_surf._pixels = dict(getattr(self, "_pixels", {}))
+            new_surf._alpha = getattr(self, "_alpha", 255)
+            return new_surf
 
 
 def _make_fake_flip(fake_cls):
     """
     Retorna uma versão de pygame.transform.flip que:
-      - como _FakeSurface é subclasse real de pygame.Surface, delega ao SDL;
-      - mantém compatibilidade com surfaces que não são pygame.Surface.
+      - no Windows (onde _FakeSurface herda pygame.Surface), delega ao SDL;
+      - no Linux Headless (onde _FakeSurface é mock puro), simula a inversão em memória pura.
     """
     import pygame as _pg
     _real_flip = _pg.transform.flip
 
     def _fake_flip(surface, flip_x: bool, flip_y: bool):
-        # _FakeSurface herda pygame.Surface — usa o flip real do SDL
+        if IS_LINUX_HEADLESS:
+            # Simula a inversão de pixels em memória pura para _FakeSurface
+            new_surf = surface.copy()
+            w, h = surface.get_width(), surface.get_height()
+            new_pixels = {}
+            for (x, y), color in getattr(surface, "_pixels", {}).items():
+                nx = w - 1 - x if flip_x else x
+                ny = h - 1 - y if flip_y else y
+                new_pixels[(nx, ny)] = color
+            new_surf._pixels = new_pixels
+            return new_surf
+
+        # Windows: usa o flip real do SDL
         return _real_flip(surface, flip_x, flip_y)
 
     return _fake_flip
