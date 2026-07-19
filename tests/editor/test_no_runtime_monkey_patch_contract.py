@@ -22,6 +22,19 @@ def test_asset_inspector_registration_has_no_class_patch_for_tool_selection() ->
     )
 
     assert "apply_tool_selection_stability_patch" not in source
+    assert "apply_editor2d_sprite_patch" not in source
+    assert "apply_editor2d_sprite_no_border_patch" not in source
+    assert "apply_phase1_sprite_overlay_patch" not in source
+    assert "apply_viewport_transform_stability_patch" not in source
+
+
+def test_transform_behaviour_is_composed_without_runtime_class_assignment() -> None:
+    viewport = (ROOT / "editor" / "widgets" / "phase1_viewport.py").read_text(encoding="utf-8")
+    support = (ROOT / "editor" / "widgets" / "transform_interaction.py").read_text(encoding="utf-8")
+
+    assert "emit_transform_changed(self, obj)" in viewport
+    assert "sync_camera_to_engine(self)" in viewport
+    assert "Phase1ViewportWidget." not in support
 
 
 def test_phase1_editor_does_not_assign_functions_to_instance_methods() -> None:
