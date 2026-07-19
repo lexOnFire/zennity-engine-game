@@ -150,6 +150,10 @@ def serialize_game_object(obj: GameObject) -> dict[str, Any]:
 
 def serialize_scene(scene: Any) -> dict[str, Any]:
     """Serialize a scene-like object into a JSON-ready dictionary."""
+    from engine.scene.scene_document import SceneDocument
+
+    if isinstance(scene, SceneDocument):
+        return scene.to_dict()
     return {
         "format_version": SCENE_FORMAT_VERSION,
         "scene_name": str(getattr(scene, "name", DEFAULT_SCENE_NAME)),
