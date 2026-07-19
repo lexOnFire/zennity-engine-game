@@ -34,7 +34,7 @@ from editor.runtime.isolated_play_mode_controller import IsolatedPlayModeControl
 from editor.runtime.scene_selection_controller import SceneSelectionController
 from editor.runtime.viewport_event_dispatcher import ViewportEventDispatcher
 from editor.runtime.scene_history import SceneHistory
-from editor.inspector_controller import IsolatedInspectorController
+from editor.inspector_controller import InspectorComponentController, IsolatedInspectorController
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from editor.widgets.component_picker import ComponentPickerDialog
@@ -148,6 +148,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._updating_inspector = False
         self._scene_history = SceneHistory(max_commands=100, max_bytes=16 * 1024 * 1024)
         self._inspector_controller = IsolatedInspectorController(self)
+        self._inspector_components = InspectorComponentController(self)
         self._drag_history_snapshot: list[dict] | None = None
         self._snap_enabled = False
         self._runtime_playing = False
@@ -1635,12 +1636,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._inspector_controller.clear()
 
     def _toggle_renderer_component(self, checked: bool) -> None:
-        if self._updating_inspector or self._selected_name not in self._objects_by_name:
-            return
-        self._record_history()
-        self._objects_by_name[self._selected_name]["renderer_enabled"] = bool(checked)
-        self._send_inspector_renderer(record_history=False)
-        self._update_inspector(self._selected_name)
+        self._inspector_components.toggle_renderer(checked)
 
     def _choose_sprite_texture(self) -> None:
         if self._selected_name not in self._objects_by_name:
@@ -1684,28 +1680,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._send_inspector_renderer(record_history=False)
 
     def _send_inspector_renderer(self, record_history: bool = True) -> None:
-        if self._updating_inspector or self._selected_name not in self._objects_by_name:
-            return
-        if record_history:
-            self._record_history()
-        obj = self._objects_by_name[self._selected_name]
-        obj["renderer_enabled"] = self.show_renderer_chk.isChecked()
-        obj["texture"] = self.sprite_texture_field.text().strip()
-        obj["render_layer"] = self.sprite_layer_combo.currentText()
-        obj["sort_order"] = int(self.sprite_order_field.value())
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
+        self._inspector_components.send_renderer(record_history)
 
     def _toggle_audio_component(self, checked: bool) -> None:
-        if self._updating_inspector or self._selected_name not in self._objects_by_name:
-            return
-        self._record_history()
-        obj = self._objects_by_name[self._selected_name]
-        if checked:
-            obj.setdefault("audio", {"path": "", "volume": 1.0, "loop": False, "autoplay": False})
-        else:
-            obj.pop("audio", None)
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
-        self._update_inspector(self._selected_name)
+        self._inspector_components.toggle_audio(checked)
 
     def _get_available_audio_files(self) -> list[str]:
         audio_dir = Path.cwd() / "Assets" / "Audio"
@@ -1722,59 +1700,16 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         return sorted(audio_files, key=str.lower)
 
     def _send_inspector_audio(self) -> None:
-        if self._updating_inspector or self._selected_name not in self._objects_by_name:
-            return
-        obj = self._objects_by_name[self._selected_name]
-        if not isinstance(obj.get("audio"), dict):
-            return
-        self._record_history()
-        chosen = self.audio_path_combo.currentData() or self.audio_path_combo.currentText()
-        if chosen == "Nenhum":
-            chosen = ""
-        obj["audio"].update({
-            "path": chosen,
-            "volume": float(self.audio_volume_field.value()),
-            "loop": self.audio_loop_field.isChecked(),
-            "autoplay": self.audio_autoplay_field.isChecked(),
-        })
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
+        self._inspector_components.send_audio()
 
     def _test_selected_audio(self) -> None:
-        if self._selected_name not in self._objects_by_name:
-            return
-        audio = self._objects_by_name[self._selected_name].get("audio")
-        if not isinstance(audio, dict) or not audio.get("path"):
-            self._log("WARNING", "Selecione um arquivo no Audio Source antes de testar")
-            return
-        self._commands.put({
-            "type": "preview_audio", "name": self._selected_name,
-            "path": str(audio["path"]), "volume": float(audio.get("volume", 1.0)),
-            "loop": bool(audio.get("loop", False)),
-        })
+        self._inspector_components.preview_audio()
 
     def _toggle_rigidbody_component(self, checked: bool) -> None:
-        if self._updating_inspector or self._selected_name not in self._objects_by_name:
-            return
-        self._record_history()
-        obj = self._objects_by_name[self._selected_name]
-        if checked:
-            obj.setdefault("rigidbody", {"mass": 1.0, "gravity_scale": 1.0, "use_gravity": True, "is_kinematic": False})
-        else:
-            obj.pop("rigidbody", None)
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
-        self._update_inspector(self._selected_name)
+        self._inspector_components.toggle_rigidbody(checked)
 
     def _toggle_collider_component(self, checked: bool) -> None:
-        if self._updating_inspector or self._selected_name not in self._objects_by_name:
-            return
-        self._record_history()
-        obj = self._objects_by_name[self._selected_name]
-        if checked:
-            obj.setdefault("collider", {"type": "box", "is_trigger": False})
-        else:
-            obj.pop("collider", None)
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
-        self._update_inspector(self._selected_name)
+        self._inspector_components.toggle_collider(checked)
 
     def _toggle_animator_component(self, checked: bool) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
@@ -2456,38 +2391,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._update_inspector(self._selected_name)
 
     def _toggle_camera_component(self, checked: bool) -> None:
-        if self._updating_inspector or self._selected_name not in self._objects_by_name:
-            return
-        self._record_history()
-        obj = self._objects_by_name[self._selected_name]
-        if checked:
-            obj.setdefault("camera", {"active": True, "zoom": 1.0, "width": 1280.0, "height": 720.0, "background_color": [22, 24, 31], "follow_target": ""})
-            names = obj.setdefault("component_names", [])
-            if "Camera2D" not in names:
-                names.append("Camera2D")
-        else:
-            obj.pop("camera", None)
-            obj["component_names"] = [name for name in obj.get("component_names", []) if name != "Camera2D"]
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
-        self._update_inspector(self._selected_name)
+        self._inspector_components.toggle_camera(checked)
 
     def _send_inspector_camera(self) -> None:
-        if self._updating_inspector or self._selected_name not in self._objects_by_name:
-            return
-        obj = self._objects_by_name[self._selected_name]
-        camera = obj.get("camera")
-        if not isinstance(camera, dict):
-            return
-        self._record_history()
-        follow = self.camera_follow_combo.currentText()
-        camera.update({
-            "active": self.camera_active_field.isChecked(),
-            "width": float(self.camera_width_field.value()),
-            "height": float(self.camera_height_field.value()),
-            "zoom": float(self.camera_zoom_field.value()),
-            "follow_target": "" if follow == "Nenhum" else follow,
-        })
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
+        self._inspector_components.send_camera()
 
     def _choose_camera_color(self) -> None:
         if self._selected_name not in self._objects_by_name:
@@ -2695,16 +2602,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self._log("INFO", f"Animator adicionado em {object_name} com {picker.selected_path.name}")
 
     def _send_inspector_physics(self) -> None:
-        if self._updating_inspector or self._selected_name not in self._objects_by_name:
-            return
-        obj = self._objects_by_name[self._selected_name]
-        rigidbody = obj.get("rigidbody")
-        if rigidbody is None:
-            return
-        self._record_history()
-        rigidbody["use_gravity"] = self.physics_fields["use_gravity"].isChecked()
-        rigidbody["is_kinematic"] = self.physics_fields["is_kinematic"].isChecked()
-        self._commands.put({"type": "set_physics", "name": self._selected_name, "rigidbody": rigidbody})
+        self._inspector_components.send_physics()
 
     def _send_inspector_transform(self) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
@@ -2716,19 +2614,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._commands.put({"type": "set_transform", "name": self._selected_name, **{k: obj[k] for k in ("x", "y", "w", "h", "rotation")}})
 
     def _send_inspector_collider(self) -> None:
-        if self._updating_inspector or self._selected_name not in self._objects_by_name:
-            return
-        obj = self._objects_by_name[self._selected_name]
-        collider = obj.get("collider")
-        if not isinstance(collider, dict):
-            return
-        self._record_history()
-        collider_type = str(collider.get("type", "box")).lower()
-        keys = ("radius", "offset_x", "offset_y") if collider_type == "circle" else ("width", "height", "offset_x", "offset_y")
-        for key in keys:
-            collider[key] = float(self.collider_fields[key].value())
-        collider["is_trigger"] = self.collider_trigger_field.isChecked()
-        self._commands.put({"type": "set_collider", "name": self._selected_name, "collider": deepcopy(collider)})
+        self._inspector_components.send_collider()
 
     def _select_hierarchy_item(self, item: QTreeWidgetItem) -> None:
         name = self._hierarchy_item_name(item)
