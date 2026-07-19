@@ -6,11 +6,16 @@ bootstrap contract before the editor shells are consolidated.
 from __future__ import annotations
 
 import sys
+import tomllib
+from pathlib import Path
 from types import ModuleType
 
 import pytest
 
 from editor import phase1_main
+
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def _module(name: str, **attributes: object) -> ModuleType:
@@ -110,3 +115,19 @@ def test_bootstrap_errors_are_not_silenced(monkeypatch) -> None:
 
     with pytest.raises(RuntimeError, match="viewport bootstrap failed"):
         phase1_main.main()
+
+
+def test_package_command_points_to_official_entrypoint() -> None:
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+
+    assert project["project"]["scripts"] == {
+        "zennity-editor": "editor.phase1_main:main",
+    }
+
+
+def test_readme_uses_only_official_public_launch_commands() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "python -m editor.phase1_main" in readme
+    assert "zennity-editor" in readme
+    assert "python editor/main.py" not in readme
