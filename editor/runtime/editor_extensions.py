@@ -66,9 +66,9 @@ class AssetDragDropExtension:
     name = "asset_drag_drop"
 
     def install(self, editor: Any) -> None:
-        from editor.runtime.asset_drag_drop_patch import apply_asset_drag_drop_patch
+        from editor.runtime.asset_drag_drop import install_asset_drag_drop
 
-        apply_asset_drag_drop_patch(editor)
+        install_asset_drag_drop(editor)
 
     def uninstall(self, editor: Any) -> None:
         # Qt owns the event filters through their widget parents. They are
