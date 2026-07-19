@@ -5,7 +5,10 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def _source(relative: str) -> str:
-    return (ROOT / relative).read_text(encoding="utf-8")
+    source = (ROOT / relative).read_text(encoding="utf-8")
+    if relative == "editor/isolated_viewport.py":
+        source += (ROOT / "editor/runtime/viewport_play_commands.py").read_text(encoding="utf-8")
+    return source
 
 
 def test_logic_and_animation_use_independent_windows_not_viewport_tabs():
@@ -418,3 +421,20 @@ def test_logic_workspace_controls_named_movements_and_debugs_runtime_objects():
     ):
         assert f'"{node_type}"' in graph
         assert f'node_type == "{node_type}"' in runtime or node_type in {"pause_continuous_motion", "resume_continuous_motion"}
+        assert f'"{node_type}"' in editor
+    assert '"movement": "Movement"' in graph
+    assert '"space": "global"' in graph
+    assert '"acceleration": 0.0' in graph and '"deceleration": 0.0' in graph
+    assert '"movement": QColor' in editor
+    assert '"controlled_permanent_motion"' in recipes
+    assert "def runtime_object_snapshot" in viewport
+    assert '"type": "runtime_objects"' in viewport
+    assert '"runtime_objects": self._handle_runtime_objects_event' in main
+    assert "def _handle_runtime_objects_event" in main
+    assert '"▶ Runtime (' in main
+    assert "_runtime_objects_by_name" in main
+    assert "runtime_debug_header" in interface
+    assert "runtime_debug_label" in interface
+    assert "Movimentos ativos" in main
+    assert "Criado por:" in main and "Grafo:" in main
+    assert "Controlado por:" in main
