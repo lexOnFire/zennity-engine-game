@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any
+from typing import Any, Callable
 
 from engine.input import Input
 from engine.runtime.input_manager import InputManager
@@ -12,6 +12,9 @@ from engine.time import Time
 class RuntimeState(str, Enum):
     STOPPED = "stopped"
     PLAYING = "playing"
+
+
+RuntimeStateListener = Callable[[RuntimeState], None]
 
 
 class RuntimeManager:
@@ -27,10 +30,26 @@ class RuntimeManager:
         self.runtime_scene: RuntimeScene | None = None
         self.input = InputManager()
         self._input_bound: bool = False
+        self._state_listeners: list[RuntimeStateListener] = []
 
     @property
     def is_playing(self) -> bool:
         return self.state == RuntimeState.PLAYING
+
+    def subscribe_state(self, callback: RuntimeStateListener) -> None:
+        if callback not in self._state_listeners:
+            self._state_listeners.append(callback)
+
+    def unsubscribe_state(self, callback: RuntimeStateListener) -> None:
+        if callback in self._state_listeners:
+            self._state_listeners.remove(callback)
+
+    def _set_state(self, state: RuntimeState) -> None:
+        if state == self.state:
+            return
+        self.state = state
+        for callback in list(self._state_listeners):
+            callback(state)
 
     def start_play(self, editor_scene: Any) -> RuntimeScene:
         """Inicia o Play Mode. Idempotente — retorna a cena existente se já iniciou."""
@@ -43,12 +62,12 @@ class RuntimeManager:
         try:
             self.runtime_scene = RuntimeScene(editor_scene)
             self.runtime_scene.start_runtime()
-            self.state = RuntimeState.PLAYING
+            self._set_state(RuntimeState.PLAYING)
         except Exception:
             # Se a criação falhar, garante cleanup para não deixar estado sujo
             self._cleanup_input()
             self.runtime_scene = None
-            self.state = RuntimeState.STOPPED
+            self._set_state(RuntimeState.STOPPED)
             raise
         return self.runtime_scene
 
@@ -75,7 +94,7 @@ class RuntimeManager:
         self.runtime_scene = None
         self._cleanup_input()
         Time._runtime_reset()
-        self.state = RuntimeState.STOPPED
+        self._set_state(RuntimeState.STOPPED)
 
     def handle_input_event(self, event: Any) -> None:
         if self.state != RuntimeState.PLAYING:
