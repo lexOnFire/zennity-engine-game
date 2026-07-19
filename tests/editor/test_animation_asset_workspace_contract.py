@@ -49,7 +49,7 @@ def test_zanim_can_be_applied_explicitly_or_dropped_on_an_object() -> None:
 
     assert "h.animation_apply_button.clicked.connect" in controller
     assert "h.animation_demo_button.clicked.connect" in controller
-    assert 'path.suffix.lower() == ".zanim"' in operations
+    assert 'path.suffix.lower() != ".zanim"' in operations
     assert "_apply_animation_asset_path_to_object" in operations
 
 
