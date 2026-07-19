@@ -37,8 +37,18 @@ if IS_LINUX_HEADLESS:
             self._flags = flags
             self._pixels: dict[tuple[int, int], tuple] = {}
             self._alpha = 255
-            self.blit_mock = MagicMock(return_value=pygame.Rect(0, 0, 0, 0))
-            self.fill_mock = MagicMock(return_value=pygame.Rect(0, 0, 0, 0))
+            self._mod_count = 0
+            
+            def _track_blit(*args, **kwargs):
+                self._mod_count += 1
+                return pygame.Rect(0, 0, 0, 0)
+                
+            def _track_fill(*args, **kwargs):
+                self._mod_count += 1
+                return pygame.Rect(0, 0, 0, 0)
+
+            self.blit_mock = MagicMock(side_effect=_track_blit)
+            self.fill_mock = MagicMock(side_effect=_track_fill)
             self.set_alpha_mock = MagicMock()
 
         def blit(self, *args, **kwargs):
@@ -89,7 +99,8 @@ if IS_LINUX_HEADLESS:
             self._pixels[tuple(pos)] = tuple(color)
 
         def get_at(self, pos):
-            return self._pixels.get(tuple(pos), (0, 0, 0, 255))
+            color = self._pixels.get(tuple(pos), (0, 0, 0, 255))
+            return pygame.Color(*color)
 else:
     class _FakeSurface(pygame.Surface):
         """
@@ -192,15 +203,66 @@ def pytest_configure(config):
 
     # Stubs — instalados UMA vez, antes de qualquer import de engine.*
     pygame.Surface         = _FakeSurface           # type: ignore[assignment]
-    def _safe_draw_rect(surface, color, rect, *args, **kwargs):
-        # Evita TypeError caso algum teste injete um _FakeSurface local em pygame.draw.rect
-        if isinstance(surface, pygame.Surface):
-            return _real_draw_rect(surface, color, rect, *args, **kwargs)
-        try:
-            return pygame.Rect(rect)
-        except Exception:
+    
+    def _make_safe_draw(real_draw_func):
+        def _safe_draw(surface, *args, **kwargs):
+            if hasattr(surface, "_mod_count"):
+                surface._mod_count += 1
+            else:
+                surface._mod_count = 1
+                
+            try:
+                # Tenta chamar a original (funciona no Windows ou se surface for original)
+                return real_draw_func(surface, *args, **kwargs)
+            except (TypeError, Exception):
+                pass
+            
+            # Se for _FakeSurface (mock) ou mock local, tenta retornar um Rect dummy
+            try:
+                if len(args) >= 2 and isinstance(args[1], (tuple, list, pygame.Rect)):
+                    return pygame.Rect(args[1])
+                elif len(args) >= 1 and isinstance(args[0], (tuple, list, pygame.Rect)):
+                    return pygame.Rect(args[0])
+            except Exception:
+                pass
             return pygame.Rect(0, 0, 0, 0)
-    pygame.draw.rect       = MagicMock(side_effect=_safe_draw_rect)
+        return _safe_draw
+
+    for draw_func_name in ["rect", "polygon", "circle", "ellipse", "arc", "line", "lines", "aaline", "aalines"]:
+        if hasattr(pygame.draw, draw_func_name):
+            real_func = getattr(pygame.draw, draw_func_name)
+            setattr(pygame.draw, draw_func_name, MagicMock(side_effect=_make_safe_draw(real_func)))
+            
+    # Mock pygame.image.tostring
+    if hasattr(pygame, "image") and hasattr(pygame.image, "tostring"):
+        _real_tostring = pygame.image.tostring
+        def _safe_tostring(surface, format, *args, **kwargs):
+            try:
+                return _real_tostring(surface, format, *args, **kwargs)
+            except TypeError:
+                # Se for FakeSurface, retorna bytes variando com _mod_count
+                w, h = getattr(surface, "get_width", lambda: 100)(), getattr(surface, "get_height", lambda: 100)()
+                bpp = 4 if format == "RGBA" else 3
+                mod_count = getattr(surface, "_mod_count", 0)
+                # Adiciona o mod_count no primeiro byte pra falhar na verificação de igualdade
+                buf = bytearray(w * h * bpp)
+                if len(buf) > 0:
+                    buf[0] = mod_count % 255
+                return bytes(buf)
+        pygame.image.tostring = MagicMock(side_effect=_safe_tostring)
+
+    # Mock pygame.transform.scale
+    if hasattr(pygame.transform, "scale"):
+        _real_scale = pygame.transform.scale
+        def _safe_scale(surface, size, *args, **kwargs):
+            try:
+                return _real_scale(surface, size, *args, **kwargs)
+            except (TypeError, Exception):
+                new_surf = _FakeSurface(size)
+                new_surf._pixels = dict(getattr(surface, "_pixels", {}))
+                return new_surf
+        pygame.transform.scale = MagicMock(side_effect=_safe_scale)
+
     pygame.SRCALPHA        = 65536
     pygame.transform.flip  = _make_fake_flip(_FakeSurface)  # type: ignore[assignment]
 
