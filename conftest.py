@@ -156,9 +156,13 @@ else:
                     return _real_blit(source, dest, *args, **kwargs)
                 return pygame.Rect(0, 0, 0, 0)
 
+            def _tracking_alpha_copy(value, *args, **kwargs):
+                new_surf._alpha = value
+                return _real_alpha(value, *args, **kwargs)
+
             new_surf.blit_mock = MagicMock(side_effect=_safe_blit_copy)
             new_surf.fill_mock = MagicMock(side_effect=_real_fill)
-            new_surf.set_alpha_mock = MagicMock(side_effect=_real_alpha)
+            new_surf.set_alpha_mock = MagicMock(side_effect=_tracking_alpha_copy)
             new_surf._pixels = dict(getattr(self, "_pixels", {}))
             new_surf._alpha = getattr(self, "_alpha", 255)
             return new_surf
