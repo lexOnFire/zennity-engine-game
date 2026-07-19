@@ -68,3 +68,18 @@ def test_component_card_expansion_state_is_preserved() -> None:
     assert '"collider": False' in source
     assert 'self._component_expanded[f"script:{script_path}"] = True' in source
     assert "_toggle_dynamic_inspector_card" in source
+
+
+def test_inspector_update_is_a_small_presenter_orchestrator() -> None:
+    source = _source("editor/isolated_editor_main.py")
+    tree = ast.parse(source)
+    update = next(
+        node for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and node.name == "_update_inspector"
+    )
+
+    assert update.end_lineno - update.lineno + 1 <= 30
+    assert "self._inspector_view.render_animator(name, obj)" in (
+        ast.get_source_segment(source, update) or ""
+    )
+    assert "scripts_list = []" not in source
