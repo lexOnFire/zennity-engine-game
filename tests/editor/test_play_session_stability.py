@@ -155,4 +155,4 @@ def test_viewport_has_one_runtime_lifecycle_and_initializes_spawned_prefabs() ->
     assert "def start_spawned_objects()" in viewport_source
     assert "for hydrator in (hydrate_animation_asset_clips, hydrate_animator_controllers, hydrate_logic_graphs)" in viewport_source
     assert "hydrator({name: obj}, Path.cwd())" in viewport_source
-    assert "start_spawned_objects()\n            trace_now" in viewport_source
+    assert "start_spawned_objects()\n            keys" in viewport_source
