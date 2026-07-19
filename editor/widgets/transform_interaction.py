@@ -9,6 +9,17 @@ from PySide6.QtGui import QBrush, QColor, QPainter, QPen
 from editor.runtime.tool_manager import EditorTool
 
 
+def event_position(event: Any) -> tuple[float, float]:
+    """Return precise Qt 6 coordinates with compatibility for synthetic events."""
+    if hasattr(event, "position"):
+        point = event.position()
+    elif hasattr(event, "pos"):
+        point = event.pos()
+    else:
+        return float(event.x()), float(event.y())
+    return float(point.x()), float(point.y())
+
+
 def sync_camera_to_engine(viewport: Any) -> None:
     from engine.graphics.camera2d import Camera2D
 
