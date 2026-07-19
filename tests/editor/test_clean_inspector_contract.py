@@ -37,7 +37,8 @@ def test_inspector_only_shows_components_present_on_selected_object() -> None:
 
     for key in ("transform", "sprite", "audio", "rigidbody", "collider", "camera"):
         assert f'_set_inspector_card_present("{key}"' in renderer_source
-    assert '_set_inspector_card_present("ui"' in update_source
+    for key in ("ui", "logic", "runtime"):
+        assert f'_set_inspector_card_present("{key}"' in renderer_source
     assert "self._inspector_view.render_physics(obj)" in update_source
 
 
