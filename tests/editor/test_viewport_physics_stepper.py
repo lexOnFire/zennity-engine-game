@@ -4,9 +4,9 @@ from editor.runtime.viewport_physics_stepper import ViewportPhysicsStepper
 def test_physics_stepper_applies_gravity_and_lands_on_static_floor() -> None:
     objects = {
         "Player": {"x": 0.0, "y": 0.0, "w": 10.0, "h": 10.0, "active": True,
-                   "rigidbody": {"use_gravity": True, "is_kinematic": False}, "collider": {}},
+                   "rigidbody": {"use_gravity": True, "is_kinematic": False}, "collider": {"type": "box"}},
         "Floor": {"x": 0.0, "y": 10.0, "w": 100.0, "h": 10.0, "active": True,
-                  "rigidbody": {"is_kinematic": True}, "collider": {}},
+                  "rigidbody": {"is_kinematic": True}, "collider": {"type": "box"}},
     }
     velocities, grounded = {}, {}
 
