@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from engine.scene import SceneDocument
+from engine.scene import SceneDocument, load_scene_document, serialize_scene
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -60,6 +60,23 @@ def test_document_does_not_share_mutable_state_with_callers() -> None:
     exported["objects"][0]["id"] = "mutated-export"
 
     assert document.objects[0]["id"] == "player"
+
+
+def test_atomic_save_retains_previous_document_as_backup(tmp_path) -> None:
+    path = tmp_path / "level.zscene"
+    SceneDocument.empty("Before").save(path)
+    SceneDocument.empty("After").save(path)
+
+    assert load_scene_document(path).scene_name == "After"
+    assert load_scene_document(path.with_suffix(".zscene.bak")).scene_name == "Before"
+    assert not path.with_suffix(".zscene.tmp").exists()
+
+
+def test_serializer_accepts_document_without_losing_extensions() -> None:
+    source = {"objects": [], "extension": {"keep": True}}
+    document = SceneDocument.from_dict(source)
+
+    assert serialize_scene(document) == document.to_dict()
 
 
 @pytest.mark.parametrize(
