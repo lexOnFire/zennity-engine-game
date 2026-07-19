@@ -8,6 +8,7 @@ def _source(relative: str) -> str:
     source = (ROOT / relative).read_text(encoding="utf-8")
     if relative == "editor/isolated_viewport.py":
         source += (ROOT / "editor/runtime/viewport_play_commands.py").read_text(encoding="utf-8")
+        source += (ROOT / "editor/runtime/viewport_session_orchestrator.py").read_text(encoding="utf-8")
     return source
 
 
@@ -177,7 +178,7 @@ def test_visual_event_nodes_are_shared_debuggable_and_exportable():
     assert "LogicEventBus" in runtime
     assert "_receive_custom_event" in runtime
     assert '"events": list(self.event_bus.recent' in runtime
-    assert "logic_event_bus.dispatch()" in viewport
+    assert "event_bus.dispatch()" in viewport
     assert 'f"evento:{event.get' in editor
 
 
@@ -438,4 +439,3 @@ def test_logic_workspace_controls_named_movements_and_debugs_runtime_objects():
     assert "Movimentos ativos" in main
     assert "Criado por:" in main and "Grafo:" in main
     assert "Controlado por:" in main
-
