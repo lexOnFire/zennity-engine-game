@@ -24,10 +24,12 @@ def test_animation_workspace_exposes_library_timeline_and_asset_actions() -> Non
 
 def test_editor_integrates_zanim_without_removing_embedded_clips() -> None:
     source = (ROOT / "editor" / "isolated_editor_main.py").read_text(encoding="utf-8")
+    operations = (ROOT / "editor" / "animation_workspace_operations.py").read_text(encoding="utf-8")
 
-    assert "load_animation_asset" in source
-    assert "save_animation_asset" in source
-    assert 'obj.setdefault("animator"' in source
+    assert "AnimationWorkspaceOperations" in source
+    assert "load_animation_asset" in operations
+    assert "save_animation_asset" in operations
+    assert 'obj.setdefault("animator"' in operations
     assert '"asset_path"' in (ROOT / "engine" / "animation" / "clip_asset.py").read_text(encoding="utf-8")
 
 
@@ -43,11 +45,12 @@ def test_preview_index_exists_before_animation_workspace_is_configured() -> None
 def test_zanim_can_be_applied_explicitly_or_dropped_on_an_object() -> None:
     source = (ROOT / "editor" / "isolated_editor_main.py").read_text(encoding="utf-8")
     controller = (ROOT / "editor" / "animation_workspace_controller.py").read_text(encoding="utf-8")
+    operations = (ROOT / "editor" / "animation_workspace_operations.py").read_text(encoding="utf-8")
 
     assert "h.animation_apply_button.clicked.connect" in controller
     assert "h.animation_demo_button.clicked.connect" in controller
-    assert 'path.suffix.lower() == ".zanim"' in source
-    assert "_apply_animation_asset_path_to_object" in source
+    assert 'path.suffix.lower() == ".zanim"' in operations
+    assert "_apply_animation_asset_path_to_object" in operations
 
 
 def test_animation_workspace_is_resizable_and_properties_scroll() -> None:
@@ -64,10 +67,11 @@ def test_animation_workspace_separates_asset_object_timeline_and_clip_properties
     source = (ROOT / "editor" / "interface_smoke_test.py").read_text(encoding="utf-8")
     runtime = (ROOT / "editor" / "isolated_editor_main.py").read_text(encoding="utf-8")
     controller = (ROOT / "editor" / "animation_workspace_controller.py").read_text(encoding="utf-8")
+    operations = (ROOT / "editor" / "animation_workspace_operations.py").read_text(encoding="utf-8")
 
     for label in ("ASSET", "OBJETO", "TIMELINE", "OBJETO SELECIONADO", "PROPRIEDADES DO CLIP"):
         assert f'QLabel("{label}")' in source
     assert 'self.animation_new_button = QToolButton()' in source
     assert 'self.animation_delete_button.setProperty("uiRole", "danger")' in source
     assert 'suffix = "  •  ainda não salvo"' in controller
-    assert 'self._set_animation_preview_state("error")' in runtime
+    assert 'self._set_animation_preview_state("error")' in operations
