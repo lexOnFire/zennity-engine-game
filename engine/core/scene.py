@@ -56,6 +56,8 @@ class Scene:
         self.name:         str            = name
         self.engine:       Optional["Engine"] = None
         self.game_objects: List["GameObject"] = []
+        from engine.scene.scene_index import SceneIndex
+        self.index = SceneIndex()
 
     def add_game_object(self, go: "GameObject") -> "GameObject":
         """
@@ -65,31 +67,39 @@ class Scene:
         if go not in self.game_objects:
             self.game_objects.append(go)
         go.scene = self
+        self.index.add(go)
         return go
 
     def remove_game_object(self, go: "GameObject") -> None:
         """Remove o GO da cena sem destruí-lo."""
         if go in self.game_objects:
             self.game_objects.remove(go)
+            self.index.remove(go)
             go.scene = None
 
     def find(self, name: str) -> Optional["GameObject"]:
         """Busca o primeiro GO com o nome dado (busca linear)."""
-        for go in self.game_objects:
-            if go.name == name:
-                return go
-        return None
+        found = self.index.by_name(name)
+        if found is not None:
+            return found
+        self.index.rebuild(self.game_objects)
+        return self.index.by_name(name)
 
     def find_by_tag(self, tag: str) -> List["GameObject"]:
         """Retorna todos os GOs com a tag dada."""
-        return [go for go in self.game_objects if go.tag == tag]
+        found = self.index.by_tag(tag)
+        if found:
+            return found
+        self.index.rebuild(self.game_objects)
+        return self.index.by_tag(tag)
 
     def find_by_id(self, uid: str) -> Optional["GameObject"]:
         """Busca pelo UUID4 completo ou short_id (8 chars)."""
-        for go in self.game_objects:
-            if go.id == uid or go.short_id == uid:
-                return go
-        return None
+        found = self.index.by_id(uid)
+        if found is not None:
+            return found
+        self.index.rebuild(self.game_objects)
+        return self.index.by_id(uid)
 
     def start(self) -> None:
         """Chamado uma vez quando a cena se torna ativa."""

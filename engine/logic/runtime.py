@@ -13,10 +13,12 @@ try:
     from .graph_asset import normalize_logic_graph
     from .blackboard import BlackboardStore
     from .event_bus import LogicEvent, LogicEventBus
+    from .handlers import LogicNodeHandlerRegistry, default_logic_handlers
 except ImportError:  # Runtime autocontido exportado.
     from .logic_graph_asset import normalize_logic_graph
     from .logic_blackboard import BlackboardStore
     from .logic_event_bus import LogicEvent, LogicEventBus
+    from .logic_handlers import LogicNodeHandlerRegistry, default_logic_handlers
 
 
 class LogicGraphRuntime:
@@ -32,6 +34,7 @@ class LogicGraphRuntime:
         event_bus: LogicEventBus | None = None,
         subgraph_loader: Callable[[str], Mapping[str, Any]] | None = None,
         call_stack: tuple[str, ...] = (),
+        handlers: LogicNodeHandlerRegistry | None = None,
     ) -> None:
         self.graph = normalize_logic_graph(graph)
         self.object_key = str(object_key)
@@ -40,6 +43,7 @@ class LogicGraphRuntime:
         self.event_bus = event_bus or LogicEventBus()
         self.subgraph_loader = subgraph_loader
         self.call_stack = tuple(str(path).casefold() for path in call_stack)
+        self.handlers = handlers or default_logic_handlers()
         self.nodes = {node["id"]: node for node in self.graph["nodes"]}
         self.outgoing: dict[str, list[dict[str, Any]]] = {}
         self.incoming: dict[tuple[str, str], dict[str, Any]] = {}
@@ -570,34 +574,9 @@ class LogicGraphRuntime:
         properties = node.get("properties", {}) if isinstance(node.get("properties"), Mapping) else {}
         node_id = str(node["id"])
 
-        if node_type == "input_axis":
-            self._evaluate_output(node_id, "value", game, dt, set())
-            return ["next"]
-        if node_type == "key_pressed":
-            pressed = bool(self._evaluate_output(node_id, "value", game, dt, set()))
-            return ["true" if pressed else "false"]
-        if node_type == "key_held":
-            pressed = bool(self._evaluate_output(node_id, "value", game, dt, set()))
-            return ["true" if pressed else "false"]
-        if node_type == "is_grounded":
-            grounded = bool(self._evaluate_output(node_id, "value", game, dt, set()))
-            return ["true" if grounded else "false"]
-        if node_type == "if_else":
-            raw = self._read_input(node_id, "condition", properties.get("condition", False), game, dt, set())
-            condition = self._condition(raw)
-            self._store(node_id, "value", condition)
-            return ["true" if condition else "false"]
-        if node_type == "compare_number":
-            condition = bool(self._evaluate_output(node_id, "value", game, dt, set()))
-            return ["true" if condition else "false"]
-        if node_type == "compare_text":
-            condition = bool(self._evaluate_output(node_id, "value", game, dt, set()))
-            return ["true" if condition else "false"]
-        if node_type == "move":
-            fallback = self.values.get("axis", 0.0)
-            amount = float(self._read_input(node_id, "value", fallback, game, dt, set()))
-            game.move(amount * float(properties.get("speed", 200.0)) * dt)
-            return ["next"]
+        handler = self.handlers.get(node_type)
+        if handler is not None:
+            return handler(self, node, game, dt)
         if node_type == "move_by":
             target = self._read_target(node_id, game, dt, set())
             velocity_x = float(self._read_input(node_id, "x", properties.get("x", 100.0), game, dt, set()))
@@ -968,6 +947,7 @@ class LogicGraphRuntime:
                 self.event_bus,
                 self.subgraph_loader,
                 (*self.call_stack, identity),
+                self.handlers,
             )
             outputs = child.run_subgraph(game, dt, input_values)
             for name, value in outputs.items():
@@ -986,9 +966,6 @@ class LogicGraphRuntime:
             value = self.blackboard.set(scope, name, value, self.object_key)
             self.variables = self.blackboard.values_for_object(self.object_key)
             self._store(node_id, "value", value)
-            return ["next"]
-        if node_type == "get_variable":
-            self._evaluate_output(node_id, "value", game, dt, set())
             return ["next"]
         if node_type == "sequence":
             outputs = max(1, int(properties.get("outputs", 2)))

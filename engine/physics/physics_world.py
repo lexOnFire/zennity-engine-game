@@ -26,6 +26,7 @@ class PhysicsWorld:
         self.contacts: set[tuple[int, int]] = set()
         self.trigger_contacts: set[tuple[int, int]] = set()
         self.detected_contacts: list[PhysicsContact] = []
+        self.broad_phase_candidates = 0
 
     def register_rigidbody(self, body: RigidBody) -> None:
         if body not in self.rigidbodies:
@@ -74,30 +75,32 @@ class PhysicsWorld:
         self.detected_contacts = []
 
         colliders = [c for c in self.colliders if self._component_active(c)]
-        for index, a in enumerate(colliders):
-            for b in colliders[index + 1 :]:
-                if not self._same_scene(a, b):
-                    continue
-                if not self._intersects(a, b):
-                    continue
-                pair = self._pair_key(a, b)
-                is_trigger = bool(getattr(a, "is_trigger", False) or getattr(b, "is_trigger", False))
-                self.detected_contacts.append(PhysicsContact(a, b, is_trigger))
-                if is_trigger:
-                    next_triggers.add(pair)
-                    if pair not in self.trigger_contacts:
-                        self._emit_trigger_enter(a, b)
-                else:
-                    next_contacts.add(pair)
-                    if pair not in self.contacts:
-                        self._emit_collision_enter(a, b)
+        candidates = self._broad_phase_pairs(colliders)
+        self.broad_phase_candidates = len(candidates)
+        for a, b in candidates:
+            if not self._same_scene(a, b):
+                continue
+            if not self._intersects(a, b):
+                continue
+            pair = self._pair_key(a, b)
+            is_trigger = bool(getattr(a, "is_trigger", False) or getattr(b, "is_trigger", False))
+            self.detected_contacts.append(PhysicsContact(a, b, is_trigger))
+            if is_trigger:
+                next_triggers.add(pair)
+                if pair not in self.trigger_contacts:
+                    self._emit_trigger_enter(a, b)
+            else:
+                next_contacts.add(pair)
+                if pair not in self.contacts:
+                    self._emit_collision_enter(a, b)
 
+        by_id = {id(collider): collider for collider in self.colliders}
         for pair in self.trigger_contacts - next_triggers:
-            a, b = self._pair_from_key(pair)
+            a, b = by_id.get(pair[0]), by_id.get(pair[1])
             if a is not None and b is not None:
                 self._emit_trigger_exit(a, b)
         for pair in self.contacts - next_contacts:
-            a, b = self._pair_from_key(pair)
+            a, b = by_id.get(pair[0]), by_id.get(pair[1])
             if a is not None and b is not None:
                 self._emit_collision_exit(a, b)
 
@@ -114,6 +117,36 @@ class PhysicsWorld:
         self.contacts.clear()
         self.trigger_contacts.clear()
         self.detected_contacts.clear()
+        self.broad_phase_candidates = 0
+
+    def _broad_phase_pairs(self, colliders: list[Any]) -> list[tuple[Any, Any]]:
+        """Sweep-and-prune no eixo X, preservando a ordem original dos pares."""
+        entries = []
+        for index, collider in enumerate(colliders):
+            left, right, top, bottom = self._bounds(collider)
+            entries.append((left, right, top, bottom, index, collider))
+        entries.sort(key=lambda item: (item[0], item[4]))
+        active: list[tuple[float, float, float, int, Any]] = []
+        candidates: list[tuple[int, int, Any, Any]] = []
+        for left, right, top, bottom, index, collider in entries:
+            active = [item for item in active if item[0] >= left]
+            for active_right, active_top, active_bottom, other_index, other in active:
+                if active_bottom < top or bottom < active_top:
+                    continue
+                first_index, second_index = sorted((other_index, index))
+                first, second = (other, collider) if other_index < index else (collider, other)
+                candidates.append((first_index, second_index, first, second))
+            active.append((right, top, bottom, index, collider))
+        candidates.sort(key=lambda item: (item[0], item[1]))
+        return [(first, second) for _, _, first, second in candidates]
+
+    def _bounds(self, collider: Any) -> tuple[float, float, float, float]:
+        if self._collider_type(collider) == "CircleCollider":
+            x, y = collider.center
+            radius = float(collider.radius)
+            return x - radius, x + radius, y - radius, y + radius
+        rect = collider.rect
+        return float(rect.left), float(rect.right), float(rect.top), float(rect.bottom)
 
     def _iter_objects(self, runtime_scene: Any) -> list[Any]:
         roots = getattr(runtime_scene, "editable_objects", None)
@@ -173,10 +206,6 @@ class PhysicsWorld:
 
     def _pair_key(self, a: Any, b: Any) -> tuple[int, int]:
         return tuple(sorted((id(a), id(b))))
-
-    def _pair_from_key(self, pair: tuple[int, int]) -> tuple[Any | None, Any | None]:
-        by_id = {id(collider): collider for collider in self.colliders}
-        return by_id.get(pair[0]), by_id.get(pair[1])
 
     def _emit_collision_enter(self, a: Any, b: Any) -> None:
         callback_a = getattr(a, "on_collision_enter", None)

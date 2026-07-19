@@ -36,14 +36,23 @@ class ScriptRuntime:
                 self._start_component(component)
 
     def update(self, delta_time: float) -> None:
+        self._update_phase("on_update", delta_time)
+
+    def fixed_update(self, delta_time: float) -> None:
+        self._update_phase("on_fixed_update", delta_time)
+
+    def late_update(self, delta_time: float) -> None:
+        self._update_phase("on_late_update", delta_time)
+
+    def _update_phase(self, method_name: str, delta_time: float) -> None:
         for instance in list(self.instances.values()):
             component = instance.component
             if not bool(getattr(component, "enabled", True)):
                 continue
             try:
-                instance.behaviour.on_update(float(delta_time))
+                getattr(instance.behaviour, method_name)(float(delta_time))
             except Exception as exc:
-                self._handle_error(component, "on_update", exc)
+                self._handle_error(component, method_name, exc)
 
     def stop(self) -> None:
         for instance in list(reversed(list(self.instances.values()))):

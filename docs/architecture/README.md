@@ -22,3 +22,7 @@ Este diretório documenta toda a arquitetura da Zennity Engine.
 ## Regras
 
 Toda alteração arquitetural relevante deve ser documentada antes do merge.
+
+## Migrações executadas
+
+- [Migração arquitetural segura — 19/07/2026](safe_architecture_migration_2026-07-19.md)

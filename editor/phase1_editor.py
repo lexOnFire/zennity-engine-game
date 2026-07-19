@@ -327,20 +327,14 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self._apply_runtime_patches()
 
     def _apply_runtime_patches(self) -> None:
-        """Ativa todos os patches de runtime apos a UI estar montada."""
+        """Instala extensões de compatibilidade declaradas para o shell embutido."""
         try:
-            from editor.runtime.undo_redo_feedback_patch import _install_instance_shortcuts
-            _install_instance_shortcuts(self)
+            from editor.extensions import phase1_compatibility_extensions
+            self._compatibility_extensions = phase1_compatibility_extensions()
+            self._compatibility_extensions.install_all(self, include_compatibility=True)
         except Exception as exc:
             if hasattr(self, "console"):
-                self.console.add("WARN", f"undo_redo_feedback_patch falhou: {exc}")
-
-        try:
-            from editor.runtime.asset_drag_drop_patch import apply_asset_drag_drop_patch
-            apply_asset_drag_drop_patch(self)
-        except Exception as exc:
-            if hasattr(self, "console"):
-                self.console.add("WARN", f"asset_drag_drop_patch falhou: {exc}")
+                self.console.add("WARN", f"extensão de compatibilidade falhou: {exc}")
 
     def _update_undo_redo_states(self) -> None:
         if hasattr(self, "act_undo") and hasattr(self, "act_redo"):

@@ -8,6 +8,7 @@ from typing import Iterable
 from engine.assets.asset_importer import ImporterRegistry
 from engine.assets.asset_metadata import AssetInfo, AssetMeta
 from engine.assets.asset_types import AssetType
+from engine.serialization_registry import atomic_write_json
 
 
 class AssetDatabase:
@@ -57,6 +58,14 @@ class AssetDatabase:
 
     def get_asset_by_path(self, path: str | Path) -> AssetInfo | None:
         return self._assets_by_path.get(self._relative_asset_path(path))
+
+    def reference_for(self, path: str | Path):
+        """Cria referência GUID + path, mantendo fallback para projetos antigos."""
+        from engine.assets.reference import AssetReference
+        info = self.get_asset_by_path(path)
+        if info is None:
+            info = self.import_asset(path)
+        return AssetReference(guid=info.uuid, path=info.path)
 
     def list_assets(self) -> list[AssetInfo]:
         return sorted(self._assets_by_uuid.values(), key=lambda asset: asset.path)
@@ -121,7 +130,9 @@ class AssetDatabase:
         return (
             path
             for path in self.assets_root.rglob("*")
-            if path.is_file() and path.suffix.lower() != ".meta"
+            if path.is_file()
+            and path.suffix.lower() not in {".meta", ".pyc", ".pyo"}
+            and "__pycache__" not in path.parts
         )
 
     def _metadata_path(self, asset_path: str | Path) -> Path:
@@ -145,4 +156,4 @@ class AssetDatabase:
         return relative.as_posix()
 
     def _write_meta(self, path: Path, meta: AssetMeta) -> None:
-        path.write_text(json.dumps(meta.to_dict(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        atomic_write_json(path, meta.to_dict())

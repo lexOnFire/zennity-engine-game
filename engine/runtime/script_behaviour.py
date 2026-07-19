@@ -32,6 +32,12 @@ class ScriptBehaviour:
     def on_update(self, delta_time: float) -> None:
         """Called on each RuntimeManager.tick(delta_time)."""
 
+    def on_fixed_update(self, fixed_delta_time: float) -> None:
+        """Called by the deterministic physics phase when enabled."""
+
+    def on_late_update(self, delta_time: float) -> None:
+        """Called after regular object updates for order-dependent logic."""
+
     def on_destroy(self) -> None:
         """Called when Play Mode stops and the Runtime World is destroyed."""
 

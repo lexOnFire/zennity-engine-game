@@ -78,6 +78,23 @@ def test_scan_ignores_meta_as_primary_asset(tmp_path) -> None:
     assert [asset.path for asset in assets] == ["Assets/player.png"]
 
 
+def test_scan_ignores_generated_python_bytecode(tmp_path) -> None:
+    _write(tmp_path / "Assets" / "Scripts" / "player.py")
+    _write(tmp_path / "Assets" / "Scripts" / "__pycache__" / "player.cpython-312.pyc")
+    db = AssetDatabase(tmp_path)
+    assets = db.scan()
+    assert [asset.path for asset in assets] == ["Assets/Scripts/player.py"]
+
+
+def test_database_builds_guid_reference_for_legacy_path(tmp_path) -> None:
+    _write(tmp_path / "Assets" / "Textures" / "player.png")
+    db = AssetDatabase(tmp_path)
+    db.scan()
+    reference = db.reference_for("Assets/Textures/player.png")
+    assert reference.guid
+    assert reference.path == "Assets/Textures/player.png"
+
+
 def test_remove_missing_assets_deletes_orphan_meta(tmp_path) -> None:
     asset = _write(tmp_path / "Assets" / "player.png")
     db = AssetDatabase(tmp_path)

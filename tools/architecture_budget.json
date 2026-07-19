@@ -1,0 +1,6 @@
+{
+  "max_class_lines": 3261,
+  "max_method_lines": 1540,
+  "max_files_over_500_lines": 18,
+  "max_import_cycles": 3
+}

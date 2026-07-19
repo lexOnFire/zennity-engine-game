@@ -6,6 +6,7 @@ from engine.physics.physics import Physics
 from engine.physics.physics_world import PhysicsWorld
 from engine.runtime.clone import clone_game_object
 from engine.runtime.script_runtime import ScriptRuntime
+from engine.runtime.lifecycle import RuntimeLifecycleScheduler
 from engine.ui.ui_renderer import UIRenderer
 
 
@@ -19,6 +20,7 @@ class RuntimeScene:
         self.name = f"{getattr(editor_scene, 'name', 'Scene')} (Runtime)"
         self.playing = True
         self.script_runtime = ScriptRuntime(self)
+        self.lifecycle = RuntimeLifecycleScheduler()
         self.physics_world = PhysicsWorld(self)
         self.ui_renderer = UIRenderer()
         self._runtime_started = False
@@ -188,25 +190,29 @@ class RuntimeScene:
         self.physics_world.build_from_scene(self)
         Physics.bind_world(self.physics_world)
         self.script_runtime.start(components)
-        for component in components:
-            self._call_component_hook(component, "on_runtime_start")
-            self._runtime_started_components.append(component)
+        self.lifecycle.start(components)
+        self._runtime_started_components.extend(components)
         AudioManager._sources = [comp for comp in components if comp.__class__.__name__ == "AudioSource"]
         AudioManager._listeners = [comp for comp in components if comp.__class__.__name__ == "AudioListener"]
 
     def update_runtime(self, delta_time: float) -> None:
         if not self._runtime_started:
             return
-        for component in self._iter_enabled_runtime_components():
-            if component in self._runtime_started_components:
-                self._call_component_hook(component, "on_runtime_update", float(delta_time))
+        current_components = self._iter_enabled_runtime_components()
+        for component in current_components:
+            if component not in self._runtime_started_components:
+                self._runtime_started_components.append(component)
+                self.lifecycle.register(component)
+        for component in tuple(self.lifecycle.components):
+            if component not in current_components:
+                self.lifecycle.unregister(component)
+        self.lifecycle.update(float(delta_time))
         self.script_runtime.update(float(delta_time))
 
     def stop_runtime(self) -> None:
         if not self._runtime_started:
             return
-        for component in list(reversed(self._runtime_started_components)):
-            self._call_component_hook(component, "on_runtime_stop")
+        self.lifecycle.stop()
         self.script_runtime.stop()
         self._runtime_started_components.clear()
         self._runtime_started = False
@@ -222,6 +228,8 @@ class RuntimeScene:
         self.update_runtime(dt)
         self.physics_world.step()
         self.scene.update(dt)
+        self.lifecycle.late_update(float(dt))
+        self.script_runtime.late_update(float(dt))
 
     def draw(self, screen: Any) -> None:
         self.draw_background(screen)

@@ -27,10 +27,12 @@ from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QWidget
 
 from editor.interface_smoke_test import InterfaceSmokeTest
 from editor.controllers.logic_assets import LogicAssetRepository
+from editor.controllers.viewport_process import ViewportProcessController
+from editor.controllers.play_mode import PlayModeController
+from editor.core.scene_document import SceneDocument
 from editor.isolated_viewport import run_viewport
 from editor.runtime.native_ui import normalize_ui, scene_item_to_ui, ui_to_scene_item
 from editor.runtime.play_session import EditorPlaySession
-from editor.runtime.viewport_command_bus import ViewportCommandBus
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from editor.widgets.component_picker import ComponentPickerDialog
@@ -92,8 +94,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "ui": True,
             "runtime": True,
         }
+        self._viewport_controller = ViewportProcessController(viewport_process, commands, events)
         self._viewport_process = viewport_process
-        self._commands = ViewportCommandBus(commands)
+        self._commands = self._viewport_controller.commands
         self._events = events
         self._pending_viewport_size: tuple[int, int] | None = None
         self._last_viewport_size_sent: tuple[int, int] | None = None
@@ -106,7 +109,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             {"id": "player", "name": "Player", "x": 0.0, "y": 0.0, "w": 36.0, "h": 48.0, "rotation": 0.0, "color": (88, 117, 255), "rigidbody": {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}, "collider": {"type": "box"}},
         ]
         self._scene_snapshot = deepcopy(self._initial_scene_snapshot)
-        self._scene_document: dict | None = None
+        self._scene_document: SceneDocument | None = None
         self._current_scene_path: Path | None = None
         self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
         self._runtime_objects_by_name: dict[str, dict] = {}
@@ -118,6 +121,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._snap_enabled = False
         self._runtime_playing = False
         self._play_session = EditorPlaySession()
+        self._play_mode = PlayModeController(self._viewport_controller, self._play_session)
         self._runtime_keys = {
             key: False for key in ("left", "right", "up", "down", "jump", "restart")
         }
@@ -359,6 +363,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
 
     def attach_viewport_process(self, process: mp.Process) -> None:
         self._viewport_process = process
+        self._viewport_controller.process = process
 
     def native_viewport_size(self) -> tuple[int, int]:
         """Return physical pixels expected by the native Pygame child window."""
@@ -390,7 +395,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self._pending_viewport_size = self.native_viewport_size()
             self._viewport_resize_timer.start()
         if watched in self._script_drop_targets:
-            if self._play_session.is_running and event.type() in {
+            if self._play_mode.is_running and event.type() in {
                 QEvent.DragEnter, QEvent.DragMove, QEvent.Drop
             }:
                 event.ignore()
@@ -478,7 +483,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         return Path(path_value) if path_value else None
 
     def _attach_script(self, object_name: str, path: Path) -> None:
-        if self._play_session.is_running:
+        if self._play_mode.is_running:
             return
         if object_name not in self._objects_by_name or path.suffix.lower() != ".py":
             return
@@ -989,7 +994,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         output = QFileDialog.getExistingDirectory(self, "Pasta para exportar", str(Path.cwd() / "Builds"))
         if not output:
             return
-        default_name = str((self._scene_document or {}).get("scene_name", "ZennityGame"))
+        default_name = self._scene_document.scene_name if self._scene_document else "ZennityGame"
         project_name, accepted = QInputDialog.getText(self, "Exportar projeto", "Nome do jogo:", text=default_name)
         if not accepted or not project_name.strip():
             return
@@ -1064,7 +1069,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
 
     def _send_toolbar_command(self, message: dict) -> None:
         starting_play = False
-        if self._play_session.is_running and message.get("type") in {
+        if self._play_mode.is_running and message.get("type") in {
             "new_scene", "load_scene", "reset_from_interface", "move_selected"
         }:
             self.statusBar().showMessage("Pare o Play Mode antes de alterar a cena")
@@ -1088,8 +1093,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self._update_inspector(self._selected_name)
             return
         if message.get("type") == "play":
-            resuming_play = self._play_session.state == "pause"
-            play_snapshot = self._play_session.begin(self._scene_snapshot, self._selected_name)
+            resuming_play = self._play_mode.state == "pause"
+            play_snapshot = self._play_mode.begin(self._scene_snapshot, self._selected_name).objects
             self._runtime_playing = True
             self._set_play_mode_editing_locked(True)
             self.logic_workspace.set_play_state(True)
@@ -1112,7 +1117,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 }
                 enabled_audio = [name for name, audio in audio_sources.items() if audio.get("autoplay") and audio.get("path")]
                 self._log("INFO", f"Play enviando {len(audio_sources)} Audio Source(s); {len(enabled_audio)} configurado(s) para iniciar")
-                scene_blackboard = deepcopy((self._scene_document or {}).get("blackboard", {}))
+                scene_blackboard = deepcopy(self._scene_document.blackboard if self._scene_document else {})
                 message = {**message, "audio_sources": audio_sources, "scene_blackboard": scene_blackboard}
         elif message.get("type") == "stop":
             self.viewport_tabs.setCurrentIndex(0)
@@ -1212,7 +1217,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._record_history()
         self._scene_snapshot = []
         self._objects_by_name = {}
-        self._scene_document = {"format_version": 1, "scene_name": "Untitled", "engine_version": "Zennity 0.1.0", "objects": []}
+        self._scene_document = SceneDocument(scene_name="Untitled", format_version=2)
         self._current_scene_path = None
         self._selected_name = None
         self._refresh_hierarchy()
@@ -1229,7 +1234,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         return f"{base}_{index}"
 
     def _create_object(self, kind: str) -> None:
-        if self._play_session.is_running:
+        if self._play_mode.is_running:
             return
         self._record_history()
         presets = {
@@ -1293,7 +1298,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if not filename:
             return
         path = Path(filename)
-        payload = deepcopy(self._scene_document) if self._scene_document else {
+        payload = self._scene_document.to_mapping() if self._scene_document else {
             "format_version": 2, "scene_name": path.stem, "engine_version": "Zennity 0.1.0", "objects": []
         }
         payload["format_version"] = max(2, int(payload.get("format_version", 1)))
@@ -1371,7 +1376,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if path.is_file():
             shutil.copy2(path, path.with_suffix(path.suffix + ".bak"))
         temporary_path.replace(path)
-        self._scene_document = payload
+        self._scene_document = SceneDocument.from_mapping(payload)
         self._current_scene_path = path
         self.statusBar().showMessage(f"Cena salva: {filename}")
         self._log("INFO", f"Cena salva: {filename}")
@@ -1454,7 +1459,11 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._record_history()
         self._scene_snapshot = snapshots
         self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
-        self._scene_document = payload if any("transform" in item for item in objects if isinstance(item, dict)) else None
+        self._scene_document = (
+            SceneDocument.from_mapping(payload)
+            if any("transform" in item for item in objects if isinstance(item, dict))
+            else None
+        )
         self._current_scene_path = Path(filename)
         self._selected_name = None
         self._refresh_hierarchy()
@@ -1496,7 +1505,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._save_selected_as_prefab()
 
     def _rename_object(self, old_name: str) -> None:
-        if self._play_session.is_running:
+        if self._play_mode.is_running:
             return
         new_name, accepted = QInputDialog.getText(self, "Renomear objeto", "Nome:", text=old_name)
         new_name = new_name.strip()
@@ -1514,7 +1523,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._update_inspector(new_name)
 
     def _delete_object(self, name: str) -> None:
-        if self._play_session.is_running:
+        if self._play_mode.is_running:
             return
         self._record_history()
         self._scene_snapshot = [obj for obj in self._scene_snapshot if obj["name"] != name]
@@ -1532,7 +1541,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
 
     def _duplicate_selected(self) -> None:
-        if self._play_session.is_running:
+        if self._play_mode.is_running:
             return
         if self._selected_name not in self._objects_by_name:
             return
@@ -1552,7 +1561,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
 
     def _refresh_hierarchy(self) -> None:
         self.hierarchy_tree.clear()
-        scene_name = self._scene_document.get("scene_name", "MainScene") if self._scene_document else "MainScene"
+        scene_name = self._scene_document.scene_name if self._scene_document else "MainScene"
         root = QTreeWidgetItem(["🟢 " + str(scene_name)])
         root.setExpanded(True)
         for obj in self._scene_snapshot:
@@ -2122,7 +2131,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         return self._apply_animation_asset_to_object(asset, path, object_name)
 
     def _apply_animation_asset_to_object(self, asset: dict, path: Path | None, object_name: str) -> bool:
-        if self._play_session.is_running:
+        if self._play_mode.is_running:
             self.statusBar().showMessage("Pare o Play Mode antes de aplicar uma animação")
             return False
         if object_name not in self._objects_by_name:
@@ -2662,7 +2671,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._log("INFO", "Canvas criado automaticamente para a interface do jogo")
 
     def _open_add_component_menu(self) -> None:
-        if self._play_session.is_running:
+        if self._play_mode.is_running:
             return
         if self._selected_name not in self._objects_by_name:
             return
@@ -3190,11 +3199,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self._updating_inspector = False
 
     def _read_viewport_events(self) -> None:
-        while True:
-            try:
-                message = self._events.get_nowait()
-            except Exception:
-                return
+        for message in self._viewport_controller.drain_events():
             if message.get("type") == "selected":
                 self._selected_name = message["name"]
                 self._update_inspector(self._selected_name)
@@ -3224,14 +3229,15 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             elif message.get("type") == "play_state":
                 state = message["state"]
                 if state in {"play", "pause"}:
-                    self._play_session.set_runtime_state(state)
+                    self._play_mode.set_runtime_state(state)
                 if state == "edit":
                     self._runtime_objects_by_name.clear()
                     self.logic_workspace.clear_runtime_trace()
                     self._runtime_animator_states.clear()
                     if self._animator_controller_dialog is not None:
                         self._animator_controller_dialog.set_runtime_state(None, {})
-                    self._scene_snapshot, self._selected_name = self._play_session.finish()
+                    result = self._play_mode.finish()
+                    self._scene_snapshot, self._selected_name = result.objects, result.selected_name
                     self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
                     self._runtime_keys = {key: False for key in self._runtime_keys}
                     self._commands.put({"type": "runtime_input", "keys": dict(self._runtime_keys)})
@@ -3239,7 +3245,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     if self._selected_name in self._objects_by_name:
                         self._commands.put({"type": "select_object", "name": self._selected_name})
                         self._update_inspector(self._selected_name)
-                self._runtime_playing = self._play_session.is_running
+                self._runtime_playing = self._play_mode.is_running
                 self._set_play_mode_editing_locked(state in {"play", "pause"})
                 self.toolbar_actions["Play"].setEnabled(state != "play")
                 self.toolbar_actions["Pause"].setEnabled(state in {"play", "pause"})
@@ -3250,9 +3256,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 )
                 self._log("INFO", {"play": "Play iniciado/retomado", "pause": "Play pausado", "edit": "Play finalizado; cena restaurada"}[state])
             elif message.get("type") == "scene_snapshot":
-                self._scene_snapshot, restored_selection = self._play_session.consume_scene_snapshot(
+                result = self._play_mode.accept_runtime_snapshot(
                     [deepcopy(item) for item in message.get("objects", [])]
                 )
+                self._scene_snapshot, restored_selection = result.objects, result.selected_name
                 if restored_selection is not None:
                     self._selected_name = restored_selection
                 self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
@@ -3315,15 +3322,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 )
 
     def closeEvent(self, event) -> None:
-        try:
-            self._commands.put_nowait({"type": "shutdown"})
-        except Exception:
-            pass
-        if self._viewport_process is not None and self._viewport_process.is_alive():
-            self._viewport_process.join(timeout=1.5)
-            if self._viewport_process.is_alive():
-                self._viewport_process.terminate()
-                self._viewport_process.join(timeout=2)
+        self._viewport_controller.shutdown(timeout=1.5)
         super().closeEvent(event)
 
 
