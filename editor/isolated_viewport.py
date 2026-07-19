@@ -33,6 +33,8 @@ try:
     from editor.runtime.viewport_navigation_events import ViewportNavigationEventHandler, ViewportNavigationState
     from editor.runtime.viewport_transform_events import ViewportTransformEventHandler, ViewportTransformState
     from editor.runtime.viewport_overlay_renderer import ViewportOverlayRenderer
+    from editor.runtime.viewport_sprite_renderer import ViewportSpriteRenderer
+    from editor.runtime.viewport_physics_stepper import ViewportPhysicsStepper
     from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
     from engine.animation.controller_asset import AnimatorControllerRuntime, load_animator_controller
     from engine.behavior.controller_asset import BehaviorControllerRunner, load_behavior_controller
@@ -53,6 +55,8 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .viewport_navigation_events import ViewportNavigationEventHandler, ViewportNavigationState
     from .viewport_transform_events import ViewportTransformEventHandler, ViewportTransformState
     from .viewport_overlay_renderer import ViewportOverlayRenderer
+    from .viewport_sprite_renderer import ViewportSpriteRenderer
+    from .viewport_physics_stepper import ViewportPhysicsStepper
     from .clip_asset import animation_asset_to_clip, load_animation_asset
     from .controller_asset import AnimatorControllerRuntime, load_animator_controller
     from .behavior_controller import BehaviorControllerRunner, load_behavior_controller
@@ -1164,6 +1168,8 @@ def run_viewport(
         pygame, objects, lambda event: _send(events, event), world_to_screen,
     )
     overlay_renderer = ViewportOverlayRenderer(pygame)
+    sprite_renderer = ViewportSpriteRenderer(pygame, prepare_sprite_surface, prepare_scrolling_sprite_surface)
+    physics_stepper = ViewportPhysicsStepper()
 
     while running:
         for command in command_queue.drain():
@@ -1453,41 +1459,9 @@ def run_viewport(
             motion_axes_by_name = {
                 name: obj.pop("_logic_motion_axes", set()) for name, obj in objects.items()
             }
-            for _physics_step in range(physics_steps):
-                static_colliders = [
-                    obj for obj in objects.values()
-                    if obj.get("active", True)
-                    and obj.get("collider")
-                    and not obj["collider"].get("is_trigger", False)
-                    and (obj.get("rigidbody") or {}).get("is_kinematic", True)
-                ]
-                for name, obj in list(objects.items()):
-                    if not obj.get("active", True):
-                        continue
-                    logic_motion_axes = motion_axes_by_name.get(name, set())
-                    rigidbody = obj.get("rigidbody") or {}
-                    if rigidbody.get("is_kinematic", False) or not rigidbody.get("use_gravity", False):
-                        continue
-                    if "y" in logic_motion_axes:
-                        velocities_y[name] = 0.0
-                        continue
-                    grounded[name] = False
-                    velocity = velocities_y.get(name, 0.0) + 980.0 * float(rigidbody.get("gravity_scale", 1.0)) * fixed_physics_dt
-                    previous_bottom = obj["y"] + obj["h"] / 2
-                    obj["y"] += velocity * fixed_physics_dt
-                    for floor in static_colliders:
-                        if floor is obj:
-                            continue
-                        overlaps_x = abs(obj["x"] - floor["x"]) * 2 < obj["w"] + floor["w"]
-                        floor_top = floor["y"] - floor["h"] / 2
-                        player_bottom = obj["y"] + obj["h"] / 2
-                        if overlaps_x and previous_bottom <= floor_top and player_bottom >= floor_top:
-                            obj["y"] = floor_top - obj["h"] / 2
-                            velocity = 0.0
-                            grounded[name] = True
-                            break
-                    velocities_y[name] = velocity
-                    obj["_grounded"] = bool(grounded.get(name, False))
+            physics_stepper.step(
+                objects, velocities_y, grounded, motion_axes_by_name, physics_steps, fixed_physics_dt,
+            )
             process_contacts()
             update_animations(dt)
             for obj in objects.values():
@@ -1523,90 +1497,11 @@ def run_viewport(
                 screen, objects, width, height, camera_x, camera_y, zoom, world_to_screen,
             )
 
-        layer_order = {"Background": 0, "Default": 1, "Foreground": 2, "UI": 3}
-        render_objects = sorted(
-            objects.items(),
-            key=lambda item: (layer_order.get(str(item[1].get("render_layer", "Default")), 1), int(item[1].get("sort_order", 0))),
+        sprite_renderer.draw(
+            screen, objects, view_mode=view_mode, selected_name=selected_name,
+            active_tool=active_tool, render_zoom=view_transform()[2],
+            world_to_screen=world_to_screen, overlay_renderer=overlay_renderer,
         )
-        for name, obj in render_objects:
-            if not obj.get("active", True) or not obj.get("renderer_enabled", True):
-                continue
-            if view_mode == "game" and (
-                "Camera2D" in obj.get("component_names", [])
-                or isinstance(obj.get("camera"), dict)
-                or obj.get("mesh_type") == "Camera"
-            ):
-                continue
-            render_zoom = view_transform()[2]
-            object_x, object_y = world_to_screen(float(obj["x"]), float(obj["y"]))
-            object_width = max(1, int(float(obj["w"]) * render_zoom))
-            object_height = max(1, int(float(obj["h"]) * render_zoom))
-            box = pygame.Rect(int(object_x - object_width / 2), int(object_y - object_height / 2), object_width, object_height)
-            texture_value = str(obj.get("texture", "")).strip()
-            animation_clip = None
-            animator = obj.get("animator")
-            if isinstance(animator, dict) and str(obj.get("_current_animation_name", "")) != "Nenhum":
-                clips = animator.get("clips")
-                if isinstance(clips, dict):
-                    candidate = clips.get(str(obj.get("_current_animation_name", animator.get("active_clip", ""))))
-                    if isinstance(candidate, dict) and candidate.get("texture"):
-                        animation_clip = candidate
-                        texture_value = str(candidate["texture"])
-            source_surface = None
-            if texture_value:
-                texture_path = Path(texture_value)
-                if not texture_path.is_absolute():
-                    texture_path = Path.cwd() / texture_path
-                try:
-                    modified = texture_path.stat().st_mtime
-                    cached = texture_cache.get(str(texture_path))
-                    if cached is None or cached[0] != modified:
-                        texture_cache[str(texture_path)] = (modified, pygame.image.load(str(texture_path)).convert_alpha())
-                    source_surface = texture_cache[str(texture_path)][1]
-                    if animation_clip is not None:
-                        frame_width = max(1, int(animation_clip.get("frame_width", source_surface.get_width())))
-                        frame_height = max(1, int(animation_clip.get("frame_height", source_surface.get_height())))
-                        columns = max(1, source_surface.get_width() // frame_width)
-                        frame_offset = int(obj.get("_animation_frame", 0))
-                        frames = animation_clip.get("frames")
-                        if isinstance(frames, list) and frames:
-                            frame_number = max(0, int(frames[min(frame_offset, len(frames) - 1)]))
-                        else:
-                            frame_number = max(0, int(animation_clip.get("start_frame", 0))) + frame_offset
-                        frame_x = (frame_number % columns) * frame_width
-                        frame_y = (frame_number // columns) * frame_height
-                        if frame_x + frame_width <= source_surface.get_width() and frame_y + frame_height <= source_surface.get_height():
-                            source_surface = source_surface.subsurface((frame_x, frame_y, frame_width, frame_height)).copy()
-                except (OSError, pygame.error):
-                    source_surface = None
-            if source_surface is not None:
-                scroll = obj.get("_texture_scroll")
-                if isinstance(scroll, dict):
-                    object_surface = prepare_scrolling_sprite_surface(
-                        source_surface,
-                        (box.width, box.height),
-                        obj.get("color", (255, 255, 255)),
-                        offset_x=float(scroll.get("offset_x", 0.0)),
-                        offset_y=float(scroll.get("offset_y", 0.0)),
-                        repeat_x=bool(scroll.get("repeat_x", False)),
-                        repeat_y=bool(scroll.get("repeat_y", True)),
-                    )
-                else:
-                    object_surface = prepare_sprite_surface(
-                        source_surface,
-                        (box.width, box.height),
-                        obj.get("color", (255, 255, 255)),
-                    )
-            else:
-                object_surface = pygame.Surface((max(1, box.width), max(1, box.height)), pygame.SRCALPHA)
-                pygame.draw.rect(object_surface, tuple(obj.get("color", (180, 180, 180))), object_surface.get_rect(), border_radius=4)
-            rotated = pygame.transform.rotate(object_surface, -float(obj.get("rotation", 0.0)))
-            screen.blit(rotated, rotated.get_rect(center=(int(object_x), int(object_y))))
-            if view_mode == "scene" and name == selected_name:
-                overlay_renderer.draw_selection(
-                    screen, obj, active_tool, object_x, object_y, object_width, object_height,
-                    render_zoom, world_to_screen,
-                )
         if view_mode == "game":
             native_ui.draw(objects, screen)
         if playing and hud_entries:
