@@ -56,6 +56,7 @@ from engine.prefabs.prefab_asset import (
     apply_exposed_properties, create_prefab_variant, load_prefab_asset,
     resolve_prefab_parameters,
 )
+from engine.scene import SceneDocument
 from editor.widgets.build_report_dialog import BuildReportDialog
 from editor.widgets.project_validation_dialog import ProjectValidationDialog
 from engine.build import (
@@ -1366,11 +1367,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 source.pop("editor_data", None)
             scene_objects.append(source)
         payload["objects"] = scene_objects
-        temporary_path = path.with_name(path.name + ".tmp")
-        temporary_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        if path.is_file():
-            shutil.copy2(path, path.with_suffix(path.suffix + ".bak"))
-        temporary_path.replace(path)
+        SceneDocument.from_dict(payload).save(path)
         self._scene_document = payload
         self._current_scene_path = path
         self.statusBar().showMessage(f"Cena salva: {filename}")
@@ -1402,7 +1399,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if not filename:
             return
         try:
-            payload = json.loads(Path(filename).read_text(encoding="utf-8"))
+            payload = SceneDocument.load(filename).to_dict()
             objects = payload.get("objects", [])
             if not isinstance(objects, list):
                 raise ValueError("arquivo de cena inválido")
