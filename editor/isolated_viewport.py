@@ -23,6 +23,11 @@ try:
         HudRuntimeSystem,
     )
     from editor.runtime.viewport_command_queue import ViewportCommandQueue
+    from editor.runtime.viewport_control_commands import (
+        ViewportAudioCommandHandler,
+        ViewportControlCommandHandler,
+        ViewportControlSettings,
+    )
     from editor.runtime.viewport_edit_commands import ViewportEditCommandHandler
     from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
     from engine.animation.controller_asset import AnimatorControllerRuntime, load_animator_controller
@@ -38,6 +43,7 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .sprite_rendering import prepare_scrolling_sprite_surface, prepare_sprite_surface
     from .viewport_systems import AnimationPlaybackSystem, AudioPlaybackSystem, FixedStepScheduler, HudRuntimeSystem
     from .viewport_command_queue import ViewportCommandQueue
+    from .viewport_control_commands import ViewportAudioCommandHandler, ViewportControlCommandHandler, ViewportControlSettings
     from .viewport_edit_commands import ViewportEditCommandHandler
     from .clip_asset import animation_asset_to_clip, load_animation_asset
     from .controller_asset import AnimatorControllerRuntime, load_animator_controller
@@ -1119,6 +1125,11 @@ def run_viewport(
         screen_to_world,
         lambda: view_transform()[2],
     )
+    control_commands = ViewportControlCommandHandler(forwarded_input)
+    audio_commands = ViewportAudioCommandHandler(
+        objects, audio_channels, audio_sounds, lambda event: _send(events, event),
+        start_audio_sources, stop_audio_sources, play_audio_file,
+    )
 
     while running:
         for command in command_queue.drain():
@@ -1126,6 +1137,19 @@ def run_viewport(
                 command, playing=playing, selected_name=selected_name,
             )
             if handled:
+                continue
+            settings = control_commands.handle(
+                command,
+                ViewportControlSettings(active_tool, view_mode, snap_enabled, snap_size, snap_angle),
+            )
+            if settings is not None:
+                active_tool = settings.active_tool
+                view_mode = settings.view_mode
+                snap_enabled = settings.snap_enabled
+                snap_size = settings.snap_size
+                snap_angle = settings.snap_angle
+                continue
+            if audio_commands.handle(command):
                 continue
             if command.get("type") == "shutdown":
                 running = False
@@ -1152,21 +1176,6 @@ def run_viewport(
                 paused = False
                 velocities_y = {}
                 grounded = {}
-            elif command.get("type") == "set_tool":
-                tool = str(command.get("tool", "select")).lower()
-                if tool in {"select", "move", "rotate", "scale"}:
-                    active_tool = tool
-            elif command.get("type") == "set_view_mode":
-                mode = str(command.get("mode", "scene")).lower()
-                if mode in {"scene", "game"}:
-                    view_mode = mode
-            elif command.get("type") == "set_snap":
-                snap_enabled = bool(command.get("enabled", False))
-                snap_size = max(0.01, float(command.get("size", 16.0)))
-                snap_angle = max(0.01, float(command.get("angle", 15.0)))
-            elif command.get("type") == "runtime_input" and isinstance(command.get("keys"), dict):
-                for key in forwarded_input:
-                    forwarded_input[key] = bool(command["keys"].get(key, False))
             elif command.get("type") == "logic_debug_command":
                 requested_graph = Path(str(command.get("graph", ""))).as_posix().casefold()
                 requested_name = Path(requested_graph).name.casefold()
@@ -1268,14 +1277,6 @@ def run_viewport(
                     paused = False
                     set_channels_paused(audio_channels, False)
                     _send(events, {"type": "play_state", "state": "play"})
-            elif command.get("type") == "start_play_audio":
-                incoming_audio = command.get("audio_sources", {})
-                if isinstance(incoming_audio, dict):
-                    for object_name, audio_config in incoming_audio.items():
-                        if object_name in objects and isinstance(audio_config, dict):
-                            objects[object_name]["audio"] = dict(audio_config)
-                _send(events, {"type": "script_log", "level": "INFO", "message": "Comando dedicado de áudio recebido pelo Play Mode"})
-                start_audio_sources()
             elif command.get("type") == "pause":
                 if playing:
                     paused = not paused
@@ -1295,20 +1296,6 @@ def run_viewport(
                     hud_entries.clear()
                     _send(events, {"type": "play_state", "state": "edit"})
                     _send(events, {"type": "scene_snapshot", "objects": list(objects.values())})
-            elif command.get("type") == "stop_all_audio":
-                stop_audio_sources()
-                _send(events, {"type": "script_log", "level": "INFO", "message": "Todos os áudios foram interrompidos"})
-            elif command.get("type") == "preview_audio":
-                play_audio_file(
-                    "__preview__", str(command.get("path", "")),
-                    float(command.get("volume", 1.0)), bool(command.get("loop", False)),
-                )
-            elif command.get("type") == "stop_audio_preview":
-                channel = audio_channels.pop("__preview__", None)
-                if channel is not None:
-                    channel.stop()
-                audio_sounds.pop("__preview__", None)
-                _send(events, {"type": "script_log", "level": "INFO", "message": "Prévia de áudio interrompida"})
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
