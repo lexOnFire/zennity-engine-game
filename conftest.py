@@ -100,3 +100,19 @@ def reset_pygame_mocks():
     yield
     if hasattr(pygame.draw.rect, "reset_mock"):
         pygame.draw.rect.reset_mock()
+
+@pytest.fixture(autouse=True)
+def reset_event_bus():
+    """Limpa os listeners globais do EventBus entre cada teste."""
+    try:
+        from engine.event_bus import EventBus
+        EventBus.clear()
+    except ImportError:
+        pass
+    yield
+    try:
+        from engine.event_bus import EventBus
+        EventBus.clear()
+    except ImportError:
+        pass
+
