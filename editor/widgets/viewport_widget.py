@@ -165,7 +165,9 @@ class ViewportWidget(QOpenGLWidget):
 
     def selected_object(self):
         """Retorna o objeto atualmente selecionado, compatibilidade com testes e API antiga."""
-        return self.viewmodel.selected_object if self.viewmodel else None
+        selected = self.viewmodel.selected_object if self.viewmodel else None
+        self._sync_scene_selection(selected)
+        return selected
 
     def duplicate_selected_object(self) -> None:
         """Duplica o objeto selecionado via SceneViewModel."""
@@ -410,6 +412,10 @@ class ViewportWidget(QOpenGLWidget):
 
     def _on_selection_changed(self, obj) -> None:
         """Propaga seleção vinda do Outliner → cena ativa por UUID."""
+        self._sync_scene_selection(obj)
+
+    def _sync_scene_selection(self, obj) -> None:
+        """Mantém o índice legado alinhado à seleção canônica do ViewModel."""
         if not self.active_scene:
             return
         objs = getattr(self.active_scene, "editable_objects", [])
