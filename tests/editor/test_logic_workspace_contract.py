@@ -423,7 +423,8 @@ def test_logic_workspace_controls_named_movements_and_debugs_runtime_objects():
     assert '"controlled_permanent_motion"' in recipes
     assert "def runtime_object_snapshot" in viewport
     assert '"type": "runtime_objects"' in viewport
-    assert 'message.get("type") == "runtime_objects"' in main
+    assert '"runtime_objects": self._handle_runtime_objects_event' in main
+    assert "def _handle_runtime_objects_event" in main
     assert '"▶ Runtime (' in main
     assert "_runtime_objects_by_name" in main
     assert "runtime_debug_header" in interface
