@@ -9,6 +9,7 @@ from types import ModuleType
 from typing import Any
 
 from engine.components.script_component import ScriptComponent
+from engine.runtime.lifecycle_scheduler import LifecycleEntry, LifecycleScheduler
 from engine.runtime.script_behaviour import ScriptBehaviour
 
 
@@ -24,33 +25,44 @@ class ScriptRuntimeInstance:
 class ScriptRuntime:
     """Loads and executes ScriptComponent Python behaviours in Runtime World."""
 
-    def __init__(self, runtime_scene: Any, project_root: str | Path | None = None) -> None:
+    def __init__(
+        self,
+        runtime_scene: Any,
+        project_root: str | Path | None = None,
+        scheduler: LifecycleScheduler | None = None,
+    ) -> None:
         self.runtime_scene = runtime_scene
         self.project_root = Path(project_root or Path.cwd()).resolve()
         self.instances: dict[ScriptComponent, ScriptRuntimeInstance] = {}
         self.errors: list[str] = []
+        self.scheduler = scheduler or LifecycleScheduler()
+        self._owns_scheduler = scheduler is None
 
     def start(self, components: list[Any]) -> None:
         for component in components:
             if isinstance(component, ScriptComponent):
                 self._start_component(component)
+        if self._owns_scheduler:
+            self.scheduler.start()
 
     def update(self, delta_time: float) -> None:
-        for instance in list(self.instances.values()):
-            component = instance.component
-            if not bool(getattr(component, "enabled", True)):
-                continue
-            try:
-                instance.behaviour.on_update(float(delta_time))
-            except Exception as exc:
-                self._handle_error(component, "on_update", exc)
+        if self._owns_scheduler:
+            self.scheduler.update(float(delta_time))
+
+    def fixed_update(self, delta_time: float) -> None:
+        if self._owns_scheduler:
+            self.scheduler.run_fixed_updates(float(delta_time))
+
+    def late_update(self, delta_time: float) -> None:
+        if self._owns_scheduler:
+            self.scheduler.late_update(float(delta_time))
 
     def stop(self) -> None:
-        for instance in list(reversed(list(self.instances.values()))):
-            try:
-                instance.behaviour.on_destroy()
-            except Exception as exc:
-                self._record_error(instance.component, "on_destroy", exc)
+        if self._owns_scheduler:
+            self.scheduler.stop()
+        else:
+            for component in list(self.instances):
+                self.scheduler.unregister(self._scheduler_key(component))
         self.instances.clear()
 
     def notify_game_object_event(self, game_object: Any, method_name: str, other: Any) -> None:
@@ -79,11 +91,42 @@ class ScriptRuntime:
             behaviour.scene = self.runtime_scene
             instance = ScriptRuntimeInstance(component, behaviour, module, path)
             self.instances[component] = instance
-            behaviour.on_awake()
-            behaviour.on_start()
-            instance.started = True
+            self.scheduler.register(
+                LifecycleEntry(
+                    key=self._scheduler_key(component),
+                    enabled=lambda component=component: bool(getattr(component, "enabled", True)),
+                    awake=lambda: self._call(instance, "on_awake"),
+                    start=lambda: self._mark_started(instance),
+                    update=lambda dt: self._call(instance, "on_update", dt),
+                    fixed_update=lambda dt: self._call(instance, "on_fixed_update", dt),
+                    late_update=lambda dt: self._call(instance, "on_late_update", dt),
+                    stop=lambda: self._call(instance, "on_destroy", disable_on_error=False),
+                )
+            )
         except Exception as exc:
             self._handle_error(component, "start", exc)
+
+    def _scheduler_key(self, component: ScriptComponent) -> tuple[str, int]:
+        return ("script", id(component))
+
+    def _mark_started(self, instance: ScriptRuntimeInstance) -> None:
+        self._call(instance, "on_start")
+        instance.started = True
+
+    def _call(
+        self,
+        instance: ScriptRuntimeInstance,
+        method_name: str,
+        *args: Any,
+        disable_on_error: bool = True,
+    ) -> None:
+        try:
+            getattr(instance.behaviour, method_name)(*args)
+        except Exception as exc:
+            if disable_on_error:
+                self._handle_error(instance.component, method_name, exc)
+            else:
+                self._record_error(instance.component, method_name, exc)
 
     def _resolve_path(self, script_path: str) -> Path:
         path = Path(script_path)
@@ -115,8 +158,9 @@ class ScriptRuntime:
 
     def _handle_error(self, component: ScriptComponent, phase: str, exc: Exception) -> None:
         component.enabled = False
-        if phase == "start":
+        if phase in {"start", "on_awake", "on_start"}:
             self.instances.pop(component, None)
+            self.scheduler.unregister(self._scheduler_key(component))
         self._record_error(component, phase, exc)
 
     def _record_error(self, component: ScriptComponent, phase: str, exc: Exception) -> None:
