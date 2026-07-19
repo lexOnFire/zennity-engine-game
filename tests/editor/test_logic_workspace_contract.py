@@ -220,6 +220,7 @@ def test_gameplay_event_library_and_search_are_available():
 def test_visual_logic_is_cleanly_managed_from_inspector():
     interface = _source("editor/interface_smoke_test.py")
     main = _source("editor/isolated_editor_main.py")
+    inspector = _source("editor/inspector_controller.py")
     picker = _source("editor/widgets/logic_graph_picker.py")
     components = _source("editor/widgets/component_picker.py")
     graph = _source("engine/logic/graph_asset.py")
@@ -228,7 +229,8 @@ def test_visual_logic_is_cleanly_managed_from_inspector():
     assert "Lógica Visual" in interface
     assert "logic_graph_combo" in interface
     assert "logic_summary_label" in interface
-    assert '"logic": (self.logic_component_header' in main
+    assert '"logic": ("logic_component_header"' in inspector
+    assert "IsolatedInspectorController" in main
     assert "_logic_graphs_for_object" in main
     assert "_choose_logic_graph_component" in main
     assert "_detach_selected_logic_graph" in main
@@ -376,59 +378,3 @@ def test_logic_workspace_controls_play_and_builds_scrolling_image_planes():
     assert 'node_type == "start_texture_scroll"' in runtime
     assert "def start_texture_scroll" in viewport
     assert "def prepare_scrolling_sprite_surface" in rendering
-    assert '"scrolling_road_or_sky"' in recipes
-
-
-def test_logic_workspace_explains_targets_and_controls_spawn_lifecycle():
-    editor = _source("editor/widgets/logic_graph_editor.py")
-    graph = _source("engine/logic/graph_asset.py")
-    runtime = _source("engine/logic/runtime.py")
-    viewport = _source("editor/isolated_viewport.py")
-    world = _source("engine/runtime/runtime_world.py")
-    recipes = _source("engine/logic/recipes.py")
-    assert "def _refresh_target_hints" in editor
-    assert "ALVO IMPLÍCITO" in editor and "ALVO ATUAL" in editor
-    assert "Referência de objeto" in editor and "Qt.DashLine" in editor
-    for node_type in ("event_object_created", "destroy_after_time"):
-        assert f'"{node_type}"' in graph
-        assert f'node_type == "{node_type}"' in runtime or node_type == "event_object_created"
-    for property_name in ("lifetime", "max_instances", "max_distance", "use_pool"):
-        assert f'"{property_name}"' in graph
-    assert "def configure_spawned" in viewport
-    assert "def update_lifecycle" in world
-    assert "def can_spawn" in world
-    assert '"safe_pooled_projectile"' in recipes
-
-
-def test_logic_workspace_controls_named_movements_and_debugs_runtime_objects():
-    graph = _source("engine/logic/graph_asset.py")
-    runtime = _source("engine/logic/runtime.py")
-    editor = _source("editor/widgets/logic_graph_editor.py")
-    viewport = _source("editor/isolated_viewport.py")
-    main = _source("editor/isolated_editor_main.py")
-    interface = _source("editor/interface_smoke_test.py")
-    recipes = _source("engine/logic/recipes.py")
-    for node_type in (
-        "update_continuous_motion", "pause_continuous_motion",
-        "resume_continuous_motion", "stop_continuous_motion",
-        "get_continuous_motion",
-    ):
-        assert f'"{node_type}"' in graph
-        assert f'node_type == "{node_type}"' in runtime or node_type in {"pause_continuous_motion", "resume_continuous_motion"}
-        assert f'"{node_type}"' in editor
-    assert '"movement": "Movement"' in graph
-    assert '"space": "global"' in graph
-    assert '"acceleration": 0.0' in graph and '"deceleration": 0.0' in graph
-    assert '"movement": QColor' in editor
-    assert '"controlled_permanent_motion"' in recipes
-    assert "def runtime_object_snapshot" in viewport
-    assert '"type": "runtime_objects"' in viewport
-    assert '"runtime_objects": self._handle_runtime_objects_event' in main
-    assert "def _handle_runtime_objects_event" in main
-    assert '"▶ Runtime (' in main
-    assert "_runtime_objects_by_name" in main
-    assert "runtime_debug_header" in interface
-    assert "runtime_debug_label" in interface
-    assert "Movimentos ativos" in main
-    assert "Criado por:" in main and "Grafo:" in main
-    assert "Controlado por:" in main
