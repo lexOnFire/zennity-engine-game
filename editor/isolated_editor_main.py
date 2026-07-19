@@ -2688,89 +2688,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
 
             self._inspector_view.render_camera(name, obj)
 
-            ui = normalize_ui(obj.get("ui"))
-            self._set_inspector_card_present("ui", ui is not None)
-            if ui is not None:
-                kind = str(ui["type"])
-                labels = {"canvas": "🖥 Canvas", "text": "🔤 UI Text", "image": "🖼 UI Image", "button": "🔘 UI Button"}
-                self.show_ui_chk.setText(labels[kind])
-                self.show_ui_chk.setChecked(bool(ui.get("visible", True)))
-                self.ui_type_field.setText({"canvas": "Canvas", "text": "Texto", "image": "Imagem", "button": "Botão"}[kind])
-                self.ui_text_field.setText(str(ui.get("text", "")))
-                self.ui_text_field.setEnabled(kind in {"text", "button"})
-                for key, field in self.ui_position_fields.items():
-                    field.setValue(float(ui.get(key, 0)))
-                    field.setEnabled(kind != "canvas" and (key != "font_size" or kind in {"text", "button"}) and (key != "alpha" or kind == "image"))
-                color = tuple(ui.get("color", (255, 255, 255)))[:3]
-                self.ui_color_button.setEnabled(kind in {"text", "image", "button"})
-                self.ui_color_button.setStyleSheet(f"background: rgb({int(color[0])}, {int(color[1])}, {int(color[2])});")
-                self.ui_image_path_field.setText(str(ui.get("path", "")))
-                self.ui_image_path_field.setEnabled(kind == "image")
-                self.ui_image_button.setEnabled(kind == "image")
-                self.ui_interactable_field.setChecked(bool(ui.get("interactable", True)))
-                self.ui_interactable_field.setEnabled(kind == "button")
-                self.ui_event_field.setText(str(ui.get("event", "click")))
-                self.ui_event_field.setEnabled(kind == "button")
-                self.ui_target_combo.clear()
-                self.ui_target_combo.addItem("Este objeto")
-                self.ui_target_combo.addItems([object_name for object_name in self._objects_by_name if object_name != name])
-                target = str(ui.get("target", ""))
-                self.ui_target_combo.setCurrentText(target if target in self._objects_by_name else "Este objeto")
-                self.ui_target_combo.setEnabled(kind == "button")
-
-            logic_bindings = self._logic_graphs_for_object(name)
-            self._set_inspector_card_present("logic", bool(logic_bindings))
-            self.logic_graph_combo.clear()
-            total_nodes = 0
-            for path, graph in logic_bindings:
-                total_nodes += len(graph.get("nodes", []))
-                target_type = str(graph.get("target", {}).get("type", "name"))
-                suffix = " • via Tag" if target_type == "tag" else ""
-                self.logic_graph_combo.addItem(f"{graph.get('name', path.stem)}{suffix}", str(path))
-            if logic_bindings:
-                self.logic_status_label.setText(
-                    f"{len(logic_bindings)} grafo(s) ativo(s) • {total_nodes} blocos"
-                )
-                self._update_logic_graph_summary()
-            else:
-                self.logic_status_label.setText("Nenhum Logic Graph vinculado")
-                self.logic_summary_label.setText("Adicione Lógica Visual para controlar este objeto sem scripts.")
-
-            lifecycle = obj.get("spawn_lifecycle") if isinstance(obj.get("spawn_lifecycle"), dict) else {}
-            motions = obj.get("logic_motions") if isinstance(obj.get("logic_motions"), list) else []
-            prefab_parameters = obj.get("prefab_parameters") if isinstance(obj.get("prefab_parameters"), dict) else {}
-            runtime_present = self._runtime_playing and (
-                bool(obj.get("spawned_by_logic", False)) or bool(lifecycle) or bool(motions) or bool(prefab_parameters)
-            )
-            self._set_inspector_card_present("runtime", runtime_present)
-            if runtime_present:
-                lines = [
-                    f"Posição: X {float(obj.get('x', 0.0)):.2f}  •  Y {float(obj.get('y', 0.0)):.2f}",
-                    f"Origem: X {float(lifecycle.get('origin_x', obj.get('x', 0.0))):.2f}  •  Y {float(lifecycle.get('origin_y', obj.get('y', 0.0))):.2f}",
-                    f"Criado por: {lifecycle.get('creator_object') or 'objeto da cena'}",
-                    f"Grafo: {lifecycle.get('creator_graph') or '—'}",
-                ]
-                if lifecycle:
-                    lines.append(
-                        f"Idade: {float(lifecycle.get('age', 0.0)):.2f}s  •  Vida: "
-                        f"{float(lifecycle.get('lifetime', 0.0)):.2f}s"
-                    )
-                if motions:
-                    lines.append("\nMovimentos ativos:")
-                    for motion in motions:
-                        lines.append(
-                            f"• {motion.get('name', 'Movement')} [{motion.get('space', 'global')}] "
-                            f"X {float(motion.get('x', 0.0)):.2f}  Y {float(motion.get('y', 0.0)):.2f}"
-                            + ("  • PAUSADO" if motion.get("paused") else "")
-                            + f"\n  Controlado por: {motion.get('graph') or '—'}"
-                        )
-                else:
-                    lines.append("Movimentos ativos: nenhum")
-                if prefab_parameters:
-                    lines.append("\nParâmetros do Prefab:")
-                    for parameter_name, parameter_value in prefab_parameters.items():
-                        lines.append(f"• {parameter_name}: {parameter_value}")
-                self.runtime_debug_label.setText("\n".join(lines))
+            self._inspector_view.render_ui(name, obj)
+            self._inspector_view.render_logic(name)
+            self._inspector_view.render_runtime(obj)
 
             # Limpa widgets de scripts anteriores
             for h_w, b_w in self.script_containers:
