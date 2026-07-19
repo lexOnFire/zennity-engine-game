@@ -27,6 +27,7 @@ def test_inspector_exposes_standard_dynamic_cards() -> None:
 
 def test_inspector_only_shows_components_present_on_selected_object() -> None:
     source = _source("editor/isolated_editor_main.py")
+    renderer_source = _source("editor/inspector_view_renderer.py")
     tree = ast.parse(source)
     update = next(
         node for node in ast.walk(tree)
@@ -34,8 +35,10 @@ def test_inspector_only_shows_components_present_on_selected_object() -> None:
     )
     update_source = ast.get_source_segment(source, update) or ""
 
-    for key in ("transform", "sprite", "audio", "rigidbody", "collider", "camera", "ui"):
-        assert f'_set_inspector_card_present("{key}"' in update_source
+    for key in ("transform", "sprite", "audio", "rigidbody", "collider", "camera"):
+        assert f'_set_inspector_card_present("{key}"' in renderer_source
+    assert '_set_inspector_card_present("ui"' in update_source
+    assert "self._inspector_view.render_physics(obj)" in update_source
 
 
 def test_add_component_uses_searchable_picker_instead_of_flat_menu() -> None:
