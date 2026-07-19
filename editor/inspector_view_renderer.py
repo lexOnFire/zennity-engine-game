@@ -1,6 +1,7 @@
-"""Read-only component view renderers for the isolated Inspector."""
+"""Component view presenters for the isolated Inspector."""
 from __future__ import annotations
 
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -8,7 +9,7 @@ from editor.runtime.native_ui import normalize_ui
 
 
 class InspectorViewRenderer:
-    """Project scene dictionaries into Inspector widgets without mutating the scene."""
+    """Project scene dictionaries into widgets and normalize legacy Animator data."""
 
     def __init__(self, host: Any) -> None:
         self.host = host
@@ -90,6 +91,61 @@ class InspectorViewRenderer:
             field.setValue(float((collider or {}).get(key, defaults[key])))
         h.collider_trigger_field.setEnabled(collider is not None)
         h.collider_trigger_field.setChecked(bool((collider or {}).get("is_trigger", False)))
+
+    def render_animator(self, name: str, obj: dict[str, Any]) -> None:
+        h = self.host
+        animator = obj.get("animator")
+        h.show_animator_chk.setChecked(animator is not None)
+        h.animator_body.setEnabled(True)
+        h._refresh_animator_controllers(str((animator or {}).get("controller_path", "")))
+        if not animator:
+            h._animation_bound_key = None
+            h.animator_current_lbl.setText("Nenhum")
+            h.animator_preview.setText("Sem Animator")
+            return
+
+        clips = h._animation_clips(animator)
+        active_clip = str(animator.get("active_clip", next(iter(clips))))
+        if active_clip not in clips:
+            active_clip = next(iter(clips))
+        h.animator_clip_combo.clear()
+        h.animator_clip_combo.addItems(list(clips))
+        h.animator_clip_combo.setCurrentText(active_clip)
+        h.animator_speed_field.setValue(float(animator.get("speed", 1.0)))
+        clip = clips[active_clip]
+        bound_key = (str(obj.get("id", name)), active_clip)
+        if bound_key != h._animation_bound_key:
+            h._animation_bound_key = bound_key
+            asset_path = str(clip.get("asset_path", ""))
+            h._current_animation_asset_path = (
+                (Path.cwd() / asset_path).resolve() if asset_path else None
+            )
+            h._animation_draft_name = active_clip
+            h._animation_asset_dirty = False
+            h._animation_events = deepcopy(clip.get("events", []))
+            h._refresh_animation_events()
+            h._update_animation_asset_status()
+        h.animator_sheet_combo.clear()
+        h.animator_sheet_combo.addItem("Nenhum", "")
+        for sheet in h._available_sprite_sheets():
+            h.animator_sheet_combo.addItem(Path(sheet).name, sheet)
+        sheet_index = h.animator_sheet_combo.findData(str(clip.get("texture", "")))
+        h.animator_sheet_combo.setCurrentIndex(max(0, sheet_index))
+        h.animator_frame_width.setValue(float(clip.get("frame_width", 32)))
+        h.animator_frame_height.setValue(float(clip.get("frame_height", 32)))
+        h.animator_start_frame.setValue(float(clip.get("start_frame", 0)))
+        h.animator_frame_count.setValue(float(clip.get("frame_count", 1)))
+        h.animator_fps_field.setValue(float(clip.get("fps", 8.0)))
+        h.animator_loop_field.setChecked(bool(clip.get("loop", True)))
+        h.animator_current_lbl.setText(
+            str(obj.get("_current_animation_name", animator.get("active_clip", "Idle")))
+        )
+        h._animator_preview_index = min(
+            h._animator_preview_index,
+            max(0, int(clip.get("frame_count", 1)) - 1),
+        )
+        h._refresh_animation_timeline(clip)
+        h._update_animation_preview(clip)
 
     def render_camera(self, name: str, obj: dict[str, Any]) -> None:
         h = self.host
