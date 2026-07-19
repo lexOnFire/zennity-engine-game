@@ -36,6 +36,7 @@ from editor.runtime.viewport_event_dispatcher import ViewportEventDispatcher
 from editor.runtime.scene_history import SceneHistory
 from editor.inspector_controller import InspectorComponentController, IsolatedInspectorController
 from editor.inspector_view_renderer import InspectorViewRenderer
+from editor.animation_workspace_controller import AnimationWorkspaceController
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from editor.widgets.component_picker import ComponentPickerDialog
@@ -151,6 +152,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._inspector_controller = IsolatedInspectorController(self)
         self._inspector_components = InspectorComponentController(self)
         self._inspector_view = InspectorViewRenderer(self)
+        self._animation_workspace = AnimationWorkspaceController(self)
         self._drag_history_snapshot: list[dict] | None = None
         self._snap_enabled = False
         self._runtime_playing = False
@@ -1749,50 +1751,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         return sorted(result, key=str.lower)
 
     def _configure_animation_workspace(self) -> None:
-        """Conecta a biblioteca de clips sem interferir no runtime existente."""
-        self.animation_new_button.clicked.connect(self._new_animation_asset)
-        self.animation_open_button.clicked.connect(self._open_animation_asset_dialog)
-        self.animation_save_button.clicked.connect(self._save_animation_asset)
-        self.animation_save_as_button.clicked.connect(lambda: self._save_animation_asset(save_as=True))
-        self.animation_duplicate_button.clicked.connect(self._duplicate_animation_asset)
-        self.animation_delete_button.clicked.connect(self._delete_animation_asset)
-        self.animation_apply_button.clicked.connect(self._apply_current_animation_to_selected)
-        self.animation_demo_button.clicked.connect(self._run_walk_animation_demo)
-        self.animation_open_demo_button.clicked.connect(
-            lambda _checked=False: self._load_scene_snapshot(scene_path=Path.cwd() / "Assets" / "Scenes" / "AnimatorControllerDemo.zscene")
-        )
-        self.animation_library_tree.itemDoubleClicked.connect(self._open_animation_library_item)
-        self.animation_controller_combo.currentIndexChanged.connect(self._select_animation_controller)
-        self.animation_new_controller_button.clicked.connect(self._new_animator_controller)
-        self.animation_edit_controller_button.clicked.connect(self._edit_animator_controller)
-
-        self.animation_play_button.clicked.connect(self._toggle_animation_preview_playback)
-        self.animation_first_frame_button.clicked.connect(lambda: self._set_animation_preview_frame(0))
-        self.animation_previous_frame_button.clicked.connect(lambda: self._set_animation_preview_frame(self._animator_preview_index - 1))
-        self.animation_next_frame_button.clicked.connect(lambda: self._set_animation_preview_frame(self._animator_preview_index + 1))
-        self.animation_last_frame_button.clicked.connect(lambda: self._set_animation_preview_frame(self._animation_frame_count() - 1))
-        self.animation_timeline.valueChanged.connect(self._set_animation_preview_frame)
-        self.animation_add_event_button.clicked.connect(self._add_animation_event)
-        self.animation_remove_event_button.clicked.connect(self._remove_animation_event)
-
-        for field_signal in (
-            self.animator_clip_combo.currentTextChanged,
-            self.animator_sheet_combo.currentIndexChanged,
-            self.animator_frame_width.valueChanged,
-            self.animator_frame_height.valueChanged,
-            self.animator_start_frame.valueChanged,
-            self.animator_frame_count.valueChanged,
-            self.animator_fps_field.valueChanged,
-            self.animator_loop_field.toggled,
-        ):
-            field_signal.connect(self._mark_animation_asset_dirty)
-        self._refresh_animation_library()
-        self._refresh_animator_controllers()
-        self._refresh_animation_timeline(self._default_animation_clip())
-        self._update_animation_asset_status()
+        self._animation_workspace.connect()
 
     def _animation_assets_directory(self) -> Path:
-        return Path.cwd() / "Assets" / "Animations"
+        return self._animation_workspace.assets_directory()
 
     def _refresh_animator_controllers(self, selected_path: str = "") -> None:
         combo = self.animation_controller_combo
@@ -2183,46 +2145,19 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             return str(path).replace("\\", "/")
 
     def _mark_animation_asset_dirty(self, *_args) -> None:
-        if self._updating_inspector:
-            return
-        self._animation_asset_dirty = True
-        self._update_animation_asset_status()
+        self._animation_workspace.mark_dirty()
 
     def _update_animation_asset_status(self) -> None:
-        name = self._current_animation_asset_path.name if self._current_animation_asset_path else self._animation_draft_name
-        if self._current_animation_asset_path is None:
-            suffix = "  •  ainda não salvo"
-        elif self._animation_asset_dirty:
-            suffix = "  •  alterações não salvas"
-        else:
-            suffix = "  •  salvo"
-        self.animation_asset_label.setText(name + suffix)
-        state = "dirty" if self._animation_asset_dirty or self._current_animation_asset_path is None else "saved"
-        if self.animation_asset_label.property("uiState") != state:
-            self.animation_asset_label.setProperty("uiState", state)
-            self.animation_asset_label.style().unpolish(self.animation_asset_label)
-            self.animation_asset_label.style().polish(self.animation_asset_label)
+        self._animation_workspace.update_status()
 
     def _animation_frame_count(self) -> int:
-        return max(1, int(self.animator_frame_count.value()))
+        return self._animation_workspace.frame_count()
 
     def _refresh_animation_timeline(self, clip: dict) -> None:
-        frames = clip.get("frames")
-        count = max(1, len(frames) if isinstance(frames, list) and frames else int(clip.get("frame_count", 1)))
-        self.animation_timeline.blockSignals(True)
-        self.animation_timeline.setRange(0, count - 1)
-        self.animation_timeline.setValue(min(self._animator_preview_index, count - 1))
-        self.animation_timeline.blockSignals(False)
-        self.animation_frame_label.setText(f"Frame {min(self._animator_preview_index, count - 1) + 1} / {count}")
+        self._animation_workspace.refresh_timeline(clip)
 
     def _set_animation_preview_frame(self, index: int) -> None:
-        count = self._animation_frame_count()
-        self._animator_preview_index = max(0, min(int(index), count - 1))
-        self.animation_timeline.blockSignals(True)
-        self.animation_timeline.setValue(self._animator_preview_index)
-        self.animation_timeline.blockSignals(False)
-        self.animation_frame_label.setText(f"Frame {self._animator_preview_index + 1} / {count}")
-        self._update_animation_preview(animation_asset_to_clip(self._animation_asset_from_editor()), self._animator_preview_index)
+        self._animation_workspace.set_preview_frame(index)
 
     def _refresh_animation_events(self) -> None:
         self.animation_events_tree.clear()
@@ -2260,10 +2195,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._update_animation_asset_status()
 
     def _toggle_animation_preview_playback(self) -> None:
-        self._animation_preview_playing = not self._animation_preview_playing
-        self.animation_play_button.setIcon(editor_icon(
-            "pause" if self._animation_preview_playing else "play"
-        ))
+        self._animation_workspace.toggle_preview()
 
     def _add_animation_clip(self) -> None:
         if self._selected_name not in self._objects_by_name:
