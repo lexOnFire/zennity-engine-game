@@ -355,7 +355,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.create_panel.create_requested.connect(self.create_object)
         self.resources.asset_selected.connect(self.preview.load_asset)
         self.prefabs.asset_selected.connect(self.preview.load_asset)
-        self.editor_context.selection.subscribe(self.on_viewport_selection_changed)
+        self.editor_context.selection.subscribe_projection(self.on_viewport_selection_changed)
         self.scene_view_model.hierarchy_updated.connect(self.refresh_hierarchy_from_viewport)
         self.scene_view_model.property_changed.connect(self.on_viewmodel_property_changed)
         self.viewport.object_transform_changed.connect(self.on_viewport_object_changed)
