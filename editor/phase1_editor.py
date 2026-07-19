@@ -711,7 +711,6 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
 
     def _sync_play_controls(self) -> None:
         playing = self._is_scene_playing()
-        self.editor_context.state.is_playing = playing
         if hasattr(self, "btn_play"):
             self.btn_play.setEnabled(not playing)
             self.btn_play.setText("Playing" if playing else "Play")
