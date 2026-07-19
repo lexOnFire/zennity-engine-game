@@ -337,6 +337,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self._hierarchy_splitter_user_resized = True
 
     def closeEvent(self, event) -> None:
+        self.editor_context.selection.unsubscribe(self.on_viewport_selection_changed)
         for viewport_name in ("viewport", "game_viewport"):
             viewport = getattr(self, viewport_name, None)
             shutdown = getattr(viewport, "shutdown", None)
@@ -354,7 +355,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.create_panel.create_requested.connect(self.create_object)
         self.resources.asset_selected.connect(self.preview.load_asset)
         self.prefabs.asset_selected.connect(self.preview.load_asset)
-        self.scene_view_model.selection_changed.connect(self.on_viewport_selection_changed)
+        self.editor_context.selection.subscribe(self.on_viewport_selection_changed)
         self.scene_view_model.hierarchy_updated.connect(self.refresh_hierarchy_from_viewport)
         self.scene_view_model.property_changed.connect(self.on_viewmodel_property_changed)
         self.viewport.object_transform_changed.connect(self.on_viewport_object_changed)
