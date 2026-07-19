@@ -36,7 +36,8 @@ def reset_font_mock(monkeypatch):
 
 
 def _screen():
-    return pygame.Surface((640, 480))
+    from conftest import SurfaceProxy
+    return SurfaceProxy((640, 480))
 
 
 def _lbl(**kw):

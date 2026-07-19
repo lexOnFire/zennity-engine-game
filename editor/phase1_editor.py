@@ -361,6 +361,9 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.viewport.tool_message_requested.connect(self.on_tool_message_requested)
         self.viewport.history_changed.connect(self._update_undo_redo_states)
         self.game_viewport.tool_message_requested.connect(self.on_tool_message_requested)
+
+        self.editor_context.selection.subscribe(self.on_context_selection_changed)
+
         self.on_viewport_selection_changed(self.editor_context.selection.selected)
         self._sync_play_controls()
         self._update_undo_redo_states()
@@ -531,7 +534,6 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
 
     def select_object(self, obj: Any) -> None:
         self.editor_context.selection.set_selected(obj)
-        self._sync_scene_selection_index(obj)
 
     def _sync_scene_selection_index(self, obj: Any) -> None:
         scene = self._editor_scene()
@@ -625,6 +627,11 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         return True
 
     def on_viewport_selection_changed(self, obj: Any) -> None:
+        self.editor_context.selection.set_selected(obj)
+
+    def on_context_selection_changed(self, obj: Any) -> None:
+        if self.viewport.selected_object() is not obj:
+            self.viewport.select_object(obj)
         self.inspector.load_object(obj)
         self.hierarchy.select_object(obj)
         self._sync_scene_selection_index(obj)

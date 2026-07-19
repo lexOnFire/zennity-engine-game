@@ -1,9 +1,7 @@
 """
 conftest.py — fixtures globais para os testes da Zennity Engine.
 
-pytest_configure() roda ANTES de qualquer coleta ou import de módulo de teste.
-Aqui apenas instalamos os stubs de pygame — NÃO importamos engine.transitions
-para evitar import duplo / conflito de cache durante a coleta.
+Aqui instalamos stubs MÍNIMOS para rodar em headless.
 """
 from __future__ import annotations
 
@@ -17,122 +15,21 @@ import pytest
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
+# Para o Qt headless também, por garantia
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pygame
 pygame.init()
 
-class _FakeSurface(pygame.Surface):
-    """
-    Subclasse de Surface que rastreia chamadas de blit/fill via MagicMock,
-    enquanto preserva o funcionamento real para funções em C do PyGame.
-    O blit é tolerante: se o surface fonte não for um pygame.Surface real
-    (ex: _FakeSurface de teste local), não delega ao C-level.
-    Suporta set_at/get_at para testes que verificam pixels (ex: flip_h).
-    """
-    _fake = True
-    SRCALPHA = 65536
-
-    def __init__(self, size=(800, 600), flags=0):
-        super().__init__(size, flags)
-        self._size = tuple(size)
-        self._flags = flags
-        self._pixels: dict[tuple[int, int], tuple] = {}
-        _real_blit  = super().blit
-        _real_fill  = super().fill
-        _real_alpha = super().set_alpha
-        self._alpha = 255
-
-        # blit: delega ao C-level somente se o source é pygame.Surface real
-        def _safe_blit(source, dest, *args, **kwargs):
-            if isinstance(source, pygame.surface.Surface):
-                return _real_blit(source, dest, *args, **kwargs)
-            # Source é um fake puro (MagicMock, _FakeSurface local) — não blita de verdade
-            return pygame.Rect(0, 0, 0, 0)
-
-        def _tracking_alpha(value, *args, **kwargs):
-            self._alpha = value
-            return _real_alpha(value, *args, **kwargs)
-
-        self.blit_mock = MagicMock(side_effect=_safe_blit)
-        self.fill_mock = MagicMock(side_effect=_real_fill)
-        self.set_alpha_mock = MagicMock(side_effect=_tracking_alpha)
-
-    def blit(self, *args, **kwargs):
-        return self.blit_mock(*args, **kwargs)
-
-    def fill(self, *args, **kwargs):
-        return self.fill_mock(*args, **kwargs)
-
-    def set_alpha(self, *args, **kwargs):
-        return self.set_alpha_mock(*args, **kwargs)
-
-    # set_at e get_at delegam ao C-level (pygame.Surface real)
-    # _pixels é mantido apenas para compatibilidade com _make_fake_flip
-
-    def copy(self):
-        new_surf = super().copy()
-        # Inicializa mocks na nova instância copiada, pois o C-level copy ignora __init__
-        _real_blit  = super(type(new_surf), new_surf).blit
-        _real_fill  = super(type(new_surf), new_surf).fill
-        _real_alpha = super(type(new_surf), new_surf).set_alpha
-
-        def _safe_blit_copy(source, dest, *args, **kwargs):
-            if isinstance(source, pygame.surface.Surface):
-                return _real_blit(source, dest, *args, **kwargs)
-            return pygame.Rect(0, 0, 0, 0)
-
-        new_surf.blit_mock = MagicMock(side_effect=_safe_blit_copy)
-        new_surf.fill_mock = MagicMock(side_effect=_real_fill)
-        new_surf.set_alpha_mock = MagicMock(side_effect=_real_alpha)
-        # _pixels pode não existir se o surf veio do C-level subsurface (ignora __init__)
-        new_surf._pixels = dict(getattr(self, "_pixels", {}))
-        new_surf._alpha = getattr(self, "_alpha", 255)
-        return new_surf
-
-    # Mantemos algumas propriedades esperadas por testes legados
-    def get_alpha(self):
-        return super().get_alpha() or 255
-
-
-def _make_fake_flip(fake_cls):
-    """
-    Retorna uma versão de pygame.transform.flip que:
-      - como _FakeSurface é subclasse real de pygame.Surface, delega ao SDL;
-      - mantém compatibilidade com surfaces que não são pygame.Surface.
-    """
-    import pygame as _pg
-    _real_flip = _pg.transform.flip
-
-    def _fake_flip(surface, flip_x: bool, flip_y: bool):
-        # _FakeSurface herda pygame.Surface — usa o flip real do SDL
-        return _real_flip(surface, flip_x, flip_y)
-
-    return _fake_flip
-
-
+# Para testes que especificamente verificam assert_called, embrulhamos as funções reais
+# sem perder o funcionamento. Assim, a superfície REAL continua sendo pintada!
 def pytest_configure(config):
-    """
-    Instala stubs de pygame antes de qualquer coleta.
-    NÃO chama importlib.import_module("engine.transitions") aqui —
-    isso causava import duplo e o erro '(unknown location)'.
-    """
-    # Garante que as funções de desenho originais executem, mas sejam rastreáveis
-    _real_draw_rect = pygame.draw.rect
-
-    # Stubs — instalados UMA vez, antes de qualquer import de engine.*
-    pygame.Surface         = _FakeSurface           # type: ignore[assignment]
-    def _safe_draw_rect(surface, color, rect, *args, **kwargs):
-        # Evita TypeError caso algum teste injete um _FakeSurface local em pygame.draw.rect
-        if isinstance(surface, pygame.Surface):
-            return _real_draw_rect(surface, color, rect, *args, **kwargs)
-        try:
-            return pygame.Rect(rect)
-        except Exception:
-            return pygame.Rect(0, 0, 0, 0)
-    pygame.draw.rect       = MagicMock(side_effect=_safe_draw_rect)
-    pygame.SRCALPHA        = 65536
-    pygame.transform.flip  = _make_fake_flip(_FakeSurface)  # type: ignore[assignment]
-
+    # Envelopa os métodos de pygame.draw para suportarem assert_called() sem perder a funcionalidade C.
+    for draw_func_name in ["rect", "polygon", "circle", "ellipse", "arc", "line", "lines", "aaline", "aalines"]:
+        if hasattr(pygame.draw, draw_func_name):
+            real_func = getattr(pygame.draw, draw_func_name)
+            setattr(pygame.draw, draw_func_name, MagicMock(wraps=real_func))
+            
     # Garante que engine.* seja importado pela 1ª vez JÁ com os stubs
     for mod in list(sys.modules.keys()):
         if mod.startswith("engine"):
@@ -151,16 +48,33 @@ def _pygame_init():
 
 # ── Fixtures globais ──────────────────────────────────────────────────────────
 
+# Muitos testes esperam 'screen' retornar uma surface mockada para checar blit_mock.
+# Em vez de mockar pygame.Surface globalmente, apenas a fixture 'screen' retorna
+# um proxy que rastreia blit e fill, mas ainda delega para a superfície real.
+class SurfaceProxy(pygame.Surface):
+    def __init__(self, size=(800, 600)):
+        super().__init__(size)
+        self.blit_mock = MagicMock(wraps=super().blit)
+        self.fill_mock = MagicMock(wraps=super().fill)
+        self._fake = True  # Para manter compatibilidade com testes que checam _fake
+        
+    def blit(self, *args, **kwargs):
+        return self.blit_mock(*args, **kwargs)
+        
+    def fill(self, *args, **kwargs):
+        return self.fill_mock(*args, **kwargs)
+
+
 @pytest.fixture
 def fake_surface_class():
-    """Expõe _FakeSurface para testes que precisam dela explicitamente."""
-    return _FakeSurface
+    """Retorna o proxy para testes que o instanciam explicitamente."""
+    return SurfaceProxy
 
 
 @pytest.fixture
 def screen():
-    """_FakeSurface 800x600 para testes que chamam .draw(screen)."""
-    return _FakeSurface((800, 600))
+    """Retorna um SurfaceProxy 800x600 para testes que chamam .draw(screen)."""
+    return SurfaceProxy((800, 600))
 
 
 @pytest.fixture
@@ -181,6 +95,8 @@ def simple_go():
 def reset_pygame_mocks():
     """Reseta mocks de pygame antes e depois de cada teste."""
     import pygame  # noqa: PLC0415
-    pygame.draw.rect.reset_mock()
+    if hasattr(pygame.draw.rect, "reset_mock"):
+        pygame.draw.rect.reset_mock()
     yield
-    pygame.draw.rect.reset_mock()
+    if hasattr(pygame.draw.rect, "reset_mock"):
+        pygame.draw.rect.reset_mock()
