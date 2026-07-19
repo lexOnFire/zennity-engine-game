@@ -2000,8 +2000,8 @@ tests/editor/test_phase1_editor_context.py:457: in test_phase1_selection_manager
     assert phase1_editor.viewport.active_scene.selected_index == 1
 E   assert -1 == 1
 E    +  where -1 = <Scene 'Editor2DScene' objects=2>.selected_index
-E    +    where <Scene 'Editor2DScene' objects=2> = <editor.widgets.phase1_viewport.Phase1ViewportWidget(0x562ff841aa10, name="ViewportCanvas") at 0x7f1b460e8c80>.active_scene
-E    +      where <editor.widgets.phase1_viewport.Phase1ViewportWidget(0x562ff841aa10, name="ViewportCanvas") at 0x7f1b460e8c80> = <editor.phase1_editor.ZennityPhase1Editor(0x562ff81f6cd0, name="ZennityPremiumEditor") at 0x7f1b45f74f40>.viewport
+E    +    where <Scene 'Editor2DScene' objects=2> = <editor.widgets.phase1_viewport.Phase1ViewportWidget(0x560aaa713160, name="ViewportCanvas") at 0x7fcb38a67100>.active_scene
+E    +      where <editor.widgets.phase1_viewport.Phase1ViewportWidget(0x560aaa713160, name="ViewportCanvas") at 0x7fcb38a67100> = <editor.phase1_editor.ZennityPhase1Editor(0x560aaa4ef750, name="ZennityPremiumEditor") at 0x7fcb38aa6580>.viewport
 ---------------------------- Captured stderr setup -----------------------------
 QOpenGLWidget is not supported on this platform.
 =============================== warnings summary ===============================
@@ -2021,6 +2021,6 @@ engine/__init__.py:2
 =========================== short test summary info ============================
 FAILED tests/editor/test_phase1_editor_context.py::test_phase1_selection_manager_syncs_viewport_hierarchy_and_inspector - assert -1 == 1
  +  where -1 = <Scene 'Editor2DScene' objects=2>.selected_index
- +    where <Scene 'Editor2DScene' objects=2> = <editor.widgets.phase1_viewport.Phase1ViewportWidget(0x562ff841aa10, name="ViewportCanvas") at 0x7f1b460e8c80>.active_scene
- +      where <editor.widgets.phase1_viewport.Phase1ViewportWidget(0x562ff841aa10, name="ViewportCanvas") at 0x7f1b460e8c80> = <editor.phase1_editor.ZennityPhase1Editor(0x562ff81f6cd0, name="ZennityPremiumEditor") at 0x7f1b45f74f40>.viewport
-============ 1 failed, 1985 passed, 1 skipped, 3 warnings in 21.59s ============
+ +    where <Scene 'Editor2DScene' objects=2> = <editor.widgets.phase1_viewport.Phase1ViewportWidget(0x560aaa713160, name="ViewportCanvas") at 0x7fcb38a67100>.active_scene
+ +      where <editor.widgets.phase1_viewport.Phase1ViewportWidget(0x560aaa713160, name="ViewportCanvas") at 0x7fcb38a67100> = <editor.phase1_editor.ZennityPhase1Editor(0x560aaa4ef750, name="ZennityPremiumEditor") at 0x7fcb38aa6580>.viewport
+============ 1 failed, 1985 passed, 1 skipped, 3 warnings in 28.45s ============
