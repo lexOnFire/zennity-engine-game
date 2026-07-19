@@ -30,7 +30,7 @@ from editor.controllers.logic_assets import LogicAssetRepository
 from editor.isolated_viewport import run_viewport
 from editor.runtime.native_ui import normalize_ui, scene_item_to_ui, ui_to_scene_item
 from editor.runtime.play_session import EditorPlaySession
-from editor.runtime.viewport_command_bus import ViewportCommandBus
+from editor.runtime.viewport_process_controller import ViewportProcessController
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from editor.widgets.component_picker import ComponentPickerDialog
@@ -66,7 +66,13 @@ from engine.build import (
 
 
 class IsolatedEditorWindow(InterfaceSmokeTest):
-    def __init__(self, viewport_process: mp.Process | None, commands, events) -> None:
+    def __init__(
+        self,
+        viewport_process: mp.Process | None,
+        commands,
+        events,
+        viewport_controller: ViewportProcessController | None = None,
+    ) -> None:
         self._console_records: list[tuple[str, str]] = []
         self._last_build_report: BuildReport | None = None
         self._last_validation_report: ProjectValidationReport | None = None
@@ -93,9 +99,14 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "ui": True,
             "runtime": True,
         }
-        self._viewport_process = viewport_process
-        self._commands = ViewportCommandBus(commands)
-        self._events = events
+        self._viewport_controller = viewport_controller or ViewportProcessController.from_queues(
+            commands,
+            events,
+            viewport_process,
+        )
+        self._viewport_process = self._viewport_controller.process
+        self._commands = self._viewport_controller.commands
+        self._events = self._viewport_controller.events
         self._pending_viewport_size: tuple[int, int] | None = None
         self._last_viewport_size_sent: tuple[int, int] | None = None
         self._viewport_resize_timer = QTimer(self)
@@ -359,6 +370,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self.preview_label.style().polish(self.preview_label)
 
     def attach_viewport_process(self, process: mp.Process) -> None:
+        self._viewport_controller.attach(process)
         self._viewport_process = process
 
     def native_viewport_size(self) -> tuple[int, int]:
@@ -3310,46 +3322,38 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 )
 
     def closeEvent(self, event) -> None:
-        try:
-            self._commands.put_nowait({"type": "shutdown"})
-        except Exception:
-            pass
-        if self._viewport_process is not None and self._viewport_process.is_alive():
-            self._viewport_process.join(timeout=1.5)
-            if self._viewport_process.is_alive():
-                self._viewport_process.terminate()
-                self._viewport_process.join(timeout=2)
+        self._viewport_controller.shutdown()
         super().closeEvent(event)
 
 
 def main() -> None:
     context = mp.get_context("spawn")
-    commands = context.Queue()
-    events = context.Queue()
+    viewport_controller = ViewportProcessController.create(context)
+    commands = viewport_controller.command_queue
+    events = viewport_controller.events
     app = QApplication.instance() or QApplication(sys.argv)
     from editor.ui import apply_editor_theme
     apply_editor_theme(app)
-    window = IsolatedEditorWindow(None, commands, events)
+    window = IsolatedEditorWindow(
+        None,
+        commands,
+        events,
+        viewport_controller=viewport_controller,
+    )
     window.show()
     app.processEvents()
 
     host_id = int(window.viewport_host.winId())
     host_size = window.native_viewport_size()
-    viewport_process = context.Process(
+    viewport_process = viewport_controller.start(
         target=run_viewport,
         args=(commands, events, host_id, host_size),
         name="ZennityViewport",
     )
     window.attach_viewport_process(viewport_process)
-    viewport_process.start()
     exit_code = app.exec()
 
-    if viewport_process.is_alive():
-        commands.put({"type": "shutdown"})
-        viewport_process.join(timeout=1.5)
-        if viewport_process.is_alive():
-            viewport_process.terminate()
-            viewport_process.join(timeout=2)
+    viewport_controller.shutdown()
     raise SystemExit(exit_code)
 
 
