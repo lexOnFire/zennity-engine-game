@@ -18,6 +18,8 @@ RUNTIME_SOURCES = (
     "editor/runtime/viewport_navigation_events.py",
     "editor/runtime/viewport_transform_events.py",
     "editor/runtime/viewport_overlay_renderer.py",
+    "editor/runtime/viewport_sprite_renderer.py",
+    "editor/runtime/viewport_physics_stepper.py",
     "engine/graphics/tint.py",
     "engine/animation/clip_asset.py",
     "engine/animation/controller_asset.py",
@@ -163,6 +165,7 @@ def test_exported_runtime_contains_all_standalone_dependencies(tmp_path: Path) -
         "viewport_play_commands.py",
         "viewport_navigation_events.py", "viewport_transform_events.py",
         "viewport_overlay_renderer.py",
+        "viewport_sprite_renderer.py", "viewport_physics_stepper.py",
         "tint.py", "clip_asset.py", "controller_asset.py", "behavior_controller.py",
         "logic_graph_asset.py", "logic_blackboard.py", "logic_event_bus.py", "logic_runtime.py", "prefab_asset.py", "runtime_world.py", "scene_loader.py",
     }
