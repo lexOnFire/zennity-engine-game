@@ -36,6 +36,7 @@ try:
     from editor.runtime.viewport_sprite_renderer import ViewportSpriteRenderer
     from editor.runtime.viewport_physics_stepper import ViewportPhysicsStepper
     from editor.runtime.viewport_animation_updater import ViewportAnimationUpdater
+    from editor.runtime.viewport_session_orchestrator import ViewportSessionOrchestrator
     from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
     from engine.animation.controller_asset import AnimatorControllerRuntime, load_animator_controller
     from engine.behavior.controller_asset import BehaviorControllerRunner, load_behavior_controller
@@ -59,6 +60,7 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .viewport_sprite_renderer import ViewportSpriteRenderer
     from .viewport_physics_stepper import ViewportPhysicsStepper
     from .viewport_animation_updater import ViewportAnimationUpdater
+    from .viewport_session_orchestrator import ViewportSessionOrchestrator
     from .clip_asset import animation_asset_to_clip, load_animation_asset
     from .controller_asset import AnimatorControllerRuntime, load_animator_controller
     from .behavior_controller import BehaviorControllerRunner, load_behavior_controller
@@ -1094,6 +1096,12 @@ def run_viewport(
         lambda name, obj: script_apis.get(name) or PlayScriptAPI(name, obj, events, objects, runtime_world),
         dispatch_animation_state_hook, lambda event: _send(events, event),
     )
+    session_orchestrator = ViewportSessionOrchestrator(
+        objects, logic_runtimes, behavior_runners, script_instances, script_apis,
+        animator_controllers, lambda: logic_event_bus, runtime_world, hud_entries,
+        lambda event: _send(events, event), play_audio_file,
+        lambda value: set_channels_paused(audio_channels, value), dispatch_animation_state_hook,
+    )
 
     while running:
         for command in command_queue.drain():
@@ -1166,9 +1174,6 @@ def run_viewport(
         dt = clock.get_time() / 1000.0
         if playing and not paused:
             start_spawned_objects()
-            trace_now = time.monotonic()
-            trace_due = trace_now - logic_trace_last_sent >= 0.10
-            debug_pause_requested = False
             keys = pygame.key.get_pressed()
             input_state = {
                 "left": bool(forwarded_input["left"] or keys[pygame.K_a] or keys[pygame.K_LEFT]),
@@ -1178,84 +1183,10 @@ def run_viewport(
                 "jump": bool(forwarded_input["jump"] or keys[pygame.K_SPACE]),
                 "restart": bool(forwarded_input["restart"] or keys[pygame.K_r]),
             }
-            for name, runtimes in list(logic_runtimes.items()):
-                obj = objects.get(name)
-                api = script_apis.get(name)
-                if obj is None or api is None or not obj.get("active", True):
-                    continue
-                api.begin_frame(input_state)
-                for graph_path, runtime in list(runtimes):
-                    try:
-                        runtime.update(api, dt)
-                        delivered_events = logic_event_bus.dispatch()
-                        if delivered_events:
-                            for trace_name, trace_runtimes in logic_runtimes.items():
-                                for trace_path, trace_runtime in trace_runtimes:
-                                    if not trace_runtime.consume_event_trace():
-                                        continue
-                                    debug_pause_requested = debug_pause_requested or trace_runtime.debug_paused
-                                    _send(events, {
-                                        "type": "logic_trace",
-                                        "object": trace_name,
-                                        "graph": trace_path,
-                                        **trace_runtime.debug_snapshot(),
-                                    })
-                        if runtime.debug_paused:
-                            debug_pause_requested = True
-                            _send(events, {
-                                "type": "logic_trace",
-                                "object": name,
-                                "graph": graph_path,
-                                **runtime.debug_snapshot(),
-                            })
-                        elif trace_due:
-                            _send(events, {
-                                "type": "logic_trace",
-                                "object": name,
-                                "graph": graph_path,
-                                **runtime.debug_snapshot(),
-                            })
-                    except Exception as exc:
-                        _send(events, {
-                            "type": "logic_trace",
-                            "object": name,
-                            "graph": graph_path,
-                            "error": str(exc),
-                            **runtime.debug_snapshot(),
-                        })
-                        runtimes.remove((graph_path, runtime))
-                        _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{graph_path}: {exc}"})
-                if trace_due:
-                    logic_trace_last_sent = trace_now
-                for instruction in obj.pop("script_instructions", []):
-                    if not isinstance(instruction, dict):
-                        continue
-                    cmd = instruction.get("command")
-                    val = instruction.get("value")
-                    if cmd == "animator_play" and val:
-                        controller = animator_controllers.get(name)
-                        if controller is not None and controller.play(str(val)):
-                            obj["_animator_state"] = controller.current_state
-                            obj["_current_animation_name"] = controller.current_state
-                            obj["_animation_time"] = 0.0
-                            obj["_animation_frame"] = 0
-                            obj["_animation_raw_frame"] = -1
-                    elif cmd == "play_sound" and val:
-                        play_audio_file(f"logic:{name}", str(val))
-                    elif cmd == "set_hud" and isinstance(val, dict):
-                        hud_entries.set_entry(dict(val))
-                    elif cmd == "remove_hud":
-                        hud_entries.remove_entry(str(val))
-                    elif cmd == "restart_scene":
-                        restart_requested = True
-                if obj.pop("_jump_requested", False) and grounded.get(name, False):
-                    velocities_y[name] = -float(obj.pop("_jump_force", 420.0))
-                    grounded[name] = False
-                    obj["_grounded"] = False
-            if debug_pause_requested:
-                paused = True
-                set_channels_paused(audio_channels, True)
-                _send(events, {"type": "play_state", "state": "pause"})
+            logic_trace_last_sent, debug_pause_requested, restart_requested = session_orchestrator.update_logic(
+                input_state, dt, logic_trace_last_sent, velocities_y, grounded, restart_requested,
+            )
+            paused = paused or debug_pause_requested
             for name, instances in list(script_instances.items()):
                 obj = objects.get(name)
                 if obj is None:
@@ -1337,48 +1268,15 @@ def run_viewport(
                     velocities_y[name] = -float(obj.pop("_jump_force", 420.0))
                     grounded[name] = False
                     obj["_grounded"] = False
-            for name, runner in list(behavior_runners.items()):
-                obj = objects.get(name)
-                api = script_apis.get(name)
-                if obj is None or api is None or not obj.get("active", True):
-                    continue
-                behavior_only = name not in script_instances
-                if behavior_only:
-                    api.begin_frame(input_state)
-                previous = runner.current_state
-                try:
-                    changed = runner.update(api, dt)
-                    obj["_behavior_state"] = runner.current_state
-                    behavior = obj.get("behavior")
-                    if isinstance(behavior, dict):
-                        behavior["parameters"] = dict(runner.parameters)
-                    if changed:
-                        _send(events, {
-                            "type": "script_log",
-                            "level": "INFO",
-                            "message": f"{name}: Behavior {previous} → {runner.current_state}",
-                        })
-                except Exception as exc:
-                    behavior_runners.pop(name, None)
-                    _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}: Behavior Controller: {exc}"})
-            for api in script_apis.values():
-                api.end_frame()
-            for destroyed_name in runtime_world.update_lifecycle(dt):
-                velocities_y.pop(destroyed_name, None)
-                grounded.pop(destroyed_name, None)
+            session_orchestrator.update_behaviors(input_state, dt)
+            session_orchestrator.finish_frame(dt, velocities_y, grounded)
             if restart_requested:
-                stop_audio_sources()
-                stop_scripts()
-                objects.clear()
-                objects.update(deepcopy(edit_snapshot))
-                velocities_y.clear()
-                grounded.clear()
-                active_contacts.clear()
-                hud_entries.clear()
+                session_orchestrator.restart(
+                    edit_snapshot, velocities_y, grounded, active_contacts,
+                    stop_audio_sources, stop_scripts, physics_scheduler.reset,
+                    start_scripts, start_audio_sources,
+                )
                 restart_requested = False
-                physics_scheduler.reset()
-                start_scripts()
-                start_audio_sources()
             physics_steps = physics_scheduler.consume(dt)
             motion_axes_by_name = {
                 name: obj.pop("_logic_motion_axes", set()) for name, obj in objects.items()
