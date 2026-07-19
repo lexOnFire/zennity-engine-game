@@ -51,6 +51,8 @@ class ViewportWidget(QOpenGLWidget):
 
         self.viewmodel: Optional[SceneViewModel] = None
         self.active_scene = None
+        self._selection_scene = None
+        self._last_scene_selected_index: int | None = None
         self.editor_mode: str = "2D"
 
         self._qt_mouse_pos: tuple = (0, 0)
@@ -142,6 +144,8 @@ class ViewportWidget(QOpenGLWidget):
                 if obj.id == selected_id:
                     self.active_scene.selected_index = i
                     break
+        self._selection_scene = self.active_scene
+        self._last_scene_selected_index = self.active_scene.selected_index
 
         self.update()
 
@@ -393,6 +397,10 @@ class ViewportWidget(QOpenGLWidget):
             return
 
         idx = getattr(self.active_scene, "selected_index", -1)
+        if self._selection_scene is self.active_scene and idx == self._last_scene_selected_index:
+            return
+        self._selection_scene = self.active_scene
+        self._last_scene_selected_index = idx
         objs = getattr(self.active_scene, "editable_objects", [])
         sel = objs[idx] if 0 <= idx < len(objs) else None
 
@@ -426,6 +434,8 @@ class ViewportWidget(QOpenGLWidget):
                 if candidate.id == selected_id:
                     self.active_scene.selected_index = i
                     break
+        self._selection_scene = self.active_scene
+        self._last_scene_selected_index = self.active_scene.selected_index
 
     def _on_property_changed(self, component_name: str, property_name: str, value) -> None:
         if component_name != "Editor":
