@@ -60,11 +60,7 @@ jobs:
           python -m pip install -r requirements.txt -r requirements-dev.txt
 
       - name: Run tests
-        run: python -m pytest > pytest-output.txt 2>&1
-        continue-on-error: true
-
-      - name: Show pytest output in log
-        run: cat pytest-output.txt || true
+        run: python -m pytest > pytest-output.txt 2>&1 || (cat pytest-output.txt && exit 1)
 
       - name: Push log to branch
         if: failure()
@@ -78,12 +74,6 @@ jobs:
           git add pytest-output.txt || true
           git commit -m "add pytest log for ${{ matrix.python-version }}" || true
           git push -f origin ci-log-${{ github.run_id }}-${{ matrix.python-version }} || true
-
-      - name: Fail if tests failed
-        run: |
-          if grep -q "FAILED " pytest-output.txt; then
-            exit 1
-          fi
 
   windows-release-candidate:
     name: Windows / Python 3.12 / Export smoke
