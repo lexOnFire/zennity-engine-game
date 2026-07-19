@@ -50,3 +50,21 @@ def test_phase1_editor_does_not_assign_functions_to_instance_methods() -> None:
     }
 
     assert assigned.isdisjoint(forbidden)
+
+
+def test_runtime_patch_modules_are_removed() -> None:
+    remaining = sorted(path.name for path in (ROOT / "editor" / "runtime").glob("*_patch.py"))
+
+    assert remaining == []
+
+
+def test_assets_panel_uses_explicit_controller_and_drag_drop_module() -> None:
+    premium = (ROOT / "editor" / "premium_editor.py").read_text(encoding="utf-8")
+    extensions = (ROOT / "editor" / "runtime" / "editor_extensions.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "AssetsPanelController(self)" in premium
+    assert "assets_panel_polish_patch" not in premium
+    assert "editor.runtime.asset_drag_drop import install_asset_drag_drop" in extensions
+    assert "asset_drag_drop_patch" not in extensions
