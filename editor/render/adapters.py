@@ -144,7 +144,9 @@ class FramePreparationAdapter:
         viewport = self.viewport
         if not viewport.pg_surface or not viewport.active_scene:
             return None
-        viewport._frame_invalidation.consume()
+        invalidation = getattr(viewport, "_frame_invalidation", None)
+        if invalidation is not None:
+            invalidation.consume()
         viewport._sync_legacy_scale_handles()
         viewport.sync_camera_from_engine()
         now = time.time()
