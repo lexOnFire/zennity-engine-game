@@ -22,6 +22,8 @@ jobs:
   tests:
     name: pytest / Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     strategy:
       fail-fast: false
