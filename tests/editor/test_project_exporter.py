@@ -21,6 +21,7 @@ RUNTIME_SOURCES = (
     "editor/runtime/viewport_sprite_renderer.py",
     "editor/runtime/viewport_physics_stepper.py",
     "editor/runtime/viewport_animation_updater.py",
+    "editor/runtime/viewport_session_orchestrator.py",
     "engine/graphics/tint.py",
     "engine/animation/clip_asset.py",
     "engine/animation/controller_asset.py",
@@ -168,6 +169,7 @@ def test_exported_runtime_contains_all_standalone_dependencies(tmp_path: Path) -
         "viewport_overlay_renderer.py",
         "viewport_sprite_renderer.py", "viewport_physics_stepper.py",
         "viewport_animation_updater.py",
+        "viewport_session_orchestrator.py",
         "tint.py", "clip_asset.py", "controller_asset.py", "behavior_controller.py",
         "logic_graph_asset.py", "logic_blackboard.py", "logic_event_bus.py", "logic_runtime.py", "prefab_asset.py", "runtime_world.py", "scene_loader.py",
     }
