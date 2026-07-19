@@ -138,13 +138,12 @@ def test_generic_property_command_captures_old_value_without_invalid_syntax() ->
 
 def test_runtime_restart_resets_physics_and_restarts_autoplay_audio() -> None:
     viewport_source = Path("editor/isolated_viewport.py").read_text(encoding="utf-8")
-    restart_block = viewport_source.split("if restart_requested:", 1)[1].split(
-        "physics_steps = physics_scheduler.consume", 1
-    )[0]
+    restart_block = Path("editor/runtime/viewport_session_orchestrator.py").read_text(encoding="utf-8")
 
-    assert "stop_audio_sources()" in restart_block
-    assert "physics_scheduler.reset()" in restart_block
-    assert "start_audio_sources()" in restart_block
+    assert "session_orchestrator.restart(" in viewport_source
+    assert "stop_audio()" in restart_block
+    assert "reset_physics()" in restart_block
+    assert "start_audio()" in restart_block
 
 
 def test_viewport_has_one_runtime_lifecycle_and_initializes_spawned_prefabs() -> None:
