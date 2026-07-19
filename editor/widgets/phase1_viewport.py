@@ -72,6 +72,7 @@ class Phase1ViewportWidget(ViewportWidget):
         self.tool_manager: ToolManager | None = None
         self.editor_state: EditorState | None = None
         self.command_manager: CommandManager | None = None
+        self.runtime_manager: Any | None = None
 
         # Estado do drag de Move
         self._move_drag_object: Any = None
@@ -143,6 +144,18 @@ class Phase1ViewportWidget(ViewportWidget):
 
     def set_command_manager(self, command_manager: CommandManager) -> None:
         self.command_manager = command_manager
+
+    def select_object(self, obj: Any) -> None:
+        if hasattr(self, "viewmodel") and self.viewmodel is not None:
+            self.viewmodel.selected_object = obj
+
+    def selected_object(self) -> Any:
+        if hasattr(self, "viewmodel") and self.viewmodel is not None:
+            return self.viewmodel.selected_object
+        return None
+
+    def set_runtime_manager(self, runtime_manager: Any) -> None:
+        self.runtime_manager = runtime_manager
 
     def set_view_mode(self, mode: str) -> None:
         self.view_mode = "game" if str(mode).lower() == "game" else "scene"

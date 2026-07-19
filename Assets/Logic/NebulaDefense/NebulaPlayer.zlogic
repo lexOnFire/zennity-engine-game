@@ -32,8 +32,8 @@
     {
       "id": "update",
       "type": "event_update",
-      "title": "A cada frame",
-      "category": "Eventos",
+      "title": "On Update",
+      "category": "Events",
       "position": [
         20.0,
         80.0
@@ -49,7 +49,7 @@
       "id": "left",
       "type": "key_held",
       "title": "Tecla está segurada?",
-      "category": "Condição",
+      "category": "Condition",
       "position": [
         260.0,
         20.0
@@ -67,7 +67,7 @@
       "id": "move_left",
       "type": "move_by",
       "title": "Mover continuamente",
-      "category": "Posição",
+      "category": "Position",
       "position": [
         520.0,
         20.0
@@ -86,7 +86,7 @@
       "id": "right",
       "type": "key_held",
       "title": "Tecla está segurada?",
-      "category": "Condição",
+      "category": "Condition",
       "position": [
         260.0,
         160.0
@@ -104,7 +104,7 @@
       "id": "move_right",
       "type": "move_by",
       "title": "Mover continuamente",
-      "category": "Posição",
+      "category": "Position",
       "position": [
         520.0,
         160.0
@@ -123,7 +123,7 @@
       "id": "up",
       "type": "key_held",
       "title": "Tecla está segurada?",
-      "category": "Condição",
+      "category": "Condition",
       "position": [
         260.0,
         300.0
@@ -141,7 +141,7 @@
       "id": "move_up",
       "type": "move_by",
       "title": "Mover continuamente",
-      "category": "Posição",
+      "category": "Position",
       "position": [
         520.0,
         300.0
@@ -160,7 +160,7 @@
       "id": "down",
       "type": "key_held",
       "title": "Tecla está segurada?",
-      "category": "Condição",
+      "category": "Condition",
       "position": [
         260.0,
         440.0
@@ -178,7 +178,7 @@
       "id": "move_down",
       "type": "move_by",
       "title": "Mover continuamente",
-      "category": "Posição",
+      "category": "Position",
       "position": [
         520.0,
         440.0
@@ -196,8 +196,8 @@
     {
       "id": "shoot",
       "type": "event_key_pressed",
-      "title": "Ao apertar tecla (uma vez)",
-      "category": "Eventos",
+      "title": "On Key Pressed (once)",
+      "category": "Events",
       "position": [
         20.0,
         650.0
@@ -215,7 +215,7 @@
       "id": "spawn_bolt",
       "type": "create_prefab",
       "title": "Criar Prefab",
-      "category": "Objetos",
+      "category": "Objects",
       "position": [
         300.0,
         650.0
@@ -373,8 +373,8 @@
     {
       "id": "missile",
       "type": "event_key_pressed",
-      "title": "Ao apertar tecla (uma vez)",
-      "category": "Eventos",
+      "title": "On Key Pressed (once)",
+      "category": "Events",
       "position": [
         20.0,
         800.0
@@ -392,7 +392,7 @@
       "id": "spawn_missile",
       "type": "create_prefab",
       "title": "Criar Prefab",
-      "category": "Objetos",
+      "category": "Objects",
       "position": [
         300.0,
         800.0
@@ -551,7 +551,7 @@
       "id": "hit",
       "type": "event_trigger_enter",
       "title": "Ao entrar na área",
-      "category": "Eventos",
+      "category": "Events",
       "position": [
         20.0,
         980.0
@@ -567,7 +567,7 @@
       "id": "other_tag",
       "type": "get_tag",
       "title": "Ler Tag do objeto",
-      "category": "Objetos",
+      "category": "Objects",
       "position": [
         260.0,
         900.0
@@ -583,7 +583,7 @@
       "id": "is_enemy",
       "type": "compare_text",
       "title": "Comparar texto",
-      "category": "Condição",
+      "category": "Condition",
       "position": [
         500.0,
         980.0
@@ -602,7 +602,7 @@
       "id": "hit_sequence",
       "type": "sequence",
       "title": "Sequência",
-      "category": "Lógica",
+      "category": "Logic",
       "position": [
         760.0,
         980.0
@@ -620,7 +620,7 @@
       "id": "get_lives",
       "type": "get_variable",
       "title": "Ler variável",
-      "category": "Variáveis",
+      "category": "Variables",
       "position": [
         1020.0,
         860.0
@@ -639,7 +639,7 @@
       "id": "lose_life",
       "type": "subtract_number",
       "title": "Subtrair",
-      "category": "Matemática",
+      "category": "Math",
       "position": [
         1260.0,
         860.0
@@ -658,7 +658,7 @@
       "id": "save_lives",
       "type": "set_variable",
       "title": "Definir variável",
-      "category": "Variáveis",
+      "category": "Variables",
       "position": [
         1500.0,
         860.0
@@ -678,7 +678,7 @@
       "id": "is_dead",
       "type": "compare_number",
       "title": "Comparar número",
-      "category": "Condição",
+      "category": "Condition",
       "position": [
         1740.0,
         860.0
@@ -697,7 +697,7 @@
       "id": "disable_player",
       "type": "set_active",
       "title": "Ativar / Desativar",
-      "category": "Ação",
+      "category": "Action",
       "position": [
         1980.0,
         820.0
@@ -715,7 +715,7 @@
       "id": "death_hud",
       "type": "set_hud",
       "title": "Atualizar HUD",
-      "category": "Ação",
+      "category": "Action",
       "position": [
         1980.0,
         940.0
@@ -733,7 +733,7 @@
       "id": "reset_position",
       "type": "set_position",
       "title": "Definir posição",
-      "category": "Ação",
+      "category": "Action",
       "position": [
         1020.0,
         1040.0
@@ -752,7 +752,7 @@
       "id": "hit_sound",
       "type": "play_sound",
       "title": "Tocar som",
-      "category": "Ação",
+      "category": "Action",
       "position": [
         1020.0,
         1180.0

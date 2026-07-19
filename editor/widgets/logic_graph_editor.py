@@ -852,23 +852,19 @@ class LogicNodeItem(QGraphicsRectItem):
         self.debug_item.setVisible(visible)
         if not visible:
             self.debug_item.setPlainText("")
-            self.setPen(QPen(QColor("#515662"), 1.2))
-            return
-        if error:
-            self.debug_item.setDefaultTextColor(QColor("#ff6b70"))
-            self.debug_item.setPlainText("ERRO • " + error[:54])
-            self.setPen(QPen(QColor("#ff5d62"), 3.0))
-            return
-        if paused:
-            self.debug_item.setDefaultTextColor(QColor("#e6b85c"))
-            self.debug_item.setPlainText("PAUSADO ANTES DE EXECUTAR")
-            self.setPen(QPen(QColor("#e6b85c"), 4.0))
-            return
-        self.debug_item.setDefaultTextColor(QColor("#7ee787"))
-        pairs = list((values or {}).items())[:2]
-        text = " • ".join(f"{name}={value}" for name, value in pairs) if pairs else "EXECUTANDO"
-        self.debug_item.setPlainText(text)
-        self.setPen(QPen(QColor("#7ee787"), 3.0))
+        else:
+            if error:
+                self.debug_item.setDefaultTextColor(QColor("#ff6b70"))
+                self.debug_item.setPlainText("ERRO • " + error[:54])
+            elif paused:
+                self.debug_item.setDefaultTextColor(QColor("#e6b85c"))
+                self.debug_item.setPlainText("PAUSADO ANTES DE EXECUTAR")
+            else:
+                self.debug_item.setDefaultTextColor(QColor("#7ee787"))
+                pairs = list((values or {}).items())[:2]
+                text = " • ".join(f"{name}={value}" for name, value in pairs) if pairs else "EXECUTANDO"
+                self.debug_item.setPlainText(text)
+        self._update_border_style()
 
     def set_breakpoint(self, enabled: bool) -> None:
         self.breakpoint_item.setVisible(bool(enabled))
@@ -877,13 +873,32 @@ class LogicNodeItem(QGraphicsRectItem):
         self.editor.toggle_breakpoint(self.node_id)
         event.accept()
 
+    def _update_border_style(self) -> None:
+        active, values, error, paused = self._runtime_display
+        visible = bool(active or error or paused)
+        if not visible:
+            if self.isSelected():
+                self.setPen(QPen(QColor("#00adb5"), 2.0))
+            else:
+                self.setPen(QPen(QColor("#3f4456"), 1.2))
+        else:
+            if error:
+                self.setPen(QPen(QColor("#ff5d62"), 3.5 if self.isSelected() else 2.5))
+            elif paused:
+                self.setPen(QPen(QColor("#e6b85c"), 4.5 if self.isSelected() else 3.5))
+            else:
+                self.setPen(QPen(QColor("#7ee787"), 3.5 if self.isSelected() else 2.5))
+
     def itemChange(self, change, value):
         result = super().itemChange(change, value)
         if change == QGraphicsItem.ItemPositionHasChanged and hasattr(self, "editor"):
+            from PySide6.QtCore import QPointF
             position = value if isinstance(value, QPointF) else self.pos()
             self.node["position"] = [round(position.x(), 2), round(position.y(), 2)]
             self.editor.refresh_connections()
             self.editor.mark_dirty()
+        elif change == QGraphicsItem.ItemSelectedHasChanged:
+            self._update_border_style()
         return result
 
 
@@ -972,9 +987,10 @@ class LogicGraphEditor(QWidget):
         self.new_subgraph_button = QPushButton("Novo subgrafo")
         self.new_subgraph_button.setToolTip("Cria uma função visual reutilizável com entrada e retorno")
         toolbar.addWidget(self.new_subgraph_button)
-        self.demo_button = QPushButton("Abrir exemplo Player")
+        self.demo_button = QPushButton("Abrir exemplo...")
         self.demo_button.setIcon(editor_icon("open"))
         self.demo_button.setProperty("uiRole", "primary")
+        self.demo_button.setToolTip("Escolha e abra um exemplo salvo de Logic Graph")
         toolbar.addWidget(self.demo_button)
         toolbar.addSpacing(8)
         self.play_button = QPushButton("Play")
@@ -2636,7 +2652,16 @@ class LogicGraphEditor(QWidget):
     def open_demo(self) -> None:
         if not self._confirm_discard():
             return
-        self.open_path(self.project_root / "Assets" / "Logic" / "PlayerMovement.zlogic")
+        directory = self.project_root / "Assets" / "Logic"
+        directory.mkdir(parents=True, exist_ok=True)
+        filename, _ = QFileDialog.getOpenFileName(
+            self,
+            "Abrir Exemplo de Lógica",
+            str(directory),
+            "Zennity Logic Graph (*.zlogic)"
+        )
+        if filename:
+            self.open_path(Path(filename))
 
     def save(self, _checked: bool = False, save_as: bool = False) -> None:
         path = self.current_path

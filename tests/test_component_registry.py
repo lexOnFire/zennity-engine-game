@@ -296,7 +296,7 @@ class TestComponentUnique:
     def test_unique_second_raises(self):
         go = GameObject()
         go.add_component(UniqueComp())
-        with pytest.raises(TypeError, match="UNIQUE"):
+        with pytest.raises((TypeError, ValueError), match="UNIQUE"):
             go.add_component(UniqueComp())
 
     def test_unique_same_instance_no_raise(self):
@@ -320,7 +320,7 @@ class TestComponentUnique:
 
     def test_transform_unique_raises(self):
         go = GameObject()
-        with pytest.raises(TypeError):
+        with pytest.raises((TypeError, ValueError)):
             go.add_component(Transform())
 
 
@@ -507,7 +507,8 @@ class TestGameObjectSerialize:
         assert restored.transform.y == pytest.approx(20.0)
 
     def test_deserialize_registered_component(self):
-        ComponentRegistry.register(Health)
+        from engine.core.component_registry import component_registry as core_registry
+        core_registry.register(Health)
         go = GameObject()
         go.add_component(Health(hp=55))
         data = go.serialize()

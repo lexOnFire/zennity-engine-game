@@ -12,62 +12,13 @@ Estratégia de isolamento:
 """
 from __future__ import annotations
 
-import sys
-from types import ModuleType
+import pygame
 from unittest.mock import MagicMock
-
 import pytest
 
-# ── stub pygame ──────────────────────────────────────────────────────────────
-
-class _FakeRect:
-    def __init__(self, x=0, y=0, w=0, h=0):
-        self.x = x; self.y = y
-        self.width = w; self.height = h
-        self.left = x; self.top = y
-        self.topleft = (x, y)
-    def collidepoint(self, p): return False
-
-
-class _FakeSurf:
-    def __init__(self, w=60, h=14):
-        self._w, self._h = w, h
-    def get_width(self):  return self._w
-    def get_height(self): return self._h
-
-
 class _FakeFont:
-    def render(self, text, aa, color): return _FakeSurf()
+    def render(self, text, aa, color): return pygame.Surface((60, 14))
     def size(self, text): return (60, 14)
-
-
-class _FakeScreen:
-    def __init__(self, w=640, h=480):
-        self._w, self._h = w, h
-        self.blit = MagicMock()
-    def get_rect(self):
-        return _FakeRect(0, 0, self._w, self._h)
-    def get_width(self):  return self._w
-    def get_height(self): return self._h
-
-
-if "pygame" not in sys.modules:
-    _pg          = ModuleType("pygame")
-    _pg.Surface  = _FakeScreen
-    _pg.Rect     = _FakeRect
-    _draw        = ModuleType("pygame.draw")
-    _draw.rect   = MagicMock()
-    _pg.draw     = _draw
-    _font_mod    = ModuleType("pygame.font")
-    _font_mod.SysFont = MagicMock(return_value=_FakeFont())
-    _pg.font     = _font_mod
-    sys.modules["pygame"]      = _pg
-    sys.modules["pygame.draw"] = _draw
-    sys.modules["pygame.font"] = _font_mod
-else:
-    _pg       = sys.modules["pygame"]
-    _draw     = sys.modules.get("pygame.draw", _pg.draw)
-    _font_mod = sys.modules.get("pygame.font", _pg.font)
 
 from engine.ui.progress_bar import ProgressBar  # noqa: E402
 
@@ -76,22 +27,13 @@ from engine.ui.progress_bar import ProgressBar  # noqa: E402
 
 @pytest.fixture(autouse=True)
 def reset_mocks(monkeypatch):
-    global _draw
-    if not hasattr(_pg, "draw"):
-        _pg.draw = ModuleType("pygame.draw")
-    _draw = _pg.draw
-    if not hasattr(getattr(_draw, "rect", None), "reset_mock"):
-        monkeypatch.setattr(_draw, "rect", MagicMock(), raising=False)
-    if not hasattr(getattr(_font_mod, "SysFont", None), "reset_mock"):
-        monkeypatch.setattr(_font_mod, "SysFont", MagicMock(), raising=False)
-    _draw.rect.reset_mock()
-    _font_mod.SysFont.reset_mock()
-    _font_mod.SysFont.return_value = _FakeFont()
+    monkeypatch.setattr(pygame.font, "SysFont", MagicMock(return_value=_FakeFont()), raising=False)
+    pygame.draw.rect.reset_mock()
     yield
-    _draw.rect.reset_mock()
+    pygame.draw.rect.reset_mock()
 
 
-def _screen(): return _FakeScreen()
+def _screen(): return pygame.Surface((640, 480))
 
 
 def _bar(**kw):
@@ -238,12 +180,12 @@ class TestDrawSelf:
     def test_draw_calls_draw_rect_bg(self):
         b = _bar()
         b._draw_self(_screen())
-        assert _draw.rect.called
+        assert pygame.draw.rect.called
 
     def test_draw_bg_color_correct(self):
         b = _bar(color_bg=(10, 20, 30))
         b._draw_self(_screen())
-        first_color = _draw.rect.call_args_list[0][0][1]
+        first_color = pygame.draw.rect.call_args_list[0][0][1]
         assert first_color == (10, 20, 30)
 
     def test_draw_fill_color_correct(self):
@@ -251,7 +193,7 @@ class TestDrawSelf:
         b._display_value = 50.0
         b._draw_self(_screen())
         # 2ª chamada é o fill
-        second_color = _draw.rect.call_args_list[1][0][1]
+        second_color = pygame.draw.rect.call_args_list[1][0][1]
         assert second_color == (80, 200, 100)
 
     def test_draw_no_fill_when_empty(self):
@@ -259,42 +201,42 @@ class TestDrawSelf:
         b._display_value = 0.0
         b._draw_self(_screen())
         # sem fill_rect: apenas bg + borda = 2 chamadas
-        assert _draw.rect.call_count == 2
+        assert pygame.draw.rect.call_count == 2
 
     def test_draw_with_border_three_calls(self):
         b = _bar(color_border=(0, 0, 0))
         b._display_value = 50.0
         b._draw_self(_screen())
         # bg + fill + borda = 3
-        assert _draw.rect.call_count == 3
+        assert pygame.draw.rect.call_count == 3
 
     def test_draw_no_border_two_calls_when_full(self):
         b = _bar(color_border=None)
         b._display_value = 50.0
         b._draw_self(_screen())
         # bg + fill (sem borda)
-        assert _draw.rect.call_count == 2
+        assert pygame.draw.rect.call_count == 2
 
     def test_show_text_calls_blit(self):
         scr = _screen()
         b = _bar(show_text=True)
         b._display_value = 50.0
         b._draw_self(scr)
-        scr.blit.assert_called_once()
+        scr.blit_mock.assert_called_once()
 
     def test_show_text_false_no_blit(self):
         scr = _screen()
         b = _bar(show_text=False)
         b._display_value = 50.0
         b._draw_self(scr)
-        scr.blit.assert_not_called()
+        scr.blit_mock.assert_not_called()
 
     def test_fill_width_proportional(self):
         """display_value=50, max=100, bar_width=200 → fill_w=100."""
         b = _bar(width=200, value=50.0, max_value=100.0)
         b._display_value = 50.0
         b._draw_self(_screen())
-        fill_rect_arg = _draw.rect.call_args_list[1][0][2]
+        fill_rect_arg = pygame.draw.rect.call_args_list[1][0][2]
         assert fill_rect_arg.width == 100
 
     def test_fill_width_zero_when_empty(self):
@@ -302,11 +244,11 @@ class TestDrawSelf:
         b._display_value = 0.0
         b._draw_self(_screen())
         # fill não é desenhado — apenas 2 chamadas (bg + borda)
-        assert _draw.rect.call_count == 2
+        assert pygame.draw.rect.call_count == 2
 
     def test_invisible_no_draw(self):
         scr = _screen()
         b = _bar()
         b.visible = False
         b.draw(scr)
-        _draw.rect.assert_not_called()
+        pygame.draw.rect.assert_not_called()

@@ -29,7 +29,7 @@ class BoxCollider(Component):
         on_collision_exit(other: BoxCollider)   -> None
     """
     component_type = "BoxCollider"
-    unique = True
+    UNIQUE = True
 
     _registry: List["BoxCollider"] = []
     _scene_tilemaps: Dict[tuple, Any] = {}
@@ -305,7 +305,7 @@ class CircleCollider(Component):
         on_collision_exit(other: CircleCollider)  -> None
     """
     component_type = "CircleCollider"
-    unique = True
+    UNIQUE = True
 
     _registry: List["CircleCollider"] = []
     _checks_count: int = 0

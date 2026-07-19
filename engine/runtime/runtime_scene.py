@@ -219,8 +219,9 @@ class RuntimeScene:
         return str(getattr(component, "type_name", getattr(component, "component_type", type(component).__name__)))
 
     def update(self, dt: float) -> None:
+        dt = float(dt)
         self.update_runtime(dt)
-        self.physics_world.step()
+        self.physics_world.step(dt)
         self.scene.update(dt)
 
     def draw(self, screen: Any) -> None:

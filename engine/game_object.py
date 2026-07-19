@@ -92,12 +92,31 @@ class GameObject:
         if getattr(type(component), 'UNIQUE', False):
             existing = self.get_component(type(component))
             if existing is not None and existing is not component:
-                raise TypeError(
+                raise ValueError(
                     f"Componente {type(component).__name__} é UNIQUE — "
                     f"já existe um no GameObject '{self.name}'."
                 )
         component.game_object = self
         self.components.append(component)
+        if self.scene and not component._started:
+            component.start()
+            component._started = True
+        return component
+
+    def insert_component(self, component: 'Component', index: int) -> 'Component':
+        """
+        Insere o *component* numa posição específica. Usado primariamente pelo Undo/Redo
+        para restaurar a ordem original.
+        """
+        if getattr(type(component), 'UNIQUE', False):
+            existing = self.get_component(type(component))
+            if existing is not None and existing is not component:
+                raise ValueError(
+                    f"Componente {type(component).__name__} é UNIQUE — "
+                    f"já existe um no GameObject '{self.name}'."
+                )
+        component.game_object = self
+        self.components.insert(index, component)
         if self.scene and not component._started:
             component.start()
             component._started = True
@@ -113,6 +132,8 @@ class GameObject:
         return [comp for comp in self.components if isinstance(comp, component_type)]  # type: ignore[misc]
 
     def remove_component(self, component: 'Component') -> None:
+        if component is self.transform:
+            raise ValueError("Não é possível remover o componente Transform de um GameObject.")
         if component in self.components:
             component.destroy()
             component.game_object = None
@@ -144,7 +165,7 @@ class GameObject:
         Usa ComponentRegistry para instanciar os componentes pelo nome.
         O Transform já é criado pelo __init__ e atualizado via deserialize().
         """
-        from engine.component_registry import ComponentRegistry
+        from engine.core.component_registry import component_registry
         from engine.core.component import Transform
 
         go = cls(name=data.get("name", "GameObject"), tag=data.get("tag", "Untagged"))
@@ -159,14 +180,10 @@ class GameObject:
                 # Transform já existe — apenas deserializa
                 go.transform.deserialize(comp_data)
             else:
-                klass = ComponentRegistry.get(type_name)
+                klass = component_registry.resolve(type_name)
                 if klass is None:
                     continue  # componente desconhecido — ignora graciosamente
-                instance = klass.__new__(klass)
-                # Inicializa via Component.__init__ sem parâmetros
-                from engine.core.component import Component
-                Component.__init__(instance)
-                instance.deserialize(comp_data)
+                instance = component_registry.create(comp_data)
                 go.add_component(instance)
 
         for child_data in data.get("children", []):

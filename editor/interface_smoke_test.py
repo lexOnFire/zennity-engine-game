@@ -105,7 +105,6 @@ class InterfaceSmokeTest(QMainWindow):
         self.viewport_host.setObjectName("IsolatedViewportHost")
         self.viewport_host.setFrameShape(QFrame.StyledPanel)
         self.viewport_host.setAttribute(Qt.WA_NativeWindow, True)
-        self.viewport_host.setStyleSheet("#IsolatedViewportHost { background: #16181f; }")
 
         # Em vez de colocar a viewport_host como widget da aba e perder o HWND parent ao alternar,
         # fazemos a viewport_tabs atuar apenas como seletor visual e inserimos o viewport_host diretamente
@@ -584,6 +583,7 @@ class InterfaceSmokeTest(QMainWindow):
 
         self.inspector_fields["x"] = QDoubleSpinBox()
         self.inspector_fields["x"].setObjectName("InspectorNumberField")
+        self.inspector_fields["x"].setButtonSymbols(QDoubleSpinBox.NoButtons)
         self.inspector_fields["x"].setDecimals(2)
         self.inspector_fields["x"].setRange(-100000.0, 100000.0)
         self.inspector_fields["x"].setKeyboardTracking(False)
@@ -592,6 +592,7 @@ class InterfaceSmokeTest(QMainWindow):
 
         self.inspector_fields["y"] = QDoubleSpinBox()
         self.inspector_fields["y"].setObjectName("InspectorNumberField")
+        self.inspector_fields["y"].setButtonSymbols(QDoubleSpinBox.NoButtons)
         self.inspector_fields["y"].setDecimals(2)
         self.inspector_fields["y"].setRange(-100000.0, 100000.0)
         self.inspector_fields["y"].setKeyboardTracking(False)
@@ -600,6 +601,7 @@ class InterfaceSmokeTest(QMainWindow):
 
         pos_z = QDoubleSpinBox()
         pos_z.setObjectName("InspectorNumberField")
+        pos_z.setButtonSymbols(QDoubleSpinBox.NoButtons)
         pos_z.setDecimals(2)
         pos_z.setValue(0.00)
         pos_z.setEnabled(False)
@@ -618,6 +620,7 @@ class InterfaceSmokeTest(QMainWindow):
 
         rot_x = QDoubleSpinBox()
         rot_x.setObjectName("InspectorNumberField")
+        rot_x.setButtonSymbols(QDoubleSpinBox.NoButtons)
         rot_x.setDecimals(2)
         rot_x.setValue(0.00)
         rot_x.setEnabled(False)
@@ -626,6 +629,7 @@ class InterfaceSmokeTest(QMainWindow):
 
         rot_y = QDoubleSpinBox()
         rot_y.setObjectName("InspectorNumberField")
+        rot_y.setButtonSymbols(QDoubleSpinBox.NoButtons)
         rot_y.setDecimals(2)
         rot_y.setValue(0.00)
         rot_y.setEnabled(False)
@@ -634,6 +638,7 @@ class InterfaceSmokeTest(QMainWindow):
 
         self.inspector_fields["rotation"] = QDoubleSpinBox()
         self.inspector_fields["rotation"].setObjectName("InspectorNumberField")
+        self.inspector_fields["rotation"].setButtonSymbols(QDoubleSpinBox.NoButtons)
         self.inspector_fields["rotation"].setDecimals(2)
         self.inspector_fields["rotation"].setRange(-100000.0, 100000.0)
         self.inspector_fields["rotation"].setKeyboardTracking(False)
@@ -652,6 +657,7 @@ class InterfaceSmokeTest(QMainWindow):
 
         self.inspector_fields["w"] = QDoubleSpinBox()
         self.inspector_fields["w"].setObjectName("InspectorNumberField")
+        self.inspector_fields["w"].setButtonSymbols(QDoubleSpinBox.NoButtons)
         self.inspector_fields["w"].setDecimals(2)
         self.inspector_fields["w"].setRange(1.0, 100000.0)
         self.inspector_fields["w"].setKeyboardTracking(False)
@@ -660,6 +666,7 @@ class InterfaceSmokeTest(QMainWindow):
 
         self.inspector_fields["h"] = QDoubleSpinBox()
         self.inspector_fields["h"].setObjectName("InspectorNumberField")
+        self.inspector_fields["h"].setButtonSymbols(QDoubleSpinBox.NoButtons)
         self.inspector_fields["h"].setDecimals(2)
         self.inspector_fields["h"].setRange(1.0, 100000.0)
         self.inspector_fields["h"].setKeyboardTracking(False)
@@ -668,6 +675,7 @@ class InterfaceSmokeTest(QMainWindow):
 
         scale_z = QDoubleSpinBox()
         scale_z.setObjectName("InspectorNumberField")
+        scale_z.setButtonSymbols(QDoubleSpinBox.NoButtons)
         scale_z.setDecimals(2)
         scale_z.setValue(1.00)
         scale_z.setEnabled(False)
@@ -1167,10 +1175,6 @@ class InterfaceSmokeTest(QMainWindow):
             self.runtime_debug_body,
         ):
             component_body.setObjectName("InspectorComponentBody")
-            component_body.setStyleSheet(
-                "#InspectorComponentBody { background: #202228; border-left: 1px solid #30343c; "
-                "border-right: 1px solid #30343c; border-bottom: 1px solid #30343c; }"
-            )
 
         # O cabeçalho e corpo de scripts/custom agora são inseridos de forma modular dinâmica para cada script ativo
         self.script_containers = []

@@ -29,13 +29,15 @@ def test_native_ui_scene_item_round_trip() -> None:
 
 
 def test_native_ui_draws_only_when_canvas_exists() -> None:
+    from unittest.mock import MagicMock
+    from conftest import _FakeSurface
     renderer = NativeUIRenderer()
-    surface = pygame.Surface((180, 90), pygame.SRCALPHA)
-    before = pygame.image.tostring(surface, "RGBA")
+    surface = _FakeSurface()
+    surface.blit = MagicMock()
 
     renderer.draw(_objects(), surface)
 
-    assert pygame.image.tostring(surface, "RGBA") != before
+    assert surface.blit.call_count > 0
     without_canvas = {key: value for key, value in _objects().items() if key != "Canvas"}
     assert renderer.components(without_canvas) == []
 

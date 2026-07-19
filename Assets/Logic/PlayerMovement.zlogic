@@ -1,26 +1,234 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
+  "enabled": true,
   "name": "PlayerMovement",
-  "target": {"type": "name", "value": "Player"},
-  "variables": {"speed": {"type": "float", "default": 220.0}},
+  "target": {
+    "type": "name",
+    "value": "Player"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {
+    "speed": {
+      "type": "number",
+      "scope": "object",
+      "default": 220.0
+    }
+  },
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
   "nodes": [
-    {"id": "update", "type": "event_update", "title": "A cada frame", "category": "Eventos", "position": [40, 180], "properties": {}},
-    {"id": "axis", "type": "input_axis", "title": "Teclas A / D", "category": "Movimento", "position": [280, 100], "properties": {"negative": "A", "positive": "D"}},
-    {"id": "moving", "type": "if_else", "title": "Existe movimento?", "category": "Lógica", "position": [520, 100], "properties": {"condition": "axis != 0"}},
-    {"id": "move", "type": "move", "title": "Ação: Andar", "category": "Movimento", "position": [780, 40], "properties": {"speed": 220.0}},
-    {"id": "idle", "type": "play_animation", "title": "Ação: Parado", "category": "Ação", "position": [780, 180], "properties": {"state": "Idle"}},
-    {"id": "space", "type": "key_pressed", "title": "Tecla Espaço", "category": "Condição", "position": [280, 330], "properties": {"key": "SPACE"}},
-    {"id": "grounded", "type": "is_grounded", "title": "Está no chão?", "category": "Condição", "position": [520, 330], "properties": {}},
-    {"id": "jump", "type": "jump", "title": "Ação: Pular", "category": "Movimento", "position": [780, 330], "properties": {"force": 440.0}}
+    {
+      "id": "update",
+      "type": "event_update",
+      "title": "On Update",
+      "category": "Events",
+      "position": [
+        40.0,
+        180.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 134.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "axis",
+      "type": "input_axis",
+      "title": "Read Input Axis",
+      "category": "Movement",
+      "position": [
+        280.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 134.0
+      },
+      "properties": {
+        "negative": "A",
+        "positive": "D"
+      }
+    },
+    {
+      "id": "moving",
+      "type": "if_else",
+      "title": "If / Else",
+      "category": "Logic",
+      "position": [
+        520.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 134.0
+      },
+      "properties": {
+        "condition": "axis != 0"
+      }
+    },
+    {
+      "id": "move",
+      "type": "move",
+      "title": "Move",
+      "category": "Movement",
+      "position": [
+        780.0,
+        40.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 134.0
+      },
+      "properties": {
+        "speed": 220.0
+      }
+    },
+    {
+      "id": "idle",
+      "type": "play_animation",
+      "title": "Play Animation",
+      "category": "Action",
+      "position": [
+        780.0,
+        191.67
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 134.0
+      },
+      "properties": {
+        "state": "Idle"
+      }
+    },
+    {
+      "id": "space",
+      "type": "key_pressed",
+      "title": "Key Pressed Now?",
+      "category": "Condition",
+      "position": [
+        280.0,
+        330.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 146.0
+      },
+      "properties": {
+        "key": "SPACE"
+      }
+    },
+    {
+      "id": "grounded",
+      "type": "is_grounded",
+      "title": "Is Grounded?",
+      "category": "Condition",
+      "position": [
+        520.0,
+        330.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 146.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "jump",
+      "type": "jump",
+      "title": "Jump",
+      "category": "Movement",
+      "position": [
+        780.0,
+        330.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 134.0
+      },
+      "properties": {
+        "force": 440.0
+      }
+    }
   ],
   "edges": [
-    {"id": "e1", "from_node": "update", "from_port": "next", "to_node": "axis", "to_port": "in", "kind": "flow"},
-    {"id": "e2", "from_node": "axis", "from_port": "next", "to_node": "moving", "to_port": "in", "kind": "flow"},
-    {"id": "e3", "from_node": "moving", "from_port": "true", "to_node": "move", "to_port": "in", "kind": "flow"},
-    {"id": "e4", "from_node": "moving", "from_port": "false", "to_node": "idle", "to_port": "in", "kind": "flow"},
-    {"id": "e5", "from_node": "update", "from_port": "next", "to_node": "space", "to_port": "in", "kind": "flow"},
-    {"id": "e6", "from_node": "space", "from_port": "true", "to_node": "grounded", "to_port": "in", "kind": "flow"},
-    {"id": "e7", "from_node": "grounded", "from_port": "true", "to_node": "jump", "to_port": "in", "kind": "flow"}
+    {
+      "id": "e1",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "axis",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e2",
+      "from_node": "axis",
+      "from_port": "next",
+      "to_node": "moving",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    },
+    {
+      "id": "e3",
+      "from_node": "moving",
+      "from_port": "true",
+      "to_node": "move",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 2
+    },
+    {
+      "id": "e4",
+      "from_node": "moving",
+      "from_port": "false",
+      "to_node": "idle",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 3
+    },
+    {
+      "id": "e5",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "space",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 4
+    },
+    {
+      "id": "e6",
+      "from_node": "space",
+      "from_port": "true",
+      "to_node": "grounded",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 5
+    },
+    {
+      "id": "e7",
+      "from_node": "grounded",
+      "from_port": "true",
+      "to_node": "jump",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 6
+    }
   ]
 }

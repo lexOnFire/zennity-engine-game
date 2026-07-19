@@ -155,25 +155,45 @@ class Component:
     # Serialização (Fase 9)                                               #
     # ------------------------------------------------------------------ #
 
+    @property
+    def type_name(self) -> str:
+        return getattr(self, "component_type", type(self).__name__)
+
     def serialize(self) -> Dict[str, Any]:
-        """
-        Retorna um dict com o estado serializável do componente.
-        A chave "type" é preenchida automaticamente com o nome da classe.
-        Sobrescreva para adicionar campos específicos — chame super().serialize()
-        e adicione ao dict retornado.
-        """
-        return {
-            "type": type(self).__name__,
+        """Retorna um dict com o estado serializável."""
+        data = {
+            "type": self.type_name,
             "enabled": self._enabled,
+            "properties": {}
         }
+        # Reflexão padrão para propriedades simples
+        for key, value in self.__dict__.items():
+            if not key.startswith("_") and key not in ["game_object", "type_name", "enabled"]:
+                if isinstance(value, (int, float, str, bool, list, dict)):
+                    data["properties"][key] = value
+
+        if hasattr(self, "serialize_properties"):
+            props = self.serialize_properties()
+            if props:
+                data["properties"].update(props)
+        return data
 
     def deserialize(self, data: Dict[str, Any]) -> None:
         """
         Restaura o estado do componente a partir de *data*.
-        Sobrescreva para restaurar campos específicos — chame super().deserialize(data)
-        no início.
         """
         self._enabled = bool(data.get("enabled", True))
+        
+        props = data.get("properties", {})
+        for key, value in props.items():
+            if hasattr(self, key):
+                try:
+                    setattr(self, key, value)
+                except AttributeError:
+                    pass
+                
+        if hasattr(self, "deserialize_properties"):
+            self.deserialize_properties(props)
 
     # ------------------------------------------------------------------ #
     # repr                                                                #

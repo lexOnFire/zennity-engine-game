@@ -94,7 +94,7 @@ def test_logic_workspace_can_create_open_save_and_load_demo():
     assert "default_logic_graph" in source
     assert "load_logic_graph" in source
     assert "save_logic_graph" in source
-    assert '"PlayerMovement.zlogic"' in source
+    assert "getOpenFileName" in source
 
 
 def test_logic_workspace_receives_throttled_runtime_debug_traces():
@@ -308,7 +308,7 @@ def test_nodes_flip_to_code_and_patrol_recipe_is_discoverable():
     assert "override_physics_axis" in runtime
     assert "def override_physics_axis" in viewport
     assert '"patrol_y_between_limits"' in recipes
-    assert "Patrulhar no Y entre -100 e 100" in recipes
+    assert "Patrol Y Axis Between Limits" in recipes
 
 
 def test_logic_editor_opens_in_selected_hierarchy_object_context():

@@ -98,8 +98,31 @@ class ViewportWidget(QOpenGLWidget):
 
         root_objects = list(self.viewmodel.get_root_objects())
 
+        existing_objects = list(
+            getattr(
+                self.active_scene,
+                "editable_objects",
+                getattr(self.active_scene, "game_objects", []),
+            )
+        )
+
+        for obj in existing_objects:
+            if hasattr(self.active_scene, "_remove_go"):
+                self.active_scene._remove_go(obj)
+            else:
+                for component in list(getattr(obj, "components", [])):
+                    destroy = getattr(component, "destroy", None)
+                    if callable(destroy):
+                        destroy()
+
+                if obj in getattr(self.active_scene, "game_objects", []):
+                    self.active_scene.game_objects.remove(obj)
+
+                obj.scene = None
+
         if hasattr(self.active_scene, "editable_objects"):
             self.active_scene.editable_objects.clear()
+
         if hasattr(self.active_scene, "game_objects"):
             self.active_scene.game_objects.clear()
 
@@ -138,6 +161,11 @@ class ViewportWidget(QOpenGLWidget):
             return
         self.viewmodel.delete_selected()
         self._sync_scene_from_model()
+        self.viewmodel.hierarchy_updated.emit()
+
+    def selected_object(self):
+        """Retorna o objeto atualmente selecionado, compatibilidade com testes e API antiga."""
+        return self.viewmodel.selected_object if self.viewmodel else None
 
     def duplicate_selected_object(self) -> None:
         """Duplica o objeto selecionado via SceneViewModel."""
@@ -329,6 +357,20 @@ class ViewportWidget(QOpenGLWidget):
 
         p = QPainter(self)
         p.drawImage(0, 0, img)
+        if self.active_scene and getattr(self.active_scene, "playing", False):
+            from PySide6.QtGui import QPen, QColor, QFont
+            import math
+            # Smooth neon pulsing glow
+            opacity = int(120 + 70 * math.sin(time.time() * 5.0))
+            # Draw ciano neon border
+            pen = QPen(QColor(0, 173, 181, opacity), 3)
+            p.setPen(pen)
+            p.drawRect(1, 1, self.width() - 2, self.height() - 2)
+
+            # Draw 'PLAY MODE ACTIVE' overlay text
+            p.setFont(QFont("Segoe UI", 9, QFont.Bold))
+            p.setPen(QColor(0, 173, 181, 220))
+            p.drawText(self.width() - 130, 24, "PLAY MODE ACTIVE")
         p.end()
 
     @Slot()

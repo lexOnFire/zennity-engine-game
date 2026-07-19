@@ -77,7 +77,7 @@ def test_inspector_hosts_plugins_for_multiple_components(qapp) -> None:
 
 def test_inspector_handles_missing_plugin(qapp) -> None:
     class NoPluginComponent(Component):
-        component_type = "NoPlugin"
+        type_name = "NoPlugin"
 
     obj = GameObject("Inspectable")
     obj.add_component(NoPluginComponent())

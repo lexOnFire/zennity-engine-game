@@ -101,6 +101,7 @@ def test_enemy_collision_graph_awards_score_only_for_projectile_tag() -> None:
 
     game = Game()
     runtime = LogicGraphRuntime(graph, store, "NebulaDrone")
+    store.set("project", "score", 0.0, "NebulaDrone")
     runtime.start(game)
     runtime.trigger_event("event_trigger_enter", game, payload=Other())
 

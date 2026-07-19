@@ -1,4 +1,4 @@
-"""Receitas didáticas e reutilizáveis para o editor de Lógica Visual."""
+"""Educational and reusable recipes for the Visual Logic Graph editor."""
 from __future__ import annotations
 
 import unicodedata
@@ -12,17 +12,17 @@ from .graph_asset import create_logic_node
 LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     {
         "id": "safe_pooled_projectile",
-        "topics": ("Objetos", "Criação", "Movimento", "Input"),
-        "title": "Disparar projétil seguro com pool",
-        "category": "Objetos e cena",
-        "summary": "Cria projéteis ao apertar Espaço, limita instâncias, move cada cópia e a reutiliza pelo pool.",
-        "keywords": "projetil tiro bala pool limite vida distância criar tecla movimento permanente",
+        "topics": ("Objects", "Creation", "Movement", "Input"),
+        "title": "Shoot Pooled Projectile",
+        "category": "Objects & Scene",
+        "summary": "Creates projectiles on Spacebar press, limits instances, moves each copy, and reuses them via pooling.",
+        "keywords": "projectile shoot bullet pool limit life distance create key movement permanent",
         "steps": (
-            "Ao apertar Espaço dispara uma vez por pressionamento.",
-            "Criar objeto produz Projectile e ele vira automaticamente o alvo do próximo bloco.",
-            "No máximo 20 projéteis permanecem ativos; cada um vive 3 segundos ou percorre 1200 unidades.",
-            "O pool reaproveita instâncias descartadas e reduz criação repetida.",
-            "Iniciar movimento permanente recebe implicitamente o Projectile recém-criado.",
+            "Pressing Space triggers once per press.",
+            "Create Object creates a Projectile, which automatically becomes the target of the next block.",
+            "A maximum of 20 projectiles remain active; each lives for 3 seconds or travels 1200 units.",
+            "The pool reuses discarded instances, reducing repeated allocation overhead.",
+            "Start Continuous Motion implicitly targets the newly created Projectile.",
         ),
         "nodes": (
             {"key": "key", "type": "event_key_pressed", "position": (0.0, 0.0), "properties": {"key": "SPACE"}},
@@ -46,17 +46,17 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "scrolling_road_or_sky",
-        "topics": ("Movimento", "Imagem", "Cenário"),
-        "title": "Criar pista ou céu em movimento",
-        "category": "Imagem e cenário",
-        "summary": "Repete a imagem de um plano e a desloca continuamente sem mover o objeto nem o collider.",
-        "keywords": "fundo rolante pista céu nuvem estrelas parallax imagem textura repetir cenário",
+        "topics": ("Movement", "Image", "Background"),
+        "title": "Create Moving Background or Road",
+        "category": "Image & Background",
+        "summary": "Repeats a background texture and scrolls it continuously without moving the object or its collider.",
+        "keywords": "background scroll road sky cloud stars parallax image texture repeat",
         "steps": (
-            "Coloque um Sprite Renderer no plano e ajuste seu tamanho na Scene View.",
-            "Escolha a imagem no bloco Iniciar fundo rolante; imagens tileáveis ficam mais suaves.",
-            "Para pista, use Y=160 e repetir Y. Para céu, use X=25 e repetir X.",
-            "Parallax 0.3 cria uma camada distante; 1.0 mantém a velocidade normal.",
-            "O Transform e o collider permanecem parados: somente a imagem se desloca.",
+            "Place a Sprite Renderer on the background and adjust its size in the Scene View.",
+            "Select the image in the Start Scrolling Background block; tileable images work best.",
+            "For a road, use Y=160 and repeat Y. For sky, use X=25 and repeat X.",
+            "Parallax 0.3 creates a far layer; 1.0 keeps normal speed.",
+            "The Transform and collider remain stationary; only the texture scrolls.",
         ),
         "nodes": (
             {"key": "start", "type": "event_start", "position": (0.0, 0.0)},
@@ -73,15 +73,15 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "move_x_every_frame",
-        "topics": ("Movimento", "Posição"),
-        "title": "Mover sozinho no eixo X",
-        "category": "Posição e movimento",
-        "summary": "Move o objeto continuamente para a direita, sem precisar apertar teclas.",
-        "keywords": "mover andar sozinho automático x direita cada frame velocidade",
+        "topics": ("Movement", "Position"),
+        "title": "Move Automatically on X Axis",
+        "category": "Position & Movement",
+        "summary": "Moves the object continuously to the right without requiring key presses.",
+        "keywords": "move walk automatic x right each frame speed velocity",
         "steps": (
-            "A cada frame inicia o fluxo continuamente.",
-            "Mover continuamente acrescenta 120 unidades por segundo no eixo X.",
-            "Use um valor negativo em X para mover para a esquerda.",
+            "Triggers the flow on every frame.",
+            "Move By adds 120 units per second to the X axis.",
+            "Use a negative value in X to move to the left.",
         ),
         "nodes": (
             {"key": "update", "type": "event_update", "position": (0.0, 0.0)},
@@ -91,16 +91,16 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "press_d_start_permanent_x",
-        "topics": ("Movimento", "Posição", "Input"),
-        "title": "Apertar D uma vez e continuar andando",
-        "category": "Entrada e movimento",
-        "summary": "Ao apertar D uma única vez, inicia um movimento permanente no eixo X que continua após soltar a tecla.",
-        "keywords": "d apertar uma vez movimento permanente infinito continuar andar x tecla soltar",
+        "topics": ("Movement", "Position", "Input"),
+        "title": "Press D Once to Keep Walking",
+        "category": "Input & Movement",
+        "summary": "Pressing D once initiates a continuous motion on the X axis that persists after releasing the key.",
+        "keywords": "d press once permanent infinite movement keep walk x key release",
         "steps": (
-            "Ao apertar tecla dispara somente na transição de solta para pressionada.",
-            "Iniciar movimento permanente guarda a velocidade X no runtime.",
-            "O objeto continua andando depois que D é solta.",
-            "Use Parar movimento permanente em outro evento para interromper.",
+            "On Key Pressed triggers only on the transition from released to pressed.",
+            "Start Continuous Motion saves the X velocity in the runtime.",
+            "The object continues moving after D is released.",
+            "Use Stop Continuous Motion on another event to halt it.",
         ),
         "nodes": (
             {"key": "key", "type": "event_key_pressed", "position": (0.0, 0.0), "properties": {"key": "D"}},
@@ -110,38 +110,38 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "controlled_permanent_motion",
-        "topics": ("Movimento", "Posição", "Input", "Depuração"),
-        "title": "Controlar movimento permanente",
-        "category": "Posição e movimento",
-        "summary": "Inicia um movimento nomeado e permite alterar, pausar, continuar ou parar somente esse movimento.",
-        "keywords": "movimento permanente nome acelerar desacelerar local global pausar continuar alterar parar consultar",
+        "topics": ("Movement", "Position", "Input", "Debug"),
+        "title": "Control Permanent Motion",
+        "category": "Position & Movement",
+        "summary": "Starts a named continuous motion and allows modifying, pausing, resuming, or stopping only that specific motion.",
+        "keywords": "permanent movement name accelerate decelerate local global pause resume change stop query",
         "steps": (
-            "Ao iniciar cria o movimento Corrida com aceleração e desaceleração suaves.",
-            "A tecla Shift altera a velocidade sem criar outro movimento.",
-            "P pausa apenas Corrida e R continua do ponto em que parou.",
-            "S faz uma parada suave usando a desaceleração configurada.",
-            "Use Consultar movimento permanente para ler velocidade, direção, pausa e atividade.",
+            "On Start creates the movement 'Run' with smooth acceleration and deceleration.",
+            "The Shift key updates the speed without creating another motion.",
+            "P pauses only 'Run', and R resumes from where it left off.",
+            "S performs a smooth stop using the configured deceleration.",
+            "Use Get Continuous Motion to read speed, direction, pause state, and active status.",
         ),
         "nodes": (
             {"key": "start", "type": "event_start", "position": (0.0, 0.0)},
             {
                 "key": "motion", "type": "start_continuous_motion", "position": (300.0, 0.0),
                 "properties": {
-                    "movement": "Corrida", "x": 120.0, "y": 0.0, "space": "global",
+                    "movement": "Run", "x": 120.0, "y": 0.0, "space": "global",
                     "acceleration": 240.0, "deceleration": 360.0,
                 },
             },
             {"key": "shift", "type": "event_key_pressed", "position": (0.0, 190.0), "properties": {"key": "LSHIFT"}},
             {
                 "key": "faster", "type": "update_continuous_motion", "position": (300.0, 190.0),
-                "properties": {"movement": "Corrida", "x": 260.0, "y": 0.0, "acceleration": 300.0},
+                "properties": {"movement": "Run", "x": 260.0, "y": 0.0, "acceleration": 300.0},
             },
             {"key": "pause_key", "type": "event_key_pressed", "position": (0.0, 380.0), "properties": {"key": "P"}},
-            {"key": "pause", "type": "pause_continuous_motion", "position": (300.0, 380.0), "properties": {"movement": "Corrida"}},
+            {"key": "pause", "type": "pause_continuous_motion", "position": (300.0, 380.0), "properties": {"movement": "Run"}},
             {"key": "resume_key", "type": "event_key_pressed", "position": (0.0, 570.0), "properties": {"key": "R"}},
-            {"key": "resume", "type": "resume_continuous_motion", "position": (300.0, 570.0), "properties": {"movement": "Corrida"}},
+            {"key": "resume", "type": "resume_continuous_motion", "position": (300.0, 570.0), "properties": {"movement": "Run"}},
             {"key": "stop_key", "type": "event_key_pressed", "position": (0.0, 760.0), "properties": {"key": "S"}},
-            {"key": "stop", "type": "stop_continuous_motion", "position": (300.0, 760.0), "properties": {"movement": "Corrida", "smooth": True}},
+            {"key": "stop", "type": "stop_continuous_motion", "position": (300.0, 760.0), "properties": {"movement": "Run", "smooth": True}},
         ),
         "edges": (
             ("start", "next", "motion", "in", "flow"),
@@ -153,15 +153,15 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "move_y_every_frame",
-        "topics": ("Movimento", "Posição"),
-        "title": "Mover sozinho no eixo Y",
-        "category": "Posição e movimento",
-        "summary": "Move o objeto continuamente para baixo sem usar o teclado.",
-        "keywords": "mover andar sozinho automático y baixo cima cada frame velocidade",
+        "topics": ("Movement", "Position"),
+        "title": "Move Automatically on Y Axis",
+        "category": "Position & Movement",
+        "summary": "Moves the object continuously downwards without using the keyboard.",
+        "keywords": "move walk automatic y down up each frame speed velocity",
         "steps": (
-            "A cada frame executa o movimento.",
-            "Mover continuamente acrescenta 120 unidades por segundo no eixo Y.",
-            "Use um valor negativo em Y para mover para cima.",
+            "Triggers the movement on every frame.",
+            "Move By adds 120 units per second to the Y axis.",
+            "Use a negative value in Y to move upwards.",
         ),
         "nodes": (
             {"key": "update", "type": "event_update", "position": (0.0, 0.0)},
@@ -171,15 +171,15 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "set_initial_position",
-        "topics": ("Posição",),
-        "title": "Definir posição ao iniciar",
-        "category": "Posição e movimento",
-        "summary": "Coloca o objeto em uma coordenada específica quando o Play começa.",
-        "keywords": "posição inicial começar spawn teleporte x y ao iniciar",
+        "topics": ("Position",),
+        "title": "Set Position on Start",
+        "category": "Position & Movement",
+        "summary": "Places the object at specific coordinates when Play mode starts.",
+        "keywords": "initial position start spawn teleport x y on start",
         "steps": (
-            "Ao iniciar executa somente uma vez.",
-            "Definir posição troca imediatamente as coordenadas X e Y.",
-            "Edite X e Y nas propriedades do bloco.",
+            "On Start triggers only once.",
+            "Set Position immediately overrides the X and Y coordinates.",
+            "Edit X and Y in the node properties.",
         ),
         "nodes": (
             {"key": "start", "type": "event_start", "position": (0.0, 0.0)},
@@ -189,17 +189,17 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "create_object_on_start",
-        "topics": ("Objetos", "Criação"),
-        "title": "Criar um objeto ao iniciar",
-        "category": "Objetos e cena",
-        "summary": "Cria um novo objeto quando o Play começa e permite reutilizá-lo em outros blocos.",
-        "keywords": "criar objeto spawn instanciar novo imagem posição tamanho cor",
+        "topics": ("Objects", "Creation"),
+        "title": "Create Object on Start",
+        "category": "Objects & Scene",
+        "summary": "Creates a new object when Play mode starts, allowing references to it in subsequent blocks.",
+        "keywords": "create object spawn instantiate new image position size color",
         "steps": (
-            "Ao iniciar executa apenas uma vez.",
-            "Criar objeto copia profundamente visual, componentes e propriedades do objeto original.",
-            "A cópia é independente: mudanças nela não alteram o objeto original.",
-            "A saída Objeto pode ser ligada a Mover, Girar, Trocar imagem ou Destruir.",
-            "Marque Posição relativa para usar X e Y como deslocamento do objeto atual.",
+            "On Start triggers only once.",
+            "Create Object deep-copies visual properties, components, and attributes from the template.",
+            "The copy is independent: changes to it do not affect the original template.",
+            "The Object output port can connect to Move, Rotate, Set Sprite, or Destroy.",
+            "Check Relative Position to offsets X and Y from the current object.",
         ),
         "nodes": (
             {"key": "start", "type": "event_start", "position": (0.0, 0.0)},
@@ -209,16 +209,16 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "spawn_prefab_on_key",
-        "topics": ("Objetos", "Criação", "Input"),
-        "title": "Criar Prefab ao apertar Espaço",
-        "category": "Objetos e cena",
-        "summary": "Instancia um Prefab completo sempre que a tecla Espaço é acionada.",
-        "keywords": "criar prefab spawn projetil tiro tecla espaço instanciar componente",
+        "topics": ("Objects", "Creation", "Input"),
+        "title": "Create Prefab on Space Press",
+        "category": "Objects & Scene",
+        "summary": "Instantiates a complete Prefab whenever the Spacebar is pressed.",
+        "keywords": "create prefab spawn projectile shoot key space instantiate component",
         "steps": (
-            "A cada frame verifica a entrada.",
-            "Tecla pressionada libera o fluxo apenas no instante do clique.",
-            "Criar Prefab preserva visual, collider, rigidbody, áudio e UI do arquivo.",
-            "Escolha o arquivo .zprefab e marque posição relativa quando necessário.",
+            "Triggers the check on every frame.",
+            "Key Pressed yields flow only during the frame the key was pressed down.",
+            "Create Prefab instantiates rendering, colliders, rigidbodies, audio, and UI from the file.",
+            "Select the .zprefab file and check Relative Position if needed.",
         ),
         "nodes": (
             {"key": "update", "type": "event_update", "position": (0.0, 0.0)},
@@ -232,17 +232,17 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "patrol_y_between_limits",
-        "topics": ("Movimento", "Posição"),
-        "title": "Patrulhar no Y entre -100 e 100",
-        "category": "Posição e movimento",
-        "summary": "Move continuamente no eixo Y e inverte o sentido ao alcançar 100 ou -100.",
-        "keywords": "patrulha ping pong inverter direção limite y menos 100 mais 100 automático",
+        "topics": ("Movement", "Position"),
+        "title": "Patrol Y Axis Between Limits",
+        "category": "Position & Movement",
+        "summary": "Moves continuously on the Y axis and reverses direction when reaching 100 or -100.",
+        "keywords": "patrol ping pong reverse direction limit y negative 100 positive 100 automatic",
         "steps": (
-            "A cada frame executa a patrulha.",
-            "O objeto começa subindo no eixo Y até o limite máximo 100.",
-            "Ao chegar em 100 inverte; em -100 volta a inverter.",
-            "Velocidade controla quantas unidades são percorridas por segundo.",
-            "A patrulha no Y assume o controle do eixo e não é desviada pela gravidade.",
+            "Triggers the patrol on every frame.",
+            "The object starts moving up the Y axis until it reaches the 100 limit.",
+            "Upon reaching 100, it reverses; at -100, it reverses again.",
+            "Speed controls the units traveled per second.",
+            "Y axis patrol overrides gravity calculations on this axis.",
         ),
         "nodes": (
             {"key": "update", "type": "event_update", "position": (0.0, 0.0)},
@@ -252,15 +252,15 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "patrol_x_between_limits",
-        "topics": ("Movimento", "Posição"),
-        "title": "Patrulhar no X entre dois pontos",
-        "category": "Posição e movimento",
-        "summary": "Cria uma plataforma ou inimigo que percorre o eixo X em ida e volta.",
-        "keywords": "patrulha plataforma inimigo ping pong inverter direção limite x",
+        "topics": ("Movement", "Position"),
+        "title": "Patrol X Axis Between Limits",
+        "category": "Position & Movement",
+        "summary": "Creates a platform or enemy that patrols back and forth along the X axis.",
+        "keywords": "patrol platform enemy ping pong reverse direction limit x",
         "steps": (
-            "A cada frame executa a patrulha.",
-            "O eixo X é limitado entre -200 e 200.",
-            "Edite mínimo, máximo e velocidade no bloco.",
+            "Triggers the patrol on every frame.",
+            "The X axis is constrained between -200 and 200.",
+            "Edit minimum, maximum, and speed in the node properties.",
         ),
         "nodes": (
             {"key": "update", "type": "event_update", "position": (0.0, 0.0)},
@@ -270,15 +270,15 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "show_x_on_hud",
-        "topics": ("Posição", "Texto"),
-        "title": "Mostrar posição X no HUD",
-        "category": "Posição e movimento",
-        "summary": "Lê a posição atual do objeto e mostra o valor X na interface durante o Play.",
-        "keywords": "ler posição coordenada x hud texto debug mostrar",
+        "topics": ("Position", "Text"),
+        "title": "Show X Position on HUD",
+        "category": "Position & Movement",
+        "summary": "Reads the current position of the object and displays the X coordinate on the HUD.",
+        "keywords": "read position coordinate x hud text debug show",
         "steps": (
-            "A cada frame atualiza o texto.",
-            "Ler posição fornece as coordenadas atuais do objeto.",
-            "Converter para texto transforma X em texto e Atualizar HUD o exibe.",
+            "Triggers the text update on every frame.",
+            "Get Position retrieves the current coordinates of the object.",
+            "Convert to Text transforms the X coordinate, and Update HUD displays it.",
         ),
         "nodes": (
             {"key": "update", "type": "event_update", "position": (0.0, 0.0)},
@@ -294,15 +294,15 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "sprite_on_start",
-        "topics": ("Ação", "Objetos"),
-        "title": "Trocar imagem ao iniciar",
-        "category": "Imagem e sprite",
-        "summary": "Vincula uma imagem de Assets e a aplica ao objeto quando o Play começa.",
-        "keywords": "imagem sprite textura png jpg trocar vincular ao iniciar",
+        "topics": ("Action", "Objects"),
+        "title": "Change Sprite on Start",
+        "category": "Image & Sprite",
+        "summary": "Binds an image asset and applies it to the object when Play mode begins.",
+        "keywords": "image sprite texture png jpg swap bind on start",
         "steps": (
-            "Ao iniciar executa uma vez.",
-            "Selecione Trocar imagem do objeto e use Selecionar asset do projeto.",
-            "Escolha um PNG, JPG, BMP ou WEBP da pasta Assets.",
+            "On Start triggers only once.",
+            "Select Set Object Sprite and choose a project asset.",
+            "Pick a PNG, JPG, BMP, or WEBP from the Assets folder.",
         ),
         "nodes": (
             {"key": "start", "type": "event_start", "position": (0.0, 0.0)},
@@ -312,15 +312,15 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "animation_asset_on_start",
-        "topics": ("Ação",),
-        "title": "Tocar animação ao iniciar",
-        "category": "Animação",
-        "summary": "Vincula e toca diretamente um arquivo .zanim quando o Play começa.",
-        "keywords": "animação animar zanim frames sprite sheet iniciar vincular",
+        "topics": ("Action",),
+        "title": "Play Animation on Start",
+        "category": "Animation",
+        "summary": "Binds and plays a .zanim animation file immediately when Play mode begins.",
+        "keywords": "animation animate zanim frames sprite sheet start bind",
         "steps": (
-            "Ao iniciar dispara uma vez.",
-            "Selecione Tocar arquivo de animação e vincule um .zanim de Assets.",
-            "A engine carrega o clip no objeto automaticamente durante o Play.",
+            "On Start triggers only once.",
+            "Select Play Animation File and bind a .zanim from Assets.",
+            "The engine loads and plays the animation clip automatically.",
         ),
         "nodes": (
             {"key": "start", "type": "event_start", "position": (0.0, 0.0)},
@@ -330,15 +330,15 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "sound_on_start",
-        "topics": ("Ação",),
-        "title": "Tocar som ao iniciar",
-        "category": "Áudio",
-        "summary": "Vincula um som de Assets e o reproduz uma vez quando o Play começa.",
-        "keywords": "som áudio musica efeito wav ogg mp3 iniciar vincular",
+        "topics": ("Action",),
+        "title": "Play Sound on Start",
+        "category": "Audio",
+        "summary": "Binds a sound asset and plays it once when Play mode begins.",
+        "keywords": "sound audio music effect wav ogg mp3 start bind",
         "steps": (
-            "Ao iniciar dispara uma vez.",
-            "Selecione Tocar som e use Selecionar asset do projeto.",
-            "Escolha WAV, OGG, MP3 ou FLAC dentro de Assets.",
+            "On Start triggers only once.",
+            "Select Play Sound and choose a project asset.",
+            "Choose a WAV, OGG, MP3, or FLAC file from the Assets folder.",
         ),
         "nodes": (
             {"key": "start", "type": "event_start", "position": (0.0, 0.0)},
@@ -348,15 +348,15 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "sound_on_collision",
-        "topics": ("Eventos", "Ação"),
-        "title": "Tocar som ao colidir",
-        "category": "Colisão e áudio",
-        "summary": "Reproduz um efeito sonoro sempre que o objeto começa uma colisão.",
-        "keywords": "colisão bater impacto som efeito evento collider",
+        "topics": ("Events", "Action"),
+        "title": "Play Sound on Collision",
+        "category": "Collision & Audio",
+        "summary": "Plays a sound effect whenever the object begins colliding with something.",
+        "keywords": "collision hit impact sound effect event collider",
         "steps": (
-            "Ao colidir é chamado pelo sistema de física.",
-            "Tocar som reproduz o asset escolhido.",
-            "O objeto precisa possuir um Collider configurado.",
+            "On Collision Enter is triggered by the physics engine.",
+            "Play Sound reproduces the selected asset.",
+            "The object must have an active Collider component.",
         ),
         "nodes": (
             {"key": "collision", "type": "event_collision_enter", "position": (0.0, 0.0)},
@@ -366,15 +366,15 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "jump_with_space",
-        "topics": ("Movimento", "Condição"),
-        "title": "Pular com Espaço",
-        "category": "Entrada e movimento",
-        "summary": "Verifica a tecla Espaço a cada frame e pula somente quando ela é pressionada.",
-        "keywords": "pular espaço space tecla condição input movimento",
+        "topics": ("Movement", "Condition"),
+        "title": "Jump on Space Press",
+        "category": "Input & Movement",
+        "summary": "Checks the Spacebar state every frame and triggers a jump only if pressed.",
+        "keywords": "jump space key condition input movement",
         "steps": (
-            "A cada frame verifica a entrada.",
-            "Tecla pressionada libera o fluxo Verdadeiro somente no clique.",
-            "Pular aplica a força configurada se o objeto estiver no chão.",
+            "Triggers the check on every frame.",
+            "Key Pressed yields True flow only on the frame the key goes down.",
+            "Jump applies the configured force if the object is grounded.",
         ),
         "nodes": (
             {"key": "update", "type": "event_update", "position": (0.0, 0.0)},
@@ -388,39 +388,39 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "timer_console_message",
-        "topics": ("Eventos",),
-        "title": "Executar ação a cada segundo",
-        "category": "Tempo e eventos",
-        "summary": "Usa um temporizador repetido para escrever uma mensagem no Console.",
-        "keywords": "timer tempo segundo repetir evento console mensagem",
+        "topics": ("Events",),
+        "title": "Trigger Action on Timer Interval",
+        "category": "Time & Events",
+        "summary": "Uses a repeating timer to output a message to the Console.",
+        "keywords": "timer time second repeat event console message",
         "steps": (
-            "Após um tempo conta um segundo e repete.",
-            "Mostrar no Console confirma cada disparo.",
-            "Troque o bloco final por qualquer ação desejada.",
+            "After a Delay ticks at 1.0 second and repeats.",
+            "Log to Console outputs a confirmation message.",
+            "Replace the final block with any desired action.",
         ),
         "nodes": (
             {"key": "timer", "type": "event_timer", "position": (0.0, 0.0), "properties": {"seconds": 1.0, "repeat": True}},
-            {"key": "log", "type": "log_message", "position": (270.0, 0.0), "properties": {"text": "Um segundo passou"}},
+            {"key": "log", "type": "log_message", "position": (270.0, 0.0), "properties": {"text": "One second passed"}},
         ),
         "edges": (("timer", "next", "log", "in", "flow"),),
     },
     {
         "id": "if_else_example",
-        "topics": ("Lógica", "Condição"),
-        "title": "Escolher entre duas ações",
-        "category": "Lógica e condição",
-        "summary": "Mostra como executar caminhos diferentes para Verdadeiro e Falso.",
-        "keywords": "if else se senão verdadeiro falso decisão condição lógica",
+        "topics": ("Logic", "Condition"),
+        "title": "Choose Between Two Actions",
+        "category": "Logic & Conditions",
+        "summary": "Demonstrates how to split execution paths based on a boolean condition.",
+        "keywords": "if else true false decision condition logic",
         "steps": (
-            "Ao iniciar entra no bloco If / Else.",
-            "Verdadeiro e Falso possuem saídas independentes.",
-            "Edite Condição nas propriedades para testar os dois caminhos.",
+            "On Start enters the If / Else block.",
+            "True and False paths run completely independent blocks.",
+            "Edit the Condition parameter in properties to test both paths.",
         ),
         "nodes": (
             {"key": "start", "type": "event_start", "position": (0.0, 0.0)},
             {"key": "branch", "type": "if_else", "position": (270.0, 0.0), "properties": {"condition": True}},
-            {"key": "yes", "type": "log_message", "position": (540.0, -80.0), "properties": {"text": "Condição verdadeira"}},
-            {"key": "no", "type": "log_message", "position": (540.0, 100.0), "properties": {"text": "Condição falsa"}},
+            {"key": "yes", "type": "log_message", "position": (540.0, -80.0), "properties": {"text": "Condition is true"}},
+            {"key": "no", "type": "log_message", "position": (540.0, 100.0), "properties": {"text": "Condition is false"}},
         ),
         "edges": (
             ("start", "next", "branch", "in", "flow"),
@@ -430,15 +430,15 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "find_and_hide_tag",
-        "topics": ("Objetos",),
-        "title": "Encontrar objeto por Tag e ocultar",
-        "category": "Objetos e cena",
-        "summary": "Procura outro objeto pela Tag e o desativa durante o Play.",
-        "keywords": "objeto procurar encontrar tag ocultar desativar cena",
+        "topics": ("Objects",),
+        "title": "Find Object by Tag and Disable",
+        "category": "Objects & Scene",
+        "summary": "Searches for an object with a specific tag and disables it during runtime.",
+        "keywords": "object search find tag hide disable scene",
         "steps": (
-            "Procurar por Tag localiza o primeiro objeto compatível.",
-            "A porta object envia a referência para Ativar / Desativar.",
-            "Edite a Tag e o valor Ativo nas propriedades.",
+            "Find by Tag locates the first active object with that tag.",
+            "The object output port sends the reference to Enable / Disable.",
+            "Edit the Target Tag and Active properties in the node panel.",
         ),
         "nodes": (
             {"key": "start", "type": "event_start", "position": (0.0, 0.0)},
@@ -453,20 +453,20 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "store_starting_health",
-        "topics": ("Variáveis",),
-        "title": "Criar variável de vida",
-        "category": "Variáveis",
-        "summary": "Define a variável Vida do objeto com valor inicial 100.",
-        "keywords": "variável vida health pontos valor guardar definir",
+        "topics": ("Variables",),
+        "title": "Create Health Variable",
+        "category": "Variables",
+        "summary": "Saves an initial Health variable on the object with a value of 100.",
+        "keywords": "variable health points value store set",
         "steps": (
-            "Ao iniciar executa uma vez.",
-            "Número fornece o valor 100.",
-            "Definir variável guarda Vida no escopo deste objeto.",
+            "On Start triggers only once.",
+            "Number node outputs the value 100.0.",
+            "Set Variable stores 'Health' on the object scope.",
         ),
         "nodes": (
             {"key": "start", "type": "event_start", "position": (0.0, 0.0)},
             {"key": "number", "type": "number_value", "position": (0.0, 180.0), "properties": {"value": 100.0}},
-            {"key": "set", "type": "set_variable", "position": (270.0, 0.0), "properties": {"scope": "object", "name": "Vida", "value": 100.0}},
+            {"key": "set", "type": "set_variable", "position": (270.0, 0.0), "properties": {"scope": "object", "name": "Health", "value": 100.0}},
         ),
         "edges": (
             ("start", "next", "set", "in", "flow"),
@@ -475,15 +475,15 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "math_to_hud",
-        "topics": ("Matemática",),
-        "title": "Somar números e mostrar no HUD",
-        "category": "Matemática e HUD",
-        "summary": "Soma dois números, converte o resultado em texto e exibe na tela.",
-        "keywords": "somar matemática números resultado converter hud",
+        "topics": ("Math",),
+        "title": "Add Numbers and Show on HUD",
+        "category": "Math & HUD",
+        "summary": "Adds two numbers, converts the sum to text, and displays it on screen.",
+        "keywords": "add math numbers sum convert hud",
         "steps": (
-            "Somar recebe A e B nas propriedades ou por conexões.",
-            "Converter para texto adapta o número para o HUD.",
-            "Atualizar HUD mostra o resultado durante o Play.",
+            "Add calculates A plus B from input ports or properties.",
+            "Convert to Text transforms the numeric value to a string.",
+            "Update HUD displays the result string on screen.",
         ),
         "nodes": (
             {"key": "start", "type": "event_start", "position": (0.0, 0.0)},
@@ -499,19 +499,19 @@ LOGIC_RECIPES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "join_text_to_hud",
-        "topics": ("Texto",),
-        "title": "Juntar textos e mostrar no HUD",
-        "category": "Texto e HUD",
-        "summary": "Combina duas partes de texto e mostra a frase resultante na tela.",
-        "keywords": "texto juntar frase nome hud interface",
+        "topics": ("Text",),
+        "title": "Join Texts and Show on HUD",
+        "category": "Text & HUD",
+        "summary": "Combines two pieces of text and displays the resulting phrase on screen.",
+        "keywords": "text concatenate phrase name hud UI",
         "steps": (
-            "Juntar textos combina A e B.",
-            "A saída value entra na propriedade text do HUD.",
-            "Edite as duas partes para criar sua própria mensagem.",
+            "Join Texts combines inputs A and B.",
+            "The output value port enters the HUD text property.",
+            "Edit both input strings to customize your message.",
         ),
         "nodes": (
             {"key": "start", "type": "event_start", "position": (0.0, 0.0)},
-            {"key": "join", "type": "join_text", "position": (0.0, 180.0), "properties": {"a": "Olá, ", "b": "jogador!"}},
+            {"key": "join", "type": "join_text", "position": (0.0, 180.0), "properties": {"a": "Hello, ", "b": "player!"}},
             {"key": "hud", "type": "set_hud", "position": (320.0, 0.0)},
         ),
         "edges": (
@@ -528,7 +528,7 @@ def _search_key(value: Any) -> str:
 
 
 def find_logic_recipes(query: str = "", topic: str = "") -> list[dict[str, Any]]:
-    """Pesquisa receitas por linguagem simples, título, categoria e passos."""
+    """Search recipes by simple query matching title, category, keywords, and steps."""
     wanted = _search_key(query).strip()
     result: list[dict[str, Any]] = []
     for recipe in LOGIC_RECIPES:
@@ -545,10 +545,10 @@ def find_logic_recipes(query: str = "", topic: str = "") -> list[dict[str, Any]]
 
 
 def build_logic_recipe(recipe_id: str, origin: tuple[float, float] = (0.0, 0.0)) -> dict[str, list[dict[str, Any]]]:
-    """Materializa uma receita como fragmento independente de nós e conexões."""
+    """Materializes a recipe as an independent fragment of nodes and edges."""
     recipe = next((entry for entry in LOGIC_RECIPES if entry["id"] == recipe_id), None)
     if recipe is None:
-        raise KeyError(f"Receita de Logic Graph desconhecida: {recipe_id}")
+        raise KeyError(f"Unknown Logic Graph recipe: {recipe_id}")
     nodes: list[dict[str, Any]] = []
     by_key: dict[str, dict[str, Any]] = {}
     for specification in recipe["nodes"]:
@@ -570,8 +570,8 @@ def build_logic_recipe(recipe_id: str, origin: tuple[float, float] = (0.0, 0.0))
 
 
 def logic_recipe(recipe_id: str) -> Mapping[str, Any]:
-    """Retorna os metadados de uma receita sem permitir mutação global."""
+    """Returns the metadata of a recipe without allowing global mutation."""
     recipe = next((entry for entry in LOGIC_RECIPES if entry["id"] == recipe_id), None)
     if recipe is None:
-        raise KeyError(f"Receita de Logic Graph desconhecida: {recipe_id}")
+        raise KeyError(f"Unknown Logic Graph recipe: {recipe_id}")
     return deepcopy(recipe)

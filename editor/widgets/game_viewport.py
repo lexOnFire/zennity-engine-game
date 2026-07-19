@@ -152,6 +152,25 @@ class GameViewportWidget(QWidget):
         img = QImage(raw, self._vp_w, self._vp_h, self._vp_w * 4, QImage.Format_RGBA8888)
         painter = QPainter(self)
         painter.drawImage(0, 0, img)
+
+        playing = False
+        if self.active_scene and bool(getattr(self.active_scene, "playing", False)):
+            playing = True
+        elif self.runtime_manager and getattr(self.runtime_manager, "is_playing", False):
+            playing = True
+
+        if playing:
+            from PySide6.QtGui import QPen, QColor, QFont
+            import math
+            opacity = int(120 + 70 * math.sin(time.time() * 5.0))
+            pen = QPen(QColor(0, 173, 181, opacity), 3)
+            painter.setPen(pen)
+            painter.drawRect(1, 1, self.width() - 2, self.height() - 2)
+
+            painter.setFont(QFont("Segoe UI", 9, QFont.Bold))
+            painter.setPen(QColor(0, 173, 181, 220))
+            painter.drawText(self.width() - 130, 24, "PLAY MODE ACTIVE")
+
         painter.end()
 
     def _tick(self) -> None:

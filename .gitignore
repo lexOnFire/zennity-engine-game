@@ -36,3 +36,7 @@ release/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Recovery/Backup
+*.backup
+estado_reintegracao.txt

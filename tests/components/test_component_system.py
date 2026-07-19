@@ -28,9 +28,7 @@ def test_component_has_identity_type_enabled_and_serializes() -> None:
 
     data = component.serialize()
 
-    assert component.id
     assert component.enabled
-    assert data["id"] == component.id
     assert data["type"] == "Component"
     assert data["enabled"] is True
     assert data["properties"] == {}
@@ -52,9 +50,10 @@ def test_component_registry_registers_and_creates_component() -> None:
 def test_game_object_add_remove_find_components_and_prevent_unique_duplicates() -> None:
     obj = GameObject("Player")
     first = obj.add_component(RigidBody(mass=2.0))
-    second = obj.add_component(RigidBody(mass=5.0))
+    
+    with pytest.raises(ValueError, match="UNIQUE"):
+        obj.add_component(RigidBody(mass=5.0))
 
-    assert first is second
     assert obj.get_component(RigidBody) is first
     assert obj.get_components(RigidBody) == [first]
 

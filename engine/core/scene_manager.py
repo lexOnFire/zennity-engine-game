@@ -158,7 +158,6 @@ class SceneManager:
         if tr is None or tr.is_done:
             if self.current:
                 self.current.update(dt)
-                self._run_physics()
             return
 
         tr.update(dt)
@@ -169,7 +168,6 @@ class SceneManager:
         if tr.phase in (TransitionPhase.IN, TransitionPhase.DONE):
             if self.current:
                 self.current.update(dt)
-                self._run_physics()
 
         if tr.is_done:
             self._transition = None
@@ -214,18 +212,6 @@ class SceneManager:
     # Internos                                                            #
     # ------------------------------------------------------------------ #
 
-    @staticmethod
-    def _run_physics() -> None:
-        """
-        Chama check_all() em todos os colliders registrados.
-        Invocado após scene.update(dt), com posições já atualizadas.
-        """
-        try:
-            from engine.physics.collider import BoxCollider, CircleCollider
-            BoxCollider.check_all()
-            CircleCollider.check_all()
-        except Exception:
-            traceback.print_exc()
 
     def _start_transition(
         self,

@@ -48,6 +48,14 @@ def inspect_script_contract(path: str | Path) -> tuple[bool, str]:
         tree = ast.parse(script_path.read_text(encoding="utf-8"), filename=str(script_path))
     except (OSError, SyntaxError, UnicodeError) as exc:
         return False, str(exc)
+    has_component_class = any(
+        isinstance(node, ast.ClassDef) and any(
+            isinstance(base, ast.Name) and base.id == "Component" for base in node.bases
+        ) for node in tree.body
+    )
+    if has_component_class:
+        return True, ""
+
     hooks = {node.name for node in tree.body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
     if not hooks.intersection(REQUIRED_UPDATE_HOOKS):
         return False, "defina on_update(game, dt), on_collision(game, other) ou on_trigger(game, other)"

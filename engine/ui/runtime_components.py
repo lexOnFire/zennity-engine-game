@@ -46,7 +46,7 @@ class UIElement(Component):
         for component in getattr(self.game_object, "components", []):
             if component is self or isinstance(component, UIElement):
                 continue
-            if getattr(component, "required", False) or getattr(component, "type_name", "") == "Transform":
+            if getattr(component, "required", False) or type(component).__name__ == "Transform":
                 continue
             return False
         return True

@@ -22,7 +22,7 @@
       "id": "spawn_timer",
       "type": "event_timer",
       "title": "Após um tempo",
-      "category": "Eventos",
+      "category": "Events",
       "position": [
         40.0,
         120.0
@@ -41,7 +41,7 @@
       "id": "random_y",
       "type": "random_number",
       "title": "Número aleatório",
-      "category": "Matemática",
+      "category": "Math",
       "position": [
         300.0,
         20.0
@@ -60,7 +60,7 @@
       "id": "spawn_enemy",
       "type": "create_prefab",
       "title": "Criar Prefab",
-      "category": "Objetos",
+      "category": "Objects",
       "position": [
         560.0,
         120.0

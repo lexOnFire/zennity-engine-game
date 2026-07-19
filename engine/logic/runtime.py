@@ -81,7 +81,7 @@ class LogicGraphRuntime:
         for node in self.nodes.values() if not self.call_stack else ():
             if node.get("type") != "event_custom":
                 continue
-            event_name = str(node.get("properties", {}).get("name", "evento")).strip()
+            event_name = str(node.get("properties", {}).get("name", "event")).strip()
             node_id = str(node["id"])
             self.event_bus.subscribe(event_name, lambda event, wanted=node_id: self._receive_custom_event(wanted, event))
 
@@ -98,7 +98,7 @@ class LogicGraphRuntime:
             if node.get("type") != "subgraph_input":
                 continue
             properties = node.get("properties", {})
-            name = str(properties.get("name", "entrada")).strip()
+            name = str(properties.get("name", "input")).strip()
             self._store(str(node["id"]), "value", deepcopy(inputs.get(name, properties.get("default"))))
         budget = [self.MAX_STEPS]
         for node in self.nodes.values():
@@ -471,13 +471,13 @@ class LogicGraphRuntime:
         branch: set[str],
     ) -> Iterator[str]:
         if budget[0] <= 0:
-            raise RuntimeError("Logic Graph excedeu o limite de execução; verifique loops no grafo.")
+            raise RuntimeError("Logic Graph exceeded execution limit; check for loops in the graph.")
         for edge in self.outgoing.get(node_id, []):
             if str(edge.get("from_port", "next")) != port:
                 continue
             target_id = str(edge["to_node"])
             if target_id in branch:
-                raise RuntimeError("Logic Graph contém um loop de execução sem espera.")
+                raise RuntimeError("Logic Graph contains an infinite execution loop.")
             target = self.nodes.get(target_id)
             if target is None:
                 continue
@@ -496,7 +496,7 @@ class LogicGraphRuntime:
                 except RuntimeError:
                     raise
                 except Exception as exc:
-                    raise RuntimeError(f"Nó '{target.get('title', target_id)}': {exc}") from exc
+                    raise RuntimeError(f"Node '{target.get('title', target_id)}': {exc}") from exc
                 next_branch = set(branch)
                 next_branch.add(target_id)
                 for next_port in next_ports:
@@ -534,13 +534,13 @@ class LogicGraphRuntime:
         branch: set[str],
     ) -> None:
         if budget[0] <= 0:
-            raise RuntimeError("Logic Graph excedeu o limite de execução; verifique loops no grafo.")
+            raise RuntimeError("Logic Graph exceeded execution limit; check for loops in the graph.")
         for edge in self.outgoing.get(node_id, []):
             if str(edge.get("from_port", "next")) != port:
                 continue
             target_id = str(edge["to_node"])
             if target_id in branch:
-                raise RuntimeError("Logic Graph contém um loop de execução sem espera.")
+                raise RuntimeError("Logic Graph contains an infinite execution loop.")
             target = self.nodes.get(target_id)
             if target is None:
                 continue
@@ -557,7 +557,7 @@ class LogicGraphRuntime:
                 except RuntimeError:
                     raise
                 except Exception as exc:
-                    raise RuntimeError(f"Nó '{target.get('title', target_id)}': {exc}") from exc
+                    raise RuntimeError(f"Node '{target.get('title', target_id)}': {exc}") from exc
                 next_branch = set(branch)
                 next_branch.add(target_id)
                 for next_port in next_ports:
@@ -1290,7 +1290,7 @@ class LogicGraphRuntime:
                     return left < right
                 return left <= right
             except TypeError as exc:
-                raise ValueError("os valores comparados têm tipos incompatíveis") from exc
+                raise ValueError("compared values have incompatible types") from exc
         return self._debug_operand(text)
 
     def _debug_operand(self, token: str, bare_text: bool = False) -> Any:
@@ -1305,7 +1305,7 @@ class LogicGraphRuntime:
                 scoped_value = self.blackboard.get(normalized_scope, name, self.object_key)
                 scoped_snapshot = self.blackboard.snapshot(self.object_key).get(normalized_scope, {})
                 if name not in scoped_snapshot:
-                    raise ValueError(f"variável '{value}' não encontrada")
+                    raise ValueError(f"variable '{value}' not found")
                 return scoped_value
         found = self.blackboard.find(value, self.object_key)
         if found is not None:
@@ -1320,14 +1320,14 @@ class LogicGraphRuntime:
             return self._debug_dt
         if lowered in {"x", "y", "w", "h", "rotation", "grounded", "name"}:
             if self._debug_game is None or not hasattr(self._debug_game, lowered):
-                raise ValueError(f"'{value}' não está disponível neste objeto")
+                raise ValueError(f"'{value}' is not available on this object")
             return getattr(self._debug_game, lowered)
         try:
             return ast.literal_eval(value)
         except (SyntaxError, ValueError):
             if bare_text:
                 return value
-            raise ValueError(f"variável '{value}' não encontrada") from None
+            raise ValueError(f"variable '{value}' not found") from None
 
     @staticmethod
     def _debug_value(value: Any) -> Any:

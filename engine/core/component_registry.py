@@ -66,6 +66,8 @@ from engine.animation.animator import Animator
 from engine.ui.runtime_components import Canvas, LabelComponent, ImageComponent, InfiniteBackground, ButtonComponent
 from engine.graphics.tilemap import Tilemap, TilemapRenderer
 from engine.components.script_component import ScriptComponent
+from engine.physics.rigidbody import RigidBody
+from engine.physics.collider import BoxCollider, CircleCollider
 
 component_registry.register(Component)
 component_registry.register(Transform)
@@ -82,3 +84,6 @@ component_registry.register(ButtonComponent)
 component_registry.register(Tilemap)
 component_registry.register(TilemapRenderer)
 component_registry.register(ScriptComponent, "Script")
+component_registry.register(RigidBody)
+component_registry.register(BoxCollider)
+component_registry.register(CircleCollider)

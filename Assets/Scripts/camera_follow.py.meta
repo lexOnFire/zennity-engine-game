@@ -1,0 +1,8 @@
+{
+  "uuid": "4c47878d-202f-48cc-9513-62bd3ae79501",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/camera_follow.py",
+  "import_settings": {},
+  "dependencies": []
+}

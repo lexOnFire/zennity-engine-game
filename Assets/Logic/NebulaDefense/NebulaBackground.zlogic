@@ -21,8 +21,8 @@
     {
       "id": "start",
       "type": "event_start",
-      "title": "Ao iniciar",
-      "category": "Eventos",
+      "title": "On Start",
+      "category": "Events",
       "position": [
         20.0,
         100.0
@@ -37,8 +37,8 @@
     {
       "id": "scroll",
       "type": "start_texture_scroll",
-      "title": "Iniciar fundo rolante",
-      "category": "Ação",
+      "title": "Start Scrolling Background",
+      "category": "Action",
       "position": [
         300.0,
         100.0

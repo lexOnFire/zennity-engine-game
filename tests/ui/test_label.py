@@ -12,63 +12,17 @@ Estratégia de isolamento:
 """
 from __future__ import annotations
 
-import sys
-from types import ModuleType
+import pygame
 from unittest.mock import MagicMock, call
-
 import pytest
-
-# ── stub pygame ──────────────────────────────────────────────────────────────
 
 TEXT_W, TEXT_H = 90, 24
 
-
-class _FakeSurf:
-    def __init__(self, w=TEXT_W, h=TEXT_H):
-        self._w, self._h = w, h
-    def get_width(self):  return self._w
-    def get_height(self): return self._h
-    @property
-    def topleft(self): return (0, 0)
-
-
 class _FakeFont:
     def render(self, text, aa, color):
-        return _FakeSurf()
+        return pygame.Surface((TEXT_W, TEXT_H))
     def size(self, text):
         return (TEXT_W, TEXT_H)
-
-
-class _FakeScreen:
-    def __init__(self, w=640, h=480):
-        self._w, self._h = w, h
-        self.blit = MagicMock()
-    def get_rect(self):
-        class R:
-            x = 0; y = 0; width = 640; height = 480
-        return R()
-    def get_width(self):  return self._w
-    def get_height(self): return self._h
-
-
-if "pygame" not in sys.modules:
-    _pg          = ModuleType("pygame")
-    _font_mod    = ModuleType("pygame.font")
-    _font_mod.SysFont = MagicMock(return_value=_FakeFont())
-    _pg.font     = _font_mod
-    _pg.Surface  = _FakeScreen
-    class _FakeRect:
-        def __init__(self, x=0, y=0, w=0, h=0):
-            self.x=x; self.y=y; self.width=w; self.height=h
-            self.left=x; self.top=y
-            self.topleft=(x,y)
-        def collidepoint(self, p): return False
-    _pg.Rect     = _FakeRect
-    sys.modules["pygame"]      = _pg
-    sys.modules["pygame.font"] = _font_mod
-else:
-    _pg       = sys.modules["pygame"]
-    _font_mod = sys.modules.get("pygame.font", _pg.font)
 
 from engine.ui.label import Label  # noqa: E402
 
@@ -77,15 +31,12 @@ from engine.ui.label import Label  # noqa: E402
 
 @pytest.fixture(autouse=True)
 def reset_font_mock(monkeypatch):
-    if not hasattr(getattr(_font_mod, "SysFont", None), "reset_mock"):
-        monkeypatch.setattr(_font_mod, "SysFont", MagicMock(), raising=False)
-    _font_mod.SysFont.reset_mock()
-    _font_mod.SysFont.return_value = _FakeFont()
+    monkeypatch.setattr(pygame.font, "SysFont", MagicMock(return_value=_FakeFont()), raising=False)
     yield
 
 
 def _screen():
-    return _FakeScreen()
+    return pygame.Surface((640, 480))
 
 
 def _lbl(**kw):
@@ -220,7 +171,7 @@ class TestDrawSelf:
         scr = _screen()
         l = _lbl()
         l._draw_self(scr)
-        scr.blit.assert_called()
+        scr.blit_mock.assert_called()
 
     def test_draw_rebuilds_when_dirty(self):
         l = _lbl()
@@ -233,21 +184,21 @@ class TestDrawSelf:
         scr = _screen()
         l = _lbl(shadow=False)
         l._draw_self(scr)
-        assert scr.blit.call_count == 1
+        assert scr.blit_mock.call_count == 1
 
     def test_draw_with_shadow_two_blits(self):
         scr = _screen()
         l = _lbl(shadow=True)
         l._draw_self(scr)
-        assert scr.blit.call_count == 2
+        assert scr.blit_mock.call_count == 2
 
     def test_shadow_blit_offset_by_one(self):
         """A sombra é deslocada (rect.x+1, rect.y+1)."""
         scr = _screen()
         l = _lbl(shadow=True)
         l._draw_self(scr)
-        shadow_pos = scr.blit.call_args_list[0][0][1]
-        text_pos   = scr.blit.call_args_list[1][0][1]
+        shadow_pos = scr.blit_mock.call_args_list[0][0][1]
+        text_pos   = scr.blit_mock.call_args_list[1][0][1]
         # text_pos pode ser uma tupla ou topleft; shadow deve ser +1
         assert shadow_pos[0] == text_pos[0] + 1 or shadow_pos[1] == text_pos[1] + 1
 
@@ -256,7 +207,7 @@ class TestDrawSelf:
         l = _lbl()
         l.visible = False
         l.draw(scr)
-        scr.blit.assert_not_called()
+        scr.blit_mock.assert_not_called()
 
     def test_draw_empty_text_no_crash(self):
         scr = _screen()

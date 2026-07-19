@@ -25,18 +25,7 @@ import pytest
 
 pygame.init()  # necessário para pygame.Rect funcionar sem display
 
-# Em execuções completas do pytest, algum teste anterior pode deixar um módulo
-# fake em sys.modules. Se `engine.physics` não for pacote real, removemos antes
-# de importar `engine.physics.collider`.
-_physics_module = sys.modules.get("engine.physics")
-if _physics_module is not None and not hasattr(_physics_module, "__path__"):
-    sys.modules.pop("engine.physics", None)
-sys.modules.pop("engine.physics.collider", None)
-_collider_module = importlib.import_module("engine.physics.collider")
-
-BoxCollider = _collider_module.BoxCollider
-CircleCollider = _collider_module.CircleCollider
-CollisionInfo = _collider_module.CollisionInfo
+from engine.physics.collider import BoxCollider, CircleCollider, CollisionInfo
 
 
 # ---------------------------------------------------------------------------

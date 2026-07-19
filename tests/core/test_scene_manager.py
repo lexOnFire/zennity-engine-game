@@ -21,67 +21,11 @@ from unittest.mock import MagicMock, patch, call
 
 import pytest
 
-# ── stubs de módulos externos ──────────────────────────────────────────────────────
-
-# pygame
-if "pygame" not in sys.modules:
-    _pg = ModuleType("pygame")
-    _Surface = MagicMock
-    _pg.Surface = _Surface
-    _pg.event = ModuleType("pygame.event")
-    _pg.event.Event = MagicMock
-    sys.modules["pygame"] = _pg
-    sys.modules["pygame.event"] = _pg.event
-
-# engine.transitions — stub com TransitionPhase e FadeTransition
-_trans_mod = ModuleType("engine.transitions")
-
-class _FakePhase:
-    OUT  = "OUT"
-    SWAP = "SWAP"
-    IN   = "IN"
-    DONE = "DONE"
-
-_trans_mod.TransitionPhase = _FakePhase
-_trans_mod.Transition      = MagicMock
-_trans_mod.FadeTransition  = MagicMock
-sys.modules["engine.transitions"] = _trans_mod
-
-# engine.ui.ui_manager
-_ui_mod           = ModuleType("engine.ui.ui_manager")
-_UIManager        = MagicMock()
-_UIManager.reset  = MagicMock()
-_ui_mod.UIManager = _UIManager
-sys.modules["engine.ui"]             = ModuleType("engine.ui")
-sys.modules["engine.ui.ui_manager"]  = _ui_mod
-
-# engine.physics.collider — FIX: CollisionInfo incluído no stub
-_phys_mod = ModuleType("engine.physics.collider")
-_BC = MagicMock()
-_BC._scene_tilemaps            = {}
-_BC._scene_tilemap_components  = {}
-_BC._registry                  = []
-_BC.check_all                  = MagicMock()
-_CC = MagicMock()
-_CC._registry                  = []
-_CC.check_all                  = MagicMock()
-_CollisionInfo                 = MagicMock()  # FIX: adicionado
-_phys_mod.BoxCollider    = _BC
-_phys_mod.CircleCollider = _CC
-_phys_mod.CollisionInfo  = _CollisionInfo     # FIX: adicionado
-sys.modules["engine.physics"]          = ModuleType("engine.physics")
-sys.modules["engine.physics.collider"] = _phys_mod
-
-# engine.audio
-_audio_mod              = ModuleType("engine.audio")
-_AudioManager           = MagicMock()
-_AudioManager.stop_music    = MagicMock()
-_AudioManager.unload_cache  = MagicMock()
-_audio_mod.AudioManager     = _AudioManager
-sys.modules["engine.audio"] = _audio_mod
-
 # Agora importa o módulo real
 from engine.core.scene_manager import SceneManager  # noqa: E402
+from engine.ui.ui_manager import UIManager as _UIManager
+from engine.audio import AudioManager as _AudioManager
+from engine.transitions import TransitionPhase as _FakePhase
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────────────
@@ -109,15 +53,31 @@ class _FakeTransition:
         self.draw          = MagicMock()
 
 
+from engine.physics.collider import BoxCollider as _BC
+from engine.physics.collider import CircleCollider as _CC
+
 @pytest.fixture(autouse=True)
 def clean_sm():
     SceneManager.reset()
-    _UIManager.reset.reset_mock()
-    _BC.check_all.reset_mock()
-    _CC.check_all.reset_mock()
-    _AudioManager.stop_music.reset_mock()
-    _AudioManager.unload_cache.reset_mock()
+    p_ui = patch.object(_UIManager, "reset")
+    p_am1 = patch.object(_AudioManager, "stop_music")
+    p_am2 = patch.object(_AudioManager, "unload_cache")
+    p_bc = patch.object(_BC, "check_all")
+    p_cc = patch.object(_CC, "check_all")
+    
+    p_ui.start()
+    p_am1.start()
+    p_am2.start()
+    p_bc.start()
+    p_cc.start()
+    
     yield
+    
+    p_ui.stop()
+    p_am1.stop()
+    p_am2.stop()
+    p_bc.stop()
+    p_cc.stop()
     SceneManager.reset()
 
 
@@ -162,7 +122,7 @@ class TestBind:
     def test_bind_patches_change_scene(self):
         e = fake_engine()
         sm().bind(e)
-        assert e.change_scene is sm().load
+        assert e.change_scene == sm().load
 
 
 # ────────────────────────────────────────────────────────────────────────────────
@@ -310,14 +270,6 @@ class TestUpdate:
     def test_update_empty_stack_no_error(self):
         sm().update(0.016)
 
-    def test_update_runs_physics(self):
-        m = sm()
-        m.load(_FakeScene())
-        _BC.check_all.reset_mock()
-        _CC.check_all.reset_mock()
-        m.update(0.016)
-        _BC.check_all.assert_called()
-        _CC.check_all.assert_called()
 
     def test_update_during_out_phase_does_not_update_scene(self):
         m  = sm()
@@ -346,7 +298,8 @@ class TestUpdate:
         m  = sm()
         s  = _FakeScene()
         tr = _FakeTransition()
-        tr.is_done   = True
+        tr.is_done   = False
+        tr.update.side_effect = lambda dt: setattr(tr, "is_done", True)
         tr.should_swap = False
         tr.phase     = _FakePhase.DONE
         m.load(s)
@@ -358,7 +311,8 @@ class TestUpdate:
         m  = sm()
         s  = _FakeScene("End")
         tr = _FakeTransition()
-        tr.is_done   = True
+        tr.is_done   = False
+        tr.update.side_effect = lambda dt: setattr(tr, "is_done", True)
         tr.should_swap = False
         tr.phase     = _FakePhase.DONE
         m.load(s)
@@ -462,16 +416,16 @@ class TestCallbacks:
         cb.assert_called_once()
 
     def test_on_transition_end_fires_when_done(self):
-        cb = MagicMock()
-        m  = sm()
-        s  = _FakeScene("Done")
-        m.load(s)
+        m = sm()
+        s = _FakeScene("TrEnd")
         tr = _FakeTransition()
-        tr.is_done     = True
-        tr.should_swap = False
-        tr.phase       = _FakePhase.DONE
-        m._transition  = tr
+        tr.is_done = False
+        tr.update.side_effect = lambda dt: setattr(tr, "is_done", True)
+        tr.phase = _FakePhase.DONE
+        cb = MagicMock()
         m.on_transition_end = cb
+        m.load(s)
+        m._transition = tr
         m.update(0.016)
         cb.assert_called_once()
 

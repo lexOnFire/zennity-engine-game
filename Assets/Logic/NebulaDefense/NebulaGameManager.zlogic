@@ -21,8 +21,8 @@
     {
       "id": "start",
       "type": "event_start",
-      "title": "Ao iniciar",
-      "category": "Eventos",
+      "title": "On Start",
+      "category": "Events",
       "position": [
         20.0,
         80.0
@@ -38,7 +38,7 @@
       "id": "start_sequence",
       "type": "sequence",
       "title": "Sequência",
-      "category": "Lógica",
+      "category": "Logic",
       "position": [
         260.0,
         80.0
@@ -56,7 +56,7 @@
       "id": "reset_score",
       "type": "set_variable",
       "title": "Definir variável",
-      "category": "Variáveis",
+      "category": "Variables",
       "position": [
         520.0,
         0.0
@@ -76,7 +76,7 @@
       "id": "reset_lives",
       "type": "set_variable",
       "title": "Definir variável",
-      "category": "Variáveis",
+      "category": "Variables",
       "position": [
         520.0,
         120.0
@@ -96,7 +96,7 @@
       "id": "help_hud",
       "type": "set_hud",
       "title": "Atualizar HUD",
-      "category": "Ação",
+      "category": "Action",
       "position": [
         520.0,
         240.0
@@ -114,7 +114,7 @@
       "id": "start_sound",
       "type": "play_sound",
       "title": "Tocar som",
-      "category": "Ação",
+      "category": "Action",
       "position": [
         520.0,
         360.0
@@ -131,8 +131,8 @@
     {
       "id": "update",
       "type": "event_update",
-      "title": "A cada frame",
-      "category": "Eventos",
+      "title": "On Update",
+      "category": "Events",
       "position": [
         20.0,
         620.0
@@ -148,7 +148,7 @@
       "id": "get_score",
       "type": "get_variable",
       "title": "Ler variável",
-      "category": "Variáveis",
+      "category": "Variables",
       "position": [
         280.0,
         520.0
@@ -167,7 +167,7 @@
       "id": "score_text",
       "type": "join_text",
       "title": "Juntar textos",
-      "category": "Texto",
+      "category": "Text",
       "position": [
         520.0,
         520.0
@@ -186,7 +186,7 @@
       "id": "score_hud",
       "type": "set_hud",
       "title": "Atualizar HUD",
-      "category": "Ação",
+      "category": "Action",
       "position": [
         780.0,
         520.0
@@ -204,7 +204,7 @@
       "id": "get_lives",
       "type": "get_variable",
       "title": "Ler variável",
-      "category": "Variáveis",
+      "category": "Variables",
       "position": [
         280.0,
         680.0
@@ -223,7 +223,7 @@
       "id": "lives_text",
       "type": "join_text",
       "title": "Juntar textos",
-      "category": "Texto",
+      "category": "Text",
       "position": [
         520.0,
         680.0
@@ -242,7 +242,7 @@
       "id": "lives_hud",
       "type": "set_hud",
       "title": "Atualizar HUD",
-      "category": "Ação",
+      "category": "Action",
       "position": [
         780.0,
         680.0
@@ -260,7 +260,7 @@
       "id": "victory",
       "type": "compare_number",
       "title": "Comparar número",
-      "category": "Condição",
+      "category": "Condition",
       "position": [
         520.0,
         840.0
@@ -279,7 +279,7 @@
       "id": "victory_hud",
       "type": "set_hud",
       "title": "Atualizar HUD",
-      "category": "Ação",
+      "category": "Action",
       "position": [
         780.0,
         840.0
@@ -297,7 +297,7 @@
       "id": "defeat",
       "type": "compare_number",
       "title": "Comparar número",
-      "category": "Condição",
+      "category": "Condition",
       "position": [
         520.0,
         1000.0
@@ -316,7 +316,7 @@
       "id": "defeat_hud",
       "type": "set_hud",
       "title": "Atualizar HUD",
-      "category": "Ação",
+      "category": "Action",
       "position": [
         780.0,
         1000.0
@@ -333,8 +333,8 @@
     {
       "id": "restart",
       "type": "event_key_pressed",
-      "title": "Ao apertar tecla (uma vez)",
-      "category": "Eventos",
+      "title": "On Key Pressed (once)",
+      "category": "Events",
       "position": [
         20.0,
         1200.0
@@ -352,7 +352,7 @@
       "id": "restart_scene",
       "type": "restart_scene",
       "title": "Reiniciar cena",
-      "category": "Ação",
+      "category": "Action",
       "position": [
         300.0,
         1200.0
