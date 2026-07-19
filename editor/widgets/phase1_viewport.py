@@ -48,6 +48,7 @@ from editor.widgets.transform_interaction import (
     activate_gizmo_reference,
     draw_transform_overlay,
     emit_transform_changed,
+    event_position,
     move_axis_at,
     request_editor_frame,
     sync_camera_to_engine,
@@ -657,8 +658,7 @@ class Phase1ViewportWidget(ViewportWidget):
             return
 
         tool = self._active_tool()
-        pos = event.position()
-        x, y = float(pos.x()), float(pos.y())
+        x, y = event_position(event)
 
         # Intercepta Pan (Botão do meio)
         if event.button() == Qt.MiddleButton:
@@ -719,8 +719,7 @@ class Phase1ViewportWidget(ViewportWidget):
             super().mouseMoveEvent(event)
             return
 
-        pos = event.position()
-        x, y = float(pos.x()), float(pos.y())
+        x, y = event_position(event)
 
         # Processa Pan ativo
         if self._panning:
