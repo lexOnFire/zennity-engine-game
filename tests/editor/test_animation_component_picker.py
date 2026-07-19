@@ -42,17 +42,17 @@ def test_animator_component_opens_picker_before_mutating_object() -> None:
 
 def test_animation_picker_preserves_create_and_empty_compatibility_paths() -> None:
     picker = _source("editor/widgets/animation_picker.py")
-    editor = _source("editor/isolated_editor_main.py")
+    operations = _source("editor/animation_workspace_operations.py")
 
     assert 'self.create_button = QPushButton("Criar nova")' in picker
     assert 'self.empty_button = QPushButton("Adicionar vazio")' in picker
     assert 'self._finish("create")' in picker
     assert 'self._finish("empty")' in picker
-    assert 'picker.requested_action == "create"' in editor
-    assert "self._show_animation_window()" in editor
-    assert 'picker.requested_action == "empty"' in editor
-    assert "já possui um Animator 2D" in editor
-    assert '"active_clip": "Idle"' in editor
+    assert 'picker.requested_action == "create"' in operations
+    assert "self._show_animation_window()" in operations
+    assert 'picker.requested_action == "empty"' in operations
+    assert "já possui um Animator 2D" in operations
+    assert '"active_clip": "Idle"' in operations
 
 
 def test_animation_picker_uses_global_theme() -> None:
