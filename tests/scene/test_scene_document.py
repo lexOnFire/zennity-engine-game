@@ -79,6 +79,14 @@ def test_serializer_accepts_document_without_losing_extensions() -> None:
     assert serialize_scene(document) == document.to_dict()
 
 
+def test_official_editor_uses_scene_document_boundary() -> None:
+    source = (ROOT / "editor/isolated_editor_main.py").read_text(encoding="utf-8")
+
+    assert "SceneDocument.from_dict(payload).save(path)" in source
+    assert "payload = SceneDocument.load(filename).to_dict()" in source
+    assert "json.loads(Path(filename).read_text" not in source
+
+
 @pytest.mark.parametrize(
     ("payload", "error", "message"),
     [
