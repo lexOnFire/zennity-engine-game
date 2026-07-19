@@ -111,7 +111,7 @@ def test_logic_workspace_receives_throttled_runtime_debug_traces():
     assert "set_runtime_state" in editor
     assert "set_runtime_active" in editor
     assert "VALORES EM EXECUÇÃO" in editor
-    assert "trace_now - logic_trace_last_sent >= 0.10" in viewport
+    assert "now - last_trace >= 0.10" in viewport
     assert '"type": "logic_trace"' in viewport
     assert 'message.get("type") == "logic_trace"' in bridge
 
