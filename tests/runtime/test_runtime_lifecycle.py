@@ -211,3 +211,17 @@ def test_play_tick_stop_sequence_is_safe() -> None:
         ("update", "a", 0.1),
         ("stop", "a", None),
     ]
+
+
+def test_runtime_manager_notifies_state_transitions_once() -> None:
+    scene = _empty_editor_scene()
+    manager = RuntimeManager()
+    states = []
+    manager.subscribe_state(states.append)
+
+    manager.start_play(scene)
+    manager.start_play(scene)
+    manager.stop_play()
+    manager.stop_play()
+
+    assert states == [RuntimeState.PLAYING, RuntimeState.STOPPED]
