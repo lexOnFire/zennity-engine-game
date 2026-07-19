@@ -64,15 +64,18 @@ jobs:
       - name: Show pytest output in log
         run: cat pytest-output.txt || true
 
-      - name: Upload log to Gist
-        if: always()
+      - name: Push log to branch
+        if: failure()
         run: |
-          gh gist create pytest-output.txt > gist_url.txt || true
-          cat gist_url.txt
-          # Also send to termbin as fallback
-          cat pytest-output.txt | nc termbin.com 9999 > termbin_url.txt || true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin
+          # Se a branch existir, a gente deleta localmente pra forçar nova
+          git branch -D ci-log-${{ github.run_id }}-${{ matrix.python-version }} || true
+          git checkout -b ci-log-${{ github.run_id }}-${{ matrix.python-version }}
+          git add pytest-output.txt || true
+          git commit -m "add pytest log for ${{ matrix.python-version }}" || true
+          git push -f origin ci-log-${{ github.run_id }}-${{ matrix.python-version }} || true
 
       - name: Fail if tests failed
         run: |
