@@ -11,17 +11,6 @@ from editor.runtime.sprite_rendering import (
     prepare_sprite_surface,
 )
 
-# Se for Linux Headless (como no GitHub Actions), pulamos testes que exigem renderização de pixels reais
-IS_LINUX_HEADLESS = sys.platform.startswith("linux") and os.environ.get("SDL_VIDEODRIVER") == "dummy"
-# O override temporário no conftest para testes locais fará com que pule se a gente setar manual
-import conftest
-if getattr(conftest, "IS_LINUX_HEADLESS", False):
-    IS_LINUX_HEADLESS = True
-
-pytestmark = pytest.mark.skipif(
-    IS_LINUX_HEADLESS,
-    reason="Headless mock doesn't support pixel-perfect surface rendering"
-)
 
 
 def test_assigning_texture_resets_placeholder_tint_to_white() -> None:
