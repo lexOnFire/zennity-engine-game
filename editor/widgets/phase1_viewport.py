@@ -149,11 +149,6 @@ class Phase1ViewportWidget(ViewportWidget):
         if hasattr(self, "viewmodel") and self.viewmodel is not None:
             self.viewmodel.selected_object = obj
 
-    def selected_object(self) -> Any:
-        if hasattr(self, "viewmodel") and self.viewmodel is not None:
-            return self.viewmodel.selected_object
-        return None
-
     def set_runtime_manager(self, runtime_manager: Any) -> None:
         self.runtime_manager = runtime_manager
 
