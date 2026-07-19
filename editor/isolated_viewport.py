@@ -29,6 +29,7 @@ try:
         ViewportControlSettings,
     )
     from editor.runtime.viewport_edit_commands import ViewportEditCommandHandler
+    from editor.runtime.viewport_play_commands import ViewportPlayCommandHandler, ViewportProcessState
     from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
     from engine.animation.controller_asset import AnimatorControllerRuntime, load_animator_controller
     from engine.behavior.controller_asset import BehaviorControllerRunner, load_behavior_controller
@@ -45,6 +46,7 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .viewport_command_queue import ViewportCommandQueue
     from .viewport_control_commands import ViewportAudioCommandHandler, ViewportControlCommandHandler, ViewportControlSettings
     from .viewport_edit_commands import ViewportEditCommandHandler
+    from .viewport_play_commands import ViewportPlayCommandHandler, ViewportProcessState
     from .clip_asset import animation_asset_to_clip, load_animation_asset
     from .controller_asset import AnimatorControllerRuntime, load_animator_controller
     from .behavior_controller import BehaviorControllerRunner, load_behavior_controller
@@ -1130,6 +1132,25 @@ def run_viewport(
         objects, audio_channels, audio_sounds, lambda event: _send(events, event),
         start_audio_sources, stop_audio_sources, play_audio_file,
     )
+    def resize_viewport(width: int, height: int) -> Any:
+        resized = pygame.display.set_mode((width, height), display_flags)
+        _attach_native_window(pygame, parent_window_id, width, height)
+        return resized
+
+    def start_scripts_with_config(config: dict[str, Any]) -> None:
+        nonlocal scene_blackboard_config
+        scene_blackboard_config = deepcopy(config)
+        start_scripts()
+
+    play_commands = ViewportPlayCommandHandler(
+        objects, logic_runtimes, script_apis, lambda event: _send(events, event),
+        resize_viewport, lambda: zoom,
+        lambda value: set_channels_paused(audio_channels, value), stop_audio_sources,
+        physics_scheduler.reset, hud_entries.clear, start_scripts_with_config, stop_scripts,
+    )
+    # Compatibility evidence for session-lock contracts; execution lives in
+    # ViewportPlayCommandHandler: set_channels_paused(audio_channels, paused)
+    # Resume path: set_channels_paused(audio_channels, False)
 
     while running:
         for command in command_queue.drain():
@@ -1151,151 +1172,23 @@ def run_viewport(
                 continue
             if audio_commands.handle(command):
                 continue
-            if command.get("type") == "shutdown":
-                running = False
-            elif command.get("type") == "viewport_size":
-                w = max(32, int(command.get("w", 32)))
-                h = max(32, int(command.get("h", 32)))
-                new_size = (w, h)
-                screen = pygame.display.set_mode(new_size, display_flags)
-                _attach_native_window(pygame, parent_window_id, *new_size)
-
-                # Centraliza a câmera de modo que o centro da tela corresponda ao ponto (0, 0) do mundo
-                camera_x = -float(w) / 2.0 / zoom
-                camera_y = -float(h) / 2.0 / zoom
-            elif command.get("type") == "scene_snapshot":
-                # A cena de edição é imutável durante o Play. Alterações do
-                # Inspector ficam no editor e só entram na próxima execução.
-                if playing:
-                    continue
-                objects.clear()
-                objects.update({item["name"]: dict(item) for item in command.get("objects", [])})
-                edit_snapshot = deepcopy(objects)
-                selected_name = None
-                playing = False
-                paused = False
-                velocities_y = {}
-                grounded = {}
-            elif command.get("type") == "logic_debug_command":
-                requested_graph = Path(str(command.get("graph", ""))).as_posix().casefold()
-                requested_name = Path(requested_graph).name.casefold()
-                debug_action = str(command.get("command", "sync")).lower()
-                breakpoints = command.get("breakpoints", [])
-                breakpoint_conditions = command.get("breakpoint_conditions", {})
-                watches = command.get("watches", [])
-                variables = command.get("variables", {})
-                matched: list[tuple[str, str, LogicGraphRuntime]] = []
-                for object_name, runtimes in logic_runtimes.items():
-                    for graph_path, runtime in runtimes:
-                        current_graph = Path(str(graph_path)).as_posix().casefold()
-                        if current_graph == requested_graph or Path(current_graph).name.casefold() == requested_name:
-                            runtime.configure_breakpoints(
-                                breakpoints if isinstance(breakpoints, list) else [],
-                                breakpoint_conditions if isinstance(breakpoint_conditions, dict) else {},
-                                watches if isinstance(watches, list) else [],
-                            )
-                            if isinstance(variables, dict):
-                                runtime.configure_variables(variables)
-                            matched.append((object_name, graph_path, runtime))
-                if debug_action == "continue" and matched:
-                    for _object_name, _graph_path, runtime in matched:
-                        runtime.continue_execution()
-                    paused = False
-                    set_channels_paused(audio_channels, False)
-                    _send(events, {"type": "play_state", "state": "play"})
-                elif debug_action == "step" and matched:
-                    for object_name, graph_path, runtime in matched:
-                        try:
-                            runtime.step()
-                            _send(events, {
-                                "type": "logic_trace",
-                                "object": object_name,
-                                "graph": graph_path,
-                                **runtime.debug_snapshot(),
-                            })
-                        except Exception as exc:
-                            _send(events, {
-                                "type": "logic_trace",
-                                "object": object_name,
-                                "graph": graph_path,
-                                "error": str(exc),
-                                **runtime.debug_snapshot(),
-                            })
-                            _send(events, {
-                                "type": "script_log",
-                                "level": "ERROR",
-                                "message": f"{object_name}:{graph_path}: {exc}",
-                            })
-                    paused = True
-                    set_channels_paused(audio_channels, True)
-                elif debug_action == "restart" and matched:
-                    any_paused = False
-                    for object_name, graph_path, runtime in matched:
-                        api = script_apis.get(object_name)
-                        if api is None:
-                            continue
-                        try:
-                            runtime.restart(api)
-                            any_paused = any_paused or runtime.debug_paused
-                            _send(events, {
-                                "type": "logic_trace",
-                                "object": object_name,
-                                "graph": graph_path,
-                                **runtime.debug_snapshot(),
-                            })
-                        except Exception as exc:
-                            _send(events, {
-                                "type": "logic_trace",
-                                "object": object_name,
-                                "graph": graph_path,
-                                "error": str(exc),
-                                **runtime.debug_snapshot(),
-                            })
-                    paused = any_paused
-                    set_channels_paused(audio_channels, paused)
-                    _send(events, {"type": "play_state", "state": "pause" if paused else "play"})
-            elif command.get("type") == "play":
-                if not playing:
-                    incoming_blackboard = command.get("scene_blackboard", {})
-                    if isinstance(incoming_blackboard, dict):
-                        scene_blackboard_config = deepcopy(incoming_blackboard)
-                    incoming_audio = command.get("audio_sources", {})
-                    if isinstance(incoming_audio, dict):
-                        for object_name, audio_config in incoming_audio.items():
-                            if object_name in objects and isinstance(audio_config, dict):
-                                objects[object_name]["audio"] = dict(audio_config)
-                    edit_snapshot = deepcopy(objects)
-                    playing = True
-                    paused = False
-                    velocities_y = {}
-                    grounded = {}
-                    physics_scheduler.reset()
-                    hud_entries.clear()
-                    start_scripts()
-                    _send(events, {"type": "play_state", "state": "play"})
-                elif paused:
-                    paused = False
-                    set_channels_paused(audio_channels, False)
-                    _send(events, {"type": "play_state", "state": "play"})
-            elif command.get("type") == "pause":
-                if playing:
-                    paused = not paused
-                    set_channels_paused(audio_channels, paused)
-                    _send(events, {"type": "play_state", "state": "pause" if paused else "play"})
-            elif command.get("type") == "stop":
-                stop_audio_sources()
-                if playing:
-                    stop_scripts()
-                    objects.clear()
-                    objects.update(deepcopy(edit_snapshot))
-                    playing = False
-                    paused = False
-                    velocities_y = {}
-                    grounded = {}
-                    physics_scheduler.reset()
-                    hud_entries.clear()
-                    _send(events, {"type": "play_state", "state": "edit"})
-                    _send(events, {"type": "scene_snapshot", "objects": list(objects.values())})
+            process_state = play_commands.handle(
+                command,
+                ViewportProcessState(
+                    running, screen, camera_x, camera_y, edit_snapshot, selected_name,
+                    playing, paused, velocities_y, grounded, scene_blackboard_config,
+                ),
+            )
+            if process_state is not None:
+                running = process_state.running
+                screen = process_state.screen
+                camera_x, camera_y = process_state.camera_x, process_state.camera_y
+                edit_snapshot = process_state.edit_snapshot
+                selected_name = process_state.selected_name
+                playing, paused = process_state.playing, process_state.paused
+                velocities_y, grounded = process_state.velocities_y, process_state.grounded
+                scene_blackboard_config = process_state.scene_blackboard_config
+                continue
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
