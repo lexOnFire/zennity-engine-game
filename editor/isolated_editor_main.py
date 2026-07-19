@@ -33,6 +33,7 @@ from editor.runtime.viewport_process_controller import ViewportProcessController
 from editor.runtime.isolated_play_mode_controller import IsolatedPlayModeController
 from editor.runtime.scene_selection_controller import SceneSelectionController
 from editor.runtime.viewport_event_dispatcher import ViewportEventDispatcher
+from editor.runtime.scene_history import SceneHistory
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from editor.widgets.component_picker import ComponentPickerDialog
@@ -144,8 +145,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._runtime_objects_by_name: dict[str, dict] = {}
         self._selected_name: str | None = None
         self._updating_inspector = False
-        self._undo_stack: list[list[dict]] = []
-        self._redo_stack: list[list[dict]] = []
+        self._scene_history = SceneHistory(max_commands=100, max_bytes=16 * 1024 * 1024)
         self._drag_history_snapshot: list[dict] | None = None
         self._snap_enabled = False
         self._runtime_playing = False
@@ -1207,11 +1207,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             break
 
     def _record_history(self, snapshot: list[dict] | None = None) -> None:
-        state = deepcopy(snapshot if snapshot is not None else self._scene_snapshot)
-        if not self._undo_stack or self._undo_stack[-1] != state:
-            self._undo_stack.append(state)
-            self._undo_stack = self._undo_stack[-100:]
-        self._redo_stack.clear()
+        if snapshot is None:
+            self._scene_history.begin(self._scene_snapshot)
+        else:
+            self._scene_history.commit(snapshot, self._scene_snapshot)
 
     def _restore_history(self, snapshot: list[dict]) -> None:
         self._scene_snapshot = deepcopy(snapshot)
@@ -1225,14 +1224,14 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self._update_inspector(self._selected_name)
 
     def _undo(self) -> None:
-        if self._undo_stack:
-            self._redo_stack.append(deepcopy(self._scene_snapshot))
-            self._restore_history(self._undo_stack.pop())
+        restored = self._scene_history.undo(self._scene_snapshot)
+        if restored is not None:
+            self._restore_history(restored)
 
     def _redo(self) -> None:
-        if self._redo_stack:
-            self._undo_stack.append(deepcopy(self._scene_snapshot))
-            self._restore_history(self._redo_stack.pop())
+        restored = self._scene_history.redo(self._scene_snapshot)
+        if restored is not None:
+            self._restore_history(restored)
 
     def _new_scene(self) -> None:
         self._record_history()
