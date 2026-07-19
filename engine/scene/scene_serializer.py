@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import json
-import shutil
 from pathlib import Path
 from typing import Any
 
@@ -37,11 +35,30 @@ def _portable_asset_path(value: Any) -> Any:
         return value
     path = Path(str(value))
     if not path.is_absolute():
-        return path.as_posix()
-    try:
-        return path.resolve().relative_to(Path.cwd().resolve()).as_posix()
-    except ValueError:
-        return str(value)
+        portable = path.as_posix()
+    else:
+        try:
+            portable = path.resolve().relative_to(Path.cwd().resolve()).as_posix()
+        except ValueError:
+            return str(value)
+    parts = Path(portable).parts
+    if parts and parts[0].casefold() == "assets":
+        return Path("Assets", *parts[1:]).as_posix()
+    return portable
+
+
+def _canonicalize_asset_paths(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {key: _canonicalize_asset_paths(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_canonicalize_asset_paths(item) for item in value]
+    if isinstance(value, tuple):
+        return [_canonicalize_asset_paths(item) for item in value]
+    if isinstance(value, str):
+        path = Path(value.replace("\\", "/"))
+        if path.parts and path.parts[0].casefold() == "assets":
+            return _portable_asset_path(value)
+    return value
 
 
 def _component_by_class_name(obj: GameObject, *class_names: str) -> Any:
@@ -122,7 +139,8 @@ def serialize_game_object(obj: GameObject) -> dict[str, Any]:
 
     object_id = str(getattr(obj, "id", getattr(obj, "uuid", "")))
     prefab_uuid = getattr(obj, "prefab_uuid", None)
-    return {
+    asset_guid = getattr(obj, "asset_guid", getattr(obj, "asset_uuid", None))
+    return _canonicalize_asset_paths({
         "id": object_id,
         "uuid": object_id,
         "prefab_uuid": prefab_uuid,
@@ -140,12 +158,13 @@ def serialize_game_object(obj: GameObject) -> dict[str, Any]:
         "visual": {
             "mesh_type": getattr(obj, "mesh_type", None),
             "sprite_path": _portable_asset_path(getattr(obj, "sprite_path", None)),
-            "asset_uuid": getattr(obj, "asset_uuid", None),
+            "asset_guid": asset_guid,
+            "asset_uuid": asset_guid,
             "color": getattr(obj, "color", None),
             "material": getattr(obj, "material", None),
         },
         "components": components,
-    }
+    })
 
 
 def serialize_scene(scene: Any) -> dict[str, Any]:
@@ -227,8 +246,10 @@ def deserialize_game_object(data: dict[str, Any]) -> GameObject:
     visual = data.get("visual", {}) or {}
     obj.mesh_type = visual.get("mesh_type")
     obj.sprite_path = visual.get("sprite_path")
-    if visual.get("asset_uuid") is not None:
-        obj.asset_uuid = visual.get("asset_uuid")
+    asset_guid = visual.get("asset_guid") or visual.get("asset_uuid")
+    if asset_guid is not None:
+        obj.asset_guid = asset_guid
+        obj.asset_uuid = asset_guid
     if visual.get("color") is not None:
         obj.color = visual.get("color")
     if visual.get("material") is not None:
@@ -286,14 +307,6 @@ def deserialize_scene(data: dict[str, Any]) -> dict[str, Any]:
 
 def save_scene(scene: Any, path: str | Path) -> Path:
     """Save a scene-like object as a .zscene JSON file."""
-    output = Path(path)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    temporary = output.with_suffix(output.suffix + ".tmp")
-    temporary.write_text(
-        json.dumps(serialize_scene(scene), indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
-    if output.is_file():
-        shutil.copy2(output, output.with_suffix(output.suffix + ".bak"))
-    temporary.replace(output)
-    return output
+    from engine.scene.scene_document import SceneDocument
+
+    return SceneDocument.from_dict(serialize_scene(scene)).save(path)
