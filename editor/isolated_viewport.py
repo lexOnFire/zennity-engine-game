@@ -32,6 +32,7 @@ try:
     from editor.runtime.viewport_play_commands import ViewportPlayCommandHandler, ViewportProcessState
     from editor.runtime.viewport_navigation_events import ViewportNavigationEventHandler, ViewportNavigationState
     from editor.runtime.viewport_transform_events import ViewportTransformEventHandler, ViewportTransformState
+    from editor.runtime.viewport_overlay_renderer import ViewportOverlayRenderer
     from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
     from engine.animation.controller_asset import AnimatorControllerRuntime, load_animator_controller
     from engine.behavior.controller_asset import BehaviorControllerRunner, load_behavior_controller
@@ -51,6 +52,7 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .viewport_play_commands import ViewportPlayCommandHandler, ViewportProcessState
     from .viewport_navigation_events import ViewportNavigationEventHandler, ViewportNavigationState
     from .viewport_transform_events import ViewportTransformEventHandler, ViewportTransformState
+    from .viewport_overlay_renderer import ViewportOverlayRenderer
     from .clip_asset import animation_asset_to_clip, load_animation_asset
     from .controller_asset import AnimatorControllerRuntime, load_animator_controller
     from .behavior_controller import BehaviorControllerRunner, load_behavior_controller
@@ -1161,6 +1163,7 @@ def run_viewport(
     transform_events = ViewportTransformEventHandler(
         pygame, objects, lambda event: _send(events, event), world_to_screen,
     )
+    overlay_renderer = ViewportOverlayRenderer(pygame)
 
     while running:
         for command in command_queue.drain():
@@ -1516,42 +1519,9 @@ def run_viewport(
 
         screen.fill(bg_color)
         if view_mode == "scene":
-            grid_spacing = max(8.0, 32.0 * zoom)
-            grid_x = (-camera_x * zoom) % grid_spacing
-            grid_y = (-camera_y * zoom) % grid_spacing
-            while grid_x < width:
-                pygame.draw.line(screen, (45, 48, 59), (int(grid_x), 0), (int(grid_x), height))
-                grid_x += grid_spacing
-            while grid_y < height:
-                pygame.draw.line(screen, (45, 48, 59), (0, int(grid_y)), (width, int(grid_y)))
-                grid_y += grid_spacing
-            origin_x, origin_y = world_to_screen(0.0, 0.0)
-            if 0 <= origin_x <= width:
-                pygame.draw.line(screen, (112, 120, 142), (int(origin_x), 0), (int(origin_x), height), 2)
-            if 0 <= origin_y <= height:
-                pygame.draw.line(screen, (112, 120, 142), (0, int(origin_y)), (width, int(origin_y)), 2)
-            # Desenha limite visual das câmeras na cena
-            for cam_name, cam_obj in objects.items():
-                if (
-                    "Camera2D" in cam_obj.get("component_names", [])
-                    or isinstance(cam_obj.get("camera"), dict)
-                    or cam_obj.get("mesh_type") == "Camera"
-                ):
-                    cam_data = cam_obj.get("camera") or {}
-                    cam_zoom = max(0.1, float(cam_data.get("zoom", 1.0)))
-                    # Resolução configurada ou padrão de viewport 800x600
-                    cam_w = float(cam_data.get("width", 800.0)) / cam_zoom
-                    cam_h = float(cam_data.get("height", 600.0)) / cam_zoom
-
-                    # Desenha retângulo tracejado ou colorido representando o frustum/limites
-                    cx, cy = world_to_screen(float(cam_obj["x"]), float(cam_obj["y"]))
-                    cw_s = cam_w * zoom
-                    ch_s = cam_h * zoom
-                    cam_rect = pygame.Rect(int(cx - cw_s / 2), int(cy - ch_s / 2), int(cw_s), int(ch_s))
-                    # Outline branca semitransparente para limites da câmera
-                    pygame.draw.rect(screen, (240, 240, 240), cam_rect, 1)
-                    # Desenha mini-triângulos ou ícone indicador simples nos cantos
-                    pygame.draw.rect(screen, (255, 100, 100) if cam_data.get("active", True) else (150, 150, 150), (int(cx - 4), int(cy - 4), 8, 8))
+            overlay_renderer.draw_scene(
+                screen, objects, width, height, camera_x, camera_y, zoom, world_to_screen,
+            )
 
         layer_order = {"Background": 0, "Default": 1, "Foreground": 2, "UI": 3}
         render_objects = sorted(
@@ -1633,128 +1603,14 @@ def run_viewport(
             rotated = pygame.transform.rotate(object_surface, -float(obj.get("rotation", 0.0)))
             screen.blit(rotated, rotated.get_rect(center=(int(object_x), int(object_y))))
             if view_mode == "scene" and name == selected_name:
-                angle = float(obj.get("rotation", 0.0))
-                collider = obj.get("collider") if isinstance(obj.get("collider"), dict) else None
-                outline_width = float((collider or {}).get("width", obj["w"]))
-                outline_height = float((collider or {}).get("height", obj["h"]))
-                offset_x = float((collider or {}).get("offset_x", 0.0))
-                offset_y = float((collider or {}).get("offset_y", 0.0))
-                radians = math.radians(angle)
-                rotated_offset_x = offset_x * math.cos(radians) - offset_y * math.sin(radians)
-                rotated_offset_y = offset_x * math.sin(radians) + offset_y * math.cos(radians)
-                collider_x, collider_y = world_to_screen(obj["x"] + rotated_offset_x, obj["y"] + rotated_offset_y)
-                outline_color = (255, 187, 72) if (collider or {}).get("is_trigger") else (125, 212, 255)
-                if (collider or {}).get("type") == "circle":
-                    radius = max(1, int(float(collider.get("radius", min(obj["w"], obj["h"]) / 2.0)) * render_zoom))
-                    pygame.draw.circle(screen, outline_color, (int(collider_x), int(collider_y)), radius, 2)
-                else:
-                    collider_surface = pygame.Surface((max(1, int(outline_width * render_zoom) + 8), max(1, int(outline_height * render_zoom) + 8)), pygame.SRCALPHA)
-                    pygame.draw.rect(collider_surface, outline_color, collider_surface.get_rect().inflate(-6, -6), width=2, border_radius=4)
-                    rotated_collider = pygame.transform.rotate(collider_surface, -angle)
-                    screen.blit(rotated_collider, rotated_collider.get_rect(center=(int(collider_x), int(collider_y))))
-
-                # Desenha Gizmos com rotação alinhada ao objeto
-                if active_tool == "move":
-                    # Eixos X (vermelho) e Y (verde) rotacionados
-                    length = 92
-                    # Eixo X local (rotacionado pelo ângulo do objeto)
-                    dir_x = (math.cos(radians), math.sin(radians))
-                    # Eixo Y local (perpendicular a X)
-                    dir_y = (-math.sin(radians), math.cos(radians))
-
-                    end_x = (int(object_x + dir_x[0] * length), int(object_y + dir_x[1] * length))
-                    end_y = (int(object_x - dir_y[0] * length), int(object_y - dir_y[1] * length))
-
-                    # Desenha eixos
-                    pygame.draw.line(screen, (245, 78, 78), (int(object_x), int(object_y)), end_x, 4)
-                    pygame.draw.line(screen, (82, 211, 106), (int(object_x), int(object_y)), end_y, 4)
-
-                    # Pequenos triângulos na ponta para dar cara de gizmo profissional
-                    from pygame import Vector2
-                    for end_pt, direction, color in [(end_x, dir_x, (245, 78, 78)), (end_y, (-dir_y[0], -dir_y[1]), (82, 211, 106))]:
-                        d = Vector2(direction)
-                        p1 = Vector2(end_pt)
-                        p2 = p1 - d * 12 + Vector2(-d.y, d.x) * 6
-                        p3 = p1 - d * 12 - Vector2(-d.y, d.x) * 6
-                        pygame.draw.polygon(screen, color, [p1, p2, p3])
-
-                elif active_tool == "rotate":
-                    pygame.draw.circle(screen, (245, 194, 78), (int(object_x), int(object_y)), int(max(object_width, object_height) / 2 + 20), 2)
-                    # Desenha linha de referência até a borda
-                    ref_end = (
-                        int(object_x + math.cos(radians) * (max(object_width, object_height) / 2 + 20)),
-                        int(object_y + math.sin(radians) * (max(object_width, object_height) / 2 + 20))
-                    )
-                    pygame.draw.line(screen, (255, 235, 150), (int(object_x), int(object_y)), ref_end, 1)
-
-                elif active_tool == "scale":
-                    # Calcula as metades das dimensões locais rotacionadas
-                    half_w = (float(obj["w"]) * render_zoom) / 2.0
-                    half_h = (float(obj["h"]) * render_zoom) / 2.0
-                    # Definimos 8 posições locais para os handles de controle de escala (TL, TC, TR, RC, BR, BC, BL, LC)
-                    local_handles = [
-                        (-half_w, -half_h),  # 0: TL
-                        (0.0, -half_h),      # 1: TC
-                        (half_w, -half_h),   # 2: TR
-                        (half_w, 0.0),       # 3: RC
-                        (half_w, half_h),    # 4: BR
-                        (0.0, half_h),       # 5: BC
-                        (-half_w, half_h),   # 6: BL
-                        (-half_w, 0.0),      # 7: LC
-                    ]
-
-                    # Rotaciona e translada os handles para coordenadas globais de tela
-                    screen_handles = []
-                    for hx, hy in local_handles:
-                        rx = hx * math.cos(radians) - hy * math.sin(radians)
-                        ry = hx * math.sin(radians) + hy * math.cos(radians)
-                        screen_handles.append((int(object_x + rx), int(object_y + ry)))
-
-                    # Desenha as linhas da caixa de seleção rotacionada unindo os cantos (0, 2, 4, 6)
-                    pygame.draw.line(screen, (125, 212, 255), screen_handles[0], screen_handles[2], 1)
-                    pygame.draw.line(screen, (125, 212, 255), screen_handles[2], screen_handles[4], 1)
-                    pygame.draw.line(screen, (125, 212, 255), screen_handles[4], screen_handles[6], 1)
-                    pygame.draw.line(screen, (125, 212, 255), screen_handles[6], screen_handles[0], 1)
-
-                    # Desenha os 8 quadradinhos (handles) rotacionados
-                    for px, py in screen_handles:
-                        handle_surf = pygame.Surface((8, 8), pygame.SRCALPHA)
-                        handle_surf.fill((125, 212, 255))
-                        rotated_handle = pygame.transform.rotate(handle_surf, -angle)
-                        screen.blit(rotated_handle, rotated_handle.get_rect(center=(px, py)))
+                overlay_renderer.draw_selection(
+                    screen, obj, active_tool, object_x, object_y, object_width, object_height,
+                    render_zoom, world_to_screen,
+                )
         if view_mode == "game":
             native_ui.draw(objects, screen)
         if playing and hud_entries:
-            for position, entries in hud_entries.grouped().items():
-                for index, entry in enumerate(entries):
-                    font_size = max(12, min(72, int(entry.get("font_size", 22))))
-                    font = pygame.font.Font(None, font_size)
-                    color = tuple(entry.get("color", (255, 255, 255)))[:3]
-                    text_surface = font.render(str(entry.get("text", "")), True, color)
-                    padding = 10
-                    panel = pygame.Surface(
-                        (text_surface.get_width() + padding * 2, text_surface.get_height() + padding),
-                        pygame.SRCALPHA,
-                    )
-                    panel.fill((10, 14, 24, 185))
-                    panel.blit(text_surface, (padding, padding // 2))
-                    margin, gap = 14, 6
-                    if position == "top-right":
-                        px = width - panel.get_width() - margin
-                        py = margin + index * (panel.get_height() + gap)
-                    elif position == "center":
-                        px = (width - panel.get_width()) // 2
-                        py = (height - panel.get_height()) // 2 + index * (panel.get_height() + gap)
-                    elif position == "bottom-left":
-                        px = margin
-                        py = height - margin - (index + 1) * (panel.get_height() + gap)
-                    elif position == "bottom-right":
-                        px = width - panel.get_width() - margin
-                        py = height - margin - (index + 1) * (panel.get_height() + gap)
-                    else:
-                        px = margin
-                        py = margin + index * (panel.get_height() + gap)
-                    screen.blit(panel, (px, py))
+            overlay_renderer.draw_hud(screen, hud_entries, width, height)
         pygame.display.flip()
         clock.tick(60)
         now_ms = pygame.time.get_ticks()
