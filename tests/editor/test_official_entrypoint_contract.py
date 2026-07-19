@@ -6,11 +6,15 @@ bootstrap contract before the editor shells are consolidated.
 from __future__ import annotations
 
 import sys
-import tomllib
 from pathlib import Path
 from types import ModuleType
 
 import pytest
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10
+    import tomli as tomllib
 
 from editor import phase1_main
 
