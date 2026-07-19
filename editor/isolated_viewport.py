@@ -10,7 +10,6 @@ import importlib.util
 import uuid
 from copy import deepcopy
 from pathlib import Path
-from queue import Empty
 from typing import Any
 
 try:
@@ -23,6 +22,7 @@ try:
         FixedStepScheduler,
         HudRuntimeSystem,
     )
+    from editor.runtime.viewport_command_queue import ViewportCommandQueue
     from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
     from engine.animation.controller_asset import AnimatorControllerRuntime, load_animator_controller
     from engine.behavior.controller_asset import BehaviorControllerRunner, load_behavior_controller
@@ -36,6 +36,7 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .native_ui import NativeUIRenderer, normalize_ui
     from .sprite_rendering import prepare_scrolling_sprite_surface, prepare_sprite_surface
     from .viewport_systems import AnimationPlaybackSystem, AudioPlaybackSystem, FixedStepScheduler, HudRuntimeSystem
+    from .viewport_command_queue import ViewportCommandQueue
     from .clip_asset import animation_asset_to_clip, load_animation_asset
     from .controller_asset import AnimatorControllerRuntime, load_animator_controller
     from .behavior_controller import BehaviorControllerRunner, load_behavior_controller
@@ -706,6 +707,7 @@ def run_viewport(
     last_stats_ms = 0
     texture_cache: dict[str, tuple[float, Any]] = {}
     native_ui = NativeUIRenderer()
+    command_queue = ViewportCommandQueue(commands)
 
     def start_audio_sources() -> None:
         stop_audio_sources()
@@ -1109,309 +1111,304 @@ def run_viewport(
         return round(value / step) * step
 
     while running:
-        if commands is not None:
-            while True:
-                try:
-                    command = commands.get_nowait()
-                except Empty:
-                    break
-                if command.get("type") == "shutdown":
-                    running = False
-                elif command.get("type") == "viewport_size":
-                    w = max(32, int(command.get("w", 32)))
-                    h = max(32, int(command.get("h", 32)))
-                    new_size = (w, h)
-                    screen = pygame.display.set_mode(new_size, display_flags)
-                    _attach_native_window(pygame, parent_window_id, *new_size)
+        for command in command_queue.drain():
+            if command.get("type") == "shutdown":
+                running = False
+            elif command.get("type") == "viewport_size":
+                w = max(32, int(command.get("w", 32)))
+                h = max(32, int(command.get("h", 32)))
+                new_size = (w, h)
+                screen = pygame.display.set_mode(new_size, display_flags)
+                _attach_native_window(pygame, parent_window_id, *new_size)
 
-                    # Centraliza a câmera de modo que o centro da tela corresponda ao ponto (0, 0) do mundo
-                    camera_x = -float(w) / 2.0 / zoom
-                    camera_y = -float(h) / 2.0 / zoom
-                elif command.get("type") == "scene_snapshot":
-                    # A cena de edição é imutável durante o Play. Alterações do
-                    # Inspector ficam no editor e só entram na próxima execução.
-                    if playing:
-                        continue
-                    objects.clear()
-                    objects.update({item["name"]: dict(item) for item in command.get("objects", [])})
-                    edit_snapshot = deepcopy(objects)
-                    selected_name = None
-                    playing = False
+                # Centraliza a câmera de modo que o centro da tela corresponda ao ponto (0, 0) do mundo
+                camera_x = -float(w) / 2.0 / zoom
+                camera_y = -float(h) / 2.0 / zoom
+            elif command.get("type") == "scene_snapshot":
+                # A cena de edição é imutável durante o Play. Alterações do
+                # Inspector ficam no editor e só entram na próxima execução.
+                if playing:
+                    continue
+                objects.clear()
+                objects.update({item["name"]: dict(item) for item in command.get("objects", [])})
+                edit_snapshot = deepcopy(objects)
+                selected_name = None
+                playing = False
+                paused = False
+                velocities_y = {}
+                grounded = {}
+            elif command.get("type") == "set_tool":
+                tool = str(command.get("tool", "select")).lower()
+                if tool in {"select", "move", "rotate", "scale"}:
+                    active_tool = tool
+            elif command.get("type") == "set_view_mode":
+                mode = str(command.get("mode", "scene")).lower()
+                if mode in {"scene", "game"}:
+                    view_mode = mode
+            elif command.get("type") == "set_snap":
+                snap_enabled = bool(command.get("enabled", False))
+                snap_size = max(0.01, float(command.get("size", 16.0)))
+                snap_angle = max(0.01, float(command.get("angle", 15.0)))
+            elif command.get("type") == "runtime_input" and isinstance(command.get("keys"), dict):
+                for key in forwarded_input:
+                    forwarded_input[key] = bool(command["keys"].get(key, False))
+            elif command.get("type") == "logic_debug_command":
+                requested_graph = Path(str(command.get("graph", ""))).as_posix().casefold()
+                requested_name = Path(requested_graph).name.casefold()
+                debug_action = str(command.get("command", "sync")).lower()
+                breakpoints = command.get("breakpoints", [])
+                breakpoint_conditions = command.get("breakpoint_conditions", {})
+                watches = command.get("watches", [])
+                variables = command.get("variables", {})
+                matched: list[tuple[str, str, LogicGraphRuntime]] = []
+                for object_name, runtimes in logic_runtimes.items():
+                    for graph_path, runtime in runtimes:
+                        current_graph = Path(str(graph_path)).as_posix().casefold()
+                        if current_graph == requested_graph or Path(current_graph).name.casefold() == requested_name:
+                            runtime.configure_breakpoints(
+                                breakpoints if isinstance(breakpoints, list) else [],
+                                breakpoint_conditions if isinstance(breakpoint_conditions, dict) else {},
+                                watches if isinstance(watches, list) else [],
+                            )
+                            if isinstance(variables, dict):
+                                runtime.configure_variables(variables)
+                            matched.append((object_name, graph_path, runtime))
+                if debug_action == "continue" and matched:
+                    for _object_name, _graph_path, runtime in matched:
+                        runtime.continue_execution()
                     paused = False
-                    velocities_y = {}
-                    grounded = {}
-                elif command.get("type") == "set_tool":
-                    tool = str(command.get("tool", "select")).lower()
-                    if tool in {"select", "move", "rotate", "scale"}:
-                        active_tool = tool
-                elif command.get("type") == "set_view_mode":
-                    mode = str(command.get("mode", "scene")).lower()
-                    if mode in {"scene", "game"}:
-                        view_mode = mode
-                elif command.get("type") == "set_snap":
-                    snap_enabled = bool(command.get("enabled", False))
-                    snap_size = max(0.01, float(command.get("size", 16.0)))
-                    snap_angle = max(0.01, float(command.get("angle", 15.0)))
-                elif command.get("type") == "runtime_input" and isinstance(command.get("keys"), dict):
-                    for key in forwarded_input:
-                        forwarded_input[key] = bool(command["keys"].get(key, False))
-                elif command.get("type") == "logic_debug_command":
-                    requested_graph = Path(str(command.get("graph", ""))).as_posix().casefold()
-                    requested_name = Path(requested_graph).name.casefold()
-                    debug_action = str(command.get("command", "sync")).lower()
-                    breakpoints = command.get("breakpoints", [])
-                    breakpoint_conditions = command.get("breakpoint_conditions", {})
-                    watches = command.get("watches", [])
-                    variables = command.get("variables", {})
-                    matched: list[tuple[str, str, LogicGraphRuntime]] = []
-                    for object_name, runtimes in logic_runtimes.items():
-                        for graph_path, runtime in runtimes:
-                            current_graph = Path(str(graph_path)).as_posix().casefold()
-                            if current_graph == requested_graph or Path(current_graph).name.casefold() == requested_name:
-                                runtime.configure_breakpoints(
-                                    breakpoints if isinstance(breakpoints, list) else [],
-                                    breakpoint_conditions if isinstance(breakpoint_conditions, dict) else {},
-                                    watches if isinstance(watches, list) else [],
-                                )
-                                if isinstance(variables, dict):
-                                    runtime.configure_variables(variables)
-                                matched.append((object_name, graph_path, runtime))
-                    if debug_action == "continue" and matched:
-                        for _object_name, _graph_path, runtime in matched:
-                            runtime.continue_execution()
-                        paused = False
-                        set_channels_paused(audio_channels, False)
-                        _send(events, {"type": "play_state", "state": "play"})
-                    elif debug_action == "step" and matched:
-                        for object_name, graph_path, runtime in matched:
-                            try:
-                                runtime.step()
-                                _send(events, {
-                                    "type": "logic_trace",
-                                    "object": object_name,
-                                    "graph": graph_path,
-                                    **runtime.debug_snapshot(),
-                                })
-                            except Exception as exc:
-                                _send(events, {
-                                    "type": "logic_trace",
-                                    "object": object_name,
-                                    "graph": graph_path,
-                                    "error": str(exc),
-                                    **runtime.debug_snapshot(),
-                                })
-                                _send(events, {
-                                    "type": "script_log",
-                                    "level": "ERROR",
-                                    "message": f"{object_name}:{graph_path}: {exc}",
-                                })
-                        paused = True
-                        set_channels_paused(audio_channels, True)
-                    elif debug_action == "restart" and matched:
-                        any_paused = False
-                        for object_name, graph_path, runtime in matched:
-                            api = script_apis.get(object_name)
-                            if api is None:
-                                continue
-                            try:
-                                runtime.restart(api)
-                                any_paused = any_paused or runtime.debug_paused
-                                _send(events, {
-                                    "type": "logic_trace",
-                                    "object": object_name,
-                                    "graph": graph_path,
-                                    **runtime.debug_snapshot(),
-                                })
-                            except Exception as exc:
-                                _send(events, {
-                                    "type": "logic_trace",
-                                    "object": object_name,
-                                    "graph": graph_path,
-                                    "error": str(exc),
-                                    **runtime.debug_snapshot(),
-                                })
-                        paused = any_paused
-                        set_channels_paused(audio_channels, paused)
-                        _send(events, {"type": "play_state", "state": "pause" if paused else "play"})
-                elif command.get("type") == "play":
-                    if not playing:
-                        incoming_blackboard = command.get("scene_blackboard", {})
-                        if isinstance(incoming_blackboard, dict):
-                            scene_blackboard_config = deepcopy(incoming_blackboard)
-                        incoming_audio = command.get("audio_sources", {})
-                        if isinstance(incoming_audio, dict):
-                            for object_name, audio_config in incoming_audio.items():
-                                if object_name in objects and isinstance(audio_config, dict):
-                                    objects[object_name]["audio"] = dict(audio_config)
-                        edit_snapshot = deepcopy(objects)
-                        playing = True
-                        paused = False
-                        velocities_y = {}
-                        grounded = {}
-                        physics_scheduler.reset()
-                        hud_entries.clear()
-                        start_scripts()
-                        _send(events, {"type": "play_state", "state": "play"})
-                    elif paused:
-                        paused = False
-                        set_channels_paused(audio_channels, False)
-                        _send(events, {"type": "play_state", "state": "play"})
-                elif command.get("type") == "start_play_audio":
+                    set_channels_paused(audio_channels, False)
+                    _send(events, {"type": "play_state", "state": "play"})
+                elif debug_action == "step" and matched:
+                    for object_name, graph_path, runtime in matched:
+                        try:
+                            runtime.step()
+                            _send(events, {
+                                "type": "logic_trace",
+                                "object": object_name,
+                                "graph": graph_path,
+                                **runtime.debug_snapshot(),
+                            })
+                        except Exception as exc:
+                            _send(events, {
+                                "type": "logic_trace",
+                                "object": object_name,
+                                "graph": graph_path,
+                                "error": str(exc),
+                                **runtime.debug_snapshot(),
+                            })
+                            _send(events, {
+                                "type": "script_log",
+                                "level": "ERROR",
+                                "message": f"{object_name}:{graph_path}: {exc}",
+                            })
+                    paused = True
+                    set_channels_paused(audio_channels, True)
+                elif debug_action == "restart" and matched:
+                    any_paused = False
+                    for object_name, graph_path, runtime in matched:
+                        api = script_apis.get(object_name)
+                        if api is None:
+                            continue
+                        try:
+                            runtime.restart(api)
+                            any_paused = any_paused or runtime.debug_paused
+                            _send(events, {
+                                "type": "logic_trace",
+                                "object": object_name,
+                                "graph": graph_path,
+                                **runtime.debug_snapshot(),
+                            })
+                        except Exception as exc:
+                            _send(events, {
+                                "type": "logic_trace",
+                                "object": object_name,
+                                "graph": graph_path,
+                                "error": str(exc),
+                                **runtime.debug_snapshot(),
+                            })
+                    paused = any_paused
+                    set_channels_paused(audio_channels, paused)
+                    _send(events, {"type": "play_state", "state": "pause" if paused else "play"})
+            elif command.get("type") == "play":
+                if not playing:
+                    incoming_blackboard = command.get("scene_blackboard", {})
+                    if isinstance(incoming_blackboard, dict):
+                        scene_blackboard_config = deepcopy(incoming_blackboard)
                     incoming_audio = command.get("audio_sources", {})
                     if isinstance(incoming_audio, dict):
                         for object_name, audio_config in incoming_audio.items():
                             if object_name in objects and isinstance(audio_config, dict):
                                 objects[object_name]["audio"] = dict(audio_config)
-                    _send(events, {"type": "script_log", "level": "INFO", "message": "Comando dedicado de áudio recebido pelo Play Mode"})
-                    start_audio_sources()
-                elif command.get("type") == "pause":
-                    if playing:
-                        paused = not paused
-                        set_channels_paused(audio_channels, paused)
-                        _send(events, {"type": "play_state", "state": "pause" if paused else "play"})
-                elif command.get("type") == "stop":
-                    stop_audio_sources()
-                    if playing:
-                        stop_scripts()
-                        objects.clear()
-                        objects.update(deepcopy(edit_snapshot))
-                        playing = False
-                        paused = False
-                        velocities_y = {}
-                        grounded = {}
-                        physics_scheduler.reset()
-                        hud_entries.clear()
-                        _send(events, {"type": "play_state", "state": "edit"})
-                        _send(events, {"type": "scene_snapshot", "objects": list(objects.values())})
-                elif command.get("type") == "stop_all_audio":
-                    stop_audio_sources()
-                    _send(events, {"type": "script_log", "level": "INFO", "message": "Todos os áudios foram interrompidos"})
-                elif command.get("type") == "preview_audio":
-                    play_audio_file(
-                        "__preview__", str(command.get("path", "")),
-                        float(command.get("volume", 1.0)), bool(command.get("loop", False)),
-                    )
-                elif command.get("type") == "stop_audio_preview":
-                    channel = audio_channels.pop("__preview__", None)
-                    if channel is not None:
-                        channel.stop()
-                    audio_sounds.pop("__preview__", None)
-                    _send(events, {"type": "script_log", "level": "INFO", "message": "Prévia de áudio interrompida"})
-                elif command.get("type") == "select_object":
-                    name = str(command.get("name", ""))
-                    if name in objects:
-                        selected_name = name
-                        _send(events, {"type": "selected", "name": name})
-                elif command.get("type") == "move_selected" and selected_name in objects:
-                    obj = objects[selected_name]
-                    obj["x"] += float(command.get("dx", 0.0))
-                    obj["y"] += float(command.get("dy", 0.0))
-                    _send(events, {"type": "transform", "name": selected_name, "x": obj["x"], "y": obj["y"]})
-                elif command.get("type") == "set_transform":
-                    name = str(command.get("name", ""))
-                    if name in objects and not playing:
-                        obj = objects[name]
-                        for key in ("x", "y", "w", "h", "rotation"):
-                            if key in command:
-                                obj[key] = float(command[key])
-                        _send(events, {"type": "transform", "name": name, **{key: obj[key] for key in ("x", "y", "w", "h", "rotation")}})
-                elif command.get("type") == "set_physics":
-                    name = str(command.get("name", ""))
-                    if name in objects and not playing and isinstance(command.get("rigidbody"), dict):
-                        objects[name]["rigidbody"] = dict(command["rigidbody"])
-                elif command.get("type") == "set_collider":
-                    name = str(command.get("name", ""))
-                    if name in objects and not playing and isinstance(command.get("collider"), dict):
-                        objects[name]["collider"] = dict(command["collider"])
-                elif command.get("type") == "script_instruction":
-                    name = str(command.get("name", ""))
-                    instruction = command.get("instruction")
-                    if name in objects and isinstance(instruction, dict):
-                        objects[name].setdefault("script_instructions", []).append(dict(instruction))
-                elif command.get("type") == "script_drop_at" and not playing:
-                    mouse_x = float(command.get("screen_x", 0.0))
-                    mouse_y = float(command.get("screen_y", 0.0))
-                    target_name = None
-                    for name, obj in reversed(list(objects.items())):
-                        object_x, object_y = world_to_screen(float(obj["x"]), float(obj["y"]))
-                        angle = math.radians(-float(obj.get("rotation", 0.0)))
-                        dx, dy = mouse_x - object_x, mouse_y - object_y
-                        local_x = dx * math.cos(angle) - dy * math.sin(angle)
-                        local_y = dx * math.sin(angle) + dy * math.cos(angle)
-                        view_zoom = view_transform()[2]
-                        if abs(local_x) <= float(obj["w"]) * view_zoom / 2.0 and abs(local_y) <= float(obj["h"]) * view_zoom / 2.0:
-                            target_name = name
-                            break
-                    if target_name is None:
-                        target_name = selected_name
-                    if target_name in objects:
-                        _send(events, {"type": "attach_script", "name": target_name, "path": str(command.get("path", ""))})
-                elif command.get("type") == "create_object_at" and not playing:
-                    kind = str(command.get("kind", "Sprite"))
-                    sx = float(command.get("screen_x", 0.0))
-                    sy = float(command.get("screen_y", 0.0))
-                    world_x, world_y = screen_to_world(sx, sy)
-
-                    # Gera presets e nome unico
-                    presets = {
-                        "Empty": ("GameObject", 40.0, 40.0, (160, 164, 174), None),
-                        "Sprite": ("Sprite", 64.0, 64.0, (180, 180, 190), None),
-                        "Player": ("Player", 36.0, 48.0, (88, 117, 255), {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}),
-                        "Platform": ("Platform", 160.0, 32.0, (91, 194, 100), {"is_kinematic": True, "use_gravity": False}),
-                        "Enemy": ("Enemy", 40.0, 40.0, (220, 88, 88), {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}),
-                        "Trigger": ("Trigger", 80.0, 80.0, (222, 178, 72), {"is_kinematic": True, "use_gravity": False}),
-                        "Camera": ("Camera2D", 96.0, 54.0, (110, 190, 210), None),
-                    }
-                    base, width, height, color, rigidbody = presets.get(kind, presets["Sprite"])
-
-                    # Nome único local
-                    index = 1
-                    name = base
-                    while name in objects:
-                        index += 1
-                        name = f"{base}_{index}"
-
-                    import uuid
-                    obj = {"id": str(uuid.uuid4()), "name": name, "x": world_x, "y": world_y, "w": width, "h": height, "rotation": 0.0, "color": color, "mesh_type": kind}
-                    if rigidbody is not None:
-                        obj["rigidbody"] = rigidbody
-                        obj["collider"] = {"type": "box"}
-                    if kind == "Trigger":
-                        obj["collider"]["is_trigger"] = True
-                    if kind == "Player":
-                        obj["scripts"] = ["Assets/Scripts/player_controller_2d.py"]
-                    if kind == "Camera":
-                        obj["component_names"] = ["Camera2D"]
-                        obj["camera"] = {"active": True, "zoom": 1.0}
-
-                    objects[name] = obj
-                    selected_name = name
+                    edit_snapshot = deepcopy(objects)
+                    playing = True
+                    paused = False
+                    velocities_y = {}
+                    grounded = {}
+                    physics_scheduler.reset()
+                    hud_entries.clear()
+                    start_scripts()
+                    _send(events, {"type": "play_state", "state": "play"})
+                elif paused:
+                    paused = False
+                    set_channels_paused(audio_channels, False)
+                    _send(events, {"type": "play_state", "state": "play"})
+            elif command.get("type") == "start_play_audio":
+                incoming_audio = command.get("audio_sources", {})
+                if isinstance(incoming_audio, dict):
+                    for object_name, audio_config in incoming_audio.items():
+                        if object_name in objects and isinstance(audio_config, dict):
+                            objects[object_name]["audio"] = dict(audio_config)
+                _send(events, {"type": "script_log", "level": "INFO", "message": "Comando dedicado de áudio recebido pelo Play Mode"})
+                start_audio_sources()
+            elif command.get("type") == "pause":
+                if playing:
+                    paused = not paused
+                    set_channels_paused(audio_channels, paused)
+                    _send(events, {"type": "play_state", "state": "pause" if paused else "play"})
+            elif command.get("type") == "stop":
+                stop_audio_sources()
+                if playing:
+                    stop_scripts()
+                    objects.clear()
+                    objects.update(deepcopy(edit_snapshot))
+                    playing = False
+                    paused = False
+                    velocities_y = {}
+                    grounded = {}
+                    physics_scheduler.reset()
+                    hud_entries.clear()
+                    _send(events, {"type": "play_state", "state": "edit"})
                     _send(events, {"type": "scene_snapshot", "objects": list(objects.values())})
-                    _send(events, {"type": "selected", "name": name})
-                elif command.get("type") == "create_sprite_at" and not playing:
-                    import uuid
-                    texture = str(command.get("texture", ""))
-                    base = Path(texture).stem or "Sprite"
-                    name = base
-                    index = 1
-                    while name in objects:
-                        index += 1
-                        name = f"{base}_{index}"
-                    world_x, world_y = screen_to_world(float(command.get("screen_x", 0.0)), float(command.get("screen_y", 0.0)))
-                    obj = {
-                        "id": str(uuid.uuid4()), "name": name,
-                        "x": world_x, "y": world_y,
-                        "w": float(command.get("width", 64.0)), "h": float(command.get("height", 64.0)),
-                        "rotation": 0.0, "color": (255, 255, 255), "mesh_type": "Sprite",
-                        "texture": texture, "renderer_enabled": True,
-                        "render_layer": "Default", "sort_order": 0,
-                    }
-                    objects[name] = obj
+            elif command.get("type") == "stop_all_audio":
+                stop_audio_sources()
+                _send(events, {"type": "script_log", "level": "INFO", "message": "Todos os áudios foram interrompidos"})
+            elif command.get("type") == "preview_audio":
+                play_audio_file(
+                    "__preview__", str(command.get("path", "")),
+                    float(command.get("volume", 1.0)), bool(command.get("loop", False)),
+                )
+            elif command.get("type") == "stop_audio_preview":
+                channel = audio_channels.pop("__preview__", None)
+                if channel is not None:
+                    channel.stop()
+                audio_sounds.pop("__preview__", None)
+                _send(events, {"type": "script_log", "level": "INFO", "message": "Prévia de áudio interrompida"})
+            elif command.get("type") == "select_object":
+                name = str(command.get("name", ""))
+                if name in objects:
                     selected_name = name
-                    _send(events, {"type": "scene_snapshot", "objects": list(objects.values())})
                     _send(events, {"type": "selected", "name": name})
-                elif command.get("type") == "reset_scene":
-                    _send(events, {"type": "snapshot_requested"})
+            elif command.get("type") == "move_selected" and selected_name in objects:
+                obj = objects[selected_name]
+                obj["x"] += float(command.get("dx", 0.0))
+                obj["y"] += float(command.get("dy", 0.0))
+                _send(events, {"type": "transform", "name": selected_name, "x": obj["x"], "y": obj["y"]})
+            elif command.get("type") == "set_transform":
+                name = str(command.get("name", ""))
+                if name in objects and not playing:
+                    obj = objects[name]
+                    for key in ("x", "y", "w", "h", "rotation"):
+                        if key in command:
+                            obj[key] = float(command[key])
+                    _send(events, {"type": "transform", "name": name, **{key: obj[key] for key in ("x", "y", "w", "h", "rotation")}})
+            elif command.get("type") == "set_physics":
+                name = str(command.get("name", ""))
+                if name in objects and not playing and isinstance(command.get("rigidbody"), dict):
+                    objects[name]["rigidbody"] = dict(command["rigidbody"])
+            elif command.get("type") == "set_collider":
+                name = str(command.get("name", ""))
+                if name in objects and not playing and isinstance(command.get("collider"), dict):
+                    objects[name]["collider"] = dict(command["collider"])
+            elif command.get("type") == "script_instruction":
+                name = str(command.get("name", ""))
+                instruction = command.get("instruction")
+                if name in objects and isinstance(instruction, dict):
+                    objects[name].setdefault("script_instructions", []).append(dict(instruction))
+            elif command.get("type") == "script_drop_at" and not playing:
+                mouse_x = float(command.get("screen_x", 0.0))
+                mouse_y = float(command.get("screen_y", 0.0))
+                target_name = None
+                for name, obj in reversed(list(objects.items())):
+                    object_x, object_y = world_to_screen(float(obj["x"]), float(obj["y"]))
+                    angle = math.radians(-float(obj.get("rotation", 0.0)))
+                    dx, dy = mouse_x - object_x, mouse_y - object_y
+                    local_x = dx * math.cos(angle) - dy * math.sin(angle)
+                    local_y = dx * math.sin(angle) + dy * math.cos(angle)
+                    view_zoom = view_transform()[2]
+                    if abs(local_x) <= float(obj["w"]) * view_zoom / 2.0 and abs(local_y) <= float(obj["h"]) * view_zoom / 2.0:
+                        target_name = name
+                        break
+                if target_name is None:
+                    target_name = selected_name
+                if target_name in objects:
+                    _send(events, {"type": "attach_script", "name": target_name, "path": str(command.get("path", ""))})
+            elif command.get("type") == "create_object_at" and not playing:
+                kind = str(command.get("kind", "Sprite"))
+                sx = float(command.get("screen_x", 0.0))
+                sy = float(command.get("screen_y", 0.0))
+                world_x, world_y = screen_to_world(sx, sy)
+
+                # Gera presets e nome unico
+                presets = {
+                    "Empty": ("GameObject", 40.0, 40.0, (160, 164, 174), None),
+                    "Sprite": ("Sprite", 64.0, 64.0, (180, 180, 190), None),
+                    "Player": ("Player", 36.0, 48.0, (88, 117, 255), {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}),
+                    "Platform": ("Platform", 160.0, 32.0, (91, 194, 100), {"is_kinematic": True, "use_gravity": False}),
+                    "Enemy": ("Enemy", 40.0, 40.0, (220, 88, 88), {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}),
+                    "Trigger": ("Trigger", 80.0, 80.0, (222, 178, 72), {"is_kinematic": True, "use_gravity": False}),
+                    "Camera": ("Camera2D", 96.0, 54.0, (110, 190, 210), None),
+                }
+                base, width, height, color, rigidbody = presets.get(kind, presets["Sprite"])
+
+                # Nome único local
+                index = 1
+                name = base
+                while name in objects:
+                    index += 1
+                    name = f"{base}_{index}"
+
+                import uuid
+                obj = {"id": str(uuid.uuid4()), "name": name, "x": world_x, "y": world_y, "w": width, "h": height, "rotation": 0.0, "color": color, "mesh_type": kind}
+                if rigidbody is not None:
+                    obj["rigidbody"] = rigidbody
+                    obj["collider"] = {"type": "box"}
+                if kind == "Trigger":
+                    obj["collider"]["is_trigger"] = True
+                if kind == "Player":
+                    obj["scripts"] = ["Assets/Scripts/player_controller_2d.py"]
+                if kind == "Camera":
+                    obj["component_names"] = ["Camera2D"]
+                    obj["camera"] = {"active": True, "zoom": 1.0}
+
+                objects[name] = obj
+                selected_name = name
+                _send(events, {"type": "scene_snapshot", "objects": list(objects.values())})
+                _send(events, {"type": "selected", "name": name})
+            elif command.get("type") == "create_sprite_at" and not playing:
+                import uuid
+                texture = str(command.get("texture", ""))
+                base = Path(texture).stem or "Sprite"
+                name = base
+                index = 1
+                while name in objects:
+                    index += 1
+                    name = f"{base}_{index}"
+                world_x, world_y = screen_to_world(float(command.get("screen_x", 0.0)), float(command.get("screen_y", 0.0)))
+                obj = {
+                    "id": str(uuid.uuid4()), "name": name,
+                    "x": world_x, "y": world_y,
+                    "w": float(command.get("width", 64.0)), "h": float(command.get("height", 64.0)),
+                    "rotation": 0.0, "color": (255, 255, 255), "mesh_type": "Sprite",
+                    "texture": texture, "renderer_enabled": True,
+                    "render_layer": "Default", "sort_order": 0,
+                }
+                objects[name] = obj
+                selected_name = name
+                _send(events, {"type": "scene_snapshot", "objects": list(objects.values())})
+                _send(events, {"type": "selected", "name": name})
+            elif command.get("type") == "reset_scene":
+                _send(events, {"type": "snapshot_requested"})
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
