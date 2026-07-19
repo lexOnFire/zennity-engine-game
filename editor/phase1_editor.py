@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QAction, QActionGroup
 from PySide6.QtWidgets import QFileDialog, QComboBox, QSplitter, QTabWidget, QToolBar, QToolButton, QWidget, QMessageBox
 
@@ -629,6 +629,11 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.inspector.load_object(obj)
         self.hierarchy.select_object(obj)
         self._sync_scene_selection_index(obj)
+        QTimer.singleShot(0, self._resync_selection_projection)
+
+    def _resync_selection_projection(self) -> None:
+        """Consolida a seleção após os timers legados das viewports."""
+        self._sync_scene_selection_index(self.editor_context.selection.selected)
 
     def on_viewport_object_changed(self, obj: Any) -> None:
         if obj is self.editor_context.selection.selected:
