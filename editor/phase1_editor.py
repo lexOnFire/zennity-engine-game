@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QAction, QActionGroup
+from PySide6.QtGui import QAction, QActionGroup, QKeySequence, QShortcut
 from PySide6.QtWidgets import QFileDialog, QComboBox, QSplitter, QTabWidget, QToolBar, QToolButton, QWidget, QMessageBox
 
 from editor.premium_editor import (
@@ -25,7 +25,9 @@ from editor.runtime.hierarchy_commands import (
     can_reparent,
 )
 from editor.runtime.editor_context import EditorContext
+from editor.runtime.editor_extensions import EditorExtensionManager, default_editor_extensions
 from editor.runtime.tool_manager import EditorTool
+from editor.runtime.tool_selection import sync_tool_selection
 from editor.widgets.game_viewport import GameViewportWidget
 from editor.widgets.phase1_viewport import Phase1ViewportWidget
 from editor.widgets.render_pipeline_profiler import RenderPipelineProfilerPanel
@@ -49,6 +51,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         # Quando True, o usuario ajustou o splitter manualmente:
         # nao recalcular automaticamente.
         self._hierarchy_splitter_user_resized = False
+        self._extensions = EditorExtensionManager(self, self._on_extension_error)
         super().__init__()
         self._ensure_default_scene()
         self.editor_context.tools.subscribe(self._on_runtime_tool_changed)
@@ -338,6 +341,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
 
     def closeEvent(self, event) -> None:
         self.editor_context.selection.unsubscribe(self.on_viewport_selection_changed)
+        self._extensions.uninstall_all()
         for viewport_name in ("viewport", "game_viewport"):
             viewport = getattr(self, viewport_name, None)
             shutdown = getattr(viewport, "shutdown", None)
@@ -361,27 +365,24 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.viewport.object_transform_changed.connect(self.on_viewport_object_changed)
         self.viewport.tool_message_requested.connect(self.on_tool_message_requested)
         self.viewport.history_changed.connect(self._update_undo_redo_states)
+        self.act_undo.triggered.connect(self.undo)
+        self.act_redo.triggered.connect(self.redo)
+        self._alternate_redo_shortcut = QShortcut(QKeySequence("Ctrl+Shift+Z"), self)
+        self._alternate_redo_shortcut.setContext(Qt.ApplicationShortcut)
+        self._alternate_redo_shortcut.activated.connect(self.redo)
         self.game_viewport.tool_message_requested.connect(self.on_tool_message_requested)
         self.on_viewport_selection_changed(self.editor_context.selection.selected)
         self._sync_play_controls()
         self._update_undo_redo_states()
-        self._apply_runtime_patches()
+        self._install_editor_extensions()
 
-    def _apply_runtime_patches(self) -> None:
-        """Ativa todos os patches de runtime apos a UI estar montada."""
-        try:
-            from editor.runtime.undo_redo_feedback_patch import _install_instance_shortcuts
-            _install_instance_shortcuts(self)
-        except Exception as exc:
-            if hasattr(self, "console"):
-                self.console.add("WARN", f"undo_redo_feedback_patch falhou: {exc}")
+    def _install_editor_extensions(self) -> None:
+        for extension in default_editor_extensions():
+            self._extensions.install(extension)
 
-        try:
-            from editor.runtime.asset_drag_drop_patch import apply_asset_drag_drop_patch
-            apply_asset_drag_drop_patch(self)
-        except Exception as exc:
-            if hasattr(self, "console"):
-                self.console.add("WARN", f"asset_drag_drop_patch falhou: {exc}")
+    def _on_extension_error(self, name: str, exc: Exception) -> None:
+        if hasattr(self, "console"):
+            self.console.add("WARN", f"Extensao '{name}' falhou: {exc}")
 
     def _update_undo_redo_states(self) -> None:
         if hasattr(self, "act_undo") and hasattr(self, "act_redo"):
@@ -420,6 +421,8 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             action.setChecked(True)
         if hasattr(self, "status_msg"):
             self.status_msg.setText(f"Ferramenta ativa: {tool.value.title()}")
+        if tool in (EditorTool.MOVE, EditorTool.ROTATE, EditorTool.SCALE):
+            sync_tool_selection(self)
 
     def scene_objects(self) -> list[Any]:
         scene = getattr(self.viewport, "active_scene", None)
