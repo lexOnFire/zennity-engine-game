@@ -7,6 +7,7 @@ from engine.core import Component
 from engine.core.component_registry import register_component
 from engine.game_object import GameObject
 from engine.runtime import RuntimeManager, RuntimeState
+from engine.time import Time
 
 
 class LifecycleProbe(Component):
@@ -28,6 +29,12 @@ class LifecycleProbe(Component):
 
     def on_runtime_update(self, delta_time: float) -> None:
         self.events.append(("update", self.label, float(delta_time)))
+
+    def on_runtime_fixed_update(self, delta_time: float) -> None:
+        self.events.append(("fixed", self.label, float(delta_time)))
+
+    def on_runtime_late_update(self, delta_time: float) -> None:
+        self.events.append(("late", self.label, float(delta_time)))
 
     def on_runtime_stop(self) -> None:
         self.events.append(("stop", self.label, None))
@@ -209,6 +216,13 @@ def test_play_tick_stop_sequence_is_safe() -> None:
     assert LifecycleProbe.events == [
         ("start", "a", None),
         ("update", "a", 0.1),
+        ("fixed", "a", Time.fixed_delta_time),
+        ("fixed", "a", Time.fixed_delta_time),
+        ("fixed", "a", Time.fixed_delta_time),
+        ("fixed", "a", Time.fixed_delta_time),
+        ("fixed", "a", Time.fixed_delta_time),
+        ("fixed", "a", Time.fixed_delta_time),
+        ("late", "a", 0.1),
         ("stop", "a", None),
     ]
 
