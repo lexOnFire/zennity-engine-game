@@ -35,6 +35,7 @@ from editor.runtime.scene_selection_controller import SceneSelectionController
 from editor.runtime.viewport_event_dispatcher import ViewportEventDispatcher
 from editor.runtime.scene_history import SceneHistory
 from editor.inspector_controller import InspectorComponentController, IsolatedInspectorController
+from editor.inspector_view_renderer import InspectorViewRenderer
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from editor.widgets.component_picker import ComponentPickerDialog
@@ -149,6 +150,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._scene_history = SceneHistory(max_commands=100, max_bytes=16 * 1024 * 1024)
         self._inspector_controller = IsolatedInspectorController(self)
         self._inspector_components = InspectorComponentController(self)
+        self._inspector_view = InspectorViewRenderer(self)
         self._drag_history_snapshot: list[dict] | None = None
         self._snap_enabled = False
         self._runtime_playing = False
@@ -2632,67 +2634,10 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             return
         self._updating_inspector = True
         try:
-            self.inspector_name_label.setText(name)
-            self.animation_object_label.setText(name)
-            self.add_component_button.setEnabled(not self._runtime_playing)
-            self._set_inspector_card_present("transform", True)
-            for key in ("x", "y", "w", "h", "rotation"):
-                self.inspector_fields[key].setValue(float(obj[key]))
-            renderer_enabled = bool(obj.get("renderer_enabled", True))
-            renderer_present = renderer_enabled and obj.get("mesh_type") != "UI" and not isinstance(obj.get("camera"), dict)
-            self._set_inspector_card_present("sprite", renderer_present)
-            self.show_renderer_chk.setChecked(renderer_enabled)
-            self.sprite_renderer_body.setEnabled(renderer_enabled)
-            self.sprite_texture_field.setText(str(obj.get("texture", "")))
-            color = tuple(obj.get("color", (255, 255, 255)))
-            self.sprite_color_button.setStyleSheet(f"background: rgb({int(color[0])}, {int(color[1])}, {int(color[2])});")
-            layer = str(obj.get("render_layer", "Default"))
-            if self.sprite_layer_combo.findText(layer) < 0:
-                self.sprite_layer_combo.addItem(layer)
-            self.sprite_layer_combo.setCurrentText(layer)
-            self.sprite_order_field.setValue(float(obj.get("sort_order", 0)))
-            audio = obj.get("audio") if isinstance(obj.get("audio"), dict) else None
-            self._set_inspector_card_present("audio", audio is not None)
-            self.show_audio_chk.setChecked(audio is not None)
-            self.audio_source_body.setEnabled(audio is not None)
-            # Popula e seleciona o áudio do QComboBox
-            self.audio_path_combo.clear()
-            self.audio_path_combo.addItem("Nenhum", "")
-            current_path = str((audio or {}).get("path", ""))
-            audio_files = self._get_available_audio_files()
-            for path in audio_files:
-                name_file = Path(path).name
-                self.audio_path_combo.addItem(name_file, path)
-            if audio:
-                idx = self.audio_path_combo.findData(current_path)
-                if idx >= 0:
-                    self.audio_path_combo.setCurrentIndex(idx)
-                else:
-                    self.audio_path_combo.setCurrentIndex(0)
-            self.audio_volume_field.setValue(float((audio or {}).get("volume", 1.0)))
-            self.audio_loop_field.setChecked(bool((audio or {}).get("loop", False)))
-            self.audio_autoplay_field.setChecked(bool((audio or {}).get("autoplay", False)))
-            rigidbody = obj.get("rigidbody")
-            self._set_inspector_card_present("rigidbody", rigidbody is not None)
-            self.show_rigidbody_chk.setChecked(rigidbody is not None)
-            for key, field in self.physics_fields.items():
-                field.setEnabled(rigidbody is not None)
-                field.setChecked(bool((rigidbody or {}).get(key, False)))
-            collider = obj.get("collider") if isinstance(obj.get("collider"), dict) else None
-            self._set_inspector_card_present("collider", collider is not None)
-            self.show_collider_chk.setChecked(collider is not None)
-            collider_type = str((collider or {}).get("type", "box")).lower()
-            collider_defaults = {
-                "width": float(obj["w"]), "height": float(obj["h"]),
-                "radius": min(float(obj["w"]), float(obj["h"])) / 2.0,
-                "offset_x": 0.0, "offset_y": 0.0,
-            }
-            for key, field in self.collider_fields.items():
-                relevant = collider is not None and (key not in ("width", "height") or collider_type == "box") and (key != "radius" or collider_type == "circle")
-                field.setEnabled(relevant)
-                field.setValue(float((collider or {}).get(key, collider_defaults[key])))
-            self.collider_trigger_field.setEnabled(collider is not None)
-            self.collider_trigger_field.setChecked(bool((collider or {}).get("is_trigger", False)))
+            self._inspector_view.render_identity_transform(name, obj)
+            self._inspector_view.render_renderer(obj)
+            self._inspector_view.render_audio(obj)
+            self._inspector_view.render_physics(obj)
 
             # Atualiza valores do Animator 2D
             anim = obj.get("animator")
@@ -2741,23 +2686,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 self.animator_current_lbl.setText("Nenhum")
                 self.animator_preview.setText("Sem Animator")
 
-            camera = obj.get("camera") if isinstance(obj.get("camera"), dict) else None
-            self._set_inspector_card_present("camera", camera is not None)
-            self.show_camera_chk.setChecked(camera is not None)
-            self.camera_body.setEnabled(camera is not None)
-            self.camera_active_field.setChecked(bool((camera or {}).get("active", True)))
-            self.camera_width_field.setValue(float((camera or {}).get("width", 1280.0)))
-            self.camera_height_field.setValue(float((camera or {}).get("height", 720.0)))
-            self.camera_zoom_field.setValue(float((camera or {}).get("zoom", 1.0)))
-            follow_target = str((camera or {}).get("follow_target", ""))
-            self.camera_follow_combo.clear()
-            self.camera_follow_combo.addItem("Nenhum")
-            for object_name in self._objects_by_name:
-                if object_name != name:
-                    self.camera_follow_combo.addItem(object_name)
-            self.camera_follow_combo.setCurrentText(follow_target if follow_target in self._objects_by_name else "Nenhum")
-            bg = (camera or {}).get("background_color", [22, 24, 31])
-            self.camera_color_button.setStyleSheet(f"background: rgb({int(bg[0])}, {int(bg[1])}, {int(bg[2])});")
+            self._inspector_view.render_camera(name, obj)
 
             ui = normalize_ui(obj.get("ui"))
             self._set_inspector_card_present("ui", ui is not None)
