@@ -32,6 +32,7 @@ from editor.runtime.native_ui import normalize_ui, scene_item_to_ui, ui_to_scene
 from editor.runtime.viewport_process_controller import ViewportProcessController
 from editor.runtime.isolated_play_mode_controller import IsolatedPlayModeController
 from editor.runtime.scene_selection_controller import SceneSelectionController
+from editor.runtime.viewport_event_dispatcher import ViewportEventDispatcher
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from editor.widgets.component_picker import ComponentPickerDialog
@@ -109,6 +110,23 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._commands = self._viewport_controller.commands
         self._events = self._viewport_controller.events
         self._scene_controller = SceneSelectionController(self._commands)
+        self._viewport_events = ViewportEventDispatcher({
+            "selected": self._handle_selected_event,
+            "transform_begin": self._handle_transform_event,
+            "transform_end": self._handle_transform_event,
+            "transform": self._handle_transform_event,
+            "play_state": self._handle_play_state_event,
+            "scene_snapshot": self._handle_scene_snapshot_event,
+            "runtime_objects": self._handle_runtime_objects_event,
+            "viewport_mode": self._handle_viewport_mode_event,
+            "script_log": self._handle_script_log_event,
+            "logic_trace": self._handle_logic_trace_event,
+            "logic_trace_clear": self._handle_logic_trace_event,
+            "animator_state": self._handle_animator_state_event,
+            "animation_event": self._handle_animation_event,
+            "attach_script": self._handle_attach_script_event,
+            "stats": self._handle_stats_event,
+        })
         self._pending_viewport_size: tuple[int, int] | None = None
         self._last_viewport_size_sent: tuple[int, int] | None = None
         self._viewport_resize_timer = QTimer(self)
@@ -3191,130 +3209,147 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         finally:
             self._updating_inspector = False
 
+    def _handle_selected_event(self, message: dict) -> None:
+        self._selected_name = message["name"]
+        self._update_inspector(self._selected_name)
+        self.statusBar().showMessage(f"Viewport: {self._selected_name} selecionado")
+
+    def _handle_transform_event(self, message: dict) -> None:
+        event_type = message.get("type")
+        if event_type == "transform_begin":
+            self._drag_history_snapshot = deepcopy(self._scene_snapshot)
+            return
+        if event_type == "transform_end":
+            if self._drag_history_snapshot is not None and self._drag_history_snapshot != self._scene_snapshot:
+                self._record_history(self._drag_history_snapshot)
+            self._drag_history_snapshot = None
+            return
+        obj = self._objects_by_name.get(message["name"])
+        if obj is not None and not self._runtime_playing:
+            obj["x"] = float(message["x"])
+            obj["y"] = float(message["y"])
+            for field in ("w", "h", "rotation"):
+                if field in message:
+                    obj[field] = float(message[field])
+            if message["name"] == self._selected_name:
+                self._update_inspector(self._selected_name)
+        self.statusBar().showMessage(
+            f"Viewport: {message['name']} em X={message['x']:.1f}, Y={message['y']:.1f}"
+        )
+
+    def _handle_play_state_event(self, message: dict) -> None:
+        state = message["state"]
+        if state in {"play", "pause"}:
+            self._play_session.set_runtime_state(state)
+        if state == "edit":
+            self._runtime_objects_by_name.clear()
+            self.logic_workspace.clear_runtime_trace()
+            self._runtime_animator_states.clear()
+            if self._animator_controller_dialog is not None:
+                self._animator_controller_dialog.set_runtime_state(None, {})
+            self._scene_snapshot, self._selected_name = self._play_session.finish()
+            self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
+            self._runtime_keys = {key: False for key in self._runtime_keys}
+            self._commands.put({"type": "runtime_input", "keys": dict(self._runtime_keys)})
+            self._refresh_hierarchy()
+            if self._selected_name in self._objects_by_name:
+                self._scene_controller.select(self._selected_name)
+                self._update_inspector(self._selected_name)
+        self._runtime_playing = self._play_session.is_running
+        running = state in {"play", "pause"}
+        self._set_play_mode_editing_locked(running)
+        self.toolbar_actions["Play"].setEnabled(state != "play")
+        self.toolbar_actions["Pause"].setEnabled(running)
+        self.toolbar_actions["Stop"].setEnabled(running)
+        self.logic_workspace.set_play_state(running)
+        self.statusBar().showMessage(
+            {"play": "Viewport: PLAY", "pause": "Viewport: PAUSE", "edit": "Viewport: EDIT — cena restaurada"}[state]
+        )
+        self._log(
+            "INFO",
+            {"play": "Play iniciado/retomado", "pause": "Play pausado", "edit": "Play finalizado; cena restaurada"}[state],
+        )
+
+    def _handle_scene_snapshot_event(self, message: dict) -> None:
+        self._scene_snapshot, restored_selection = self._play_session.consume_scene_snapshot(
+            [deepcopy(item) for item in message.get("objects", [])]
+        )
+        if restored_selection is not None:
+            self._selected_name = restored_selection
+        self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
+        self._refresh_hierarchy()
+        if self._selected_name in self._objects_by_name:
+            self._update_inspector(self._selected_name)
+
+    def _handle_runtime_objects_event(self, message: dict) -> None:
+        previous_names = set(self._runtime_objects_by_name)
+        self._runtime_objects_by_name = {
+            str(item.get("name")): deepcopy(item)
+            for item in message.get("objects", [])
+            if isinstance(item, dict) and item.get("name")
+        }
+        if set(self._runtime_objects_by_name) != previous_names:
+            self._refresh_hierarchy()
+        if self._selected_name in self._runtime_objects_by_name:
+            self._update_inspector(str(self._selected_name))
+        elif self._selected_name in previous_names and self._selected_name not in self._objects_by_name:
+            self._selected_name = None
+            self._clear_inspector_view()
+
+    def _handle_viewport_mode_event(self, message: dict) -> None:
+        state = "embutida" if message.get("embedded") else "em janela separada (fallback)"
+        self.statusBar().showMessage(f"Viewport {state}")
+
+    def _handle_script_log_event(self, message: dict) -> None:
+        self._log(str(message.get("level", "INFO")), str(message.get("message", "")))
+
+    def _handle_logic_trace_event(self, message: dict) -> None:
+        if message.get("type") == "logic_trace":
+            self.logic_workspace.apply_runtime_trace(dict(message))
+        else:
+            self.logic_workspace.clear_runtime_trace()
+
+    def _handle_animator_state_event(self, message: dict) -> None:
+        object_name = str(message.get("name", ""))
+        self._runtime_animator_states[object_name] = dict(message)
+        if object_name == self._selected_name:
+            state = str(message.get("state", "Nenhum"))
+            self.animator_current_lbl.setText(state)
+            if self._animator_controller_dialog is not None:
+                self._animator_controller_dialog.set_runtime_state(state, message.get("parameters"))
+
+    def _handle_animation_event(self, message: dict) -> None:
+        self._log(
+            "INFO",
+            f"Evento de animação: {message.get('name')} → {message.get('event')} "
+            f"(frame {int(message.get('frame', 0)) + 1})",
+        )
+
+    def _handle_attach_script_event(self, message: dict) -> None:
+        self._attach_script(str(message.get("name", "")), Path(str(message.get("path", ""))))
+
+    def _handle_stats_event(self, message: dict) -> None:
+        command_stats = self._commands.stats()
+        self.profiler_label.setText(
+            f"FPS: {message.get('fps', 0):.0f}\n"
+            f"Objetos: {message.get('objects', 0)}\n"
+            f"Modo: {message.get('mode', 'EDIT')} / {message.get('view', 'SCENE')}\n"
+            f"Câmera: {message.get('camera', 'Editor')}\n"
+            f"Jogador: {message.get('player') or '—'}\n"
+            f"Zoom: {message.get('zoom', 1.0):.2f}\n"
+            f"Spawn: {message.get('spawned', 0)} • Reuso: {message.get('reused', 0)} • "
+            f"Pool: {message.get('pooled', 0)} • "
+            f"Removidos: {message.get('destroyed', 0)}\n"
+            f"IPC: {command_stats['sent']} enviados • {command_stats['coalesced']} unidos"
+        )
+
     def _read_viewport_events(self) -> None:
         while True:
             try:
                 message = self._events.get_nowait()
             except Exception:
                 return
-            if message.get("type") == "selected":
-                self._selected_name = message["name"]
-                self._update_inspector(self._selected_name)
-                self.statusBar().showMessage(f"Viewport: {self._selected_name} selecionado")
-            elif message.get("type") == "transform_begin":
-                self._drag_history_snapshot = deepcopy(self._scene_snapshot)
-            elif message.get("type") == "transform_end":
-                if self._drag_history_snapshot is not None and self._drag_history_snapshot != self._scene_snapshot:
-                    self._record_history(self._drag_history_snapshot)
-                self._drag_history_snapshot = None
-            elif message.get("type") == "transform":
-                obj = self._objects_by_name.get(message["name"])
-                if obj is not None and not self._runtime_playing:
-                    obj["x"] = float(message["x"])
-                    obj["y"] = float(message["y"])
-                    if "w" in message:
-                        obj["w"] = float(message["w"])
-                    if "h" in message:
-                        obj["h"] = float(message["h"])
-                    if "rotation" in message:
-                        obj["rotation"] = float(message["rotation"])
-                    if message["name"] == self._selected_name:
-                        self._update_inspector(self._selected_name)
-                self.statusBar().showMessage(
-                    f"Viewport: {message['name']} em X={message['x']:.1f}, Y={message['y']:.1f}"
-                )
-            elif message.get("type") == "play_state":
-                state = message["state"]
-                if state in {"play", "pause"}:
-                    self._play_session.set_runtime_state(state)
-                if state == "edit":
-                    self._runtime_objects_by_name.clear()
-                    self.logic_workspace.clear_runtime_trace()
-                    self._runtime_animator_states.clear()
-                    if self._animator_controller_dialog is not None:
-                        self._animator_controller_dialog.set_runtime_state(None, {})
-                    self._scene_snapshot, self._selected_name = self._play_session.finish()
-                    self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
-                    self._runtime_keys = {key: False for key in self._runtime_keys}
-                    self._commands.put({"type": "runtime_input", "keys": dict(self._runtime_keys)})
-                    self._refresh_hierarchy()
-                    if self._selected_name in self._objects_by_name:
-                        self._scene_controller.select(self._selected_name)
-                        self._update_inspector(self._selected_name)
-                self._runtime_playing = self._play_session.is_running
-                self._set_play_mode_editing_locked(state in {"play", "pause"})
-                self.toolbar_actions["Play"].setEnabled(state != "play")
-                self.toolbar_actions["Pause"].setEnabled(state in {"play", "pause"})
-                self.toolbar_actions["Stop"].setEnabled(state in {"play", "pause"})
-                self.logic_workspace.set_play_state(state in {"play", "pause"})
-                self.statusBar().showMessage(
-                    {"play": "Viewport: PLAY", "pause": "Viewport: PAUSE", "edit": "Viewport: EDIT — cena restaurada"}[state]
-                )
-                self._log("INFO", {"play": "Play iniciado/retomado", "pause": "Play pausado", "edit": "Play finalizado; cena restaurada"}[state])
-            elif message.get("type") == "scene_snapshot":
-                self._scene_snapshot, restored_selection = self._play_session.consume_scene_snapshot(
-                    [deepcopy(item) for item in message.get("objects", [])]
-                )
-                if restored_selection is not None:
-                    self._selected_name = restored_selection
-                self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
-                self._refresh_hierarchy()
-                if self._selected_name in self._objects_by_name:
-                    self._update_inspector(self._selected_name)
-            elif message.get("type") == "runtime_objects":
-                values = message.get("objects", [])
-                previous_names = set(self._runtime_objects_by_name)
-                self._runtime_objects_by_name = {
-                    str(item.get("name")): deepcopy(item)
-                    for item in values if isinstance(item, dict) and item.get("name")
-                }
-                if set(self._runtime_objects_by_name) != previous_names:
-                    self._refresh_hierarchy()
-                if self._selected_name in self._runtime_objects_by_name:
-                    self._update_inspector(str(self._selected_name))
-                elif self._selected_name in previous_names and self._selected_name not in self._objects_by_name:
-                    self._selected_name = None
-                    self._clear_inspector_view()
-            elif message.get("type") == "viewport_mode":
-                state = "embutida" if message.get("embedded") else "em janela separada (fallback)"
-                self.statusBar().showMessage(f"Viewport {state}")
-            elif message.get("type") == "script_log":
-                self._log(str(message.get("level", "INFO")), str(message.get("message", "")))
-            elif message.get("type") == "logic_trace":
-                self.logic_workspace.apply_runtime_trace(dict(message))
-            elif message.get("type") == "logic_trace_clear":
-                self.logic_workspace.clear_runtime_trace()
-            elif message.get("type") == "animator_state":
-                object_name = str(message.get("name", ""))
-                self._runtime_animator_states[object_name] = dict(message)
-                if object_name == self._selected_name:
-                    state = str(message.get("state", "Nenhum"))
-                    self.animator_current_lbl.setText(state)
-                    dialog = self._animator_controller_dialog
-                    if dialog is not None:
-                        dialog.set_runtime_state(state, message.get("parameters"))
-            elif message.get("type") == "animation_event":
-                self._log(
-                    "INFO",
-                    f"Evento de animação: {message.get('name')} → {message.get('event')} "
-                    f"(frame {int(message.get('frame', 0)) + 1})",
-                )
-            elif message.get("type") == "attach_script":
-                self._attach_script(str(message.get("name", "")), Path(str(message.get("path", ""))))
-            elif message.get("type") == "stats":
-                command_stats = self._commands.stats()
-                self.profiler_label.setText(
-                    f"FPS: {message.get('fps', 0):.0f}\n"
-                    f"Objetos: {message.get('objects', 0)}\n"
-                    f"Modo: {message.get('mode', 'EDIT')} / {message.get('view', 'SCENE')}\n"
-                    f"Câmera: {message.get('camera', 'Editor')}\n"
-                    f"Jogador: {message.get('player') or '—'}\n"
-                    f"Zoom: {message.get('zoom', 1.0):.2f}\n"
-                    f"Spawn: {message.get('spawned', 0)} • Reuso: {message.get('reused', 0)} • "
-                    f"Pool: {message.get('pooled', 0)} • "
-                    f"Removidos: {message.get('destroyed', 0)}\n"
-                    f"IPC: {command_stats['sent']} enviados • {command_stats['coalesced']} unidos"
-                )
+            self._viewport_events.dispatch(message)
 
     def closeEvent(self, event) -> None:
         self._viewport_controller.shutdown()
