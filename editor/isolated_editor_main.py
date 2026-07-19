@@ -29,8 +29,8 @@ from editor.interface_smoke_test import InterfaceSmokeTest
 from editor.controllers.logic_assets import LogicAssetRepository
 from editor.isolated_viewport import run_viewport
 from editor.runtime.native_ui import normalize_ui, scene_item_to_ui, ui_to_scene_item
-from editor.runtime.play_session import EditorPlaySession
 from editor.runtime.viewport_process_controller import ViewportProcessController
+from editor.runtime.isolated_play_mode_controller import IsolatedPlayModeController
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from editor.widgets.component_picker import ComponentPickerDialog
@@ -129,7 +129,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._drag_history_snapshot: list[dict] | None = None
         self._snap_enabled = False
         self._runtime_playing = False
-        self._play_session = EditorPlaySession()
+        self._play_controller = IsolatedPlayModeController()
+        self._play_session = self._play_controller.session
         self._runtime_keys = {
             key: False for key in ("left", "right", "up", "down", "jump", "restart")
         }
@@ -1076,10 +1077,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._tool_action_group = group
 
     def _send_toolbar_command(self, message: dict) -> None:
-        starting_play = False
-        if self._play_session.is_running and message.get("type") in {
-            "new_scene", "load_scene", "reset_from_interface", "move_selected"
-        }:
+        command_type = str(message.get("type", ""))
+        if self._play_controller.blocks(command_type):
             self.statusBar().showMessage("Pare o Play Mode antes de alterar a cena")
             return
         if message.get("type") == "new_scene":
@@ -1100,44 +1099,38 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             if self._selected_name in self._objects_by_name:
                 self._update_inspector(self._selected_name)
             return
-        if message.get("type") == "play":
-            resuming_play = self._play_session.state == "pause"
-            play_snapshot = self._play_session.begin(self._scene_snapshot, self._selected_name)
-            self._runtime_playing = True
-            self._set_play_mode_editing_locked(True)
-            self.logic_workspace.set_play_state(True)
-            self.toolbar_actions["Play"].setEnabled(False)
-            self.toolbar_actions["Pause"].setEnabled(False)
-            self.toolbar_actions["Stop"].setEnabled(True)
-            self.viewport_tabs.setCurrentIndex(1)
-            if resuming_play:
-                self._log("INFO", "Retomando Play pausado")
-            else:
-                starting_play = True
-                logic_directory = Path.cwd() / "Assets" / "Logic"
-                logic_assets = list(logic_directory.rglob("*.zlogic")) if logic_directory.exists() else []
-                self._log("INFO", f"Play solicitado com {len(logic_assets)} Logic Graph(s); scripts Python desativados")
-                self._commands.put({"type": "scene_snapshot", "objects": deepcopy(play_snapshot)})
-                audio_sources = {
-                    obj["name"]: deepcopy(obj["audio"])
-                    for obj in play_snapshot
-                    if isinstance(obj.get("audio"), dict)
-                }
-                enabled_audio = [name for name, audio in audio_sources.items() if audio.get("autoplay") and audio.get("path")]
-                self._log("INFO", f"Play enviando {len(audio_sources)} Audio Source(s); {len(enabled_audio)} configurado(s) para iniciar")
-                scene_blackboard = deepcopy((self._scene_document or {}).get("blackboard", {}))
-                message = {**message, "audio_sources": audio_sources, "scene_blackboard": scene_blackboard}
-        elif message.get("type") == "stop":
-            self.viewport_tabs.setCurrentIndex(0)
+        if command_type in {"play", "pause", "stop"}:
+            plan = self._play_controller.plan(
+                message,
+                scene_objects=self._scene_snapshot,
+                selected_name=self._selected_name,
+                scene_blackboard=(self._scene_document or {}).get("blackboard", {}),
+            )
+            if command_type == "play":
+                self._runtime_playing = True
+                self._set_play_mode_editing_locked(True)
+                self.logic_workspace.set_play_state(True)
+                self.toolbar_actions["Play"].setEnabled(False)
+                self.toolbar_actions["Pause"].setEnabled(False)
+                self.toolbar_actions["Stop"].setEnabled(True)
+                self.viewport_tabs.setCurrentIndex(1)
+                if plan.resuming:
+                    self._log("INFO", "Retomando Play pausado")
+                else:
+                    logic_directory = Path.cwd() / "Assets" / "Logic"
+                    logic_assets = list(logic_directory.rglob("*.zlogic")) if logic_directory.exists() else []
+                    self._log("INFO", f"Play solicitado com {len(logic_assets)} Logic Graph(s); scripts Python desativados")
+                    audio_sources = plan.audio_sources or {}
+                    enabled_audio = [name for name, audio in audio_sources.items() if audio.get("autoplay") and audio.get("path")]
+                    self._log("INFO", f"Play enviando {len(audio_sources)} Audio Source(s); {len(enabled_audio)} configurado(s) para iniciar")
+            elif command_type == "stop":
+                self.viewport_tabs.setCurrentIndex(0)
+            for command in plan.commands:
+                self._commands.put(command)
+            return
         if message.get("type") == "move_selected" and self._selected_name is not None:
             self._record_history()
         self._commands.put(message)
-        if message.get("type") == "play" and starting_play:
-            # Comando separado: não depende do carregamento ou da presença de scripts.
-            self._commands.put({"type": "start_play_audio", "audio_sources": audio_sources})
-        elif message.get("type") == "stop":
-            # Garante a interrupção mesmo que o estado de scripts já tenha mudado.
-            self._commands.put({"type": "stop_all_audio"})
 
     def _set_play_mode_editing_locked(self, locked: bool) -> None:
         """Mantém a inspeção visível, mas impede alterações na cena em execução."""
