@@ -31,6 +31,7 @@ from editor.isolated_viewport import run_viewport
 from editor.runtime.native_ui import normalize_ui, scene_item_to_ui, ui_to_scene_item
 from editor.runtime.viewport_process_controller import ViewportProcessController
 from editor.runtime.isolated_play_mode_controller import IsolatedPlayModeController
+from editor.runtime.scene_selection_controller import SceneSelectionController
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from editor.widgets.component_picker import ComponentPickerDialog
@@ -107,6 +108,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._viewport_process = self._viewport_controller.process
         self._commands = self._viewport_controller.commands
         self._events = self._viewport_controller.events
+        self._scene_controller = SceneSelectionController(self._commands)
         self._pending_viewport_size: tuple[int, int] | None = None
         self._last_viewport_size_sent: tuple[int, int] | None = None
         self._viewport_resize_timer = QTimer(self)
@@ -176,7 +178,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             target.setAcceptDrops(True)
             target.installEventFilter(self)
         QApplication.instance().installEventFilter(self)
-        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
         self._event_timer = QTimer(self)
         self._event_timer.timeout.connect(self._read_viewport_events)
         self._event_timer.start(33)
@@ -511,8 +513,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         scripts = obj.setdefault("scripts", [])
         scripts.append(script_path)
         self._component_expanded[f"script:{script_path}"] = True
-        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
-        self._commands.put({"type": "select_object", "name": object_name})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
+        self._scene_controller.select(object_name)
         self._selected_name = object_name
         self._update_inspector(object_name)
         self._log("INFO", f"Script anexado em {object_name}: {script_path}")
@@ -536,7 +538,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             scripts[idx] = new_path
         else:
             scripts.append(new_path)
-        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
         self._update_inspector(self._selected_name)
         self._log("INFO", f"Script alterado de {Path(old_path).name} para {Path(new_path).name}")
 
@@ -550,7 +552,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             scripts.remove(script_path)
         if not scripts:
             obj.pop("scripts", None)
-        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
         self._update_inspector(self._selected_name)
         self._log("INFO", f"Script removido: {Path(script_path).name}")
 
@@ -563,7 +565,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             return
         self._record_history()
         properties[key] = value
-        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
         self._log("INFO", f"{self._selected_name}: '{key}' = {value} em {Path(script_path).name}")
 
     def _remove_all_scripts(self) -> None:
@@ -572,7 +574,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._record_history()
         obj = self._objects_by_name[self._selected_name]
         obj.pop("scripts", None)
-        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
         self._update_inspector(self._selected_name)
         self._log("INFO", f"Todos os scripts removidos de {self._selected_name}")
 
@@ -953,8 +955,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._objects_by_name[obj["name"]] = obj
         self._selected_name = obj["name"]
         self._refresh_hierarchy()
-        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
-        self._commands.put({"type": "select_object", "name": obj["name"]})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
+        self._scene_controller.select(obj["name"])
         self._update_inspector(obj["name"])
         self._log("INFO", f"Prefab adicionado: {obj['name']}")
 
@@ -1095,7 +1097,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self._scene_snapshot = deepcopy(self._initial_scene_snapshot)
             self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
             self._refresh_hierarchy()
-            self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+            self._scene_controller.publish_snapshot(self._scene_snapshot)
             if self._selected_name in self._objects_by_name:
                 self._update_inspector(self._selected_name)
             return
@@ -1199,9 +1201,9 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if self._selected_name not in self._objects_by_name:
             self._selected_name = None
         self._refresh_hierarchy()
-        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
         if self._selected_name is not None:
-            self._commands.put({"type": "select_object", "name": self._selected_name})
+            self._scene_controller.select(self._selected_name)
             self._update_inspector(self._selected_name)
 
     def _undo(self) -> None:
@@ -1222,7 +1224,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._current_scene_path = None
         self._selected_name = None
         self._refresh_hierarchy()
-        self._commands.put({"type": "scene_snapshot", "objects": []})
+        self._scene_controller.publish_snapshot([])
         self.statusBar().showMessage("Nova cena criada")
         self._log("INFO", "Nova cena criada")
 
@@ -1262,8 +1264,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._objects_by_name[name] = obj
         self._selected_name = name
         self._refresh_hierarchy()
-        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
-        self._commands.put({"type": "select_object", "name": name})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
+        self._scene_controller.select(name)
         self._update_inspector(name)
         self._log("INFO", f"Objeto criado: {name}")
 
@@ -1460,7 +1462,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._current_scene_path = Path(filename)
         self._selected_name = None
         self._refresh_hierarchy()
-        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
         self.statusBar().showMessage(f"Cena aberta: {filename}")
         self._log("INFO", f"Cena aberta: {filename}")
 
@@ -1511,8 +1513,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         if self._selected_name == old_name:
             self._selected_name = new_name
         self._refresh_hierarchy()
-        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
-        self._commands.put({"type": "select_object", "name": new_name})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
+        self._scene_controller.select(new_name)
         self._update_inspector(new_name)
 
     def _delete_object(self, name: str) -> None:
@@ -1531,7 +1533,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             self.script_containers.clear()
             self._clear_inspector_view()
         self._refresh_hierarchy()
-        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
 
     def _duplicate_selected(self) -> None:
         if self._play_session.is_running:
@@ -1548,8 +1550,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._objects_by_name[duplicate["name"]] = duplicate
         self._selected_name = duplicate["name"]
         self._refresh_hierarchy()
-        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
-        self._commands.put({"type": "select_object", "name": self._selected_name})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
+        self._scene_controller.select(self._selected_name)
         self._update_inspector(self._selected_name)
 
     def _refresh_hierarchy(self) -> None:
@@ -1765,7 +1767,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         obj["texture"] = self.sprite_texture_field.text().strip()
         obj["render_layer"] = self.sprite_layer_combo.currentText()
         obj["sort_order"] = int(self.sprite_order_field.value())
-        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
 
     def _toggle_audio_component(self, checked: bool) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
@@ -1776,7 +1778,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             obj.setdefault("audio", {"path": "", "volume": 1.0, "loop": False, "autoplay": False})
         else:
             obj.pop("audio", None)
-        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
         self._update_inspector(self._selected_name)
 
     def _get_available_audio_files(self) -> list[str]:
@@ -1809,7 +1811,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "loop": self.audio_loop_field.isChecked(),
             "autoplay": self.audio_autoplay_field.isChecked(),
         })
-        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
 
     def _test_selected_audio(self) -> None:
         if self._selected_name not in self._objects_by_name:
@@ -1833,7 +1835,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             obj.setdefault("rigidbody", {"mass": 1.0, "gravity_scale": 1.0, "use_gravity": True, "is_kinematic": False})
         else:
             obj.pop("rigidbody", None)
-        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
         self._update_inspector(self._selected_name)
 
     def _toggle_collider_component(self, checked: bool) -> None:
@@ -1845,7 +1847,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             obj.setdefault("collider", {"type": "box", "is_trigger": False})
         else:
             obj.pop("collider", None)
-        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
         self._update_inspector(self._selected_name)
 
     def _toggle_animator_component(self, checked: bool) -> None:
@@ -1857,7 +1859,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             obj.setdefault("animator", {"active_clip": "Idle", "speed": 1.0, "clips": {"Idle": self._default_animation_clip()}})
         else:
             obj.pop("animator", None)
-        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
         self._update_inspector(self._selected_name)
 
     @staticmethod
@@ -1958,7 +1960,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             animator.pop("controller_path", None)
             animator.pop("controller", None)
             animator.pop("parameters", None)
-            self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+            self._scene_controller.publish_snapshot(self._scene_snapshot)
             self._update_animator_controller_summary()
 
     def _apply_animator_controller_path(self, path: Path, target_name: str) -> None:
@@ -1978,7 +1980,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         animator["parameters"] = {
             name: parameter["default"] for name, parameter in controller["parameters"].items()
         }
-        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
         if target_name == self._selected_name:
             self._refresh_animator_controllers(relative)
             self._update_inspector(target_name)
@@ -2150,8 +2152,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._animation_asset_dirty = False
         self._animation_bound_key = (str(obj.get("id", object_name)), str(asset["name"]))
         self._refresh_hierarchy()
-        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
-        self._commands.put({"type": "select_object", "name": object_name})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
+        self._scene_controller.select(object_name)
         self._update_inspector(object_name)
         self._update_animation_asset_status()
         self._log("INFO", f"Animação '{asset['name']}' aplicada em {object_name}")
@@ -2306,7 +2308,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         relative_path = self._project_relative_path(path) if path else ""
         clips[str(asset["name"])] = animation_asset_to_clip(asset, relative_path)
         animator["active_clip"] = str(asset["name"])
-        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
         self._update_inspector(self._selected_name)
 
     def _project_relative_path(self, path: Path | None) -> str:
@@ -2414,7 +2416,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._record_history()
         clips[name] = self._default_animation_clip()
         animator["active_clip"] = name
-        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
         self._update_inspector(self._selected_name)
 
     def _remove_animation_clip(self) -> None:
@@ -2430,7 +2432,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._record_history()
         clips.pop(name)
         animator["active_clip"] = next(iter(clips))
-        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
         self._update_inspector(self._selected_name)
 
     def _tick_animation_preview(self) -> None:
@@ -2524,7 +2526,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "loop": self.animator_loop_field.isChecked(),
         })
         clip["frames"] = list(range(clip["start_frame"], clip["start_frame"] + clip["frame_count"]))
-        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
         self._update_inspector(self._selected_name)
 
     def _toggle_camera_component(self, checked: bool) -> None:
@@ -2540,7 +2542,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         else:
             obj.pop("camera", None)
             obj["component_names"] = [name for name in obj.get("component_names", []) if name != "Camera2D"]
-        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
         self._update_inspector(self._selected_name)
 
     def _send_inspector_camera(self) -> None:
@@ -2559,7 +2561,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "zoom": float(self.camera_zoom_field.value()),
             "follow_target": "" if follow == "Nenhum" else follow,
         })
-        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
 
     def _choose_camera_color(self) -> None:
         if self._selected_name not in self._objects_by_name:
@@ -2574,7 +2576,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._record_history()
         camera["background_color"] = [color.red(), color.green(), color.blue()]
         self.camera_color_button.setStyleSheet(f"background: rgb({color.red()}, {color.green()}, {color.blue()});")
-        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
 
     def _toggle_ui_visibility(self, checked: bool) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
@@ -2584,7 +2586,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             return
         self._record_history()
         ui["visible"] = bool(checked)
-        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
 
     def _delete_ui_component(self) -> None:
         if self._selected_name not in self._objects_by_name:
@@ -2594,7 +2596,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             return
         self._record_history()
         obj.pop("ui", None)
-        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
         self._update_inspector(self._selected_name)
 
     def _choose_ui_color(self) -> None:
@@ -2610,7 +2612,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         self._record_history()
         self._objects_by_name[self._selected_name]["ui"]["color"] = [color.red(), color.green(), color.blue()]
         self.ui_color_button.setStyleSheet(f"background: rgb({color.red()}, {color.green()}, {color.blue()});")
-        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
 
     def _choose_ui_image(self) -> None:
         if self._selected_name not in self._objects_by_name:
@@ -2647,7 +2649,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
             "target": "" if self.ui_target_combo.currentText() == "Este objeto" else self.ui_target_combo.currentText(),
         })
         obj["ui"] = ui
-        self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
 
     def _ensure_canvas(self) -> None:
         if any((normalize_ui(obj.get("ui")) or {}).get("type") == "canvas" for obj in self._scene_snapshot):
@@ -2732,8 +2734,8 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
         }.get(component, "ui" if component.startswith("ui_") else None)
         if card_key is not None:
             self._component_expanded[card_key] = True
-        self._commands.put({"type": "scene_snapshot", "objects": self._scene_snapshot})
-        self._commands.put({"type": "select_object", "name": self._selected_name})
+        self._scene_controller.publish_snapshot(self._scene_snapshot)
+        self._scene_controller.select(self._selected_name)
         self._update_inspector(self._selected_name)
         self._log("INFO", f"Componente adicionado em {self._selected_name}: {component}")
 
@@ -2758,7 +2760,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                 "active_clip": "Idle", "speed": 1.0,
                 "clips": {"Idle": self._default_animation_clip()},
             }
-            self._commands.put({"type": "scene_snapshot", "objects": deepcopy(self._scene_snapshot)})
+            self._scene_controller.publish_snapshot(self._scene_snapshot)
             self._update_inspector(object_name)
             self._log("INFO", f"Animator vazio adicionado em {object_name}")
             return
@@ -2805,7 +2807,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
     def _select_hierarchy_item(self, item: QTreeWidgetItem) -> None:
         name = self._hierarchy_item_name(item)
         if name in self._objects_by_name or (self._runtime_playing and name in self._runtime_objects_by_name):
-            self._commands.put({"type": "select_object", "name": name})
+            self._scene_controller.select(name)
             self._selected_name = name
             self._update_inspector(name)
             source = "Runtime" if name in self._runtime_objects_by_name and name not in self._objects_by_name else "Interface"
@@ -3237,7 +3239,7 @@ class IsolatedEditorWindow(InterfaceSmokeTest):
                     self._commands.put({"type": "runtime_input", "keys": dict(self._runtime_keys)})
                     self._refresh_hierarchy()
                     if self._selected_name in self._objects_by_name:
-                        self._commands.put({"type": "select_object", "name": self._selected_name})
+                        self._scene_controller.select(self._selected_name)
                         self._update_inspector(self._selected_name)
                 self._runtime_playing = self._play_session.is_running
                 self._set_play_mode_editing_locked(state in {"play", "pause"})
