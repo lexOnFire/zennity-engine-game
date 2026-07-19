@@ -126,7 +126,7 @@ def test_logic_workspace_supports_breakpoints_continue_and_single_step():
     assert 'self.debug_command.emit("continue")' in editor
     assert 'self.debug_command.emit("step")' in editor
     assert "self.logic_workspace.debug_command.connect" in bridge
-    assert 'command.get("type") == "logic_debug_command"' in viewport
+    assert 'command_type == "logic_debug_command"' in viewport
     assert "runtime.continue_execution()" in viewport
     assert "runtime.step()" in viewport
     assert "def continue_execution" in runtime
@@ -145,7 +145,7 @@ def test_logic_debugger_exposes_conditions_watches_highlight_and_restart():
     assert 'self.debug_command.emit("restart")' in editor
     assert "_update_breakpoint_condition" in editor
     assert "_refresh_watch_values" in editor
-    assert 'debug_action == "restart"' in viewport
+    assert 'action == "restart"' in viewport
     assert '"breakpoint_conditions"' in bridge
     assert '"watches"' in bridge
     assert "def _evaluate_debug_expression" in runtime
@@ -223,7 +223,7 @@ def test_gameplay_event_library_and_search_are_available():
 
 def test_visual_logic_is_cleanly_managed_from_inspector():
     interface = _source("editor/interface_smoke_test.py")
-    main = _source("editor/isolated_editor_main.py")
+    main = _source("editor/isolated_editor_main.py") + _source("editor/inspector_view_renderer.py")
     inspector = _source("editor/inspector_controller.py")
     picker = _source("editor/widgets/logic_graph_picker.py")
     components = _source("editor/widgets/component_picker.py")
@@ -411,7 +411,7 @@ def test_logic_workspace_controls_named_movements_and_debugs_runtime_objects():
     runtime = _source("engine/logic/runtime.py")
     editor = _source("editor/widgets/logic_graph_editor.py")
     viewport = _source("editor/isolated_viewport.py")
-    main = _source("editor/isolated_editor_main.py")
+    main = _source("editor/isolated_editor_main.py") + _source("editor/inspector_view_renderer.py")
     interface = _source("editor/interface_smoke_test.py")
     recipes = _source("engine/logic/recipes.py")
     for node_type in (
@@ -438,3 +438,4 @@ def test_logic_workspace_controls_named_movements_and_debugs_runtime_objects():
     assert "Movimentos ativos" in main
     assert "Criado por:" in main and "Grafo:" in main
     assert "Controlado por:" in main
+
