@@ -97,6 +97,13 @@ class ViewportRenderer:
         selection_visible: bool = True,
     ) -> None:
         """Draw only the selection outline and its bounding box."""
+        has_sprite = any(
+            getattr(component, "type_name", type(component).__name__) == "Image"
+            and bool(str(getattr(component, "sprite_path", "") or "").strip())
+            for component in getattr(selected, "components", ())
+        ) if selected is not None else False
+        if has_sprite and active_tool_name.lower() != "scale":
+            selection_visible = False
         if selected is None or is_playing or not selection_visible:
             return
         self.outline_renderer.draw(painter, selected, camera.world_to_viewport)
