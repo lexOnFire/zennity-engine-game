@@ -37,31 +37,19 @@ class _FakeRect:
                          self.width + dw, self.height + dh)
 
 
-class _FakeTextSurf:
-    def get_width(self):  return 80
-    def get_height(self): return 20
-
-
 class _FakeFont:
     def size(self, text): return (80, 20)
-    def render(self, text, aa, color): return _FakeTextSurf()
+    def render(self, text, aa, color):
+        import pygame
+        return pygame.Surface((80, 20))
 
 
-class _FakeSurface:
-    SRCALPHA = 0x00010000
-    def __init__(self, size=(640, 480)):
-        self._w, self._h = size
-        self.blit = MagicMock()
-        self.fill = MagicMock()
-    def get_rect(self):
-        return _FakeRect(0, 0, self._w, self._h)
-    def get_width(self):  return self._w
-    def get_height(self): return self._h
+
 
 
 if "pygame" not in sys.modules:
     _pg              = ModuleType("pygame")
-    _pg.Surface      = _FakeSurface
+    _pg.Surface      = None
     _pg.Rect         = _FakeRect
     _pg.MOUSEMOTION      = MOUSEMOTION
     _pg.MOUSEBUTTONDOWN  = MOUSEBUTTONDOWN
@@ -106,7 +94,8 @@ def reset_draw(monkeypatch):
 
 
 def _screen(w=640, h=480):
-    return _FakeSurface((w, h))
+    from conftest import SurfaceProxy
+    return SurfaceProxy((w, h))
 
 
 def _btn(**kw):
@@ -362,20 +351,18 @@ class TestDrawSelf:
 
     def test_screen_blit_called_for_text(self):
         screen = _screen()
-        b = _btn(x=0, y=0, width=120, height=40)
+        b = _btn()
         b._draw_self(screen)
-        screen.blit.assert_called_once()
+        screen.blit_mock.assert_called_once()
 
     def test_pressed_text_offset_y(self):
         """Quando pressionado, o texto deve ser deslocado 1px para baixo."""
         screen = _screen()
-        b = _btn(x=0, y=0, width=120, height=40)
-        # sem press
+        b = _btn()
         b._draw_self(screen)
-        ty_normal = screen.blit.call_args[0][1][1]
-        screen.blit.reset_mock()
-        # com press
+        ty_normal = screen.blit_mock.call_args[0][1][1]
+        
         b._pressed = True
         b._draw_self(screen)
-        ty_pressed = screen.blit.call_args[0][1][1]
+        ty_pressed = screen.blit_mock.call_args[0][1][1]
         assert ty_pressed == ty_normal + 1
