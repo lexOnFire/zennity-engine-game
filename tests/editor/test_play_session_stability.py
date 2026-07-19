@@ -118,7 +118,7 @@ def test_editor_and_viewport_integrate_session_lock_and_audio_pause() -> None:
     editor_source = open("editor/isolated_editor_main.py", encoding="utf-8").read()
     viewport_source = open("editor/isolated_viewport.py", encoding="utf-8").read()
 
-    assert "self._play_session.begin" in editor_source
+    assert "self._play_controller.plan" in editor_source
     assert "self._play_session.finish" in editor_source
     assert "self._set_play_mode_editing_locked(True)" in editor_source
     assert "set_channels_paused(audio_channels, paused)" in viewport_source
