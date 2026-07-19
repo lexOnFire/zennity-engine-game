@@ -813,7 +813,6 @@ class Phase1ViewportWidget(ViewportWidget):
     # ── Ciclo de Renderização (paintGL) ───────────────────────────────────────
 
     def paintGL(self) -> None:
-        self._frame_invalidation.consume()
         context = self.frame_preparation_adapter.create_context()
         if context is None:
             return
