@@ -1,0 +1,1585 @@
+============================= test session starts ==============================
+platform linux -- Python 3.10.20, pytest-9.1.1, pluggy-1.6.0 -- /opt/hostedtoolcache/Python/3.10.20/x64/bin/python
+cachedir: .pytest_cache
+rootdir: /home/runner/work/zennity-engine-game/zennity-engine-game
+configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)
+testpaths: tests
+plugins: cov-7.1.0, env-1.6.0
+collecting ... collected 1432 items / 57 errors / 1 skipped
+
+==================================== ERRORS ====================================
+____ ERROR collecting tests/animation/test_animation_runtime_foundation.py _____
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/animation/test_animation_runtime_foundation.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/animation/test_animation_runtime_foundation.py:6: in <module>
+    from editor_legacy.editor_2d import Editor2DScene
+editor_legacy/__init__.py:1: in <module>
+    from .scene import EditorScene
+editor_legacy/scene.py:30: in <module>
+    from engine.core import Scene
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+______ ERROR collecting tests/animation/test_animator_controller_demo.py _______
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/animation/test_animator_controller_demo.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/animation/test_animator_controller_demo.py:9: in <module>
+    from engine.build.runtime_scene_loader import load_objects
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+_____________ ERROR collecting tests/assets/test_asset_database.py _____________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/assets/test_asset_database.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/assets/test_asset_database.py:6: in <module>
+    from engine.assets import AssetDatabase, AssetType
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+_____________ ERROR collecting tests/assets/test_asset_importer.py _____________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/assets/test_asset_importer.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/assets/test_asset_importer.py:3: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+______ ERROR collecting tests/behavior/test_behavior_controller_asset.py _______
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/behavior/test_behavior_controller_asset.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/behavior/test_behavior_controller_asset.py:5: in <module>
+    from engine.behavior.controller_asset import (
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+____________ ERROR collecting tests/beta/test_beta_stabilization.py ____________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/beta/test_beta_stabilization.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/beta/test_beta_stabilization.py:8: in <module>
+    from editor_legacy.editor_2d import Editor2DScene
+editor_legacy/__init__.py:1: in <module>
+    from .scene import EditorScene
+editor_legacy/scene.py:30: in <module>
+    from engine.core import Scene
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+________ ERROR collecting tests/components/test_component_management.py ________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/components/test_component_management.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/components/test_component_management.py:6: in <module>
+    from editor.premium_panels import RealInspectorPanel
+editor/premium_panels.py:21: in <module>
+    from editor.inspector import InspectorPluginRegistry, inspector_plugin_registry
+editor/inspector/__init__.py:3: in <module>
+    from editor.inspector.plugin import InspectorPlugin
+editor/inspector/plugin.py:7: in <module>
+    from editor.runtime.command_manager import CommandManager, FunctionCommand
+editor/runtime/__init__.py:8: in <module>
+    from editor.runtime.editor_context import EditorContext
+editor/runtime/editor_context.py:9: in <module>
+    from engine.runtime import RuntimeManager
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+__________ ERROR collecting tests/components/test_component_system.py __________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/components/test_component_system.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/components/test_component_system.py:7: in <module>
+    from editor.premium_panels import RealInspectorPanel
+editor/premium_panels.py:21: in <module>
+    from editor.inspector import InspectorPluginRegistry, inspector_plugin_registry
+editor/inspector/__init__.py:28: in <module>
+    inspector_plugin_registry: InspectorPluginRegistry = _get_registry()  # type: ignore[assignment]
+editor/inspector/__init__.py:24: in _get_registry
+    _registry = _build_registry()
+editor/inspector/__init__.py:11: in _build_registry
+    from editor.inspector.asset_component_plugins import register_asset_component_plugins
+editor/inspector/asset_component_plugins.py:12: in <module>
+    from editor.runtime.editor2d_sprite_no_border_patch import apply_editor2d_sprite_no_border_patch
+editor/runtime/__init__.py:8: in <module>
+    from editor.runtime.editor_context import EditorContext
+editor/runtime/editor_context.py:9: in <module>
+    from engine.runtime import RuntimeManager
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+______ ERROR collecting tests/components/test_inspector_plugin_system.py _______
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/components/test_inspector_plugin_system.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/components/test_inspector_plugin_system.py:9: in <module>
+    from editor.inspector import InspectorPlugin, InspectorPluginRegistry, inspector_plugin_registry
+editor/inspector/__init__.py:28: in <module>
+    inspector_plugin_registry: InspectorPluginRegistry = _get_registry()  # type: ignore[assignment]
+editor/inspector/__init__.py:24: in _get_registry
+    _registry = _build_registry()
+editor/inspector/__init__.py:11: in _build_registry
+    from editor.inspector.asset_component_plugins import register_asset_component_plugins
+editor/inspector/asset_component_plugins.py:12: in <module>
+    from editor.runtime.editor2d_sprite_no_border_patch import apply_editor2d_sprite_no_border_patch
+editor/runtime/__init__.py:8: in <module>
+    from editor.runtime.editor_context import EditorContext
+editor/runtime/editor_context.py:9: in <module>
+    from engine.runtime import RuntimeManager
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+___ ERROR collecting tests/editor/test_asset_component_inspector_plugins.py ____
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/editor/test_asset_component_inspector_plugins.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/editor/test_asset_component_inspector_plugins.py:6: in <module>
+    from editor.inspector import inspector_plugin_registry
+editor/inspector/__init__.py:28: in <module>
+    inspector_plugin_registry: InspectorPluginRegistry = _get_registry()  # type: ignore[assignment]
+editor/inspector/__init__.py:24: in _get_registry
+    _registry = _build_registry()
+editor/inspector/__init__.py:11: in _build_registry
+    from editor.inspector.asset_component_plugins import register_asset_component_plugins
+editor/inspector/asset_component_plugins.py:12: in <module>
+    from editor.runtime.editor2d_sprite_no_border_patch import apply_editor2d_sprite_no_border_patch
+editor/runtime/__init__.py:8: in <module>
+    from editor.runtime.editor_context import EditorContext
+editor/runtime/editor_context.py:9: in <module>
+    from engine.runtime import RuntimeManager
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+____________ ERROR collecting tests/editor/test_desktop_package.py _____________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/editor/test_desktop_package.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/editor/test_desktop_package.py:3: in <module>
+    from engine.build import (
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+_____________ ERROR collecting tests/editor/test_export_config.py ______________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/editor/test_export_config.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/editor/test_export_config.py:3: in <module>
+    from engine.build.build_config import BuildConfig, BuildTarget
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+____________ ERROR collecting tests/editor/test_export_profiles.py _____________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/editor/test_export_profiles.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/editor/test_export_profiles.py:3: in <module>
+    from engine.build import BuildConfig, BuildTarget, ExportProfile, ExportProfileManager
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+_________ ERROR collecting tests/editor/test_hierarchy_improvements.py _________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/editor/test_hierarchy_improvements.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/editor/test_hierarchy_improvements.py:11: in <module>
+    from editor.phase1_editor import ZennityPhase1Editor
+editor/phase1_editor.py:10: in <module>
+    from editor.premium_editor import (
+editor/premium_editor.py:28: in <module>
+    from editor.assets import AssetBrowserModel, AssetBrowserViewModel, ProjectBrowserService
+editor/assets/__init__.py:1: in <module>
+    from editor.assets.asset_browser_model import AssetBrowserItem, AssetBrowserModel
+editor/assets/asset_browser_model.py:6: in <module>
+    from engine.assets import AssetDatabase, AssetInfo
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+__________ ERROR collecting tests/editor/test_inspector_ux_polish.py ___________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/editor/test_inspector_ux_polish.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/editor/test_inspector_ux_polish.py:14: in <module>
+    from editor.widgets.inspector_dock import InspectorDock
+editor/widgets/inspector_dock.py:5: in <module>
+    from editor.premium_panels import RealInspectorPanel
+editor/premium_panels.py:21: in <module>
+    from editor.inspector import InspectorPluginRegistry, inspector_plugin_registry
+editor/inspector/__init__.py:28: in <module>
+    inspector_plugin_registry: InspectorPluginRegistry = _get_registry()  # type: ignore[assignment]
+editor/inspector/__init__.py:24: in _get_registry
+    _registry = _build_registry()
+editor/inspector/__init__.py:11: in _build_registry
+    from editor.inspector.asset_component_plugins import register_asset_component_plugins
+editor/inspector/asset_component_plugins.py:12: in <module>
+    from editor.runtime.editor2d_sprite_no_border_patch import apply_editor2d_sprite_no_border_patch
+editor/runtime/__init__.py:8: in <module>
+    from editor.runtime.editor_context import EditorContext
+editor/runtime/editor_context.py:9: in <module>
+    from engine.runtime import RuntimeManager
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+____ ERROR collecting tests/editor/test_isolated_animation_asset_runtime.py ____
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/editor/test_isolated_animation_asset_runtime.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/editor/test_isolated_animation_asset_runtime.py:3: in <module>
+    from editor.isolated_viewport import hydrate_animation_asset_clips, hydrate_animator_controllers
+editor/isolated_viewport.py:17: in <module>
+    from editor.runtime.audio_playback_state import set_channels_paused
+editor/runtime/__init__.py:8: in <module>
+    from editor.runtime.editor_context import EditorContext
+editor/runtime/editor_context.py:9: in <module>
+    from engine.runtime import RuntimeManager
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+_______ ERROR collecting tests/editor/test_isolated_behavior_runtime.py ________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/editor/test_isolated_behavior_runtime.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/editor/test_isolated_behavior_runtime.py:3: in <module>
+    from editor.isolated_viewport import PlayScriptAPI, hydrate_behavior_controllers
+editor/isolated_viewport.py:17: in <module>
+    from editor.runtime.audio_playback_state import set_channels_paused
+editor/runtime/__init__.py:8: in <module>
+    from editor.runtime.editor_context import EditorContext
+editor/runtime/editor_context.py:9: in <module>
+    from engine.runtime import RuntimeManager
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+_______ ERROR collecting tests/editor/test_isolated_script_templates.py ________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/editor/test_isolated_script_templates.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/editor/test_isolated_script_templates.py:5: in <module>
+    from editor.isolated_viewport import PlayScriptAPI
+editor/isolated_viewport.py:17: in <module>
+    from editor.runtime.audio_playback_state import set_channels_paused
+editor/runtime/__init__.py:8: in <module>
+    from editor.runtime.editor_context import EditorContext
+editor/runtime/editor_context.py:9: in <module>
+    from engine.runtime import RuntimeManager
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+_______ ERROR collecting tests/editor/test_isolated_sprite_rendering.py ________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/editor/test_isolated_sprite_rendering.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/editor/test_isolated_sprite_rendering.py:8: in <module>
+    from editor.runtime.sprite_rendering import (
+editor/runtime/__init__.py:8: in <module>
+    from editor.runtime.editor_context import EditorContext
+editor/runtime/editor_context.py:9: in <module>
+    from engine.runtime import RuntimeManager
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+________ ERROR collecting tests/editor/test_native_ui_editor_bridge.py _________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/editor/test_native_ui_editor_bridge.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/editor/test_native_ui_editor_bridge.py:8: in <module>
+    from editor.runtime.native_ui import NativeUIRenderer, scene_item_to_ui, ui_to_scene_item
+editor/runtime/__init__.py:8: in <module>
+    from editor.runtime.editor_context import EditorContext
+editor/runtime/editor_context.py:9: in <module>
+    from engine.runtime import RuntimeManager
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+_________ ERROR collecting tests/editor/test_phase1_editor_context.py __________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/editor/test_phase1_editor_context.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/editor/test_phase1_editor_context.py:17: in <module>
+    from editor.phase1_editor import ZennityPhase1Editor
+editor/phase1_editor.py:10: in <module>
+    from editor.premium_editor import (
+editor/premium_editor.py:28: in <module>
+    from editor.assets import AssetBrowserModel, AssetBrowserViewModel, ProjectBrowserService
+editor/assets/__init__.py:1: in <module>
+    from editor.assets.asset_browser_model import AssetBrowserItem, AssetBrowserModel
+editor/assets/asset_browser_model.py:6: in <module>
+    from engine.assets import AssetDatabase, AssetInfo
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+____________ ERROR collecting tests/editor/test_phase1_inspector.py ____________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/editor/test_phase1_inspector.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/editor/test_phase1_inspector.py:4: in <module>
+    from editor.widgets.inspector_dock import InspectorDock
+editor/widgets/inspector_dock.py:5: in <module>
+    from editor.premium_panels import RealInspectorPanel
+editor/premium_panels.py:21: in <module>
+    from editor.inspector import InspectorPluginRegistry, inspector_plugin_registry
+editor/inspector/__init__.py:28: in <module>
+    inspector_plugin_registry: InspectorPluginRegistry = _get_registry()  # type: ignore[assignment]
+editor/inspector/__init__.py:24: in _get_registry
+    _registry = _build_registry()
+editor/inspector/__init__.py:11: in _build_registry
+    from editor.inspector.asset_component_plugins import register_asset_component_plugins
+editor/inspector/asset_component_plugins.py:12: in <module>
+    from editor.runtime.editor2d_sprite_no_border_patch import apply_editor2d_sprite_no_border_patch
+editor/runtime/__init__.py:8: in <module>
+    from editor.runtime.editor_context import EditorContext
+editor/runtime/editor_context.py:9: in <module>
+    from engine.runtime import RuntimeManager
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+___________ ERROR collecting tests/editor/test_phase1_rotate_tool.py ___________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/editor/test_phase1_rotate_tool.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/editor/test_phase1_rotate_tool.py:26: in <module>
+    from editor.phase1_editor import ZennityPhase1Editor
+editor/phase1_editor.py:10: in <module>
+    from editor.premium_editor import (
+editor/premium_editor.py:28: in <module>
+    from editor.assets import AssetBrowserModel, AssetBrowserViewModel, ProjectBrowserService
+editor/assets/__init__.py:1: in <module>
+    from editor.assets.asset_browser_model import AssetBrowserItem, AssetBrowserModel
+editor/assets/asset_browser_model.py:6: in <module>
+    from engine.assets import AssetDatabase, AssetInfo
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+___________ ERROR collecting tests/editor/test_phase1_scale_tool.py ____________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/editor/test_phase1_scale_tool.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/editor/test_phase1_scale_tool.py:17: in <module>
+    from editor.phase1_editor import ZennityPhase1Editor
+editor/phase1_editor.py:10: in <module>
+    from editor.premium_editor import (
+editor/premium_editor.py:28: in <module>
+    from editor.assets import AssetBrowserModel, AssetBrowserViewModel, ProjectBrowserService
+editor/assets/__init__.py:1: in <module>
+    from editor.assets.asset_browser_model import AssetBrowserItem, AssetBrowserModel
+editor/assets/asset_browser_model.py:6: in <module>
+    from engine.assets import AssetDatabase, AssetInfo
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+__________ ERROR collecting tests/editor/test_phase1_viewport_pro.py ___________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/editor/test_phase1_viewport_pro.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/editor/test_phase1_viewport_pro.py:29: in <module>
+    from editor.phase1_editor import ZennityPhase1Editor
+editor/phase1_editor.py:10: in <module>
+    from editor.premium_editor import (
+editor/premium_editor.py:28: in <module>
+    from editor.assets import AssetBrowserModel, AssetBrowserViewModel, ProjectBrowserService
+editor/assets/__init__.py:1: in <module>
+    from editor.assets.asset_browser_model import AssetBrowserItem, AssetBrowserModel
+editor/assets/asset_browser_model.py:6: in <module>
+    from engine.assets import AssetDatabase, AssetInfo
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+______ ERROR collecting tests/editor/test_project_browser_improvements.py ______
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/editor/test_project_browser_improvements.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/editor/test_project_browser_improvements.py:5: in <module>
+    from editor.assets.project_browser import (
+editor/assets/__init__.py:1: in <module>
+    from editor.assets.asset_browser_model import AssetBrowserItem, AssetBrowserModel
+editor/assets/asset_browser_model.py:6: in <module>
+    from engine.assets import AssetDatabase, AssetInfo
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+___________ ERROR collecting tests/editor/test_reference_scripts.py ____________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/editor/test_reference_scripts.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/editor/test_reference_scripts.py:5: in <module>
+    from engine.runtime.script_runtime import ScriptRuntime
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+________________ ERROR collecting tests/editor/test_runtime.py _________________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/editor/test_runtime.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/editor/test_runtime.py:3: in <module>
+    from editor.runtime import CommandManager, EditorContext, EditorTool, FunctionCommand
+editor/runtime/__init__.py:8: in <module>
+    from editor.runtime.editor_context import EditorContext
+editor/runtime/editor_context.py:9: in <module>
+    from engine.runtime import RuntimeManager
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+__________ ERROR collecting tests/editor/test_viewport_command_bus.py __________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/editor/test_viewport_command_bus.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/editor/test_viewport_command_bus.py:1: in <module>
+    from editor.runtime.viewport_command_bus import ViewportCommandBus
+editor/runtime/__init__.py:8: in <module>
+    from editor.runtime.editor_context import EditorContext
+editor/runtime/editor_context.py:9: in <module>
+    from engine.runtime import RuntimeManager
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+____________ ERROR collecting tests/editor/test_viewport_systems.py ____________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/editor/test_viewport_systems.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/editor/test_viewport_systems.py:1: in <module>
+    from editor.runtime.viewport_systems import AnimationPlaybackSystem, FixedStepScheduler, HudRuntimeSystem
+editor/runtime/__init__.py:8: in <module>
+    from editor.runtime.editor_context import EditorContext
+editor/runtime/editor_context.py:9: in <module>
+    from engine.runtime import RuntimeManager
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+__________ ERROR collecting tests/game_base_2d/test_nebula_defense.py __________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/game_base_2d/test_nebula_defense.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/game_base_2d/test_nebula_defense.py:7: in <module>
+    from engine.build.runtime_scene_loader import load_objects
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+________ ERROR collecting tests/integration/test_gameplay_foundation.py ________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/integration/test_gameplay_foundation.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/integration/test_gameplay_foundation.py:8: in <module>
+    from engine.core import Scene, GameObject, Transform, Component
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+________ ERROR collecting tests/integration/test_tilemap_integration.py ________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/integration/test_tilemap_integration.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/integration/test_tilemap_integration.py:4: in <module>
+    from engine.core.game_object import GameObject
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+________ ERROR collecting tests/integration/test_v030_stabilization.py _________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/integration/test_v030_stabilization.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/integration/test_v030_stabilization.py:7: in <module>
+    from engine.core.game_object import GameObject
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+_________ ERROR collecting tests/logic/test_graph_english_contracts.py _________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/logic/test_graph_english_contracts.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/logic/test_graph_english_contracts.py:5: in <module>
+    from engine.logic.graph_asset import (
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+____________ ERROR collecting tests/logic/test_logic_graph_asset.py ____________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/logic/test_logic_graph_asset.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/logic/test_logic_graph_asset.py:5: in <module>
+    from engine.logic.graph_asset import (
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+________ ERROR collecting tests/prefabs/test_parametric_prefab_asset.py ________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/prefabs/test_parametric_prefab_asset.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/prefabs/test_parametric_prefab_asset.py:8: in <module>
+    from engine.logic.graph_asset import create_logic_node, node_port_definitions
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+_____________ ERROR collecting tests/prefabs/test_prefab_loader.py _____________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/prefabs/test_prefab_loader.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/prefabs/test_prefab_loader.py:10: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+___________ ERROR collecting tests/prefabs/test_prefab_serializer.py ___________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/prefabs/test_prefab_serializer.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/prefabs/test_prefab_serializer.py:7: in <module>
+    from engine.prefabs.prefab_serializer import serialize_prefab, deserialize_prefab
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+_____________ ERROR collecting tests/runtime/test_input_system.py ______________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/runtime/test_input_system.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/runtime/test_input_system.py:7: in <module>
+    from editor_legacy.editor_2d import Editor2DScene
+editor_legacy/__init__.py:1: in <module>
+    from .scene import EditorScene
+editor_legacy/scene.py:30: in <module>
+    from engine.core import Scene
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+_________ ERROR collecting tests/runtime/test_play_mode_foundation.py __________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/runtime/test_play_mode_foundation.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/runtime/test_play_mode_foundation.py:5: in <module>
+    from editor_legacy.editor_2d import Editor2DScene
+editor_legacy/__init__.py:1: in <module>
+    from .scene import EditorScene
+editor_legacy/scene.py:30: in <module>
+    from engine.core import Scene
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+___________ ERROR collecting tests/runtime/test_runtime_lifecycle.py ___________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/runtime/test_runtime_lifecycle.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/runtime/test_runtime_lifecycle.py:5: in <module>
+    from editor_legacy.editor_2d import Editor2DScene
+editor_legacy/__init__.py:1: in <module>
+    from .scene import EditorScene
+editor_legacy/scene.py:30: in <module>
+    from engine.core import Scene
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+_____________ ERROR collecting tests/runtime/test_runtime_world.py _____________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/runtime/test_runtime_world.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/runtime/test_runtime_world.py:5: in <module>
+    from engine.runtime.runtime_world import RuntimeWorld, normalize_color
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+____________ ERROR collecting tests/runtime/test_script_runtime.py _____________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/runtime/test_script_runtime.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/runtime/test_script_runtime.py:7: in <module>
+    from editor_legacy.editor_2d import Editor2DScene
+editor_legacy/__init__.py:1: in <module>
+    from .scene import EditorScene
+editor_legacy/scene.py:30: in <module>
+    from engine.core import Scene
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+______________ ERROR collecting tests/runtime/test_time_system.py ______________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/runtime/test_time_system.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/runtime/test_time_system.py:8: in <module>
+    from editor_legacy.editor_2d import Editor2DScene
+editor_legacy/__init__.py:1: in <module>
+    from .scene import EditorScene
+editor_legacy/scene.py:30: in <module>
+    from engine.core import Scene
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+___________ ERROR collecting tests/runtime/test_world_ecs_adapter.py ___________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/runtime/test_world_ecs_adapter.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/runtime/test_world_ecs_adapter.py:1: in <module>
+    from engine.runtime.world_ecs_adapter import RuntimeWorldECSAdapter
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+___________ ERROR collecting tests/scene/test_scene_serialization.py ___________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/scene/test_scene_serialization.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/scene/test_scene_serialization.py:12: in <module>
+    from engine.scene import (
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+____________________ ERROR collecting tests/test_assets.py _____________________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/test_assets.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_assets.py:77: in <module>
+    from engine.assets import Assets, Mesh  # noqa: E402
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+______________ ERROR collecting tests/test_component_registry.py _______________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/test_component_registry.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_component_registry.py:27: in <module>
+    from engine.component_registry import ComponentRegistry
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+____________________ ERROR collecting tests/test_tilemap.py ____________________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/test_tilemap.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_tilemap.py:4: in <module>
+    from engine.core.game_object import GameObject
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+________________ ERROR collecting tests/tilemap/test_tilemap.py ________________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/tilemap/test_tilemap.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/tilemap/test_tilemap.py:73: in <module>
+    from engine.tilemap.tilemap import TileLayer, TileMap, TilemapRenderer  # noqa: E402
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+___________ ERROR collecting tests/ui/test_ui_runtime_foundation.py ____________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/ui/test_ui_runtime_foundation.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/ui/test_ui_runtime_foundation.py:5: in <module>
+    from editor_legacy.editor_2d import Editor2DScene
+editor_legacy/__init__.py:1: in <module>
+    from .scene import EditorScene
+editor_legacy/scene.py:30: in <module>
+    from engine.core import Scene
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+______________ ERROR collecting tests/unit/test_asset_pipeline.py ______________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/unit/test_asset_pipeline.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/unit/test_asset_pipeline.py:6: in <module>
+    from engine.assets.asset_importer import (
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+_______________ ERROR collecting tests/unit/test_audio_system.py _______________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/unit/test_audio_system.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/unit/test_audio_system.py:3: in <module>
+    from engine.core import GameObject, Scene, component_registry
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+______________ ERROR collecting tests/unit/test_camera_system.py _______________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/unit/test_camera_system.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/unit/test_camera_system.py:3: in <module>
+    from engine.core import GameObject, Scene, component_registry
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+_______________ ERROR collecting tests/unit/test_gizmo_system.py _______________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/unit/test_gizmo_system.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/unit/test_gizmo_system.py:6: in <module>
+    from engine.core import GameObject, Component, Transform
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+_____________ ERROR collecting tests/unit/test_package_manager.py ______________
+ImportError while importing test module '/home/runner/work/zennity-engine-game/zennity-engine-game/tests/unit/test_package_manager.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/unit/test_package_manager.py:7: in <module>
+    from engine.packages.package import Package
+engine/__init__.py:1: in <module>
+    from .core          import Engine, Scene
+engine/core/__init__.py:52: in <module>
+    from engine.application          import Application               # noqa: F401
+engine/application.py:51: in <module>
+    from .assets        import Assets
+engine/assets/__init__.py:9: in <module>
+    from engine.assets.asset_database import AssetDatabase
+engine/assets/asset_database.py:8: in <module>
+    from engine.assets.asset_importer import ImporterRegistry
+engine/assets/asset_importer.py:8: in <module>
+    from engine.assets.asset_types import AssetType, detect_asset_type
+engine/assets/asset_types.py:3: in <module>
+    from enum import StrEnum
+E   ImportError: cannot import name 'StrEnum' from 'enum' (/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/enum.py)
+=============================== warnings summary ===============================
+../../../../../opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/site-packages/pygame/pkgdata.py:25
+  /opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/site-packages/pygame/pkgdata.py:25: DeprecationWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html
+    from pkg_resources import resource_stream, resource_exists
+
+engine/graphics/renderer.py:4
+  /home/runner/work/zennity-engine-game/zennity-engine-game/engine/graphics/renderer.py:4: DeprecationWarning: engine.component está deprecado. Use: from engine.core import Component, Transform
+    from engine.component import Component
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR tests/animation/test_animation_runtime_foundation.py
+ERROR tests/animation/test_animator_controller_demo.py
+ERROR tests/assets/test_asset_database.py
+ERROR tests/assets/test_asset_importer.py
+ERROR tests/behavior/test_behavior_controller_asset.py
+ERROR tests/beta/test_beta_stabilization.py
+ERROR tests/components/test_component_management.py
+ERROR tests/components/test_component_system.py
+ERROR tests/components/test_inspector_plugin_system.py
+ERROR tests/editor/test_asset_component_inspector_plugins.py
+ERROR tests/editor/test_desktop_package.py
+ERROR tests/editor/test_export_config.py
+ERROR tests/editor/test_export_profiles.py
+ERROR tests/editor/test_hierarchy_improvements.py
+ERROR tests/editor/test_inspector_ux_polish.py
+ERROR tests/editor/test_isolated_animation_asset_runtime.py
+ERROR tests/editor/test_isolated_behavior_runtime.py
+ERROR tests/editor/test_isolated_script_templates.py
+ERROR tests/editor/test_isolated_sprite_rendering.py
+ERROR tests/editor/test_native_ui_editor_bridge.py
+ERROR tests/editor/test_phase1_editor_context.py
+ERROR tests/editor/test_phase1_inspector.py
+ERROR tests/editor/test_phase1_rotate_tool.py
+ERROR tests/editor/test_phase1_scale_tool.py
+ERROR tests/editor/test_phase1_viewport_pro.py
+ERROR tests/editor/test_project_browser_improvements.py
+ERROR tests/editor/test_reference_scripts.py
+ERROR tests/editor/test_runtime.py
+ERROR tests/editor/test_viewport_command_bus.py
+ERROR tests/editor/test_viewport_systems.py
+ERROR tests/game_base_2d/test_nebula_defense.py
+ERROR tests/integration/test_gameplay_foundation.py
+ERROR tests/integration/test_tilemap_integration.py
+ERROR tests/integration/test_v030_stabilization.py
+ERROR tests/logic/test_graph_english_contracts.py
+ERROR tests/logic/test_logic_graph_asset.py
+ERROR tests/prefabs/test_parametric_prefab_asset.py
+ERROR tests/prefabs/test_prefab_loader.py
+ERROR tests/prefabs/test_prefab_serializer.py
+ERROR tests/runtime/test_input_system.py
+ERROR tests/runtime/test_play_mode_foundation.py
+ERROR tests/runtime/test_runtime_lifecycle.py
+ERROR tests/runtime/test_runtime_world.py
+ERROR tests/runtime/test_script_runtime.py
+ERROR tests/runtime/test_time_system.py
+ERROR tests/runtime/test_world_ecs_adapter.py
+ERROR tests/scene/test_scene_serialization.py
+ERROR tests/test_assets.py
+ERROR tests/test_component_registry.py
+ERROR tests/test_tilemap.py
+ERROR tests/tilemap/test_tilemap.py
+ERROR tests/ui/test_ui_runtime_foundation.py
+ERROR tests/unit/test_asset_pipeline.py
+ERROR tests/unit/test_audio_system.py
+ERROR tests/unit/test_camera_system.py
+ERROR tests/unit/test_gizmo_system.py
+ERROR tests/unit/test_package_manager.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 57 errors during collection !!!!!!!!!!!!!!!!!!!
+================== 1 skipped, 2 warnings, 57 errors in 5.36s ===================
