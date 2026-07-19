@@ -1,0 +1,1 @@
+import pygame, unittest.mock; pygame.init(); surf = pygame.Surface((10,10)); m = unittest.mock.MagicMock(wraps=pygame.draw.rect); pygame.draw.rect = m; pygame.draw.rect(surf, (255,0,0), (0,0,5,5)); m.assert_called(); print('OK')

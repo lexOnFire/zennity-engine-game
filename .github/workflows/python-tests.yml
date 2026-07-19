@@ -22,6 +22,8 @@ jobs:
   tests:
     name: pytest / Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     strategy:
       fail-fast: false
@@ -58,7 +60,20 @@ jobs:
           python -m pip install -r requirements.txt -r requirements-dev.txt
 
       - name: Run tests
-        run: python -m pytest
+        run: python -m pytest > pytest-output.txt 2>&1 || (cat pytest-output.txt && exit 1)
+
+      - name: Push log to branch
+        if: failure()
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin
+          # Se a branch existir, a gente deleta localmente pra forçar nova
+          git branch -D ci-log-${{ github.run_id }}-${{ matrix.python-version }} || true
+          git checkout -b ci-log-${{ github.run_id }}-${{ matrix.python-version }}
+          git add pytest-output.txt || true
+          git commit -m "add pytest log for ${{ matrix.python-version }}" || true
+          git push -f origin ci-log-${{ github.run_id }}-${{ matrix.python-version }} || true
 
   windows-release-candidate:
     name: Windows / Python 3.12 / Export smoke
