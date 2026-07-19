@@ -35,6 +35,7 @@ try:
     from editor.runtime.viewport_overlay_renderer import ViewportOverlayRenderer
     from editor.runtime.viewport_sprite_renderer import ViewportSpriteRenderer
     from editor.runtime.viewport_physics_stepper import ViewportPhysicsStepper
+    from editor.runtime.viewport_animation_updater import ViewportAnimationUpdater
     from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
     from engine.animation.controller_asset import AnimatorControllerRuntime, load_animator_controller
     from engine.behavior.controller_asset import BehaviorControllerRunner, load_behavior_controller
@@ -57,6 +58,7 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .viewport_overlay_renderer import ViewportOverlayRenderer
     from .viewport_sprite_renderer import ViewportSpriteRenderer
     from .viewport_physics_stepper import ViewportPhysicsStepper
+    from .viewport_animation_updater import ViewportAnimationUpdater
     from .clip_asset import animation_asset_to_clip, load_animation_asset
     from .controller_asset import AnimatorControllerRuntime, load_animator_controller
     from .behavior_controller import BehaviorControllerRunner, load_behavior_controller
@@ -768,90 +770,6 @@ def run_viewport(
             except Exception as exc:
                 _send(events, {"type": "script_log", "level": "ERROR", "message": f"{object_name}:{path}:{hook_name}: {exc}"})
 
-    def update_animations(delta_time: float) -> None:
-        for object_name, obj in objects.items():
-            animator = obj.get("animator")
-            if not isinstance(animator, dict):
-                continue
-            clips = animator.get("clips")
-            if isinstance(clips, list):
-                continue
-            if not isinstance(clips, dict):
-                continue
-            controller = animator_controllers.get(object_name)
-            if controller is not None:
-                previous = controller.current_state
-                if object_name not in animator_event_signatures:
-                    dispatch_animation_state_hook(object_name, "on_animation_state_enter", previous)
-                current_clip = clips.get(controller.current_state, {})
-                current_count = max(1, int(current_clip.get("frame_count", 1))) if isinstance(current_clip, dict) else 1
-                current_fps = max(0.01, float(current_clip.get("fps", 8.0))) if isinstance(current_clip, dict) else 8.0
-                progress = float(obj.get("_animation_time", 0.0)) * current_fps / current_count
-                normalized_time = progress % 1.0 if isinstance(current_clip, dict) and current_clip.get("loop", True) else min(1.0, progress)
-                controller.update(normalized_time=normalized_time, delta_time=delta_time)
-                animator["parameters"] = dict(controller.parameters)
-                animator["active_clip"] = controller.current_state
-                obj["_animator_state"] = controller.current_state
-                obj["_current_animation_name"] = controller.current_state
-                if controller.current_state != previous:
-                    dispatch_animation_state_hook(object_name, "on_animation_state_exit", previous)
-                    dispatch_animation_state_hook(object_name, "on_animation_state_enter", controller.current_state)
-                    obj["_animation_time"] = 0.0
-                    obj["_animation_frame"] = 0
-                    obj["_animation_raw_frame"] = -1
-                signature = (
-                    controller.current_state,
-                    tuple(sorted((key, repr(value)) for key, value in controller.parameters.items())),
-                )
-                if animator_event_signatures.get(object_name) != signature:
-                    animator_event_signatures[object_name] = signature
-                    _send(events, {
-                        "type": "animator_state",
-                        "name": object_name,
-                        "state": controller.current_state,
-                        "parameters": dict(controller.parameters),
-                        "controller_path": str(animator.get("controller_path", "")),
-                    })
-            name = str(obj.get("_current_animation_name", animator.get("active_clip", "")))
-            clip = clips.get(name)
-            if not isinstance(clip, dict):
-                continue
-            count = max(1, int(clip.get("frame_count", 1)))
-            fps = (
-                max(0.01, float(clip.get("fps", 8.0)))
-                * max(0.0, float(animator.get("speed", 1.0)))
-                * max(0.0, float(clip.get("controller_speed", 1.0)))
-            )
-            previous_raw = int(obj.get("_animation_raw_frame", -1))
-            frame_result = animation_system.advance(
-                float(obj.get("_animation_time", 0.0)),
-                previous_raw,
-                delta_time,
-                count,
-                fps,
-                bool(clip.get("loop", True)),
-            )
-            if frame_result.crossed_frames:
-                events_by_frame: dict[int, list[dict[str, Any]]] = {}
-                for event in clip.get("events", []):
-                    if isinstance(event, dict):
-                        events_by_frame.setdefault(max(0, int(event.get("frame", 0))), []).append(event)
-                for event_frame in frame_result.crossed_frames:
-                    for event in events_by_frame.get(event_frame, []):
-                        api = script_apis.get(object_name) or PlayScriptAPI(object_name, obj, events, objects, runtime_world)
-                        api.state["animation_event_payload"] = event.get("payload")
-                        for path, module in list(script_instances.get(object_name, [])):
-                            hook = getattr(module, "on_animation_event", None)
-                            if not callable(hook):
-                                continue
-                            try:
-                                hook(api, str(event.get("name", "")))
-                            except Exception as exc:
-                                _send(events, {"type": "script_log", "level": "ERROR", "message": f"{object_name}:{path}:on_animation_event: {exc}"})
-                        _send(events, {"type": "animation_event", "name": object_name, "state": name, "event": str(event.get("name", "")), "frame": event_frame, "payload": event.get("payload")})
-            obj["_animation_time"] = frame_result.elapsed
-            obj["_animation_frame"] = frame_result.frame
-            obj["_animation_raw_frame"] = frame_result.raw_frame
 
     def game_camera() -> dict[str, Any] | None:
         return next(
@@ -1170,6 +1088,12 @@ def run_viewport(
     overlay_renderer = ViewportOverlayRenderer(pygame)
     sprite_renderer = ViewportSpriteRenderer(pygame, prepare_sprite_surface, prepare_scrolling_sprite_surface)
     physics_stepper = ViewportPhysicsStepper()
+    animation_updater = ViewportAnimationUpdater(
+        objects, animation_system, animator_controllers, animator_event_signatures,
+        script_instances,
+        lambda name, obj: script_apis.get(name) or PlayScriptAPI(name, obj, events, objects, runtime_world),
+        dispatch_animation_state_hook, lambda event: _send(events, event),
+    )
 
     while running:
         for command in command_queue.drain():
@@ -1463,7 +1387,7 @@ def run_viewport(
                 objects, velocities_y, grounded, motion_axes_by_name, physics_steps, fixed_physics_dt,
             )
             process_contacts()
-            update_animations(dt)
+            animation_updater.update(dt)
             for obj in objects.values():
                 scroll = obj.get("_texture_scroll")
                 if not isinstance(scroll, dict) or not scroll.get("enabled", False):
