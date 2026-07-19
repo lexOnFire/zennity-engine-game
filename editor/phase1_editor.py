@@ -342,6 +342,9 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
     def closeEvent(self, event) -> None:
         self.editor_context.selection.unsubscribe(self.on_viewport_selection_changed)
         self._extensions.uninstall_all()
+        resources_controller = getattr(getattr(self, "resources", None), "assets_controller", None)
+        if resources_controller is not None:
+            resources_controller.uninstall()
         for viewport_name in ("viewport", "game_viewport"):
             viewport = getattr(self, viewport_name, None)
             shutdown = getattr(viewport, "shutdown", None)
