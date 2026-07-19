@@ -14,6 +14,7 @@ RUNTIME_SOURCES = (
     "editor/runtime/viewport_command_queue.py",
     "editor/runtime/viewport_edit_commands.py",
     "editor/runtime/viewport_control_commands.py",
+    "editor/runtime/viewport_play_commands.py",
     "engine/graphics/tint.py",
     "engine/animation/clip_asset.py",
     "engine/animation/controller_asset.py",
@@ -156,6 +157,7 @@ def test_exported_runtime_contains_all_standalone_dependencies(tmp_path: Path) -
         "__init__.py", "viewport.py", "native_ui.py", "audio_playback_state.py", "sprite_rendering.py",
         "viewport_systems.py",
         "viewport_command_queue.py", "viewport_edit_commands.py", "viewport_control_commands.py",
+        "viewport_play_commands.py",
         "tint.py", "clip_asset.py", "controller_asset.py", "behavior_controller.py",
         "logic_graph_asset.py", "logic_blackboard.py", "logic_event_bus.py", "logic_runtime.py", "prefab_asset.py", "runtime_world.py", "scene_loader.py",
     }
