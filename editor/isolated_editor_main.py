@@ -8,17 +8,15 @@ from __future__ import annotations
 import multiprocessing as mp
 import sys
 import json
-import shutil
-import uuid
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QEvent, Qt, QTimer
-from PySide6.QtGui import QAction, QColor
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
-    QColorDialog, QFileDialog, QInputDialog, QMenu,
+    QMenu,
     QHBoxLayout, QFormLayout,
     QCheckBox, QLabel, QComboBox, QLineEdit,
     QMessageBox, QPushButton, QDoubleSpinBox,
@@ -28,7 +26,6 @@ from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QWidget
 from editor.interface_smoke_test import InterfaceSmokeTest
 from editor.controllers.logic_assets import LogicAssetRepository
 from editor.isolated_viewport import run_viewport
-from editor.runtime.native_ui import normalize_ui
 from editor.runtime.viewport_process_controller import ViewportProcessController
 from editor.runtime.isolated_play_mode_controller import IsolatedPlayModeController
 from editor.runtime.scene_selection_controller import SceneSelectionController
@@ -48,7 +45,6 @@ from editor.prefab_workspace_controller import PrefabWorkspaceController
 from editor.scene_object_controller import SceneObjectController
 from editor.editor_command_controller import EditorCommandController
 from editor.project_workflow_controller import ProjectWorkflowController
-from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.widgets.component_picker import ComponentPickerDialog
 from editor.widgets.animation_picker import AnimationPickerDialog
 from editor.widgets.animator_controller_editor import AnimatorControllerEditorDialog
@@ -580,45 +576,10 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._inspector_components.toggle_renderer(checked)
 
     def _choose_sprite_texture(self) -> None:
-        if self._selected_name not in self._objects_by_name:
-            return
-        filename, _ = QFileDialog.getOpenFileName(self, "Selecionar textura", str(Path.cwd() / "Assets"), "Imagens (*.png *.jpg *.jpeg *.bmp *.webp)")
-        if not filename:
-            return
-        path = Path(filename)
-        try:
-            texture = str(path.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
-        except ValueError:
-            textures_dir = Path.cwd() / "Assets" / "Textures"
-            textures_dir.mkdir(parents=True, exist_ok=True)
-            destination = textures_dir / path.name
-            index = 1
-            while destination.exists() and destination.read_bytes() != path.read_bytes():
-                destination = textures_dir / f"{path.stem}_{index}{path.suffix}"
-                index += 1
-            if not destination.exists():
-                shutil.copy2(path, destination)
-            texture = str(destination.relative_to(Path.cwd())).replace("\\", "/")
-            self._refresh_assets()
-        self._record_history()
-        obj = self._objects_by_name[self._selected_name]
-        assign_sprite_texture(obj, texture)
-        self.sprite_texture_field.setText(texture)
-        self.sprite_color_button.setStyleSheet("background: rgb(255, 255, 255);")
-        self._send_inspector_renderer(record_history=False)
-        self._log("INFO", f"Textura aplicada sem tint: {Path(texture).name}")
+        self._inspector_components.choose_sprite_texture()
 
     def _choose_sprite_color(self) -> None:
-        if self._selected_name not in self._objects_by_name:
-            return
-        current = self._objects_by_name[self._selected_name].get("color", (255, 255, 255))
-        color = QColorDialog.getColor(QColor(*current[:3]), self, "Cor do Sprite")
-        if not color.isValid():
-            return
-        self._record_history()
-        self._objects_by_name[self._selected_name]["color"] = (color.red(), color.green(), color.blue())
-        self.sprite_color_button.setStyleSheet(f"background: rgb({color.red()}, {color.green()}, {color.blue()});")
-        self._send_inspector_renderer(record_history=False)
+        self._inspector_components.choose_sprite_color()
 
     def _send_inspector_renderer(self, record_history: bool = True) -> None:
         self._inspector_components.send_renderer(record_history)
@@ -627,18 +588,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._inspector_components.toggle_audio(checked)
 
     def _get_available_audio_files(self) -> list[str]:
-        audio_dir = Path.cwd() / "Assets" / "Audio"
-        if not audio_dir.exists():
-            return []
-        audio_files = []
-        for file in audio_dir.rglob("*"):
-            if file.is_file() and file.suffix.lower() in {".wav", ".ogg", ".mp3"}:
-                try:
-                    rel_p = str(file.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
-                except ValueError:
-                    rel_p = str(file).replace("\\", "/")
-                audio_files.append(rel_p)
-        return sorted(audio_files, key=str.lower)
+        return self._inspector_components.available_audio_files()
 
     def _send_inspector_audio(self) -> None:
         self._inspector_components.send_audio()
@@ -653,7 +603,6 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._inspector_components.toggle_collider(checked)
 
 
-    @staticmethod
 
 
 
@@ -705,106 +654,25 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._inspector_components.send_camera()
 
     def _choose_camera_color(self) -> None:
-        if self._selected_name not in self._objects_by_name:
-            return
-        camera = self._objects_by_name[self._selected_name].get("camera")
-        if not isinstance(camera, dict):
-            return
-        current = camera.get("background_color", [22, 24, 31])
-        color = QColorDialog.getColor(QColor(*current[:3]), self, "Cor de fundo da câmera")
-        if not color.isValid():
-            return
-        self._record_history()
-        camera["background_color"] = [color.red(), color.green(), color.blue()]
-        self.camera_color_button.setStyleSheet(f"background: rgb({color.red()}, {color.green()}, {color.blue()});")
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
+        self._inspector_components.choose_camera_color()
 
     def _toggle_ui_visibility(self, checked: bool) -> None:
-        if self._updating_inspector or self._selected_name not in self._objects_by_name:
-            return
-        ui = self._objects_by_name[self._selected_name].get("ui")
-        if not isinstance(ui, dict):
-            return
-        self._record_history()
-        ui["visible"] = bool(checked)
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
+        self._inspector_components.toggle_ui_visibility(checked)
 
     def _delete_ui_component(self) -> None:
-        if self._selected_name not in self._objects_by_name:
-            return
-        obj = self._objects_by_name[self._selected_name]
-        if "ui" not in obj:
-            return
-        self._record_history()
-        obj.pop("ui", None)
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
-        self._update_inspector(self._selected_name)
+        self._inspector_components.delete_ui()
 
     def _choose_ui_color(self) -> None:
-        if self._selected_name not in self._objects_by_name:
-            return
-        ui = normalize_ui(self._objects_by_name[self._selected_name].get("ui"))
-        if ui is None:
-            return
-        current = tuple(ui.get("color", (255, 255, 255)))[:3]
-        color = QColorDialog.getColor(QColor(*current), self, "Cor da UI")
-        if not color.isValid():
-            return
-        self._record_history()
-        self._objects_by_name[self._selected_name]["ui"]["color"] = [color.red(), color.green(), color.blue()]
-        self.ui_color_button.setStyleSheet(f"background: rgb({color.red()}, {color.green()}, {color.blue()});")
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
+        self._inspector_components.choose_ui_color()
 
     def _choose_ui_image(self) -> None:
-        if self._selected_name not in self._objects_by_name:
-            return
-        filename, _ = QFileDialog.getOpenFileName(
-            self, "Selecionar imagem da UI", str(Path.cwd() / "Assets"),
-            "Imagens (*.png *.jpg *.jpeg *.bmp *.webp)",
-        )
-        if not filename:
-            return
-        path = Path(filename)
-        try:
-            value = str(path.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
-        except ValueError:
-            value = str(path.resolve())
-        self.ui_image_path_field.setText(value)
-        self._send_inspector_ui()
+        self._inspector_components.choose_ui_image()
 
     def _send_inspector_ui(self) -> None:
-        if self._updating_inspector or self._selected_name not in self._objects_by_name:
-            return
-        obj = self._objects_by_name[self._selected_name]
-        ui = normalize_ui(obj.get("ui"))
-        if ui is None:
-            return
-        self._record_history()
-        ui.update({key: float(field.value()) for key, field in self.ui_position_fields.items()})
-        ui.update({
-            "visible": self.show_ui_chk.isChecked(),
-            "text": self.ui_text_field.text(),
-            "path": self.ui_image_path_field.text(),
-            "interactable": self.ui_interactable_field.isChecked(),
-            "event": self.ui_event_field.text().strip() or "click",
-            "target": "" if self.ui_target_combo.currentText() == "Este objeto" else self.ui_target_combo.currentText(),
-        })
-        obj["ui"] = ui
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
+        self._inspector_components.send_ui()
 
     def _ensure_canvas(self) -> None:
-        if any((normalize_ui(obj.get("ui")) or {}).get("type") == "canvas" for obj in self._scene_snapshot):
-            return
-        name = self._unique_name("Canvas")
-        canvas = {
-            "id": str(uuid.uuid4()), "name": name, "x": 0.0, "y": 0.0,
-            "w": 1.0, "h": 1.0, "rotation": 0.0, "color": (255, 255, 255),
-            "mesh_type": "UI", "renderer_enabled": False,
-            "ui": normalize_ui({"type": "canvas"}),
-        }
-        self._scene_snapshot.append(canvas)
-        self._objects_by_name[name] = canvas
-        self._log("INFO", "Canvas criado automaticamente para a interface do jogo")
+        self._inspector_components.ensure_canvas()
 
     def _open_add_component_menu(self) -> None:
         if self._play_session.is_running:
