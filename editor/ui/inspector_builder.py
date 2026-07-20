@@ -776,7 +776,6 @@ def build_inspector_dock(window):
     _build_audio_component(window, main_layout)
     _build_rigidbody_component(window, main_layout)
     _build_collider_component(window, main_layout)
-    _build_animator_component(window, main_layout)
     _build_camera_component(window, main_layout)
     _build_native_ui_component(window, main_layout)
     _build_logic_component(window, main_layout)
