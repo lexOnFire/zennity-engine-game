@@ -16,7 +16,7 @@ from typing import Any
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QEvent, Qt, QTimer
-from PySide6.QtGui import QAction, QActionGroup, QColor, QPixmap
+from PySide6.QtGui import QAction, QActionGroup, QColor
 from PySide6.QtWidgets import (
     QColorDialog, QFileDialog, QInputDialog, QMenu, QToolBar,
     QHBoxLayout, QFormLayout,
@@ -45,6 +45,7 @@ from editor.hierarchy_view_renderer import HierarchyViewRenderer
 from editor.script_workspace_controller import ScriptWorkspaceController
 from editor.logic_workspace_controller import LogicWorkspaceController
 from editor.prefab_workspace_controller import PrefabWorkspaceController
+from editor.scene_object_controller import SceneObjectController
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.widgets.component_picker import ComponentPickerDialog
 from editor.widgets.animation_picker import AnimationPickerDialog
@@ -153,6 +154,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._script_workspace = ScriptWorkspaceController(self)
         self._logic_workspace_controller = LogicWorkspaceController(self)
         self._prefab_workspace = PrefabWorkspaceController(self)
+        self._scene_objects = SceneObjectController(self)
         self._drag_history_snapshot: list[dict] | None = None
         self._snap_enabled = False
         self._runtime_playing = False
@@ -691,81 +693,19 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
             self._restore_history(restored)
 
     def _new_scene(self) -> None:
-        self._record_history()
-        self._scene_snapshot = []
-        self._objects_by_name = {}
-        self._scene_document = {"format_version": 1, "scene_name": "Untitled", "engine_version": "Zennity 0.1.0", "objects": []}
-        self._current_scene_path = None
-        self._selected_name = None
-        self._refresh_hierarchy()
-        self._scene_controller.publish_snapshot([])
-        self.statusBar().showMessage("Nova cena criada")
-        self._log("INFO", "Nova cena criada")
+        self._scene_objects.new_scene()
 
     def _unique_name(self, base: str) -> str:
-        if base not in self._objects_by_name:
-            return base
-        index = 2
-        while f"{base}_{index}" in self._objects_by_name:
-            index += 1
-        return f"{base}_{index}"
+        return self._scene_objects.unique_name(base)
 
     def _create_object(self, kind: str) -> None:
-        if self._play_session.is_running:
-            return
-        self._record_history()
-        presets = {
-            "Empty": ("GameObject", 40.0, 40.0, (160, 164, 174), None),
-            "Sprite": ("Sprite", 64.0, 64.0, (180, 180, 190), None),
-            "Player": ("Player", 36.0, 48.0, (88, 117, 255), {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}),
-            "Platform": ("Platform", 160.0, 32.0, (91, 194, 100), {"is_kinematic": True, "use_gravity": False}),
-            "Enemy": ("Enemy", 40.0, 40.0, (220, 88, 88), {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}),
-            "Trigger": ("Trigger", 80.0, 80.0, (222, 178, 72), {"is_kinematic": True, "use_gravity": False}),
-            "Camera": ("Camera2D", 96.0, 54.0, (110, 190, 210), None),
-        }
-        base, width, height, color, rigidbody = presets[kind]
-        name = self._unique_name(base)
-        obj = {"id": str(uuid.uuid4()), "name": name, "x": 450.0, "y": 250.0, "w": width, "h": height, "rotation": 0.0, "color": color, "mesh_type": kind}
-        if rigidbody is not None:
-            obj["rigidbody"] = rigidbody
-            obj["collider"] = {"type": "box"}
-        if kind == "Trigger":
-            obj["collider"]["is_trigger"] = True
-        if kind == "Camera":
-            obj["component_names"] = ["Camera2D"]
-            obj["camera"] = {"active": True, "zoom": 1.0}
-        self._scene_snapshot.append(obj)
-        self._objects_by_name[name] = obj
-        self._selected_name = name
-        self._refresh_hierarchy()
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
-        self._scene_controller.select(name)
-        self._update_inspector(name)
-        self._log("INFO", f"Objeto criado: {name}")
+        self._scene_objects.create(kind)
 
     def _create_object_at(self, kind: str, screen_x: float, screen_y: float) -> None:
-        self._record_history()
-        self._commands.put({
-            "type": "create_object_at",
-            "kind": kind,
-            "screen_x": screen_x,
-            "screen_y": screen_y
-        })
+        self._scene_objects.create_at(kind, screen_x, screen_y)
 
     def _create_sprite_at(self, texture_path: Path, screen_x: float, screen_y: float) -> None:
-        try:
-            relative = str(texture_path.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
-        except ValueError:
-            relative = str(texture_path.resolve())
-        pixmap = QPixmap(str(texture_path))
-        width = float(pixmap.width()) if not pixmap.isNull() else 64.0
-        height = float(pixmap.height()) if not pixmap.isNull() else 64.0
-        self._record_history()
-        self._commands.put({
-            "type": "create_sprite_at", "texture": relative,
-            "screen_x": screen_x, "screen_y": screen_y,
-            "width": max(1.0, width), "height": max(1.0, height),
-        })
+        self._scene_objects.create_sprite_at(texture_path, screen_x, screen_y)
 
     def _save_scene_snapshot(self) -> None:
         filename, _ = QFileDialog.getSaveFileName(
@@ -842,66 +782,20 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
 
     def _select_and_duplicate(self, name: str) -> None:
         self._selected_name = name
-        self._duplicate_selected()
+        self._scene_objects.duplicate_selected()
 
     def _select_and_save_prefab(self, name: str) -> None:
         self._selected_name = name
         self._save_selected_as_prefab()
 
     def _rename_object(self, old_name: str) -> None:
-        if self._play_session.is_running:
-            return
-        new_name, accepted = QInputDialog.getText(self, "Renomear objeto", "Nome:", text=old_name)
-        new_name = new_name.strip()
-        if not accepted or not new_name or (new_name != old_name and new_name in self._objects_by_name):
-            return
-        self._record_history()
-        obj = self._objects_by_name.pop(old_name)
-        obj["name"] = new_name
-        self._objects_by_name[new_name] = obj
-        if self._selected_name == old_name:
-            self._selected_name = new_name
-        self._refresh_hierarchy()
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
-        self._scene_controller.select(new_name)
-        self._update_inspector(new_name)
+        self._scene_objects.rename(old_name)
 
     def _delete_object(self, name: str) -> None:
-        if self._play_session.is_running:
-            return
-        self._record_history()
-        self._scene_snapshot = [obj for obj in self._scene_snapshot if obj["name"] != name]
-        self._objects_by_name.pop(name, None)
-        if self._selected_name == name:
-            self._selected_name = None
-            for header, body in self.script_containers:
-                self.inspector_layout.removeWidget(header)
-                self.inspector_layout.removeWidget(body)
-                header.deleteLater()
-                body.deleteLater()
-            self.script_containers.clear()
-            self._clear_inspector_view()
-        self._refresh_hierarchy()
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
+        self._scene_objects.delete(name)
 
     def _duplicate_selected(self) -> None:
-        if self._play_session.is_running:
-            return
-        if self._selected_name not in self._objects_by_name:
-            return
-        self._record_history()
-        duplicate = deepcopy(self._objects_by_name[self._selected_name])
-        duplicate["id"] = str(uuid.uuid4())
-        duplicate["name"] = self._unique_name(f"{self._selected_name}_copy")
-        duplicate["x"] = float(duplicate.get("x", 0.0)) + 16.0
-        duplicate["y"] = float(duplicate.get("y", 0.0)) + 16.0
-        self._scene_snapshot.append(duplicate)
-        self._objects_by_name[duplicate["name"]] = duplicate
-        self._selected_name = duplicate["name"]
-        self._refresh_hierarchy()
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
-        self._scene_controller.select(self._selected_name)
-        self._update_inspector(self._selected_name)
+        self._scene_objects.duplicate_selected()
 
     def _refresh_hierarchy(self) -> None:
         self._hierarchy_view.refresh()
