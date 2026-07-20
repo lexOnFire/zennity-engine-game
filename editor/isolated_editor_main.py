@@ -16,7 +16,6 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QEvent, Qt, QTimer
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
-    QMenu,
     QHBoxLayout, QFormLayout,
     QCheckBox, QLabel, QComboBox, QLineEdit,
     QMessageBox, QPushButton, QDoubleSpinBox,
@@ -46,6 +45,7 @@ from editor.scene_object_controller import SceneObjectController
 from editor.editor_command_controller import EditorCommandController
 from editor.project_workflow_controller import ProjectWorkflowController
 from editor.viewport_event_controller import ViewportEventController
+from editor.hierarchy_controller import HierarchyController
 from editor.widgets.component_picker import ComponentPickerDialog
 from editor.widgets.animation_picker import AnimationPickerDialog
 from editor.widgets.animator_controller_editor import AnimatorControllerEditorDialog
@@ -138,6 +138,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._runtime_objects_by_name: dict[str, dict] = {}
         self._selected_name: str | None = None
         self._hierarchy_view = HierarchyViewRenderer(self)
+        self._hierarchy_controller = HierarchyController(self, self._hierarchy_view)
         self._updating_inspector = False
         self._scene_history = SceneHistory(max_commands=100, max_bytes=16 * 1024 * 1024)
         self._inspector_controller = IsolatedInspectorController(self)
@@ -509,37 +510,16 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._project_workflow.load_scene(scene_path)
 
     def _connect_hierarchy_to_viewport(self) -> None:
-        self.hierarchy_tree.setDragEnabled(True)
-        self.hierarchy_tree.setAcceptDrops(True)
-        self.hierarchy_tree.setDragDropMode(QTreeWidget.InternalMove)
-        self.hierarchy_tree.itemClicked.connect(self._select_hierarchy_item)
-        self.hierarchy_tree.itemDoubleClicked.connect(lambda item: self._rename_object(self._hierarchy_item_name(item)))
-        self.hierarchy_tree.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.hierarchy_tree.customContextMenuRequested.connect(self._open_hierarchy_menu)
+        self._hierarchy_controller.connect()
 
     def _open_hierarchy_menu(self, position) -> None:
-        item = self.hierarchy_tree.itemAt(position)
-        item_name = self._hierarchy_item_name(item)
-        if item is None or item_name not in self._objects_by_name:
-            return
-        menu = QMenu(self)
-        rename_action = menu.addAction("Renomear")
-        duplicate_action = menu.addAction("Duplicar")
-        prefab_action = menu.addAction("Criar Prefab")
-        delete_action = menu.addAction("Excluir")
-        rename_action.triggered.connect(lambda _checked=False: self._rename_object(item_name))
-        duplicate_action.triggered.connect(lambda _checked=False: self._select_and_duplicate(item_name))
-        prefab_action.triggered.connect(lambda _checked=False: self._select_and_save_prefab(item_name))
-        delete_action.triggered.connect(lambda _checked=False: self._delete_object(item_name))
-        menu.exec(self.hierarchy_tree.viewport().mapToGlobal(position))
+        self._hierarchy_controller.open_context_menu(position)
 
     def _select_and_duplicate(self, name: str) -> None:
-        self._selected_name = name
-        self._scene_objects.duplicate_selected()
+        self._hierarchy_controller.select_and_duplicate(name)
 
     def _select_and_save_prefab(self, name: str) -> None:
-        self._selected_name = name
-        self._save_selected_as_prefab()
+        self._hierarchy_controller.select_and_save_prefab(name)
 
     def _rename_object(self, old_name: str) -> None:
         self._scene_objects.rename(old_name)
@@ -551,10 +531,10 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._scene_objects.duplicate_selected()
 
     def _refresh_hierarchy(self) -> None:
-        self._hierarchy_view.refresh()
+        self._hierarchy_controller.refresh()
 
     def _hierarchy_item_name(self, item: QTreeWidgetItem | None) -> str:
-        return self._hierarchy_view.item_name(item)
+        return self._hierarchy_controller.item_name(item)
 
     def _connect_inspector_to_viewport(self) -> None:
         self._inspector_controller.connect()
@@ -705,13 +685,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._inspector_components.send_collider()
 
     def _select_hierarchy_item(self, item: QTreeWidgetItem) -> None:
-        name = self._hierarchy_item_name(item)
-        if name in self._objects_by_name or (self._runtime_playing and name in self._runtime_objects_by_name):
-            self._scene_controller.select(name)
-            self._selected_name = name
-            self._update_inspector(name)
-            source = "Runtime" if name in self._runtime_objects_by_name and name not in self._objects_by_name else "Interface"
-            self.statusBar().showMessage(f"{source}: {name} selecionado")
+        self._hierarchy_controller.select_item(item)
 
     def _update_inspector(self, name: str) -> None:
         obj = self._runtime_objects_by_name.get(name) if self._runtime_playing else None
