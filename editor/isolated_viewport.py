@@ -38,6 +38,7 @@ try:
     from editor.runtime.viewport_animation_updater import ViewportAnimationUpdater
     from editor.runtime.viewport_session_orchestrator import ViewportSessionOrchestrator
     from editor.runtime.viewport_script_updater import ViewportScriptUpdater
+    from editor.runtime.viewport_contact_processor import ViewportContactProcessor
     from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
     from engine.animation.controller_asset import AnimatorControllerRuntime, load_animator_controller
     from engine.behavior.controller_asset import BehaviorControllerRunner, load_behavior_controller
@@ -63,6 +64,7 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .viewport_animation_updater import ViewportAnimationUpdater
     from .viewport_session_orchestrator import ViewportSessionOrchestrator
     from .viewport_script_updater import ViewportScriptUpdater
+    from .viewport_contact_processor import ViewportContactProcessor
     from .clip_asset import animation_asset_to_clip, load_animation_asset
     from .controller_asset import AnimatorControllerRuntime, load_animator_controller
     from .behavior_controller import BehaviorControllerRunner, load_behavior_controller
@@ -949,22 +951,6 @@ def run_viewport(
             if isinstance(audio, dict) and audio.get("autoplay") and audio.get("path"):
                 play_audio_file(name, str(audio["path"]), float(audio.get("volume", 1.0)), bool(audio.get("loop", False)))
 
-    def collider_bounds(obj: dict[str, Any]) -> tuple[float, float, float, float]:
-        collider = obj.get("collider") or {}
-        angle = math.radians(float(obj.get("rotation", 0.0)))
-        offset_x = float(collider.get("offset_x", 0.0))
-        offset_y = float(collider.get("offset_y", 0.0))
-        center_x = float(obj.get("x", 0.0)) + offset_x * math.cos(angle) - offset_y * math.sin(angle)
-        center_y = float(obj.get("y", 0.0)) + offset_x * math.sin(angle) + offset_y * math.cos(angle)
-        if str(collider.get("type", "box")).lower() == "circle":
-            width = height = float(collider.get("radius", min(obj.get("w", 1.0), obj.get("h", 1.0)) / 2.0)) * 2.0
-        else:
-            width = float(collider.get("width", obj.get("w", 1.0)))
-            height = float(collider.get("height", obj.get("h", 1.0)))
-            cosine, sine = abs(math.cos(angle)), abs(math.sin(angle))
-            width, height = width * cosine + height * sine, width * sine + height * cosine
-        return center_x - width / 2.0, center_y - height / 2.0, center_x + width / 2.0, center_y + height / 2.0
-
     def dispatch_contact(name: str, other_name: str, hook_name: str) -> None:
         obj = objects.get(name)
         other_obj = objects.get(other_name)
@@ -1000,30 +986,6 @@ def run_viewport(
                         "type": "script_log", "level": "ERROR",
                         "message": f"{name}:{graph_path}:{logic_event}: {exc}",
                     })
-
-    def process_contacts() -> None:
-        current: dict[tuple[str, str], bool] = {}
-        collidable = [(name, obj) for name, obj in objects.items() if obj.get("active", True) and isinstance(obj.get("collider"), dict)]
-        for index, (name_a, obj_a) in enumerate(collidable):
-            left_a, top_a, right_a, bottom_a = collider_bounds(obj_a)
-            for name_b, obj_b in collidable[index + 1:]:
-                left_b, top_b, right_b, bottom_b = collider_bounds(obj_b)
-                if right_a < left_b or right_b < left_a or bottom_a < top_b or bottom_b < top_a:
-                    continue
-                pair = tuple(sorted((name_a, name_b)))
-                is_trigger = bool(obj_a["collider"].get("is_trigger") or obj_b["collider"].get("is_trigger"))
-                current[pair] = is_trigger
-                if pair not in active_contacts:
-                    hook = "on_trigger" if is_trigger else "on_collision"
-                    dispatch_contact(name_a, name_b, hook)
-                    dispatch_contact(name_b, name_a, hook)
-        for pair, was_trigger in list(active_contacts.items()):
-            if pair not in current:
-                hook = "on_trigger_exit" if was_trigger else "on_collision_exit"
-                dispatch_contact(pair[0], pair[1], hook)
-                dispatch_contact(pair[1], pair[0], hook)
-        active_contacts.clear()
-        active_contacts.update(current)
 
     def view_transform() -> tuple[float, float, float]:
         if view_mode == "game":
@@ -1109,6 +1071,7 @@ def run_viewport(
         normalize_ui, play_audio_file, dispatch_animation_state_hook,
         lambda event: _send(events, event),
     )
+    contact_processor = ViewportContactProcessor(objects, active_contacts, dispatch_contact)
 
     while running:
         for command in command_queue.drain():
@@ -1213,7 +1176,7 @@ def run_viewport(
             physics_stepper.step(
                 objects, velocities_y, grounded, motion_axes_by_name, physics_steps, fixed_physics_dt,
             )
-            process_contacts()
+            contact_processor.process()
             animation_updater.update(dt)
             for obj in objects.values():
                 scroll = obj.get("_texture_scroll")
