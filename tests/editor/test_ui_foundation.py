@@ -36,7 +36,10 @@ def test_toolbar_and_component_glyphs_are_centralized_and_monochrome() -> None:
 
 
 def test_editor_applies_foundation_and_exposes_semantic_widget_names() -> None:
-    interface = (\n        Path("editor/interface_smoke_test.py").read_text(encoding="utf-8")\n        + Path("editor/ui/docks_builder.py").read_text(encoding="utf-8")\n    )
+    interface = (
+        Path("editor/interface_smoke_test.py").read_text(encoding="utf-8")
+        + Path("editor/ui/docks_builder.py").read_text(encoding="utf-8")
+    )
     main = Path("editor/isolated_editor_main.py").read_text(encoding="utf-8")
     compatibility = Path("editor/premium_theme.py").read_text(encoding="utf-8")
 

@@ -2,7 +2,10 @@ from pathlib import Path
 
 
 def test_viewport_delegates_runtime_initialization_and_spawn_discovery() -> None:
-    viewport = (\n        Path("editor/isolated_viewport.py").read_text(encoding="utf-8")\n        + Path("editor/runtime/viewport_session.py").read_text(encoding="utf-8")\n    )
+    viewport = (
+        Path("editor/isolated_viewport.py").read_text(encoding="utf-8")
+        + Path("editor/runtime/viewport_session.py").read_text(encoding="utf-8")
+    )
     initializer = Path("editor/runtime/viewport_runtime_initializer.py").read_text(encoding="utf-8")
 
     assert "runtime_initializer = ViewportRuntimeInitializer(" in viewport
@@ -19,7 +22,10 @@ def test_viewport_delegates_runtime_initialization_and_spawn_discovery() -> None
 def test_run_viewport_is_below_original_large_method_threshold() -> None:
     import ast
 
-    source = (\n        Path("editor/isolated_viewport.py").read_text(encoding="utf-8")\n        + Path("editor/runtime/viewport_session.py").read_text(encoding="utf-8")\n    )
+    source = (
+        Path("editor/isolated_viewport.py").read_text(encoding="utf-8")
+        + Path("editor/runtime/viewport_session.py").read_text(encoding="utf-8")
+    )
     tree = ast.parse(source)
     run_viewport = next(
         node for node in tree.body

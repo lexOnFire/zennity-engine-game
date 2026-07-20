@@ -21,7 +21,10 @@ def test_toolbar_has_a_valid_svg_for_every_action() -> None:
 
 
 def test_animation_actions_use_the_same_svg_package() -> None:
-    source = (\n        (ROOT / "editor" / "interface_smoke_test.py").read_text(encoding="utf-8")\n        + (ROOT / "editor" / "ui" / "workspace_builder.py").read_text(encoding="utf-8")\n    )
+    source = (
+        (ROOT / "editor" / "interface_smoke_test.py").read_text(encoding="utf-8")
+        + (ROOT / "editor" / "ui" / "workspace_builder.py").read_text(encoding="utf-8")
+    )
     required = {
         "new", "open", "save", "duplicate", "delete", "apply", "play",
         "first", "previous", "pause", "next", "last",

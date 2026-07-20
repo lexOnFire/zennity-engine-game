@@ -120,7 +120,10 @@ def test_editor_and_viewport_integrate_session_lock_and_audio_pause() -> None:
         + open("editor/editor_command_controller.py", encoding="utf-8").read()
         + open("editor/viewport_event_controller.py", encoding="utf-8").read()
     )
-    viewport_source = (\n        open("editor/isolated_viewport.py", encoding="utf-8").read()\n        + open("editor/runtime/viewport_session.py", encoding="utf-8").read()\n    )
+    viewport_source = (
+        open("editor/isolated_viewport.py", encoding="utf-8").read()
+        + open("editor/runtime/viewport_session.py", encoding="utf-8").read()
+    )
 
     assert "h._play_controller.plan" in editor_source
     assert "h._play_session.finish" in editor_source
@@ -141,7 +144,10 @@ def test_generic_property_command_captures_old_value_without_invalid_syntax() ->
 
 
 def test_runtime_restart_resets_physics_and_restarts_autoplay_audio() -> None:
-    viewport_source = (\n        Path("editor/isolated_viewport.py").read_text(encoding="utf-8")\n        + Path("editor/runtime/viewport_session.py").read_text(encoding="utf-8")\n    )
+    viewport_source = (
+        Path("editor/isolated_viewport.py").read_text(encoding="utf-8")
+        + Path("editor/runtime/viewport_session.py").read_text(encoding="utf-8")
+    )
     restart_block = Path("editor/runtime/viewport_session_orchestrator.py").read_text(encoding="utf-8")
 
     assert "session_orchestrator.restart(" in viewport_source
@@ -151,7 +157,10 @@ def test_runtime_restart_resets_physics_and_restarts_autoplay_audio() -> None:
 
 
 def test_viewport_has_one_runtime_lifecycle_and_initializes_spawned_prefabs() -> None:
-    viewport_source = (\n        Path("editor/isolated_viewport.py").read_text(encoding="utf-8")\n        + Path("editor/runtime/viewport_session.py").read_text(encoding="utf-8")\n    )
+    viewport_source = (
+        Path("editor/isolated_viewport.py").read_text(encoding="utf-8")
+        + Path("editor/runtime/viewport_session.py").read_text(encoding="utf-8")
+    )
     initializer_source = Path("editor/runtime/viewport_runtime_initializer.py").read_text(encoding="utf-8")
 
     assert viewport_source.count("    def stop_scripts()") == 1
