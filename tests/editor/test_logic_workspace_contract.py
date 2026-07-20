@@ -9,6 +9,7 @@ def _source(relative: str) -> str:
     if relative == "editor/isolated_viewport.py":
         source += (ROOT / "editor/runtime/viewport_play_commands.py").read_text(encoding="utf-8")
         source += (ROOT / "editor/runtime/viewport_session_orchestrator.py").read_text(encoding="utf-8")
+        source += (ROOT / "editor/runtime/viewport_runtime_initializer.py").read_text(encoding="utf-8")
     return source
 
 
@@ -36,7 +37,7 @@ def test_python_script_component_is_not_offered_or_executed() -> None:
     viewport = _source("editor/isolated_viewport.py")
     assert '("Código", "Script", "script"' not in picker
     assert "scripts Python estão desativados" in viewport
-    assert "hydrate_logic_graphs(objects, Path.cwd())" in viewport
+    assert "hydrate_logic_graphs" in viewport
 
 
 def test_logic_workspace_exposes_palette_canvas_connections_and_properties():

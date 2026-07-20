@@ -24,6 +24,7 @@ RUNTIME_SOURCES = (
     "editor/runtime/viewport_session_orchestrator.py",
     "editor/runtime/viewport_script_updater.py",
     "editor/runtime/viewport_contact_processor.py",
+    "editor/runtime/viewport_runtime_initializer.py",
     "engine/physics/spatial_hash.py",
     "engine/graphics/tint.py",
     "engine/animation/clip_asset.py",
@@ -175,6 +176,7 @@ def test_exported_runtime_contains_all_standalone_dependencies(tmp_path: Path) -
         "viewport_session_orchestrator.py",
         "viewport_script_updater.py",
         "viewport_contact_processor.py", "spatial_hash.py",
+        "viewport_runtime_initializer.py",
         "tint.py", "clip_asset.py", "controller_asset.py", "behavior_controller.py",
         "logic_graph_asset.py", "logic_blackboard.py", "logic_event_bus.py", "logic_runtime.py", "prefab_asset.py", "runtime_world.py", "scene_loader.py",
     }

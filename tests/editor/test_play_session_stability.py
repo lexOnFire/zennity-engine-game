@@ -148,11 +148,12 @@ def test_runtime_restart_resets_physics_and_restarts_autoplay_audio() -> None:
 
 def test_viewport_has_one_runtime_lifecycle_and_initializes_spawned_prefabs() -> None:
     viewport_source = Path("editor/isolated_viewport.py").read_text(encoding="utf-8")
+    initializer_source = Path("editor/runtime/viewport_runtime_initializer.py").read_text(encoding="utf-8")
 
-    assert viewport_source.count("    def start_scripts()") == 1
     assert viewport_source.count("    def stop_scripts()") == 1
     assert viewport_source.count("    def game_camera()") == 1
-    assert "def start_spawned_objects()" in viewport_source
-    assert "for hydrator in (hydrate_animation_asset_clips, hydrate_animator_controllers, hydrate_logic_graphs)" in viewport_source
-    assert "hydrator({name: obj}, Path.cwd())" in viewport_source
-    assert "start_spawned_objects()\n            keys" in viewport_source
+    assert "class ViewportRuntimeInitializer" in initializer_source
+    assert "def start_spawned_objects(self)" in initializer_source
+    assert "for hydrator in self.hydrators" in initializer_source
+    assert "self._hydrate({name: obj})" in initializer_source
+    assert "runtime_initializer.start_spawned_objects()\n            keys" in viewport_source

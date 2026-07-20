@@ -39,13 +39,12 @@ try:
     from editor.runtime.viewport_session_orchestrator import ViewportSessionOrchestrator
     from editor.runtime.viewport_script_updater import ViewportScriptUpdater
     from editor.runtime.viewport_contact_processor import ViewportContactProcessor
+    from editor.runtime.viewport_runtime_initializer import ViewportRuntimeInitializer
     from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
     from engine.animation.controller_asset import AnimatorControllerRuntime, load_animator_controller
     from engine.behavior.controller_asset import BehaviorControllerRunner, load_behavior_controller
     from engine.logic.graph_asset import load_logic_graph
     from engine.logic.runtime import LogicGraphRuntime
-    from engine.logic.blackboard import BlackboardStore, load_blackboard_asset
-    from engine.logic.event_bus import LogicEventBus
     from engine.runtime.runtime_world import RuntimeWorld
 except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .audio_playback_state import set_channels_paused
@@ -65,13 +64,12 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .viewport_session_orchestrator import ViewportSessionOrchestrator
     from .viewport_script_updater import ViewportScriptUpdater
     from .viewport_contact_processor import ViewportContactProcessor
+    from .viewport_runtime_initializer import ViewportRuntimeInitializer
     from .clip_asset import animation_asset_to_clip, load_animation_asset
     from .controller_asset import AnimatorControllerRuntime, load_animator_controller
     from .behavior_controller import BehaviorControllerRunner, load_behavior_controller
     from .logic_graph_asset import load_logic_graph
     from .logic_runtime import LogicGraphRuntime
-    from .logic_blackboard import BlackboardStore, load_blackboard_asset
-    from .logic_event_bus import LogicEventBus
     from .runtime_world import RuntimeWorld
 
 
@@ -712,8 +710,6 @@ def run_viewport(
     behavior_runners: dict[str, BehaviorControllerRunner] = {}
     logic_runtimes: dict[str, list[tuple[str, LogicGraphRuntime]]] = {}
     initialized_runtime_ids: set[str] = set()
-    logic_blackboard = BlackboardStore()
-    logic_event_bus = LogicEventBus()
     scene_blackboard_config: dict[str, Any] = {}
     logic_trace_last_sent = 0.0
     animator_event_signatures: dict[str, tuple[Any, ...]] = {}
@@ -826,131 +822,6 @@ def run_viewport(
             })
         return snapshot
 
-    def start_scripts() -> None:
-        nonlocal logic_blackboard, logic_event_bus
-        script_instances.clear()
-        script_apis.clear()
-        animator_controllers.clear()
-        behavior_runners.clear()
-        logic_runtimes.clear()
-        initialized_runtime_ids.clear()
-        animator_event_signatures.clear()
-        runtime_world.reset_session()
-        project_blackboard_path = Path.cwd() / "Assets" / "Logic" / "ProjectBlackboard.zblackboard"
-        try:
-            project_blackboard = load_blackboard_asset(project_blackboard_path) if project_blackboard_path.is_file() else {}
-        except (OSError, ValueError):
-            project_blackboard = {}
-        logic_blackboard = BlackboardStore(scene_blackboard_config, project_blackboard)
-        logic_event_bus = LogicEventBus()
-        initial_objects = list(objects.items())
-        for level, object_name, message in hydrate_animation_asset_clips(objects, Path.cwd()):
-            _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
-        for level, object_name, message in hydrate_animator_controllers(objects, Path.cwd()):
-            _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
-        for level, object_name, message in hydrate_logic_graphs(objects, Path.cwd()):
-            _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
-        for name, obj in initial_objects:
-            animator = obj.get("animator")
-            if not isinstance(animator, dict):
-                continue
-            controller = animator.get("controller")
-            if isinstance(controller, dict):
-                runtime = AnimatorControllerRuntime(controller, animator.get("parameters", {}))
-                animator_controllers[name] = runtime
-                animator["parameters"] = dict(runtime.parameters)
-                animator["active_clip"] = runtime.current_state
-                obj["_animator_state"] = runtime.current_state
-            obj["_current_animation_name"] = str(animator.get("active_clip", "Idle"))
-            obj["_animation_time"] = 0.0
-            obj["_animation_frame"] = 0
-            obj["_animation_raw_frame"] = -1
-        for name, obj in initial_objects:
-            entries = obj.get("logic_graphs", [])
-            if not isinstance(entries, list):
-                continue
-            for entry in entries:
-                graph = entry.get("graph") if isinstance(entry, dict) else None
-                if not isinstance(graph, dict):
-                    continue
-                try:
-                    api = script_apis.setdefault(name, PlayScriptAPI(name, obj, events, objects, runtime_world))
-                    runtime = LogicGraphRuntime(
-                        graph,
-                        logic_blackboard,
-                        name,
-                        logic_event_bus,
-                        lambda path: load_project_subgraph(path, Path.cwd()),
-                    )
-                    runtime.start(api)
-                    logic_runtimes.setdefault(name, []).append((str(entry.get("path", graph.get("name", "Logic Graph"))), runtime))
-                except Exception as exc:
-                    _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}: Logic Graph: {exc}"})
-        loaded_graphs = sum(len(entries) for entries in logic_runtimes.values())
-        initialized_runtime_ids.update(str(obj.get("id", name)) for name, obj in initial_objects)
-        start_spawned_objects()
-        _send(events, {"type": "script_log", "level": "INFO", "message": f"Play Mode carregou {loaded_graphs} Logic Graph(s); scripts Python estão desativados"})
-
-    def stop_scripts() -> None:
-        logic_runtimes.clear()
-        script_instances.clear()
-        script_apis.clear()
-        animator_controllers.clear()
-        behavior_runners.clear()
-        initialized_runtime_ids.clear()
-        animator_event_signatures.clear()
-        active_contacts.clear()
-        _send(events, {"type": "logic_trace_clear"})
-
-    def start_spawned_objects() -> None:
-        active_names = set(objects)
-        for stale_name in set(logic_runtimes) - active_names:
-            logic_runtimes.pop(stale_name, None)
-            script_apis.pop(stale_name, None)
-            animator_controllers.pop(stale_name, None)
-        pending = [
-            (name, obj) for name, obj in list(objects.items())
-            if str(obj.get("id", name)) not in initialized_runtime_ids
-        ]
-        for name, obj in pending:
-            object_id = str(obj.get("id", name))
-            initialized_runtime_ids.add(object_id)
-            for hydrator in (hydrate_animation_asset_clips, hydrate_animator_controllers, hydrate_logic_graphs):
-                for level, object_name, message in hydrator({name: obj}, Path.cwd()):
-                    _send(events, {"type": "script_log", "level": level, "message": f"{object_name}: {message}"})
-            animator = obj.get("animator")
-            if isinstance(animator, dict):
-                controller = animator.get("controller")
-                if isinstance(controller, dict):
-                    controller_runtime = AnimatorControllerRuntime(controller, animator.get("parameters", {}))
-                    animator_controllers[name] = controller_runtime
-                    animator["parameters"] = dict(controller_runtime.parameters)
-                    animator["active_clip"] = controller_runtime.current_state
-                    obj["_animator_state"] = controller_runtime.current_state
-                obj["_current_animation_name"] = str(animator.get("active_clip", "Idle"))
-                obj["_animation_time"] = 0.0
-                obj["_animation_frame"] = 0
-                obj["_animation_raw_frame"] = -1
-            entries = obj.get("logic_graphs", [])
-            if isinstance(entries, list):
-                for entry in entries:
-                    graph = entry.get("graph") if isinstance(entry, dict) else None
-                    if not isinstance(graph, dict):
-                        continue
-                    try:
-                        api = script_apis.setdefault(name, PlayScriptAPI(name, obj, events, objects, runtime_world))
-                        graph_runtime = LogicGraphRuntime(
-                            graph, logic_blackboard, name, logic_event_bus,
-                            lambda path: load_project_subgraph(path, Path.cwd()),
-                        )
-                        graph_runtime.start(api)
-                        logic_runtimes.setdefault(name, []).append((str(entry.get("path", graph.get("name", "Logic Graph"))), graph_runtime))
-                    except Exception as exc:
-                        _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}: Logic Graph: {exc}"})
-            audio = obj.get("audio")
-            if isinstance(audio, dict) and audio.get("autoplay") and audio.get("path"):
-                play_audio_file(name, str(audio["path"]), float(audio.get("volume", 1.0)), bool(audio.get("loop", False)))
-
     def dispatch_contact(name: str, other_name: str, hook_name: str) -> None:
         obj = objects.get(name)
         other_obj = objects.get(other_name)
@@ -1026,6 +897,14 @@ def run_viewport(
         objects, audio_channels, audio_sounds, lambda event: _send(events, event),
         start_audio_sources, stop_audio_sources, play_audio_file,
     )
+    runtime_initializer = ViewportRuntimeInitializer(
+        objects, script_instances, script_apis, animator_controllers, behavior_runners,
+        logic_runtimes, initialized_runtime_ids, animator_event_signatures, runtime_world,
+        (hydrate_animation_asset_clips, hydrate_animator_controllers, hydrate_logic_graphs),
+        lambda name, obj: PlayScriptAPI(name, obj, events, objects, runtime_world),
+        lambda path: load_project_subgraph(path, Path.cwd()),
+        lambda event: _send(events, event), play_audio_file, Path.cwd(),
+    )
     def resize_viewport(width: int, height: int) -> Any:
         resized = pygame.display.set_mode((width, height), display_flags)
         _attach_native_window(pygame, parent_window_id, width, height)
@@ -1034,7 +913,13 @@ def run_viewport(
     def start_scripts_with_config(config: dict[str, Any]) -> None:
         nonlocal scene_blackboard_config
         scene_blackboard_config = deepcopy(config)
-        start_scripts()
+        runtime_initializer.start(scene_blackboard_config)
+
+    def stop_scripts() -> None:
+        runtime_initializer.stop(active_contacts)
+
+    def restart_scripts() -> None:
+        runtime_initializer.start(scene_blackboard_config)
 
     play_commands = ViewportPlayCommandHandler(
         objects, logic_runtimes, script_apis, lambda event: _send(events, event),
@@ -1062,7 +947,7 @@ def run_viewport(
     )
     session_orchestrator = ViewportSessionOrchestrator(
         objects, logic_runtimes, behavior_runners, script_instances, script_apis,
-        animator_controllers, lambda: logic_event_bus, runtime_world, hud_entries,
+        animator_controllers, lambda: runtime_initializer.logic_event_bus, runtime_world, hud_entries,
         lambda event: _send(events, event), play_audio_file,
         lambda value: set_channels_paused(audio_channels, value), dispatch_animation_state_hook,
     )
@@ -1143,7 +1028,7 @@ def run_viewport(
         width, height = screen.get_size()
         dt = clock.get_time() / 1000.0
         if playing and not paused:
-            start_spawned_objects()
+            runtime_initializer.start_spawned_objects()
             keys = pygame.key.get_pressed()
             input_state = {
                 "left": bool(forwarded_input["left"] or keys[pygame.K_a] or keys[pygame.K_LEFT]),
@@ -1166,7 +1051,7 @@ def run_viewport(
                 session_orchestrator.restart(
                     edit_snapshot, velocities_y, grounded, active_contacts,
                     stop_audio_sources, stop_scripts, physics_scheduler.reset,
-                    start_scripts, start_audio_sources,
+                    restart_scripts, start_audio_sources,
                 )
                 restart_requested = False
             physics_steps = physics_scheduler.consume(dt)
