@@ -2,7 +2,7 @@ from __future__ import annotations
 import math
 import random
 from typing import Any, Mapping
-from engine.logic.runtime.registry import registry
+from ..registry import registry
 
 @registry.register_executor('create_object')
 def execute_create_object(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:

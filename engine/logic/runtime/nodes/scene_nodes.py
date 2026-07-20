@@ -2,7 +2,7 @@ from __future__ import annotations
 import math
 import random
 from typing import Any, Mapping
-from engine.logic.runtime.registry import registry
+from ..registry import registry
 
 @registry.register_evaluator('delta_time')
 def evaluate_delta_time(runtime, node_id: str, port: str, node: Mapping[str, Any], game: Any, dt: float, branch: set[str]) -> Any:

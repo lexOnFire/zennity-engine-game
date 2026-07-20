@@ -31,7 +31,7 @@ RUNTIME_SOURCES = (
     "engine/logic/graph_asset.py",
     "engine/logic/blackboard.py",
     "engine/logic/event_bus.py",
-    "engine/logic/runtime.py",
+    "engine/logic/runtime/core.py",
     "engine/prefabs/prefab_asset.py",
     "engine/runtime/runtime_world.py",
     "engine/build/runtime_scene_loader.py",
@@ -346,7 +346,7 @@ def _validate_runtime_sources(root: Path, report: ProjectValidationReport) -> No
     for relative in RUNTIME_SOURCES:
         path = root / relative
         report.checked_files += 1
-        if not path.is_file():
+        if not path.exists():
             report.add("error", "Exportação", "Dependência do runtime não encontrada.", relative)
 
 

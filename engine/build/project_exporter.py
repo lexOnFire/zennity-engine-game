@@ -108,14 +108,14 @@ def _validate_export_inputs(project_root: Path, scene_path: Path, report: BuildR
         "engine/logic/graph_asset.py",
         "engine/logic/blackboard.py",
         "engine/logic/event_bus.py",
-        "engine/logic/runtime.py",
+        "engine/logic/runtime",
         "engine/prefabs/prefab_asset.py",
         "engine/runtime/runtime_world.py",
         "engine/build/runtime_scene_loader.py",
     )
     for relative in runtime_sources:
         source = project_root / relative
-        if not source.is_file():
+        if not source.exists():
             report.add_error("Dependência do runtime de exportação não encontrada.", source)
     if not (project_root / "Assets").is_dir():
         report.add_warning("A pasta Assets não existe; o build será criado sem assets.", project_root / "Assets")
@@ -177,13 +177,14 @@ def _write_development_project(project_root: Path, scene_path: Path, destination
         project_root / "engine" / "logic" / "graph_asset.py": runtime_dir / "logic_graph_asset.py",
         project_root / "engine" / "logic" / "blackboard.py": runtime_dir / "logic_blackboard.py",
         project_root / "engine" / "logic" / "event_bus.py": runtime_dir / "logic_event_bus.py",
-        project_root / "engine" / "logic" / "runtime.py": runtime_dir / "logic_runtime.py",
         project_root / "engine" / "prefabs" / "prefab_asset.py": runtime_dir / "prefab_asset.py",
         project_root / "engine" / "runtime" / "runtime_world.py": runtime_dir / "runtime_world.py",
         project_root / "engine" / "build" / "runtime_scene_loader.py": runtime_dir / "scene_loader.py",
     }
     for source, target in runtime_sources.items():
         shutil.copy2(source, target)
+        
+    shutil.copytree(project_root / "engine" / "logic" / "runtime", runtime_dir / "logic_runtime")
     (runtime_dir / "__init__.py").write_text("", encoding="utf-8")
     (destination / "main.py").write_text(_launcher_source(), encoding="utf-8")
     (destination / "executar.bat").write_text("@echo off\npython main.py\npause\n", encoding="utf-8")
@@ -315,7 +316,7 @@ def _validate_exported_project(destination: Path, report: BuildReport) -> None:
         "zennity_runtime/logic_graph_asset.py",
         "zennity_runtime/logic_blackboard.py",
         "zennity_runtime/logic_event_bus.py",
-        "zennity_runtime/logic_runtime.py",
+        "zennity_runtime/logic_runtime/core.py",
         "zennity_runtime/prefab_asset.py",
         "zennity_runtime/runtime_world.py",
         "zennity_runtime/scene_loader.py",

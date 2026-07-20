@@ -2,7 +2,7 @@ from __future__ import annotations
 import math
 import random
 from typing import Any, Mapping
-from engine.logic.runtime.registry import registry
+from ..registry import registry
 
 @registry.register_executor('input_axis')
 def execute_input_axis(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:

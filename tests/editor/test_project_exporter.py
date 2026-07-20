@@ -33,7 +33,7 @@ RUNTIME_SOURCES = (
     "engine/logic/graph_asset.py",
     "engine/logic/blackboard.py",
     "engine/logic/event_bus.py",
-    "engine/logic/runtime.py",
+    "engine/logic/runtime",
     "engine/prefabs/prefab_asset.py",
     "engine/runtime/runtime_world.py",
     "engine/build/runtime_scene_loader.py",
@@ -61,9 +61,14 @@ def _load_runtime_scene_loader():
 def _install_runtime_sources(project: Path) -> None:
     source_root = Path.cwd()
     for relative in RUNTIME_SOURCES:
+        source_path = source_root / relative
         target = project / relative
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes((source_root / relative).read_bytes())
+        if source_path.is_dir():
+            import shutil
+            shutil.copytree(source_path, target, dirs_exist_ok=True)
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(source_path.read_bytes())
 
 
 def test_development_export_contains_scene_assets_and_launchers(tmp_path: Path) -> None:
@@ -178,7 +183,8 @@ def test_exported_runtime_contains_all_standalone_dependencies(tmp_path: Path) -
         "viewport_contact_processor.py", "spatial_hash.py",
         "viewport_runtime_initializer.py",
         "tint.py", "clip_asset.py", "controller_asset.py", "behavior_controller.py",
-        "logic_graph_asset.py", "logic_blackboard.py", "logic_event_bus.py", "logic_runtime.py", "prefab_asset.py", "runtime_world.py", "scene_loader.py",
+        "logic_graph_asset.py", "logic_blackboard.py", "logic_event_bus.py", 
+        "prefab_asset.py", "runtime_world.py", "scene_loader.py",
     }
     launcher = (Path(report.destination) / "main.py").read_text(encoding="utf-8")
     assert "from zennity_runtime.scene_loader import load_objects" in launcher

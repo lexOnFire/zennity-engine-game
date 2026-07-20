@@ -2,7 +2,7 @@ from __future__ import annotations
 import math
 import random
 from typing import Any, Mapping
-from engine.logic.runtime.registry import registry
+from ..registry import registry
 
 @registry.register_evaluator(('add_number', 'subtract_number', 'multiply_number', 'divide_number'))
 def evaluate_add_number_or_subtract_number_or_multiply_number_or_divide_number(runtime, node_id: str, port: str, node: Mapping[str, Any], game: Any, dt: float, branch: set[str]) -> Any:

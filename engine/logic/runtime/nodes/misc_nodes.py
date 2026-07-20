@@ -4,7 +4,7 @@ import random
 from typing import Any, Mapping
 from copy import deepcopy
 from copy import deepcopy
-from engine.logic.runtime.registry import registry
+from ..registry import registry
 
 @registry.register_executor('set_hud')
 def execute_set_hud(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:

@@ -2,7 +2,7 @@ from __future__ import annotations
 import math
 import random
 from typing import Any, Mapping
-from engine.logic.runtime.registry import registry
+from ..registry import registry
 
 @registry.register_evaluator('join_text')
 def evaluate_join_text(runtime, node_id: str, port: str, node: Mapping[str, Any], game: Any, dt: float, branch: set[str]) -> Any:

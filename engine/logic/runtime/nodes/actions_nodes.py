@@ -2,7 +2,7 @@ from __future__ import annotations
 import math
 import random
 from typing import Any, Mapping
-from engine.logic.runtime.registry import registry
+from ..registry import registry
 
 @registry.register_executor('play_animation')
 def execute_play_animation(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
