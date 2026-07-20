@@ -24,7 +24,7 @@ def test_animation_workspace_exposes_library_timeline_and_asset_actions() -> Non
 
 def test_editor_integrates_zanim_without_removing_embedded_clips() -> None:
     source = (ROOT / "editor" / "isolated_editor_main.py").read_text(encoding="utf-8")
-    operations = (ROOT / "editor" / "animation_workspace_operations.py").read_text(encoding="utf-8")
+    operations = (ROOT / "editor" / "animation_workspace_operations.py").read_text(encoding="utf-8") + (ROOT / "editor" / "animation_asset_operations.py").read_text(encoding="utf-8") + (ROOT / "editor" / "animation_preview_operations.py").read_text(encoding="utf-8")
 
     assert "AnimationWorkspaceOperations" in source
     assert "load_animation_asset" in operations
@@ -46,7 +46,7 @@ def test_preview_index_exists_before_animation_workspace_is_configured() -> None
 def test_zanim_can_be_applied_explicitly_or_dropped_on_an_object() -> None:
     source = (ROOT / "editor" / "isolated_editor_main.py").read_text(encoding="utf-8")
     controller = (ROOT / "editor" / "animation_workspace_controller.py").read_text(encoding="utf-8")
-    operations = (ROOT / "editor" / "animation_workspace_operations.py").read_text(encoding="utf-8")
+    operations = (ROOT / "editor" / "animation_workspace_operations.py").read_text(encoding="utf-8") + (ROOT / "editor" / "animation_asset_operations.py").read_text(encoding="utf-8") + (ROOT / "editor" / "animation_preview_operations.py").read_text(encoding="utf-8")
 
     assert "h.animation_apply_button.clicked.connect" in controller
     assert "h.animation_demo_button.clicked.connect" in controller
@@ -68,7 +68,7 @@ def test_animation_workspace_separates_asset_object_timeline_and_clip_properties
     source = (ROOT / "editor" / "ui" / "workspace_builder.py").read_text(encoding="utf-8")
     runtime = (ROOT / "editor" / "isolated_editor_main.py").read_text(encoding="utf-8")
     controller = (ROOT / "editor" / "animation_workspace_controller.py").read_text(encoding="utf-8")
-    operations = (ROOT / "editor" / "animation_workspace_operations.py").read_text(encoding="utf-8")
+    operations = (ROOT / "editor" / "animation_workspace_operations.py").read_text(encoding="utf-8") + (ROOT / "editor" / "animation_asset_operations.py").read_text(encoding="utf-8") + (ROOT / "editor" / "animation_preview_operations.py").read_text(encoding="utf-8")
 
     for label in ("ASSET", "OBJETO", "TIMELINE", "OBJETO SELECIONADO", "PROPRIEDADES DO CLIP"):
         assert f'QLabel("{label}")' in source

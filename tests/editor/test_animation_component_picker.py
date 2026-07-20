@@ -27,7 +27,7 @@ def test_animation_picker_discovers_searches_and_previews_zanim_assets() -> None
 
 def test_animator_component_opens_picker_before_mutating_object() -> None:
     source = _source("editor/inspector_controller.py")
-    operations = _source("editor/animation_workspace_operations.py")
+    operations = _source("editor/animation_workspace_operations.py") + _source("editor/animation_asset_operations.py") + _source("editor/animation_preview_operations.py")
     add_start = source.index("def add_component")
     add_method = source[add_start:source.index("def _attach_next_script", add_start)]
     choose_start = operations.index("def _choose_animation_component")
@@ -42,7 +42,7 @@ def test_animator_component_opens_picker_before_mutating_object() -> None:
 
 def test_animation_picker_preserves_create_and_empty_compatibility_paths() -> None:
     picker = _source("editor/widgets/animation_picker.py")
-    operations = _source("editor/animation_workspace_operations.py")
+    operations = _source("editor/animation_workspace_operations.py") + _source("editor/animation_asset_operations.py") + _source("editor/animation_preview_operations.py")
 
     assert 'self.create_button = QPushButton("Criar nova")' in picker
     assert 'self.empty_button = QPushButton("Adicionar vazio")' in picker

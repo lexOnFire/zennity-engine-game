@@ -37,7 +37,7 @@ def test_logic_and_animation_use_independent_windows_not_viewport_tabs():
         + _source("editor/inspector_controller.py")
         + _source("editor/logic_workspace_controller.py")
     )
-    animation = _source("editor/animation_workspace_operations.py")
+    animation = _source("editor/animation_workspace_operations.py") + _source("editor/animation_asset_operations.py") + _source("editor/animation_preview_operations.py")
     assert 'self.viewport_tabs.addTab(QWidget(), "Animation")' not in interface
     assert 'self.viewport_tabs.addTab(QWidget(), "Logic")' not in interface
     assert "class DetachedWorkspaceWindow(QMainWindow)" in interface
