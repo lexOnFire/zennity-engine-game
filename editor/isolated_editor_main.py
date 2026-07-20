@@ -41,6 +41,7 @@ from editor.animation_workspace_controller import AnimationWorkspaceController
 from editor.animation_workspace_operations import AnimationWorkspaceOperations
 from editor.asset_preview_service import AssetPreviewService
 from editor.scene_persistence import EditorScenePersistence
+from editor.hierarchy_view_renderer import HierarchyViewRenderer
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from editor.widgets.component_picker import ComponentPickerDialog
@@ -149,6 +150,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
         self._runtime_objects_by_name: dict[str, dict] = {}
         self._selected_name: str | None = None
+        self._hierarchy_view = HierarchyViewRenderer(self)
         self._updating_inspector = False
         self._scene_history = SceneHistory(max_commands=100, max_bytes=16 * 1024 * 1024)
         self._inspector_controller = IsolatedInspectorController(self)
@@ -1220,47 +1222,10 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._update_inspector(self._selected_name)
 
     def _refresh_hierarchy(self) -> None:
-        self.hierarchy_tree.clear()
-        scene_name = self._scene_document.get("scene_name", "MainScene") if self._scene_document else "MainScene"
-        root = QTreeWidgetItem(["🟢 " + str(scene_name)])
-        root.setExpanded(True)
-        for obj in self._scene_snapshot:
-            name = str(obj["name"])
-            if "player" in name.lower():
-                icon = "👤 "
-            elif "chao" in name.lower() or "floor" in name.lower():
-                icon = "🏔️ "
-            else:
-                icon = "📦 "
-            item = QTreeWidgetItem([icon + name])
-            item.setData(0, Qt.UserRole, name)
-            root.addChild(item)
-        spawned = [
-            obj for name, obj in self._runtime_objects_by_name.items()
-            if obj.get("spawned_by_logic", False) and name not in self._objects_by_name
-        ]
-        if self._runtime_playing and spawned:
-            runtime_root = QTreeWidgetItem([f"▶ Runtime ({len(spawned)})"])
-            runtime_root.setData(0, Qt.UserRole + 1, "runtime-group")
-            runtime_root.setExpanded(True)
-            for obj in sorted(spawned, key=lambda value: str(value.get("name", ""))):
-                runtime_name = str(obj.get("name", "RuntimeObject"))
-                item = QTreeWidgetItem(["⚡ " + runtime_name])
-                item.setData(0, Qt.UserRole, runtime_name)
-                item.setData(0, Qt.UserRole + 1, "runtime-object")
-                item.setToolTip(0, "Instância temporária criada durante o Play Mode")
-                runtime_root.addChild(item)
-            root.addChild(runtime_root)
-        self.hierarchy_tree.addTopLevelItem(root)
+        self._hierarchy_view.refresh()
 
-    @staticmethod
-    def _hierarchy_item_name(item: QTreeWidgetItem | None) -> str:
-        if item is None:
-            return ""
-        stored_name = item.data(0, Qt.UserRole)
-        if stored_name:
-            return str(stored_name)
-        return item.text(0).lstrip("🟢🔴🟡🔵🟣⚫⚪📁🏔️☀️☁️📷🔶💡👤📦 ").strip()
+    def _hierarchy_item_name(self, item: QTreeWidgetItem | None) -> str:
+        return self._hierarchy_view.item_name(item)
 
     def _connect_inspector_to_viewport(self) -> None:
         self._inspector_controller.connect()

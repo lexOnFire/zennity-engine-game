@@ -225,7 +225,11 @@ def test_gameplay_event_library_and_search_are_available():
 
 def test_visual_logic_is_cleanly_managed_from_inspector():
     interface = _source("editor/interface_smoke_test.py")
-    main = _source("editor/isolated_editor_main.py") + _source("editor/inspector_view_renderer.py")
+    main = (
+        _source("editor/isolated_editor_main.py")
+        + _source("editor/inspector_view_renderer.py")
+        + _source("editor/hierarchy_view_renderer.py")
+    )
     inspector = _source("editor/inspector_controller.py")
     picker = _source("editor/widgets/logic_graph_picker.py")
     components = _source("editor/widgets/component_picker.py")
