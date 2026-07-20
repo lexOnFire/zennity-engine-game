@@ -34,6 +34,7 @@ from editor.runtime.isolated_play_mode_controller import IsolatedPlayModeControl
 from editor.runtime.scene_selection_controller import SceneSelectionController
 from editor.runtime.viewport_event_dispatcher import ViewportEventDispatcher
 from editor.runtime.scene_history import SceneHistory
+from editor.runtime.editor_event_router import EditorEventRouter
 from editor.inspector_controller import InspectorComponentController, IsolatedInspectorController
 from editor.inspector_view_renderer import InspectorViewRenderer
 from editor.animation_workspace_controller import AnimationWorkspaceController
@@ -199,6 +200,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._inspector_drop_targets = {self.inspector_panel, *self.inspector_panel.findChildren(QWidget)}
         self._scene_drop_targets = {self.viewport_tabs, self.viewport_tabs.tabBar(), self.viewport_host}
         self._script_drop_targets = self._hierarchy_drop_targets | self._inspector_drop_targets | self._scene_drop_targets
+        self._event_router = EditorEventRouter(self)
         for target in self._script_drop_targets:
             target.setAcceptDrops(True)
             target.installEventFilter(self)
@@ -266,96 +268,9 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         )
 
     def eventFilter(self, watched, event) -> bool:
-        key_map = {
-            Qt.Key_A: "left", Qt.Key_Left: "left",
-            Qt.Key_D: "right", Qt.Key_Right: "right",
-            Qt.Key_W: "up", Qt.Key_Up: "up",
-            Qt.Key_S: "down", Qt.Key_Down: "down",
-            Qt.Key_Space: "jump",
-            Qt.Key_R: "restart",
-        }
-        if self._runtime_playing and event.type() == QEvent.ShortcutOverride and event.key() in key_map:
-            event.accept()
-            return True
-        if self._runtime_playing and event.type() in (QEvent.KeyPress, QEvent.KeyRelease) and event.key() in key_map:
-            if not event.isAutoRepeat():
-                self._runtime_keys[key_map[event.key()]] = event.type() == QEvent.KeyPress
-                self._commands.put({"type": "runtime_input", "keys": dict(self._runtime_keys)})
-                self.statusBar().showMessage(f"Play Input: {key_map[event.key()]} {'ON' if event.type() == QEvent.KeyPress else 'OFF'}")
-            return True
-        if watched is self.viewport_host and event.type() == QEvent.Resize:
-            self._pending_viewport_size = self.native_viewport_size()
-            self._viewport_resize_timer.start()
-        if watched in self._script_drop_targets:
-            if self._play_session.is_running and event.type() in {
-                QEvent.DragEnter, QEvent.DragMove, QEvent.Drop
-            }:
-                event.ignore()
-                return True
-            if event.type() == QEvent.DragEnter:
-                if event.source() is not self.assets_tree:
-                    return super().eventFilter(watched, event)
-                path = self._dragged_asset_path()
-                if path is not None and path.suffix.lower() in {".zanim", ".zanimator", ".zlogic", ".png", ".jpg", ".jpeg", ".bmp", ".webp"}:
-                    event.acceptProposedAction()
-                    return True
-            elif event.type() == QEvent.DragMove:
-                if event.source() is not self.assets_tree:
-                    return super().eventFilter(watched, event)
-                event.acceptProposedAction()
-                return True
-            elif event.type() == QEvent.Drop:
-                if event.source() is not self.assets_tree:
-                    return super().eventFilter(watched, event)
-                path = self._dragged_asset_path()
-                if path is not None and path.suffix.lower() == ".py":
-                    if watched is self.viewport_host:
-                        pos = event.position()
-                        scale = max(1.0, float(self.viewport_host.devicePixelRatioF()))
-                        self._commands.put({"type": "script_drop_at", "path": str(path.resolve()), "screen_x": float(pos.x()) * scale, "screen_y": float(pos.y()) * scale})
-                        event.acceptProposedAction()
-                        return True
-                    target_name = self._selected_name
-                    if watched in self._hierarchy_drop_targets:
-                        local_position = self.hierarchy_tree.viewport().mapFromGlobal(event.globalPosition().toPoint())
-                        item = self.hierarchy_tree.itemAt(local_position)
-                        item_name = self._hierarchy_item_name(item)
-                        if item_name in self._objects_by_name:
-                            target_name = item_name
-                    if target_name in self._objects_by_name:
-                        self._attach_script(target_name, path)
-                        event.acceptProposedAction()
-                        return True
-                elif path is not None and path.suffix.lower() == ".zanim":
-                    target_name = self._selected_name
-                    if watched in self._hierarchy_drop_targets:
-                        local_position = self.hierarchy_tree.viewport().mapFromGlobal(event.globalPosition().toPoint())
-                        item = self.hierarchy_tree.itemAt(local_position)
-                        item_name = self._hierarchy_item_name(item)
-                        if item_name in self._objects_by_name:
-                            target_name = item_name
-                    if target_name in self._objects_by_name:
-                        self._apply_animation_asset_path_to_object(path, target_name)
-                        event.acceptProposedAction()
-                        return True
-                elif path is not None and path.suffix.lower() == ".zanimator":
-                    target_name = self._selected_name
-                    if watched in self._hierarchy_drop_targets:
-                        local_position = self.hierarchy_tree.viewport().mapFromGlobal(event.globalPosition().toPoint())
-                        item = self.hierarchy_tree.itemAt(local_position)
-                        item_name = self._hierarchy_item_name(item)
-                        if item_name in self._objects_by_name:
-                            target_name = item_name
-                    if target_name in self._objects_by_name:
-                        self._apply_animator_controller_path(path, target_name)
-                        event.acceptProposedAction()
-                        return True
-                elif path is not None and watched is self.viewport_host and path.suffix.lower() in {".png", ".jpg", ".jpeg", ".bmp", ".webp"}:
-                    pos = event.position()
-                    scale = max(1.0, float(self.viewport_host.devicePixelRatioF()))
-                    self._create_sprite_at(path, float(pos.x()) * scale, float(pos.y()) * scale)
-                    event.acceptProposedAction()
-                    return True
+        handled = self._event_router.handle(watched, event)
+        if handled is not None:
+            return handled
         return super().eventFilter(watched, event)
 
     def _flush_viewport_resize(self) -> None:

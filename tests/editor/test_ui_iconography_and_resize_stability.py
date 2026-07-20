@@ -34,13 +34,13 @@ def test_animation_actions_use_the_same_svg_package() -> None:
 
 def test_viewport_resize_events_are_coalesced_and_deduplicated() -> None:
     source = (ROOT / "editor" / "isolated_editor_main.py").read_text(encoding="utf-8")
-    event_filter = source[source.index("def eventFilter"):source.index("def _flush_viewport_resize")]
+    event_filter = (ROOT / "editor" / "runtime" / "editor_event_router.py").read_text(encoding="utf-8")
     flush = source[source.index("def _flush_viewport_resize"):source.index("def _dragged_asset_path")]
 
     assert "self._viewport_resize_timer.setSingleShot(True)" in source
     assert "self._viewport_resize_timer.setInterval(24)" in source
-    assert "self._pending_viewport_size = self.native_viewport_size()" in event_filter
-    assert "self._viewport_resize_timer.start()" in event_filter
+    assert "editor._pending_viewport_size = editor.native_viewport_size()" in event_filter
+    assert "editor._viewport_resize_timer.start()" in event_filter
     assert 'self._commands.put({"type": "viewport_size"' not in event_filter
     assert "size == self._last_viewport_size_sent" in flush
     assert 'self._commands.put({"type": "viewport_size", "w": size[0], "h": size[1]})' in flush
