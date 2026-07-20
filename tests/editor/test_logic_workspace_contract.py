@@ -233,6 +233,7 @@ def test_visual_logic_is_cleanly_managed_from_inspector():
         _source("editor/isolated_editor_main.py")
         + _source("editor/inspector_view_renderer.py")
         + _source("editor/hierarchy_view_renderer.py")
+        + _source("editor/viewport_event_controller.py")
         + _source("editor/logic_workspace_controller.py")
     )
     inspector = _source("editor/inspector_controller.py")

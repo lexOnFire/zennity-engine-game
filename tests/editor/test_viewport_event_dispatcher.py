@@ -21,11 +21,9 @@ def test_dispatcher_ignores_unknown_event() -> None:
 
 
 def test_event_polling_only_drains_queue_and_dispatches() -> None:
-    source = Path("editor/isolated_editor_main.py").read_text(encoding="utf-8")
-    polling = source.split("    def _read_viewport_events", 1)[1].split(
-        "    def closeEvent", 1
-    )[0]
+    source = Path("editor/viewport_event_controller.py").read_text(encoding="utf-8")
+    polling = source.split("    def poll", 1)[1]
 
-    assert "self._viewport_events.dispatch(message)" in polling
+    assert "h._viewport_events.dispatch(message)" in polling
     assert 'message.get("type")' not in polling
     assert "elif " not in polling
