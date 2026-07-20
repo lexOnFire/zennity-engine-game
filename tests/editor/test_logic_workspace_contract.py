@@ -19,6 +19,8 @@ def _source(relative: str) -> str:
         source += (ROOT / "editor/runtime/viewport_play_commands.py").read_text(encoding="utf-8")
         source += (ROOT / "editor/runtime/viewport_session_orchestrator.py").read_text(encoding="utf-8")
         source += (ROOT / "editor/runtime/viewport_runtime_initializer.py").read_text(encoding="utf-8")
+        source += (ROOT / "editor/runtime/viewport_asset_hydration.py").read_text(encoding="utf-8")
+        source += (ROOT / "editor/runtime/viewport_script_api.py").read_text(encoding="utf-8")
     if relative == "editor/interface_smoke_test.py":
         source += "\n" + (ROOT / "editor/ui/workspace_builder.py").read_text(encoding="utf-8")
         source += "\n" + (ROOT / "editor/ui/docks_builder.py").read_text(encoding="utf-8")
