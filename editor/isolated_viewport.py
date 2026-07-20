@@ -37,6 +37,7 @@ try:
     from editor.runtime.viewport_physics_stepper import ViewportPhysicsStepper
     from editor.runtime.viewport_animation_updater import ViewportAnimationUpdater
     from editor.runtime.viewport_session_orchestrator import ViewportSessionOrchestrator
+    from editor.runtime.viewport_script_updater import ViewportScriptUpdater
     from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
     from engine.animation.controller_asset import AnimatorControllerRuntime, load_animator_controller
     from engine.behavior.controller_asset import BehaviorControllerRunner, load_behavior_controller
@@ -61,6 +62,7 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .viewport_physics_stepper import ViewportPhysicsStepper
     from .viewport_animation_updater import ViewportAnimationUpdater
     from .viewport_session_orchestrator import ViewportSessionOrchestrator
+    from .viewport_script_updater import ViewportScriptUpdater
     from .clip_asset import animation_asset_to_clip, load_animation_asset
     from .controller_asset import AnimatorControllerRuntime, load_animator_controller
     from .behavior_controller import BehaviorControllerRunner, load_behavior_controller
@@ -1102,6 +1104,11 @@ def run_viewport(
         lambda event: _send(events, event), play_audio_file,
         lambda value: set_channels_paused(audio_channels, value), dispatch_animation_state_hook,
     )
+    script_updater = ViewportScriptUpdater(
+        objects, script_instances, script_apis, animator_controllers, hud_entries,
+        normalize_ui, play_audio_file, dispatch_animation_state_hook,
+        lambda event: _send(events, event),
+    )
 
     while running:
         for command in command_queue.drain():
@@ -1187,87 +1194,9 @@ def run_viewport(
                 input_state, dt, logic_trace_last_sent, velocities_y, grounded, restart_requested,
             )
             paused = paused or debug_pause_requested
-            for name, instances in list(script_instances.items()):
-                obj = objects.get(name)
-                if obj is None:
-                    continue
-                instructions = obj.pop("script_instructions", [])
-                api = script_apis[name]
-                api.begin_frame(input_state)
-                for path, module in list(instances):
-                    try:
-                        simple_instruction_hook = getattr(module, "on_instruction", None)
-                        legacy_instruction_hook = getattr(module, "isolated_on_instruction", None)
-                        for instruction in instructions:
-                            if isinstance(instruction, dict):
-                                cmd = instruction.get("command")
-                                val = instruction.get("value")
-                                if cmd == "play_animation" and val:
-                                    obj["_current_animation_name"] = str(val)
-                                    obj["_animation_time"] = 0.0
-                                    obj["_animation_frame"] = 0
-                                    obj["_animation_raw_frame"] = -1
-                                    # Força o componente de animação (se houver) a trocar
-                                    anim = obj.get("animator")
-                                    if isinstance(anim, dict):
-                                        anim["active_clip"] = str(val)
-                                elif cmd == "animator_play" and val:
-                                    controller = animator_controllers.get(name)
-                                    previous_state = controller.current_state if controller is not None else ""
-                                    if controller is not None and controller.play(str(val)):
-                                        dispatch_animation_state_hook(name, "on_animation_state_exit", previous_state)
-                                        dispatch_animation_state_hook(name, "on_animation_state_enter", controller.current_state)
-                                        obj["_animator_state"] = controller.current_state
-                                        obj["_current_animation_name"] = controller.current_state
-                                        obj["_animation_time"] = 0.0
-                                        obj["_animation_frame"] = 0
-                                        obj["_animation_raw_frame"] = -1
-                                elif cmd in {"animator_set_bool", "animator_set_float"} and isinstance(val, dict):
-                                    controller = animator_controllers.get(name)
-                                    if controller is not None:
-                                        parameter = str(val.get("name", ""))
-                                        if cmd == "animator_set_bool":
-                                            controller.set_bool(parameter, bool(val.get("value")))
-                                        else:
-                                            controller.set_float(parameter, float(val.get("value", 0.0)))
-                                elif cmd == "animator_trigger" and val:
-                                    controller = animator_controllers.get(name)
-                                    if controller is not None:
-                                        controller.trigger(str(val))
-                                elif cmd == "stop_animation":
-                                    obj["_current_animation_name"] = "Nenhum"
-                                elif cmd == "play_sound" and val:
-                                    play_audio_file(f"script:{name}", str(val))
-                                elif cmd == "set_hud" and isinstance(val, dict):
-                                    hud_entries.set_entry(dict(val))
-                                elif cmd == "remove_hud":
-                                    hud_entries.remove_entry(str(val))
-                                elif cmd == "set_ui_text" and isinstance(val, dict):
-                                    target = objects.get(str(val.get("object", "")))
-                                    target_ui = normalize_ui(target.get("ui")) if target is not None else None
-                                    if target is not None and target_ui is not None and target_ui["type"] in {"text", "button"}:
-                                        target_ui["text"] = str(val.get("text", ""))
-                                        target["ui"] = target_ui
-                                elif cmd == "restart_scene":
-                                    restart_requested = True
-
-                                if callable(simple_instruction_hook):
-                                    simple_instruction_hook(api, instruction)
-                                elif callable(legacy_instruction_hook):
-                                    legacy_instruction_hook(obj, instruction)
-                        if module._zennity_update_mode == "simple":
-                            module._zennity_update_hook(api, dt)
-                        elif module._zennity_update_mode == "legacy":
-                            module._zennity_update_hook(obj, dt)
-                        else:
-                            module._zennity_update_hook(obj, input_state, dt)
-                    except Exception as exc:
-                        instances.remove((path, module))
-                        _send(events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}: {exc}"})
-                if obj.pop("_jump_requested", False) and grounded.get(name, False):
-                    velocities_y[name] = -float(obj.pop("_jump_force", 420.0))
-                    grounded[name] = False
-                    obj["_grounded"] = False
+            restart_requested = script_updater.update(
+                input_state, dt, velocities_y, grounded,
+            ) or restart_requested
             session_orchestrator.update_behaviors(input_state, dt)
             session_orchestrator.finish_frame(dt, velocities_y, grounded)
             if restart_requested:
