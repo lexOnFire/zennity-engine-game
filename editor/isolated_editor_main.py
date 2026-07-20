@@ -28,7 +28,7 @@ from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QWidget
 from editor.interface_smoke_test import InterfaceSmokeTest
 from editor.controllers.logic_assets import LogicAssetRepository
 from editor.isolated_viewport import run_viewport
-from editor.runtime.native_ui import normalize_ui, scene_item_to_ui, ui_to_scene_item
+from editor.runtime.native_ui import normalize_ui
 from editor.runtime.viewport_process_controller import ViewportProcessController
 from editor.runtime.isolated_play_mode_controller import IsolatedPlayModeController
 from editor.runtime.scene_selection_controller import SceneSelectionController
@@ -40,6 +40,7 @@ from editor.inspector_view_renderer import InspectorViewRenderer
 from editor.animation_workspace_controller import AnimationWorkspaceController
 from editor.animation_workspace_operations import AnimationWorkspaceOperations
 from editor.asset_preview_service import AssetPreviewService
+from editor.scene_persistence import EditorScenePersistence
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from editor.widgets.component_picker import ComponentPickerDialog
@@ -62,7 +63,6 @@ from engine.prefabs.prefab_asset import (
     apply_exposed_properties, create_prefab_variant, load_prefab_asset,
     resolve_prefab_parameters,
 )
-from engine.scene import SceneDocument
 from editor.widgets.build_report_dialog import BuildReportDialog
 from editor.widgets.project_validation_dialog import ProjectValidationDialog
 from engine.build import (
@@ -85,6 +85,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._logic_assets_repository = LogicAssetRepository(Path.cwd())
         super().__init__()
         self._asset_preview_service = AssetPreviewService(DEFAULT_TOKENS.danger)
+        self._scene_persistence = EditorScenePersistence(Path.cwd())
         self._current_animation_asset_path: Path | None = None
         self._animation_draft_name = "NewAnimation"
         self._animation_events: list[dict] = []
@@ -1085,169 +1086,44 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
     def _save_scene_snapshot(self) -> None:
         filename, _ = QFileDialog.getSaveFileName(
             self, "Salvar cena", str(self._current_scene_path or "Untitled.zscene"),
-            "Zennity Scene (*.zscene);;Cena JSON (*.json)"
+            "Zennity Scene (*.zscene);;Cena JSON (*.json)",
         )
         if not filename:
             return
         path = Path(filename)
-        payload = deepcopy(self._scene_document) if self._scene_document else {
-            "format_version": 2, "scene_name": path.stem, "engine_version": "Zennity 0.1.0", "objects": []
-        }
-        payload["format_version"] = max(2, int(payload.get("format_version", 1)))
-        payload["scene_name"] = str(payload.get("scene_name") or path.stem)
-        scene_variables = self._collect_logic_variables("scene")
-        payload["blackboard"] = {"variables": scene_variables}
-        existing_by_id = {str(item.get("id")): item for item in payload.get("objects", []) if item.get("id") is not None}
-        existing_by_name = {str(item.get("name")): item for item in payload.get("objects", [])}
-        scene_objects = []
-        for snapshot in self._scene_snapshot:
-            source = deepcopy(existing_by_id.get(str(snapshot.get("id"))) or existing_by_name.get(snapshot["name"], {}))
-            source.update({"name": snapshot["name"], "active": bool(snapshot.get("active", True)), "enabled": bool(snapshot.get("active", True)), "static": bool(snapshot.get("static", False)), "tag": str(snapshot.get("tag", "Untagged")), "layer": str(snapshot.get("layer", "Default"))})
-            source.setdefault("id", snapshot.get("id", snapshot["name"]))
-            source["transform"] = {
-                "position": [snapshot["x"], snapshot["y"], 0.0],
-                "rotation": [0.0, 0.0, float(snapshot.get("rotation", 0.0))],
-                "rz": float(snapshot.get("rotation", 0.0)),
-                "scale": [snapshot["w"], snapshot["h"], 1.0],
-            }
-            source.setdefault("visual", {"mesh_type": snapshot.get("mesh_type"), "color": snapshot.get("color")})
-            if not isinstance(source.get("visual"), dict):
-                source["visual"] = {"mesh_type": snapshot.get("mesh_type"), "color": snapshot.get("color")}
-            source["visual"]["enabled"] = bool(snapshot.get("renderer_enabled", True))
-            source["visual"]["material"] = str(snapshot.get("material", "Default_Material"))
-            source["visual"]["mesh_type"] = snapshot.get("mesh_type")
-            source["visual"]["color"] = snapshot.get("color", (255, 255, 255))
-            source["visual"]["texture"] = str(snapshot.get("texture", ""))
-            source["visual"]["layer"] = str(snapshot.get("render_layer", "Default"))
-            source["visual"]["order"] = int(snapshot.get("sort_order", 0))
-            components = source.get("components")
-            if not isinstance(components, dict):
-                components = {}
-                source["components"] = components
-            components.pop("controller", None)
-            for key in ("rigidbody", "collider", "camera", "audio", "scripts"):
-                components.pop(key, None)
-            if snapshot.get("rigidbody") is not None:
-                components["rigidbody"] = deepcopy(snapshot["rigidbody"])
-            if snapshot.get("collider") is not None:
-                collider = deepcopy(snapshot["collider"])
-                collider.setdefault("width", snapshot["w"])
-                collider.setdefault("height", snapshot["h"])
-                components["collider"] = collider
-            if snapshot.get("camera") is not None or "Camera2D" in snapshot.get("component_names", []):
-                components["camera"] = deepcopy(snapshot.get("camera") or {"active": True, "zoom": 1.0})
-            if isinstance(snapshot.get("audio"), dict):
-                components["audio"] = deepcopy(snapshot["audio"])
-            existing_items = components.get("items") if isinstance(components.get("items"), list) else []
-            components["items"] = [
-                deepcopy(item) for item in existing_items
-                if scene_item_to_ui(item) is None
-            ]
-            ui_item = ui_to_scene_item(snapshot.get("ui"))
-            if ui_item is not None:
-                components["items"].append(ui_item)
-            if not components["items"]:
-                components.pop("items", None)
-            known_keys = {
-                "id", "name", "x", "y", "w", "h", "rotation", "color", "mesh_type",
-                "renderer_enabled", "material", "texture", "render_layer", "sort_order", "active", "static", "tag", "layer",
-                "rigidbody", "collider", "camera", "audio", "scripts", "component_names", "ui",
-            }
-            editor_data = {
-                key: deepcopy(value) for key, value in snapshot.items()
-                if key not in known_keys and not str(key).startswith("_")
-            }
-            if editor_data:
-                source["editor_data"] = editor_data
-            else:
-                source.pop("editor_data", None)
-            scene_objects.append(source)
-        payload["objects"] = scene_objects
-        SceneDocument.from_dict(payload).save(path)
+        try:
+            payload = self._scene_persistence.save(
+                path, self._scene_snapshot, self._scene_document,
+            )
+        except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
+            self.statusBar().showMessage(f"Falha ao salvar cena: {exc}")
+            return
         self._scene_document = payload
         self._current_scene_path = path
         self.statusBar().showMessage(f"Cena salva: {filename}")
         self._log("INFO", f"Cena salva: {filename}")
 
-    @staticmethod
-    def _collect_logic_variables(scope: str) -> dict[str, dict[str, Any]]:
-        variables: dict[str, dict[str, Any]] = {}
-        directory = Path.cwd() / "Assets" / "Logic"
-        if not directory.is_dir():
-            return variables
-        for graph_path in sorted(directory.rglob("*.zlogic"), key=lambda item: str(item).casefold()):
-            try:
-                graph = load_logic_graph(graph_path)
-            except (OSError, ValueError, json.JSONDecodeError):
-                continue
-            for name, definition in graph.get("variables", {}).items():
-                if isinstance(definition, dict) and definition.get("scope") == scope:
-                    variables[str(name)] = deepcopy(definition)
-        return variables
+    def _collect_logic_variables(self, scope: str) -> dict[str, dict[str, Any]]:
+        return self._scene_persistence.collect_logic_variables(scope)
 
     def _load_scene_snapshot(self, _checked: bool = False, scene_path: Path | None = None) -> None:
         if scene_path is not None:
             filename = str(scene_path)
         else:
             filename, _ = QFileDialog.getOpenFileName(
-                self, "Abrir cena", "", "Zennity Scene (*.zscene);;Cena JSON (*.json)"
+                self, "Abrir cena", "", "Zennity Scene (*.zscene);;Cena JSON (*.json)",
             )
         if not filename:
             return
         try:
-            payload = SceneDocument.load(filename).to_dict()
-            objects = payload.get("objects", [])
-            if not isinstance(objects, list):
-                raise ValueError("arquivo de cena inválido")
-        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            payload, snapshots, typed = self._scene_persistence.load(Path(filename))
+        except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
             self.statusBar().showMessage(f"Falha ao abrir cena: {exc}")
-            return
-        snapshots = []
-        for item in objects:
-            if not isinstance(item, dict) or "name" not in item:
-                continue
-            if "transform" in item:
-                transform = item.get("transform", {})
-                position = list(transform.get("position", [0.0, 0.0, 0.0]))
-                scale = list(transform.get("scale", [32.0, 32.0, 1.0]))
-                visual = item.get("visual", {}) or {}
-                components = item.get("components", {}) or {}
-                color = visual.get("color") or ((91, 194, 100) if item["name"].lower() in {"chao", "floor"} else (88, 117, 255))
-                rotation = transform.get("rz", (transform.get("rotation") or [0.0, 0.0, 0.0])[2])
-                snapshot = {"id": item.get("id", item["name"]), "name": item["name"], "x": float(position[0]), "y": float(position[1]), "w": abs(float(scale[0])), "h": abs(float(scale[1])), "rotation": float(rotation), "color": color, "mesh_type": visual.get("mesh_type"), "renderer_enabled": bool(visual.get("enabled", True)), "material": str(visual.get("material", "Default_Material")), "texture": str(visual.get("texture", "")), "render_layer": str(visual.get("layer", "Default")), "sort_order": int(visual.get("order", 0)), "active": bool(item.get("active", item.get("enabled", True))), "static": bool(item.get("static", False)), "tag": str(item.get("tag", "Untagged")), "layer": str(item.get("layer", "Default"))}
-                if isinstance(item.get("editor_data"), dict):
-                    snapshot.update(deepcopy(item["editor_data"]))
-                if isinstance(components.get("rigidbody"), dict):
-                    snapshot["rigidbody"] = deepcopy(components["rigidbody"])
-                if isinstance(components.get("collider"), dict):
-                    snapshot["collider"] = deepcopy(components["collider"])
-                if isinstance(components.get("camera"), dict):
-                    snapshot["camera"] = deepcopy(components["camera"])
-                if isinstance(components.get("audio"), dict):
-                    snapshot["audio"] = deepcopy(components["audio"])
-                component_names = ["Camera2D"] if isinstance(components.get("camera"), dict) else []
-                for component in components.get("items", []):
-                    if isinstance(component, dict):
-                        component_names.append(str(component.get("type") or component.get("component_type") or "Component"))
-                        parsed_ui = scene_item_to_ui(component)
-                        if parsed_ui is not None:
-                            snapshot["ui"] = parsed_ui
-                if component_names:
-                    snapshot["component_names"] = component_names
-                snapshots.append(snapshot)
-            elif {"x", "y", "w", "h"}.issubset(item):
-                snapshots.append(dict(item))
-        if not snapshots and objects:
-            self.statusBar().showMessage("Falha ao abrir cena: nenhum objeto compatível")
-            return
-        names = [str(item["name"]) for item in snapshots]
-        if len(names) != len(set(names)):
-            self.statusBar().showMessage("Falha ao abrir cena: existem objetos com nomes duplicados")
             return
         self._record_history()
         self._scene_snapshot = snapshots
-        self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
-        self._scene_document = payload if any("transform" in item for item in objects if isinstance(item, dict)) else None
+        self._objects_by_name = {item["name"]: item for item in snapshots}
+        self._scene_document = payload if typed else None
         self._current_scene_path = Path(filename)
         self._selected_name = None
         self._refresh_hierarchy()

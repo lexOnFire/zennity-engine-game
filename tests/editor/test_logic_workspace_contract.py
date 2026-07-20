@@ -166,7 +166,7 @@ def test_logic_workspace_exposes_typed_scoped_blackboard_panel():
     assert "ProjectBlackboard.zblackboard" in editor
     assert "BlackboardStore" in viewport
     assert "scene_blackboard" in viewport
-    assert 'self._collect_logic_variables("scene")' in bridge
+    assert "self._scene_persistence.collect_logic_variables(scope)" in bridge
 
 
 def test_visual_event_nodes_are_shared_debuggable_and_exportable():
