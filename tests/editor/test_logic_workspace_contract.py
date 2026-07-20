@@ -235,6 +235,7 @@ def test_visual_logic_is_cleanly_managed_from_inspector():
     interface = _source("editor/interface_smoke_test.py")
     main = (
         _source("editor/isolated_editor_main.py")
+        + _source("editor/editor_bootstrap_controller.py")
         + _source("editor/inspector_view_renderer.py")
         + _source("editor/hierarchy_view_renderer.py")
         + _source("editor/viewport_event_controller.py")
@@ -432,6 +433,7 @@ def test_logic_workspace_controls_named_movements_and_debugs_runtime_objects():
     viewport = _source("editor/isolated_viewport.py")
     main = (
         _source("editor/isolated_editor_main.py")
+        + _source("editor/editor_bootstrap_controller.py")
         + _source("editor/inspector_view_renderer.py")
         + _source("editor/hierarchy_view_renderer.py")
     )
@@ -452,7 +454,7 @@ def test_logic_workspace_controls_named_movements_and_debugs_runtime_objects():
     assert '"controlled_permanent_motion"' in recipes
     assert "def runtime_object_snapshot" in viewport
     assert '"type": "runtime_objects"' in viewport
-    assert '"runtime_objects": self._handle_runtime_objects_event' in main
+    assert '"runtime_objects": h._handle_runtime_objects_event' in main
     assert "def _handle_runtime_objects_event" in main
     assert '"▶ Runtime (' in main
     assert "_runtime_objects_by_name" in main
