@@ -26,10 +26,10 @@ def test_animation_picker_discovers_searches_and_previews_zanim_assets() -> None
 
 
 def test_animator_component_opens_picker_before_mutating_object() -> None:
-    source = _source("editor/isolated_editor_main.py")
+    source = _source("editor/inspector_controller.py")
     operations = _source("editor/animation_workspace_operations.py")
-    add_start = source.index("def _add_component")
-    add_method = source[add_start:source.index("def _send_inspector_physics", add_start)]
+    add_start = source.index("def add_component")
+    add_method = source[add_start:source.index("def _attach_next_script", add_start)]
     choose_start = operations.index("def _choose_animation_component")
     choose_method = operations[choose_start:]
 

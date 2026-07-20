@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 from copy import deepcopy
+from pathlib import Path
 
 
 class IsolatedInspectorController:
@@ -149,6 +150,79 @@ class InspectorComponentController:
         if h._updating_inspector or name not in h._objects_by_name:
             return None
         return name, h._objects_by_name[name]
+
+    def add_component(self, component: str) -> None:
+        h = self.host
+        if h._selected_name not in h._objects_by_name:
+            return
+        if component == "script":
+            self._attach_next_script()
+            return
+        if component == "animator":
+            h._choose_animation_component()
+            return
+        if component == "logic":
+            h._choose_logic_graph_component()
+            return
+        h._record_history()
+        obj = h._objects_by_name[h._selected_name]
+        if component == "sprite":
+            obj["renderer_enabled"] = True
+        elif component == "audio":
+            obj.setdefault("audio", {"path": "", "volume": 1.0, "loop": False, "autoplay": False})
+        elif component == "rigidbody":
+            obj.setdefault("rigidbody", {
+                "mass": 1.0, "gravity_scale": 1.0,
+                "use_gravity": True, "is_kinematic": False,
+            })
+        elif component in {"box", "circle"}:
+            obj["collider"] = {"type": component, "is_trigger": False}
+        elif component == "camera":
+            obj["camera"] = {
+                "active": True, "zoom": 1.0, "width": 1280.0, "height": 720.0,
+                "background_color": [22, 24, 31], "follow_target": "",
+            }
+            names = obj.setdefault("component_names", [])
+            if "Camera2D" not in names:
+                names.append("Camera2D")
+        elif component.startswith("ui_"):
+            kind = component.removeprefix("ui_")
+            if kind != "canvas":
+                h._ensure_canvas()
+            from editor.runtime.native_ui import normalize_ui
+            obj["ui"] = normalize_ui({"type": kind})
+            obj["renderer_enabled"] = False
+            obj["mesh_type"] = "UI"
+            h._refresh_hierarchy()
+        card_key = {
+            "sprite": "sprite", "audio": "audio", "rigidbody": "rigidbody",
+            "box": "collider", "circle": "collider", "camera": "camera",
+        }.get(component, "ui" if component.startswith("ui_") else None)
+        if card_key is not None:
+            h._component_expanded[card_key] = True
+        h._scene_controller.publish_snapshot(h._scene_snapshot)
+        h._scene_controller.select(h._selected_name)
+        h._update_inspector(h._selected_name)
+        h._log("INFO", f"Componente adicionado em {h._selected_name}: {component}")
+
+    def _attach_next_script(self) -> None:
+        h = self.host
+        available = h._get_available_scripts()
+        if not available:
+            h.statusBar().showMessage("Nenhum script encontrado em Assets/Scripts")
+            return
+        attached = set(h._objects_by_name[h._selected_name].get("scripts", []))
+        preferred = next((path for path in available if path.name == "player_controller_2d.py"), None)
+        ordered = ([preferred] if preferred is not None else []) + [path for path in available if path != preferred]
+        for path in ordered:
+            try:
+                relative = str(path.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
+            except ValueError:
+                relative = str(path.resolve())
+            if relative not in attached:
+                h._attach_script(h._selected_name, path)
+                return
+        h.statusBar().showMessage("Todos os scripts disponíveis já estão anexados")
 
     def toggle_renderer(self, checked: bool) -> None:
         selected = self._selected()

@@ -1485,69 +1485,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
             self._add_component(picker.selected_component)
 
     def _add_component(self, component: str) -> None:
-        if self._selected_name not in self._objects_by_name:
-            return
-        if component == "script":
-            available = self._get_available_scripts()
-            if not available:
-                self.statusBar().showMessage("Nenhum script encontrado em Assets/Scripts")
-                return
-            attached = set(self._objects_by_name[self._selected_name].get("scripts", []))
-            preferred = next((path for path in available if path.name == "player_controller_2d.py"), None)
-            ordered = ([preferred] if preferred is not None else []) + [path for path in available if path != preferred]
-            chosen = None
-            for path in ordered:
-                try:
-                    relative = str(path.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
-                except ValueError:
-                    relative = str(path.resolve())
-                if relative not in attached:
-                    chosen = path
-                    break
-            if chosen is None:
-                self.statusBar().showMessage("Todos os scripts disponíveis já estão anexados")
-                return
-            self._attach_script(self._selected_name, chosen)
-            return
-        if component == "animator":
-            self._choose_animation_component()
-            return
-        if component == "logic":
-            self._choose_logic_graph_component()
-            return
-        self._record_history()
-        obj = self._objects_by_name[self._selected_name]
-        if component == "sprite":
-            obj["renderer_enabled"] = True
-        elif component == "audio":
-            obj.setdefault("audio", {"path": "", "volume": 1.0, "loop": False, "autoplay": False})
-        elif component == "rigidbody":
-            obj.setdefault("rigidbody", {"mass": 1.0, "gravity_scale": 1.0, "use_gravity": True, "is_kinematic": False})
-        elif component in {"box", "circle"}:
-            obj["collider"] = {"type": component, "is_trigger": False}
-        elif component == "camera":
-            obj["camera"] = {"active": True, "zoom": 1.0, "width": 1280.0, "height": 720.0, "background_color": [22, 24, 31], "follow_target": ""}
-            names = obj.setdefault("component_names", [])
-            if "Camera2D" not in names:
-                names.append("Camera2D")
-        elif component.startswith("ui_"):
-            kind = component.removeprefix("ui_")
-            if kind != "canvas":
-                self._ensure_canvas()
-            obj["ui"] = normalize_ui({"type": kind})
-            obj["renderer_enabled"] = False
-            obj["mesh_type"] = "UI"
-            self._refresh_hierarchy()
-        card_key = {
-            "sprite": "sprite", "audio": "audio", "rigidbody": "rigidbody",
-            "box": "collider", "circle": "collider", "camera": "camera",
-        }.get(component, "ui" if component.startswith("ui_") else None)
-        if card_key is not None:
-            self._component_expanded[card_key] = True
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
-        self._scene_controller.select(self._selected_name)
-        self._update_inspector(self._selected_name)
-        self._log("INFO", f"Componente adicionado em {self._selected_name}: {component}")
+        self._inspector_components.add_component(component)
 
 
     def _send_inspector_physics(self) -> None:
