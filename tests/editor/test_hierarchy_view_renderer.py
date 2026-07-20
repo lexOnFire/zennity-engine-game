@@ -58,7 +58,10 @@ def test_hierarchy_rebuilds_for_structural_and_runtime_changes(qapp: QApplicatio
 
 
 def test_official_editor_delegates_hierarchy_rendering() -> None:
-    source = open("editor/isolated_editor_main.py", encoding="utf-8").read()
+    source = (
+        open("editor/isolated_editor_main.py", encoding="utf-8").read()
+        + open("editor/hierarchy_controller.py", encoding="utf-8").read()
+    )
 
-    assert "self._hierarchy_view.refresh()" in source
+    assert "self.renderer.refresh(force=force)" in source
     assert "self.hierarchy_tree.clear()" not in source
