@@ -1,10 +1,23 @@
 # Zennity Engine — Roadmap
 
-> Última atualização: 2026-07-16
+> Última atualização: 2026-07-20
 
 ---
 
 ## Versões e Objetivos
+
+### v1.0.0 — Architecture & Release Readiness 🔄
+
+- [x] Baseline pré-v1: controllers do editor, composition root e lifecycle de sessão
+- [x] Play Mode determinístico, `SceneDocument`, lifecycle scheduler e serialização consolidada
+- [x] Broad phase espacial, caches de render, dirty flags e remoção dos patches prioritários
+- [ ] Decompor builders e workspaces restantes do editor oficial
+- [ ] Decompor Logic Graph Editor e Runtime
+- [ ] Concluir extração do processo da Viewport e validar teardown de recursos
+- [ ] Consolidar entrypoints legados, imports e casing de Assets
+- [ ] Aplicar budgets de performance/memória e fechar o release gate multiplataforma
+
+Plano detalhado: [`docs/architecture/PRE_V1_COMPLETION_ROADMAP.md`](docs/architecture/PRE_V1_COMPLETION_ROADMAP.md).
 
 ### v0.5.0-alpha — Export Foundation (Milestone 5) 🔄
 - [x] UI Foundation com tokens, tema único, papéis semânticos e primeira migração do editor
