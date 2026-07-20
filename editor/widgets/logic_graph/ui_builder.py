@@ -6,6 +6,8 @@ from PySide6.QtWidgets import (
     QTreeWidget, QVBoxLayout, QWidget,
 )
 
+from editor.ui.icons import editor_icon
+
 from .views import LogicGraphView, LogicMiniMapView
 
 
