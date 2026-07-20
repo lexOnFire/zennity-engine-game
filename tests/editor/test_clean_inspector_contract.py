@@ -12,7 +12,7 @@ def _source(path: str) -> str:
 
 
 def test_inspector_exposes_standard_dynamic_cards() -> None:
-    source = _source("editor/ui/docks_builder.py")
+    source = _source("editor/ui/docks_builder.py") + _source("editor/ui/inspector_builder.py")
     expected = {
         "transform_header", "sprite_renderer_header", "audio_source_header",
         "rigidbody_header", "collider_header", "camera_header",

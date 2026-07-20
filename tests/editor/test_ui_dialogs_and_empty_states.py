@@ -10,7 +10,7 @@ def _source(path: str) -> str:
 
 def test_empty_state_is_reusable_and_used_by_bottom_panels() -> None:
     component = _source("editor/ui/empty_state.py")
-    interface = _source("editor/ui/docks_builder.py")
+    interface = _source("editor/ui/docks_builder.py") + _source("editor/ui/bottom_panels_builder.py") + _source("editor/ui/bottom_panels_builder.py")
     theme = _source("editor/ui/theme.py")
 
     assert "class EmptyStateWidget(QWidget)" in component

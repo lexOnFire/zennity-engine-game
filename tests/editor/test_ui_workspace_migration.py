@@ -26,7 +26,7 @@ def test_animation_workspace_uses_semantic_theme_contract() -> None:
 
 
 def test_console_and_profiler_share_global_tokens() -> None:
-    interface = _source("editor/interface_smoke_test.py") + _source("editor/ui/docks_builder.py")
+    interface = _source("editor/interface_smoke_test.py") + _source("editor/ui/docks_builder.py") + _source("editor/ui/bottom_panels_builder.py")
     console = _source("editor/widgets/console_dock.py")
     profiler = _source("editor/widgets/profiler_dock.py")
     theme = _source("editor/ui/theme.py")
