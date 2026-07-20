@@ -128,8 +128,7 @@ def test_editor_and_viewport_integrate_session_lock_and_audio_pause() -> None:
     assert "h._play_controller.plan" in editor_source
     assert "h._play_session.finish" in editor_source
     assert "self.set_editing_locked(True)" in editor_source
-    assert "set_channels_paused(audio_channels, paused)" in viewport_source
-    assert "set_channels_paused(audio_channels, False)" in viewport_source
+    assert "lambda value: set_channels_paused(self.audio_channels, value)" in viewport_source
 
 
 def test_generic_property_command_captures_old_value_without_invalid_syntax() -> None:
@@ -163,8 +162,8 @@ def test_viewport_has_one_runtime_lifecycle_and_initializes_spawned_prefabs() ->
     )
     initializer_source = Path("editor/runtime/viewport_runtime_initializer.py").read_text(encoding="utf-8")
 
-    assert viewport_source.count("    def stop_scripts()") == 1
-    assert viewport_source.count("    def game_camera()") == 1
+    assert viewport_source.count("    def stop_scripts(self):") == 1
+    assert viewport_source.count("    def game_camera(self):") == 1
     assert "class ViewportRuntimeInitializer" in initializer_source
     assert "def start_spawned_objects(self)" in initializer_source
     assert "for hydrator in self.hydrators" in initializer_source

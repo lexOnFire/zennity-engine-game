@@ -9,9 +9,9 @@ def test_viewport_delegates_runtime_initialization_and_spawn_discovery() -> None
     initializer = Path("editor/runtime/viewport_runtime_initializer.py").read_text(encoding="utf-8")
 
     assert "runtime_initializer = ViewportRuntimeInitializer(" in viewport
-    assert "runtime_initializer.start(scene_blackboard_config)" in viewport
-    assert "runtime_initializer.stop(active_contacts)" in viewport
-    assert "runtime_initializer.start_spawned_objects()" in viewport
+    assert "self.runtime_initializer.start(self.scene_blackboard_config)" in viewport
+    assert "self.runtime_initializer.stop(self.active_contacts)" in viewport
+    assert "self.runtime_initializer.start_spawned_objects()" in viewport
     assert "class ViewportRuntimeInitializer" in initializer
     assert "self.runtime_world.reset_session()" in initializer
     assert "self.initialized_ids" in initializer
