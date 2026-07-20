@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import QEvent, Qt, QTimer
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QHBoxLayout, QFormLayout,
@@ -30,7 +30,7 @@ from editor.runtime.isolated_play_mode_controller import IsolatedPlayModeControl
 from editor.runtime.scene_selection_controller import SceneSelectionController
 from editor.runtime.viewport_event_dispatcher import ViewportEventDispatcher
 from editor.runtime.scene_history import SceneHistory
-from editor.runtime.editor_event_router import EditorEventRouter
+from editor.editor_session_controller import EditorSessionController
 from editor.inspector_controller import InspectorComponentController, IsolatedInspectorController
 from editor.inspector_view_renderer import InspectorViewRenderer
 from editor.animation_workspace_controller import AnimationWorkspaceController
@@ -122,12 +122,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
             "attach_script": self._handle_attach_script_event,
             "stats": self._handle_stats_event,
         })
-        self._pending_viewport_size: tuple[int, int] | None = None
-        self._last_viewport_size_sent: tuple[int, int] | None = None
-        self._viewport_resize_timer = QTimer(self)
-        self._viewport_resize_timer.setSingleShot(True)
-        self._viewport_resize_timer.setInterval(24)
-        self._viewport_resize_timer.timeout.connect(self._flush_viewport_resize)
+        self._session_controller = EditorSessionController(self)
         self._initial_scene_snapshot = [
             {"id": "floor", "name": "Chao", "x": 0.0, "y": 150.0, "w": 600.0, "h": 32.0, "rotation": 0.0, "color": (91, 194, 100), "rigidbody": {"is_kinematic": True, "use_gravity": False}, "collider": {"type": "box"}},
             {"id": "player", "name": "Player", "x": 0.0, "y": 0.0, "w": 36.0, "h": 48.0, "rotation": 0.0, "color": (88, 117, 255), "rigidbody": {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}, "collider": {"type": "box"}},
@@ -192,26 +187,8 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self.add_component_button.clicked.connect(self._open_add_component_menu)
         self.viewport_tabs.currentChanged.connect(self._change_view_mode)
 
-        # Habilita Drag & Drop na árvore de assets e viewport_host
-        self.assets_tree.setDragEnabled(True)
-        self.viewport_host.setAcceptDrops(True)
-        self.viewport_host.installEventFilter(self)
-        self._hierarchy_drop_targets = {self.hierarchy_tree, self.hierarchy_tree.viewport()}
-        self._inspector_drop_targets = {self.inspector_panel, *self.inspector_panel.findChildren(QWidget)}
-        self._scene_drop_targets = {self.viewport_tabs, self.viewport_tabs.tabBar(), self.viewport_host}
-        self._script_drop_targets = self._hierarchy_drop_targets | self._inspector_drop_targets | self._scene_drop_targets
-        self._event_router = EditorEventRouter(self)
-        for target in self._script_drop_targets:
-            target.setAcceptDrops(True)
-            target.installEventFilter(self)
-        QApplication.instance().installEventFilter(self)
+        self._session_controller.configure()
         self._scene_controller.publish_snapshot(self._scene_snapshot)
-        self._event_timer = QTimer(self)
-        self._event_timer.timeout.connect(self._read_viewport_events)
-        self._event_timer.start(33)
-        self._animator_preview_timer = QTimer(self)
-        self._animator_preview_timer.timeout.connect(self._tick_animation_preview)
-        self._animator_preview_timer.start(125)
         self._log("INFO", "Zennity Phase 1 iniciado com Viewport em processo separado")
 
     def _log(self, level: str, message: str) -> None:
@@ -256,31 +233,21 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self.preview_label.style().polish(self.preview_label)
 
     def attach_viewport_process(self, process: mp.Process) -> None:
-        self._viewport_controller.attach(process)
-        self._viewport_process = process
+        self._session_controller.attach_viewport_process(process)
 
     def native_viewport_size(self) -> tuple[int, int]:
         """Return physical pixels expected by the native Pygame child window."""
-        scale = max(1.0, float(self.viewport_host.devicePixelRatioF()))
-        return (
-            max(32, round(self.viewport_host.width() * scale)),
-            max(32, round(self.viewport_host.height() * scale)),
-        )
+        return self._session_controller.native_viewport_size()
 
     def eventFilter(self, watched, event) -> bool:
-        handled = self._event_router.handle(watched, event)
+        handled = self._session_controller.handle_event(watched, event)
         if handled is not None:
             return handled
         return super().eventFilter(watched, event)
 
     def _flush_viewport_resize(self) -> None:
         """Agrupa a rajada de Resize do Qt e envia sempre o último tamanho."""
-        size = self._pending_viewport_size
-        self._pending_viewport_size = None
-        if size is None or size == self._last_viewport_size_sent:
-            return
-        self._last_viewport_size_sent = size
-        self._commands.put({"type": "viewport_size", "w": size[0], "h": size[1]})
+        self._session_controller.flush_viewport_resize()
 
     def _dragged_asset_path(self) -> Path | None:
         selected_items = self.assets_tree.selectedItems()
@@ -734,7 +701,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._viewport_event_controller.poll()
 
     def closeEvent(self, event) -> None:
-        self._viewport_controller.shutdown()
+        self._session_controller.shutdown()
         super().closeEvent(event)
 
 

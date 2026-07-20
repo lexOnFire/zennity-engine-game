@@ -59,6 +59,6 @@ def test_editor_event_filter_only_delegates_and_falls_back() -> None:
     source = open("editor/isolated_editor_main.py", encoding="utf-8").read()
     block = source[source.index("    def eventFilter"):source.index("    def _flush_viewport_resize")]
 
-    assert "self._event_router.handle(watched, event)" in block
+    assert "self._session_controller.handle_event(watched, event)" in block
     assert "key_map =" not in block
     assert len(block.splitlines()) <= 7
