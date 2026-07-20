@@ -15,7 +15,7 @@ def _source(relative: str) -> str:
         package_dir = ROOT / "editor" / "widgets"
         if package_dir.exists():
             source += "\n" + "\n".join(p.read_text(encoding="utf-8") for p in package_dir.glob("**/*.py") if p.is_file())
-    if relative == "editor/isolated_viewport.py":
+    if relative == "editor/runtime/viewport_session.py":
         source += (ROOT / "editor/runtime/viewport_play_commands.py").read_text(encoding="utf-8")
         source += (ROOT / "editor/runtime/viewport_session_orchestrator.py").read_text(encoding="utf-8")
         source += (ROOT / "editor/runtime/viewport_runtime_initializer.py").read_text(encoding="utf-8")
@@ -50,7 +50,7 @@ def test_logic_and_animation_use_independent_windows_not_viewport_tabs():
 
 def test_python_script_component_is_not_offered_or_executed() -> None:
     picker = _source("editor/widgets/component_picker.py")
-    viewport = _source("editor/isolated_viewport.py")
+    viewport = _source("editor/runtime/viewport_session.py")
     assert '("Código", "Script", "script"' not in picker
     assert "scripts Python estão desativados" in viewport
     assert "hydrate_logic_graphs" in viewport
@@ -121,7 +121,7 @@ def test_logic_workspace_can_create_open_save_and_load_demo():
 
 def test_logic_workspace_receives_throttled_runtime_debug_traces():
     editor = _source("editor/widgets/logic_graph_editor.py")
-    viewport = _source("editor/isolated_viewport.py")
+    viewport = _source("editor/runtime/viewport_session.py")
     bridge = (
         _source("editor/isolated_editor_main.py")
         + _source("editor/logic_workspace_controller.py")
@@ -139,7 +139,7 @@ def test_logic_workspace_receives_throttled_runtime_debug_traces():
 
 def test_logic_workspace_supports_breakpoints_continue_and_single_step():
     editor = _source("editor/widgets/logic_graph_editor.py")
-    viewport = _source("editor/isolated_viewport.py")
+    viewport = _source("editor/runtime/viewport_session.py")
     bridge = _source("editor/isolated_editor_main.py") + _source("editor/logic_workspace_controller.py")
     runtime = _source("engine/logic/runtime")
     assert "def toggle_breakpoint" in editor
@@ -158,7 +158,7 @@ def test_logic_workspace_supports_breakpoints_continue_and_single_step():
 
 def test_logic_debugger_exposes_conditions_watches_highlight_and_restart():
     editor = _source("editor/widgets/logic_graph_editor.py")
-    viewport = _source("editor/isolated_viewport.py")
+    viewport = _source("editor/runtime/viewport_session.py")
     bridge = _source("editor/isolated_editor_main.py") + _source("editor/logic_workspace_controller.py")
     runtime = _source("engine/logic/runtime")
     assert "CONDIÇÃO DO BREAKPOINT" in editor
@@ -176,7 +176,7 @@ def test_logic_debugger_exposes_conditions_watches_highlight_and_restart():
 
 def test_logic_workspace_exposes_typed_scoped_blackboard_panel():
     editor = _source("editor/widgets/logic_graph_editor.py")
-    viewport = _source("editor/isolated_viewport.py")
+    viewport = _source("editor/runtime/viewport_session.py")
     bridge = _source("editor/isolated_editor_main.py") + _source("editor/project_workflow_controller.py")
     assert 'addTab(data_page, "Dados")' in editor
     assert "blackboard_scope_combo" in editor
@@ -192,7 +192,7 @@ def test_logic_workspace_exposes_typed_scoped_blackboard_panel():
 def test_visual_event_nodes_are_shared_debuggable_and_exportable():
     graph = _source("engine/logic/graph_asset.py")
     runtime = _source("engine/logic/runtime")
-    viewport = _source("editor/isolated_viewport.py")
+    viewport = _source("editor/runtime/viewport_session.py")
     editor = _source("editor/widgets/logic_graph_editor.py")
     assert '"event_custom"' in graph
     assert '"emit_event"' in graph
@@ -206,7 +206,7 @@ def test_visual_event_nodes_are_shared_debuggable_and_exportable():
 def test_reusable_subgraphs_are_discoverable_typed_and_safe():
     graph = _source("engine/logic/graph_asset.py")
     runtime = _source("engine/logic/runtime")
-    viewport = _source("editor/isolated_viewport.py")
+    viewport = _source("editor/runtime/viewport_session.py")
     editor = _source("editor/widgets/logic_graph_editor.py")
     assert '"subgraph_start"' in graph
     assert '"subgraph_input"' in graph
@@ -227,7 +227,7 @@ def test_reusable_subgraphs_are_discoverable_typed_and_safe():
 def test_gameplay_event_library_and_search_are_available():
     graph = _source("engine/logic/graph_asset.py")
     runtime = _source("engine/logic/runtime")
-    viewport = _source("editor/isolated_viewport.py")
+    viewport = _source("editor/runtime/viewport_session.py")
     editor = _source("editor/widgets/logic_graph_editor.py")
     for node_type in (
         "event_collision_enter", "event_collision_exit", "event_trigger_enter",
@@ -257,7 +257,7 @@ def test_visual_logic_is_cleanly_managed_from_inspector():
     picker = _source("editor/widgets/logic_graph_picker.py")
     components = _source("editor/widgets/component_picker.py")
     graph = _source("engine/logic/graph_asset.py")
-    viewport = _source("editor/isolated_viewport.py")
+    viewport = _source("editor/runtime/viewport_session.py")
     editor = _source("editor/widgets/logic_graph_editor.py")
     assert "Lógica Visual" in interface
     assert "logic_graph_combo" in interface
@@ -306,7 +306,7 @@ def test_recipe_topics_and_project_asset_picker_cover_visual_gameplay():
     picker = _source("editor/widgets/logic_asset_picker.py")
     graph = _source("engine/logic/graph_asset.py")
     runtime = _source("engine/logic/runtime")
-    viewport = _source("editor/isolated_viewport.py")
+    viewport = _source("editor/runtime/viewport_session.py")
     recipes = _source("engine/logic/recipes.py")
     assert "_category_changed" in editor
     assert "Receitas de {selected_topic}" in editor
@@ -331,7 +331,7 @@ def test_nodes_flip_to_code_and_patrol_recipe_is_discoverable():
     preview = _source("engine/logic/code_preview.py")
     graph = _source("engine/logic/graph_asset.py")
     runtime = _source("engine/logic/runtime")
-    viewport = _source("editor/isolated_viewport.py")
+    viewport = _source("editor/runtime/viewport_session.py")
     recipes = _source("engine/logic/recipes.py")
     assert "class LogicFlipControl" in editor
     assert 'super().__init__("</>", node)' in editor
@@ -380,7 +380,7 @@ def test_logic_workspace_can_create_runtime_objects_and_pick_their_sprite():
     editor = _source("editor/widgets/logic_graph_editor.py")
     graph = _source("engine/logic/graph_asset.py")
     runtime = _source("engine/logic/runtime")
-    viewport = _source("editor/isolated_viewport.py")
+    viewport = _source("editor/runtime/viewport_session.py")
     world = _source("engine/runtime/runtime_world.py")
     picker = _source("editor/widgets/logic_asset_picker.py")
     recipes = _source("engine/logic/recipes.py")
@@ -402,7 +402,7 @@ def test_logic_workspace_controls_play_and_builds_scrolling_image_planes():
     main = _source("editor/isolated_editor_main.py") + _source("editor/logic_workspace_controller.py")
     graph = _source("engine/logic/graph_asset.py")
     runtime = _source("engine/logic/runtime")
-    viewport = _source("editor/isolated_viewport.py")
+    viewport = _source("editor/runtime/viewport_session.py")
     rendering = _source("editor/runtime/sprite_rendering.py")
     recipes = _source("engine/logic/recipes.py")
     assert "play_requested = Signal()" in editor
@@ -421,7 +421,7 @@ def test_logic_workspace_explains_targets_and_controls_spawn_lifecycle():
     editor = _source("editor/widgets/logic_graph_editor.py")
     graph = _source("engine/logic/graph_asset.py")
     runtime = _source("engine/logic/runtime")
-    viewport = _source("editor/isolated_viewport.py")
+    viewport = _source("editor/runtime/viewport_session.py")
     world = _source("engine/runtime/runtime_world.py")
     recipes = _source("engine/logic/recipes.py")
     assert "def _refresh_target_hints" in editor
@@ -442,7 +442,7 @@ def test_logic_workspace_controls_named_movements_and_debugs_runtime_objects():
     graph = _source("engine/logic/graph_asset.py")
     runtime = _source("engine/logic/runtime")
     editor = _source("editor/widgets/logic_graph_editor.py")
-    viewport = _source("editor/isolated_viewport.py")
+    viewport = _source("editor/runtime/viewport_session.py")
     main = (
         _source("editor/isolated_editor_main.py")
         + _source("editor/editor_bootstrap_controller.py")
