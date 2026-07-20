@@ -15,8 +15,8 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import QEvent, Qt, QTimer, QUrl
-from PySide6.QtGui import QAction, QActionGroup, QColor, QDesktopServices, QPixmap
+from PySide6.QtCore import QEvent, Qt, QTimer
+from PySide6.QtGui import QAction, QActionGroup, QColor, QPixmap
 from PySide6.QtWidgets import (
     QColorDialog, QFileDialog, QInputDialog, QMenu, QToolBar,
     QHBoxLayout, QFormLayout,
@@ -42,8 +42,8 @@ from editor.animation_workspace_operations import AnimationWorkspaceOperations
 from editor.asset_preview_service import AssetPreviewService
 from editor.scene_persistence import EditorScenePersistence
 from editor.hierarchy_view_renderer import HierarchyViewRenderer
+from editor.script_workspace_controller import ScriptWorkspaceController
 from editor.runtime.sprite_rendering import assign_sprite_texture
-from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from editor.widgets.component_picker import ComponentPickerDialog
 from editor.widgets.logic_graph_picker import LogicGraphPickerDialog
 from editor.widgets.animation_picker import AnimationPickerDialog
@@ -157,6 +157,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._inspector_components = InspectorComponentController(self)
         self._inspector_view = InspectorViewRenderer(self)
         self._animation_workspace = AnimationWorkspaceController(self)
+        self._script_workspace = ScriptWorkspaceController(self)
         self._drag_history_snapshot: list[dict] | None = None
         self._snap_enabled = False
         self._runtime_playing = False
@@ -293,126 +294,31 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         return Path(path_value) if path_value else None
 
     def _attach_script(self, object_name: str, path: Path) -> None:
-        if self._play_session.is_running:
-            return
-        if object_name not in self._objects_by_name or path.suffix.lower() != ".py":
-            return
-        try:
-            script_path = str(path.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
-        except ValueError:
-            script_path = str(path.resolve())
-        obj = self._objects_by_name[object_name]
-        if script_path in obj.get("scripts", []):
-            self.statusBar().showMessage(f"Script já anexado: {path.name}")
-            return
-        compatible, reason = inspect_script_contract(path)
-        if not compatible:
-            self._log("WARNING", f"Script anexado, mas incompatível com Play isolado: {path.name}: {reason}")
-        self._record_history()
-        scripts = obj.setdefault("scripts", [])
-        scripts.append(script_path)
-        self._component_expanded[f"script:{script_path}"] = True
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
-        self._scene_controller.select(object_name)
-        self._selected_name = object_name
-        self._update_inspector(object_name)
-        self._log("INFO", f"Script anexado em {object_name}: {script_path}")
+        self._script_workspace.attach(object_name, path)
 
     def _get_available_scripts(self) -> list[Path]:
-        scripts_dir = Path.cwd() / "Assets" / "Scripts"
-        if scripts_dir.exists():
-            return sorted([p for p in scripts_dir.glob("*.py") if p.name != "__init__.py"])
-        return []
+        return self._script_workspace.available_scripts()
 
     def _change_attached_script(self, old_path: str, new_path: str) -> None:
-        if self._selected_name not in self._objects_by_name or not new_path:
-            return
-        if old_path == new_path:
-            return
-        self._record_history()
-        obj = self._objects_by_name[self._selected_name]
-        scripts = obj.get("scripts", [])
-        if old_path in scripts:
-            idx = scripts.index(old_path)
-            scripts[idx] = new_path
-        else:
-            scripts.append(new_path)
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
-        self._update_inspector(self._selected_name)
-        self._log("INFO", f"Script alterado de {Path(old_path).name} para {Path(new_path).name}")
+        self._script_workspace.change(old_path, new_path)
 
     def _remove_single_script(self, script_path: str) -> None:
-        if self._selected_name not in self._objects_by_name:
-            return
-        self._record_history()
-        obj = self._objects_by_name[self._selected_name]
-        scripts = obj.get("scripts", [])
-        if script_path in scripts:
-            scripts.remove(script_path)
-        if not scripts:
-            obj.pop("scripts", None)
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
-        self._update_inspector(self._selected_name)
-        self._log("INFO", f"Script removido: {Path(script_path).name}")
+        self._script_workspace.remove(script_path)
 
     def _update_script_config_val(self, script_path: str, key: str, value: float | bool | str) -> None:
-        if self._updating_inspector or self._selected_name not in self._objects_by_name:
-            return
-        obj = self._objects_by_name[self._selected_name]
-        properties = obj.setdefault("script_properties", {}).setdefault(script_path, {})
-        if properties.get(key) == value:
-            return
-        self._record_history()
-        properties[key] = value
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
-        self._log("INFO", f"{self._selected_name}: '{key}' = {value} em {Path(script_path).name}")
+        self._script_workspace.update_property(script_path, key, value)
 
     def _remove_all_scripts(self) -> None:
-        if self._selected_name not in self._objects_by_name:
-            return
-        self._record_history()
-        obj = self._objects_by_name[self._selected_name]
-        obj.pop("scripts", None)
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
-        self._update_inspector(self._selected_name)
-        self._log("INFO", f"Todos os scripts removidos de {self._selected_name}")
+        self._script_workspace.remove_all()
 
     def _create_script_asset(self) -> None:
-        if self._selected_name not in self._objects_by_name:
-            self.statusBar().showMessage("Selecione um objeto antes de criar o script")
-            return
-        default_path = Path.cwd() / "Assets" / "Scripts" / "new_script.py"
-        filename, _ = QFileDialog.getSaveFileName(self, "Criar Script", str(default_path), "Python Script (*.py)")
-        if not filename:
-            return
-        path = Path(filename)
-        if path.suffix.lower() != ".py":
-            path = path.with_suffix(".py")
-        path.parent.mkdir(parents=True, exist_ok=True)
-        if not path.exists():
-            path.write_text(build_isolated_script_template(path.stem), encoding="utf-8")
-        self._refresh_assets()
-        self._attach_script(self._selected_name, path)
-        self._edit_script_path(path)
+        self._script_workspace.create_asset()
 
     def _edit_selected_script(self) -> None:
-        if self._selected_name not in self._objects_by_name:
-            return
-        obj = self._objects_by_name[self._selected_name]
-        scripts = obj.get("scripts", [])
-        if not scripts:
-            self.statusBar().showMessage("Nenhum script anexado para editar")
-            return
-        self._edit_script_path(Path(scripts[0]))
+        self._script_workspace.edit_selected()
 
     def _edit_script_path(self, path: Path) -> None:
-        if not path.is_absolute():
-            path = Path.cwd() / path
-        if not path.exists():
-            self.statusBar().showMessage(f"Script não encontrado: {path}")
-            return
-        if not QDesktopServices.openUrl(QUrl.fromLocalFile(str(path.resolve()))):
-            self.statusBar().showMessage(f"Não foi possível abrir o editor para {path.name}")
+        self._script_workspace.edit_path(path)
 
     def _change_view_mode(self, index: int) -> None:
         mode = "scene" if index == 0 else "game"
