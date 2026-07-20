@@ -13,7 +13,8 @@ from editor.ui.empty_state import EmptyStateWidget
 from editor.widgets.logic_graph_editor import LogicGraphEditor
 from editor.interface_smoke_test import DetachedWorkspaceWindow
 
-def build_center_workspace(window):
+
+def _build_viewport_workspace(window):
     window.viewport_tabs = QTabWidget()
     window.viewport_tabs.setObjectName("SceneGameTabs")
     window.viewport_host = QFrame()
@@ -27,6 +28,8 @@ def build_center_workspace(window):
     window.viewport_tabs.addTab(QWidget(), "Scene")
     window.viewport_tabs.addTab(QWidget(), "Game")
 
+
+def _build_animation_header(window):
     window.animation_workspace = QWidget()
     window.animation_workspace.setObjectName("AnimationWorkspace")
     animation_layout = QVBoxLayout(window.animation_workspace)
@@ -105,6 +108,8 @@ def build_center_workspace(window):
     animation_toolbar.addStretch(1)
     animation_layout.addWidget(animation_toolbar_widget)
 
+
+def _build_animation_library(window):
     window.animation_content_splitter = QSplitter(Qt.Horizontal)
     window.animation_content_splitter.setObjectName("AnimationContentSplitter")
     window.animation_content_splitter.setChildrenCollapsible(False)
@@ -131,6 +136,8 @@ def build_center_workspace(window):
     preview_panel = QWidget()
     preview_panel.setObjectName("AnimationPreviewPanel")
     preview_panel.setMinimumWidth(220)
+
+def _build_animation_preview(window):
     preview_column = QVBoxLayout(preview_panel)
     preview_column.setContentsMargins(8, 8, 8, 8)
     window.animator_preview = QLabel("Selecione um objeto com Animator 2D")
@@ -208,6 +215,8 @@ def build_center_workspace(window):
     current_clip_label = QLabel("Clip ativo")
     current_clip_label.setObjectName("PanelHint")
     current_clip_row.addWidget(current_clip_label)
+
+def _build_animation_properties(window):
     window.animator_current_lbl = QLineEdit("Nenhum")
     window.animator_current_lbl.setReadOnly(True)
     current_clip_row.addWidget(window.animator_current_lbl, 1)
@@ -305,6 +314,8 @@ def build_center_workspace(window):
     window.animation_content_splitter.setStretchFactor(2, 0)
     window.animation_content_splitter.setSizes([170, 430, 250])
     animation_layout.addWidget(window.animation_content_splitter, 1)
+
+def _build_detached_workspaces(window):
     window.logic_workspace = LogicGraphEditor()
     window.animation_window = DetachedWorkspaceWindow("Zennity — Editor de Animação", window.animation_workspace, window)
     window.logic_window = DetachedWorkspaceWindow("Zennity — Editor de Lógica Visual", window.logic_workspace, window)
@@ -317,3 +328,11 @@ def build_center_workspace(window):
     layout.addWidget(window.viewport_host)
     layout.setStretchFactor(window.viewport_host, 1)
 
+
+def build_center_workspace(window):
+    _build_viewport_workspace(window)
+    _build_animation_header(window)
+    _build_animation_library(window)
+    _build_animation_preview(window)
+    _build_animation_properties(window)
+    _build_detached_workspaces(window)
