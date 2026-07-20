@@ -417,7 +417,11 @@ def test_logic_workspace_controls_named_movements_and_debugs_runtime_objects():
     runtime = _source("engine/logic/runtime.py")
     editor = _source("editor/widgets/logic_graph_editor.py")
     viewport = _source("editor/isolated_viewport.py")
-    main = _source("editor/isolated_editor_main.py") + _source("editor/inspector_view_renderer.py")
+    main = (
+        _source("editor/isolated_editor_main.py")
+        + _source("editor/inspector_view_renderer.py")
+        + _source("editor/hierarchy_view_renderer.py")
+    )
     interface = _source("editor/interface_smoke_test.py")
     recipes = _source("engine/logic/recipes.py")
     for node_type in (
