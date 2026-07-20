@@ -38,6 +38,7 @@ from editor.inspector_controller import InspectorComponentController, IsolatedIn
 from editor.inspector_view_renderer import InspectorViewRenderer
 from editor.animation_workspace_controller import AnimationWorkspaceController
 from editor.animation_workspace_operations import AnimationWorkspaceOperations
+from editor.asset_preview_service import AssetPreviewService
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.script_templates import build_isolated_script_template, inspect_script_contract
 from editor.widgets.component_picker import ComponentPickerDialog
@@ -50,15 +51,12 @@ from engine.animation.clip_asset import (
     animation_asset_from_clip,
     animation_asset_to_clip,
     default_animation_asset,
-    load_animation_asset,
     save_animation_asset,
 )
-from engine.animation.controller_asset import load_animator_controller
 from engine.logic.graph_asset import (
     create_logic_node, default_logic_graph, load_logic_graph,
     save_logic_graph, validate_logic_graph,
 )
-from engine.logic.blackboard import load_blackboard_asset
 from engine.prefabs.prefab_asset import (
     apply_exposed_properties, create_prefab_variant, load_prefab_asset,
     resolve_prefab_parameters,
@@ -85,6 +83,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._last_validation_report: ProjectValidationReport | None = None
         self._logic_assets_repository = LogicAssetRepository(Path.cwd())
         super().__init__()
+        self._asset_preview_service = AssetPreviewService(DEFAULT_TOKENS.danger)
         self._current_animation_asset_path: Path | None = None
         self._animation_draft_name = "NewAnimation"
         self._animation_events: list[dict] = []
@@ -236,161 +235,17 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         path_value = item.toolTip(0)
         if not path_value:
             return
-        path = Path(path_value)
+        preview = self._asset_preview_service.preview(Path(path_value))
         self._set_asset_preview_state("content")
-        if not path.exists() or path.is_dir():
-            self.preview_label.clear()
-            self.preview_label.setText("📁 Folder")
-            self.preview_details_label.setText(f"<b>{path.name}</b><br><br>Tipo: Diretório do Projeto<br>Caminho: {path}")
-            return
-
-        import os
-        from datetime import datetime
-
-        size_bytes = os.path.getsize(path)
-        size_kb = size_bytes / 1024.0
-        size_str = f"{size_kb:.2f} KB" if size_kb < 1024.0 else f"{size_kb/1024.0:.2f} MB"
-        mtime = os.path.getmtime(path)
-        date_str = datetime.fromtimestamp(mtime).strftime("%d/%m/%Y %H:%M")
-        ext = path.suffix.lower()
-
-        if ext in {".png", ".jpg", ".jpeg", ".bmp", ".webp"}:
-            pixmap = QPixmap(str(path))
-            if not pixmap.isNull():
-                self.preview_label.setPixmap(pixmap.scaled(self.preview_label.width(), self.preview_label.height(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
-                meta = (
-                    f"<b>{path.name}</b><br><br>"
-                    f"Tipo: Textura 2D<br>"
-                    f"Tamanho: {pixmap.width()} x {pixmap.height()} px<br>"
-                    f"Formato: {ext[1:].upper()}<br>"
-                    f"Tamanho Físico: {size_str}<br>"
-                    f"Importado: {date_str}"
-                )
-                self.preview_details_label.setText(meta)
-                return
-
-        elif ext in {".wav", ".ogg", ".mp3"}:
-            self.preview_label.clear()
-            self.preview_label.setText("🔊 Audio")
-            meta = (
-                f"<b>{path.name}</b><br><br>"
-                f"Tipo: Clipe de Áudio (AudioClip)<br>"
-                f"Formato: {ext[1:].upper()}<br>"
-                f"Tamanho: {size_str}<br>"
-                f"Importado: {date_str}<br>"
-                f"<i>Dica: Arraste para o Inspector para criar um AudioSource</i>"
-            )
-            self.preview_details_label.setText(meta)
-            return
-
-        elif ext == ".py":
-            self.preview_label.clear()
-            self.preview_label.setText("🐍 Script")
-            meta = (
-                f"<b>{path.name}</b><br><br>"
-                f"Tipo: Script de Comportamento<br>"
-                f"Tamanho: {size_str}<br>"
-                f"Linguagem: Python 3<br>"
-                f"Modificado: {date_str}"
-            )
-            self.preview_details_label.setText(meta)
-            return
-
-        elif ext == ".zanim":
-            self.preview_label.clear()
-            self.preview_label.setText("🎞 Animation")
-            try:
-                animation = load_animation_asset(path)
-                details = (
-                    f"Nome: {animation['name']}<br>"
-                    f"Quadros: {len(animation['frames'])}<br>"
-                    f"FPS: {animation['fps']:g}<br>"
-                    f"Repetir: {'Sim' if animation['loop'] else 'Não'}<br>"
-                )
-            except (OSError, ValueError, json.JSONDecodeError) as exc:
-                details = f"<span style='color:{DEFAULT_TOKENS.danger}'>Asset inválido: {exc}</span><br>"
-            self.preview_details_label.setText(
-                f"<b>{path.name}</b><br><br>Tipo: Clip de Animação 2D<br>{details}Tamanho: {size_str}<br>Modificado: {date_str}"
-            )
-            return
-
-        elif ext == ".zanimator":
-            self.preview_label.clear()
-            self.preview_label.setText("◉ Animator Controller")
-            try:
-                controller = load_animator_controller(path)
-                details = (
-                    f"Nome: {controller['name']}<br>"
-                    f"Estado inicial: {controller['initial_state']}<br>"
-                    f"Estados: {len(controller['states'])}<br>"
-                    f"Transições: {len(controller['transitions'])}<br>"
-                )
-            except (OSError, ValueError, json.JSONDecodeError) as exc:
-                details = f"<span style='color:{DEFAULT_TOKENS.danger}'>Asset inválido: {exc}</span><br>"
-            self.preview_details_label.setText(
-                f"<b>{path.name}</b><br><br>Tipo: Animator Controller<br>{details}Tamanho: {size_str}<br>Modificado: {date_str}"
-            )
-            return
-
-        elif ext == ".zlogic":
-            self.preview_label.clear()
-            self.preview_label.setText("◇ Logic Graph")
-            try:
-                graph = load_logic_graph(path)
-                target = graph.get("target", {})
-                details = (
-                    f"Nome: {graph['name']}<br>"
-                    f"Status: {'Ativo' if graph.get('enabled', True) else 'Desvinculado'}<br>"
-                    f"Alvo: {target.get('value', 'Nenhum')} ({target.get('type', 'name')})<br>"
-                    f"Nós: {len(graph['nodes'])}<br>"
-                    f"Conexões: {len(graph['edges'])}<br>"
-                    f"Variáveis: {len(graph['variables'])}<br>"
-                )
-            except (OSError, ValueError, json.JSONDecodeError) as exc:
-                details = f"<span style='color:{DEFAULT_TOKENS.danger}'>Asset inválido: {exc}</span><br>"
-            self.preview_details_label.setText(
-                f"<b>{path.name}</b><br><br>Tipo: Logic Graph Visual<br>{details}Tamanho: {size_str}<br>Modificado: {date_str}<br><br><i>Duplo clique para editar</i>"
-            )
-            return
-
-        elif ext == ".zblackboard":
-            self.preview_label.clear()
-            self.preview_label.setText("▦ Blackboard")
-            try:
-                blackboard = load_blackboard_asset(path)
-                variables = blackboard.get("variables", {})
-                details = f"Variáveis de projeto: {len(variables)}<br>"
-            except (OSError, ValueError, json.JSONDecodeError) as exc:
-                details = f"<span style='color:{DEFAULT_TOKENS.danger}'>Asset inválido: {exc}</span><br>"
-            self.preview_details_label.setText(
-                f"<b>{path.name}</b><br><br>Tipo: Blackboard do Projeto<br>{details}Tamanho: {size_str}<br>Modificado: {date_str}"
-            )
-            return
-
-        elif ext in {".zscene", ".json"}:
-            self.preview_label.clear()
-            self.preview_label.setText("🎬 Scene")
-            meta = (
-                f"<b>{path.name}</b><br><br>"
-                f"Tipo: Cena de Jogo<br>"
-                f"Formato: Zennity JSON<br>"
-                f"Tamanho: {size_str}<br>"
-                f"Modificado: {date_str}"
-            )
-            self.preview_details_label.setText(meta)
-            return
-
-        # Fallback
         self.preview_label.clear()
-        self.preview_label.setText("📄 File")
-        meta = (
-            f"<b>{path.name}</b><br><br>"
-            f"Tipo: Recurso Genérico<br>"
-            f"Formato: {ext.upper() or 'N/A'}<br>"
-            f"Tamanho: {size_str}<br>"
-            f"Modificado: {date_str}"
-        )
-        self.preview_details_label.setText(meta)
+        if preview.pixmap is not None:
+            self.preview_label.setPixmap(preview.pixmap.scaled(
+                self.preview_label.width(), self.preview_label.height(),
+                Qt.KeepAspectRatio, Qt.SmoothTransformation,
+            ))
+        else:
+            self.preview_label.setText(preview.label)
+        self.preview_details_label.setText(preview.details)
 
     def _set_asset_preview_state(self, state: str) -> None:
         """Atualiza somente o estado visual, preservando o conteúdo da prévia."""
