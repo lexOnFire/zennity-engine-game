@@ -43,9 +43,9 @@ from editor.asset_preview_service import AssetPreviewService
 from editor.scene_persistence import EditorScenePersistence
 from editor.hierarchy_view_renderer import HierarchyViewRenderer
 from editor.script_workspace_controller import ScriptWorkspaceController
+from editor.logic_workspace_controller import LogicWorkspaceController
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.widgets.component_picker import ComponentPickerDialog
-from editor.widgets.logic_graph_picker import LogicGraphPickerDialog
 from editor.widgets.animation_picker import AnimationPickerDialog
 from editor.widgets.animator_controller_editor import AnimatorControllerEditorDialog
 from editor.ui.icons import component_title, editor_icon
@@ -55,10 +55,6 @@ from engine.animation.clip_asset import (
     animation_asset_to_clip,
     default_animation_asset,
     save_animation_asset,
-)
-from engine.logic.graph_asset import (
-    create_logic_node, default_logic_graph, load_logic_graph,
-    save_logic_graph, validate_logic_graph,
 )
 from engine.prefabs.prefab_asset import (
     apply_exposed_properties, create_prefab_variant, load_prefab_asset,
@@ -158,6 +154,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._inspector_view = InspectorViewRenderer(self)
         self._animation_workspace = AnimationWorkspaceController(self)
         self._script_workspace = ScriptWorkspaceController(self)
+        self._logic_workspace_controller = LogicWorkspaceController(self)
         self._drag_history_snapshot: list[dict] | None = None
         self._snap_enabled = False
         self._runtime_playing = False
@@ -326,175 +323,44 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._log("INFO", f"Aba alterada para: {mode.upper()}")
 
     def _configure_logic_workspace(self) -> None:
-        self.logic_workspace.message.connect(self._log)
-        self.logic_workspace.asset_changed.connect(self._refresh_assets)
-        self.logic_workspace.debug_command.connect(self._send_logic_debug_command)
-        self.logic_workspace.play_requested.connect(lambda: self._send_toolbar_command({"type": "play"}))
-        self.logic_workspace.stop_requested.connect(lambda: self._send_toolbar_command({"type": "stop"}))
-        animation_action = QAction(editor_icon("play"), "Editor de Animação", self)
-        animation_action.triggered.connect(self._show_animation_window)
-        logic_action = QAction(editor_icon("snap"), "Editor de Lógica Visual", self)
-        logic_action.triggered.connect(self._show_logic_window)
-        self.editor_menus["Janela"].addSeparator()
-        self.editor_menus["Janela"].addAction(animation_action)
-        self.editor_menus["Janela"].addAction(logic_action)
+        self._logic_workspace_controller.connect()
 
     def _send_logic_debug_command(self, command: str) -> None:
-        """Sincroniza breakpoints e controles do depurador com a Viewport."""
-        path = self.logic_workspace.current_path
-        if path is None:
-            self._log("WARNING", "Abra ou salve um Logic Graph antes de depurar")
-            return
-        graph = self.logic_workspace.graph_data()
-        try:
-            graph_path = path.resolve().relative_to(Path.cwd().resolve()).as_posix()
-        except (OSError, ValueError):
-            graph_path = str(path)
-        self._commands.put({
-            "type": "logic_debug_command",
-            "command": str(command),
-            "graph": graph_path,
-            "breakpoints": list(graph.get("debug", {}).get("breakpoints", [])),
-            "breakpoint_conditions": dict(graph.get("debug", {}).get("breakpoint_conditions", {})),
-            "watches": list(graph.get("debug", {}).get("watches", [])),
-            "variables": deepcopy(graph.get("variables", {})),
-        })
+        self._logic_workspace_controller.send_debug_command(command)
 
 
     def _show_logic_window(self, _checked: bool = False, *, preferred_path: Path | None = None) -> None:
-        selected = self._selected_name if self._selected_name in self._objects_by_name else None
-        if selected is not None:
-            bindings = self._logic_graphs_for_object(selected)
-            context_path = preferred_path or (bindings[0][0] if bindings else None)
-            if not self.logic_workspace.open_for_object(selected, context_path):
-                return
-            self.logic_window.setWindowTitle(f"Zennity — Lógica Visual — {selected}")
-            source = context_path.name if context_path is not None else "novo rascunho"
-            self.statusBar().showMessage(f"Lógica Visual: {selected} • {source}")
-        elif preferred_path is not None:
-            if not self.logic_workspace.open_asset(preferred_path):
-                return
-            self.logic_window.setWindowTitle("Zennity — Editor de Lógica Visual")
-        else:
-            self.statusBar().showMessage("Selecione um objeto na Hierarchy para definir o alvo da lógica")
-        self.logic_window.show()
-        self.logic_window.raise_()
-        self.logic_window.activateWindow()
-        self._log("INFO", f"Editor de Lógica Visual aberto{f' para {selected}' if selected else ''}")
+        self._logic_workspace_controller.show(preferred_path=preferred_path)
 
     def _logic_assets(self) -> list[tuple[Path, dict]]:
-        return self._logic_assets_repository.assets()
+        return self._logic_workspace_controller.assets()
 
     def _logic_graphs_for_object(self, object_name: str) -> list[tuple[Path, dict]]:
-        obj = self._objects_by_name.get(object_name, {})
-        return self._logic_assets_repository.for_object(object_name, obj)
+        return self._logic_workspace_controller.graphs_for_object(object_name)
 
     def _save_logic_binding(self, path: Path, graph: dict) -> None:
-        self._logic_assets_repository.save(path, graph)
-        self._refresh_assets()
-        if self._selected_name in self._objects_by_name:
-            self._update_inspector(self._selected_name)
+        self._logic_workspace_controller.save_binding(path, graph)
 
     def _choose_logic_graph_component(self) -> None:
-        if self._selected_name not in self._objects_by_name:
-            return
-        assets = self._logic_assets()
-        if not assets:
-            self.statusBar().showMessage("Nenhum Logic Graph disponível; use Criar novo")
-            self._create_logic_graph_for_selected()
-            return
-        picker = LogicGraphPickerDialog(assets, self)
-        if picker.exec() and picker.selected_path is not None:
-            graph = deepcopy(load_logic_graph(picker.selected_path))
-            graph["enabled"] = True
-            graph["target"] = {"type": "name", "value": self._selected_name}
-            self._component_expanded["logic"] = True
-            self._save_logic_binding(picker.selected_path, graph)
-            self._log("INFO", f"{picker.selected_path.name} vinculado a {self._selected_name}")
+        self._logic_workspace_controller.choose_component()
 
     def _create_logic_graph_for_selected(self) -> None:
-        if self._selected_name not in self._objects_by_name:
-            return
-        directory = Path.cwd() / "Assets" / "Logic"
-        directory.mkdir(parents=True, exist_ok=True)
-        safe_name = "".join(character if character.isalnum() else "_" for character in self._selected_name).strip("_") or "Object"
-        path = directory / f"{safe_name}Logic.zlogic"
-        suffix = 2
-        while path.exists():
-            path = directory / f"{safe_name}Logic{suffix}.zlogic"
-            suffix += 1
-        graph = default_logic_graph(path.stem)
-        graph["target"] = {"type": "name", "value": self._selected_name}
-        graph["nodes"] = [create_logic_node("event_start", (80.0, 100.0))]
-        save_logic_graph(path, graph)
-        self._logic_assets_repository.invalidate(path)
-        self._component_expanded["logic"] = True
-        self._refresh_assets()
-        self._update_inspector(self._selected_name)
-        self._show_logic_window(preferred_path=path)
-        self._log("INFO", f"Logic Graph criado para {self._selected_name}: {path.name}")
+        self._logic_workspace_controller.create_for_selected()
 
     def _selected_logic_path(self) -> Path | None:
-        value = self.logic_graph_combo.currentData()
-        return Path(str(value)).resolve() if value else None
+        return self._logic_workspace_controller.selected_path()
 
     def _open_selected_logic_graph(self) -> None:
-        path = self._selected_logic_path()
-        if path is None or not path.is_file():
-            return
-        self._show_logic_window(preferred_path=path)
+        self._logic_workspace_controller.open_selected()
 
     def _detach_selected_logic_graph(self) -> None:
-        path = self._selected_logic_path()
-        if path is None or not path.is_file():
-            return
-        graph = deepcopy(load_logic_graph(path))
-        graph["enabled"] = False
-        self._save_logic_binding(path, graph)
-        self._log("INFO", f"Logic Graph desvinculado: {path.name}")
+        self._logic_workspace_controller.detach_selected()
 
     def _remove_all_logic_graphs(self) -> None:
-        if self._selected_name not in self._objects_by_name:
-            return
-        bindings = self._logic_graphs_for_object(self._selected_name)
-        if not bindings:
-            return
-        answer = QMessageBox.question(
-            self, "Desvincular lógica",
-            f"Desvincular {len(bindings)} Logic Graph(s) de {self._selected_name}? Os arquivos serão preservados.",
-        )
-        if answer != QMessageBox.Yes:
-            return
-        for path, source in bindings:
-            graph = deepcopy(source)
-            graph["enabled"] = False
-            save_logic_graph(path, graph)
-            self._logic_assets_repository.invalidate(path)
-        self._refresh_assets()
-        self._update_inspector(self._selected_name)
-        self._log("INFO", f"Lógica Visual desvinculada de {self._selected_name}")
+        self._logic_workspace_controller.remove_all()
 
     def _update_logic_graph_summary(self, _index: int = -1) -> None:
-        path = self._selected_logic_path()
-        if path is None or not path.is_file():
-            self.logic_summary_label.setText("Nenhum Logic Graph selecionado.")
-            self.logic_open_button.setEnabled(False)
-            self.logic_unlink_button.setEnabled(False)
-            return
-        try:
-            graph = load_logic_graph(path)
-            events = [node.get("title", "Evento") for node in graph.get("nodes", []) if str(node.get("type", "")).startswith("event_")]
-            issues = validate_logic_graph(graph)
-            problem_count = len([issue for issue in issues if issue.get("level") == "error"])
-            summary = f"{len(graph.get('nodes', []))} blocos • {len(events)} eventos"
-            if events:
-                summary += f"\n{', '.join(str(event) for event in events[:3])}"
-            summary += f"\n{'Pronto para executar' if not problem_count else f'{problem_count} erro(s) de validação'}"
-            self.logic_summary_label.setText(summary)
-            self.logic_open_button.setEnabled(True)
-            self.logic_unlink_button.setEnabled(True)
-        except (OSError, ValueError, json.JSONDecodeError) as exc:
-            self.logic_summary_label.setText(f"Asset inválido: {exc}")
+        self._logic_workspace_controller.update_summary()
 
     def _build_viewport_link_toolbar(self) -> None:
         toolbar = QToolBar("Ligação com Viewport")

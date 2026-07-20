@@ -15,7 +15,11 @@ def _source(relative: str) -> str:
 
 def test_logic_and_animation_use_independent_windows_not_viewport_tabs():
     interface = _source("editor/interface_smoke_test.py")
-    editor = _source("editor/isolated_editor_main.py") + _source("editor/inspector_controller.py")
+    editor = (
+        _source("editor/isolated_editor_main.py")
+        + _source("editor/inspector_controller.py")
+        + _source("editor/logic_workspace_controller.py")
+    )
     animation = _source("editor/animation_workspace_operations.py")
     assert 'self.viewport_tabs.addTab(QWidget(), "Animation")' not in interface
     assert 'self.viewport_tabs.addTab(QWidget(), "Logic")' not in interface
@@ -229,6 +233,7 @@ def test_visual_logic_is_cleanly_managed_from_inspector():
         _source("editor/isolated_editor_main.py")
         + _source("editor/inspector_view_renderer.py")
         + _source("editor/hierarchy_view_renderer.py")
+        + _source("editor/logic_workspace_controller.py")
     )
     inspector = _source("editor/inspector_controller.py")
     picker = _source("editor/widgets/logic_graph_picker.py")
@@ -324,14 +329,17 @@ def test_nodes_flip_to_code_and_patrol_recipe_is_discoverable():
 
 
 def test_logic_editor_opens_in_selected_hierarchy_object_context():
-    main = _source("editor/isolated_editor_main.py")
+    main = (
+        _source("editor/isolated_editor_main.py")
+        + _source("editor/logic_workspace_controller.py")
+    )
     editor = _source("editor/widgets/logic_graph_editor.py")
     assert "def open_for_object" in editor
     assert "def open_asset" in editor
     assert 'graph["target"] = {"type": "name", "value": target_name}' in editor
     assert 'create_logic_node("event_start"' in editor
-    assert "bindings = self._logic_graphs_for_object(selected)" in main
-    assert "self.logic_workspace.open_for_object(selected, context_path)" in main
+    assert "bindings = self.graphs_for_object(selected)" in main
+    assert "h.logic_workspace.open_for_object(selected, context_path)" in main
     assert 'setWindowTitle(f"Zennity — Lógica Visual — {selected}")' in main
     assert 'Lógica Visual: {selected}' in main
     assert "preferred_path=path" in main
