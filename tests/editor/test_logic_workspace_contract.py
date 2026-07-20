@@ -24,6 +24,9 @@ def _source(relative: str) -> str:
     if relative == "editor/interface_smoke_test.py":
         source += "\n" + (ROOT / "editor/ui/workspace_builder.py").read_text(encoding="utf-8")
         source += "\n" + (ROOT / "editor/ui/docks_builder.py").read_text(encoding="utf-8")
+        source += "\n" + (ROOT / "editor/ui/navigation_builder.py").read_text(encoding="utf-8")
+        source += "\n" + (ROOT / "editor/ui/inspector_builder.py").read_text(encoding="utf-8")
+        source += "\n" + (ROOT / "editor/ui/bottom_panels_builder.py").read_text(encoding="utf-8")
     return "\n" + source + "\n"
 
 
