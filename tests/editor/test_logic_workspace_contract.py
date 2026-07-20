@@ -33,7 +33,7 @@ def _source(relative: str) -> str:
 def test_logic_and_animation_use_independent_windows_not_viewport_tabs():
     interface = _source("editor/interface_smoke_test.py")
     editor = (
-        _source("editor/isolated_editor_main.py")
+        (_source("editor/isolated_editor_main.py") + _source("editor/editor_integration_adapters.py"))
         + _source("editor/inspector_controller.py")
         + _source("editor/logic_workspace_controller.py")
     )
@@ -128,7 +128,7 @@ def test_logic_workspace_receives_throttled_runtime_debug_traces():
     editor = _source("editor/widgets/logic_graph_editor.py")
     viewport = _source("editor/runtime/viewport_session.py")
     bridge = (
-        _source("editor/isolated_editor_main.py")
+        (_source("editor/isolated_editor_main.py") + _source("editor/editor_integration_adapters.py"))
         + _source("editor/logic_workspace_controller.py")
         + _source("editor/viewport_event_controller.py")
     )
@@ -145,7 +145,7 @@ def test_logic_workspace_receives_throttled_runtime_debug_traces():
 def test_logic_workspace_supports_breakpoints_continue_and_single_step():
     editor = _source("editor/widgets/logic_graph_editor.py")
     viewport = _source("editor/runtime/viewport_session.py")
-    bridge = _source("editor/isolated_editor_main.py") + _source("editor/logic_workspace_controller.py")
+    bridge = (_source("editor/isolated_editor_main.py") + _source("editor/editor_integration_adapters.py")) + _source("editor/logic_workspace_controller.py")
     runtime = _source("engine/logic/runtime")
     assert "def toggle_breakpoint" in editor
     assert "● Breakpoint" in editor
@@ -164,7 +164,7 @@ def test_logic_workspace_supports_breakpoints_continue_and_single_step():
 def test_logic_debugger_exposes_conditions_watches_highlight_and_restart():
     editor = _source("editor/widgets/logic_graph_editor.py")
     viewport = _source("editor/runtime/viewport_session.py")
-    bridge = _source("editor/isolated_editor_main.py") + _source("editor/logic_workspace_controller.py")
+    bridge = (_source("editor/isolated_editor_main.py") + _source("editor/editor_integration_adapters.py")) + _source("editor/logic_workspace_controller.py")
     runtime = _source("engine/logic/runtime")
     assert "CONDIÇÃO DO BREAKPOINT" in editor
     assert "OBSERVADORES" in editor
@@ -182,7 +182,7 @@ def test_logic_debugger_exposes_conditions_watches_highlight_and_restart():
 def test_logic_workspace_exposes_typed_scoped_blackboard_panel():
     editor = _source("editor/widgets/logic_graph_editor.py")
     viewport = _source("editor/runtime/viewport_session.py")
-    bridge = _source("editor/isolated_editor_main.py") + _source("editor/project_workflow_controller.py")
+    bridge = (_source("editor/isolated_editor_main.py") + _source("editor/editor_integration_adapters.py")) + _source("editor/project_workflow_controller.py")
     assert 'addTab(data_page, "Dados")' in editor
     assert "blackboard_scope_combo" in editor
     assert "blackboard_type_combo" in editor
@@ -251,7 +251,7 @@ def test_gameplay_event_library_and_search_are_available():
 def test_visual_logic_is_cleanly_managed_from_inspector():
     interface = _source("editor/interface_smoke_test.py")
     main = (
-        _source("editor/isolated_editor_main.py")
+        (_source("editor/isolated_editor_main.py") + _source("editor/editor_integration_adapters.py"))
         + _source("editor/editor_bootstrap_controller.py")
         + _source("editor/inspector_view_renderer.py")
         + _source("editor/hierarchy_view_renderer.py")
@@ -353,7 +353,7 @@ def test_nodes_flip_to_code_and_patrol_recipe_is_discoverable():
 
 def test_logic_editor_opens_in_selected_hierarchy_object_context():
     main = (
-        _source("editor/isolated_editor_main.py")
+        (_source("editor/isolated_editor_main.py") + _source("editor/editor_integration_adapters.py"))
         + _source("editor/logic_workspace_controller.py")
     )
     editor = _source("editor/widgets/logic_graph_editor.py")
@@ -404,7 +404,7 @@ def test_logic_workspace_can_create_runtime_objects_and_pick_their_sprite():
 
 def test_logic_workspace_controls_play_and_builds_scrolling_image_planes():
     editor = _source("editor/widgets/logic_graph_editor.py")
-    main = _source("editor/isolated_editor_main.py") + _source("editor/logic_workspace_controller.py")
+    main = (_source("editor/isolated_editor_main.py") + _source("editor/editor_integration_adapters.py")) + _source("editor/logic_workspace_controller.py")
     graph = _source("engine/logic/graph_asset.py")
     runtime = _source("engine/logic/runtime")
     viewport = _source("editor/runtime/viewport_session.py")
@@ -449,7 +449,7 @@ def test_logic_workspace_controls_named_movements_and_debugs_runtime_objects():
     editor = _source("editor/widgets/logic_graph_editor.py")
     viewport = _source("editor/runtime/viewport_session.py")
     main = (
-        _source("editor/isolated_editor_main.py")
+        (_source("editor/isolated_editor_main.py") + _source("editor/editor_integration_adapters.py"))
         + _source("editor/editor_bootstrap_controller.py")
         + _source("editor/inspector_view_renderer.py")
         + _source("editor/hierarchy_view_renderer.py")
