@@ -5,14 +5,23 @@ from editor.asset_browser_controller import AssetBrowserController
 
 
 def test_asset_root_prefers_canonical_case_and_supports_legacy_case(tmp_path: Path) -> None:
-    controller = AssetBrowserController(SimpleNamespace(), tmp_path, SimpleNamespace())
-    legacy = tmp_path / "assets"
+    legacy_root = tmp_path / "legacy_project"
+    legacy_root.mkdir()
+    legacy = legacy_root / "assets"
     legacy.mkdir()
-    assert controller.asset_root() == legacy
+    legacy_controller = AssetBrowserController(
+        SimpleNamespace(), legacy_root, SimpleNamespace(),
+    )
+    assert legacy_controller.asset_root() == legacy
 
-    canonical = tmp_path / "Assets"
+    canonical_root = tmp_path / "canonical_project"
+    canonical_root.mkdir()
+    canonical = canonical_root / "Assets"
     canonical.mkdir()
-    assert controller.asset_root() == canonical
+    canonical_controller = AssetBrowserController(
+        SimpleNamespace(), canonical_root, SimpleNamespace(),
+    )
+    assert canonical_controller.asset_root() == canonical
 
 
 def test_asset_classification_hides_internal_files_and_assigns_icons(tmp_path: Path) -> None:
