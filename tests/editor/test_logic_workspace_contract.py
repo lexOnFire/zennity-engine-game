@@ -110,7 +110,7 @@ def test_logic_workspace_can_create_open_save_and_load_demo():
 def test_logic_workspace_receives_throttled_runtime_debug_traces():
     editor = _source("editor/widgets/logic_graph_editor.py")
     viewport = _source("editor/isolated_viewport.py")
-    bridge = _source("editor/isolated_editor_main.py")
+    bridge = _source("editor/isolated_editor_main.py") + _source("editor/logic_workspace_controller.py")
     assert "def apply_runtime_trace" in editor
     assert "def clear_runtime_trace" in editor
     assert "set_runtime_state" in editor
@@ -124,14 +124,14 @@ def test_logic_workspace_receives_throttled_runtime_debug_traces():
 def test_logic_workspace_supports_breakpoints_continue_and_single_step():
     editor = _source("editor/widgets/logic_graph_editor.py")
     viewport = _source("editor/isolated_viewport.py")
-    bridge = _source("editor/isolated_editor_main.py")
+    bridge = _source("editor/isolated_editor_main.py") + _source("editor/logic_workspace_controller.py")
     runtime = _source("engine/logic/runtime.py")
     assert "def toggle_breakpoint" in editor
     assert "● Breakpoint" in editor
     assert "Próximo nó" in editor
     assert 'self.debug_command.emit("continue")' in editor
     assert 'self.debug_command.emit("step")' in editor
-    assert "self.logic_workspace.debug_command.connect" in bridge
+    assert "h.logic_workspace.debug_command.connect" in bridge
     assert 'command_type == "logic_debug_command"' in viewport
     assert "runtime.continue_execution()" in viewport
     assert "runtime.step()" in viewport
@@ -143,7 +143,7 @@ def test_logic_workspace_supports_breakpoints_continue_and_single_step():
 def test_logic_debugger_exposes_conditions_watches_highlight_and_restart():
     editor = _source("editor/widgets/logic_graph_editor.py")
     viewport = _source("editor/isolated_viewport.py")
-    bridge = _source("editor/isolated_editor_main.py")
+    bridge = _source("editor/isolated_editor_main.py") + _source("editor/logic_workspace_controller.py")
     runtime = _source("engine/logic/runtime.py")
     assert "CONDIÇÃO DO BREAKPOINT" in editor
     assert "OBSERVADORES" in editor
@@ -381,7 +381,7 @@ def test_logic_workspace_can_create_runtime_objects_and_pick_their_sprite():
 
 def test_logic_workspace_controls_play_and_builds_scrolling_image_planes():
     editor = _source("editor/widgets/logic_graph_editor.py")
-    main = _source("editor/isolated_editor_main.py")
+    main = _source("editor/isolated_editor_main.py") + _source("editor/logic_workspace_controller.py")
     graph = _source("engine/logic/graph_asset.py")
     runtime = _source("engine/logic/runtime.py")
     viewport = _source("editor/isolated_viewport.py")
