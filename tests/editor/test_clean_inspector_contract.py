@@ -12,7 +12,7 @@ def _source(path: str) -> str:
 
 
 def test_inspector_exposes_standard_dynamic_cards() -> None:
-    source = _source("editor/interface_smoke_test.py")
+    source = _source("editor/ui/docks_builder.py")
     expected = {
         "transform_header", "sprite_renderer_header", "audio_source_header",
         "rigidbody_header", "collider_header", "camera_header",
@@ -20,7 +20,7 @@ def test_inspector_exposes_standard_dynamic_cards() -> None:
     }
 
     for attribute in expected:
-        assert f"self.{attribute}" in source
+        assert f"window.{attribute}" in source
     assert "inspector.setFixedWidth(280)" not in source
     assert "inspector_dock.setFixedWidth(290)" not in source
 
