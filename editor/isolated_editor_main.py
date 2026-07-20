@@ -16,9 +16,9 @@ from typing import Any
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QEvent, Qt, QTimer
-from PySide6.QtGui import QAction, QActionGroup, QColor
+from PySide6.QtGui import QAction, QColor
 from PySide6.QtWidgets import (
-    QColorDialog, QFileDialog, QInputDialog, QMenu, QToolBar,
+    QColorDialog, QFileDialog, QInputDialog, QMenu,
     QHBoxLayout, QFormLayout,
     QCheckBox, QLabel, QComboBox, QLineEdit,
     QMessageBox, QPushButton, QDoubleSpinBox,
@@ -46,6 +46,7 @@ from editor.script_workspace_controller import ScriptWorkspaceController
 from editor.logic_workspace_controller import LogicWorkspaceController
 from editor.prefab_workspace_controller import PrefabWorkspaceController
 from editor.scene_object_controller import SceneObjectController
+from editor.editor_command_controller import EditorCommandController
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.widgets.component_picker import ComponentPickerDialog
 from editor.widgets.animation_picker import AnimationPickerDialog
@@ -155,6 +156,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._logic_workspace_controller = LogicWorkspaceController(self)
         self._prefab_workspace = PrefabWorkspaceController(self)
         self._scene_objects = SceneObjectController(self)
+        self._editor_commands = EditorCommandController(self)
         self._drag_history_snapshot: list[dict] | None = None
         self._snap_enabled = False
         self._runtime_playing = False
@@ -363,47 +365,13 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._logic_workspace_controller.update_summary()
 
     def _build_viewport_link_toolbar(self) -> None:
-        toolbar = QToolBar("Ligação com Viewport")
-        toolbar.setMovable(False)
-        self.addToolBar(toolbar)
-        for label, payload in (
-            ("Selecionar Player", {"type": "select_object", "name": "Player"}),
-            ("Mover ←", {"type": "move_selected", "dx": -16}),
-            ("Mover →", {"type": "move_selected", "dx": 16}),
-            ("Reset", {"type": "reset_from_interface"}),
-        ):
-            action = QAction(label, self)
-            action.triggered.connect(lambda checked=False, message=payload: self._send_toolbar_command(message))
-            toolbar.addAction(action)
+        self._editor_commands.build_viewport_toolbar()
 
     def _configure_main_menus(self) -> None:
-        for label in ("Novo", "Abrir", "Salvar"):
-            self.editor_menus["Arquivo"].addAction(self.toolbar_actions[label])
-        for label in ("Select", "Move", "Rotate", "Scale", "Snap: OFF"):
-            self.editor_menus["Ferramentas"].addAction(self.toolbar_actions[label])
-        for label in ("Play", "Pause", "Stop"):
-            self.editor_menus["Executar"].addAction(self.toolbar_actions[label])
-        validate_action = self.editor_menus["Build"].addAction("Validar projeto...")
-        validate_action.triggered.connect(self._validate_current_project)
-        self.editor_menus["Build"].addSeparator()
-        export_action = self.editor_menus["Build"].addAction("Exportar projeto...")
-        export_action.triggered.connect(self._export_project)
-        report_action = self.editor_menus["Build"].addAction("Último relatório...")
-        report_action.setEnabled(False)
-        report_action.triggered.connect(self._show_last_build_report)
-        self._build_report_action = report_action
-        self.toolbar_actions["Pause"].setEnabled(False)
-        self.toolbar_actions["Stop"].setEnabled(False)
-        snap_action = self.toolbar_actions["Snap: OFF"]
-        snap_action.setCheckable(True)
-        snap_action.toggled.connect(self._toggle_snap)
+        self._editor_commands.configure_main_menus()
 
     def _toggle_snap(self, enabled: bool) -> None:
-        self._snap_enabled = bool(enabled)
-        action = self.toolbar_actions["Snap: OFF"]
-        action.setText("Snap: ON" if enabled else "Snap: OFF")
-        self._commands.put({"type": "set_snap", "enabled": bool(enabled), "size": 16.0, "angle": 15.0})
-        self.statusBar().showMessage("Snap ativado" if enabled else "Snap desativado")
+        self._editor_commands.toggle_snap(enabled)
 
     def _refresh_assets(self) -> None:
         self.assets_tree.clear()
@@ -523,147 +491,22 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         BuildReportDialog(self._last_build_report, self).exec()
 
     def _connect_existing_toolbar_actions(self) -> None:
-        commands = {
-            "Novo": {"type": "new_scene"},
-            "Abrir": {"type": "load_scene"},
-            "Salvar": {"type": "save_scene"},
-            "Play": {"type": "play"},
-            "Pause": {"type": "pause"},
-            "Stop": {"type": "stop"},
-        }
-        for action in self.findChildren(QAction):
-            label = action.toolTip() if action.toolTip() else action.text()
-            payload = commands.get(label)
-            if payload is not None:
-                action.triggered.connect(
-                    lambda checked=False, message=payload: self._send_toolbar_command(message)
-                )
+        self._editor_commands.connect_toolbar_actions()
 
     def _configure_tool_actions(self) -> None:
-        group = QActionGroup(self)
-        group.setExclusive(True)
-        shortcuts = {"select": "Q", "move": "W", "rotate": "E", "scale": "R"}
-        for action in self.findChildren(QAction):
-            label = action.toolTip() if action.toolTip() else action.text()
-            tool = label.lower()
-            if tool not in {"select", "move", "rotate", "scale"}:
-                continue
-            action.setCheckable(True)
-            action.setShortcut(shortcuts[tool])
-            action.setChecked(tool == "select")
-            group.addAction(action)
-            action.triggered.connect(lambda checked=False, name=tool: checked and self._commands.put({"type": "set_tool", "tool": name}))
-        self._tool_action_group = group
+        self._editor_commands.configure_tools()
 
     def _send_toolbar_command(self, message: dict) -> None:
-        command_type = str(message.get("type", ""))
-        if self._play_controller.blocks(command_type):
-            self.statusBar().showMessage("Pare o Play Mode antes de alterar a cena")
-            return
-        if message.get("type") == "new_scene":
-            self._new_scene()
-            return
-        if message.get("type") == "save_scene":
-            self._save_scene_snapshot()
-            return
-        if message.get("type") == "load_scene":
-            self._load_scene_snapshot()
-            return
-        if message.get("type") == "reset_from_interface":
-            self._record_history()
-            self._scene_snapshot = deepcopy(self._initial_scene_snapshot)
-            self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
-            self._refresh_hierarchy()
-            self._scene_controller.publish_snapshot(self._scene_snapshot)
-            if self._selected_name in self._objects_by_name:
-                self._update_inspector(self._selected_name)
-            return
-        if command_type in {"play", "pause", "stop"}:
-            plan = self._play_controller.plan(
-                message,
-                scene_objects=self._scene_snapshot,
-                selected_name=self._selected_name,
-                scene_blackboard=(self._scene_document or {}).get("blackboard", {}),
-            )
-            if command_type == "play":
-                self._runtime_playing = True
-                self._set_play_mode_editing_locked(True)
-                self.logic_workspace.set_play_state(True)
-                self.toolbar_actions["Play"].setEnabled(False)
-                self.toolbar_actions["Pause"].setEnabled(False)
-                self.toolbar_actions["Stop"].setEnabled(True)
-                self.viewport_tabs.setCurrentIndex(1)
-                if plan.resuming:
-                    self._log("INFO", "Retomando Play pausado")
-                else:
-                    logic_directory = Path.cwd() / "Assets" / "Logic"
-                    logic_assets = list(logic_directory.rglob("*.zlogic")) if logic_directory.exists() else []
-                    self._log("INFO", f"Play solicitado com {len(logic_assets)} Logic Graph(s); scripts Python desativados")
-                    audio_sources = plan.audio_sources or {}
-                    enabled_audio = [name for name, audio in audio_sources.items() if audio.get("autoplay") and audio.get("path")]
-                    self._log("INFO", f"Play enviando {len(audio_sources)} Audio Source(s); {len(enabled_audio)} configurado(s) para iniciar")
-            elif command_type == "stop":
-                self.viewport_tabs.setCurrentIndex(0)
-            for command in plan.commands:
-                self._commands.put(command)
-            return
-        if message.get("type") == "move_selected" and self._selected_name is not None:
-            self._record_history()
-        self._commands.put(message)
+        self._editor_commands.dispatch(message)
 
     def _set_play_mode_editing_locked(self, locked: bool) -> None:
-        """Mantém a inspeção visível, mas impede alterações na cena em execução."""
-        self.inspector_panel.setEnabled(not locked)
-        self.hierarchy_tree.setDragEnabled(not locked)
-        for label in ("Desfazer", "Refazer", "Move", "Rotate", "Scale", "Snap: OFF"):
-            action = self.toolbar_actions.get(label)
-            if action is not None:
-                action.setEnabled(not locked)
-        create_menu = self.editor_menus.get("Criar")
-        if create_menu is not None:
-            for action in create_menu.actions():
-                action.setEnabled(not locked)
+        self._editor_commands.set_editing_locked(locked)
 
     def _configure_create_menu(self) -> None:
-        for menu_action in self.menuBar().actions():
-            menu = menu_action.menu()
-            if menu is None or menu.title() != "Criar":
-                continue
-            menu.clear()
-            for label, kind in (
-                ("Empty Object", "Empty"), ("Sprite 2D", "Sprite"),
-                ("Player 2D", "Player"), ("Platform 2D", "Platform"),
-                ("Enemy 2D", "Enemy"), ("Trigger 2D", "Trigger"),
-                ("Camera 2D", "Camera"),
-            ):
-                action = menu.addAction(label)
-                action.triggered.connect(lambda checked=False, object_kind=kind: self._create_object(object_kind))
-            break
+        self._editor_commands.configure_create_menu()
 
     def _configure_edit_menu(self) -> None:
-        for menu_action in self.menuBar().actions():
-            menu = menu_action.menu()
-            if menu is None or menu.title() != "Editar":
-                continue
-            menu.clear()
-            undo_action = self.toolbar_actions["Desfazer"]
-            undo_action.setShortcut("Ctrl+Z")
-            undo_action.triggered.connect(self._undo)
-            menu.addAction(undo_action)
-            redo_action = self.toolbar_actions["Refazer"]
-            redo_action.setShortcut("Ctrl+Y")
-            redo_action.triggered.connect(self._redo)
-            menu.addAction(redo_action)
-            menu.addSeparator()
-            duplicate_action = menu.addAction("Duplicar")
-            duplicate_action.setShortcut("Ctrl+D")
-            duplicate_action.triggered.connect(self._duplicate_selected)
-            delete_action = menu.addAction("Excluir")
-            delete_action.setShortcut("Delete")
-            delete_action.triggered.connect(
-                lambda _checked=False: self._selected_name is not None and self._delete_object(self._selected_name)
-            )
-            break
+        self._editor_commands.configure_edit_menu()
 
     def _record_history(self, snapshot: list[dict] | None = None) -> None:
         if snapshot is None:
