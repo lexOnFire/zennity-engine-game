@@ -44,6 +44,7 @@ from editor.scene_persistence import EditorScenePersistence
 from editor.hierarchy_view_renderer import HierarchyViewRenderer
 from editor.script_workspace_controller import ScriptWorkspaceController
 from editor.logic_workspace_controller import LogicWorkspaceController
+from editor.prefab_workspace_controller import PrefabWorkspaceController
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.widgets.component_picker import ComponentPickerDialog
 from editor.widgets.animation_picker import AnimationPickerDialog
@@ -55,10 +56,6 @@ from engine.animation.clip_asset import (
     animation_asset_to_clip,
     default_animation_asset,
     save_animation_asset,
-)
-from engine.prefabs.prefab_asset import (
-    apply_exposed_properties, create_prefab_variant, load_prefab_asset,
-    resolve_prefab_parameters,
 )
 from editor.widgets.build_report_dialog import BuildReportDialog
 from editor.widgets.project_validation_dialog import ProjectValidationDialog
@@ -155,6 +152,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._animation_workspace = AnimationWorkspaceController(self)
         self._script_workspace = ScriptWorkspaceController(self)
         self._logic_workspace_controller = LogicWorkspaceController(self)
+        self._prefab_workspace = PrefabWorkspaceController(self)
         self._drag_history_snapshot: list[dict] | None = None
         self._snap_enabled = False
         self._runtime_playing = False
@@ -454,107 +452,19 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._show_logic_window(preferred_path=path)
 
     def _refresh_prefabs(self) -> None:
-        self.prefab_tree.clear()
-        root = QTreeWidgetItem(["📦 Prefabs"])
-        self.prefab_tree.addTopLevelItem(root)
-        directory = Path.cwd() / "Assets" / "Prefabs"
-        directory.mkdir(parents=True, exist_ok=True)
-        for path in sorted(directory.rglob("*.zprefab"), key=lambda item: str(item).lower()):
-            try:
-                payload = json.loads(path.read_text(encoding="utf-8"))
-                variant = bool(payload.get("base_prefab")) if isinstance(payload, dict) else False
-            except (OSError, json.JSONDecodeError):
-                variant = False
-            item = QTreeWidgetItem([("↳ " if variant else "🧩 ") + path.stem])
-            item.setToolTip(0, str(path))
-            root.addChild(item)
-        root.setExpanded(True)
+        self._prefab_workspace.refresh()
 
     def _save_selected_as_prefab(self) -> None:
-        if self._selected_name not in self._objects_by_name:
-            return
-        default_name = self._selected_name
-        name, accepted = QInputDialog.getText(self, "Criar Prefab", "Nome do Prefab:", text=default_name)
-        name = "".join(char for char in name.strip() if char.isalnum() or char in "-_ ")
-        if not accepted or not name:
-            return
-        path = Path.cwd() / "Assets" / "Prefabs" / f"{name}.zprefab"
-        prefab_object = deepcopy(self._objects_by_name[self._selected_name])
-        prefab_object.pop("id", None)
-        exposed = [
-            {"name": "width", "label": "Largura", "type": "number", "default": float(prefab_object.get("w", 64.0)), "target": "w"},
-            {"name": "height", "label": "Altura", "type": "number", "default": float(prefab_object.get("h", 64.0)), "target": "h"},
-            {"name": "color", "label": "Cor", "type": "color", "default": prefab_object.get("color", "#ffffff"), "target": "color"},
-            {"name": "image", "label": "Imagem", "type": "image", "default": prefab_object.get("texture", ""), "target": "texture"},
-            {"name": "tag", "label": "Tag", "type": "text", "default": prefab_object.get("tag", "Untagged"), "target": "tag"},
-            {"name": "layer", "label": "Layer", "type": "text", "default": prefab_object.get("layer", "Default"), "target": "layer"},
-        ]
-        payload = {"format_version": 2, "prefab_name": name, "object": prefab_object, "exposed_properties": exposed}
-        path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        self._refresh_prefabs()
-        self._refresh_assets()
-        self._log("INFO", f"Prefab criado: {path.name}")
+        self._prefab_workspace.save_selected()
 
     def _instantiate_prefab_item(self, item: QTreeWidgetItem) -> None:
-        path_value = item.toolTip(0)
-        if not path_value:
-            return
-        try:
-            payload = load_prefab_asset(path_value, Path.cwd())
-            prefab_object = deepcopy(payload["object"])
-            definitions = payload.get("exposed_properties", [])
-            values = resolve_prefab_parameters(definitions, {})
-            apply_exposed_properties(prefab_object, definitions, values)
-            if any(key in prefab_object for key in ("transform", "visual", "components")):
-                raise ValueError("use o Play Mode para instanciar este formato legado")
-        except (OSError, ValueError, json.JSONDecodeError) as exc:
-            self._log("ERROR", f"Falha ao abrir Prefab: {exc}")
-            return
-        self._record_history()
-        obj = deepcopy(prefab_object)
-        obj["id"] = str(uuid.uuid4())
-        obj["name"] = self._unique_name(str(obj.get("name") or payload.get("prefab_name") or "Prefab"))
-        obj["x"] = float(obj.get("x", 0.0)) + 16.0
-        obj["y"] = float(obj.get("y", 0.0)) + 16.0
-        self._scene_snapshot.append(obj)
-        self._objects_by_name[obj["name"]] = obj
-        self._selected_name = obj["name"]
-        self._refresh_hierarchy()
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
-        self._scene_controller.select(obj["name"])
-        self._update_inspector(obj["name"])
-        self._log("INFO", f"Prefab adicionado: {obj['name']}")
+        self._prefab_workspace.instantiate_item(item)
 
     def _open_prefab_menu(self, position) -> None:
-        item = self.prefab_tree.itemAt(position)
-        path_value = item.toolTip(0) if item is not None else ""
-        if not path_value or not Path(path_value).is_file():
-            return
-        menu = QMenu(self)
-        instantiate = menu.addAction("Adicionar à cena")
-        variant = menu.addAction("Criar variante...")
-        instantiate.triggered.connect(lambda _checked=False: self._instantiate_prefab_item(item))
-        variant.triggered.connect(lambda _checked=False: self._create_prefab_variant(Path(path_value)))
-        menu.exec(self.prefab_tree.viewport().mapToGlobal(position))
+        self._prefab_workspace.open_menu(position)
 
     def _create_prefab_variant(self, base_path: Path) -> None:
-        name, accepted = QInputDialog.getText(
-            self, "Criar variante de Prefab", "Nome da variante:", text=f"{base_path.stem}Variant"
-        )
-        safe = "".join(char for char in name.strip() if char.isalnum() or char in "-_ ")
-        if not accepted or not safe:
-            return
-        target = base_path.parent / f"{safe}.zprefab"
-        if target.exists() and QMessageBox.question(self, "Substituir variante", f"{target.name} já existe. Substituir?") != QMessageBox.Yes:
-            return
-        try:
-            create_prefab_variant(base_path, target, project_root=Path.cwd())
-        except (OSError, ValueError) as exc:
-            self._log("ERROR", f"Falha ao criar variante: {exc}")
-            return
-        self._refresh_prefabs()
-        self._refresh_assets()
-        self._log("INFO", f"Variante criada: {target.name} → {base_path.name}")
+        self._prefab_workspace.create_variant(base_path)
 
     def _export_project(self) -> None:
         self._save_scene_snapshot()
