@@ -41,9 +41,13 @@ def test_selection_uses_single_protocol_boundary() -> None:
 
 
 def test_isolated_editor_routes_scene_and_selection_through_controller() -> None:
-    source = Path("editor/isolated_editor_main.py").read_text(encoding="utf-8")
+    source = (
+        Path("editor/isolated_editor_main.py").read_text(encoding="utf-8")
+        + Path("editor/scene_history_controller.py").read_text(encoding="utf-8")
+        + Path("editor/hierarchy_controller.py").read_text(encoding="utf-8")
+    )
 
     assert 'self._commands.put({"type": "scene_snapshot"' not in source
     assert 'self._commands.put({"type": "select_object"' not in source
     assert "self._scene_controller.publish_snapshot" in source
-    assert "self._scene_controller.select" in source
+    assert "h._scene_controller.select" in source
