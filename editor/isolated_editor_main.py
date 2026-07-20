@@ -46,6 +46,7 @@ from editor.editor_command_controller import EditorCommandController
 from editor.project_workflow_controller import ProjectWorkflowController
 from editor.viewport_event_controller import ViewportEventController
 from editor.hierarchy_controller import HierarchyController
+from editor.scene_history_controller import SceneHistoryController
 from editor.widgets.component_picker import ComponentPickerDialog
 from editor.widgets.animation_picker import AnimationPickerDialog
 from editor.widgets.animator_controller_editor import AnimatorControllerEditorDialog
@@ -141,6 +142,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._hierarchy_controller = HierarchyController(self, self._hierarchy_view)
         self._updating_inspector = False
         self._scene_history = SceneHistory(max_commands=100, max_bytes=16 * 1024 * 1024)
+        self._history_controller = SceneHistoryController(self)
         self._inspector_controller = IsolatedInspectorController(self)
         self._inspector_components = InspectorComponentController(self)
         self._inspector_view = InspectorViewRenderer(self)
@@ -459,31 +461,16 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._editor_commands.configure_edit_menu()
 
     def _record_history(self, snapshot: list[dict] | None = None) -> None:
-        if snapshot is None:
-            self._scene_history.begin(self._scene_snapshot)
-        else:
-            self._scene_history.commit(snapshot, self._scene_snapshot)
+        self._history_controller.record(snapshot)
 
     def _restore_history(self, snapshot: list[dict]) -> None:
-        self._scene_snapshot = deepcopy(snapshot)
-        self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
-        if self._selected_name not in self._objects_by_name:
-            self._selected_name = None
-        self._refresh_hierarchy()
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
-        if self._selected_name is not None:
-            self._scene_controller.select(self._selected_name)
-            self._update_inspector(self._selected_name)
+        self._history_controller.restore(snapshot)
 
     def _undo(self) -> None:
-        restored = self._scene_history.undo(self._scene_snapshot)
-        if restored is not None:
-            self._restore_history(restored)
+        self._history_controller.undo()
 
     def _redo(self) -> None:
-        restored = self._scene_history.redo(self._scene_snapshot)
-        if restored is not None:
-            self._restore_history(restored)
+        self._history_controller.redo()
 
     def _new_scene(self) -> None:
         self._scene_objects.new_scene()
