@@ -22,27 +22,6 @@ def evaluate_add_number_or_subtract_number_or_multiply_number_or_divide_number(r
         value = left / right
     return value
 
-@registry.register_evaluator('add_number')
-def evaluate_add_number(runtime, node_id: str, port: str, node: Mapping[str, Any], game: Any, dt: float, branch: set[str]) -> Any:
-    node_type = str(node.get('type'))
-    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
-    value = left + right
-    return value
-
-@registry.register_evaluator('subtract_number')
-def evaluate_subtract_number(runtime, node_id: str, port: str, node: Mapping[str, Any], game: Any, dt: float, branch: set[str]) -> Any:
-    node_type = str(node.get('type'))
-    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
-    value = left - right
-    return value
-
-@registry.register_evaluator('multiply_number')
-def evaluate_multiply_number(runtime, node_id: str, port: str, node: Mapping[str, Any], game: Any, dt: float, branch: set[str]) -> Any:
-    node_type = str(node.get('type'))
-    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
-    value = left * right
-    return value
-
 @registry.register_evaluator('absolute_number')
 def evaluate_absolute_number(runtime, node_id: str, port: str, node: Mapping[str, Any], game: Any, dt: float, branch: set[str]) -> Any:
     node_type = str(node.get('type'))

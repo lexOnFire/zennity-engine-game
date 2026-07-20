@@ -7,9 +7,14 @@ import unicodedata
 import uuid
 from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal
+from PySide6.QtGui import QColor, QPainter, QPen
+from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QWidget
+
+if TYPE_CHECKING:
+    from editor.widgets.logic_graph_editor import LogicGraphEditor
 
 class LogicGraphView(QGraphicsView):
     def __init__(self, scene: QGraphicsScene, editor: "LogicGraphEditor", parent: QWidget | None = None) -> None:

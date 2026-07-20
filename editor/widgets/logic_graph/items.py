@@ -7,9 +7,49 @@ import unicodedata
 import uuid
 from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal
+from PySide6.QtGui import QColor, QPainterPath, QPainterPathStroker, QPen, QBrush
+from PySide6.QtWidgets import (
+    QGraphicsEllipseItem,
+    QGraphicsItem,
+    QGraphicsPathItem,
+    QGraphicsRectItem,
+    QGraphicsTextItem,
+    QInputDialog,
+)
+
+from engine.logic.graph_asset import node_port_definitions
+from engine.logic.code_preview import node_code_preview
+
+if TYPE_CHECKING:
+    from editor.widgets.logic_graph_editor import LogicGraphEditor
+
+CATEGORY_COLORS = {
+    "Eventos": QColor("#d66ba0"),
+    "Movimento": QColor("#4c9aff"),
+    "Posição": QColor("#3fb6a8"),
+    "Ação": QColor("#ae7df0"),
+    "Lógica": QColor("#f0a64b"),
+    "Condição": QColor("#50c878"),
+    "Objetos": QColor("#47b8c8"),
+    "Variáveis": QColor("#d5b84b"),
+    "Subgrafos": QColor("#b48ead"),
+    "Matemática": QColor("#e07a5f"),
+    "Texto": QColor("#81b29a"),
+    "Personalizado": QColor("#7f8b9c"),
+}
+
+PORT_COLORS = {
+    "flow": QColor("#d9dde7"),
+    "number": QColor("#58a6ff"),
+    "bool": QColor("#50c878"),
+    "text": QColor("#e6b85c"),
+    "object": QColor("#47b8c8"),
+    "movement": QColor("#ff8c69"),
+    "any": QColor("#ae7df0"),
+}
 
 class LogicPortItem(QGraphicsEllipseItem):
     """Porta interativa que inicia e conclui uma conexão por arraste."""
