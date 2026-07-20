@@ -31,8 +31,8 @@ def test_asset_preview_cache_has_a_strict_memory_bound(tmp_path: Path) -> None:
 
 
 def test_editor_delegates_asset_preview_generation() -> None:
-    source = Path("editor/isolated_editor_main.py").read_text(encoding="utf-8")
+    source = Path("editor/asset_browser_controller.py").read_text(encoding="utf-8")
 
-    assert "self._asset_preview_service = AssetPreviewService(" in source
-    assert "preview = self._asset_preview_service.preview(Path(path_value))" in source
+    assert "AssetPreviewService(DEFAULT_TOKENS.danger)" in source
+    assert "preview = self.preview_service.preview(Path(path_value))" in source
     assert "os.path.getsize(path)" not in source

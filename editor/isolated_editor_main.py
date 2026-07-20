@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QCheckBox, QLabel, QComboBox, QLineEdit,
     QMessageBox, QPushButton, QDoubleSpinBox,
 )
-from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QWidget
+from PySide6.QtWidgets import QTreeWidgetItem, QWidget
 
 from editor.interface_smoke_test import InterfaceSmokeTest
 from editor.controllers.logic_assets import LogicAssetRepository
@@ -35,7 +35,8 @@ from editor.inspector_controller import InspectorComponentController, IsolatedIn
 from editor.inspector_view_renderer import InspectorViewRenderer
 from editor.animation_workspace_controller import AnimationWorkspaceController
 from editor.animation_workspace_operations import AnimationWorkspaceOperations
-from editor.asset_preview_service import AssetPreviewService
+from editor.asset_browser_controller import AssetBrowserController
+from editor.console_controller import ConsoleController
 from editor.scene_persistence import EditorScenePersistence
 from editor.hierarchy_view_renderer import HierarchyViewRenderer
 from editor.script_workspace_controller import ScriptWorkspaceController
@@ -51,7 +52,6 @@ from editor.widgets.component_picker import ComponentPickerDialog
 from editor.widgets.animation_picker import AnimationPickerDialog
 from editor.widgets.animator_controller_editor import AnimatorControllerEditorDialog
 from editor.ui.icons import component_title, editor_icon
-from editor.ui.tokens import DEFAULT_TOKENS
 from engine.animation.clip_asset import (
     animation_asset_from_clip,
     animation_asset_to_clip,
@@ -68,12 +68,13 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         events,
         viewport_controller: ViewportProcessController | None = None,
     ) -> None:
-        self._console_records: list[tuple[str, str]] = []
         self._last_build_report = None
         self._last_validation_report = None
         self._logic_assets_repository = LogicAssetRepository(Path.cwd())
         super().__init__()
-        self._asset_preview_service = AssetPreviewService(DEFAULT_TOKENS.danger)
+        self._console_controller = ConsoleController(self)
+        self._console_records = self._console_controller.records
+        self._asset_browser = AssetBrowserController(self, Path.cwd())
         self._scene_persistence = EditorScenePersistence(Path.cwd())
         self._current_animation_asset_path: Path | None = None
         self._animation_draft_name = "NewAnimation"
@@ -172,11 +173,8 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self.prefab_tree.itemDoubleClicked.connect(self._instantiate_prefab_item)
         self.prefab_tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.prefab_tree.customContextMenuRequested.connect(self._open_prefab_menu)
-        for check in self.console_level_checks.values():
-            check.toggled.connect(self._refresh_console)
-        self.console_clear_button.clicked.connect(self._clear_console)
-        self.assets_tree.itemClicked.connect(self._preview_asset)
-        self.assets_tree.itemDoubleClicked.connect(self._open_logic_asset_item)
+        self._console_controller.connect()
+        self._asset_browser.connect()
         self._connect_hierarchy_to_viewport()
         self._refresh_hierarchy()
         self._connect_inspector_to_viewport()
@@ -192,45 +190,24 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._log("INFO", "Zennity Phase 1 iniciado com Viewport em processo separado")
 
     def _log(self, level: str, message: str) -> None:
-        normalized = str(level).upper()
-        self._console_records.append((normalized, str(message)))
-        self._console_records = self._console_records[-2000:]
-        if self.console_level_checks.get(normalized) is None or self.console_level_checks[normalized].isChecked():
-            self.console_output.appendPlainText(f"[{normalized}] {message}")
+        self._console_controller.log(level, message)
 
     def _refresh_console(self) -> None:
-        visible = {level for level, check in self.console_level_checks.items() if check.isChecked()}
-        self.console_output.setPlainText("\n".join(f"[{level}] {message}" for level, message in self._console_records if level in visible))
+        self._console_controller.refresh()
 
     def _clear_console(self) -> None:
-        self._console_records.clear()
-        self.console_output.clear()
+        self._console_controller.clear()
 
     def _connect_create_panel(self) -> None:
         for kind, button in self.create_buttons.items():
             button.clicked.connect(lambda checked=False, object_kind=kind: self._create_object(object_kind))
 
     def _preview_asset(self, item: QTreeWidgetItem) -> None:
-        path_value = item.toolTip(0)
-        if not path_value:
-            return
-        preview = self._asset_preview_service.preview(Path(path_value))
-        self._set_asset_preview_state("content")
-        self.preview_label.clear()
-        if preview.pixmap is not None:
-            self.preview_label.setPixmap(preview.pixmap.scaled(
-                self.preview_label.width(), self.preview_label.height(),
-                Qt.KeepAspectRatio, Qt.SmoothTransformation,
-            ))
-        else:
-            self.preview_label.setText(preview.label)
-        self.preview_details_label.setText(preview.details)
+        self._asset_browser.preview(item)
 
     def _set_asset_preview_state(self, state: str) -> None:
         """Atualiza somente o estado visual, preservando o conteúdo da prévia."""
-        self.preview_label.setProperty("uiState", state)
-        self.preview_label.style().unpolish(self.preview_label)
-        self.preview_label.style().polish(self.preview_label)
+        self._asset_browser.set_preview_state(state)
 
     def attach_viewport_process(self, process: mp.Process) -> None:
         self._session_controller.attach_viewport_process(process)
@@ -250,11 +227,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._session_controller.flush_viewport_resize()
 
     def _dragged_asset_path(self) -> Path | None:
-        selected_items = self.assets_tree.selectedItems()
-        if not selected_items:
-            return None
-        path_value = selected_items[0].toolTip(0)
-        return Path(path_value) if path_value else None
+        return self._asset_browser.dragged_path()
 
     def _attach_script(self, object_name: str, path: Path) -> None:
         self._script_workspace.attach(object_name, path)
@@ -338,52 +311,10 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._editor_commands.toggle_snap(enabled)
 
     def _refresh_assets(self) -> None:
-        self.assets_tree.clear()
-        root_path = Path.cwd() / "Assets"
-        if not root_path.exists():
-            root_path = Path.cwd() / "assets"
-        root_item = QTreeWidgetItem(["📁 " + (root_path.name if root_path.exists() else "Assets")])
-        self.assets_tree.addTopLevelItem(root_item)
-
-        def add_directory(parent_item: QTreeWidgetItem, directory: Path) -> None:
-            for child in sorted(directory.iterdir(), key=lambda path: (path.is_file(), path.name.lower())):
-                if (
-                    child.name.startswith(".")
-                    or child.suffix == ".meta"
-                    or child.suffix.lower() in {".py", ".zbehavior"}
-                    or (child.is_dir() and child.name.casefold() in {"scripts", "behaviors"})
-                ):
-                    continue
-                if child.is_dir():
-                    icon = "📁 "
-                elif child.suffix.lower() in (".png", ".jpg", ".jpeg"):
-                    icon = "🖼️ "
-                elif child.suffix.lower() in (".ogg", ".wav", ".mp3"):
-                    icon = "🔊 "
-                elif child.suffix.lower() == ".zanim":
-                    icon = "🎞 "
-                elif child.suffix.lower() == ".zanimator":
-                    icon = "◉ "
-                elif child.suffix.lower() == ".zlogic":
-                    icon = "◇ "
-                else:
-                    icon = "📄 "
-                item = QTreeWidgetItem([icon + child.name])
-                item.setToolTip(0, str(child))
-                parent_item.addChild(item)
-                if child.is_dir():
-                    add_directory(item, child)
-
-        if root_path.exists():
-            add_directory(root_item, root_path)
-        root_item.setExpanded(True)
+        self._asset_browser.refresh()
 
     def _open_logic_asset_item(self, item: QTreeWidgetItem, _column: int = 0) -> None:
-        path_value = item.toolTip(0)
-        path = Path(path_value) if path_value else None
-        if path is None or not path.is_file() or path.suffix.lower() != ".zlogic":
-            return
-        self._show_logic_window(preferred_path=path)
+        self._asset_browser.open_item(item, _column)
 
     def _refresh_prefabs(self) -> None:
         self._prefab_workspace.refresh()
