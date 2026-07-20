@@ -33,6 +33,7 @@ def _build_animation_header(window):
     window.animation_workspace = QWidget()
     window.animation_workspace.setObjectName("AnimationWorkspace")
     animation_layout = QVBoxLayout(window.animation_workspace)
+    window._animation_layout = animation_layout
     animation_layout.setContentsMargins(8, 8, 8, 8)
     animation_layout.setSpacing(8)
     animation_title_row = QHBoxLayout()
@@ -136,8 +137,10 @@ def _build_animation_library(window):
     preview_panel = QWidget()
     preview_panel.setObjectName("AnimationPreviewPanel")
     preview_panel.setMinimumWidth(220)
+    window._animation_preview_panel = preview_panel
 
 def _build_animation_preview(window):
+    preview_panel = window._animation_preview_panel
     preview_column = QVBoxLayout(preview_panel)
     preview_column.setContentsMargins(8, 8, 8, 8)
     window.animator_preview = QLabel("Selecione um objeto com Animator 2D")
@@ -215,14 +218,18 @@ def _build_animation_preview(window):
     current_clip_label = QLabel("Clip ativo")
     current_clip_label.setObjectName("PanelHint")
     current_clip_row.addWidget(current_clip_label)
+    window._animation_preview_column = preview_column
+    window._animation_timeline_panel = timeline_panel
+    window._animation_timeline_layout = timeline_layout
+    window._animation_current_clip_row = current_clip_row
 
 def _build_animation_properties(window):
     window.animator_current_lbl = QLineEdit("Nenhum")
     window.animator_current_lbl.setReadOnly(True)
-    current_clip_row.addWidget(window.animator_current_lbl, 1)
-    timeline_layout.addLayout(current_clip_row)
-    preview_column.addWidget(timeline_panel)
-    window.animation_content_splitter.addWidget(preview_panel)
+    window._animation_current_clip_row.addWidget(window.animator_current_lbl, 1)
+    window._animation_timeline_layout.addLayout(window._animation_current_clip_row)
+    window._animation_preview_column.addWidget(window._animation_timeline_panel)
+    window.animation_content_splitter.addWidget(window._animation_preview_panel)
 
     window.animator_body = QWidget()
     window.animator_body.setObjectName("AnimationPropertiesPanel")
@@ -313,7 +320,7 @@ def _build_animation_properties(window):
     window.animation_content_splitter.setStretchFactor(1, 1)
     window.animation_content_splitter.setStretchFactor(2, 0)
     window.animation_content_splitter.setSizes([170, 430, 250])
-    animation_layout.addWidget(window.animation_content_splitter, 1)
+    window._animation_layout.addWidget(window.animation_content_splitter, 1)
 
 def _build_detached_workspaces(window):
     window.logic_workspace = LogicGraphEditor()
