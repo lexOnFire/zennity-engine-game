@@ -34,7 +34,7 @@ def test_animator_component_opens_picker_before_mutating_object() -> None:
     choose_method = operations[choose_start:]
 
     assert 'if component == "animator":' in add_method
-    assert "self._choose_animation_component()" in add_method
+    assert "h._choose_animation_component()" in add_method
     assert "AnimationPickerDialog(Path.cwd(), self)" in choose_method
     assert "picker.exec()" in choose_method
     assert "_apply_animation_asset_path_to_object(picker.selected_path, object_name)" in choose_method

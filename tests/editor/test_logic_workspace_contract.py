@@ -15,7 +15,7 @@ def _source(relative: str) -> str:
 
 def test_logic_and_animation_use_independent_windows_not_viewport_tabs():
     interface = _source("editor/interface_smoke_test.py")
-    editor = _source("editor/isolated_editor_main.py")
+    editor = _source("editor/isolated_editor_main.py") + _source("editor/inspector_controller.py")
     animation = _source("editor/animation_workspace_operations.py")
     assert 'self.viewport_tabs.addTab(QWidget(), "Animation")' not in interface
     assert 'self.viewport_tabs.addTab(QWidget(), "Logic")' not in interface
