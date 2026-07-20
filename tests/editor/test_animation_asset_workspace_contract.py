@@ -35,11 +35,12 @@ def test_editor_integrates_zanim_without_removing_embedded_clips() -> None:
 
 def test_preview_index_exists_before_animation_workspace_is_configured() -> None:
     source = (ROOT / "editor" / "isolated_editor_main.py").read_text(encoding="utf-8")
-    init_start = source.index("def __init__")
-    preview_index = source.index("self._animator_preview_index = 0", init_start)
-    configure_workspace = source.index("self._configure_animation_workspace()", init_start)
+    bootstrap = (ROOT / "editor" / "editor_bootstrap_controller.py").read_text(encoding="utf-8")
+    preview_index = source.index("self._animator_preview_index = 0")
+    compose = source.index("self._bootstrap.compose(")
 
-    assert preview_index < configure_workspace
+    assert preview_index < compose
+    assert "h._configure_animation_workspace()" in bootstrap
 
 
 def test_zanim_can_be_applied_explicitly_or_dropped_on_an_object() -> None:

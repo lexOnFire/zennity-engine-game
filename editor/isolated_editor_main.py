@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QHBoxLayout, QFormLayout,
@@ -26,28 +25,8 @@ from editor.interface_smoke_test import InterfaceSmokeTest
 from editor.controllers.logic_assets import LogicAssetRepository
 from editor.isolated_viewport import run_viewport
 from editor.runtime.viewport_process_controller import ViewportProcessController
-from editor.runtime.isolated_play_mode_controller import IsolatedPlayModeController
-from editor.runtime.scene_selection_controller import SceneSelectionController
-from editor.runtime.viewport_event_dispatcher import ViewportEventDispatcher
-from editor.runtime.scene_history import SceneHistory
-from editor.editor_session_controller import EditorSessionController
-from editor.inspector_controller import InspectorComponentController, IsolatedInspectorController
-from editor.inspector_view_renderer import InspectorViewRenderer
-from editor.animation_workspace_controller import AnimationWorkspaceController
+from editor.editor_bootstrap_controller import EditorBootstrapController
 from editor.animation_workspace_operations import AnimationWorkspaceOperations
-from editor.asset_browser_controller import AssetBrowserController
-from editor.console_controller import ConsoleController
-from editor.scene_persistence import EditorScenePersistence
-from editor.hierarchy_view_renderer import HierarchyViewRenderer
-from editor.script_workspace_controller import ScriptWorkspaceController
-from editor.logic_workspace_controller import LogicWorkspaceController
-from editor.prefab_workspace_controller import PrefabWorkspaceController
-from editor.scene_object_controller import SceneObjectController
-from editor.editor_command_controller import EditorCommandController
-from editor.project_workflow_controller import ProjectWorkflowController
-from editor.viewport_event_controller import ViewportEventController
-from editor.hierarchy_controller import HierarchyController
-from editor.scene_history_controller import SceneHistoryController
 from editor.widgets.component_picker import ComponentPickerDialog
 from editor.widgets.animation_picker import AnimationPickerDialog
 from editor.widgets.animator_controller_editor import AnimatorControllerEditorDialog
@@ -72,10 +51,6 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._last_validation_report = None
         self._logic_assets_repository = LogicAssetRepository(Path.cwd())
         super().__init__()
-        self._console_controller = ConsoleController(self)
-        self._console_records = self._console_controller.records
-        self._asset_browser = AssetBrowserController(self, Path.cwd())
-        self._scene_persistence = EditorScenePersistence(Path.cwd())
         self._current_animation_asset_path: Path | None = None
         self._animation_draft_name = "NewAnimation"
         self._animation_events: list[dict] = []
@@ -97,33 +72,6 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
             "ui": True,
             "runtime": True,
         }
-        self._viewport_controller = viewport_controller or ViewportProcessController.from_queues(
-            commands,
-            events,
-            viewport_process,
-        )
-        self._viewport_process = self._viewport_controller.process
-        self._commands = self._viewport_controller.commands
-        self._events = self._viewport_controller.events
-        self._scene_controller = SceneSelectionController(self._commands)
-        self._viewport_events = ViewportEventDispatcher({
-            "selected": self._handle_selected_event,
-            "transform_begin": self._handle_transform_event,
-            "transform_end": self._handle_transform_event,
-            "transform": self._handle_transform_event,
-            "play_state": self._handle_play_state_event,
-            "scene_snapshot": self._handle_scene_snapshot_event,
-            "runtime_objects": self._handle_runtime_objects_event,
-            "viewport_mode": self._handle_viewport_mode_event,
-            "script_log": self._handle_script_log_event,
-            "logic_trace": self._handle_logic_trace_event,
-            "logic_trace_clear": self._handle_logic_trace_event,
-            "animator_state": self._handle_animator_state_event,
-            "animation_event": self._handle_animation_event,
-            "attach_script": self._handle_attach_script_event,
-            "stats": self._handle_stats_event,
-        })
-        self._session_controller = EditorSessionController(self)
         self._initial_scene_snapshot = [
             {"id": "floor", "name": "Chao", "x": 0.0, "y": 150.0, "w": 600.0, "h": 32.0, "rotation": 0.0, "color": (91, 194, 100), "rigidbody": {"is_kinematic": True, "use_gravity": False}, "collider": {"type": "box"}},
             {"id": "player", "name": "Player", "x": 0.0, "y": 0.0, "w": 36.0, "h": 48.0, "rotation": 0.0, "color": (88, 117, 255), "rigidbody": {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}, "collider": {"type": "box"}},
@@ -134,60 +82,16 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._objects_by_name = {item["name"]: item for item in self._scene_snapshot}
         self._runtime_objects_by_name: dict[str, dict] = {}
         self._selected_name: str | None = None
-        self._hierarchy_view = HierarchyViewRenderer(self)
-        self._hierarchy_controller = HierarchyController(self, self._hierarchy_view)
         self._updating_inspector = False
-        self._scene_history = SceneHistory(max_commands=100, max_bytes=16 * 1024 * 1024)
-        self._history_controller = SceneHistoryController(self)
-        self._inspector_controller = IsolatedInspectorController(self)
-        self._inspector_components = InspectorComponentController(self)
-        self._inspector_view = InspectorViewRenderer(self)
-        self._animation_workspace = AnimationWorkspaceController(self)
-        self._script_workspace = ScriptWorkspaceController(self)
-        self._logic_workspace_controller = LogicWorkspaceController(self)
-        self._prefab_workspace = PrefabWorkspaceController(self)
-        self._scene_objects = SceneObjectController(self)
-        self._editor_commands = EditorCommandController(self)
-        self._project_workflow = ProjectWorkflowController(self)
-        self._viewport_event_controller = ViewportEventController(self)
         self._drag_history_snapshot: list[dict] | None = None
         self._snap_enabled = False
         self._runtime_playing = False
-        self._play_controller = IsolatedPlayModeController()
-        self._play_session = self._play_controller.session
         self._runtime_keys = {
             key: False for key in ("left", "right", "up", "down", "jump", "restart")
         }
-        self.setWindowTitle("Zennity Engine Editor — Phase 1")
-        self.statusBar().showMessage(
-            "Zennity Phase 1 pronto — Viewport em processo dedicado."
-        )
-        self._connect_existing_toolbar_actions()
-        self._configure_main_menus()
-        self._configure_tool_actions()
-        self._configure_create_menu()
-        self._connect_create_panel()
-        self._configure_edit_menu()
-        self._refresh_assets()
-        self._refresh_prefabs()
-        self.prefab_tree.itemDoubleClicked.connect(self._instantiate_prefab_item)
-        self.prefab_tree.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.prefab_tree.customContextMenuRequested.connect(self._open_prefab_menu)
-        self._console_controller.connect()
-        self._asset_browser.connect()
-        self._connect_hierarchy_to_viewport()
-        self._refresh_hierarchy()
-        self._connect_inspector_to_viewport()
-        self._configure_animation_workspace()
-        self._configure_logic_workspace()
-        self.script_containers = []
-        self._clear_inspector_view()
-        self.add_component_button.clicked.connect(self._open_add_component_menu)
-        self.viewport_tabs.currentChanged.connect(self._change_view_mode)
-
-        self._session_controller.configure()
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
-        self._log("INFO", "Zennity Phase 1 iniciado com Viewport em processo separado")
+        self._bootstrap = EditorBootstrapController(self, Path.cwd())
+        self._bootstrap.compose(viewport_process, commands, events, viewport_controller)
+        self._bootstrap.configure()
 
     def _log(self, level: str, message: str) -> None:
         self._console_controller.log(level, message)
