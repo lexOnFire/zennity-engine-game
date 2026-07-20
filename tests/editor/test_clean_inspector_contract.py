@@ -61,12 +61,13 @@ def test_add_component_uses_searchable_picker_instead_of_flat_menu() -> None:
 
 def test_component_card_expansion_state_is_preserved() -> None:
     source = _source("editor/isolated_editor_main.py")
+    script_workspace_source = _source("editor/script_workspace_controller.py")
 
     assert "self._component_expanded" in source
     assert '"audio": False' in source
     assert '"rigidbody": False' in source
     assert '"collider": False' in source
-    assert 'self._component_expanded[f"script:{script_path}"] = True' in source
+    assert 'h._component_expanded[f"script:{script_path}"] = True' in script_workspace_source
     assert "_toggle_dynamic_inspector_card" in source
 
 
