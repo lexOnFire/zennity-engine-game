@@ -161,7 +161,7 @@ def test_logic_debugger_exposes_conditions_watches_highlight_and_restart():
 def test_logic_workspace_exposes_typed_scoped_blackboard_panel():
     editor = _source("editor/widgets/logic_graph_editor.py")
     viewport = _source("editor/isolated_viewport.py")
-    bridge = _source("editor/isolated_editor_main.py")
+    bridge = _source("editor/isolated_editor_main.py") + _source("editor/project_workflow_controller.py")
     assert 'addTab(data_page, "Dados")' in editor
     assert "blackboard_scope_combo" in editor
     assert "blackboard_type_combo" in editor
@@ -170,7 +170,7 @@ def test_logic_workspace_exposes_typed_scoped_blackboard_panel():
     assert "ProjectBlackboard.zblackboard" in editor
     assert "BlackboardStore" in viewport
     assert "scene_blackboard" in viewport
-    assert "self._scene_persistence.collect_logic_variables(scope)" in bridge
+    assert "self.host._scene_persistence.collect_logic_variables(scope)" in bridge
 
 
 def test_visual_event_nodes_are_shared_debuggable_and_exportable():

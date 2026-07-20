@@ -157,6 +157,7 @@ def test_validation_ui_and_export_gate_are_integrated() -> None:
     editor = (
         Path("editor/isolated_editor_main.py").read_text(encoding="utf-8")
         + Path("editor/editor_command_controller.py").read_text(encoding="utf-8")
+        + Path("editor/project_workflow_controller.py").read_text(encoding="utf-8")
     )
     dialog = Path("editor/widgets/project_validation_dialog.py").read_text(encoding="utf-8")
 

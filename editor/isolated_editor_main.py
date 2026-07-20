@@ -47,6 +47,7 @@ from editor.logic_workspace_controller import LogicWorkspaceController
 from editor.prefab_workspace_controller import PrefabWorkspaceController
 from editor.scene_object_controller import SceneObjectController
 from editor.editor_command_controller import EditorCommandController
+from editor.project_workflow_controller import ProjectWorkflowController
 from editor.runtime.sprite_rendering import assign_sprite_texture
 from editor.widgets.component_picker import ComponentPickerDialog
 from editor.widgets.animation_picker import AnimationPickerDialog
@@ -59,12 +60,6 @@ from engine.animation.clip_asset import (
     default_animation_asset,
     save_animation_asset,
 )
-from editor.widgets.build_report_dialog import BuildReportDialog
-from editor.widgets.project_validation_dialog import ProjectValidationDialog
-from engine.build import (
-    BuildReport, ProjectValidationReport,
-    export_development_project_with_report, validate_project,
-)
 
 
 class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
@@ -76,8 +71,8 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         viewport_controller: ViewportProcessController | None = None,
     ) -> None:
         self._console_records: list[tuple[str, str]] = []
-        self._last_build_report: BuildReport | None = None
-        self._last_validation_report: ProjectValidationReport | None = None
+        self._last_build_report = None
+        self._last_validation_report = None
         self._logic_assets_repository = LogicAssetRepository(Path.cwd())
         super().__init__()
         self._asset_preview_service = AssetPreviewService(DEFAULT_TOKENS.danger)
@@ -157,6 +152,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._prefab_workspace = PrefabWorkspaceController(self)
         self._scene_objects = SceneObjectController(self)
         self._editor_commands = EditorCommandController(self)
+        self._project_workflow = ProjectWorkflowController(self)
         self._drag_history_snapshot: list[dict] | None = None
         self._snap_enabled = False
         self._runtime_playing = False
@@ -437,58 +433,13 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._prefab_workspace.create_variant(base_path)
 
     def _export_project(self) -> None:
-        self._save_scene_snapshot()
-        if self._current_scene_path is None:
-            return
-        validation = validate_project(Path.cwd(), self._current_scene_path)
-        self._last_validation_report = validation
-        if not validation.valid:
-            self._log("ERROR", f"Exportação bloqueada por {len(validation.errors)} erro(s) de validação")
-            self.statusBar().showMessage("Corrija os erros de validação antes de exportar")
-            ProjectValidationDialog(validation, self).exec()
-            return
-        output = QFileDialog.getExistingDirectory(self, "Pasta para exportar", str(Path.cwd() / "Builds"))
-        if not output:
-            return
-        default_name = str((self._scene_document or {}).get("scene_name", "ZennityGame"))
-        project_name, accepted = QInputDialog.getText(self, "Exportar projeto", "Nome do jogo:", text=default_name)
-        if not accepted or not project_name.strip():
-            return
-        report = export_development_project_with_report(
-            Path.cwd(), self._current_scene_path, Path(output), project_name
-        )
-        self._last_build_report = report
-        self._build_report_action.setEnabled(True)
-        if report.success:
-            self._log(
-                "INFO",
-                f"Projeto exportado: {report.destination} "
-                f"({report.file_count} arquivos, {len(report.warnings)} aviso(s))",
-            )
-            self.statusBar().showMessage(f"Build criado em {report.destination}")
-        else:
-            self._log("ERROR", f"Build não concluído: {len(report.errors)} erro(s)")
-            self.statusBar().showMessage("Build não concluído — consulte o relatório")
-        self._show_last_build_report()
+        self._project_workflow.export_project()
 
     def _validate_current_project(self) -> None:
-        self._save_scene_snapshot()
-        if self._current_scene_path is None:
-            return
-        report = validate_project(Path.cwd(), self._current_scene_path)
-        self._last_validation_report = report
-        if report.valid:
-            self._log("INFO", f"Projeto validado: {len(report.warnings)} aviso(s), nenhum erro")
-            self.statusBar().showMessage("Projeto pronto para exportar")
-        else:
-            self._log("ERROR", f"Validação encontrou {len(report.errors)} erro(s) e {len(report.warnings)} aviso(s)")
-            self.statusBar().showMessage("Projeto precisa de correções antes da exportação")
-        ProjectValidationDialog(report, self).exec()
+        self._project_workflow.validate_current_project()
 
     def _show_last_build_report(self) -> None:
-        if self._last_build_report is None:
-            return
-        BuildReportDialog(self._last_build_report, self).exec()
+        self._project_workflow.show_last_build_report()
 
     def _connect_existing_toolbar_actions(self) -> None:
         self._editor_commands.connect_toolbar_actions()
@@ -551,52 +502,13 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._scene_objects.create_sprite_at(texture_path, screen_x, screen_y)
 
     def _save_scene_snapshot(self) -> None:
-        filename, _ = QFileDialog.getSaveFileName(
-            self, "Salvar cena", str(self._current_scene_path or "Untitled.zscene"),
-            "Zennity Scene (*.zscene);;Cena JSON (*.json)",
-        )
-        if not filename:
-            return
-        path = Path(filename)
-        try:
-            payload = self._scene_persistence.save(
-                path, self._scene_snapshot, self._scene_document,
-            )
-        except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
-            self.statusBar().showMessage(f"Falha ao salvar cena: {exc}")
-            return
-        self._scene_document = payload
-        self._current_scene_path = path
-        self.statusBar().showMessage(f"Cena salva: {filename}")
-        self._log("INFO", f"Cena salva: {filename}")
+        self._project_workflow.save_scene()
 
     def _collect_logic_variables(self, scope: str) -> dict[str, dict[str, Any]]:
-        return self._scene_persistence.collect_logic_variables(scope)
+        return self._project_workflow.collect_logic_variables(scope)
 
     def _load_scene_snapshot(self, _checked: bool = False, scene_path: Path | None = None) -> None:
-        if scene_path is not None:
-            filename = str(scene_path)
-        else:
-            filename, _ = QFileDialog.getOpenFileName(
-                self, "Abrir cena", "", "Zennity Scene (*.zscene);;Cena JSON (*.json)",
-            )
-        if not filename:
-            return
-        try:
-            payload, snapshots, typed = self._scene_persistence.load(Path(filename))
-        except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
-            self.statusBar().showMessage(f"Falha ao abrir cena: {exc}")
-            return
-        self._record_history()
-        self._scene_snapshot = snapshots
-        self._objects_by_name = {item["name"]: item for item in snapshots}
-        self._scene_document = payload if typed else None
-        self._current_scene_path = Path(filename)
-        self._selected_name = None
-        self._refresh_hierarchy()
-        self._scene_controller.publish_snapshot(self._scene_snapshot)
-        self.statusBar().showMessage(f"Cena aberta: {filename}")
-        self._log("INFO", f"Cena aberta: {filename}")
+        self._project_workflow.load_scene(scene_path)
 
     def _connect_hierarchy_to_viewport(self) -> None:
         self.hierarchy_tree.setDragEnabled(True)

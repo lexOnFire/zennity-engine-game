@@ -8,6 +8,7 @@ def test_build_menu_exposes_export_and_last_report() -> None:
     source = (
         (ROOT / "editor" / "isolated_editor_main.py").read_text(encoding="utf-8")
         + (ROOT / "editor" / "editor_command_controller.py").read_text(encoding="utf-8")
+        + (ROOT / "editor" / "project_workflow_controller.py").read_text(encoding="utf-8")
     )
 
     assert 'addAction("Exportar projeto...")' in source

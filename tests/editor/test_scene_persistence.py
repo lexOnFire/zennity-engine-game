@@ -52,8 +52,11 @@ def test_scene_persistence_rejects_duplicate_names_before_editor_state_changes(t
 
 
 def test_official_editor_delegates_scene_io() -> None:
-    source = Path("editor/isolated_editor_main.py").read_text(encoding="utf-8")
+    source = (
+        Path("editor/isolated_editor_main.py").read_text(encoding="utf-8")
+        + Path("editor/project_workflow_controller.py").read_text(encoding="utf-8")
+    )
 
-    assert "self._scene_persistence.save(" in source
-    assert "self._scene_persistence.load(Path(filename))" in source
+    assert "h._scene_persistence.save(" in source
+    assert "h._scene_persistence.load(Path(filename))" in source
     assert "existing_by_id =" not in source
