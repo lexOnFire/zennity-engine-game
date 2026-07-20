@@ -110,7 +110,11 @@ def test_logic_workspace_can_create_open_save_and_load_demo():
 def test_logic_workspace_receives_throttled_runtime_debug_traces():
     editor = _source("editor/widgets/logic_graph_editor.py")
     viewport = _source("editor/isolated_viewport.py")
-    bridge = _source("editor/isolated_editor_main.py") + _source("editor/logic_workspace_controller.py")
+    bridge = (
+        _source("editor/isolated_editor_main.py")
+        + _source("editor/logic_workspace_controller.py")
+        + _source("editor/viewport_event_controller.py")
+    )
     assert "def apply_runtime_trace" in editor
     assert "def clear_runtime_trace" in editor
     assert "set_runtime_state" in editor
