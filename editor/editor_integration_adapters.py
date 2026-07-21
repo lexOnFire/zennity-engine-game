@@ -70,9 +70,6 @@ class EditorIntegrationAdapters:
         self._commands.put({"type": "set_view_mode", "mode": mode})
         self._log("INFO", f"Aba alterada para: {mode.upper()}")
 
-    def _configure_logic_workspace(self) -> None:
-        self._logic_workspace_controller.connect()
-
     def _send_logic_debug_command(self, command: str) -> None:
         self._logic_workspace_controller.send_debug_command(command)
 
@@ -113,29 +110,11 @@ class EditorIntegrationAdapters:
     def _build_viewport_link_toolbar(self) -> None:
         self._editor_commands.build_viewport_toolbar()
 
-    def _configure_main_menus(self) -> None:
-        self._editor_commands.configure_main_menus()
-
     def _toggle_snap(self, enabled: bool) -> None:
         self._editor_commands.toggle_snap(enabled)
 
-    def _refresh_assets(self) -> None:
-        self._asset_browser.refresh()
-
-    def _open_logic_asset_item(self, item: QTreeWidgetItem, _column: int = 0) -> None:
-        self._asset_browser.open_item(item, _column)
-
-    def _refresh_prefabs(self) -> None:
-        self._prefab_workspace.refresh()
-
     def _save_selected_as_prefab(self) -> None:
         self._prefab_workspace.save_selected()
-
-    def _instantiate_prefab_item(self, item: QTreeWidgetItem) -> None:
-        self._prefab_workspace.instantiate_item(item)
-
-    def _open_prefab_menu(self, position) -> None:
-        self._prefab_workspace.open_menu(position)
 
     def _create_prefab_variant(self, base_path: Path) -> None:
         self._prefab_workspace.create_variant(base_path)
@@ -148,12 +127,6 @@ class EditorIntegrationAdapters:
 
     def _show_last_build_report(self) -> None:
         self._project_workflow.show_last_build_report()
-
-    def _connect_existing_toolbar_actions(self) -> None:
-        self._editor_commands.connect_toolbar_actions()
-
-    def _configure_tool_actions(self) -> None:
-        self._editor_commands.configure_tools()
 
     def _send_toolbar_command(self, message: dict) -> None:
         self._editor_commands.dispatch(message)
