@@ -52,17 +52,7 @@ def execute_create_object(runtime, node: Mapping[str, Any], game: Any, dt: float
     runtime._configure_spawned(game, created, node_id, properties, dt)
     return ["next"]
 
-@registry.register_executor('create_prefab')
-def execute_create_prefab(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
-    node_id = str(node['id'])
-    node_type = str(node.get('type'))
-    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
-    if not runtime._spawn_allowed(game, node_id, properties):
-        runtime._store(node_id, "object", None)
-        return ["limit_reached"]
-    path = str(properties.get("path", "")).strip()
-    if not path:
-        raise RuntimeError("Escolha um arquivo .zprefab.")
+def _prefab_transform_overrides(runtime, node_id, properties, game, dt):
     override_position = bool(properties.get("override_position", True))
     x = float(runtime._read_input(node_id, "x", properties.get("x", 0.0), game, dt, set())) if override_position else None
     y = float(runtime._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set())) if override_position else None
@@ -73,29 +63,56 @@ def execute_create_prefab(runtime, node: Mapping[str, Any], game: Any, dt: float
         float(runtime._read_input(node_id, "rotation", properties.get("rotation", 0.0), game, dt, set()))
         if bool(properties.get("override_rotation", False)) else None
     )
-    width = (
-        float(runtime._read_input(node_id, "width", properties.get("width", 64.0), game, dt, set()))
-        if bool(properties.get("override_scale", False)) else None
-    )
-    height = (
-        float(runtime._read_input(node_id, "height", properties.get("height", 64.0), game, dt, set()))
-        if bool(properties.get("override_scale", False)) else None
-    )
+    size = tuple(
+        float(runtime._read_input(node_id, port, properties.get(port, 64.0), game, dt, set()))
+        for port in ("width", "height")
+    ) if bool(properties.get("override_scale", False)) else (None, None)
+    return x, y, rotation, size[0], size[1]
+
+
+def _prefab_parameters(runtime, node_id, properties, game, dt):
     exposed = properties.get("exposed_properties", [])
     defaults = properties.get("parameters", {}) if isinstance(properties.get("parameters"), Mapping) else {}
     parameters: dict[str, Any] = {}
-    if isinstance(exposed, list):
-        for definition in exposed:
-            if not isinstance(definition, Mapping):
-                continue
-            name = str(definition.get("name", "")).strip()
-            if not name:
-                continue
+    for definition in exposed if isinstance(exposed, list) else ():
+        if not isinstance(definition, Mapping):
+            continue
+        name = str(definition.get("name", "")).strip()
+        if name:
             port = str(definition.get("port", f"param_{name}"))
             parameters[name] = runtime._read_input(
                 node_id, port, defaults.get(name, definition.get("default")), game, dt, set()
             )
-    prefab_options = {
+    return exposed, parameters
+
+
+def _prefab_lifecycle(properties, exposed, parameters):
+    lifecycle = dict(properties)
+    for definition in exposed if isinstance(exposed, list) else ():
+        if not isinstance(definition, Mapping):
+            continue
+        semantic = str(definition.get("semantic", ""))
+        name = str(definition.get("name", ""))
+        if semantic in {"lifetime", "max_distance", "max_instances"} and name in parameters:
+            lifecycle[semantic] = parameters[name]
+    return lifecycle
+
+
+@registry.register_executor('create_prefab')
+def execute_create_prefab(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
+    node_id = str(node['id'])
+    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
+    if not runtime._spawn_allowed(game, node_id, properties):
+        runtime._store(node_id, "object", None)
+        return ["limit_reached"]
+    path = str(properties.get("path", "")).strip()
+    if not path:
+        raise RuntimeError("Escolha um arquivo .zprefab.")
+    x, y, rotation, width, height = _prefab_transform_overrides(
+        runtime, node_id, properties, game, dt
+    )
+    exposed, parameters = _prefab_parameters(runtime, node_id, properties, game, dt)
+    options = {
         "rotation": rotation, "width": width, "height": height,
         "include_camera": bool(properties.get("include_camera", False)),
         "include_audio": bool(properties.get("include_audio", False)),
@@ -103,24 +120,15 @@ def execute_create_prefab(runtime, node: Mapping[str, Any], game: Any, dt: float
         "parameters": parameters,
     }
     if bool(properties.get("use_pool", True)) and callable(getattr(game, "create_prefab_from_pool", None)):
-        created = game.create_prefab_from_pool(
-            path, x, y, runtime._spawn_group(node_id), **prefab_options
-        )
+        created = game.create_prefab_from_pool(path, x, y, runtime._spawn_group(node_id), **options)
     else:
-        created = game.create_prefab(path, x, y, **prefab_options)
+        created = game.create_prefab(path, x, y, **options)
     runtime._store(node_id, "object", created)
     runtime._store(node_id, "parameters", parameters)
     runtime._node_state.setdefault(node_id, {})["flow_target"] = created
-    lifecycle_properties = dict(properties)
-    if isinstance(exposed, list):
-        for definition in exposed:
-            if not isinstance(definition, Mapping):
-                continue
-            semantic = str(definition.get("semantic", ""))
-            name = str(definition.get("name", ""))
-            if semantic in {"lifetime", "max_distance", "max_instances"} and name in parameters:
-                lifecycle_properties[semantic] = parameters[name]
-    runtime._configure_spawned(game, created, node_id, lifecycle_properties, dt)
+    runtime._configure_spawned(
+        game, created, node_id, _prefab_lifecycle(properties, exposed, parameters), dt
+    )
     return ["next"]
 
 @registry.register_executor('clone_object')
