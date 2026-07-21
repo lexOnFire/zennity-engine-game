@@ -64,6 +64,8 @@ from engine.logic.graph_asset import (
 )
 from engine.logic.blackboard import coerce_variable_value, save_blackboard_asset
 
+from engine.prefabs.prefab_asset import load_prefab_asset, resolve_prefab_parameters
+
 from editor.widgets.logic_graph_editor import (
     CATEGORY_COLORS, PORT_COLORS, NODE_DESCRIPTIONS, PROPERTY_LABELS, NODE_PROPERTY_LABELS,
 )

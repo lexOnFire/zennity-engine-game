@@ -64,6 +64,8 @@ from engine.logic.graph_asset import (
 )
 from engine.logic.blackboard import coerce_variable_value, save_blackboard_asset
 
+from engine.logic.recipes import build_logic_recipe, find_logic_recipes, logic_recipe
+
 from editor.widgets.logic_graph_editor import (
     CATEGORY_COLORS, PORT_COLORS, NODE_DESCRIPTIONS, PROPERTY_LABELS, NODE_PROPERTY_LABELS,
 )
