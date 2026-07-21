@@ -564,5 +564,34 @@ class ViewportSession:
                 _send(self.events, {"type": "runtime_objects", "objects": self.runtime_object_snapshot(), "selected": self.selected_name})
             _send(self.events, {"type": "stats", "fps": self.clock.get_fps(), "objects": len(self.objects), "mode": runtime_mode, "view": self.view_mode.upper(), "zoom": self.view_transform()[2], "snap": self.snap_enabled, "camera": (self.game_camera() or {}).get("name") if self.view_mode == "game" else "Editor", "player": player_name, "spawned": world_stats["created"], "reused": world_stats["reused"], "destroyed": world_stats["destroyed"], "pooled": world_stats["pooled"]})
 
-    def teardown(self):
-        pass
+    def teardown(self) -> bool:
+        """Libera deterministicamente todos os recursos pertencentes à sessão."""
+        if getattr(self, "_teardown_complete", False):
+            return False
+        self._teardown_complete = True
+        self.running = False
+
+        self.stop_scripts()
+        self.audio_system.shutdown()
+        tuple(self.command_queue.drain())
+        self.native_ui.clear_caches()
+
+        for collection_name in (
+            "objects",
+            "edit_snapshot",
+            "velocities_y",
+            "grounded",
+            "scene_blackboard_config",
+            "animator_event_signatures",
+            "active_contacts",
+            "forwarded_input",
+            "texture_cache",
+            "hud_entries",
+        ):
+            collection = getattr(self, collection_name, None)
+            if hasattr(collection, "clear"):
+                collection.clear()
+
+        self.screen = None
+        self.clock = None
+        return True

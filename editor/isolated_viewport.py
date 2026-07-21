@@ -74,13 +74,14 @@ def run_viewport(
     session = ViewportSession(
         pygame, screen, display_flags, clock, commands, events, parent_window_id, initial_size
     )
-    while session.running:
-        session.process_commands()
-        session.process_events()
-        session.step()
-        session.render()
-        session.clock.tick(60)
-        session.sync_stats()
-
-    session.teardown()
-    pygame.quit()
+    try:
+        while session.running:
+            session.process_commands()
+            session.process_events()
+            session.step()
+            session.render()
+            session.clock.tick(60)
+            session.sync_stats()
+    finally:
+        session.teardown()
+        pygame.quit()

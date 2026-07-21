@@ -70,3 +70,14 @@ def test_delete_object_does_not_access_removed_shared_script_selector() -> None:
     assert "create_script_button" not in attributes
     assert "edit_script_button" not in attributes
     assert "script_containers" in attributes
+
+
+def test_native_ui_clear_caches_releases_fonts_and_surfaces() -> None:
+    renderer = NativeUIRenderer()
+    renderer._fonts[(12, False)] = object()
+    renderer._images["sprite.png"] = object()
+
+    renderer.clear_caches()
+
+    assert renderer._fonts == {}
+    assert renderer._images == {}
