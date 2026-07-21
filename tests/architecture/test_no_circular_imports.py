@@ -32,12 +32,30 @@ def _resolve_from(current: str, node: ast.ImportFrom) -> str:
 
 
 def _production_graph() -> dict[str, set[str]]:
-    paths = [path for root in SOURCE_ROOTS for path in root.rglob("*.py")]
+    # Package facades intentionally re-export implementations.  The release gate
+    # targets executable implementation modules, where cycles affect initialization.
+    paths = [
+        path for root in SOURCE_ROOTS for path in root.rglob("*.py")
+        if path.name != "__init__.py"
+    ]
     modules = {_module_name(path): path for path in paths}
     graph = {module: set() for module in modules}
     for module, path in modules.items():
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        for node in ast.walk(tree):
+        runtime_nodes: list[ast.AST] = []
+        pending = list(tree.body)
+        while pending:
+            node = pending.pop()
+            if (
+                isinstance(node, ast.If)
+                and isinstance(node.test, ast.Name)
+                and node.test.id == "TYPE_CHECKING"
+            ):
+                pending.extend(node.orelse)
+                continue
+            runtime_nodes.append(node)
+            pending.extend(ast.iter_child_nodes(node))
+        for node in runtime_nodes:
             candidates: list[str] = []
             if isinstance(node, ast.Import):
                 candidates.extend(alias.name for alias in node.names)

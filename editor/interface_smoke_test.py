@@ -38,22 +38,7 @@ from PySide6.QtWidgets import (
 from editor.ui.icons import TOOLBAR_ICONS, component_title, editor_icon
 from editor.ui.empty_state import EmptyStateWidget
 from editor.widgets.logic_graph_editor import LogicGraphEditor
-
-
-class DetachedWorkspaceWindow(QMainWindow):
-    """Janela de ferramenta independente que apenas se oculta ao fechar."""
-
-    def __init__(self, title: str, workspace: QWidget, parent: QWidget | None = None) -> None:
-        super().__init__(parent, Qt.Window)
-        self.setWindowTitle(title)
-        self.resize(1180, 760)
-        self.setMinimumSize(820, 560)
-        self.setCentralWidget(workspace)
-        workspace.show()
-
-    def closeEvent(self, event) -> None:
-        event.ignore()
-        self.hide()
+from editor.ui.detached_workspace import DetachedWorkspaceWindow
 
 
 class InterfaceSmokeTest(QMainWindow):

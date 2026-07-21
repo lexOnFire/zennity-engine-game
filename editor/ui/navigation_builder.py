@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
 from editor.ui.icons import TOOLBAR_ICONS, component_title, editor_icon
 from editor.ui.empty_state import EmptyStateWidget
 from editor.widgets.logic_graph_editor import LogicGraphEditor
-from editor.interface_smoke_test import DetachedWorkspaceWindow
+from editor.ui.detached_workspace import DetachedWorkspaceWindow
 
 def build_navigation_panels(window):
     hierarchy = QTreeWidget()
