@@ -106,4 +106,14 @@ class EditorSessionController:
             application = QApplication.instance()
             if application is not None:
                 application.removeEventFilter(self.editor)
+        for controller_name in (
+            "_inspector_controller",
+            "_hierarchy_controller",
+            "_asset_browser",
+            "_console_controller",
+        ):
+            controller = getattr(self.editor, controller_name, None)
+            disconnect = getattr(controller, "disconnect", None)
+            if callable(disconnect):
+                disconnect()
         self.editor._viewport_controller.shutdown()

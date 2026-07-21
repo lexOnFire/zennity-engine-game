@@ -16,6 +16,20 @@ class HierarchyController:
         self.host = host
         self.renderer = renderer or HierarchyViewRenderer(host)
         self._connected = False
+        self._connections: list[tuple[Any, Any]] = []
+
+    def _bind(self, signal: Any, callback: Any) -> None:
+        signal.connect(callback)
+        self._connections.append((signal, callback))
+
+    def disconnect(self) -> bool:
+        if not self._connected:
+            return False
+        for signal, callback in reversed(self._connections):
+            signal.disconnect(callback)
+        self._connections.clear()
+        self._connected = False
+        return True
 
     def connect(self) -> bool:
         if self._connected:
@@ -24,12 +38,12 @@ class HierarchyController:
         h.hierarchy_tree.setDragEnabled(True)
         h.hierarchy_tree.setAcceptDrops(True)
         h.hierarchy_tree.setDragDropMode(QTreeWidget.InternalMove)
-        h.hierarchy_tree.itemClicked.connect(h._select_hierarchy_item)
-        h.hierarchy_tree.itemDoubleClicked.connect(
+        self._bind(h.hierarchy_tree.itemClicked, h._select_hierarchy_item)
+        self._bind(h.hierarchy_tree.itemDoubleClicked, 
             lambda item: h._rename_object(self.item_name(item))
         )
         h.hierarchy_tree.setContextMenuPolicy(Qt.CustomContextMenu)
-        h.hierarchy_tree.customContextMenuRequested.connect(h._open_hierarchy_menu)
+        self._bind(h.hierarchy_tree.customContextMenuRequested, h._open_hierarchy_menu)
         self._connected = True
         return True
 
