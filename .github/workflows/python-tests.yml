@@ -5,7 +5,7 @@ on:
   push:
     branches: [main, zen/fix-phase1-tests]
   pull_request:
-    branches: [main]
+    branches: [main, release/v1.0.0-rc2]
 
 concurrency:
   group: python-tests-${{ github.workflow }}-${{ github.ref }}
