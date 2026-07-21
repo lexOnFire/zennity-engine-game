@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import os
+import sys
 import pygame
+import pytest
 
 from editor.runtime.sprite_rendering import (
     assign_sprite_texture,
     prepare_scrolling_sprite_surface,
     prepare_sprite_surface,
 )
+
 
 
 def test_assigning_texture_resets_placeholder_tint_to_white() -> None:
