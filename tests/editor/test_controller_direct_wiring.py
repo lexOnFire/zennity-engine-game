@@ -50,5 +50,4 @@ def test_migrated_consumers_do_not_use_removed_shell_adapters() -> None:
 def test_adapter_surface_is_below_twenty_methods() -> None:
     import ast
     tree = ast.parse(Path("editor/editor_integration_adapters.py").read_text(encoding="utf-8"))
-    cls = next(node for node in tree.body if isinstance(node, ast.ClassDef))
-    assert sum(isinstance(node, ast.FunctionDef) for node in cls.body) < 20
+    assert not any(isinstance(node, ast.ClassDef) for node in tree.body)

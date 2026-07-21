@@ -34,6 +34,4 @@ def test_bootstrap_uses_focused_controllers_directly() -> None:
 
 def test_trivial_bootstrap_adapters_do_not_return() -> None:
     tree = ast.parse(Path("editor/editor_integration_adapters.py").read_text(encoding="utf-8"))
-    adapter = next(node for node in tree.body if isinstance(node, ast.ClassDef))
-    names = {node.name for node in adapter.body if isinstance(node, ast.FunctionDef)}
-    assert names.isdisjoint(REMOVED)
+    assert not any(isinstance(node, ast.ClassDef) for node in tree.body)
