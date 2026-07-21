@@ -14,7 +14,8 @@ def _workflow() -> str:
 def test_linux_and_windows_run_the_complete_test_suite() -> None:
     workflow = _workflow()
 
-    assert workflow.count("run: python -m pytest") == 2
+    # Linux matrix, Windows and the coverage gate all execute the complete suite.
+    assert workflow.count("run: python -m pytest") == 3
     assert "tests/editor/test_project_exporter.py" not in workflow
     assert "windows-tests:" in workflow
     assert "Windows / Python 3.12 / Full suite" in workflow
