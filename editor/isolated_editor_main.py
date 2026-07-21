@@ -27,7 +27,6 @@ from editor.isolated_viewport import run_viewport
 from editor.runtime.viewport_process_controller import ViewportProcessController
 from editor.editor_bootstrap_controller import EditorBootstrapController
 from editor.animation_workspace_operations import AnimationWorkspaceOperations
-from editor.editor_integration_adapters import EditorIntegrationAdapters
 from editor.widgets.component_picker import ComponentPickerDialog
 from editor.widgets.animation_picker import AnimationPickerDialog
 from editor.widgets.animator_controller_editor import AnimatorControllerEditorDialog
@@ -40,7 +39,7 @@ from engine.animation.clip_asset import (
 )
 
 
-class IsolatedEditorWindow(AnimationWorkspaceOperations, EditorIntegrationAdapters, InterfaceSmokeTest):
+class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
     def __init__(
         self,
         viewport_process: mp.Process | None,

@@ -74,7 +74,7 @@ class HierarchyController:
 
     def select_and_save_prefab(self, name: str) -> None:
         self.host._selected_name = name
-        self.host._save_selected_as_prefab()
+        self.host._prefab_workspace.save_selected()
 
     def select_item(self, item: QTreeWidgetItem) -> None:
         h = self.host
