@@ -10,6 +10,7 @@ def test_ci_enforces_critical_boundary_coverage() -> None:
     assert "critical-coverage:" in source
     assert "--cov=." in source
     assert "--fail-under=70" in source
+    assert "release/v1.0.0-rc2" in source
     for boundary in (
         "engine/scene/scene_document.py",
         "engine/runtime/lifecycle_scheduler.py",
