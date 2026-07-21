@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QTreeWidgetItem
 
 from editor.asset_browser_controller import AssetBrowserController
 from editor.hierarchy_controller import HierarchyController
+from editor.inspector_controller import IsolatedInspectorController
 
 
 class FakeTree:
@@ -203,3 +204,59 @@ def test_hierarchy_ignores_unknown_and_labels_runtime_selection() -> None:
     controller.select_item(runtime_item)
     assert selected == ["Enemy"]
     assert status == ["Runtime: Enemy selecionado"]
+
+
+class FakeWidget:
+    def __init__(self, *, visible=True) -> None:
+        self.visible = visible
+        self.text = None
+        self.enabled = True
+
+    def setVisible(self, value) -> None:
+        self.visible = bool(value)
+
+    def isVisible(self) -> bool:
+        return self.visible
+
+    def setText(self, value) -> None:
+        self.text = value
+
+    def setEnabled(self, value) -> None:
+        self.enabled = bool(value)
+
+
+def test_inspector_card_presentation_toggle_and_clear() -> None:
+    host = SimpleNamespace(_component_expanded={"transform": True, "dynamic": False})
+    for header_name, body_name, button_name in IsolatedInspectorController.CARD_WIDGETS.values():
+        setattr(host, header_name, FakeWidget())
+        setattr(host, body_name, FakeWidget())
+        setattr(host, button_name, FakeWidget())
+    host.inspector_name_label = FakeWidget()
+    host.animation_object_label = FakeWidget()
+    host.add_component_button = FakeWidget()
+
+    controller = IsolatedInspectorController(host)
+    header, body, button = controller.card("transform")
+    assert (header, body, button) == (
+        host.transform_header, host.transform_body, host.btn_collapse_transform,
+    )
+    controller.set_card_present("transform", True)
+    assert header.visible and body.visible
+    assert button.text == "▼"
+    controller.toggle_card("transform")
+    assert host._component_expanded["transform"] is False
+    assert body.visible is False
+    assert button.text == "▶"
+
+    dynamic_body, dynamic_button = FakeWidget(), FakeWidget()
+    controller.toggle_dynamic_card("dynamic", dynamic_body, dynamic_button)
+    assert host._component_expanded["dynamic"] is True
+    assert dynamic_body.visible is True
+    assert dynamic_button.text == "▼"
+
+    controller.clear()
+    assert host.inspector_name_label.text == "Nenhum objeto selecionado"
+    assert host.animation_object_label.text == "Nenhum objeto selecionado"
+    assert host.add_component_button.enabled is False
+    for header_name, _body_name, _button_name in controller.CARD_WIDGETS.values():
+        assert getattr(host, header_name).visible is False
