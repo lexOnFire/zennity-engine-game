@@ -354,30 +354,62 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
 
     def _connect(self) -> None:
         self.hierarchy.selected.connect(self.select_object)
-        self.hierarchy.create_empty_requested.connect(lambda: self.create_object("Empty"))
+        self.hierarchy.create_empty_requested.connect(
+            lambda: self.create_object("Empty")
+        )
         self.hierarchy.duplicate_requested.connect(self.duplicate_object)
         self.hierarchy.delete_requested.connect(self.delete_object)
         self.hierarchy.rename_requested.connect(self.rename_object)
         self.hierarchy.reparent_requested.connect(self.reparent_object)
+
         self.create_panel.create_requested.connect(self.create_object)
+
         self.resources.asset_selected.connect(self.preview.load_asset)
         self.prefabs.asset_selected.connect(self.preview.load_asset)
-        self.editor_context.selection.subscribe_projection(self.on_viewport_selection_changed)
-        self.scene_view_model.hierarchy_updated.connect(self.refresh_hierarchy_from_viewport)
-        self.scene_view_model.property_changed.connect(self.on_viewmodel_property_changed)
-        self.viewport.object_transform_changed.connect(self.on_viewport_object_changed)
-        self.viewport.tool_message_requested.connect(self.on_tool_message_requested)
-        self.viewport.history_changed.connect(self._update_undo_redo_states)
+
+        self.scene_view_model.hierarchy_updated.connect(
+            self.refresh_hierarchy_from_viewport
+        )
+        self.scene_view_model.property_changed.connect(
+            self.on_viewmodel_property_changed
+        )
+
+        self.viewport.object_transform_changed.connect(
+            self.on_viewport_object_changed
+        )
+        self.viewport.tool_message_requested.connect(
+            self.on_tool_message_requested
+        )
+        self.viewport.history_changed.connect(
+            self._update_undo_redo_states
+        )
+
         self.act_undo.triggered.connect(self.undo)
         self.act_redo.triggered.connect(self.redo)
-        self._alternate_redo_shortcut = QShortcut(QKeySequence("Ctrl+Shift+Z"), self)
-        self._alternate_redo_shortcut.setContext(Qt.ApplicationShortcut)
+
+        self._alternate_redo_shortcut = QShortcut(
+            QKeySequence("Ctrl+Shift+Z"),
+            self,
+        )
+        self._alternate_redo_shortcut.setContext(
+            Qt.ApplicationShortcut
+        )
         self._alternate_redo_shortcut.activated.connect(self.redo)
-        self.game_viewport.tool_message_requested.connect(self.on_tool_message_requested)
 
-        self.editor_context.selection.subscribe(self.on_context_selection_changed)
+        self.game_viewport.tool_message_requested.connect(
+            self.on_tool_message_requested
+        )
 
-        self.on_viewport_selection_changed(self.editor_context.selection.selected)
+        # Este callback projeta a seleção para viewport, inspector e hierarchy.
+        self.editor_context.selection.subscribe(
+            self.on_context_selection_changed
+        )
+
+        # Sincronização inicial sem escrever novamente no SelectionManager.
+        self.on_context_selection_changed(
+            self.editor_context.selection.selected
+        )
+
         self._sync_play_controls()
         self._update_undo_redo_states()
         self._install_editor_extensions()

@@ -26,6 +26,7 @@ class SelectionManager:
         if obj is self._selected:
             self._notify(self._projection_listeners)
             return
+
         self._selected = obj
         self._notify([*self._listeners, *self._projection_listeners])
 
@@ -46,6 +47,7 @@ class SelectionManager:
     def unsubscribe(self, callback: SelectionListener) -> None:
         if callback in self._listeners:
             self._listeners.remove(callback)
+
         if callback in self._projection_listeners:
             self._projection_listeners.remove(callback)
 
