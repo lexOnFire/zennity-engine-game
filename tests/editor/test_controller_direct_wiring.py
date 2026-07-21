@@ -1,6 +1,7 @@
 """Focused controllers must not route through shell pass-through methods."""
 
 from pathlib import Path
+import ast
 
 
 REMOVED = [
@@ -35,9 +36,15 @@ def test_migrated_consumers_do_not_use_removed_shell_adapters() -> None:
         "editor/runtime/editor_event_router.py",
         "editor/logic_workspace_controller.py",
     )
-    combined = "\n".join(Path(path).read_text(encoding="utf-8") for path in paths)
-    for name in REMOVED:
-        assert f".{name}" not in combined
+    called_attributes: set[str] = set()
+    for path in paths:
+        tree = ast.parse(Path(path).read_text(encoding="utf-8"), filename=path)
+        called_attributes.update(
+            node.func.attr
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+        )
+    assert called_attributes.isdisjoint(REMOVED)
 
 
 def test_adapter_surface_is_below_twenty_methods() -> None:

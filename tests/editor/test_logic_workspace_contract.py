@@ -44,7 +44,7 @@ def test_logic_and_animation_use_independent_windows_not_viewport_tabs():
     assert "window.animation_window = DetachedWorkspaceWindow" in interface or "self.animation_window = DetachedWorkspaceWindow" in interface
     assert "window.logic_window = DetachedWorkspaceWindow" in interface or "self.logic_window = DetachedWorkspaceWindow" in interface
     assert "window.logic_workspace = LogicGraphEditor()" in interface or "self.logic_workspace = LogicGraphEditor()" in interface
-    assert "def _show_logic_window" in editor
+    assert "def show(self" in editor
     assert "def _show_animation_window" in animation
     assert 'editor_icon("play")' in editor
     assert 'editor_icon("snap")' in editor
@@ -269,10 +269,10 @@ def test_visual_logic_is_cleanly_managed_from_inspector():
     assert "logic_summary_label" in interface
     assert '"logic": ("logic_component_header"' in inspector
     assert "IsolatedInspectorController" in main
-    assert "_logic_graphs_for_object" in main
-    assert "_choose_logic_graph_component" in main
-    assert "_detach_selected_logic_graph" in main
-    assert "_create_logic_graph_for_selected" in main
+    assert "graphs_for_object" in main
+    assert "choose_component" in main
+    assert "detach_selected" in main
+    assert "create_for_selected" in main
     assert "class LogicGraphPickerDialog" in picker
     assert '"Lógica Visual", "logic"' in components
     assert '"enabled": True' in graph

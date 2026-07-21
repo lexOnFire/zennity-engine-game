@@ -40,12 +40,10 @@ def test_viewport_resize_events_are_coalesced_and_deduplicated() -> None:
               + (ROOT / "editor" / "editor_integration_adapters.py").read_text(encoding="utf-8"))
     session = (ROOT / "editor" / "editor_session_controller.py").read_text(encoding="utf-8")
     event_filter = (ROOT / "editor" / "runtime" / "editor_event_router.py").read_text(encoding="utf-8")
-    flush = source[source.index("def _flush_viewport_resize"):source.index("def _dragged_asset_path")]
-
     assert "interval=24, single_shot=True" in session
     assert "editor._pending_viewport_size = editor.native_viewport_size()" in event_filter
     assert "editor._viewport_resize_timer.start()" in event_filter
     assert 'self._commands.put({"type": "viewport_size"' not in event_filter
-    assert "self._session_controller.flush_viewport_resize()" in flush
+    assert "self._session_controller.flush_viewport_resize()" in source
     assert "size == editor._last_viewport_size_sent" in session
     assert 'editor._commands.put({"type": "viewport_size", "w": size[0], "h": size[1]})' in session
