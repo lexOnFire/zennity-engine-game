@@ -29,7 +29,7 @@ class EditorCommandController:
         ):
             action = QAction(label, h)
             action.triggered.connect(
-                lambda checked=False, message=payload: h._send_toolbar_command(message)
+                lambda checked=False, message=payload: self.dispatch(message)
             )
             toolbar.addAction(action)
 
@@ -42,19 +42,19 @@ class EditorCommandController:
         for label in ("Play", "Pause", "Stop"):
             h.editor_menus["Executar"].addAction(h.toolbar_actions[label])
         validate_action = h.editor_menus["Build"].addAction("Validar projeto...")
-        validate_action.triggered.connect(h._validate_current_project)
+        validate_action.triggered.connect(h._project_workflow.validate_current_project)
         h.editor_menus["Build"].addSeparator()
         export_action = h.editor_menus["Build"].addAction("Exportar projeto...")
-        export_action.triggered.connect(h._export_project)
+        export_action.triggered.connect(h._project_workflow.export_project)
         report_action = h.editor_menus["Build"].addAction("Último relatório...")
         report_action.setEnabled(False)
-        report_action.triggered.connect(h._show_last_build_report)
+        report_action.triggered.connect(h._project_workflow.show_last_build_report)
         h._build_report_action = report_action
         h.toolbar_actions["Pause"].setEnabled(False)
         h.toolbar_actions["Stop"].setEnabled(False)
         snap_action = h.toolbar_actions["Snap: OFF"]
         snap_action.setCheckable(True)
-        snap_action.toggled.connect(h._toggle_snap)
+        snap_action.toggled.connect(self.toggle_snap)
 
     def toggle_snap(self, enabled: bool) -> None:
         h = self.host
@@ -78,7 +78,7 @@ class EditorCommandController:
             payload = commands.get(label)
             if payload is not None:
                 action.triggered.connect(
-                    lambda checked=False, message=payload: h._send_toolbar_command(message)
+                    lambda checked=False, message=payload: self.dispatch(message)
                 )
 
     def configure_tools(self) -> None:

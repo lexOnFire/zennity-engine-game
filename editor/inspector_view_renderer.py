@@ -219,7 +219,7 @@ class InspectorViewRenderer:
 
     def render_logic(self, name: str) -> None:
         h = self.host
-        bindings = h._logic_graphs_for_object(name)
+        bindings = h._logic_workspace_controller.graphs_for_object(name)
         h._set_inspector_card_present("logic", bool(bindings))
         h.logic_graph_combo.clear()
         total_nodes = 0
@@ -231,7 +231,7 @@ class InspectorViewRenderer:
             h.logic_status_label.setText(
                 f"{len(bindings)} grafo(s) ativo(s) • {total_nodes} blocos"
             )
-            h._update_logic_graph_summary()
+            h._logic_workspace_controller.update_summary()
         else:
             h.logic_status_label.setText("Nenhum Logic Graph vinculado")
             h.logic_summary_label.setText(

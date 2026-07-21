@@ -118,12 +118,12 @@ class IsolatedInspectorController:
         self._bind(h.ui_target_combo.currentTextChanged, lambda _value: h._send_inspector_ui())
         self._bind(h.btn_collapse_logic.clicked, lambda: h._toggle_inspector_card("logic"))
         self._bind(h.btn_collapse_runtime.clicked, lambda: h._toggle_inspector_card("runtime"))
-        self._bind(h.btn_delete_logic.clicked, h._remove_all_logic_graphs)
-        self._bind(h.logic_graph_combo.currentIndexChanged, h._update_logic_graph_summary)
-        self._bind(h.logic_open_button.clicked, h._open_selected_logic_graph)
-        self._bind(h.logic_link_button.clicked, h._choose_logic_graph_component)
-        self._bind(h.logic_new_button.clicked, h._create_logic_graph_for_selected)
-        self._bind(h.logic_unlink_button.clicked, h._detach_selected_logic_graph)
+        self._bind(h.btn_delete_logic.clicked, h._logic_workspace_controller.remove_all)
+        self._bind(h.logic_graph_combo.currentIndexChanged, h._logic_workspace_controller.update_summary)
+        self._bind(h.logic_open_button.clicked, h._logic_workspace_controller.open_selected)
+        self._bind(h.logic_link_button.clicked, h._logic_workspace_controller.choose_component)
+        self._bind(h.logic_new_button.clicked, h._logic_workspace_controller.create_for_selected)
+        self._bind(h.logic_unlink_button.clicked, h._logic_workspace_controller.detach_selected)
         self._connected = True
         return True
 
@@ -184,7 +184,7 @@ class InspectorComponentController:
             h._choose_animation_component()
             return
         if component == "logic":
-            h._choose_logic_graph_component()
+            h._logic_workspace_controller.choose_component()
             return
         h._record_history()
         obj = h._objects_by_name[h._selected_name]
@@ -229,7 +229,7 @@ class InspectorComponentController:
 
     def _attach_next_script(self) -> None:
         h = self.host
-        available = h._get_available_scripts()
+        available = h._script_workspace.available_scripts()
         if not available:
             h.statusBar().showMessage("Nenhum script encontrado em Assets/Scripts")
             return
@@ -242,7 +242,7 @@ class InspectorComponentController:
             except ValueError:
                 relative = str(path.resolve())
             if relative not in attached:
-                h._attach_script(h._selected_name, path)
+                h._script_workspace.attach(h._selected_name, path)
                 return
         h.statusBar().showMessage("Todos os scripts disponíveis já estão anexados")
 

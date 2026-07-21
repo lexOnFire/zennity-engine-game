@@ -37,7 +37,7 @@ class EditorEventRouter:
             return True
         if event.type() == QEvent.DragEnter:
             if event.source() is editor.assets_tree:
-                path = editor._dragged_asset_path()
+                path = editor._asset_browser.dragged_path()
                 if path is not None and path.suffix.lower() in self.PREVIEW_EXTENSIONS:
                     event.acceptProposedAction()
                     return True
@@ -70,7 +70,7 @@ class EditorEventRouter:
 
     def _drop(self, watched: Any, event: Any) -> bool | None:
         editor = self.editor
-        path = editor._dragged_asset_path()
+        path = editor._asset_browser.dragged_path()
         if path is None:
             return None
         extension = path.suffix.lower()
@@ -85,7 +85,7 @@ class EditorEventRouter:
                 return self._accept(event)
             target = self._target_name(watched, event)
             if target in editor._objects_by_name:
-                editor._attach_script(target, path)
+                editor._script_workspace.attach(target, path)
                 return self._accept(event)
         elif extension == ".zanim":
             target = self._target_name(watched, event)

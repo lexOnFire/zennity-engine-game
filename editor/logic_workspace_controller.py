@@ -34,17 +34,17 @@ class LogicWorkspaceController:
         h = self.host
         h.logic_workspace.message.connect(h._log)
         h.logic_workspace.asset_changed.connect(h._refresh_assets)
-        h.logic_workspace.debug_command.connect(h._send_logic_debug_command)
+        h.logic_workspace.debug_command.connect(self.send_debug_command)
         h.logic_workspace.play_requested.connect(
-            lambda: h._send_toolbar_command({"type": "play"})
+            lambda: h._editor_commands.dispatch({"type": "play"})
         )
         h.logic_workspace.stop_requested.connect(
-            lambda: h._send_toolbar_command({"type": "stop"})
+            lambda: h._editor_commands.dispatch({"type": "stop"})
         )
         animation_action = QAction(editor_icon("play"), "Editor de Animação", h)
         animation_action.triggered.connect(h._show_animation_window)
         logic_action = QAction(editor_icon("snap"), "Editor de Lógica Visual", h)
-        logic_action.triggered.connect(h._show_logic_window)
+        logic_action.triggered.connect(self.show)
         h.editor_menus["Janela"].addSeparator()
         h.editor_menus["Janela"].addAction(animation_action)
         h.editor_menus["Janela"].addAction(logic_action)
