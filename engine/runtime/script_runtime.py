@@ -144,7 +144,11 @@ class ScriptRuntime:
         if spec is None or spec.loader is None:
             raise ImportError(f"Cannot load script module: {path}")
         module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        # Compile the current bytes directly.  SourceFileLoader may reuse a
+        # timestamp-based .pyc when several hot reloads happen in one second.
+        source = path.read_bytes()
+        code = compile(source, str(path), "exec")
+        exec(code, module.__dict__)
         return module
 
     def _find_behaviour_type(self, module: ModuleType) -> type[ScriptBehaviour]:

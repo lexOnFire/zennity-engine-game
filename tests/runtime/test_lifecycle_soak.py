@@ -81,5 +81,6 @@ def test_viewport_close_soak_sends_one_shutdown_and_releases_each_process() -> N
         assert process.alive is False
         assert process.terminations == 1
     assert len(queue.values) == 100
-    assert all(value == {"type": "shutdown"} for value in queue.values)
+    assert [value["type"] for value in queue.values] == ["shutdown"] * 100
+    assert [value["_seq"] for value in queue.values] == list(range(1, 101))
     assert all(process.joins == 2 for process in processes)
