@@ -71,6 +71,7 @@ from editor.widgets.logic_graph_editor import (
 )
 
 class LogicGraphPaletteMixin:
+    @staticmethod
     def _search_key(value: Any) -> str:
         normalized = unicodedata.normalize("NFKD", str(value).casefold())
         return "".join(character for character in normalized if not unicodedata.combining(character))

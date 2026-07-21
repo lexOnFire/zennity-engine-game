@@ -292,4 +292,3 @@ class LogicGraphEditor(
         self.target_value.textChanged.connect(lambda _text: (self.mark_dirty(), self._refresh_target_hints()))
         self.graph_enabled_check.toggled.connect(lambda _checked: self.mark_dirty())
 
-    @staticmethod
