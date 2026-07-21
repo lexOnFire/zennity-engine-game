@@ -24,10 +24,23 @@ class AssetBrowserController:
         self.host = host
         self.project_root = Path(project_root)
         self.preview_service = preview_service or AssetPreviewService(DEFAULT_TOKENS.danger)
+        self._connected = False
 
-    def connect(self) -> None:
+    def connect(self) -> bool:
+        if self._connected:
+            return False
         self.host.assets_tree.itemClicked.connect(self.preview)
         self.host.assets_tree.itemDoubleClicked.connect(self.open_item)
+        self._connected = True
+        return True
+
+    def disconnect(self) -> bool:
+        if not self._connected:
+            return False
+        self.host.assets_tree.itemClicked.disconnect(self.preview)
+        self.host.assets_tree.itemDoubleClicked.disconnect(self.open_item)
+        self._connected = False
+        return True
 
     def refresh(self) -> None:
         tree = self.host.assets_tree

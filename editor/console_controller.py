@@ -11,11 +11,25 @@ class ConsoleController:
         self.host = host
         self.maximum_records = int(maximum_records)
         self.records: list[tuple[str, str]] = []
+        self._connected = False
 
-    def connect(self) -> None:
+    def connect(self) -> bool:
+        if self._connected:
+            return False
         for check in self.host.console_level_checks.values():
             check.toggled.connect(self.refresh)
         self.host.console_clear_button.clicked.connect(self.clear)
+        self._connected = True
+        return True
+
+    def disconnect(self) -> bool:
+        if not self._connected:
+            return False
+        for check in self.host.console_level_checks.values():
+            check.toggled.disconnect(self.refresh)
+        self.host.console_clear_button.clicked.disconnect(self.clear)
+        self._connected = False
+        return True
 
     def log(self, level: str, message: str) -> None:
         normalized = str(level).upper()
