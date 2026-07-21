@@ -1,5 +1,12 @@
-from editor.premium_editor import run
+"""Compatibility launcher; use editor.phase1_main."""
+from __future__ import annotations
+
+from editor.entrypoints import run_deprecated_entrypoint
+
+
+def main() -> None:
+    run_deprecated_entrypoint("editor.premium_main")
 
 
 if __name__ == "__main__":
-    run()
+    main()
