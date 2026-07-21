@@ -1,6 +1,6 @@
 # Zennity Engine — Roadmap de conclusão arquitetural pré-v1.0
 
-Atualizado em 20 de julho de 2026.
+Atualizado em 21 de julho de 2026.
 
 ## Estado atual
 
@@ -64,6 +64,15 @@ Ainda não é recomendável declarar a v1.0 enquanto os hotspots abaixo permanec
 - [ ] Executar profiling de memória em ciclos de abrir/fechar cena, Play/Stop e Hot Reload.
 - [ ] Elevar cobertura das fronteiras críticas para pelo menos 70% e manter a suíte multiplataforma verde.
 - [ ] Produzir relatório final de compatibilidade, migração e riscos aceitos da v1.0.
+
+### Checkpoint final de auditoria
+
+- [x] Gate de cobertura crítica com mínimo agregado de 70%.
+- [x] Baseline focado medido em 76%.
+- [x] Auditoria final de classes, métodos, imports e lifecycle publicada em
+  `PRE_V1_FINAL_AUDIT.md`.
+- [ ] Decompor as violações estruturais bloqueantes registradas na auditoria
+  antes de promover a branch para v1.0.
 
 ## Sequência de entrega
 
