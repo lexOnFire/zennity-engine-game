@@ -10,12 +10,12 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal
-from .logic_graph.items import (
+from editor.widgets.logic_graph.items import (
     LogicPortItem, LogicEdgeItem, LogicGroupResizeHandle, LogicGroupItem,
     LogicCommentItem, LogicFlipControl, LogicCollapseControl, LogicResizeHandle,
     LogicNodeItem
 )
-from .logic_graph.views import LogicGraphView, LogicMiniMapView
+from editor.widgets.logic_graph.views import LogicGraphView, LogicMiniMapView
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPainterPathStroker, QPen, QBrush
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -66,8 +66,12 @@ from engine.logic.blackboard import coerce_variable_value, save_blackboard_asset
 
 from engine.logic.recipes import build_logic_recipe, find_logic_recipes, logic_recipe
 
-from editor.widgets.logic_graph_editor import (
-    CATEGORY_COLORS, PORT_COLORS, NODE_DESCRIPTIONS, PROPERTY_LABELS, NODE_PROPERTY_LABELS,
+from editor.widgets.logic_graph.definitions import (
+    CATEGORY_COLORS,
+    NODE_DESCRIPTIONS,
+    NODE_PROPERTY_LABELS,
+    PORT_COLORS,
+    PROPERTY_LABELS,
 )
 
 class LogicGraphPaletteMixin:
