@@ -31,7 +31,10 @@ def _source(relative: str) -> str:
 
 
 def test_logic_and_animation_use_independent_windows_not_viewport_tabs():
-    interface = _source("editor/interface_smoke_test.py")
+    interface = (
+        _source("editor/interface_smoke_test.py")
+        + _source("editor/ui/detached_workspace.py")
+    )
     editor = (
         (_source("editor/isolated_editor_main.py") + _source("editor/editor_integration_adapters.py"))
         + _source("editor/inspector_controller.py")

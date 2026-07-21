@@ -36,7 +36,7 @@ def _production_graph() -> dict[str, set[str]]:
     # targets executable implementation modules, where cycles affect initialization.
     paths = [
         path for root in SOURCE_ROOTS for path in root.rglob("*.py")
-        if path.name != "__init__.py"
+        if path.name != "__init__.py" and not path.with_suffix("").is_dir()
     ]
     modules = {_module_name(path): path for path in paths}
     graph = {module: set() for module in modules}
