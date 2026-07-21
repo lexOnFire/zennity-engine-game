@@ -492,9 +492,3 @@ class CircleCollider(Component):
         if self.debug_draw:
             cx, cy = self.center
             pygame.draw.circle(screen, (0, 255, 128), (int(cx), int(cy)), int(self.radius), 1)
-
-
-from engine.core.component_registry import register_component
-
-register_component(BoxCollider)
-register_component(CircleCollider)

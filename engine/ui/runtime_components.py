@@ -497,16 +497,3 @@ class ButtonComponent(UIElement):
         super().deserialize_properties(data)
         self.text = str(data.get("text", self.text))
         self.interactable = bool(data.get("interactable", self.interactable))
-
-
-from engine.core.component_registry import register_component
-
-register_component(Canvas)
-register_component(LabelComponent)
-register_component(LabelComponent, "UILabel")
-register_component(ImageComponent)
-register_component(ImageComponent, "UIImage")
-register_component(InfiniteBackground)
-register_component(InfiniteBackground, "Infinite Background")
-register_component(ButtonComponent)
-register_component(ButtonComponent, "UIButton")
