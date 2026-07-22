@@ -1,4 +1,4 @@
-"""Inicializa Interface Qt e Viewport Pygame em processos independentes.
+﻿"""Inicializa Interface Qt e Viewport Pygame em processos independentes.
 
 Execute a partir da raiz do projeto:
     python -m editor.isolated_editor_main
@@ -57,7 +57,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._animation_asset_dirty = False
         self._animation_preview_playing = True
         self._animation_bound_key: tuple[str, str] | None = None
-        # A workspace usa este índice durante sua configuração inicial.
+        # A workspace usa este Ã­ndice durante sua configuraÃ§Ã£o inicial.
         self._animator_preview_index = 0
         self._animator_controller_dialog: AnimatorControllerEditorDialog | None = None
         self._runtime_animator_states: dict[str, dict] = {}
@@ -110,7 +110,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._asset_browser.preview(item)
 
     def _set_asset_preview_state(self, state: str) -> None:
-        """Atualiza somente o estado visual, preservando o conteúdo da prévia."""
+        """Atualiza somente o estado visual, preservando o conteÃºdo da prÃ©via."""
         self._asset_browser.set_preview_state(state)
 
     def attach_viewport_process(self, process: mp.Process) -> None:
@@ -127,9 +127,18 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         return super().eventFilter(watched, event)
 
     def _flush_viewport_resize(self) -> None:
-        """Agrupa a rajada de Resize do Qt e envia sempre o último tamanho."""
+        """Agrupa a rajada de Resize do Qt e envia sempre o Ãºltimo tamanho."""
         self._session_controller.flush_viewport_resize()
 
+    def _change_view_mode(self, index: int) -> None:
+        mode = "game" if int(index) == 1 else "scene"
+        self._commands.put({
+            "type": "set_view_mode",
+            "mode": mode,
+        })
+
+        label = "Game View" if mode == "game" else "Scene View"
+        self.statusBar().showMessage(f"{label} ativa")
     def _set_play_mode_editing_locked(self, locked: bool) -> None:
         self._editor_commands.set_editing_locked(locked)
 
@@ -450,3 +459,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

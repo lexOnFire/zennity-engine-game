@@ -1,4 +1,4 @@
-"""Visual-logic asset, binding and editor-window orchestration."""
+﻿"""Visual-logic asset, binding and editor-window orchestration."""
 from __future__ import annotations
 
 import json
@@ -33,7 +33,7 @@ class LogicWorkspaceController:
             return False
         h = self.host
         h.logic_workspace.message.connect(h._log)
-        h.logic_workspace.asset_changed.connect(h._refresh_assets)
+        h.logic_workspace.asset_changed.connect(h._asset_browser.refresh)
         h.logic_workspace.debug_command.connect(self.send_debug_command)
         h.logic_workspace.play_requested.connect(
             lambda: h._editor_commands.dispatch({"type": "play"})
@@ -41,9 +41,9 @@ class LogicWorkspaceController:
         h.logic_workspace.stop_requested.connect(
             lambda: h._editor_commands.dispatch({"type": "stop"})
         )
-        animation_action = QAction(editor_icon("play"), "Editor de Animação", h)
+        animation_action = QAction(editor_icon("play"), "Editor de AnimaÃ§Ã£o", h)
         animation_action.triggered.connect(h._show_animation_window)
-        logic_action = QAction(editor_icon("snap"), "Editor de Lógica Visual", h)
+        logic_action = QAction(editor_icon("snap"), "Editor de LÃ³gica Visual", h)
         logic_action.triggered.connect(self.show)
         h.editor_menus["Janela"].addSeparator()
         h.editor_menus["Janela"].addAction(animation_action)
@@ -82,21 +82,21 @@ class LogicWorkspaceController:
             context_path = preferred_path or (bindings[0][0] if bindings else None)
             if not h.logic_workspace.open_for_object(selected, context_path):
                 return
-            h.logic_window.setWindowTitle(f"Zennity — Lógica Visual — {selected}")
+            h.logic_window.setWindowTitle(f"Zennity â€” LÃ³gica Visual â€” {selected}")
             source = context_path.name if context_path is not None else "novo rascunho"
-            h.statusBar().showMessage(f"Lógica Visual: {selected} • {source}")
+            h.statusBar().showMessage(f"LÃ³gica Visual: {selected} â€¢ {source}")
         elif preferred_path is not None:
             if not h.logic_workspace.open_asset(preferred_path):
                 return
-            h.logic_window.setWindowTitle("Zennity — Editor de Lógica Visual")
+            h.logic_window.setWindowTitle("Zennity â€” Editor de LÃ³gica Visual")
         else:
             h.statusBar().showMessage(
-                "Selecione um objeto na Hierarchy para definir o alvo da lógica"
+                "Selecione um objeto na Hierarchy para definir o alvo da lÃ³gica"
             )
         h.logic_window.show()
         h.logic_window.raise_()
         h.logic_window.activateWindow()
-        h._log("INFO", f"Editor de Lógica Visual aberto{f' para {selected}' if selected else ''}")
+        h._log("INFO", f"Editor de LÃ³gica Visual aberto{f' para {selected}' if selected else ''}")
 
     def assets(self) -> list[tuple[Path, dict]]:
         return self.host._logic_assets_repository.assets()
@@ -110,7 +110,7 @@ class LogicWorkspaceController:
     def save_binding(self, path: Path, graph: dict) -> None:
         h = self.host
         h._logic_assets_repository.save(path, graph)
-        h._refresh_assets()
+        h._asset_browser.refresh()
         if h._selected_name in h._objects_by_name:
             h._update_inspector(h._selected_name)
 
@@ -120,7 +120,7 @@ class LogicWorkspaceController:
             return
         assets = self.assets()
         if not assets:
-            h.statusBar().showMessage("Nenhum Logic Graph disponível; use Criar novo")
+            h.statusBar().showMessage("Nenhum Logic Graph disponÃ­vel; use Criar novo")
             self.create_for_selected()
             return
         picker = LogicGraphPickerDialog(assets, h)
@@ -152,7 +152,7 @@ class LogicWorkspaceController:
         save_logic_graph(path, graph)
         h._logic_assets_repository.invalidate(path)
         h._component_expanded["logic"] = True
-        h._refresh_assets()
+        h._asset_browser.refresh()
         h._update_inspector(h._selected_name)
         self.show(preferred_path=path)
         h._log("INFO", f"Logic Graph criado para {h._selected_name}: {path.name}")
@@ -184,8 +184,8 @@ class LogicWorkspaceController:
             return
         answer = QMessageBox.question(
             h,
-            "Desvincular lógica",
-            f"Desvincular {len(bindings)} Logic Graph(s) de {h._selected_name}? Os arquivos serão preservados.",
+            "Desvincular lÃ³gica",
+            f"Desvincular {len(bindings)} Logic Graph(s) de {h._selected_name}? Os arquivos serÃ£o preservados.",
         )
         if answer != QMessageBox.Yes:
             return
@@ -194,9 +194,9 @@ class LogicWorkspaceController:
             graph["enabled"] = False
             save_logic_graph(path, graph)
             h._logic_assets_repository.invalidate(path)
-        h._refresh_assets()
+        h._asset_browser.refresh()
         h._update_inspector(h._selected_name)
-        h._log("INFO", f"Lógica Visual desvinculada de {h._selected_name}")
+        h._log("INFO", f"LÃ³gica Visual desvinculada de {h._selected_name}")
 
     def update_summary(self) -> None:
         h = self.host
@@ -215,12 +215,13 @@ class LogicWorkspaceController:
             ]
             issues = validate_logic_graph(graph)
             errors = sum(issue.get("level") == "error" for issue in issues)
-            summary = f"{len(graph.get('nodes', []))} blocos • {len(events)} eventos"
+            summary = f"{len(graph.get('nodes', []))} blocos â€¢ {len(events)} eventos"
             if events:
                 summary += f"\n{', '.join(str(event) for event in events[:3])}"
-            summary += f"\n{'Pronto para executar' if not errors else f'{errors} erro(s) de validação'}"
+            summary += f"\n{'Pronto para executar' if not errors else f'{errors} erro(s) de validaÃ§Ã£o'}"
             h.logic_summary_label.setText(summary)
             h.logic_open_button.setEnabled(True)
             h.logic_unlink_button.setEnabled(True)
         except (OSError, ValueError, json.JSONDecodeError) as exc:
-            h.logic_summary_label.setText(f"Asset inválido: {exc}")
+            h.logic_summary_label.setText(f"Asset invÃ¡lido: {exc}")
+
