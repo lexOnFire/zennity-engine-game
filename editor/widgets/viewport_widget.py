@@ -26,6 +26,7 @@ from editor.core.event_bus import (
     EVENT_PROPERTY_CHANGED,
     EVENT_HIERARCHY_UPDATED,
 )
+from editor.render.frame_invalidation import FrameInvalidation, FrameInvalidationStats
 from editor.viewmodels.scene_viewmodel import SceneViewModel
 from editor.widgets.viewport_qt_events import ViewportQtEventsMixin
 

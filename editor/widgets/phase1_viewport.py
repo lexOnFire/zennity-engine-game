@@ -50,8 +50,6 @@ from editor.widgets.transform_interaction import (
     activate_gizmo_reference,
     draw_transform_overlay,
     emit_transform_changed,
-)
-from editor.widgets.viewport_gizmo_helpers import (
     event_position,
     move_axis_at,
     request_editor_frame,

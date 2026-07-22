@@ -6,7 +6,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QMouseEvent
 
 from editor.runtime.tool_manager import EditorTool
-from editor.widgets.viewport_gizmo_helpers import (
+from editor.widgets.transform_interaction import (
     event_position,
     move_axis_at,
     request_editor_frame,

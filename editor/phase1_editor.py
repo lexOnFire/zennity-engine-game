@@ -7,6 +7,11 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QAction, QActionGroup, QKeySequence, QShortcut
 from PySide6.QtWidgets import QFileDialog, QComboBox, QSplitter, QTabWidget, QToolBar, QToolButton, QWidget, QMessageBox
 
+from engine.game_object import GameObject
+from engine.physics.collider import BoxCollider
+from engine.physics.rigidbody import RigidBody
+from editor.runtime.editor_extensions import EditorExtensionManager, default_editor_extensions
+from editor.runtime.editor_context import EditorContext
 from editor.phase1_editor_mixins import (
     Phase1EditorUIBuilderMixin,
     Phase1SceneOperationsMixin,
