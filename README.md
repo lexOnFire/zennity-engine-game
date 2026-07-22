@@ -66,14 +66,20 @@ pip install -r requirements.txt
 
 ### 3. Executar o Editor
 ```bash
-python editor/main.py
-```
-
-Também é possível abrir o editor da Fase 1 diretamente:
-
-```bash
 python -m editor.phase1_main
 ```
+
+Depois de instalar o projeto como pacote, o mesmo entrypoint fica disponível
+como comando:
+
+```bash
+zennity-editor
+```
+
+`editor.phase1_main` é o único entrypoint público do editor. Outros launchers
+em `editor/` permanecem internos ou de compatibilidade e não devem ser usados
+em scripts, atalhos ou documentação nova. Para diagnosticar temporariamente o
+editor embutido antigo, use `python -m editor.phase1_main --legacy-embedded`.
 
 ### 4. Abrir o Projeto Exemplo
 

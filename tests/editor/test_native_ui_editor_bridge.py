@@ -55,11 +55,11 @@ def test_native_ui_button_hit_test_keeps_script_event() -> None:
 
 
 def test_delete_object_does_not_access_removed_shared_script_selector() -> None:
-    source = Path("editor/isolated_editor_main.py").read_text(encoding="utf-8")
+    source = Path("editor/scene_object_controller.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
     delete_method = next(
         node for node in ast.walk(tree)
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == "_delete_object"
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == "delete"
     )
     attributes = {
         node.attr for node in ast.walk(delete_method)
@@ -70,3 +70,14 @@ def test_delete_object_does_not_access_removed_shared_script_selector() -> None:
     assert "create_script_button" not in attributes
     assert "edit_script_button" not in attributes
     assert "script_containers" in attributes
+
+
+def test_native_ui_clear_caches_releases_fonts_and_surfaces() -> None:
+    renderer = NativeUIRenderer()
+    renderer._fonts[(12, False)] = object()
+    renderer._images["sprite.png"] = object()
+
+    renderer.clear_caches()
+
+    assert renderer._fonts == {}
+    assert renderer._images == {}

@@ -1,0 +1,39 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "LIMITADORLogic",
+  "target": {
+    "type": "name",
+    "value": "LIMITADOR"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "c7d9cf0c9f644ea8ad475fd0f90be9e2",
+      "type": "event_update",
+      "title": "On Update",
+      "category": "Events",
+      "position": [
+        -349.3,
+        -195.49
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 134.0
+      },
+      "properties": {}
+    }
+  ],
+  "edges": []
+}

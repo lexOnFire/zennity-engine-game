@@ -115,14 +115,20 @@ def test_pause_and_resume_are_forwarded_to_every_audio_channel() -> None:
 
 
 def test_editor_and_viewport_integrate_session_lock_and_audio_pause() -> None:
-    editor_source = open("editor/isolated_editor_main.py", encoding="utf-8").read()
-    viewport_source = open("editor/isolated_viewport.py", encoding="utf-8").read()
+    editor_source = (
+        open("editor/isolated_editor_main.py", encoding="utf-8").read()
+        + open("editor/editor_command_controller.py", encoding="utf-8").read()
+        + open("editor/viewport_event_controller.py", encoding="utf-8").read()
+    )
+    viewport_source = (
+        open("editor/isolated_viewport.py", encoding="utf-8").read()
+        + open("editor/runtime/viewport_session.py", encoding="utf-8").read()
+    )
 
-    assert "self._play_session.begin" in editor_source
-    assert "self._play_session.finish" in editor_source
-    assert "self._set_play_mode_editing_locked(True)" in editor_source
-    assert "set_channels_paused(audio_channels, paused)" in viewport_source
-    assert "set_channels_paused(audio_channels, False)" in viewport_source
+    assert "h._play_controller.plan" in editor_source
+    assert "h._play_session.finish" in editor_source
+    assert "self.set_editing_locked(True)" in editor_source
+    assert "lambda value: set_channels_paused(self.audio_channels, value)" in viewport_source
 
 
 def test_generic_property_command_captures_old_value_without_invalid_syntax() -> None:
@@ -137,23 +143,29 @@ def test_generic_property_command_captures_old_value_without_invalid_syntax() ->
 
 
 def test_runtime_restart_resets_physics_and_restarts_autoplay_audio() -> None:
-    viewport_source = Path("editor/isolated_viewport.py").read_text(encoding="utf-8")
-    restart_block = viewport_source.split("if restart_requested:", 1)[1].split(
-        "physics_steps = physics_scheduler.consume", 1
-    )[0]
+    viewport_source = (
+        Path("editor/isolated_viewport.py").read_text(encoding="utf-8")
+        + Path("editor/runtime/viewport_session.py").read_text(encoding="utf-8")
+    )
+    restart_block = Path("editor/runtime/viewport_session_orchestrator.py").read_text(encoding="utf-8")
 
-    assert "stop_audio_sources()" in restart_block
-    assert "physics_scheduler.reset()" in restart_block
-    assert "start_audio_sources()" in restart_block
+    assert "session_orchestrator.restart(" in viewport_source
+    assert "stop_audio()" in restart_block
+    assert "reset_physics()" in restart_block
+    assert "start_audio()" in restart_block
 
 
 def test_viewport_has_one_runtime_lifecycle_and_initializes_spawned_prefabs() -> None:
-    viewport_source = Path("editor/isolated_viewport.py").read_text(encoding="utf-8")
+    viewport_source = (
+        Path("editor/isolated_viewport.py").read_text(encoding="utf-8")
+        + Path("editor/runtime/viewport_session.py").read_text(encoding="utf-8")
+    )
+    initializer_source = Path("editor/runtime/viewport_runtime_initializer.py").read_text(encoding="utf-8")
 
-    assert viewport_source.count("    def start_scripts()") == 1
-    assert viewport_source.count("    def stop_scripts()") == 1
-    assert viewport_source.count("    def game_camera()") == 1
-    assert "def start_spawned_objects()" in viewport_source
-    assert "for hydrator in (hydrate_animation_asset_clips, hydrate_animator_controllers, hydrate_logic_graphs)" in viewport_source
-    assert "hydrator({name: obj}, Path.cwd())" in viewport_source
-    assert "start_spawned_objects()\n            trace_now" in viewport_source
+    assert viewport_source.count("    def stop_scripts(self):") == 1
+    assert viewport_source.count("    def game_camera(self):") == 1
+    assert "class ViewportRuntimeInitializer" in initializer_source
+    assert "def start_spawned_objects(self)" in initializer_source
+    assert "for hydrator in self.hydrators" in initializer_source
+    assert "self._hydrate({name: obj})" in initializer_source
+    assert "runtime_initializer.start_spawned_objects()\n            keys" in viewport_source

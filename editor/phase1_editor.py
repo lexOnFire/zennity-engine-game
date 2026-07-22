@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction, QActionGroup
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QAction, QActionGroup, QKeySequence, QShortcut
 from PySide6.QtWidgets import QFileDialog, QComboBox, QSplitter, QTabWidget, QToolBar, QToolButton, QWidget, QMessageBox
 
 from editor.premium_editor import (
@@ -25,7 +25,9 @@ from editor.runtime.hierarchy_commands import (
     can_reparent,
 )
 from editor.runtime.editor_context import EditorContext
+from editor.runtime.editor_extensions import EditorExtensionManager, default_editor_extensions
 from editor.runtime.tool_manager import EditorTool
+from editor.runtime.tool_selection import sync_tool_selection
 from editor.widgets.game_viewport import GameViewportWidget
 from editor.widgets.phase1_viewport import Phase1ViewportWidget
 from editor.widgets.render_pipeline_profiler import RenderPipelineProfilerPanel
@@ -49,6 +51,7 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         # Quando True, o usuario ajustou o splitter manualmente:
         # nao recalcular automaticamente.
         self._hierarchy_splitter_user_resized = False
+        self._extensions = EditorExtensionManager(self, self._on_extension_error)
         super().__init__()
         self._ensure_default_scene()
         self.editor_context.tools.subscribe(self._on_runtime_tool_changed)
@@ -337,6 +340,11 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self._hierarchy_splitter_user_resized = True
 
     def closeEvent(self, event) -> None:
+        self.editor_context.selection.unsubscribe(self.on_viewport_selection_changed)
+        self._extensions.uninstall_all()
+        resources_controller = getattr(getattr(self, "resources", None), "assets_controller", None)
+        if resources_controller is not None:
+            resources_controller.uninstall()
         for viewport_name in ("viewport", "game_viewport"):
             viewport = getattr(self, viewport_name, None)
             shutdown = getattr(viewport, "shutdown", None)
@@ -346,44 +354,73 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
 
     def _connect(self) -> None:
         self.hierarchy.selected.connect(self.select_object)
-        self.hierarchy.create_empty_requested.connect(lambda: self.create_object("Empty"))
+        self.hierarchy.create_empty_requested.connect(
+            lambda: self.create_object("Empty")
+        )
         self.hierarchy.duplicate_requested.connect(self.duplicate_object)
         self.hierarchy.delete_requested.connect(self.delete_object)
         self.hierarchy.rename_requested.connect(self.rename_object)
         self.hierarchy.reparent_requested.connect(self.reparent_object)
+
         self.create_panel.create_requested.connect(self.create_object)
+
         self.resources.asset_selected.connect(self.preview.load_asset)
         self.prefabs.asset_selected.connect(self.preview.load_asset)
-        self.scene_view_model.selection_changed.connect(self.on_viewport_selection_changed)
-        self.scene_view_model.hierarchy_updated.connect(self.refresh_hierarchy_from_viewport)
-        self.scene_view_model.property_changed.connect(self.on_viewmodel_property_changed)
-        self.viewport.object_transform_changed.connect(self.on_viewport_object_changed)
-        self.viewport.tool_message_requested.connect(self.on_tool_message_requested)
-        self.viewport.history_changed.connect(self._update_undo_redo_states)
-        self.game_viewport.tool_message_requested.connect(self.on_tool_message_requested)
 
-        self.editor_context.selection.subscribe(self.on_context_selection_changed)
+        self.scene_view_model.hierarchy_updated.connect(
+            self.refresh_hierarchy_from_viewport
+        )
+        self.scene_view_model.property_changed.connect(
+            self.on_viewmodel_property_changed
+        )
 
-        self.on_viewport_selection_changed(self.editor_context.selection.selected)
+        self.viewport.object_transform_changed.connect(
+            self.on_viewport_object_changed
+        )
+        self.viewport.tool_message_requested.connect(
+            self.on_tool_message_requested
+        )
+        self.viewport.history_changed.connect(
+            self._update_undo_redo_states
+        )
+
+        self.act_undo.triggered.connect(self.undo)
+        self.act_redo.triggered.connect(self.redo)
+
+        self._alternate_redo_shortcut = QShortcut(
+            QKeySequence("Ctrl+Shift+Z"),
+            self,
+        )
+        self._alternate_redo_shortcut.setContext(
+            Qt.ApplicationShortcut
+        )
+        self._alternate_redo_shortcut.activated.connect(self.redo)
+
+        self.game_viewport.tool_message_requested.connect(
+            self.on_tool_message_requested
+        )
+
+        # Este callback projeta a seleção para viewport, inspector e hierarchy.
+        self.editor_context.selection.subscribe(
+            self.on_context_selection_changed
+        )
+
+        # Sincronização inicial sem escrever novamente no SelectionManager.
+        self.on_context_selection_changed(
+            self.editor_context.selection.selected
+        )
+
         self._sync_play_controls()
         self._update_undo_redo_states()
-        self._apply_runtime_patches()
+        self._install_editor_extensions()
 
-    def _apply_runtime_patches(self) -> None:
-        """Ativa todos os patches de runtime apos a UI estar montada."""
-        try:
-            from editor.runtime.undo_redo_feedback_patch import _install_instance_shortcuts
-            _install_instance_shortcuts(self)
-        except Exception as exc:
-            if hasattr(self, "console"):
-                self.console.add("WARN", f"undo_redo_feedback_patch falhou: {exc}")
+    def _install_editor_extensions(self) -> None:
+        for extension in default_editor_extensions():
+            self._extensions.install(extension)
 
-        try:
-            from editor.runtime.asset_drag_drop_patch import apply_asset_drag_drop_patch
-            apply_asset_drag_drop_patch(self)
-        except Exception as exc:
-            if hasattr(self, "console"):
-                self.console.add("WARN", f"asset_drag_drop_patch falhou: {exc}")
+    def _on_extension_error(self, name: str, exc: Exception) -> None:
+        if hasattr(self, "console"):
+            self.console.add("WARN", f"Extensao '{name}' falhou: {exc}")
 
     def _update_undo_redo_states(self) -> None:
         if hasattr(self, "act_undo") and hasattr(self, "act_redo"):
@@ -422,6 +459,8 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
             action.setChecked(True)
         if hasattr(self, "status_msg"):
             self.status_msg.setText(f"Ferramenta ativa: {tool.value.title()}")
+        if tool in (EditorTool.MOVE, EditorTool.ROTATE, EditorTool.SCALE):
+            sync_tool_selection(self)
 
     def scene_objects(self) -> list[Any]:
         scene = getattr(self.viewport, "active_scene", None)
@@ -635,6 +674,11 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
         self.inspector.load_object(obj)
         self.hierarchy.select_object(obj)
         self._sync_scene_selection_index(obj)
+        QTimer.singleShot(0, self._resync_selection_projection)
+
+    def _resync_selection_projection(self) -> None:
+        """Consolida a seleção após os timers legados das viewports."""
+        self._sync_scene_selection_index(self.editor_context.selection.selected)
 
     def on_viewport_object_changed(self, obj: Any) -> None:
         if obj is self.editor_context.selection.selected:
@@ -712,7 +756,6 @@ class ZennityPhase1Editor(ZennityPremiumEditor):
 
     def _sync_play_controls(self) -> None:
         playing = self._is_scene_playing()
-        self.editor_context.state.is_playing = playing
         if hasattr(self, "btn_play"):
             self.btn_play.setEnabled(not playing)
             self.btn_play.setText("Playing" if playing else "Play")

@@ -5,7 +5,9 @@ from typing import Any
 from engine.physics.physics import Physics
 from engine.physics.physics_world import PhysicsWorld
 from engine.runtime.clone import clone_game_object
+from engine.runtime.lifecycle_scheduler import LifecycleEntry, LifecycleScheduler
 from engine.runtime.script_runtime import ScriptRuntime
+from engine.time import Time
 from engine.ui.ui_renderer import UIRenderer
 
 
@@ -18,7 +20,8 @@ class RuntimeScene:
         self.scene.start()
         self.name = f"{getattr(editor_scene, 'name', 'Scene')} (Runtime)"
         self.playing = True
-        self.script_runtime = ScriptRuntime(self)
+        self.lifecycle = LifecycleScheduler(fixed_delta_time=Time.fixed_delta_time)
+        self.script_runtime = ScriptRuntime(self, scheduler=self.lifecycle)
         self.physics_world = PhysicsWorld(self)
         self.ui_renderer = UIRenderer()
         self._runtime_started = False
@@ -189,25 +192,39 @@ class RuntimeScene:
         Physics.bind_world(self.physics_world)
         self.script_runtime.start(components)
         for component in components:
-            self._call_component_hook(component, "on_runtime_start")
+            self.lifecycle.register(
+                LifecycleEntry(
+                    key=("component", id(component)),
+                    enabled=lambda component=component: bool(getattr(component, "enabled", True)),
+                    start=lambda component=component: self._call_component_hook(component, "on_runtime_start"),
+                    update=lambda dt, component=component: self._call_component_hook(
+                        component, "on_runtime_update", dt
+                    ),
+                    fixed_update=lambda dt, component=component: self._call_component_hook(
+                        component, "on_runtime_fixed_update", dt
+                    ),
+                    late_update=lambda dt, component=component: self._call_component_hook(
+                        component, "on_runtime_late_update", dt
+                    ),
+                    stop=lambda component=component: self._call_component_hook(component, "on_runtime_stop"),
+                )
+            )
             self._runtime_started_components.append(component)
+        self.lifecycle.start()
         AudioManager._sources = [comp for comp in components if comp.__class__.__name__ == "AudioSource"]
         AudioManager._listeners = [comp for comp in components if comp.__class__.__name__ == "AudioListener"]
 
     def update_runtime(self, delta_time: float) -> None:
         if not self._runtime_started:
             return
-        for component in self._iter_enabled_runtime_components():
-            if component in self._runtime_started_components:
-                self._call_component_hook(component, "on_runtime_update", float(delta_time))
-        self.script_runtime.update(float(delta_time))
+        self.lifecycle.update(float(delta_time))
 
     def stop_runtime(self) -> None:
         if not self._runtime_started:
             return
-        for component in list(reversed(self._runtime_started_components)):
-            self._call_component_hook(component, "on_runtime_stop")
-        self.script_runtime.stop()
+        self.lifecycle.stop()
+        self.script_runtime.instances.clear()
+        self.lifecycle.clear()
         self._runtime_started_components.clear()
         self._runtime_started = False
         from engine.graphics.camera_manager import CameraManager
@@ -221,7 +238,8 @@ class RuntimeScene:
     def update(self, dt: float) -> None:
         dt = float(dt)
         self.update_runtime(dt)
-        self.physics_world.step(dt)
+        self.lifecycle.run_fixed_updates(dt, self.physics_world.step)
+        self.lifecycle.late_update(dt)
         self.scene.update(dt)
 
     def draw(self, screen: Any) -> None:

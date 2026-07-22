@@ -369,8 +369,3 @@ class Animator(Component):
     def __repr__(self) -> str:
         clip = self._current.name if self._current else "None"
         return f"<Animator clip='{clip}' frame={self._frame_index}>"
-
-
-from engine.core.component_registry import register_component
-
-register_component(Animator)

@@ -1,10 +1,17 @@
 from __future__ import annotations
 
-from enum import Enum
+try:
+    from enum import StrEnum
+except ImportError:  # Python 3.10
+    from enum import Enum
+
+    class StrEnum(str, Enum):
+        def __str__(self) -> str:
+            return str(self.value)
 from pathlib import Path
 
 
-class AssetType(str, Enum):
+class AssetType(StrEnum):
     SCENE = "scene"
     IMAGE = "image"
     AUDIO = "audio"
@@ -13,9 +20,6 @@ class AssetType(str, Enum):
     MATERIAL = "material"
     PREFAB = "prefab"
     UNKNOWN = "unknown"
-
-    def __str__(self) -> str:
-        return self.value
 
 
 EXTENSION_TYPES: dict[str, AssetType] = {

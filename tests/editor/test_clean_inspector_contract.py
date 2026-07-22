@@ -12,7 +12,7 @@ def _source(path: str) -> str:
 
 
 def test_inspector_exposes_standard_dynamic_cards() -> None:
-    source = _source("editor/interface_smoke_test.py")
+    source = _source("editor/ui/docks_builder.py") + _source("editor/ui/inspector_builder.py")
     expected = {
         "transform_header", "sprite_renderer_header", "audio_source_header",
         "rigidbody_header", "collider_header", "camera_header",
@@ -20,13 +20,14 @@ def test_inspector_exposes_standard_dynamic_cards() -> None:
     }
 
     for attribute in expected:
-        assert f"self.{attribute}" in source
+        assert f"window.{attribute}" in source
     assert "inspector.setFixedWidth(280)" not in source
     assert "inspector_dock.setFixedWidth(290)" not in source
 
 
 def test_inspector_only_shows_components_present_on_selected_object() -> None:
     source = _source("editor/isolated_editor_main.py")
+    renderer_source = _source("editor/inspector_view_renderer.py")
     tree = ast.parse(source)
     update = next(
         node for node in ast.walk(tree)
@@ -34,8 +35,11 @@ def test_inspector_only_shows_components_present_on_selected_object() -> None:
     )
     update_source = ast.get_source_segment(source, update) or ""
 
-    for key in ("transform", "sprite", "audio", "rigidbody", "collider", "camera", "ui"):
-        assert f'_set_inspector_card_present("{key}"' in update_source
+    for key in ("transform", "sprite", "audio", "rigidbody", "collider", "camera"):
+        assert f'_set_inspector_card_present("{key}"' in renderer_source
+    for key in ("ui", "logic", "runtime"):
+        assert f'_set_inspector_card_present("{key}"' in renderer_source
+    assert "self._inspector_view.render_physics(obj)" in update_source
 
 
 def test_add_component_uses_searchable_picker_instead_of_flat_menu() -> None:
@@ -57,10 +61,26 @@ def test_add_component_uses_searchable_picker_instead_of_flat_menu() -> None:
 
 def test_component_card_expansion_state_is_preserved() -> None:
     source = _source("editor/isolated_editor_main.py")
+    script_workspace_source = _source("editor/script_workspace_controller.py")
 
     assert "self._component_expanded" in source
     assert '"audio": False' in source
     assert '"rigidbody": False' in source
     assert '"collider": False' in source
-    assert 'self._component_expanded[f"script:{script_path}"] = True' in source
+    assert 'h._component_expanded[f"script:{script_path}"] = True' in script_workspace_source
     assert "_toggle_dynamic_inspector_card" in source
+
+
+def test_inspector_update_is_a_small_presenter_orchestrator() -> None:
+    source = _source("editor/isolated_editor_main.py")
+    tree = ast.parse(source)
+    update = next(
+        node for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and node.name == "_update_inspector"
+    )
+
+    assert update.end_lineno - update.lineno + 1 <= 30
+    assert "self._inspector_view.render_animator(name, obj)" in (
+        ast.get_source_segment(source, update) or ""
+    )
+    assert "scripts_list = []" not in source

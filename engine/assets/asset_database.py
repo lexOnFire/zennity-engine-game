@@ -7,6 +7,7 @@ from typing import Iterable
 
 from engine.assets.asset_importer import ImporterRegistry
 from engine.assets.asset_metadata import AssetInfo, AssetMeta
+from engine.assets.asset_path import AssetPathResolver
 from engine.assets.asset_types import AssetType
 
 
@@ -26,20 +27,23 @@ class AssetDatabase:
 
     def __init__(self, project_root: str | Path | None = None, assets_dir: str = "Assets") -> None:
         self.project_root = Path(project_root or Path.cwd()).resolve()
+        self.path_resolver = AssetPathResolver(self.project_root)
         self.assets_root = (self.project_root / assets_dir).resolve()
         self.importer_registry = ImporterRegistry()
         self._assets_by_uuid: dict[str, AssetInfo] = {}
         self._assets_by_path: dict[str, AssetInfo] = {}
+        self.path_conflicts: list[tuple[str, Path, Path]] = []
+        self.guid_conflicts: list[tuple[str, Path, Path]] = []
 
     def scan(self) -> list[AssetInfo]:
         self.ensure_project_folders()
         self._assets_by_uuid.clear()
         self._assets_by_path.clear()
+        self.path_conflicts.clear()
+        self.guid_conflicts.clear()
 
         for path in self._iter_asset_files():
             info = self.import_asset(path)
-            self._assets_by_uuid[info.uuid] = info
-            self._assets_by_path[info.path] = info
 
         return self.list_assets()
 
@@ -55,8 +59,11 @@ class AssetDatabase:
     def get_asset_by_uuid(self, asset_uuid: str) -> AssetInfo | None:
         return self._assets_by_uuid.get(asset_uuid)
 
+    def get_asset_by_guid(self, asset_guid: str) -> AssetInfo | None:
+        return self._assets_by_uuid.get(str(asset_guid))
+
     def get_asset_by_path(self, path: str | Path) -> AssetInfo | None:
-        return self._assets_by_path.get(self._relative_asset_path(path))
+        return self._assets_by_path.get(self.path_resolver.lookup_key(path))
 
     def list_assets(self) -> list[AssetInfo]:
         return sorted(self._assets_by_uuid.values(), key=lambda asset: asset.path)
@@ -83,17 +90,36 @@ class AssetDatabase:
             modified_time=float(stat.st_mtime),
             metadata_path=self._metadata_path(absolute_path),
         )
+        existing_guid = self._assets_by_uuid.get(info.guid)
+        if existing_guid is not None and existing_guid.absolute_path != info.absolute_path:
+            self.guid_conflicts.append((info.guid, existing_guid.absolute_path, info.absolute_path))
+            meta.uuid = str(uuid.uuid4())
+            self._write_meta(info.metadata_path, meta)
+            info = AssetInfo(
+                uuid=meta.guid,
+                name=info.name,
+                path=info.path,
+                absolute_path=info.absolute_path,
+                type=info.type,
+                extension=info.extension,
+                size=info.size,
+                modified_time=info.modified_time,
+                metadata_path=info.metadata_path,
+            )
         self._assets_by_uuid[info.uuid] = info
-        self._assets_by_path[info.path] = info
+        self._assets_by_path[self.path_resolver.lookup_key(info.path)] = info
         return info
 
     def remove_missing_assets(self) -> int:
         removed = 0
-        for meta_path in self.assets_root.rglob("*.meta"):
-            source = meta_path.with_suffix("")
-            if not source.exists():
-                meta_path.unlink()
-                removed += 1
+        for root in self.path_resolver.physical_roots():
+            if not root.exists():
+                continue
+            for meta_path in root.rglob("*.meta"):
+                source = meta_path.with_suffix("")
+                if not source.exists():
+                    meta_path.unlink()
+                    removed += 1
         return removed
 
     def ensure_meta(self, asset_path: str | Path) -> AssetMeta:
@@ -118,31 +144,30 @@ class AssetDatabase:
         return meta
 
     def _iter_asset_files(self) -> Iterable[Path]:
-        return (
-            path
-            for path in self.assets_root.rglob("*")
-            if path.is_file() and path.suffix.lower() != ".meta"
-        )
+        selected: dict[str, Path] = {}
+        for root in self.path_resolver.physical_roots():
+            if not root.exists():
+                continue
+            for path in root.rglob("*"):
+                if not path.is_file() or path.suffix.lower() == ".meta":
+                    continue
+                canonical = self.path_resolver.canonicalize(path)
+                key = canonical.casefold()
+                existing = selected.get(key)
+                if existing is not None:
+                    self.path_conflicts.append((canonical, existing, path))
+                    continue
+                selected[key] = path
+        return iter(selected.values())
 
     def _metadata_path(self, asset_path: str | Path) -> Path:
         return Path(f"{self._absolute_asset_path(asset_path)}.meta")
 
     def _absolute_asset_path(self, path: str | Path) -> Path:
-        candidate = Path(path)
-        if candidate.is_absolute():
-            return candidate.resolve()
-        if candidate.parts and candidate.parts[0].lower() == "assets":
-            return (self.project_root / candidate).resolve()
-        return (self.assets_root / candidate).resolve()
+        return self.path_resolver.resolve(path)
 
     def _relative_asset_path(self, path: str | Path) -> str:
-        absolute_path = self._absolute_asset_path(path)
-        try:
-            relative = absolute_path.relative_to(self.project_root)
-        except ValueError:
-            relative = absolute_path.relative_to(self.assets_root)
-            return f"Assets/{relative.as_posix()}"
-        return relative.as_posix()
+        return self.path_resolver.canonicalize(self._absolute_asset_path(path))
 
     def _write_meta(self, path: Path, meta: AssetMeta) -> None:
         path.write_text(json.dumps(meta.to_dict(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
