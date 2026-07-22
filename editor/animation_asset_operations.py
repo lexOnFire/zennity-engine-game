@@ -1,4 +1,4 @@
-"""Animation asset, controller, preview and binding operations."""
+﻿"""Animation asset, controller, preview and binding operations."""
 from __future__ import annotations
 
 import json
@@ -23,7 +23,7 @@ class AnimationAssetOperations:
         self.animation_window.show()
         self.animation_window.raise_()
         self.animation_window.activateWindow()
-        self._log("INFO", "Editor de Animação aberto")
+        self._log("INFO", "Editor de AnimaÃ§Ã£o aberto")
 
     def _toggle_animator_component(self, checked: bool) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
@@ -37,6 +37,7 @@ class AnimationAssetOperations:
         self._scene_controller.publish_snapshot(self._scene_snapshot)
         self._update_inspector(self._selected_name)
 
+    @staticmethod
     def _default_animation_clip() -> dict:
         return {"texture": "", "frame_width": 32, "frame_height": 32, "start_frame": 0, "frame_count": 1, "fps": 8.0, "loop": True}
 
@@ -103,7 +104,7 @@ class AnimationAssetOperations:
             relative = resolved.relative_to(Path.cwd().resolve()).as_posix()
             controller = load_animator_controller(resolved)
         except (OSError, ValueError) as exc:
-            self._log("ERROR", f"Não foi possível aplicar o controller: {exc}")
+            self._log("ERROR", f"NÃ£o foi possÃ­vel aplicar o controller: {exc}")
             return
         self._record_history()
         obj = self._objects_by_name[target_name]
@@ -152,18 +153,18 @@ class AnimationAssetOperations:
     def _update_animator_controller_summary(self) -> None:
         path_value = str(self.animation_controller_combo.currentData() or "")
         if not path_value:
-            self.animation_controller_summary.setText("Use um controller para criar estados e transições.")
+            self.animation_controller_summary.setText("Use um controller para criar estados e transiÃ§Ãµes.")
             self.animation_edit_controller_button.setEnabled(False)
             return
         self.animation_edit_controller_button.setEnabled(True)
         try:
             controller = load_animator_controller(Path.cwd() / path_value)
             self.animation_controller_summary.setText(
-                f'Inicial: {controller["initial_state"]} · {len(controller["states"])} estado(s) · '
-                f'{len(controller["transitions"])} transição(ões)'
+                f'Inicial: {controller["initial_state"]} Â· {len(controller["states"])} estado(s) Â· '
+                f'{len(controller["transitions"])} transiÃ§Ã£o(Ãµes)'
             )
         except (OSError, ValueError):
-            self.animation_controller_summary.setText("Controller inválido ou não encontrado.")
+            self.animation_controller_summary.setText("Controller invÃ¡lido ou nÃ£o encontrado.")
 
     def _refresh_animation_library(self) -> None:
         selected = self._current_animation_asset_path
@@ -177,12 +178,12 @@ class AnimationAssetOperations:
             if selected and path.resolve() == selected.resolve():
                 self.animation_library_tree.setCurrentItem(item)
         if self.animation_library_tree.topLevelItemCount() == 0:
-            empty = QTreeWidgetItem(["Nenhuma animação salva"])
+            empty = QTreeWidgetItem(["Nenhuma animaÃ§Ã£o salva"])
             empty.setDisabled(True)
             self.animation_library_tree.addTopLevelItem(empty)
 
     def _new_animation_asset(self) -> None:
-        name, accepted = QInputDialog.getText(self, "Nova Animação", "Nome da animação:", text="NewAnimation")
+        name, accepted = QInputDialog.getText(self, "Nova AnimaÃ§Ã£o", "Nome da animaÃ§Ã£o:", text="NewAnimation")
         name = name.strip()
         if not accepted or not name:
             return
@@ -191,11 +192,11 @@ class AnimationAssetOperations:
         self._apply_animation_asset_to_editor(default_animation_asset(name), attach_to_object=False)
         self._animation_asset_dirty = True
         self._update_animation_asset_status()
-        self._log("INFO", f"Nova animação preparada: {name}")
+        self._log("INFO", f"Nova animaÃ§Ã£o preparada: {name}")
 
     def _open_animation_asset_dialog(self) -> None:
         start = self._animation_assets_directory()
-        filename, _ = QFileDialog.getOpenFileName(self, "Abrir Animação", str(start), "Animação Zennity (*.zanim)")
+        filename, _ = QFileDialog.getOpenFileName(self, "Abrir AnimaÃ§Ã£o", str(start), "AnimaÃ§Ã£o Zennity (*.zanim)")
         if filename:
             self._load_animation_asset_path(Path(filename))
 
@@ -208,8 +209,8 @@ class AnimationAssetOperations:
         try:
             asset = load_animation_asset(path)
         except (OSError, ValueError, json.JSONDecodeError) as exc:
-            QMessageBox.warning(self, "Animação inválida", f"Não foi possível abrir o arquivo.\n\n{exc}")
-            self._log("ERROR", f"Falha ao abrir animação {path.name}: {exc}")
+            QMessageBox.warning(self, "AnimaÃ§Ã£o invÃ¡lida", f"NÃ£o foi possÃ­vel abrir o arquivo.\n\n{exc}")
+            self._log("ERROR", f"Falha ao abrir animaÃ§Ã£o {path.name}: {exc}")
             return
         self._current_animation_asset_path = path.resolve()
         self._animation_draft_name = str(asset["name"])
@@ -217,7 +218,7 @@ class AnimationAssetOperations:
         self._animation_asset_dirty = False
         self._update_animation_asset_status()
         self._refresh_animation_library()
-        self._log("INFO", f"Animação aberta: {path.name}")
+        self._log("INFO", f"AnimaÃ§Ã£o aberta: {path.name}")
 
     def _current_animation_asset(self) -> tuple[dict, Path | None]:
         path = self._current_animation_asset_path
@@ -228,48 +229,48 @@ class AnimationAssetOperations:
     def _animation_play_error(self, asset: dict) -> str:
         texture = str(asset.get("texture", "")).strip()
         if not texture:
-            return "selecione um Sprite Sheet nas propriedades da animação e salve novamente"
+            return "selecione um Sprite Sheet nas propriedades da animaÃ§Ã£o e salve novamente"
         texture_path = Path(texture)
         if not texture_path.is_absolute():
             texture_path = Path.cwd() / texture_path
         if not texture_path.is_file():
-            return f"Sprite Sheet não encontrado: {texture}"
+            return f"Sprite Sheet nÃ£o encontrado: {texture}"
         pixmap = QPixmap(str(texture_path))
         if pixmap.isNull():
-            return f"não foi possível abrir o Sprite Sheet: {texture}"
+            return f"nÃ£o foi possÃ­vel abrir o Sprite Sheet: {texture}"
         frame_width = max(1, int(asset.get("frame_width", 1)))
         frame_height = max(1, int(asset.get("frame_height", 1)))
         if frame_width > pixmap.width() or frame_height > pixmap.height():
-            return "o tamanho do quadro é maior que o Sprite Sheet"
+            return "o tamanho do quadro Ã© maior que o Sprite Sheet"
         columns = max(1, pixmap.width() // frame_width)
         rows = max(1, pixmap.height() // frame_height)
         frames = asset.get("frames", [0])
         if not isinstance(frames, list) or not frames:
-            return "a animação não possui quadros"
+            return "a animaÃ§Ã£o nÃ£o possui quadros"
         if max(int(frame) for frame in frames) >= columns * rows:
-            return f"o quadro {max(int(frame) for frame in frames)} está fora do Sprite Sheet ({columns * rows} disponíveis)"
+            return f"o quadro {max(int(frame) for frame in frames)} estÃ¡ fora do Sprite Sheet ({columns * rows} disponÃ­veis)"
         return ""
 
     def _apply_animation_asset_path_to_object(self, path: Path, object_name: str) -> bool:
         try:
             asset = load_animation_asset(path)
         except (OSError, ValueError, json.JSONDecodeError) as exc:
-            self._log("ERROR", f"Não foi possível aplicar {path.name}: {exc}")
-            QMessageBox.warning(self, "Animação inválida", str(exc))
+            self._log("ERROR", f"NÃ£o foi possÃ­vel aplicar {path.name}: {exc}")
+            QMessageBox.warning(self, "AnimaÃ§Ã£o invÃ¡lida", str(exc))
             return False
         return self._apply_animation_asset_to_object(asset, path, object_name)
 
     def _apply_animation_asset_to_object(self, asset: dict, path: Path | None, object_name: str) -> bool:
         if self._play_session.is_running:
-            self.statusBar().showMessage("Pare o Play Mode antes de aplicar uma animação")
+            self.statusBar().showMessage("Pare o Play Mode antes de aplicar uma animaÃ§Ã£o")
             return False
         if object_name not in self._objects_by_name:
             return False
         error = self._animation_play_error(asset)
         if error:
-            message = f"A animação '{asset.get('name', 'Animation')}' não pode ser reproduzida: {error}."
+            message = f"A animaÃ§Ã£o '{asset.get('name', 'Animation')}' nÃ£o pode ser reproduzida: {error}."
             self._log("ERROR", message)
-            QMessageBox.warning(self, "Animação incompleta", message)
+            QMessageBox.warning(self, "AnimaÃ§Ã£o incompleta", message)
             return False
 
         self._selected_name = object_name
@@ -290,17 +291,17 @@ class AnimationAssetOperations:
         self._scene_controller.select(object_name)
         self._update_inspector(object_name)
         self._update_animation_asset_status()
-        self._log("INFO", f"Animação '{asset['name']}' aplicada em {object_name}")
+        self._log("INFO", f"AnimaÃ§Ã£o '{asset['name']}' aplicada em {object_name}")
         return True
 
     def _apply_current_animation_to_selected(self) -> None:
         if self._selected_name not in self._objects_by_name:
-            QMessageBox.information(self, "Aplicar Animação", "Selecione primeiro um objeto na Hierarchy.")
+            QMessageBox.information(self, "Aplicar AnimaÃ§Ã£o", "Selecione primeiro um objeto na Hierarchy.")
             return
         try:
             asset, path = self._current_animation_asset()
         except (OSError, ValueError, json.JSONDecodeError) as exc:
-            QMessageBox.warning(self, "Animação inválida", str(exc))
+            QMessageBox.warning(self, "AnimaÃ§Ã£o invÃ¡lida", str(exc))
             return
         self._apply_animation_asset_to_object(asset, path, self._selected_name)
 
@@ -311,7 +312,7 @@ class AnimationAssetOperations:
             candidates = [item for item in directory.glob("*.zanim") if item.stem.casefold() == "andar"] if directory.exists() else []
             path = candidates[0] if candidates else None
         if path is None:
-            message = "Salve a animação como Assets/Animations/andar.zanim antes de iniciar a demo."
+            message = "Salve a animaÃ§Ã£o como Assets/Animations/andar.zanim antes de iniciar a demo."
             self._log("ERROR", message)
             QMessageBox.information(self, "Demo andar", message)
             return
@@ -326,15 +327,15 @@ class AnimationAssetOperations:
             return
         if not self._apply_animation_asset_path_to_object(path, player_name):
             return
-        self._log("INFO", f"Demo iniciada: '{path.stem}' está ativa em {player_name}")
-        self.statusBar().showMessage("Demo iniciada — a animação está tocando no Player")
+        self._log("INFO", f"Demo iniciada: '{path.stem}' estÃ¡ ativa em {player_name}")
+        self.statusBar().showMessage("Demo iniciada â€” a animaÃ§Ã£o estÃ¡ tocando no Player")
         self._send_toolbar_command({"type": "play"})
 
     def _save_animation_asset(self, _checked: bool = False, save_as: bool = False) -> None:
         path = self._current_animation_asset_path
         if save_as or path is None:
             default_path = self._animation_assets_directory() / f"{self._animation_draft_name}.zanim"
-            filename, _ = QFileDialog.getSaveFileName(self, "Salvar Animação", str(default_path), "Animação Zennity (*.zanim)")
+            filename, _ = QFileDialog.getSaveFileName(self, "Salvar AnimaÃ§Ã£o", str(default_path), "AnimaÃ§Ã£o Zennity (*.zanim)")
             if not filename:
                 return
             path = Path(filename)
@@ -345,8 +346,8 @@ class AnimationAssetOperations:
         try:
             saved = save_animation_asset(path, asset)
         except OSError as exc:
-            QMessageBox.warning(self, "Erro ao salvar", f"Não foi possível salvar a animação.\n\n{exc}")
-            self._log("ERROR", f"Falha ao salvar animação {path.name}: {exc}")
+            QMessageBox.warning(self, "Erro ao salvar", f"NÃ£o foi possÃ­vel salvar a animaÃ§Ã£o.\n\n{exc}")
+            self._log("ERROR", f"Falha ao salvar animaÃ§Ã£o {path.name}: {exc}")
             return
         self._current_animation_asset_path = path.resolve()
         self._animation_draft_name = str(saved["name"])
@@ -354,7 +355,7 @@ class AnimationAssetOperations:
         self._update_animation_asset_status()
         self._refresh_animation_library()
         self._refresh_assets()
-        self._log("INFO", f"Animação salva: {self._project_relative_path(path)} — use 'Aplicar ao selecionado' para anexá-la")
+        self._log("INFO", f"AnimaÃ§Ã£o salva: {self._project_relative_path(path)} â€” use 'Aplicar ao selecionado' para anexÃ¡-la")
 
     def _duplicate_animation_asset(self) -> None:
         original_path = self._current_animation_asset_path
@@ -372,8 +373,8 @@ class AnimationAssetOperations:
         if path is None or not path.exists():
             return
         answer = QMessageBox.question(
-            self, "Excluir Animação",
-            f"Excluir '{path.name}' da biblioteca?\n\nObjetos que já usam o clip manterão uma cópia compatível.",
+            self, "Excluir AnimaÃ§Ã£o",
+            f"Excluir '{path.name}' da biblioteca?\n\nObjetos que jÃ¡ usam o clip manterÃ£o uma cÃ³pia compatÃ­vel.",
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
         )
         if answer != QMessageBox.Yes:
@@ -388,7 +389,7 @@ class AnimationAssetOperations:
         self._update_animation_asset_status()
         self._refresh_animation_library()
         self._refresh_assets()
-        self._log("INFO", f"Animação excluída da biblioteca: {path.name}")
+        self._log("INFO", f"AnimaÃ§Ã£o excluÃ­da da biblioteca: {path.name}")
 
     def _animation_asset_from_editor(self, name: str | None = None) -> dict:
         clip_name = name or self._animation_draft_name or self.animator_clip_combo.currentText() or "NewAnimation"
@@ -452,4 +453,5 @@ class AnimationAssetOperations:
             return str(path.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
         except ValueError:
             return str(path).replace("\\", "/")
+
 
