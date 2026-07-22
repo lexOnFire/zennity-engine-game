@@ -37,6 +37,7 @@ class AnimationAssetOperations:
         self._scene_controller.publish_snapshot(self._scene_snapshot)
         self._update_inspector(self._selected_name)
 
+    @staticmethod
     def _default_animation_clip() -> dict:
         return {"texture": "", "frame_width": 32, "frame_height": 32, "start_frame": 0, "frame_count": 1, "fps": 8.0, "loop": True}
 
