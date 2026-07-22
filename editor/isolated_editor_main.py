@@ -130,6 +130,16 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         """Agrupa a rajada de Resize do Qt e envia sempre o último tamanho."""
         self._session_controller.flush_viewport_resize()
 
+    def _change_view_mode(self, index: int) -> None:
+        mode = "game" if int(index) == 1 else "scene"
+        self._commands.put({
+            "type": "set_view_mode",
+            "mode": mode,
+        })
+
+        label = "Game View" if mode == "game" else "Scene View"
+        self.statusBar().showMessage(f"{label} ativa")
+
     def _set_play_mode_editing_locked(self, locked: bool) -> None:
         self._editor_commands.set_editing_locked(locked)
 

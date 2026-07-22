@@ -33,7 +33,7 @@ class LogicWorkspaceController:
             return False
         h = self.host
         h.logic_workspace.message.connect(h._log)
-        h.logic_workspace.asset_changed.connect(h._refresh_assets)
+        h.logic_workspace.asset_changed.connect(h._asset_browser.refresh)
         h.logic_workspace.debug_command.connect(self.send_debug_command)
         h.logic_workspace.play_requested.connect(
             lambda: h._editor_commands.dispatch({"type": "play"})
@@ -110,7 +110,7 @@ class LogicWorkspaceController:
     def save_binding(self, path: Path, graph: dict) -> None:
         h = self.host
         h._logic_assets_repository.save(path, graph)
-        h._refresh_assets()
+        h._asset_browser.refresh()
         if h._selected_name in h._objects_by_name:
             h._update_inspector(h._selected_name)
 
@@ -152,7 +152,7 @@ class LogicWorkspaceController:
         save_logic_graph(path, graph)
         h._logic_assets_repository.invalidate(path)
         h._component_expanded["logic"] = True
-        h._refresh_assets()
+        h._asset_browser.refresh()
         h._update_inspector(h._selected_name)
         self.show(preferred_path=path)
         h._log("INFO", f"Logic Graph criado para {h._selected_name}: {path.name}")
@@ -194,7 +194,7 @@ class LogicWorkspaceController:
             graph["enabled"] = False
             save_logic_graph(path, graph)
             h._logic_assets_repository.invalidate(path)
-        h._refresh_assets()
+        h._asset_browser.refresh()
         h._update_inspector(h._selected_name)
         h._log("INFO", f"Lógica Visual desvinculada de {h._selected_name}")
 
