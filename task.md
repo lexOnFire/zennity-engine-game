@@ -1,5 +1,6 @@
 # Tarefas — Inspector Profissional (Fase 8)
 
+### Bloco 1: Funcionalidades Principais
 - [x] Ocultar handles legados permanentemente na nova viewport (`editor/widgets/phase1_viewport.py`)
 - [x] Sincronizar e mapear `project_root` no `EditorContext` a partir do `AssetModel` do editor (`editor_context.py` & `main_window.py`)
 - [x] Adicionar resolução automática do `project_root` a partir do caminho do arquivo no `prefab_loader.py`

@@ -1,0 +1,597 @@
+"""Janela Pygame independente usada pelo experimento de viewport isolada."""
+from __future__ import annotations
+
+import os
+import sys
+from copy import deepcopy
+from pathlib import Path
+from typing import Any
+
+try:
+    from editor.runtime.audio_playback_state import set_channels_paused
+    from editor.runtime.native_ui import NativeUIRenderer, normalize_ui
+    from editor.runtime.sprite_rendering import prepare_scrolling_sprite_surface, prepare_sprite_surface
+    from editor.runtime.viewport_systems import (
+        AnimationPlaybackSystem,
+        AudioPlaybackSystem,
+        FixedStepScheduler,
+        HudRuntimeSystem,
+    )
+    from editor.runtime.viewport_command_queue import ViewportCommandQueue
+    from editor.runtime.viewport_control_commands import (
+        ViewportAudioCommandHandler,
+        ViewportControlCommandHandler,
+        ViewportControlSettings,
+    )
+    from editor.runtime.viewport_edit_commands import ViewportEditCommandHandler
+    from editor.runtime.viewport_play_commands import ViewportPlayCommandHandler, ViewportProcessState
+    from editor.runtime.viewport_navigation_events import ViewportNavigationEventHandler, ViewportNavigationState
+    from editor.runtime.viewport_transform_events import ViewportTransformEventHandler, ViewportTransformState
+    from editor.runtime.viewport_overlay_renderer import ViewportOverlayRenderer
+    from editor.runtime.viewport_sprite_renderer import ViewportSpriteRenderer
+    from editor.runtime.viewport_physics_stepper import ViewportPhysicsStepper
+    from editor.runtime.viewport_animation_updater import ViewportAnimationUpdater
+    from editor.runtime.viewport_session_orchestrator import ViewportSessionOrchestrator
+    from editor.runtime.viewport_script_updater import ViewportScriptUpdater
+    from editor.runtime.viewport_contact_processor import ViewportContactProcessor
+    from editor.runtime.viewport_runtime_initializer import ViewportRuntimeInitializer
+    from editor.runtime.viewport_asset_hydration import (
+        hydrate_animation_asset_clips,
+        hydrate_animator_controllers,
+        hydrate_behavior_controllers,
+        hydrate_logic_graphs,
+        load_project_subgraph,
+    )
+    from editor.runtime.viewport_script_api import PlayScriptAPI, _send
+    from engine.animation.controller_asset import AnimatorControllerRuntime
+    from engine.behavior.controller_asset import BehaviorControllerRunner
+    from engine.logic.runtime import LogicGraphRuntime
+    from engine.runtime.runtime_world import RuntimeWorld
+except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
+    from .audio_playback_state import set_channels_paused
+    from .native_ui import NativeUIRenderer, normalize_ui
+    from .sprite_rendering import prepare_scrolling_sprite_surface, prepare_sprite_surface
+    from .viewport_systems import AnimationPlaybackSystem, AudioPlaybackSystem, FixedStepScheduler, HudRuntimeSystem
+    from .viewport_command_queue import ViewportCommandQueue
+    from .viewport_control_commands import ViewportAudioCommandHandler, ViewportControlCommandHandler, ViewportControlSettings
+    from .viewport_edit_commands import ViewportEditCommandHandler
+    from .viewport_play_commands import ViewportPlayCommandHandler, ViewportProcessState
+    from .viewport_navigation_events import ViewportNavigationEventHandler, ViewportNavigationState
+    from .viewport_transform_events import ViewportTransformEventHandler, ViewportTransformState
+    from .viewport_overlay_renderer import ViewportOverlayRenderer
+    from .viewport_sprite_renderer import ViewportSpriteRenderer
+    from .viewport_physics_stepper import ViewportPhysicsStepper
+    from .viewport_animation_updater import ViewportAnimationUpdater
+    from .viewport_session_orchestrator import ViewportSessionOrchestrator
+    from .viewport_script_updater import ViewportScriptUpdater
+    from .viewport_contact_processor import ViewportContactProcessor
+    from .viewport_runtime_initializer import ViewportRuntimeInitializer
+    from .viewport_asset_hydration import (
+        hydrate_animation_asset_clips,
+        hydrate_animator_controllers,
+        hydrate_behavior_controllers,
+        hydrate_logic_graphs,
+        load_project_subgraph,
+    )
+    from .viewport_script_api import PlayScriptAPI, _send
+    from .controller_asset import AnimatorControllerRuntime
+    from .behavior_controller import BehaviorControllerRunner
+    from .logic_runtime import LogicGraphRuntime
+    from .runtime_world import RuntimeWorld
+
+
+def _attach_native_window(pygame: Any, parent_window_id: int | None, width: int, height: int) -> bool:
+    if not parent_window_id:
+        return False
+    if sys.platform != "win32":
+        return bool(os.environ.get("SDL_WINDOWID"))
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        hwnd = int(pygame.display.get_wm_info().get("window", 0))
+        if not hwnd:
+            return False
+        user32 = ctypes.windll.user32
+        user32.SetParent.argtypes = (wintypes.HWND, wintypes.HWND)
+        user32.SetParent.restype = wintypes.HWND
+        user32.SetWindowPos.argtypes = (
+            wintypes.HWND, wintypes.HWND, ctypes.c_int, ctypes.c_int,
+            ctypes.c_int, ctypes.c_int, wintypes.UINT,
+        )
+        user32.SetWindowPos.restype = wintypes.BOOL
+
+        long_ptr = ctypes.c_longlong if ctypes.sizeof(ctypes.c_void_p) == 8 else ctypes.c_long
+        get_style = getattr(user32, "GetWindowLongPtrW", user32.GetWindowLongW)
+        set_style = getattr(user32, "SetWindowLongPtrW", user32.SetWindowLongW)
+        get_style.argtypes = (wintypes.HWND, ctypes.c_int)
+        get_style.restype = long_ptr
+        set_style.argtypes = (wintypes.HWND, ctypes.c_int, long_ptr)
+        set_style.restype = long_ptr
+
+        user32.SetParent(hwnd, int(parent_window_id))
+        style = int(get_style(hwnd, -16))
+        decorations = 0x00C00000 | 0x00080000 | 0x00040000 | 0x00020000 | 0x00010000
+        style = (style | 0x40000000) & ~(0x80000000 | decorations)
+        set_style(hwnd, -16, style)
+        user32.SetWindowPos(hwnd, 0, 0, 0, int(width), int(height), 0x0020 | 0x0040 | 0x0004)
+        return True
+    except Exception:
+        return False
+
+
+
+class ViewportSession:
+    def __init__(self, pygame, screen, display_flags, clock, commands, events, parent_window_id, initial_size):
+        self.pygame = pygame
+        self.screen = screen
+        self.display_flags = display_flags
+        self.clock = clock
+        self.commands = commands
+        self.events = events
+        self.parent_window_id = parent_window_id
+        self.initial_size = initial_size
+        
+        self.running = True
+        self.objects = {}
+        self.runtime_world = RuntimeWorld(self.objects)
+        self.dragging = False
+        self.selected_name = None
+        self.active_tool = "select"
+        self.snap_enabled = False
+        self.snap_size = 16.0
+        self.snap_angle = 15.0
+        self.view_mode = "scene"
+        self.camera_x = 0.0
+        self.camera_y = 0.0
+        self.zoom = 1.0
+        self.panning = False
+        self.pan_last = (0, 0)
+        self.drag_start_mouse = (0.0, 0.0)
+        self.drag_start_object = {}
+        self.drag_handle = -1
+        self.move_axis = ""
+        self.playing = False
+        self.paused = False
+        self.edit_snapshot = deepcopy(self.objects)
+        self.velocities_y = {}
+        self.grounded = {}
+        self.script_instances = {}
+        self.script_apis = {}
+        self.animator_controllers = {}
+        self.behavior_runners = {}
+        self.logic_runtimes = {}
+        self.initialized_runtime_ids = set()
+        self.scene_blackboard_config = {}
+        self.logic_trace_last_sent = 0.0
+        self.animator_event_signatures = {}
+        self.active_contacts = {}
+        
+        self.audio_system = AudioPlaybackSystem(self.pygame, Path.cwd(), self.runtime_log)
+        self.audio_channels = self.audio_system.channels
+        self.audio_sounds = self.audio_system.sounds
+        self.hud_entries = HudRuntimeSystem()
+        self.animation_system = AnimationPlaybackSystem()
+        self.restart_requested = False
+        self.physics_scheduler = FixedStepScheduler(1.0 / 60.0, maximum_steps=5)
+        self.fixed_physics_dt = self.physics_scheduler.step
+        self.forwarded_input = {
+            key: False for key in ("left", "right", "up", "down", "jump", "restart")
+        }
+        self.last_stats_ms = 0
+        self.texture_cache = {}
+        self.native_ui = NativeUIRenderer()
+        self.command_queue = ViewportCommandQueue(self.commands)
+        
+        self.edit_commands = ViewportEditCommandHandler(
+            self.objects, lambda event: _send(self.events, event),
+            self.world_to_screen, self.screen_to_world, lambda: self.view_transform()[2]
+        )
+        self.control_commands = ViewportControlCommandHandler(self.forwarded_input)
+        self.audio_commands = ViewportAudioCommandHandler(
+            self.objects, self.audio_channels, self.audio_sounds, lambda event: _send(self.events, event),
+            self.start_audio_sources, self.stop_audio_sources, self.play_audio_file
+        )
+        self.runtime_initializer = ViewportRuntimeInitializer(
+            self.objects, self.script_instances, self.script_apis, self.animator_controllers, self.behavior_runners,
+            self.logic_runtimes, self.initialized_runtime_ids, self.animator_event_signatures, self.runtime_world,
+            (hydrate_animation_asset_clips, hydrate_animator_controllers, hydrate_logic_graphs),
+            lambda name, obj: PlayScriptAPI(name, obj, self.events, self.objects, self.runtime_world),
+            lambda path: load_project_subgraph(path, Path.cwd()),
+            lambda event: _send(self.events, event), self.play_audio_file, Path.cwd()
+        )
+        
+        self.play_commands = ViewportPlayCommandHandler(
+            self.objects, self.logic_runtimes, self.script_apis, lambda event: _send(self.events, event),
+            self.resize_viewport, lambda: self.zoom,
+            lambda value: set_channels_paused(self.audio_channels, value), self.stop_audio_sources,
+            self.physics_scheduler.reset, self.hud_entries.clear, self.start_scripts_with_config, self.stop_scripts
+        )
+        self.navigation_events = ViewportNavigationEventHandler(
+            self.pygame, self.objects, self.native_ui, lambda event: _send(self.events, event), self.screen_to_world
+        )
+        self.transform_events = ViewportTransformEventHandler(
+            self.pygame, self.objects, lambda event: _send(self.events, event), self.world_to_screen
+        )
+        self.overlay_renderer = ViewportOverlayRenderer(self.pygame)
+        self.sprite_renderer = ViewportSpriteRenderer(self.pygame, prepare_sprite_surface, prepare_scrolling_sprite_surface)
+        self.physics_stepper = ViewportPhysicsStepper()
+        self.animation_updater = ViewportAnimationUpdater(
+            self.objects, self.animation_system, self.animator_controllers, self.animator_event_signatures,
+            self.script_instances,
+            lambda name, obj: self.script_apis.get(name) or PlayScriptAPI(name, obj, self.events, self.objects, self.runtime_world),
+            self.dispatch_animation_state_hook, lambda event: _send(self.events, event)
+        )
+        self.session_orchestrator = ViewportSessionOrchestrator(
+            self.objects, self.logic_runtimes, self.behavior_runners, self.script_instances, self.script_apis,
+            self.animator_controllers, lambda: self.runtime_initializer.logic_event_bus, self.runtime_world, self.hud_entries,
+            lambda event: _send(self.events, event), self.play_audio_file,
+            lambda value: set_channels_paused(self.audio_channels, value), self.dispatch_animation_state_hook
+        )
+        self.script_updater = ViewportScriptUpdater(
+            self.objects, self.script_instances, self.script_apis, self.animator_controllers, self.hud_entries,
+            normalize_ui, self.play_audio_file, self.dispatch_animation_state_hook,
+            lambda event: _send(self.events, event)
+        )
+        self.contact_processor = ViewportContactProcessor(self.objects, self.active_contacts, self.dispatch_contact)
+
+    def runtime_log(self, level, message):
+        _send(self.events, {"type": "script_log", "level": level, "message": message})
+        
+    def start_audio_sources(self):
+        self.stop_audio_sources()
+        found = 0
+        enabled = 0
+        for name, obj in self.objects.items():
+            audio = obj.get("audio")
+            if not isinstance(audio, dict):
+                continue
+            found += 1
+            if not audio.get("autoplay") or not audio.get("path"):
+                _send(self.events, {"type": "script_log", "level": "INFO", "message": f"{name}: Audio Source não inicia (Ao iniciar={bool(audio.get('autoplay'))}, arquivo={bool(audio.get('path'))})"})
+                continue
+            enabled += 1
+            self.play_audio_file(name, str(audio["path"]), float(audio.get("volume", 1.0)), bool(audio.get("loop", False)))
+        _send(self.events, {"type": "script_log", "level": "INFO", "message": f"Play processou {found} Audio Source(s); {enabled} iniciado(s)"})
+
+    def ensure_audio_mixer(self):
+        return self.audio_system.ensure_mixer()
+        
+    def play_audio_file(self, key, path_value, volume=1.0, loop=False):
+        self.audio_system.play(key, path_value, volume, loop)
+        
+    def stop_audio_sources(self):
+        self.audio_system.stop_all()
+
+    def dispatch_animation_state_hook(self, object_name, hook_name, state_name):
+        obj = self.objects.get(object_name)
+        if obj is None:
+            return
+        api = self.script_apis.get(object_name) or PlayScriptAPI(object_name, obj, self.events, self.objects, self.runtime_world)
+        for path, module in list(self.script_instances.get(object_name, [])):
+            hook = getattr(module, hook_name, None)
+            if not callable(hook):
+                continue
+            try:
+                hook(api, state_name)
+            except Exception as exc:
+                _send(self.events, {"type": "script_log", "level": "ERROR", "message": f"{object_name}:{path}:{hook_name}: {exc}"})
+                
+    def game_camera(self):
+        return next(
+            (
+                obj for obj in self.objects.values()
+                if (
+                    "Camera2D" in obj.get("component_names", [])
+                    or isinstance(obj.get("camera"), dict)
+                    or obj.get("mesh_type") == "Camera"
+                )
+                and bool((obj.get("camera") or {}).get("active", True))
+            ),
+            None,
+        )
+        
+    def controlled_object(self):
+        for name in self.logic_runtimes:
+            if name in self.objects:
+                return name, self.objects[name]
+        for name in self.script_instances:
+            if name in self.objects:
+                return name, self.objects[name]
+        return None, None
+        
+    def runtime_object_snapshot(self):
+        snapshot = []
+        for name, obj in self.objects.items():
+            lifecycle = obj.get("spawn_lifecycle") if isinstance(obj.get("spawn_lifecycle"), dict) else {}
+            motions = obj.get("_logic_motions") if isinstance(obj.get("_logic_motions"), dict) else {}
+            snapshot.append({
+                "id": str(obj.get("id", name)),
+                "name": str(name),
+                "x": float(obj.get("x", 0.0)), "y": float(obj.get("y", 0.0)),
+                "w": float(obj.get("w", 1.0)), "h": float(obj.get("h", 1.0)),
+                "rotation": float(obj.get("rotation", 0.0)),
+                "active": bool(obj.get("active", True)),
+                "spawned_by_logic": bool(obj.get("spawned_by_logic", False)),
+                "spawn_lifecycle": deepcopy(lifecycle),
+                "prefab_path": str(obj.get("prefab_path", "")),
+                "prefab_base": str(obj.get("prefab_base", "")),
+                "prefab_parameters": deepcopy(obj.get("prefab_parameters", {}))
+                if isinstance(obj.get("prefab_parameters"), dict) else {},
+                "logic_motions": [
+                    {"handle": str(handle), **deepcopy(state)}
+                    for handle, state in motions.items() if isinstance(state, dict)
+                ],
+            })
+        return snapshot
+
+    def dispatch_contact(self, name, other_name, hook_name):
+        obj = self.objects.get(name)
+        other_obj = self.objects.get(other_name)
+        if obj is None or other_obj is None:
+            return
+        game = self.script_apis.get(name) or PlayScriptAPI(name, obj, self.events, self.objects, self.runtime_world)
+        other = PlayScriptAPI(other_name, other_obj, self.events, self.objects, self.runtime_world)
+        for path, module in list(self.script_instances.get(name, [])):
+            hook = getattr(module, hook_name, None)
+            if not callable(hook):
+                continue
+            try:
+                hook(game, other)
+            except Exception as exc:
+                _send(self.events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}:{hook_name}: {exc}"})
+                
+        logic_event = {
+            "on_collision": "event_collision_enter",
+            "on_collision_exit": "event_collision_exit",
+            "on_trigger": "event_trigger_enter",
+            "on_trigger_exit": "event_trigger_exit",
+        }.get(hook_name)
+        if logic_event:
+            for graph_path, runtime in list(self.logic_runtimes.get(name, [])):
+                try:
+                    runtime.trigger_event(logic_event, game, 0.0, other)
+                    _send(self.events, {
+                        "type": "logic_trace", "object": name, "graph": graph_path,
+                        **runtime.debug_snapshot(),
+                    })
+                except Exception as exc:
+                    _send(self.events, {
+                        "type": "script_log", "level": "ERROR",
+                        "message": f"{name}:{graph_path}:{logic_event}: {exc}",
+                    })
+
+    def view_transform(self):
+        if self.view_mode == "game":
+            width, height = self.screen.get_size()
+            camera = self.game_camera()
+            if camera is not None:
+                game_zoom = max(0.1, float((camera.get("camera") or {}).get("zoom", 1.0)))
+                return (
+                    float(camera.get("x", 0.0)) - width / (2.0 * game_zoom),
+                    float(camera.get("y", 0.0)) - height / (2.0 * game_zoom),
+                    game_zoom,
+                )
+            return (-width / 2.0, -height / 2.0, 1.0)
+        return (self.camera_x, self.camera_y, self.zoom)
+        
+    def world_to_screen(self, x, y):
+        view_x, view_y, view_zoom = self.view_transform()
+        return ((x - view_x) * view_zoom, (y - view_y) * view_zoom)
+        
+    def screen_to_world(self, x, y):
+        view_x, view_y, view_zoom = self.view_transform()
+        return (view_x + x / view_zoom, view_y + y / view_zoom)
+        
+    def snapped(self, value, step):
+        if not self.snap_enabled or step <= 0.0:
+            return value
+        return round(value / step) * step
+
+    def resize_viewport(self, width, height):
+        self.screen = self.pygame.display.set_mode((width, height), self.display_flags)
+        _attach_native_window(self.pygame, self.parent_window_id, width, height)
+        return self.screen
+
+    def start_scripts_with_config(self, config):
+        self.scene_blackboard_config = deepcopy(config)
+        self.runtime_initializer.start(self.scene_blackboard_config)
+        
+    def stop_scripts(self):
+        self.runtime_initializer.stop(self.active_contacts)
+        
+    def restart_scripts(self):
+        self.runtime_initializer.start(self.scene_blackboard_config)
+
+    def process_commands(self):
+        for command in self.command_queue.drain():
+            handled, self.selected_name = self.edit_commands.handle(
+                command, playing=self.playing, selected_name=self.selected_name,
+            )
+            if handled:
+                continue
+            settings = self.control_commands.handle(
+                command,
+                ViewportControlSettings(self.active_tool, self.view_mode, self.snap_enabled, self.snap_size, self.snap_angle),
+            )
+            if settings is not None:
+                self.active_tool = settings.active_tool
+                self.view_mode = settings.view_mode
+                self.snap_enabled = settings.snap_enabled
+                self.snap_size = settings.snap_size
+                self.snap_angle = settings.snap_angle
+                continue
+            if self.audio_commands.handle(command):
+                continue
+            process_state = self.play_commands.handle(
+                command,
+                ViewportProcessState(
+                    self.running, self.screen, self.camera_x, self.camera_y, self.edit_snapshot, self.selected_name,
+                    self.playing, self.paused, self.velocities_y, self.grounded, self.scene_blackboard_config,
+                ),
+            )
+            if process_state is not None:
+                self.running = process_state.running
+                self.screen = process_state.screen
+                self.camera_x, self.camera_y = process_state.camera_x, process_state.camera_y
+                self.edit_snapshot = process_state.edit_snapshot
+                self.selected_name = process_state.selected_name
+                self.playing, self.paused = process_state.playing, process_state.paused
+                self.velocities_y, self.grounded = process_state.velocities_y, process_state.grounded
+                self.scene_blackboard_config = process_state.scene_blackboard_config
+                continue
+
+    def process_events(self):
+        for event in self.pygame.event.get():
+            handled, navigation_state = self.navigation_events.handle(
+                event,
+                ViewportNavigationState(self.running, self.panning, self.pan_last, self.camera_x, self.camera_y, self.zoom),
+                playing=self.playing,
+                view_mode=self.view_mode,
+            )
+            if handled:
+                self.running = navigation_state.running
+                self.panning, self.pan_last = navigation_state.panning, navigation_state.pan_last
+                self.camera_x, self.camera_y, self.zoom = navigation_state.camera_x, navigation_state.camera_y, navigation_state.zoom
+                continue
+            handled, transform_state = self.transform_events.handle(
+                event,
+                ViewportTransformState(
+                    self.dragging, self.selected_name, self.drag_start_mouse, self.drag_start_object,
+                    self.drag_handle, self.move_axis,
+                ),
+                playing=self.playing, view_mode=self.view_mode, active_tool=self.active_tool, zoom=self.zoom,
+                snap_enabled=self.snap_enabled, snap_size=self.snap_size, snap_angle=self.snap_angle,
+            )
+            if handled:
+                self.dragging = transform_state.dragging
+                self.selected_name = transform_state.selected_name
+                self.drag_start_mouse = transform_state.drag_start_mouse
+                self.drag_start_object = transform_state.drag_start_object
+                self.drag_handle, self.move_axis = transform_state.drag_handle, transform_state.move_axis
+                continue
+
+    def step(self):
+        width, height = self.screen.get_size()
+        dt = self.clock.get_time() / 1000.0
+        if self.playing and not self.paused:
+            self.runtime_initializer.start_spawned_objects()
+            keys = self.pygame.key.get_pressed()
+            input_state = {
+                "left": bool(self.forwarded_input["left"] or keys[self.pygame.K_a] or keys[self.pygame.K_LEFT]),
+                "right": bool(self.forwarded_input["right"] or keys[self.pygame.K_d] or keys[self.pygame.K_RIGHT]),
+                "up": bool(self.forwarded_input["up"] or keys[self.pygame.K_w] or keys[self.pygame.K_UP]),
+                "down": bool(self.forwarded_input["down"] or keys[self.pygame.K_s] or keys[self.pygame.K_DOWN]),
+                "jump": bool(self.forwarded_input["jump"] or keys[self.pygame.K_SPACE]),
+                "restart": bool(self.forwarded_input["restart"] or keys[self.pygame.K_r]),
+            }
+            self.logic_trace_last_sent, debug_pause_requested, self.restart_requested = self.session_orchestrator.update_logic(
+                input_state, dt, self.logic_trace_last_sent, self.velocities_y, self.grounded, self.restart_requested,
+            )
+            self.paused = self.paused or debug_pause_requested
+            self.restart_requested = self.script_updater.update(
+                input_state, dt, self.velocities_y, self.grounded,
+            ) or self.restart_requested
+            self.session_orchestrator.update_behaviors(input_state, dt)
+            self.session_orchestrator.finish_frame(dt, self.velocities_y, self.grounded)
+            if self.restart_requested:
+                self.session_orchestrator.restart(
+                    self.edit_snapshot, self.velocities_y, self.grounded, self.active_contacts,
+                    self.stop_audio_sources, self.stop_scripts, self.physics_scheduler.reset,
+                    self.restart_scripts, self.start_audio_sources,
+                )
+                self.restart_requested = False
+            physics_steps = self.physics_scheduler.consume(dt)
+            motion_axes_by_name = {
+                name: obj.pop("_logic_motion_axes", set()) for name, obj in self.objects.items()
+            }
+            self.physics_stepper.step(
+                self.objects, self.velocities_y, self.grounded, motion_axes_by_name, physics_steps, self.fixed_physics_dt,
+            )
+            self.contact_processor.process()
+            self.animation_updater.update(dt)
+            for obj in self.objects.values():
+                scroll = obj.get("_texture_scroll")
+                if not isinstance(scroll, dict) or not scroll.get("enabled", False):
+                    continue
+                factor = max(0.0, float(scroll.get("parallax", 1.0)))
+                scroll["offset_x"] = float(scroll.get("offset_x", 0.0)) + float(scroll.get("speed_x", 0.0)) * factor * dt
+                scroll["offset_y"] = float(scroll.get("offset_y", 0.0)) + float(scroll.get("speed_y", 0.0)) * factor * dt
+                
+    def render(self):
+        width, height = self.screen.get_size()
+        bg_color = (22, 24, 31)
+        active_cam = self.game_camera()
+        if active_cam:
+            cam_data = active_cam.get("camera") or {}
+            raw_color = cam_data.get("background_color", cam_data.get("color", (22, 24, 31)))
+            if isinstance(raw_color, (list, tuple)) and len(raw_color) >= 3:
+                bg_color = tuple(raw_color[:3])
+
+        if self.playing and not self.paused and active_cam:
+            cam_data = active_cam.get("camera") or {}
+            target_name = cam_data.get("follow_target")
+            if target_name and target_name in self.objects:
+                tgt = self.objects[target_name]
+                active_cam["x"] = float(tgt["x"])
+                active_cam["y"] = float(tgt["y"])
+
+        self.screen.fill(bg_color)
+        if self.view_mode == "scene":
+            self.overlay_renderer.draw_scene(
+                self.screen, self.objects, width, height, self.camera_x, self.camera_y, self.zoom, self.world_to_screen,
+            )
+
+        self.sprite_renderer.draw(
+            self.screen, self.objects, view_mode=self.view_mode, selected_name=self.selected_name,
+            active_tool=self.active_tool, render_zoom=self.view_transform()[2],
+            world_to_screen=self.world_to_screen, overlay_renderer=self.overlay_renderer,
+        )
+        if self.view_mode == "game":
+            self.native_ui.draw(self.objects, self.screen)
+        if self.playing and self.hud_entries:
+            self.overlay_renderer.draw_hud(self.screen, self.hud_entries, width, height)
+        self.pygame.display.flip()
+
+    def sync_stats(self):
+        now_ms = self.pygame.time.get_ticks()
+        if now_ms - self.last_stats_ms >= 500:
+            self.last_stats_ms = now_ms
+            runtime_mode = "PAUSE" if self.paused else ("PLAY" if self.playing else "EDIT")
+            player_name, _player = self.controlled_object()
+            world_stats = self.runtime_world.stats()
+            if self.playing:
+                _send(self.events, {"type": "runtime_objects", "objects": self.runtime_object_snapshot(), "selected": self.selected_name})
+            _send(self.events, {"type": "stats", "fps": self.clock.get_fps(), "objects": len(self.objects), "mode": runtime_mode, "view": self.view_mode.upper(), "zoom": self.view_transform()[2], "snap": self.snap_enabled, "camera": (self.game_camera() or {}).get("name") if self.view_mode == "game" else "Editor", "player": player_name, "spawned": world_stats["created"], "reused": world_stats["reused"], "destroyed": world_stats["destroyed"], "pooled": world_stats["pooled"]})
+
+    def teardown(self) -> bool:
+        """Libera deterministicamente todos os recursos pertencentes à sessão."""
+        if getattr(self, "_teardown_complete", False):
+            return False
+        self._teardown_complete = True
+        self.running = False
+
+        self.stop_scripts()
+        self.audio_system.shutdown()
+        tuple(self.command_queue.drain())
+        self.native_ui.clear_caches()
+
+        for collection_name in (
+            "objects",
+            "edit_snapshot",
+            "velocities_y",
+            "grounded",
+            "scene_blackboard_config",
+            "animator_event_signatures",
+            "active_contacts",
+            "forwarded_input",
+            "texture_cache",
+            "hud_entries",
+        ):
+            collection = getattr(self, collection_name, None)
+            if hasattr(collection, "clear"):
+                collection.clear()
+
+        self.screen = None
+        self.clock = None
+        return True

@@ -1,0 +1,422 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "PlayerMovement",
+  "target": {
+    "type": "name",
+    "value": "Player"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {
+    "speed": {
+      "type": "number",
+      "scope": "object",
+      "default": 220.0
+    }
+  },
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "update",
+      "type": "event_update",
+      "title": "On Update",
+      "category": "Events",
+      "position": [
+        80.0,
+        80.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 134.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "axis",
+      "type": "input_axis",
+      "title": "Read Input Axis",
+      "category": "Movement",
+      "position": [
+        370.0,
+        80.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 134.0
+      },
+      "properties": {
+        "negative": "A",
+        "positive": "D"
+      }
+    },
+    {
+      "id": "moving",
+      "type": "if_else",
+      "title": "If / Else",
+      "category": "Logic",
+      "position": [
+        660.0,
+        80.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 134.0
+      },
+      "properties": {
+        "condition": "axis != 0"
+      }
+    },
+    {
+      "id": "move",
+      "type": "move",
+      "title": "Move",
+      "category": "Movement",
+      "position": [
+        950.0,
+        80.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 134.0
+      },
+      "properties": {
+        "speed": 220.0
+      }
+    },
+    {
+      "id": "idle",
+      "type": "play_animation",
+      "title": "Play Animation",
+      "category": "Action",
+      "position": [
+        950.0,
+        250.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 134.0
+      },
+      "properties": {
+        "state": "Idle"
+      }
+    },
+    {
+      "id": "space",
+      "type": "key_pressed",
+      "title": "Key Pressed Now?",
+      "category": "Condition",
+      "position": [
+        370.0,
+        250.0
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 210.0,
+        "height": 146.0
+      },
+      "properties": {
+        "key": "SPACE"
+      }
+    },
+    {
+      "id": "0d60c09c535445f0b35f94fd8e6d3747",
+      "type": "create_object",
+      "title": "Create Object",
+      "category": "Objects",
+      "position": [
+        660.0,
+        250.0
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 210.0,
+        "height": 190.0
+      },
+      "properties": {
+        "name": "Projectile",
+        "x": 0.0,
+        "y": 0.0,
+        "width": 10,
+        "height": 20,
+        "color": "#ffd166",
+        "texture": "",
+        "tag": "Projectile",
+        "relative": true,
+        "inherit_source": false,
+        "inherit_logic": false,
+        "lifetime": 3.0,
+        "max_instances": 20,
+        "max_distance": 1200.0,
+        "use_pool": true
+      }
+    },
+    {
+      "id": "0a2f66d09e4d425185bc0ab938c3dda8",
+      "type": "start_continuous_motion",
+      "title": "Start Continuous Motion",
+      "category": "Position",
+      "position": [
+        950.0,
+        420.0
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 210.0,
+        "height": 168.0
+      },
+      "properties": {
+        "movement": "Movement",
+        "x": 0,
+        "y": -420,
+        "space": "global",
+        "acceleration": 0.0,
+        "deceleration": 0.0
+      }
+    },
+    {
+      "id": "f65e33327296427fb4c54589d2688637",
+      "type": "input_axis",
+      "title": "Read Input Axis",
+      "category": "Movement",
+      "position": [
+        370.0,
+        420.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 134.0
+      },
+      "properties": {
+        "negative": "W",
+        "positive": "S"
+      }
+    },
+    {
+      "id": "4584ae64086a4f218e35a3a5d5a2f04d",
+      "type": "if_else",
+      "title": "If / Else",
+      "category": "Logic",
+      "position": [
+        660.0,
+        420.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 134.0
+      },
+      "properties": {
+        "condition": "axis != 0"
+      }
+    },
+    {
+      "id": "09cc189c00fb4f2088fdd99bcf0d0c36",
+      "type": "move_by",
+      "title": "Move By",
+      "category": "Position",
+      "position": [
+        1240.0,
+        80.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 168.0
+      },
+      "properties": {
+        "x": 0,
+        "y": 220
+      }
+    },
+    {
+      "id": "96fd1b6dfef142f6b2aed7dff3c1906c",
+      "type": "compare_number",
+      "title": "Compare Number",
+      "category": "Condition",
+      "position": [
+        950.0,
+        590.0
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 210.0,
+        "height": 146.0
+      },
+      "properties": {
+        "operator": ">",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "ebc47c3d9eac405aad65d7e7565b3894",
+      "type": "compare_number",
+      "title": "Compare Number",
+      "category": "Condition",
+      "position": [
+        950.0,
+        760.0
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 210.0,
+        "height": 146.0
+      },
+      "properties": {
+        "operator": "<",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "ee7b7d296f0e4258af8d5aabe598f96d",
+      "type": "move_by",
+      "title": "Move By",
+      "category": "Position",
+      "position": [
+        1240.0,
+        250.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 168.0
+      },
+      "properties": {
+        "x": 0,
+        "y": -220
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "axis",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e4",
+      "from_node": "moving",
+      "from_port": "false",
+      "to_node": "idle",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 3
+    },
+    {
+      "id": "e5",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "space",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 4
+    },
+    {
+      "id": "3bd37abec63c43a79bd9a8be5997cd85",
+      "from_node": "0d60c09c535445f0b35f94fd8e6d3747",
+      "from_port": "next",
+      "to_node": "0a2f66d09e4d425185bc0ab938c3dda8",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 6
+    },
+    {
+      "id": "aede7dbe58d9466c86f5ca61b22b977b",
+      "from_node": "space",
+      "from_port": "true",
+      "to_node": "0d60c09c535445f0b35f94fd8e6d3747",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 4
+    },
+    {
+      "id": "cafd1dff77a04523b5298c5a319aed11",
+      "from_node": "moving",
+      "from_port": "true",
+      "to_node": "move",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 5
+    },
+    {
+      "id": "864f56f85737471c953b672a17666d9c",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "f65e33327296427fb4c54589d2688637",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 6
+    },
+    {
+      "id": "ce260472e7914600ba18c503d5c66da2",
+      "from_node": "axis",
+      "from_port": "next",
+      "to_node": "moving",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 7
+    },
+    {
+      "id": "2697822ca02849e1930113bf73527f79",
+      "from_node": "f65e33327296427fb4c54589d2688637",
+      "from_port": "next",
+      "to_node": "4584ae64086a4f218e35a3a5d5a2f04d",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 8
+    },
+    {
+      "id": "c5156cbd07fe41a980118fe571c3bcb3",
+      "from_node": "4584ae64086a4f218e35a3a5d5a2f04d",
+      "from_port": "true",
+      "to_node": "96fd1b6dfef142f6b2aed7dff3c1906c",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 9
+    },
+    {
+      "id": "2a7f59cd2f974332b86b635bfb88a25f",
+      "from_node": "96fd1b6dfef142f6b2aed7dff3c1906c",
+      "from_port": "true",
+      "to_node": "09cc189c00fb4f2088fdd99bcf0d0c36",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 10
+    },
+    {
+      "id": "e5d4edd375dd4792b05f15da5ae1af9d",
+      "from_node": "4584ae64086a4f218e35a3a5d5a2f04d",
+      "from_port": "true",
+      "to_node": "ebc47c3d9eac405aad65d7e7565b3894",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 11
+    },
+    {
+      "id": "f999b24a455b44228b9fb31705870f41",
+      "from_node": "ebc47c3d9eac405aad65d7e7565b3894",
+      "from_port": "true",
+      "to_node": "ee7b7d296f0e4258af8d5aabe598f96d",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 12
+    }
+  ]
+}

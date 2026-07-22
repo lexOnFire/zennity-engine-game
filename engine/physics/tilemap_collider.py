@@ -72,6 +72,17 @@ class TilemapCollider:
     # API pública
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _box_collider(game_object):
+        """Resolve a box collider structurally without importing its concrete module."""
+        return next(
+            (
+                component for component in getattr(game_object, "components", ())
+                if getattr(component, "component_type", "") == "BoxCollider"
+            ),
+            None,
+        )
+
     def resolve_all(self, game_objects: List["GameObject"]) -> None:
         """
         Resolve colisões de tilemap para uma lista de GameObjects.
@@ -88,10 +99,9 @@ class TilemapCollider:
         RigidBody é opcional — sem ele o transform ainda é corrigido mas
         a velocidade não é zerada.
         """
-        from engine.physics.collider  import BoxCollider
         from engine.physics.rigidbody import RigidBody
 
-        col = game_object.get_component(BoxCollider)
+        col = self._box_collider(game_object)
         if col is None or col.is_trigger:
             return
 
@@ -165,10 +175,9 @@ class TilemapCollider:
         game_object : GameObject – Objeto a resolver.
         prev_bottom : float      – Borda inferior do collider no frame anterior.
         """
-        from engine.physics.collider  import BoxCollider
         from engine.physics.rigidbody import RigidBody
 
-        col = game_object.get_component(BoxCollider)
+        col = self._box_collider(game_object)
         if col is None:
             return
 

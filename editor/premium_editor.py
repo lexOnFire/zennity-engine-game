@@ -26,8 +26,8 @@ from PySide6.QtWidgets import (
 )
 
 from editor.assets import AssetBrowserModel, AssetBrowserViewModel, ProjectBrowserService
+from editor.assets_panel_controller import AssetsPanelController, image_icon
 from editor.models.scene_model import SceneModel
-from editor.runtime.assets_panel_polish_patch import apply_assets_panel_polish
 from editor.runtime.editor_context import EditorContext
 from editor.viewmodels.scene_viewmodel import SceneViewModel
 from editor.widgets.viewport_widget import ViewportWidget
@@ -127,12 +127,20 @@ class ResourcesPanel(Panel):
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self.open_context_menu)
         self.layout.addWidget(self.tree)
+        self.assets_controller = AssetsPanelController(self)
+        self.assets_controller.install()
         self.set_view_mode(self.browser.session.view_mode)
         self.refresh_assets()
         self.tree.itemSelectionChanged.connect(self._selected)
-        apply_assets_panel_polish(self)
 
     def refresh_assets(self) -> None:
+        self.assets_controller.refresh(self._refresh_assets_content)
+
+    def closeEvent(self, event) -> None:
+        self.assets_controller.uninstall()
+        super().closeEvent(event)
+
+    def _refresh_assets_content(self) -> None:
         self.browser.refresh()
         self.tree.clear()
         self._items_by_path.clear()
@@ -290,6 +298,10 @@ class ResourcesPanel(Panel):
         self.refresh_favorites()
 
     def _icon_for_item(self, item) -> QIcon:
+        if item.asset is not None:
+            thumbnail = image_icon(item.asset)
+            if thumbnail is not None:
+                return thumbnail
         if item.asset is None:
             return self._icon_for("thumbnail:folder")
         return self._icon_for(self.browser.thumbnail_for_asset(item.asset))

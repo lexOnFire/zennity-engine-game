@@ -18,6 +18,18 @@ def test_selection_manager_notifies_only_on_change() -> None:
     assert calls == [selected, None]
 
 
+def test_selection_manager_resynchronizes_projection_on_same_selection() -> None:
+    manager = SelectionManager()
+    calls = []
+    selected = object()
+
+    manager.subscribe_projection(calls.append)
+    manager.set_selected(selected)
+    manager.set_selected(selected)
+
+    assert calls == [selected, selected]
+
+
 def test_tool_manager_tracks_active_tool() -> None:
     manager = ToolManager()
     calls = []

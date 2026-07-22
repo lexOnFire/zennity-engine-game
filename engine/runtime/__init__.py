@@ -2,6 +2,7 @@
 
 from engine.runtime.clone import clone_game_object
 from engine.runtime.input_manager import InputManager
+from engine.runtime.lifecycle_scheduler import LifecycleEntry, LifecycleScheduler
 from engine.runtime.runtime_manager import RuntimeManager, RuntimeState
 from engine.runtime.runtime_scene import RuntimeScene
 from engine.runtime.script_behaviour import ScriptBehaviour
@@ -14,6 +15,8 @@ from engine.time import Time
 __all__ = [
     "Input",
     "InputManager",
+    "LifecycleEntry",
+    "LifecycleScheduler",
     "RuntimeManager",
     "RuntimeScene",
     "RuntimeState",
