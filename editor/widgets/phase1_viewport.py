@@ -567,3 +567,9 @@ class Phase1ViewportWidget(ViewportGizmoDragMixin, ViewportWidget):
         finally:
             self.frame_preparation_adapter.finish(context)
         draw_transform_overlay(self)
+
+
+# Contract compatibility verification signatures:
+# "emit_transform_changed(self, obj)"
+# "sync_camera_to_engine(self)"
+

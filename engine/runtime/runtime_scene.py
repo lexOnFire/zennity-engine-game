@@ -37,6 +37,10 @@ class RuntimeScene:
         if objs is None:
             objs = getattr(self.scene, "game_objects", [])
         for obj in list(objs):
+            try:
+                obj.destroy()
+            except Exception:
+                pass
             if hasattr(self.scene, "_remove_go"):
                 self.scene._remove_go(obj)
             elif obj in getattr(self.scene, "game_objects", []):
@@ -284,6 +288,10 @@ class RuntimeScene:
         if objs is None:
             objs = getattr(self.scene, "game_objects", [])
         for obj in list(objs):
+            try:
+                obj.destroy()
+            except Exception:
+                pass
             if hasattr(self.scene, "_remove_go"):
                 self.scene._remove_go(obj)
             elif obj in getattr(self.scene, "game_objects", []):
