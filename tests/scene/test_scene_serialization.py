@@ -71,7 +71,17 @@ def test_serialize_scene_with_object_transform() -> None:
     assert saved["transform"]["rz"] == pytest.approx(45.0)
     assert saved["transform"]["scale"] == [2.0, 3.0, 1.0]
     assert saved["visual"]["mesh_type"] == "rect"
-    assert saved["visual"]["sprite_path"] == "assets/player.png"
+    assert saved["visual"]["sprite_path"] == "Assets/player.png"
+
+
+def test_serialize_scene_canonicalizes_nested_asset_references() -> None:
+    obj = GameObject("Player")
+    obj.scripts = ["assets/scripts/player.py"]
+    scene = SimpleNamespace(name="Level", editable_objects=[obj])
+
+    saved = serialize_scene(scene)["objects"][0]
+
+    assert saved["components"]["scripts"] == ["Assets/scripts/player.py"]
 
 
 def test_deserialize_game_object_restores_transform_and_identity() -> None:

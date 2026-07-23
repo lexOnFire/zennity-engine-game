@@ -89,6 +89,11 @@ class NativeUIRenderer:
         self._fonts: dict[tuple[int, bool], pygame.font.Font] = {}
         self._images: dict[str, pygame.Surface | None] = {}
 
+    def clear_caches(self) -> None:
+        """Libera fonts e surfaces retidas pelo renderer."""
+        self._fonts.clear()
+        self._images.clear()
+
     @staticmethod
     def _values(objects: Any) -> list[dict[str, Any]]:
         values: Iterable[Any] = objects.values() if isinstance(objects, dict) else objects

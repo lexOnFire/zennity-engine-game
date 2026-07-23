@@ -1,4 +1,4 @@
-from editor.runtime.viewport_systems import AnimationPlaybackSystem, FixedStepScheduler, HudRuntimeSystem
+from editor.runtime.viewport_systems import AudioPlaybackSystem, AnimationPlaybackSystem, FixedStepScheduler, HudRuntimeSystem
 
 
 def test_fixed_step_scheduler_caps_late_frames_and_resets() -> None:
@@ -24,3 +24,57 @@ def test_hud_runtime_groups_entries_and_removes_them() -> None:
     hud.remove_entry("score")
     assert set(hud) == {"life"}
 
+
+
+class _FakeChannel:
+    def __init__(self) -> None:
+        self.stopped = 0
+
+    def stop(self) -> None:
+        self.stopped += 1
+
+
+class _FakeMusic:
+    def stop(self) -> None:
+        return None
+
+
+class _FakeMixer:
+    def __init__(self) -> None:
+        self.initialized = True
+        self.music = _FakeMusic()
+        self.stopped = 0
+        self.quit_calls = 0
+
+    def get_init(self):
+        return self.initialized
+
+    def stop(self) -> None:
+        self.stopped += 1
+
+    def quit(self) -> None:
+        self.quit_calls += 1
+        self.initialized = False
+
+
+class _FakePygame:
+    error = RuntimeError
+
+    def __init__(self) -> None:
+        self.mixer = _FakeMixer()
+
+
+def test_audio_shutdown_releases_channels_sounds_and_mixer(tmp_path) -> None:
+    pygame = _FakePygame()
+    system = AudioPlaybackSystem(pygame, tmp_path, lambda *_args: None)
+    channel = _FakeChannel()
+    system.channels["music"] = channel
+    system.sounds["music"] = object()
+
+    system.shutdown()
+    system.shutdown()
+
+    assert channel.stopped == 1
+    assert system.channels == {}
+    assert system.sounds == {}
+    assert pygame.mixer.quit_calls == 1

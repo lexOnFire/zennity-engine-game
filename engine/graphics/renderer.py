@@ -46,6 +46,15 @@ class SpriteRenderer(Component):
         self._width = self._surface.get_width()
         self._height = self._surface.get_height()
 
+        # Cache de renderização
+        self._cached_source_surface: pygame.Surface | None = None
+        self._cached_zoom: float = 1.0
+        self._cached_flip_x: bool = False
+        self._cached_flip_y: bool = False
+        self._cached_color: Tuple[int, int, int] = (255, 255, 255)
+        self._cached_alpha: int = 255
+        self._cached_final_surface: pygame.Surface | None = None
+
     # ------------------------------------------------------------------
     # Surface
     # ------------------------------------------------------------------
@@ -75,32 +84,51 @@ class SpriteRenderer(Component):
         world_pos = self.game_object.transform.get_world_position()
         wx, wy = float(world_pos[0]), float(world_pos[1])
 
-        # Aplica flip se necessário
-        surf = self._surface
-        if self.flip_x or self.flip_y:
-            surf = pygame.transform.flip(surf, self.flip_x, self.flip_y)
-
-        # Aplica zoom da câmera se existir
         cam = Camera._active
-        if cam is not None:
-            sx, sy = cam.world_to_screen(wx, wy)
-            zoom = cam.zoom
+        zoom = cam.zoom if cam is not None else 1.0
+        color = getattr(self, "color", (255, 255, 255))
+        alpha = getattr(self, "alpha", 255)
+
+        # Verifica se o cache é válido
+        if (
+            self._cached_final_surface is None
+            or self._cached_source_surface is not self._surface
+            or self._cached_zoom != zoom
+            or self._cached_flip_x != self.flip_x
+            or self._cached_flip_y != self.flip_y
+            or self._cached_color != color
+            or self._cached_alpha != alpha
+        ):
+            # Reconstrói a superfície final no cache
+            surf = self._surface
+            if self.flip_x or self.flip_y:
+                surf = pygame.transform.flip(surf, self.flip_x, self.flip_y)
+
             if zoom != 1.0:
                 new_w = max(1, int(self._width * zoom))
                 new_h = max(1, int(self._height * zoom))
                 surf = pygame.transform.scale(surf, (new_w, new_h))
-            # Centraliza o sprite na posição
+
+            from engine.graphics.tint import apply_pygame_tint
+            surf = apply_pygame_tint(surf, color, alpha)
+
+            # Atualiza o cache
+            self._cached_source_surface = self._surface
+            self._cached_zoom = zoom
+            self._cached_flip_x = self.flip_x
+            self._cached_flip_y = self.flip_y
+            self._cached_color = color
+            self._cached_alpha = alpha
+            self._cached_final_surface = surf
+        else:
+            surf = self._cached_final_surface
+
+        if cam is not None:
+            sx, sy = cam.world_to_screen(wx, wy)
             draw_x = sx - surf.get_width() // 2
             draw_y = sy - surf.get_height() // 2
         else:
-            # Sem câmera: renderiza em coordenadas de mundo direto
-            draw_x = int(wx) - self._width // 2
-            draw_y = int(wy) - self._height // 2
+            draw_x = int(wx) - surf.get_width() // 2
+            draw_y = int(wy) - surf.get_height() // 2
 
-        from engine.graphics.tint import apply_pygame_tint
-        surf = apply_pygame_tint(
-            surf,
-            getattr(self, "color", (255, 255, 255)),
-            getattr(self, "alpha", 255),
-        )
         screen.blit(surf, (draw_x, draw_y))

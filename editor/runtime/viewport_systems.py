@@ -144,3 +144,13 @@ class AudioPlaybackSystem:
             except self.pygame.error:
                 pass
 
+    def shutdown(self) -> None:
+        """Para canais e encerra o mixer; seguro para chamadas repetidas."""
+        self.stop_all()
+        try:
+            if self.pygame.mixer.get_init():
+                self.pygame.mixer.quit()
+        except self.pygame.error:
+            pass
+
+

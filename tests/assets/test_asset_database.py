@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from types import SimpleNamespace
+
+import pytest
 
 from engine.assets import AssetDatabase, AssetType
 from engine.game_object import GameObject
@@ -51,6 +54,28 @@ def test_meta_uuid_is_stable_across_refresh(tmp_path) -> None:
     second = db.refresh()[0].uuid
 
     assert second == first
+
+
+def test_atomic_meta_write_preserves_original_when_replace_fails(
+    tmp_path, monkeypatch,
+) -> None:
+    asset_path = _write(tmp_path / "Assets" / "Scripts" / "rotate.py")
+    db = AssetDatabase(tmp_path)
+    meta = db.ensure_meta(asset_path)
+    meta_path = Path(f"{asset_path}.meta")
+    original = meta_path.read_text(encoding="utf-8")
+    meta.import_settings["changed"] = True
+
+    def fail_replace(_source: Path, _target: Path) -> None:
+        raise OSError("simulated replace failure")
+
+    monkeypatch.setattr(Path, "replace", fail_replace)
+
+    with pytest.raises(OSError, match="simulated replace failure"):
+        db._write_meta(meta_path, meta)
+
+    assert meta_path.read_text(encoding="utf-8") == original
+    assert list(meta_path.parent.glob(f".{meta_path.name}.*.tmp")) == []
 
 
 def test_list_assets_by_type_and_lookup(tmp_path) -> None:

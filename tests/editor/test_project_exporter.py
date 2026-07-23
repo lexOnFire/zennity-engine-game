@@ -11,14 +11,36 @@ RUNTIME_SOURCES = (
     "editor/runtime/audio_playback_state.py",
     "editor/runtime/sprite_rendering.py",
     "editor/runtime/viewport_systems.py",
+    "editor/runtime/viewport_session.py",
+    "editor/runtime/viewport_session_lifecycle.py",
+    "editor/runtime/viewport_asset_hydration.py",
+    "editor/runtime/viewport_script_api.py",
+    "editor/runtime/viewport_command_queue.py",
+    "editor/runtime/viewport_edit_commands.py",
+    "editor/runtime/viewport_control_commands.py",
+    "editor/runtime/viewport_play_commands.py",
+    "editor/runtime/viewport_navigation_events.py",
+    "editor/runtime/viewport_transform_events.py",
+    "editor/runtime/viewport_overlay_renderer.py",
+    "editor/runtime/viewport_sprite_renderer.py",
+    "editor/runtime/viewport_physics_stepper.py",
+    "editor/runtime/viewport_animation_updater.py",
+    "editor/runtime/viewport_session_orchestrator.py",
+    "editor/runtime/viewport_script_updater.py",
+    "editor/runtime/viewport_contact_processor.py",
+    "editor/runtime/viewport_runtime_initializer.py",
+    "engine/physics/spatial_hash.py",
     "engine/graphics/tint.py",
     "engine/animation/clip_asset.py",
     "engine/animation/controller_asset.py",
     "engine/behavior/controller_asset.py",
     "engine/logic/graph_asset.py",
+    "engine/logic/node_definitions.py",
+    "engine/logic/graph_normalizer.py",
+    "engine/logic/graph_validator.py",
     "engine/logic/blackboard.py",
     "engine/logic/event_bus.py",
-    "engine/logic/runtime.py",
+    "engine/logic/runtime",
     "engine/prefabs/prefab_asset.py",
     "engine/runtime/runtime_world.py",
     "engine/build/runtime_scene_loader.py",
@@ -46,9 +68,14 @@ def _load_runtime_scene_loader():
 def _install_runtime_sources(project: Path) -> None:
     source_root = Path.cwd()
     for relative in RUNTIME_SOURCES:
+        source_path = source_root / relative
         target = project / relative
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes((source_root / relative).read_bytes())
+        if source_path.is_dir():
+            import shutil
+            shutil.copytree(source_path, target, dirs_exist_ok=True)
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(source_path.read_bytes())
 
 
 def test_development_export_contains_scene_assets_and_launchers(tmp_path: Path) -> None:
@@ -67,6 +94,25 @@ def test_development_export_contains_scene_assets_and_launchers(tmp_path: Path) 
     assert (destination / "main.py").is_file()
     assert (destination / "executar.bat").is_file()
     assert json.loads((destination / "package_manifest.json").read_text(encoding="utf-8"))["project_name"] == "Meu Jogo"
+
+
+def test_export_excludes_python_caches_and_bytecode(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    (project / "Assets" / "__pycache__").mkdir(parents=True)
+    (project / "Assets" / "__pycache__" / "asset.cpython-312.pyc").write_bytes(b"cache")
+    _install_runtime_sources(project)
+    runtime_cache = project / "engine" / "logic" / "runtime" / "__pycache__"
+    runtime_cache.mkdir(exist_ok=True)
+    (runtime_cache / "core.cpython-312.pyc").write_bytes(b"cache")
+    scene = project / "main.zscene"
+    scene.write_text(json.dumps({"objects": []}), encoding="utf-8")
+
+    destination = _load_exporter().export_development_project(
+        project, scene, tmp_path / "output", "Clean Build"
+    )
+
+    assert not list(destination.rglob("__pycache__"))
+    assert not list(destination.rglob("*.pyc"))
 
 
 def test_exported_game_validates_outside_the_editor(tmp_path: Path) -> None:
@@ -152,8 +198,24 @@ def test_exported_runtime_contains_all_standalone_dependencies(tmp_path: Path) -
     assert {path.name for path in runtime.glob("*.py")} == {
         "__init__.py", "viewport.py", "native_ui.py", "audio_playback_state.py", "sprite_rendering.py",
         "viewport_systems.py",
+        "viewport_session.py",
+        "viewport_session_lifecycle.py",
+        "viewport_asset_hydration.py",
+        "viewport_script_api.py",
+        "viewport_command_queue.py", "viewport_edit_commands.py", "viewport_control_commands.py",
+        "viewport_play_commands.py",
+        "viewport_navigation_events.py", "viewport_transform_events.py",
+        "viewport_overlay_renderer.py",
+        "viewport_sprite_renderer.py", "viewport_physics_stepper.py",
+        "viewport_animation_updater.py",
+        "viewport_session_orchestrator.py",
+        "viewport_script_updater.py",
+        "viewport_contact_processor.py", "spatial_hash.py",
+        "viewport_runtime_initializer.py",
         "tint.py", "clip_asset.py", "controller_asset.py", "behavior_controller.py",
-        "logic_graph_asset.py", "logic_blackboard.py", "logic_event_bus.py", "logic_runtime.py", "prefab_asset.py", "runtime_world.py", "scene_loader.py",
+        "logic_graph_asset.py", "node_definitions.py", "graph_normalizer.py", "graph_validator.py",
+        "logic_blackboard.py", "logic_event_bus.py",
+        "prefab_asset.py", "runtime_world.py", "scene_loader.py",
     }
     launcher = (Path(report.destination) / "main.py").read_text(encoding="utf-8")
     assert "from zennity_runtime.scene_loader import load_objects" in launcher

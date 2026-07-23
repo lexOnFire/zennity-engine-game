@@ -1,0 +1,436 @@
+"""Inspector signal wiring and card presentation for the isolated editor."""
+from __future__ import annotations
+
+import shutil
+import uuid
+from typing import Any
+from copy import deepcopy
+from pathlib import Path
+
+from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QColorDialog, QFileDialog
+
+from editor.runtime.native_ui import normalize_ui
+from editor.runtime.sprite_rendering import assign_sprite_texture
+
+
+from editor.inspector_controller_ui_media import InspectorControllerUIMediaMixin
+
+
+class IsolatedInspectorController(InspectorControllerUIMediaMixin):
+    """Own Inspector UI wiring without owning the editor window or scene model."""
+
+    CARD_WIDGETS = {
+        "transform": ("transform_header", "transform_body", "btn_collapse_transform"),
+        "sprite": ("sprite_renderer_header", "sprite_renderer_body", "btn_collapse_renderer"),
+        "audio": ("audio_source_header", "audio_source_body", "btn_collapse_audio"),
+        "rigidbody": ("rigidbody_header", "rigidbody_body", "btn_collapse_rigidbody"),
+        "collider": ("collider_header", "collider_body", "btn_collapse_collider"),
+        "camera": ("camera_header", "camera_body", "btn_collapse_camera"),
+        "ui": ("ui_component_header", "ui_component_body", "btn_collapse_ui"),
+        "logic": ("logic_component_header", "logic_component_body", "btn_collapse_logic"),
+        "runtime": ("runtime_debug_header", "runtime_debug_body", "btn_collapse_runtime"),
+    }
+
+    def __init__(self, host: Any) -> None:
+        self.host = host
+        self._connected = False
+        self._connections: list[tuple[Any, Any]] = []
+
+    def _bind(self, signal: Any, callback: Any) -> None:
+        signal.connect(callback)
+        self._connections.append((signal, callback))
+
+    def disconnect(self) -> bool:
+        if not self._connected:
+            return False
+        for signal, callback in reversed(self._connections):
+            signal.disconnect(callback)
+        self._connections.clear()
+        self._connected = False
+        return True
+
+    def connect(self) -> bool:
+        """Connect all Inspector signals once and report whether wiring occurred."""
+        if self._connected:
+            return False
+        h = self.host
+        for field in h.inspector_fields.values():
+            self._bind(field.valueChanged, lambda _value: h._send_inspector_transform())
+        for field in h.physics_fields.values():
+            self._bind(field.toggled, lambda _checked: h._send_inspector_physics())
+        for field in h.collider_fields.values():
+            self._bind(field.valueChanged, lambda _value: h._send_inspector_collider())
+        self._bind(h.collider_trigger_field.toggled, lambda _checked: h._send_inspector_collider())
+
+        self._bind(h.show_rigidbody_chk.toggled, h._toggle_rigidbody_component)
+        self._bind(h.show_collider_chk.toggled, h._toggle_collider_component)
+        self._bind(h.show_animator_chk.toggled, h._toggle_animator_component)
+        self._bind(h.btn_del_rb.clicked, lambda: h.show_rigidbody_chk.setChecked(False))
+        self._bind(h.btn_del_col.clicked, lambda: h.show_collider_chk.setChecked(False))
+        self._bind(h.btn_del_anim.clicked, lambda: h.show_animator_chk.setChecked(False))
+        self._bind(h.show_renderer_chk.toggled, h._toggle_renderer_component)
+        self._bind(h.sprite_texture_button.clicked, h._choose_sprite_texture)
+        self._bind(h.sprite_color_button.clicked, h._choose_sprite_color)
+        self._bind(h.sprite_layer_combo.currentTextChanged, lambda _text: h._send_inspector_renderer())
+        self._bind(h.sprite_order_field.valueChanged, lambda _value: h._send_inspector_renderer())
+        self._bind(h.btn_collapse_transform.clicked, lambda: h._toggle_inspector_card("transform"))
+        self._bind(h.btn_collapse_renderer.clicked, lambda: h._toggle_inspector_card("sprite"))
+        self._bind(h.btn_delete_renderer.clicked, lambda: h.show_renderer_chk.setChecked(False))
+        self._bind(h.show_audio_chk.toggled, h._toggle_audio_component)
+        self._bind(h.btn_collapse_audio.clicked, lambda: h._toggle_inspector_card("audio"))
+        self._bind(h.btn_delete_audio.clicked, lambda: h.show_audio_chk.setChecked(False))
+        self._bind(h.audio_path_combo.activated, lambda _idx: h._send_inspector_audio())
+        self._bind(h.audio_volume_field.valueChanged, lambda _value: h._send_inspector_audio())
+        self._bind(h.audio_loop_field.toggled, lambda _value: h._send_inspector_audio())
+        self._bind(h.audio_autoplay_field.toggled, lambda _value: h._send_inspector_audio())
+        self._bind(h.audio_test_button.clicked, h._test_selected_audio)
+        self._bind(h.audio_stop_button.clicked, lambda: h._commands.put({"type": "stop_audio_preview"}))
+        self._bind(h.animator_clip_combo.currentTextChanged, lambda _text: h._send_inspector_animator())
+        self._bind(h.animator_speed_field.valueChanged, lambda _value: h._send_inspector_animator())
+        self._bind(h.animator_sheet_combo.currentIndexChanged, lambda _value: h._send_inspector_animator())
+        for field in (
+            h.animator_frame_width, h.animator_frame_height, h.animator_start_frame,
+            h.animator_frame_count, h.animator_fps_field,
+        ):
+            self._bind(field.valueChanged, lambda _value: h._send_inspector_animator())
+        self._bind(h.animator_loop_field.toggled, lambda _value: h._send_inspector_animator())
+        self._bind(h.animator_add_clip_button.clicked, h._add_animation_clip)
+        self._bind(h.animator_remove_clip_button.clicked, h._remove_animation_clip)
+        self._bind(h.show_camera_chk.toggled, h._toggle_camera_component)
+        self._bind(h.btn_collapse_rigidbody.clicked, lambda: h._toggle_inspector_card("rigidbody"))
+        self._bind(h.btn_collapse_collider.clicked, lambda: h._toggle_inspector_card("collider"))
+        self._bind(h.btn_collapse_camera.clicked, lambda: h._toggle_inspector_card("camera"))
+        self._bind(h.btn_delete_camera.clicked, lambda: h.show_camera_chk.setChecked(False))
+        self._bind(h.camera_active_field.toggled, lambda _value: h._send_inspector_camera())
+        self._bind(h.camera_viewport_w.valueChanged, lambda _value: h._send_inspector_camera())
+        self._bind(h.camera_viewport_h.valueChanged, lambda _value: h._send_inspector_camera())
+        self._bind(h.camera_zoom_field.valueChanged, lambda _value: h._send_inspector_camera())
+        self._bind(h.camera_follow_combo.currentTextChanged, lambda _value: h._send_inspector_camera())
+        self._bind(h.camera_color_button.clicked, h._choose_camera_color)
+        self._bind(h.show_ui_chk.toggled, h._toggle_ui_visibility)
+        self._bind(h.btn_collapse_ui.clicked, lambda: h._toggle_inspector_card("ui"))
+        self._bind(h.btn_delete_ui.clicked, h._delete_ui_component)
+        self._bind(h.ui_text_field.editingFinished, h._send_inspector_ui)
+        for field in h.ui_position_fields.values():
+            self._bind(field.valueChanged, lambda _value: h._send_inspector_ui())
+        self._bind(h.ui_color_button.clicked, h._choose_ui_color)
+        self._bind(h.ui_image_button.clicked, h._choose_ui_image)
+        self._bind(h.ui_interactable_field.toggled, lambda _value: h._send_inspector_ui())
+        self._bind(h.ui_event_field.editingFinished, h._send_inspector_ui)
+        self._bind(h.ui_target_combo.currentTextChanged, lambda _value: h._send_inspector_ui())
+        self._bind(h.btn_collapse_logic.clicked, lambda: h._toggle_inspector_card("logic"))
+        self._bind(h.btn_collapse_runtime.clicked, lambda: h._toggle_inspector_card("runtime"))
+        self._bind(h.btn_delete_logic.clicked, h._logic_workspace_controller.remove_all)
+        self._bind(h.logic_graph_combo.currentIndexChanged, h._logic_workspace_controller.update_summary)
+        self._bind(h.logic_open_button.clicked, h._logic_workspace_controller.open_selected)
+        self._bind(h.logic_link_button.clicked, h._logic_workspace_controller.choose_component)
+        self._bind(h.logic_new_button.clicked, h._logic_workspace_controller.create_for_selected)
+        self._bind(h.logic_unlink_button.clicked, h._logic_workspace_controller.detach_selected)
+        self._connected = True
+        return True
+
+    def card(self, key: str) -> tuple[Any, Any, Any]:
+        attributes = self.CARD_WIDGETS[key]
+        return tuple(getattr(self.host, name) for name in attributes)
+
+    def set_card_present(self, key: str, present: bool) -> None:
+        header, body, button = self.card(key)
+        header.setVisible(bool(present))
+        expanded = bool(self.host._component_expanded.get(key, False))
+        body.setVisible(bool(present) and expanded)
+        button.setText("▼" if expanded else "▶")
+
+    def toggle_card(self, key: str) -> None:
+        header, body, button = self.card(key)
+        expanded = not bool(self.host._component_expanded.get(key, False))
+        self.host._component_expanded[key] = expanded
+        body.setVisible(header.isVisible() and expanded)
+        button.setText("▼" if expanded else "▶")
+
+    def toggle_dynamic_card(self, key: str, body: Any, button: Any) -> None:
+        expanded = not bool(self.host._component_expanded.get(key, False))
+        self.host._component_expanded[key] = expanded
+        body.setVisible(expanded)
+        button.setText("▼" if expanded else "▶")
+
+    def clear(self) -> None:
+        h = self.host
+        h.inspector_name_label.setText("Nenhum objeto selecionado")
+        h.animation_object_label.setText("Nenhum objeto selecionado")
+        for key in self.CARD_WIDGETS:
+            self.set_card_present(key, False)
+        h.add_component_button.setEnabled(False)
+
+
+class InspectorComponentController(InspectorControllerUIMediaMixin):
+    """Own mutations and viewport messages for standard Inspector components."""
+
+    def __init__(self, host: Any) -> None:
+        self.host = host
+
+    def _selected(self) -> tuple[str, dict[str, Any]] | None:
+        h = self.host
+        name = h._selected_name
+        if h._updating_inspector or name not in h._objects_by_name:
+            return None
+        return name, h._objects_by_name[name]
+
+    def add_component(self, component: str) -> None:
+        h = self.host
+        if h._selected_name not in h._objects_by_name:
+            return
+        if component == "script":
+            self._attach_next_script()
+            return
+        if component == "animator":
+            h._choose_animation_component()
+            return
+        if component == "logic":
+            h._logic_workspace_controller.choose_component()
+            return
+        h._record_history()
+        obj = h._objects_by_name[h._selected_name]
+        if component == "sprite":
+            obj["renderer_enabled"] = True
+        elif component == "audio":
+            obj.setdefault("audio", {"path": "", "volume": 1.0, "loop": False, "autoplay": False})
+        elif component == "rigidbody":
+            obj.setdefault("rigidbody", {
+                "mass": 1.0, "gravity_scale": 1.0,
+                "use_gravity": True, "is_kinematic": False,
+            })
+        elif component in {"box", "circle"}:
+            obj["collider"] = {"type": component, "is_trigger": False}
+        elif component == "camera":
+            obj["camera"] = {
+                "active": True, "zoom": 1.0, "width": 1280.0, "height": 720.0,
+                "background_color": [22, 24, 31], "follow_target": "",
+            }
+            names = obj.setdefault("component_names", [])
+            if "Camera2D" not in names:
+                names.append("Camera2D")
+        elif component.startswith("ui_"):
+            kind = component.removeprefix("ui_")
+            if kind != "canvas":
+                h._ensure_canvas()
+            from editor.runtime.native_ui import normalize_ui
+            obj["ui"] = normalize_ui({"type": kind})
+            obj["renderer_enabled"] = False
+            obj["mesh_type"] = "UI"
+            h._refresh_hierarchy()
+        card_key = {
+            "sprite": "sprite", "audio": "audio", "rigidbody": "rigidbody",
+            "box": "collider", "circle": "collider", "camera": "camera",
+        }.get(component, "ui" if component.startswith("ui_") else None)
+        if card_key is not None:
+            h._component_expanded[card_key] = True
+        h._scene_controller.publish_snapshot(h._scene_snapshot)
+        h._scene_controller.select(h._selected_name)
+        h._update_inspector(h._selected_name)
+        h._log("INFO", f"Componente adicionado em {h._selected_name}: {component}")
+
+    def _attach_next_script(self) -> None:
+        h = self.host
+        available = h._script_workspace.available_scripts()
+        if not available:
+            h.statusBar().showMessage("Nenhum script encontrado em Assets/Scripts")
+            return
+        attached = set(h._objects_by_name[h._selected_name].get("scripts", []))
+        preferred = next((path for path in available if path.name == "player_controller_2d.py"), None)
+        ordered = ([preferred] if preferred is not None else []) + [path for path in available if path != preferred]
+        for path in ordered:
+            try:
+                relative = str(path.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
+            except ValueError:
+                relative = str(path.resolve())
+            if relative not in attached:
+                h._script_workspace.attach(h._selected_name, path)
+                return
+        h.statusBar().showMessage("Todos os scripts disponíveis já estão anexados")
+
+    def toggle_renderer(self, checked: bool) -> None:
+        selected = self._selected()
+        if selected is None:
+            return
+        name, obj = selected
+        self.host._record_history()
+        obj["renderer_enabled"] = bool(checked)
+        self.send_renderer(record_history=False)
+        self.host._update_inspector(name)
+
+    def send_renderer(self, record_history: bool = True) -> None:
+        selected = self._selected()
+        if selected is None:
+            return
+        _, obj = selected
+        h = self.host
+        if record_history:
+            h._record_history()
+        obj.update({
+            "renderer_enabled": h.show_renderer_chk.isChecked(),
+            "texture": h.sprite_texture_field.text().strip(),
+            "render_layer": h.sprite_layer_combo.currentText(),
+            "sort_order": int(h.sprite_order_field.value()),
+        })
+        h._scene_controller.publish_snapshot(h._scene_snapshot)
+
+    def toggle_audio(self, checked: bool) -> None:
+        self._toggle_dictionary_component(
+            "audio", checked,
+            {"path": "", "volume": 1.0, "loop": False, "autoplay": False},
+        )
+
+    def send_audio(self) -> None:
+        selected = self._selected()
+        if selected is None:
+            return
+        _, obj = selected
+        audio = obj.get("audio")
+        if not isinstance(audio, dict):
+            return
+        h = self.host
+        h._record_history()
+        chosen = h.audio_path_combo.currentData() or h.audio_path_combo.currentText()
+        audio.update({
+            "path": "" if chosen == "Nenhum" else chosen,
+            "volume": float(h.audio_volume_field.value()),
+            "loop": h.audio_loop_field.isChecked(),
+            "autoplay": h.audio_autoplay_field.isChecked(),
+        })
+        h._scene_controller.publish_snapshot(h._scene_snapshot)
+
+    def preview_audio(self) -> None:
+        selected = self._selected()
+        if selected is None:
+            return
+        name, obj = selected
+        audio = obj.get("audio")
+        if not isinstance(audio, dict) or not audio.get("path"):
+            self.host._log("WARNING", "Selecione um arquivo no Audio Source antes de testar")
+            return
+        self.host._commands.put({
+            "type": "preview_audio", "name": name,
+            "path": str(audio["path"]), "volume": float(audio.get("volume", 1.0)),
+            "loop": bool(audio.get("loop", False)),
+        })
+
+    def toggle_rigidbody(self, checked: bool) -> None:
+        self._toggle_dictionary_component(
+            "rigidbody", checked,
+            {"mass": 1.0, "gravity_scale": 1.0, "use_gravity": True, "is_kinematic": False},
+        )
+
+    def toggle_collider(self, checked: bool) -> None:
+        self._toggle_dictionary_component("collider", checked, {"type": "box", "is_trigger": False})
+
+    def send_physics(self) -> None:
+        selected = self._selected()
+        if selected is None:
+            return
+        name, obj = selected
+        rigidbody = obj.get("rigidbody")
+        if not isinstance(rigidbody, dict):
+            return
+        h = self.host
+        h._record_history()
+        rigidbody.update({
+            "use_gravity": h.physics_fields["use_gravity"].isChecked(),
+            "is_kinematic": h.physics_fields["is_kinematic"].isChecked(),
+        })
+        h._commands.put({"type": "set_physics", "name": name, "rigidbody": rigidbody})
+
+    def send_collider(self) -> None:
+        selected = self._selected()
+        if selected is None:
+            return
+        name, obj = selected
+        collider = obj.get("collider")
+        if not isinstance(collider, dict):
+            return
+        h = self.host
+        h._record_history()
+        collider_type = str(collider.get("type", "box")).lower()
+        keys = (
+            ("radius", "offset_x", "offset_y")
+            if collider_type == "circle"
+            else ("width", "height", "offset_x", "offset_y")
+        )
+        for key in keys:
+            collider[key] = float(h.collider_fields[key].value())
+        collider["is_trigger"] = h.collider_trigger_field.isChecked()
+        h._commands.put({"type": "set_collider", "name": name, "collider": deepcopy(collider)})
+
+    def toggle_camera(self, checked: bool) -> None:
+        selected = self._selected()
+        if selected is None:
+            return
+        name, obj = selected
+        h = self.host
+        h._record_history()
+        if checked:
+            obj.setdefault("camera", {
+                "active": True, "zoom": 1.0, "width": 1280.0, "height": 720.0,
+                "background_color": [22, 24, 31], "follow_target": "",
+            })
+            component_names = obj.setdefault("component_names", [])
+            if "Camera2D" not in component_names:
+                component_names.append("Camera2D")
+        else:
+            obj.pop("camera", None)
+            obj["component_names"] = [
+                value for value in obj.get("component_names", []) if value != "Camera2D"
+            ]
+        h._scene_controller.publish_snapshot(h._scene_snapshot)
+        h._update_inspector(name)
+
+    def send_camera(self) -> None:
+        selected = self._selected()
+        if selected is None:
+            return
+        _, obj = selected
+        camera = obj.get("camera")
+        if not isinstance(camera, dict):
+            return
+        h = self.host
+        h._record_history()
+        follow = h.camera_follow_combo.currentText()
+        camera.update({
+            "active": h.camera_active_field.isChecked(),
+            "width": float(h.camera_viewport_w.value()),
+            "height": float(h.camera_viewport_h.value()),
+            "zoom": float(h.camera_zoom_field.value()),
+            "follow_target": "" if follow == "Nenhum" else follow,
+        })
+        h._scene_controller.publish_snapshot(h._scene_snapshot)
+
+    @staticmethod
+    def available_audio_files(project_root: Path | None = None) -> list[str]:
+        root = (project_root or Path.cwd()).resolve()
+        audio_dir = root / "Assets" / "Audio"
+        if not audio_dir.exists():
+            return []
+        result = []
+        for path in audio_dir.rglob("*"):
+            if path.is_file() and path.suffix.lower() in {".wav", ".ogg", ".mp3"}:
+                try:
+                    result.append(path.resolve().relative_to(root).as_posix())
+                except ValueError:
+                    result.append(str(path).replace("\\", "/"))
+        return sorted(result, key=str.lower)
+
+    def _toggle_dictionary_component(
+        self, key: str, checked: bool, default: dict[str, Any]
+    ) -> None:
+        selected = self._selected()
+        if selected is None:
+            return
+        name, obj = selected
+        h = self.host
+        h._record_history()
+        if checked:
+            obj.setdefault(key, deepcopy(default))
+        else:
+            obj.pop(key, None)
+        h._scene_controller.publish_snapshot(h._scene_snapshot)
+        h._update_inspector(name)

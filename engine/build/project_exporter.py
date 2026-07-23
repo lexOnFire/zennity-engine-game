@@ -27,6 +27,7 @@ RUNTIME_ASSET_GROUPS = {
     "image": {".png", ".jpg", ".jpeg", ".bmp", ".webp"},
 }
 RUNTIME_ASSET_SUFFIXES = set().union(*RUNTIME_ASSET_GROUPS.values())
+EXPORT_IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo")
 
 
 def export_development_project(project_root: Path, scene_path: Path, output_dir: Path, project_name: str) -> Path:
@@ -86,6 +87,24 @@ def _validate_export_inputs(project_root: Path, scene_path: Path, report: BuildR
         "editor/runtime/audio_playback_state.py",
         "editor/runtime/sprite_rendering.py",
         "editor/runtime/viewport_systems.py",
+        "editor/runtime/viewport_session.py",
+        "editor/runtime/viewport_asset_hydration.py",
+        "editor/runtime/viewport_script_api.py",
+        "editor/runtime/viewport_command_queue.py",
+        "editor/runtime/viewport_edit_commands.py",
+        "editor/runtime/viewport_control_commands.py",
+        "editor/runtime/viewport_play_commands.py",
+        "editor/runtime/viewport_navigation_events.py",
+        "editor/runtime/viewport_transform_events.py",
+        "editor/runtime/viewport_overlay_renderer.py",
+        "editor/runtime/viewport_sprite_renderer.py",
+        "editor/runtime/viewport_physics_stepper.py",
+        "editor/runtime/viewport_animation_updater.py",
+        "editor/runtime/viewport_session_orchestrator.py",
+        "editor/runtime/viewport_script_updater.py",
+        "editor/runtime/viewport_contact_processor.py",
+        "editor/runtime/viewport_runtime_initializer.py",
+        "engine/physics/spatial_hash.py",
         "engine/graphics/tint.py",
         "engine/animation/clip_asset.py",
         "engine/animation/controller_asset.py",
@@ -93,14 +112,14 @@ def _validate_export_inputs(project_root: Path, scene_path: Path, report: BuildR
         "engine/logic/graph_asset.py",
         "engine/logic/blackboard.py",
         "engine/logic/event_bus.py",
-        "engine/logic/runtime.py",
+        "engine/logic/runtime",
         "engine/prefabs/prefab_asset.py",
         "engine/runtime/runtime_world.py",
         "engine/build/runtime_scene_loader.py",
     )
     for relative in runtime_sources:
         source = project_root / relative
-        if not source.is_file():
+        if not source.exists():
             report.add_error("Dependência do runtime de exportação não encontrada.", source)
     if not (project_root / "Assets").is_dir():
         report.add_warning("A pasta Assets não existe; o build será criado sem assets.", project_root / "Assets")
@@ -125,7 +144,10 @@ def _write_development_project(project_root: Path, scene_path: Path, destination
     shutil.copy2(scene_path, data_dir / "main.zscene")
     assets_source = project_root / "Assets"
     if assets_source.is_dir():
-        shutil.copytree(assets_source, destination / "Assets", dirs_exist_ok=True)
+        shutil.copytree(
+            assets_source, destination / "Assets",
+            dirs_exist_ok=True, ignore=EXPORT_IGNORE,
+        )
     lowercase_assets = project_root / "assets"
     # Only copy the lowercase 'assets' folder when it is genuinely distinct from
     # 'Assets'. On case-insensitive filesystems (Windows / macOS) they resolve to
@@ -133,27 +155,57 @@ def _write_development_project(project_root: Path, scene_path: Path, destination
     if lowercase_assets.is_dir() and (
         not assets_source.is_dir() or lowercase_assets.resolve() != assets_source.resolve()
     ):
-        shutil.copytree(lowercase_assets, destination / "assets", dirs_exist_ok=True)
+        shutil.copytree(
+            lowercase_assets, destination / "assets",
+            dirs_exist_ok=True, ignore=EXPORT_IGNORE,
+        )
     runtime_sources = {
         project_root / "editor" / "isolated_viewport.py": runtime_dir / "viewport.py",
         project_root / "editor" / "runtime" / "native_ui.py": runtime_dir / "native_ui.py",
         project_root / "editor" / "runtime" / "audio_playback_state.py": runtime_dir / "audio_playback_state.py",
         project_root / "editor" / "runtime" / "sprite_rendering.py": runtime_dir / "sprite_rendering.py",
         project_root / "editor" / "runtime" / "viewport_systems.py": runtime_dir / "viewport_systems.py",
+        project_root / "editor" / "runtime" / "viewport_session.py": runtime_dir / "viewport_session.py",
+        project_root / "editor" / "runtime" / "viewport_session_lifecycle.py": runtime_dir / "viewport_session_lifecycle.py",
+        project_root / "editor" / "runtime" / "viewport_asset_hydration.py": runtime_dir / "viewport_asset_hydration.py",
+        project_root / "editor" / "runtime" / "viewport_script_api.py": runtime_dir / "viewport_script_api.py",
+        project_root / "editor" / "runtime" / "viewport_command_queue.py": runtime_dir / "viewport_command_queue.py",
+        project_root / "editor" / "runtime" / "viewport_edit_commands.py": runtime_dir / "viewport_edit_commands.py",
+        project_root / "editor" / "runtime" / "viewport_control_commands.py": runtime_dir / "viewport_control_commands.py",
+        project_root / "editor" / "runtime" / "viewport_play_commands.py": runtime_dir / "viewport_play_commands.py",
+        project_root / "editor" / "runtime" / "viewport_navigation_events.py": runtime_dir / "viewport_navigation_events.py",
+        project_root / "editor" / "runtime" / "viewport_transform_events.py": runtime_dir / "viewport_transform_events.py",
+        project_root / "editor" / "runtime" / "viewport_overlay_renderer.py": runtime_dir / "viewport_overlay_renderer.py",
+        project_root / "editor" / "runtime" / "viewport_sprite_renderer.py": runtime_dir / "viewport_sprite_renderer.py",
+        project_root / "editor" / "runtime" / "viewport_physics_stepper.py": runtime_dir / "viewport_physics_stepper.py",
+        project_root / "editor" / "runtime" / "viewport_animation_updater.py": runtime_dir / "viewport_animation_updater.py",
+        project_root / "editor" / "runtime" / "viewport_session_orchestrator.py": runtime_dir / "viewport_session_orchestrator.py",
+        project_root / "editor" / "runtime" / "viewport_script_updater.py": runtime_dir / "viewport_script_updater.py",
+        project_root / "editor" / "runtime" / "viewport_contact_processor.py": runtime_dir / "viewport_contact_processor.py",
+        project_root / "editor" / "runtime" / "viewport_runtime_initializer.py": runtime_dir / "viewport_runtime_initializer.py",
+        project_root / "engine" / "physics" / "spatial_hash.py": runtime_dir / "spatial_hash.py",
         project_root / "engine" / "graphics" / "tint.py": runtime_dir / "tint.py",
         project_root / "engine" / "animation" / "clip_asset.py": runtime_dir / "clip_asset.py",
         project_root / "engine" / "animation" / "controller_asset.py": runtime_dir / "controller_asset.py",
         project_root / "engine" / "behavior" / "controller_asset.py": runtime_dir / "behavior_controller.py",
         project_root / "engine" / "logic" / "graph_asset.py": runtime_dir / "logic_graph_asset.py",
+        project_root / "engine" / "logic" / "node_definitions.py": runtime_dir / "node_definitions.py",
+        project_root / "engine" / "logic" / "graph_normalizer.py": runtime_dir / "graph_normalizer.py",
+        project_root / "engine" / "logic" / "graph_validator.py": runtime_dir / "graph_validator.py",
         project_root / "engine" / "logic" / "blackboard.py": runtime_dir / "logic_blackboard.py",
         project_root / "engine" / "logic" / "event_bus.py": runtime_dir / "logic_event_bus.py",
-        project_root / "engine" / "logic" / "runtime.py": runtime_dir / "logic_runtime.py",
         project_root / "engine" / "prefabs" / "prefab_asset.py": runtime_dir / "prefab_asset.py",
         project_root / "engine" / "runtime" / "runtime_world.py": runtime_dir / "runtime_world.py",
         project_root / "engine" / "build" / "runtime_scene_loader.py": runtime_dir / "scene_loader.py",
     }
     for source, target in runtime_sources.items():
         shutil.copy2(source, target)
+        
+    shutil.copytree(
+        project_root / "engine" / "logic" / "runtime",
+        runtime_dir / "logic_runtime",
+        ignore=EXPORT_IGNORE,
+    )
     (runtime_dir / "__init__.py").write_text("", encoding="utf-8")
     (destination / "main.py").write_text(_launcher_source(), encoding="utf-8")
     (destination / "executar.bat").write_text("@echo off\npython main.py\npause\n", encoding="utf-8")
@@ -263,14 +315,36 @@ def _validate_exported_project(destination: Path, report: BuildReport) -> None:
         "zennity_runtime/audio_playback_state.py",
         "zennity_runtime/sprite_rendering.py",
         "zennity_runtime/viewport_systems.py",
+        "zennity_runtime/viewport_session.py",
+        "zennity_runtime/viewport_session_lifecycle.py",
+        "zennity_runtime/viewport_asset_hydration.py",
+        "zennity_runtime/viewport_script_api.py",
+        "zennity_runtime/viewport_command_queue.py",
+        "zennity_runtime/viewport_edit_commands.py",
+        "zennity_runtime/viewport_control_commands.py",
+        "zennity_runtime/viewport_play_commands.py",
+        "zennity_runtime/viewport_navigation_events.py",
+        "zennity_runtime/viewport_transform_events.py",
+        "zennity_runtime/viewport_overlay_renderer.py",
+        "zennity_runtime/viewport_sprite_renderer.py",
+        "zennity_runtime/viewport_physics_stepper.py",
+        "zennity_runtime/viewport_animation_updater.py",
+        "zennity_runtime/viewport_session_orchestrator.py",
+        "zennity_runtime/viewport_script_updater.py",
+        "zennity_runtime/viewport_contact_processor.py",
+        "zennity_runtime/viewport_runtime_initializer.py",
+        "zennity_runtime/spatial_hash.py",
         "zennity_runtime/tint.py",
         "zennity_runtime/clip_asset.py",
         "zennity_runtime/controller_asset.py",
         "zennity_runtime/behavior_controller.py",
         "zennity_runtime/logic_graph_asset.py",
+        "zennity_runtime/node_definitions.py",
+        "zennity_runtime/graph_normalizer.py",
+        "zennity_runtime/graph_validator.py",
         "zennity_runtime/logic_blackboard.py",
         "zennity_runtime/logic_event_bus.py",
-        "zennity_runtime/logic_runtime.py",
+        "zennity_runtime/logic_runtime/core.py",
         "zennity_runtime/prefab_asset.py",
         "zennity_runtime/runtime_world.py",
         "zennity_runtime/scene_loader.py",

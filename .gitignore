@@ -40,3 +40,22 @@ Thumbs.db
 # Recovery/Backup
 *.backup
 estado_reintegracao.txt
+
+# Local CI and GitHub diagnostics
+api*.json
+check_runs*.json
+jobs.json
+job_log.txt
+pytest-output.txt
+check[0-9]*.py
+check_final*.py
+check_jobs.py
+read_annotations*.py
+read_check_runs*.py
+test_mock.py
+test_proxy.py
+test_sub.py
+scratch/
+zennity-engine-game/
+.coverage
+htmlcov/
