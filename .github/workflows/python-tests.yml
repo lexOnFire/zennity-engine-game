@@ -3,9 +3,9 @@ name: Python Tests
 on:
   workflow_dispatch:
   push:
-    branches: [main, release/v1.0.0-rc2, "release/**", "refactor/pre-v1-architecture-baseline"]
+    branches: [main, release/v1.0.0-rc2, "release/**", "refactor/pre-v1-architecture-baseline", "agent/**"]
   pull_request:
-    branches: [main, release/v1.0.0-rc2, "release/**"]
+    branches: [main, release/v1.0.0-rc2, "release/**", "agent/**"]
 
 concurrency:
   group: python-tests-${{ github.workflow }}-${{ github.ref }}
