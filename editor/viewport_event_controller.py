@@ -128,8 +128,18 @@ class ViewportEventController:
     def stats(self, message: dict) -> None:
         h = self.host
         command_stats = h._commands.stats()
+        subsystems = message.get("subsystems_ms", {})
+        subsystem_text = " • ".join(
+            f"{name}: {float(value):.2f} ms"
+            for name, value in sorted(subsystems.items())
+        ) if isinstance(subsystems, dict) else ""
         h.profiler_label.setText(
             f"FPS: {message.get('fps', 0):.0f}\n"
+            f"Frame: {message.get('frame_ms', 0):.2f} ms • "
+            f"P95: {message.get('p95_frame_ms', 0):.2f} ms • "
+            f"CPU: {message.get('cpu_ms', 0):.2f} ms\n"
+            f"Memória: {message.get('memory_mb', 0):.1f} MB • "
+            f"Física: {message.get('physics_bodies', 0)} corpos\n"
             f"Objetos: {message.get('objects', 0)}\n"
             f"Modo: {message.get('mode', 'EDIT')} / {message.get('view', 'SCENE')}\n"
             f"Câmera: {message.get('camera', 'Editor')}\n"
@@ -138,6 +148,7 @@ class ViewportEventController:
             f"Spawn: {message.get('spawned', 0)} • Reuso: {message.get('reused', 0)} • "
             f"Pool: {message.get('pooled', 0)} • Removidos: {message.get('destroyed', 0)}\n"
             f"IPC: {command_stats['sent']} enviados • {command_stats['coalesced']} unidos"
+            + (f"\n{subsystem_text}" if subsystem_text else "")
         )
 
     def poll(self) -> None:

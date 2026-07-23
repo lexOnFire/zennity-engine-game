@@ -61,3 +61,29 @@ def test_selected_event_updates_inspector_and_status() -> None:
 
     assert host.inspected == ["Player"]
     assert status.messages == ["Viewport: Player selecionado"]
+
+
+def test_stats_render_real_profiler_metrics() -> None:
+    host, _ = _host()
+    label = SimpleNamespace(text="", setText=lambda value: setattr(label, "text", value))
+    host.profiler_label = label
+    host._commands = SimpleNamespace(
+        stats=lambda: {"sent": 4, "coalesced": 2}
+    )
+
+    ViewportEventController(host).stats({
+        "fps": 60,
+        "frame_ms": 16.67,
+        "p95_frame_ms": 18.2,
+        "cpu_ms": 7.5,
+        "memory_mb": 128.25,
+        "physics_bodies": 3,
+        "objects": 8,
+        "subsystems_ms": {"physics": 1.2, "render": 2.4},
+    })
+
+    assert "Frame: 16.67 ms" in label.text
+    assert "P95: 18.20 ms" in label.text
+    assert "Memória: 128.2 MB" in label.text
+    assert "physics: 1.20 ms" in label.text
+    assert "render: 2.40 ms" in label.text

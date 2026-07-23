@@ -1,10 +1,5 @@
-import os
-import time
-import pygame
 from collections import deque
-from PySide6.QtWidgets import (
-    QDockWidget, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame
-)
+from PySide6.QtWidgets import QDockWidget, QWidget, QVBoxLayout, QHBoxLayout, QLabel
 from PySide6.QtCore import Qt, QTimer, Slot
 from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QPolygonF
 from PySide6.QtCore import QPointF
@@ -121,10 +116,19 @@ class ProfilerDock(QDockWidget):
         
         self.lbl_fps = QLabel("FPS: --")
         self.lbl_frame_time = QLabel("Frame Time: -- ms")
+        self.lbl_cpu = QLabel("CPU: -- ms")
+        self.lbl_p95 = QLabel("P95: -- ms")
         self.lbl_memory = QLabel("Memória: -- MB")
         self.lbl_physics = QLabel("Física: 0 corpos / 0 colisores")
         
-        for lbl in (self.lbl_fps, self.lbl_frame_time, self.lbl_memory, self.lbl_physics):
+        for lbl in (
+            self.lbl_fps,
+            self.lbl_frame_time,
+            self.lbl_cpu,
+            self.lbl_p95,
+            self.lbl_memory,
+            self.lbl_physics,
+        ):
             lbl.setObjectName("ProfilerMetric")
             m_layout.addWidget(lbl)
             
@@ -141,56 +145,40 @@ class ProfilerDock(QDockWidget):
         self.sample_timer = QTimer(self)
         self.sample_timer.timeout.connect(self.sample_metrics)
         self.sample_timer.start(100)
+        self._profiler = None
+
+    def set_profiler(self, profiler) -> None:
+        self._profiler = profiler
+
+    def _current_profiler(self):
+        if self._profiler is not None:
+            return self._profiler
+        win = self.window()
+        manager = getattr(win, "runtime_manager", None)
+        runtime_scene = getattr(manager, "runtime_scene", None)
+        if runtime_scene is not None:
+            return getattr(runtime_scene, "profiler", None)
+        viewport = getattr(win, "viewport", None)
+        scene = getattr(viewport, "active_scene", None)
+        return getattr(scene, "profiler", None)
 
     @Slot()
     def sample_metrics(self) -> None:
         """Coleta estatísticas de desempenho reais e atualiza o gráfico."""
-        win = self.window()
-        if not win or not hasattr(win, "viewport") or not win.viewport.active_scene:
+        profiler = self._current_profiler()
+        if profiler is None:
             return
-            
-        viewport = win.viewport
-        scene = viewport.active_scene
-        
-        # 1. Calcula FPS real a partir do Delta Time do último frame
-        dt = max(0.0001, time.time() - viewport._last_time)
-        # Se a simulação não estiver rodando ativamente, o tick do QTimer define a taxa
-        fps = 1.0 / dt if dt < 0.2 else 60.0
-        # Média simples para atenuar ruídos
-        self.chart.add_sample(fps)
-        
-        self.lbl_fps.setText(f"FPS: {int(fps)}")
-        self.lbl_frame_time.setText(f"Frame Time: {dt*1000:.1f} ms")
-        
-        # 2. Consumo de Memória (Estimado)
-        mem = self.get_estimated_memory()
-        self.lbl_memory.setText(f"Memória: {mem:.1f} MB")
-        
-        # 3. Estatísticas de Física da Cena
-        num_bodies = 0
-        num_colliders = 0
-        
-        objs = getattr(scene, "editable_objects", scene.game_objects)
-        for obj in objs:
-            from engine.physics.rigidbody import RigidBody
-            from engine.physics.collider import BoxCollider, CircleCollider
-            if obj.get_component(RigidBody):
-                num_bodies += 1
-            if obj.get_component(BoxCollider) or obj.get_component(CircleCollider):
-                num_colliders += 1
-                
-        self.lbl_physics.setText(f"Física: {num_bodies} Corpos / {num_colliders} Colisores")
-
-    def get_estimated_memory(self) -> float:
-        """Retorna estimativa portátil de memória do processo."""
-        try:
-            import psutil
-            process = psutil.Process(os.getpid())
-            return process.memory_info().rss / (1024 * 1024)
-        except ImportError:
-            # Fallback seguro estimando com base nas janelas e caches do pygame
-            base = 15.4
-            if pygame.display.get_init() and pygame.display.get_surface():
-                sz = pygame.display.get_surface().get_size()
-                base += (sz[0] * sz[1] * 4) / (1024 * 1024)
-            return base
+        summary = profiler.summary(window=120)
+        if summary.sample_count == 0:
+            return
+        self.chart.add_sample(summary.fps)
+        self.lbl_fps.setText(f"FPS: {summary.fps:.0f}")
+        self.lbl_frame_time.setText(
+            f"Frame Time: {summary.average_frame_ms:.2f} ms"
+        )
+        self.lbl_cpu.setText(f"CPU: {summary.average_cpu_ms:.2f} ms")
+        self.lbl_p95.setText(f"P95: {summary.p95_frame_ms:.2f} ms")
+        self.lbl_memory.setText(f"Memória: {summary.memory_mb:.1f} MB")
+        self.lbl_physics.setText(
+            f"Física: {summary.physics_bodies} corpos"
+        )

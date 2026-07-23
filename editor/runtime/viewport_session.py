@@ -38,14 +38,11 @@ try:
     from editor.runtime.viewport_asset_hydration import (
         hydrate_animation_asset_clips,
         hydrate_animator_controllers,
-        hydrate_behavior_controllers,
         hydrate_logic_graphs,
         load_project_subgraph,
     )
     from editor.runtime.viewport_script_api import PlayScriptAPI, _send
-    from engine.animation.controller_asset import AnimatorControllerRuntime
-    from engine.behavior.controller_asset import BehaviorControllerRunner
-    from engine.logic.runtime import LogicGraphRuntime
+    from engine.performance.profiler import RuntimeProfiler
     from engine.runtime.runtime_world import RuntimeWorld
 except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .audio_playback_state import set_channels_paused
@@ -69,14 +66,11 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .viewport_asset_hydration import (
         hydrate_animation_asset_clips,
         hydrate_animator_controllers,
-        hydrate_behavior_controllers,
         hydrate_logic_graphs,
         load_project_subgraph,
     )
     from .viewport_script_api import PlayScriptAPI, _send
-    from .controller_asset import AnimatorControllerRuntime
-    from .behavior_controller import BehaviorControllerRunner
-    from .logic_runtime import LogicGraphRuntime
+    from .profiler import RuntimeProfiler
     from .runtime_world import RuntimeWorld
 
 
@@ -141,6 +135,7 @@ class ViewportSession(ViewportSessionLifecycleMixin):
         self.running = True
         self.objects = {}
         self.runtime_world = RuntimeWorld(self.objects)
+        self.profiler = RuntimeProfiler(capacity=240, memory_sample_interval=30)
         self.dragging = False
         self.selected_name = None
         self.active_tool = "select"
