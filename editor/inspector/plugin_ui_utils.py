@@ -48,12 +48,14 @@ def _section(title: str) -> tuple[QWidget, QVBoxLayout]:
         
     # Hook the toggle to save state
     original_toggle = foldout.toggle
-    def new_toggle():
+    def new_toggle(*args):
         original_toggle()
         COLLAPSED_STATES[title] = not foldout._is_expanded
     foldout.toggle = new_toggle
     foldout.toggle_btn.clicked.disconnect()
     foldout.toggle_btn.clicked.connect(foldout.toggle)
+    foldout.header.clicked.disconnect()
+    foldout.header.clicked.connect(foldout.toggle)
         
     return foldout, foldout.content_layout
 

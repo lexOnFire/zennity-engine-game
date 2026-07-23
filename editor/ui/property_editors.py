@@ -85,6 +85,20 @@ class DragScrubSlider(QWidget):
     def lineEdit(self):
         return self.input
 
+class FoldoutHeader(QFrame):
+    clicked = Signal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setCursor(Qt.PointingHandCursor)
+
+    def mousePressEvent(self, event: QMouseEvent):
+        if event.button() == Qt.LeftButton:
+            self.clicked.emit()
+            event.accept()
+        else:
+            super().mousePressEvent(event)
+
 class FoldoutWidget(QWidget):
     def __init__(self, title: str, parent=None):
         super().__init__(parent)
@@ -92,19 +106,31 @@ class FoldoutWidget(QWidget):
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(0)
 
-        self.header = QFrame()
+        self.header = FoldoutHeader()
         self.header.setObjectName("FoldoutHeader")
+        self.header.setStyleSheet("""
+            QFrame#FoldoutHeader {
+                background-color: #2b2d35;
+                border-radius: 4px;
+            }
+            QFrame#FoldoutHeader:hover {
+                background-color: #383b45;
+            }
+        """)
+        self.header.clicked.connect(self.toggle)
         
         header_layout = QHBoxLayout(self.header)
-        header_layout.setContentsMargins(4, 2, 4, 2)
+        header_layout.setContentsMargins(4, 4, 4, 4)
         
         self.toggle_btn = QToolButton()
         self.toggle_btn.setArrowType(Qt.DownArrow)
         self.toggle_btn.setObjectName("FoldoutToggle")
         self.toggle_btn.clicked.connect(self.toggle)
+        self.toggle_btn.setStyleSheet("QToolButton { border: none; background: transparent; }")
         
         self.title_label = QLabel(title)
         self.title_label.setObjectName("FoldoutTitle")
+        self.title_label.setStyleSheet("font-weight: bold; color: #e0e0e0;")
         
         header_layout.addWidget(self.toggle_btn)
         header_layout.addWidget(self.title_label)
