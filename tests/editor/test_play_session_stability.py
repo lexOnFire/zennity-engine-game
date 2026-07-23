@@ -146,6 +146,7 @@ def test_runtime_restart_resets_physics_and_restarts_autoplay_audio() -> None:
     viewport_source = (
         Path("editor/isolated_viewport.py").read_text(encoding="utf-8")
         + Path("editor/runtime/viewport_session.py").read_text(encoding="utf-8")
+        + Path("editor/runtime/viewport_session_lifecycle.py").read_text(encoding="utf-8")
     )
     restart_block = Path("editor/runtime/viewport_session_orchestrator.py").read_text(encoding="utf-8")
 
@@ -159,6 +160,7 @@ def test_viewport_has_one_runtime_lifecycle_and_initializes_spawned_prefabs() ->
     viewport_source = (
         Path("editor/isolated_viewport.py").read_text(encoding="utf-8")
         + Path("editor/runtime/viewport_session.py").read_text(encoding="utf-8")
+        + Path("editor/runtime/viewport_session_lifecycle.py").read_text(encoding="utf-8")
     )
     initializer_source = Path("editor/runtime/viewport_runtime_initializer.py").read_text(encoding="utf-8")
 

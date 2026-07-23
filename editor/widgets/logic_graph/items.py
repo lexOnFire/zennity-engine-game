@@ -170,81 +170,7 @@ class LogicEdgeItem(QGraphicsPathItem):
         stroker.setWidth(14.0)
         return stroker.createStroke(self.path())
 
-class LogicGroupResizeHandle(QGraphicsRectItem):
-    SIZE = 14.0
-
-    def __init__(self, group: "LogicGroupItem") -> None:
-        super().__init__(0.0, 0.0, self.SIZE, self.SIZE, group)
-        self.group = group
-        self._origin = QPointF()
-        self._initial_size = (group.rect().width(), group.rect().height())
-        self.setBrush(QBrush(QColor("#55789b")))
-        self.setPen(Qt.NoPen)
-        self.setCursor(Qt.SizeFDiagCursor)
-        self.setZValue(3)
-
-    def mousePressEvent(self, event) -> None:
-        self._origin = event.scenePos()
-        self._initial_size = (self.group.rect().width(), self.group.rect().height())
-        event.accept()
-
-    def mouseMoveEvent(self, event) -> None:
-        delta = event.scenePos() - self._origin
-        self.group.resize_to(self._initial_size[0] + delta.x(), self._initial_size[1] + delta.y())
-        event.accept()
-
-    def mouseReleaseEvent(self, event) -> None:
-        self.group.editor.mark_dirty()
-        event.accept()
-
-class LogicGroupItem(QGraphicsRectItem):
-    """Área visual persistente usada para organizar partes de um grafo."""
-
-    def __init__(self, editor: "LogicGraphEditor", data: dict[str, Any]) -> None:
-        size = data.get("size", [460.0, 280.0])
-        super().__init__(0.0, 0.0, float(size[0]), float(size[1]))
-        self.editor = editor
-        self.data = data
-        self.group_id = str(data["id"])
-        self.setPos(*data.get("position", [0.0, 0.0]))
-        self.setZValue(-4)
-        self.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemSendsGeometryChanges)
-        color = QColor(str(data.get("color", "#35506b")))
-        color.setAlpha(48)
-        self.setBrush(QBrush(color))
-        self.setPen(QPen(QColor(str(data.get("color", "#35506b"))), 2.0, Qt.DashLine))
-        self.title_item = QGraphicsTextItem(str(data.get("title", "Grupo")), self)
-        self.title_item.setDefaultTextColor(QColor("#dbeafe"))
-        font = self.title_item.font()
-        font.setBold(True)
-        self.title_item.setFont(font)
-        self.title_item.setPos(8.0, 4.0)
-        self.resize_handle = LogicGroupResizeHandle(self)
-        self.resize_handle.setPos(self.rect().width() - 17.0, self.rect().height() - 17.0)
-        self.setToolTip("Duplo clique renomeia o grupo")
-
-    def resize_to(self, width: float, height: float) -> None:
-        width = max(240.0, min(1600.0, float(width)))
-        height = max(140.0, min(1200.0, float(height)))
-        self.setRect(0.0, 0.0, width, height)
-        self.resize_handle.setPos(width - 17.0, height - 17.0)
-        self.data["size"] = [round(width, 2), round(height, 2)]
-
-    def mouseDoubleClickEvent(self, event) -> None:
-        title, accepted = QInputDialog.getText(None, "Renomear grupo", "Nome", text=str(self.data.get("title", "Grupo")))
-        if accepted and title.strip():
-            self.data["title"] = title.strip()
-            self.title_item.setPlainText(title.strip())
-            self.editor.mark_dirty()
-        event.accept()
-
-    def itemChange(self, change, value):
-        result = super().itemChange(change, value)
-        if change == QGraphicsItem.ItemPositionHasChanged and hasattr(self, "editor"):
-            position = value if isinstance(value, QPointF) else self.pos()
-            self.data["position"] = [round(position.x(), 2), round(position.y(), 2)]
-            self.editor.mark_dirty()
-        return result
+from editor.widgets.logic_graph.group_item import LogicGroupItem, LogicGroupResizeHandle
 
 class LogicCommentItem(QGraphicsRectItem):
     """Nota persistente que explica uma região do grafo sem afetar o runtime."""
@@ -359,7 +285,11 @@ class LogicResizeHandle(QGraphicsRectItem):
         self.node.editor.mark_dirty()
         event.accept()
 
-class LogicNodeItem(QGraphicsRectItem):
+from editor.widgets.logic_graph.item_runtime_mixin import LogicNodeItemRuntimeMixin
+from editor.widgets.logic_graph.item_geometry_mixin import LogicNodeItemGeometryMixin
+
+
+class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGraphicsRectItem):
     WIDTH = 210.0
     MINIMUM_WIDTH = 170.0
     MAXIMUM_WIDTH = 520.0
@@ -498,66 +428,7 @@ class LogicNodeItem(QGraphicsRectItem):
         })
         self._apply_geometry()
 
-    def toggle_collapsed(self) -> None:
-        self.collapsed = not self.collapsed
-        self.node.setdefault("editor", {}).update({
-            "collapsed": self.collapsed,
-            "width": round(self.width, 2),
-            "height": round(self.expanded_height, 2),
-        })
-        self._apply_geometry()
-        self.editor.mark_dirty()
 
-    def _apply_geometry(self, notify: bool = True) -> None:
-        self.height = self.COLLAPSED_HEIGHT if self.collapsed else self.expanded_height
-        self.setRect(0.0, 0.0, self.width, self.height)
-        self.header.setRect(0.0, 0.0, self.width, 28.0)
-        self.breakpoint_item.setRect(self.width - 20.0, 8.0, 10.0, 10.0)
-        self.flip_control.setPos(self.width - 52.0, 2.0)
-        self.collapse_control.refresh()
-        self.summary_item.setTextWidth(self.width - 22.0)
-        self.summary_item.setPos(10.0, self.expanded_height - 25.0)
-        self.target_item.setTextWidth(self.width - 22.0)
-        self.target_item.setPos(10.0, self.expanded_height - 45.0)
-        self.debug_item.setTextWidth(self.width - 22.0)
-        self.debug_item.setPos(10.0, self.expanded_height - 25.0)
-        self.code_item.setTextWidth(self.width - 18.0)
-        self.resize_handle.setPos(
-            self.width - self.resize_handle.SIZE - 3.0,
-            self.expanded_height - self.resize_handle.SIZE - 3.0,
-        )
-        for index, (name, _data_type) in enumerate(self.input_definitions):
-            y = 43.0 + index * 22.0
-            port = self.input_ports[name]
-            port.setRect(-LogicPortItem.SIZE / 2, y - LogicPortItem.SIZE / 2, LogicPortItem.SIZE, LogicPortItem.SIZE)
-            port.setTransformOriginPoint(port.boundingRect().center())
-            self.port_labels[index].setPos(9.0, y - 12.0)
-        output_label_offset = len(self.input_definitions)
-        for index, (name, _data_type) in enumerate(self.output_definitions):
-            y = 43.0 + index * 22.0
-            port = self.output_ports[name]
-            port.setRect(self.width - LogicPortItem.SIZE / 2, y - LogicPortItem.SIZE / 2, LogicPortItem.SIZE, LogicPortItem.SIZE)
-            port.setTransformOriginPoint(port.boundingRect().center())
-            label = self.port_labels[output_label_offset + index]
-            label.setTextWidth(min(110.0, self.width * 0.45))
-            label.setPos(self.width - min(118.0, self.width * 0.48), y - 12.0)
-        body_visible = not self.collapsed
-        self.flip_control.setVisible(body_visible)
-        self.resize_handle.setVisible(body_visible)
-        for port in (*self.input_ports.values(), *self.output_ports.values()):
-            port.setVisible(body_visible and not self._show_code)
-        for label in self.port_labels:
-            label.setVisible(body_visible and not self._show_code)
-        self.code_item.setVisible(body_visible and self._show_code)
-        if self.collapsed:
-            self.summary_item.hide()
-            self.target_item.hide()
-            self.debug_item.hide()
-        else:
-            self.set_runtime_state(*self._runtime_display)
-        if notify:
-            self.editor.refresh_connections()
-            self.update()
 
     def refresh_text(self) -> None:
         properties = self.node.get("properties", {})
@@ -589,86 +460,9 @@ class LogicNodeItem(QGraphicsRectItem):
         self.target_item.setVisible(bool(text) and not self.collapsed and not self._show_code)
         self.setToolTip(self.target_item.toolTip() if text else "")
 
-    def toggle_code_preview(self) -> None:
-        self._show_code = not self._show_code
-        for port in (*self.input_ports.values(), *self.output_ports.values()):
-            port.setVisible(not self._show_code and not self.collapsed)
-        for label in self.port_labels:
-            label.setVisible(not self._show_code and not self.collapsed)
-        self.target_item.setVisible(bool(self._target_hint) and not self._show_code and not self.collapsed)
-        self.code_item.setVisible(self._show_code and not self.collapsed)
-        self.flip_control.setToolTip(
-            "Voltar para as portas do bloco" if self._show_code else "Virar bloco e mostrar o código equivalente"
-        )
-        if self._show_code:
-            self.refresh_text()
-            self.summary_item.hide()
-            self.target_item.hide()
-            self.debug_item.hide()
-            self.setBrush(QBrush(QColor("#17221c")))
-        else:
-            self.setBrush(QBrush(QColor("#22242a")))
-            self.set_runtime_state(*self._runtime_display)
-
-    def set_runtime_state(
-        self,
-        active: bool,
-        values: dict[str, Any] | None = None,
-        error: str = "",
-        paused: bool = False,
-    ) -> None:
-        self._runtime_display = (bool(active), values, str(error), bool(paused))
-        if self.collapsed:
-            self.summary_item.hide()
-            self.target_item.hide()
-            self.debug_item.hide()
-            return
-        if self._show_code:
-            self.summary_item.hide()
-            self.debug_item.hide()
-            return
-        visible = bool(active or error or paused)
-        self.summary_item.setVisible(not visible)
-        self.target_item.setVisible(bool(self._target_hint) and not visible)
-        self.debug_item.setVisible(visible)
-        if not visible:
-            self.debug_item.setPlainText("")
-        else:
-            if error:
-                self.debug_item.setDefaultTextColor(QColor("#ff6b70"))
-                self.debug_item.setPlainText("ERRO • " + error[:54])
-            elif paused:
-                self.debug_item.setDefaultTextColor(QColor("#e6b85c"))
-                self.debug_item.setPlainText("PAUSADO ANTES DE EXECUTAR")
-            else:
-                self.debug_item.setDefaultTextColor(QColor("#7ee787"))
-                pairs = list((values or {}).items())[:2]
-                text = " • ".join(f"{name}={value}" for name, value in pairs) if pairs else "EXECUTANDO"
-                self.debug_item.setPlainText(text)
-        self._update_border_style()
-
-    def set_breakpoint(self, enabled: bool) -> None:
-        self.breakpoint_item.setVisible(bool(enabled))
-
     def mouseDoubleClickEvent(self, event) -> None:
         self.editor.toggle_breakpoint(self.node_id)
         event.accept()
-
-    def _update_border_style(self) -> None:
-        active, values, error, paused = self._runtime_display
-        visible = bool(active or error or paused)
-        if not visible:
-            if self.isSelected():
-                self.setPen(QPen(QColor("#00adb5"), 2.0))
-            else:
-                self.setPen(QPen(QColor("#3f4456"), 1.2))
-        else:
-            if error:
-                self.setPen(QPen(QColor("#ff5d62"), 3.5 if self.isSelected() else 2.5))
-            elif paused:
-                self.setPen(QPen(QColor("#e6b85c"), 4.5 if self.isSelected() else 3.5))
-            else:
-                self.setPen(QPen(QColor("#7ee787"), 3.5 if self.isSelected() else 2.5))
 
     def itemChange(self, change, value):
         result = super().itemChange(change, value)

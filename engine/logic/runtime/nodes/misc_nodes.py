@@ -83,6 +83,10 @@ def execute_set_variable(runtime, node: Mapping[str, Any], game: Any, dt: float)
     value = runtime._read_input(node_id, "value", properties.get("value"), game, dt, set())
     value = runtime.blackboard.set(scope, name, value, runtime.object_key)
     runtime.variables = runtime.blackboard.values_for_object(runtime.object_key)
+    if scope != "object":
+        # ``variables`` predates scoped blackboards and remains a public debug
+        # view of values written by the graph.
+        runtime.variables[name] = deepcopy(value)
     runtime._store(node_id, "value", value)
     return ["next"]
 

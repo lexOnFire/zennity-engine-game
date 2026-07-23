@@ -5,6 +5,7 @@ def test_isolated_viewport_delegates_animation_frames_and_events() -> None:
     viewport = (
         Path("editor/isolated_viewport.py").read_text(encoding="utf-8")
         + Path("editor/runtime/viewport_session.py").read_text(encoding="utf-8")
+        + Path("editor/runtime/viewport_session_lifecycle.py").read_text(encoding="utf-8")
     )
     updater = Path("editor/runtime/viewport_animation_updater.py").read_text(encoding="utf-8")
 

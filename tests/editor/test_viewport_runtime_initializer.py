@@ -5,6 +5,7 @@ def test_viewport_delegates_runtime_initialization_and_spawn_discovery() -> None
     viewport = (
         Path("editor/isolated_viewport.py").read_text(encoding="utf-8")
         + Path("editor/runtime/viewport_session.py").read_text(encoding="utf-8")
+        + Path("editor/runtime/viewport_session_lifecycle.py").read_text(encoding="utf-8")
     )
     initializer = Path("editor/runtime/viewport_runtime_initializer.py").read_text(encoding="utf-8")
 
@@ -25,6 +26,7 @@ def test_run_viewport_is_below_original_large_method_threshold() -> None:
     source = (
         Path("editor/isolated_viewport.py").read_text(encoding="utf-8")
         + Path("editor/runtime/viewport_session.py").read_text(encoding="utf-8")
+        + Path("editor/runtime/viewport_session_lifecycle.py").read_text(encoding="utf-8")
     )
     tree = ast.parse(source)
     run_viewport = next(

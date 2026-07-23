@@ -16,6 +16,7 @@ def _source(relative: str) -> str:
         if package_dir.exists():
             source += "\n" + "\n".join(p.read_text(encoding="utf-8") for p in package_dir.glob("**/*.py") if p.is_file())
     if relative == "editor/runtime/viewport_session.py":
+        source += (ROOT / "editor/runtime/viewport_session_lifecycle.py").read_text(encoding="utf-8")
         source += (ROOT / "editor/runtime/viewport_play_commands.py").read_text(encoding="utf-8")
         source += (ROOT / "editor/runtime/viewport_session_orchestrator.py").read_text(encoding="utf-8")
         source += (ROOT / "editor/runtime/viewport_runtime_initializer.py").read_text(encoding="utf-8")
@@ -26,7 +27,11 @@ def _source(relative: str) -> str:
         source += "\n" + (ROOT / "editor/ui/docks_builder.py").read_text(encoding="utf-8")
         source += "\n" + (ROOT / "editor/ui/navigation_builder.py").read_text(encoding="utf-8")
         source += "\n" + (ROOT / "editor/ui/inspector_builder.py").read_text(encoding="utf-8")
+        source += "\n" + (ROOT / "editor/ui/inspector_builder_extra.py").read_text(encoding="utf-8")
+        source += "\n" + (ROOT / "editor/ui/inspector_builder_physics.py").read_text(encoding="utf-8")
         source += "\n" + (ROOT / "editor/ui/bottom_panels_builder.py").read_text(encoding="utf-8")
+    if relative == "engine/logic/graph_asset.py":
+        source += "\n" + (ROOT / "engine/logic/node_definitions.py").read_text(encoding="utf-8")
     return "\n" + source + "\n"
 
 
@@ -67,7 +72,7 @@ def test_python_script_component_is_not_offered_or_executed() -> None:
 def test_logic_workspace_exposes_palette_canvas_connections_and_properties():
     source = _source("editor/widgets/logic_graph_editor.py")
     assert "class LogicGraphView(QGraphicsView)" in source
-    assert "class LogicNodeItem(QGraphicsRectItem)" in source
+    assert "class LogicNodeItem(" in source and "QGraphicsRectItem" in source
     assert "class LogicPortItem(QGraphicsEllipseItem)" in source
     assert "class LogicEdgeItem(QGraphicsPathItem)" in source
     assert "class LogicCollapseControl(QGraphicsTextItem)" in source

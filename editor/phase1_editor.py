@@ -12,6 +12,8 @@ from engine.physics.collider import BoxCollider
 from engine.physics.rigidbody import RigidBody
 from editor.runtime.editor_extensions import EditorExtensionManager, default_editor_extensions
 from editor.runtime.editor_context import EditorContext
+from editor.runtime.tool_manager import EditorTool
+from editor.runtime.tool_selection import sync_tool_selection
 from editor.phase1_editor_mixins import (
     Phase1EditorUIBuilderMixin,
     Phase1SceneOperationsMixin,

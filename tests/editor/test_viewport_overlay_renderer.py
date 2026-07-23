@@ -14,6 +14,7 @@ def test_isolated_viewport_delegates_overlays_and_gizmos() -> None:
     source = (
         Path("editor/isolated_viewport.py").read_text(encoding="utf-8")
         + Path("editor/runtime/viewport_session.py").read_text(encoding="utf-8")
+        + Path("editor/runtime/viewport_session_lifecycle.py").read_text(encoding="utf-8")
     )
     sprite_renderer = Path("editor/runtime/viewport_sprite_renderer.py").read_text(encoding="utf-8")
     renderer = Path("editor/runtime/viewport_overlay_renderer.py").read_text(encoding="utf-8")

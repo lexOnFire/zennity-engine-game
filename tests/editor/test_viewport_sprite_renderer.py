@@ -13,6 +13,7 @@ def test_isolated_viewport_delegates_sprite_and_physics_work() -> None:
     source = (
         Path("editor/isolated_viewport.py").read_text(encoding="utf-8")
         + Path("editor/runtime/viewport_session.py").read_text(encoding="utf-8")
+        + Path("editor/runtime/viewport_session_lifecycle.py").read_text(encoding="utf-8")
     )
     assert "sprite_renderer.draw(" in source
     assert "physics_stepper.step(" in source
