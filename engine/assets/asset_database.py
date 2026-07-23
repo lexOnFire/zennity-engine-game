@@ -177,4 +177,11 @@ class AssetDatabase:
                     return
             except (OSError, UnicodeError):
                 pass
-        path.write_text(serialized, encoding="utf-8", newline="\n")
+        temporary_path = path.with_name(
+            f".{path.name}.{uuid.uuid4().hex}.tmp"
+        )
+        try:
+            temporary_path.write_text(serialized, encoding="utf-8", newline="\n")
+            temporary_path.replace(path)
+        finally:
+            temporary_path.unlink(missing_ok=True)

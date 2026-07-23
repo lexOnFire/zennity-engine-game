@@ -103,8 +103,8 @@ class IsolatedInspectorController(InspectorControllerUIMediaMixin):
         self._bind(h.btn_collapse_camera.clicked, lambda: h._toggle_inspector_card("camera"))
         self._bind(h.btn_delete_camera.clicked, lambda: h.show_camera_chk.setChecked(False))
         self._bind(h.camera_active_field.toggled, lambda _value: h._send_inspector_camera())
-        self._bind(h.camera_width_field.valueChanged, lambda _value: h._send_inspector_camera())
-        self._bind(h.camera_height_field.valueChanged, lambda _value: h._send_inspector_camera())
+        self._bind(h.camera_viewport_w.valueChanged, lambda _value: h._send_inspector_camera())
+        self._bind(h.camera_viewport_h.valueChanged, lambda _value: h._send_inspector_camera())
         self._bind(h.camera_zoom_field.valueChanged, lambda _value: h._send_inspector_camera())
         self._bind(h.camera_follow_combo.currentTextChanged, lambda _value: h._send_inspector_camera())
         self._bind(h.camera_color_button.clicked, h._choose_camera_color)
@@ -397,8 +397,8 @@ class InspectorComponentController(InspectorControllerUIMediaMixin):
         follow = h.camera_follow_combo.currentText()
         camera.update({
             "active": h.camera_active_field.isChecked(),
-            "width": float(h.camera_width_field.value()),
-            "height": float(h.camera_height_field.value()),
+            "width": float(h.camera_viewport_w.value()),
+            "height": float(h.camera_viewport_h.value()),
             "zoom": float(h.camera_zoom_field.value()),
             "follow_target": "" if follow == "Nenhum" else follow,
         })
