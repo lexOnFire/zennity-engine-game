@@ -24,7 +24,6 @@ from PySide6.QtWidgets import QApplication
 
 from editor.gizmos.rotate_gizmo import QtRotateGizmoOverlay
 from editor.phase1_editor import ZennityPhase1Editor
-from editor.runtime import EditorContext
 from editor.runtime.tool_manager import EditorTool
 from editor.runtime.editor_state import EditorState
 

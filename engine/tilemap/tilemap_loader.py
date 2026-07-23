@@ -16,10 +16,9 @@ Usage
 """
 import json
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 from engine.logger import Logger
 
-import pygame
 
 from .tileset import Tileset, TileData
 from .tilemap import TileLayer, TileMap

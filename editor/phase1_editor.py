@@ -187,9 +187,9 @@ class ZennityPhase1Editor(
                     except Exception as e:
                         self.console.add("WARN", f"Falha ao registrar editor_extension '{ext_path}': {e}")
 
-    def _on_extension_error(self, name: str, exc: Exception) -> None:
+    def _on_extension_error(self, name: str, phase: str, exc: Exception) -> None:
         if hasattr(self, "console"):
-            self.console.add("WARN", f"Extensao '{name}' falhou: {exc}")
+            self.console.add("WARN", f"Extensao '{name}' falhou na fase '{phase}': {exc}")
 
     def _update_undo_redo_states(self) -> None:
         if hasattr(self, "act_undo") and hasattr(self, "act_redo"):

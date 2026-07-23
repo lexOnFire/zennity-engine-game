@@ -15,7 +15,6 @@ Estratégia de isolamento:
 from __future__ import annotations
 
 import sys
-import math
 from types import ModuleType
 from unittest.mock import MagicMock, patch
 

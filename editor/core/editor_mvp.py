@@ -4,7 +4,7 @@ import numpy as np
 from PySide6.QtCore import Qt
 
 from engine.game_object import GameObject
-from engine.physics.collider import BoxCollider, CircleCollider
+from engine.physics.collider import BoxCollider
 from engine.physics.rigidbody import RigidBody
 from engine.graphics.camera2d import Camera2D
 from editor.widgets.create_dock import CreateDock

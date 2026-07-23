@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Any
 
@@ -298,7 +297,6 @@ class _ScriptWidget(QWidget):
             return
         
         # Garante diretório Assets/Scripts existente
-        from editor.script_templates import build_isolated_script_template
         scripts_dir = self._scripts_root
         scripts_dir.mkdir(parents=True, exist_ok=True)
         

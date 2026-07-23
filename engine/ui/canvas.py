@@ -10,7 +10,6 @@ canvases por cena (ex: HUD + PauseMenu).
 """
 
 import pygame
-from typing import List
 from .base import UIElement
 
 

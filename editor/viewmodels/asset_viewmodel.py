@@ -1,5 +1,5 @@
 import os
-from PySide6.QtCore import QObject, Signal, Slot
+from PySide6.QtCore import QObject, Signal
 from editor.models.asset_model import AssetModel
 from editor.core.event_bus import EventBus, EVENT_ASSET_SELECTED
 

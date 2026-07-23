@@ -15,7 +15,6 @@ Máquina de estados leve:
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
-import pygame
 
 from engine.component import Component
 from engine.time import Time

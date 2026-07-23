@@ -1,5 +1,4 @@
 # Script de Comportamento: Bloco_1
-import numpy as np
 
 def start(obj):
     obj.script_time = 0.0

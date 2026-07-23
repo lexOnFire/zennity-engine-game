@@ -1,5 +1,4 @@
 import pytest
-import json
 from engine.core import GameObject, Scene, component_registry
 from engine.graphics.camera import Camera
 from engine.graphics.camera_manager import CameraManager

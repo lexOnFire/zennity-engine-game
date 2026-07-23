@@ -5,9 +5,7 @@ Testes unitários e de integração para a Scale Tool (Fase 1).
 """
 from __future__ import annotations
 
-import math
 import os
-import numpy as np
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 

@@ -12,19 +12,17 @@ Arquitetura:
 
 import time
 import pygame
-import numpy as np
-from typing import Optional, List
+from typing import Optional
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
 from PySide6.QtWidgets import QWidget
 from PySide6.QtCore import Qt, QTimer, Slot
-from PySide6.QtGui import QPainter, QImage, QMouseEvent, QKeyEvent, QWheelEvent
+from PySide6.QtGui import QPainter, QImage
 
 from editor.core.event_bus import (
     EventBus,
     EVENT_PLAY_STATE_CHANGED,
     EVENT_SELECTION_CHANGED,
     EVENT_PROPERTY_CHANGED,
-    EVENT_HIERARCHY_UPDATED,
 )
 from editor.render.frame_invalidation import FrameInvalidation, FrameInvalidationStats
 from editor.viewmodels.scene_viewmodel import SceneViewModel

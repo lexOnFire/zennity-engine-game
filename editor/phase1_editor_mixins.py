@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QActionGroup
 from PySide6.QtWidgets import (
     QComboBox,
-    QFileDialog,
-    QMessageBox,
     QSplitter,
     QTabWidget,
     QToolBar,
@@ -38,10 +35,6 @@ from editor.runtime.tool_manager import EditorTool
 from editor.widgets.game_viewport import GameViewportWidget
 from editor.widgets.phase1_viewport import Phase1ViewportWidget
 from editor.widgets.render_pipeline_profiler import RenderPipelineProfilerPanel
-from engine.game_object import GameObject
-from engine.physics.collider import BoxCollider
-from engine.physics.rigidbody import RigidBody
-from engine.scene import load_scene, save_scene
 
 
 class Phase1EditorUIBuilderMixin:
@@ -318,7 +311,6 @@ class Phase1EditorUIBuilderMixin:
             self.left_splitter.setSizes([96, 644])
 
 
-from editor.phase1_editor_scene_ops import Phase1SceneOperationsMixin
 
 
 class Phase1HierarchyOperationsMixin:

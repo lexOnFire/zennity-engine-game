@@ -5,7 +5,6 @@ editor/launcher.py
 Cena do Launcher inicial que permite escolher entre o Editor 2D e o Editor 3D.
 """
 
-import sys
 import pygame
 from engine.core import Scene
 import editor_legacy.theme as T

@@ -1,7 +1,6 @@
 import pytest
 import tempfile
 import json
-import shutil
 from pathlib import Path
 
 from engine.packages.package import Package

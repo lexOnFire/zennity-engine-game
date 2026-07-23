@@ -1,14 +1,12 @@
-import pytest
 from unittest.mock import MagicMock
 import pygame
 import numpy as np
 
-from engine.core import GameObject, Component, Transform
+from engine.core import GameObject
 from engine.graphics.camera import Camera
 from engine.physics.collider import BoxCollider, CircleCollider
 from engine.audio import AudioSource, AudioListener
-from editor.gizmos.gizmo_registry import GizmoRegistry, _get_screen_pos, _get_zoom
-from editor.widgets.viewport_widget import ViewportWidget
+from editor.gizmos.gizmo_registry import GizmoRegistry
 
 
 

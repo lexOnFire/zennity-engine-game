@@ -1,20 +1,14 @@
 """Animation asset, controller, preview and binding operations."""
 from __future__ import annotations
 
-import json
-from copy import deepcopy
 from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
-from PySide6.QtWidgets import QFileDialog, QInputDialog, QMessageBox, QTreeWidgetItem
+from PySide6.QtWidgets import QInputDialog, QTreeWidgetItem
 
-from editor.runtime.sprite_rendering import assign_sprite_texture
-from editor.ui.icons import editor_icon
 from editor.widgets.animation_picker import AnimationPickerDialog
-from editor.widgets.animator_controller_editor import AnimatorControllerEditorDialog
-from engine.animation.clip_asset import animation_asset_from_clip, animation_asset_to_clip, default_animation_asset, load_animation_asset, save_animation_asset
-from engine.animation.controller_asset import load_animator_controller
+from engine.animation.clip_asset import animation_asset_to_clip
 
 
 class AnimationPreviewOperations:

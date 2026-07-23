@@ -22,7 +22,7 @@ except ImportError:
 try:
     from .blackboard import normalize_variable_definitions
 except ImportError:  # Self-contained exported runtime.
-    from .logic_blackboard import normalize_variable_definitions
+    pass
 
 
 # ---------------------------------------------------------------------------

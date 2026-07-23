@@ -1,13 +1,11 @@
-import pytest
 from unittest.mock import MagicMock
-import numpy as np
 import pygame
 import tempfile
 from pathlib import Path
 
-from engine.core import Scene, GameObject, Transform, Component
+from engine.core import Scene, GameObject
 from engine.components.script_component import ScriptComponent
-from engine.runtime import RuntimeScene, ScriptBehaviour, Input, RuntimeManager
+from engine.runtime import RuntimeManager
 from engine.graphics.camera import Camera
 from engine.physics.collider import BoxCollider
 from editor.gizmos.gizmo_registry import GizmoRegistry

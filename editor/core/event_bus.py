@@ -1,4 +1,3 @@
-from engine.event_bus import EventBus
 
 # ── Constantes de Eventos do Editor ──────────────────────────────────────────
 

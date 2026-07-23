@@ -21,7 +21,6 @@ import pygame
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from engine.core import Engine, Scene
-from engine.input import Input
 from engine.tilemap import TileMap, TileLayer, Tileset, TileData
 
 

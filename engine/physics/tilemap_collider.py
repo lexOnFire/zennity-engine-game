@@ -32,13 +32,10 @@ Arquitetura
   (BoxCollider.check_all) e adiciona a colisão objeto↔tilemap por cima.
 """
 
-from typing import List, Optional, TYPE_CHECKING
-import pygame
+from typing import List, TYPE_CHECKING
 
-from engine.component import Component
 
 if TYPE_CHECKING:
-    from engine.tilemap.tilemap import TileMap
     from engine.game_object import GameObject
 
 

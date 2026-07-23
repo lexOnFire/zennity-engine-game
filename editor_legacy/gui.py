@@ -1,5 +1,5 @@
 """Widgets de GUI para o editor — sistema visual coeso com theme.py."""
-from typing import Tuple, Optional
+from typing import Tuple
 import pygame
 from . import theme as T
 

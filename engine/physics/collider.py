@@ -1,12 +1,12 @@
 from __future__ import annotations
 from typing import Optional, Callable, List, Dict, Any, TYPE_CHECKING
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import math
 import pygame
 from engine.core.component import Component
 
 if TYPE_CHECKING:
-    from engine.game_object import GameObject
+    pass
 
 
 @dataclass

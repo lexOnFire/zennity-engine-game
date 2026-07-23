@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from pathlib import Path
+import json
 import shutil
+from pathlib import Path
+from typing import Any, Dict
 
 from engine.packages.package import Package
 from engine.packages.registry import PackageRegistry
@@ -16,6 +18,20 @@ class PackageManager:
         self.registry = PackageRegistry(self.packages_dir)
         self.registry.scan()
 
+    def _update_lockfile(self) -> None:
+        """Saves current installed packages and their versions to packages.lock.json."""
+        lockfile_path = self.packages_dir / "packages.lock.json"
+        lock_data: Dict[str, Any] = {"version": 1, "packages": {}}
+        
+        for pkg in self.registry.list_packages():
+            lock_data["packages"][pkg.name] = {
+                "version": pkg.version,
+                "dependencies": pkg.dependencies
+            }
+            
+        with open(lockfile_path, "w", encoding="utf-8") as f:
+            json.dump(lock_data, f, indent=4)
+
     def install_local_package(self, source_dir: str | Path) -> Package:
         """Installs a local package by copying its directory to project's Packages/ folder."""
         source_path = Path(source_dir).resolve()
@@ -26,6 +42,11 @@ class PackageManager:
 
         # Dest directory: Packages/<package_name>
         dest_dir = self.packages_dir / source_pkg.name
+        
+        # Security: Prevent path traversal by ensuring destination is inside packages_dir
+        if self.packages_dir not in dest_dir.parents and dest_dir != self.packages_dir / source_pkg.name:
+            raise ValueError(f"Invalid package destination path: {dest_dir}")
+
         temp_dir = self.packages_dir / f".temp_{source_pkg.name}"
         backup_dir = self.packages_dir / f".backup_{source_pkg.name}"
         
@@ -53,7 +74,7 @@ class PackageManager:
                 shutil.rmtree(backup_dir)
         except Exception as e:
             # Rollback
-            if dest_dir.exists() and temp_dir.exists():  # If swap partially failed? Unlikely but safe.
+            if dest_dir.exists() and temp_dir.exists():
                 shutil.rmtree(dest_dir)
             if backup_dir.exists():
                 backup_dir.rename(dest_dir)
@@ -62,10 +83,16 @@ class PackageManager:
             raise RuntimeError(f"Package installation failed, rolled back. Error: {e}")
 
         # Re-scan/load from destination
-        installed_manifest = dest_dir / "package.json"
-        installed_pkg = Package.from_manifest(installed_manifest)
-        self.registry.register_package(installed_pkg)
-        
+        self.registry.scan()
+        installed_pkg = self.registry.get_package(source_pkg.name)
+        if not installed_pkg:
+             # The package was installed but rejected by the registry (e.g. missing dependency)
+             if dest_dir.exists():
+                 shutil.rmtree(dest_dir)
+             self._update_lockfile()
+             raise RuntimeError(f"Package '{source_pkg.name}' installed but failed registry load (possibly missing dependencies). Installation rolled back.")
+             
+        self._update_lockfile()
         return installed_pkg
 
     def uninstall_package(self, name: str) -> bool:
@@ -89,10 +116,11 @@ class PackageManager:
                     backup_dir.rename(dest_dir)
                 raise RuntimeError(f"Package uninstallation failed. Error: {e}")
 
-        self.registry.unregister_package(name)
+        self.registry.scan()
+        self._update_lockfile()
         return True
 
-    def update_package(self, name: str, source_dir: str | Path) -> Package:
+    def update_package(self, name: str, source_dir: str | Path, force: bool = False) -> Package:
         """Updates an existing package if the source version is equal or greater."""
         existing_pkg = self.registry.get_package(name)
         if not existing_pkg:
@@ -101,17 +129,17 @@ class PackageManager:
         source_path = Path(source_dir).resolve()
         source_pkg = Package.from_manifest(source_path / "package.json")
 
-        # Basic SemVer comparison (major.minor.patch string check or split check)
         def parse_ver(v: str) -> tuple[int, ...]:
             try:
                 return tuple(int(x) for x in v.split("."))
             except ValueError:
                 return (0,)
 
-        if parse_ver(source_pkg.version) < parse_ver(existing_pkg.version):
+        if not force and parse_ver(source_pkg.version) < parse_ver(existing_pkg.version):
             raise ValueError(
-                f"Cannot downgrade package '{name}' from version {existing_pkg.version} to {source_pkg.version}"
+                f"Cannot downgrade package '{name}' from version {existing_pkg.version} to {source_pkg.version}. Use force=True to allow downgrade."
             )
 
         # Re-install
         return self.install_local_package(source_dir)
+

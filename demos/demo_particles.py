@@ -6,7 +6,6 @@ Demo completa do Sistema de Partículas 2D da Zennity Engine.
 
 import sys
 import os
-import random
 import pygame
 import numpy as np
 

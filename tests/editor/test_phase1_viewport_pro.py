@@ -14,16 +14,13 @@ for name in ["engine.physics.collider", "engine.physics.rigidbody", "engine.phys
         if not getattr(mod, "__file__", None) and not getattr(mod, "__path__", None):
             sys.modules.pop(name, None)
 
-import math
 import os
 import numpy as np
-import pygame
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
 from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QPainter
 
 from editor.phase1_editor import ZennityPhase1Editor

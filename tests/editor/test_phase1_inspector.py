@@ -5,8 +5,6 @@ from editor.widgets.inspector_dock import InspectorDock
 from editor.viewmodels.scene_viewmodel import SceneViewModel
 from editor.models.scene_model import SceneModel
 from engine.game_object import GameObject
-from engine.physics.rigidbody import RigidBody
-from engine.physics.collider import BoxCollider
 from editor.runtime.command_manager import CommandManager
 
 @pytest.fixture

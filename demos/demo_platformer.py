@@ -39,14 +39,14 @@ Arquitetura
 """
 from __future__ import annotations
 
-import sys, os
+import sys
+import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pygame
 
-from engine.core           import Scene, Engine
+from engine.core           import Scene
 from engine.game_object    import GameObject
-from engine.transform      import Transform
 from engine.component      import Component
 from engine.physics        import RigidBody, BoxCollider, TilemapCollider
 from engine.graphics.camera2d import Camera2D

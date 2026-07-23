@@ -11,12 +11,10 @@ Uso:
 
 from __future__ import annotations
 
-from typing import Optional
 
 import pygame
-import numpy as np
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QPainter, QImage
 from PySide6.QtWidgets import (
     QWidget,
@@ -24,7 +22,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QPushButton,
     QSizePolicy,
-    QFrame,
 )
 
 from editor.widgets.viewport_widget import ViewportWidget

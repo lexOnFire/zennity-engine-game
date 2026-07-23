@@ -2,14 +2,10 @@
 
 from __future__ import annotations
 
-import json
-import unicodedata
-import uuid
-from copy import deepcopy
 from pathlib import Path
 from typing import Any, TYPE_CHECKING
 
-from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal
+from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QColor, QPainterPath, QPainterPathStroker, QPen, QBrush
 from PySide6.QtWidgets import (
     QGraphicsEllipseItem,
@@ -170,7 +166,6 @@ class LogicEdgeItem(QGraphicsPathItem):
         stroker.setWidth(14.0)
         return stroker.createStroke(self.path())
 
-from editor.widgets.logic_graph.group_item import LogicGroupItem, LogicGroupResizeHandle
 
 class LogicCommentItem(QGraphicsRectItem):
     """Nota persistente que explica uma região do grafo sem afetar o runtime."""

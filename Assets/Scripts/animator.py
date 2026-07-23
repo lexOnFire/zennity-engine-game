@@ -15,7 +15,7 @@ Uso:
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from engine.core.component import Component
 from engine.component_registry import ComponentRegistry
@@ -89,7 +89,6 @@ class Animator(Component):
         frame = self.current_frame
         if frame is None:
             return
-        import pygame
         pos = (int(self.transform.x), int(self.transform.y))
         screen.blit(frame, pos)
 

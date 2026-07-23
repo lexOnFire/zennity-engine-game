@@ -2,20 +2,17 @@ from __future__ import annotations
 
 import sys
 from PySide6.QtCore import Qt, QSize, Signal
-from PySide6.QtGui import QAction, QColor, QFont, QIcon, QPainter, QPixmap
+from PySide6.QtGui import QFont, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
-    QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QMainWindow,
-    QMenu,
     QPushButton,
     QSplitter,
     QStatusBar,
-    QTabWidget,
     QTextBrowser,
     QToolBar,
     QToolButton,
@@ -25,8 +22,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from editor.assets import AssetBrowserModel, AssetBrowserViewModel, ProjectBrowserService
-from editor.assets_panel_controller import AssetsPanelController, image_icon
+from editor.assets import AssetBrowserModel, AssetBrowserViewModel
 from editor.premium_resources_panel import ResourcesPanel
 from editor.models.scene_model import SceneModel
 from editor.runtime.editor_context import EditorContext

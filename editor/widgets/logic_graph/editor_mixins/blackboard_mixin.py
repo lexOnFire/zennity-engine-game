@@ -3,8 +3,7 @@ import json
 from copy import deepcopy
 from typing import Any
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QListWidgetItem, QMessageBox, QTreeWidgetItem
-from editor.widgets.logic_graph.items import LogicNodeItem
+from PySide6.QtWidgets import QTreeWidgetItem
 from engine.logic.blackboard import coerce_variable_value, save_blackboard_asset
 from engine.logic.graph_asset import create_logic_node, load_logic_graph
 

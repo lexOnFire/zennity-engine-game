@@ -12,9 +12,8 @@ Estratégia:
 from __future__ import annotations
 
 import re
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock
 
-import pytest
 
 from engine.game_object import GameObject
 from engine.core.component import Component, Transform

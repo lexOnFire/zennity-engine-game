@@ -4,12 +4,10 @@ Testes unitários para o componente Transform.
 """
 from __future__ import annotations
 
-import math
 import numpy as np
 import pytest
 
 from engine.game_object import GameObject
-from engine.core.component import Transform
 
 
 @pytest.fixture

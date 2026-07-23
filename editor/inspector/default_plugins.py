@@ -37,7 +37,6 @@ __all__ = [
 ]
 
 from editor.inspector.plugin_registry import inspector_plugin_registry
-from editor.inspector.plugin_ui_utils import _section, _property_row, _float_field, _axis_row
 
 def register_default_inspector_plugins() -> None:
     inspector_plugin_registry.register(TransformInspectorPlugin)

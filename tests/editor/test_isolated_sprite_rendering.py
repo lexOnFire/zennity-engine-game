@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-import os
-import sys
 import pygame
-import pytest
 
 from editor.runtime.sprite_rendering import (
     assign_sprite_texture,

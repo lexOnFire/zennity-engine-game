@@ -11,14 +11,10 @@ from PySide6.QtWidgets import (
     QComboBox, QDialog, QDialogButtonBox, QFormLayout, QHBoxLayout,
     QCheckBox, QDoubleSpinBox, QGraphicsItem, QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsRectItem,
     QGraphicsScene, QGraphicsSimpleTextItem, QGraphicsView, QInputDialog, QLabel,
-    QLineEdit, QMessageBox, QPushButton, QSpinBox, QSplitter, QTabWidget, QTreeWidget,
-    QTreeWidgetItem, QVBoxLayout, QWidget,
+    QMessageBox, QPushButton, QSpinBox, QTreeWidget,
+    QTreeWidgetItem, QVBoxLayout,
 )
 
-from engine.animation.controller_asset import (
-    AnimatorControllerRuntime, default_animator_controller, load_animator_controller,
-    save_animator_controller, validate_animator_controller,
-)
 
 
 class AnimatorGraphView(QGraphicsView):

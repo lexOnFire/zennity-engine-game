@@ -1,5 +1,5 @@
 import pygame
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict, List, Tuple, Optional
 from ..core.component import Component
 
 class Tileset:

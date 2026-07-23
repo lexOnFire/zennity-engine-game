@@ -16,9 +16,8 @@ from __future__ import annotations
 import sys
 import uuid
 from types import ModuleType
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
-import pytest
 
 # ── stub pygame ──────────────────────────────────────────────────────────────
 if "pygame" not in sys.modules:

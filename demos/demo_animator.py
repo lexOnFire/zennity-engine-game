@@ -174,7 +174,6 @@ def _build_tilemap() -> TileMap:
 # ─────────────────────────────────────────────
 from engine.graphics.camera2d import Camera2D
 from engine.tilemap import TilemapRenderer
-from typing import List
 
 class AnimatorDemoScene(Scene):
     def start(self):

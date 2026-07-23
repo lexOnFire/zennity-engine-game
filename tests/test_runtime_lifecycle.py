@@ -126,7 +126,6 @@ class TestCloneGameObject:
 class TestRuntimeManagerLifecycle:
     def _make_manager(self):
         """Cria um RuntimeManager com stubs de Input e Time."""
-        from unittest.mock import patch, MagicMock
         from engine.runtime.runtime_manager import RuntimeManager
 
         manager = RuntimeManager()
@@ -180,7 +179,6 @@ class TestEditorContextReset:
 
     def test_reset_clears_commands(self):
         from editor.runtime.editor_context import EditorContext
-        from editor.runtime.command_manager import CommandManager
 
         ctx = EditorContext()
         # Verifica que clear() foi chamado (não lança)

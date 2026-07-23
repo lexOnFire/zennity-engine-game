@@ -1,4 +1,6 @@
 import json
+import shutil
+import tempfile
 from pathlib import Path
 from typing import Dict, Any
 
@@ -23,32 +25,42 @@ def get_template_manifest(template_name: str) -> Dict[str, Any]:
 
 
 def create_project(template_name: str, dest_dir: str | Path) -> None:
-    """Cria um novo projeto Zennity usando o template especificado."""
+    """Cria um novo projeto Zennity usando o template especificado, de forma atomica."""
     project_root = Path(dest_dir).resolve()
     
     if project_root.exists() and any(project_root.iterdir()):
         raise ValueError(f"Destination directory '{project_root}' is not empty.")
         
-    project_root.mkdir(parents=True, exist_ok=True)
-    
-    # Create standard directories
-    (project_root / "Assets").mkdir(exist_ok=True)
-    (project_root / "Assets" / "Scripts").mkdir(exist_ok=True)
-    (project_root / "Assets" / "Sprites").mkdir(exist_ok=True)
-    (project_root / "Assets" / "Prefabs").mkdir(exist_ok=True)
-    (project_root / "Assets" / "Scenes").mkdir(exist_ok=True)
-    (project_root / "Packages").mkdir(exist_ok=True)
-    (project_root / "Library").mkdir(exist_ok=True)
-    
-    # Write project manifest
-    manifest_data = get_template_manifest(template_name)
-    manifest_path = project_root / "project.json"
-    with open(manifest_path, "w", encoding="utf-8") as f:
-        json.dump(manifest_data, f, indent=4)
+    # Use atomic creation via a temporary directory next to destination or in temp
+    temp_dir = Path(tempfile.mkdtemp(prefix="zennity_template_"))
+    try:
+        # Create standard directories
+        (temp_dir / "Assets").mkdir(exist_ok=True)
+        (temp_dir / "Assets" / "Scripts").mkdir(exist_ok=True)
+        (temp_dir / "Assets" / "Sprites").mkdir(exist_ok=True)
+        (temp_dir / "Assets" / "Prefabs").mkdir(exist_ok=True)
+        (temp_dir / "Assets" / "Scenes").mkdir(exist_ok=True)
+        (temp_dir / "Packages").mkdir(exist_ok=True)
+        (temp_dir / "Library").mkdir(exist_ok=True)
         
-    # Write default main scene if template is not empty
-    if template_name.lower() == "platformer":
-        _create_platformer_scene(project_root / "Assets" / "Scenes" / "Main.zscene")
+        # Write project manifest
+        manifest_data = get_template_manifest(template_name)
+        manifest_path = temp_dir / "project.json"
+        with open(manifest_path, "w", encoding="utf-8") as f:
+            json.dump(manifest_data, f, indent=4)
+            
+        # Write default main scene if template is not empty
+        if template_name.lower() == "platformer":
+            _create_platformer_scene(temp_dir / "Assets" / "Scenes" / "Main.zscene")
+            
+        # Move atomically
+        if project_root.exists():
+             shutil.rmtree(project_root) # it was empty anyway based on check
+        shutil.move(str(temp_dir), str(project_root))
+        
+    finally:
+        if temp_dir.exists():
+            shutil.rmtree(temp_dir)
 
 
 def _create_platformer_scene(scene_path: Path) -> None:
