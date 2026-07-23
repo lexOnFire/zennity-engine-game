@@ -221,6 +221,7 @@ class RuntimeScene:
     def update_runtime(self, delta_time: float) -> None:
         if not self._runtime_started:
             return
+        self.script_runtime.reload_changed()
         self.lifecycle.update(float(delta_time))
 
     def stop_runtime(self) -> None:

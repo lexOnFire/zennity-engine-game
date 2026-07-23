@@ -41,6 +41,13 @@ class ScriptBehaviour:
     def on_destroy(self) -> None:
         """Called when Play Mode stops and the Runtime World is destroyed."""
 
+    def on_before_reload(self) -> dict[str, Any] | None:
+        """Optionally return extra state before a hot reload."""
+        return None
+
+    def on_reload(self, previous_state: dict[str, Any]) -> None:
+        """Called on the replacement instance after state migration."""
+
     def on_trigger_enter(self, other: Any) -> None:
         """Called when this GameObject enters a trigger contact."""
 
