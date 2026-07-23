@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, List, Type
+from typing import Dict, List
+import hashlib
 import uuid
 
-from engine.assets.asset_types import AssetType, detect_asset_type
+from engine.assets.asset_types import detect_asset_type
 from engine.assets.asset_metadata import AssetMeta
 
 
@@ -14,7 +15,9 @@ class AssetImporter(ABC):
     Base class for all asset importers.
     An importer is responsible for processing a source file and generating/updating its AssetMeta.
     """
-    
+
+    IMPORTER_VERSION = 1
+
     @classmethod
     @abstractmethod
     def get_importer_name(cls) -> str:
@@ -42,6 +45,7 @@ class AssetImporter(ABC):
         
         # Perform specific import logic via subclasses
         import_settings, dependencies = self.process_import(source_path, import_settings, dependencies)
+        stat = source_path.stat() if source_path.exists() else None
         
         return AssetMeta(
             uuid=asset_uuid,
@@ -50,6 +54,21 @@ class AssetImporter(ABC):
             source_path=source_path.as_posix(), # Normalizes paths
             import_settings=import_settings,
             dependencies=dependencies,
+            importer_version=self.IMPORTER_VERSION,
+            source_hash=_source_hash(source_path) if stat is not None else "",
+            source_size=int(stat.st_size) if stat is not None else 0,
+            source_modified_ns=int(stat.st_mtime_ns) if stat is not None else 0,
+        )
+
+    def needs_reimport(self, source_path: Path, meta: AssetMeta | None) -> bool:
+        if meta is None:
+            return True
+        stat = source_path.stat()
+        return (
+            meta.importer != self.get_importer_name()
+            or meta.importer_version != self.IMPORTER_VERSION
+            or meta.source_size != int(stat.st_size)
+            or meta.source_modified_ns != int(stat.st_mtime_ns)
         )
 
     def process_import(self, source_path: Path, import_settings: dict, dependencies: list) -> tuple[dict, list]:
@@ -143,3 +162,11 @@ class ImporterRegistry:
             path = Path(path)
         ext = path.suffix.lower()
         return self._importers_by_ext.get(ext, self._fallback_importer)
+
+
+def _source_hash(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for block in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()

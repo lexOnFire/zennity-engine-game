@@ -32,6 +32,11 @@ class AssetMeta:
     source_path: str
     import_settings: dict[str, Any] = field(default_factory=dict)
     dependencies: list[str] = field(default_factory=list)
+    schema_version: int = 1
+    importer_version: int = 1
+    source_hash: str = ""
+    source_size: int = 0
+    source_modified_ns: int = 0
 
     @property
     def guid(self) -> str:
@@ -46,6 +51,11 @@ class AssetMeta:
             "source_path": self.source_path,
             "import_settings": self.import_settings,
             "dependencies": self.dependencies,
+            "schema_version": self.schema_version,
+            "importer_version": self.importer_version,
+            "source_hash": self.source_hash,
+            "source_size": self.source_size,
+            "source_modified_ns": self.source_modified_ns,
         }
 
     @classmethod
@@ -57,4 +67,9 @@ class AssetMeta:
             source_path=str(data.get("source_path", "")),
             import_settings=dict(data.get("import_settings", {}) or {}),
             dependencies=list(data.get("dependencies", []) or []),
+            schema_version=int(data.get("schema_version", 1)),
+            importer_version=int(data.get("importer_version", 0)),
+            source_hash=str(data.get("source_hash", "")),
+            source_size=int(data.get("source_size", 0)),
+            source_modified_ns=int(data.get("source_modified_ns", 0)),
         )

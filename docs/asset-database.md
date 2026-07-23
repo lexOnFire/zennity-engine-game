@@ -52,6 +52,23 @@ The `.meta` JSON stores the stable identity and import settings:
 ```
 
 The UUID stays stable across refreshes as long as the `.meta` file exists.
+Metadata also stores the importer/schema versions and a SHA-256 source
+fingerprint. An unchanged size and modification timestamp lets a scan reuse the
+existing import immediately. Changed sources are reimported while preserving
+their UUID and custom import settings.
+
+## Derived Cache
+
+`Library/AssetCache/index.json` contains the rebuildable project index used by
+the editor. `Library/` is local, ignored by Git, and can be deleted safely. A
+new scan reconstructs a missing, outdated, or corrupt index from `Assets/` and
+the `.meta` sidecars.
+
+## Reimport
+
+`AssetDatabase.reimport_asset(path)` forces the matching importer to run while
+preserving the asset UUID. The Project Browser exposes the same operation
+through `ProjectBrowserService.reimport_asset(path)`.
 
 ## Scene References
 

@@ -5,6 +5,7 @@ import uuid
 from pathlib import Path
 from typing import Iterable
 
+from engine.assets.asset_cache import AssetCache
 from engine.assets.asset_importer import ImporterRegistry
 from engine.assets.asset_metadata import AssetInfo, AssetMeta
 from engine.assets.asset_path import AssetPathResolver
@@ -30,10 +31,14 @@ class AssetDatabase:
         self.path_resolver = AssetPathResolver(self.project_root)
         self.assets_root = (self.project_root / assets_dir).resolve()
         self.importer_registry = ImporterRegistry()
+        self.cache = AssetCache(self.project_root)
         self._assets_by_uuid: dict[str, AssetInfo] = {}
         self._assets_by_path: dict[str, AssetInfo] = {}
         self.path_conflicts: list[tuple[str, Path, Path]] = []
         self.guid_conflicts: list[tuple[str, Path, Path]] = []
+        self.last_scan_imported = 0
+        self.last_scan_reused = 0
+        self._metadata_by_uuid: dict[str, AssetMeta] = {}
 
     def scan(self) -> list[AssetInfo]:
         self.ensure_project_folders()
@@ -41,10 +46,14 @@ class AssetDatabase:
         self._assets_by_path.clear()
         self.path_conflicts.clear()
         self.guid_conflicts.clear()
+        self._metadata_by_uuid.clear()
+        self.last_scan_imported = 0
+        self.last_scan_reused = 0
 
         for path in self._iter_asset_files():
-            info = self.import_asset(path)
+            self.import_asset(path)
 
+        self.write_cache()
         return self.list_assets()
 
     def ensure_project_folders(self) -> None:
@@ -65,6 +74,9 @@ class AssetDatabase:
     def get_asset_by_path(self, path: str | Path) -> AssetInfo | None:
         return self._assets_by_path.get(self.path_resolver.lookup_key(path))
 
+    def get_metadata(self, asset_guid: str) -> AssetMeta | None:
+        return self._metadata_by_uuid.get(str(asset_guid))
+
     def list_assets(self) -> list[AssetInfo]:
         return sorted(self._assets_by_uuid.values(), key=lambda asset: asset.path)
 
@@ -72,11 +84,11 @@ class AssetDatabase:
         normalized = AssetType(str(asset_type))
         return [asset for asset in self.list_assets() if asset.type == normalized]
 
-    def import_asset(self, path: str | Path) -> AssetInfo:
+    def import_asset(self, path: str | Path, *, force: bool = False) -> AssetInfo:
         absolute_path = self._absolute_asset_path(path)
         if absolute_path.suffix.lower() == ".meta":
             raise ValueError(".meta files are metadata, not primary assets")
-        meta = self.ensure_meta(absolute_path)
+        meta = self.ensure_meta(absolute_path, force=force)
         stat = absolute_path.stat()
         rel_path = self._relative_asset_path(absolute_path)
         info = AssetInfo(
@@ -108,7 +120,23 @@ class AssetDatabase:
             )
         self._assets_by_uuid[info.uuid] = info
         self._assets_by_path[self.path_resolver.lookup_key(info.path)] = info
+        self._metadata_by_uuid[info.uuid] = meta
         return info
+
+    def reimport_asset(self, path: str | Path) -> AssetInfo:
+        """Force an importer run while preserving the asset GUID and settings."""
+        self.last_scan_imported = 0
+        self.last_scan_reused = 0
+        info = self.import_asset(path, force=True)
+        self.write_cache()
+        return info
+
+    def write_cache(self) -> None:
+        self.cache.write(
+            (info, meta)
+            for info in self.list_assets()
+            if (meta := self.get_metadata(info.guid)) is not None
+        )
 
     def remove_missing_assets(self) -> int:
         removed = 0
@@ -122,7 +150,7 @@ class AssetDatabase:
                     removed += 1
         return removed
 
-    def ensure_meta(self, asset_path: str | Path) -> AssetMeta:
+    def ensure_meta(self, asset_path: str | Path, *, force: bool = False) -> AssetMeta:
         absolute_path = self._absolute_asset_path(asset_path)
         metadata_path = self._metadata_path(absolute_path)
         source_path = self._relative_asset_path(absolute_path)
@@ -137,9 +165,15 @@ class AssetDatabase:
             except Exception:
                 pass
 
+        if not force and not importer.needs_reimport(absolute_path, existing_meta):
+            self.last_scan_reused += 1
+            assert existing_meta is not None
+            existing_meta.source_path = source_path
+            return existing_meta
+
         meta = importer.import_asset(absolute_path, existing_meta)
         meta.source_path = source_path
-        
+        self.last_scan_imported += 1
         self._write_meta(metadata_path, meta)
         return meta
 
