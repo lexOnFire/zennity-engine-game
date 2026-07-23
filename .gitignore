@@ -55,5 +55,7 @@ read_check_runs*.py
 test_mock.py
 test_proxy.py
 test_sub.py
+scratch/
+zennity-engine-game/
 .coverage
 htmlcov/

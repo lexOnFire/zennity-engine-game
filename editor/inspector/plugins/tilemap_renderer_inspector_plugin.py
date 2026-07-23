@@ -20,11 +20,11 @@ class TilemapRendererInspectorPlugin(InspectorPlugin):
         refresh: callable | None = None,
     ) -> QWidget:
         widget, layout = _section("Tilemap Renderer")
-        
+
         info = QLabel("Requires a Tilemap component on the same GameObject.")
         info.setWordWrap(True)
         info.setStyleSheet("color: gray;")
         layout.addWidget(info)
-        
+
         widget.setProperty("component_type", self.component_type)
         return widget

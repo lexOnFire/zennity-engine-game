@@ -20,7 +20,7 @@ class TilemapInspectorPlugin(InspectorPlugin):
         refresh: callable | None = None,
     ) -> QWidget:
         widget, layout = _section("Tilemap")
-        
+
         # Width
         width_spin = QSpinBox()
         width_spin.setRange(1, 1000)
@@ -29,7 +29,7 @@ class TilemapInspectorPlugin(InspectorPlugin):
             lambda: self.set_property(component, "width", width_spin.value(), command_manager, refresh)
         )
         layout.addWidget(_property_row("Width", width_spin))
-        
+
         # Height
         height_spin = QSpinBox()
         height_spin.setRange(1, 1000)
@@ -38,7 +38,7 @@ class TilemapInspectorPlugin(InspectorPlugin):
             lambda: self.set_property(component, "height", height_spin.value(), command_manager, refresh)
         )
         layout.addWidget(_property_row("Height", height_spin))
-        
+
         # Tile Size
         size_spin = QSpinBox()
         size_spin.setRange(1, 256)
@@ -51,6 +51,6 @@ class TilemapInspectorPlugin(InspectorPlugin):
         # Layers info
         layers_count = len(getattr(component, "layers", []))
         layout.addWidget(_property_row("Layers", QLabel(str(layers_count))))
-        
+
         widget.setProperty("component_type", self.component_type)
         return widget

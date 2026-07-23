@@ -3,9 +3,9 @@ name: Python Tests
 on:
   workflow_dispatch:
   push:
-    branches: [main, zen/fix-phase1-tests]
+    branches: [main, release/v1.0.0-rc2, "release/**", "refactor/pre-v1-architecture-baseline"]
   pull_request:
-    branches: [main, release/v1.0.0-rc2]
+    branches: [main, release/v1.0.0-rc2, "release/**"]
 
 concurrency:
   group: python-tests-${{ github.workflow }}-${{ github.ref }}
@@ -151,3 +151,23 @@ jobs:
           python -m coverage report
           --include="engine/scene/scene_document.py,engine/runtime/lifecycle_scheduler.py,engine/runtime/runtime_world.py,engine/logic/runtime/*.py,engine/logic/runtime/nodes/*.py,editor/runtime/isolated_play_mode_controller.py"
           --fail-under=70
+
+  package-smoke:
+    name: Build and install wheel / Python 3.12
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Build distributions
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+      - name: Install wheel without source tree
+        run: |
+          python -m venv package-venv
+          package-venv/bin/python -m pip install dist/*.whl
+          cd /tmp
+          "$GITHUB_WORKSPACE/package-venv/bin/python" -c "import engine, editor; from editor.ui.icons import icon_path; assert icon_path('play').is_file()"

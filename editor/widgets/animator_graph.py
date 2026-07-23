@@ -241,5 +241,3 @@ class TransitionEditorDialog(QDialog):
             "interruptible": self.interruptible_check.isChecked(),
         })
         self.accept()
-
-

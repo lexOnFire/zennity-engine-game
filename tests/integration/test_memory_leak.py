@@ -65,12 +65,12 @@ def test_editor_play_stop_cycle_memory_stability(qapp: QApplication) -> None:
     growth = len(final_objects) - len(initial_objects)
     
     # Se houver crescimento excessivo, imprime a diferença por tipo de objeto
-    if growth >= 6000:
+    if growth >= 1200:
         diff = {k: final_types[k] - initial_types[k] for k in final_types if final_types[k] > initial_types[k]}
         sorted_diff = sorted(diff.items(), key=lambda x: x[1], reverse=True)
         print("\nLEAKED TYPES:", sorted_diff[:15])
         
-    assert growth < 6000, f"Potencial vazamento de memória detectado: +{growth} objetos retidos."
+    assert growth < 1200, f"Potencial vazamento de memória detectado: +{growth} objetos retidos."
 
     editor.close()
     editor.deleteLater()

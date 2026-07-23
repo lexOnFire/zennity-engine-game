@@ -89,7 +89,7 @@ def _section(title: str) -> tuple[QWidget, QVBoxLayout]:
             body.setVisible(True)
             foldout.setText("▾")
             COLLAPSED_STATES[title] = False
-    
+
     header_host.mousePressEvent = toggle_collapse
 
     return widget, body_layout
@@ -178,5 +178,3 @@ def _safe_script_name(name: str) -> str:
 def _safe_class_name(name: str) -> str:
     parts = [part for part in _safe_script_name(name).split("_") if part]
     return "".join(part.capitalize() for part in parts) + "Behaviour"
-
-

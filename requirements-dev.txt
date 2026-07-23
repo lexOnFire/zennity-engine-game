@@ -5,6 +5,7 @@
 pytest>=7.4
 pytest-cov>=4.1
 pytest-env>=1.1          # suporte a [pytest] env = ... no pytest.ini
+build>=1.2
 tomli>=2.0; python_version < "3.11"
 
 # Lint e formatacao

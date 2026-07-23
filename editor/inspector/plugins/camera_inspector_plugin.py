@@ -63,9 +63,9 @@ class CameraInspectorPlugin(InspectorPlugin):
         color_layout = QHBoxLayout(color_row)
         color_layout.setContentsMargins(0, 0, 0, 0)
         color_layout.setSpacing(4)
-        
+
         current_color = getattr(component, "clear_color", (30, 30, 30))
-        
+
         sb_r = QSpinBox()
         sb_r.setRange(0, 255)
         sb_r.setValue(current_color[0])
@@ -75,15 +75,15 @@ class CameraInspectorPlugin(InspectorPlugin):
         sb_b = QSpinBox()
         sb_b.setRange(0, 255)
         sb_b.setValue(current_color[2])
-        
+
         def update_color():
             new_color = (sb_r.value(), sb_g.value(), sb_b.value())
             self.set_property(component, "clear_color", new_color, command_manager, refresh)
-            
+
         sb_r.valueChanged.connect(lambda _: update_color())
         sb_g.valueChanged.connect(lambda _: update_color())
         sb_b.valueChanged.connect(lambda _: update_color())
-        
+
         color_layout.addWidget(QLabel("R"))
         color_layout.addWidget(sb_r, 1)
         color_layout.addWidget(QLabel("G"))
@@ -97,42 +97,42 @@ class CameraInspectorPlugin(InspectorPlugin):
         rect_layout = QHBoxLayout(rect_row)
         rect_layout.setContentsMargins(0, 0, 0, 0)
         rect_layout.setSpacing(4)
-        
+
         current_rect = getattr(component, "viewport_rect", (0.0, 0.0, 1.0, 1.0))
-        
+
         sb_x = QDoubleSpinBox()
         sb_x.setButtonSymbols(QDoubleSpinBox.NoButtons)
         sb_x.setRange(0.0, 1.0)
         sb_x.setSingleStep(0.1)
         sb_x.setValue(current_rect[0])
-        
+
         sb_y = QDoubleSpinBox()
         sb_y.setButtonSymbols(QDoubleSpinBox.NoButtons)
         sb_y.setRange(0.0, 1.0)
         sb_y.setSingleStep(0.1)
         sb_y.setValue(current_rect[1])
-        
+
         sb_w = QDoubleSpinBox()
         sb_w.setButtonSymbols(QDoubleSpinBox.NoButtons)
         sb_w.setRange(0.0, 1.0)
         sb_w.setSingleStep(0.1)
         sb_w.setValue(current_rect[2])
-        
+
         sb_h = QDoubleSpinBox()
         sb_h.setButtonSymbols(QDoubleSpinBox.NoButtons)
         sb_h.setRange(0.0, 1.0)
         sb_h.setSingleStep(0.1)
         sb_h.setValue(current_rect[3])
-        
+
         def update_rect():
             new_rect = (sb_x.value(), sb_y.value(), sb_w.value(), sb_h.value())
             self.set_property(component, "viewport_rect", new_rect, command_manager, refresh)
-            
+
         sb_x.valueChanged.connect(lambda _: update_rect())
         sb_y.valueChanged.connect(lambda _: update_rect())
         sb_w.valueChanged.connect(lambda _: update_rect())
         sb_h.valueChanged.connect(lambda _: update_rect())
-        
+
         rect_layout.addWidget(QLabel("X"))
         rect_layout.addWidget(sb_x, 1)
         rect_layout.addWidget(QLabel("Y"))

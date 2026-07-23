@@ -170,4 +170,11 @@ class AssetDatabase:
         return self.path_resolver.canonicalize(self._absolute_asset_path(path))
 
     def _write_meta(self, path: Path, meta: AssetMeta) -> None:
-        path.write_text(json.dumps(meta.to_dict(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        serialized = json.dumps(meta.to_dict(), indent=2, ensure_ascii=False) + "\n"
+        if path.exists():
+            try:
+                if path.read_text(encoding="utf-8") == serialized:
+                    return
+            except (OSError, UnicodeError):
+                pass
+        path.write_text(serialized, encoding="utf-8", newline="\n")

@@ -36,6 +36,7 @@ from editor.widgets.viewport_tab_bar import ViewportContainer
 
 # Diálogos
 from editor.windows.main_window_menus import MainWindowMenusMixin
+from editor.windows.preferences_dialog import PreferencesDialog
 
 
 class MainWindow(MainWindowMenusMixin, QMainWindow):

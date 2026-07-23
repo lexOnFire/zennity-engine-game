@@ -3,10 +3,10 @@ import json
 from copy import deepcopy
 from typing import Any
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QListWidgetItem, QMessageBox
+from PySide6.QtWidgets import QListWidgetItem, QMessageBox, QTreeWidgetItem
 from editor.widgets.logic_graph.items import LogicNodeItem
 from engine.logic.blackboard import coerce_variable_value, save_blackboard_asset
-from engine.logic.graph_asset import create_logic_node
+from engine.logic.graph_asset import create_logic_node, load_logic_graph
 
 class LogicGraphBlackboardMixin:
     def _add_watch(self) -> None:
@@ -151,4 +151,3 @@ class LogicGraphBlackboardMixin:
         target = directory / "ProjectBlackboard.zblackboard"
         if variables or target.exists():
             save_blackboard_asset(target, {"variables": variables})
-

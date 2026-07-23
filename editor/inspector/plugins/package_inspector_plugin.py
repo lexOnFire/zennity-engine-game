@@ -20,7 +20,7 @@ class PackageInspectorPlugin(InspectorPlugin):
         refresh: callable | None = None,
     ) -> QWidget:
         widget, layout = _section("Package Manager")
-        
+
         try:
             packages = component.registry.list_packages()
             if not packages:
@@ -35,8 +35,6 @@ class PackageInspectorPlugin(InspectorPlugin):
                     layout.addWidget(QLabel("---"))
         except Exception as e:
             layout.addWidget(QLabel(f"Error reading packages: {e}"))
-            
+
         widget.setProperty("component_type", self.component_type)
         return widget
-
-

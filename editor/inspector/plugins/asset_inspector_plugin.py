@@ -20,12 +20,12 @@ class AssetInspectorPlugin(InspectorPlugin):
         refresh: callable | None = None,
     ) -> QWidget:
         widget, layout = _section("Asset Import Settings")
-        
+
         layout.addWidget(_property_row("UUID", QLabel(getattr(component, "uuid", ""))))
         layout.addWidget(_property_row("Name", QLabel(getattr(component, "name", ""))))
         layout.addWidget(_property_row("Path", QLabel(getattr(component, "path", ""))))
         layout.addWidget(_property_row("Type", QLabel(str(getattr(component, "type", "")))))
-        
+
         # Read the meta file if possible
         try:
             import json
@@ -34,13 +34,13 @@ class AssetInspectorPlugin(InspectorPlugin):
                 data = json.loads(meta_path.read_text(encoding="utf-8"))
                 importer = data.get("importer", "unknown")
                 layout.addWidget(_property_row("Importer", QLabel(importer)))
-                
+
                 settings = data.get("import_settings", {})
                 if settings:
                     layout.addWidget(QLabel("Settings:"))
                     for k, v in settings.items():
                         layout.addWidget(_property_row(f"  {k}", QLabel(str(v))))
-                        
+
                 deps = data.get("dependencies", [])
                 if deps:
                     layout.addWidget(QLabel("Dependencies:"))
@@ -48,6 +48,6 @@ class AssetInspectorPlugin(InspectorPlugin):
                         layout.addWidget(QLabel(f"  - {d}"))
         except Exception:
             layout.addWidget(QLabel("Error reading .meta file."))
-            
+
         widget.setProperty("component_type", self.component_type)
         return widget
