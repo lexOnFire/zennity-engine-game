@@ -12,7 +12,7 @@ from typing import Any
 
 from PySide6.QtCore import QEvent, QMimeData, QObject, Qt
 from PySide6.QtGui import QDrag
-from PySide6.QtWidgets import QTreeWidget, QWidget
+from PySide6.QtWidgets import QAbstractItemView, QTreeWidget, QTreeWidgetItem, QWidget
 
 _ASSET_MIME = "application/x-zennity-asset-path"
 _IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"}

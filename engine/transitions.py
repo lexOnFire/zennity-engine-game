@@ -22,6 +22,7 @@ Easing disponível:
   linear, ease_in, ease_out, ease_in_out
 """
 
+import math
 import pygame
 from enum import Enum, auto
 from typing import Optional, Tuple, Callable

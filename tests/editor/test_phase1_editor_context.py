@@ -71,6 +71,7 @@ class _MousePress:
 
 
 def _scene_registered_colliders(scene: object) -> list[object]:
+    from engine.physics.collider import BoxCollider, CircleCollider
     colliders = [*BoxCollider._registry, *CircleCollider._registry]
     return [
         collider
@@ -80,6 +81,7 @@ def _scene_registered_colliders(scene: object) -> list[object]:
 
 
 def _scene_attached_colliders(scene: object) -> list[object]:
+    from engine.physics.collider import BoxCollider, CircleCollider
     attached: list[object] = []
     for obj in getattr(scene, "game_objects", []):
         attached.extend(obj.get_components(BoxCollider))

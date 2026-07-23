@@ -13,7 +13,7 @@ Estratégia de isolamento:
 from __future__ import annotations
 
 import pygame
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 import pytest
 
 TEXT_W, TEXT_H = 90, 24

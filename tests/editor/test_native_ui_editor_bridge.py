@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
+import pygame
 
 from editor.runtime.native_ui import NativeUIRenderer, scene_item_to_ui, ui_to_scene_item
 

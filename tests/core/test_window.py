@@ -7,7 +7,7 @@ Todos os testes mockam pygame.display para rodar headless.
 from __future__ import annotations
 
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, PropertyMock
 import pygame
 
 

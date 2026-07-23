@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Type, TypeVar, TYPE_CHECKING
 import pygame
 
 if TYPE_CHECKING:
-    from .component import Component
+    from .component import Component, Transform
     from .core import Scene
 
 T = TypeVar('T', bound='Component')
@@ -166,6 +166,7 @@ class GameObject:
         O Transform já é criado pelo __init__ e atualizado via deserialize().
         """
         from engine.core.component_registry import component_registry
+        from engine.core.component import Transform
 
         go = cls(name=data.get("name", "GameObject"), tag=data.get("tag", "Untagged"))
         go.active = bool(data.get("active", True))

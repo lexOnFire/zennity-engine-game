@@ -1,14 +1,17 @@
+import sys
 import os
 from PySide6.QtWidgets import (
-    QMainWindow, QMessageBox,
-    QFileDialog, QDialog
+    QMainWindow, QWidget, QMenuBar, QMenu, QToolBar, QStatusBar,
+    QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox,
+    QDockWidget, QFileDialog, QComboBox, QDialog
 )
-from PySide6.QtGui import QCloseEvent
+from PySide6.QtGui import QAction, QKeySequence, QIcon, QCloseEvent
 from PySide6.QtCore import Qt, Slot, QSettings
 
 # Barramento de Eventos do Editor
 from editor.core.event_bus import (
-    EventBus, EVENT_PLAY_STATE_CHANGED, EVENT_HIERARCHY_UPDATED, EVENT_ASSET_SELECTED, EVENT_PROPERTY_CHANGED
+    EventBus, EVENT_PLAY_STATE_CHANGED, EVENT_SELECTION_CHANGED,
+    EVENT_HIERARCHY_UPDATED, EVENT_ASSET_SELECTED, EVENT_PROPERTY_CHANGED
 )
 
 # Modelos e ViewModels MVVM

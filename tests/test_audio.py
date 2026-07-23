@@ -15,7 +15,7 @@ import sys
 import pygame
 import pytest
 from types import ModuleType
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 # Salva o mixer real original antes de stubar
 orig_mixer = getattr(pygame, "mixer", None)

@@ -1,10 +1,11 @@
 import pygame
 import numpy as np
-from typing import Tuple, Optional
+from typing import Tuple, List, Optional
 from ..component import Component
 from ..assets import Mesh
 from .math3d import (
-    rotation_matrix, projection_matrix, view_matrix, project_vertices
+    translation_matrix, rotation_matrix, scale_matrix,
+    projection_matrix, view_matrix, project_vertices
 )
 
 

@@ -1,12 +1,15 @@
 
 from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
-    QCheckBox, QComboBox, QDoubleSpinBox,
-    QFormLayout, QFrame, QHBoxLayout, QLabel, QLineEdit, QPushButton, QScrollArea, QSlider, QSizePolicy,
-    QSplitter, QTabWidget, QToolButton, QTreeWidget,
-    QVBoxLayout, QWidget
+    QApplication, QCheckBox, QComboBox, QDockWidget, QDoubleSpinBox,
+    QFormLayout, QFrame, QHBoxLayout, QLabel, QLineEdit, QMainWindow,
+    QPlainTextEdit, QPushButton, QScrollArea, QSlider, QSizePolicy,
+    QSplitter, QTabWidget, QToolBar, QToolButton, QTreeWidget,
+    QTreeWidgetItem, QVBoxLayout, QWidget
 )
-from editor.ui.icons import editor_icon
+from editor.ui.icons import TOOLBAR_ICONS, component_title, editor_icon
+from editor.ui.empty_state import EmptyStateWidget
 from editor.widgets.logic_graph_editor import LogicGraphEditor
 from editor.ui.detached_workspace import DetachedWorkspaceWindow
 

@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import ast
+import math
+import re
 from copy import deepcopy
 from typing import Any, Callable, Iterator, Mapping
 
@@ -9,6 +12,7 @@ from .registry import registry
 from .output_evaluator import evaluate_output
 from .debug import LogicGraphDebugMixin
 from .motion import LogicGraphMotionMixin
+from . import nodes
 
 try:
     from ..graph_asset import normalize_logic_graph

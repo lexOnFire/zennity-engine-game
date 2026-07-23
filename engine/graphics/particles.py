@@ -9,7 +9,7 @@ import math
 import random
 import pygame
 import numpy as np
-from typing import List, Tuple
+from typing import List, Tuple, Optional, Any
 from engine.component import Component
 from engine.graphics.camera2d import Camera2D
 

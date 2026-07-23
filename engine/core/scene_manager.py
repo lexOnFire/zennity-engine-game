@@ -27,6 +27,7 @@ Uso:
 """
 from __future__ import annotations
 
+import traceback
 from typing import Callable, List, Optional
 
 import pygame

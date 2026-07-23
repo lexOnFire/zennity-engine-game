@@ -6,9 +6,11 @@ relevante (mover, escalar, girar, criar, deletar, clonar, alterar cor, etc.).
 Usa uma deque com limite de tamanho para manter a memória controlada.
 """
 from __future__ import annotations
+import copy
 from collections import deque
-from typing import Any, Dict, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
+import numpy as np
 
 if TYPE_CHECKING:
     from engine.game_object import GameObject
@@ -116,6 +118,8 @@ class History:
     # ------------------------------------------------------------------
     def _restore(self, scene: Any, snapshot: Dict) -> None:
         """Reconstrói a cena a partir de um snapshot."""
+        from engine.game_object import GameObject
+        from engine.graphics.renderer3d import MeshRenderer3D
 
         # Remove objetos atuais
         for obj in list(scene.editable_objects):

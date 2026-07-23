@@ -17,6 +17,7 @@ import sys
 from types import ModuleType
 from unittest.mock import MagicMock
 
+import pytest
 
 # ── stub pygame (Surface + Event para type hints) ───────────────────────
 if "pygame" not in sys.modules:

@@ -53,7 +53,7 @@ from .layout import (
     GIZMO_SECTION_Y, GIZMO_ROW_Y,
     SNAP_Y, TEMPLATES_Y,
     TREE_Y, TREE_ROW_H,
-    INSPECTOR_W,
+    INSPECTOR_PAD, INSPECTOR_W,
     INSP_HEADER_Y, INSP_PHYSICS_Y, INSP_SCRIPT_Y,
     INSP_COLOR_Y, INSP_CLONE_Y, INSP_HIER_Y, INSP_TAG_Y,
     INSP_TRANSFORM_Y,
@@ -824,6 +824,7 @@ class EditorScene(Scene):
 
     # -----------------------------------------------------------------------
     def _draw_viewport_badge(self, screen, x, y, text, color):
+        from .gui import Badge
         bg = T.alpha_blend(color, 0.15, T.BG)
         Badge(x, y, text, color, bg).draw(screen, self.font_section)
 
@@ -1054,6 +1055,7 @@ class EditorScene(Scene):
 
         # Modo da câmera (Badge)
         mode_name = CAMERA_MODES[self.camera_mode_index]
+        from .gui import Badge
         Badge(lay.play_button_x + 96, 4, f"Câmera: {mode_name}", T.TEXT_PRIMARY, T.SURFACE_2).draw(screen, self.font_section)
 
         # Dropdowns
@@ -1138,6 +1140,7 @@ class EditorScene(Scene):
         # Script
         SectionHeader(rx, script_y, INSPECTOR_W, "Script").draw(screen, self.font_section)
         cur_script = getattr(sel, "_script_name", "Nenhum")
+        from .gui import Badge
         Badge(rx + 32, script_y + 2, cur_script, T.ACCENT, T.ACCENT_BG).draw(screen, self.font_body)
         for btn in [self.btn_prev_script, self.btn_next_script,
                     self.btn_new_script, self.btn_edit_script,

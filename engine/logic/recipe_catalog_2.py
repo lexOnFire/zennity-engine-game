@@ -1,3 +1,4 @@
+from typing import Any
 
 LOGIC_RECIPES_PART_2 = (
     {

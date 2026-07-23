@@ -15,7 +15,9 @@ Estratégia de isolamento:
 """
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+import sys
+from types import ModuleType
+from unittest.mock import MagicMock, patch, call
 
 import pytest
 

@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (
-    QDialog, QWidget, QVBoxLayout, QFormLayout,
-    QCheckBox, QSpinBox, QLabel, QDialogButtonBox
+    QDialog, QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
+    QCheckBox, QSpinBox, QPushButton, QLabel, QDialogButtonBox
 )
 from PySide6.QtCore import Qt, QSettings
 

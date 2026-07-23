@@ -7,11 +7,18 @@ from __future__ import annotations
 
 import multiprocessing as mp
 import sys
+import json
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
 from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import (
+    QHBoxLayout, QFormLayout,
+    QCheckBox, QLabel, QComboBox, QLineEdit,
+    QMessageBox, QPushButton, QDoubleSpinBox,
+)
 from PySide6.QtWidgets import QTreeWidgetItem, QWidget
 
 from editor.interface_smoke_test import InterfaceSmokeTest
@@ -21,7 +28,15 @@ from editor.runtime.viewport_process_controller import ViewportProcessController
 from editor.editor_bootstrap_controller import EditorBootstrapController
 from editor.animation_workspace_operations import AnimationWorkspaceOperations
 from editor.widgets.component_picker import ComponentPickerDialog
+from editor.widgets.animation_picker import AnimationPickerDialog
 from editor.widgets.animator_controller_editor import AnimatorControllerEditorDialog
+from editor.ui.icons import component_title, editor_icon
+from engine.animation.clip_asset import (
+    animation_asset_from_clip,
+    animation_asset_to_clip,
+    default_animation_asset,
+    save_animation_asset,
+)
 
 
 class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):

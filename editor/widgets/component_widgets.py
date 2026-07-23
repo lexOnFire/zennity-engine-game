@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from typing import Optional
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QDoubleSpinBox, QFormLayout,
     QGridLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
-    QWidget,
+    QSizePolicy, QSpinBox, QWidget,
 )
 
+from engine.game_object import GameObject
 from engine.physics.rigidbody import RigidBody
 from engine.physics.collider import BoxCollider, CircleCollider
 from editor.viewmodels.scene_viewmodel import SceneViewModel

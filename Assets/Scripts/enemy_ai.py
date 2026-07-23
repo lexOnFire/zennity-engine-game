@@ -13,7 +13,7 @@ Uso:
 from __future__ import annotations
 
 import math
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from engine.core.component import Component
 from engine.component_registry import ComponentRegistry

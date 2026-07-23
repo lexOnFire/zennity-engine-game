@@ -6,6 +6,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QAbstractItemView, QLineEdit, QMenu, QTreeWidgetItem
 
 from editor.premium_editor import HierarchyPanel
+from editor.premium_panel_base import Panel
 
 
 class RealHierarchyPanel(HierarchyPanel):

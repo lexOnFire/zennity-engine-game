@@ -6,6 +6,7 @@ ao cursor e conversão de coordenadas (World <-> Viewport/Screen).
 """
 from __future__ import annotations
 
+import math
 import numpy as np
 
 

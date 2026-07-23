@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
     QTreeView, QListView, QLineEdit, QPushButton, QLabel
 )
 from PySide6.QtCore import Qt, QSize, Slot, QModelIndex, QDir
+from PySide6.QtGui import QIcon, QPainter, QColor, QPixmap
 from editor.models.asset_model import AssetModel
 from editor.viewmodels.asset_viewmodel import AssetViewModel
 

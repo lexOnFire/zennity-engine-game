@@ -7,12 +7,19 @@ presenter: ``window.transform_header``, ``window.sprite_renderer_header``,
 ``window.ui_component_header``.
 """
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
-    QCheckBox, QComboBox, QDockWidget, QDoubleSpinBox,
-    QFormLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QScrollArea, QToolButton, QVBoxLayout, QWidget
+    QApplication, QCheckBox, QComboBox, QDockWidget, QDoubleSpinBox,
+    QFormLayout, QFrame, QHBoxLayout, QLabel, QLineEdit, QMainWindow,
+    QPlainTextEdit, QPushButton, QScrollArea, QSlider, QSizePolicy,
+    QSplitter, QTabWidget, QToolBar, QToolButton, QTreeWidget,
+    QTreeWidgetItem, QVBoxLayout, QWidget
 )
-from editor.ui.icons import component_title
+from editor.ui.icons import TOOLBAR_ICONS, component_title, editor_icon
+from editor.ui.empty_state import EmptyStateWidget
+from editor.widgets.logic_graph_editor import LogicGraphEditor
+from editor.ui.detached_workspace import DetachedWorkspaceWindow
 
 def _build_inspector_shell(window):
     # Criação do Inspector como QDockWidget para habilitar desgrudar/flutuar e encolher/fechar

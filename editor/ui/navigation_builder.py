@@ -1,9 +1,17 @@
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
-    QPushButton, QSplitter, QTabWidget, QTreeWidget,
+    QApplication, QCheckBox, QComboBox, QDockWidget, QDoubleSpinBox,
+    QFormLayout, QFrame, QHBoxLayout, QLabel, QLineEdit, QMainWindow,
+    QPlainTextEdit, QPushButton, QScrollArea, QSlider, QSizePolicy,
+    QSplitter, QTabWidget, QToolBar, QToolButton, QTreeWidget,
     QTreeWidgetItem, QVBoxLayout, QWidget
 )
+from editor.ui.icons import TOOLBAR_ICONS, component_title, editor_icon
+from editor.ui.empty_state import EmptyStateWidget
+from editor.widgets.logic_graph_editor import LogicGraphEditor
+from editor.ui.detached_workspace import DetachedWorkspaceWindow
 
 def build_navigation_panels(window):
     hierarchy = QTreeWidget()

@@ -2,25 +2,75 @@
 
 from __future__ import annotations
 
+import json
+import unicodedata
 import uuid
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QPointF, Qt
+from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal
 from editor.widgets.logic_graph.items import (
-    LogicPortItem, LogicEdgeItem, LogicGroupItem,
-    LogicCommentItem, LogicNodeItem
+    LogicPortItem, LogicEdgeItem, LogicGroupResizeHandle, LogicGroupItem,
+    LogicCommentItem, LogicFlipControl, LogicCollapseControl, LogicResizeHandle,
+    LogicNodeItem
 )
-from PySide6.QtGui import QPainterPath, QPen
+from editor.widgets.logic_graph.views import LogicGraphView, LogicMiniMapView
+from PySide6.QtGui import QColor, QPainter, QPainterPath, QPainterPathStroker, QPen, QBrush
 from PySide6.QtWidgets import (
+    QCheckBox,
+    QFileDialog,
+    QFrame,
+    QComboBox,
+    QGraphicsEllipseItem,
+    QGraphicsItem,
     QGraphicsPathItem,
+    QGraphicsRectItem,
+    QGraphicsScene,
+    QGraphicsTextItem,
+    QGraphicsView,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QInputDialog,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QPushButton,
+    QSplitter,
+    QTabWidget,
+    QToolButton,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
 )
 
+from editor.ui.icons import editor_icon
+from editor.widgets.logic_asset_picker import LogicAssetPickerDialog
 from engine.logic.graph_asset import (
+    NODE_DEFINITIONS,
+    UNIQUE_EVENT_TYPES,
+    consolidate_logic_events,
+    create_logic_node,
+    default_logic_graph,
+    load_logic_graph,
+    merge_logic_fragment,
+    normalize_logic_graph,
     node_port_definitions,
+    save_logic_graph,
+    subgraph_interface,
+    validate_logic_graph,
 )
+from engine.logic.blackboard import coerce_variable_value, save_blackboard_asset
 
+from editor.widgets.logic_graph.definitions import (
+    CATEGORY_COLORS,
+    NODE_DESCRIPTIONS,
+    NODE_PROPERTY_LABELS,
+    PORT_COLORS,
+    PROPERTY_LABELS,
+)
 
 class LogicGraphCanvasMixin:
     def refresh_connections(self) -> None:

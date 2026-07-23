@@ -1,5 +1,7 @@
 from engine.physics.collider import BoxCollider
-from typing import Tuple, List
+from ..component import Component
+from typing import Tuple, List, Optional
+import numpy as np
 
 
 class BoxCollider2D(BoxCollider):

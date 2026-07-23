@@ -11,7 +11,7 @@ Uso:
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from engine.core.component import Component
 from engine.component_registry import ComponentRegistry

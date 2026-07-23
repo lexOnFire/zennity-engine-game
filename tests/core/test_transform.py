@@ -7,6 +7,7 @@ Este arquivo cobre o restante da API.
 """
 from __future__ import annotations
 import pytest
+import numpy as np
 
 
 # ===========================================================================
@@ -117,7 +118,7 @@ class TestTransformMethods:
 
     def test_world_position_no_parent(self):
         """Sem parent, world_position == position local."""
-        from engine.core import GameObject
+        from engine.core import Transform, GameObject
         go = GameObject("WP")
         go.transform.x = 5.0
         go.transform.y = 8.0
@@ -126,7 +127,7 @@ class TestTransformMethods:
         assert float(wp[1]) == pytest.approx(8.0)
 
     def test_get_world_position_alias(self):
-        from engine.core import GameObject
+        from engine.core import Transform, GameObject
         go = GameObject("Alias")
         go.transform.x = 3.0
         go.transform.y = 4.0
@@ -156,7 +157,7 @@ class TestTransformRepr:
         assert "detached" in repr(t)
 
     def test_repr_attached_label(self):
-        from engine.core import GameObject
+        from engine.core import Transform, GameObject
         go = GameObject("Hero")
         assert "Hero" in repr(go.transform)
 

@@ -11,8 +11,8 @@ import time
 from typing import Any
 
 import numpy as np
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPainter, QMouseEvent
+from PySide6.QtCore import QRectF, Qt, Signal
+from PySide6.QtGui import QColor, QPainter, QPen, QMouseEvent, QWheelEvent
 
 from editor.gizmos.qt_gizmo_overlay import QtMoveGizmoOverlay
 from editor.gizmos.rotate_gizmo import QtRotateGizmoOverlay
@@ -39,15 +39,20 @@ from editor.render.render_pipeline import (
     TransformGizmoPass,
 )
 from editor.render.sprite_overlay_renderer import SpriteDrawCommand, SpriteOverlayRenderer
-from editor.runtime.command_manager import CommandManager
+from editor.runtime.command_manager import CommandManager, FunctionCommand
 from editor.runtime.editor_state import EditorState
 from editor.runtime.tool_manager import EditorTool, ToolManager
+from editor.viewport.bounding_box import get_handle_positions, hit_test_handle
 from editor.widgets.viewport_widget import ViewportWidget
 from editor.widgets.viewport_gizmo_drag import ViewportGizmoDragMixin
 from editor.widgets.phase1_viewport_events import Phase1ViewportEventsMixin
 from editor.widgets.transform_interaction import (
     activate_gizmo_reference,
     draw_transform_overlay,
+    emit_transform_changed,
+    event_position,
+    move_axis_at,
+    request_editor_frame,
     sync_camera_to_engine,
 )
 

@@ -15,6 +15,9 @@ Estratégia de isolamento:
 """
 from __future__ import annotations
 
+import importlib
+import math
+import sys
 from unittest.mock import MagicMock
 
 import pygame

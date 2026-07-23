@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (
-    QDockWidget, QWidget, QVBoxLayout, QLineEdit,
-    QTreeWidget, QTreeWidgetItem
+    QDockWidget, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit,
+    QTreeWidget, QTreeWidgetItem, QLabel, QHeaderView
 )
 from typing import Optional
 from PySide6.QtCore import Qt, Slot

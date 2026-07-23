@@ -5,6 +5,7 @@ from __future__ import annotations
 import shutil
 import uuid
 from pathlib import Path
+from typing import Any
 
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QColorDialog, QFileDialog
