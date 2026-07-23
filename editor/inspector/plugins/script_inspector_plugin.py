@@ -95,18 +95,7 @@ class ScriptInspectorPlugin(InspectorPlugin):
             QDesktopServices.openUrl(QUrl.fromLocalFile(str(path.resolve())))
 
         def create_script() -> None:
-            owner = getattr(component, "game_object", None)
-            name = getattr(owner, "name", owner_name)
-            scripts_root = Path.cwd() / "Assets" / "Scripts"
-            scripts_root.mkdir(parents=True, exist_ok=True)
-            base = _safe_script_name(str(name))
-            path = scripts_root / f"{base}.py"
-            suffix = 1
-            while path.exists():
-                path = scripts_root / f"{base}_{suffix}.py"
-                suffix += 1
-            path.write_text(_script_template(_safe_class_name(str(name))), encoding="utf-8")
-            set_script_path(_project_relative(path))
+            _create_script(component, owner_name, set_script_path)
 
         field.activated.connect(on_script_activated)
         edit_button.clicked.connect(edit_current_script)
@@ -119,3 +108,18 @@ class ScriptInspectorPlugin(InspectorPlugin):
         widget.create_script = create_script
         widget.setProperty("component_type", self.component_type)
         return widget
+
+
+def _create_script(component: Any, owner_name: str, set_script_path: callable) -> None:
+    owner = getattr(component, "game_object", None)
+    name = getattr(owner, "name", owner_name)
+    scripts_root = Path.cwd() / "Assets" / "Scripts"
+    scripts_root.mkdir(parents=True, exist_ok=True)
+    base = _safe_script_name(str(name))
+    path = scripts_root / f"{base}.py"
+    suffix = 1
+    while path.exists():
+        path = scripts_root / f"{base}_{suffix}.py"
+        suffix += 1
+    path.write_text(_script_template(_safe_class_name(str(name))), encoding="utf-8")
+    set_script_path(_project_relative(path))

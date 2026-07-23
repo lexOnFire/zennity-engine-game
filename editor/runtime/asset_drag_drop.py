@@ -75,109 +75,92 @@ def _apply_asset_with_undo(editor: Any, asset_path: str, target_obj: Any) -> boo
     """Aplica asset ao target_obj registrando no CommandManager para undo."""
     if target_obj is None or not asset_path:
         return False
-
     commands = getattr(getattr(editor, "editor_context", None), "commands", None)
     if commands is None:
         return False
-
     path = asset_path.strip()
-
     if _is_image(path):
-        comp = None
-        comp_attr = None
-        for comp_type_name, attr in (
-            ("SpriteRenderer", "sprite_path"),
-            ("Image", "source"),
-        ):
-            try:
-                from engine import components as _comps
-                comp_type = getattr(_comps, comp_type_name, None)
-                if comp_type is None:
-                    continue
-                found = target_obj.get_component(comp_type)
-                if found is not None:
-                    comp = found
-                    comp_attr = attr
-                    break
-            except Exception:
-                continue
-
-        if comp is None or comp_attr is None:
-            return False
-
-        old_val = getattr(comp, comp_attr, None)
-        new_val = path
-
-        def do_apply():
-            setattr(comp, comp_attr, new_val)
-            _post_apply(editor, target_obj)
-
-        def do_undo():
-            setattr(comp, comp_attr, old_val)
-            _post_apply(editor, target_obj)
-
-        from editor.runtime.command_manager import FunctionCommand
-        commands.execute(FunctionCommand(
-            f"Aplicar sprite '{Path(path).name}' em {target_obj.name}",
-            do_apply,
-            do_undo,
-        ))
-        return True
-
+        return _apply_image_with_undo(editor, commands, path, target_obj)
     if _is_script(path):
-        comp = None
-        comp_attr = None
-        try:
-            from engine import components as _comps
-            script_type = getattr(_comps, "ScriptComponent", None) or getattr(_comps, "Script", None)
-            if script_type is not None:
-                found = target_obj.get_component(script_type)
-                if found is not None:
-                    comp = found
-                    comp_attr = "script_path"
-        except Exception:
-            pass
-
-        if comp is None:
-            if hasattr(target_obj, "script_path"):
-                old_val = target_obj.script_path
-
-                def do_apply_obj():
-                    target_obj.script_path = path
-                    _post_apply(editor, target_obj)
-
-                def do_undo_obj():
-                    target_obj.script_path = old_val
-                    _post_apply(editor, target_obj)
-
-                from editor.runtime.command_manager import FunctionCommand
-                commands.execute(FunctionCommand(
-                    f"Aplicar script '{Path(path).name}' em {target_obj.name}",
-                    do_apply_obj,
-                    do_undo_obj,
-                ))
-                return True
-            return False
-
-        old_val = getattr(comp, comp_attr, None)
-
-        def do_apply_comp():
-            setattr(comp, comp_attr, path)
-            _post_apply(editor, target_obj)
-
-        def do_undo_comp():
-            setattr(comp, comp_attr, old_val)
-            _post_apply(editor, target_obj)
-
-        from editor.runtime.command_manager import FunctionCommand
-        commands.execute(FunctionCommand(
-            f"Aplicar script '{Path(path).name}' em {target_obj.name}",
-            do_apply_comp,
-            do_undo_comp,
-        ))
-        return True
-
+        return _apply_script_with_undo(editor, commands, path, target_obj)
     return False
+
+
+def _apply_image_with_undo(
+    editor: Any, commands: Any, path: str, target_obj: Any,
+) -> bool:
+    component = None
+    component_attr = None
+    for component_type_name, attribute in (
+        ("SpriteRenderer", "sprite_path"),
+        ("Image", "source"),
+    ):
+        try:
+            from engine import components
+            component_type = getattr(components, component_type_name, None)
+            if component_type is None:
+                continue
+            found = target_obj.get_component(component_type)
+            if found is not None:
+                component = found
+                component_attr = attribute
+                break
+        except Exception:
+            continue
+    if component is None or component_attr is None:
+        return False
+    _execute_attribute_change(
+        editor, commands, target_obj, component, component_attr, path,
+        f"Aplicar sprite '{Path(path).name}' em {target_obj.name}",
+    )
+    return True
+
+
+def _apply_script_with_undo(
+    editor: Any, commands: Any, path: str, target_obj: Any,
+) -> bool:
+    target = target_obj
+    try:
+        from engine import components
+        script_type = (
+            getattr(components, "ScriptComponent", None)
+            or getattr(components, "Script", None)
+        )
+        component = target_obj.get_component(script_type) if script_type is not None else None
+        if component is not None:
+            target = component
+    except Exception:
+        pass
+    if not hasattr(target, "script_path"):
+        return False
+    _execute_attribute_change(
+        editor, commands, target_obj, target, "script_path", path,
+        f"Aplicar script '{Path(path).name}' em {target_obj.name}",
+    )
+    return True
+
+
+def _execute_attribute_change(
+    editor: Any,
+    commands: Any,
+    target_obj: Any,
+    target: Any,
+    attribute: str,
+    value: Any,
+    description: str,
+) -> None:
+    old_value = getattr(target, attribute, None)
+
+    def apply() -> None:
+        setattr(target, attribute, value)
+        _post_apply(editor, target_obj)
+
+    def undo() -> None:
+        setattr(target, attribute, old_value)
+        _post_apply(editor, target_obj)
+
+    from editor.runtime.command_manager import FunctionCommand
+    commands.execute(FunctionCommand(description, apply, undo))
 
 
 def _post_apply(editor: Any, obj: Any) -> None:

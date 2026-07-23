@@ -381,6 +381,12 @@ class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGrap
         self.input_ports: dict[str, LogicPortItem] = {}
         self.output_ports: dict[str, LogicPortItem] = {}
         self.port_labels: list[QGraphicsTextItem] = []
+        self._build_ports()
+        self.resize_handle = LogicResizeHandle(self)
+        self.refresh_text()
+        self._apply_geometry(notify=False)
+
+    def _build_ports(self) -> None:
         for index, (name, data_type) in enumerate(self.input_definitions):
             y = 43.0 + index * 22.0
             port = LogicPortItem(self, name, "input", data_type, y)
@@ -398,9 +404,6 @@ class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGrap
             label.setTextWidth(76.0)
             label.setPos(self.width - 84.0, y - 12.0)
             self.port_labels.append(label)
-        self.resize_handle = LogicResizeHandle(self)
-        self.refresh_text()
-        self._apply_geometry(notify=False)
 
     @property
     def node_id(self) -> str:

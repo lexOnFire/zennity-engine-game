@@ -48,3 +48,21 @@ def test_runtime_orchestration_methods_stay_below_one_hundred_lines() -> None:
         and node.end_lineno - node.lineno + 1 > 100
     }
     assert oversized == {}
+
+
+def test_graph_asset_boundaries_stay_below_one_hundred_lines() -> None:
+    entrypoint_limits = {
+        "graph_normalizer.py": ("normalize_logic_graph", 30),
+        "graph_validator.py": ("validate_logic_graph", 40),
+    }
+    for filename, (entrypoint, entrypoint_limit) in entrypoint_limits.items():
+        path = ROOT / "engine" / "logic" / filename
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        sizes = {
+            node.name: node.end_lineno - node.lineno + 1
+            for node in tree.body
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        }
+
+        assert sizes[entrypoint] <= entrypoint_limit
+        assert max(sizes.values()) < 100

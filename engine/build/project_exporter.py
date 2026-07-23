@@ -27,6 +27,7 @@ RUNTIME_ASSET_GROUPS = {
     "image": {".png", ".jpg", ".jpeg", ".bmp", ".webp"},
 }
 RUNTIME_ASSET_SUFFIXES = set().union(*RUNTIME_ASSET_GROUPS.values())
+EXPORT_IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo")
 
 
 def export_development_project(project_root: Path, scene_path: Path, output_dir: Path, project_name: str) -> Path:
@@ -143,7 +144,10 @@ def _write_development_project(project_root: Path, scene_path: Path, destination
     shutil.copy2(scene_path, data_dir / "main.zscene")
     assets_source = project_root / "Assets"
     if assets_source.is_dir():
-        shutil.copytree(assets_source, destination / "Assets", dirs_exist_ok=True)
+        shutil.copytree(
+            assets_source, destination / "Assets",
+            dirs_exist_ok=True, ignore=EXPORT_IGNORE,
+        )
     lowercase_assets = project_root / "assets"
     # Only copy the lowercase 'assets' folder when it is genuinely distinct from
     # 'Assets'. On case-insensitive filesystems (Windows / macOS) they resolve to
@@ -151,7 +155,10 @@ def _write_development_project(project_root: Path, scene_path: Path, destination
     if lowercase_assets.is_dir() and (
         not assets_source.is_dir() or lowercase_assets.resolve() != assets_source.resolve()
     ):
-        shutil.copytree(lowercase_assets, destination / "assets", dirs_exist_ok=True)
+        shutil.copytree(
+            lowercase_assets, destination / "assets",
+            dirs_exist_ok=True, ignore=EXPORT_IGNORE,
+        )
     runtime_sources = {
         project_root / "editor" / "isolated_viewport.py": runtime_dir / "viewport.py",
         project_root / "editor" / "runtime" / "native_ui.py": runtime_dir / "native_ui.py",
@@ -194,7 +201,11 @@ def _write_development_project(project_root: Path, scene_path: Path, destination
     for source, target in runtime_sources.items():
         shutil.copy2(source, target)
         
-    shutil.copytree(project_root / "engine" / "logic" / "runtime", runtime_dir / "logic_runtime")
+    shutil.copytree(
+        project_root / "engine" / "logic" / "runtime",
+        runtime_dir / "logic_runtime",
+        ignore=EXPORT_IGNORE,
+    )
     (runtime_dir / "__init__.py").write_text("", encoding="utf-8")
     (destination / "main.py").write_text(_launcher_source(), encoding="utf-8")
     (destination / "executar.bat").write_text("@echo off\npython main.py\npause\n", encoding="utf-8")

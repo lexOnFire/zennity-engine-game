@@ -21,4 +21,12 @@ def test_logic_graph_editor_has_no_large_methods() -> None:
 def test_logic_graph_ui_builder_is_a_separate_boundary() -> None:
     source = Path("editor/widgets/logic_graph/ui_builder.py")
     assert source.is_file()
-    assert len(source.read_text(encoding="utf-8").splitlines()) < 350
+    tree = ast.parse(source.read_text(encoding="utf-8"))
+    builders = {
+        node.name: node.end_lineno - node.lineno + 1
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef)
+    }
+
+    assert builders["build_logic_graph_ui"] <= 30
+    assert max(builders.values()) < 100

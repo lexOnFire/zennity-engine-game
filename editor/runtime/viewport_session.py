@@ -188,7 +188,9 @@ class ViewportSession(ViewportSessionLifecycleMixin):
         self.texture_cache = {}
         self.native_ui = NativeUIRenderer()
         self.command_queue = ViewportCommandQueue(self.commands)
-        
+        self._initialize_controllers()
+
+    def _initialize_controllers(self) -> None:
         self.edit_commands = ViewportEditCommandHandler(
             self.objects, lambda event: _send(self.events, event),
             self.world_to_screen, self.screen_to_world, lambda: self.view_transform()[2]

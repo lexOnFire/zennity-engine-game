@@ -136,80 +136,9 @@ def _build_transform_component(window, main_layout):
     # Conecta as ações
 
     window.inspector_fields: dict[str, QDoubleSpinBox] = {}
+    trans_body_layout.addWidget(_build_position_fields(window))
 
-    # 1. Posição
-    pos_widget = QWidget()
-    pos_layout = QHBoxLayout(pos_widget)
-    pos_layout.setContentsMargins(4, 0, 4, 0)
-    pos_lbl = QLabel("Posição")
-    pos_lbl.setMinimumWidth(50)
-    pos_layout.addWidget(pos_lbl)
-
-    window.inspector_fields["x"] = QDoubleSpinBox()
-    window.inspector_fields["x"].setObjectName("InspectorNumberField")
-    window.inspector_fields["x"].setButtonSymbols(QDoubleSpinBox.NoButtons)
-    window.inspector_fields["x"].setDecimals(2)
-    window.inspector_fields["x"].setRange(-100000.0, 100000.0)
-    window.inspector_fields["x"].setKeyboardTracking(False)
-    pos_layout.addWidget(QLabel("X"))
-    pos_layout.addWidget(window.inspector_fields["x"])
-
-    window.inspector_fields["y"] = QDoubleSpinBox()
-    window.inspector_fields["y"].setObjectName("InspectorNumberField")
-    window.inspector_fields["y"].setButtonSymbols(QDoubleSpinBox.NoButtons)
-    window.inspector_fields["y"].setDecimals(2)
-    window.inspector_fields["y"].setRange(-100000.0, 100000.0)
-    window.inspector_fields["y"].setKeyboardTracking(False)
-    pos_layout.addWidget(QLabel("Y"))
-    pos_layout.addWidget(window.inspector_fields["y"])
-
-    pos_z = QDoubleSpinBox()
-    pos_z.setObjectName("InspectorNumberField")
-    pos_z.setButtonSymbols(QDoubleSpinBox.NoButtons)
-    pos_z.setDecimals(2)
-    pos_z.setValue(0.00)
-    pos_z.setEnabled(False)
-    pos_layout.addWidget(QLabel("Z"))
-    pos_layout.addWidget(pos_z)
-
-    trans_body_layout.addWidget(pos_widget)
-
-    # 2. Rotação
-    rot_widget = QWidget()
-    rot_layout = QHBoxLayout(rot_widget)
-    rot_layout.setContentsMargins(4, 0, 4, 0)
-    rot_lbl = QLabel("Rotação")
-    rot_lbl.setMinimumWidth(50)
-    rot_layout.addWidget(rot_lbl)
-
-    rot_x = QDoubleSpinBox()
-    rot_x.setObjectName("InspectorNumberField")
-    rot_x.setButtonSymbols(QDoubleSpinBox.NoButtons)
-    rot_x.setDecimals(2)
-    rot_x.setValue(0.00)
-    rot_x.setEnabled(False)
-    rot_layout.addWidget(QLabel("X"))
-    rot_layout.addWidget(rot_x)
-
-    rot_y = QDoubleSpinBox()
-    rot_y.setObjectName("InspectorNumberField")
-    rot_y.setButtonSymbols(QDoubleSpinBox.NoButtons)
-    rot_y.setDecimals(2)
-    rot_y.setValue(0.00)
-    rot_y.setEnabled(False)
-    rot_layout.addWidget(QLabel("Y"))
-    rot_layout.addWidget(rot_y)
-
-    window.inspector_fields["rotation"] = QDoubleSpinBox()
-    window.inspector_fields["rotation"].setObjectName("InspectorNumberField")
-    window.inspector_fields["rotation"].setButtonSymbols(QDoubleSpinBox.NoButtons)
-    window.inspector_fields["rotation"].setDecimals(2)
-    window.inspector_fields["rotation"].setRange(-100000.0, 100000.0)
-    window.inspector_fields["rotation"].setKeyboardTracking(False)
-    rot_layout.addWidget(QLabel("Z"))
-    rot_layout.addWidget(window.inspector_fields["rotation"])
-
-    trans_body_layout.addWidget(rot_widget)
+    trans_body_layout.addWidget(_build_rotation_fields(window))
 
     # 3. Escala
     scale_widget = QWidget()
@@ -248,6 +177,62 @@ def _build_transform_component(window, main_layout):
 
     trans_body_layout.addWidget(scale_widget)
     main_layout.addWidget(window.transform_body)
+
+
+def _build_position_fields(window) -> QWidget:
+    widget = QWidget()
+    layout = QHBoxLayout(widget)
+    layout.setContentsMargins(4, 0, 4, 0)
+    label = QLabel("Posição")
+    label.setMinimumWidth(50)
+    layout.addWidget(label)
+    for axis in ("x", "y"):
+        field = QDoubleSpinBox()
+        field.setObjectName("InspectorNumberField")
+        field.setButtonSymbols(QDoubleSpinBox.NoButtons)
+        field.setDecimals(2)
+        field.setRange(-100000.0, 100000.0)
+        field.setKeyboardTracking(False)
+        window.inspector_fields[axis] = field
+        layout.addWidget(QLabel(axis.upper()))
+        layout.addWidget(field)
+    position_z = QDoubleSpinBox()
+    position_z.setObjectName("InspectorNumberField")
+    position_z.setButtonSymbols(QDoubleSpinBox.NoButtons)
+    position_z.setDecimals(2)
+    position_z.setValue(0.0)
+    position_z.setEnabled(False)
+    layout.addWidget(QLabel("Z"))
+    layout.addWidget(position_z)
+    return widget
+
+
+def _build_rotation_fields(window) -> QWidget:
+    widget = QWidget()
+    layout = QHBoxLayout(widget)
+    layout.setContentsMargins(4, 0, 4, 0)
+    label = QLabel("Rotação")
+    label.setMinimumWidth(50)
+    layout.addWidget(label)
+    for axis in ("X", "Y"):
+        field = QDoubleSpinBox()
+        field.setObjectName("InspectorNumberField")
+        field.setButtonSymbols(QDoubleSpinBox.NoButtons)
+        field.setDecimals(2)
+        field.setValue(0.0)
+        field.setEnabled(False)
+        layout.addWidget(QLabel(axis))
+        layout.addWidget(field)
+    rotation = QDoubleSpinBox()
+    rotation.setObjectName("InspectorNumberField")
+    rotation.setButtonSymbols(QDoubleSpinBox.NoButtons)
+    rotation.setDecimals(2)
+    rotation.setRange(-100000.0, 100000.0)
+    rotation.setKeyboardTracking(False)
+    window.inspector_fields["rotation"] = rotation
+    layout.addWidget(QLabel("Z"))
+    layout.addWidget(rotation)
+    return widget
 
 
 def _build_sprite_component(window, main_layout):

@@ -209,28 +209,13 @@ class RuntimeWorld:
         resolved_parameters = resolve_prefab_parameters(definitions, parameters)
         apply_exposed_properties(isolated_object, definitions, resolved_parameters)
         if not any(key in isolated_object for key in ("transform", "visual", "components")):
-            values = isolated_object
-            values.pop("id", None)
-            values.pop("uuid", None)
-            values["name"] = values.get("name") or payload.get("prefab_name", "Prefab")
-            if x is not None:
-                values["x"] = x
-            if y is not None:
-                values["y"] = y
-            if rotation is not None:
-                values["rotation"] = rotation
-            if width is not None:
-                values["w"] = width
-                values["width"] = width
-            if height is not None:
-                values["h"] = height
-                values["height"] = height
-            values["prefab_parameters"] = resolved_parameters
-            values["prefab_exposed"] = definitions
-            values["prefab_base"] = payload.get("base_prefab", "")
-            self._apply_prefab_component_policy(values, include_camera, include_audio, include_logic)
-            values["prefab_path"] = str(path)
-            values["pool_key"] = pool_key or f"prefab:{Path(path).as_posix().casefold()}"
+            values = self._legacy_prefab_values(
+                isolated_object, payload, resolved_parameters, definitions,
+                path, pool_key, x, y, rotation, width, height,
+            )
+            self._apply_prefab_component_policy(
+                values, include_camera, include_audio, include_logic
+            )
             return self.create_object(**values)
         transform = isolated_object.get("transform") if isinstance(isolated_object.get("transform"), dict) else {}
         position = _vector(transform.get("position"), (0.0, 0.0, 0.0))
@@ -297,6 +282,40 @@ class RuntimeWorld:
         values["pool_key"] = pool_key or f"prefab:{Path(path).as_posix().casefold()}"
         self._apply_prefab_component_policy(values, include_camera, include_audio, include_logic)
         return self.create_object(**values)
+
+    @staticmethod
+    def _legacy_prefab_values(
+        isolated_object: dict[str, Any],
+        payload: Mapping[str, Any],
+        resolved_parameters: Mapping[str, Any],
+        definitions: list[Any],
+        path: str | Path,
+        pool_key: str | None,
+        x: float | None,
+        y: float | None,
+        rotation: float | None,
+        width: float | None,
+        height: float | None,
+    ) -> dict[str, Any]:
+        values = isolated_object
+        values.pop("id", None)
+        values.pop("uuid", None)
+        values["name"] = values.get("name") or payload.get("prefab_name", "Prefab")
+        for key, value in (("x", x), ("y", y), ("rotation", rotation)):
+            if value is not None:
+                values[key] = value
+        if width is not None:
+            values["w"] = width
+            values["width"] = width
+        if height is not None:
+            values["h"] = height
+            values["height"] = height
+        values["prefab_parameters"] = resolved_parameters
+        values["prefab_exposed"] = definitions
+        values["prefab_base"] = payload.get("base_prefab", "")
+        values["prefab_path"] = str(path)
+        values["pool_key"] = pool_key or f"prefab:{Path(path).as_posix().casefold()}"
+        return values
 
     @staticmethod
     def _apply_prefab_component_policy(

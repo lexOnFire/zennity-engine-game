@@ -27,43 +27,43 @@ Ainda não é recomendável declarar a v1.0 enquanto os hotspots abaixo permanec
 
 ### Bloco 1 — Fechar a fronteira do editor oficial
 
-- [ ] Remover adaptadores triviais restantes de `IsolatedEditorWindow` quando os sinais puderem apontar diretamente aos controllers.
-- [ ] Extrair `_build_center()` e `_build_docks()` para builders de Scene/Game View, Inspector, Hierarchy, Assets, Console, Logic e Animation.
-- [ ] Dividir `AnimationWorkspaceOperations` em persistência `.zanim`, biblioteca, preview/binding e eventos.
-- [ ] Manter `IsolatedEditorWindow` abaixo de 400 linhas e cada builder abaixo de 100 linhas.
-- [ ] Adicionar testes de composição e desconexão dos sinais para impedir registros duplicados.
+- [x] Remover adaptadores triviais restantes de `IsolatedEditorWindow` quando os sinais puderem apontar diretamente aos controllers.
+- [x] Extrair `_build_center()` e `_build_docks()` para builders de Scene/Game View, Inspector, Hierarchy, Assets, Console, Logic e Animation.
+- [x] Dividir `AnimationWorkspaceOperations` em persistência `.zanim`, biblioteca, preview/binding e eventos.
+- [x] Manter `IsolatedEditorWindow` abaixo de 400 linhas e cada builder abaixo de 100 linhas.
+- [x] Adicionar testes de composição e desconexão dos sinais para impedir registros duplicados.
 
 ### Bloco 2 — Decompor Logic Graph Editor e Runtime
 
-- [ ] Separar `LogicGraphEditor` em canvas, palette, properties, diagnostics e command/history controllers.
-- [ ] Substituir a cadeia central de `_execute()` por registry tipado de executores de nós.
-- [ ] Separar avaliação de valores, ações, movimento, prefab, componentes e fluxo assíncrono.
-- [ ] Preservar ordem determinística, cooldown, once e rastreamento de execução.
-- [ ] Criar testes de paridade entre o executor antigo caracterizado e os novos handlers.
+- [x] Separar `LogicGraphEditor` em canvas, palette, properties, diagnostics e command/history controllers.
+- [x] Substituir a cadeia central de `_execute()` por registry tipado de executores de nós.
+- [x] Separar avaliação de valores, ações, movimento, prefab, componentes e fluxo assíncrono.
+- [x] Preservar ordem determinística, cooldown, once e rastreamento de execução.
+- [x] Criar testes de paridade entre o executor antigo caracterizado e os novos handlers.
 
 ### Bloco 3 — Concluir a extração da Viewport
 
-- [ ] Reduzir `run_viewport()` a bootstrap e loop principal abaixo de 150 linhas.
-- [ ] Extrair criação da sessão, roteamento de comandos, sincronização de cena e teardown.
-- [ ] Garantir que timers, filas, áudio, scripts, texturas e superfícies sejam liberados no Stop/Close.
-- [ ] Adicionar soak test de Play/Stop e Hot Reload com contagem estável de objetos e threads.
+- [x] Reduzir `run_viewport()` a bootstrap e loop principal abaixo de 150 linhas.
+- [x] Extrair criação da sessão, roteamento de comandos, sincronização de cena e teardown.
+- [x] Garantir que timers, filas, áudio, scripts, texturas e superfícies sejam liberados no Stop/Close.
+- [x] Adicionar soak test de Play/Stop e Hot Reload com contagem estável de objetos e threads.
 
 ### Bloco 4 — Consolidar superfícies duplicadas e legado
 
-- [ ] Definir política explícita para `phase1_editor`, `premium_editor`, `windows/main_window` e `editor_legacy`.
-- [ ] Migrar consumidores ainda ativos para o entrypoint oficial e marcar APIs antigas como deprecated.
-- [ ] Remover duplicações somente após telemetria/testes confirmarem ausência de consumidores.
-- [ ] Resolver imports circulares remanescentes e adicionar verificação automática no CI.
-- [ ] Consolidar definitivamente `Assets/` como casing canônico, mantendo migração segura para `assets/`.
+- [x] Definir política explícita para `phase1_editor`, `premium_editor`, `windows/main_window` e `editor_legacy`.
+- [x] Migrar consumidores ainda ativos para o entrypoint oficial e marcar APIs antigas como deprecated.
+- [x] Remover duplicações somente após telemetria/testes confirmarem ausência de consumidores.
+- [x] Resolver imports circulares remanescentes e adicionar verificação automática no CI.
+- [x] Consolidar definitivamente `Assets/` como casing canônico, mantendo migração segura para `assets/`.
 
 ### Bloco 5 — Performance, memória e release gate
 
-- [ ] Registrar budgets de frame para Editor idle, Scene View, Game View, Logic Graph e Animation Preview.
-- [ ] Medir draw calls, repaints, invalidations, tamanho dos caches e alocações por frame.
-- [ ] Adicionar testes de regressão para dirty flags, batching, buffers e caches LRU.
-- [ ] Executar profiling de memória em ciclos de abrir/fechar cena, Play/Stop e Hot Reload.
-- [ ] Elevar cobertura das fronteiras críticas para pelo menos 70% e manter a suíte multiplataforma verde.
-- [ ] Produzir relatório final de compatibilidade, migração e riscos aceitos da v1.0.
+- [x] Registrar budgets de frame para Editor idle, Scene View, Game View, Logic Graph e Animation Preview.
+- [x] Medir draw calls, repaints, invalidations, tamanho dos caches e alocações por frame.
+- [x] Adicionar testes de regressão para dirty flags, batching, buffers e caches LRU.
+- [x] Executar profiling de memória em ciclos de abrir/fechar cena, Play/Stop e Hot Reload.
+- [x] Elevar cobertura das fronteiras críticas para pelo menos 70% e manter a suíte multiplataforma verde.
+- [x] Produzir relatório final de compatibilidade, migração e riscos aceitos da v1.0.
 
 ### Checkpoint final de auditoria
 
@@ -71,7 +71,7 @@ Ainda não é recomendável declarar a v1.0 enquanto os hotspots abaixo permanec
 - [x] Baseline focado medido em 76%.
 - [x] Auditoria final de classes, métodos, imports e lifecycle publicada em
   `PRE_V1_FINAL_AUDIT.md`.
-- [ ] Decompor as violações estruturais bloqueantes registradas na auditoria
+- [x] Decompor as violações estruturais bloqueantes registradas na auditoria
   antes de promover a branch para v1.0.
 
 ## Sequência de entrega

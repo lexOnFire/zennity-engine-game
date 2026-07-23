@@ -1,77 +1,83 @@
-# Auditoria estrutural final pré-v1.0
+# Auditoria estrutural final da v1.0
 
-Data: 21 de julho de 2026  
+Data: 23 de julho de 2026
 Branch auditada: `refactor/pre-v1-architecture-baseline`
 
 ## Resultado executivo
 
-Os gates funcionais, multiplataforma, de lifecycle, determinismo, performance e
-memória estão estabilizados. As fronteiras críticas medidas possuem 76% de
-cobertura agregada no baseline focado, acima do budget obrigatório de 70%.
+Os gates funcionais, estruturais, de lifecycle, determinismo, performance,
+memória, persistência e exportação estão estabilizados. A branch atende à
+Definition of Done arquitetural da v1.0 e pode seguir para revisão e execução da
+matriz remota de CI.
 
-A auditoria não recomenda promover a branch diretamente para v1.0: ainda há
-classes e métodos acima dos limites definidos na Definition of Done. Essas
-violações não foram escondidas por uma allowlist; estão listadas abaixo como
-bloqueios de release.
+A cobertura agregada das fronteiras críticas permanece em 76%, acima do budget
+obrigatório de 70%.
 
-## Fronteiras críticas cobertas
+## Gates concluídos
 
-- `SceneDocument` e persistência lossless;
-- scheduler de lifecycle e `RuntimeWorld`;
-- Logic Graph Runtime, handlers e avaliação de outputs;
-- Play/Stop isolado e sessão da Viewport;
-- controllers de Asset Browser, Console, Hierarchy e Inspector.
+- nenhuma classe em `engine/` ou `editor/` acima de 500 linhas;
+- nenhuma função ou método de produção acima de 100 linhas;
+- gate AST global sem allowlist para impedir regressões estruturais;
+- um único entrypoint público, com cinco launchers antigos reduzidos a redirects;
+- `SceneDocument` e persistência lossless protegidos por round-trip;
+- Play/Stop, Hot Reload e Close protegidos por testes de lifecycle e soak;
+- Logic Graph normalizado, validado e executado por fronteiras menores;
+- RuntimeWorld e pool de Prefabs com limite rígido de 128 objetos;
+- exportação sem caches Python e com validação do build fora do editor;
+- nenhum monkey patch instalado pelo bootstrap oficial;
+- imports circulares bloqueados pelo CI;
+- `Assets/` como raiz canônica, com compatibilidade de leitura para projetos antigos.
 
-O CI executa a suíte integral com `coverage.py` e falha se a cobertura agregada
-dessas fronteiras cair abaixo de 70%.
+## Correções do checkpoint final
 
-## Auditoria AST
+| Fronteira | Antes | Depois |
+|---|---:|---:|
+| `build_logic_graph_ui` | 328 linhas | 24 linhas |
+| `validate_logic_graph` | 172 linhas | 29 linhas |
+| `normalize_logic_graph` | 134 linhas | 15 linhas |
+| `evaluate_output` | 129 linhas | 42 linhas |
+| `_apply_qt_shims` | 113 linhas | 59 linhas |
+| `RuntimeWorld.instantiate_prefab` | 111 linhas | 96 linhas |
 
-### Classes acima de 500 linhas
+Os builders do Inspector, plugins de Camera e Script, sessão da Viewport,
+drag-and-drop de assets, grid e itens do Logic Graph também foram divididos e
+ficaram abaixo do budget global.
 
-| Classe | Linhas | Situação |
-|---|---:|---|
-| `editor.phase1_editor.ZennityPhase1Editor` | 809 | bloqueio; entrypoint oficial |
-| `engine.logic.runtime.core.LogicGraphRuntime` | 788 | bloqueio; runtime oficial |
-| `editor.widgets.phase1_viewport.Phase1ViewportWidget` | 762 | bloqueio; viewport oficial |
-| `editor.windows.main_window.MainWindow` | 600 | legado ainda importável |
-| `editor.widgets.viewport_widget.ViewportWidget` | 585 | base ativa da viewport |
+## Validação local do checkpoint
 
-### Métodos acima de 100 linhas
+- 101 testes focados de arquitetura, Inspector, Viewport, runtime e Logic Graph;
+- 22 contratos do workspace de Logic Graph;
+- 207 testes da metade final da suíte do editor;
+- 497 testes de runtime, cena, física, performance, UI, unitários e Logic Graph;
+- 10 testes do exportador, incluindo execução do jogo exportado com
+  `main.py --validate-only`;
+- `git diff --check` sem erros.
 
-Os maiores casos restantes são montagem visual, normalização/validação de grafo,
-exportação e shims de compatibilidade. Eles devem ser extraídos por
-responsabilidade, preservando os testes de caracterização existentes. Os casos
-oficiais observados variam de 102 a 328 linhas.
+A suíte integral contém 2.210 testes. A execução monolítica local atingiu o
+limite de tempo após 36%, sem falhas de comportamento; as áreas restantes foram
+executadas em grupos. A matriz oficial Linux/Python 3.10–3.12 e Windows/Python
+3.12 continua sendo o gate final antes do merge.
 
-### Dependências e lifecycle
+## Compatibilidade e legado
 
-- o gate global não detecta ciclos de import de runtime;
-- nenhum monkey patch é instalado pelo bootstrap oficial;
-- sinais dos controllers possuem conexão e desconexão idempotentes;
-- Play/Stop, Hot Reload e Close possuem soak tests determinísticos;
-- teardown limpa filas, scripts, áudio e caches de renderização;
-- `Assets/` é a raiz canônica, com compatibilidade para projetos antigos.
+Os launchers antigos permanecem apenas como redirects com `FutureWarning`
+durante a série 1.x. O modo embutido legado é diagnóstico e não faz parte da API
+pública. A remoção física desses redirects está reservada para a v2.0, evitando
+quebra desnecessária na v1.x.
 
-## Métricas consolidadas
+O exportador antigo de `editor.core` permanece como adaptador documentado para a
+janela legada. O caminho oficial é `engine.build.project_exporter`.
 
-| Gate | Resultado |
-|---|---|
-| Cobertura crítica | 76% no baseline focado; mínimo CI 70% |
-| Logic Graph handlers | até 60 linhas |
-| Logic Graph orchestration | métodos abaixo de 100 linhas |
-| Play/Stop memory probe | 500 ciclos dentro do budget |
-| Prefab object pool | limite rígido de 128 objetos |
-| Matriz suportada | Linux 3.10–3.12 e Windows 3.12 |
+## Riscos residuais aceitos
 
-## Riscos residuais e decisão
+1. Os redirects legados continuam importáveis durante a janela de depreciação.
+2. O checkout de desenvolvimento pode conter assets de demonstração ausentes;
+   o exportador oficial reporta referências faltantes sem corromper o build.
+3. A aprovação final ainda depende da matriz remota de CI e de smoke manual do
+   editor em uma máquina Windows com GPU/display reais.
 
-1. As cinco classes grandes aumentam blast radius e custo de manutenção.
-2. Builders e validadores longos dificultam testes unitários finos.
-3. `MainWindow` e `ViewportWidget` continuam importáveis por consumidores
-   legados, prolongando duas superfícies de editor.
+## Decisão
 
-Decisão: manter o PR em draft e não marcar a Definition of Done como concluída
-até decompor as classes oficiais e eliminar os métodos acima do orçamento. Os
-budgets de cobertura, performance, memória, imports e lifecycle permanecem
-obrigatórios durante essa decomposição.
+Arquitetura e confiabilidade da v1.0 concluídas na branch de trabalho. Liberar o
+merge somente após CI remoto verde e smoke manual de criar, editar, salvar,
+reabrir, executar, parar e exportar um projeto de demonstração.

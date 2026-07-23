@@ -280,8 +280,12 @@ class ViewportWidget(ViewportQtEventsMixin, QOpenGLWidget):
                 scene.handle_event = _qt_handle_event_2d
 
         elif hasattr(scene, "_lay"):
+            self._apply_qt_3d_shim(scene)
 
-            def _sync_3d_layout(_w=widget, _lay=scene._lay):
+    def _apply_qt_3d_shim(self, scene) -> None:
+        widget = self
+
+        def _sync_3d_layout(_w=widget, _lay=scene._lay):
                 w, h = _w._vp_w, _w._vp_h
                 _lay.left_panel_rect    = pygame.Rect(0, 0, 0, 0)
                 _lay.right_panel_rect   = pygame.Rect(w, 0, 0, 0)
@@ -295,46 +299,48 @@ class ViewportWidget(ViewportQtEventsMixin, QOpenGLWidget):
                 _lay.viewport_h = h
                 _lay.viewport_w = w
 
+        _sync_3d_layout()
+        scene._lay.update = lambda sw, sh: None
+
+        def _qt_draw_3d(screen, _scene=scene):
             _sync_3d_layout()
-            scene._lay.update = lambda sw, sh: None
 
-            def _qt_draw_3d(screen, _scene=scene, _w=widget):
-                _sync_3d_layout()
+            _scene.showing_welcome = False
+            _scene.showing_templates = False
+            _scene.showing_help_modal = False
+            if hasattr(_scene, "code_editor"):
+                _scene.code_editor.is_open = False
 
-                _scene.showing_welcome = False
-                _scene.showing_templates = False
-                _scene.showing_help_modal = False
-                if hasattr(_scene, "code_editor"):
-                    _scene.code_editor.is_open = False
+            lay = _scene._lay
+            cam = _scene.camera_comp
+            cam.viewport_x = 0
+            cam.viewport_y = 0
+            cam.viewport_width = lay.viewport_rect.width
+            cam.viewport_height = lay.viewport_rect.height
+            cam.update(0.0)
 
-                lay = _scene._lay
-                cam = _scene.camera_comp
-                cam.viewport_x = 0
-                cam.viewport_y = 0
-                cam.viewport_width = lay.viewport_rect.width
-                cam.viewport_height = lay.viewport_rect.height
-                cam.update(0.0)
+            from engine.graphics.renderer3d import Camera3D, MeshRenderer3D
+            Camera3D.main = cam
 
-                from engine.graphics.renderer3d import Camera3D, MeshRenderer3D
-                Camera3D.main = cam
+            screen.fill((28, 29, 36))
+            _scene._draw_floor_grid(screen)
 
-                screen.fill((28, 29, 36))
-                _scene._draw_floor_grid(screen)
+            for go in _scene.game_objects:
+                go.draw(screen)
+                if (_scene.selected_index >= 0
+                        and go is _scene.editable_objects[_scene.selected_index]):
+                    renderer = go.get_component(MeshRenderer3D)
+                    if renderer:
+                        old_style = renderer.wireframe, renderer.color, renderer.line_width
+                        renderer.wireframe, renderer.color, renderer.line_width = (
+                            True, (80, 160, 255), 3
+                        )
+                        renderer.draw(screen)
+                        renderer.wireframe, renderer.color, renderer.line_width = old_style
 
-                for go in _scene.game_objects:
-                    go.draw(screen)
-                    if (_scene.selected_index >= 0
-                            and go is _scene.editable_objects[_scene.selected_index]):
-                        r = go.get_component(MeshRenderer3D)
-                        if r:
-                            ow, oc, olw = r.wireframe, r.color, r.line_width
-                            r.wireframe, r.color, r.line_width = True, (80, 160, 255), 3
-                            r.draw(screen)
-                            r.wireframe, r.color, r.line_width = ow, oc, olw
+            _scene._draw_gizmo(screen)
 
-                _scene._draw_gizmo(screen)
-
-            scene.draw = _qt_draw_3d
+        scene.draw = _qt_draw_3d
 
     def focus_camera_on_selected(self) -> None:
         if not self.active_scene or not self.viewmodel:

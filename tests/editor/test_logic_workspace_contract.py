@@ -191,7 +191,7 @@ def test_logic_workspace_exposes_typed_scoped_blackboard_panel():
     editor = _source("editor/widgets/logic_graph_editor.py")
     viewport = _source("editor/runtime/viewport_session.py")
     bridge = (_source("editor/isolated_editor_main.py") + _source("editor/editor_integration_adapters.py")) + _source("editor/project_workflow_controller.py")
-    assert 'addTab(data_page, "Dados")' in editor
+    assert '_tab(self, "Dados")' in editor
     assert "blackboard_scope_combo" in editor
     assert "blackboard_type_combo" in editor
     assert "_save_blackboard_variable" in editor
@@ -228,7 +228,7 @@ def test_reusable_subgraphs_are_discoverable_typed_and_safe():
     assert "def subgraph_interface" in graph
     assert "def run_subgraph" in runtime
     assert "circular entre subgrafos" in runtime
-    assert 'addTab(subgraphs_page, "Subgrafos")' in editor
+    assert '_tab(self, "Subgrafos")' in editor
     assert "Novo subgrafo" in editor
     assert "def new_subgraph" in editor
     assert "_refresh_subgraph_assets" in editor
@@ -290,9 +290,9 @@ def test_visual_logic_is_cleanly_managed_from_inspector():
     assert "graph_enabled_check" in editor
     assert "Ativo no Play" in editor
     assert "category_group" not in editor
-    assert 'addTab(blocks_page, "Blocos")' in editor
-    assert 'addTab(data_page, "Dados")' in editor
-    assert 'addTab(subgraphs_page, "Subgrafos")' in editor
+    assert '_tab(self, "Blocos")' in editor
+    assert '_tab(self, "Dados")' in editor
+    assert '_tab(self, "Subgrafos")' in editor
 
 
 def test_logic_workspace_teaches_searchable_position_recipes():
@@ -301,7 +301,7 @@ def test_logic_workspace_teaches_searchable_position_recipes():
     graph = _source("engine/logic/graph_asset.py")
     runtime = _source("engine/logic/runtime")
     recipes = _source("engine/logic/recipes.py") + _source("engine/logic/recipe_catalog_1.py") + _source("engine/logic/recipe_catalog_2.py")
-    assert 'addTab(recipes_page, "Receitas")' in editor
+    assert '_tab(self, "Receitas")' in editor
     assert "Editar / Receitas" in interface
     assert "O que você quer fazer?" in editor
     assert "_insert_selected_recipe" in editor

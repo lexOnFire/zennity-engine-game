@@ -34,13 +34,9 @@ class GridRenderer:
 
         Garante que eixos X/Y principais e secundários acompanhem o pan/zoom.
         """
-        # Limites visíveis no mundo
-        # Como world_to_viewport(world) = (world - cam) * zoom + center
-        # world = (screen - center) / zoom + cam
-        left_w = (0.0 - vp_w / 2.0) / zoom + camera_pos[0]
-        right_w = (vp_w - vp_w / 2.0) / zoom + camera_pos[0]
-        top_w = (0.0 - vp_h / 2.0) / zoom + camera_pos[1]
-        bottom_w = (vp_h - vp_h / 2.0) / zoom + camera_pos[1]
+        left_w, right_w, top_w, bottom_w = self._visible_bounds(
+            vp_w, vp_h, zoom, camera_pos
+        )
 
         # Espaçamento do grid secundário em tela
         spacing_px = self.grid_size * zoom
@@ -123,3 +119,15 @@ class GridRenderer:
                 curr_y += step_y
 
         painter.restore()
+
+    @staticmethod
+    def _visible_bounds(
+        vp_w: int, vp_h: int, zoom: float, camera_pos: Any,
+    ) -> tuple[float, float, float, float]:
+        """Converte os limites da viewport para coordenadas de mundo."""
+        return (
+            (-vp_w / 2.0) / zoom + camera_pos[0],
+            (vp_w / 2.0) / zoom + camera_pos[0],
+            (-vp_h / 2.0) / zoom + camera_pos[1],
+            (vp_h / 2.0) / zoom + camera_pos[1],
+        )

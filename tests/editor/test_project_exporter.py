@@ -96,6 +96,25 @@ def test_development_export_contains_scene_assets_and_launchers(tmp_path: Path) 
     assert json.loads((destination / "package_manifest.json").read_text(encoding="utf-8"))["project_name"] == "Meu Jogo"
 
 
+def test_export_excludes_python_caches_and_bytecode(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    (project / "Assets" / "__pycache__").mkdir(parents=True)
+    (project / "Assets" / "__pycache__" / "asset.cpython-312.pyc").write_bytes(b"cache")
+    _install_runtime_sources(project)
+    runtime_cache = project / "engine" / "logic" / "runtime" / "__pycache__"
+    runtime_cache.mkdir(exist_ok=True)
+    (runtime_cache / "core.cpython-312.pyc").write_bytes(b"cache")
+    scene = project / "main.zscene"
+    scene.write_text(json.dumps({"objects": []}), encoding="utf-8")
+
+    destination = _load_exporter().export_development_project(
+        project, scene, tmp_path / "output", "Clean Build"
+    )
+
+    assert not list(destination.rglob("__pycache__"))
+    assert not list(destination.rglob("*.pyc"))
+
+
 def test_exported_game_validates_outside_the_editor(tmp_path: Path) -> None:
     project = tmp_path / "project"
     (project / "Assets").mkdir(parents=True)
