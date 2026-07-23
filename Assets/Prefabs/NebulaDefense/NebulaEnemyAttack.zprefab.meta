@@ -5,10 +5,5 @@
   "importer": "generic_importer",
   "source_path": "Assets/Prefabs/NebulaDefense/NebulaEnemyAttack.zprefab",
   "import_settings": {},
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "1e5980d70150a7c9d889ebf7ffdf7551dba0377015f9eefb5b36976538278c89",
-  "source_size": 417,
-  "source_modified_ns": 1784305638604430100
+  "dependencies": []
 }

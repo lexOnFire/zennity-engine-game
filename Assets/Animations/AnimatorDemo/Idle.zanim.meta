@@ -5,10 +5,5 @@
   "importer": "generic_importer",
   "source_path": "Assets/Animations/AnimatorDemo/Idle.zanim",
   "import_settings": {},
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "25ac1885c62c0818f0993b1bb571c834e71485d1bc88944f7cc0934ac4a36195",
-  "source_size": 244,
-  "source_modified_ns": 1784295889281725300
+  "dependencies": []
 }

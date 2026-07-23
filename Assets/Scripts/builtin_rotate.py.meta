@@ -5,10 +5,5 @@
   "importer": "script_importer",
   "source_path": "Assets/Scripts/builtin_rotate.py",
   "import_settings": {},
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "402e8b37039d8cd31e053b1b3e677feadd765bed62a91588597e3615d890d5c5",
-  "source_size": 157,
-  "source_modified_ns": 1784295889801270100
+  "dependencies": []
 }

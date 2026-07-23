@@ -7,10 +7,5 @@
   "import_settings": {
     "load_type": "decompress_on_load"
   },
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "c2ec1843f7b133e6fa840294fe8b091fe5f40e17716227ab4bad6397f3284c4a",
-  "source_size": 1396819,
-  "source_modified_ns": 1784295889311087600
+  "dependencies": []
 }

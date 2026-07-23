@@ -5,10 +5,5 @@
   "importer": "generic_importer",
   "source_path": "Assets/Scenes/AnimatorControllerDemo.zscene",
   "import_settings": {},
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "3b7900f81a5426859d1d006369decdc0a13f8d48d6a8f4abd832229061fb35fb",
-  "source_size": 2825,
-  "source_modified_ns": 1784295889650037600
+  "dependencies": []
 }

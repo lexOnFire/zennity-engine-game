@@ -5,10 +5,5 @@
   "importer": "generic_importer",
   "source_path": "Assets/Animations/AnimatorDemo/Walk.zanim",
   "import_settings": {},
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "2f4c9ff0d59adf405732ed127a3f4a9ce7dc9bdbb4c1caebdbb9c409250cb4b1",
-  "source_size": 370,
-  "source_modified_ns": 1784295889283862700
+  "dependencies": []
 }

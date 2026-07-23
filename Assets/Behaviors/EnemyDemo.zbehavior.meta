@@ -5,10 +5,5 @@
   "importer": "generic_importer",
   "source_path": "Assets/Behaviors/EnemyDemo.zbehavior",
   "import_settings": {},
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "e05f518f34ab832924b8e410c1a47268fd7a1d835d42f43f57a0dc37dac01b01",
-  "source_size": 1409,
-  "source_modified_ns": 1784295889333358200
+  "dependencies": []
 }

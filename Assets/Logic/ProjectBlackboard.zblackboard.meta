@@ -5,10 +5,5 @@
   "importer": "generic_importer",
   "source_path": "Assets/Logic/ProjectBlackboard.zblackboard",
   "import_settings": {},
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "de29933b95aee7c4b9e3eebb291a2b3499845e3ad7d57aa46400c9969a1b55b6",
-  "source_size": 77,
-  "source_modified_ns": 1784643010811815600
+  "dependencies": []
 }

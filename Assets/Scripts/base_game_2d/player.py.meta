@@ -5,10 +5,5 @@
   "importer": "script_importer",
   "source_path": "Assets/Scripts/base_game_2d/player.py",
   "import_settings": {},
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "b2bef79ebd0542a39698ce77f941e19fa2c8912ea4ab2be0ddaf7428d639ce73",
-  "source_size": 3500,
-  "source_modified_ns": 1784295889793786400
+  "dependencies": []
 }

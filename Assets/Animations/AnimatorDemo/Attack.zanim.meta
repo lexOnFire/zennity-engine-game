@@ -5,10 +5,5 @@
   "importer": "generic_importer",
   "source_path": "Assets/Animations/AnimatorDemo/Attack.zanim",
   "import_settings": {},
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "3004616e63a4a4a206daf83ed32d34480fedf09876acbbbf3809318d15f93631",
-  "source_size": 384,
-  "source_modified_ns": 1784295889280725800
+  "dependencies": []
 }

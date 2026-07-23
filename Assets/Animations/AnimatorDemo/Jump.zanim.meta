@@ -5,10 +5,5 @@
   "importer": "generic_importer",
   "source_path": "Assets/Animations/AnimatorDemo/Jump.zanim",
   "import_settings": {},
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "c14f1dba41971fa32fc15e4c1319177f4692d709ade73d8161f63ddfd776e6ac",
-  "source_size": 299,
-  "source_modified_ns": 1784295889282860700
+  "dependencies": []
 }

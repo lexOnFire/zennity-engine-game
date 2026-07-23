@@ -7,10 +7,5 @@
   "import_settings": {
     "filter_mode": "bilinear"
   },
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "61d5c577d8c41b1a2904440c067d4349e66639661b47b94c10f3076b7acb8f67",
-  "source_size": 140141,
-  "source_modified_ns": 1784295889828196700
+  "dependencies": []
 }

@@ -5,10 +5,5 @@
   "importer": "script_importer",
   "source_path": "Assets/Scripts/player_controller.py",
   "import_settings": {},
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "505877d751ac3ade720294848d815eb1430b16f8a99d95a21320075777d257f6",
-  "source_size": 3058,
-  "source_modified_ns": 1784643010951196200
+  "dependencies": []
 }

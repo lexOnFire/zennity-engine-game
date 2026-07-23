@@ -5,10 +5,5 @@
   "importer": "generic_importer",
   "source_path": "Assets/Logic/LIMITADORLogic.zlogic",
   "import_settings": {},
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "b196824db4bd86813b7ba08e39b63aa492a2dc0357cb11781e4c97d262830e34",
-  "source_size": 737,
-  "source_modified_ns": 1784643010796190200
+  "dependencies": []
 }

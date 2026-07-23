@@ -5,10 +5,5 @@
   "importer": "generic_importer",
   "source_path": "Assets/Scenes/BehaviorControllerDemo.zscene",
   "import_settings": {},
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "17c2e641a506fa64da616101e950187a4f0e76866fb67ed2b2d53fb62d09ef94",
-  "source_size": 1678,
-  "source_modified_ns": 1784295889651038000
+  "dependencies": []
 }

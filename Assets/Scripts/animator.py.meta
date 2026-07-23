@@ -5,10 +5,5 @@
   "importer": "script_importer",
   "source_path": "Assets/Scripts/animator.py",
   "import_settings": {},
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "dd9effb589ad5f0401c9ed67c9a5b74d9a2568de066c475c3e0938b78eacf2e2",
-  "source_size": 4082,
-  "source_modified_ns": 1784643015670055500
+  "dependencies": []
 }

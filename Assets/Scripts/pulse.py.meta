@@ -5,10 +5,5 @@
   "importer": "script_importer",
   "source_path": "Assets/Scripts/pulse.py",
   "import_settings": {},
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "3c103208eb7f740b91baa7643c72e0a91f315ef52d89f8c511b586fd14a484f8",
-  "source_size": 455,
-  "source_modified_ns": 1784295889819831700
+  "dependencies": []
 }

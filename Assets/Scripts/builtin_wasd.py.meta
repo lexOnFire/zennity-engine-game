@@ -5,10 +5,5 @@
   "importer": "script_importer",
   "source_path": "Assets/Scripts/builtin_wasd.py",
   "import_settings": {},
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "4912bc1dd50a5dd6c24825a659865ba3234187a60b950ebc8a6bc0d5f35d253d",
-  "source_size": 238,
-  "source_modified_ns": 1784295889802391900
+  "dependencies": []
 }

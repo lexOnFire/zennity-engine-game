@@ -5,10 +5,5 @@
   "importer": "generic_importer",
   "source_path": "Assets/Logic/CalcularPontuacao.zlogic",
   "import_settings": {},
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "aa6ad40547a39bce1ee1c892f149bdde16f04da8df185fadf247ef6af13e4f8a",
-  "source_size": 2957,
-  "source_modified_ns": 1784643010796190200
+  "dependencies": []
 }

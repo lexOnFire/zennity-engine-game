@@ -5,10 +5,5 @@
   "importer": "generic_importer",
   "source_path": "Assets/Logic/PlayerMovement.zlogic",
   "import_settings": {},
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "dea3d690fc888f6cc5906803da448a8bb743fd11a479acee6745e45e9871e272",
-  "source_size": 4566,
-  "source_modified_ns": 1784643010811815600
+  "dependencies": []
 }

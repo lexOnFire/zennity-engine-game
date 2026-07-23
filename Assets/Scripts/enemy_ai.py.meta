@@ -5,10 +5,5 @@
   "importer": "script_importer",
   "source_path": "Assets/Scripts/enemy_ai.py",
   "import_settings": {},
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "a80aadf4dfc9c71b0f8566e51b36339e293404f509f46810b37d5747e632a004",
-  "source_size": 3199,
-  "source_modified_ns": 1784643010951196200
+  "dependencies": []
 }

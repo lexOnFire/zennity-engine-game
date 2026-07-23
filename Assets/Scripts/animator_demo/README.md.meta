@@ -5,10 +5,5 @@
   "importer": "generic_importer",
   "source_path": "Assets/Scripts/animator_demo/README.md",
   "import_settings": {},
-  "dependencies": [],
-  "schema_version": 1,
-  "importer_version": 1,
-  "source_hash": "544ab6f60fc1e1c5d416fbda703e660ad4275e6afc823c3e11b18ea0b39458a3",
-  "source_size": 572,
-  "source_modified_ns": 1784295889784666000
+  "dependencies": []
 }
