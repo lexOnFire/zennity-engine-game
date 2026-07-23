@@ -71,7 +71,7 @@ class MeuCustomInspector:
 
     def supports(self, component):
         return type(component).__name__ == self.component_type
-        
+
     def build_ui(self, inspector, component):
         # Constrói UI do Qt dinamicamente
         pass

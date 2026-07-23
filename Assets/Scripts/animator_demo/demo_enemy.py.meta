@@ -5,5 +5,10 @@
   "importer": "script_importer",
   "source_path": "Assets/Scripts/animator_demo/demo_enemy.py",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "schema_version": 1,
+  "importer_version": 1,
+  "source_hash": "db17f390202bf300ea76e3e7b844316cf5dd1d61b84cc1ad8c3c7e10096c272a",
+  "source_size": 608,
+  "source_modified_ns": 1784295889785666400
 }

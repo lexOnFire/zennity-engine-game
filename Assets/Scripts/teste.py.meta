@@ -5,5 +5,10 @@
   "importer": "script_importer",
   "source_path": "Assets/Scripts/teste.py",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "schema_version": 1,
+  "importer_version": 1,
+  "source_hash": "981ab7919432529e15c2a8eb2972871ca7d8fd648da4a2c7f37b6da5f7c80462",
+  "source_size": 1323,
+  "source_modified_ns": 1784295889821938700
 }

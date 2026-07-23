@@ -5,5 +5,10 @@
   "importer": "generic_importer",
   "source_path": "Assets/Logic/NebulaDefense/NebulaSpawner.zlogic",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "schema_version": 1,
+  "importer_version": 1,
+  "source_hash": "9de96e5b21fef47c875b803df0eb7154eff8538efcbb454019f1832f7ceaed2a",
+  "source_size": 2553,
+  "source_modified_ns": 1784643010811815600
 }

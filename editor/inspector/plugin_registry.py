@@ -14,14 +14,14 @@ class InspectorPluginRegistry:
 
     def register(self, plugin: InspectorPlugin | type[InspectorPlugin]) -> InspectorPlugin:
         instance = plugin() if isinstance(plugin, type) else plugin
-        
+
         # Prevenir IDs duplicados exatos (mesma classe de mesmo plugin)
         for existing in self._plugins:
             if type(existing) is type(instance) and existing.component_type == instance.component_type:
                 logging.warning(f"InspectorPlugin for {instance.component_type} already registered by {type(existing).__name__}. Ignoring.")
                 return existing
 
-        # Se houver outro plugin pro mesmo componente mas de tipo diferente, a política 
+        # Se houver outro plugin pro mesmo componente mas de tipo diferente, a política
         # atual (v1.1) é sobrescrever. Para V1.2, avisamos e sobrescrevemos (o último ganha).
         filtered = []
         for existing in self._plugins:

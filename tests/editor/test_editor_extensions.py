@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pytest
 
 from editor.runtime.editor_extensions import EditorExtensionManager
 
@@ -32,7 +31,7 @@ class ProbeExtension:
 def test_extensions_install_once_and_uninstall_in_reverse_order():
     events = []
     manager = EditorExtensionManager(editor=None)
-    
+
     first = ProbeExtension("first", events)
     second = ProbeExtension("second", events)
 
@@ -44,9 +43,9 @@ def test_extensions_install_once_and_uninstall_in_reverse_order():
 
     manager.uninstall_all()
     assert events == [
-        "load:first", "enable:first", 
+        "load:first", "enable:first",
         "load:second", "enable:second",
-        "disable:second", "unload:second", 
+        "disable:second", "unload:second",
         "disable:first", "unload:first"
     ]
     assert len(manager.installed_names) == 0
@@ -60,7 +59,7 @@ def test_failed_install_is_reported_and_not_registered():
         errors.append(f"{n}:{phase}:{exc}")
 
     manager = EditorExtensionManager(editor=None, on_error=on_err)
-    
+
     # Fail enable -> should rollback
     assert manager.install(ProbeExtension("broken", events, fail_enable=True)) is False
 
@@ -80,12 +79,12 @@ def test_uninstall_failure_does_not_block_remaining_extensions():
         errors.append(f"{n}:{phase}:{exc}")
 
     manager = EditorExtensionManager(editor=None, on_error=on_err)
-    
+
     manager.install(ProbeExtension("first", events))
     manager.install(ProbeExtension("broken", events, fail_disable=True))
-    
+
     manager.uninstall_all()
-    
+
     assert len(errors) == 1
     assert errors[0] == "broken:disable:fail_disable:broken"
     assert events[-3:] == ["unload:broken", "disable:first", "unload:first"]

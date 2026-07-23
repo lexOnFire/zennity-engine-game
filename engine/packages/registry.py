@@ -21,7 +21,7 @@ class PackageRegistry:
         """Scans packages_dir for any subdirectory containing package.json."""
         self._packages.clear()
         self._loaded_packages.clear()
-        
+
         if not self.packages_dir.exists():
             return []
 
@@ -57,7 +57,7 @@ class PackageRegistry:
                 return pkg_name in self._loaded_packages
 
             stack.add(pkg_name)
-            
+
             pkg = self._packages.get(pkg_name)
             if not pkg:
                 logging.error(f"Missing dependency: '{pkg_name}'")
@@ -83,7 +83,7 @@ class PackageRegistry:
         for name in list(self._packages.keys()):
             if name not in visited:
                 dfs(name)
-                
+
         # Synchronize active packages with successfully loaded ones
         self._packages = dict(self._loaded_packages)
 
@@ -107,7 +107,7 @@ class PackageRegistry:
         """Dynamically loads a class from a package by its string path."""
         if str(self.packages_dir) not in sys.path:
             sys.path.insert(0, str(self.packages_dir))
-            
+
         try:
             module_name, class_name = class_path.rsplit(".", 1)
             module = importlib.import_module(module_name)

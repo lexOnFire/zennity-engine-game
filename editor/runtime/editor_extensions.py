@@ -99,14 +99,14 @@ class EditorExtensionManager:
                     ext.disable(self.editor)
             except Exception as exc:
                 self._report_error(installed.name, "disable", exc)
-            
+
             # Phase 2: Unload
             try:
                 if hasattr(ext, "unload"):
                     ext.unload(self.editor)
             except Exception as exc:
                 self._report_error(installed.name, "unload", exc)
-                
+
         self._installed.clear()
         self._installed_names.clear()
 
@@ -116,7 +116,7 @@ class AssetDragDropExtension:
 
     def load(self, editor: Any) -> None:
         pass
-        
+
     def enable(self, editor: Any) -> None:
         from editor.runtime.asset_drag_drop import install_asset_drag_drop
         install_asset_drag_drop(editor)
@@ -125,11 +125,10 @@ class AssetDragDropExtension:
         # Qt owns the event filters through their widget parents. They are
         # destroyed with the editor; no global class state needs restoration.
         pass
-        
+
     def unload(self, editor: Any) -> None:
         pass
 
 
 def default_editor_extensions() -> tuple[EditorExtension, ...]:
     return (AssetDragDropExtension(),)
-

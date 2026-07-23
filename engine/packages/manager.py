@@ -22,13 +22,13 @@ class PackageManager:
         """Saves current installed packages and their versions to packages.lock.json."""
         lockfile_path = self.packages_dir / "packages.lock.json"
         lock_data: Dict[str, Any] = {"version": 1, "packages": {}}
-        
+
         for pkg in self.registry.list_packages():
             lock_data["packages"][pkg.name] = {
                 "version": pkg.version,
                 "dependencies": pkg.dependencies
             }
-            
+
         with open(lockfile_path, "w", encoding="utf-8") as f:
             json.dump(lock_data, f, indent=4)
 
@@ -36,22 +36,22 @@ class PackageManager:
         """Installs a local package by copying its directory to project's Packages/ folder."""
         source_path = Path(source_dir).resolve()
         manifest_path = source_path / "package.json"
-        
+
         # Load and validate source package before doing I/O
         source_pkg = Package.from_manifest(manifest_path)
 
         # Dest directory: Packages/<package_name>
         dest_dir = self.packages_dir / source_pkg.name
-        
+
         # Security: Prevent path traversal by ensuring destination is inside packages_dir
         if self.packages_dir not in dest_dir.parents and dest_dir != self.packages_dir / source_pkg.name:
             raise ValueError(f"Invalid package destination path: {dest_dir}")
 
         temp_dir = self.packages_dir / f".temp_{source_pkg.name}"
         backup_dir = self.packages_dir / f".backup_{source_pkg.name}"
-        
+
         self.packages_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Cleanup temp artifacts from previous failed runs
         if temp_dir.exists():
             shutil.rmtree(temp_dir)
@@ -61,14 +61,14 @@ class PackageManager:
         try:
             # 1. Copy to temp dir first
             shutil.copytree(source_path, temp_dir)
-            
+
             # 2. Backup existing
             if dest_dir.exists():
                 dest_dir.rename(backup_dir)
-                
+
             # 3. Swap temp to final
             temp_dir.rename(dest_dir)
-            
+
             # 4. Remove backup
             if backup_dir.exists():
                 shutil.rmtree(backup_dir)
@@ -91,7 +91,7 @@ class PackageManager:
                  shutil.rmtree(dest_dir)
              self._update_lockfile()
              raise RuntimeError(f"Package '{source_pkg.name}' installed but failed registry load (possibly missing dependencies). Installation rolled back.")
-             
+
         self._update_lockfile()
         return installed_pkg
 
@@ -103,7 +103,7 @@ class PackageManager:
 
         dest_dir = self.packages_dir / name
         backup_dir = self.packages_dir / f".backup_{name}"
-        
+
         if backup_dir.exists():
             shutil.rmtree(backup_dir)
 
@@ -142,4 +142,3 @@ class PackageManager:
 
         # Re-install
         return self.install_local_package(source_dir)
-

@@ -5,5 +5,10 @@
   "importer": "generic_importer",
   "source_path": "Assets/Scenes/JogoBase2D.zscene",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "schema_version": 1,
+  "importer_version": 1,
+  "source_hash": "01cf8f24b2a219719a8d890ae03efb54f6c391589e4b8caa55b68a1da0bb43fb",
+  "source_size": 14552,
+  "source_modified_ns": 1784295889780008500
 }

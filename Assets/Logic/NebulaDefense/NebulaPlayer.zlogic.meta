@@ -5,5 +5,10 @@
   "importer": "generic_importer",
   "source_path": "Assets/Logic/NebulaDefense/NebulaPlayer.zlogic",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "schema_version": 1,
+  "importer_version": 1,
+  "source_hash": "a2f71d20bf79b507a6dcefe03c13c669cae3f5b53b5504074baf722f79040a2c",
+  "source_size": 22643,
+  "source_modified_ns": 1784643010796190200
 }

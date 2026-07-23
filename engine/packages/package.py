@@ -57,7 +57,7 @@ class Package:
 
         # Tratar engine_version legacy
         engine_ver = str(data.get("engine_version", "1.0.0"))
-        
+
         return cls(
             name=str(data["name"]),
             version=str(data["version"]),
@@ -82,11 +82,11 @@ class Package:
         for field in required:
             if field not in data or not data[field]:
                 raise ValueError(f"Missing mandatory field: '{field}'")
-        
+
         name = str(data["name"])
         if not re.match(r"^[a-zA-Z0-9_\-\.]+$", name) or name in (".", "..") or ".." in name:
             raise ValueError(f"Invalid package name '{name}'. Only alphanumeric characters, dashes, underscores and dots are allowed to prevent path traversal.")
-        
+
         # Simple semver validation
         version = str(data["version"])
         parts = version.split(".")

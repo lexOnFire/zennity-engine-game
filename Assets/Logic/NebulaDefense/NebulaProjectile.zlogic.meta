@@ -5,5 +5,10 @@
   "importer": "generic_importer",
   "source_path": "Assets/Logic/NebulaDefense/NebulaProjectile.zlogic",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "schema_version": 1,
+  "importer_version": 1,
+  "source_hash": "83950f191e629dfdade472b152276dd42ab96af43dd1f10fe3069389b184cd80",
+  "source_size": 8322,
+  "source_modified_ns": 1784643010796190200
 }

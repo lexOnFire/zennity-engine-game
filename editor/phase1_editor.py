@@ -165,7 +165,7 @@ class ZennityPhase1Editor(
     def _install_editor_extensions(self) -> None:
         for extension in default_editor_extensions():
             self._extensions.install(extension)
-            
+
         # Instalar extensions do ecosystem
         registry = self.package_manager.registry
         for pkg in registry.list_packages():
@@ -177,7 +177,7 @@ class ZennityPhase1Editor(
                         inspector_plugin_registry.register(plugin_class)
                     except Exception as e:
                         self.console.add("WARN", f"Falha ao registrar inspector_plugin '{plugin_path}': {e}")
-                        
+
             # 2. Editor Extensions
             for ext_path in pkg.editor_extensions:
                 ext_class = registry.resolve_class(ext_path)
