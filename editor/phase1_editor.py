@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QAction, QActionGroup, QKeySequence, QShortcut
-from PySide6.QtWidgets import QFileDialog, QComboBox, QSplitter, QTabWidget, QToolBar, QToolButton, QWidget, QMessageBox
+from PySide6.QtGui import QAction, QKeySequence, QShortcut
+from PySide6.QtWidgets import QFileDialog, QMessageBox
 
 from engine.game_object import GameObject
 from engine.physics.collider import BoxCollider
@@ -22,11 +22,6 @@ from editor.phase1_editor_mixins import (
     Phase1HierarchyOperationsMixin,
 )
 from editor.premium_editor import (
-    AssetPreviewPanel,
-    ConsolePanel,
-    CreatePanel,
-    PrefabsPanel,
-    ResourcesPanel,
     ZennityPremiumEditor,
 )
 
@@ -64,7 +59,7 @@ class ZennityPhase1Editor(
         platform.transform.position = [0.0, 160.0, 0.0]
         platform.transform.scale = [320.0, 24.0, 1.0]
 
-        platform_collider = platform.add_component(
+        platform.add_component(
             BoxCollider(width=320, height=24)
         )
         platform_body = platform.add_component(RigidBody())

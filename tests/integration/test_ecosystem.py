@@ -1,9 +1,7 @@
 import json
 import pytest
-import shutil
 from pathlib import Path
 from engine.packages.manager import PackageManager
-from engine.packages.registry import PackageRegistry
 from engine.project_templates import create_project
 
 @pytest.fixture
@@ -69,7 +67,7 @@ def test_transactional_install_and_uninstall(temp_project: Path, mock_plugin_src
 
 def test_invalid_class_resolution(temp_project: Path, mock_plugin_src: Path):
     manager = PackageManager(temp_project)
-    pkg = manager.install_local_package(mock_plugin_src)
+    manager.install_local_package(mock_plugin_src)
     
     # Test safe failure
     result = manager.registry.resolve_class("mock_plugin.plugins.NonExistentClass")
