@@ -5,5 +5,10 @@
   "importer": "generic_importer",
   "source_path": "Assets/Prefabs/NebulaDefense/NebulaDrone.zprefab",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "schema_version": 1,
+  "importer_version": 1,
+  "source_hash": "acf88efadd9a63147ac2e3b0c4f3cebbf19ea219c7cddee0acdfc413eca41b43",
+  "source_size": 643,
+  "source_modified_ns": 1784305638603429200
 }

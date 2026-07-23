@@ -4,12 +4,14 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QAction, QActionGroup, QKeySequence, QShortcut
-from PySide6.QtWidgets import QFileDialog, QComboBox, QSplitter, QTabWidget, QToolBar, QToolButton, QWidget, QMessageBox
+from PySide6.QtGui import QAction, QKeySequence, QShortcut
+from PySide6.QtWidgets import QFileDialog, QMessageBox
 
 from engine.game_object import GameObject
 from engine.physics.collider import BoxCollider
 from engine.physics.rigidbody import RigidBody
+from engine.packages.manager import PackageManager
+from editor.inspector.plugin_registry import inspector_plugin_registry
 from editor.runtime.editor_extensions import EditorExtensionManager, default_editor_extensions
 from editor.runtime.editor_context import EditorContext
 from editor.runtime.tool_manager import EditorTool
@@ -20,11 +22,6 @@ from editor.phase1_editor_mixins import (
     Phase1HierarchyOperationsMixin,
 )
 from editor.premium_editor import (
-    AssetPreviewPanel,
-    ConsolePanel,
-    CreatePanel,
-    PrefabsPanel,
-    ResourcesPanel,
     ZennityPremiumEditor,
 )
 
@@ -48,6 +45,7 @@ class ZennityPhase1Editor(
         # nao recalcular automaticamente.
         self._hierarchy_splitter_user_resized = False
         self._extensions = EditorExtensionManager(self, self._on_extension_error)
+        self.package_manager = PackageManager(self.editor_context.project_root)
         super().__init__()
         self._ensure_default_scene()
         self.editor_context.tools.subscribe(self._on_runtime_tool_changed)
@@ -61,7 +59,7 @@ class ZennityPhase1Editor(
         platform.transform.position = [0.0, 160.0, 0.0]
         platform.transform.scale = [320.0, 24.0, 1.0]
 
-        platform_collider = platform.add_component(
+        platform.add_component(
             BoxCollider(width=320, height=24)
         )
         platform_body = platform.add_component(RigidBody())
@@ -168,9 +166,30 @@ class ZennityPhase1Editor(
         for extension in default_editor_extensions():
             self._extensions.install(extension)
 
-    def _on_extension_error(self, name: str, exc: Exception) -> None:
+        # Instalar extensions do ecosystem
+        registry = self.package_manager.registry
+        for pkg in registry.list_packages():
+            # 1. Inspector plugins
+            for plugin_path in pkg.inspector_plugins:
+                plugin_class = registry.resolve_class(plugin_path)
+                if plugin_class:
+                    try:
+                        inspector_plugin_registry.register(plugin_class)
+                    except Exception as e:
+                        self.console.add("WARN", f"Falha ao registrar inspector_plugin '{plugin_path}': {e}")
+
+            # 2. Editor Extensions
+            for ext_path in pkg.editor_extensions:
+                ext_class = registry.resolve_class(ext_path)
+                if ext_class:
+                    try:
+                        self._extensions.install(ext_class())
+                    except Exception as e:
+                        self.console.add("WARN", f"Falha ao registrar editor_extension '{ext_path}': {e}")
+
+    def _on_extension_error(self, name: str, phase: str, exc: Exception) -> None:
         if hasattr(self, "console"):
-            self.console.add("WARN", f"Extensao '{name}' falhou: {exc}")
+            self.console.add("WARN", f"Extensao '{name}' falhou na fase '{phase}': {exc}")
 
     def _update_undo_redo_states(self) -> None:
         if hasattr(self, "act_undo") and hasattr(self, "act_redo"):

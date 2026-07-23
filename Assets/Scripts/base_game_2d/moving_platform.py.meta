@@ -5,5 +5,10 @@
   "importer": "script_importer",
   "source_path": "Assets/Scripts/base_game_2d/moving_platform.py",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "schema_version": 1,
+  "importer_version": 1,
+  "source_hash": "7664091559341db8030d7d2aa493ac4a59f6613d7d8fb5cbfb752a6fb97412ff",
+  "source_size": 515,
+  "source_modified_ns": 1784295889791665600
 }

@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from PySide6.QtWidgets import QFileDialog
 
 from editor.project_workflow_controller import ProjectWorkflowController
+from editor.runtime.diagnostics import DiagnosticCenter
 
 
 class _Persistence:
@@ -46,6 +47,7 @@ def _host():
         _scene_persistence=_Persistence(), _scene_snapshot=[], _objects_by_name={},
         _scene_document=None, _current_scene_path=None, _selected_name="Old",
         _scene_controller=_SceneBridge(), history=0, refreshed=0, logs=[],
+        _diagnostics=DiagnosticCenter(),
     )
     host._record_history = lambda: setattr(host, "history", host.history + 1)
     host._refresh_hierarchy = lambda: setattr(host, "refreshed", host.refreshed + 1)
@@ -99,3 +101,19 @@ def test_project_workflow_syncs_prefab_overrides_before_save(
     assert saved is True
     assert sync_calls == [True]
     assert host._scene_persistence.saved[0] == scene
+
+
+def test_project_workflow_reports_actionable_load_failure(tmp_path: Path) -> None:
+    host, status = _host()
+    scene = tmp_path / "Broken.zscene"
+    host._scene_persistence.load = lambda _path: (_ for _ in ()).throw(
+        ValueError("JSON inválido")
+    )
+
+    assert ProjectWorkflowController(host, tmp_path).load_scene(scene) is False
+    diagnostic = host._diagnostics.records[-1]
+    assert diagnostic.title == "Falha ao abrir cena"
+    assert diagnostic.path == scene
+    assert "restaure uma cópia válida" in diagnostic.action
+    assert host.logs[-1][0] == "ERROR"
+    assert status.messages[-1].startswith("Falha ao abrir cena.")

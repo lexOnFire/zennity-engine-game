@@ -17,6 +17,7 @@ class SceneHistoryController:
             h._scene_history.begin(h._scene_snapshot)
         else:
             h._scene_history.commit(before, h._scene_snapshot)
+        self.sync_actions()
 
     def restore(self, snapshot: list[dict]) -> None:
         h = self.host
@@ -31,10 +32,12 @@ class SceneHistoryController:
             h._update_inspector(h._selected_name)
         else:
             h._clear_inspector_view()
+        self.sync_actions()
 
     def undo(self) -> bool:
         restored = self.host._scene_history.undo(self.host._scene_snapshot)
         if restored is None:
+            self.sync_actions()
             return False
         self.restore(restored)
         return True
@@ -42,6 +45,18 @@ class SceneHistoryController:
     def redo(self) -> bool:
         restored = self.host._scene_history.redo(self.host._scene_snapshot)
         if restored is None:
+            self.sync_actions()
             return False
         self.restore(restored)
         return True
+
+    def sync_actions(self) -> None:
+        """Keep Edit menu actions aligned with the actual history state."""
+        actions = getattr(self.host, "toolbar_actions", {})
+        undo_action = actions.get("Desfazer")
+        redo_action = actions.get("Refazer")
+        editing_locked = bool(getattr(self.host, "_runtime_playing", False))
+        if undo_action is not None:
+            undo_action.setEnabled(not editing_locked and self.host._scene_history.can_undo)
+        if redo_action is not None:
+            redo_action.setEnabled(not editing_locked and self.host._scene_history.can_redo)

@@ -47,3 +47,24 @@ def test_history_evicts_oldest_deltas_to_respect_memory_budget() -> None:
 
     assert stats.retained_bytes <= 2500
     assert stats.evicted_entries > 0
+
+
+def test_history_exposes_available_undo_and_redo_transitions() -> None:
+    history = SceneHistory()
+    scene = _scene(1)
+
+    assert history.can_undo is False
+    assert history.can_redo is False
+
+    history.begin(scene)
+    assert history.can_undo is True
+
+    scene[0]["x"] = 10.0
+    restored = history.undo(scene)
+    assert restored is not None
+    assert history.can_undo is False
+    assert history.can_redo is True
+
+    history.redo(restored)
+    assert history.can_undo is True
+    assert history.can_redo is False

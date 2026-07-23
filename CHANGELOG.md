@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.1 — Editor Experience
+
+### Added
+* Undo/Redo agora reflete a disponibilidade real do histórico, permanece bloqueado no Play Mode e aceita `Ctrl+Y` ou `Ctrl+Shift+Z` para refazer.
+* Layout do editor passa a ser salvo com versão de esquema, recuperado com validação e pode ser restaurado pelo menu Janela.
+* Falhas de abertura e salvamento geram diagnósticos limitados em memória com arquivo, causa, contagem de repetição e próxima ação recomendada.
+
 - Logic Graphs agora possuem grupos redimensionáveis, comentários, minimapa, alinhamento, distribuição, organização automática e histórico de desfazer/refazer.
 - A validação visual destaca conexões inválidas, fluxos inalcançáveis e ciclos de execução perigosos antes do Play.
 - Física fixa, áudio, animação e HUD da Viewport passaram a usar serviços independentes e exportáveis; foi adicionada uma ponte explícita para o ECS oficial.
