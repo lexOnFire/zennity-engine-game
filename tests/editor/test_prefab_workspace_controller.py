@@ -69,6 +69,10 @@ def test_prefab_instantiation_creates_independent_scene_object(tmp_path: Path) -
     assert host.history == 1
     assert host._scene_controller.snapshots == 1
     assert host._scene_controller.selected == ["Crate 2"]
+    assert created["prefab_source"] == "Assets/Prefabs/Crate.zprefab"
+    assert created["prefab_guid"]
+    assert set(created["prefab_overrides"]["values"]) >= {"/x", "/y"}
+    assert "/name" not in created["prefab_overrides"]["values"]
 
 
 def test_prefab_instantiation_rejects_legacy_runtime_shape(tmp_path: Path) -> None:
@@ -81,3 +85,33 @@ def test_prefab_instantiation_rejects_legacy_runtime_shape(tmp_path: Path) -> No
     assert host.history == 0
     assert len(host._scene_snapshot) == 1
     assert host.logs[-1][0] == "ERROR"
+
+
+def test_scene_instance_overrides_sync_refresh_and_revert(tmp_path: Path) -> None:
+    prefab_dir = tmp_path / "Assets" / "Prefabs"
+    prefab_dir.mkdir(parents=True)
+    path = prefab_dir / "Crate.zprefab"
+    payload = PrefabWorkspaceController.build_payload(
+        {"name": "Crate", "x": 2.0, "y": 3.0, "w": 32.0, "h": 16.0},
+        "Crate",
+    )
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    host = _host()
+    controller = PrefabWorkspaceController(host, tmp_path)
+    controller.instantiate(path)
+    created = host._scene_snapshot[-1]
+    created["w"] = 80.0
+    controller.sync_scene_instances()
+
+    payload["object"]["h"] = 40.0
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    assert controller.refresh_instance(created["name"])
+    refreshed = host._scene_snapshot[-1]
+
+    assert refreshed["w"] == 80.0
+    assert refreshed["h"] == 40.0
+    assert controller.revert_instance(refreshed["name"])
+    reverted = host._scene_snapshot[-1]
+    assert reverted["w"] == 32.0
+    assert reverted["h"] == 40.0
+    assert reverted["prefab_overrides"] == {"values": {}, "removed": []}

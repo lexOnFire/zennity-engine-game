@@ -50,6 +50,23 @@ Alterações futuras no Prefab base são herdadas automaticamente. Overrides da 
 
 No painel **Adicionar Prefabs**, clique com o botão direito em um Prefab e use **Criar variante...**. Variantes aparecem com o indicador `↳`.
 
+## Instâncias e overrides persistentes
+
+Uma instância adicionada à cena registra:
+
+- `prefab_guid`: identidade estável do asset;
+- `prefab_source`: caminho portátil dentro de `Assets/`;
+- `prefab_overrides`: somente valores alterados ou removidos em relação ao
+  Prefab resolvido.
+
+Os overrides usam caminhos JSON Pointer, portanto propriedades aninhadas e
+nomes contendo `/` ou `~` continuam seguros. Antes de salvar a cena, o editor
+recalcula o patch da instância. Ao atualizar uma instância, novos valores do
+Prefab são incorporados e as diferenças locais permanecem. A reversão descarta
+as diferenças, mas preserva o ID, o nome único da cena e o vínculo da instância.
+
+O Inspector mostra a origem, o GUID e a lista de caminhos modificados.
+
 ## Compatibilidade e exportação
 
 - Prefabs antigos continuam carregando normalmente.

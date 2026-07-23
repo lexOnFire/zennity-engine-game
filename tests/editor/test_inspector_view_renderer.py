@@ -62,3 +62,29 @@ def test_renderer_card_is_hidden_for_camera_objects() -> None:
     InspectorViewRenderer(host).render_renderer({"camera": {}, "renderer_enabled": True})
 
     assert ("sprite", False) in cards
+
+
+def test_runtime_card_shows_prefab_origin_and_overrides_outside_play_mode() -> None:
+    cards = []
+    label = SimpleNamespace(text="", setText=lambda value: setattr(label, "text", value))
+    host = SimpleNamespace(
+        _runtime_playing=False,
+        _set_inspector_card_present=lambda key, present: cards.append((key, present)),
+        runtime_debug_label=label,
+    )
+    obj = {
+        "name": "Crate 2",
+        "prefab_source": "Assets/Prefabs/Crate.zprefab",
+        "prefab_guid": "guid-1",
+        "prefab_overrides": {
+            "values": {"/transform/position/x": 20},
+            "removed": ["/visual/texture"],
+        },
+    }
+
+    InspectorViewRenderer(host).render_runtime(obj)
+
+    assert ("runtime", True) in cards
+    assert "Assets/Prefabs/Crate.zprefab" in label.text
+    assert "GUID: guid-1" in label.text
+    assert "Overrides: 2" in label.text
