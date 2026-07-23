@@ -8,7 +8,7 @@ from editor.inspector.plugin import InspectorPlugin
 from editor.inspector.plugin_registry import inspector_plugin_registry
 from editor.runtime.command_manager import CommandManager, FunctionCommand
 from editor.inspector.plugin_ui_utils import *
-
+from editor.ui.property_editors import DragScrubSlider
 
 class TransformInspectorPlugin(InspectorPlugin):
     component_type = "Transform"
@@ -77,7 +77,7 @@ class TransformInspectorPlugin(InspectorPlugin):
                 )
             )
             row = body.itemAt(body.count() - 1).widget()
-            spinboxes = row.findChildren(QDoubleSpinBox)
+            spinboxes = row.findChildren(DragScrubSlider)
             for index, field in enumerate(spinboxes):
                 fields[(property_name, index)] = field
         widget.sb_pos_x = fields[("position", 0)]

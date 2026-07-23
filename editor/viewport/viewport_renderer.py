@@ -13,7 +13,7 @@ from editor.viewport.selection_outline import SelectionOutlineRenderer
 from editor.viewport.bounding_box import BoundingBoxRenderer
 from editor.viewport.viewport_overlay import ViewportOverlay
 from editor.viewport.viewport_camera import ViewportCamera
-
+from editor.gizmos.qt_gizmo_overlay import QtMoveGizmoOverlay
 
 class ViewportRenderer:
     """Coordinates all QPainter based Scene View overlays."""
@@ -23,6 +23,7 @@ class ViewportRenderer:
         self.outline_renderer = SelectionOutlineRenderer()
         self.bounding_box_renderer = BoundingBoxRenderer()
         self.overlay = ViewportOverlay()
+        self.move_gizmo = QtMoveGizmoOverlay()
         self._fps_last_time: float = time.time()
         self._fps_value: float = 60.0
 
@@ -104,15 +105,20 @@ class ViewportRenderer:
         ) if selected is not None else False
         if has_sprite and active_tool_name.lower() != "scale":
             selection_visible = False
-        if selected is None or is_playing or not selection_visible:
+        if selected is None or is_playing:
             return
-        self.outline_renderer.draw(painter, selected, camera.world_to_viewport)
-        self.bounding_box_renderer.draw(
-            painter,
-            selected,
-            camera.world_to_viewport,
-            show_handles=active_tool_name.lower() == "scale",
-        )
+            
+        if selection_visible:
+            self.outline_renderer.draw(painter, selected, camera.world_to_viewport)
+            self.bounding_box_renderer.draw(
+                painter,
+                selected,
+                camera.world_to_viewport,
+                show_handles=active_tool_name.lower() == "scale",
+            )
+            
+        if active_tool_name.lower() == "move":
+            self.move_gizmo.draw(painter, selected, camera.world_to_viewport)
 
     def render_hud_overlays(
         self,

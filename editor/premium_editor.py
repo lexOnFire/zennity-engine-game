@@ -250,7 +250,10 @@ class ZennityPremiumEditor(QMainWindow):
         bar = self.menuBar()
         for name in ["Arquivo", "Editar", "Janela", "Criar", "Ferramentas", "Build + Executar", "Ajuda"]:
             menu = bar.addMenu(name)
-            if name == "Criar":
+            if name == "Janela":
+                menu.addAction("Salvar Layout", self.save_layout)
+                menu.addAction("Restaurar Layout", self.load_layout)
+            elif name == "Criar":
                 for item in ["Player", "Plataforma", "Inimigo", "Sprite 2D", "Camera 2D"]:
                     menu.addAction(item, lambda checked=False, value=item: self.create_object(value))
             elif name == "Build + Executar":
@@ -279,6 +282,8 @@ class ZennityPremiumEditor(QMainWindow):
         tb.addWidget(QComboBox())
 
     def _build_layout(self) -> None:
+        self.setDockNestingEnabled(True)
+
         self.hierarchy = HierarchyPanel()
         self.resources = ResourcesPanel()
         self.create_panel = CreatePanel()
@@ -291,28 +296,23 @@ class ZennityPremiumEditor(QMainWindow):
         self.viewport.setObjectName("ViewportCanvas")
         self.viewport.set_viewmodel(self.scene_view_model)
 
-        left = QSplitter(Qt.Vertical)
-        left.addWidget(self.hierarchy)
-        left.addWidget(self.resources)
-        left.addWidget(self.create_panel)
-        left.setSizes([320, 260, 220])
+        self.setCentralWidget(self.viewport)
 
-        center = QSplitter(Qt.Vertical)
-        center.addWidget(self.viewport)
-        bottom = QSplitter(Qt.Horizontal)
-        bottom.addWidget(self.console)
-        bottom.addWidget(self.preview)
-        bottom.addWidget(self.profiler)
-        bottom.setSizes([520, 260, 260])
-        center.addWidget(bottom)
-        center.setSizes([560, 240])
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.hierarchy)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.resources)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.create_panel)
 
-        main = QSplitter(Qt.Horizontal)
-        main.addWidget(left)
-        main.addWidget(center)
-        main.addWidget(self.inspector)
-        main.setSizes([260, 850, 300])
-        self.setCentralWidget(main)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.inspector)
+
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.console)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.preview)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.profiler)
+
+        self.splitDockWidget(self.hierarchy, self.resources, Qt.Vertical)
+        self.splitDockWidget(self.resources, self.create_panel, Qt.Vertical)
+
+        self.splitDockWidget(self.console, self.preview, Qt.Horizontal)
+        self.splitDockWidget(self.preview, self.profiler, Qt.Horizontal)
 
     def _build_status(self) -> None:
         status = QStatusBar()
@@ -347,6 +347,25 @@ class ZennityPremiumEditor(QMainWindow):
         self.viewport._on_play_state_changed("stop")
         self.status_msg.setText("Simulacao parada.")
         self.console.add("INFO", "Play finalizado.")
+
+    def save_layout(self) -> None:
+        try:
+            state = self.saveState().data()
+            with open("layout.zstate", "wb") as f:
+                f.write(state)
+            self.console.add("INFO", "Layout salvo com sucesso.")
+        except Exception as e:
+            self.console.add("ERROR", f"Falha ao salvar layout: {e}")
+
+    def load_layout(self) -> None:
+        try:
+            from PySide6.QtCore import QByteArray
+            with open("layout.zstate", "rb") as f:
+                state = f.read()
+            self.restoreState(QByteArray(state))
+            self.console.add("INFO", "Layout restaurado.")
+        except Exception as e:
+            self.console.add("ERROR", f"Falha ao restaurar layout: {e}")
 
 
 def run() -> None:

@@ -34,6 +34,7 @@ from PySide6.QtWidgets import (
 from editor.inspector.plugin import InspectorPlugin
 from editor.inspector.plugin_registry import inspector_plugin_registry
 from editor.runtime.command_manager import CommandManager, FunctionCommand
+from editor.ui.property_editors import DragScrubSlider, FoldoutWidget
 
 
 # Dicionário para manter o estado de colapso de cada tópico/componente
@@ -41,58 +42,20 @@ COLLAPSED_STATES: dict[str, bool] = {}
 
 
 def _section(title: str) -> tuple[QWidget, QVBoxLayout]:
-    widget = QWidget()
-    widget.setObjectName("InspectorComponentCard")
-    layout = QVBoxLayout(widget)
-    layout.setContentsMargins(0, 0, 0, 0)
-    layout.setSpacing(0)
-
-    header_host = QWidget()
-    header_host.setObjectName("InspectorComponentHeader")
-    header_host.setCursor(Qt.PointingHandCursor)
-    header_layout = QHBoxLayout(header_host)
-    header_layout.setContentsMargins(6, 4, 6, 4)
-    header_layout.setSpacing(6)
-
-    foldout = QLabel("▾")
-    foldout.setObjectName("InspectorFoldout")
-    icon = QLabel("✦")
-    icon.setObjectName("InspectorComponentIcon")
-    header = QLabel(title)
-    header.setObjectName("InspectorComponentTitle")
-    header_layout.addWidget(foldout)
-    header_layout.addWidget(icon)
-    header_layout.addWidget(header, 1)
-    header_layout.addWidget(QLabel("↻"))
-    header_layout.addWidget(QLabel("⋮"))
-
-    body = QWidget()
-    body.setObjectName("InspectorComponentBody")
-    body_layout = QVBoxLayout(body)
-    body_layout.setContentsMargins(8, 6, 8, 8)
-    body_layout.setSpacing(4)
-    layout.addWidget(header_host)
-    layout.addWidget(body)
-
-    # Restaura o estado colapsado anterior se houver
+    foldout = FoldoutWidget(title)
     if COLLAPSED_STATES.get(title, False):
-        body.setVisible(False)
-        foldout.setText("▸")
-
-    # Função para encolher/expandir o tópico
-    def toggle_collapse(event):
-        if body.isVisible():
-            body.setVisible(False)
-            foldout.setText("▸")
-            COLLAPSED_STATES[title] = True
-        else:
-            body.setVisible(True)
-            foldout.setText("▾")
-            COLLAPSED_STATES[title] = False
-
-    header_host.mousePressEvent = toggle_collapse
-
-    return widget, body_layout
+        foldout.toggle() # Set it to collapsed if it was saved as collapsed
+        
+    # Hook the toggle to save state
+    original_toggle = foldout.toggle
+    def new_toggle():
+        original_toggle()
+        COLLAPSED_STATES[title] = not foldout._is_expanded
+    foldout.toggle = new_toggle
+    foldout.toggle_btn.clicked.disconnect()
+    foldout.toggle_btn.clicked.connect(foldout.toggle)
+        
+    return foldout, foldout.content_layout
 
 
 def _float_field(value: float, on_change: callable) -> QDoubleSpinBox:
@@ -118,10 +81,10 @@ def _axis_row(label: str, values: Any, on_change: callable) -> QWidget:
     title.setObjectName("InspectorPropertyLabel")
     layout.addWidget(title)
     for index, axis in enumerate(("X", "Y", "Z")):
-        axis_label = QLabel(axis)
-        axis_label.setObjectName("InspectorAxisLabel")
-        layout.addWidget(axis_label)
-        layout.addWidget(_float_field(values[index], lambda value, idx=index: on_change(idx, value)), 1)
+        slider = DragScrubSlider(axis, float(values[index]))
+        slider.valueChanged.connect(lambda value, idx=index: on_change(idx, value))
+        slider.original_value = float(values[index])
+        layout.addWidget(slider, 1)
     return row
 
 

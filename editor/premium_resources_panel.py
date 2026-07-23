@@ -61,11 +61,23 @@ class ResourcesPanel(Panel):
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self.open_context_menu)
         self.layout.addWidget(self.tree)
+        
+        from PySide6.QtWidgets import QListWidget, QListWidgetItem
+        self.grid_view = QListWidget()
+        self.grid_view.setViewMode(QListWidget.IconMode)
+        self.grid_view.setResizeMode(QListWidget.Adjust)
+        self.grid_view.setSpacing(8)
+        self.grid_view.setIconSize(QSize(64, 64))
+        self.grid_view.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.grid_view.customContextMenuRequested.connect(self.open_context_menu)
+        self.layout.addWidget(self.grid_view)
+        
         self.assets_controller = AssetsPanelController(self)
         self.assets_controller.install()
         self.set_view_mode(self.browser.session.view_mode)
         self.refresh_assets()
         self.tree.itemSelectionChanged.connect(self._selected)
+        self.grid_view.itemSelectionChanged.connect(self._grid_selected)
 
     def refresh_assets(self) -> None:
         self.assets_controller.refresh(self._refresh_assets_content)
@@ -77,6 +89,7 @@ class ResourcesPanel(Panel):
     def _refresh_assets_content(self) -> None:
         self.browser.refresh()
         self.tree.clear()
+        self.grid_view.clear()
         self._items_by_path.clear()
         root = self.asset_viewmodel.refresh()
         root_item = QTreeWidgetItem(self.tree, [root.name, "folder"])
@@ -87,14 +100,24 @@ class ResourcesPanel(Panel):
         self.apply_filter(self.search.text())
 
     def _populate_item(self, parent_item: QTreeWidgetItem, browser_item) -> None:
+        from PySide6.QtWidgets import QListWidgetItem
         for child in browser_item.children:
             tree_item = QTreeWidgetItem(parent_item, [child.name, child.item_type])
             tree_item.setData(0, Qt.UserRole, child.asset)
             rel_path = child.asset.path if child.asset is not None else self._folder_path(parent_item, child.name)
             tree_item.setData(0, Qt.UserRole + 1, rel_path)
-            tree_item.setIcon(0, self._icon_for_item(child))
+            icon = self._icon_for_item(child)
+            tree_item.setIcon(0, icon)
             if rel_path:
                 self._items_by_path[rel_path] = tree_item
+                
+            if child.item_type != "folder":
+                grid_item = QListWidgetItem(child.name)
+                grid_item.setIcon(icon)
+                grid_item.setData(Qt.UserRole, child.asset)
+                grid_item.setData(Qt.UserRole + 1, rel_path)
+                self.grid_view.addItem(grid_item)
+                
             self._populate_item(tree_item, child)
 
     def _selected(self) -> None:
@@ -103,6 +126,13 @@ class ResourcesPanel(Panel):
             self.asset_selected.emit(None)
             return
         self.asset_selected.emit(item.data(0, Qt.UserRole))
+        
+    def _grid_selected(self) -> None:
+        item = self.grid_view.currentItem()
+        if item is None:
+            self.asset_selected.emit(None)
+            return
+        self.asset_selected.emit(item.data(Qt.UserRole))
 
     def _favorite_selected(self) -> None:
         item = self.favorites.currentItem()
@@ -120,11 +150,11 @@ class ResourcesPanel(Panel):
     def set_view_mode(self, mode: str) -> None:
         self.browser.session.set_view_mode(mode)
         if mode == "grid":
-            self.tree.setIconSize(QSize(48, 48))
-            self.tree.setColumnWidth(0, 150)
+            self.tree.hide()
+            self.grid_view.show()
         else:
-            self.tree.setIconSize(QSize(20, 20))
-            self.tree.setColumnWidth(0, 220)
+            self.tree.show()
+            self.grid_view.hide()
         self._sync_view_mode_buttons()
 
     def _sync_view_mode_buttons(self) -> None:
@@ -142,15 +172,23 @@ class ResourcesPanel(Panel):
     def apply_filter(self, text: str) -> None:
         query = text.strip().lower()
         root = self.tree.topLevelItem(0)
-        if root is None:
-            return
-        if not query:
-            self._set_visible_recursive(root, True)
-            root.setExpanded(True)
-            return
-        self._filter_item(root, query)
-        root.setHidden(False)
-        root.setExpanded(True)
+        if root is not None:
+            if not query:
+                self._set_visible_recursive(root, True)
+                root.setExpanded(True)
+            else:
+                self._filter_item(root, query)
+                root.setHidden(False)
+                root.setExpanded(True)
+                
+        for i in range(self.grid_view.count()):
+            item = self.grid_view.item(i)
+            asset = item.data(Qt.UserRole)
+            fields = [item.text()]
+            if asset is not None:
+                fields.extend([asset.extension, asset.type.value, asset.path])
+            visible = not query or any(query in str(field).lower() for field in fields)
+            item.setHidden(not visible)
 
     def _set_visible_recursive(self, item: QTreeWidgetItem, visible: bool) -> None:
         item.setHidden(not visible)
@@ -173,9 +211,20 @@ class ResourcesPanel(Panel):
         return visible
 
     def open_context_menu(self, pos) -> None:
-        item = self.tree.itemAt(pos)
-        asset = item.data(0, Qt.UserRole) if item is not None else None
-        path = item.data(0, Qt.UserRole + 1) if item is not None else "Assets"
+        sender = self.sender()
+        if sender == self.tree:
+            item = self.tree.itemAt(pos)
+            asset = item.data(0, Qt.UserRole) if item is not None else None
+            path = item.data(0, Qt.UserRole + 1) if item is not None else "Assets"
+            rename_enabled = item is not None and item.parent() is not None
+        elif sender == self.grid_view:
+            item = self.grid_view.itemAt(pos)
+            asset = item.data(Qt.UserRole) if item is not None else None
+            path = item.data(Qt.UserRole + 1) if item is not None else "Assets"
+            rename_enabled = item is not None
+        else:
+            return
+
         menu = QMenu(self)
         new_folder = menu.addAction("New Folder")
         rename = menu.addAction("Rename")
@@ -185,12 +234,17 @@ class ResourcesPanel(Panel):
         copy_path = menu.addAction("Copy Path")
         menu.addSeparator()
         favorite = menu.addAction("Add Favorite")
-        rename.setEnabled(item is not None and item.parent() is not None)
+        rename.setEnabled(rename_enabled)
         duplicate.setEnabled(asset is not None)
-        delete.setEnabled(item is not None and item.parent() is not None)
+        can_delete = False
+        if sender == self.tree:
+            can_delete = item is not None and item.parent() is not None
+        elif sender == self.grid_view:
+            can_delete = item is not None
+        delete.setEnabled(can_delete)
         reveal.setEnabled(item is not None)
         copy_path.setEnabled(item is not None)
-        action = menu.exec(self.tree.viewport().mapToGlobal(pos))
+        action = menu.exec(sender.viewport().mapToGlobal(pos))
         if action is new_folder:
             self.create_folder(path if asset is None else str(asset.absolute_path.parent))
         elif action is rename and item is not None:

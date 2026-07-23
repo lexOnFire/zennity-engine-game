@@ -1,12 +1,16 @@
-from PySide6.QtWidgets import QFrame, QVBoxLayout, QWidget, QHBoxLayout, QLabel
+from PySide6.QtWidgets import QDockWidget, QVBoxLayout, QWidget, QHBoxLayout, QLabel
 
-class Panel(QFrame):
+class Panel(QDockWidget):
     def __init__(self, title: str) -> None:
-        super().__init__()
+        super().__init__(title)
         self.setObjectName("PremiumPanel")
-        self.layout = QVBoxLayout(self)
+        
+        self.container = QWidget()
+        self.layout = QVBoxLayout(self.container)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(0)
+        self.setWidget(self.container)
+        
         header = QWidget()
         header.setObjectName("PanelHeader")
         row = QHBoxLayout(header)
@@ -16,4 +20,4 @@ class Panel(QFrame):
         row.addWidget(label)
         row.addStretch(1)
         row.addWidget(QLabel("gear x"))
-        self.layout.addWidget(header)
+        self.setTitleBarWidget(header)
