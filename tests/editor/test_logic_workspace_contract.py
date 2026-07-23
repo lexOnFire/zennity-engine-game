@@ -111,7 +111,7 @@ def test_visual_logic_supports_independent_clones_and_one_shot_permanent_motion(
     graph = _source("engine/logic/graph_asset.py")
     runtime = _source("engine/logic/runtime")
     world = _source("engine/runtime/runtime_world.py")
-    recipes = _source("engine/logic/recipes.py")
+    recipes = _source("engine/logic/recipes.py") + _source("engine/logic/recipe_catalog_1.py") + _source("engine/logic/recipe_catalog_2.py")
     assert '"inherit_source": True' in graph
     assert '"inherit_logic": False' in graph
     assert '"event_key_pressed"' in graph
@@ -300,7 +300,7 @@ def test_logic_workspace_teaches_searchable_position_recipes():
     editor = _source("editor/widgets/logic_graph_editor.py")
     graph = _source("engine/logic/graph_asset.py")
     runtime = _source("engine/logic/runtime")
-    recipes = _source("engine/logic/recipes.py")
+    recipes = _source("engine/logic/recipes.py") + _source("engine/logic/recipe_catalog_1.py") + _source("engine/logic/recipe_catalog_2.py")
     assert 'addTab(recipes_page, "Receitas")' in editor
     assert "Editar / Receitas" in interface
     assert "O que você quer fazer?" in editor
@@ -320,7 +320,7 @@ def test_recipe_topics_and_project_asset_picker_cover_visual_gameplay():
     graph = _source("engine/logic/graph_asset.py")
     runtime = _source("engine/logic/runtime")
     viewport = _source("editor/runtime/viewport_session.py")
-    recipes = _source("engine/logic/recipes.py")
+    recipes = _source("engine/logic/recipes.py") + _source("engine/logic/recipe_catalog_1.py") + _source("engine/logic/recipe_catalog_2.py")
     assert "_category_changed" in editor
     assert "Receitas de {selected_topic}" in editor
     assert 'selected_topic == "Todos"' in editor
@@ -345,7 +345,7 @@ def test_nodes_flip_to_code_and_patrol_recipe_is_discoverable():
     graph = _source("engine/logic/graph_asset.py")
     runtime = _source("engine/logic/runtime")
     viewport = _source("editor/runtime/viewport_session.py")
-    recipes = _source("engine/logic/recipes.py")
+    recipes = _source("engine/logic/recipes.py") + _source("engine/logic/recipe_catalog_1.py") + _source("engine/logic/recipe_catalog_2.py")
     assert "class LogicFlipControl" in editor
     assert 'super().__init__("</>", node)' in editor
     assert "toggle_code_preview" in editor
@@ -396,7 +396,7 @@ def test_logic_workspace_can_create_runtime_objects_and_pick_their_sprite():
     viewport = _source("editor/runtime/viewport_session.py")
     world = _source("engine/runtime/runtime_world.py")
     picker = _source("editor/widgets/logic_asset_picker.py")
-    recipes = _source("engine/logic/recipes.py")
+    recipes = _source("engine/logic/recipes.py") + _source("engine/logic/recipe_catalog_1.py") + _source("engine/logic/recipe_catalog_2.py")
     assert '"create_object"' in graph
     assert "'create_object'" in runtime or '"create_object"' in runtime
     assert "def create_object(" in viewport
@@ -417,7 +417,7 @@ def test_logic_workspace_controls_play_and_builds_scrolling_image_planes():
     runtime = _source("engine/logic/runtime")
     viewport = _source("editor/runtime/viewport_session.py")
     rendering = _source("editor/runtime/sprite_rendering.py")
-    recipes = _source("engine/logic/recipes.py")
+    recipes = _source("engine/logic/recipes.py") + _source("engine/logic/recipe_catalog_1.py") + _source("engine/logic/recipe_catalog_2.py")
     assert "play_requested = Signal()" in editor
     assert "stop_requested = Signal()" in editor
     assert "def request_play" in editor and "def set_play_state" in editor
@@ -436,7 +436,7 @@ def test_logic_workspace_explains_targets_and_controls_spawn_lifecycle():
     runtime = _source("engine/logic/runtime")
     viewport = _source("editor/runtime/viewport_session.py")
     world = _source("engine/runtime/runtime_world.py")
-    recipes = _source("engine/logic/recipes.py")
+    recipes = _source("engine/logic/recipes.py") + _source("engine/logic/recipe_catalog_1.py") + _source("engine/logic/recipe_catalog_2.py")
     assert "def _refresh_target_hints" in editor
     assert "ALVO IMPLÍCITO" in editor and "ALVO ATUAL" in editor
     assert "de objeto" in editor and "Qt.DashLine" in editor
@@ -463,7 +463,7 @@ def test_logic_workspace_controls_named_movements_and_debugs_runtime_objects():
         + _source("editor/hierarchy_view_renderer.py")
     )
     interface = _source("editor/interface_smoke_test.py")
-    recipes = _source("engine/logic/recipes.py")
+    recipes = _source("engine/logic/recipes.py") + _source("engine/logic/recipe_catalog_1.py") + _source("engine/logic/recipe_catalog_2.py")
     for node_type in (
         "update_continuous_motion", "pause_continuous_motion",
         "resume_continuous_motion", "stop_continuous_motion",

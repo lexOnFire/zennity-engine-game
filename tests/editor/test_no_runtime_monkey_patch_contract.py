@@ -59,7 +59,7 @@ def test_runtime_patch_modules_are_removed() -> None:
 
 
 def test_assets_panel_uses_explicit_controller_and_drag_drop_module() -> None:
-    premium = (ROOT / "editor" / "premium_editor.py").read_text(encoding="utf-8")
+    premium = (ROOT / "editor" / "premium_resources_panel.py").read_text(encoding="utf-8")
     extensions = (ROOT / "editor" / "runtime" / "editor_extensions.py").read_text(
         encoding="utf-8"
     )

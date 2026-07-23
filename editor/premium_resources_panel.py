@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
 
 from editor.assets import AssetBrowserModel, AssetBrowserViewModel, ProjectBrowserService
 from editor.assets_panel_controller import AssetsPanelController, image_icon
-from editor.premium_editor import Panel
+from editor.premium_panel_base import Panel
 
 
 class ResourcesPanel(Panel):

@@ -80,11 +80,12 @@ from .logic_graph.editor_mixins import (
     LogicGraphPaletteMixin, LogicGraphRuntimeViewMixin, LogicGraphCanvasMixin,
     LogicGraphPropertiesMixin, LogicGraphPersistenceMixin,
 )
+from editor.widgets.logic_graph.editor_mixins.blackboard_mixin import LogicGraphBlackboardMixin
 
 
 class LogicGraphEditor(
     LogicGraphPaletteMixin, LogicGraphRuntimeViewMixin, LogicGraphCanvasMixin,
-    LogicGraphPropertiesMixin, LogicGraphPersistenceMixin, QWidget,
+    LogicGraphPropertiesMixin, LogicGraphPersistenceMixin, LogicGraphBlackboardMixin, QWidget,
 ):
     message = Signal(str, str)
     asset_changed = Signal()

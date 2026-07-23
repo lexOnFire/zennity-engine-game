@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 
 from editor.inspector import InspectorPluginRegistry, inspector_plugin_registry
 from editor.premium_editor import InspectorPanel
+from editor.premium_panel_base import Panel
 from editor.runtime.command_manager import CommandManager, FunctionCommand
 from editor.runtime.component_commands import AddComponentCommand, RemoveComponentCommand
 from engine.core.component_registry import ComponentRegistry, component_registry
