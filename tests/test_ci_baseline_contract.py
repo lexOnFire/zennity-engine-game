@@ -11,11 +11,17 @@ def _workflow() -> str:
     )
 
 
-def test_linux_and_windows_run_the_complete_test_suite() -> None:
+def test_linux_windows_coverage_and_memory_gates_cover_the_suite() -> None:
     workflow = _workflow()
 
-    # Linux matrix, Windows and the coverage gate all execute the complete suite.
-    assert workflow.count("run: python -m pytest") == 3
+    # Linux matrix, Windows and coverage run the broad suite. The stateful memory
+    # budget runs separately so its object-growth baseline starts in a clean process.
+    assert workflow.count("run: python -m pytest") == 4
+    assert workflow.count("--ignore=tests/integration/test_memory_leak.py") == 3
+    assert (
+        "run: python -m pytest tests/integration/test_memory_leak.py" in workflow
+    )
+    assert "Editor memory stability / Python 3.12" in workflow
     assert "tests/editor/test_project_exporter.py" not in workflow
     assert "windows-tests:" in workflow
     assert "Windows / Python 3.12 / Full suite" in workflow
