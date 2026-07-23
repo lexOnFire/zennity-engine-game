@@ -5,6 +5,8 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+from engine.prefabs.prefab_overrides import override_paths
+
 from editor.runtime.native_ui import normalize_ui
 
 
@@ -243,18 +245,29 @@ class InspectorViewRenderer:
         lifecycle = obj.get("spawn_lifecycle") if isinstance(obj.get("spawn_lifecycle"), dict) else {}
         motions = obj.get("logic_motions") if isinstance(obj.get("logic_motions"), list) else []
         parameters = obj.get("prefab_parameters") if isinstance(obj.get("prefab_parameters"), dict) else {}
-        present = h._runtime_playing and (
+        prefab_source = str(obj.get("prefab_source", "")).strip()
+        modified = override_paths(obj.get("prefab_overrides"))
+        present = bool(prefab_source) or h._runtime_playing and (
             bool(obj.get("spawned_by_logic", False)) or bool(lifecycle) or bool(motions) or bool(parameters)
         )
         h._set_inspector_card_present("runtime", present)
         if not present:
             return
-        lines = [
-            f"Posição: X {float(obj.get('x', 0.0)):.2f}  •  Y {float(obj.get('y', 0.0)):.2f}",
-            f"Origem: X {float(lifecycle.get('origin_x', obj.get('x', 0.0))):.2f}  •  Y {float(lifecycle.get('origin_y', obj.get('y', 0.0))):.2f}",
-            f"Criado por: {lifecycle.get('creator_object') or 'objeto da cena'}",
-            f"Grafo: {lifecycle.get('creator_graph') or '—'}",
-        ]
+        lines = []
+        if prefab_source:
+            lines.extend([
+                f"Prefab: {prefab_source}",
+                f"GUID: {obj.get('prefab_guid') or '—'}",
+                f"Overrides: {len(modified)}",
+            ])
+            lines.extend(f"• {path}" for path in modified)
+        if h._runtime_playing:
+            lines.extend([
+                f"Posição: X {float(obj.get('x', 0.0)):.2f}  •  Y {float(obj.get('y', 0.0)):.2f}",
+                f"Origem: X {float(lifecycle.get('origin_x', obj.get('x', 0.0))):.2f}  •  Y {float(lifecycle.get('origin_y', obj.get('y', 0.0))):.2f}",
+                f"Criado por: {lifecycle.get('creator_object') or 'objeto da cena'}",
+                f"Grafo: {lifecycle.get('creator_graph') or '—'}",
+            ])
         if lifecycle:
             lines.append(
                 f"Idade: {float(lifecycle.get('age', 0.0)):.2f}s  •  Vida: "
@@ -269,7 +282,7 @@ class InspectorViewRenderer:
                     + ("  • PAUSADO" if motion.get("paused") else "")
                     + f"\n  Controlado por: {motion.get('graph') or '—'}"
                 )
-        else:
+        elif h._runtime_playing:
             lines.append("Movimentos ativos: nenhum")
         if parameters:
             lines.append("\nParâmetros do Prefab:")

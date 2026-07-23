@@ -1,19 +1,15 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, QSize, Signal
-from PySide6.QtGui import QColor, QFont, QIcon, QPainter, QPixmap
+from PySide6.QtGui import QColor, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
-    QComboBox,
-    QFrame,
     QHBoxLayout,
-    QLabel,
     QLineEdit,
     QMenu,
     QPushButton,
     QTreeWidget,
     QTreeWidgetItem,
-    QVBoxLayout,
     QWidget,
 )
 
@@ -180,6 +176,7 @@ class ResourcesPanel(Panel):
         new_folder = menu.addAction("New Folder")
         rename = menu.addAction("Rename")
         duplicate = menu.addAction("Duplicate")
+        reimport = menu.addAction("Reimport")
         delete = menu.addAction("Delete")
         reveal = menu.addAction("Reveal in Explorer/Finder")
         copy_path = menu.addAction("Copy Path")
@@ -187,6 +184,7 @@ class ResourcesPanel(Panel):
         favorite = menu.addAction("Add Favorite")
         rename.setEnabled(item is not None and item.parent() is not None)
         duplicate.setEnabled(asset is not None)
+        reimport.setEnabled(asset is not None)
         delete.setEnabled(item is not None and item.parent() is not None)
         reveal.setEnabled(item is not None)
         copy_path.setEnabled(item is not None)
@@ -197,6 +195,8 @@ class ResourcesPanel(Panel):
             self.rename_path(path, f"{item.text(0)}_renamed")
         elif action is duplicate and asset is not None:
             self.duplicate_path(asset.path)
+        elif action is reimport and asset is not None:
+            self.reimport_path(asset.path)
         elif action is delete and item is not None:
             self.delete_path(path)
         elif action is reveal and item is not None:
@@ -216,6 +216,10 @@ class ResourcesPanel(Panel):
 
     def duplicate_path(self, path: str) -> None:
         self.browser.duplicate_asset(path)
+        self.refresh_assets()
+
+    def reimport_path(self, path: str) -> None:
+        self.browser.reimport_asset(path)
         self.refresh_assets()
 
     def delete_path(self, path: str) -> None:

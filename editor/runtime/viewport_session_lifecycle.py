@@ -65,15 +65,16 @@ class ViewportSessionLifecycleMixin:
             motion_axes_by_name = {
                 name: obj.pop("_logic_motion_axes", set()) for name, obj in self.objects.items()
             }
-            self.physics_stepper.step(
-                self.objects,
-                self.velocities_y,
-                self.grounded,
-                motion_axes_by_name,
-                physics_steps,
-                self.fixed_physics_dt,
-            )
-            self.contact_processor.process()
+            with self.profiler.measure("physics"):
+                self.physics_stepper.step(
+                    self.objects,
+                    self.velocities_y,
+                    self.grounded,
+                    motion_axes_by_name,
+                    physics_steps,
+                    self.fixed_physics_dt,
+                )
+                self.contact_processor.process()
             self.animation_updater.update(dt)
             for obj in self.objects.values():
                 scroll = obj.get("_texture_scroll")
@@ -137,6 +138,7 @@ class ViewportSessionLifecycleMixin:
             runtime_mode = "PAUSE" if self.paused else ("PLAY" if self.playing else "EDIT")
             player_name, _player = self.controlled_object()
             world_stats = self.runtime_world.stats()
+            profile = self.profiler.summary(window=120)
             if self.playing:
                 _send(
                     self.events,
@@ -162,6 +164,12 @@ class ViewportSessionLifecycleMixin:
                     "reused": world_stats["reused"],
                     "destroyed": world_stats["destroyed"],
                     "pooled": world_stats["pooled"],
+                    "frame_ms": profile.average_frame_ms,
+                    "p95_frame_ms": profile.p95_frame_ms,
+                    "cpu_ms": profile.average_cpu_ms,
+                    "memory_mb": profile.memory_mb,
+                    "physics_bodies": profile.physics_bodies,
+                    "subsystems_ms": profile.subsystems_ms,
                 },
             )
 

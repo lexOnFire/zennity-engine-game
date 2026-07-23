@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
 from engine.game_object import GameObject
 from engine.assets.asset_database import AssetDatabase
 from engine.prefabs.prefab_serializer import serialize_prefab, deserialize_prefab

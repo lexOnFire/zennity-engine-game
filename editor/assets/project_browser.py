@@ -61,6 +61,10 @@ class ProjectBrowserService:
     def refresh(self) -> list[AssetInfo]:
         return self.database.refresh()
 
+    def reimport_asset(self, asset: str | Path) -> AssetInfo:
+        """Force an asset import and refresh the derived project index."""
+        return self.database.reimport_asset(self._asset_path(asset))
+
     def search_assets(self, query: str) -> list[AssetInfo]:
         query = query.strip().lower()
         if not query:

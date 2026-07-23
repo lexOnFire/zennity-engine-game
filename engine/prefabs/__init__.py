@@ -9,6 +9,13 @@ from engine.prefabs.prefab_asset import (
     normalize_exposed_properties,
     resolve_prefab_parameters,
 )
+from engine.prefabs.prefab_overrides import (
+    apply_prefab_overrides,
+    build_prefab_overrides,
+    override_paths,
+    revert_prefab_instance,
+    update_prefab_instance,
+)
 
 __all__ = [
     "serialize_prefab",
@@ -20,4 +27,9 @@ __all__ = [
     "load_prefab_asset",
     "normalize_exposed_properties",
     "resolve_prefab_parameters",
+    "apply_prefab_overrides",
+    "build_prefab_overrides",
+    "override_paths",
+    "revert_prefab_instance",
+    "update_prefab_instance",
 ]

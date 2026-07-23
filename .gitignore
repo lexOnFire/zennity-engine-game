@@ -25,6 +25,7 @@ dist/
 *.egg-info/
 exports/
 release/
+Library/
 
 # Runtime logs and local scenes
 *.log

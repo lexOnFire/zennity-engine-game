@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
+from PySide6.QtWidgets import QFileDialog
+
 from editor.project_workflow_controller import ProjectWorkflowController
 
 
@@ -16,6 +18,10 @@ class _Persistence:
 
     def load(self, path: Path):
         return ({"scene_name": path.stem}, [{"name": "Player", "id": "p1"}], True)
+
+    def save(self, path: Path, snapshot, document):
+        self.saved = (path, snapshot, document)
+        return {"scene_name": path.stem}
 
 
 class _SceneBridge:
@@ -71,3 +77,25 @@ def test_project_workflow_loads_typed_scene_and_publishes_snapshot(tmp_path: Pat
     assert host.history == 1
     assert host._scene_controller.snapshots == [[{"name": "Player", "id": "p1"}]]
     assert status.messages == [f"Cena aberta: {scene}"]
+
+
+def test_project_workflow_syncs_prefab_overrides_before_save(
+    tmp_path: Path, monkeypatch,
+) -> None:
+    host, _ = _host()
+    sync_calls = []
+    host._prefab_workspace = SimpleNamespace(
+        sync_scene_instances=lambda: sync_calls.append(True)
+    )
+    scene = tmp_path / "Level.zscene"
+    monkeypatch.setattr(
+        QFileDialog,
+        "getSaveFileName",
+        lambda *_args, **_kwargs: (str(scene), ""),
+    )
+
+    saved = ProjectWorkflowController(host, tmp_path).save_scene()
+
+    assert saved is True
+    assert sync_calls == [True]
+    assert host._scene_persistence.saved[0] == scene

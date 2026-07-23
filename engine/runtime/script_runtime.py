@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import traceback
+from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
@@ -20,6 +21,9 @@ class ScriptRuntimeInstance:
     module: ModuleType
     path: Path
     started: bool = False
+    source_signature: tuple[int, int] = (0, 0)
+    source_fingerprint: str = ""
+    failed_fingerprint: str = ""
 
 
 class ScriptRuntime:
@@ -46,6 +50,7 @@ class ScriptRuntime:
             self.scheduler.start()
 
     def update(self, delta_time: float) -> None:
+        self.reload_changed()
         if self._owns_scheduler:
             self.scheduler.update(float(delta_time))
 
@@ -89,7 +94,15 @@ class ScriptRuntime:
             behaviour.game_object = component.game_object
             behaviour.runtime = self
             behaviour.scene = self.runtime_scene
-            instance = ScriptRuntimeInstance(component, behaviour, module, path)
+            signature, fingerprint = self._source_identity(path)
+            instance = ScriptRuntimeInstance(
+                component,
+                behaviour,
+                module,
+                path,
+                source_signature=signature,
+                source_fingerprint=fingerprint,
+            )
             self.instances[component] = instance
             self.scheduler.register(
                 LifecycleEntry(
@@ -112,6 +125,76 @@ class ScriptRuntime:
     def _mark_started(self, instance: ScriptRuntimeInstance) -> None:
         self._call(instance, "on_start")
         instance.started = True
+
+    def reload_changed(self) -> list[Path]:
+        """Transactionally reload changed scripts without restarting the scene."""
+        reloaded: list[Path] = []
+        for instance in list(self.instances.values()):
+            try:
+                signature = self._source_signature(instance.path)
+                if signature == instance.source_signature:
+                    continue
+                fingerprint = self._source_fingerprint(instance.path)
+                if fingerprint == instance.source_fingerprint:
+                    instance.source_signature = signature
+                    continue
+                if fingerprint == instance.failed_fingerprint:
+                    continue
+                self._reload_instance(instance, signature, fingerprint)
+                reloaded.append(instance.path)
+            except Exception as exc:
+                try:
+                    failed_fingerprint = self._source_fingerprint(instance.path)
+                except OSError:
+                    failed_fingerprint = "<unreadable>"
+                if failed_fingerprint == instance.failed_fingerprint:
+                    continue
+                instance.failed_fingerprint = failed_fingerprint
+                self._record_error(instance.component, "reload", exc)
+        return reloaded
+
+    def _reload_instance(
+        self,
+        instance: ScriptRuntimeInstance,
+        signature: tuple[int, int],
+        fingerprint: str,
+    ) -> None:
+        module = self._load_module(instance.path)
+        behaviour_type = self._find_behaviour_type(module)
+        state = self._capture_reload_state(instance.behaviour)
+        candidate = behaviour_type()
+        candidate.game_object = instance.behaviour.game_object
+        candidate.runtime = self
+        candidate.scene = self.runtime_scene
+        for name, value in state.items():
+            setattr(candidate, name, self._copy_state(value))
+        candidate.on_reload(self._copy_state(state))
+        instance.behaviour = candidate
+        instance.module = module
+        instance.source_signature = signature
+        instance.source_fingerprint = fingerprint
+        instance.failed_fingerprint = ""
+
+    def _capture_reload_state(self, behaviour: ScriptBehaviour) -> dict[str, Any]:
+        state = {
+            name: self._copy_state(value)
+            for name, value in vars(behaviour).items()
+            if not name.startswith("_")
+            and name not in {"game_object", "runtime", "scene", "input"}
+        }
+        supplied = behaviour.on_before_reload()
+        if supplied is not None:
+            if not isinstance(supplied, dict):
+                raise TypeError("on_before_reload must return a dict or None")
+            state.update(deepcopy(supplied))
+        return state
+
+    @staticmethod
+    def _copy_state(value: Any) -> Any:
+        try:
+            return deepcopy(value)
+        except (TypeError, ValueError):
+            return value
 
     def _call(
         self,
@@ -150,6 +233,19 @@ class ScriptRuntime:
         code = compile(source, str(path), "exec")
         exec(code, module.__dict__)
         return module
+
+    @staticmethod
+    def _source_signature(path: Path) -> tuple[int, int]:
+        stat = path.stat()
+        return int(stat.st_mtime_ns), int(stat.st_size)
+
+    @classmethod
+    def _source_identity(cls, path: Path) -> tuple[tuple[int, int], str]:
+        return cls._source_signature(path), cls._source_fingerprint(path)
+
+    @staticmethod
+    def _source_fingerprint(path: Path) -> str:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
 
     def _find_behaviour_type(self, module: ModuleType) -> type[ScriptBehaviour]:
         explicit = getattr(module, "Script", None)

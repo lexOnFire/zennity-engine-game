@@ -7,6 +7,7 @@ import numpy as np
 import pygame
 
 from engine.assets.asset_database import AssetDatabase
+from engine.assets.asset_cache import AssetCache
 from engine.assets.asset_importer import AssetImporter
 from engine.assets.asset_metadata import AssetInfo, AssetMeta
 from engine.assets.asset_path import AssetPathResolver
@@ -162,6 +163,7 @@ class Assets:
 __all__ = [
     "Any",
     "AssetDatabase",
+    "AssetCache",
     "AssetImporter",
     "AssetInfo",
     "AssetMeta",

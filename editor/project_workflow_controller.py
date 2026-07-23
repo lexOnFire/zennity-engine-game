@@ -33,6 +33,9 @@ class ProjectWorkflowController:
             return False
         path = Path(filename)
         try:
+            prefab_workspace = getattr(h, "_prefab_workspace", None)
+            if prefab_workspace is not None:
+                prefab_workspace.sync_scene_instances()
             payload = h._scene_persistence.save(
                 path, h._scene_snapshot, h._scene_document
             )

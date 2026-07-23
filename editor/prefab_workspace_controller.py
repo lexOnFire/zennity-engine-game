@@ -9,11 +9,17 @@ from typing import Any, Mapping
 
 from PySide6.QtWidgets import QInputDialog, QMenu, QMessageBox, QTreeWidgetItem
 
+from engine.assets import AssetDatabase
 from engine.prefabs.prefab_asset import (
     apply_exposed_properties,
     create_prefab_variant,
     load_prefab_asset,
     resolve_prefab_parameters,
+)
+from engine.prefabs.prefab_overrides import (
+    build_prefab_overrides,
+    revert_prefab_instance,
+    update_prefab_instance,
 )
 
 
@@ -111,6 +117,11 @@ class PrefabWorkspaceController:
         )
         obj["x"] = float(obj.get("x", 0.0)) + 16.0
         obj["y"] = float(obj.get("y", 0.0)) + 16.0
+        database = AssetDatabase(self.project_root)
+        asset = database.import_asset(path)
+        obj["prefab_guid"] = asset.guid
+        obj["prefab_source"] = asset.path
+        obj["prefab_overrides"] = build_prefab_overrides(prefab_object, obj)
         h._scene_snapshot.append(obj)
         h._objects_by_name[obj["name"]] = obj
         h._selected_name = obj["name"]
@@ -119,6 +130,57 @@ class PrefabWorkspaceController:
         h._scene_controller.select(obj["name"])
         h._update_inspector(obj["name"])
         h._log("INFO", f"Prefab adicionado: {obj['name']}")
+
+    def sync_scene_instances(self) -> None:
+        """Persist current scene differences relative to each Prefab source."""
+        for obj in self.host._scene_snapshot:
+            source = str(obj.get("prefab_source", "")).strip()
+            if not source:
+                continue
+            try:
+                payload = load_prefab_asset(source, self.project_root)
+                obj["prefab_overrides"] = build_prefab_overrides(
+                    payload["object"], obj
+                )
+            except (OSError, ValueError, json.JSONDecodeError) as exc:
+                self.host._log(
+                    "WARNING",
+                    f"Não foi possível atualizar overrides de {obj.get('name')}: {exc}",
+                )
+
+    def refresh_instance(self, name: str) -> bool:
+        """Pull latest Prefab values while retaining persisted overrides."""
+        obj = self.host._objects_by_name.get(name)
+        if not isinstance(obj, dict) or not obj.get("prefab_source"):
+            return False
+        payload = load_prefab_asset(obj["prefab_source"], self.project_root)
+        return self._replace_instance(name, update_prefab_instance(payload["object"], obj))
+
+    def revert_instance(self, name: str) -> bool:
+        """Discard all overrides and restore the current Prefab values."""
+        obj = self.host._objects_by_name.get(name)
+        if not isinstance(obj, dict) or not obj.get("prefab_source"):
+            return False
+        payload = load_prefab_asset(obj["prefab_source"], self.project_root)
+        return self._replace_instance(name, revert_prefab_instance(payload["object"], obj))
+
+    def _replace_instance(self, old_name: str, replacement: dict[str, Any]) -> bool:
+        h = self.host
+        h._record_history()
+        for index, current in enumerate(h._scene_snapshot):
+            if current is h._objects_by_name.get(old_name):
+                h._scene_snapshot[index] = replacement
+                break
+        else:
+            return False
+        h._objects_by_name.pop(old_name, None)
+        h._objects_by_name[replacement["name"]] = replacement
+        h._selected_name = replacement["name"]
+        h._refresh_hierarchy()
+        h._scene_controller.publish_snapshot(h._scene_snapshot)
+        h._scene_controller.select(replacement["name"])
+        h._update_inspector(replacement["name"])
+        return True
 
     def open_menu(self, position) -> None:
         h = self.host

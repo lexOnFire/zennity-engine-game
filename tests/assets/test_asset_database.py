@@ -141,3 +141,63 @@ def test_zscene_uses_relative_asset_reference(tmp_path) -> None:
     assert visual["sprite_path"] == "Assets/Textures/player.png"
     assert visual["asset_uuid"] == asset.uuid
     assert str(sprite) not in json.dumps(data)
+
+
+def test_unchanged_scan_reuses_metadata_without_reimport(tmp_path) -> None:
+    _write(tmp_path / "Assets" / "Textures" / "player.png", b"original")
+    db = AssetDatabase(tmp_path)
+
+    first = db.scan()[0]
+    first_meta = db.get_metadata(first.guid)
+    second = db.scan()[0]
+
+    assert second.guid == first.guid
+    assert db.last_scan_imported == 0
+    assert db.last_scan_reused == 1
+    assert db.get_metadata(second.guid) == first_meta
+
+
+def test_changed_source_reimports_with_stable_guid_and_new_hash(tmp_path) -> None:
+    source = _write(tmp_path / "Assets" / "Textures" / "player.png", b"one")
+    db = AssetDatabase(tmp_path)
+    first = db.scan()[0]
+    original_hash = db.get_metadata(first.guid).source_hash
+
+    source.write_bytes(b"updated-content")
+    second = db.scan()[0]
+    updated_meta = db.get_metadata(second.guid)
+
+    assert second.guid == first.guid
+    assert db.last_scan_imported == 1
+    assert updated_meta.source_hash != original_hash
+    assert updated_meta.source_size == len(b"updated-content")
+
+
+def test_force_reimport_preserves_guid_and_updates_cache(tmp_path) -> None:
+    source = _write(tmp_path / "Assets" / "Audio" / "theme.ogg", b"audio")
+    db = AssetDatabase(tmp_path)
+    original = db.scan()[0]
+    cache_before = db.cache.index_path.read_text(encoding="utf-8")
+
+    reimported = db.reimport_asset(source)
+    cache_after = json.loads(db.cache.index_path.read_text(encoding="utf-8"))
+
+    assert reimported.guid == original.guid
+    assert db.last_scan_imported == 1
+    assert cache_before
+    assert cache_after["assets"][original.guid]["path"] == original.path
+
+
+def test_cache_is_derived_and_rebuilt_after_corruption(tmp_path) -> None:
+    _write(tmp_path / "Assets" / "Scripts" / "player.py", b"print('ok')")
+    db = AssetDatabase(tmp_path)
+    asset = db.scan()[0]
+    db.cache.index_path.write_text("{broken", encoding="utf-8")
+
+    assert db.cache.load() == {}
+
+    db.scan()
+    cached = db.cache.load()
+
+    assert cached[asset.guid]["path"] == "Assets/Scripts/player.py"
+    assert cached[asset.guid]["source_hash"]

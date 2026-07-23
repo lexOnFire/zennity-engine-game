@@ -69,3 +69,17 @@ def test_hierarchy_ignores_unknown_items() -> None:
 
     assert host._selected_name is None
     assert selected == [] and inspected == [] and status.messages == []
+
+
+def test_hierarchy_delegates_prefab_refresh_and_revert() -> None:
+    host, *_ = _host()
+    calls = []
+    host._prefab_workspace = SimpleNamespace(
+        refresh_instance=lambda name: calls.append(("refresh", name)) or True,
+        revert_instance=lambda name: calls.append(("revert", name)) or True,
+    )
+    controller = HierarchyController(host, _Renderer())
+
+    assert controller.refresh_prefab_instance("Player")
+    assert controller.revert_prefab_instance("Player")
+    assert calls == [("refresh", "Player"), ("revert", "Player")]

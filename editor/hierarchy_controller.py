@@ -57,13 +57,26 @@ class HierarchyController:
         rename_action = menu.addAction("Renomear")
         duplicate_action = menu.addAction("Duplicar")
         prefab_action = menu.addAction("Criar Prefab")
+        refresh_prefab_action = menu.addAction("Atualizar do Prefab")
+        revert_prefab_action = menu.addAction("Reverter overrides")
         delete_action = menu.addAction("Excluir")
+        is_prefab_instance = bool(
+            h._objects_by_name[item_name].get("prefab_source")
+        )
+        refresh_prefab_action.setEnabled(is_prefab_instance)
+        revert_prefab_action.setEnabled(is_prefab_instance)
         rename_action.triggered.connect(lambda _checked=False: h._rename_object(item_name))
         duplicate_action.triggered.connect(
             lambda _checked=False: self.select_and_duplicate(item_name)
         )
         prefab_action.triggered.connect(
             lambda _checked=False: self.select_and_save_prefab(item_name)
+        )
+        refresh_prefab_action.triggered.connect(
+            lambda _checked=False: self.refresh_prefab_instance(item_name)
+        )
+        revert_prefab_action.triggered.connect(
+            lambda _checked=False: self.revert_prefab_instance(item_name)
         )
         delete_action.triggered.connect(lambda _checked=False: h._delete_object(item_name))
         menu.exec(h.hierarchy_tree.viewport().mapToGlobal(position))
@@ -75,6 +88,12 @@ class HierarchyController:
     def select_and_save_prefab(self, name: str) -> None:
         self.host._selected_name = name
         self.host._prefab_workspace.save_selected()
+
+    def refresh_prefab_instance(self, name: str) -> bool:
+        return self.host._prefab_workspace.refresh_instance(name)
+
+    def revert_prefab_instance(self, name: str) -> bool:
+        return self.host._prefab_workspace.revert_instance(name)
 
     def select_item(self, item: QTreeWidgetItem) -> None:
         h = self.host

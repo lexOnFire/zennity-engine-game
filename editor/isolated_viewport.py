@@ -76,11 +76,25 @@ def run_viewport(
     )
     try:
         while session.running:
-            session.process_commands()
-            session.process_events()
-            session.step()
-            session.render()
-            session.clock.tick(60)
+            session.profiler.begin_frame()
+            with session.profiler.measure("commands"):
+                session.process_commands()
+            with session.profiler.measure("events"):
+                session.process_events()
+            with session.profiler.measure("simulation"):
+                session.step()
+            with session.profiler.measure("render"):
+                session.render()
+            with session.profiler.measure("frame_limit"):
+                session.clock.tick(60)
+            session.profiler.end_frame(
+                session.clock.get_time() / 1000.0,
+                object_count=len(session.objects),
+                physics_bodies=sum(
+                    1 for obj in session.objects.values()
+                    if isinstance(obj.get("rigidbody"), dict)
+                ),
+            )
             session.sync_stats()
     finally:
         session.teardown()

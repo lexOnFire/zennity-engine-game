@@ -126,3 +126,27 @@ def test_project_browser_session_tracks_view_mode_and_favorites() -> None:
     assert session.view_mode == "list"
     assert session.is_favorite("Assets/Textures")
     assert session.list_favorites() == ["Assets/Textures"]
+
+
+def test_project_browser_can_force_asset_reimport(tmp_path: Path) -> None:
+    _write_asset(tmp_path, "Assets/Textures/player.png", b"texture")
+    database = AssetDatabase(tmp_path)
+    service = ProjectBrowserService(database)
+    original = service.refresh()[0]
+
+    reimported = service.reimport_asset(original.path)
+
+    assert reimported.guid == original.guid
+    assert database.last_scan_imported == 1
+    assert database.cache.load()[original.guid]["path"] == original.path
+
+
+def test_resources_panel_exposes_reimport_action() -> None:
+    source = (
+        Path(__file__).resolve().parents[2]
+        / "editor"
+        / "premium_resources_panel.py"
+    ).read_text(encoding="utf-8")
+
+    assert 'menu.addAction("Reimport")' in source
+    assert "self.browser.reimport_asset(path)" in source

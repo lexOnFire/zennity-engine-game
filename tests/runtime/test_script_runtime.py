@@ -268,3 +268,144 @@ class IsolationBehaviour(ScriptBehaviour):
     assert float(runtime_obj.transform.position[0]) == 77.0
     assert float(editor_obj.transform.position[0]) == original_x
     assert _read_events(events) == ["runtime:77.0"]
+
+
+def test_hot_reload_preserves_behaviour_and_scene_state(tmp_path: Path) -> None:
+    events = tmp_path / "events.txt"
+    script = tmp_path / "reloadable.py"
+    _write_script(
+        script,
+        events,
+        """
+class Reloadable(ScriptBehaviour):
+    def __init__(self):
+        super().__init__()
+        self.counter = 0
+
+    def on_update(self, delta_time):
+        self.counter += 1
+        self.transform.position[0] = 25.0
+""",
+    )
+    scene = _empty_editor_scene()
+    editor_obj = _add_script_object(scene, "Player", script)
+    manager = RuntimeManager()
+    runtime_scene = manager.start_play(scene)
+    manager.tick(0.1)
+
+    _write_script(
+        script,
+        events,
+        """
+class Reloadable(ScriptBehaviour):
+    def __init__(self):
+        super().__init__()
+        self.counter = 100
+
+    def on_reload(self, previous_state):
+        log(f"reload:{previous_state['counter']}")
+
+    def on_update(self, delta_time):
+        self.counter += 10
+""",
+    )
+    manager.tick(0.1)
+    instance = next(iter(runtime_scene.script_runtime.instances.values()))
+    runtime_obj = runtime_scene.runtime_for_editor(editor_obj)
+
+    assert instance.behaviour.counter == 11
+    assert float(runtime_obj.transform.position[0]) == 25.0
+    assert _read_events(events) == ["reload:1"]
+
+
+def test_failed_hot_reload_keeps_previous_script_until_source_is_fixed(
+    tmp_path: Path,
+) -> None:
+    events = tmp_path / "events.txt"
+    script = tmp_path / "recoverable.py"
+    _write_script(
+        script,
+        events,
+        """
+class Recoverable(ScriptBehaviour):
+    def __init__(self):
+        super().__init__()
+        self.counter = 0
+
+    def on_update(self, delta_time):
+        self.counter += 1
+""",
+    )
+    scene = _empty_editor_scene()
+    _add_script_object(scene, "Player", script)
+    manager = RuntimeManager()
+    runtime_scene = manager.start_play(scene)
+    manager.tick(0.1)
+    component, instance = next(iter(runtime_scene.script_runtime.instances.items()))
+
+    script.write_text("class Broken(:\n", encoding="utf-8")
+    manager.tick(0.1)
+    manager.tick(0.1)
+
+    assert component.enabled is True
+    assert instance.behaviour.counter == 3
+    assert len(runtime_scene.script_runtime.errors) == 1
+    assert ":reload:" in runtime_scene.script_runtime.errors[0]
+
+    _write_script(
+        script,
+        events,
+        """
+class Recovered(ScriptBehaviour):
+    def on_update(self, delta_time):
+        self.counter += 5
+""",
+    )
+    manager.tick(0.1)
+
+    assert instance.behaviour.counter == 8
+    assert component.enabled is True
+
+
+def test_missing_script_reports_once_and_recovers_when_restored(tmp_path: Path) -> None:
+    events = tmp_path / "events.txt"
+    script = tmp_path / "temporary.py"
+    _write_script(
+        script,
+        events,
+        """
+class Temporary(ScriptBehaviour):
+    def __init__(self):
+        super().__init__()
+        self.updates = 0
+
+    def on_update(self, delta_time):
+        self.updates += 1
+""",
+    )
+    scene = _empty_editor_scene()
+    _add_script_object(scene, "Player", script)
+    manager = RuntimeManager()
+    runtime_scene = manager.start_play(scene)
+    manager.tick(0.1)
+    instance = next(iter(runtime_scene.script_runtime.instances.values()))
+
+    script.unlink()
+    manager.tick(0.1)
+    manager.tick(0.1)
+
+    assert instance.behaviour.updates == 3
+    assert len(runtime_scene.script_runtime.errors) == 1
+
+    _write_script(
+        script,
+        events,
+        """
+class Temporary(ScriptBehaviour):
+    def on_update(self, delta_time):
+        self.updates += 4
+""",
+    )
+    manager.tick(0.1)
+
+    assert instance.behaviour.updates == 7
