@@ -5,5 +5,10 @@
   "importer": "script_importer",
   "source_path": "Assets/Scripts/oscillate.py",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "schema_version": 1,
+  "importer_version": 1,
+  "source_hash": "72ef4f9aa11f1afb5d137fcdf630d43b5decbead1a8aee99800a75bc8b78b93d",
+  "source_size": 345,
+  "source_modified_ns": 1784295889811706000
 }

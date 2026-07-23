@@ -5,5 +5,10 @@
   "importer": "script_importer",
   "source_path": "Assets/Scripts/player_controller_2d.py",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "schema_version": 1,
+  "importer_version": 1,
+  "source_hash": "9aec69bdd28712a8f66a8c1988fda8976f7baadd849ef6f9918a17a9065b025f",
+  "source_size": 476,
+  "source_modified_ns": 1784295889815831100
 }

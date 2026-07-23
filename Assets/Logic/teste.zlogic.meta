@@ -5,5 +5,10 @@
   "importer": "generic_importer",
   "source_path": "Assets/Logic/teste.zlogic",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "schema_version": 1,
+  "importer_version": 1,
+  "source_hash": "91894d51535fdc38d4176826ed1c0888698a01e557ade3018218ed75344370d1",
+  "source_size": 1595,
+  "source_modified_ns": 1784643010811815600
 }

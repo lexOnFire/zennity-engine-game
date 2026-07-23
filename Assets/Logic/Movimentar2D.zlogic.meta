@@ -5,5 +5,10 @@
   "importer": "generic_importer",
   "source_path": "Assets/Logic/Movimentar2D.zlogic",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "schema_version": 1,
+  "importer_version": 1,
+  "source_hash": "8116c9af25c2b6203dbcec97b08ae3e7b50880ddffa51d5fadbd05d8db70c704",
+  "source_size": 2199,
+  "source_modified_ns": 1784643010796190200
 }

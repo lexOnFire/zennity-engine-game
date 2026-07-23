@@ -5,5 +5,10 @@
   "importer": "generic_importer",
   "source_path": "Assets/Logic/NebulaDefense/NebulaEnemy.zlogic",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "schema_version": 1,
+  "importer_version": 1,
+  "source_hash": "e2ffe25b5dd7134ccd1b6fedf0de641bda6098c582f4506a57edcd9bfff856a8",
+  "source_size": 9071,
+  "source_modified_ns": 1784643010796190200
 }
