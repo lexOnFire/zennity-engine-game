@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QFileDialog, QInputDialog
 
 from editor.widgets.build_report_dialog import BuildReportDialog
 from editor.widgets.project_validation_dialog import ProjectValidationDialog
+from editor.runtime.diagnostics import EditorDiagnostic
 from engine.build import export_development_project_with_report, validate_project
 
 
@@ -40,7 +41,12 @@ class ProjectWorkflowController:
                 path, h._scene_snapshot, h._scene_document
             )
         except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
-            h.statusBar().showMessage(f"Falha ao salvar cena: {exc}")
+            self._report_failure(
+                "Falha ao salvar cena",
+                exc,
+                action="Verifique a pasta de destino e tente Salvar como.",
+                path=path,
+            )
             return False
         h._scene_document = payload
         h._current_scene_path = path
@@ -64,7 +70,12 @@ class ProjectWorkflowController:
         try:
             payload, snapshots, typed = h._scene_persistence.load(Path(filename))
         except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
-            h.statusBar().showMessage(f"Falha ao abrir cena: {exc}")
+            self._report_failure(
+                "Falha ao abrir cena",
+                exc,
+                action="Confira o formato do arquivo ou restaure uma cópia válida.",
+                path=Path(filename),
+            )
             return False
         h._record_history()
         h._scene_snapshot = snapshots
@@ -146,3 +157,20 @@ class ProjectWorkflowController:
         h = self.host
         if h._last_build_report is not None:
             BuildReportDialog(h._last_build_report, h).exec()
+
+    def _report_failure(
+        self, title: str, error: Exception, *, action: str, path: Path | None = None,
+    ) -> None:
+        h = self.host
+        diagnostic = EditorDiagnostic(
+            severity="ERROR",
+            title=title,
+            message=str(error),
+            action=action,
+            path=path,
+        )
+        center = getattr(h, "_diagnostics", None)
+        if center is not None:
+            diagnostic = center.report(diagnostic)
+        h._log(diagnostic.severity, diagnostic.console_message())
+        h.statusBar().showMessage(f"{title}. {action}")

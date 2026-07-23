@@ -176,10 +176,11 @@ class EditorCommandController:
         h = self.host
         h.inspector_panel.setEnabled(not locked)
         h.hierarchy_tree.setDragEnabled(not locked)
-        for label in ("Desfazer", "Refazer", "Move", "Rotate", "Scale", "Snap: OFF"):
+        for label in ("Move", "Rotate", "Scale", "Snap: OFF"):
             action = h.toolbar_actions.get(label)
             if action is not None:
                 action.setEnabled(not locked)
+        h._history_controller.sync_actions()
         create_menu = h.editor_menus.get("Criar")
         if create_menu is not None:
             for action in create_menu.actions():
@@ -213,10 +214,12 @@ class EditorCommandController:
             menu.clear()
             undo_action = h.toolbar_actions["Desfazer"]
             undo_action.setShortcut("Ctrl+Z")
+            undo_action.setStatusTip("Desfaz a última alteração da cena")
             undo_action.triggered.connect(h._undo)
             menu.addAction(undo_action)
             redo_action = h.toolbar_actions["Refazer"]
-            redo_action.setShortcut("Ctrl+Y")
+            redo_action.setShortcuts(["Ctrl+Y", "Ctrl+Shift+Z"])
+            redo_action.setStatusTip("Refaz a última alteração desfeita")
             redo_action.triggered.connect(h._redo)
             menu.addAction(redo_action)
             menu.addSeparator()

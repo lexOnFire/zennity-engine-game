@@ -87,6 +87,16 @@ class SceneHistory:
         self._pending_before = None
         self._retained_bytes = 0
 
+    @property
+    def can_undo(self) -> bool:
+        """Return whether a finalized command is currently undoable."""
+        return bool(self._undo or self._pending_before is not None)
+
+    @property
+    def can_redo(self) -> bool:
+        """Return whether a command can currently be reapplied."""
+        return bool(self._redo)
+
     def snapshot(self) -> SceneHistoryStats:
         entries = self._undo + self._redo
         return SceneHistoryStats(

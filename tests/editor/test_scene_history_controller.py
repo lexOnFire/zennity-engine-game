@@ -18,6 +18,14 @@ class _SceneBridge:
         self.selected.append(name)
 
 
+class _Action:
+    def __init__(self) -> None:
+        self.enabled = None
+
+    def setEnabled(self, enabled: bool) -> None:
+        self.enabled = bool(enabled)
+
+
 def _host():
     obj = {"id": "p", "name": "Player", "x": 0.0}
     bridge = _SceneBridge()
@@ -25,6 +33,8 @@ def _host():
         _scene_snapshot=[obj], _objects_by_name={"Player": obj},
         _selected_name="Player", _scene_history=SceneHistory(),
         _scene_controller=bridge, refreshed=0, inspected=[], cleared=0,
+        _runtime_playing=False,
+        toolbar_actions={"Desfazer": _Action(), "Refazer": _Action()},
     )
     host._refresh_hierarchy = lambda: setattr(host, "refreshed", host.refreshed + 1)
     host._update_inspector = lambda name: host.inspected.append(name)
@@ -62,3 +72,25 @@ def test_history_controller_reports_empty_undo_redo() -> None:
 
     assert controller.undo() is False
     assert controller.redo() is False
+
+
+def test_history_controller_synchronizes_action_availability() -> None:
+    host, _ = _host()
+    controller = SceneHistoryController(host)
+
+    controller.sync_actions()
+    assert host.toolbar_actions["Desfazer"].enabled is False
+    assert host.toolbar_actions["Refazer"].enabled is False
+
+    controller.record()
+    assert host.toolbar_actions["Desfazer"].enabled is True
+
+    host._scene_snapshot[0]["x"] = 8.0
+    assert controller.undo() is True
+    assert host.toolbar_actions["Desfazer"].enabled is False
+    assert host.toolbar_actions["Refazer"].enabled is True
+
+    host._runtime_playing = True
+    controller.sync_actions()
+    assert host.toolbar_actions["Desfazer"].enabled is False
+    assert host.toolbar_actions["Refazer"].enabled is False

@@ -57,6 +57,11 @@ class EditorSessionController:
         editor._animator_preview_timer = self._timer(
             editor._tick_animation_preview, interval=125,
         )
+        if not editor._layout_state.restore():
+            editor.statusBar().showMessage(
+                "Layout padrão carregado; o layout salvo estava ausente ou inválido.",
+                5000,
+            )
         self._configured = True
 
     def _timer(self, callback: Any, *, interval: int, single_shot: bool = False) -> QTimer:
@@ -94,6 +99,9 @@ class EditorSessionController:
         if self._closed:
             return
         self._closed = True
+        layout_state = getattr(self.editor, "_layout_state", None)
+        if layout_state is not None:
+            layout_state.save()
         if self._configured:
             for timer_name in (
                 "_viewport_resize_timer", "_event_timer", "_animator_preview_timer",

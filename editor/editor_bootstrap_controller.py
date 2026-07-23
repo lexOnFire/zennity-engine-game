@@ -16,9 +16,11 @@ from editor.hierarchy_view_renderer import HierarchyViewRenderer
 from editor.inspector_controller import InspectorComponentController, IsolatedInspectorController
 from editor.inspector_view_renderer import InspectorViewRenderer
 from editor.logic_workspace_controller import LogicWorkspaceController
+from editor.layout_state_controller import LayoutStateController
 from editor.prefab_workspace_controller import PrefabWorkspaceController
 from editor.project_workflow_controller import ProjectWorkflowController
 from editor.runtime.isolated_play_mode_controller import IsolatedPlayModeController
+from editor.runtime.diagnostics import DiagnosticCenter
 from editor.runtime.scene_history import SceneHistory
 from editor.runtime.scene_selection_controller import SceneSelectionController
 from editor.runtime.viewport_event_dispatcher import ViewportEventDispatcher
@@ -51,6 +53,7 @@ class EditorBootstrapController:
         h = self.host
         h._console_controller = ConsoleController(h)
         h._console_records = h._console_controller.records
+        h._diagnostics = DiagnosticCenter(maximum_records=200)
         h._asset_browser = AssetBrowserController(h, self.project_root)
         h._scene_persistence = EditorScenePersistence(self.project_root)
         h._viewport_controller = viewport_controller or ViewportProcessController.from_queues(
@@ -60,6 +63,7 @@ class EditorBootstrapController:
         h._commands = h._viewport_controller.commands
         h._events = h._viewport_controller.events
         h._scene_controller = SceneSelectionController(h._commands)
+        h._layout_state = LayoutStateController(h)
         h._viewport_events = ViewportEventDispatcher(self._viewport_handlers())
         h._session_controller = EditorSessionController(h)
         h._hierarchy_view = HierarchyViewRenderer(h)
@@ -95,6 +99,8 @@ class EditorBootstrapController:
         h._configure_create_menu()
         h._connect_create_panel()
         h._configure_edit_menu()
+        self._configure_window_menu()
+        h._history_controller.sync_actions()
         h._asset_browser.refresh()
         h._prefab_workspace.refresh()
         h.prefab_tree.itemDoubleClicked.connect(h._prefab_workspace.instantiate_item)
@@ -115,6 +121,20 @@ class EditorBootstrapController:
         h._scene_controller.publish_snapshot(h._scene_snapshot)
         h._log("INFO", "Zennity Phase 1 iniciado com Viewport em processo separado")
         self._configured = True
+
+    def _configure_window_menu(self) -> None:
+        h = self.host
+        menu = h.editor_menus.get("Janela")
+        if menu is None:
+            return
+        reset_action = menu.addAction("Restaurar layout padrão")
+        reset_action.setStatusTip("Recupera os painéis e descarta o layout salvo")
+        reset_action.triggered.connect(self._reset_layout)
+        h._reset_layout_action = reset_action
+
+    def _reset_layout(self) -> None:
+        self.host._layout_state.reset()
+        self.host.statusBar().showMessage("Layout padrão restaurado")
 
     def _viewport_handlers(self) -> dict[str, Any]:
         h = self.host
