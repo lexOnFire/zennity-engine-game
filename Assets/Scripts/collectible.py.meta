@@ -5,5 +5,10 @@
   "importer": "script_importer",
   "source_path": "Assets/Scripts/collectible.py",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "schema_version": 1,
+  "importer_version": 1,
+  "source_hash": "581d3bab38b5c2b610a835f64c8842708204f77eb71457d20abc72f391e64e97",
+  "source_size": 3116,
+  "source_modified_ns": 1784643010951196200
 }

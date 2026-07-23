@@ -5,5 +5,10 @@
   "importer": "script_importer",
   "source_path": "Assets/Scripts/builtin_destroy_on_collision.py",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "schema_version": 1,
+  "importer_version": 1,
+  "source_hash": "ae906a71be82ddab3c30d1636037d19f7e4b2044da011aaced76faa2ca47f36e",
+  "source_size": 275,
+  "source_modified_ns": 1784295889797786000
 }

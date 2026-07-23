@@ -10,6 +10,8 @@ from PySide6.QtWidgets import QFileDialog, QComboBox, QSplitter, QTabWidget, QTo
 from engine.game_object import GameObject
 from engine.physics.collider import BoxCollider
 from engine.physics.rigidbody import RigidBody
+from engine.packages.manager import PackageManager
+from editor.inspector.plugin_registry import inspector_plugin_registry
 from editor.runtime.editor_extensions import EditorExtensionManager, default_editor_extensions
 from editor.runtime.editor_context import EditorContext
 from editor.runtime.tool_manager import EditorTool
@@ -48,6 +50,7 @@ class ZennityPhase1Editor(
         # nao recalcular automaticamente.
         self._hierarchy_splitter_user_resized = False
         self._extensions = EditorExtensionManager(self, self._on_extension_error)
+        self.package_manager = PackageManager(self.editor_context.project_root)
         super().__init__()
         self._ensure_default_scene()
         self.editor_context.tools.subscribe(self._on_runtime_tool_changed)
@@ -167,6 +170,27 @@ class ZennityPhase1Editor(
     def _install_editor_extensions(self) -> None:
         for extension in default_editor_extensions():
             self._extensions.install(extension)
+            
+        # Instalar extensions do ecosystem
+        registry = self.package_manager.registry
+        for pkg in registry.list_packages():
+            # 1. Inspector plugins
+            for plugin_path in pkg.inspector_plugins:
+                plugin_class = registry.resolve_class(plugin_path)
+                if plugin_class:
+                    try:
+                        inspector_plugin_registry.register(plugin_class)
+                    except Exception as e:
+                        self.console.add("WARN", f"Falha ao registrar inspector_plugin '{plugin_path}': {e}")
+                        
+            # 2. Editor Extensions
+            for ext_path in pkg.editor_extensions:
+                ext_class = registry.resolve_class(ext_path)
+                if ext_class:
+                    try:
+                        self._extensions.install(ext_class())
+                    except Exception as e:
+                        self.console.add("WARN", f"Falha ao registrar editor_extension '{ext_path}': {e}")
 
     def _on_extension_error(self, name: str, exc: Exception) -> None:
         if hasattr(self, "console"):

@@ -4,6 +4,7 @@ from typing import Any
 
 from engine.physics.physics import Physics
 from engine.physics.physics_world import PhysicsWorld
+from engine.performance import RuntimeProfiler
 from engine.runtime.clone import clone_game_object
 from engine.runtime.lifecycle_scheduler import LifecycleEntry, LifecycleScheduler
 from engine.runtime.script_runtime import ScriptRuntime
@@ -23,6 +24,7 @@ class RuntimeScene:
         self.lifecycle = LifecycleScheduler(fixed_delta_time=Time.fixed_delta_time)
         self.script_runtime = ScriptRuntime(self, scheduler=self.lifecycle)
         self.physics_world = PhysicsWorld(self)
+        self.profiler = RuntimeProfiler()
         self.ui_renderer = UIRenderer()
         self._runtime_started = False
         self._runtime_started_components: list[Any] = []
@@ -37,6 +39,10 @@ class RuntimeScene:
         if objs is None:
             objs = getattr(self.scene, "game_objects", [])
         for obj in list(objs):
+            try:
+                obj.destroy()
+            except Exception:
+                pass
             if hasattr(self.scene, "_remove_go"):
                 self.scene._remove_go(obj)
             elif obj in getattr(self.scene, "game_objects", []):
@@ -217,6 +223,7 @@ class RuntimeScene:
     def update_runtime(self, delta_time: float) -> None:
         if not self._runtime_started:
             return
+        self.script_runtime.reload_changed()
         self.lifecycle.update(float(delta_time))
 
     def stop_runtime(self) -> None:
@@ -237,14 +244,27 @@ class RuntimeScene:
 
     def update(self, dt: float) -> None:
         dt = float(dt)
-        self.update_runtime(dt)
-        self.lifecycle.run_fixed_updates(dt, self.physics_world.step)
-        self.lifecycle.late_update(dt)
-        self.scene.update(dt)
+        self.profiler.begin_frame()
+        try:
+            with self.profiler.measure("scripts"):
+                self.update_runtime(dt)
+            with self.profiler.measure("physics"):
+                self.lifecycle.run_fixed_updates(dt, self.physics_world.step)
+            with self.profiler.measure("late_update"):
+                self.lifecycle.late_update(dt)
+            with self.profiler.measure("scene"):
+                self.scene.update(dt)
+        finally:
+            self.profiler.end_frame(
+                dt,
+                object_count=len(self._iter_runtime_objects()),
+                physics_bodies=len(self.physics_world.rigidbodies),
+            )
 
     def draw(self, screen: Any) -> None:
-        self.draw_background(screen)
-        self.draw_content(screen)
+        with self.profiler.measure("render"):
+            self.draw_background(screen)
+            self.draw_content(screen)
 
     def _scene_supports_split_background(self) -> bool:
         """Só separa cenas que mantêm o contrato canônico ou o implementam."""
@@ -284,6 +304,10 @@ class RuntimeScene:
         if objs is None:
             objs = getattr(self.scene, "game_objects", [])
         for obj in list(objs):
+            try:
+                obj.destroy()
+            except Exception:
+                pass
             if hasattr(self.scene, "_remove_go"):
                 self.scene._remove_go(obj)
             elif obj in getattr(self.scene, "game_objects", []):

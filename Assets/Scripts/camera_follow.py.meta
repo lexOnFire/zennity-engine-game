@@ -5,5 +5,10 @@
   "importer": "script_importer",
   "source_path": "Assets/Scripts/camera_follow.py",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "schema_version": 1,
+  "importer_version": 1,
+  "source_hash": "7fde2252a0ee08e130756921aa6cf7f4374e01f49b7fb5bbffd1729373657efe",
+  "source_size": 3306,
+  "source_modified_ns": 1784643010951196200
 }

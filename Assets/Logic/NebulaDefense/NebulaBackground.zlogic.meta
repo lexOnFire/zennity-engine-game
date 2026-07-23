@@ -5,5 +5,10 @@
   "importer": "generic_importer",
   "source_path": "Assets/Logic/NebulaDefense/NebulaBackground.zlogic",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "schema_version": 1,
+  "importer_version": 1,
+  "source_hash": "109f93808780009b36cd0bd5e4c01ee6c0eb174fdb83e949331331496495dc55",
+  "source_size": 1493,
+  "source_modified_ns": 1784643010796190200
 }

@@ -26,13 +26,40 @@ class PackageManager:
 
         # Dest directory: Packages/<package_name>
         dest_dir = self.packages_dir / source_pkg.name
+        temp_dir = self.packages_dir / f".temp_{source_pkg.name}"
+        backup_dir = self.packages_dir / f".backup_{source_pkg.name}"
         
-        # In case it already exists, clear it
-        if dest_dir.exists():
-            shutil.rmtree(dest_dir)
-
         self.packages_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(source_path, dest_dir)
+        
+        # Cleanup temp artifacts from previous failed runs
+        if temp_dir.exists():
+            shutil.rmtree(temp_dir)
+        if backup_dir.exists():
+            shutil.rmtree(backup_dir)
+
+        try:
+            # 1. Copy to temp dir first
+            shutil.copytree(source_path, temp_dir)
+            
+            # 2. Backup existing
+            if dest_dir.exists():
+                dest_dir.rename(backup_dir)
+                
+            # 3. Swap temp to final
+            temp_dir.rename(dest_dir)
+            
+            # 4. Remove backup
+            if backup_dir.exists():
+                shutil.rmtree(backup_dir)
+        except Exception as e:
+            # Rollback
+            if dest_dir.exists() and temp_dir.exists():  # If swap partially failed? Unlikely but safe.
+                shutil.rmtree(dest_dir)
+            if backup_dir.exists():
+                backup_dir.rename(dest_dir)
+            if temp_dir.exists():
+                shutil.rmtree(temp_dir)
+            raise RuntimeError(f"Package installation failed, rolled back. Error: {e}")
 
         # Re-scan/load from destination
         installed_manifest = dest_dir / "package.json"
@@ -42,14 +69,25 @@ class PackageManager:
         return installed_pkg
 
     def uninstall_package(self, name: str) -> bool:
-        """Removes an installed package from the disk and registry."""
+        """Removes an installed package from the disk and registry transactionally."""
         pkg = self.registry.get_package(name)
         if not pkg:
             return False
 
         dest_dir = self.packages_dir / name
+        backup_dir = self.packages_dir / f".backup_{name}"
+        
+        if backup_dir.exists():
+            shutil.rmtree(backup_dir)
+
         if dest_dir.exists():
-            shutil.rmtree(dest_dir)
+            try:
+                dest_dir.rename(backup_dir)
+                shutil.rmtree(backup_dir)
+            except Exception as e:
+                if backup_dir.exists() and not dest_dir.exists():
+                    backup_dir.rename(dest_dir)
+                raise RuntimeError(f"Package uninstallation failed. Error: {e}")
 
         self.registry.unregister_package(name)
         return True

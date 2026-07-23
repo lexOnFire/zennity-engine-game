@@ -14,9 +14,11 @@ class Package:
         version: str,
         author: str,
         description: str,
+        engine_version: str,
         dependencies: Dict[str, str],
         components: List[str],
         inspector_plugins: List[str],
+        editor_extensions: List[str],
         importers: List[str],
         gizmos: List[str],
         content_dir: Path,
@@ -25,9 +27,11 @@ class Package:
         self.version = version
         self.author = author
         self.description = description
+        self.engine_version = engine_version
         self.dependencies = dependencies
         self.components = components
         self.inspector_plugins = inspector_plugins
+        self.editor_extensions = editor_extensions
         self.importers = importers
         self.gizmos = gizmos
         self.content_dir = content_dir
@@ -51,9 +55,11 @@ class Package:
             version=str(data["version"]),
             author=str(data.get("author", "")),
             description=str(data.get("description", "")),
+            engine_version=str(data.get("engine_version", "1.0.0")),
             dependencies=dict(data.get("dependencies", {})),
             components=list(data.get("components", [])),
             inspector_plugins=list(data.get("inspector_plugins", [])),
+            editor_extensions=list(data.get("editor_extensions", [])),
             importers=list(data.get("importers", [])),
             gizmos=list(data.get("gizmos", [])),
             content_dir=manifest_path.parent,

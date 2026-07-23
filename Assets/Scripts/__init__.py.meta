@@ -5,5 +5,10 @@
   "importer": "script_importer",
   "source_path": "Assets/Scripts/__init__.py",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "schema_version": 1,
+  "importer_version": 1,
+  "source_hash": "bfc22849bac3aad7f9fc85f0c1ed068056f754650448d5ea9f355c9a112bd10b",
+  "source_size": 732,
+  "source_modified_ns": 1784643010910441200
 }

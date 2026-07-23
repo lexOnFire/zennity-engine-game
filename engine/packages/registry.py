@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, List
+import sys
+import importlib
+from typing import Dict, List, Any
 
 from engine.packages.package import Package
 
@@ -47,3 +49,18 @@ class PackageRegistry:
     def list_packages(self) -> List[Package]:
         """Returns all registered packages sorted by name."""
         return sorted(self._packages.values(), key=lambda p: p.name)
+
+    def resolve_class(self, class_path: str) -> Any | None:
+        """Dynamically loads a class from a package by its string path (e.g., 'package_name.module.ClassName')."""
+        if str(self.packages_dir) not in sys.path:
+            sys.path.insert(0, str(self.packages_dir))
+            
+        try:
+            module_name, class_name = class_path.rsplit(".", 1)
+            module = importlib.import_module(module_name)
+            return getattr(module, class_name)
+        except Exception as e:
+            # Fallback for safe failure isolation
+            import logging
+            logging.error(f"Failed to load plugin class '{class_path}': {e}")
+            return None
