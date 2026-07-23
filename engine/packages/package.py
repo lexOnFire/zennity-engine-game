@@ -84,8 +84,8 @@ class Package:
                 raise ValueError(f"Missing mandatory field: '{field}'")
         
         name = str(data["name"])
-        if not re.match(r"^[a-zA-Z0-9_\-]+$", name):
-            raise ValueError(f"Invalid package name '{name}'. Only alphanumeric characters, dashes and underscores are allowed to prevent path traversal.")
+        if not re.match(r"^[a-zA-Z0-9_\-\.]+$", name) or name in (".", "..") or ".." in name:
+            raise ValueError(f"Invalid package name '{name}'. Only alphanumeric characters, dashes, underscores and dots are allowed to prevent path traversal.")
         
         # Simple semver validation
         version = str(data["version"])
