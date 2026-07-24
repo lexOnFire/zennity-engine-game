@@ -13,14 +13,13 @@ class PinType(str, Enum):
     VECTOR3 = "vector3"
     COLOR = "color"
     OBJECT = "object"
-    # Custom types handled via string comparison if not in enum
 
 @dataclass
 class PinDefinition:
     id: str
     pin_type: str | PinType
-    label: str = ""
-    description: str = ""
+    label_key: str = ""  # Migrated from 'label'
+    description_key: str = ""
     default_value: Any = None
     is_list: bool = False
     hide_label: bool = False
@@ -28,5 +27,9 @@ class PinDefinition:
     def __post_init__(self):
         if isinstance(self.pin_type, PinType):
             self.pin_type = self.pin_type.value
-        if not self.label:
-            self.label = self.id.capitalize()
+        if not self.label_key:
+            self.label_key = f"pin.{self.id}.label"
+            
+    # Backwards compatibility
+    @property
+    def label(self): return self.label_key

@@ -2,17 +2,16 @@
 import importlib
 import pkgutil
 from pathlib import Path
+from engine.localization import LocalizationManager
 
 class PluginManager:
     """Discovers and initializes engine plugins."""
     
     @classmethod
     def load_all_plugins(cls, plugins_package="engine.plugins"):
-        """Dynamically imports all modules in the plugins directory."""
         try:
             package = importlib.import_module(plugins_package)
         except ImportError:
-            print(f"Warning: Plugin package {plugins_package} not found.")
             return
             
         if not hasattr(package, "__path__"):
@@ -23,10 +22,13 @@ class PluginManager:
                 full_module_name = f"{plugins_package}.{module_name}"
                 try:
                     plugin_module = importlib.import_module(full_module_name)
+                    plugin_path = Path(plugin_module.__file__).parent
                     
-                    # Assume convention: a plugin exposes an initialize() method or a Plugin class
-                    # For now, we will look for an explicit Plugin class matching the naming convention,
-                    # e.g., engine.plugins.logic exposes LogicPlugin.
+                    # Auto-register plugin locales
+                    plugin_locales = plugin_path / "locales"
+                    if plugin_locales.exists() and plugin_locales.is_dir():
+                        LocalizationManager().add_locales_directory(plugin_locales)
+                    
                     plugin_class_name = module_name.capitalize() + "Plugin"
                     if hasattr(plugin_module, plugin_class_name):
                         plugin_cls = getattr(plugin_module, plugin_class_name)
