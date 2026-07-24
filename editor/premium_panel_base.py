@@ -11,13 +11,5 @@ class Panel(QDockWidget):
         self.layout.setSpacing(0)
         self.setWidget(self.container)
         
-        header = QWidget()
-        header.setObjectName("PanelHeader")
-        row = QHBoxLayout(header)
-        row.setContentsMargins(8, 4, 8, 4)
-        label = QLabel(title)
-        label.setObjectName("PanelHeaderTitle")
-        row.addWidget(label)
-        row.addStretch(1)
-        row.addWidget(QLabel("gear x"))
-        self.setTitleBarWidget(header)
+        # O custom title bar foi removido para permitir o uso da title bar padrão
+        # do QDockWidget, que possui os botões Float e Close essenciais.

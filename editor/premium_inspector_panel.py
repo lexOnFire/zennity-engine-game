@@ -190,6 +190,13 @@ class RealInspectorPanel(InspectorPanel):
             widget.customContextMenuRequested.connect(
                 lambda pos, comp=component, w=widget: self.open_component_context_menu(comp, w.mapToGlobal(pos))
             )
+            # Connect the 3-dots button if the widget is a FoldoutWidget
+            if hasattr(widget, "options_btn"):
+                widget.options_btn.clicked.connect(
+                    lambda checked=False, comp=component, w=widget: self.open_component_context_menu(
+                        comp, w.options_btn.mapToGlobal(w.options_btn.rect().bottomLeft())
+                    )
+                )
             self.component_list_layout.addWidget(widget)
 
     def _component_type(self, component: Any) -> str:

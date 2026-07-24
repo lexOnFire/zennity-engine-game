@@ -132,9 +132,25 @@ class FoldoutWidget(QWidget):
         self.title_label.setObjectName("FoldoutTitle")
         self.title_label.setStyleSheet("font-weight: bold; color: #e0e0e0;")
         
+        self.options_btn = QToolButton()
+        self.options_btn.setText("⋮") # 3 vertical dots
+        self.options_btn.setToolTip("Opções do Componente (Resetar, etc)")
+        self.options_btn.setObjectName("FoldoutOptions")
+        self.options_btn.setStyleSheet("""
+            QToolButton { 
+                border: none; 
+                background: transparent; 
+                color: #8a8e99;
+                font-weight: bold;
+                font-size: 14px;
+            }
+            QToolButton:hover { color: #ffffff; }
+        """)
+        
         header_layout.addWidget(self.toggle_btn)
         header_layout.addWidget(self.title_label)
         header_layout.addStretch(1)
+        header_layout.addWidget(self.options_btn)
 
         self.content_area = QWidget()
         self.content_layout = QVBoxLayout(self.content_area)
