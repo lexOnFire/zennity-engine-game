@@ -1,0 +1,10 @@
+{
+    "graph.node.is_grounded": "Is Grounded",
+    "graph.documentation": "Documentation",
+    "graph.search": "Search",
+    "graph.title": "Universal Graph Framework",
+    "graph.category.movement": "Movement",
+    "graph.category.events": "Events",
+    "graph.library.export_error": "Failed to export library: {error}",
+    "graph.library.import_error": "Failed to import library: {error}"
+}

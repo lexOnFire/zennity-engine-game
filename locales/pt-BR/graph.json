@@ -1,0 +1,10 @@
+{
+    "graph.node.is_grounded": "Est\u00e1 no Ch\u00e3o",
+    "graph.documentation": "Documenta\u00e7\u00e3o",
+    "graph.search": "Pesquisar",
+    "graph.title": "Framework de Grafos Universal",
+    "graph.category.movement": "Movimento",
+    "graph.category.events": "Eventos",
+    "graph.library.export_error": "Falha ao exportar biblioteca: {error}",
+    "graph.library.import_error": "Falha ao importar biblioteca: {error}"
+}

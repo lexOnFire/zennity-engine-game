@@ -1,6 +1,7 @@
 """Data-driven Inspector for Graph Nodes."""
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QFormLayout
-from engine.graphs.registry import GraphRegistry
+from engine.graphs.registry.graph_registry import GraphRegistry
+from engine.localization import tr
 
 class GraphInspector(QWidget):
     """Renders node properties dynamically based on their NodeDefinition metadata."""
@@ -13,7 +14,6 @@ class GraphInspector(QWidget):
         self.layout.addStretch()
         
     def inspect(self, node_id: str):
-        # Clear previous
         while self.form_layout.count():
             child = self.form_layout.takeAt(0)
             if child.widget():
@@ -23,18 +23,15 @@ class GraphInspector(QWidget):
         definition = registry.get_node(node_id)
         
         if not definition:
-            self.form_layout.addRow(QLabel("No node selected or unknown node."))
             return
             
-        self.form_layout.addRow(QLabel(f"<b>{definition.name}</b>"))
-        self.form_layout.addRow(QLabel(f"<i>{definition.category}</i>"))
-        self.form_layout.addRow(QLabel(definition.description))
-        self.form_layout.addRow(QLabel(f"Author: {definition.author} (v{definition.version})"))
+        # Try to resolve localized string or fallback to definition value
+        node_name = tr(f"node.{definition.id}.name", fallback=definition.name)
+        category_name = tr(f"graph.category.{definition.category.lower()}", fallback=definition.category)
         
-        self.form_layout.addRow(QLabel("<b>Inputs</b>"))
+        self.form_layout.addRow(QLabel(f"<b>{node_name}</b>"))
+        self.form_layout.addRow(QLabel(f"<i>{category_name}</i>"))
+        
         for pin in definition.inputs:
-            self.form_layout.addRow(QLabel(pin.label), QLabel(f"[{pin.pin_type}]"))
-            
-        self.form_layout.addRow(QLabel("<b>Outputs</b>"))
-        for pin in definition.outputs:
-            self.form_layout.addRow(QLabel(pin.label), QLabel(f"[{pin.pin_type}]"))
+            pin_label = tr(f"pin.{definition.id}.{pin.id}", fallback=pin.label)
+            self.form_layout.addRow(QLabel(pin_label), QLabel(f"[{pin.pin_type}]"))
