@@ -1,10 +1,15 @@
 """Generic Graph Canvas for the Zennity Engine."""
-from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QUndoStack
+from PySide6.QtWidgets import QGraphicsView, QGraphicsScene
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPainter, QPen, QColor, QBrush
+from PySide6.QtGui import QUndoStack, QPainter, QPen, QColor, QBrush
 
 class GraphCanvas(QGraphicsView):
     selection_changed = Signal(list)
+    message = Signal(str, str)
+    asset_changed = Signal()
+    debug_command = Signal(str)
+    play_requested = Signal()
+    stop_requested = Signal()
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -14,10 +19,19 @@ class GraphCanvas(QGraphicsView):
         self.setDragMode(QGraphicsView.ScrollHandDrag)
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
         
-        # Histórico embutido
-        self.undo_stack = QUndoStack(self)
         
-        self.scene.selectionChanged.connect(self._on_selection_changed)
+    # --- Mocks para compatibilidade legada com LogicWorkspaceController ---
+    @property
+    def current_path(self): return None
+    
+    def graph_data(self): return None
+    
+    def open_for_object(self, object_name, filepath=None):
+        print(f"GraphCanvas abriu para {object_name}")
+        return True
+        
+    def new_document(self):
+        pass
         
     def drawBackground(self, painter, rect):
         """Grade infinita genérica."""
