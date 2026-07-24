@@ -5,3 +5,4 @@ from .category import CategoryDefinition
 from .connection import ConnectionDefinition
 
 __all__ = ["PinDefinition", "PinType", "NodeDefinition", "GraphDefinition", "CategoryDefinition", "ConnectionDefinition"]
+from .editor import EditorDefinition

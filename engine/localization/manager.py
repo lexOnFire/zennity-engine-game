@@ -4,6 +4,7 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Any
 from engine.event_bus import EventBus
+from .events import LocalizationChangedEvent
 
 logger = logging.getLogger(__name__)
 
@@ -21,18 +22,23 @@ class LocalizationManager:
         self.current_locale: str = "en-US"
         self.base_locales_dir: Path = Path.cwd() / "locales"
         self._plugin_locales_dirs: List[Path] = []
-        self._cache: Dict[str, str] = {}
+        
+        # Multidimensional cache: _caches["pt-BR"]["graph.node.title"]
+        self._caches: Dict[str, Dict[str, str]] = {}
         
     def add_locales_directory(self, path: Path):
         if path not in self._plugin_locales_dirs:
             self._plugin_locales_dirs.append(path)
-            self.reload()
+            # Invalidate caches to force reload
+            self._caches.clear()
+            self._ensure_cache(self.current_locale)
 
     def set_locale(self, locale: str):
-        if self.current_locale != locale:
+        prev = self.current_locale
+        if prev != locale:
             self.current_locale = locale
-            self.reload()
-            EventBus.publish("LocalizationChanged", {"locale": locale})
+            self._ensure_cache(locale)
+            EventBus.emit("LocalizationChanged", payload=LocalizationChangedEvent(locale=locale, previous_locale=prev))
             
     def _get_fallback_chain(self, locale: str) -> List[str]:
         chain = [locale]
@@ -45,37 +51,42 @@ class LocalizationManager:
         chain.reverse()
         return chain
         
-    def reload(self):
-        self._cache.clear()
-        chain = self._get_fallback_chain(self.current_locale)
+    def _ensure_cache(self, locale: str):
+        """Builds the cache for a specific locale if it doesn't exist."""
+        if locale in self._caches:
+            return
+            
+        self._caches[locale] = {}
+        chain = self._get_fallback_chain(locale)
         
         for loc in chain:
-            self._load_from_dir(self.base_locales_dir / loc)
+            self._load_from_dir(self.base_locales_dir / loc, locale)
             for plugin_dir in self._plugin_locales_dirs:
-                self._load_from_dir(plugin_dir / loc)
+                self._load_from_dir(plugin_dir / loc, locale)
                 
-    def _load_from_dir(self, directory: Path):
+    def _load_from_dir(self, directory: Path, target_locale: str):
         if not directory.exists() or not directory.is_dir():
             return
             
-        # PHASE 5: Recursive load
         for file in directory.rglob("*.json"):
             try:
                 with open(file, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     if isinstance(data, dict):
-                        self._cache.update(data)
+                        self._caches[target_locale].update(data)
             except Exception as e:
                 logger.error(f"Failed to load translations from {file}: {e}")
 
     def _advanced_format(self, text: str, **kwargs) -> str:
-        # PHASE 7 STUB: Pluralization, Gender, RTL parsing could go here
-        # E.g., handling syntax like {count, plural, =1 {item} other {items}}
-        # For now, we just pass down to normal format
+        # FASE 7 STUBS: Plural, Gender, Currency, Dates
+        # E.g. _format_currency(value), _format_date(date)
         return text.format(**kwargs)
 
     def translate(self, key: str, **kwargs) -> str:
-        text = self._cache.get(key, key)
+        self._ensure_cache(self.current_locale)
+        active_cache = self._caches[self.current_locale]
+        
+        text = active_cache.get(key, key)
         if kwargs and text != key:
             try:
                 text = self._advanced_format(text, **kwargs)
