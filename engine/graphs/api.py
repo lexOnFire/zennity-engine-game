@@ -1,7 +1,7 @@
 """Public API for developers."""
 from typing import Type, Callable, Any
 from engine.graphs.registry.graph_registry import GraphRegistry
-from engine.graphs.metadata import NodeDefinition, GraphDefinition, CategoryDefinition
+from engine.core.metadata import NodeDefinition, GraphDefinition, CategoryDefinition
 
 # --- Imperative API ---
 def register_compiler(graph_id: str, compiler: Any) -> None:

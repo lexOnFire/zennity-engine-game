@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
 )
 
 from editor.ui.icons import editor_icon
-from engine.i18n import tr
+from engine.localization import tr
 
 from .views import LogicGraphView, LogicMiniMapView
 

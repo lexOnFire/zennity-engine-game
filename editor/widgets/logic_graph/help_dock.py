@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QTextBrowser
 from PySide6.QtCore import Signal
-from engine.i18n import tr
+from engine.localization import tr
 from engine.logic.graph_asset import NODE_DEFINITIONS
 
 class LogicHelpDock(QWidget):

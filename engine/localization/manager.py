@@ -10,21 +10,20 @@ logger = logging.getLogger(__name__)
 
 class LocalizationManager:
     """Singleton for robust module-based localization."""
-    _instance = None
-    
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._init()
-        return cls._instance
-        
-    def _init(self):
+    def __init__(self):
+        super().__init__()
         self.current_locale: str = "en-US"
         self.base_locales_dir: Path = Path.cwd() / "locales"
         self._plugin_locales_dirs: List[Path] = []
         
         # Multidimensional cache: _caches["pt-BR"]["graph.node.title"]
         self._caches: Dict[str, Dict[str, str]] = {}
+        
+    def initialize(self) -> None:
+        pass
+        
+    def shutdown(self) -> None:
+        pass
         
     def add_locales_directory(self, path: Path):
         if path not in self._plugin_locales_dirs:
@@ -95,4 +94,9 @@ class LocalizationManager:
         return text
 
 def tr(key: str, **kwargs) -> str:
-    return LocalizationManager().translate(key, **kwargs)
+    from engine.core.services import EngineServices
+    try:
+        return EngineServices.get(LocalizationManager).translate(key, **kwargs)
+    except KeyError:
+        # Fallback if engine is not initialized yet
+        return key

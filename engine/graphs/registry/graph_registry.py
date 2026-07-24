@@ -1,6 +1,6 @@
 """Universal Robust Graph Registry."""
 from typing import Any, Type, Callable
-from engine.graphs.metadata import NodeDefinition, GraphDefinition, CategoryDefinition
+from engine.core.metadata import NodeDefinition, GraphDefinition, CategoryDefinition
 
 class GraphRegistry:
     """Singleton registry for EVERYTHING in the Graph Framework."""

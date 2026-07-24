@@ -66,7 +66,7 @@ from engine.logic.blackboard import coerce_variable_value, save_blackboard_asset
 
 from engine.logic.recipes import build_logic_recipe, find_logic_recipes, logic_recipe
 
-from engine.i18n import tr
+from engine.localization import tr
 from editor.widgets.logic_graph.definitions import (
     CATEGORY_COLORS,
     NODE_DESCRIPTIONS,

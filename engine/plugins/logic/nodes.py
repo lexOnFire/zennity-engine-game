@@ -1,6 +1,6 @@
 """Declarative Node definitions for Logic Plugin."""
 from engine.graphs.registry import register_node
-from engine.graphs.metadata.pin import PinDefinition, PinType
+from engine.core.metadata.pin import PinDefinition, PinType
 
 @register_node(
     id="logic.events.start",

@@ -5,7 +5,7 @@ the concrete QWidget and forming a circular dependency.
 """
 
 from PySide6.QtGui import QColor
-from engine.i18n import tr
+from engine.localization import tr
 
 class I18nNodeDesc:
     def get(self, key, default=None):

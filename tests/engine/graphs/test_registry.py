@@ -1,7 +1,7 @@
 """Unit Tests for Graph Registry."""
 import pytest
 from engine.graphs.registry.graph_registry import GraphRegistry
-from engine.graphs.metadata.node import NodeDefinition
+from engine.core.metadata.node import NodeDefinition
 
 def test_registry_singleton():
     reg1 = GraphRegistry()
