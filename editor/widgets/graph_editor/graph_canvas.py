@@ -33,6 +33,15 @@ class GraphCanvas(QGraphicsView):
     def new_document(self):
         pass
         
+    def set_play_state(self, playing: bool):
+        pass
+        
+    def clear_runtime_trace(self):
+        pass
+        
+    def apply_runtime_trace(self, trace_data):
+        pass
+        
     def drawBackground(self, painter, rect):
         """Grade infinita genérica."""
         super().drawBackground(painter, rect)
