@@ -19,7 +19,7 @@
 
 Plano detalhado: [`docs/architecture/PRE_V1_COMPLETION_ROADMAP.md`](docs/architecture/PRE_V1_COMPLETION_ROADMAP.md).
 
-### v0.5.0-alpha — Export Foundation (Milestone 5) 🔄
+### v0.5.0-alpha — Export Foundation (Milestone 5) ✅
 - [x] UI Foundation com tokens, tema único, papéis semânticos e primeira migração do editor
 - [x] UI Polish da Animation Workspace, Console, Profiler e Build Report sobre o tema central
 - [x] UI Polish de diálogos, estados vazios e Asset Preview responsivo
@@ -30,7 +30,7 @@ Plano detalhado: [`docs/architecture/PRE_V1_COMPLETION_ROADMAP.md`](docs/archite
 - [x] Export Profiles com ExportProfile, ExportProfileManager, perfis Debug/Release e persistência JSON (Fase 32)
 - [x] Desktop Packaging com DesktopPackagePlan, planner por BuildConfig/Profile e testes multiplataforma (Fase 33)
 - [x] Build Report UI com validação da cena, referências de assets, métricas, lista de arquivos e relatório JSON
-- [ ] Release Candidate Stabilization
+- [x] Release Candidate Stabilization
   - [x] Gerar runtime de desenvolvimento autocontido e validar cena/componentes exportados
   - [x] Tornar Play/Pause/Stop determinístico, restaurar seleção/cena e pausar áudio
   - [x] Adicionar validação de projeto integrada ao editor e bloquear exportação com erros
