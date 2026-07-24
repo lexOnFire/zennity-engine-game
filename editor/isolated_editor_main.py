@@ -384,6 +384,10 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
 
 def main() -> None:
     context = mp.get_context("spawn")
+    
+    from engine.core.bootstrap import EngineBootstrap
+    engine_context = EngineBootstrap.boot()
+    
     viewport_controller = ViewportProcessController.create(context)
     commands = viewport_controller.command_queue
     events = viewport_controller.events
