@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
 )
 from editor.ui.icons import TOOLBAR_ICONS, component_title, editor_icon
 from editor.ui.empty_state import EmptyStateWidget
-from editor.widgets.graph_editor.graph_canvas import GraphCanvas
+from editor.widgets.logic_graph_editor import LogicGraphEditor
 from editor.ui.detached_workspace import DetachedWorkspaceWindow
 
 
@@ -323,7 +323,7 @@ def _build_animation_properties(window):
     window._animation_layout.addWidget(window.animation_content_splitter, 1)
 
 def _build_detached_workspaces(window):
-    window.logic_workspace = GraphCanvas()
+    window.logic_workspace = LogicGraphEditor()
     window.animation_window = DetachedWorkspaceWindow("Zennity — Editor de Animação", window.animation_workspace, window)
     window.logic_window = DetachedWorkspaceWindow("Zennity — Editor de Lógica Visual", window.logic_workspace, window)
 
