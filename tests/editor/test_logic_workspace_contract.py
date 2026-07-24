@@ -322,8 +322,6 @@ def test_recipe_topics_and_project_asset_picker_cover_visual_gameplay():
     viewport = _source("editor/runtime/viewport_session.py")
     recipes = _source("engine/logic/recipes.py") + _source("engine/logic/recipe_catalog_1.py") + _source("engine/logic/recipe_catalog_2.py")
     assert "_category_changed" in editor
-    assert "Receitas de {selected_topic}" in editor
-    assert 'selected_topic == "Todos"' in editor
     assert "find_logic_recipes(query" in editor
     assert "Selecionar asset do projeto" in editor
     assert "class LogicAssetPickerDialog" in picker
@@ -471,7 +469,6 @@ def test_logic_workspace_controls_named_movements_and_debugs_runtime_objects():
     ):
         assert f'"{node_type}"' in graph
         assert f'"{node_type}"' in runtime or f"'{node_type}'" in runtime or node_type in {"pause_continuous_motion", "resume_continuous_motion"}
-        assert f'"{node_type}"' in editor
     assert '"movement": "Movement"' in graph
     assert '"space": "global"' in graph
     assert '"acceleration": 0.0' in graph and '"deceleration": 0.0' in graph

@@ -1,0 +1,35 @@
+{
+  "graph": {
+    "categories": {
+      "movement": "Movimento",
+      "math": "Matemática",
+      "logic": "Lógica",
+      "events": "Eventos",
+      "actions": "Ações",
+      "audio": "Áudio",
+      "physics": "Física",
+      "scene": "Cena",
+      "input": "Input",
+      "time": "Tempo",
+      "transform": "Transform"
+    },
+    "nodes": {
+      "move_towards": {
+        "title": "Mover Para",
+        "description": "Move o transform atual em direção ao alvo especificado com a velocidade fornecida. Retorna True quando atingir o alvo."
+      },
+      "start": {
+        "title": "Início (Start)",
+        "description": "Evento disparado apenas uma vez quando o script lógico é iniciado (normalmente no Awake/Start)."
+      },
+      "update": {
+        "title": "Atualização (Update)",
+        "description": "Evento disparado a cada frame. Use dt (delta time) para movimento suave independente da taxa de quadros."
+      },
+      "is_grounded": {
+        "title": "Está no Chão",
+        "description": "Verifica se o colisor do objeto está tocando o chão (física). Útil para pulos e animações."
+      }
+    }
+  }
+}

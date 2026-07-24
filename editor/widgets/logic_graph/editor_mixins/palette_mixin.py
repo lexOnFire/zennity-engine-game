@@ -66,6 +66,7 @@ from engine.logic.blackboard import coerce_variable_value, save_blackboard_asset
 
 from engine.logic.recipes import build_logic_recipe, find_logic_recipes, logic_recipe
 
+from engine.i18n import tr
 from editor.widgets.logic_graph.definitions import (
     CATEGORY_COLORS,
     NODE_DESCRIPTIONS,
@@ -86,7 +87,7 @@ class LogicGraphPaletteMixin:
         query = self._search_key(self.node_search.text()).strip()
         self.palette.clear()
         for node_type, definition in NODE_DEFINITIONS.items():
-            node_category = str(definition.get("category", "Personalizado"))
+            node_category = str(definition.get("category", "Custom"))
             searchable = self._search_key(
                 f"{definition.get('title', '')} {node_category} {node_type} "
                 f"{' '.join(str(key) for key in definition.get('properties', {}))} "
@@ -95,7 +96,7 @@ class LogicGraphPaletteMixin:
             if query:
                 if query not in searchable:
                     continue
-            elif self._palette_category != "Todos" and node_category != self._palette_category:
+            elif self._palette_category != "All" and node_category != self._palette_category:
                 continue
             label = str(definition["title"])
             if query:
@@ -136,10 +137,10 @@ class LogicGraphPaletteMixin:
         self._refresh_recipes(self.recipe_search.text(), category)
 
     def _refresh_recipes(self, query: str = "", topic: str | None = None) -> None:
-        selected_topic = str(topic or self.category_combo.currentText() or "Movimento")
-        self.recipe_topic_label.setText(f"Receitas de {selected_topic}")
+        selected_topic = str(topic or self.category_combo.currentText() or "Movement")
+        self.recipe_topic_label.setText(tr(f"graph.categories.{selected_topic.lower()}", selected_topic))
         self.recipe_list.clear()
-        for recipe in find_logic_recipes(query, "" if selected_topic == "Todos" else selected_topic):
+        for recipe in find_logic_recipes(query, "" if selected_topic == "All" else selected_topic):
             item = QListWidgetItem(str(recipe["title"]))
             item.setData(Qt.UserRole, str(recipe["id"]))
             item.setToolTip(f"{recipe['category']} • {recipe['summary']}")

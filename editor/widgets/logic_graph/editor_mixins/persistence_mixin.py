@@ -278,6 +278,14 @@ class LogicGraphPersistenceMixin:
         """Mantém os controles locais sincronizados com a Viewport isolada."""
         self.play_button.setEnabled(not playing)
         self.stop_button.setEnabled(playing)
+        self.graph_enabled_check.setEnabled(not playing)
+        self.target_type.setEnabled(not playing)
+        self.target_value.setEnabled(not playing)
+        if not playing:
+            self.view.centerOn(0.0, 0.0)
+            return
+        bounds = self.scene.itemsBoundingRect().adjusted(-80.0, -80.0, 80.0, 80.0)
+        self.view.fitInView(bounds, Qt.KeepAspectRatio)
 
     def fit_graph(self) -> None:
         if not self.node_items:

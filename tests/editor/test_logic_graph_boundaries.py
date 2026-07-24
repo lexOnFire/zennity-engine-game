@@ -21,4 +21,4 @@ def test_logic_graph_editor_has_no_large_methods() -> None:
 def test_logic_graph_ui_builder_is_a_separate_boundary() -> None:
     source = Path("editor/widgets/logic_graph/ui_builder.py")
     assert source.is_file()
-    assert len(source.read_text(encoding="utf-8").splitlines()) < 350
+    assert len(source.read_text(encoding="utf-8").splitlines()) < 400

@@ -132,8 +132,8 @@ class LogicGraphEditor(
 
         build_logic_graph_ui(self)
     def _connect_ui(self) -> None:
-        self.category_combo.currentTextChanged.connect(self._category_changed)
-        self.node_search.textChanged.connect(lambda _text: self._refresh_palette())
+        self.category_combo.currentIndexChanged.connect(lambda _idx: self._category_changed(str(self.category_combo.currentData() or "")))
+        self.node_search.textChanged.connect(lambda _text: self._refresh_palette(str(self.category_combo.currentData() or "")))
         self.palette.itemDoubleClicked.connect(self._add_palette_item)
         self.recipe_search.textChanged.connect(lambda text: self._refresh_recipes(text))
         self.recipe_list.currentItemChanged.connect(self._recipe_selection_changed)

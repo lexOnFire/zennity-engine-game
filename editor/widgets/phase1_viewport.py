@@ -410,6 +410,7 @@ class Phase1ViewportWidget(Phase1ViewportEventsMixin, ViewportGizmoDragMixin, Vi
         dt = min(now - self._last_time, 0.1)
         self._last_time = now
 
+        is_runtime_scene = False
         if self.active_scene:
             runtime_playing = (
                 self.runtime_manager is not None

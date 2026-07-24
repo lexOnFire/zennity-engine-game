@@ -4,7 +4,7 @@ from PySide6.QtCore import Qt
 
 class DocumentationDock(QDockWidget):
     def __init__(self, parent=None):
-        super().__init__("Documentation (Help)", parent)
+        super().__init__("📖 Documentation (F1)", parent)
         
         container = QWidget()
         layout = QVBoxLayout(container)
@@ -13,7 +13,11 @@ class DocumentationDock(QDockWidget):
         self.search_bar.setPlaceholderText("Search nodes, events, functions...")
         
         self.doc_browser = QTextBrowser()
-        self.doc_browser.setHtml("<h2>Zennity Documentation</h2><p>Search for a node to see its details, examples, and rules.</p>")
+        self.doc_browser.setHtml(
+            "<h2>Zennity Documentation</h2>"
+            "<p>Busque por nós ou tópicos da API interna.</p>"
+            "<p><i>O sistema de tradução inteligente (i18n) está ativo.</i></p>"
+        )
         
         layout.addWidget(self.search_bar)
         layout.addWidget(self.doc_browser)

@@ -30,8 +30,8 @@
       "title": "On Update",
       "category": "Events",
       "position": [
-        40.0,
-        180.0
+        80.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
@@ -46,8 +46,8 @@
       "title": "Read Input Axis",
       "category": "Movement",
       "position": [
-        280.0,
-        100.0
+        370.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
@@ -65,8 +65,8 @@
       "title": "If / Else",
       "category": "Logic",
       "position": [
-        520.0,
-        100.0
+        660.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
@@ -83,8 +83,8 @@
       "title": "Move",
       "category": "Movement",
       "position": [
-        780.0,
-        40.0
+        950.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
@@ -101,8 +101,8 @@
       "title": "Play Animation",
       "category": "Action",
       "position": [
-        780.0,
-        191.67
+        950.0,
+        250.0
       ],
       "editor": {
         "collapsed": false,
@@ -119,8 +119,8 @@
       "title": "Key Pressed Now?",
       "category": "Condition",
       "position": [
-        280.0,
-        330.0
+        370.0,
+        250.0
       ],
       "editor": {
         "collapsed": false,
@@ -137,8 +137,8 @@
       "title": "Is Grounded?",
       "category": "Condition",
       "position": [
-        520.0,
-        330.0
+        660.0,
+        250.0
       ],
       "editor": {
         "collapsed": false,
@@ -153,8 +153,8 @@
       "title": "Jump",
       "category": "Movement",
       "position": [
-        780.0,
-        330.0
+        950.0,
+        420.0
       ],
       "editor": {
         "collapsed": false,
