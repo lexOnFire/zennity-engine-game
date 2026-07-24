@@ -1,0 +1,25 @@
+{
+  "format": "zennity.animator_controller",
+  "version": 1,
+  "name": "PlayerDemo",
+  "initial_state": "Idle",
+  "parameters": {
+    "speed": {"type": "float", "default": 0.0},
+    "grounded": {"type": "bool", "default": true},
+    "attack": {"type": "trigger", "default": false}
+  },
+  "states": {
+    "Idle": {"animation": "Assets/Animations/AnimatorDemo/Idle.zanim", "speed": 1.0, "position": [40.0, 170.0]},
+    "Walk": {"animation": "Assets/Animations/AnimatorDemo/Walk.zanim", "speed": 1.0, "position": [260.0, 170.0]},
+    "Jump": {"animation": "Assets/Animations/AnimatorDemo/Jump.zanim", "speed": 1.0, "position": [150.0, 20.0]},
+    "Attack": {"animation": "Assets/Animations/AnimatorDemo/Attack.zanim", "speed": 1.0, "position": [480.0, 80.0]}
+  },
+  "transitions": [
+    {"from": "Idle", "to": "Walk", "conditions": [{"parameter": "speed", "operator": ">", "value": 0.1}], "priority": 1, "has_exit_time": false, "exit_time": 1.0, "duration": 0.0, "interruptible": true},
+    {"from": "Walk", "to": "Idle", "conditions": [{"parameter": "speed", "operator": "<=", "value": 0.1}], "priority": 1, "has_exit_time": false, "exit_time": 1.0, "duration": 0.0, "interruptible": true},
+    {"from": "*", "to": "Jump", "conditions": [{"parameter": "grounded", "operator": "==", "value": false}], "priority": 10, "has_exit_time": false, "exit_time": 1.0, "duration": 0.0, "interruptible": true},
+    {"from": "Jump", "to": "Idle", "conditions": [{"parameter": "grounded", "operator": "==", "value": true}], "priority": 5, "has_exit_time": false, "exit_time": 1.0, "duration": 0.0, "interruptible": true},
+    {"from": "*", "to": "Attack", "conditions": [{"parameter": "attack", "operator": "trigger", "value": true}], "priority": 20, "has_exit_time": false, "exit_time": 1.0, "duration": 0.35, "interruptible": false},
+    {"from": "Attack", "to": "Idle", "conditions": [], "priority": 8, "has_exit_time": true, "exit_time": 0.95, "duration": 0.0, "interruptible": true}
+  ]
+}

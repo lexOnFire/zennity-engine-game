@@ -1,0 +1,9 @@
+{
+  "guid": "2e8d389b-066e-4d61-a9fe-8ce6958f1786",
+  "uuid": "2e8d389b-066e-4d61-a9fe-8ce6958f1786",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Logic/PlayerMovement_wasd.zlogic",
+  "import_settings": {},
+  "dependencies": []
+}

@@ -1,0 +1,11 @@
+{
+  "guid": "f6fb3079-bfb8-4279-ab62-f66d1e67c859",
+  "uuid": "f6fb3079-bfb8-4279-ab62-f66d1e67c859",
+  "type": "audio",
+  "importer": "audio_importer",
+  "source_path": "Assets/Audio/freesound_community-videogame-death-sound-43894.mp3",
+  "import_settings": {
+    "load_type": "decompress_on_load"
+  },
+  "dependencies": []
+}

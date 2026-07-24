@@ -1,0 +1,107 @@
+{
+  "format_version": 2,
+  "scene_name": "Untitled",
+  "engine_version": "Zennity 0.1.0",
+  "objects": [
+    {
+      "name": "Chao",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "tag": "Untagged",
+      "layer": "Default",
+      "id": "floor",
+      "transform": {
+        "position": [
+          0.0,
+          150.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          600.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": null,
+        "color": [
+          91,
+          194,
+          100
+        ],
+        "enabled": true,
+        "material": "Default_Material"
+      },
+      "components": {
+        "rigidbody": {
+          "is_kinematic": true,
+          "use_gravity": false
+        },
+        "collider": {
+          "type": "box",
+          "width": 600.0,
+          "height": 32.0
+        }
+      }
+    },
+    {
+      "name": "Player",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "tag": "Untagged",
+      "layer": "Default",
+      "id": "player",
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          36.0,
+          48.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "enabled": true,
+        "material": "Default_Material"
+      },
+      "components": {
+        "rigidbody": {
+          "is_kinematic": false,
+          "use_gravity": true,
+          "gravity_scale": 1.0
+        },
+        "collider": {
+          "type": "box",
+          "width": 36.0,
+          "height": 48.0
+        },
+        "scripts": [
+          "Assets/Scripts/player_controller_2d.py"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+from .recipe_catalog_1 import LOGIC_RECIPES_PART_1
+from .recipe_catalog_2 import LOGIC_RECIPES_PART_2
+
+LOGIC_RECIPES = LOGIC_RECIPES_PART_1 + LOGIC_RECIPES_PART_2

@@ -1,0 +1,9 @@
+{
+  "guid": "bf813bdb-24bc-4ee2-b1cc-9877101d0f87",
+  "uuid": "bf813bdb-24bc-4ee2-b1cc-9877101d0f87",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/base_game_2d/goal.py",
+  "import_settings": {},
+  "dependencies": []
+}

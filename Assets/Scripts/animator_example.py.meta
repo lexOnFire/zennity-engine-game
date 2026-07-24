@@ -1,0 +1,9 @@
+{
+  "guid": "1a8dd886-d8cf-4257-bdd6-87ef03fc5150",
+  "uuid": "1a8dd886-d8cf-4257-bdd6-87ef03fc5150",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/animator_example.py",
+  "import_settings": {},
+  "dependencies": []
+}

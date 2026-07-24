@@ -1,0 +1,9 @@
+{
+  "guid": "982b8ea6-0a95-4444-a3bc-944bf626787b",
+  "uuid": "982b8ea6-0a95-4444-a3bc-944bf626787b",
+  "type": "scene",
+  "importer": "generic_importer",
+  "source_path": "Assets/Scenes/BehaviorControllerDemo.zscene",
+  "import_settings": {},
+  "dependencies": []
+}

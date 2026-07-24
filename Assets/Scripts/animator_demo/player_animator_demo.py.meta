@@ -1,0 +1,9 @@
+{
+  "guid": "f37b6edb-4c0c-4607-85a7-67d959c1dd71",
+  "uuid": "f37b6edb-4c0c-4607-85a7-67d959c1dd71",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/animator_demo/player_animator_demo.py",
+  "import_settings": {},
+  "dependencies": []
+}

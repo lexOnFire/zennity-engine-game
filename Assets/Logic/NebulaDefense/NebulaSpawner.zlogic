@@ -1,0 +1,116 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "Nebula Enemy Spawner",
+  "target": {
+    "type": "name",
+    "value": "NebulaSpawner"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "spawn_timer",
+      "type": "event_timer",
+      "title": "Após um tempo",
+      "category": "Events",
+      "position": [
+        40.0,
+        120.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "seconds": 1.15,
+        "repeat": true
+      }
+    },
+    {
+      "id": "random_y",
+      "type": "random_number",
+      "title": "Número aleatório",
+      "category": "Math",
+      "position": [
+        300.0,
+        20.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "minimum": 80.0,
+        "maximum": 640.0
+      }
+    },
+    {
+      "id": "spawn_enemy",
+      "type": "create_prefab",
+      "title": "Criar Prefab",
+      "category": "Objects",
+      "position": [
+        560.0,
+        120.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "path": "Assets/Prefabs/NebulaDefense/NebulaDrone.zprefab",
+        "override_position": true,
+        "x": 1160.0,
+        "y": 360.0,
+        "relative": false,
+        "override_rotation": false,
+        "rotation": 0.0,
+        "override_scale": false,
+        "width": 64.0,
+        "height": 64.0,
+        "include_camera": false,
+        "include_audio": false,
+        "include_logic": false,
+        "parameters": {},
+        "exposed_properties": [],
+        "lifetime": 10.0,
+        "max_instances": 9,
+        "max_distance": 1500.0,
+        "use_pool": true
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "spawn_timer_next_spawn_enemy_in",
+      "from_node": "spawn_timer",
+      "from_port": "next",
+      "to_node": "spawn_enemy",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "random_y_value_spawn_enemy_y",
+      "from_node": "random_y",
+      "from_port": "value",
+      "to_node": "spawn_enemy",
+      "to_port": "y",
+      "kind": "number",
+      "order": 0
+    }
+  ]
+}

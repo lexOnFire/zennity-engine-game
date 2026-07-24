@@ -1,0 +1,11 @@
+{
+  "guid": "fff849ab-a19f-4b76-9bd6-6658d05711f7",
+  "uuid": "fff849ab-a19f-4b76-9bd6-6658d05711f7",
+  "type": "audio",
+  "importer": "audio_importer",
+  "source_path": "Assets/Audio/game-start-317318.mp3",
+  "import_settings": {
+    "load_type": "decompress_on_load"
+  },
+  "dependencies": []
+}

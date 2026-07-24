@@ -1,0 +1,494 @@
+from __future__ import annotations
+from typing import Optional, Callable, List, Dict, Any, TYPE_CHECKING
+from dataclasses import dataclass, field
+import math
+import pygame
+from engine.core.component import Component
+
+if TYPE_CHECKING:
+    from engine.game_object import GameObject
+
+
+@dataclass
+class CollisionInfo:
+    """Informações sobre uma colisão entre dois colliders."""
+    other: "BoxCollider"
+    overlap_x: float = 0.0
+    overlap_y: float = 0.0
+
+
+class BoxCollider(Component):
+    """
+    Collider retangular (AABB — Axis-Aligned Bounding Box).
+
+    Registra-se automaticamente no PhysicsWorld ao ser adicionado
+    a um GameObject que pertence a uma Scene.
+
+    Callbacks disponíveis:
+        on_collision_enter(info: CollisionInfo) -> None
+        on_collision_exit(other: BoxCollider)   -> None
+    """
+    component_type = "BoxCollider"
+    UNIQUE = True
+
+    _registry: List["BoxCollider"] = []
+    _scene_tilemaps: Dict[tuple, Any] = {}
+    _scene_tilemap_components: Dict[int, Any] = {}
+    _checks_count: int = 0
+
+    def __init__(
+        self,
+        width: float = 32.0,
+        height: float = 32.0,
+        offset_x: float = 0.0,
+        offset_y: float = 0.0,
+        is_trigger: bool = False,
+        debug_draw: bool = False,
+    ) -> None:
+        super().__init__()
+        self.width = width
+        self.height = height
+        self.offset_x = offset_x
+        self.offset_y = offset_y
+        self.is_trigger = is_trigger   # trigger = detecta mas não resolve colisão
+        self.debug_draw = debug_draw
+
+        self._colliding_with: set["BoxCollider"] = set()
+
+        # Callbacks — atribua funções externas a estes
+        self.on_collision_enter: Optional[Callable[[CollisionInfo], None]] = None
+        self.on_collision_exit: Optional[Callable[["BoxCollider"], None]] = None
+        self.on_trigger_enter: Optional[Callable[["BoxCollider"], None]] = None
+        self.on_trigger_exit: Optional[Callable[["BoxCollider"], None]] = None
+
+    def serialize_properties(self) -> dict[str, Any]:
+        return {
+            "width": float(self.width),
+            "height": float(self.height),
+            "offset_x": float(self.offset_x),
+            "offset_y": float(self.offset_y),
+            "is_trigger": bool(self.is_trigger),
+            "debug_draw": bool(self.debug_draw),
+        }
+
+    def deserialize_properties(self, data: dict[str, Any]) -> None:
+        self.width = float(data.get("width", 32.0))
+        self.height = float(data.get("height", 32.0))
+        offset = data.get("offset")
+        if isinstance(offset, (list, tuple)) and len(offset) >= 2:
+            self.offset_x = float(offset[0])
+            self.offset_y = float(offset[1])
+        else:
+            self.offset_x = float(data.get("offset_x", 0.0))
+            self.offset_y = float(data.get("offset_y", 0.0))
+        self.is_trigger = bool(data.get("is_trigger", False))
+        self.debug_draw = bool(data.get("debug_draw", False))
+
+    # ------------------------------------------------------------------
+    # Ciclo de vida
+    # ------------------------------------------------------------------
+
+    def start(self) -> None:
+        BoxCollider._registry.append(self)
+
+    def destroy(self) -> None:
+        if self in BoxCollider._registry:
+            BoxCollider._registry.remove(self)
+        for other in list(self._colliding_with):
+            other._colliding_with.discard(self)
+        self._colliding_with.clear()
+
+    # ------------------------------------------------------------------
+    # Rect utilitário
+    # ------------------------------------------------------------------
+
+    @property
+    def rect(self) -> pygame.Rect:
+        """Retorna o pygame.Rect atual no espaço de mundo."""
+        if self.game_object is None:
+            return pygame.Rect(0, 0, int(self.width), int(self.height))
+        pos = self.game_object.transform.get_world_position()
+        left = int(pos[0] + self.offset_x - self.width / 2)
+        top  = int(pos[1] + self.offset_y - self.height / 2)
+        return pygame.Rect(left, top, int(self.width), int(self.height))
+
+    @classmethod
+    def invalidate_tilemap_cache(cls, scene: Any) -> None:
+        """Clear cached TilemapCollider instances for the specified scene."""
+        scene_id = id(scene)
+        cls._scene_tilemap_components.pop(scene_id, None)
+        keys_to_remove = [k for k in cls._scene_tilemaps if k[0] == scene_id]
+        for k in keys_to_remove:
+            cls._scene_tilemaps.pop(k, None)
+
+    # ------------------------------------------------------------------
+    # Detecção AABB
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def check_all() -> None:
+        """
+        Verifica colisões entre todos os BoxColliders registrados.
+        Purga órfãos periodicamente (1x a cada 60 frames) e limita as colisões ao escopo da mesma cena ativa.
+        """
+        BoxCollider._checks_count += 1
+        if BoxCollider._checks_count >= 60:
+            BoxCollider._checks_count = 0
+            BoxCollider._registry = [c for c in BoxCollider._registry if c.game_object is not None and c.game_object.scene is not None]
+        
+        registry = list(BoxCollider._registry)
+        n = len(registry)
+
+        # Resolução de colisões contra Tilemaps na mesma cena (usando cache estático por instância de mapa)
+        for a in registry:
+            if a.game_object is None or not a.game_object.active:
+                continue
+            scene = a.game_object.scene
+            if scene is None:
+                continue
+            
+            from engine.physics.rigidbody import RigidBody
+            rb = a.game_object.get_component(RigidBody)
+            if rb is None or rb.is_kinematic:
+                continue
+
+            # Busca por TilemapRenderer ativo na cena usando cache persistente
+            scene_id = id(scene)
+            if scene_id not in BoxCollider._scene_tilemap_components:
+                tm_comp = None
+                if hasattr(scene, "game_objects"):
+                    from engine.tilemap.tilemap import TilemapRenderer
+                    for go in scene.game_objects:
+                        found = go.get_component(TilemapRenderer)
+                        if found is not None and found.tilemap is not None:
+                            tm_comp = found
+                            break
+                BoxCollider._scene_tilemap_components[scene_id] = tm_comp
+
+            tm_comp = BoxCollider._scene_tilemap_components[scene_id]
+            if tm_comp is not None:
+                cache_key = (scene_id, id(tm_comp.tilemap))
+                if cache_key not in BoxCollider._scene_tilemaps:
+                    from engine.physics.tilemap_collider import TilemapCollider
+                    BoxCollider._scene_tilemaps[cache_key] = TilemapCollider(tm_comp.tilemap, layer_name="collision")
+                
+                tm_collider = BoxCollider._scene_tilemaps[cache_key]
+                tm_collider.resolve(a.game_object)
+
+        for i in range(n):
+            a = registry[i]
+            if a.game_object is None or not a.game_object.active:
+                continue
+            scene_a = a.game_object.scene
+            if scene_a is None:
+                continue
+            for j in range(i + 1, n):
+                b = registry[j]
+                if b.game_object is None or not b.game_object.active:
+                    continue
+                if b.game_object.scene != scene_a:
+                    continue
+
+                rect_a = a.rect
+                rect_b = b.rect
+
+                if rect_a.colliderect(rect_b):
+                    # Calcula overlaps para resolução de colisão
+                    overlap_x = min(rect_a.right, rect_b.right) - max(rect_a.left, rect_b.left)
+                    overlap_y = min(rect_a.bottom, rect_b.bottom) - max(rect_a.top, rect_b.top)
+                    info_ab = CollisionInfo(other=b, overlap_x=overlap_x, overlap_y=overlap_y)
+                    info_ba = CollisionInfo(other=a, overlap_x=overlap_x, overlap_y=overlap_y)
+
+                    # Resolução física (só para não-triggers)
+                    if not a.is_trigger and not b.is_trigger:
+                        BoxCollider._resolve(a, b, overlap_x, overlap_y)
+
+                    # Callbacks de enter
+                    if b not in a._colliding_with:
+                        a._colliding_with.add(b)
+                        b._colliding_with.add(a)
+                        if a.on_collision_enter:
+                            a.on_collision_enter(info_ab)
+                        if b.on_collision_enter:
+                            b.on_collision_enter(info_ba)
+                else:
+                    # Callbacks de exit
+                    if b in a._colliding_with:
+                        a._colliding_with.discard(b)
+                        b._colliding_with.discard(a)
+                        if a.on_collision_exit:
+                            a.on_collision_exit(b)
+                        if b.on_collision_exit:
+                            b.on_collision_exit(a)
+
+    @staticmethod
+    def _resolve(a: "BoxCollider", b: "BoxCollider", overlap_x: float, overlap_y: float) -> None:
+        """
+        Resolve penetração pelo eixo de menor sobreposição (MTV).
+
+        A normal de separação aponta de A para B (nx > 0 quando B está à direita de A).
+
+        Regra de cancelamento de velocidade por dot product:
+          - Para A: cancela a componente na direção +nx quando a_vel dot n > 0
+            (A se movendo em direção a B → cancela)
+          - Para B: cancela a componente na direção -nx quando b_vel dot (-n) > 0,
+            equivalente a b_vel dot n < 0 (B se movendo em direção a A → cancela)
+
+        Isso preserva a componente tangencial (ex: deslizar ao longo de uma parede)
+        e evita sub-correção quando apenas um objeto é dinâmico (share=1.0 neste caso).
+        """
+        from engine.physics.rigidbody import RigidBody
+
+        rb_a = a.game_object.get_component(RigidBody) if a.game_object else None
+        rb_b = b.game_object.get_component(RigidBody) if b.game_object else None
+
+        a_dyn = rb_a is not None and not rb_a.is_kinematic
+        b_dyn = rb_b is not None and not rb_b.is_kinematic
+
+        if not a_dyn and not b_dyn:
+            return
+
+        # Divide a penetração igualmente quando ambos são dinâmicos;
+        # aplica 100% ao único dinâmico caso contrário.
+        share = 0.5 if (a_dyn and b_dyn) else 1.0
+
+        if overlap_x < overlap_y:
+            # MTV aponta no eixo X: normal nx = ±1, ny = 0
+            # nx aponta de A para B: positivo quando B está à direita de A
+            nx = 1.0 if a.rect.centerx < b.rect.centerx else -1.0
+            correction = overlap_x * share
+            if a_dyn:
+                a.game_object.transform.position[0] -= nx * correction
+                # Cancela velocidade de A na direção de B (+nx)
+                dot = rb_a.velocity[0] * nx
+                if dot > 0:
+                    rb_a.velocity[0] -= nx * dot
+            if b_dyn:
+                b.game_object.transform.position[0] += nx * correction
+                # Cancela velocidade de B na direção de A (-nx)
+                dot = rb_b.velocity[0] * nx
+                if dot < 0:
+                    rb_b.velocity[0] -= nx * dot
+        else:
+            # MTV aponta no eixo Y: normal nx = 0, ny = ±1
+            # ny aponta de A para B: positivo quando B está abaixo de A
+            ny = 1.0 if a.rect.centery < b.rect.centery else -1.0
+            correction = overlap_y * share
+            if a_dyn:
+                a.game_object.transform.position[1] -= ny * correction
+                # Cancela velocidade de A na direção de B (+ny)
+                dot = rb_a.velocity[1] * ny
+                if dot > 0:
+                    rb_a.velocity[1] -= ny * dot
+            if b_dyn:
+                b.game_object.transform.position[1] += ny * correction
+                # Cancela velocidade de B na direção de A (-ny)
+                dot = rb_b.velocity[1] * ny
+                if dot < 0:
+                    rb_b.velocity[1] -= ny * dot
+
+    # ------------------------------------------------------------------
+    # Debug
+    # ------------------------------------------------------------------
+
+    def draw(self, screen: pygame.Surface) -> None:
+        if self.debug_draw:
+            pygame.draw.rect(screen, (0, 255, 0), self.rect, 1)
+
+
+class CircleCollider(Component):
+    """
+    Collider circular para detecção de colisão por distância.
+
+    Callbacks disponíveis:
+        on_collision_enter(other: CircleCollider) -> None
+        on_collision_exit(other: CircleCollider)  -> None
+    """
+    component_type = "CircleCollider"
+    UNIQUE = True
+
+    _registry: List["CircleCollider"] = []
+    _checks_count: int = 0
+
+    def __init__(
+        self,
+        radius: float = 16.0,
+        offset_x: float = 0.0,
+        offset_y: float = 0.0,
+        is_trigger: bool = False,
+        debug_draw: bool = False,
+    ) -> None:
+        super().__init__()
+        self.radius = radius
+        self.offset_x = offset_x
+        self.offset_y = offset_y
+        self.is_trigger = is_trigger
+        self.debug_draw = debug_draw
+
+        self._colliding_with: set["CircleCollider"] = set()
+
+        self.on_collision_enter: Optional[Callable[["CircleCollider"], None]] = None
+        self.on_collision_exit: Optional[Callable[["CircleCollider"], None]] = None
+        self.on_trigger_enter: Optional[Callable[["CircleCollider"], None]] = None
+        self.on_trigger_exit: Optional[Callable[["CircleCollider"], None]] = None
+
+    def serialize_properties(self) -> dict[str, Any]:
+        return {
+            "radius": float(self.radius),
+            "offset_x": float(self.offset_x),
+            "offset_y": float(self.offset_y),
+            "is_trigger": bool(self.is_trigger),
+            "debug_draw": bool(self.debug_draw),
+        }
+
+    def deserialize_properties(self, data: dict[str, Any]) -> None:
+        self.radius = float(data.get("radius", 16.0))
+        offset = data.get("offset")
+        if isinstance(offset, (list, tuple)) and len(offset) >= 2:
+            self.offset_x = float(offset[0])
+            self.offset_y = float(offset[1])
+        else:
+            self.offset_x = float(data.get("offset_x", 0.0))
+            self.offset_y = float(data.get("offset_y", 0.0))
+        self.is_trigger = bool(data.get("is_trigger", False))
+        self.debug_draw = bool(data.get("debug_draw", False))
+
+    # ------------------------------------------------------------------
+    # Ciclo de vida
+    # ------------------------------------------------------------------
+
+    def start(self) -> None:
+        CircleCollider._registry.append(self)
+
+    def destroy(self) -> None:
+        if self in CircleCollider._registry:
+            CircleCollider._registry.remove(self)
+        for other in list(self._colliding_with):
+            other._colliding_with.discard(self)
+        self._colliding_with.clear()
+
+    # ------------------------------------------------------------------
+    # Centro utilitário
+    # ------------------------------------------------------------------
+
+    @property
+    def center(self) -> tuple[float, float]:
+        """Retorna o centro do collider no espaço de mundo."""
+        if self.game_object is None:
+            return (self.offset_x, self.offset_y)
+        pos = self.game_object.transform.get_world_position()
+        return (float(pos[0]) + self.offset_x, float(pos[1]) + self.offset_y)
+
+    # ------------------------------------------------------------------
+    # Detecção círculo-círculo
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def check_all() -> None:
+        """
+        Verifica colisões entre todos os CircleColliders registrados.
+        Purga órfãos periodicamente (1x a cada 60 frames) e limita as colisões ao escopo da mesma cena ativa.
+        """
+        CircleCollider._checks_count += 1
+        if CircleCollider._checks_count >= 60:
+            CircleCollider._checks_count = 0
+            CircleCollider._registry = [c for c in CircleCollider._registry if c.game_object is not None and c.game_object.scene is not None]
+        
+        registry = list(CircleCollider._registry)
+        n = len(registry)
+
+        for i in range(n):
+            a = registry[i]
+            if a.game_object is None or not a.game_object.active:
+                continue
+            scene_a = a.game_object.scene
+            if scene_a is None:
+                continue
+            for j in range(i + 1, n):
+                b = registry[j]
+                if b.game_object is None or not b.game_object.active:
+                    continue
+                if b.game_object.scene != scene_a:
+                    continue
+
+                ax, ay = a.center
+                bx, by = b.center
+                dist = math.hypot(bx - ax, by - ay)
+                min_dist = a.radius + b.radius
+
+                if dist < min_dist:
+                    if not a.is_trigger and not b.is_trigger:
+                        CircleCollider._resolve(a, b, ax, ay, bx, by, dist, min_dist)
+
+                    if b not in a._colliding_with:
+                        a._colliding_with.add(b)
+                        b._colliding_with.add(a)
+                        if a.on_collision_enter:
+                            a.on_collision_enter(b)
+                        if b.on_collision_enter:
+                            b.on_collision_enter(a)
+                else:
+                    if b in a._colliding_with:
+                        a._colliding_with.discard(b)
+                        b._colliding_with.discard(a)
+                        if a.on_collision_exit:
+                            a.on_collision_exit(b)
+                        if b.on_collision_exit:
+                            b.on_collision_exit(a)
+
+    @staticmethod
+    def _resolve(
+        a: "CircleCollider", b: "CircleCollider",
+        ax: float, ay: float, bx: float, by: float,
+        dist: float, min_dist: float,
+    ) -> None:
+        """
+        Empurra os dois círculos para fora da sobreposição e resolve velocidades ao longo da normal.
+        Nota: Se dist == 0 (coordenadas idênticas), uma normal arbitrária (1.0, 0.0) é usada como fallback,
+        empurrando os objetos horizontalmente para a direita.
+        """
+        from engine.physics.rigidbody import RigidBody
+
+        if dist == 0:
+            nx, ny = 1.0, 0.0
+        else:
+            nx, ny = (bx - ax) / dist, (by - ay) / dist
+
+        rb_a = a.game_object.get_component(RigidBody) if a.game_object else None
+        rb_b = b.game_object.get_component(RigidBody) if b.game_object else None
+
+        a_dyn = rb_a and not rb_a.is_kinematic
+        b_dyn = rb_b and not rb_b.is_kinematic
+
+        if not a_dyn and not b_dyn:
+            return
+
+        # Se ambos forem dinâmicos, divide a correção. Se apenas um, aplica 100% no dinâmico.
+        correction_factor = 0.5 if (a_dyn and b_dyn) else 1.0
+        overlap = (min_dist - dist) * correction_factor
+
+        if a_dyn:
+            a.game_object.transform.position[0] -= nx * overlap
+            a.game_object.transform.position[1] -= ny * overlap
+            # Zera apenas a componente de velocidade normal se estiver se movendo em direção à colisão
+            dot_a = rb_a.velocity[0] * nx + rb_a.velocity[1] * ny
+            if dot_a > 0:
+                rb_a.velocity[0] -= nx * dot_a
+                rb_a.velocity[1] -= ny * dot_a
+
+        if b_dyn:
+            b.game_object.transform.position[0] += nx * overlap
+            b.game_object.transform.position[1] += ny * overlap
+            dot_b = rb_b.velocity[0] * nx + rb_b.velocity[1] * ny
+            if dot_b < 0:
+                rb_b.velocity[0] -= nx * dot_b
+                rb_b.velocity[1] -= ny * dot_b
+
+    # ------------------------------------------------------------------
+    # Debug
+    # ------------------------------------------------------------------
+
+    def draw(self, screen: pygame.Surface) -> None:
+        if self.debug_draw:
+            cx, cy = self.center
+            pygame.draw.circle(screen, (0, 255, 128), (int(cx), int(cy)), int(self.radius), 1)

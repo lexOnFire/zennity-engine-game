@@ -1,0 +1,9 @@
+{
+  "guid": "5486b64b-8351-4369-a398-2f2033ad7fbd",
+  "uuid": "5486b64b-8351-4369-a398-2f2033ad7fbd",
+  "type": "scene",
+  "importer": "generic_importer",
+  "source_path": "Assets/Scenes/AnimatorControllerDemo.zscene",
+  "import_settings": {},
+  "dependencies": []
+}

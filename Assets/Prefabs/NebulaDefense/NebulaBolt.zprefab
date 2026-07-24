@@ -1,0 +1,149 @@
+{
+  "format_version": 2,
+  "prefab_name": "NebulaBolt",
+  "exposed_properties": [
+    {
+      "name": "speed",
+      "label": "Velocidade",
+      "type": "number",
+      "default": 680.0,
+      "target": "gameplay.speed",
+      "minimum": 0.0
+    },
+    {
+      "name": "damage",
+      "label": "Dano",
+      "type": "number",
+      "default": 1.0,
+      "target": "gameplay.damage",
+      "minimum": 0.0
+    },
+    {
+      "name": "direction_x",
+      "label": "Direção X",
+      "type": "number",
+      "default": 1.0,
+      "target": "gameplay.direction_x"
+    },
+    {
+      "name": "direction_y",
+      "label": "Direção Y",
+      "type": "number",
+      "default": 0.0,
+      "target": "gameplay.direction_y"
+    },
+    {
+      "name": "lifetime",
+      "label": "Tempo de vida",
+      "type": "number",
+      "default": 2.2,
+      "target": "gameplay.lifetime",
+      "semantic": "lifetime",
+      "minimum": 0.0
+    },
+    {
+      "name": "image",
+      "label": "Imagem",
+      "type": "image",
+      "default": "",
+      "target": "texture",
+      "asset_kind": "image"
+    },
+    {
+      "name": "animation",
+      "label": "Animação",
+      "type": "animation",
+      "default": "",
+      "target": "animator.asset_path",
+      "asset_kind": "animation"
+    },
+    {
+      "name": "sound",
+      "label": "Som",
+      "type": "audio",
+      "default": "Assets/Audio/jump-sound-531048.mp3",
+      "target": "gameplay.sound",
+      "asset_kind": "audio"
+    },
+    {
+      "name": "width",
+      "label": "Escala X",
+      "type": "number",
+      "default": 30.0,
+      "target": "w",
+      "minimum": 1.0
+    },
+    {
+      "name": "height",
+      "label": "Escala Y",
+      "type": "number",
+      "default": 10.0,
+      "target": "h",
+      "minimum": 1.0
+    },
+    {
+      "name": "color",
+      "label": "Cor",
+      "type": "color",
+      "default": [
+        86,
+        221,
+        255
+      ],
+      "target": "color"
+    },
+    {
+      "name": "tag",
+      "label": "Tag",
+      "type": "text",
+      "default": "ProjectileNebula",
+      "target": "tag"
+    },
+    {
+      "name": "layer",
+      "label": "Layer",
+      "type": "text",
+      "default": "Default",
+      "target": "layer"
+    }
+  ],
+  "object": {
+    "name": "NebulaBolt",
+    "x": 0.0,
+    "y": 0.0,
+    "w": 30.0,
+    "h": 10.0,
+    "rotation": 0.0,
+    "color": [
+      86,
+      221,
+      255
+    ],
+    "tag": "ProjectileNebula",
+    "layer": "Default",
+    "renderer_enabled": true,
+    "collider": {
+      "type": "box",
+      "width": 30.0,
+      "height": 10.0,
+      "is_trigger": true
+    },
+    "rigidbody": {
+      "mass": 0.1,
+      "use_gravity": false,
+      "is_kinematic": true,
+      "gravity_scale": 0.0
+    },
+    "gameplay": {
+      "speed": 680.0,
+      "damage": 1.0,
+      "direction_x": 1.0,
+      "direction_y": 0.0,
+      "lifetime": 2.2,
+      "sound": "Assets/Audio/jump-sound-531048.mp3"
+    },
+    "animator": {
+      "asset_path": ""
+    }
+  }
+}

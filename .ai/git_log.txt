@@ -1,0 +1,20 @@
+92484ad feat(tools): add AI Toolkit and architecture documentation
+29e52be Restore legacy editor default scene for tests
+cc397e6 Restore legacy editor default scene for tests
+a17d1e8 Add legacy Editor2D draw object hook
+d4583c3 Fix inspector plugin compatibility after runtime merge
+0350141 Merge runtime serialization audit safely
+f698066 Merge editor stability CI updates
+f268cb8 Keep asset rename editor open until user commits
+57652c3 Apply assets panel polish directly in ResourcesPanel
+5754fd1 Register assets panel polish runtime patch
+e249fdb Add assets panel polish patch
+0a93801 algumas alteraçoes
+a9f016c Avoid pickling pygame runtime objects during play clone
+51d43f7 Cull offscreen runtime sprites before transform cache work
+ef52627 Optimize editor sprite overlay culling
+7b88575 Add generated script metadata
+78c956a Guard runtime lifecycle hooks for legacy components
+c52b9aa Merge Projectile script from main
+c294146 Merge Animator script from main
+ab6e3aa Merge TimerComponent script from main

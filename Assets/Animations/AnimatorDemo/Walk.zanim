@@ -1,0 +1,15 @@
+{
+  "format": "zennity.animation_clip",
+  "version": 1,
+  "name": "Walk",
+  "texture": "Assets/Textures/formiga_2.PNG",
+  "frame_width": 115,
+  "frame_height": 115,
+  "frames": [0, 0, 0, 0],
+  "fps": 8.0,
+  "loop": true,
+  "events": [
+    {"frame": 1, "name": "passo", "payload": "esquerdo"},
+    {"frame": 3, "name": "passo", "payload": "direito"}
+  ]
+}

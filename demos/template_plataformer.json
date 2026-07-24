@@ -1,0 +1,58 @@
+{
+    "_template_name": "Plataformer",
+    "_template_desc": "Personagem com pulo sobre plataformas. Use WASD para mover e ESPACO para pular.",
+    "objects": [
+        {
+            "name": "Chao",
+            "shape": "Cube",
+            "position": [0.0, -1.1, 1.5],
+            "rotation": [0.0, 0.0, 0.0],
+            "scale": [6.0, 0.2, 4.0],
+            "color": [60, 160, 80],
+            "is_static": true,
+            "use_physics": false,
+            "initial_velocity_y": 0.0,
+            "script_path": "",
+            "tag": ""
+        },
+        {
+            "name": "Plataforma_1",
+            "shape": "Cube",
+            "position": [1.5, 0.0, 1.5],
+            "rotation": [0.0, 0.0, 0.0],
+            "scale": [2.0, 0.2, 1.5],
+            "color": [100, 120, 200],
+            "is_static": true,
+            "use_physics": false,
+            "initial_velocity_y": 0.0,
+            "script_path": "",
+            "tag": ""
+        },
+        {
+            "name": "Plataforma_2",
+            "shape": "Cube",
+            "position": [-1.5, 0.6, 1.5],
+            "rotation": [0.0, 0.0, 0.0],
+            "scale": [2.0, 0.2, 1.5],
+            "color": [100, 120, 200],
+            "is_static": true,
+            "use_physics": false,
+            "initial_velocity_y": 0.0,
+            "script_path": "",
+            "tag": ""
+        },
+        {
+            "name": "Jogador",
+            "shape": "Cube",
+            "position": [0.0, 0.0, 1.5],
+            "rotation": [0.0, 0.0, 0.0],
+            "scale": [0.6, 0.6, 0.6],
+            "color": [220, 80, 40],
+            "is_static": false,
+            "use_physics": true,
+            "initial_velocity_y": 0.0,
+            "script_path": "scripts/builtin_wasd.py",
+            "tag": "player"
+        }
+    ]
+}

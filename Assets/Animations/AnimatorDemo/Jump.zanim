@@ -1,0 +1,14 @@
+{
+  "format": "zennity.animation_clip",
+  "version": 1,
+  "name": "Jump",
+  "texture": "Assets/Textures/formiga_2.PNG",
+  "frame_width": 115,
+  "frame_height": 115,
+  "frames": [0, 0],
+  "fps": 4.0,
+  "loop": true,
+  "events": [
+    {"frame": 0, "name": "pulo", "payload": null}
+  ]
+}

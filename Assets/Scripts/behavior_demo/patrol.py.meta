@@ -1,0 +1,9 @@
+{
+  "guid": "5df73e22-d56c-4ceb-a17d-044dc3e3623d",
+  "uuid": "5df73e22-d56c-4ceb-a17d-044dc3e3623d",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/behavior_demo/patrol.py",
+  "import_settings": {},
+  "dependencies": []
+}

@@ -1,0 +1,414 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "Nebula Drone Behavior",
+  "target": {
+    "type": "tag",
+    "value": "EnemyNebula"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "start",
+      "type": "event_start",
+      "title": "On Start",
+      "category": "Events",
+      "position": [
+        20.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "advance",
+      "type": "start_continuous_motion",
+      "title": "Iniciar movimento permanente",
+      "category": "Position",
+      "position": [
+        280.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "movement": "Ataque",
+        "x": -155.0,
+        "y": 0.0,
+        "space": "global",
+        "acceleration": 100.0,
+        "deceleration": 0.0
+      }
+    },
+    {
+      "id": "trigger",
+      "type": "event_trigger_enter",
+      "title": "Ao entrar na área",
+      "category": "Events",
+      "position": [
+        20.0,
+        360.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "other_tag",
+      "type": "get_tag",
+      "title": "Ler Tag do objeto",
+      "category": "Objects",
+      "position": [
+        260.0,
+        280.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "is_bolt",
+      "type": "compare_text",
+      "title": "Comparar texto",
+      "category": "Condition",
+      "position": [
+        500.0,
+        360.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "operator": "==",
+        "value": "ProjectileNebula"
+      }
+    },
+    {
+      "id": "destroy_sequence",
+      "type": "sequence",
+      "title": "Sequência",
+      "category": "Logic",
+      "position": [
+        760.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "outputs": 3
+      }
+    },
+    {
+      "id": "destroy_enemy",
+      "type": "destroy_object",
+      "title": "Destruir objeto",
+      "category": "Action",
+      "position": [
+        1020.0,
+        220.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "get_score",
+      "type": "get_variable",
+      "title": "Ler variável",
+      "category": "Variables",
+      "position": [
+        1020.0,
+        380.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "scope": "project",
+        "name": "score"
+      }
+    },
+    {
+      "id": "add_score",
+      "type": "add_number",
+      "title": "Somar",
+      "category": "Math",
+      "position": [
+        1260.0,
+        380.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 1.0
+      }
+    },
+    {
+      "id": "get_damage",
+      "type": "get_prefab_parameter",
+      "title": "Ler parâmetro do Prefab",
+      "category": "Objects",
+      "position": [
+        1020.0,
+        470.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "damage",
+        "type": "number",
+        "default": 1.0
+      }
+    },
+    {
+      "id": "save_score",
+      "type": "set_variable",
+      "title": "Definir variável",
+      "category": "Variables",
+      "position": [
+        1500.0,
+        380.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "scope": "project",
+        "name": "score",
+        "value": 1.0
+      }
+    },
+    {
+      "id": "score_sound",
+      "type": "play_sound",
+      "title": "Tocar som",
+      "category": "Action",
+      "position": [
+        1020.0,
+        540.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "path": "Assets/Audio/collect-points-190037.mp3"
+      }
+    },
+    {
+      "id": "is_player",
+      "type": "compare_text",
+      "title": "Comparar texto",
+      "category": "Condition",
+      "position": [
+        760.0,
+        660.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "operator": "==",
+        "value": "Player"
+      }
+    },
+    {
+      "id": "destroy_on_player",
+      "type": "destroy_object",
+      "title": "Destruir objeto",
+      "category": "Action",
+      "position": [
+        1020.0,
+        660.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "start_next_advance_in",
+      "from_node": "start",
+      "from_port": "next",
+      "to_node": "advance",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "trigger_next_is_bolt_in",
+      "from_node": "trigger",
+      "from_port": "next",
+      "to_node": "is_bolt",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "trigger_other_other_tag_target",
+      "from_node": "trigger",
+      "from_port": "other",
+      "to_node": "other_tag",
+      "to_port": "target",
+      "kind": "object",
+      "order": 0
+    },
+    {
+      "id": "other_tag_value_is_bolt_value",
+      "from_node": "other_tag",
+      "from_port": "value",
+      "to_node": "is_bolt",
+      "to_port": "value",
+      "kind": "text",
+      "order": 0
+    },
+    {
+      "id": "is_bolt_true_destroy_sequence_in",
+      "from_node": "is_bolt",
+      "from_port": "true",
+      "to_node": "destroy_sequence",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "destroy_sequence_then_0_destroy_enemy_in",
+      "from_node": "destroy_sequence",
+      "from_port": "then_0",
+      "to_node": "destroy_enemy",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "destroy_sequence_then_1_save_score_in",
+      "from_node": "destroy_sequence",
+      "from_port": "then_1",
+      "to_node": "save_score",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    },
+    {
+      "id": "get_score_value_add_score_a",
+      "from_node": "get_score",
+      "from_port": "value",
+      "to_node": "add_score",
+      "to_port": "a",
+      "kind": "number",
+      "order": 0
+    },
+    {
+      "id": "trigger_other_get_damage_target",
+      "from_node": "trigger",
+      "from_port": "other",
+      "to_node": "get_damage",
+      "to_port": "target",
+      "kind": "object",
+      "order": 0
+    },
+    {
+      "id": "get_damage_value_add_score_b",
+      "from_node": "get_damage",
+      "from_port": "value",
+      "to_node": "add_score",
+      "to_port": "b",
+      "kind": "number",
+      "order": 0
+    },
+    {
+      "id": "add_score_value_save_score_value",
+      "from_node": "add_score",
+      "from_port": "value",
+      "to_node": "save_score",
+      "to_port": "value",
+      "kind": "number",
+      "order": 0
+    },
+    {
+      "id": "destroy_sequence_then_2_score_sound_in",
+      "from_node": "destroy_sequence",
+      "from_port": "then_2",
+      "to_node": "score_sound",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 2
+    },
+    {
+      "id": "is_bolt_false_is_player_in",
+      "from_node": "is_bolt",
+      "from_port": "false",
+      "to_node": "is_player",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "other_tag_value_is_player_value",
+      "from_node": "other_tag",
+      "from_port": "value",
+      "to_node": "is_player",
+      "to_port": "value",
+      "kind": "text",
+      "order": 0
+    },
+    {
+      "id": "is_player_true_destroy_on_player_in",
+      "from_node": "is_player",
+      "from_port": "true",
+      "to_node": "destroy_on_player",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    }
+  ]
+}

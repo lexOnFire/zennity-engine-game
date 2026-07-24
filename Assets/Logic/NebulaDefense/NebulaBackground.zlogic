@@ -1,0 +1,73 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "Nebula Scrolling Background",
+  "target": {
+    "type": "name",
+    "value": "NebulaBackground"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "start",
+      "type": "event_start",
+      "title": "On Start",
+      "category": "Events",
+      "position": [
+        20.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "scroll",
+      "type": "start_texture_scroll",
+      "title": "Start Scrolling Background",
+      "category": "Action",
+      "position": [
+        300.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "path": "Assets/Materials/CEU.PNG",
+        "speed_x": -18.0,
+        "speed_y": 0.0,
+        "repeat_x": true,
+        "repeat_y": true,
+        "parallax": 0.25,
+        "send_to_background": true
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "start_next_scroll_in",
+      "from_node": "start",
+      "from_port": "next",
+      "to_node": "scroll",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    }
+  ]
+}

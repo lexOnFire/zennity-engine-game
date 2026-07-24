@@ -1,0 +1,383 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "Nebula Bolt Collision",
+  "target": {
+    "type": "tag",
+    "value": "ProjectileNebula"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "start",
+      "type": "event_start",
+      "title": "On Start",
+      "category": "Events",
+      "position": [
+        20.0,
+        -260.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "speed",
+      "type": "get_prefab_parameter",
+      "title": "Ler parâmetro do Prefab",
+      "category": "Objects",
+      "position": [
+        260.0,
+        -360.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "speed",
+        "type": "number",
+        "default": 680.0
+      }
+    },
+    {
+      "id": "direction_x",
+      "type": "get_prefab_parameter",
+      "title": "Ler parâmetro do Prefab",
+      "category": "Objects",
+      "position": [
+        260.0,
+        -240.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "direction_x",
+        "type": "number",
+        "default": 1.0
+      }
+    },
+    {
+      "id": "velocity_x",
+      "type": "multiply_number",
+      "title": "Multiplicar",
+      "category": "Math",
+      "position": [
+        520.0,
+        -320.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 680.0,
+        "b": 1.0
+      }
+    },
+    {
+      "id": "direction_y",
+      "type": "get_prefab_parameter",
+      "title": "Ler parâmetro do Prefab",
+      "category": "Objects",
+      "position": [
+        260.0,
+        -100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "direction_y",
+        "type": "number",
+        "default": 0.0
+      }
+    },
+    {
+      "id": "velocity_y",
+      "type": "multiply_number",
+      "title": "Multiplicar",
+      "category": "Math",
+      "position": [
+        520.0,
+        -140.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 680.0,
+        "b": 0.0
+      }
+    },
+    {
+      "id": "motion",
+      "type": "start_continuous_motion",
+      "title": "Iniciar movimento permanente",
+      "category": "Position",
+      "position": [
+        780.0,
+        -260.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "movement": "PrefabMotion",
+        "x": 680.0,
+        "y": 0.0,
+        "space": "global",
+        "acceleration": 1200.0,
+        "deceleration": 0.0
+      }
+    },
+    {
+      "id": "sound",
+      "type": "get_prefab_parameter",
+      "title": "Ler parâmetro do Prefab",
+      "category": "Objects",
+      "position": [
+        520.0,
+        20.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "sound",
+        "type": "audio",
+        "default": "Assets/Audio/jump-sound-531048.mp3"
+      }
+    },
+    {
+      "id": "play_sound",
+      "type": "play_sound",
+      "title": "Tocar som",
+      "category": "Action",
+      "position": [
+        780.0,
+        20.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "path": "Assets/Audio/jump-sound-531048.mp3"
+      }
+    },
+    {
+      "id": "trigger",
+      "type": "event_trigger_enter",
+      "title": "Ao entrar na área",
+      "category": "Events",
+      "position": [
+        20.0,
+        120.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "other_tag",
+      "type": "get_tag",
+      "title": "Ler Tag do objeto",
+      "category": "Objects",
+      "position": [
+        280.0,
+        20.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "is_enemy",
+      "type": "compare_text",
+      "title": "Comparar texto",
+      "category": "Condition",
+      "position": [
+        520.0,
+        120.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "operator": "==",
+        "value": "EnemyNebula"
+      }
+    },
+    {
+      "id": "destroy",
+      "type": "destroy_object",
+      "title": "Destruir objeto",
+      "category": "Action",
+      "position": [
+        780.0,
+        120.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "start_next_motion_in",
+      "from_node": "start",
+      "from_port": "next",
+      "to_node": "motion",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "start_next_play_sound_in",
+      "from_node": "start",
+      "from_port": "next",
+      "to_node": "play_sound",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    },
+    {
+      "id": "speed_value_velocity_x_a",
+      "from_node": "speed",
+      "from_port": "value",
+      "to_node": "velocity_x",
+      "to_port": "a",
+      "kind": "number",
+      "order": 0
+    },
+    {
+      "id": "direction_x_value_velocity_x_b",
+      "from_node": "direction_x",
+      "from_port": "value",
+      "to_node": "velocity_x",
+      "to_port": "b",
+      "kind": "number",
+      "order": 0
+    },
+    {
+      "id": "velocity_x_value_motion_x",
+      "from_node": "velocity_x",
+      "from_port": "value",
+      "to_node": "motion",
+      "to_port": "x",
+      "kind": "number",
+      "order": 0
+    },
+    {
+      "id": "speed_value_velocity_y_a",
+      "from_node": "speed",
+      "from_port": "value",
+      "to_node": "velocity_y",
+      "to_port": "a",
+      "kind": "number",
+      "order": 0
+    },
+    {
+      "id": "direction_y_value_velocity_y_b",
+      "from_node": "direction_y",
+      "from_port": "value",
+      "to_node": "velocity_y",
+      "to_port": "b",
+      "kind": "number",
+      "order": 0
+    },
+    {
+      "id": "velocity_y_value_motion_y",
+      "from_node": "velocity_y",
+      "from_port": "value",
+      "to_node": "motion",
+      "to_port": "y",
+      "kind": "number",
+      "order": 0
+    },
+    {
+      "id": "sound_value_play_sound_path",
+      "from_node": "sound",
+      "from_port": "value",
+      "to_node": "play_sound",
+      "to_port": "path",
+      "kind": "text",
+      "order": 0
+    },
+    {
+      "id": "trigger_next_is_enemy_in",
+      "from_node": "trigger",
+      "from_port": "next",
+      "to_node": "is_enemy",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "trigger_other_other_tag_target",
+      "from_node": "trigger",
+      "from_port": "other",
+      "to_node": "other_tag",
+      "to_port": "target",
+      "kind": "object",
+      "order": 0
+    },
+    {
+      "id": "other_tag_value_is_enemy_value",
+      "from_node": "other_tag",
+      "from_port": "value",
+      "to_node": "is_enemy",
+      "to_port": "value",
+      "kind": "text",
+      "order": 0
+    },
+    {
+      "id": "is_enemy_true_destroy_in",
+      "from_node": "is_enemy",
+      "from_port": "true",
+      "to_node": "destroy",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    }
+  ]
+}

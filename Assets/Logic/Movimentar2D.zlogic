@@ -1,0 +1,104 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "name": "Movimentar 2D",
+  "target": {
+    "type": "name",
+    "value": "Player"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "nodes": [
+    {
+      "id": "subgraph_start",
+      "type": "subgraph_start",
+      "title": "Subgraph Start",
+      "category": "Subgraphs",
+      "position": [
+        80.0,
+        100.0
+      ],
+      "properties": {}
+    },
+    {
+      "id": "direction_input",
+      "type": "subgraph_input",
+      "title": "Subgraph Input",
+      "category": "Subgraphs",
+      "position": [
+        80.0,
+        280.0
+      ],
+      "properties": {
+        "name": "direcao",
+        "type": "number",
+        "default": 0.0
+      }
+    },
+    {
+      "id": "move_action",
+      "type": "move",
+      "title": "Move",
+      "category": "Movement",
+      "position": [
+        360.0,
+        100.0
+      ],
+      "properties": {
+        "speed": 200.0
+      }
+    },
+    {
+      "id": "direction_output",
+      "type": "subgraph_return",
+      "title": "Subgraph Return",
+      "category": "Subgraphs",
+      "position": [
+        650.0,
+        100.0
+      ],
+      "properties": {
+        "name": "direcao_aplicada",
+        "type": "number"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "flow_start_move",
+      "from_node": "subgraph_start",
+      "from_port": "next",
+      "to_node": "move_action",
+      "to_port": "in",
+      "kind": "flow"
+    },
+    {
+      "id": "data_direction_move",
+      "from_node": "direction_input",
+      "from_port": "value",
+      "to_node": "move_action",
+      "to_port": "value",
+      "kind": "number"
+    },
+    {
+      "id": "flow_move_return",
+      "from_node": "move_action",
+      "from_port": "next",
+      "to_node": "direction_output",
+      "to_port": "in",
+      "kind": "flow"
+    },
+    {
+      "id": "data_direction_return",
+      "from_node": "direction_input",
+      "from_port": "value",
+      "to_node": "direction_output",
+      "to_port": "value",
+      "kind": "number"
+    }
+  ]
+}
