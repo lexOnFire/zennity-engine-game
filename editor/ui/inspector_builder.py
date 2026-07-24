@@ -41,38 +41,6 @@ def _build_inspector_shell(window):
     main_layout.setContentsMargins(8, 8, 8, 10)
     main_layout.setSpacing(6)
 
-    # BARRA DE TÍTULO CUSTOMIZADA DO INSPECTOR (Com botões de encolher, desgrudar/flutuar, acoplar)
-    title_bar = QWidget()
-    title_bar.setObjectName("InspectorToolbar")
-    title_bar_layout = QHBoxLayout(title_bar)
-    title_bar_layout.setContentsMargins(6, 4, 6, 4)
-
-    inspector_lbl = QLabel("🔍 INSPECTOR")
-    inspector_lbl.setObjectName("InspectorToolbarTitle")
-    title_bar_layout.addWidget(inspector_lbl)
-    title_bar_layout.addStretch()
-
-    # Botões de controle da janela
-    window.btn_collapse_dock = QPushButton("▼") # Encolher
-    window.btn_collapse_dock.setToolTip("Ocultar Painel")
-    window.btn_float_dock = QPushButton("⎋")      # Desgrudar / Flutuar
-    window.btn_float_dock.setToolTip("Desgrudar/Flutuar Janela")
-    window.btn_dock_dock = QPushButton("⚓")       # Acoplar / Travar
-    window.btn_dock_dock.setToolTip("Acoplar no Editor")
-
-    for btn in (window.btn_collapse_dock, window.btn_float_dock, window.btn_dock_dock):
-        btn.setFixedSize(20, 20)
-        btn.setObjectName("InspectorPanelControl")
-        btn.setProperty("uiRole", "icon")
-        title_bar_layout.addWidget(btn)
-
-    # Conecta as ações nos botões customizados
-    window.btn_collapse_dock.clicked.connect(lambda: window.inspector_panel.setVisible(not window.inspector_panel.isVisible()))
-    window.btn_float_dock.clicked.connect(lambda: window.inspector_dock.setFloating(True))
-    window.btn_dock_dock.clicked.connect(lambda: window.inspector_dock.setFloating(False))
-
-    main_layout.addWidget(title_bar)
-
     # Cabeçalho do Objeto (Player, Estático, etc.)
     obj_header = QWidget()
     obj_header_layout = QHBoxLayout(obj_header)
