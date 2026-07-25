@@ -96,7 +96,47 @@ class Phase1EditorUIBuilderMixin:
         self.act_instantiate_prefab.triggered.connect(self.instantiate_prefab_ui)
         prefab_menu.addAction(self.act_instantiate_prefab)
 
-        self._unused_menu_refs = (edit_menu, window_menu, tools_menu, help_menu)
+        # Popula o menu Ferramentas com todos os editores visuais e ferramentas de produção
+        tool_items = [
+            ("Editor de Lógica Visual (Logic Graph)", "visual_scripting", "editor.visual_scripting.visual_scripting_dock", "VisualScriptingEditorDock"),
+            ("Animation Studio Visual", "animation_studio", "editor.animation_studio.animation_studio_dock", "AnimationStudioDock"),
+            ("Behavior Tree Editor", "behavior_tree", "editor.behavior_tree.behavior_tree_dock", "BehaviorTreeEditorDock"),
+            ("Dialogue Graph Editor", "dialogue", "editor.dialogue.dialogue_dock", "DialogueGraphEditorDock"),
+            ("Material Graph Editor", "material", "editor.material_graph.material_dock", "MaterialGraphEditorDock"),
+            ("UI Builder", "ui_builder", "editor.ui_builder.ui_builder_dock", "UIBuilderDock"),
+            ("Ecossistema de Extensões / Plugins", "extension_manager", "editor.extension_manager.extension_dock", "ExtensionManagerDock"),
+            ("Grafo de Dependências de Assets", "dependency_viewer", "editor.tools.dependency_viewer_dock", "DependencyViewerDock"),
+            ("Build Pipeline & Export", "build_report", "editor.tools.build_report_dock", "BuildReportDock"),
+            ("Auditor de Capacidades de Assets", "asset_auditor", "editor.tools.asset_auditor_dock", "AssetAuditorDock"),
+            ("Assistente de Build & Export Wizard", "build_wizard", "editor.wizards.build_wizard_dock", "BuildWizardDock"),
+            ("Configurações do Projeto", "project_settings", "editor.wizards.project_settings_dock", "ProjectSettingsDock"),
+        ]
+
+        for label, attr_name, mod_path, class_name in tool_items:
+            act = QAction(label, self)
+            act.triggered.connect(
+                lambda checked=False, m=mod_path, c=class_name, a=attr_name: self._show_visual_tool_dock(m, c, a)
+            )
+            tools_menu.addAction(act)
+            window_menu.addAction(act)
+
+        self._unused_menu_refs = (edit_menu, help_menu)
+
+    def _show_visual_tool_dock(self, module_path: str, class_name: str, attr_name: str) -> None:
+        """Instancia e exibe a dock do editor visual dinamicamente ao ser clicada no menu."""
+        dock_attr = f"_dock_{attr_name}"
+        dock_widget = getattr(self, dock_attr, None)
+        if dock_widget is None:
+            import importlib
+            mod = importlib.import_module(module_path)
+            cls = getattr(mod, class_name)
+            dock_widget = cls(self)
+            setattr(self, dock_attr, dock_widget)
+            self.addDockWidget(Qt.RightDockWidgetArea, dock_widget)
+
+        dock_widget.show()
+        dock_widget.raise_()
+        dock_widget.activateWindow()
 
     def _build_toolbar(self) -> None:
         toolbar = QToolBar("MainToolBar")
