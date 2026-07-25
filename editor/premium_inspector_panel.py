@@ -104,8 +104,24 @@ class RealInspectorPanel(InspectorPanel):
     def set_inspector_plugin_registry(self, registry: InspectorPluginRegistry) -> None:
         self.inspector_plugin_registry = registry
 
+    def load_objects(self, objects: list[Any]) -> None:
+        """Carrega múltiplos objetos para edição em lote (Multi-Selection)."""
+        self.current_objects = objects or []
+        if len(self.current_objects) == 1:
+            self.load_object(self.current_objects[0])
+        elif len(self.current_objects) > 1:
+            self.current_object = self.current_objects[0]
+            self.header.setEnabled(True)
+            self.object_name.setText(f"-- {len(self.current_objects)} Objetos Selecionados --")
+            if hasattr(self, "name"):
+                self.name.setText(f"{len(self.current_objects)} Objetos")
+            self._render_component_controls(self.current_object)
+        else:
+            self.load_object(None)
+
     def load_object(self, obj: Any) -> None:
         self.current_object = obj
+        self.current_objects = [obj] if obj is not None else []
         self.status_label.setText("")
         self.add_component_button.setEnabled(obj is not None)
         self.component_filter.setEnabled(obj is not None)

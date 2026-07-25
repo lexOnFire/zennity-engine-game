@@ -33,11 +33,11 @@ class HierarchyDock(QDockWidget):
         self.txt_search.textChanged.connect(self.filter_tree)
         layout.addWidget(self.txt_search)
         
-        # Árvore de entidades (Outliner)
+        # Árvore de entidades (Outliner - Suporte a Multi-Seleção ExtendedSelection)
         self.tree = QTreeWidget()
         self.tree.setHeaderHidden(True)
         self.tree.setColumnCount(1)
-        self.tree.setSelectionMode(QTreeWidget.SingleSelection)
+        self.tree.setSelectionMode(QTreeWidget.ExtendedSelection)
         self.tree.itemSelectionChanged.connect(self.on_item_selection_changed)
         self.tree.itemDoubleClicked.connect(self.on_item_double_clicked)
         self.tree.itemChanged.connect(self.on_item_changed)
@@ -70,9 +70,22 @@ class HierarchyDock(QDockWidget):
         self.filter_tree(self.txt_search.text())
 
     def add_object_node(self, parent_item: QTreeWidgetItem, obj: GameObject) -> None:
-        """Adiciona recursivamente nós de GameObjects à árvore."""
+        """Adiciona recursivamente nós de GameObjects à árvore com ícones por tipo/tag."""
         item = QTreeWidgetItem(parent_item)
-        item.setText(0, obj.name)
+        
+        # Define o ícone representativo baseado no nome/tag/componentes
+        icon_prefix = "📦 "
+        name_lower = obj.name.lower()
+        if "folder" in name_lower or "group" in name_lower:
+            icon_prefix = "📁 "
+        elif "camera" in name_lower:
+            icon_prefix = "📷 "
+        elif "light" in name_lower:
+            icon_prefix = "💡 "
+        elif "sprite" in name_lower or "mesh" in name_lower:
+            icon_prefix = "🖼️ "
+
+        item.setText(0, f"{icon_prefix}{obj.name}")
         item.setData(0, Qt.UserRole, obj)
         
         # Permite edição do nome ao dar duplo clique
