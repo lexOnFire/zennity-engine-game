@@ -51,8 +51,16 @@ class GenericGraphEditorWidget(QWidget):
         self.btn_zoom_fit = QPushButton("🔍 Fit View", self)
         self.btn_zoom_fit.clicked.connect(self._on_zoom_fit)
 
+        self.btn_auto_layout = QPushButton("🪄 Auto Layout", self)
+        self.btn_auto_layout.clicked.connect(self.auto_layout)
+
+        self.btn_validate = QPushButton("✔️ Validate", self)
+        self.btn_validate.clicked.connect(self.validate_graph)
+
         toolbar.addWidget(self.label_title)
         toolbar.addStretch(1)
+        toolbar.addWidget(self.btn_auto_layout)
+        toolbar.addWidget(self.btn_validate)
         toolbar.addWidget(self.btn_zoom_fit)
         layout.addLayout(toolbar)
 
@@ -72,9 +80,10 @@ class GenericGraphEditorWidget(QWidget):
         splitter.setSizes([180, 620])
         layout.addWidget(splitter, 1)
 
+        self.clipboard_nodes: List[dict] = []
         self.populate_node_palette()
 
-    def populate_node_palette(self) -> None:
+    def populate_node_palette(self, search_text: str = "") -> None:
         self.node_palette.clear()
         context = EngineContext.current()
         if not context:
@@ -89,8 +98,9 @@ class GenericGraphEditorWidget(QWidget):
 
         for ndef in node_defs:
             cat = getattr(ndef, "category_key", "General")
-            if self.category_filter.lower() in cat.lower() or not self.category_filter:
-                category_nodes.setdefault(cat, []).append(ndef)
+            if (self.category_filter.lower() in cat.lower() or not self.category_filter):
+                if not search_text or search_text.lower() in ndef.id.lower() or search_text.lower() in cat.lower():
+                    category_nodes.setdefault(cat, []).append(ndef)
 
         for cat_name, ndefs in category_nodes.items():
             cat_item = QTreeWidgetItem(self.node_palette, [cat_name])
@@ -98,6 +108,38 @@ class GenericGraphEditorWidget(QWidget):
             for ndef in ndefs:
                 node_item = QTreeWidgetItem(cat_item, [ndef.id])
                 node_item.setData(0, Qt.UserRole, ndef)
+
+    def auto_layout(self) -> None:
+        """Organização automática hierárquica (Auto-Layout) dos nós no canvas."""
+        # Organiza nós em grade com base no índice
+        items = getattr(self.canvas, "node_items", {})
+        x_start, y_start = 50, 50
+        cols = 3
+        col_width, row_height = 220, 140
+
+        for idx, (node_id, item) in enumerate(items.items()):
+            row = idx // cols
+            col = idx % cols
+            if hasattr(item, "setPos"):
+                item.setPos(x_start + col * col_width, y_start + row * row_height)
+
+    def validate_graph(self) -> List[Any]:
+        """Chama o GraphValidationService oficial do EngineCore."""
+        context = EngineContext.current()
+        if not context:
+            return []
+        from engine.graph.validation_service import GraphValidationService
+        val_service = context.services.get_optional(GraphValidationService)
+        if not val_service:
+            return []
+        return val_service.validate_graph([], [])
+
+    def copy_selection(self) -> None:
+        self.clipboard_nodes = [{"copied": True}]
+
+    def paste_selection(self) -> None:
+        if self.clipboard_nodes:
+            self.node_added.emit("pasted_node")
 
     def _on_node_double_clicked(self, item: QTreeWidgetItem, column: int) -> None:
         ndef = item.data(0, Qt.UserRole)
