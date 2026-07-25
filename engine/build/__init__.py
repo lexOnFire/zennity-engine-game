@@ -1,5 +1,6 @@
 from engine.build.pipeline import BuildProfile, BuildPipeline, BuildReport
 from engine.build.project_validator import ProjectValidationReport, ValidationIssue, validate_project
+from engine.build.project_exporter import export_development_project, export_development_project_with_report
 from engine.build.stages import (
     ResolveDependenciesStage,
     AssetCookingStage,
@@ -16,6 +17,8 @@ __all__ = [
     "ProjectValidationReport",
     "ValidationIssue",
     "validate_project",
+    "export_development_project",
+    "export_development_project_with_report",
     "ResolveDependenciesStage",
     "AssetCookingStage",
     "AssetCompressionStage",
