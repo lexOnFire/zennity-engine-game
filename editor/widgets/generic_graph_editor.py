@@ -31,9 +31,10 @@ from editor.widgets.graph_editor.graph_canvas import GraphCanvas
 
 
 class GenericGraphEditorWidget(QWidget):
-    """Widget de Editor de Grafos Genérico da Zennity Engine."""
+    """Widget de Editor de Grafos Genérico da Zennity Engine (Migrado para Editor Framework 2.0)."""
 
     node_added = Signal(str)
+    node_selected = Signal(object)
 
     def __init__(self, graph_category_filter: str = "Behavior Tree", parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)

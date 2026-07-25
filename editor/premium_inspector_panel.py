@@ -109,6 +109,7 @@ class RealInspectorPanel(InspectorPanel):
         self.status_label.setText("")
         self.add_component_button.setEnabled(obj is not None)
         self.component_filter.setEnabled(obj is not None)
+
         if obj is None:
             self.header.setEnabled(False)
             self.object_name.setText("")
@@ -119,6 +120,7 @@ class RealInspectorPanel(InspectorPanel):
             self.transform_label.setText("Transform\n  X: 0    Y: 0    Z: 0")
             self._clear_component_controls()
             return
+
         display_name = getattr(obj, "name", str(obj))
         self.header.setEnabled(True)
         self.object_name.setText(display_name)
@@ -128,8 +130,34 @@ class RealInspectorPanel(InspectorPanel):
         self.object_static.setChecked(bool(getattr(obj, "is_static", False)))
         self.object_tag.setCurrentText(str(getattr(obj, "tag", "Untagged")))
         self.object_layer.setCurrentText(str(getattr(obj, "layer", "Default")))
+
+        # --- FASE 8.1: Integração com PropertyBindingGroup & EventBus ---
+        from editor.core.property_binding import PropertyBindingGroup
+        self.binding_group = PropertyBindingGroup(obj, command_manager=self.command_manager)
+        
+        # Binding do Nome
+        self.binding_group.bind(
+            "name",
+            label="Nome do Objeto",
+            on_changed=lambda new_val: self._on_property_changed_notify("name", new_val)
+        )
+        # Binding do estado Ativo
+        self.binding_group.bind(
+            "active",
+            label="Estado Ativo",
+            on_changed=lambda new_val: self._on_property_changed_notify("active", new_val)
+        )
+
         self._update_legacy_labels(obj, getattr(obj, "components", []))
         self._render_component_controls(obj)
+
+    def _on_property_changed_notify(self, prop_name: str, new_val: Any) -> None:
+        """Notifica alterações via EventBus no domínio Scene.*"""
+        try:
+            from editor.core.event_bus import EventBus, EVENT_OBJECT_MODIFIED
+            EventBus.emit(EVENT_OBJECT_MODIFIED, object=self.current_object, property=prop_name, value=new_val)
+        except Exception:
+            pass
 
     def _update_legacy_labels(self, obj: Any, components: list[Any]) -> None:
         component_names = [self._component_type(comp) for comp in components if not getattr(comp, "required", False)]

@@ -31,12 +31,13 @@ from editor.animation_studio.keyframe_canvas import KeyframeCanvas
 
 
 class AnimationStudioDock(QDockWidget):
-    """Dock visual principal do Animation Studio da Zennity Engine."""
+    """Dock visual principal do Animation Studio da Zennity Engine (Migrado para Editor Framework 2.0)."""
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: Optional[QWidget] = None, editor_context: Optional[Any] = None) -> None:
         super().__init__("🎞 Animation Studio Visual", parent)
         self.setObjectName("AnimationStudioDock")
         self.setMinimumHeight(280)
+        self.editor_context = editor_context
 
         # Dados da Animação
         self.tracks: List[AnimationTrack] = [
@@ -46,6 +47,10 @@ class AnimationStudioDock(QDockWidget):
         self.player_service = AnimationPlayerService()
         self.playback_state = AnimationPlaybackState.STOPPED
         self.playback_speed: float = 1.0
+
+        # Conecta a seleção global via SelectionService se disponível
+        if self.editor_context and hasattr(self.editor_context, "selection"):
+            self.editor_context.selection.subscribe(self._on_global_selection_changed)
 
         # Timer para amostragem de tempo real (Marco D - Preview)
         self._playback_timer = QTimer(self)
@@ -146,10 +151,12 @@ class AnimationStudioDock(QDockWidget):
     def play(self) -> None:
         self.playback_state = AnimationPlaybackState.PLAYING
         self._playback_timer.start()
+        self._emit_event("Animation.playback_changed", state="playing")
 
     def pause(self) -> None:
         self.playback_state = AnimationPlaybackState.PAUSED
         self._playback_timer.stop()
+        self._emit_event("Animation.playback_changed", state="paused")
 
     def stop(self) -> None:
         self.playback_state = AnimationPlaybackState.STOPPED
@@ -157,6 +164,21 @@ class AnimationStudioDock(QDockWidget):
         self.ruler.set_current_time(0.0)
         self.canvas.current_time = 0.0
         self.canvas.update()
+        self._emit_event("Animation.playback_changed", state="stopped")
+
+    def _on_global_selection_changed(self, obj: Any) -> None:
+        """Sincroniza o painel quando uma entidade é selecionada globalmente."""
+        if obj is None:
+            return
+        # Notifica que a animação agora foca no objeto selecionado
+        self._emit_event("Animation.target_changed", object=obj)
+
+    def _emit_event(self, event_name: str, **kwargs: Any) -> None:
+        try:
+            from editor.core.event_bus import EventBus
+            EventBus.emit(event_name, **kwargs)
+        except Exception:
+            pass
 
     def _on_timer_tick(self) -> None:
         if self.playback_state == AnimationPlaybackState.PLAYING:
