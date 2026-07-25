@@ -99,3 +99,17 @@ class AnimationPlayerService(IService):
         """Realiza mesclagem (blending) vetorizada usando NumPy."""
         w = max(0.0, min(1.0, float(weight)))
         return vec_a + (vec_b - vec_a) * w
+
+    def on_asset_reimported(self, asset_path: str) -> int:
+        """
+        Notificação de Hot Reload quando um asset .zanim ou .zanimator é modificado no disco.
+        Reseta e reavalia instantaneamente os playbacks ativos correspondentes.
+        """
+        reloaded_count = 0
+        path_name = str(asset_path).replace("\\", "/").split("/")[-1]
+        for playbacks in self._active_playbacks.values():
+            for pb in playbacks:
+                if pb.name in path_name or path_name in pb.name:
+                    pb.seek(0.0)
+                    reloaded_count += 1
+        return reloaded_count

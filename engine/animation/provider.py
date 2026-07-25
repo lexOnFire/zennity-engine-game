@@ -92,3 +92,12 @@ class AnimationProvider(EngineProvider):
         manager.register(AnimationStateNode.__node_definition__)
         manager.register(AnimatorParameterNode.__node_definition__)
         manager.register(BlendTree1DNode.__node_definition__)
+
+        # 5. Registro do Provedor de Preview de Animações
+        from engine.core.metadata.asset import PreviewDefinition
+        from engine.animation.preview_provider import AnimationPreviewProvider
+        manager.register(PreviewDefinition(
+            id="animation_preview",
+            extensions=[".zanim", ".zanimator"],
+            provider_class=AnimationPreviewProvider,
+        ))
