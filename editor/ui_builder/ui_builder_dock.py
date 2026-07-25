@@ -122,10 +122,18 @@ class UIBuilderDock(QDockWidget):
         self.tree_hierarchy.clear()
         root_item = QTreeWidgetItem(self.tree_hierarchy, [self.preview_canvas.canvas_runtime.name])
         for child in self.preview_canvas.canvas_runtime.children:
-            QTreeWidgetItem(root_item, [child.name])
+            item = QTreeWidgetItem(root_item, [child.name])
+            item.setData(0, Qt.UserRole, child)
         self.tree_hierarchy.expandAll()
 
     def add_widget(self, widget) -> None:
         self.preview_canvas.canvas_runtime.add_child(widget)
         self.rebuild_hierarchy_tree()
         self.preview_canvas.update()
+
+        # FASE 8.4: Notifica inserção e vincula ao PropertyBinding
+        try:
+            from editor.core.event_bus import EventBus
+            EventBus.emit("UI.widget_added", widget=widget)
+        except Exception:
+            pass

@@ -129,7 +129,11 @@ class EditorBridgeOrchestrator:
         if extension_dock:
             self.extensions.attach_dock(extension_dock)
 
-        # 9. Build Pipeline Bridge (Sprint 4d)
+        # 10. UI Builder Bridge (Sprint 4 / Fase 8.4)
+        from editor.runtime.ui_builder_bridge import UIBuilderBridge
+        self.ui_builder = UIBuilderBridge(self._ctx)
+        if ui_builder_dock:
+            self.ui_builder.attach_dock(ui_builder_dock)
         from editor.runtime.build_pipeline_bridge import BuildPipelineBridge
         self.build_pipeline = BuildPipelineBridge(self._ctx, diagnostics_bridge=self.diagnostics)
         if build_wizard_dock:
