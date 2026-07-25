@@ -41,6 +41,10 @@ class KeyframeCanvas(QWidget):
         self.selected_keyframes: Set[dict] = set()
         self.clipboard_keyframes: List[dict] = []
 
+        # --- ANIMATION POLISH: Curve Editor & Event Markers ---
+        self.curve_mode: str = "Bezier"  # Bezier, Linear, Step
+        self.event_markers: List[dict] = []  # [{"time": 1.0, "event_name": "footstep"}]
+
         self._is_dragging: bool = False
         self._drag_start_pos: QPointF = QPointF()
         self._dragged_keyframe: Optional[dict] = None
@@ -96,11 +100,33 @@ class KeyframeCanvas(QWidget):
 
             y += self.track_height
 
-        # Linha vertical do Playhead
-        px = self.time_to_pixel(self.current_time)
-        if 0 <= px <= rect.width():
-            painter.setPen(QPen(QColor("#E74C3C"), 2))
-            painter.drawLine(int(px), 0, int(px), rect.height())
+    # ──────────────────────────────────────────────────────────────────────────
+    # ANIMATION POLISH: Curve Editor & Event Markers API
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def add_event_marker(self, time_seconds: float, event_name: str) -> None:
+        """Adiciona um marcador de evento na timeline de animação."""
+        self.event_markers.append({"time": time_seconds, "name": event_name})
+        self.update()
+
+    def set_curve_mode(self, mode: str) -> None:
+        """Define o modo de interpolação das curvas de animação (Bezier / Linear / Step)."""
+        self.curve_mode = mode
+        self.update()
+
+    def _draw_event_markers(self, painter: QPainter, rect: QRectF) -> None:
+        """Desenha os marcadores de eventos no topo do canvas."""
+        for marker in self.event_markers:
+            mx = self.time_to_pixel(marker["time"])
+            if 0 <= mx <= rect.width():
+                painter.setPen(QPen(QColor("#F39C12"), 1))
+                painter.setBrush(QBrush(QColor("#F1C40F")))
+                poly = [
+                    QPointF(mx - 5, 0),
+                    QPointF(mx + 5, 0),
+                    QPointF(mx, 10),
+                ]
+                painter.drawPolygon(poly)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.LeftButton:

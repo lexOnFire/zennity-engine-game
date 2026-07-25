@@ -122,6 +122,20 @@ class GraphCanvas(QGraphicsView):
         self.palette.hide()
         self.palette.node_selected.connect(self._spawn_node)
         self._spawn_pos = QPointF(0, 0)
+
+        # --- GRAPH EDITORS POLISH: Minimapa & Comment Frames ---
+        self.minimap_enabled: bool = True
+        self.comment_frames: list = []
+
+    def add_comment_frame(self, title: str, rect: Any = None, color_hex: str = "#2C3E50") -> Any:
+        """Adiciona uma caixa de comentários/grupo colorida ao grafo."""
+        from PySide6.QtCore import QRectF
+        from .comment_frame_item import CommentFrameItem
+        r = rect or QRectF(0, 0, 300, 200)
+        item = CommentFrameItem(title=title, rect=r, color_hex=color_hex)
+        self.scene.addItem(item)
+        self.comment_frames.append(item)
+        return item
         
     def mouseDoubleClickEvent(self, event):
         super().mouseDoubleClickEvent(event)
