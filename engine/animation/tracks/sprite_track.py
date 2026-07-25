@@ -1,4 +1,5 @@
 from __future__ import annotations
+from pathlib import Path
 from typing import Any, Dict, List
 from engine.animation.tracks.base_track import AnimationTrack
 
@@ -34,6 +35,31 @@ class SpriteTrack(AnimationTrack):
             if current_kf.get("flip_h"):
                 import pygame
                 sr.image = pygame.transform.flip(sr.image, True, False)
+
+    def evaluate(self, time_seconds: float) -> dict[str, Any]:
+        if not self.keyframes:
+            return {}
+        sorted_kfs = sorted(self.keyframes, key=lambda k: k["time"])
+        current_kf = sorted_kfs[0]
+        for kf in sorted_kfs:
+            if kf["time"] <= time_seconds:
+                current_kf = kf
+            else:
+                break
+        return dict(current_kf)
+
+    def clone(self) -> SpriteTrack:
+        track = SpriteTrack(name=self.name, enabled=self.enabled)
+        track.deserialize(self.serialize())
+        return track
+
+    def preview(self, time_seconds: float) -> str:
+        eval_data = self.evaluate(time_seconds)
+        path = eval_data.get("image_path", "None")
+        return f"Sprite({Path(path).name if path else 'None'})"
+
+    def duration(self) -> float:
+        return max((float(kf.get("time", 0.0)) for kf in self.keyframes), default=0.0)
 
     def serialize(self) -> Dict[str, Any]:
         data = super().serialize()

@@ -52,6 +52,35 @@ class PropertyTrack(AnimationTrack):
             return [float(a[i]) + (float(b[i]) - float(a[i])) * alpha for i in range(length)]
         return b if alpha >= 1.0 else a
 
+    def evaluate(self, time_seconds: float) -> Any:
+        if not self.keyframes:
+            return None
+        sorted_kfs = sorted(self.keyframes, key=lambda k: k["time"])
+        t = float(time_seconds)
+        if t <= sorted_kfs[0]["time"]:
+            return sorted_kfs[0]["value"]
+        if t >= sorted_kfs[-1]["time"]:
+            return sorted_kfs[-1]["value"]
+        for left, right in zip(sorted_kfs, sorted_kfs[1:]):
+            if left["time"] <= t <= right["time"]:
+                span = max(float(right["time"] - left["time"]), 0.000001)
+                alpha = (t - float(left["time"])) / span
+                return self._lerp(left["value"], right["value"], alpha)
+        return sorted_kfs[-1]["value"]
+
+    def clone(self) -> PropertyTrack:
+        track = PropertyTrack(name=self.name, component_type=self.component_type, property_name=self.property_name, enabled=self.enabled)
+        track.deserialize(self.serialize())
+        return track
+
+    def preview(self, time_seconds: float) -> str:
+        val = self.evaluate(time_seconds)
+        prop = self.property_name or "Property"
+        return f"{prop}={val}"
+
+    def duration(self) -> float:
+        return max((float(kf.get("time", 0.0)) for kf in self.keyframes), default=0.0)
+
     def serialize(self) -> Dict[str, Any]:
         data = super().serialize()
         data.update({

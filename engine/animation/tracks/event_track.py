@@ -31,6 +31,22 @@ class EventTrack(AnimationTrack):
                             bus.publish_raw(event_name, payload)
         self._last_sampled_time = t
 
+    def evaluate(self, time_seconds: float) -> dict[str, Any]:
+        events = [kf for kf in self.keyframes if float(kf.get("time", 0.0)) <= time_seconds]
+        return {"events": events}
+
+    def clone(self) -> EventTrack:
+        track = EventTrack(name=self.name, enabled=self.enabled)
+        track.deserialize(self.serialize())
+        return track
+
+    def preview(self, time_seconds: float) -> str:
+        events = self.evaluate(time_seconds).get("events", [])
+        return f"Event(fired={len(events)})"
+
+    def duration(self) -> float:
+        return max((float(kf.get("time", 0.0)) for kf in self.keyframes), default=0.0)
+
     def serialize(self) -> Dict[str, Any]:
         data = super().serialize()
         data["keyframes"] = self.keyframes

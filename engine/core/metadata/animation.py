@@ -54,3 +54,26 @@ class AnimationEventDefinition(MetadataDefinition):
     """Metadata definition for Animation Keyframe Events."""
     event_type: str = "generic"
     payload_schema: dict = field(default_factory=dict)
+
+
+@dataclass
+class TransitionDefinition(MetadataDefinition):
+    """Metadata definition for Animation State Transitions."""
+    has_exit_time: bool = False
+    exit_time: float = 1.0
+    duration: float = 0.0
+
+
+@dataclass
+class TimelineDefinition(MetadataDefinition):
+    """Metadata definition for Multi-track Timelines."""
+    extensions: List[str] = field(default_factory=lambda: [".ztimeline"])
+    tracks: List[str] = field(default_factory=list)
+
+
+@dataclass
+class SpritesheetDefinition(MetadataDefinition):
+    """Metadata definition for Spritesheet Atlas assets."""
+    extensions: List[str] = field(default_factory=lambda: [".png", ".jpg"])
+    frame_width: int = 32
+    frame_height: int = 32

@@ -6,7 +6,7 @@ from typing import Any, Dict
 class AnimationTrack(ABC):
     """
     Classe base abstrata para todas as Trilhas do Track Framework da Zennity Engine.
-    Permite sequenciar e interpolar qualquer tipo de dado em tempo de execução.
+    Exige a implementação padronizada dos 7 métodos fundamentais do Track System.
     """
 
     def __init__(self, name: str = "Track", enabled: bool = True) -> None:
@@ -14,8 +14,13 @@ class AnimationTrack(ABC):
         self.enabled = bool(enabled)
 
     @abstractmethod
-    def sample(self, time_seconds: float, target: Any) -> Any:
+    def sample(self, time_seconds: float, target: Any) -> None:
         """Avalia a trilha para o instante informado e aplica os efeitos no alvo."""
+        pass
+
+    @abstractmethod
+    def evaluate(self, time_seconds: float) -> Any:
+        """Retorna o valor interpolado puro para o instante sem aplicar no alvo."""
         pass
 
     @abstractmethod
@@ -32,3 +37,18 @@ class AnimationTrack(ABC):
         """Carrega as propriedades da trilha a partir de um dicionário."""
         self.name = str(data.get("name", self.name))
         self.enabled = bool(data.get("enabled", True))
+
+    @abstractmethod
+    def clone(self) -> AnimationTrack:
+        """Cria uma cópia idêntica da trilha."""
+        pass
+
+    @abstractmethod
+    def preview(self, time_seconds: float) -> str:
+        """Retorna uma representação legível do estado da trilha no instante."""
+        pass
+
+    @abstractmethod
+    def duration(self) -> float:
+        """Retorna a duração total da trilha em segundos."""
+        pass

@@ -13,6 +13,9 @@ from .animation import (
     CurveDefinition,
     BlendTreeDefinition,
     AnimationEventDefinition,
+    TransitionDefinition,
+    TimelineDefinition,
+    SpritesheetDefinition,
 )
 
 __all__ = [
@@ -22,4 +25,5 @@ __all__ = [
     "InspectorDefinition", "PropertyDefinition", "PluginDefinition",
     "AnimationClipDefinition", "AnimatorDefinition", "TrackDefinition",
     "CurveDefinition", "BlendTreeDefinition", "AnimationEventDefinition",
+    "TransitionDefinition", "TimelineDefinition", "SpritesheetDefinition",
 ]

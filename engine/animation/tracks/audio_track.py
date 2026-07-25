@@ -30,6 +30,26 @@ class AudioTrack(AnimationTrack):
                         sound.play()
         self._last_sampled_time = t
 
+    def evaluate(self, time_seconds: float) -> dict[str, Any]:
+        triggered = []
+        for kf in self.keyframes:
+            if float(kf.get("time", 0.0)) <= time_seconds:
+                triggered.append(kf)
+        return {"triggered": triggered}
+
+    def clone(self) -> AudioTrack:
+        track = AudioTrack(name=self.name, enabled=self.enabled)
+        track.deserialize(self.serialize())
+        return track
+
+    def preview(self, time_seconds: float) -> str:
+        data = self.evaluate(time_seconds)
+        count = len(data.get("triggered", []))
+        return f"Audio(triggered={count})"
+
+    def duration(self) -> float:
+        return max((float(kf.get("time", 0.0)) for kf in self.keyframes), default=0.0)
+
     def serialize(self) -> Dict[str, Any]:
         data = super().serialize()
         data["keyframes"] = self.keyframes

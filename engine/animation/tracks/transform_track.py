@@ -48,6 +48,35 @@ class TransformTrack(AnimationTrack):
                 return v_a + (v_b - v_a) * alpha
         return current
 
+    def evaluate(self, time_seconds: float) -> dict[str, Any]:
+        """Retorna os valores puros de posição, rotação e escala para o instante."""
+        dummy_pos = np.zeros(3, dtype=np.float32)
+        dummy_rot = np.zeros(3, dtype=np.float32)
+        dummy_scl = np.ones(3, dtype=np.float32)
+        return {
+            "position": self._sample_vec3(self.position_keyframes, time_seconds, dummy_pos),
+            "rotation": self._sample_vec3(self.rotation_keyframes, time_seconds, dummy_rot),
+            "scale": self._sample_vec3(self.scale_keyframes, time_seconds, dummy_scl),
+        }
+
+    def clone(self) -> TransformTrack:
+        track = TransformTrack(name=self.name, enabled=self.enabled)
+        track.deserialize(self.serialize())
+        return track
+
+    def preview(self, time_seconds: float) -> str:
+        values = self.evaluate(time_seconds)
+        pos = values["position"]
+        return f"Transform(pos=[{pos[0]:.1f}, {pos[1]:.1f}, {pos[2]:.1f}])"
+
+    def duration(self) -> float:
+        all_times = [
+            kf["time"]
+            for kfs in (self.position_keyframes, self.rotation_keyframes, self.scale_keyframes)
+            for kf in kfs
+        ]
+        return max(all_times, default=0.0)
+
     def serialize(self) -> Dict[str, Any]:
         data = super().serialize()
         data.update({
