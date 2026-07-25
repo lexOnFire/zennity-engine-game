@@ -68,33 +68,40 @@ class CommandPaletteWidget(QDialog):
         from engine.core.context import EngineContext
         from engine.metadata.manager import MetadataManager
         from engine.core.metadata.node import NodeDefinition
-        
+
         self.results.clear()
         context = EngineContext.current()
         if not context: return
         manager = context.services.get_optional(MetadataManager)
         if not manager: return
-        
+
         nodes = manager.get_all(NodeDefinition)
-        
-        # Sort by category and name
-        sorted_nodes = sorted(nodes, key=lambda n: (tr(n.category_key), tr(n.title_key)))
-        
+
+        # Sort por categoria e título
+        sorted_nodes = sorted(nodes, key=lambda n: (tr(getattr(n, "category_key", "General")), tr(getattr(n, "name_key", n.id))))
+
         for node in sorted_nodes:
-            item = QListWidgetItem(f"{tr(node.name_key)}  ({tr(node.category_key)})")
+            display_title = tr(getattr(node, "name_key", node.id))
+            display_category = tr(getattr(node, "category_key", "General"))
+            tags = getattr(node, "tags", [])
+            search_blob = f"{display_title} {display_category} {node.id} {' '.join(tags)}".lower()
+
+            item = QListWidgetItem(f"{display_title}  ({display_category})")
             item.setData(Qt.UserRole, node.id)
+            item.setData(Qt.UserRole + 1, search_blob)
             self.results.addItem(item)
-            
+
         if self.results.count() > 0:
             self.results.setCurrentRow(0)
-            
+
     def _filter_nodes(self, text):
-        search_text = text.lower()
+        search_text = text.lower().strip()
         for i in range(self.results.count()):
             item = self.results.item(i)
-            item.setHidden(search_text not in item.text().lower())
-            
-        # Select first visible
+            search_blob = item.data(Qt.UserRole + 1) or item.text().lower()
+            item.setHidden(bool(search_text) and (search_text not in search_blob))
+
+        # Seleciona o primeiro visível
         for i in range(self.results.count()):
             if not self.results.item(i).isHidden():
                 self.results.setCurrentRow(i)

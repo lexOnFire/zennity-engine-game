@@ -142,6 +142,13 @@ class GraphCanvas(QGraphicsView):
         if event.button() == Qt.LeftButton:
             self._spawn_pos = self.mapToScene(event.pos())
             self.palette.show_at(event.globalPos())
+
+    def contextMenuEvent(self, event):
+        """Menu de Contexto 'Create Node' (Estilo Unreal Engine / Unity)."""
+        super().contextMenuEvent(event)
+        if not self.itemAt(event.pos()):
+            self._spawn_pos = self.mapToScene(event.pos())
+            self.palette.show_at(event.globalPos())
             
     def _spawn_node(self, node_def_id: str):
         from engine.graphs.registry import GraphRegistry

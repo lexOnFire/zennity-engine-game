@@ -96,18 +96,36 @@ class GenericGraphEditorWidget(QWidget):
 
         node_defs = meta_manager.get_all(NodeDefinition)
         category_nodes: dict[str, List[NodeDefinition]] = {}
+        query = search_text.lower().strip()
 
         for ndef in node_defs:
-            cat = getattr(ndef, "category_key", "General")
-            if (self.category_filter.lower() in cat.lower() or not self.category_filter):
-                if not search_text or search_text.lower() in ndef.id.lower() or search_text.lower() in cat.lower():
+            cat = getattr(ndef, "category_key", "General") or getattr(ndef, "category", "General")
+            node_id = str(getattr(ndef, "id", "")).lower()
+            name_key = str(getattr(ndef, "name_key", "")).lower()
+            tags = [t.lower() for t in getattr(ndef, "tags", [])]
+
+            # Filtro por tipo de editor (Visual Scripting, Behavior Tree, Dialogue, etc)
+            is_matching_category = (not self.category_filter) or (self.category_filter.lower() in cat.lower()) or (cat.lower() in ["events", "flow", "variables", "movement", "physics", "math", "ai", "animation", "audio", "objects", "ui", "transform"])
+
+            if is_matching_category:
+                # Busca inteligente por substring, ID, Nome ou Sinonímias/Tags
+                matches_search = (
+                    not query or
+                    query in node_id or
+                    query in name_key or
+                    query in cat.lower() or
+                    any(query in tag for tag in tags)
+                )
+
+                if matches_search:
                     category_nodes.setdefault(cat, []).append(ndef)
 
         for cat_name, ndefs in category_nodes.items():
             cat_item = QTreeWidgetItem(self.node_palette, [cat_name])
             cat_item.setExpanded(True)
             for ndef in ndefs:
-                node_item = QTreeWidgetItem(cat_item, [ndef.id])
+                display_name = getattr(ndef, "name_key", ndef.id)
+                node_item = QTreeWidgetItem(cat_item, [f"{display_name} ({ndef.id})"])
                 node_item.setData(0, Qt.UserRole, ndef)
 
     def auto_layout(self) -> None:
