@@ -31,6 +31,23 @@ class PerformanceCounter:
             self.history.pop(0)
 
 
+class DiagnosticScope:
+    """Gerenciador de contexto para medir o tempo de execução de subsistemas (with diagnostics.measure("Physics"): ...)."""
+
+    def __init__(self, service: DiagnosticsService, scope_name: str) -> None:
+        self.service = service
+        self.scope_name = scope_name
+        self.start_time: float = 0.0
+
+    def __enter__(self) -> DiagnosticScope:
+        self.start_time = time.perf_counter()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        elapsed_ms = (time.perf_counter() - self.start_time) * 1000.0
+        self.service.record_scope_time(self.scope_name, elapsed_ms)
+
+
 class DiagnosticsService(IService):
     """Serviço central de coleta e telemetria da Zennity Engine."""
 
@@ -38,6 +55,7 @@ class DiagnosticsService(IService):
         super().__init__()
         self.scope = ServiceScope.ENGINE
         self._counters: Dict[str, PerformanceCounter] = {}
+        self._scope_times: Dict[str, float] = {}
 
     def initialize(self) -> None:
         # Inicializa contadores nativos (FPS, Frame Time, Memória, Draw Calls)
@@ -48,6 +66,18 @@ class DiagnosticsService(IService):
 
     def shutdown(self) -> None:
         self._counters.clear()
+        self._scope_times.clear()
+
+    def measure(self, scope_name: str) -> DiagnosticScope:
+        """Retorna um gerenciador de contexto para medição de subsistemas."""
+        return DiagnosticScope(self, scope_name)
+
+    def record_scope_time(self, scope_name: str, elapsed_ms: float) -> None:
+        self._scope_times[scope_name] = elapsed_ms
+        self.record_counter(f"scope.{scope_name}", elapsed_ms)
+
+    def get_scope_time(self, scope_name: str) -> float:
+        return self._scope_times.get(scope_name, 0.0)
 
     def register_counter(self, name: str, category: str = "General", unit: str = "") -> PerformanceCounter:
         if name not in self._counters:
@@ -55,8 +85,9 @@ class DiagnosticsService(IService):
         return self._counters[name]
 
     def record_counter(self, name: str, value: float) -> None:
-        if name in self._counters:
-            self._counters[name].record(value)
+        if name not in self._counters:
+            self.register_counter(name)
+        self._counters[name].record(value)
 
     def get_counter(self, name: str) -> Optional[PerformanceCounter]:
         return self._counters.get(name)
@@ -65,4 +96,6 @@ class DiagnosticsService(IService):
         return self._counters
 
     def get_summary(self) -> Dict[str, float]:
-        return {name: c.current_value for name, c in self._counters.items()}
+        summary = {name: c.current_value for name, c in self._counters.items()}
+        summary.update(self._scope_times)
+        return summary
