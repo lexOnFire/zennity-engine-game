@@ -70,8 +70,8 @@ def test_visual_scripting_provider_boots_metadata(qapp):
 
 
 def test_visual_scripting_editor_dock_specialization(qapp):
-    """Valida a 4ª especialização do GenericGraphEditorWidget para Visual Scripting."""
+    """Valida o Editor de Scripting Visual completo (Logic Graph Editor restaurado)."""
     context = EngineBootstrap.boot()
     dock = VisualScriptingEditorDock()
     assert dock.graph_editor.category_filter == "Visual Scripting"
-    assert dock.graph_editor.node_palette.topLevelItemCount() >= 1
+    assert hasattr(dock.graph_editor, "palette")

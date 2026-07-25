@@ -89,7 +89,7 @@ def build_logic_graph_ui(self) -> None:
     toolbar.addWidget(self.target_type)
     toolbar.addWidget(self.target_value)
     self.help_button = QPushButton("📖 Ajuda")
-    self.help_button.setToolTip(tr("editor.help.tooltip", "Dicionário de nós e documentação"))
+    self.help_button.setToolTip(tr("editor.help.tooltip") if callable(tr) else "Dicionário de nós e documentação")
     self.help_button.clicked.connect(lambda: right_tabs.setCurrentWidget(self.help_dock))
     toolbar.addWidget(self.help_button)
     toolbar.addStretch(1)

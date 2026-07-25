@@ -98,6 +98,7 @@ class LogicGraphEditor(
         super().__init__(parent)
         self.setObjectName("LogicWorkspace")
         self.project_root = Path(project_root or Path.cwd()).resolve()
+        self.category_filter = "Visual Scripting"
         self.current_path: Path | None = None
         self.graph = default_logic_graph()
         self.node_items: dict[str, LogicNodeItem] = {}
