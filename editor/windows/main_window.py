@@ -23,13 +23,25 @@ from editor.viewmodels.asset_viewmodel import AssetViewModel
 # Serialização
 from editor.core.serializer import save_scene_to_file, load_scene_from_file
 
-# Widgets do Editor
+# Widgets e Docks do Editor
 from editor.widgets.hierarchy_dock import HierarchyDock
 from editor.widgets.asset_browser_dock import AssetBrowserDock
 from editor.widgets.console_dock import ConsoleDock
 from editor.widgets.inspector_dock import InspectorDock
 from editor.widgets.code_editor_dock import CodeEditorDock
 from editor.widgets.profiler_dock import ProfilerDock
+from editor.visual_scripting.visual_scripting_dock import VisualScriptingEditorDock
+from editor.animation_studio.animation_studio_dock import AnimationStudioDock
+from editor.behavior_tree.behavior_tree_dock import BehaviorTreeEditorDock
+from editor.dialogue.dialogue_dock import DialogueGraphEditorDock
+from editor.material_graph.material_dock import MaterialGraphEditorDock
+from editor.ui_builder.ui_builder_dock import UIBuilderDock
+from editor.extension_manager.extension_dock import ExtensionManagerDock
+from editor.tools.dependency_viewer_dock import DependencyViewerDock
+from editor.tools.build_report_dock import BuildReportDock
+from editor.tools.asset_auditor_dock import AssetAuditorDock
+from editor.wizards.build_wizard_dock import BuildWizardDock
+from editor.wizards.project_settings_dock import ProjectSettingsDock
 
 # ── NOVO: Container com abas Scene / Game ─────────────────────────────────────
 from editor.widgets.viewport_tab_bar import ViewportContainer
@@ -140,12 +152,51 @@ class MainWindow(MainWindowMenusMixin, QMainWindow):
         self.dock_code_editor.hide()
         self.dock_profiler  = ProfilerDock(self)
 
+        # Docks Visuais e Editores Especiais
+        self.dock_visual_scripting = VisualScriptingEditorDock(self)
+        self.dock_animation_studio = AnimationStudioDock(self)
+        self.dock_behavior_tree    = BehaviorTreeEditorDock(self)
+        self.dock_dialogue         = DialogueGraphEditorDock(self)
+        self.dock_material         = MaterialGraphEditorDock(self)
+        self.dock_ui_builder       = UIBuilderDock(self)
+        self.dock_extension_manager = ExtensionManagerDock(self)
+        self.dock_dependency_viewer = DependencyViewerDock(self)
+        self.dock_build_report     = BuildReportDock(self)
+        self.dock_asset_auditor    = AssetAuditorDock(self)
+        self.dock_build_wizard     = BuildWizardDock(self)
+        self.dock_project_settings = ProjectSettingsDock(self)
+
+        # Oculta por padrão para não sobrecarregar a UI inicial
+        for d in (
+            self.dock_visual_scripting, self.dock_animation_studio,
+            self.dock_behavior_tree, self.dock_dialogue, self.dock_material,
+            self.dock_ui_builder, self.dock_extension_manager,
+            self.dock_dependency_viewer, self.dock_build_report,
+            self.dock_asset_auditor, self.dock_build_wizard,
+            self.dock_project_settings
+        ):
+            d.hide()
+
         self.addDockWidget(Qt.LeftDockWidgetArea,   self.dock_hierarchy)
         self.addDockWidget(Qt.RightDockWidgetArea,  self.dock_inspector)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_assets)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_console)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_profiler)
         self.addDockWidget(Qt.RightDockWidgetArea,  self.dock_code_editor)
+
+        # Adiciona docks no painel central/inferior
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_visual_scripting)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_animation_studio)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_behavior_tree)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_dialogue)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_material)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_ui_builder)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_extension_manager)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_dependency_viewer)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_build_report)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_asset_auditor)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_build_wizard)
+        self.addDockWidget(Qt.RightDockWidgetArea,  self.dock_project_settings)
 
         self.tabifyDockWidget(self.dock_console, self.dock_profiler)
         self.splitDockWidget(self.dock_assets, self.dock_console, Qt.Horizontal)

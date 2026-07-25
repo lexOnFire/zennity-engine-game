@@ -89,6 +89,21 @@ class MainWindowMenusMixin:
         menu_window.addAction(self.dock_profiler.toggleViewAction())
         menu_window.addAction(self.dock_code_editor.toggleViewAction())
 
+        menu_tools = menubar.addMenu("Ferramentas & Editores")
+        menu_tools.addAction(self.dock_visual_scripting.toggleViewAction())
+        menu_tools.addAction(self.dock_animation_studio.toggleViewAction())
+        menu_tools.addAction(self.dock_behavior_tree.toggleViewAction())
+        menu_tools.addAction(self.dock_dialogue.toggleViewAction())
+        menu_tools.addAction(self.dock_material.toggleViewAction())
+        menu_tools.addAction(self.dock_ui_builder.toggleViewAction())
+        menu_tools.addSeparator()
+        menu_tools.addAction(self.dock_extension_manager.toggleViewAction())
+        menu_tools.addAction(self.dock_dependency_viewer.toggleViewAction())
+        menu_tools.addAction(self.dock_build_report.toggleViewAction())
+        menu_tools.addAction(self.dock_asset_auditor.toggleViewAction())
+        menu_tools.addAction(self.dock_build_wizard.toggleViewAction())
+        menu_tools.addAction(self.dock_project_settings.toggleViewAction())
+
         menu_create = menubar.addMenu("Criar")
         shapes = ["Quadrado", "Círculo", "Plataforma", "Player", "Inimigo", "Trigger", "Mola"]
         for s in shapes:
