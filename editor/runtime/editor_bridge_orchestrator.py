@@ -68,6 +68,7 @@ class EditorBridgeOrchestrator:
         material_dock: Any = None,
         profiler_dock: Any = None,
         extension_dock: Any = None,
+        ui_builder_dock: Any = None,
         build_wizard_dock: Any = None,
         build_report_dock: Any = None,
     ) -> None:
