@@ -17,21 +17,29 @@ class GraphExecutionContext:
         self.node_outputs: dict[str, dict[str, Any]] = {}
 
 
+from engine.graph.runtime.node_runtime import GraphNodeRuntime
+
+
 class GraphExecutor(IService):
-    """Serviço unificado de execução de grafos em tempo de jogo."""
+    """Serviço unificado de execução de grafos em tempo de jogo com despacho por GraphNodeRuntime."""
 
     def __init__(self) -> None:
         super().__init__()
         self.scope = ServiceScope.ENGINE
+        self._node_runtimes: Dict[str, GraphNodeRuntime] = {}
+
+    def register_node_runtime(self, node_type: str, runtime: GraphNodeRuntime) -> None:
+        """Registra um executador especializado de runtime para um tipo de nó."""
+        self._node_runtimes[str(node_type)] = runtime
 
     def initialize(self) -> None:
         pass
 
     def shutdown(self) -> None:
-        pass
+        self._node_runtimes.clear()
 
     def execute_graph(self, graph: CompiledGraph, context: Optional[GraphExecutionContext] = None) -> Any:
-        """Executa sequencialmente o grafo compilado."""
+        """Executa sequencialmente o grafo compilado delegando aos GraphNodeRuntimes registrados."""
         if context is None:
             context = GraphExecutionContext()
 
@@ -49,11 +57,12 @@ class GraphExecutor(IService):
         return last_result
 
     def execute_instruction(self, inst: CompiledGraphInstruction, context: GraphExecutionContext) -> Any:
-        """Avalia uma instrução de nó individual."""
-        # Se for um nó matemático ou constante, armazena no contexto
-        if "math" in inst.node_type or "color" in inst.node_type:
-            val = inst.inputs.get("value", 0.0)
-            context.node_outputs[inst.node_id] = {"output": val}
-            return val
+        """Avalia uma instrução de nó individual delegando ao GraphNodeRuntime registrado."""
+        runtime = self._node_runtimes.get(inst.node_type)
+        if runtime:
+            return runtime.execute(inst, context)
 
-        return True
+        # Fallback genérico
+        val = inst.inputs.get("value", True)
+        context.node_outputs[inst.node_id] = {"output": val}
+        return val
