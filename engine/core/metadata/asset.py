@@ -29,3 +29,12 @@ class ExporterDefinition(MetadataDefinition):
     """
     extensions: List[str] = field(default_factory=list)
     exporter_class: type | None = None
+
+
+@dataclass
+class PreviewDefinition(MetadataDefinition):
+    """
+    Defines an asset preview provider for extensions.
+    """
+    extensions: List[str] = field(default_factory=list)
+    provider_class: type | None = None
