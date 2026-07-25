@@ -106,12 +106,17 @@ class VisualScriptingEditorDock(QDockWidget):
         self.mini_viewport = MiniLiveViewportWidget(self.bottom_panel)
         self.bottom_panel.addWidget(self.mini_viewport)
 
-        # Painel de Watches / Runtime Logs
+        # Painel de Watches / Runtime Logs & Timeline (Sprint 13)
+        from editor.visual_scripting.runtime_timeline import RuntimeTimelineWidget
         self.watches_tabs = QTabWidget(self.bottom_panel)
         self.runtime_logs_text = QTextEdit(self.watches_tabs)
         self.runtime_logs_text.setReadOnly(True)
         self.runtime_logs_text.append("[Runtime] Visual Scripting 2.0 inicializado.")
         self.watches_tabs.addTab(self.runtime_logs_text, "📜 Runtime Logs & Watches")
+
+        self.runtime_timeline = RuntimeTimelineWidget(self.watches_tabs)
+        self.watches_tabs.addTab(self.runtime_timeline, "⏱️ Runtime Timeline")
+
         self.bottom_panel.addWidget(self.watches_tabs)
 
         self.bottom_panel.setSizes([380, 620])
