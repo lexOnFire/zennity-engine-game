@@ -1,10 +1,20 @@
-from typing import Optional
+from typing import Optional, Union
 from PySide6.QtCore import QObject, Signal, Slot
 from engine.game_object import GameObject
 from editor.models.scene_model import SceneModel
-from editor.runtime.selection_manager import SelectionManager
+# SelectionService é o SelectionManager com SelectionItem genérico (Editor Framework 2.0)
+from editor.runtime.selection_manager import SelectionManager, SelectionService
 from editor.core.event_bus import (
-    EventBus, EVENT_SELECTION_CHANGED, EVENT_HIERARCHY_UPDATED, EVENT_PROPERTY_CHANGED
+    EventBus,
+    # Event Domains 2.0 (Selection.*, Scene.*)
+    EVENT_SELECTION_CHANGED,
+    EVENT_HIERARCHY_UPDATED,
+    EVENT_PROPERTY_CHANGED,
+    EVENT_OBJECT_CREATED,
+    EVENT_OBJECT_DELETED,
+    EVENT_OBJECT_MODIFIED,
+    EVENT_SCENE_OPENED,
+    EVENT_SCENE_SAVED,
 )
 
 
@@ -29,7 +39,7 @@ class SceneViewModel(QObject):
     def __init__(
         self,
         model: SceneModel,
-        selection_manager: Optional[SelectionManager] = None,
+        selection_manager: Optional[Union[SelectionManager, SelectionService]] = None,
     ) -> None:
         super().__init__()
         self._model = model
@@ -40,7 +50,7 @@ class SceneViewModel(QObject):
             self._selected_object = self._selection_manager.selected
             self._selection_manager.subscribe(self._on_selection_manager_changed)
 
-    # Conecta sinais do modelo
+        # Conecta sinais do modelo
         self._model.object_structure_changed.connect(
             self.on_model_hierarchy_changed
         )
