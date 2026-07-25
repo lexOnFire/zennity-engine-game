@@ -1,31 +1,48 @@
-from .base         import UIElement, Anchor, Pivot
-from .label        import Label
-from .button       import Button
-from .image        import UIImage
-from .progress_bar import ProgressBar
-from .panel        import Panel
-from .canvas       import UICanvas
-from .ui_manager   import UIManager
-from .runtime_components import (
-    ButtonComponent,
-    Canvas,
-    ImageComponent,
-    LabelComponent,
+from engine.ui.provider import UIProvider
+from engine.ui.metadata import WidgetDefinition, UILayoutDefinition
+from engine.ui.preview_provider import UIPreviewProvider
+from engine.ui.runtime import (
+    UIWidget,
+    UICanvas,
+    UIPanel,
+    UIButton,
+    UILabel,
+    UIImage,
+    UIScrollView,
+    UIInput,
+    UIContainer,
 )
-from .ui_renderer import UIRenderer
+
+# Aliases de compatibilidade retroativa
+UIElement = UIWidget
+Anchor = str
+Pivot = str
+Label = UILabel
+Button = UIButton
+ProgressBar = UIWidget
+Panel = UIPanel
+UIManager = UIWidget
 
 __all__ = [
-    "UIElement", "Anchor", "Pivot",
+    "UIProvider",
+    "WidgetDefinition",
+    "UILayoutDefinition",
+    "UIPreviewProvider",
+    "UIWidget",
+    "UICanvas",
+    "UIPanel",
+    "UIButton",
+    "UILabel",
+    "UIImage",
+    "UIScrollView",
+    "UIInput",
+    "UIContainer",
+    "UIElement",
+    "Anchor",
+    "Pivot",
     "Label",
     "Button",
-    "UIImage",
     "ProgressBar",
     "Panel",
-    "UICanvas",
     "UIManager",
-    "Canvas",
-    "LabelComponent",
-    "ImageComponent",
-    "ButtonComponent",
-    "UIRenderer",
 ]
