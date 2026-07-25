@@ -11,6 +11,7 @@ from typing import List, Type, Dict, Any, Optional
 
 from engine.core.context import EngineContext
 from engine.core.provider import EngineProvider
+from engine.core.lifecycle import BootProfile
 import engine
 
 
@@ -71,7 +72,7 @@ class EngineBootstrap:
         return sorted_providers
 
     @classmethod
-    def boot(cls, config: Optional[Dict[str, Any]] = None) -> EngineContext:
+    def boot(cls, config: Optional[Dict[str, Any]] = None, profile: BootProfile = BootProfile.EDITOR) -> EngineContext:
         """
         Starts the engine following the lifecycle:
         1. Create EngineContext
@@ -83,12 +84,20 @@ class EngineBootstrap:
         t_start = time.perf_counter()
         
         context = EngineContext(config=config)
+        context.diagnostics["active_profile"] = profile.name
         
         # 1. Discover all providers
         provider_classes = cls._discover_providers()
         
+        # 1.5 Filter providers by boot profile
+        filtered_classes = []
+        for p_cls in provider_classes:
+            profiles = getattr(p_cls, 'profiles', [BootProfile.ALL])
+            if BootProfile.ALL in profiles or profile in profiles:
+                filtered_classes.append(p_cls)
+        
         # Topological Sort to respect dependencies
-        sorted_classes = cls._topological_sort(provider_classes)
+        sorted_classes = cls._topological_sort(filtered_classes)
         
         # Instantiate providers
         providers = [p() for p in sorted_classes]

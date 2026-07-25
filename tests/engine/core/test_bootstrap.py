@@ -4,6 +4,7 @@ from engine.core.context import EngineContext
 from engine.core.provider import EngineProvider
 from engine.localization.manager import LocalizationManager
 from engine.graphs.plugins.manager import PluginManager
+from engine.core.lifecycle import BootProfile
 
 class ProviderA(EngineProvider):
     depends_on = []
@@ -28,7 +29,6 @@ ProviderCycle1.depends_on = [ProviderCycle2]
 
 
 def test_topological_sort_correct_order():
-    # Misturar ordem
     providers = [ProviderC, ProviderA, ProviderB]
     sorted_provs = EngineBootstrap._topological_sort(providers)
     
@@ -46,20 +46,16 @@ def test_topological_sort_circular_dependency():
 def test_bootstrap_discovers_and_initializes_providers():
     context = EngineBootstrap.boot()
     
-    # Validation 1: Context is created properly
     assert isinstance(context, EngineContext)
     
-    # Validation 2: Diagnostics exists
     assert "total_boot_time" in context.diagnostics
     assert "provider_boot_times" in context.diagnostics
     assert "CoreProvider" in context.diagnostics["provider_boot_times"]
     
-    # Validation 3: Localization Provider was discovered and registered LocalizationManager
     loc_manager = context.services.get(LocalizationManager)
     assert isinstance(loc_manager, LocalizationManager)
     assert loc_manager.base_locales_dir == context.locales_dir
     
-    # Validation 4: Plugin Provider was discovered and registered PluginManager
     plugin_manager = context.services.get(PluginManager)
     assert isinstance(plugin_manager, PluginManager)
 
@@ -73,5 +69,45 @@ def test_bootstrap_initializes_services(monkeypatch):
     
     context = EngineBootstrap.boot()
     
-    # Validation 5: initialize_all was called
     assert called is True
+
+# --- Boot Profiles Testing ---
+
+class RuntimeOnlyProvider(EngineProvider):
+    profiles = [BootProfile.RUNTIME]
+    def register_services(self, context):
+        context.diagnostics["runtime_loaded"] = True
+
+class EditorOnlyProvider(EngineProvider):
+    profiles = [BootProfile.EDITOR]
+    def register_services(self, context):
+        context.diagnostics["editor_loaded"] = True
+
+class SharedProvider(EngineProvider):
+    profiles = [BootProfile.RUNTIME, BootProfile.EDITOR]
+    def register_services(self, context):
+        context.diagnostics["shared_loaded"] = True
+
+def test_bootstrap_filters_by_profile(monkeypatch):
+    def mock_discover():
+        return [RuntimeOnlyProvider, EditorOnlyProvider, SharedProvider]
+    
+    monkeypatch.setattr('engine.core.bootstrap.EngineBootstrap._discover_providers', mock_discover)
+    
+    # Test EDITOR profile
+    ctx_editor = EngineBootstrap.boot(profile=BootProfile.EDITOR)
+    assert ctx_editor.diagnostics.get("editor_loaded") is True
+    assert ctx_editor.diagnostics.get("shared_loaded") is True
+    assert ctx_editor.diagnostics.get("runtime_loaded") is None
+    
+    # Test RUNTIME profile
+    ctx_runtime = EngineBootstrap.boot(profile=BootProfile.RUNTIME)
+    assert ctx_runtime.diagnostics.get("editor_loaded") is None
+    assert ctx_runtime.diagnostics.get("shared_loaded") is True
+    assert ctx_runtime.diagnostics.get("runtime_loaded") is True
+    
+    # Test HEADLESS profile
+    ctx_headless = EngineBootstrap.boot(profile=BootProfile.HEADLESS)
+    assert ctx_headless.diagnostics.get("editor_loaded") is None
+    assert ctx_headless.diagnostics.get("shared_loaded") is None
+    assert ctx_headless.diagnostics.get("runtime_loaded") is None

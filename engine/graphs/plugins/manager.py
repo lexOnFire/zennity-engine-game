@@ -8,6 +8,7 @@ class PluginManager(IService):
     """Discovers and initializes engine plugins."""
     
     def __init__(self):
+        super().__init__()
         self.loaded_plugins = []
         
     def initialize(self, context=None) -> None:
