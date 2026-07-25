@@ -1,6 +1,6 @@
 """Engine Provider Interface."""
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Type
 
 if TYPE_CHECKING:
     from engine.core.context import EngineContext
@@ -10,6 +10,7 @@ class EngineProvider(ABC):
     Base class for module providers. 
     A provider registers services to the EngineContext during bootstrap.
     """
+    depends_on: list['Type[EngineProvider]'] = []
     
     @abstractmethod
     def register_services(self, context: 'EngineContext') -> None:

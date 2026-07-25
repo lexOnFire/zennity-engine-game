@@ -1,5 +1,5 @@
 """Zennity Engine Service Locator (IoC Container)."""
-from typing import Dict, Type, TypeVar, Any
+from typing import Dict, Type, TypeVar, Any, Optional, List, Tuple
 from abc import ABC, abstractmethod
 
 T = TypeVar('T', bound='IService')
@@ -25,34 +25,56 @@ class IService(ABC):
         """Optional: Check health of the service."""
         return True
 
+
 class EngineServices:
     """Service Locator for the Zennity Engine."""
-    _services: Dict[Type[IService], IService] = {}
     
-    @classmethod
-    def register(cls, service_type: Type[T], instance: T) -> None:
+    def __init__(self):
+        self._services: Dict[Type[IService], IService] = {}
+    
+    def register(self, service_type: Type[T], instance: T) -> None:
         """Registers a service instance."""
-        cls._services[service_type] = instance
+        self._services[service_type] = instance
         
-    @classmethod
-    def get(cls, service_type: Type[T]) -> T:
+    def get(self, service_type: Type[T]) -> T:
         """Retrieves a service instance. Raises KeyError if not found."""
-        if service_type not in cls._services:
+        if service_type not in self._services:
             raise KeyError(f"Service {service_type.__name__} is not registered.")
-        return cls._services[service_type] # type: ignore
+        return self._services[service_type]  # type: ignore
         
-    @classmethod
-    def initialize_all(cls) -> None:
-        """Initializes all registered services."""
-        for service in cls._services.values():
+    def try_get(self, service_type: Type[T]) -> Tuple[bool, Optional[T]]:
+        """Safely attempts to retrieve a service, returning (success, instance)."""
+        instance = self._services.get(service_type)
+        return (instance is not None, instance) # type: ignore
+        
+    def get_optional(self, service_type: Type[T]) -> Optional[T]:
+        """Retrieves a service instance if it exists, otherwise returns None."""
+        return self._services.get(service_type) # type: ignore
+        
+    def has(self, service_type: Type[IService]) -> bool:
+        """Checks if a service is registered."""
+        return service_type in self._services
+        
+    def list_services(self) -> List[Type[IService]]:
+        """Returns a list of all registered service types."""
+        return list(self._services.keys())
+        
+    def initialize_all(self, context=None) -> None:
+        """Initializes all registered services and validates their health."""
+        for service_type, service in self._services.items():
             service.initialize()
+            if not service.validate():
+                # Store warning/error in diagnostics if context is passed
+                if context and hasattr(context, "diagnostics"):
+                    context.diagnostics.setdefault("service_errors", []).append(
+                        f"Validation failed for service: {service_type.__name__}"
+                    )
             
-    @classmethod
-    def shutdown_all(cls) -> None:
+    def shutdown_all(self) -> None:
         """Shuts down all services in reverse registration order."""
-        for service in reversed(list(cls._services.values())):
+        for service in reversed(list(self._services.values())):
             service.shutdown()
             
-    @classmethod
-    def clear(cls) -> None:
-        cls._services.clear()
+    def clear(self) -> None:
+        """Clears all registered services."""
+        self._services.clear()

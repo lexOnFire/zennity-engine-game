@@ -14,7 +14,14 @@ class EngineContext:
         self.config: Dict[str, Any] = config or {}
         
         # Core Services Locator is accessible from the context
-        self.services = EngineServices
+        self.services = EngineServices()
+        
+        # Diagnostics and Observability
+        self.diagnostics: Dict[str, Any] = {
+            "total_boot_time": 0.0,
+            "provider_boot_times": {},
+            "service_errors": []
+        }
         
         # Fundamental engine state
         self.version: str = "2.0.0"

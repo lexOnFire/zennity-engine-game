@@ -10,13 +10,13 @@ class PluginManager(IService):
     def __init__(self):
         self.loaded_plugins = []
         
-    def initialize(self) -> None:
-        self.load_all_plugins()
+    def initialize(self, context=None) -> None:
+        self.load_all_plugins(context=context)
         
     def shutdown(self) -> None:
         self.loaded_plugins.clear()
     
-    def load_all_plugins(self, plugins_package="engine.plugins"):
+    def load_all_plugins(self, plugins_package="engine.plugins", context=None):
         try:
             package = importlib.import_module(plugins_package)
         except ImportError:
@@ -26,11 +26,10 @@ class PluginManager(IService):
             return
             
         # Needs LocalizationManager if we register locales
-        try:
+        loc_manager = None
+        if context:
             from engine.localization import LocalizationManager
-            loc_manager = EngineServices.get(LocalizationManager)
-        except KeyError:
-            loc_manager = None
+            loc_manager = context.services.get_optional(LocalizationManager)
             
         for _, module_name, is_pkg in pkgutil.iter_modules(package.__path__):
             if is_pkg:

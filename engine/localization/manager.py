@@ -6,12 +6,18 @@ from typing import Dict, List, Any
 from engine.event_bus import EventBus
 from .events import LocalizationChangedEvent
 
+from engine.core.services import IService
+
 logger = logging.getLogger(__name__)
 
-class LocalizationManager:
+_active_manager = None
+
+class LocalizationManager(IService):
     """Singleton for robust module-based localization."""
     def __init__(self):
         super().__init__()
+        global _active_manager
+        _active_manager = self
         self.current_locale: str = "en-US"
         self.base_locales_dir: Path = Path.cwd() / "locales"
         self._plugin_locales_dirs: List[Path] = []
@@ -94,9 +100,7 @@ class LocalizationManager:
         return text
 
 def tr(key: str, **kwargs) -> str:
-    from engine.core.services import EngineServices
-    try:
-        return EngineServices.get(LocalizationManager).translate(key, **kwargs)
-    except KeyError:
-        # Fallback if engine is not initialized yet
-        return key
+    global _active_manager
+    if _active_manager:
+        return _active_manager.translate(key, **kwargs)
+    return key

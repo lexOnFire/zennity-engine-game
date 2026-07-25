@@ -1,28 +1,37 @@
 """Unit Tests for Engine Services."""
 import pytest
 from engine.core.services import EngineServices, IService
+import pytest
 
 class DummyService(IService):
     def __init__(self):
-        self.is_init = False
-        self.is_shutdown = False
-        
-    def initialize(self):
-        self.is_init = True
-        
-    def shutdown(self):
-        self.is_shutdown = True
+        self.initialized = False
+        self.shutdown_called = False
 
-def test_service_lifecycle():
-    EngineServices.clear()
-    
+    def initialize(self) -> None:
+        self.initialized = True
+
+    def shutdown(self) -> None:
+        self.shutdown_called = True
+
+def test_engine_services_register_and_get():
+    services = EngineServices()
     svc = DummyService()
-    EngineServices.register(DummyService, svc)
+    services.register(DummyService, svc)
+    assert services.get(DummyService) is svc
+
+def test_engine_services_get_unregistered_raises_keyerror():
+    services = EngineServices()
+    with pytest.raises(KeyError):
+        services.get(DummyService)
+
+def test_engine_services_lifecycle():
+    services = EngineServices()
+    svc = DummyService()
+    services.register(DummyService, svc)
     
-    assert EngineServices.get(DummyService) is svc
+    services.initialize_all()
+    assert svc.initialized is True
     
-    EngineServices.initialize_all()
-    assert svc.is_init is True
-    
-    EngineServices.shutdown_all()
-    assert svc.is_shutdown is True
+    services.shutdown_all()
+    assert svc.shutdown_called is True

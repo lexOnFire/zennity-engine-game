@@ -6,6 +6,7 @@ Responsible for auto-discovering EngineProviders and booting the core.
 import importlib
 import inspect
 import pkgutil
+import time
 from typing import List, Type, Dict, Any, Optional
 
 from engine.core.context import EngineContext
@@ -43,6 +44,33 @@ class EngineBootstrap:
         return providers
 
     @classmethod
+    def _topological_sort(cls, providers: List[Type[EngineProvider]]) -> List[Type[EngineProvider]]:
+        """Sorts providers based on their depends_on property to resolve dependency graph."""
+        graph = {p: set(getattr(p, 'depends_on', [])) for p in providers}
+        
+        sorted_providers = []
+        # Find all nodes with no dependencies
+        no_deps = [p for p, deps in graph.items() if not deps]
+        
+        while no_deps:
+            node = no_deps.pop(0)
+            sorted_providers.append(node)
+            
+            # Remove this node from others' dependencies
+            for p, deps in list(graph.items()):
+                if node in deps:
+                    deps.remove(node)
+                    if not deps:
+                        no_deps.append(p)
+                        del graph[p]
+                        
+        if any(deps for deps in graph.values()):
+            cycle_nodes = [p.__name__ for p, deps in graph.items() if deps]
+            raise RuntimeError(f"Circular dependency detected among providers: {', '.join(cycle_nodes)}")
+            
+        return sorted_providers
+
+    @classmethod
     def boot(cls, config: Optional[Dict[str, Any]] = None) -> EngineContext:
         """
         Starts the engine following the lifecycle:
@@ -52,25 +80,37 @@ class EngineBootstrap:
         4. Boot Providers
         5. Initialize Services
         """
+        t_start = time.perf_counter()
+        
         context = EngineContext(config=config)
         
         # 1. Discover all providers
         provider_classes = cls._discover_providers()
         
+        # Topological Sort to respect dependencies
+        sorted_classes = cls._topological_sort(provider_classes)
+        
         # Instantiate providers
-        # Optionally, we could sort them by dependencies if they declare any
-        # For now, CoreProvider should naturally be self-contained
-        providers = [p() for p in provider_classes]
+        providers = [p() for p in sorted_classes]
         
         # 2. Register Services phase
         for provider in providers:
+            t_prov_start = time.perf_counter()
             provider.register_services(context)
+            
+            # Initial tracking
+            context.diagnostics["provider_boot_times"][provider.__class__.__name__] = time.perf_counter() - t_prov_start
             
         # 3. Boot Providers phase
         for provider in providers:
+            t_prov_start = time.perf_counter()
             provider.boot(context)
             
-        # 4. Initialize Services
-        context.services.initialize_all()
+            # Accumulate time
+            context.diagnostics["provider_boot_times"][provider.__class__.__name__] += time.perf_counter() - t_prov_start
+            
+        # 4. Initialize Services (passes context for health check validation)
+        context.services.initialize_all(context=context)
         
+        context.diagnostics["total_boot_time"] = time.perf_counter() - t_start
         return context

@@ -51,7 +51,7 @@ def test_logic_and_animation_use_independent_windows_not_viewport_tabs():
     assert "class DetachedWorkspaceWindow(QMainWindow)" in interface
     assert "window.animation_window = DetachedWorkspaceWindow" in interface or "self.animation_window = DetachedWorkspaceWindow" in interface
     assert "window.logic_window = DetachedWorkspaceWindow" in interface or "self.logic_window = DetachedWorkspaceWindow" in interface
-    assert "window.logic_workspace = LogicGraphEditor()" in interface or "self.logic_workspace = LogicGraphEditor()" in interface
+    assert "window.logic_workspace = GraphCanvas()" in interface or "self.logic_workspace = GraphCanvas()" in interface
     assert "def show(self" in editor
     assert "def _show_animation_window" in animation
     assert 'editor_icon("play")' in editor
