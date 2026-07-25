@@ -1,8 +1,0 @@
-  ci-pytest-import-cleanup
-  feature/phase1-scale-tool
-  fix-pytest-collection-errors
-  fix/bugs-julho-2026
-  fix/editor-ci-and-gitignore
-  fix/undo-redo-and-asset-drag-drop
-  main
-* stabilization/v0.2

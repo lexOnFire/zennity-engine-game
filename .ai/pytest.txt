@@ -1,1 +1,0 @@
-Command 'python -m pytest --tb=short -q' returned non-zero exit status 1.

@@ -380,6 +380,7 @@ zennity-engine-game/
 ├── demos/                 # Exemplos práticos e demonstrativos
 ├── examples/              # Projetos exemplo oficiais da Beta
 ├── scripts/               # Scripts utilitários e de comportamento do usuário
+├── tools/                 # Ferramentas auxiliares e definições de contexto/agentes IA (tools/ai/)
 └── tests/                 # Suites completas de testes unitários (pytest)
 ```
 
