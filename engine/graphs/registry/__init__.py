@@ -1,4 +1,3 @@
-from .graph_registry import GraphRegistry
 from engine.core.metadata import NodeDefinition
 
 def register_node(**kwargs):
@@ -15,9 +14,9 @@ def register_node(**kwargs):
         definition = NodeDefinition(**kwargs)
         definition.runtime_class = cls
         
-        # Register in the singleton registry
-        GraphRegistry().register_node(definition)
+        # Attach the definition to the class so that plugins/bootstrap can discover it
+        cls.__node_definition__ = definition
         return cls
     return decorator
 
-__all__ = ["GraphRegistry", "register_node"]
+__all__ = ["register_node"]

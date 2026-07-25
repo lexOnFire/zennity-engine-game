@@ -61,8 +61,33 @@ class PluginManager(IService):
                                     loc_manager.add_locales_directory(plugin_locales)
                         
                         if hasattr(plugin_cls, "initialize"):
-                            plugin_cls.initialize()
+                            # Some plugins might need context now
+                            import inspect
+                            sig = inspect.signature(plugin_cls.initialize)
+                            if "context" in sig.parameters:
+                                plugin_cls.initialize(context=context)
+                            else:
+                                plugin_cls.initialize()
                             
                         self.loaded_plugins.append(plugin_class_name)
+                        
+                        # Auto-discover metadata definitions inside the plugin module
+                        if context:
+                            from engine.metadata.manager import MetadataManager
+                            meta_manager = context.services.get_optional(MetadataManager)
+                            if meta_manager:
+                                for name in dir(plugin_module):
+                                    obj = getattr(plugin_module, name)
+                                    if hasattr(obj, "__node_definition__"):
+                                        meta_manager.register(getattr(obj, "__node_definition__"))
+                                        
+                                # Also check submodules like .nodes if they exist
+                                if hasattr(plugin_module, "nodes"):
+                                    nodes_mod = getattr(plugin_module, "nodes")
+                                    for name in dir(nodes_mod):
+                                        obj = getattr(nodes_mod, name)
+                                        if hasattr(obj, "__node_definition__"):
+                                            meta_manager.register(getattr(obj, "__node_definition__"))
+                                            
                 except Exception as e:
                     print(f"Failed to load plugin {full_module_name}: {e}")

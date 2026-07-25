@@ -65,12 +65,20 @@ class CommandPaletteWidget(QDialog):
         self.search_input.setFocus()
         
     def _populate_all(self):
-        from engine.graphs.registry import GraphRegistry
+        from engine.core.context import EngineContext
+        from engine.metadata.manager import MetadataManager
+        from engine.core.metadata.node import NodeDefinition
+        
         self.results.clear()
-        nodes = GraphRegistry.get_all_nodes()
+        context = EngineContext.current()
+        if not context: return
+        manager = context.services.get_optional(MetadataManager)
+        if not manager: return
+        
+        nodes = manager.get_all(NodeDefinition)
         
         # Sort by category and name
-        sorted_nodes = sorted(nodes.values(), key=lambda n: (tr(n.category_key), tr(n.name_key)))
+        sorted_nodes = sorted(nodes, key=lambda n: (tr(n.category_key), tr(n.title_key)))
         
         for node in sorted_nodes:
             item = QListWidgetItem(f"{tr(node.name_key)}  ({tr(node.category_key)})")

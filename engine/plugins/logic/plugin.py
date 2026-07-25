@@ -1,5 +1,5 @@
 """Logic Plugin Bootstrapper."""
-from engine.graphs.registry import GraphRegistry
+
 from . import nodes
 
 class LogicPlugin:
@@ -7,11 +7,10 @@ class LogicPlugin:
     
     @classmethod
     def initialize(cls):
-        registry = GraphRegistry()
-        # The @register_node decorators in nodes.py automatically populated the registry upon import.
+        # In the new architecture, node definitions are automatically discovered by PluginManager
         # Here we would register the LogicCompiler, LogicSerializer overrides, etc.
-        registry.register_compiler("logic", cls.get_compiler())
-        print("Logic Plugin Initialized. Registered Nodes:", len(registry.get_all_nodes()))
+        # registry.register_compiler("logic", cls.get_compiler())
+        print("Logic Plugin Initialized.")
         
     @classmethod
     def get_compiler(cls):

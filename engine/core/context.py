@@ -10,6 +10,12 @@ from engine.core.services import EngineServices
 class EngineContext:
     """The central context passed to all EngineProviders during bootstrap."""
     
+    _current = None
+    
+    @classmethod
+    def current(cls) -> 'EngineContext':
+        return cls._current
+    
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         self.config: Dict[str, Any] = config or {}
         

@@ -122,4 +122,5 @@ class EngineBootstrap:
         context.services.initialize_all(context=context)
         
         context.diagnostics["total_boot_time"] = time.perf_counter() - t_start
+        EngineContext._current = context
         return context
