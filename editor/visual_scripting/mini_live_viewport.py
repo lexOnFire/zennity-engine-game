@@ -207,7 +207,7 @@ class RuntimeVisualizationPanelWidget(QFrame):
                     pass
 
     def paintEvent(self, event) -> None:
-        """Renderiza a Viewport com a camada de Runtime Visualization e Performance Overlay."""
+        """Renderiza os objetos reais da cena ativa do EditorContext / SceneContext com gizmos e overlays de runtime."""
         super().paintEvent(event)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing, True)
@@ -220,33 +220,64 @@ class RuntimeVisualizationPanelWidget(QFrame):
         painter.drawLine(0, int(cy), rect.width(), int(cy))
         painter.drawLine(int(cx), 0, int(cx), rect.height())
 
-        # 2. Renderização da Camada Visual (Física, Colliders, Vetores, IA FOV, Pathfinding)
-        self.renderer.draw_visualization_layer(painter, rect, self.target_object, self.active_node_name, self.highlight_timer)
+        # 2. Obtém a lista de Objetos Reais da Cena Ativa (via EditorContext ou target_object)
+        scene_objects: list[Any] = []
+        try:
+            from editor.runtime.editor_context import EditorContext
+            ctx = EditorContext.instance()
+            if ctx and hasattr(ctx, "scene") and ctx.scene:
+                scene_objects = getattr(ctx.scene, "objects", []) or getattr(ctx.scene, "game_objects", [])
+        except Exception:
+            pass
 
-        # 3. Renderiza Objeto Principal
-        obj_name = getattr(self.target_object, "name", "MainPlayer") if self.target_object else "Player"
+        if not scene_objects and self.target_object:
+            scene_objects = [self.target_object]
+
         is_highlighted = time.time() < self.highlight_timer
 
-        if is_highlighted:
-            glow_color = QColor("#ff4d8d") if "jump" in self.active_node_name.lower() else QColor("#4c9aff")
-            painter.setPen(QPen(glow_color, 3.0))
-            painter.setBrush(QBrush(glow_color.darker(160)))
-            painter.drawEllipse(QPointF(cx, cy), 32.0, 32.0)
+        # 3. Renderiza cada Objeto Real da Cena com suas posições reais
+        if scene_objects:
+            for idx, obj in enumerate(scene_objects):
+                obj_name = getattr(obj, "name", f"Object_{idx}")
+                pos = getattr(obj, "position", [0.0, 0.0])
+                # Converter coordenadas da cena para o espaço local da mini viewport
+                ox = cx + (float(pos[0]) if len(pos) > 0 else 0.0) * 15.0 - (idx * 60.0 if len(scene_objects) > 1 else 0.0)
+                oy = cy - (float(pos[1]) if len(pos) > 1 else 0.0) * 15.0
+
+                is_target = (obj is self.target_object) or (idx == 0)
+
+                if is_target and is_highlighted:
+                    glow_color = QColor("#ff4d8d") if "jump" in self.active_node_name.lower() else QColor("#4c9aff")
+                    painter.setPen(QPen(glow_color, 3.0))
+                    painter.setBrush(QBrush(glow_color.darker(160)))
+                    painter.drawEllipse(QPointF(ox, oy), 30.0, 30.0)
+                else:
+                    color = QColor("#50c878") if is_target else QColor("#47b8c8")
+                    painter.setPen(QPen(color, 2.0))
+                    painter.setBrush(QBrush(color.darker(220)))
+                    painter.drawRect(QRectF(ox - 20.0, oy - 20.0, 40.0, 40.0))
+
+                painter.setFont(QFont("Segoe UI", 8, QFont.Bold))
+                painter.setPen(QPen(QColor("#ffffff")))
+                painter.drawText(QRectF(ox - 50.0, oy - 36.0, 100.0, 16.0), Qt.AlignCenter, obj_name)
         else:
+            # Fallback caso a cena esteja vazia
             painter.setPen(QPen(QColor("#50c878"), 2.0))
             painter.setBrush(QBrush(QColor("#1b3829")))
             painter.drawRect(QRectF(cx - 24.0, cy - 24.0, 48.0, 48.0))
+            painter.setFont(QFont("Segoe UI", 9, QFont.Bold))
+            painter.setPen(QPen(QColor("#ffffff")))
+            painter.drawText(QRectF(cx - 60.0, cy - 42.0, 120.0, 18.0), Qt.AlignCenter, "Cena Vazia")
 
-        painter.setFont(QFont("Segoe UI", 9, QFont.Bold))
-        painter.setPen(QPen(QColor("#ffffff")))
-        painter.drawText(QRectF(cx - 60.0, cy - 42.0, 120.0, 18.0), Qt.AlignCenter, obj_name)
+        # 4. Renderização dos Gizmos de Depuração (Física, Colliders, Vetores, IA FOV, Pathfinding)
+        self.renderer.draw_visualization_layer(painter, rect, self.target_object, self.active_node_name, self.highlight_timer)
 
         if is_highlighted and self.active_node_name:
             painter.setFont(QFont("Segoe UI", 8, QFont.Bold))
             painter.setPen(QPen(QColor("#ffe600")))
             painter.drawText(QRectF(cx - 100.0, cy + 28.0, 200.0, 18.0), Qt.AlignCenter, f"⚡ {self.active_node_name}")
 
-        # 4. Performance Overlay Detalhado (FPS, Physics, Scripts, Animation, Rendering MS)
+        # 5. Performance Overlay Detalhado
         painter.setFont(QFont("Consolas", 8))
         painter.setPen(QPen(QColor("#8b949e")))
         perf_text = f"FPS: {self.fps:.0f} | Physics: {self.physics_ms:.1f}ms | Scripts: {self.scripts_ms:.1f}ms | Render: {self.rendering_ms:.1f}ms"
