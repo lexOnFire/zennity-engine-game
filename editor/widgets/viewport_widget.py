@@ -57,6 +57,13 @@ class ViewportWidget(ViewportQtEventsMixin, QOpenGLWidget):
         self._last_scene_selected_index: int | None = None
         self.editor_mode: str = "2D"
 
+        # --- FASE UX SCENE VIEW: Snapping, Camera Bookmarks & Overlays ---
+        self.snap_enabled: bool = True
+        self.snap_grid_size: float = 1.0  # unidades
+        self.snap_rotation_deg: float = 15.0  # graus
+        self.render_overlay_mode: str = "Shaded"  # Shaded, Wireframe, 2D, 3D
+        self.camera_bookmarks: dict[int, tuple[float, float, float]] = {}  # {slot: (x, y, zoom)}
+
         self._qt_mouse_pos: tuple = (0, 0)
         pygame.mouse.get_pos = lambda: self._qt_mouse_pos
 
@@ -101,8 +108,33 @@ class ViewportWidget(ViewportQtEventsMixin, QOpenGLWidget):
         self._sync_scene_from_model()
 
     # ──────────────────────────────────────────────────────────────────────────
-    # Sincronização Modelo ↔ Cena
+    # FASE UX SCENE VIEW: Snapping & Camera Bookmarks API
     # ──────────────────────────────────────────────────────────────────────────
+
+    def snap_value(self, val: float, step: float | None = None) -> float:
+        """Aplica snapping em um valor escalar ou de coordenadas."""
+        if not self.snap_enabled:
+            return val
+        s = step or self.snap_grid_size
+        return round(val / s) * s
+
+    def save_camera_bookmark(self, slot: int, x: float, y: float, zoom: float = 1.0) -> None:
+        """Salva um Bookmark de Câmera no slot especificado (1..9)."""
+        self.camera_bookmarks[slot] = (x, y, zoom)
+        try:
+            EventBus.emit("Viewport.bookmark_saved", slot=slot, position=(x, y, zoom))
+        except Exception:
+            pass
+
+    def restore_camera_bookmark(self, slot: int) -> tuple[float, float, float] | None:
+        """Restaura o Bookmark de Câmera do slot especificado (1..9)."""
+        bm = self.camera_bookmarks.get(slot)
+        if bm is not None:
+            try:
+                EventBus.emit("Viewport.bookmark_restored", slot=slot, position=bm)
+            except Exception:
+                pass
+        return bm
 
     def _sync_scene_from_model(self) -> None:
         """
