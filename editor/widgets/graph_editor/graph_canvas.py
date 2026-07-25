@@ -240,27 +240,50 @@ class GraphCanvas(QGraphicsView):
         
     def drawBackground(self, painter, rect):
         super().drawBackground(painter, rect)
-        painter.fillRect(rect, QColor("#1e1e1e"))
-        
-        grid_size = 20
-        left = int(rect.left()) - (int(rect.left()) % grid_size)
-        top = int(rect.top()) - (int(rect.top()) % grid_size)
-        
-        lines = []
+        painter.fillRect(rect, QColor("#121418"))
+
+        # Grid primário (20px) e secundário (100px) adaptativo
+        grid_small = 20
+        grid_large = 100
+
+        left = int(rect.left()) - (int(rect.left()) % grid_small)
+        top = int(rect.top()) - (int(rect.top()) % grid_small)
+
+        pen_small = QPen(QColor("#1a1d24"), 1)
+        pen_large = QPen(QColor("#282c37"), 1.2)
+        pen_axis = QPen(QColor("#4c9aff"), 1.5, Qt.DashLine)
+
+        # 1. Grid secundário suave
+        painter.setPen(pen_small)
         x = left
         while x < rect.right():
-            lines.append((x, rect.top(), x, rect.bottom()))
-            x += grid_size
-            
+            painter.drawLine(int(x), int(rect.top()), int(x), int(rect.bottom()))
+            x += grid_small
+
         y = top
         while y < rect.bottom():
-            lines.append((rect.left(), y, rect.right(), y))
-            y += grid_size
-            
-        pen = QPen(QColor("#2a2a2a"), 1)
-        painter.setPen(pen)
-        for line in lines:
-            painter.drawLine(*line)
+            painter.drawLine(int(rect.left()), int(y), int(rect.right()), int(y))
+            y += grid_small
+
+        # 2. Grid principal em blocos de 100px
+        painter.setPen(pen_large)
+        left_large = int(rect.left()) - (int(rect.left()) % grid_large)
+        top_large = int(rect.top()) - (int(rect.top()) % grid_large)
+
+        x = left_large
+        while x < rect.right():
+            painter.drawLine(int(x), int(rect.top()), int(x), int(rect.bottom()))
+            x += grid_large
+
+        y = top_large
+        while y < rect.bottom():
+            painter.drawLine(int(rect.left()), int(y), int(rect.right()), int(y))
+            y += grid_large
+
+        # 3. Eixos de Origem do Mundo (0,0)
+        painter.setPen(pen_axis)
+        painter.drawLine(0, int(rect.top()), 0, int(rect.bottom()))
+        painter.drawLine(int(rect.left()), 0, int(rect.right()), 0)
             
     def _on_selection_changed(self):
         self.selection_changed.emit(self.scene.selectedItems())
