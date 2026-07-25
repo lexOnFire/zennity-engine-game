@@ -74,9 +74,26 @@ class RuntimeVisualizationPanelWidget(QFrame):
         header = QHBoxLayout()
         header.setContentsMargins(6, 2, 6, 2)
 
-        title = QLabel("👁️ Runtime Visualization Panel (Visual Debugger)")
+        title = QLabel("👁️ Visual Debugger")
         title.setStyleSheet("font-weight: bold; color: #a4b1cd; font-size: 11px;")
         header.addWidget(title)
+
+        from PySide6.QtWidgets import QCheckBox
+        self.chk_phys = QCheckBox("Physics", self)
+        self.chk_phys.setChecked(True)
+        self.chk_phys.toggled.connect(lambda c: setattr(self.renderer, "show_colliders", c))
+
+        self.chk_nav = QCheckBox("Navigation", self)
+        self.chk_nav.setChecked(True)
+        self.chk_nav.toggled.connect(lambda c: setattr(self.renderer, "show_pathfinding", c))
+
+        self.chk_ai = QCheckBox("AI", self)
+        self.chk_ai.setChecked(True)
+        self.chk_ai.toggled.connect(lambda c: setattr(self.renderer, "show_ai_fov", c))
+
+        header.addWidget(self.chk_phys)
+        header.addWidget(self.chk_nav)
+        header.addWidget(self.chk_ai)
 
         header.addStretch(1)
 

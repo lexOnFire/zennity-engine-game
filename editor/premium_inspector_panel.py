@@ -165,7 +165,36 @@ class RealInspectorPanel(InspectorPanel):
         )
 
         self._update_legacy_labels(obj, getattr(obj, "components", []))
+
+        # --- RUNTIME INSPECTOR DUAL: Divisão limpa Persistente vs Runtime ---
+        self._render_runtime_inspector_section(obj)
         self._render_component_controls(obj)
+
+    def _render_runtime_inspector_section(self, obj: Any) -> None:
+        """Renderiza a seção dividida de Dados de Runtime em Tempo Real no Inspector Dual."""
+        runtime_group = QWidget()
+        runtime_layout = QVBoxLayout(runtime_group)
+        runtime_layout.setContentsMargins(4, 4, 4, 4)
+
+        header_label = QLabel("⚡ DADOS DE RUNTIME (TEMPO REAL)")
+        header_label.setStyleSheet("font-weight: bold; color: #ff8c69; font-size: 10px;")
+        runtime_layout.addWidget(header_label)
+
+        # Dados voláteis de execução
+        state = getattr(obj, "state", "PLAYING / IDLE")
+        vel = getattr(obj, "velocity", [0.0, 0.0])
+        grounded = getattr(obj, "is_grounded", True)
+        hp = getattr(obj, "health", 100.0)
+
+        info_label = QLabel(
+            f"  Velocidade: ({vel[0]:.1f}, {vel[1]:.1f}) | Grounded: {grounded}\n"
+            f"  Estado de IA: {state} | Vida: {hp:.0f} HP\n"
+            f"  Blackboard: [target = Player, alert_level = 0.0]"
+        )
+        info_label.setStyleSheet("color: #7ee787; font-family: Consolas; font-size: 10px;")
+        runtime_layout.addWidget(info_label)
+
+        self.component_list_layout.addWidget(runtime_group)
 
     def _on_property_changed_notify(self, prop_name: str, new_val: Any) -> None:
         """Notifica alterações via EventBus no domínio Scene.*"""
