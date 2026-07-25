@@ -6,7 +6,7 @@ from typing import Dict, List, Type
 import uuid
 
 from engine.assets.asset_types import AssetType, detect_asset_type
-from engine.assets.asset_metadata import AssetMeta
+from engine.assets.asset_metadata import AssetMeta, compute_file_hash
 
 
 class AssetImporter(ABC):
@@ -39,6 +39,7 @@ class AssetImporter(ABC):
         # Default settings if none exist
         import_settings = existing_meta.import_settings if existing_meta else {}
         dependencies = existing_meta.dependencies if existing_meta else []
+        file_hash = compute_file_hash(source_path)
         
         # Perform specific import logic via subclasses
         import_settings, dependencies = self.process_import(source_path, import_settings, dependencies)
@@ -50,6 +51,7 @@ class AssetImporter(ABC):
             source_path=source_path.as_posix(), # Normalizes paths
             import_settings=import_settings,
             dependencies=dependencies,
+            hash=file_hash,
         )
 
     def process_import(self, source_path: Path, import_settings: dict, dependencies: list) -> tuple[dict, list]:
@@ -124,22 +126,40 @@ class GenericImporter(AssetImporter):
 class ImporterRegistry:
     """
     Central registry that maps file extensions to their respective AssetImporters.
+    Now wraps the Engine's MetadataManager.
     """
     def __init__(self):
-        self._importers_by_ext: Dict[str, AssetImporter] = {}
         self._fallback_importer = GenericImporter()
+        self._importers: Dict[str, AssetImporter] = {}
+        self.register(TextureImporter())
+        self.register(AudioImporter())
+        self.register(ScriptImporter())
+        self.register(TilemapImporter())
         
-        self.register_importer(TextureImporter())
-        self.register_importer(AudioImporter())
-        self.register_importer(ScriptImporter())
-        self.register_importer(TilemapImporter())
-        
-    def register_importer(self, importer: AssetImporter) -> None:
+    def register(self, importer: AssetImporter) -> None:
         for ext in importer.get_supported_extensions():
-            self._importers_by_ext[ext.lower()] = importer
+            self._importers[ext] = importer
             
     def get_importer_for(self, path: str | Path) -> AssetImporter:
         if isinstance(path, str):
             path = Path(path)
         ext = path.suffix.lower()
-        return self._importers_by_ext.get(ext, self._fallback_importer)
+        
+        from engine.core.context import EngineContext
+        from engine.metadata.manager import MetadataManager
+        from engine.core.metadata import ImporterDefinition
+        
+        context = EngineContext.current()
+        if context:
+            manager = context.services.get_optional(MetadataManager)
+            if manager:
+                # Find all importers that support this extension
+                defs = manager.get_all(ImporterDefinition)
+                for d in defs:
+                    if ext in d.extensions and d.importer_class:
+                        return d.importer_class()
+                        
+        if ext in self._importers:
+            return self._importers[ext]
+            
+        return self._fallback_importer

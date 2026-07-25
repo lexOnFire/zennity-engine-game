@@ -1,7 +1,6 @@
 """Graph Library Manager for .zlib reusable graphs."""
 import json
 from pathlib import Path
-from engine.graphs.registry.graph_registry import GraphRegistry
 from engine.localization import tr
 
 class GraphLibraryManager:

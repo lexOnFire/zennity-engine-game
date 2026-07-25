@@ -9,8 +9,9 @@ from typing import Any
 from engine.graphs.core.graph import Graph
 from engine.graphs.core.node import GraphNode
 from engine.graphs.core.connection import GraphConnection
-from engine.graphs.core.registry import GraphRegistry
-
+from engine.core.context import EngineContext
+from engine.metadata.manager import MetadataManager
+from engine.core.metadata import GraphDefinition, NodeDefinition
 
 class GraphSerializer:
     """Sistema modular de I/O para arquivos .zgraph."""
@@ -26,21 +27,26 @@ class GraphSerializer:
         with open(filepath, "r", encoding="utf-8") as f:
             data = json.load(f)
             
-        graph_type_name = data.get("graph_type", "Generic Graph")
-        graph_class = GraphRegistry.get_graph_class(graph_type_name)
-        if not graph_class:
+        context = EngineContext.current()
+        manager = context.services.get(MetadataManager)
+            
+        graph_type_name = data.get("graph_type", "Generic Graph").lower()
+        g_def = manager.get(GraphDefinition, graph_type_name)
+        if not g_def or not hasattr(g_def, "_graph_class"):
             raise ValueError(f"Tipo de grafo não registrado na engine: {graph_type_name}")
             
-        graph = graph_class()
+        graph = g_def._graph_class()
         graph.properties = data.get("properties", {}).copy()
         
         # Load Nodes
         for node_data in data.get("nodes", []):
             node_type = node_data.get("type")
-            node_class = GraphRegistry.get_node_class(graph_type_name, node_type)
-            if not node_class:
+            n_def = manager.get(NodeDefinition, node_type)
+            if not n_def or not hasattr(n_def, "_node_class"):
                 print(f"Warning: Nó não encontrado no registro para '{graph_type_name}': {node_type}")
                 continue
+                
+            node_class = n_def._node_class
                 
             node = node_class(node_id=node_data.get("id"))
             node.deserialize(node_data)

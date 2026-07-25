@@ -7,10 +7,12 @@ import numpy as np
 import pygame
 
 from engine.assets.asset_database import AssetDatabase
+from engine.assets.asset_handle import AssetHandle
 from engine.assets.asset_importer import AssetImporter
 from engine.assets.asset_metadata import AssetInfo, AssetMeta
 from engine.assets.asset_path import AssetPathResolver
 from engine.assets.asset_types import AssetType, detect_asset_type
+from engine.assets.runtime_asset_manager import RuntimeAssetManager
 
 
 class Mesh:
@@ -51,7 +53,19 @@ class Assets:
     _meshes: Dict[str, Mesh] = {}
 
     @classmethod
+    def _get_manager(cls) -> Optional[RuntimeAssetManager]:
+        from engine.core.context import EngineContext
+        ctx = EngineContext.current()
+        if ctx:
+            return ctx.services.get_optional(RuntimeAssetManager)
+        return None
+
+    @classmethod
     def get_image(cls, path: str, alpha: bool = True) -> pygame.Surface:
+        mgr = cls._get_manager()
+        if mgr:
+            return mgr.get_image(path, alpha)
+            
         if path not in cls._images:
             if not os.path.exists(path):
                 fallback = pygame.Surface((32, 32))
@@ -77,6 +91,10 @@ class Assets:
 
     @classmethod
     def get_sound(cls, path: str) -> pygame.mixer.Sound:
+        mgr = cls._get_manager()
+        if mgr:
+            return mgr.get_sound(path)
+            
         if path not in cls._sounds:
             if not os.path.exists(path):
                 class NullSound:
@@ -97,6 +115,10 @@ class Assets:
 
     @classmethod
     def get_font(cls, name: Optional[str], size: int) -> pygame.font.Font:
+        mgr = cls._get_manager()
+        if mgr:
+            return mgr.get_font(name, size)
+            
         key = (name or "sys_default", size)
         if key not in cls._fonts:
             if name is None or not os.path.exists(name):
@@ -162,6 +184,7 @@ class Assets:
 __all__ = [
     "Any",
     "AssetDatabase",
+    "AssetHandle",
     "AssetImporter",
     "AssetInfo",
     "AssetMeta",
@@ -169,5 +192,6 @@ __all__ = [
     "AssetType",
     "Assets",
     "Mesh",
+    "RuntimeAssetManager",
     "detect_asset_type",
 ]

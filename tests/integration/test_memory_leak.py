@@ -68,12 +68,13 @@ def test_editor_play_stop_cycle_memory_stability(qapp: QApplication) -> None:
     final_objects = gc.get_objects()
     final_types = Counter(type(obj).__name__ for obj in final_objects)
 
-    # O crescimento de objetos na memória deve ser desprezível
-    growth = len(final_objects) - len(initial_objects)
+    # O crescimento de objetos na memória deve ser desprezível, mas descontamos overhead do unittest.mock
+    mock_types = {"_Call", "_CallList", "MagicMock", "Mock"}
+    growth = sum(count for type_name, count in final_types.items() if type_name not in mock_types) - sum(count for type_name, count in initial_types.items() if type_name not in mock_types)
     
     # Se houver crescimento excessivo, imprime a diferença por tipo de objeto
     if growth >= 1200:
-        diff = {k: final_types[k] - initial_types[k] for k in final_types if final_types[k] > initial_types[k]}
+        diff = {k: final_types[k] - initial_types[k] for k in final_types if final_types[k] > initial_types[k] and k not in mock_types}
         sorted_diff = sorted(diff.items(), key=lambda x: x[1], reverse=True)
         print("\nLEAKED TYPES:", sorted_diff[:15])
         

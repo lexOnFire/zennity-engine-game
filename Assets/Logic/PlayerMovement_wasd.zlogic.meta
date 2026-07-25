@@ -5,5 +5,6 @@
   "importer": "generic_importer",
   "source_path": "Assets/Logic/PlayerMovement_wasd.zlogic",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "hash": "31ed0e9b4429992ae55071a450c91732d6a1206227b626c56c7260e6d1520d96"
 }

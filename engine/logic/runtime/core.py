@@ -360,9 +360,25 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin):
 
     def _execute(self, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
         node_type = str(node["type"])
+        
+        from engine.core.context import EngineContext
+        from engine.metadata.manager import MetadataManager
+        from engine.core.metadata.node import NodeDefinition
+        from .registry import registry
+        
+        context = EngineContext.current()
+        if context:
+            manager = context.services.get_optional(MetadataManager)
+            if manager:
+                node_def = manager.get(NodeDefinition, node_type)
+                if node_def and node_def.executor:
+                    return node_def.executor(self, node, game, dt)
+                    
+        # Fallback for isolated tests
         executor = registry.executors.get(node_type)
         if executor:
             return executor(self, node, game, dt)
+            
         return ["next"]
 
     def _read_input(

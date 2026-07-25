@@ -5,5 +5,6 @@
   "importer": "script_importer",
   "source_path": "Assets/Scripts/base_game_2d/coin.py",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "hash": "97db7a56ea2401cd154b193e61d32410fc098cd072b7fb4850ee95218edb2b07"
 }

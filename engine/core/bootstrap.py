@@ -110,6 +110,23 @@ class EngineBootstrap:
             # Initial tracking
             context.diagnostics["provider_boot_times"][provider.__class__.__name__] = time.perf_counter() - t_prov_start
             
+        # 2.5 Metadata Auto-discovery
+        from engine.metadata.manager import MetadataManager
+        from engine.metadata.core import MetadataDefinition
+        meta_manager = context.services.get_optional(MetadataManager)
+        if meta_manager:
+            for p_cls in sorted_classes:
+                # Get the module of the provider
+                import sys
+                mod = sys.modules.get(p_cls.__module__)
+                if mod:
+                    for name in dir(mod):
+                        obj = getattr(mod, name)
+                        if isinstance(obj, MetadataDefinition):
+                            meta_manager.register(obj)
+                        elif hasattr(obj, "__node_definition__"):
+                            meta_manager.register(getattr(obj, "__node_definition__"))
+            
         # 3. Boot Providers phase
         for provider in providers:
             t_prov_start = time.perf_counter()

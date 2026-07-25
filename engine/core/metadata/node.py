@@ -21,6 +21,8 @@ class NodeDefinition(MetadataDefinition):
     common_errors_key: str = ""
     
     runtime_class: Callable[..., Any] | None = None
+    executor: Callable[..., Any] | None = None
+    evaluator: Callable[..., Any] | None = None
     
     def __post_init__(self):
         if self.name_key and not self.title_key:

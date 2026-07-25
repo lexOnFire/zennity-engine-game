@@ -5,5 +5,6 @@
   "importer": "script_importer",
   "source_path": "Assets/Scripts/animator_demo/player_animator_demo.py",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "hash": "60a4deaf715146ce9d8f2e40735fb08daaaa3a7673e6fdac8595a5af828def6d"
 }

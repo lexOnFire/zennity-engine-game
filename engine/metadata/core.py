@@ -12,3 +12,5 @@ class MetadataDefinition:
     icon: str = ""
     category_key: str = ""
     tags: list[str] = field(default_factory=list)
+    version: str = "1.0.0"
+    namespace: str = "core"

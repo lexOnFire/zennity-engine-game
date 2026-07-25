@@ -1,7 +1,6 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QTextBrowser
 from PySide6.QtCore import Signal
 from engine.localization import tr
-from engine.logic.graph_asset import NODE_DEFINITIONS
 
 class LogicHelpDock(QWidget):
     def __init__(self, parent=None):
@@ -28,28 +27,50 @@ class LogicHelpDock(QWidget):
         query = query.lower().strip()
         html = [f"<h3>{tr('editor.help.title', 'Dicionário de Nós')}</h3>"]
         
-        for node_id, definition in sorted(NODE_DEFINITIONS.items()):
-            title = definition.get("title", node_id)
-            desc = tr(f"graph.nodes.{node_id}.description", "Sem descrição disponível.")
+        from engine.core.context import EngineContext
+        from engine.metadata.manager import MetadataManager
+        from engine.core.metadata.node import NodeDefinition
+        
+        context = EngineContext.current()
+        if not context:
+            self.help_text.setHtml("".join(html) + f"<p><i>{tr('editor.help.no_context', 'Motor não iniciado.')}</i></p>")
+            return
+            
+        manager = context.services.get_optional(MetadataManager)
+        if not manager:
+            self.help_text.setHtml("".join(html) + f"<p><i>{tr('editor.help.no_metadata', 'Metadados não disponíveis.')}</i></p>")
+            return
+            
+        nodes = manager.get_all(NodeDefinition)
+        nodes.sort(key=lambda d: d.id)
+        
+        count = 0
+        for definition in nodes:
+            node_id = definition.id
+            title = tr(definition.title_key, fallback=definition.title_key)
+            desc = tr(definition.description_key, fallback=definition.description_key)
             
             if query and query not in node_id.lower() and query not in title.lower() and query not in desc.lower():
                 continue
                 
+            count += 1
             html.append(f"<h4>{title} <code>({node_id})</code></h4>")
             html.append(f"<p>{desc}</p>")
             
-            inputs = definition.get("inputs", [])
-            outputs = definition.get("outputs", [])
+            inputs = getattr(definition, "inputs", [])
+            outputs = getattr(definition, "outputs", [])
             if inputs or outputs:
                 html.append("<ul>")
-                for port, ptype in inputs:
-                    html.append(f"<li><b>[In] {port}</b> <i>({ptype})</i></li>")
-                for port, ptype in outputs:
-                    html.append(f"<li><b>[Out] {port}</b> <i>({ptype})</i></li>")
+                for pin in inputs:
+                    pin_label = tr(f"pin.{definition.id}.{pin.id}", fallback=getattr(pin, "title_key", pin.id))
+                    html.append(f"<li><b>[In] {pin_label}</b> <i>({pin.pin_type})</i></li>")
+                for pin in outputs:
+                    pin_label = tr(f"pin.{definition.id}.{pin.id}", fallback=getattr(pin, "title_key", pin.id))
+                    html.append(f"<li><b>[Out] {pin_label}</b> <i>({pin.pin_type})</i></li>")
                 html.append("</ul>")
             html.append("<hr>")
             
-        if len(html) == 1:
+        if count == 0:
             html.append(f"<p><i>{tr('editor.help.no_results', 'Nenhum resultado encontrado.')}</i></p>")
             
         self.help_text.setHtml("".join(html))

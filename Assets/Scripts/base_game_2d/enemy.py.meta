@@ -5,5 +5,6 @@
   "importer": "script_importer",
   "source_path": "Assets/Scripts/base_game_2d/enemy.py",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "hash": "9fd271d6da7fdf7271d09d1b622831e77c1305d22e1e6307e1f70ae44af9802b"
 }

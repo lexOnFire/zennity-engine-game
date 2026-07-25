@@ -8,5 +8,8 @@ class MetadataProvider(EngineProvider):
     
     profiles = [BootProfile.ALL]
     
-    def register_services(self, context) -> None:
+    def register_services(self, context: 'EngineContext') -> None:
+        from engine.metadata.manager import MetadataManager
+        from engine.metadata.validator import MetadataValidator
         context.services.register(MetadataManager, MetadataManager())
+        context.services.register(MetadataValidator, MetadataValidator())

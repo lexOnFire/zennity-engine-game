@@ -14,12 +14,12 @@ class PinType(str, Enum):
     COLOR = "color"
     OBJECT = "object"
 
+from engine.metadata.core import MetadataDefinition
+
 @dataclass
-class PinDefinition:
-    id: str
-    pin_type: str | PinType
-    label_key: str = ""  # Migrated from 'label'
-    description_key: str = ""
+class PinDefinition(MetadataDefinition):
+    pin_type: str | PinType = PinType.EXEC
+    label_key: str = ""
     default_value: Any = None
     is_list: bool = False
     hide_label: bool = False

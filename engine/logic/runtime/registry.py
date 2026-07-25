@@ -16,26 +16,46 @@ class NodeRegistry:
         self.evaluators: dict[str, EvaluatorFunc] = {}
 
     def register_executor(self, node_types: str | tuple[str, ...]) -> Callable[[ExecutorFunc], ExecutorFunc]:
-        """Registra uma função como executora de fluxo para os tipos de nós informados."""
+        """Registra uma função como executora de fluxo injetando no MetadataManager via EngineContext."""
         def decorator(func: ExecutorFunc) -> ExecutorFunc:
-            if isinstance(node_types, str):
-                self.executors[node_types] = func
-            else:
-                for t in node_types:
-                    self.executors[t] = func
+            types = (node_types,) if isinstance(node_types, str) else node_types
+            for t in types:
+                self.executors[t] = func
             return func
         return decorator
 
     def register_evaluator(self, node_types: str | tuple[str, ...]) -> Callable[[EvaluatorFunc], EvaluatorFunc]:
-        """Registra uma função como avaliadora de valor (outputs) para os tipos de nós informados."""
+        """Registra uma função como avaliadora injetando no MetadataManager via EngineContext."""
         def decorator(func: EvaluatorFunc) -> EvaluatorFunc:
-            if isinstance(node_types, str):
-                self.evaluators[node_types] = func
-            else:
-                for t in node_types:
-                    self.evaluators[t] = func
+            types = (node_types,) if isinstance(node_types, str) else node_types
+            for t in types:
+                self.evaluators[t] = func
             return func
         return decorator
 
-
 registry = NodeRegistry()
+
+def sync_logic_registry_to_metadata(context) -> None:
+    from engine.metadata.manager import MetadataManager
+    from engine.core.metadata import NodeDefinition
+    
+    manager = context.services.get_optional(MetadataManager)
+    manager = context.services.get_optional(MetadataManager)
+    if not manager:
+        return
+        
+    for type_id, func in registry.executors.items():
+        node_def = manager.get(NodeDefinition, type_id)
+        if not node_def:
+            node_def = NodeDefinition(id=type_id, title_key=type_id)
+            manager.register(node_def)
+            print(f"Registered executor {type_id}")
+        node_def.executor = func
+            
+    for type_id, func in registry.evaluators.items():
+        node_def = manager.get(NodeDefinition, type_id)
+        if not node_def:
+            node_def = NodeDefinition(id=type_id, title_key=type_id)
+            manager.register(node_def)
+            print(f"Registered evaluator {type_id}")
+        node_def.evaluator = func
