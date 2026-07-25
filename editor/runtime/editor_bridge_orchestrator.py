@@ -18,6 +18,9 @@ Uso (na MainWindow ou IsolatedEditorWindow):
         behavior_tree_dock=self.dock_bt,
         dialogue_dock=self.dock_dlg,
         material_dock=self.dock_mat,
+        profiler_dock=self.dock_profiler,
+        extension_dock=self.dock_extensions,
+        build_wizard_dock=self.dock_build_wizard,
     )
 """
 from __future__ import annotations
@@ -35,6 +38,9 @@ class EditorBridgeOrchestrator:
       4. BehaviorTreeBridge    (Graph.bt.* Events)   ← Sprint 4c
       5. DialogueBridge        (Graph.dlg.* Events)  ← Sprint 4c
       6. MaterialGraphBridge   (Graph.mat.* Events)  ← Sprint 4c
+      7. DiagnosticsBridge     (Runtime.* Events)    ← Sprint 4d
+      8. ExtensionsBridge      (Workspace.* Events)  ← Sprint 4d
+      9. BuildPipelineBridge   (Build.* Events)      ← Sprint 4d
     """
 
     def __init__(self, editor_context: Any) -> None:
@@ -45,6 +51,9 @@ class EditorBridgeOrchestrator:
         self.behavior_tree: Any = None
         self.dialogue: Any = None
         self.material_graph: Any = None
+        self.diagnostics: Any = None
+        self.extensions: Any = None
+        self.build_pipeline: Any = None
 
     def setup(
         self,
@@ -57,6 +66,10 @@ class EditorBridgeOrchestrator:
         behavior_tree_dock: Any = None,
         dialogue_dock: Any = None,
         material_dock: Any = None,
+        profiler_dock: Any = None,
+        extension_dock: Any = None,
+        build_wizard_dock: Any = None,
+        build_report_dock: Any = None,
     ) -> None:
         """Configura todos os bridges. Argumentos None são silenciosamente ignorados."""
 
@@ -104,6 +117,26 @@ class EditorBridgeOrchestrator:
         if material_dock:
             self.material_graph.attach_dock(material_dock)
 
+        # 7. Diagnostics Bridge (Sprint 4d)
+        from editor.runtime.diagnostics_bridge import DiagnosticsBridge
+        self.diagnostics = DiagnosticsBridge(self._ctx)
+        if profiler_dock:
+            self.diagnostics.attach_dock(profiler_dock)
+
+        # 8. Extensions Bridge (Sprint 4d)
+        from editor.runtime.extensions_bridge import ExtensionsBridge
+        self.extensions = ExtensionsBridge(self._ctx)
+        if extension_dock:
+            self.extensions.attach_dock(extension_dock)
+
+        # 9. Build Pipeline Bridge (Sprint 4d)
+        from editor.runtime.build_pipeline_bridge import BuildPipelineBridge
+        self.build_pipeline = BuildPipelineBridge(self._ctx, diagnostics_bridge=self.diagnostics)
+        if build_wizard_dock:
+            self.build_pipeline.attach_wizard_dock(build_wizard_dock)
+        if build_report_dock:
+            self.build_pipeline.attach_report_dock(build_report_dock)
+
     # ── Convenience API ───────────────────────────────────────────────────────
 
     def select(self, obj: Any, context: str = "scene") -> None:
@@ -136,6 +169,11 @@ class EditorBridgeOrchestrator:
             return self.material_graph.open_document(path=path, data=data)
         return None
 
+    def run_build(self, target_scene: str = "MainScene.zscene") -> Any:
+        if self.build_pipeline:
+            return self.build_pipeline.run_build(target_scene=target_scene)
+        return None
+
     def activate(self, tool_id: str) -> None:
         """Ativa qualquer ferramenta pelo ID via ToolRegistry."""
         try:
@@ -158,3 +196,13 @@ class EditorBridgeOrchestrator:
 
     def activate_material_graph(self) -> None:
         self.activate("material_graph")
+
+    def activate_profiler(self) -> None:
+        self.activate("diagnostics.profiler")
+
+    def activate_extensions(self) -> None:
+        self.activate("extensions.manager")
+
+    def activate_build_wizard(self) -> None:
+        self.activate("build.wizard")
+
