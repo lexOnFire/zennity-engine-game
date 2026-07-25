@@ -49,6 +49,8 @@ class VisualScriptingEditorDock(QDockWidget):
         self.btn_auto_layout = QPushButton("✨ Auto Layout", self.toolbar_widget)
         self.btn_validate = QPushButton("✔️ Validar Grafo", self.toolbar_widget)
         self.btn_debug = QPushButton("🐞 Debugger", self.toolbar_widget)
+        self.btn_explain = QPushButton("💡 Explain Mode", self.toolbar_widget)
+        self.btn_explain.setStyleSheet("background-color: #8957e5; color: white; font-weight: bold;")
 
         self.search_bar = QLineEdit(self.toolbar_widget)
         self.search_bar.setPlaceholderText("🔍 Pesquisar Nós... (Ctrl+F)")
@@ -61,6 +63,7 @@ class VisualScriptingEditorDock(QDockWidget):
         toolbar_layout.addWidget(self.btn_auto_layout)
         toolbar_layout.addWidget(self.btn_validate)
         toolbar_layout.addWidget(self.btn_debug)
+        toolbar_layout.addWidget(self.btn_explain)
         toolbar_layout.addStretch(1)
         toolbar_layout.addWidget(self.search_bar)
 
@@ -126,6 +129,14 @@ class VisualScriptingEditorDock(QDockWidget):
         self.btn_stop.clicked.connect(lambda: self.mini_viewport.set_play_mode(False))
         self.btn_auto_layout.clicked.connect(self.graph_editor.auto_layout)
         self.btn_validate.clicked.connect(self.graph_editor.validate_graph)
+        self.btn_explain.clicked.connect(self.trigger_explain_mode)
+
+    def trigger_explain_mode(self) -> None:
+        """Dispara a explicação causa-raiz no Runtime Explain Mode."""
+        from editor.visual_scripting.runtime_explain_mode import RuntimeExplainMode
+        exp = RuntimeExplainMode.instance().explain_object_behavior(self.mini_viewport.target_object or "Player", "Move")
+        self.runtime_logs_text.append(f"[EXPLAIN] {exp['cause_summary']}")
+        self.runtime_logs_text.append(f"[EXPLAIN] Cadeia: {' ➔ '.join(exp['execution_chain'])}")
 
     def highlight_node_execution(self, node_id: str, node_name: str) -> None:
         """Sincroniza execução de um nó com a Mini Live Viewport."""
