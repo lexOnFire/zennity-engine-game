@@ -136,3 +136,34 @@ def test_engine_services_circular_dependency():
     with pytest.raises(RuntimeError) as exc:
         services._topological_sort_services()
     assert "Circular dependency detected" in str(exc.value)
+
+def test_engine_services_health_reports_and_mermaid():
+    services = EngineServices()
+    svc1 = DummyService()
+    svc2 = FailingService()
+    svc2.depends_on = [DummyService]
+    
+    services.register(DummyService, svc1)
+    services.register(FailingService, svc2)
+    
+    ctx = MockContext()
+    services.initialize_all(context=ctx)
+    
+    assert "health_reports" in ctx.diagnostics
+    reports = ctx.diagnostics["health_reports"]
+    
+    assert "DummyService" in reports
+    assert reports["DummyService"]["state"] == "RUNNING"
+    assert len(reports["DummyService"]["errors"]) == 0
+    assert "boot_time_ms" in reports["DummyService"]
+    
+    assert "FailingService" in reports
+    assert reports["FailingService"]["state"] == "FAILED"
+    assert len(reports["FailingService"]["errors"]) == 1
+    assert "Validation failed" in reports["FailingService"]["errors"][0]
+    
+    mermaid = services.generate_dependency_graph_mermaid()
+    assert "graph TD;" in mermaid
+    assert "DummyService[DummyService];" in mermaid
+    assert "FailingService[FailingService]:::failed;" in mermaid
+    assert "FailingService -->|depends on| DummyService;" in mermaid

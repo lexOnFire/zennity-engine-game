@@ -118,15 +118,22 @@ class EngineServices:
         if context and not hasattr(context, "diagnostics"):
             context = None # Fallback safety
             
-        if context and "service_boot_times" not in context.diagnostics:
-            context.diagnostics["service_boot_times"] = {}
+        if context:
+            if "service_boot_times" not in context.diagnostics:
+                context.diagnostics["service_boot_times"] = {}
+            if "health_reports" not in context.diagnostics:
+                context.diagnostics["health_reports"] = {}
+            if "service_errors" not in context.diagnostics:
+                context.diagnostics["service_errors"] = []
             
         sorted_types = self._topological_sort_services()
         
         for service_type in sorted_types:
             service = self._services[service_type]
+            service_name = service_type.__name__
             if service.state == ServiceState.REGISTERED:
                 t_start = time.perf_counter()
+                errors = []
                 
                 try:
                     service.initialize()
@@ -134,22 +141,28 @@ class EngineServices:
                     
                     if not service.validate():
                         service.state = ServiceState.FAILED
+                        msg = f"Validation failed for service: {service_name}"
+                        errors.append(msg)
                         if context:
-                            context.diagnostics.setdefault("service_errors", []).append(
-                                f"Validation failed for service: {service_type.__name__}"
-                            )
+                            context.diagnostics["service_errors"].append(msg)
                     else:
                         service.state = ServiceState.RUNNING
                         
                 except Exception as e:
                     service.state = ServiceState.FAILED
+                    msg = f"Exception initializing service {service_name}: {str(e)}"
+                    errors.append(msg)
                     if context:
-                        context.diagnostics.setdefault("service_errors", []).append(
-                            f"Exception initializing service {service_type.__name__}: {str(e)}"
-                        )
+                        context.diagnostics["service_errors"].append(msg)
                         
+                boot_time = time.perf_counter() - t_start
                 if context:
-                    context.diagnostics["service_boot_times"][service_type.__name__] = time.perf_counter() - t_start
+                    context.diagnostics["service_boot_times"][service_name] = boot_time
+                    context.diagnostics["health_reports"][service_name] = {
+                        "state": service.state.name,
+                        "boot_time_ms": boot_time * 1000.0,
+                        "errors": errors
+                    }
             
     def shutdown_all(self) -> None:
         """Shuts down all services in reverse registration (or dependency) order."""
@@ -169,3 +182,21 @@ class EngineServices:
     def clear(self) -> None:
         """Clears all registered services."""
         self._services.clear()
+        
+    def generate_dependency_graph_mermaid(self) -> str:
+        """Generates a Mermaid JS graph of service dependencies."""
+        lines = ["graph TD;"]
+        
+        for sType, svc in self._services.items():
+            s_name = sType.__name__
+            if svc.state == ServiceState.FAILED:
+                lines.append(f"    {s_name}[{s_name}]:::failed;")
+            else:
+                lines.append(f"    {s_name}[{s_name}];")
+                
+            for dep in svc.depends_on:
+                dep_name = dep.__name__
+                lines.append(f"    {s_name} -->|depends on| {dep_name};")
+                
+        lines.append("    classDef failed fill:#ffcccc,stroke:#ff0000,stroke-width:2px;")
+        return "\n".join(lines)
