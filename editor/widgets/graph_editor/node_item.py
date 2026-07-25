@@ -113,3 +113,24 @@ class GraphNodeItem(QGraphicsRectItem):
         elif change == QGraphicsItem.ItemSelectedHasChanged:
             self.setPen(QPen(QColor("#f2f4f8") if self.isSelected() else QColor("#515662"), 1.8 if self.isSelected() else 1.2))
         return result
+
+    def record_execution(self) -> None:
+        """Registra a execução do nó e ajusta a cor térmica do Heat Map (Azul -> Verde -> Amarelo -> Vermelho)."""
+        if not hasattr(self, "execution_count"):
+            self.execution_count = 0
+        self.execution_count += 1
+
+        # Gradiente térmico baseado no número de execuções
+        if self.execution_count > 100:
+            heat_color = QColor("#ff4d4d")  # Vermelho (Gargalo / Quente)
+        elif self.execution_count > 50:
+            heat_color = QColor("#ff9933")  # Laranja
+        elif self.execution_count > 20:
+            heat_color = QColor("#ffe600")  # Amarelo
+        elif self.execution_count > 5:
+            heat_color = QColor("#50c878")  # Verde
+        else:
+            heat_color = QColor("#4c9aff")  # Azul (Frio)
+
+        self.setPen(QPen(heat_color, 2.5))
+        self.header.setBrush(QBrush(heat_color.darker(160)))
