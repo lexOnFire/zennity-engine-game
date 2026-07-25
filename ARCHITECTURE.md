@@ -927,3 +927,65 @@ Reparent valida ciclos com `can_reparent(...)`. Delete reversível remove o obje
 ### Limites
 
 Esta fase não implementa Project Browser avançado, nova Scene View, nova UX do Inspector, Build Pipeline ou sistemas de Runtime.
+
+---
+
+## Plataforma Unificada de Animação & Track Framework
+
+A **Plataforma de Animação da Zennity Engine** é um sistema desacoplado, extensível por plugins e guiado por metadados (*Data-Driven*).
+
+### 1. Diagrama de Dependências de Serviços
+
+```mermaid
+graph TD
+    EB["EngineBootstrap"] --> AP["AnimationProvider"]
+    AP --> ES["EngineServices"]
+    AP --> MM["MetadataManager"]
+    
+    ES --> APS["AnimationPlayerService (IService)"]
+    MM --> ClipDef["AnimationClipDefinition (.zanim)"]
+    MM --> AnimDef["AnimatorDefinition (.zanimator)"]
+    MM --> TrackDef["TrackDefinition (Transform/Sprite/Audio/Event/Property)"]
+    MM --> PrevDef["PreviewDefinition (AnimationPreviewProvider)"]
+```
+
+### 2. Fluxo do Asset Pipeline
+
+```mermaid
+graph LR
+    Disk[".zanim / .zanimator no Disco"] --> Importer["AssetImporter"]
+    Importer --> Meta[".meta + SHA-256 Hash"]
+    Importer --> ADB["AssetDatabase (IService)"]
+    ADB --> GUID["AssetHandle (GUID Imutável)"]
+    GUID --> RAM["RuntimeAssetManager (RefCounting)"]
+```
+
+### 3. Ciclo de Vida do Runtime de Animação
+
+```mermaid
+graph TD
+    Update["Engine Tick / Play Mode"] --> APS["AnimationPlayerService.update(dt)"]
+    APS --> Playback["TrackPlaybackState (PLAYING)"]
+    Playback --> Tracks["AnimationTrack.sample(t, target)"]
+    
+    Tracks --> T1["TransformTrack"]
+    Tracks --> T2["SpriteTrack"]
+    Tracks --> T3["AudioTrack"]
+    Tracks --> T4["EventTrack (EventBus)"]
+    Tracks --> T5["PropertyTrack"]
+    
+    ReimportEvent["AssetReimportedEvent"] -.->|Hot Reload| APS
+```
+
+### 4. Relação entre Metadata, Plugins e Graph Framework
+
+```mermaid
+graph TD
+    Plugin["Plugin de Animação de Terceiros"] --> MM["MetadataManager"]
+    MM --> GraphNode["NodeDefinition (Animator States & Blend Trees)"]
+    MM --> TrackDef["TrackDefinition (Custom Track)"]
+    MM --> PrevDef["PreviewDefinition (Custom Preview)"]
+    
+    GraphNode --> GraphFramework["Graph Framework Oficial"]
+    GraphFramework --> Animator["Animator Controller (.zanimator)"]
+```
