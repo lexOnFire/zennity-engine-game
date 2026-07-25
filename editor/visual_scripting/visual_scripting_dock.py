@@ -6,13 +6,12 @@ from editor.widgets.generic_graph_editor import GenericGraphEditorWidget
 
 
 class VisualScriptingEditorDock(QDockWidget):
-    """Dock do Editor de Scripting Visual completo (Logic Graph Editor com Conexões, Blackboard, Receitas e Nós)."""
+    """Dock do Editor de Scripting Visual construído como 4ª especialização do GenericGraphEditorWidget."""
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__("⚡ Visual Scripting Editor", parent)
         self.setObjectName("VisualScriptingEditorDock")
 
-        # Instancia o Editor Completo de Grafos de Lógica Visual (LogicGraphEditor)
-        from editor.widgets.logic_graph_editor import LogicGraphEditor
-        self.graph_editor = LogicGraphEditor(parent=self)
+        # Instancia o Editor Genérico filtrado para a categoria "Visual Scripting"
+        self.graph_editor = GenericGraphEditorWidget(graph_category_filter="Visual Scripting", parent=self)
         self.setWidget(self.graph_editor)

@@ -271,8 +271,6 @@ class LogicGraphCanvasMixin:
         if origin is None:
             return
         if target is None or target is origin:
-            # Soltou no espaço vazio: abre o menu contextual Drag-to-Spawn
-            self._spawn_node_menu_from_connection(origin, scene_position)
             self.cancel_connection()
             return
         if not self._ports_compatible(origin, target):
@@ -458,69 +456,4 @@ class LogicGraphCanvasMixin:
         self._autosave()
         self.debug_command.emit("sync")
         self.message.emit("INFO", f"Breakpoint {'adicionado' if enabled else 'removido'}: {item.node.get('title', item.node_id)}")
-
-    def _spawn_node_menu_from_connection(self, origin: LogicPortItem, scene_position: QPointF) -> None:
-        """Abre menu de criação rápida de nó inteligente conectando à porta de origem."""
-        try:
-            from PySide6.QtWidgets import QMenu
-            menu = QMenu(self)
-            menu.setTitle(f"Criar nó conectado ({origin.name} : {origin.data_type})")
-
-            def add_node_type(ntype: str):
-                node = self.add_node(ntype, [scene_position.x(), scene_position.y()])
-                node_item = self.node_items.get(node["id"])
-                if node_item:
-                    # Tenta conectar automaticamente
-                    if origin.direction == "output":
-                        for target_name, target_port in node_item.input_ports.items():
-                            if target_port.data_type == origin.data_type or "any" in {target_port.data_type, origin.data_type}:
-                                self.graph["edges"].append({
-                                    "id": uuid.uuid4().hex,
-                                    "from_node": origin.node.node_id,
-                                    "from_port": origin.name,
-                                    "to_node": node_item.node_id,
-                                    "to_port": target_name,
-                                    "kind": origin.data_type,
-                                })
-                                break
-                    else:
-                        for target_name, target_port in node_item.output_ports.items():
-                            if target_port.data_type == origin.data_type or "any" in {target_port.data_type, origin.data_type}:
-                                self.graph["edges"].append({
-                                    "id": uuid.uuid4().hex,
-                                    "from_node": node_item.node_id,
-                                    "from_port": target_name,
-                                    "to_node": origin.node.node_id,
-                                    "to_port": origin.name,
-                                    "kind": origin.data_type,
-                                })
-                                break
-                    self.refresh_connections()
-                    self.mark_dirty()
-
-            # Sugestões inteligentes dependendo do tipo
-            if origin.data_type == "flow":
-                menu.addAction("⚡ Se / Senão (If / Else)", lambda: add_node_type("if_else"))
-                menu.addAction("⚡ Mover Objeto (Move)", lambda: add_node_type("move"))
-                menu.addAction("⚡ Executar Animação (Play Animation)", lambda: add_node_type("play_animation"))
-                menu.addAction("⚡ Tocar Som (Play Sound)", lambda: add_node_type("play_sound"))
-                menu.addAction("⚡ Log de Mensagem", lambda: add_node_type("log_message"))
-            elif origin.data_type == "bool":
-                menu.addAction("🔍 E (AND)", lambda: add_node_type("and"))
-                menu.addAction("🔍 OU (OR)", lambda: add_node_type("or"))
-                menu.addAction("🔍 NÃO (NOT)", lambda: add_node_type("not"))
-                menu.addAction("🔍 Comparar Números", lambda: add_node_type("compare_number"))
-            elif origin.data_type == "number":
-                menu.addAction("🔢 Somar (+)", lambda: add_node_type("add_number"))
-                menu.addAction("🔢 Subtrair (-)", lambda: add_node_type("subtract_number"))
-                menu.addAction("🔢 Multiplicar (*)", lambda: add_node_type("multiply_number"))
-                menu.addAction("🔢 Restringir (Clamp)", lambda: add_node_type("clamp_number"))
-            else:
-                menu.addAction("⚡ Mover", lambda: add_node_type("move"))
-                menu.addAction("⚡ Log", lambda: add_node_type("log_message"))
-
-            screen_pos = self.view.mapToGlobal(self.view.mapFromScene(scene_position))
-            menu.exec(screen_pos)
-        except Exception as exc:
-            print(f"[LogicGraphCanvas] Drag-to-spawn menu: {exc}")
 

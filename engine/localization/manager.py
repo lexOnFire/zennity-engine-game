@@ -99,11 +99,8 @@ class LocalizationManager(IService):
                 pass
         return text
 
-def tr(key: str, default: str | None = None, **kwargs) -> str:
+def tr(key: str, **kwargs) -> str:
     global _active_manager
     if _active_manager:
-        res = _active_manager.translate(key, **kwargs)
-        if res == key and default is not None:
-            return default
-        return res
-    return default if default is not None else key
+        return _active_manager.translate(key, **kwargs)
+    return key
