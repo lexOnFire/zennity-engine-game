@@ -9,7 +9,7 @@ Implementa o layout profissional completo de 4 áreas + Mini Live Viewport:
 """
 from __future__ import annotations
 from typing import Optional
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
     QLineEdit, QSplitter, QTabWidget, QTextEdit,

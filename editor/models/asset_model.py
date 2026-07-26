@@ -1,6 +1,6 @@
 import os
 from PySide6.QtWidgets import QFileSystemModel
-from PySide6.QtCore import QDir
+from PySide6.QtCore import QDir, Qt
 
 
 class AssetModel(QFileSystemModel):
@@ -33,3 +33,26 @@ class AssetModel(QFileSystemModel):
     def get_assets_root_path(self) -> str:
         """Retorna o caminho absoluto do diretório Assets do projeto."""
         return self.rootPath()
+
+    def data(self, index, role: int = Qt.ItemDataRole.DisplayRole):
+        """Sobrescreve a renderização de dados para fornecer Thumbnails dinâmicas."""
+        if not index.isValid():
+            return None
+
+        if role == Qt.ItemDataRole.DecorationRole:
+            path = self.filePath(index)
+            if self.isDir(index):
+                return super().data(index, role)
+
+            ext = os.path.splitext(path)[1].lower()
+            if ext in [".png", ".jpg", ".tga"]:
+                # Aqui usaríamos um sistema de cache otimizado (lru_cache) em produção
+                # Para simplificar na implementação inicial, carregamos diretamente
+                from PySide6.QtGui import QPixmap, QIcon
+                pixmap = QPixmap(path)
+                if not pixmap.isNull():
+                    # Escala mantendo proporção para melhor UX
+                    scaled = pixmap.scaled(64, 64, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                    return QIcon(scaled)
+
+        return super().data(index, role)

@@ -98,6 +98,8 @@ class AssetBrowserDock(QDockWidget):
         self.list_files.setGridSize(QSize(95, 95))
         self.list_files.setIconSize(QSize(48, 48))
         self.list_files.setWordWrap(True)
+        self.list_files.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.list_files.customContextMenuRequested.connect(self.on_context_menu_requested)
         self.list_files.clicked.connect(self.on_file_list_clicked)
         self.list_files.doubleClicked.connect(self.on_file_list_double_clicked)
         splitter.addWidget(self.list_files)
@@ -212,6 +214,31 @@ class AssetBrowserDock(QDockWidget):
     # ──────────────────────────────────────────────────────────────────────────
     # FASE UX ASSET BROWSER: Favoritos & Filtros por Categoria API
     # ──────────────────────────────────────────────────────────────────────────
+
+    @Slot(object)
+    def on_context_menu_requested(self, pos) -> None:
+        index = self.list_files.indexAt(pos)
+        if not index.isValid():
+            return
+        
+        from PySide6.QtWidgets import QMenu
+        menu = QMenu(self)
+        
+        rename_action = menu.addAction("Renomear Seguro")
+        is_fav = self.model.filePath(index) in self.favorites
+        fav_action = menu.addAction("Remover dos Favoritos" if is_fav else "Adicionar aos Favoritos")
+        reimport_action = menu.addAction("Reimportar")
+        
+        action = menu.exec(self.list_files.viewport().mapToGlobal(pos))
+        
+        if action == rename_action:
+            self.list_files.edit(index)
+        elif action == fav_action:
+            self.toggle_favorite(self.model.filePath(index))
+            self.model.layoutChanged.emit()
+        elif action == reimport_action:
+            import logging
+            logging.info(f"Reimportando: {self.model.filePath(index)}")
 
     def toggle_favorite(self, file_path: str) -> bool:
         """Adiciona ou remove um arquivo dos favoritos."""
