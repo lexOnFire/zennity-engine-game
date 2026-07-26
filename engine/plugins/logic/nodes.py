@@ -408,3 +408,212 @@ class LogicDestroyNode: pass
     outputs=[PinDefinition("exec", PinType.EXEC)]
 )
 class LogicSetUITextNode: pass
+
+
+# ── 12. NODOS COMPLEMENTARES (usados pelos Example Graphs) ──────────────────
+
+@register_node(
+    id="logic.math.compare",
+    name="Compare",
+    category="Math",
+    description="Compares two numbers with a given operator (==, !=, <, >, <=, >=).",
+    tags=["compare", "comparar", "maior", "menor", "igual", "condicao", "if"],
+    color="#e07a5f",
+    inputs=[
+        PinDefinition("a",        PinType.FLOAT, "A"),
+        PinDefinition("b",        PinType.FLOAT, "B", default_value=0.0),
+        PinDefinition("operator", PinType.STRING, "Op",  default_value="<="),
+    ],
+    outputs=[PinDefinition("result", PinType.BOOL, "Result")]
+)
+class LogicMathCompareNode: pass
+
+@register_node(
+    id="logic.math.distance",
+    name="Distance",
+    category="Math",
+    description="Calculates the distance between two objects or positions.",
+    tags=["distance", "distancia", "range", "alcance", "length"],
+    color="#e07a5f",
+    inputs=[
+        PinDefinition("exec", PinType.EXEC),
+        PinDefinition("a",    PinType.OBJECT, "From"),
+        PinDefinition("b",    PinType.OBJECT, "To"),
+    ],
+    outputs=[
+        PinDefinition("exec",   PinType.EXEC),
+        PinDefinition("result", PinType.FLOAT, "Distance"),
+    ]
+)
+class LogicMathDistanceNode: pass
+
+@register_node(
+    id="logic.math.subtract",
+    name="Subtract",
+    category="Math",
+    description="Subtracts B from A (A - B).",
+    tags=["subtract", "subtrair", "minus", "menos", "reduzir"],
+    color="#e07a5f",
+    inputs=[
+        PinDefinition("a", PinType.FLOAT, "A"),
+        PinDefinition("b", PinType.FLOAT, "B", default_value=0.0),
+    ],
+    outputs=[PinDefinition("result", PinType.FLOAT, "Result")]
+)
+class LogicMathSubtractNode: pass
+
+@register_node(
+    id="logic.movement.set_velocity",
+    name="Set Velocity",
+    category="Movement",
+    description="Directly sets the velocity of the object's Rigidbody.",
+    tags=["velocity", "velocidade", "set", "definir", "mover", "speed", "rigidbody"],
+    color="#4c9aff",
+    inputs=[
+        PinDefinition("exec", PinType.EXEC),
+        PinDefinition("x",    PinType.FLOAT, "X", default_value=0.0),
+        PinDefinition("y",    PinType.FLOAT, "Y", default_value=0.0),
+    ],
+    outputs=[PinDefinition("exec", PinType.EXEC)]
+)
+class LogicSetVelocityNode: pass
+
+@register_node(
+    id="logic.physics.get_velocity",
+    name="Get Velocity",
+    category="Physics",
+    description="Returns the current velocity vector of the Rigidbody.",
+    tags=["velocity", "velocidade", "get", "obter", "speed", "rigidbody"],
+    color="#f4a460",
+    inputs=[PinDefinition("exec", PinType.EXEC)],
+    outputs=[
+        PinDefinition("exec", PinType.EXEC),
+        PinDefinition("x",    PinType.FLOAT, "X"),
+        PinDefinition("y",    PinType.FLOAT, "Y"),
+    ]
+)
+class LogicGetVelocityNode: pass
+
+@register_node(
+    id="logic.transform.get_pos",
+    name="Get Position",
+    category="Transform",
+    description="Returns the current world position of this object.",
+    tags=["position", "posicao", "get", "obter", "transform", "location", "coord"],
+    color="#3fb6a8",
+    inputs=[PinDefinition("exec", PinType.EXEC)],
+    outputs=[
+        PinDefinition("exec",  PinType.EXEC),
+        PinDefinition("value", PinType.VECTOR2, "Position"),
+    ]
+)
+class LogicGetPositionNode: pass
+
+@register_node(
+    id="logic.transform.set_pos",
+    name="Set Position",
+    category="Transform",
+    description="Teleports the object to the given world position.",
+    tags=["position", "posicao", "set", "definir", "transform", "teleport", "mover"],
+    color="#3fb6a8",
+    inputs=[
+        PinDefinition("exec",  PinType.EXEC),
+        PinDefinition("value", PinType.VECTOR2, "Position"),
+    ],
+    outputs=[PinDefinition("exec", PinType.EXEC)]
+)
+class LogicSetPositionNode: pass
+
+@register_node(
+    id="logic.ai.chase",
+    name="AI Chase",
+    category="AI",
+    description="Makes the AI character follow the target at a given speed.",
+    tags=["chase", "perseguir", "follow", "seguir", "ai", "ia", "target", "enemy"],
+    color="#cf6679",
+    inputs=[
+        PinDefinition("exec",  PinType.EXEC),
+        PinDefinition("speed", PinType.FLOAT, "Speed", default_value=3.5),
+    ],
+    outputs=[PinDefinition("exec", PinType.EXEC)]
+)
+class LogicAIChaseNode: pass
+
+@register_node(
+    id="logic.ai.patrol",
+    name="AI Patrol",
+    category="AI",
+    description="Makes the AI walk a patrol route between waypoints.",
+    tags=["patrol", "patrulha", "waypoint", "ai", "ia", "idle", "andar"],
+    color="#cf6679",
+    inputs=[
+        PinDefinition("exec",  PinType.EXEC),
+        PinDefinition("speed", PinType.FLOAT, "Speed", default_value=1.5),
+    ],
+    outputs=[PinDefinition("exec", PinType.EXEC)]
+)
+class LogicAIPatrolNode: pass
+
+@register_node(
+    id="logic.ai.attack",
+    name="AI Attack",
+    category="AI",
+    description="Triggers the AI's attack behavior against the current target.",
+    tags=["attack", "atacar", "hit", "combat", "combate", "ai", "ia", "dano", "damage"],
+    color="#cf6679",
+    inputs=[
+        PinDefinition("exec",   PinType.EXEC),
+        PinDefinition("damage", PinType.FLOAT, "Damage", default_value=10.0),
+    ],
+    outputs=[PinDefinition("exec", PinType.EXEC)]
+)
+class LogicAIAttackNode: pass
+
+@register_node(
+    id="logic.scene.load",
+    name="Load Scene",
+    category="Objects",
+    description="Loads a named scene (Game Over, Main Menu, Level 2, etc.).",
+    tags=["scene", "cena", "load", "carregar", "level", "fase", "gameover", "menu", "transicao"],
+    color="#16a085",
+    inputs=[
+        PinDefinition("exec",       PinType.EXEC),
+        PinDefinition("scene_name", PinType.STRING, "Scene", default_value="GameOver"),
+    ],
+    outputs=[PinDefinition("exec", PinType.EXEC)]
+)
+class LogicLoadSceneNode: pass
+
+@register_node(
+    id="logic.objects.find",
+    name="Find Object by Tag",
+    category="Objects",
+    description="Finds the first object in the scene with the given tag.",
+    tags=["find", "encontrar", "buscar", "tag", "object", "objeto", "search", "player", "enemy"],
+    color="#16a085",
+    inputs=[
+        PinDefinition("exec", PinType.EXEC),
+        PinDefinition("tag",  PinType.STRING, "Tag", default_value="Player"),
+    ],
+    outputs=[
+        PinDefinition("exec",   PinType.EXEC),
+        PinDefinition("result", PinType.OBJECT, "Object"),
+    ]
+)
+class LogicFindObjectNode: pass
+
+@register_node(
+    id="logic.ui.set_progress_bar",
+    name="Set Progress Bar",
+    category="UI",
+    description="Sets the fill value of a UI progress bar (0.0 – 1.0).",
+    tags=["progress", "bar", "barra", "progresso", "hp", "vida", "stamina", "ui", "hud", "fill"],
+    color="#d35400",
+    inputs=[
+        PinDefinition("exec",       PinType.EXEC),
+        PinDefinition("element_id", PinType.STRING, "Element", default_value="HP_Bar"),
+        PinDefinition("value",      PinType.FLOAT,  "Value (0–1)", default_value=1.0),
+    ],
+    outputs=[PinDefinition("exec", PinType.EXEC)]
+)
+class LogicSetProgressBarNode: pass
