@@ -18,6 +18,7 @@ from editor.widgets.logic_graph.items import (
 from editor.widgets.logic_graph.views import LogicGraphView, LogicMiniMapView
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPainterPathStroker, QPen, QBrush
 from PySide6.QtWidgets import (
+    QApplication,
     QCheckBox,
     QFileDialog,
     QFrame,
@@ -73,6 +74,7 @@ from editor.widgets.logic_graph.definitions import (
 )
 
 class LogicGraphCanvasMixin:
+    _clipboard_mime = "application/x-zennity-logic-selection"
     def refresh_connections(self) -> None:
         if not hasattr(self, "scene"):
             return
@@ -271,7 +273,7 @@ class LogicGraphCanvasMixin:
         if origin is None:
             return
         if target is None or target is origin:
-            self.cancel_connection()
+            self._create_node_from_connection(origin, scene_position)
             return
         if not self._ports_compatible(origin, target):
             self.message.emit("WARNING", "Portas incompatíveis: conecte fluxo com fluxo e valores do mesmo tipo")
@@ -307,6 +309,38 @@ class LogicGraphCanvasMixin:
         self.refresh_connections()
         self.mark_dirty()
         self._update_validation()
+
+    def _create_node_from_connection(self, origin: LogicPortItem, position: QPointF) -> None:
+        """Offer compatible nodes when a wire is released on empty canvas."""
+        direction = "input" if origin.direction == "output" else "output"
+        choices: list[tuple[str, str, str]] = []
+        for node_type, definition in NODE_DEFINITIONS.items():
+            ports = node_port_definitions({"type": node_type, "properties": definition.get("properties", {})})
+            for port_name, data_type in ports.get(f"{direction}s", []):
+                if data_type == origin.data_type or "any" in {data_type, origin.data_type}:
+                    label = f"{definition.get('title', node_type)} — {port_name} ({data_type})"
+                    choices.append((label, node_type, port_name))
+        choices.sort(key=lambda value: value[0].casefold())
+        if not choices:
+            self.cancel_connection()
+            return
+        selected, accepted = QInputDialog.getItem(
+            self, "Criar e conectar", "Nó compatível:", [item[0] for item in choices], 0, False
+        )
+        if not accepted:
+            self.cancel_connection()
+            return
+        _label, node_type, port_name = next(item for item in choices if item[0] == selected)
+        node = create_logic_node(node_type, (position.x(), position.y()))
+        self.graph["nodes"].append(node)
+        item = self._create_node_item(node)
+        target = (
+            item.input_ports.get(port_name)
+            if origin.direction == "output"
+            else item.output_ports.get(port_name)
+        )
+        self._connection_candidate = target
+        self.finish_connection(target.scene_position() if target is not None else position)
 
     def cancel_connection(self, refresh: bool = True) -> None:
         if self._connection_preview is not None and self._connection_preview.scene() is self.scene:
@@ -419,6 +453,71 @@ class LogicGraphCanvasMixin:
         self.refresh_connections()
         self.mark_dirty()
         self._update_validation()
+
+    def copy_selected(self) -> bool:
+        selected = [item for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)]
+        if not selected:
+            return False
+        selected_ids = {item.node_id for item in selected}
+        nodes = [deepcopy(item.node) for item in selected]
+        edges = [
+            deepcopy(edge) for edge in self.graph["edges"]
+            if edge["from_node"] in selected_ids and edge["to_node"] in selected_ids
+        ]
+        payload = {"format": "zennity.logic.selection", "version": 1, "nodes": nodes, "edges": edges}
+        text = json.dumps(payload, ensure_ascii=False)
+        QApplication.clipboard().setText(text)
+        self._logic_clipboard = payload
+        self.message.emit("INFO", f"{len(nodes)} nó(s) copiado(s)")
+        return True
+
+    def cut_selected(self) -> None:
+        if self.copy_selected():
+            self.delete_selected()
+
+    def paste_selected(self) -> bool:
+        payload = getattr(self, "_logic_clipboard", None)
+        try:
+            system_payload = json.loads(QApplication.clipboard().text())
+            if system_payload.get("format") == "zennity.logic.selection":
+                payload = system_payload
+        except (AttributeError, TypeError, json.JSONDecodeError):
+            pass
+        if not isinstance(payload, dict) or not payload.get("nodes"):
+            return False
+        center = self.view.mapToScene(self.view.viewport().rect().center())
+        nodes = deepcopy(payload["nodes"])
+        min_x = min(float(node.get("position", [0.0, 0.0])[0]) for node in nodes)
+        min_y = min(float(node.get("position", [0.0, 0.0])[1]) for node in nodes)
+        id_map: dict[str, str] = {}
+        for node in nodes:
+            old_id = str(node["id"])
+            id_map[old_id] = uuid.uuid4().hex
+            node["id"] = id_map[old_id]
+            position = node.get("position", [0.0, 0.0])
+            node["position"] = [
+                center.x() + float(position[0]) - min_x + 24.0,
+                center.y() + float(position[1]) - min_y + 24.0,
+            ]
+        edges = []
+        for source in payload.get("edges", []):
+            if source.get("from_node") not in id_map or source.get("to_node") not in id_map:
+                continue
+            edge = deepcopy(source)
+            edge["id"] = uuid.uuid4().hex
+            edge["from_node"] = id_map[edge["from_node"]]
+            edge["to_node"] = id_map[edge["to_node"]]
+            edges.append(edge)
+        self.scene.clearSelection()
+        self.graph["nodes"].extend(nodes)
+        self.graph["edges"].extend(edges)
+        for node in nodes:
+            self._create_node_item(node).setSelected(True)
+        self.refresh_connections()
+        self.mark_dirty()
+        self._update_validation()
+        self.message.emit("INFO", f"{len(nodes)} nó(s) colado(s)")
+        return True
 
     def toggle_selected_breakpoint(self) -> None:
         selected = [item for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)]

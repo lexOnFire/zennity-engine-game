@@ -68,6 +68,27 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
         "outputs": [("next", "flow")],
         "properties": {"interval": 1.0, "repeat": True},
     },
+    "if_else": {
+        "title": "Se / Senão",
+        "category": "Lógica",
+        "inputs": [("in", "flow"), ("condition", "bool")],
+        "outputs": [("true", "flow"), ("false", "flow")],
+        "properties": {"condition": True},
+    },
+    "set_position": {
+        "title": "Definir Posição",
+        "category": "Posição",
+        "inputs": [("in", "flow"), ("x", "number"), ("y", "number"), ("target", "object")],
+        "outputs": [("next", "flow")],
+        "properties": {"x": 0.0, "y": 0.0},
+    },
+    "log_message": {
+        "title": "Mensagem no Console",
+        "category": "Ação",
+        "inputs": [("in", "flow"), ("message", "text")],
+        "outputs": [("next", "flow")],
+        "properties": {"message": "Hello Zennity!"},
+    },
     "move_x": {
         "title": "Mover X",
         "category": "Movimento",

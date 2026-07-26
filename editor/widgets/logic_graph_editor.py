@@ -65,6 +65,7 @@ from engine.logic.graph_asset import (
 from engine.logic.blackboard import coerce_variable_value, save_blackboard_asset
 from engine.logic.code_preview import node_code_preview
 from engine.logic.recipes import build_logic_recipe, find_logic_recipes, logic_recipe
+from engine.logic.graph_templates import GRAPH_TEMPLATES, build_logic_template
 from engine.prefabs.prefab_asset import load_prefab_asset, resolve_prefab_parameters
 
 

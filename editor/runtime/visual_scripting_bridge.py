@@ -17,14 +17,15 @@ from pathlib import Path
 from typing import Any
 
 
-class VisualScriptingBridge:
-    """Integra VisualScriptingEditorDock ao Editor Framework 2.0."""
+class VisualLogicBridge:
+    """Single bridge owner for the Visual Logic hub and all graph modes."""
 
     def __init__(self, editor_context: Any) -> None:
         self._ctx = editor_context
         self._dock: Any = None
         self._current_document: Any = None
         self._reactive_bridge: Any = None
+        self._mode_bridges: dict[str, Any] = {}
 
         # Registra a ferramenta no ToolRegistry
         self._register_tool()
@@ -41,6 +42,23 @@ class VisualScriptingBridge:
 
     def attach_reactive_bridge(self, reactive_bridge: Any) -> None:
         self._reactive_bridge = reactive_bridge
+
+    def mode_bridge(self, tool_id: str) -> Any:
+        """Return the typed adapter owned by this bridge for a hub tab."""
+        key = str(tool_id)
+        if key in self._mode_bridges:
+            return self._mode_bridges[key]
+        from editor.runtime.graph_editor_bridge import GraphEditorBridge
+        from editor.workspace.document_framework import DocumentType
+        configs = {
+            "behavior_tree": (DocumentType.BEHAVIOR_TREE, "bt"),
+            "dialogue": (DocumentType.DIALOGUE, "dlg"),
+            "material_graph": (DocumentType.MATERIAL, "mat"),
+        }
+        document_type, prefix = configs[key]
+        bridge = GraphEditorBridge(self._ctx, key, document_type, prefix)
+        self._mode_bridges[key] = bridge
+        return bridge
 
     # ── Tool Registry ──────────────────────────────────────────────────────────
 
@@ -206,3 +224,9 @@ class VisualScriptingBridge:
                 graph_editor.execute()
         except Exception:
             pass
+
+
+# Public compatibility name for extensions built against the pre-consolidation API.
+VisualScriptingBridge = VisualLogicBridge
+
+__all__ = ["VisualLogicBridge", "VisualScriptingBridge"]

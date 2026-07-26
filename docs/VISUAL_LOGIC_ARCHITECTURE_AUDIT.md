@@ -236,32 +236,48 @@ must be migrated to `.zlogic` before deletion; no silent converter currently exi
 7. **Tests preserve compatibility — medium:** several tests assert Sprint-era public
    class names. Migration must update contracts rather than merely add aliases.
 
+## Post-audit implementation update
+
+The authoring and migration pass completed after this audit added:
+
+- six guided templates for empty, 2D movement, platformer, enemy patrol,
+  interaction and HUD graphs;
+- contextual compatible-node creation when a connection is released on empty
+  canvas;
+- real copy, cut and paste of nodes with internal connections;
+- crash recovery snapshots and `.bak` protection before overwriting assets;
+- direct import/migration of `.zscriptgraph` and `.zvs` into canonical `.zlogic`;
+- canonical definitions for `if_else`, `set_position` and `log_message`, whose
+  executors already existed in the runtime;
+- one active `VisualLogicBridge` owning all graph-mode adapters.
+
+The pre-consolidation `VisualScriptingBridge` name is now an alias to the same
+class, not a parallel implementation. `graph_bridges.py` remains a compatibility
+surface for external pre-v1 imports and is no longer used by the orchestrator.
+
 ## Consolidation score
 
-**74 / 100**
+**88 / 100**
 
 Rationale:
 
 - Entry point, document lifecycle, active workspace and production Logic runtime are
   singular and verified.
 - Seven dead/invalid modules were removed.
-- The remaining gap is not dead code; it is an active schema/canvas/runtime split.
-- A score above 90 requires asset conversion, a shared canvas protocol, one typed
-  bridge and execution parity tests between authoring and runtime.
+- Legacy Visual Script assets now have an explicit conversion path.
+- The graph hub now has one active bridge owner.
+- The remaining gap is the specialized Logic canvas versus the generic metadata
+  canvas and interpreter-versus-compiler execution parity.
+- A score above 90 requires a shared canvas protocol and execution parity tests
+  between compiled and interpreted Logic graphs.
 
 ## Required next migration sequence
 
-1. Define a versioned `VisualLogicDocument` envelope that can read `.zlogic`,
-   `.zscriptgraph` and generic graph documents without losing node IDs.
-2. Move the five `vs.*` definitions into the canonical Logic node catalog and ship an
-   explicit asset converter.
-3. Define shared canvas/node/port/edge protocols; port Logic-only behavior behind
+1. Define shared canvas/node/port/edge protocols; port Logic-only behavior behind
    capabilities.
-4. Make `GraphCompiler` compile canonical `.zlogic` into instructions with parity
+2. Make `GraphCompiler` compile canonical `.zlogic` into instructions with parity
    tests against `LogicGraphRuntime`.
-5. Make `VisualLogicRuntime` the only runtime facade and keep the existing runtime as
+3. Make `VisualLogicRuntime` the only runtime facade and keep the existing runtime as
    its interpreter backend until compiler parity reaches 100%.
-6. Merge all graph bridge factories into one `VisualLogicBridge`.
-7. Remove `engine.scripting`, the typed legacy importer, redundant command palette,
+4. Remove `engine.scripting`, the compatibility bridge factories, redundant command palette,
    unused workspace session and generic debugger after import scans and full tests.
-

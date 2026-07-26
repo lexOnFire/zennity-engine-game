@@ -94,27 +94,24 @@ class EditorBridgeOrchestrator:
             self.animation.attach_dock(animation_dock)
 
         # 3. Visual Scripting Bridge
-        from editor.runtime.visual_scripting_bridge import VisualScriptingBridge
-        self.visual_scripting = VisualScriptingBridge(self._ctx)
+        from editor.runtime.visual_scripting_bridge import VisualLogicBridge
+        self.visual_scripting = VisualLogicBridge(self._ctx)
         self.visual_scripting.attach_reactive_bridge(self.reactive)
         if visual_scripting_dock:
             self.visual_scripting.attach_dock(visual_scripting_dock)
 
         # 4. Behavior Tree Bridge (Sprint 4c)
-        from editor.runtime.graph_bridges import BehaviorTreeBridge
-        self.behavior_tree = BehaviorTreeBridge(self._ctx)
+        self.behavior_tree = self.visual_scripting.mode_bridge("behavior_tree")
         if behavior_tree_dock:
             self.behavior_tree.attach_dock(behavior_tree_dock)
 
         # 5. Dialogue Bridge (Sprint 4c)
-        from editor.runtime.graph_bridges import DialogueBridge
-        self.dialogue = DialogueBridge(self._ctx)
+        self.dialogue = self.visual_scripting.mode_bridge("dialogue")
         if dialogue_dock:
             self.dialogue.attach_dock(dialogue_dock)
 
         # 6. Material Graph Bridge (Sprint 4c)
-        from editor.runtime.graph_bridges import MaterialGraphBridge
-        self.material_graph = MaterialGraphBridge(self._ctx)
+        self.material_graph = self.visual_scripting.mode_bridge("material_graph")
         if material_dock:
             self.material_graph.attach_dock(material_dock)
 
@@ -210,4 +207,3 @@ class EditorBridgeOrchestrator:
 
     def activate_build_wizard(self) -> None:
         self.activate("build.wizard")
-

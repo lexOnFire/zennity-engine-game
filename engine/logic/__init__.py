@@ -21,6 +21,7 @@ from .blackboard import BlackboardStore
 from .event_bus import LogicEventBus
 from .recipes import LOGIC_RECIPES, build_logic_recipe, find_logic_recipes, logic_recipe
 from .code_preview import node_code_preview
+from .graph_templates import GRAPH_TEMPLATES, build_logic_template
 
 __all__ = [
     "LOGIC_GRAPH_FORMAT",
@@ -45,4 +46,6 @@ __all__ = [
     "find_logic_recipes",
     "logic_recipe",
     "node_code_preview",
+    "GRAPH_TEMPLATES",
+    "build_logic_template",
 ]

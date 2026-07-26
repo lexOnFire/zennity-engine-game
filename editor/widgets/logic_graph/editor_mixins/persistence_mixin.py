@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import unicodedata
 import uuid
 from copy import deepcopy
@@ -63,6 +64,7 @@ from engine.logic.graph_asset import (
     validate_logic_graph,
 )
 from engine.logic.blackboard import coerce_variable_value, save_blackboard_asset
+from engine.logic.graph_templates import GRAPH_TEMPLATES, build_logic_template
 
 from editor.widgets.logic_graph.definitions import (
     CATEGORY_COLORS,
@@ -144,8 +146,27 @@ class LogicGraphPersistenceMixin:
     def new_graph(self) -> None:
         if not self._confirm_discard():
             return
-        self.set_graph(default_logic_graph())
-        self.message.emit("INFO", "Novo Logic Graph criado")
+        labels = [
+            f"{template['title']} — {template['description']}"
+            for template in GRAPH_TEMPLATES.values()
+        ]
+        selected, accepted = QInputDialog.getItem(
+            self,
+            "Novo Logic Graph",
+            "Escolha um ponto de partida:",
+            labels,
+            0,
+            False,
+        )
+        if not accepted:
+            return
+        template_id = list(GRAPH_TEMPLATES)[labels.index(selected)]
+        graph = build_logic_template(template_id)
+        self.set_graph(graph)
+        self.message.emit(
+            "INFO",
+            f"Novo Logic Graph criado: {GRAPH_TEMPLATES[template_id]['title']}",
+        )
 
     def new_subgraph(self) -> None:
         if not self._confirm_discard():
@@ -174,7 +195,10 @@ class LogicGraphPersistenceMixin:
         if not self._confirm_discard():
             return
         filename, _ = QFileDialog.getOpenFileName(
-            self, "Abrir Logic Graph", str(self.project_root / "Assets" / "Logic"), "Zennity Logic Graph (*.zlogic)"
+            self,
+            "Abrir Logic Graph",
+            str(self.project_root / "Assets" / "Logic"),
+            "Zennity Logic Graph (*.zlogic *.zscriptgraph *.zvs)",
         )
         if filename:
             self.open_path(Path(filename))
@@ -182,7 +206,21 @@ class LogicGraphPersistenceMixin:
     def open_path(self, path: str | Path) -> None:
         try:
             resolved = Path(path).resolve()
-            self.set_graph(load_logic_graph(resolved), resolved)
+            graph = load_logic_graph(resolved)
+            recovery = self._recovery_path(resolved)
+            if recovery.is_file() and recovery.stat().st_mtime > resolved.stat().st_mtime:
+                answer = QMessageBox.question(
+                    self,
+                    "Recuperar alterações?",
+                    "Existe uma versão de recuperação mais recente deste grafo. "
+                    "Deseja restaurá-la?",
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.Yes,
+                )
+                if answer == QMessageBox.Yes:
+                    graph = load_logic_graph(recovery)
+                    self.message.emit("INFO", f"Recuperação restaurada: {resolved.name}")
+            self.set_graph(graph, resolved)
             self.message.emit("INFO", f"Logic Graph aberto: {resolved.name}")
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             self.message.emit("ERROR", f"Não foi possível abrir o Logic Graph: {exc}")
@@ -252,10 +290,12 @@ class LogicGraphPersistenceMixin:
                 return
             path = Path(filename)
         try:
+            self._backup_current_file(Path(path))
             saved = save_logic_graph(path, self.graph_data())
             self._sync_project_blackboard()
             saved_path = Path(path).with_suffix(".zlogic")
             self.set_graph(saved, saved_path)
+            self._remove_recovery(saved_path)
             self.asset_changed.emit()
             self.message.emit("INFO", f"Logic Graph salvo: {saved_path.name}")
         except (OSError, ValueError) as exc:
@@ -302,21 +342,44 @@ class LogicGraphPersistenceMixin:
         if not self._dirty:
             self._dirty = True
             self._update_status()
-        if self.current_path is not None:
-            self._autosave_timer.start()
+        self._autosave_timer.start()
 
     def _autosave(self) -> None:
-        if not self._dirty or self.current_path is None:
+        if not self._dirty:
             return
         try:
+            recovery = self._recovery_path(self.current_path)
+            save_logic_graph(recovery, self.graph_data())
+            if self.current_path is None:
+                self.message.emit("INFO", "Rascunho protegido pela recuperação automática")
+                return
+            self._backup_current_file(self.current_path)
             save_logic_graph(self.current_path, self.graph_data())
             self._sync_project_blackboard()
             self._dirty = False
             self._update_status()
             self.asset_changed.emit()
+            self._remove_recovery(self.current_path)
             self.message.emit("INFO", f"Logic Graph salvo automaticamente: {self.current_path.name}")
         except (OSError, ValueError) as exc:
             self.message.emit("ERROR", f"Falha ao salvar automaticamente o Logic Graph: {exc}")
+
+    def _recovery_path(self, path: Path | None) -> Path:
+        if path is not None:
+            return path.with_name(path.name + ".autosave.zlogic")
+        directory = self.project_root / ".zennity" / "recovery"
+        directory.mkdir(parents=True, exist_ok=True)
+        return directory / "UntitledLogic.autosave.zlogic"
+
+    @staticmethod
+    def _backup_current_file(path: Path) -> None:
+        if path.is_file():
+            shutil.copy2(path, path.with_suffix(path.suffix + ".bak"))
+
+    def _remove_recovery(self, path: Path) -> None:
+        recovery = self._recovery_path(path)
+        if recovery.is_file():
+            recovery.unlink()
 
     def _update_status(self) -> None:
         name = self.current_path.name if self.current_path else str(self.graph.get("name", "NewLogic"))

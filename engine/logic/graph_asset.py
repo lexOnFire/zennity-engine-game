@@ -421,6 +421,9 @@ def load_logic_graph(path: str | Path) -> dict[str, Any]:
     raw = json.loads(graph_path.read_text(encoding="utf-8"))
     if not isinstance(raw, dict):
         raise ValueError("The Logic Graph must contain a JSON object.")
+    from engine.logic.legacy_visual_script import is_legacy_visual_script, migrate_visual_script_graph
+    if is_legacy_visual_script(raw):
+        return migrate_visual_script_graph(raw)
     if raw.get("format", LOGIC_GRAPH_FORMAT) != LOGIC_GRAPH_FORMAT:
         raise ValueError("Unrecognized Logic Graph format.")
     return normalize_logic_graph(raw)

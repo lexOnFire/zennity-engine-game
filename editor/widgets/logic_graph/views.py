@@ -77,6 +77,18 @@ class LogicGraphView(QGraphicsView):
             self.editor.duplicate_selected()
             event.accept()
             return
+        if event.key() == Qt.Key_C and event.modifiers() & Qt.ControlModifier:
+            self.editor.copy_selected()
+            event.accept()
+            return
+        if event.key() == Qt.Key_X and event.modifiers() & Qt.ControlModifier:
+            self.editor.cut_selected()
+            event.accept()
+            return
+        if event.key() == Qt.Key_V and event.modifiers() & Qt.ControlModifier:
+            self.editor.paste_selected()
+            event.accept()
+            return
         if event.key() in (Qt.Key_Delete, Qt.Key_Backspace):
             self.editor.delete_selected()
             event.accept()

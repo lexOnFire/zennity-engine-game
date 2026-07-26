@@ -71,6 +71,10 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
             "color": str(raw_comment.get("color", "#6b5b2f")),
         })
     result["editor"] = {"groups": groups, "comments": comments}
+    for metadata_key in ("template", "migrated_from"):
+        metadata_value = str(raw_editor_layout.get(metadata_key, "")).strip()
+        if metadata_value:
+            result["editor"][metadata_key] = metadata_value
     raw_debug = source.get("debug", {})
     raw_breakpoints = raw_debug.get("breakpoints", []) if isinstance(raw_debug, Mapping) else []
     raw_conditions = raw_debug.get("breakpoint_conditions", {}) if isinstance(raw_debug, Mapping) else {}
