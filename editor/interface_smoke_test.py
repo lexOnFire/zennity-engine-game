@@ -66,7 +66,8 @@ class InterfaceSmokeTest(QMainWindow):
             menu = self.menuBar().addMenu(name)
             self.editor_menus[name] = menu
 
-        # Popula o menu Ferramentas e Janela com todos os editores visuais e ferramentas de produção
+        # Ferramentas contém editores e utilitários. Janela fica reservada
+        # exclusivamente a layout e visibilidade de painéis.
         tool_items = [
             ("Editor de Lógica Visual", "visual_scripting", "editor.visual_scripting.visual_scripting_dock", "VisualScriptingEditorDock"),
             ("UI Builder", "ui_builder", "editor.ui_builder.ui_builder_dock", "UIBuilderDock"),
@@ -79,15 +80,12 @@ class InterfaceSmokeTest(QMainWindow):
         ]
 
         tools_menu = self.editor_menus["Ferramentas"]
-        janela_menu = self.editor_menus["Janela"]
-
         for label, attr_name, mod_path, class_name in tool_items:
             act = QAction(label, self)
             act.triggered.connect(
                 lambda checked=False, m=mod_path, c=class_name, a=attr_name: self._show_visual_tool_dock(m, c, a)
             )
             tools_menu.addAction(act)
-            janela_menu.addAction(act)
 
     def _show_visual_tool_dock(self, module_path: str, class_name: str, attr_name: str) -> None:
         """Instancia e exibe a dock do editor visual dinamicamente ao ser clicada no menu."""

@@ -43,11 +43,9 @@ class LogicWorkspaceController:
         )
         animation_action = QAction(editor_icon("play"), "Editor de Animação", h)
         animation_action.triggered.connect(h._show_animation_window)
-        logic_action = QAction(editor_icon("snap"), "Editor de Lógica Visual", h)
-        logic_action.triggered.connect(self.show)
-        h.editor_menus["Janela"].addSeparator()
-        h.editor_menus["Janela"].addAction(animation_action)
-        h.editor_menus["Janela"].addAction(logic_action)
+        tools_menu = h.editor_menus["Ferramentas"]
+        tools_menu.addSeparator()
+        tools_menu.addAction(animation_action)
         self._connected = True
         return True
 

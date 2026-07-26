@@ -96,7 +96,8 @@ class Phase1EditorUIBuilderMixin:
         self.act_instantiate_prefab.triggered.connect(self.instantiate_prefab_ui)
         prefab_menu.addAction(self.act_instantiate_prefab)
 
-        # Popula o menu Ferramentas com todos os editores visuais e ferramentas de produção
+        # Ferramentas contém editores e utilitários. Janela fica reservada
+        # exclusivamente a layout e visibilidade de painéis.
         tool_items = [
             ("Editor de Lógica Visual", "visual_scripting", "editor.visual_scripting.visual_scripting_dock", "VisualScriptingEditorDock"),
             ("UI Builder", "ui_builder", "editor.ui_builder.ui_builder_dock", "UIBuilderDock"),
@@ -114,9 +115,8 @@ class Phase1EditorUIBuilderMixin:
                 lambda checked=False, m=mod_path, c=class_name, a=attr_name: self._show_visual_tool_dock(m, c, a)
             )
             tools_menu.addAction(act)
-            window_menu.addAction(act)
 
-        self._unused_menu_refs = (edit_menu, help_menu)
+        self._unused_menu_refs = (edit_menu, window_menu, help_menu)
 
     def _show_visual_tool_dock(self, module_path: str, class_name: str, attr_name: str) -> None:
         """Instancia e exibe a dock do editor visual dinamicamente ao ser clicada no menu."""
