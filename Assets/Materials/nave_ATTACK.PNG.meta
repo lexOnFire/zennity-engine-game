@@ -1,0 +1,12 @@
+{
+  "guid": "81648e7a-7e09-43cd-94cb-2ef0d5634cee",
+  "uuid": "81648e7a-7e09-43cd-94cb-2ef0d5634cee",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/nave_ATTACK.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "65a567b8763d4e6cd75c9761029c34216883e4e6f1dcb3add11fb447d9afa866"
+}

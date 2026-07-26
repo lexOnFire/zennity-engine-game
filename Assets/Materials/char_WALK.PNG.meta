@@ -1,0 +1,12 @@
+{
+  "guid": "ec7f5545-5a53-4cec-9a92-b97c3597b594",
+  "uuid": "ec7f5545-5a53-4cec-9a92-b97c3597b594",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/char_WALK.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "4a76bdeb262048cc53a843ec6509e499956a676bbc910e9ddccf66bcb6b06d99"
+}
