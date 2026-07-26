@@ -1,0 +1,22 @@
+{
+  "format": "zennity.animation_clip",
+  "version": 1,
+  "name": "nave_Idle",
+  "texture": "Assets/Materials/nave_IDLE.PNG",
+  "frame_width": 224,
+  "frame_height": 200,
+  "frames": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "fps": 8.0,
+  "loop": true,
+  "events": [],
+  "tracks": []
+}

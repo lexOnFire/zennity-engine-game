@@ -1,0 +1,72 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "NewLogic",
+  "target": {
+    "type": "name",
+    "value": "Player"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "2d28eacd3056412c9546305af09468ed",
+      "type": "event_update",
+      "title": "A Cada Frame",
+      "category": "Events",
+      "position": [
+        -396.87,
+        -151.51
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "609f8c936b314ab69753943059d3585e",
+      "type": "start_continuous_motion",
+      "title": "Start Continuous Motion",
+      "category": "Position",
+      "position": [
+        -20.67,
+        -53.57
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 212.0
+      },
+      "properties": {
+        "movement": "Movement",
+        "x": 0.0,
+        "y": 100.0,
+        "space": "global",
+        "acceleration": 0.0,
+        "deceleration": 0.0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "503be56b3d05484e96a14cfc14062e75",
+      "from_node": "2d28eacd3056412c9546305af09468ed",
+      "from_port": "next",
+      "to_node": "609f8c936b314ab69753943059d3585e",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    }
+  ]
+}

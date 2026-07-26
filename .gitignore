@@ -39,6 +39,8 @@ Thumbs.db
 
 # Recovery/Backup
 *.backup
+*.bak
+.zennity/
 estado_reintegracao.txt
 
 # Local CI and GitHub diagnostics
