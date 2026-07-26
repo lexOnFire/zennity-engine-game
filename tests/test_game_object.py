@@ -27,7 +27,7 @@ if "pygame" not in sys.modules:
     sys.modules["pygame"] = _pg
 
 from engine.game_object import GameObject   # noqa: E402
-from engine.component import Component, Transform  # noqa: E402
+from engine.core import Component, Transform # noqa: E402
 
 
 # ── componentes auxiliares ─────────────────────────────────────────────────────────

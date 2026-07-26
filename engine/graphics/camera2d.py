@@ -1,4 +1,4 @@
-from ..component import Component
+from ..core.component import Component
 from typing import Tuple, Optional, Any
 import numpy as np
 

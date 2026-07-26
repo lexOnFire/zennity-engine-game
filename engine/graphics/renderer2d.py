@@ -1,5 +1,5 @@
 import pygame
-from ..component import Component
+from ..core.component import Component
 from .camera2d import Camera2D
 from ..assets import Assets
 from typing import Tuple, List, Optional

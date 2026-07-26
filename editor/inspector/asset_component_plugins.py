@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtWidgets import QDoubleSpinBox, QLabel, QPushButton
+from PySide6.QtWidgets import QDoubleSpinBox, QLabel, QPushButton, QComboBox
 from editor.ui.property_editors import AssetPickerComboBox
 
 from editor.inspector.default_plugins import _property_row, _section

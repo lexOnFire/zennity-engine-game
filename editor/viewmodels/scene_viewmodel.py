@@ -192,7 +192,7 @@ class SceneViewModel(QObject):
         go.transform.rotation = src.transform.rotation.copy()
         
         for comp in src.components:
-            from engine.component import Transform
+            from engine.core import Transform
             if isinstance(comp, Transform):
                 continue
             from engine.physics.rigidbody import RigidBody

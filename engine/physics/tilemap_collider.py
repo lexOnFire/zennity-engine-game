@@ -35,7 +35,7 @@ Arquitetura
 from typing import List, Optional, TYPE_CHECKING
 import pygame
 
-from engine.component import Component
+from engine.core import Component
 
 if TYPE_CHECKING:
     from engine.tilemap.tilemap import TileMap

@@ -5,16 +5,19 @@ Este arquivo é mantido apenas para retrocompatibilidade.
 Todo código novo deve importar de engine.core:
 
     from engine.core import Component, Transform   # correto
-    from engine.component import Component         # legado (ainda funciona)
+    from engine.core import Component         # legado (ainda funciona)
 """
-import warnings as _warnings
-_warnings.warn(
+import traceback
+import warnings
+
+print("=" * 80)
+print("engine.component foi importado por:")
+traceback.print_stack(limit=12)
+print("=" * 80)
+
+warnings.warn(
     "engine.component está deprecado. "
     "Use: from engine.core import Component, Transform",
     DeprecationWarning,
     stacklevel=2,
 )
-
-from engine.core.component import Component, Transform  # noqa: F401, E402
-
-__all__ = ["Component", "Transform"]

@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Optional
-from engine.component import Component
+from engine.core import Component
 
 
 class RigidBody(Component):

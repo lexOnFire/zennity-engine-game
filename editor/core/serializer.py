@@ -26,7 +26,7 @@ def serialize_game_object(go: GameObject) -> Dict[str, Any]:
     
     # Serializa componentes conhecidos
     for comp in go.components:
-        from engine.component import Transform
+        from engine.core import Transform
         if isinstance(comp, Transform):
             # O transform já é coberto no dicionário raiz do GameObject
             continue

@@ -3,7 +3,7 @@ RigidBody3D — Componente de física 3D para a Zennity Engine.
 """
 from __future__ import annotations
 import numpy as np
-from engine.component import Component
+from engine.core import Component
 
 
 class RigidBody3D(Component):

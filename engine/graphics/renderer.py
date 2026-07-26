@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Optional, Tuple
 import pygame
-from engine.component import Component
+from engine.core import Component
 from engine.graphics.camera import Camera
 
 

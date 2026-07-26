@@ -17,7 +17,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 import pygame
 
-from engine.component import Component
+from engine.core import Component
 from engine.time import Time
 from .clip import AnimationClip
 
