@@ -16,7 +16,26 @@ from PySide6.QtWidgets import (
 )
 
 from editor.widgets.logic_graph_editor import LogicGraphEditor
+from editor.widgets.generic_graph_editor import GenericGraphEditorWidget
 from editor.visual_scripting.mini_live_viewport import MiniLiveViewportWidget
+
+
+class _GraphToolAdapter:
+    """Expose one hub tab through the bridge/tool contracts."""
+
+    def __init__(self, hub: "VisualScriptingEditorDock", tool_id: str, graph_editor) -> None:
+        self.hub = hub
+        self.tool_id = tool_id
+        self.graph_editor = graph_editor
+
+    def show(self) -> None:
+        self.hub.open_graph_tool(self.tool_id)
+
+    def raise_(self) -> None:
+        self.hub.raise_()
+
+    def activateWindow(self) -> None:
+        self.hub.activateWindow()
 
 
 class VisualScriptingEditorDock(QMainWindow):
@@ -143,13 +162,75 @@ class VisualScriptingEditorDock(QMainWindow):
         self.vertical_splitter.addWidget(self.bottom_panel)
 
         self.vertical_splitter.setSizes([650, 260])
-        root_layout.addWidget(self.vertical_splitter)
+
+        # Central única para todos os sistemas baseados em grafo. Ferramentas
+        # especializadas não criam mais janelas concorrentes no editor.
+        self.graph_mode_tabs = QTabWidget(self.main_container)
+        self.graph_mode_tabs.setObjectName("GraphModeTabs")
+        self.graph_mode_tabs.addTab(self.vertical_splitter, "Logic Graph")
+        self.behavior_tree_editor = self._new_specialized_graph("Behavior Tree")
+        self.dialogue_graph_editor = self._new_specialized_graph("Dialogue")
+        self.material_graph_editor = self._new_specialized_graph("Material")
+        self.animator_graph_editor = self._new_specialized_graph("Animation")
+        self.graph_mode_tabs.addTab(self.behavior_tree_editor, "Behavior Tree")
+        self.graph_mode_tabs.addTab(self.dialogue_graph_editor, "Dialogue")
+        self.graph_mode_tabs.addTab(self.material_graph_editor, "Material")
+        self.graph_mode_tabs.addTab(self.animator_graph_editor, "Animator Graph")
+        self._graph_tool_adapters = {
+            "behavior_tree": _GraphToolAdapter(self, "behavior_tree", self.behavior_tree_editor),
+            "dialogue": _GraphToolAdapter(self, "dialogue", self.dialogue_graph_editor),
+            "material_graph": _GraphToolAdapter(self, "material_graph", self.material_graph_editor),
+            "animator_graph": _GraphToolAdapter(self, "animator_graph", self.animator_graph_editor),
+        }
+        self.graph_mode_tabs.currentChanged.connect(self._on_graph_mode_changed)
+        root_layout.addWidget(self.graph_mode_tabs)
 
         self._apply_modern_theme()
         # Conexões de Sinais da Toolbar
         self._connect_signals()
         self._open_initial_document()
         self.sync_from_host()
+
+    @staticmethod
+    def _new_specialized_graph(category: str) -> GenericGraphEditorWidget:
+        """Create a metadata-backed graph editor inside the unified hub."""
+        try:
+            from engine.core.context import EngineContext
+            if EngineContext.current() is None:
+                from engine.core.bootstrap import EngineBootstrap
+                EngineBootstrap.boot()
+        except Exception:
+            pass
+        return GenericGraphEditorWidget(graph_category_filter=category)
+
+    def _on_graph_mode_changed(self, index: int) -> None:
+        logic_mode = index == 0
+        for button in (
+            self.btn_play, self.btn_pause, self.btn_stop, self.btn_new,
+            self.btn_open, self.btn_save, self.btn_debug, self.btn_explain,
+        ):
+            button.setEnabled(logic_mode)
+        self.search_bar.setEnabled(logic_mode)
+        labels = ("LOGIC GRAPH", "BEHAVIOR TREE", "DIALOGUE", "MATERIAL", "ANIMATOR GRAPH")
+        self.document_label.setText(labels[index] if 0 <= index < len(labels) else "GRAPH")
+
+    def open_graph_tool(self, tool_id: str) -> None:
+        """Open this single window directly on a requested graph domain."""
+        indexes = {
+            "visual_scripting": 0,
+            "logic_graph": 0,
+            "behavior_tree": 1,
+            "dialogue": 2,
+            "material_graph": 3,
+            "animator_graph": 4,
+        }
+        self.graph_mode_tabs.setCurrentIndex(indexes.get(tool_id, 0))
+        self.show()
+        self.raise_()
+        self.activateWindow()
+
+    def graph_tool_adapter(self, tool_id: str):
+        return self._graph_tool_adapters.get(tool_id)
 
     def _apply_modern_theme(self) -> None:
         self.setStyleSheet("""

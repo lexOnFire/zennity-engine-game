@@ -25,6 +25,8 @@ from editor.interface_smoke_test import InterfaceSmokeTest
 from editor.controllers.logic_assets import LogicAssetRepository
 from editor.isolated_viewport import run_viewport
 from editor.runtime.viewport_process_controller import ViewportProcessController
+from editor.runtime.editor_context import EditorContext
+from editor.runtime.editor_bridge_orchestrator import EditorBridgeOrchestrator
 from editor.editor_bootstrap_controller import EditorBootstrapController
 from editor.animation_workspace_operations import AnimationWorkspaceOperations
 from editor.widgets.component_picker import ComponentPickerDialog
@@ -49,11 +51,16 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
     ) -> None:
         self._last_build_report = None
         self._last_validation_report = None
+        self.editor_context = EditorContext(Path.cwd())
         self._logic_assets_repository = LogicAssetRepository(Path.cwd())
         super().__init__()
+        self.bridge_orchestrator = EditorBridgeOrchestrator(self.editor_context)
+        self.bridge_orchestrator.setup(animation_dock=self.animation_track_studio)
+        self._graph_hub_bridges_attached = False
         self._current_animation_asset_path: Path | None = None
         self._animation_draft_name = "NewAnimation"
         self._animation_events: list[dict] = []
+        self._animation_frames: list[int] = [0]
         self._animation_asset_dirty = False
         self._animation_preview_playing = True
         self._animation_bound_key: tuple[str, str] | None = None

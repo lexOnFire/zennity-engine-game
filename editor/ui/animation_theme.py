@@ -48,6 +48,9 @@ def apply_animation_workspace_theme(workspace: Any) -> None:
         QWidget#AnimationPropertiesPanel, QFrame#AnimationTimelinePanel {
             background:#0d121b; border:1px solid #222d3d; border-radius:9px;
         }
+        QWidget#AnimationFrameEditor {
+            background:#0a0f17; border:1px solid #263247; border-radius:8px;
+        }
         QLabel#AnimationPreview {
             color:#74839b; background:#070a0f;
             border:1px solid #273246; border-radius:9px;
@@ -64,13 +67,19 @@ def apply_animation_workspace_theme(workspace: Any) -> None:
             border-radius:10px; padding:3px 9px;
             font-family:"Consolas"; font-weight:700;
         }
-        QTreeWidget {
+        QTreeWidget, QListWidget {
             color:#cbd5e6; background:#090e16;
             border:1px solid #222d3d; border-radius:6px; outline:none;
         }
-        QTreeWidget::item { min-height:26px; padding:3px 5px; border-radius:4px; }
-        QTreeWidget::item:hover { background:#1c2737; color:#fff; }
-        QTreeWidget::item:selected { background:#503ca8; color:#fff; }
+        QTreeWidget::item, QListWidget::item {
+            min-height:26px; padding:3px 5px; border-radius:4px;
+        }
+        QTreeWidget::item:hover, QListWidget::item:hover {
+            background:#1c2737; color:#fff;
+        }
+        QTreeWidget::item:selected, QListWidget::item:selected {
+            background:#503ca8; color:#fff;
+        }
         QHeaderView::section {
             color:#8291aa; background:#151d29; border:none;
             border-bottom:1px solid #2b3749; padding:6px; font-weight:600;

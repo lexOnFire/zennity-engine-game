@@ -200,3 +200,27 @@ class AnimationStudioDock(QDockWidget):
     def trigger_hot_reload(self) -> None:
         self.player_service.on_asset_reimported("AnimationStudio")
         self.canvas.update()
+
+    def serialize_tracks(self) -> list[dict]:
+        """Return the canonical JSON-safe track payload used by .zanim."""
+        return [track.serialize() for track in self.tracks]
+
+    def load_animation_data(self, data: dict) -> None:
+        """Load persisted tracks from the modern animation asset."""
+        loaded: list[AnimationTrack] = []
+        for raw in data.get("tracks", []) if isinstance(data, dict) else []:
+            if not isinstance(raw, dict):
+                continue
+            track_type = str(raw.get("type", ""))
+            if track_type == "TransformTrack":
+                track = TransformTrack()
+            elif track_type == "PropertyTrack":
+                track = PropertyTrack()
+            else:
+                continue
+            track.deserialize(raw)
+            loaded.append(track)
+        self.tracks = loaded
+        self.canvas.tracks = self.tracks
+        self.rebuild_track_headers()
+        self.canvas.update()

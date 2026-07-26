@@ -31,9 +31,12 @@ class DocumentType(str, Enum):
             ".zscene":  cls.SCENE,
             ".zmat":    cls.MATERIAL,
             ".zanim":   cls.ANIMATION,
+            ".zdialogue": cls.DIALOGUE,
             ".zdlg":    cls.DIALOGUE,
+            ".zbehavior": cls.BEHAVIOR_TREE,
             ".zbtree":  cls.BEHAVIOR_TREE,
             ".zui":     cls.UI,
+            ".zlogic":  cls.VISUAL_SCRIPT,
             ".zvs":     cls.VISUAL_SCRIPT,
         }.get(ext, cls.UNKNOWN)
 

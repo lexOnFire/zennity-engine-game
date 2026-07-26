@@ -7,6 +7,11 @@ from engine.runtime.production_runtime import (
     JobScheduler,
     JobTask,
 )
+from engine.runtime.input_manager import InputManager
+from engine.runtime.script_behaviour import ScriptBehaviour
+from engine.runtime.clone import clone_game_object
+from engine.input import Input
+from engine.time import Time
 
 __all__ = [
     "RuntimeManager",
@@ -17,4 +22,9 @@ __all__ = [
     "ResourceManagerCache",
     "JobScheduler",
     "JobTask",
+    "Input",
+    "InputManager",
+    "ScriptBehaviour",
+    "Time",
+    "clone_game_object",
 ]

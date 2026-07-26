@@ -11,6 +11,8 @@ from PySide6.QtWidgets import (
 from editor.ui.icons import TOOLBAR_ICONS, component_title, editor_icon
 from editor.ui.empty_state import EmptyStateWidget
 from editor.widgets.logic_graph_editor import LogicGraphEditor
+from editor.widgets.animation_frame_editor import AnimationFrameEditor
+from editor.animation_studio.animation_studio_dock import AnimationStudioDock
 from editor.ui.detached_workspace import DetachedWorkspaceWindow
 
 
@@ -156,6 +158,8 @@ def _build_animation_preview(window):
     window.animator_preview.setMinimumHeight(160)
     window.animator_preview.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
     preview_column.addWidget(window.animator_preview, 1)
+    window.animation_frame_editor = AnimationFrameEditor()
+    preview_column.addWidget(window.animation_frame_editor)
 
     timeline_panel = QFrame()
     timeline_panel.setObjectName("AnimationTimelinePanel")
@@ -327,7 +331,19 @@ def _build_animation_properties(window):
     window.animation_content_splitter.setStretchFactor(1, 1)
     window.animation_content_splitter.setStretchFactor(2, 0)
     window.animation_content_splitter.setSizes([230, 700, 310])
-    window._animation_layout.addWidget(window.animation_content_splitter, 1)
+    _build_animation_track_tabs(window)
+
+def _build_animation_track_tabs(window):
+    window.animation_mode_tabs = QTabWidget()
+    window.animation_mode_tabs.setObjectName("AnimationModeTabs")
+    window.animation_mode_tabs.addTab(window.animation_content_splitter, "Sprite Animation")
+    window.animation_track_studio = AnimationStudioDock(window)
+    track_workspace = window.animation_track_studio.widget()
+    window.animation_track_studio.setWidget(QWidget())
+    track_workspace.setParent(window.animation_mode_tabs)
+    track_workspace.setObjectName("AnimationTracksWorkspace")
+    window.animation_mode_tabs.addTab(track_workspace, "Tracks & Keyframes")
+    window._animation_layout.addWidget(window.animation_mode_tabs, 1)
 
 def _build_detached_workspaces(window):
     window.logic_workspace = LogicGraphEditor()

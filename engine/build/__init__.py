@@ -9,6 +9,14 @@ from engine.build.stages import (
     ManifestGenerationStage,
     ExecutableLinkStage,
 )
+from engine.build.build_config import BuildConfig, BuildTarget
+from engine.build.export_profile import ExportProfile
+from engine.build.export_profile_manager import ExportProfileManager
+from engine.build.desktop_package import (
+    DesktopPackagePlan,
+    create_desktop_package_plan,
+    create_plan_from_profile,
+)
 
 __all__ = [
     "BuildProfile",
@@ -25,4 +33,11 @@ __all__ = [
     "PackageGenerationStage",
     "ManifestGenerationStage",
     "ExecutableLinkStage",
+    "BuildConfig",
+    "BuildTarget",
+    "ExportProfile",
+    "ExportProfileManager",
+    "DesktopPackagePlan",
+    "create_desktop_package_plan",
+    "create_plan_from_profile",
 ]

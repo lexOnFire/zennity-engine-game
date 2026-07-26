@@ -98,11 +98,7 @@ class Phase1EditorUIBuilderMixin:
 
         # Popula o menu Ferramentas com todos os editores visuais e ferramentas de produção
         tool_items = [
-            ("Editor de Lógica Visual (Logic Graph)", "visual_scripting", "editor.visual_scripting.visual_scripting_dock", "VisualScriptingEditorDock"),
-            ("Animation Studio Visual", "animation_studio", "editor.animation_studio.animation_studio_dock", "AnimationStudioDock"),
-            ("Behavior Tree Editor", "behavior_tree", "editor.behavior_tree.behavior_tree_dock", "BehaviorTreeEditorDock"),
-            ("Dialogue Graph Editor", "dialogue", "editor.dialogue.dialogue_dock", "DialogueGraphEditorDock"),
-            ("Material Graph Editor", "material", "editor.material_graph.material_dock", "MaterialGraphEditorDock"),
+            ("Editor de Lógica Visual", "visual_scripting", "editor.visual_scripting.visual_scripting_dock", "VisualScriptingEditorDock"),
             ("UI Builder", "ui_builder", "editor.ui_builder.ui_builder_dock", "UIBuilderDock"),
             ("Ecossistema de Extensões / Plugins", "extension_manager", "editor.extension_manager.extension_dock", "ExtensionManagerDock"),
             ("Grafo de Dependências de Assets", "dependency_viewer", "editor.tools.dependency_viewer_dock", "DependencyViewerDock"),

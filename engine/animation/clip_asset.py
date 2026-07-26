@@ -25,6 +25,7 @@ def default_animation_asset(name: str = "NewAnimation") -> dict[str, Any]:
         "fps": 8.0,
         "loop": True,
         "events": [],
+        "tracks": [],
     }
 
 
@@ -62,6 +63,11 @@ def normalize_animation_asset(data: Mapping[str, Any] | None) -> dict[str, Any]:
             "payload": deepcopy(event.get("payload")),
         })
     result["events"] = sorted(normalized_events, key=lambda item: (item["frame"], item["name"]))
+    tracks = source.get("tracks", [])
+    result["tracks"] = [
+        deepcopy(track) for track in tracks
+        if isinstance(track, dict) and str(track.get("type", "")).strip()
+    ] if isinstance(tracks, list) else []
     return result
 
 
@@ -86,6 +92,7 @@ def animation_asset_to_clip(asset: Mapping[str, Any], asset_path: str = "") -> d
         "fps": normalized["fps"],
         "loop": normalized["loop"],
         "events": deepcopy(normalized["events"]),
+        "tracks": deepcopy(normalized["tracks"]),
     }
     if asset_path:
         clip["asset_path"] = str(asset_path).replace("\\", "/")

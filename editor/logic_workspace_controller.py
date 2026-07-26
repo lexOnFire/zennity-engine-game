@@ -114,12 +114,26 @@ class LogicWorkspaceController:
         )
         dock = getattr(h, "_dock_visual_scripting", None)
         if dock is not None and hasattr(dock, "sync_from_host"):
+            self._attach_graph_hub_bridges(dock)
             dock.setWindowTitle(
                 f"⚡ Visual Scripting Editor 2.0"
                 f"{f' — {selected}' if selected else ''}"
             )
             dock.sync_from_host()
         h._log("INFO", f"Editor de Lógica Visual aberto{f' para {selected}' if selected else ''}")
+
+    def _attach_graph_hub_bridges(self, dock: Any) -> None:
+        h = self.host
+        if getattr(h, "_graph_hub_bridges_attached", False):
+            return
+        orchestrator = getattr(h, "bridge_orchestrator", None)
+        if orchestrator is None:
+            return
+        orchestrator.visual_scripting.attach_dock(dock)
+        orchestrator.behavior_tree.attach_dock(dock.graph_tool_adapter("behavior_tree"))
+        orchestrator.dialogue.attach_dock(dock.graph_tool_adapter("dialogue"))
+        orchestrator.material_graph.attach_dock(dock.graph_tool_adapter("material_graph"))
+        h._graph_hub_bridges_attached = True
 
     def assets(self) -> list[tuple[Path, dict]]:
         return self.host._logic_assets_repository.assets()

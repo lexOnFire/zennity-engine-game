@@ -119,6 +119,12 @@ class GraphEditorBridge:
                 data=data,
             )
             self._current_document = doc
+            graph_editor = getattr(self._dock, "graph_editor", None)
+            if graph_editor is not None:
+                if path and hasattr(graph_editor, "load_document"):
+                    graph_editor.load_document(path)
+                elif data and hasattr(graph_editor, "canvas"):
+                    graph_editor.canvas.load_graph_data(data)
             self._emit("opened", document=doc)
             return doc
         except Exception as exc:
@@ -147,6 +153,14 @@ class GraphEditorBridge:
         self._try_connect(graph_editor, "node_added", self._on_node_added)
         self._try_connect(graph_editor, "node_deleted", self._on_node_deleted)
         self._try_connect(graph_editor, "edge_added", self._on_edge_added)
+        self._try_connect(graph_editor, "document_changed", self._on_document_changed)
+
+    def _on_document_changed(self, path: Any) -> None:
+        if self._current_document is None:
+            self.open_document(path=path)
+            return
+        if path:
+            self._current_document.mark_saved(Path(path))
 
     def _try_connect(self, obj: Any, signal_name: str, handler: Any) -> None:
         try:

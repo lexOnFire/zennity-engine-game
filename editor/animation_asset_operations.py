@@ -397,11 +397,11 @@ class AnimationAssetOperations:
             "texture": self.animator_sheet_combo.currentData() or "",
             "frame_width": int(self.animator_frame_width.value()),
             "frame_height": int(self.animator_frame_height.value()),
-            "start_frame": int(self.animator_start_frame.value()),
-            "frame_count": int(self.animator_frame_count.value()),
+            "frames": list(self._animation_frames),
             "fps": float(self.animator_fps_field.value()),
             "loop": self.animator_loop_field.isChecked(),
             "events": deepcopy(self._animation_events),
+            "tracks": self.animation_track_studio.serialize_tracks(),
         }
         return animation_asset_from_clip(str(clip_name), clip)
 
@@ -422,12 +422,15 @@ class AnimationAssetOperations:
             self.animator_frame_count.setValue(float(clip["frame_count"]))
             self.animator_fps_field.setValue(float(clip["fps"]))
             self.animator_loop_field.setChecked(bool(clip["loop"]))
+            self._animation_frames = list(clip.get("frames") or [clip["start_frame"]])
             self.animator_current_lbl.setText(str(asset["name"]))
             self._animation_events = deepcopy(asset.get("events", []))
+            self.animation_track_studio.load_animation_data(asset)
             self._refresh_animation_events()
         finally:
             self._updating_inspector = previous_updating
         self._animator_preview_index = 0
+        self._refresh_animation_frame_editor_from_fields()
         self._refresh_animation_timeline(clip)
         self._update_animation_preview(clip, 0)
         if attach_to_object:

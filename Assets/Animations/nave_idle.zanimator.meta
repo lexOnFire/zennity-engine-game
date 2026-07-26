@@ -1,0 +1,10 @@
+{
+  "guid": "cf1b3310-1f65-4995-acdd-7513d8dae48d",
+  "uuid": "cf1b3310-1f65-4995-acdd-7513d8dae48d",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Animations/nave_idle.zanimator",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "02fd83f2e24cd3844f6bc3b5df233a5da1e1e265387e7b033965c692abf19580"
+}
