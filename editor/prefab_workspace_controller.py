@@ -129,10 +129,14 @@ class PrefabWorkspaceController:
         menu = QMenu(h)
         instantiate = menu.addAction("Adicionar à cena")
         variant = menu.addAction("Criar variante...")
+        menu.addSeparator()
+        unpack = menu.addAction("Desempacotar instância (Unpack)")
+        unpack.setToolTip("Remove a relação de prefab do objeto selecionado na cena, preservando seus valores atuais.")
         instantiate.triggered.connect(lambda _checked=False: self.instantiate_item(item))
         variant.triggered.connect(
             lambda _checked=False: self.create_variant(Path(path_value))
         )
+        unpack.triggered.connect(lambda _checked=False: self.unpack_selected_instance())
         menu.exec(h.prefab_tree.viewport().mapToGlobal(position))
 
     def create_variant(self, base_path: Path) -> None:
@@ -159,3 +163,25 @@ class PrefabWorkspaceController:
         self.refresh()
         h._refresh_assets()
         h._log("INFO", f"Variante criada: {target.name} → {base_path.name}")
+
+    def unpack_selected_instance(self) -> None:
+        """Desvincula o objeto atualmente selecionado na cena de seu prefab."""
+        from engine.prefabs.prefab_serializer import unpack_prefab
+        h = self.host
+        selected = getattr(h, "_selected_name", None)
+        if not selected:
+            return
+        obj = getattr(h, "_objects_by_name", {}).get(selected)
+        if obj is None:
+            return
+        # Suporte ao model MVVM (GameObject) e ao model dict do viewport antigo
+        if hasattr(obj, "prefab_uuid"):
+            unpack_prefab(obj)
+        else:
+            obj.pop("prefab_uuid", None)
+            obj.pop("prefab_source", None)
+        h._log("INFO", f"Prefab desempacotado: {selected}")
+        # Atualiza a hierarchy para remover o badge 🔷
+        if hasattr(h, "_refresh_hierarchy"):
+            h._refresh_hierarchy()
+
