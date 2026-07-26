@@ -58,7 +58,7 @@ def test_animation_workspace_is_resizable_and_properties_scroll() -> None:
     source = (ROOT / "editor" / "ui" / "workspace_builder.py").read_text(encoding="utf-8")
 
     assert "window.animation_content_splitter = QSplitter(Qt.Horizontal)" in source
-    assert "window.animation_content_splitter.setSizes([170, 430, 250])" in source
+    assert "window.animation_content_splitter.setSizes([230, 700, 310])" in source
     assert "window.animation_properties_scroll.setWidgetResizable(True)" in source
     assert "window.animator_preview.setMinimumHeight(160)" in source
     assert "window.animator_preview.setMinimumSize(320, 260)" not in source

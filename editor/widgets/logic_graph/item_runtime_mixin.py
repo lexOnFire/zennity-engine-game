@@ -26,9 +26,9 @@ class LogicNodeItemRuntimeMixin:
             self.summary_item.hide()
             self.target_item.hide()
             self.debug_item.hide()
-            self.setBrush(QBrush(QColor("#17221c")))
+            self.setBrush(QBrush(QColor("#111d18")))
         else:
-            self.setBrush(QBrush(QColor("#22242a")))
+            self.setBrush(QBrush(QColor("#151922")))
             self.set_runtime_state(*self._runtime_display)
 
     def set_runtime_state(
@@ -76,9 +76,9 @@ class LogicNodeItemRuntimeMixin:
         visible = bool(active or error or paused)
         if not visible:
             if self.isSelected():
-                self.setPen(QPen(QColor("#00adb5"), 2.0))
+                self.setPen(QPen(QColor("#7c5cff"), 2.4))
             else:
-                self.setPen(QPen(QColor("#3f4456"), 1.2))
+                self.setPen(QPen(QColor("#30394a"), 1.2))
         else:
             if error:
                 self.setPen(QPen(QColor("#ff5d62"), 3.5 if self.isSelected() else 2.5))

@@ -132,20 +132,21 @@ class ViewportSessionLifecycleMixin:
 
     def sync_stats(self) -> None:
         now_ms = self.pygame.time.get_ticks()
+        if self.playing and now_ms - self.last_runtime_sync_ms >= 33:
+            self.last_runtime_sync_ms = now_ms
+            _send(
+                self.events,
+                {
+                    "type": "runtime_objects",
+                    "objects": self.runtime_object_snapshot(),
+                    "selected": self.selected_name,
+                },
+            )
         if now_ms - self.last_stats_ms >= 500:
             self.last_stats_ms = now_ms
             runtime_mode = "PAUSE" if self.paused else ("PLAY" if self.playing else "EDIT")
             player_name, _player = self.controlled_object()
             world_stats = self.runtime_world.stats()
-            if self.playing:
-                _send(
-                    self.events,
-                    {
-                        "type": "runtime_objects",
-                        "objects": self.runtime_object_snapshot(),
-                        "selected": self.selected_name,
-                    },
-                )
             _send(
                 self.events,
                 {

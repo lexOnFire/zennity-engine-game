@@ -82,20 +82,43 @@ class LogicWorkspaceController:
             context_path = preferred_path or (bindings[0][0] if bindings else None)
             if not h.logic_workspace.open_for_object(selected, context_path):
                 return
-            h.logic_window.setWindowTitle(f"Zennity — Lógica Visual — {selected}")
             source = context_path.name if context_path is not None else "novo rascunho"
             h.statusBar().showMessage(f"Lógica Visual: {selected} • {source}")
         elif preferred_path is not None:
             if not h.logic_workspace.open_asset(preferred_path):
                 return
-            h.logic_window.setWindowTitle("Zennity — Editor de Lógica Visual")
         else:
-            h.statusBar().showMessage(
-                "Selecione um objeto na Hierarchy para definir o alvo da lógica"
+            assets = self.assets()
+            if assets and h.logic_workspace.current_path is None:
+                fallback_path, _graph = max(
+                    assets,
+                    key=lambda entry: (
+                        str(entry[1].get("target", {}).get("value", ""))
+                        in h._objects_by_name,
+                        len(entry[1].get("nodes", [])),
+                    ),
+                )
+                if not h.logic_workspace.open_asset(fallback_path):
+                    return
+                h.statusBar().showMessage(
+                    f"Lógica Visual: {fallback_path.name} • selecione um objeto para vincular"
+                )
+            else:
+                h.statusBar().showMessage(
+                    "Selecione um objeto na Hierarchy para definir o alvo da lógica"
+                )
+        h._show_visual_tool_dock(
+            "editor.visual_scripting.visual_scripting_dock",
+            "VisualScriptingEditorDock",
+            "visual_scripting",
+        )
+        dock = getattr(h, "_dock_visual_scripting", None)
+        if dock is not None and hasattr(dock, "sync_from_host"):
+            dock.setWindowTitle(
+                f"⚡ Visual Scripting Editor 2.0"
+                f"{f' — {selected}' if selected else ''}"
             )
-        h.logic_window.show()
-        h.logic_window.raise_()
-        h.logic_window.activateWindow()
+            dock.sync_from_host()
         h._log("INFO", f"Editor de Lógica Visual aberto{f' para {selected}' if selected else ''}")
 
     def assets(self) -> list[tuple[Path, dict]]:

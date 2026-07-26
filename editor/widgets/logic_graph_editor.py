@@ -115,6 +115,7 @@ class LogicGraphEditor(
         self._history: list[dict[str, Any]] = []
         self._history_index = -1
         self._restoring_history = False
+        self._loading_graph = False
         self._history_timer = QTimer(self)
         self._history_timer.setSingleShot(True)
         self._history_timer.setInterval(180)
@@ -126,6 +127,21 @@ class LogicGraphEditor(
         self._build_ui()
         self._connect_ui()
         self.set_graph(self.graph)
+        self._category_changed(str(self.category_combo.currentData() or "All"))
+
+    def set_embedded_mode(self, embedded: bool = True) -> None:
+        """Show only the production graph surface when hosted by VS 2.0."""
+        for widget in (
+            getattr(self, "header_widget", None),
+            getattr(self, "toolbar_widget", None),
+            getattr(self, "category_widget", None),
+        ):
+            if widget is not None:
+                widget.setVisible(not embedded)
+        layout = self.layout()
+        if layout is not None:
+            layout.setContentsMargins(2, 2, 2, 2)
+            layout.setSpacing(2)
 
     def _build_ui(self) -> None:
         from .logic_graph.ui_builder import build_logic_graph_ui

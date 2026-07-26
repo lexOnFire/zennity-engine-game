@@ -296,8 +296,9 @@ class LogicGraphPersistenceMixin:
         self.view.fitInView(bounds, Qt.KeepAspectRatio)
 
     def mark_dirty(self) -> None:
-        if not self._restoring_history:
-            self._history_timer.start()
+        if self._restoring_history or self._loading_graph:
+            return
+        self._history_timer.start()
         if not self._dirty:
             self._dirty = True
             self._update_status()

@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 
 import pytest
 from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import QColor, QPixmap
 
 
 @pytest.fixture(scope="module")
@@ -53,6 +54,26 @@ def test_runtime_visualization_panel_replay_buffer(qapp):
     # Retorna ao vivo (Live Mode)
     panel.resume_live()
     assert panel.is_replaying is False
+
+
+def test_game_view_renders_serialized_rgb_colors(qapp):
+    """Scene snapshots commonly carry RGB tuples instead of QColor values."""
+    from editor.visual_scripting.mini_live_viewport import RuntimeVisualizationPanelWidget
+
+    panel = RuntimeVisualizationPanelWidget()
+    canvas = panel.unified_viewport
+    canvas.resize(480, 260)
+    canvas.apply_snapshot({
+        "objects": [
+            {"id": "player", "x": 0, "y": 0, "size": 24, "color": (88, 117, 255)},
+            {"id": "floor", "x": 0, "y": 40, "w": 300, "h": 32, "color": [91, 194, 100, 255]},
+        ],
+    })
+
+    assert canvas._object_color((88, 117, 255)) == QColor(88, 117, 255)
+    image = QPixmap(canvas.size())
+    canvas.render(image)
+    assert not image.isNull()
 
 
 def test_node_performance_heat_map(qapp):

@@ -185,6 +185,7 @@ class ViewportSession(ViewportSessionLifecycleMixin):
             key: False for key in ("left", "right", "up", "down", "jump", "restart")
         }
         self.last_stats_ms = 0
+        self.last_runtime_sync_ms = 0
         self.texture_cache = {}
         self.native_ui = NativeUIRenderer()
         self.command_queue = ViewportCommandQueue(self.commands)
@@ -318,6 +319,17 @@ class ViewportSession(ViewportSessionLifecycleMixin):
                 "w": float(obj.get("w", 1.0)), "h": float(obj.get("h", 1.0)),
                 "rotation": float(obj.get("rotation", 0.0)),
                 "active": bool(obj.get("active", True)),
+                "renderer_enabled": bool(obj.get("renderer_enabled", True)),
+                "render_layer": str(obj.get("render_layer", "Default")),
+                "sort_order": int(obj.get("sort_order", 0)),
+                "color": deepcopy(obj.get("color", (180, 180, 180))),
+                "texture": str(obj.get("texture", "")),
+                "collider": deepcopy(obj.get("collider"))
+                if isinstance(obj.get("collider"), dict) else None,
+                "rigidbody": deepcopy(obj.get("rigidbody"))
+                if isinstance(obj.get("rigidbody"), dict) else None,
+                "velocity_y": float(self.velocities_y.get(name, 0.0)),
+                "grounded": bool(self.grounded.get(name, False)),
                 "spawned_by_logic": bool(obj.get("spawned_by_logic", False)),
                 "spawn_lifecycle": deepcopy(lifecycle),
                 "prefab_path": str(obj.get("prefab_path", "")),

@@ -55,7 +55,9 @@ class InterfaceSmokeTest(QMainWindow):
         self._build_center()
         self._build_docks()
         from editor.ui import polish_editor_widgets
+        from editor.ui.animation_theme import apply_animation_workspace_theme
         polish_editor_widgets(self)
+        apply_animation_workspace_theme(self.animation_workspace)
         self.statusBar().showMessage("Teste isolado: não há Pygame nem renderização de cena.")
 
     def _build_menu(self) -> None:
@@ -101,7 +103,10 @@ class InterfaceSmokeTest(QMainWindow):
             cls = getattr(mod, class_name)
             dock_widget = cls(self)
             setattr(self, dock_attr, dock_widget)
-            self.addDockWidget(Qt.RightDockWidgetArea, dock_widget)
+            if isinstance(dock_widget, QDockWidget):
+                self.addDockWidget(Qt.RightDockWidgetArea, dock_widget)
+            if hasattr(dock_widget, "configure_independent_window"):
+                dock_widget.configure_independent_window()
 
         dock_widget.show()
         dock_widget.raise_()

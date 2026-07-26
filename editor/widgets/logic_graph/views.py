@@ -26,16 +26,32 @@ class LogicGraphView(QGraphicsView):
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
         self.setViewportUpdateMode(QGraphicsView.BoundingRectViewportUpdate)
+        self.setCacheMode(QGraphicsView.CacheBackground)
+        self.setStyleSheet(
+            "QGraphicsView#LogicGraphView {"
+            "background: #0b0e14; border: 1px solid #202633; border-radius: 6px;"
+            "}"
+        )
 
     def drawBackground(self, painter: QPainter, rect: QRectF) -> None:
-        painter.fillRect(rect, QColor("#17191f"))
-        spacing = 22
+        painter.fillRect(rect, QColor("#0b0e14"))
+        spacing = 24
         left = int(rect.left()) - (int(rect.left()) % spacing)
         top = int(rect.top()) - (int(rect.top()) % spacing)
-        painter.setPen(QPen(QColor("#2b2e37"), 1))
+        painter.setPen(QPen(QColor("#151b26"), 1))
         for x in range(left, int(rect.right()) + spacing, spacing):
-            for y in range(top, int(rect.bottom()) + spacing, spacing):
-                painter.drawPoint(x, y)
+            painter.drawLine(x, int(rect.top()), x, int(rect.bottom()))
+        for y in range(top, int(rect.bottom()) + spacing, spacing):
+            painter.drawLine(int(rect.left()), y, int(rect.right()), y)
+
+        major = spacing * 5
+        major_left = int(rect.left()) - (int(rect.left()) % major)
+        major_top = int(rect.top()) - (int(rect.top()) % major)
+        painter.setPen(QPen(QColor("#202838"), 1))
+        for x in range(major_left, int(rect.right()) + major, major):
+            painter.drawLine(x, int(rect.top()), x, int(rect.bottom()))
+        for y in range(major_top, int(rect.bottom()) + major, major):
+            painter.drawLine(int(rect.left()), y, int(rect.right()), y)
 
     def wheelEvent(self, event) -> None:
         if event.modifiers() & Qt.ControlModifier:

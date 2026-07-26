@@ -25,12 +25,28 @@ def qapp():
 def test_visual_scripting_2_0_dock_layout(qapp):
     """Valida o layout de 4 áreas e os componentes do Visual Scripting 2.0."""
     from editor.visual_scripting.visual_scripting_dock import VisualScriptingEditorDock
+    from editor.widgets.logic_graph_editor import LogicGraphEditor
 
     dock = VisualScriptingEditorDock()
-    assert dock.graph_editor.category_filter == "Visual Scripting"
+    assert isinstance(dock.graph_editor, LogicGraphEditor)
     assert dock.mini_viewport is not None
+    assert dock.mini_viewport.transport_toolbar.isHidden()
     assert dock.btn_play is not None
     assert dock.btn_stop is not None
+
+
+def test_visual_scripting_can_be_a_native_independent_window(qapp):
+    from PySide6.QtCore import Qt
+    from editor.visual_scripting.visual_scripting_dock import VisualScriptingEditorDock
+
+    window = VisualScriptingEditorDock()
+    window.configure_independent_window()
+
+    assert window.isWindow()
+    assert window.windowFlags() & Qt.WindowMinMaxButtonsHint
+    assert window.windowFlags() & Qt.WindowCloseButtonHint
+    assert window.minimumWidth() >= 960
+    assert window.minimumHeight() >= 640
 
 
 def test_mini_live_viewport_highlight_execution(qapp):

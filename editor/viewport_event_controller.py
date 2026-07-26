@@ -88,6 +88,9 @@ class ViewportEventController:
         h._refresh_hierarchy()
         if h._selected_name in h._objects_by_name:
             h._update_inspector(h._selected_name)
+        dock = getattr(h, "_dock_visual_scripting", None)
+        if dock is not None:
+            dock.sync_from_host()
 
     def runtime_objects(self, message: dict) -> None:
         h = self.host
@@ -104,6 +107,9 @@ class ViewportEventController:
         elif h._selected_name in previous_names and h._selected_name not in h._objects_by_name:
             h._selected_name = None
             h._clear_inspector_view()
+        dock = getattr(h, "_dock_visual_scripting", None)
+        if dock is not None:
+            dock.sync_from_host()
 
     def viewport_mode(self, message: dict) -> None:
         state = "embutida" if message.get("embedded") else "em janela separada (fallback)"
@@ -119,6 +125,9 @@ class ViewportEventController:
             self.host.logic_workspace.apply_runtime_trace(dict(message))
         else:
             self.host.logic_workspace.clear_runtime_trace()
+        dock = getattr(self.host, "_dock_visual_scripting", None)
+        if dock is not None and hasattr(dock, "apply_runtime_trace"):
+            dock.apply_runtime_trace(message)
 
     def attach_script(self, message: dict) -> None:
         self.host._attach_script(
@@ -127,6 +136,12 @@ class ViewportEventController:
 
     def stats(self, message: dict) -> None:
         h = self.host
+        dock = getattr(h, "_dock_visual_scripting", None)
+        if dock is not None:
+            dock.mini_viewport.update_stats(
+                fps=float(message.get("fps", 0.0)),
+                object_count=int(message.get("objects", 0)),
+            )
         command_stats = h._commands.stats()
         h.profiler_label.setText(
             f"FPS: {message.get('fps', 0):.0f}\n"

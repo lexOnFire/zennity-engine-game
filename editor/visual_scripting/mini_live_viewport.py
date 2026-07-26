@@ -29,13 +29,14 @@ import math
 import time
 from collections import deque
 from enum import Enum
+from pathlib import Path
 from typing import Any, Optional
 
 from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal, QSize
 from PySide6.QtGui import (
     QColor, QFont, QPainter, QPen, QBrush,
     QLinearGradient, QRadialGradient, QPolygonF,
-    QFontMetrics, QPainterPath,
+    QFontMetrics, QPainterPath, QPixmap,
 )
 from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QPushButton, QSlider,
@@ -182,6 +183,7 @@ class _GameViewCanvas(QWidget):
         # Game objects snapshot
         self.game_objects: list[dict] = []
         self.selected_object_id: str  = ""
+        self._texture_cache: dict[str, tuple[float, QPixmap]] = {}
 
         # FPS sparkline
         self._sparkline = _FPSSparkline()
@@ -219,51 +221,39 @@ class _GameViewCanvas(QWidget):
 
     def paintEvent(self, _event):
         p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing)
-        p.setRenderHint(QPainter.TextAntialiasing)
+        try:
+            p.setRenderHint(QPainter.Antialiasing)
+            p.setRenderHint(QPainter.TextAntialiasing)
 
-        w, h = self.width(), self.height()
-        rect = QRectF(0, 0, w, h)
-        self._pulse += 0.07
-        pulse = 0.5 + 0.5 * math.sin(self._pulse)
+            w, h = self.width(), self.height()
+            self._pulse += 0.07
+            pulse = 0.5 + 0.5 * math.sin(self._pulse)
 
-        # ── 1. Background ─────────────────────────────────────────────────
-        p.fillRect(0, 0, w, h, _C.BG_DEEP)
+            p.fillRect(0, 0, w, h, _C.BG_DEEP)
+            if self.show_grid:
+                self._draw_grid(p, w, h)
+            if self.mode != ViewportMode.EDITOR:
+                self._draw_debug_overlays(p, w, h)
+            self._draw_game_objects(p, w, h)
+            self._draw_mode_border(p, w, h, pulse)
 
-        # ── 2. Grid ───────────────────────────────────────────────────────
-        if self.show_grid:
-            self._draw_grid(p, w, h)
+            if self.show_node_exec and time.time() < self._node_flash_until:
+                fade = min(1.0, (self._node_flash_until - time.time()) / 0.12)
+                p.fillRect(0, 0, w, h, QColor(174, 125, 240, int(18 * fade)))
 
-        # ── 3. Debug overlays ─────────────────────────────────────────────
-        if self.mode != ViewportMode.EDITOR:
-            self._draw_debug_overlays(p, w, h)
-
-        # ── 4. Game objects ───────────────────────────────────────────────
-        self._draw_game_objects(p, w, h)
-
-        # ── 5. Mode border ────────────────────────────────────────────────
-        self._draw_mode_border(p, w, h, pulse)
-
-        # ── 6. Node execution flash ───────────────────────────────────────
-        if self.show_node_exec and time.time() < self._node_flash_until:
-            fade = min(1.0, (self._node_flash_until - time.time()) / 0.12)
-            p.fillRect(0, 0, w, h, QColor(174, 125, 240, int(18 * fade)))
-
-        # ── 7. HUD overlays ───────────────────────────────────────────────
-        self._draw_camera_badge(p, w, h)
-        if self.mode != ViewportMode.EDITOR:
-            self._draw_runtime_clock(p, w, h)
-        if self.show_stats and self.mode != ViewportMode.EDITOR:
-            self._draw_stats_panel(p, w, h)
-            self._sparkline.draw(p, w - 108, h - 46, 100, 38)
-        if self.show_node_exec:
-            self._draw_node_pill(p, w, h, pulse)
-
-        # ── 8. Editor placeholder ─────────────────────────────────────────
-        if self.mode == ViewportMode.EDITOR and not self.game_objects:
-            self._draw_editor_placeholder(p, w, h)
-
-        p.end()
+            self._draw_camera_badge(p, w, h)
+            if self.mode != ViewportMode.EDITOR:
+                self._draw_runtime_clock(p, w, h)
+            if self.show_stats and self.mode != ViewportMode.EDITOR:
+                self._draw_stats_panel(p, w, h)
+                self._sparkline.draw(p, w - 108, h - 46, 100, 38)
+            if self.show_node_exec:
+                self._draw_node_pill(p, w, h, pulse)
+            if self.mode == ViewportMode.EDITOR and not self.game_objects:
+                self._draw_editor_placeholder(p, w, h)
+        finally:
+            if p.isActive():
+                p.end()
 
     # ── Drawing sub-methods ────────────────────────────────────────────────
 
@@ -302,12 +292,7 @@ class _GameViewCanvas(QWidget):
 
         # Colliders
         if self.show_colliders:
-            p.setPen(QPen(_C.COLLIDER, 1.4, Qt.DashLine))
-            p.setBrush(QBrush(_C.COLLIDER_FILL))
-            p.drawRoundedRect(QRectF(cx - 28, cy - 28, 56, 56), 2, 2)
-            # Ground line
-            p.setPen(QPen(QColor(80, 220, 140, 100), 1, Qt.DotLine))
-            p.drawLine(int(cx - 36), int(cy + 28), int(cx + 36), int(cy + 28))
+            self._draw_physics_overlays(p, cx, cy)
 
         # AI FOV
         if self.show_ai:
@@ -369,40 +354,134 @@ class _GameViewCanvas(QWidget):
                 p.setBrush(Qt.NoBrush)
                 p.drawEllipse(QPointF(cx, cy), float(r), float(r))
 
+    def _draw_physics_overlays(
+        self, p: QPainter, cx: float, cy: float
+    ) -> None:
+        for obj in self.game_objects:
+            collider = obj.get("collider")
+            rigidbody = obj.get("rigidbody")
+            if not isinstance(collider, dict) and not isinstance(rigidbody, dict):
+                continue
+            ox = cx + float(obj.get("x", 0.0))
+            oy = cy + float(obj.get("y", 0.0))
+            width = max(1.0, float(
+                (collider or {}).get("width", obj.get("w", 1.0))
+            ))
+            height = max(1.0, float(
+                (collider or {}).get("height", obj.get("h", 1.0))
+            ))
+            offset_x = float((collider or {}).get("offset_x", 0.0))
+            offset_y = float((collider or {}).get("offset_y", 0.0))
+
+            p.save()
+            p.translate(ox + offset_x, oy + offset_y)
+            p.rotate(float(obj.get("rotation", 0.0)))
+            p.setPen(QPen(_C.COLLIDER, 1.4, Qt.DashLine))
+            p.setBrush(QBrush(_C.COLLIDER_FILL))
+            shape = str((collider or {}).get("type", "box")).lower()
+            rect = QRectF(-width / 2, -height / 2, width, height)
+            if shape in {"circle", "sphere"}:
+                p.drawEllipse(rect)
+            else:
+                p.drawRect(rect)
+            p.restore()
+
+            velocity_y = float(obj.get("velocity_y", 0.0))
+            if isinstance(rigidbody, dict) and abs(velocity_y) > 0.5:
+                arrow = max(-70.0, min(70.0, velocity_y * 0.08))
+                p.setPen(QPen(_C.VELOCITY, 2.0))
+                p.drawLine(
+                    QPointF(ox, oy),
+                    QPointF(ox, oy + arrow),
+                )
+
     def _draw_game_objects(self, p: QPainter, w: int, h: int) -> None:
         cx, cy = w / 2, h / 2
-        for obj in self.game_objects:
-            ox = cx + obj.get("x", 0)
-            oy = cy - obj.get("y", 0)
-            sz = obj.get("size", 14)
-            color = QColor(obj.get("color", "#4c9aff"))
+        layer_order = {"Background": 0, "Default": 1, "Foreground": 2, "UI": 3}
+        ordered = sorted(self.game_objects, key=lambda obj: (
+            layer_order.get(str(obj.get("render_layer", "Default")), 1),
+            int(obj.get("sort_order", 0)),
+        ))
+        for obj in ordered:
+            if not obj.get("active", True) or not obj.get("renderer_enabled", True):
+                continue
+            if self.mode == ViewportMode.GAME and self._is_camera(obj):
+                continue
+            ox = cx + float(obj.get("x", 0))
+            oy = cy + float(obj.get("y", 0))
+            width = max(1.0, float(obj.get("w", obj.get("size", 14))))
+            height = max(1.0, float(obj.get("h", obj.get("size", 14))))
+            color = self._object_color(obj.get("color", "#4c9aff"))
             is_sel = obj.get("id", "") == self.selected_object_id
+            rect = QRectF(-width / 2, -height / 2, width, height)
 
-            # Shadow
-            p.setPen(Qt.NoPen)
-            p.setBrush(QBrush(QColor(0, 0, 0, 80)))
-            p.drawEllipse(QPointF(ox + 2, oy + 2), sz * 0.5, sz * 0.5)
-
-            # Body
-            grad = QRadialGradient(ox - sz * 0.2, oy - sz * 0.2, sz * 0.8)
-            grad.setColorAt(0.0, color.lighter(160))
-            grad.setColorAt(1.0, color.darker(130))
-            p.setBrush(QBrush(grad))
-            p.setPen(QPen(color.lighter(180), 1.0))
-            p.drawEllipse(QPointF(ox, oy), sz * 0.5, sz * 0.5)
-
-            # Selection ring
+            p.save()
+            p.translate(ox, oy)
+            p.rotate(float(obj.get("rotation", 0.0)))
+            pixmap = self._object_pixmap(obj)
+            if pixmap is not None:
+                p.drawPixmap(rect, pixmap, QRectF(pixmap.rect()))
+            else:
+                p.setPen(QPen(color.lighter(145), 1.0))
+                p.setBrush(QBrush(color))
+                p.drawRoundedRect(rect, min(4.0, width / 4), min(4.0, height / 4))
             if is_sel:
                 p.setBrush(Qt.NoBrush)
                 p.setPen(QPen(_C.SELECTION_RING, 1.5))
-                p.drawEllipse(QPointF(ox, oy), sz * 0.7, sz * 0.7)
+                p.drawRect(rect.adjusted(-3, -3, 3, 3))
+            p.restore()
 
-            # Label
-            lbl = obj.get("label", "")
+            lbl = str(obj.get("name") or obj.get("label") or "")
             if lbl:
                 p.setFont(QFont("Segoe UI", 7))
                 p.setPen(QPen(_C.TEXT_SECONDARY))
-                p.drawText(int(ox + sz * 0.5 + 3), int(oy + 4), lbl)
+                p.drawText(int(ox + width / 2 + 4), int(oy + 4), lbl)
+
+    def _object_pixmap(self, obj: dict[str, Any]) -> QPixmap | None:
+        texture = str(obj.get("texture", "")).strip()
+        if not texture:
+            return None
+        path = Path(texture)
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        try:
+            modified = path.stat().st_mtime
+        except OSError:
+            return None
+        key = str(path.resolve())
+        cached = self._texture_cache.get(key)
+        if cached is None or cached[0] != modified:
+            pixmap = QPixmap(key)
+            if pixmap.isNull():
+                return None
+            cached = (modified, pixmap)
+            self._texture_cache[key] = cached
+        return cached[1]
+
+    @staticmethod
+    def _is_camera(obj: dict[str, Any]) -> bool:
+        return (
+            "Camera2D" in obj.get("component_names", [])
+            or isinstance(obj.get("camera"), dict)
+            or obj.get("mesh_type") == "Camera"
+        )
+
+    @staticmethod
+    def _object_color(value: Any) -> QColor:
+        """Normalize serialized scene colors into a valid QColor."""
+        if isinstance(value, QColor):
+            return QColor(value)
+        if isinstance(value, (list, tuple)) and len(value) in (3, 4):
+            try:
+                channels = [max(0, min(255, int(channel))) for channel in value]
+                return QColor(*channels)
+            except (TypeError, ValueError):
+                pass
+        if isinstance(value, str):
+            color = QColor(value)
+            if color.isValid():
+                return color
+        return QColor("#4c9aff")
 
     def _draw_mode_border(self, p: QPainter, w: int, h: int, pulse: float) -> None:
         if self.mode == ViewportMode.GAME:
@@ -513,12 +592,14 @@ class _GameViewCanvas(QWidget):
             pos = event.position()
             cx, cy = self.width() / 2, self.height() / 2
             for obj in self.game_objects:
-                ox = cx + obj.get("x", 0)
-                oy = cy - obj.get("y", 0)
-                sz = obj.get("size", 14)
-                dx = pos.x() - ox
-                dy = pos.y() - oy
-                if dx * dx + dy * dy <= (sz * 0.7) ** 2:
+                ox = cx + float(obj.get("x", 0))
+                oy = cy + float(obj.get("y", 0))
+                width = max(1.0, float(obj.get("w", obj.get("size", 14))))
+                height = max(1.0, float(obj.get("h", obj.get("size", 14))))
+                if (
+                    abs(pos.x() - ox) <= width / 2
+                    and abs(pos.y() - oy) <= height / 2
+                ):
                     self.selected_object_id = obj.get("id", "")
                     self.object_clicked.emit(obj)
                     self.update()
@@ -696,12 +777,16 @@ class RuntimeVisualizationPanelWidget(QFrame):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
-        root.addWidget(self._build_primary_toolbar())
+        self.transport_toolbar = self._build_primary_toolbar()
+        root.addWidget(self.transport_toolbar)
         root.addWidget(self._build_overlay_bar())
         root.addWidget(self._canvas, 1)
         root.addWidget(self._build_step_controls())   # hidden in EDITOR/GAME
         root.addWidget(self._build_replay_bar())
         root.addWidget(self._build_status_bar())
+
+    def set_transport_controls_visible(self, visible: bool) -> None:
+        self.transport_toolbar.setVisible(visible)
 
     def _build_primary_toolbar(self) -> QWidget:
         bar = QWidget(self)

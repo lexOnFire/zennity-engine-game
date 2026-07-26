@@ -2,7 +2,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List
 from engine.event_bus import EventBus
 from .events import LocalizationChangedEvent
 
@@ -87,11 +87,11 @@ class LocalizationManager(IService):
         # E.g. _format_currency(value), _format_date(date)
         return text.format(**kwargs)
 
-    def translate(self, key: str, **kwargs) -> str:
+    def translate(self, key: str, fallback: str | None = None, **kwargs) -> str:
         self._ensure_cache(self.current_locale)
         active_cache = self._caches[self.current_locale]
         
-        text = active_cache.get(key, key)
+        text = active_cache.get(key, fallback if fallback is not None else key)
         if kwargs and text != key:
             try:
                 text = self._advanced_format(text, **kwargs)
@@ -99,8 +99,8 @@ class LocalizationManager(IService):
                 pass
         return text
 
-def tr(key: str, **kwargs) -> str:
+def tr(key: str, fallback: str | None = None, **kwargs) -> str:
     global _active_manager
     if _active_manager:
-        return _active_manager.translate(key, **kwargs)
-    return key
+        return _active_manager.translate(key, fallback=fallback, **kwargs)
+    return fallback if fallback is not None else key

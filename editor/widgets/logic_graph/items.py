@@ -10,7 +10,10 @@ from pathlib import Path
 from typing import Any, TYPE_CHECKING
 
 from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QPainterPath, QPainterPathStroker, QPen, QBrush
+from PySide6.QtGui import (
+    QColor, QFont, QLinearGradient, QPainter, QPainterPath, QPainterPathStroker,
+    QPen, QBrush,
+)
 from PySide6.QtWidgets import (
     QGraphicsEllipseItem,
     QGraphicsItem,
@@ -18,6 +21,7 @@ from PySide6.QtWidgets import (
     QGraphicsRectItem,
     QGraphicsTextItem,
     QInputDialog,
+    QGraphicsDropShadowEffect,
 )
 
 from engine.logic.graph_asset import node_port_definitions
@@ -28,17 +32,29 @@ if TYPE_CHECKING:
 
 CATEGORY_COLORS = {
     "Eventos": QColor("#d66ba0"),
+    "Events": QColor("#ff4fa3"),
     "Movimento": QColor("#4c9aff"),
+    "Movement": QColor("#4c8dff"),
     "Posição": QColor("#3fb6a8"),
+    "Position": QColor("#20d6c7"),
     "Ação": QColor("#ae7df0"),
+    "Action": QColor("#a970ff"),
     "Lógica": QColor("#f0a64b"),
+    "Logic": QColor("#ffad42"),
     "Condição": QColor("#50c878"),
+    "Condition": QColor("#42e68b"),
     "Objetos": QColor("#47b8c8"),
+    "Objects": QColor("#34c8e8"),
     "Variáveis": QColor("#d5b84b"),
+    "Variables": QColor("#ffd84a"),
     "Subgrafos": QColor("#b48ead"),
+    "Subgraphs": QColor("#d184ff"),
     "Matemática": QColor("#e07a5f"),
+    "Math": QColor("#ff725e"),
     "Texto": QColor("#81b29a"),
+    "Text": QColor("#6fd6a8"),
     "Personalizado": QColor("#7f8b9c"),
+    "Custom": QColor("#8b98ad"),
 }
 
 PORT_COLORS = {
@@ -54,7 +70,7 @@ PORT_COLORS = {
 class LogicPortItem(QGraphicsEllipseItem):
     """Porta interativa que inicia e conclui uma conexão por arraste."""
 
-    SIZE = 12.0
+    SIZE = 11.0
 
     def __init__(self, node: "LogicNodeItem", name: str, direction: str, data_type: str, y: float) -> None:
         x = -self.SIZE / 2 if direction == "input" else node.width - self.SIZE / 2
@@ -64,8 +80,8 @@ class LogicPortItem(QGraphicsEllipseItem):
         self.direction = str(direction)
         self.data_type = str(data_type)
         self.base_color = PORT_COLORS.get(self.data_type, PORT_COLORS["any"])
-        self.setPen(QPen(QColor("#f3f5f9"), 1.0))
-        self.setBrush(QBrush(self.base_color))
+        self.setPen(QPen(self.base_color.lighter(135), 2.2))
+        self.setBrush(QBrush(QColor("#0b0e14")))
         self.setTransformOriginPoint(self.boundingRect().center())
         self.setAcceptHoverEvents(True)
         self.setAcceptedMouseButtons(Qt.LeftButton)
@@ -89,8 +105,8 @@ class LogicPortItem(QGraphicsEllipseItem):
             self.setPen(QPen(QColor("#777d89"), 1.0))
             self.setScale(0.9)
         else:
-            self.setBrush(QBrush(self.base_color))
-            self.setPen(QPen(QColor("#f3f5f9"), 1.0))
+            self.setBrush(QBrush(QColor("#0b0e14")))
+            self.setPen(QPen(self.base_color.lighter(135), 2.2))
             self.setScale(1.0)
 
     def hoverEnterEvent(self, event) -> None:
@@ -125,7 +141,7 @@ class LogicEdgeItem(QGraphicsPathItem):
         self.base_color = PORT_COLORS.get(data_type, PORT_COLORS["any"])
         self._runtime_active = False
         self._validation_level = ""
-        self.setPen(QPen(self.base_color, 2.2))
+        self.setPen(QPen(self.base_color, 2.4, Qt.SolidLine, Qt.RoundCap))
         self.setZValue(0)
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         self.setData(0, edge_id)
@@ -152,7 +168,7 @@ class LogicEdgeItem(QGraphicsPathItem):
 
     def _refresh_pen(self, selected: bool) -> None:
         if self._runtime_active:
-            self.setPen(QPen(QColor("#7ee787"), 4.2))
+            self.setPen(QPen(QColor("#55f29a"), 4.2, Qt.SolidLine, Qt.RoundCap))
         elif self._validation_level == "error":
             self.setPen(QPen(QColor("#ff5d62"), 3.4, Qt.DashLine))
         elif self._validation_level == "warning":
@@ -161,8 +177,9 @@ class LogicEdgeItem(QGraphicsPathItem):
             style = Qt.DashLine if self.data_type == "object" else Qt.SolidLine
             self.setPen(QPen(
                 QColor("#ffffff") if selected else self.base_color,
-                3.4 if selected else (2.8 if self.data_type == "object" else 2.2),
+                3.6 if selected else (3.0 if self.data_type == "object" else 2.4),
                 style,
+                Qt.RoundCap,
             ))
 
     def shape(self) -> QPainterPath:
@@ -290,18 +307,25 @@ from editor.widgets.logic_graph.item_geometry_mixin import LogicNodeItemGeometry
 
 
 class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGraphicsRectItem):
-    WIDTH = 210.0
-    MINIMUM_WIDTH = 170.0
+    WIDTH = 242.0
+    MINIMUM_WIDTH = 220.0
     MAXIMUM_WIDTH = 520.0
-    MINIMUM_HEIGHT = 116.0
+    MINIMUM_HEIGHT = 132.0
     MAXIMUM_HEIGHT = 720.0
-    COLLAPSED_HEIGHT = 32.0
+    COLLAPSED_HEIGHT = 42.0
+    HEADER_HEIGHT = 42.0
+    PORT_START_Y = 60.0
+    PORT_SPACING = 28.0
 
     def __init__(self, editor: "LogicGraphEditor", node: dict[str, Any]) -> None:
         ports = node_port_definitions(node)
         self.input_definitions = ports["inputs"]
         self.output_definitions = ports["outputs"]
-        self.natural_height = max(self.MINIMUM_HEIGHT + 18.0, 80.0 + max(len(self.input_definitions), len(self.output_definitions), 1) * 22.0)
+        port_rows = max(len(self.input_definitions), len(self.output_definitions), 1)
+        self.natural_height = max(
+            self.MINIMUM_HEIGHT + 18.0,
+            100.0 + port_rows * self.PORT_SPACING,
+        )
         editor_state = node.setdefault("editor", {})
         self.width = max(self.MINIMUM_WIDTH, min(self.MAXIMUM_WIDTH, float(editor_state.get("width", self.WIDTH))))
         stored_height = float(editor_state.get("height", 0.0))
@@ -313,6 +337,7 @@ class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGrap
         self.editor = editor
         self.node = node
         self._show_code = False
+        self._hovered = False
         self._fanout_count = 0
         self._target_hint = ""
         self._target_is_implicit = False
@@ -322,15 +347,27 @@ class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGrap
             | QGraphicsItem.ItemIsSelectable
             | QGraphicsItem.ItemSendsGeometryChanges
         )
+        self.setAcceptHoverEvents(True)
         self.setPos(float(node["position"][0]), float(node["position"][1]))
         self.setZValue(2)
-        self.setPen(QPen(QColor("#515662"), 1.2))
-        self.setBrush(QBrush(QColor("#22242a")))
-
+        self.setPen(QPen(QColor("#30394a"), 1.2))
+        self.setBrush(QBrush(QColor("#151922")))
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(18.0)
+        shadow.setOffset(0.0, 5.0)
         color = CATEGORY_COLORS.get(str(node.get("category")), CATEGORY_COLORS["Personalizado"])
+        self.category_color = color
+        shadow_color = QColor(color)
+        shadow_color.setAlpha(75)
+        shadow.setColor(shadow_color)
+        self.setGraphicsEffect(shadow)
         self.header = QGraphicsRectItem(0.0, 0.0, self.width, 28.0, self)
         self.header.setPen(Qt.NoPen)
-        self.header.setBrush(QBrush(color.darker(155)))
+        self.header.setBrush(Qt.NoBrush)
+        self.header.hide()
+        self.accent = QGraphicsRectItem(0.0, 0.0, 4.0, self.height, self)
+        self.accent.setPen(Qt.NoPen)
+        self.accent.setBrush(QBrush(color))
         self.breakpoint_item = QGraphicsEllipseItem(self.width - 20.0, 8.0, 10.0, 10.0, self)
         self.breakpoint_item.setPen(QPen(QColor("#ffd7d9"), 1.0))
         self.breakpoint_item.setBrush(QBrush(QColor("#ff4d55")))
@@ -338,17 +375,29 @@ class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGrap
         self.breakpoint_item.setVisible(False)
 
         self.title_item = QGraphicsTextItem(str(node.get("title", "Nó")), self)
-        self.title_item.setDefaultTextColor(QColor("#f2f4f8"))
-        self.title_item.setPos(10.0, 3.0)
+        self.title_item.setDefaultTextColor(QColor("#f5f7fb"))
+        self.title_item.setPos(13.0, 3.0)
         font = self.title_item.font()
         font.setBold(True)
-        font.setPointSizeF(9.5)
+        font.setFamily("Segoe UI")
+        font.setPointSizeF(10.0)
         self.title_item.setFont(font)
+        self.category_item = QGraphicsTextItem(
+            str(node.get("category", "Custom")).upper(), self
+        )
+        self.category_item.setDefaultTextColor(color.lighter(170))
+        self.category_item.setPos(13.0, 21.0)
+        category_font = self.category_item.font()
+        category_font.setFamily("Segoe UI")
+        category_font.setBold(True)
+        category_font.setPointSizeF(6.8)
+        category_font.setLetterSpacing(QFont.AbsoluteSpacing, 1.1)
+        self.category_item.setFont(category_font)
         self.flip_control = LogicFlipControl(self)
         self.collapse_control = LogicCollapseControl(self)
 
         self.summary_item = QGraphicsTextItem("", self)
-        self.summary_item.setDefaultTextColor(QColor("#b8beca"))
+        self.summary_item.setDefaultTextColor(QColor("#7f8a9d"))
         self.summary_item.setTextWidth(self.width - 22.0)
         self.summary_item.setPos(10.0, self.height - 25.0)
         summary_font = self.summary_item.font()
@@ -382,25 +431,107 @@ class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGrap
         self.output_ports: dict[str, LogicPortItem] = {}
         self.port_labels: list[QGraphicsTextItem] = []
         for index, (name, data_type) in enumerate(self.input_definitions):
-            y = 43.0 + index * 22.0
+            y = self.PORT_START_Y + index * self.PORT_SPACING
             port = LogicPortItem(self, name, "input", data_type, y)
             self.input_ports[name] = port
             label = QGraphicsTextItem(name, self)
             label.setDefaultTextColor(QColor("#aeb6c5"))
-            label.setPos(9.0, y - 12.0)
+            label.setPos(13.0, y - 12.0)
+            label_font = label.font()
+            label_font.setFamily("Segoe UI")
+            label_font.setPointSizeF(8.0)
+            label.setFont(label_font)
             self.port_labels.append(label)
         for index, (name, data_type) in enumerate(self.output_definitions):
-            y = 43.0 + index * 22.0
+            y = self.PORT_START_Y + index * self.PORT_SPACING
             port = LogicPortItem(self, name, "output", data_type, y)
             self.output_ports[name] = port
             label = QGraphicsTextItem(name, self)
             label.setDefaultTextColor(QColor("#aeb6c5"))
             label.setTextWidth(76.0)
             label.setPos(self.width - 84.0, y - 12.0)
+            label_font = label.font()
+            label_font.setFamily("Segoe UI")
+            label_font.setPointSizeF(8.0)
+            label.setFont(label_font)
             self.port_labels.append(label)
         self.resize_handle = LogicResizeHandle(self)
         self.refresh_text()
         self._apply_geometry(notify=False)
+
+    def paint(self, painter: QPainter, option, widget=None) -> None:
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        outer = QPainterPath()
+        outer.addRoundedRect(self.rect(), 9.0, 9.0)
+        body_gradient = QLinearGradient(0.0, 0.0, 0.0, self.height)
+        body_gradient.setColorAt(0.0, self.category_color.darker(340))
+        body_gradient.setColorAt(0.42, QColor("#141a26"))
+        body_gradient.setColorAt(1.0, QColor("#0d1119"))
+        painter.fillPath(outer, QBrush(body_gradient))
+
+        header_rect = QRectF(
+            1.0, 1.0, self.width - 2.0,
+            min(self.HEADER_HEIGHT, self.height - 2.0),
+        )
+        header = QPainterPath()
+        header.addRoundedRect(header_rect, 8.0, 8.0)
+        gradient = QLinearGradient(0.0, 0.0, self.width, 0.0)
+        gradient.setColorAt(0.0, self.category_color.darker(112))
+        gradient.setColorAt(0.62, self.category_color.darker(155))
+        gradient.setColorAt(1.0, self.category_color.darker(230))
+        painter.fillPath(header, QBrush(gradient))
+        if self.height > self.HEADER_HEIGHT:
+            painter.fillRect(
+                QRectF(1.0, self.HEADER_HEIGHT - 8.0, self.width - 2.0, 9.0),
+                QBrush(gradient),
+            )
+
+        painter.fillRect(
+            QRectF(0.0, 0.0, self.width, 3.0),
+            QBrush(self.category_color.lighter(125)),
+        )
+
+        if not self.collapsed:
+            rows = max(len(self.input_definitions), len(self.output_definitions), 1)
+            for index in range(rows):
+                row_y = self.PORT_START_Y - 15.0 + index * self.PORT_SPACING
+                if index % 2 == 0:
+                    painter.fillRect(
+                        QRectF(7.0, row_y, self.width - 14.0, self.PORT_SPACING),
+                        QColor(
+                            self.category_color.red(),
+                            self.category_color.green(),
+                            self.category_color.blue(),
+                            18,
+                        ),
+                    )
+            footer_y = self.height - 34.0
+            painter.setPen(QPen(QColor("#252d3b"), 1.0))
+            painter.drawLine(
+                QPointF(10.0, footer_y),
+                QPointF(self.width - 10.0, footer_y),
+            )
+
+        if self.isSelected():
+            painter.setPen(QPen(QColor(124, 92, 255, 55), 7.0))
+            painter.drawPath(outer)
+        elif self._hovered:
+            hover = QColor(self.category_color)
+            hover.setAlpha(90)
+            painter.setPen(QPen(hover, 4.0))
+            painter.drawPath(outer)
+        painter.setPen(self.pen())
+        painter.drawPath(outer)
+
+    def hoverEnterEvent(self, event) -> None:
+        self._hovered = True
+        self.update()
+        super().hoverEnterEvent(event)
+
+    def hoverLeaveEvent(self, event) -> None:
+        self._hovered = False
+        self.update()
+        super().hoverLeaveEvent(event)
 
     @property
     def node_id(self) -> str:
@@ -410,13 +541,17 @@ class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGrap
         if self.collapsed:
             return self.mapToScene(QPointF(0.0, self.COLLAPSED_HEIGHT / 2.0))
         port = self.input_ports.get(port_name) or next(iter(self.input_ports.values()), None)
-        return port.scene_position() if port is not None else self.mapToScene(QPointF(0.0, 43.0))
+        return port.scene_position() if port is not None else self.mapToScene(
+            QPointF(0.0, self.PORT_START_Y)
+        )
 
     def output_position(self, port_name: str = "next") -> QPointF:
         if self.collapsed:
             return self.mapToScene(QPointF(self.width, self.COLLAPSED_HEIGHT / 2.0))
         port = self.output_ports.get(port_name) or next(iter(self.output_ports.values()), None)
-        return port.scene_position() if port is not None else self.mapToScene(QPointF(self.width, 43.0))
+        return port.scene_position() if port is not None else self.mapToScene(
+            QPointF(self.width, self.PORT_START_Y)
+        )
 
     def resize_to(self, width: float, height: float) -> None:
         self.width = max(self.MINIMUM_WIDTH, min(self.MAXIMUM_WIDTH, float(width)))

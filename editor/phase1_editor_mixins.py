@@ -132,7 +132,10 @@ class Phase1EditorUIBuilderMixin:
             cls = getattr(mod, class_name)
             dock_widget = cls(self)
             setattr(self, dock_attr, dock_widget)
-            self.addDockWidget(Qt.RightDockWidgetArea, dock_widget)
+            if isinstance(dock_widget, QDockWidget):
+                self.addDockWidget(Qt.RightDockWidgetArea, dock_widget)
+            if hasattr(dock_widget, "configure_independent_window"):
+                dock_widget.configure_independent_window()
 
         dock_widget.show()
         dock_widget.raise_()

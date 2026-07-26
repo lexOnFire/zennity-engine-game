@@ -93,6 +93,7 @@ class LogicGraphRuntimeViewMixin:
         self.target_value.setText(str(target.get("value", "Player")))
         self.target_type.blockSignals(False)
         self.target_value.blockSignals(False)
+        self._loading_graph = True
         self.scene.clear()
         self.node_items.clear()
         self.edge_items.clear()
@@ -105,6 +106,7 @@ class LogicGraphRuntimeViewMixin:
             self._create_comment_item(comment)
         for node in self.graph["nodes"]:
             self._create_node_item(node)
+        self._loading_graph = False
         for node_id in self.graph.get("debug", {}).get("breakpoints", []):
             if node_id in self.node_items:
                 self.node_items[node_id].set_breakpoint(True)

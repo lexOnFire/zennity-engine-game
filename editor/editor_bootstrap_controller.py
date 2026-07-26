@@ -16,8 +16,6 @@ from editor.hierarchy_view_renderer import HierarchyViewRenderer
 from editor.inspector_controller import InspectorComponentController, IsolatedInspectorController
 from editor.inspector_view_renderer import InspectorViewRenderer
 from editor.logic_workspace_controller import LogicWorkspaceController
-from editor.widgets.graph_editor.graph_canvas import GraphCanvas
-from editor.widgets.graph_editor.command_palette import CommandPaletteWidget
 from editor.prefab_workspace_controller import PrefabWorkspaceController
 from editor.project_workflow_controller import ProjectWorkflowController
 from editor.runtime.isolated_play_mode_controller import IsolatedPlayModeController

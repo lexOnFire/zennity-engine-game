@@ -185,7 +185,6 @@ class MainWindow(MainWindowMenusMixin, QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea,  self.dock_code_editor)
 
         # Adiciona docks no painel central/inferior
-        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_visual_scripting)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_animation_studio)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_behavior_tree)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_dialogue)
@@ -197,6 +196,7 @@ class MainWindow(MainWindowMenusMixin, QMainWindow):
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_asset_auditor)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_build_wizard)
         self.addDockWidget(Qt.RightDockWidgetArea,  self.dock_project_settings)
+        self.dock_visual_scripting.configure_independent_window()
 
         self.tabifyDockWidget(self.dock_console, self.dock_profiler)
         self.splitDockWidget(self.dock_assets, self.dock_console, Qt.Horizontal)
