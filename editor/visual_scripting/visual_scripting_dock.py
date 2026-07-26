@@ -190,6 +190,12 @@ class VisualScriptingEditorDock(QMainWindow):
         self._connect_signals()
         self._open_initial_document()
         self.sync_from_host()
+        
+        self._sync_timer = QTimer(self)
+        self._sync_timer.timeout.connect(self._tick_sync)
+
+    def _tick_sync(self) -> None:
+        self.sync_from_host()
 
     @staticmethod
     def _new_specialized_graph(category: str) -> GenericGraphEditorWidget:
@@ -472,15 +478,23 @@ class VisualScriptingEditorDock(QMainWindow):
     def _play(self) -> None:
         self.graph_editor.request_play()
         self.mini_viewport.start_play_mode()
+        if hasattr(self._host, "on_play_clicked"):
+            self._host.on_play_clicked()
         self.sync_from_host()
+        self._sync_timer.start(16)
 
     def _pause(self) -> None:
         self._dispatch("pause")
         self.mini_viewport.toggle_pause_mode()
+        if hasattr(self._host, "on_pause_clicked"):
+            self._host.on_pause_clicked()
 
     def _stop(self) -> None:
+        self._sync_timer.stop()
         self.graph_editor.stop_requested.emit()
         self.mini_viewport.stop_play_mode()
+        if hasattr(self._host, "on_stop_clicked"):
+            self._host.on_stop_clicked()
         self.sync_from_host()
 
     def _validate(self) -> None:
