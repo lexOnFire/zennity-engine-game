@@ -1,139 +1,390 @@
-"""Dock do UI Builder da Zennity Engine (Fase 5 - Cliente da UI Platform)."""
+"""Production UI layout authoring dock for canonical ``.zui`` assets."""
 from __future__ import annotations
+
+import json
+from copy import deepcopy
+from pathlib import Path
 from typing import Optional
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QPainter, QColor, QPen, QBrush
+
+from PySide6.QtCore import QPoint, QRectF, Qt, Signal
+from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import (
-    QDockWidget,
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QPushButton,
-    QLabel,
-    QSplitter,
-    QTreeWidget,
-    QTreeWidgetItem,
-    QLineEdit,
-    QSpinBox,
+    QCheckBox, QComboBox, QDockWidget, QFileDialog, QFormLayout, QHBoxLayout,
+    QLabel, QLineEdit, QMessageBox, QPushButton, QSpinBox, QSplitter,
+    QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget,
 )
 
-from engine.ui.runtime import UICanvas, UIPanel, UIButton, UILabel, UIImage
+from engine.ui.runtime import (
+    UIButton, UICanvas, UIContainer, UIImage, UIInput, UILabel, UIPanel,
+    UIScrollView, UIWidget, widget_from_dict,
+)
 
 
 class UICanvasPreviewWidget(QWidget):
-    """Canvas de visualização WYSIWYG de UI em tempo real."""
+    """Interactive WYSIWYG preview with selection and drag positioning."""
+
+    selection_changed = Signal(object)
+    widget_moved = Signal(object)
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.canvas_runtime = UICanvas("MainCanvas")
-        self.selected_widget = None
+        self.selected_widget: UIWidget | None = None
+        self._drag_origin: QPoint | None = None
+        self._widget_origin = (0.0, 0.0)
+        self.setMinimumSize(520, 320)
 
-    def paintEvent(self, event) -> None:
+    def canvas_rect(self) -> QRectF:
+        margin = 24
+        width = max(1, self.width() - margin * 2)
+        height = min(max(1, self.height() - margin * 2), width * 9 / 16)
+        width = height * 16 / 9
+        return QRectF((self.width() - width) / 2, (self.height() - height) / 2, width, height)
+
+    def _scale(self) -> tuple[float, float]:
+        rect = self.canvas_rect()
+        return rect.width() / self.canvas_runtime.width, rect.height() / self.canvas_runtime.height
+
+    def _walk(self, parent: UIWidget | None = None):
+        root = parent or self.canvas_runtime
+        for child in root.children:
+            yield child
+            yield from self._walk(child)
+
+    def _widget_rect(self, widget: UIWidget) -> QRectF:
+        canvas = self.canvas_rect()
+        sx, sy = self._scale()
+        return QRectF(
+            canvas.left() + widget.x * sx, canvas.top() + widget.y * sy,
+            widget.width * sx, widget.height * sy,
+        )
+
+    def paintEvent(self, _event) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
-
-        rect = self.rect()
-        painter.fillRect(rect, QColor("#121216"))
-
-        # Renderiza a área do Canvas (800x450 proporção 16:9)
-        cw, ch = 700, 394
-        cx = (rect.width() - cw) // 2
-        cy = (rect.height() - ch) // 2
-        painter.fillRect(cx, cy, cw, ch, QColor("#1E1E26"))
-        painter.setPen(QPen(QColor("#3A3A4C"), 2))
-        painter.drawRect(cx, cy, cw, ch)
-
-        # Renderiza os widgets filhos do Canvas
-        for widget in self.canvas_runtime.children:
-            wx = cx + int(widget.x)
-            wy = cy + int(widget.y)
-            ww = int(widget.width)
-            wh = int(widget.height)
-
-            if isinstance(widget, UIButton):
-                painter.fillRect(wx, wy, ww, wh, QColor("#3498DB"))
-                painter.setPen(QPen(QColor("#FFFFFF"), 1))
-                painter.drawText(wx, wy, ww, wh, Qt.AlignCenter, getattr(widget, "text", "Button"))
+        painter.fillRect(self.rect(), QColor("#10141d"))
+        canvas = self.canvas_rect()
+        painter.fillRect(canvas, QColor("#1c2330"))
+        painter.setPen(QPen(QColor("#46536b"), 1))
+        painter.drawRect(canvas)
+        for widget in self._walk():
+            if not widget.visible:
+                continue
+            rect = self._widget_rect(widget)
+            if isinstance(widget, (UIPanel, UIContainer, UIScrollView)):
+                painter.fillRect(rect, QColor(getattr(widget, "bg_color", "#263246")))
+            elif isinstance(widget, UIButton):
+                painter.fillRect(rect, QColor("#3478d4"))
+                painter.setPen(QColor("#ffffff"))
+                painter.drawText(rect, Qt.AlignCenter, widget.text)
             elif isinstance(widget, UILabel):
-                painter.setPen(QPen(QColor("#2ECC71"), 1))
-                painter.drawText(wx, wy, ww, wh, Qt.AlignLeft | Qt.AlignVCenter, getattr(widget, "text", "Label"))
-            elif isinstance(widget, UIPanel):
-                painter.fillRect(wx, wy, ww, wh, QColor("#2C3E50"))
+                painter.setPen(QColor(widget.text_color))
+                painter.drawText(rect, Qt.AlignLeft | Qt.AlignVCenter, widget.text)
+            elif isinstance(widget, UIInput):
+                painter.fillRect(rect, QColor("#151b26"))
+                painter.setPen(QColor("#8d9ab0"))
+                painter.drawRect(rect)
+                painter.drawText(rect.adjusted(6, 0, -4, 0), Qt.AlignVCenter, widget.placeholder)
+            elif isinstance(widget, UIImage):
+                painter.fillRect(rect, QColor("#332d48"))
+                painter.setPen(QColor("#b79cff"))
+                painter.drawText(rect, Qt.AlignCenter, Path(widget.texture_path).name or "Image")
+            if widget is self.selected_widget:
+                painter.setPen(QPen(QColor("#61d7ff"), 2, Qt.DashLine))
+                painter.drawRect(rect.adjusted(-2, -2, 2, 2))
+
+    def mousePressEvent(self, event) -> None:
+        position = event.position()
+        selected = next(
+            (widget for widget in reversed(list(self._walk())) if self._widget_rect(widget).contains(position)),
+            None,
+        )
+        self.selected_widget = selected
+        self.selection_changed.emit(selected)
+        if selected is not None:
+            self._drag_origin = event.position().toPoint()
+            self._widget_origin = (selected.x, selected.y)
+        self.update()
+
+    def mouseMoveEvent(self, event) -> None:
+        if self.selected_widget is None or self._drag_origin is None:
+            return
+        sx, sy = self._scale()
+        delta = event.position().toPoint() - self._drag_origin
+        self.selected_widget.x = max(0.0, self._widget_origin[0] + delta.x() / sx)
+        self.selected_widget.y = max(0.0, self._widget_origin[1] + delta.y() / sy)
+        self.widget_moved.emit(self.selected_widget)
+        self.update()
+
+    def mouseReleaseEvent(self, _event) -> None:
+        self._drag_origin = None
 
 
 class UIBuilderDock(QDockWidget):
-    """Dock do UI Builder Visual (Cliente oficial da UI Platform)."""
+    """Complete editor for creating, editing and persisting UI layouts."""
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    document_changed = Signal(object)
+
+    def __init__(self, parent: Optional[QWidget] = None, project_root: str | Path | None = None) -> None:
         super().__init__("🎨 UI Builder", parent)
         self.setObjectName("UIBuilderDock")
+        self.project_root = Path(project_root or Path.cwd()).resolve()
+        self.current_path: Path | None = None
+        self.is_dirty = False
+        self._updating_inspector = False
+        self._name_counter: dict[str, int] = {}
 
         container = QWidget(self)
-        main_layout = QVBoxLayout(container)
-        main_layout.setContentsMargins(4, 4, 4, 4)
-
-        # Toolbar Superior
+        root = QVBoxLayout(container)
+        root.setContentsMargins(6, 6, 6, 6)
         toolbar = QHBoxLayout()
-        btn_add_panel = QPushButton("+ Panel", self)
-        btn_add_panel.clicked.connect(lambda: self.add_widget(UIPanel("Panel_1")))
-
-        btn_add_button = QPushButton("+ Button", self)
-        btn_add_button.clicked.connect(lambda: self.add_widget(UIButton("Button_1")))
-
-        btn_add_label = QPushButton("+ Label", self)
-        btn_add_label.clicked.connect(lambda: self.add_widget(UILabel("Label_1")))
-
-        toolbar.addWidget(QLabel("UI Widgets:", self))
-        toolbar.addWidget(btn_add_panel)
-        toolbar.addWidget(btn_add_button)
-        toolbar.addWidget(btn_add_label)
+        for label, callback in (
+            ("Novo", self.new_document), ("Abrir", self.open_dialog), ("Salvar", self.save),
+            ("Panel", lambda: self.add_widget(UIPanel(self._next_name("Panel")))),
+            ("Button", lambda: self.add_widget(UIButton(self._next_name("Button")))),
+            ("Label", lambda: self.add_widget(UILabel(self._next_name("Label")))),
+            ("Image", lambda: self.add_widget(UIImage(self._next_name("Image")))),
+            ("Input", lambda: self.add_widget(UIInput(self._next_name("Input")))),
+            ("Container", lambda: self.add_widget(UIContainer(self._next_name("Container")))),
+        ):
+            button = QPushButton(label, self)
+            button.clicked.connect(callback)
+            toolbar.addWidget(button)
         toolbar.addStretch(1)
-        main_layout.addLayout(toolbar)
+        self.btn_duplicate = QPushButton("Duplicar", self)
+        self.btn_delete = QPushButton("Excluir", self)
+        self.btn_duplicate.clicked.connect(self.duplicate_selected)
+        self.btn_delete.clicked.connect(self.delete_selected)
+        toolbar.addWidget(self.btn_duplicate)
+        toolbar.addWidget(self.btn_delete)
+        root.addLayout(toolbar)
 
-        # Splitter (Hierarquia | Canvas | Inspector)
         splitter = QSplitter(Qt.Horizontal, container)
-
-        # 1. Painel de Hierarquia
         self.tree_hierarchy = QTreeWidget(splitter)
         self.tree_hierarchy.setHeaderLabel("Hierarquia de UI")
-        splitter.addWidget(self.tree_hierarchy)
-
-        # 2. Preview Canvas WYSIWYG
         self.preview_canvas = UICanvasPreviewWidget(splitter)
-        splitter.addWidget(self.preview_canvas)
-
-        # 3. Painel de Propriedades (Inspector)
         self.inspector_panel = QWidget(splitter)
-        insp_layout = QVBoxLayout(self.inspector_panel)
-        insp_layout.addWidget(QLabel("Propriedades do Widget", self))
+        form = QFormLayout(self.inspector_panel)
         self.txt_name = QLineEdit(self)
-        insp_layout.addWidget(QLabel("Nome:", self))
-        insp_layout.addWidget(self.txt_name)
-        insp_layout.addStretch(1)
+        self.spin_x, self.spin_y = QSpinBox(self), QSpinBox(self)
+        self.spin_width, self.spin_height = QSpinBox(self), QSpinBox(self)
+        for spin in (self.spin_x, self.spin_y, self.spin_width, self.spin_height):
+            spin.setRange(0, 8192)
+        self.txt_text = QLineEdit(self)
+        self.txt_asset = QLineEdit(self)
+        self.check_visible = QCheckBox("Visível", self)
+        self.check_visible.setChecked(True)
+        self.combo_layout = QComboBox(self)
+        self.combo_layout.addItems(["Vertical", "Horizontal", "Free"])
+        form.addRow("Nome", self.txt_name)
+        form.addRow("X", self.spin_x)
+        form.addRow("Y", self.spin_y)
+        form.addRow("Largura", self.spin_width)
+        form.addRow("Altura", self.spin_height)
+        form.addRow("Texto", self.txt_text)
+        form.addRow("Asset", self.txt_asset)
+        form.addRow("Layout", self.combo_layout)
+        form.addRow(self.check_visible)
+        splitter.addWidget(self.tree_hierarchy)
+        splitter.addWidget(self.preview_canvas)
         splitter.addWidget(self.inspector_panel)
-
-        splitter.setSizes([180, 500, 200])
-        main_layout.addWidget(splitter, 1)
+        splitter.setSizes([220, 700, 250])
+        root.addWidget(splitter, 1)
         self.setWidget(container)
 
+        self.tree_hierarchy.itemSelectionChanged.connect(self._tree_selection_changed)
+        self.preview_canvas.selection_changed.connect(self.select_widget)
+        self.preview_canvas.widget_moved.connect(self._widget_moved)
+        self.txt_name.editingFinished.connect(self.apply_inspector)
+        self.txt_text.editingFinished.connect(self.apply_inspector)
+        self.txt_asset.editingFinished.connect(self.apply_inspector)
+        self.combo_layout.currentTextChanged.connect(lambda _value: self.apply_inspector())
+        self.check_visible.toggled.connect(lambda _value: self.apply_inspector())
+        for spin in (self.spin_x, self.spin_y, self.spin_width, self.spin_height):
+            spin.valueChanged.connect(lambda _value: self.apply_inspector())
         self.rebuild_hierarchy_tree()
+        self.select_widget(None)
+
+    def _next_name(self, prefix: str) -> str:
+        self._name_counter[prefix] = self._name_counter.get(prefix, 0) + 1
+        return f"{prefix}_{self._name_counter[prefix]}"
+
+    def _tree_items(self, parent_item, parent_widget: UIWidget) -> None:
+        for child in parent_widget.children:
+            item = QTreeWidgetItem(parent_item, [child.name])
+            item.setData(0, Qt.UserRole, child)
+            self._tree_items(item, child)
 
     def rebuild_hierarchy_tree(self) -> None:
         self.tree_hierarchy.clear()
-        root_item = QTreeWidgetItem(self.tree_hierarchy, [self.preview_canvas.canvas_runtime.name])
-        for child in self.preview_canvas.canvas_runtime.children:
-            item = QTreeWidgetItem(root_item, [child.name])
-            item.setData(0, Qt.UserRole, child)
+        canvas = self.preview_canvas.canvas_runtime
+        root_item = QTreeWidgetItem(self.tree_hierarchy, [canvas.name])
+        root_item.setData(0, Qt.UserRole, canvas)
+        self._tree_items(root_item, canvas)
         self.tree_hierarchy.expandAll()
 
-    def add_widget(self, widget) -> None:
-        self.preview_canvas.canvas_runtime.add_child(widget)
+    def add_widget(self, widget: UIWidget) -> None:
+        parent = self.preview_canvas.selected_widget
+        if not isinstance(parent, (UICanvas, UIPanel, UIContainer, UIScrollView)):
+            parent = self.preview_canvas.canvas_runtime
+        widget.x = 40.0 + len(parent.children) * 24.0
+        widget.y = 40.0 + len(parent.children) * 24.0
+        parent.add_child(widget)
+        self._changed()
         self.rebuild_hierarchy_tree()
-        self.preview_canvas.update()
-
-        # FASE 8.4: Notifica inserção e vincula ao PropertyBinding
+        self.select_widget(widget)
         try:
             from editor.core.event_bus import EventBus
             EventBus.emit("UI.widget_added", widget=widget)
         except Exception:
             pass
+
+    def select_widget(self, widget: UIWidget | None) -> None:
+        self.preview_canvas.selected_widget = widget
+        self._updating_inspector = True
+        enabled = widget is not None and widget is not self.preview_canvas.canvas_runtime
+        for control in (
+            self.txt_name, self.spin_x, self.spin_y, self.spin_width, self.spin_height,
+            self.txt_text, self.txt_asset, self.combo_layout, self.check_visible,
+            self.btn_duplicate, self.btn_delete,
+        ):
+            control.setEnabled(enabled)
+        if widget is not None:
+            self.txt_name.setText(widget.name)
+            self.spin_x.setValue(int(widget.x))
+            self.spin_y.setValue(int(widget.y))
+            self.spin_width.setValue(int(widget.width))
+            self.spin_height.setValue(int(widget.height))
+            self.txt_text.setText(str(getattr(widget, "text", getattr(widget, "placeholder", ""))))
+            self.txt_asset.setText(str(getattr(widget, "texture_path", "")))
+            self.check_visible.setChecked(widget.visible)
+            self.combo_layout.setCurrentText(str(getattr(widget, "layout_mode", "Free")))
+        self._updating_inspector = False
+        self.preview_canvas.update()
+
+    def _tree_selection_changed(self) -> None:
+        items = self.tree_hierarchy.selectedItems()
+        self.select_widget(items[0].data(0, Qt.UserRole) if items else None)
+
+    def _widget_moved(self, widget: UIWidget) -> None:
+        self._updating_inspector = True
+        self.spin_x.setValue(int(widget.x))
+        self.spin_y.setValue(int(widget.y))
+        self._updating_inspector = False
+        self._changed()
+
+    def apply_inspector(self) -> None:
+        widget = self.preview_canvas.selected_widget
+        if self._updating_inspector or widget is None:
+            return
+        widget.name = self.txt_name.text().strip() or widget.name
+        widget.x, widget.y = float(self.spin_x.value()), float(self.spin_y.value())
+        widget.width, widget.height = float(self.spin_width.value()), float(self.spin_height.value())
+        widget.visible = self.check_visible.isChecked()
+        if hasattr(widget, "text"):
+            widget.text = self.txt_text.text()
+        if hasattr(widget, "placeholder"):
+            widget.placeholder = self.txt_text.text()
+        if hasattr(widget, "texture_path"):
+            widget.texture_path = self.txt_asset.text().strip()
+        if hasattr(widget, "layout_mode"):
+            widget.layout_mode = self.combo_layout.currentText()
+        self._changed()
+        self.rebuild_hierarchy_tree()
+
+    def delete_selected(self) -> None:
+        widget = self.preview_canvas.selected_widget
+        if widget is None or widget.parent is None:
+            return
+        widget.parent.remove_child(widget)
+        self.select_widget(None)
+        self.rebuild_hierarchy_tree()
+        self._changed()
+
+    def duplicate_selected(self) -> None:
+        widget = self.preview_canvas.selected_widget
+        if widget is None or widget.parent is None:
+            return
+        clone = widget_from_dict(deepcopy(widget.serialize()))
+        clone.name = f"{widget.name}_Copy"
+        clone.x += 24.0
+        clone.y += 24.0
+        widget.parent.add_child(clone)
+        self.rebuild_hierarchy_tree()
+        self.select_widget(clone)
+        self._changed()
+
+    def new_document(self) -> None:
+        if not self._confirm_discard():
+            return
+        self.preview_canvas.canvas_runtime = UICanvas("MainCanvas")
+        self.current_path = None
+        self.is_dirty = False
+        self.rebuild_hierarchy_tree()
+        self.select_widget(None)
+        self.document_changed.emit(None)
+
+    def open_dialog(self) -> None:
+        if not self._confirm_discard():
+            return
+        filename, _ = QFileDialog.getOpenFileName(
+            self, "Abrir UI Layout", str(self.project_root / "Assets"), "Zennity UI (*.zui)"
+        )
+        if filename:
+            self.load_document(filename)
+
+    def load_document(self, path: str | Path) -> bool:
+        try:
+            source = Path(path).resolve()
+            data = json.loads(source.read_text(encoding="utf-8"))
+            canvas = widget_from_dict(data.get("canvas", data))
+            if not isinstance(canvas, UICanvas):
+                raise ValueError("O documento não possui um UICanvas válido.")
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            QMessageBox.warning(self, "UI inválida", str(exc))
+            return False
+        self.preview_canvas.canvas_runtime = canvas
+        self.current_path = source
+        self.is_dirty = False
+        self.rebuild_hierarchy_tree()
+        self.select_widget(None)
+        self.document_changed.emit(source)
+        return True
+
+    def document_data(self) -> dict:
+        return {"format": "zennity.ui", "version": 1, "canvas": self.preview_canvas.canvas_runtime.serialize()}
+
+    def save(self) -> bool:
+        path = self.current_path
+        if path is None:
+            directory = self.project_root / "Assets" / "UI"
+            directory.mkdir(parents=True, exist_ok=True)
+            filename, _ = QFileDialog.getSaveFileName(
+                self, "Salvar UI Layout", str(directory / "MainUI.zui"), "Zennity UI (*.zui)"
+            )
+            if not filename:
+                return False
+            path = Path(filename)
+        if path.suffix.lower() != ".zui":
+            path = path.with_suffix(".zui")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = path.with_suffix(".zui.tmp")
+        temporary.write_text(json.dumps(self.document_data(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        temporary.replace(path)
+        self.current_path = path.resolve()
+        self.is_dirty = False
+        self.document_changed.emit(self.current_path)
+        return True
+
+    def _changed(self) -> None:
+        self.is_dirty = True
+        self.preview_canvas.update()
+
+    def _confirm_discard(self) -> bool:
+        if not self.is_dirty:
+            return True
+        answer = QMessageBox.question(
+            self, "Descartar alterações?", "O layout possui alterações não salvas.",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
+        )
+        return answer == QMessageBox.Yes

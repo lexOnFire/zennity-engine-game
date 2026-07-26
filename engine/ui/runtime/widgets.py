@@ -1,6 +1,6 @@
 """Hierarquia Runtime de Widgets de UI (UICanvas, UIPanel, UIButton, UILabel, UIImage, UIScrollView, UIInput, UIContainer)."""
 from __future__ import annotations
-from typing import List, Optional
+from typing import Any, List, Optional
 
 
 class UIWidget:
@@ -26,15 +26,23 @@ class UIWidget:
             self.children.remove(child)
 
     def serialize(self) -> dict:
-        return {
+        data = {
             "name": self.name,
             "type": self.__class__.__name__,
             "x": self.x,
             "y": self.y,
             "width": self.width,
             "height": self.height,
+            "visible": self.visible,
             "children": [c.serialize() for c in self.children],
         }
+        for key in (
+            "bg_color", "text", "hover_color", "font_size", "text_color",
+            "texture_path", "scroll_y", "placeholder", "layout_mode",
+        ):
+            if hasattr(self, key):
+                data[key] = getattr(self, key)
+        return data
 
 
 class UICanvas(UIWidget):
@@ -103,3 +111,26 @@ class UIContainer(UIWidget):
     def __init__(self, name: str = "Container", layout_mode: str = "Vertical") -> None:
         super().__init__(name)
         self.layout_mode: str = layout_mode
+
+
+WIDGET_TYPES = {
+    cls.__name__: cls
+    for cls in (UICanvas, UIPanel, UIButton, UILabel, UIImage, UIScrollView, UIInput, UIContainer)
+}
+
+
+def widget_from_dict(data: dict[str, Any]) -> UIWidget:
+    """Rebuild a runtime widget hierarchy from serialized UI data."""
+    widget_class = WIDGET_TYPES.get(str(data.get("type", "")), UIWidget)
+    widget = widget_class(str(data.get("name", widget_class.__name__)))
+    for key in (
+        "x", "y", "width", "height", "visible", "bg_color", "text",
+        "hover_color", "font_size", "text_color", "texture_path",
+        "scroll_y", "placeholder", "layout_mode",
+    ):
+        if key in data and hasattr(widget, key):
+            setattr(widget, key, data[key])
+    for child_data in data.get("children", []):
+        if isinstance(child_data, dict):
+            widget.add_child(widget_from_dict(child_data))
+    return widget
