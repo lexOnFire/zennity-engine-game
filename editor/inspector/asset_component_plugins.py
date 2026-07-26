@@ -3,7 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtWidgets import QComboBox, QDoubleSpinBox, QLabel, QPushButton
+from PySide6.QtWidgets import QDoubleSpinBox, QLabel, QPushButton
+from editor.ui.property_editors import AssetPickerComboBox
 
 from editor.inspector.default_plugins import _property_row, _section
 from editor.inspector.plugin import InspectorPlugin
@@ -45,7 +46,8 @@ class AssetAwareImageInspectorPlugin(InspectorPlugin):
         refresh: callable | None = None,
     ):
         widget, layout = _section("Image")
-        sprite_selector = QComboBox()
+        _IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp", ".tga"]
+        sprite_selector = AssetPickerComboBox(accepted_extensions=_IMAGE_EXTS)
         sprite_selector.setObjectName("InspectorSpriteSelector")
         sprite_selector.setEditable(False)
 
@@ -66,6 +68,8 @@ class AssetAwareImageInspectorPlugin(InspectorPlugin):
             self.set_property(component, "sprite_path", next_value, command_manager, refresh)
 
         sprite_selector.activated.connect(lambda index: set_sprite_path(sprite_selector.itemText(index)))
+        # Suporte a Drag & Drop: atualiza sprite quando arquivo arrastado sobre o combo
+        sprite_selector.asset_dropped.connect(set_sprite_path)
         layout.addWidget(_property_row("Sprite", sprite_selector))
 
         alpha = QDoubleSpinBox()

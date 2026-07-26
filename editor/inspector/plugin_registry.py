@@ -12,6 +12,27 @@ class InspectorPluginRegistry:
         self._plugins: list[InspectorPlugin] = []
 
     def register(self, plugin: InspectorPlugin | type[InspectorPlugin]) -> InspectorPlugin:
+        # ── Validação estrutural (Plugin Validation) ───────────────────────
+        # Garantimos que o plugin registrado honra o contrato de InspectorPlugin,
+        # prevenindo falhas silenciosas na UI ao carregar um componente.
+        cls = plugin if isinstance(plugin, type) else type(plugin)
+        if not issubclass(cls, InspectorPlugin):
+            raise TypeError(
+                f"[InspectorPluginRegistry] '{cls.__name__}' não é uma subclasse de "
+                f"InspectorPlugin. Verifique a herança do plugin."
+            )
+        if not callable(getattr(cls, "create_widget", None)):
+            raise TypeError(
+                f"[InspectorPluginRegistry] '{cls.__name__}' não implementa o método "
+                f"'create_widget'. O plugin não pode ser registrado."
+            )
+        if not getattr(cls, "component_type", None):
+            import logging
+            logging.warning(
+                f"[InspectorPluginRegistry] '{cls.__name__}' não define 'component_type'. "
+                f"O plugin pode não aparecer no Inspector corretamente."
+            )
+        # ── Instanciação e substituição de duplicatas ─────────────────────
         instance = plugin() if isinstance(plugin, type) else plugin
         
         self._plugins = [
