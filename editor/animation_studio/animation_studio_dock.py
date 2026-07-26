@@ -177,8 +177,9 @@ class AnimationStudioDock(QDockWidget):
         try:
             from editor.core.event_bus import EventBus
             EventBus.emit(event_name, **kwargs)
-        except Exception:
-            pass
+        except Exception as e:
+            import logging
+            logging.exception(f"Erro ao emitir evento {event_name}: {e}")
 
     def _on_timer_tick(self) -> None:
         if self.playback_state == AnimationPlaybackState.PLAYING:

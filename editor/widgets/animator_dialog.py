@@ -1,7 +1,7 @@
 from __future__ import annotations
 from copy import deepcopy
 from pathlib import Path
-from PySide6.QtCore import QPointF, Qt, Signal
+from PySide6.QtCore import QPointF, Qt, Signal, QTimer
 from PySide6.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen, QPolygonF
 from PySide6.QtWidgets import (
     QComboBox, QDialog, QDialogButtonBox, QFormLayout, QHBoxLayout,
@@ -34,6 +34,12 @@ class AnimatorControllerEditorDialog(QDialog):
         self._preview_parameters = {
             name: parameter["default"] for name, parameter in self.data["parameters"].items()
         }
+        self._preview_timer = QTimer(self)
+        self._preview_timer.setInterval(16)  # ~60 FPS
+        self._preview_timer.timeout.connect(self._tick_preview)
+        self._preview_runtime: AnimatorControllerRuntime | None = None
+        self._preview_elapsed = 0.0
+
         self.setWindowTitle("Animator Controller")
         self.resize(1040, 650)
         self._build_ui()
@@ -55,7 +61,8 @@ class AnimatorControllerEditorDialog(QDialog):
         self.duplicate_state_button = QPushButton("Duplicar")
         self.delete_state_button = QPushButton("Excluir")
         self.test_parameter_button = QPushButton("Testar parâmetro")
-        self.evaluate_button = QPushButton("Avaliar transições")
+        self.evaluate_button = QPushButton("Play Preview")
+        self.evaluate_button.setCheckable(True)
         for button in (
             self.undo_button, self.redo_button, self.rename_state_button,
             self.duplicate_state_button, self.delete_state_button,
@@ -442,11 +449,35 @@ class AnimatorControllerEditorDialog(QDialog):
         self._refresh_all()
 
     def _evaluate_preview(self) -> None:
-        runtime = AnimatorControllerRuntime(self.data, self._preview_parameters)
-        runtime.play(self._preview_state)
-        runtime.update()
-        self._preview_state = runtime.current_state
-        self._preview_parameters = dict(runtime.parameters)
+        if self.evaluate_button.isChecked():
+            self._preview_runtime = AnimatorControllerRuntime(self.data, self._preview_parameters)
+            self._preview_runtime.play(self._preview_state)
+            self._preview_elapsed = 0.0
+            self._preview_timer.start()
+            self.evaluate_button.setText("Stop Preview")
+        else:
+            self._preview_timer.stop()
+            self._preview_runtime = None
+            self.evaluate_button.setText("Play Preview")
+
+    def _tick_preview(self) -> None:
+        if not self._preview_runtime:
+            return
+        dt = 0.016
+        self._preview_elapsed += dt
+        
+        normalized = 1.0
+        state_data = self.data["states"].get(self._preview_runtime.current_state)
+        if state_data:
+            speed = max(0.001, float(state_data.get("speed", 1.0)))
+            # Na ausência de duração real da animação na UI, usamos um loop fictício de 1s para o preview visual do Exit Time
+            normalized = (self._preview_elapsed * speed) % 1.0
+
+        if self._preview_runtime.update(normalized, dt):
+            self._preview_elapsed = 0.0  # Reset on state change
+
+        self._preview_state = self._preview_runtime.current_state
+        self._preview_parameters = dict(self._preview_runtime.parameters)
         self._active_state = ""
         self._refresh_all()
         self.graph.select_state(self._preview_state)
