@@ -5,7 +5,8 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtGui import QAction, QActionGroup
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QAction, QActionGroup, QKeySequence, QShortcut
 from PySide6.QtWidgets import QToolBar
 
 
@@ -86,19 +87,35 @@ class EditorCommandController:
         group = QActionGroup(h)
         group.setExclusive(True)
         shortcuts = {"select": "Q", "move": "W", "rotate": "E", "scale": "R"}
+        h._tool_actions = {}
+        h._tool_shortcuts = []
+
+        def activate_tool(name: str) -> None:
+            action = h._tool_actions.get(name)
+            if action is not None and not action.isChecked():
+                action.setChecked(True)
+            h._commands.put({"type": "set_tool", "tool": name})
+            h.statusBar().showMessage(f"Ferramenta ativa: {name.title()}")
+
         for action in h.findChildren(QAction):
             label = action.toolTip() if action.toolTip() else action.text()
             tool = label.lower()
             if tool not in shortcuts:
                 continue
             action.setCheckable(True)
-            action.setShortcut(shortcuts[tool])
+            action.setShortcut(QKeySequence(shortcuts[tool]))
+            action.setShortcutContext(Qt.ApplicationShortcut)
             action.setChecked(tool == "select")
             group.addAction(action)
+            h._tool_actions[tool] = action
             action.triggered.connect(
-                lambda checked=False, name=tool: checked
-                and h._commands.put({"type": "set_tool", "tool": name})
+                lambda checked=False, name=tool: checked and activate_tool(name)
             )
+        for tool, shortcut_key in shortcuts.items():
+            shortcut = QShortcut(QKeySequence(shortcut_key), h)
+            shortcut.setContext(Qt.ApplicationShortcut)
+            shortcut.activated.connect(lambda name=tool: activate_tool(name))
+            h._tool_shortcuts.append(shortcut)
         h._tool_action_group = group
 
     def dispatch(self, message: dict) -> None:
