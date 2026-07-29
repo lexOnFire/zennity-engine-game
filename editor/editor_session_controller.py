@@ -76,14 +76,14 @@ class EditorSessionController:
     def attach_viewport_process(self, process: Any) -> None:
         self.editor._viewport_controller.attach(process)
         self.editor._viewport_process = process
-        self._viewport_was_alive = bool(process is not None and process.is_alive())
+        self._viewport_was_alive = self._is_process_alive(process)
         self._closed = False
 
     def _check_viewport_process(self) -> None:
         process = getattr(self.editor, "_viewport_process", None)
         if process is None:
             return
-        is_alive = bool(process.is_alive())
+        is_alive = self._is_process_alive(process)
         if is_alive:
             self._viewport_was_alive = True
             return
@@ -100,6 +100,11 @@ class EditorSessionController:
             self.editor.statusBar().showMessage(message)
         except Exception:
             pass
+
+    @staticmethod
+    def _is_process_alive(process: Any) -> bool:
+        is_alive = getattr(process, "is_alive", None)
+        return bool(callable(is_alive) and is_alive())
 
     def native_viewport_size(self) -> tuple[int, int]:
         host = self.editor.viewport_host

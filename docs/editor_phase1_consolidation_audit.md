@@ -92,6 +92,9 @@ The official editor entrypoint is `editor.phase1_main`.
   edit-command Play Mode safety and focus/grid camera behavior.
 - Routed Logic Workspace selected-object checks through the Phase 1 selection
   facade instead of reaching directly into the main window state.
+- Hardened editor session process monitoring for non-standard process wrappers
+  and split Logic Graph target-hint calculation out of the canvas mixin to keep
+  responsibilities bounded.
 
 ## Next Blocks
 
