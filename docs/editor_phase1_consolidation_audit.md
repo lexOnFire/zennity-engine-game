@@ -82,6 +82,9 @@ The official editor entrypoint is `editor.phase1_main`.
   `PlayLogicAPI`, `ViewportLogicEventUpdater`, `viewport_logic_api.py` and
   `viewport_logic_event_updater.py`.
 - Renamed Play Mode lifecycle callbacks from script naming to logic naming.
+- Added `LogicBindingController` so Logic Graph asset/object bindings are managed
+  behind a focused Phase 1 controller instead of directly inside the visual
+  workspace window controller.
 
 ## Next Blocks
 

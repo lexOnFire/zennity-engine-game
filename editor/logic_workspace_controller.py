@@ -8,14 +8,9 @@ from typing import Any
 
 from PySide6.QtWidgets import QMessageBox
 
+from editor.controllers.logic_binding_controller import LogicBindingController
 from editor.widgets.logic_graph_picker import LogicGraphPickerDialog
-from engine.logic.graph_asset import (
-    create_logic_node,
-    default_logic_graph,
-    load_logic_graph,
-    save_logic_graph,
-    validate_logic_graph,
-)
+from engine.logic.graph_asset import load_logic_graph, validate_logic_graph
 
 
 class LogicWorkspaceController:
@@ -24,6 +19,7 @@ class LogicWorkspaceController:
     def __init__(self, host: Any, project_root: Path | None = None) -> None:
         self.host = host
         self.project_root = (project_root or Path.cwd()).resolve()
+        self.bindings = LogicBindingController(host, self.project_root)
         self._connected = False
 
     def connect(self) -> bool:
@@ -127,20 +123,13 @@ class LogicWorkspaceController:
         h._graph_hub_bridges_attached = True
 
     def assets(self) -> list[tuple[Path, dict]]:
-        return self.host._logic_assets_repository.assets()
+        return self.bindings.assets()
 
     def graphs_for_object(self, object_name: str) -> list[tuple[Path, dict]]:
-        h = self.host
-        return h._logic_assets_repository.for_object(
-            object_name, h._objects_by_name.get(object_name, {})
-        )
+        return self.bindings.graphs_for_object(object_name)
 
     def save_binding(self, path: Path, graph: dict) -> None:
-        h = self.host
-        h._logic_assets_repository.save(path, graph)
-        h._asset_browser.refresh()
-        if h._selected_name in h._objects_by_name:
-            h._update_inspector(h._selected_name)
+        self.bindings.save_binding(path, graph)
 
     def choose_component(self) -> None:
         h = self.host
@@ -153,35 +142,16 @@ class LogicWorkspaceController:
             return
         picker = LogicGraphPickerDialog(assets, h)
         if picker.exec() and picker.selected_path is not None:
-            graph = deepcopy(load_logic_graph(picker.selected_path))
-            graph["enabled"] = True
-            graph["target"] = {"type": "name", "value": h._selected_name}
+            self.bindings.bind_existing_to_object(picker.selected_path, h._selected_name)
             h._component_expanded["logic"] = True
-            self.save_binding(picker.selected_path, graph)
             h._log("INFO", f"{picker.selected_path.name} vinculado a {h._selected_name}")
 
     def create_for_selected(self) -> None:
         h = self.host
         if h._selected_name not in h._objects_by_name:
             return
-        directory = self.project_root / "Assets" / "Logic"
-        directory.mkdir(parents=True, exist_ok=True)
-        safe_name = "".join(
-            char if char.isalnum() else "_" for char in h._selected_name
-        ).strip("_") or "Object"
-        path = directory / f"{safe_name}Logic.zlogic"
-        suffix = 2
-        while path.exists():
-            path = directory / f"{safe_name}Logic{suffix}.zlogic"
-            suffix += 1
-        graph = default_logic_graph(path.stem)
-        graph["target"] = {"type": "name", "value": h._selected_name}
-        graph["nodes"] = [create_logic_node("event_start", (80.0, 100.0))]
-        save_logic_graph(path, graph)
-        h._logic_assets_repository.invalidate(path)
+        path = self.bindings.create_for_object(h._selected_name)
         h._component_expanded["logic"] = True
-        h._asset_browser.refresh()
-        h._update_inspector(h._selected_name)
         self.show(preferred_path=path)
         h._log("INFO", f"Logic Graph criado para {h._selected_name}: {path.name}")
 
@@ -198,9 +168,7 @@ class LogicWorkspaceController:
         path = self.selected_path()
         if path is None or not path.is_file():
             return
-        graph = deepcopy(load_logic_graph(path))
-        graph["enabled"] = False
-        self.save_binding(path, graph)
+        self.bindings.detach(path)
         self.host._log("INFO", f"Logic Graph desvinculado: {path.name}")
 
     def remove_all(self) -> None:
@@ -217,13 +185,7 @@ class LogicWorkspaceController:
         )
         if answer != QMessageBox.Yes:
             return
-        for path, source in bindings:
-            graph = deepcopy(source)
-            graph["enabled"] = False
-            save_logic_graph(path, graph)
-            h._logic_assets_repository.invalidate(path)
-        h._asset_browser.refresh()
-        h._update_inspector(h._selected_name)
+        self.bindings.detach_all_for_object(h._selected_name)
         h._log("INFO", f"Lógica Visual desvinculada de {h._selected_name}")
 
     def update_summary(self) -> None:
