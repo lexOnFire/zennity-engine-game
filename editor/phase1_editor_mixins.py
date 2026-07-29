@@ -224,9 +224,9 @@ class Phase1EditorUIBuilderMixin:
 
     def _build_layout(self) -> None:
         self.hierarchy = RealHierarchyPanel()
-        self.resources = ResourcesPanel()
+        self.resources = ResourcesPanel(initial_refresh=False)
         self.create_panel = CreatePanel()
-        self.prefabs = PrefabsPanel()
+        self.prefabs = PrefabsPanel(initial_refresh=False)
         self.inspector = RealInspectorPanel()
         self.inspector.set_command_manager(self.editor_context.commands)
         if hasattr(self.inspector, "name"):
@@ -336,6 +336,13 @@ class Phase1EditorUIBuilderMixin:
         self._left_panel_focus = "assets"
         if hasattr(self, "left_splitter"):
             self.left_splitter.setSizes([96, 644])
+        if not hasattr(self, "asset_tabs"):
+            return
+        current = self.asset_tabs.currentWidget()
+        if current is getattr(self, "resources", None) and hasattr(self.resources, "ensure_assets_loaded"):
+            self.resources.ensure_assets_loaded()
+        elif current is getattr(self, "prefabs", None) and hasattr(self.prefabs, "ensure_prefabs_loaded"):
+            self.prefabs.ensure_prefabs_loaded()
 
 
 from editor.phase1_editor_scene_ops import Phase1SceneOperationsMixin
