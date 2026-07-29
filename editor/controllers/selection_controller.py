@@ -37,6 +37,19 @@ class EditorSelectionController:
             return None
         return str(name), h._objects_by_name[name]
 
+    def selected_scene_name(self) -> str | None:
+        selected = self.selected_scene_object()
+        return selected[0] if selected is not None else None
+
+    def scene_object(self, name: str | None) -> dict[str, Any] | None:
+        if not name:
+            return None
+        obj = self.host._objects_by_name.get(str(name))
+        return obj if isinstance(obj, dict) else None
+
+    def has_scene_object(self, name: str | None) -> bool:
+        return self.scene_object(name) is not None
+
     def publish_scene(self) -> None:
         h = self.host
         h._scene_controller.publish_snapshot(h._scene_snapshot)

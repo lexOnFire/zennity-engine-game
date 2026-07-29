@@ -84,6 +84,18 @@ def test_selection_controller_returns_selected_scene_object() -> None:
     assert selected == ("Player", host._objects_by_name["Player"])
 
 
+def test_selection_controller_exposes_scene_object_helpers() -> None:
+    host, _selected, _inspected, _status = _host()
+    host._selected_name = "Player"
+    controller = EditorSelectionController(host)
+
+    assert controller.selected_scene_name() == "Player"
+    assert controller.scene_object("Player") is host._objects_by_name["Player"]
+    assert controller.has_scene_object("Player") is True
+    assert controller.scene_object("Missing") is None
+    assert controller.has_scene_object("Missing") is False
+
+
 def test_selection_controller_blocks_selected_object_while_updating_inspector() -> None:
     host, _selected, _inspected, _status = _host()
     host._selected_name = "Player"

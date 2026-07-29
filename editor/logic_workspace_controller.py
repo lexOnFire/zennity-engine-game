@@ -63,7 +63,7 @@ class LogicWorkspaceController:
 
     def show(self, *, preferred_path: Path | None = None) -> None:
         h = self.host
-        selected = h._selected_name if h._selected_name in h._objects_by_name else None
+        selected = self._selected_scene_name()
         if selected is not None:
             bindings = self.graphs_for_object(selected)
             context_path = preferred_path or (bindings[0][0] if bindings else None)
@@ -81,7 +81,7 @@ class LogicWorkspaceController:
                     assets,
                     key=lambda entry: (
                         str(entry[1].get("target", {}).get("value", ""))
-                        in h._objects_by_name,
+                        in self._scene_object_names(),
                         len(entry[1].get("nodes", [])),
                     ),
                 )
@@ -137,7 +137,8 @@ class LogicWorkspaceController:
 
     def choose_component(self) -> None:
         h = self.host
-        if h._selected_name not in h._objects_by_name:
+        selected = self._selected_scene_name()
+        if selected is None:
             return
         assets = self.assets()
         if not assets:
@@ -146,18 +147,19 @@ class LogicWorkspaceController:
             return
         picker = LogicGraphPickerDialog(assets, h)
         if picker.exec() and picker.selected_path is not None:
-            self.bindings.bind_existing_to_object(picker.selected_path, h._selected_name)
+            self.bindings.bind_existing_to_object(picker.selected_path, selected)
             h._component_expanded["logic"] = True
-            h._log("INFO", f"{picker.selected_path.name} vinculado a {h._selected_name}")
+            h._log("INFO", f"{picker.selected_path.name} vinculado a {selected}")
 
     def create_for_selected(self) -> None:
         h = self.host
-        if h._selected_name not in h._objects_by_name:
+        selected = self._selected_scene_name()
+        if selected is None:
             return
-        path = self.bindings.create_for_object(h._selected_name)
+        path = self.bindings.create_for_object(selected)
         h._component_expanded["logic"] = True
         self.show(preferred_path=path)
-        h._log("INFO", f"Logic Graph criado para {h._selected_name}: {path.name}")
+        h._log("INFO", f"Logic Graph criado para {selected}: {path.name}")
 
     def selected_path(self) -> Path | None:
         value = self.host.logic_graph_combo.currentData()
@@ -177,20 +179,21 @@ class LogicWorkspaceController:
 
     def remove_all(self) -> None:
         h = self.host
-        if h._selected_name not in h._objects_by_name:
+        selected = self._selected_scene_name()
+        if selected is None:
             return
-        bindings = self.graphs_for_object(h._selected_name)
+        bindings = self.graphs_for_object(selected)
         if not bindings:
             return
         answer = QMessageBox.question(
             h,
             "Desvincular lógica",
-            f"Desvincular {len(bindings)} Logic Graph(s) de {h._selected_name}? Os arquivos serão preservados.",
+            f"Desvincular {len(bindings)} Logic Graph(s) de {selected}? Os arquivos serão preservados.",
         )
         if answer != QMessageBox.Yes:
             return
-        self.bindings.detach_all_for_object(h._selected_name)
-        h._log("INFO", f"Lógica Visual desvinculada de {h._selected_name}")
+        self.bindings.detach_all_for_object(selected)
+        h._log("INFO", f"Lógica Visual desvinculada de {selected}")
 
     def update_summary(self) -> None:
         h = self.host
@@ -218,3 +221,14 @@ class LogicWorkspaceController:
             h.logic_unlink_button.setEnabled(True)
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             h.logic_summary_label.setText(f"Asset inválido: {exc}")
+
+    def _selected_scene_name(self) -> str | None:
+        selection = getattr(self.host, "_selection", None)
+        if selection is not None and hasattr(selection, "selected_scene_name"):
+            return selection.selected_scene_name()
+        selected = getattr(self.host, "_selected_name", None)
+        objects = getattr(self.host, "_objects_by_name", {})
+        return selected if selected in objects else None
+
+    def _scene_object_names(self) -> set[str]:
+        return set(getattr(self.host, "_objects_by_name", {}))

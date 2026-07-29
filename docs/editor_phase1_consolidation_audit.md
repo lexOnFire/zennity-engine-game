@@ -90,6 +90,8 @@ The official editor entrypoint is `editor.phase1_main`.
   workspaces.
 - Expanded isolated viewport tests for gizmo-axis movement, snap scaling,
   edit-command Play Mode safety and focus/grid camera behavior.
+- Routed Logic Workspace selected-object checks through the Phase 1 selection
+  facade instead of reaching directly into the main window state.
 
 ## Next Blocks
 

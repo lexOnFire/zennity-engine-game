@@ -83,7 +83,7 @@ def test_logic_workspace_populates_palette_and_opens_existing_graph_fallback() -
     assert 'self._category_changed(str(self.category_combo.currentData() or "All"))' in editor
     assert "assets = self.assets()" in controller
     assert "fallback_path, _graph = max(" in controller
-    assert "in h._objects_by_name" in controller
+    assert "in self._scene_object_names()" in controller
     assert "h.logic_workspace.open_asset(fallback_path)" in controller
 
 
