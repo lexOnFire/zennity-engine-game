@@ -264,6 +264,9 @@ class ZennityPremiumEditor(QMainWindow):
         tb = QToolBar("MainToolBar")
         tb.setObjectName("CommandBar")
         tb.setMovable(False)
+        tb.setFloatable(False)
+        tb.setAllowedAreas(Qt.TopToolBarArea)
+        tb.setStyleSheet("QToolBar::handle { width: 0px; image: none; }")
         tb.setIconSize(QSize(16, 16))
         self.addToolBar(tb)
         for text in ["Open", "Save", "Undo", "Redo"]:

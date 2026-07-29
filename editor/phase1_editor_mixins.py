@@ -152,6 +152,9 @@ class Phase1EditorUIBuilderMixin:
         toolbar = QToolBar("MainToolBar")
         toolbar.setObjectName("CommandBar")
         toolbar.setMovable(False)
+        toolbar.setFloatable(False)
+        toolbar.setAllowedAreas(Qt.TopToolBarArea)
+        toolbar.setStyleSheet("QToolBar::handle { width: 0px; image: none; }")
         self.addToolBar(toolbar)
 
         open_button = QToolButton()

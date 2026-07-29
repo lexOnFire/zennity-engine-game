@@ -21,6 +21,9 @@ class EditorCommandController:
         h = self.host
         toolbar = QToolBar("Ligação com Viewport")
         toolbar.setMovable(False)
+        toolbar.setFloatable(False)
+        toolbar.setAllowedAreas(Qt.TopToolBarArea)
+        toolbar.setStyleSheet("QToolBar::handle { width: 0px; image: none; }")
         h.addToolBar(toolbar)
         for label, payload in (
             ("Selecionar Player", {"type": "select_object", "name": "Player"}),

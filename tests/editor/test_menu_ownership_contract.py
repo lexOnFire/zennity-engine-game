@@ -24,3 +24,17 @@ def test_logic_controller_does_not_repopulate_tools_menu():
     assert 'h.editor_menus["Ferramentas"]' not in source
     assert "tools_menu.addAction" not in source
     assert 'h.editor_menus["Janela"].addAction' not in source
+
+
+def test_top_toolbars_are_fixed_and_not_floatable():
+    for path in (
+        "editor/interface_smoke_test.py",
+        "editor/editor_command_controller.py",
+        "editor/phase1_editor_mixins.py",
+        "editor/premium_editor.py",
+        "editor/windows/main_window_menus.py",
+    ):
+        source = _source(path)
+        assert ".setFloatable(False)" in source
+        assert ".setAllowedAreas(Qt.TopToolBarArea)" in source
+        assert "QToolBar::handle { width: 0px; image: none; }" in source

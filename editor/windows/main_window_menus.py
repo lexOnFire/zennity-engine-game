@@ -105,6 +105,9 @@ class MainWindowMenusMixin:
         toolbar = self.addToolBar("Comandos")
         toolbar.setObjectName("MainToolBar")
         toolbar.setMovable(False)
+        toolbar.setFloatable(False)
+        toolbar.setAllowedAreas(Qt.TopToolBarArea)
+        toolbar.setStyleSheet("QToolBar::handle { width: 0px; image: none; }")
         toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
         self.btn_play = QPushButton(" ▶  PLAY ")

@@ -113,6 +113,9 @@ class InterfaceSmokeTest(QMainWindow):
         toolbar = QToolBar("Comandos")
         toolbar.setObjectName("CommandBar")
         toolbar.setMovable(False)
+        toolbar.setFloatable(False)
+        toolbar.setAllowedAreas(Qt.TopToolBarArea)
+        toolbar.setStyleSheet("QToolBar::handle { width: 0px; image: none; }")
         toolbar.setIconSize(QSize(17, 17))
         self.addToolBar(toolbar)
         self.toolbar_actions = {}
