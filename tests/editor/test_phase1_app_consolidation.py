@@ -75,13 +75,17 @@ def test_phase1_uses_selection_controller_for_hierarchy_selection() -> None:
 
 def test_inspector_component_controller_uses_selection_facade() -> None:
     inspector = _source("editor/inspector_controller.py")
+    inspector_media = _source("editor/inspector_controller_ui_media.py")
     selection = _source("editor/controllers/selection_controller.py")
     assert "return self.host._selection.selected_scene_object()" in inspector
     assert "h._selection.publish_selected_change(select=True, inspect=True)" in inspector
     assert "h._selection.publish_scene()" in inspector
     assert "h._selection.refresh_inspector(name)" in inspector
+    assert "h._selection.publish_scene()" in inspector_media
+    assert "h._selection.append_scene_object(canvas)" in inspector_media
     assert "def selected_scene_object" in selection
     assert "def publish_selected_change" in selection
+    assert "def append_scene_object" in selection
 
 
 def test_viewport_handles_focus_and_grid_commands() -> None:

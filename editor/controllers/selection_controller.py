@@ -41,6 +41,15 @@ class EditorSelectionController:
         h = self.host
         h._scene_controller.publish_snapshot(h._scene_snapshot)
 
+    def scene_objects(self) -> list[dict[str, Any]]:
+        return self.host._scene_snapshot
+
+    def append_scene_object(self, obj: dict[str, Any]) -> None:
+        self.host._scene_snapshot.append(obj)
+        name = obj.get("name")
+        if name:
+            self.host._objects_by_name[str(name)] = obj
+
     def publish_selected_change(self, *, select: bool = False, inspect: bool = False) -> None:
         h = self.host
         self.publish_scene()

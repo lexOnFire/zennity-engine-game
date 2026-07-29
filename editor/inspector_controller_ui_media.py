@@ -84,7 +84,7 @@ class InspectorControllerUIMediaMixin:
         h._record_history()
         camera["background_color"] = [color.red(), color.green(), color.blue()]
         h.camera_color_button.setStyleSheet(f"background: rgb({color.red()}, {color.green()}, {color.blue()});")
-        h._scene_controller.publish_snapshot(h._scene_snapshot)
+        h._selection.publish_scene()
 
     def toggle_ui_visibility(self, checked: bool) -> None:
         selected = self._selected()
@@ -97,7 +97,7 @@ class InspectorControllerUIMediaMixin:
         h = self.host
         h._record_history()
         ui["visible"] = bool(checked)
-        h._scene_controller.publish_snapshot(h._scene_snapshot)
+        h._selection.publish_scene()
 
     def delete_ui(self) -> None:
         selected = self._selected()
@@ -109,8 +109,8 @@ class InspectorControllerUIMediaMixin:
         h = self.host
         h._record_history()
         obj.pop("ui", None)
-        h._scene_controller.publish_snapshot(h._scene_snapshot)
-        h._update_inspector(name)
+        h._selection.publish_scene()
+        h._selection.refresh_inspector(name)
 
     def choose_ui_color(self) -> None:
         selected = self._selected()
@@ -127,7 +127,7 @@ class InspectorControllerUIMediaMixin:
         h._record_history()
         obj["ui"]["color"] = [color.red(), color.green(), color.blue()]
         h.ui_color_button.setStyleSheet(f"background: rgb({color.red()}, {color.green()}, {color.blue()});")
-        h._scene_controller.publish_snapshot(h._scene_snapshot)
+        h._selection.publish_scene()
 
     def choose_ui_image(self) -> None:
         if self._selected() is None:
@@ -169,11 +169,12 @@ class InspectorControllerUIMediaMixin:
             "target": "" if h.ui_target_combo.currentText() == "Este objeto" else h.ui_target_combo.currentText(),
         })
         obj["ui"] = ui
-        h._scene_controller.publish_snapshot(h._scene_snapshot)
+        h._selection.publish_scene()
 
     def ensure_canvas(self) -> None:
         h = self.host
-        if any((normalize_ui(obj.get("ui")) or {}).get("type") == "canvas" for obj in h._scene_snapshot):
+        scene_objects = h._selection.scene_objects()
+        if any((normalize_ui(obj.get("ui")) or {}).get("type") == "canvas" for obj in scene_objects):
             return
         name = h._unique_name("Canvas")
         canvas = {
@@ -189,6 +190,5 @@ class InspectorControllerUIMediaMixin:
             "renderer_enabled": False,
             "ui": normalize_ui({"type": "canvas"}),
         }
-        h._scene_snapshot.append(canvas)
-        h._objects_by_name[name] = canvas
+        h._selection.append_scene_object(canvas)
         h._log("INFO", "Canvas criado automaticamente para a interface do jogo")

@@ -73,10 +73,11 @@ The official editor entrypoint is `editor.phase1_main`.
 - Added `EditorSelectionController` as the Phase 1 selection facade.
 - Routed hierarchy selection and viewport selection through the shared selection facade.
 - Moved selected-object lookup and scene publication paths from `InspectorComponentController` into the selection facade.
+- Routed Inspector UI/media scene publication and auto-canvas registration through the selection facade.
 
 ## Next Blocks
 
-1. Continue moving remaining inspector media/UI component helpers behind controller facades without changing behavior.
+1. Continue moving workspace-specific scene mutations behind controller facades without changing behavior.
 2. Expand viewport command tests for selection and transform gizmos.
 3. Consolidate Animation, Visual Graph, Behavior Tree, Dialogue, UI Builder and Material Graph under a single Phase 1 workspace registry.
 4. Mark legacy editor windows as reference-only, then remove them after all useful behavior is represented in Phase 1.

@@ -104,3 +104,17 @@ def test_selection_controller_publishes_and_refreshes_selected_change() -> None:
     assert published == [host._scene_snapshot]
     assert selected == ["Player"]
     assert inspected == ["Player"]
+
+
+def test_selection_controller_exposes_and_appends_scene_objects() -> None:
+    host, _selected, _inspected, _status = _host()
+    host._scene_snapshot = []
+    canvas = {"name": "Canvas"}
+    controller = EditorSelectionController(host)
+
+    assert controller.scene_objects() is host._scene_snapshot
+
+    controller.append_scene_object(canvas)
+
+    assert host._scene_snapshot == [canvas]
+    assert host._objects_by_name["Canvas"] is canvas
