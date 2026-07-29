@@ -40,6 +40,21 @@ def test_edit_handler_blocks_editor_mutation_during_play() -> None:
     assert emitted == []
 
 
+def test_edit_handler_blocks_creation_during_play() -> None:
+    objects = {"Player": {"name": "Player"}}
+    handler, emitted = _handler(objects)
+
+    handled, selected = handler.handle(
+        {"type": "create_object_at", "kind": "Enemy", "screen_x": 10, "screen_y": 20},
+        playing=True,
+        selected_name="Player",
+    )
+
+    assert handled and selected == "Player"
+    assert list(objects) == ["Player"]
+    assert emitted == []
+
+
 def test_edit_handler_creates_unique_sprite_and_emits_snapshot() -> None:
     objects = {"hero": {"name": "hero"}}
     handler, emitted = _handler(objects)

@@ -51,3 +51,43 @@ def test_transform_handler_snaps_rotation() -> None:
         snap_enabled=True, snap_size=16.0, snap_angle=15.0,
     )
     assert objects["Player"]["rotation"] == 45.0
+
+
+def test_transform_handler_moves_only_selected_gizmo_axis() -> None:
+    objects = {"Player": {"name": "Player", "x": 0.0, "y": 0.0, "w": 20.0, "h": 20.0, "rotation": 0.0}}
+    handler = ViewportTransformEventHandler(_Pygame, objects, lambda event: None, lambda x, y: (x, y))
+    state = ViewportTransformState(False, "Player", (0.0, 0.0))
+
+    down = SimpleNamespace(type=_Pygame.MOUSEBUTTONDOWN, button=1, pos=(92, 0))
+    handled, state = handler.handle(
+        down, state, playing=False, view_mode="scene", active_tool="move", zoom=1.0,
+        snap_enabled=False, snap_size=16.0, snap_angle=15.0,
+    )
+    motion = SimpleNamespace(type=_Pygame.MOUSEMOTION, pos=(132, 40))
+    handled, state = handler.handle(
+        motion, state, playing=False, view_mode="scene", active_tool="move", zoom=1.0,
+        snap_enabled=False, snap_size=16.0, snap_angle=15.0,
+    )
+
+    assert handled and state.move_axis == "x"
+    assert (objects["Player"]["x"], objects["Player"]["y"]) == (40.0, 0.0)
+
+
+def test_transform_handler_scales_from_body_with_snap() -> None:
+    objects = {"Player": {"name": "Player", "x": 0.0, "y": 0.0, "w": 20.0, "h": 20.0, "rotation": 0.0}}
+    handler = ViewportTransformEventHandler(_Pygame, objects, lambda event: None, lambda x, y: (x, y))
+    state = ViewportTransformState(False, None, (0.0, 0.0))
+
+    down = SimpleNamespace(type=_Pygame.MOUSEBUTTONDOWN, button=1, pos=(0, 0))
+    handled, state = handler.handle(
+        down, state, playing=False, view_mode="scene", active_tool="scale", zoom=1.0,
+        snap_enabled=True, snap_size=16.0, snap_angle=15.0,
+    )
+    motion = SimpleNamespace(type=_Pygame.MOUSEMOTION, pos=(21, 30))
+    handled, state = handler.handle(
+        motion, state, playing=False, view_mode="scene", active_tool="scale", zoom=1.0,
+        snap_enabled=True, snap_size=16.0, snap_angle=15.0,
+    )
+
+    assert handled and state.drag_handle == 8
+    assert (objects["Player"]["w"], objects["Player"]["h"]) == (64.0, 80.0)

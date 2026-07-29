@@ -31,3 +31,13 @@ def test_focus_selected_without_selection_is_handled_but_noop() -> None:
 
     assert handler.handle({"type": "focus_selected"}, state) == state
     assert handler.handle({"type": "unknown"}, state) is None
+
+
+def test_focus_selected_preserves_grid_and_zoom_for_negative_world_positions() -> None:
+    objects = {"CameraTarget": {"x": -120.0, "y": -64.0}}
+    handler = ViewportEditorViewCommandHandler(objects, lambda: (640, 480))
+    state = ViewportEditorViewState("CameraTarget", 90.0, 100.0, 4.0, False)
+
+    focused = handler.handle({"type": "focus_selected"}, state)
+
+    assert focused == ViewportEditorViewState("CameraTarget", -200.0, -124.0, 4.0, False)

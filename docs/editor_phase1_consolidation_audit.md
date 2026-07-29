@@ -88,9 +88,11 @@ The official editor entrypoint is `editor.phase1_main`.
 - Added `WorkspaceRegistry` as the single Phase 1 path for opening Animator,
   Visual Logic, Behavior Tree, Dialogue, Material Graph and UI Builder
   workspaces.
+- Expanded isolated viewport tests for gizmo-axis movement, snap scaling,
+  edit-command Play Mode safety and focus/grid camera behavior.
 
 ## Next Blocks
 
 1. Continue moving workspace-specific graph scene mutations behind controller facades without changing behavior.
-2. Expand viewport command tests for selection and transform gizmos.
-3. Connect additional Phase 1 menu/actions to `WorkspaceRegistry` as they become official surfaces.
+2. Connect additional Phase 1 menu/actions to `WorkspaceRegistry` as they become official surfaces.
+3. Continue hardening viewport command coverage around multi-selection and transform gizmos.
