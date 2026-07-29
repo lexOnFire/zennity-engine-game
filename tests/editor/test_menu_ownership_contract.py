@@ -38,3 +38,12 @@ def test_top_toolbars_are_fixed_and_not_floatable():
         assert ".setFloatable(False)" in source
         assert ".setAllowedAreas(Qt.TopToolBarArea)" in source
         assert "QToolBar::handle { width: 0px; image: none; }" in source
+
+
+def test_embedded_animation_studio_does_not_leave_floating_dock_shell():
+    source = _source("editor/ui/workspace_builder.py")
+    assert "window.animation_track_studio = AnimationStudioDock()" in source
+    assert "track_workspace = window.animation_track_studio.widget()" in source
+    assert "window.animation_track_studio.hide()" in source
+    assert "window.animation_track_studio.setParent(None)" in source
+    assert 'window.animation_mode_tabs.addTab(track_workspace, "Tracks & Keyframes")' in source
