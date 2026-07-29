@@ -56,9 +56,11 @@ def test_tool_controller_uses_shortcut_service_and_tool_manager() -> None:
 
 def test_viewport_handles_focus_and_grid_commands() -> None:
     source = _source("editor/runtime/viewport_session.py")
+    handler = _source("editor/runtime/viewport_editor_view_commands.py")
     lifecycle = _source("editor/runtime/viewport_session_lifecycle.py")
     assert "self.show_grid = True" in source
-    assert 'command_type == "toggle_grid"' in source
-    assert 'command_type != "focus_selected"' in source
-    assert "self.camera_x = float(selected.get" in source
+    assert "ViewportEditorViewCommandHandler" in source
+    assert "ViewportEditorViewState" in source
+    assert 'COMMAND_TYPES = frozenset({"focus_selected", "toggle_grid"})' in handler
+    assert "float(selected.get(\"x\", 0.0))" in handler
     assert "self.view_mode == \"scene\" and self.show_grid" in lifecycle

@@ -64,11 +64,13 @@ The official editor entrypoint is `editor.phase1_main`.
   - `F` focus selected
   - `G` toggle grid
 - Added isolated viewport commands for `focus_selected` and `toggle_grid`.
+- Extracted editor-only viewport view commands to `ViewportEditorViewCommandHandler`.
+- Added direct behavior tests for `F` focus selected and `G` grid toggle.
 
 ## Next Blocks
 
 1. Move scene/hierarchy/inspector orchestration behind controller facades without changing behavior.
-2. Make `ToolManager` the single source of truth for isolated editor tool state, not only embedded editor widgets.
-3. Expand viewport command tests for focus, grid, snap and selection.
+2. Add a dedicated viewport controller facade for command routing and status feedback.
+3. Expand viewport command tests for snap, selection and transform gizmos.
 4. Consolidate Animation, Visual Graph, Behavior Tree, Dialogue, UI Builder and Material Graph under a single Phase 1 workspace registry.
 5. Mark legacy editor windows as reference-only, then remove them after all useful behavior is represented in Phase 1.

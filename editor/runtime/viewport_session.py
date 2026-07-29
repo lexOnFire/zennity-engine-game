@@ -23,6 +23,10 @@ try:
         ViewportControlCommandHandler,
         ViewportControlSettings,
     )
+    from editor.runtime.viewport_editor_view_commands import (
+        ViewportEditorViewCommandHandler,
+        ViewportEditorViewState,
+    )
     from editor.runtime.viewport_edit_commands import ViewportEditCommandHandler
     from editor.runtime.viewport_play_commands import ViewportPlayCommandHandler, ViewportProcessState
     from editor.runtime.viewport_navigation_events import ViewportNavigationEventHandler, ViewportNavigationState
@@ -54,6 +58,7 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .viewport_systems import AnimationPlaybackSystem, AudioPlaybackSystem, FixedStepScheduler, HudRuntimeSystem
     from .viewport_command_queue import ViewportCommandQueue
     from .viewport_control_commands import ViewportAudioCommandHandler, ViewportControlCommandHandler, ViewportControlSettings
+    from .viewport_editor_view_commands import ViewportEditorViewCommandHandler, ViewportEditorViewState
     from .viewport_edit_commands import ViewportEditCommandHandler
     from .viewport_play_commands import ViewportPlayCommandHandler, ViewportProcessState
     from .viewport_navigation_events import ViewportNavigationEventHandler, ViewportNavigationState
@@ -196,6 +201,9 @@ class ViewportSession(ViewportSessionLifecycleMixin):
             self.world_to_screen, self.screen_to_world, lambda: self.view_transform()[2]
         )
         self.control_commands = ViewportControlCommandHandler(self.forwarded_input)
+        self.editor_view_commands = ViewportEditorViewCommandHandler(
+            self.objects, lambda: self.screen.get_size()
+        )
         self.audio_commands = ViewportAudioCommandHandler(
             self.objects, self.audio_channels, self.audio_sounds, lambda event: _send(self.events, event),
             self.start_audio_sources, self.stop_audio_sources, self.play_audio_file
@@ -440,7 +448,22 @@ class ViewportSession(ViewportSessionLifecycleMixin):
                 self.snap_size = settings.snap_size
                 self.snap_angle = settings.snap_angle
                 continue
-            if self._handle_editor_view_command(command):
+            editor_view_state = self.editor_view_commands.handle(
+                command,
+                ViewportEditorViewState(
+                    self.selected_name,
+                    self.camera_x,
+                    self.camera_y,
+                    self.zoom,
+                    self.show_grid,
+                ),
+            )
+            if editor_view_state is not None:
+                self.selected_name = editor_view_state.selected_name
+                self.camera_x = editor_view_state.camera_x
+                self.camera_y = editor_view_state.camera_y
+                self.zoom = editor_view_state.zoom
+                self.show_grid = editor_view_state.show_grid
                 continue
             if self.audio_commands.handle(command):
                 continue
@@ -461,21 +484,6 @@ class ViewportSession(ViewportSessionLifecycleMixin):
                 self.velocities_y, self.grounded = process_state.velocities_y, process_state.grounded
                 self.scene_blackboard_config = process_state.scene_blackboard_config
                 continue
-
-    def _handle_editor_view_command(self, command: dict[str, Any]) -> bool:
-        command_type = str(command.get("type", ""))
-        if command_type == "toggle_grid":
-            self.show_grid = not self.show_grid
-            return True
-        if command_type != "focus_selected":
-            return False
-        selected = self.objects.get(str(self.selected_name)) if self.selected_name else None
-        if selected is None:
-            return True
-        width, height = self.screen.get_size()
-        self.camera_x = float(selected.get("x", 0.0)) - width / (2.0 * self.zoom)
-        self.camera_y = float(selected.get("y", 0.0)) - height / (2.0 * self.zoom)
-        return True
 
     def process_events(self):
         for event in self.pygame.event.get():
