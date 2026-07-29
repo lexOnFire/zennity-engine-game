@@ -256,7 +256,7 @@ LOGIC_RECIPES_PART_2 = (
         "id": "code_edit_spin_on_update",
         "topics": ("Action", "Movement", "Code Editing"),
         "title": "Editable Code: Spin Every Frame",
-        "category": "Code Editing",
+        "category": "Logic & Code Editing",
         "summary": "Rotates the object every frame with a code preview value you can change from 90 to any angle.",
         "keywords": "code edit editable rotate rotation degrees spin 90 180 double click",
         "steps": (
@@ -274,7 +274,7 @@ LOGIC_RECIPES_PART_2 = (
         "id": "code_edit_diagonal_move",
         "topics": ("Movement", "Position", "Code Editing"),
         "title": "Editable Code: Diagonal Move",
-        "category": "Code Editing",
+        "category": "Logic & Code Editing",
         "summary": "Moves diagonally with X and Y values designed for quick editing in code preview mode.",
         "keywords": "code edit editable move diagonal x y speed velocity double click",
         "steps": (
@@ -292,7 +292,7 @@ LOGIC_RECIPES_PART_2 = (
         "id": "code_edit_key_teleport",
         "topics": ("Position", "Input", "Code Editing"),
         "title": "Editable Code: Press T to Teleport",
-        "category": "Code Editing",
+        "category": "Logic & Code Editing",
         "summary": "Teleports the object to editable X/Y coordinates when T is pressed.",
         "keywords": "code edit editable teleport position x y key t double click",
         "steps": (
@@ -310,7 +310,7 @@ LOGIC_RECIPES_PART_2 = (
         "id": "code_edit_timer_spawn",
         "topics": ("Events", "Objects", "Code Editing"),
         "title": "Editable Code: Timer Spawn",
-        "category": "Code Editing",
+        "category": "Logic & Code Editing",
         "summary": "Creates an object on a timer with editable interval, spawn position, limit, and lifetime.",
         "keywords": "code edit editable timer create object spawn lifetime limit seconds",
         "steps": (
@@ -331,7 +331,7 @@ LOGIC_RECIPES_PART_2 = (
         "id": "code_edit_tunable_jump",
         "topics": ("Movement", "Input", "Code Editing"),
         "title": "Editable Code: Tunable Jump Force",
-        "category": "Code Editing",
+        "category": "Logic & Code Editing",
         "summary": "Press Space to jump, then tune the jump force directly from the code preview.",
         "keywords": "code edit editable jump force space input double click",
         "steps": (
@@ -349,7 +349,7 @@ LOGIC_RECIPES_PART_2 = (
         "id": "code_edit_patrol_bounds",
         "topics": ("Movement", "Position", "Code Editing"),
         "title": "Editable Code: Patrol Bounds",
-        "category": "Code Editing",
+        "category": "Logic & Code Editing",
         "summary": "Patrols between two limits and lets you tune minimum, maximum, and speed from code mode.",
         "keywords": "code edit editable patrol bounds minimum maximum speed platform enemy",
         "steps": (
@@ -370,7 +370,7 @@ LOGIC_RECIPES_PART_2 = (
         "id": "code_edit_scroll_speeds",
         "topics": ("Action", "Movement", "Image", "Code Editing"),
         "title": "Editable Code: Background Scroll Speeds",
-        "category": "Code Editing",
+        "category": "Logic & Code Editing",
         "summary": "Starts a scrolling texture and exposes X/Y scroll speeds for quick code-mode tuning.",
         "keywords": "code edit editable scroll background texture speed x y parallax",
         "steps": (
@@ -391,7 +391,7 @@ LOGIC_RECIPES_PART_2 = (
         "id": "code_edit_number_driven_move",
         "topics": ("Math", "Movement", "Code Editing"),
         "title": "Editable Code: Number Controls Movement",
-        "category": "Code Editing",
+        "category": "Logic & Code Editing",
         "summary": "Uses a Number node as the movement amount so the speed can be edited from code preview mode.",
         "keywords": "code edit editable number value movement speed wire double click",
         "steps": (
