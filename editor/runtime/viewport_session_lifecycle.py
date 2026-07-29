@@ -102,7 +102,7 @@ class ViewportSessionLifecycleMixin:
                 active_cam["y"] = float(tgt["y"])
 
         self.screen.fill(bg_color)
-        if self.view_mode == "scene":
+        if self.view_mode == "scene" and self.show_grid:
             self.overlay_renderer.draw_scene(
                 self.screen,
                 self.objects,

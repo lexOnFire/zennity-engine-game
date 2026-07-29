@@ -9,6 +9,8 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QActionGroup, QKeySequence, QShortcut
 from PySide6.QtWidgets import QToolBar
 
+from editor.services.shortcut_service import ShortcutService
+
 
 class EditorCommandController:
     """Owns editor command routing and the controls that emit those commands."""
@@ -16,6 +18,7 @@ class EditorCommandController:
     def __init__(self, host: Any, project_root: Path | None = None) -> None:
         self.host = host
         self.project_root = (project_root or Path.cwd()).resolve()
+        self.shortcut_service = ShortcutService(host)
 
     def build_viewport_toolbar(self) -> None:
         h = self.host
@@ -98,25 +101,43 @@ class EditorCommandController:
             h._commands.put({"type": "set_tool", "tool": name})
             h.statusBar().showMessage(f"Ferramenta ativa: {name.title()}")
 
+        def focus_selected() -> None:
+            h._commands.put({"type": "focus_selected"})
+            h.statusBar().showMessage("Foco no objeto selecionado")
+
+        def toggle_grid() -> None:
+            h._commands.put({"type": "toggle_grid"})
+            h.statusBar().showMessage("Grade alternada")
+
         for action in h.findChildren(QAction):
             label = action.toolTip() if action.toolTip() else action.text()
             tool = label.lower()
             if tool not in shortcuts:
                 continue
             action.setCheckable(True)
-            action.setShortcut(QKeySequence(shortcuts[tool]))
-            action.setShortcutContext(Qt.ApplicationShortcut)
+            self.shortcut_service.bind_action(action, shortcuts[tool])
             action.setChecked(tool == "select")
             group.addAction(action)
             h._tool_actions[tool] = action
             action.triggered.connect(
                 lambda checked=False, name=tool: checked and activate_tool(name)
             )
-        for tool, shortcut_key in shortcuts.items():
-            shortcut = QShortcut(QKeySequence(shortcut_key), h)
-            shortcut.setContext(Qt.ApplicationShortcut)
-            shortcut.activated.connect(lambda name=tool: activate_tool(name))
-            h._tool_shortcuts.append(shortcut)
+        self.shortcut_service.register(
+            ShortcutService.STANDARD_BINDINGS,
+            {
+                "tool.select": lambda: activate_tool("select"),
+                "tool.move": lambda: activate_tool("move"),
+                "tool.rotate": lambda: activate_tool("rotate"),
+                "tool.scale": lambda: activate_tool("scale"),
+                "edit.duplicate": lambda: h._selected_name is not None and h._duplicate_selected(),
+                "edit.undo": h._undo,
+                "edit.redo": h._redo,
+                "edit.delete": lambda: h._selected_name is not None and h._delete_object(h._selected_name),
+                "viewport.focus_selected": focus_selected,
+                "viewport.toggle_grid": toggle_grid,
+            },
+        )
+        h._tool_shortcuts.extend(self.shortcut_service.shortcuts)
         h._tool_action_group = group
 
     def dispatch(self, message: dict) -> None:

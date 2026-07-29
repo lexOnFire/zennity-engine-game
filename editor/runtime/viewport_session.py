@@ -148,6 +148,7 @@ class ViewportSession(ViewportSessionLifecycleMixin):
         self.snap_size = 16.0
         self.snap_angle = 15.0
         self.view_mode = "scene"
+        self.show_grid = True
         self.camera_x = 0.0
         self.camera_y = 0.0
         self.zoom = 1.0
@@ -439,6 +440,8 @@ class ViewportSession(ViewportSessionLifecycleMixin):
                 self.snap_size = settings.snap_size
                 self.snap_angle = settings.snap_angle
                 continue
+            if self._handle_editor_view_command(command):
+                continue
             if self.audio_commands.handle(command):
                 continue
             process_state = self.play_commands.handle(
@@ -458,6 +461,21 @@ class ViewportSession(ViewportSessionLifecycleMixin):
                 self.velocities_y, self.grounded = process_state.velocities_y, process_state.grounded
                 self.scene_blackboard_config = process_state.scene_blackboard_config
                 continue
+
+    def _handle_editor_view_command(self, command: dict[str, Any]) -> bool:
+        command_type = str(command.get("type", ""))
+        if command_type == "toggle_grid":
+            self.show_grid = not self.show_grid
+            return True
+        if command_type != "focus_selected":
+            return False
+        selected = self.objects.get(str(self.selected_name)) if self.selected_name else None
+        if selected is None:
+            return True
+        width, height = self.screen.get_size()
+        self.camera_x = float(selected.get("x", 0.0)) - width / (2.0 * self.zoom)
+        self.camera_y = float(selected.get("y", 0.0)) - height / (2.0 * self.zoom)
+        return True
 
     def process_events(self):
         for event in self.pygame.event.get():
