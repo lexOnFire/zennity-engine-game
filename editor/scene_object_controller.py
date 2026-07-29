@@ -104,6 +104,16 @@ class SceneObjectController:
             "width": max(1.0, width), "height": max(1.0, height),
         })
 
+    def reset_to_initial(self) -> None:
+        h = self.host
+        h._record_history()
+        h._scene_snapshot = deepcopy(h._initial_scene_snapshot)
+        h._objects_by_name = {item["name"]: item for item in h._scene_snapshot}
+        h._refresh_hierarchy()
+        h._scene_controller.publish_snapshot(h._scene_snapshot)
+        if h._selected_name in h._objects_by_name:
+            h._update_inspector(h._selected_name)
+
     def rename(self, old_name: str) -> None:
         h = self.host
         if h._play_session.is_running or old_name not in h._objects_by_name:

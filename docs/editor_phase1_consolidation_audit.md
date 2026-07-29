@@ -68,10 +68,12 @@ The official editor entrypoint is `editor.phase1_main`.
 - Added direct behavior tests for `F` focus selected and `G` grid toggle.
 - Added `editor/controllers/viewport_controller.py`.
 - Routed tool selection, focus selected, grid toggle and snap status through the Phase 1 viewport facade.
+- Moved Reset/New/Duplicate/Delete scene routing toward `SceneObjectController`.
+- Removed another set of scene state mutations from `EditorCommandController`.
 
 ## Next Blocks
 
-1. Move scene/hierarchy/inspector orchestration behind controller facades without changing behavior.
+1. Continue moving hierarchy and inspector orchestration behind controller facades without changing behavior.
 2. Expand viewport command tests for selection and transform gizmos.
 3. Consolidate Animation, Visual Graph, Behavior Tree, Dialogue, UI Builder and Material Graph under a single Phase 1 workspace registry.
 4. Mark legacy editor windows as reference-only, then remove them after all useful behavior is represented in Phase 1.

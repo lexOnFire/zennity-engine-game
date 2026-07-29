@@ -76,3 +76,19 @@ def test_scene_object_controller_deletes_unselected_object() -> None:
     assert host._scene_snapshot == []
     assert host._objects_by_name == {}
     assert host._scene_controller.snapshots == 1
+
+
+def test_scene_object_controller_resets_to_initial_scene() -> None:
+    host = _host()
+    initial = {"id": "initial", "name": "Player", "x": 100.0, "y": 200.0}
+    host._initial_scene_snapshot = [initial]
+    host._scene_snapshot[0]["x"] = 500.0
+
+    SceneObjectController(host).reset_to_initial()
+
+    assert host.history == 1
+    assert host._scene_snapshot == [initial]
+    assert host._scene_snapshot[0] is not initial
+    assert host._objects_by_name == {"Player": host._scene_snapshot[0]}
+    assert host._scene_controller.snapshots == 1
+    assert host.inspected == ["Player"]

@@ -50,6 +50,8 @@ def test_tool_controller_uses_shortcut_service_and_tool_manager() -> None:
     assert "ShortcutService.STANDARD_BINDINGS" in source
     assert "h.editor_context.tools.set_active_tool(next_tool)" in source
     assert "h._viewport_commands.set_tool(next_tool)" in source
+    assert "h._scene_objects.duplicate_selected()" in source
+    assert "h._scene_objects.delete(h._selected_name)" in source
     assert '"viewport.focus_selected": self.focus_selected' in source
     assert '"viewport.toggle_grid": self.toggle_grid' in source
     assert "class ViewportController" in viewport

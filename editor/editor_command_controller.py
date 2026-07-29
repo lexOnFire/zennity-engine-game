@@ -1,7 +1,6 @@
 """Toolbar, menu and Play Mode command coordination."""
 from __future__ import annotations
 
-from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -87,7 +86,7 @@ class EditorCommandController:
             h.statusBar().showMessage("Pare o Play Mode antes de alterar a cena")
             return
         if command_type == "new_scene":
-            h._new_scene()
+            h._scene_objects.new_scene()
             return
         if command_type == "save_scene":
             h._save_scene_snapshot()
@@ -96,13 +95,7 @@ class EditorCommandController:
             h._load_scene_snapshot()
             return
         if command_type == "reset_from_interface":
-            h._record_history()
-            h._scene_snapshot = deepcopy(h._initial_scene_snapshot)
-            h._objects_by_name = {item["name"]: item for item in h._scene_snapshot}
-            h._refresh_hierarchy()
-            h._scene_controller.publish_snapshot(h._scene_snapshot)
-            if h._selected_name in h._objects_by_name:
-                h._update_inspector(h._selected_name)
+            h._scene_objects.reset_to_initial()
             return
         if command_type in {"play", "pause", "stop"}:
             self._dispatch_play_command(message, command_type)
@@ -201,11 +194,11 @@ class EditorCommandController:
             menu.addSeparator()
             duplicate_action = menu.addAction("Duplicar")
             duplicate_action.setShortcut("Ctrl+D")
-            duplicate_action.triggered.connect(h._duplicate_selected)
+            duplicate_action.triggered.connect(h._scene_objects.duplicate_selected)
             delete_action = menu.addAction("Excluir")
             delete_action.setShortcut("Delete")
             delete_action.triggered.connect(
                 lambda _checked=False: h._selected_name is not None
-                and h._delete_object(h._selected_name)
+                and h._scene_objects.delete(h._selected_name)
             )
             break

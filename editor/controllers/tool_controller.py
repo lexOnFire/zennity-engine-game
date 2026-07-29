@@ -54,11 +54,11 @@ class ToolController:
                 "tool.rotate": lambda: self.activate_tool(EditorTool.ROTATE),
                 "tool.scale": lambda: self.activate_tool(EditorTool.SCALE),
                 "edit.duplicate": lambda: h._selected_name is not None
-                and h._duplicate_selected(),
+                and h._scene_objects.duplicate_selected(),
                 "edit.undo": h._undo,
                 "edit.redo": h._redo,
                 "edit.delete": lambda: h._selected_name is not None
-                and h._delete_object(h._selected_name),
+                and h._scene_objects.delete(h._selected_name),
                 "viewport.focus_selected": self.focus_selected,
                 "viewport.toggle_grid": self.toggle_grid,
             },
