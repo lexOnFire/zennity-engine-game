@@ -170,16 +170,14 @@ class InspectorComponentController(InspectorControllerUIMediaMixin):
         self.host = host
 
     def _selected(self) -> tuple[str, dict[str, Any]] | None:
-        h = self.host
-        name = h._selected_name
-        if h._updating_inspector or name not in h._objects_by_name:
-            return None
-        return name, h._objects_by_name[name]
+        return self.host._selection.selected_scene_object()
 
     def add_component(self, component: str) -> None:
         h = self.host
-        if h._selected_name not in h._objects_by_name:
+        selected = self._selected()
+        if selected is None:
             return
+        name, obj = selected
         if component == "script":
             self._attach_next_script()
             return
@@ -190,7 +188,6 @@ class InspectorComponentController(InspectorControllerUIMediaMixin):
             h._logic_workspace_controller.choose_component()
             return
         h._record_history()
-        obj = h._objects_by_name[h._selected_name]
         if component == "sprite":
             obj["renderer_enabled"] = True
         elif component == "audio":
@@ -225,18 +222,20 @@ class InspectorComponentController(InspectorControllerUIMediaMixin):
         }.get(component, "ui" if component.startswith("ui_") else None)
         if card_key is not None:
             h._component_expanded[card_key] = True
-        h._scene_controller.publish_snapshot(h._scene_snapshot)
-        h._scene_controller.select(h._selected_name)
-        h._update_inspector(h._selected_name)
-        h._log("INFO", f"Componente adicionado em {h._selected_name}: {component}")
+        h._selection.publish_selected_change(select=True, inspect=True)
+        h._log("INFO", f"Componente adicionado em {name}: {component}")
 
     def _attach_next_script(self) -> None:
         h = self.host
+        selected = self._selected()
+        if selected is None:
+            return
+        name, obj = selected
         available = h._script_workspace.available_scripts()
         if not available:
             h.statusBar().showMessage("Nenhum script encontrado em Assets/Scripts")
             return
-        attached = set(h._objects_by_name[h._selected_name].get("scripts", []))
+        attached = set(obj.get("scripts", []))
         preferred = next((path for path in available if path.name == "player_controller_2d.py"), None)
         ordered = ([preferred] if preferred is not None else []) + [path for path in available if path != preferred]
         for path in ordered:
@@ -245,7 +244,7 @@ class InspectorComponentController(InspectorControllerUIMediaMixin):
             except ValueError:
                 relative = str(path.resolve())
             if relative not in attached:
-                h._script_workspace.attach(h._selected_name, path)
+                h._script_workspace.attach(name, path)
                 return
         h.statusBar().showMessage("Todos os scripts disponíveis já estão anexados")
 
@@ -257,7 +256,7 @@ class InspectorComponentController(InspectorControllerUIMediaMixin):
         self.host._record_history()
         obj["renderer_enabled"] = bool(checked)
         self.send_renderer(record_history=False)
-        self.host._update_inspector(name)
+        self.host._selection.refresh_inspector(name)
 
     def send_renderer(self, record_history: bool = True) -> None:
         selected = self._selected()
@@ -273,7 +272,7 @@ class InspectorComponentController(InspectorControllerUIMediaMixin):
             "render_layer": h.sprite_layer_combo.currentText(),
             "sort_order": int(h.sprite_order_field.value()),
         })
-        h._scene_controller.publish_snapshot(h._scene_snapshot)
+        h._selection.publish_scene()
 
     def toggle_audio(self, checked: bool) -> None:
         self._toggle_dictionary_component(
@@ -298,7 +297,7 @@ class InspectorComponentController(InspectorControllerUIMediaMixin):
             "loop": h.audio_loop_field.isChecked(),
             "autoplay": h.audio_autoplay_field.isChecked(),
         })
-        h._scene_controller.publish_snapshot(h._scene_snapshot)
+        h._selection.publish_scene()
 
     def preview_audio(self) -> None:
         selected = self._selected()
@@ -381,8 +380,8 @@ class InspectorComponentController(InspectorControllerUIMediaMixin):
             obj["component_names"] = [
                 value for value in obj.get("component_names", []) if value != "Camera2D"
             ]
-        h._scene_controller.publish_snapshot(h._scene_snapshot)
-        h._update_inspector(name)
+        h._selection.publish_scene()
+        h._selection.refresh_inspector(name)
 
     def send_camera(self) -> None:
         selected = self._selected()
@@ -402,7 +401,7 @@ class InspectorComponentController(InspectorControllerUIMediaMixin):
             "zoom": float(h.camera_zoom_field.value()),
             "follow_target": "" if follow == "Nenhum" else follow,
         })
-        h._scene_controller.publish_snapshot(h._scene_snapshot)
+        h._selection.publish_scene()
 
     @staticmethod
     def available_audio_files(project_root: Path | None = None) -> list[str]:
@@ -432,5 +431,5 @@ class InspectorComponentController(InspectorControllerUIMediaMixin):
             obj.setdefault(key, deepcopy(default))
         else:
             obj.pop(key, None)
-        h._scene_controller.publish_snapshot(h._scene_snapshot)
-        h._update_inspector(name)
+        h._selection.publish_scene()
+        h._selection.refresh_inspector(name)

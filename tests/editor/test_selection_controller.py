@@ -73,3 +73,34 @@ def test_selection_controller_select_for_action_only_accepts_scene_objects() -> 
     assert host._selected_name == "Player"
     assert controller.select_for_action("Missing") is False
     assert host._selected_name == "Player"
+
+
+def test_selection_controller_returns_selected_scene_object() -> None:
+    host, _selected, _inspected, _status = _host()
+    host._selected_name = "Player"
+
+    selected = EditorSelectionController(host).selected_scene_object()
+
+    assert selected == ("Player", host._objects_by_name["Player"])
+
+
+def test_selection_controller_blocks_selected_object_while_updating_inspector() -> None:
+    host, _selected, _inspected, _status = _host()
+    host._selected_name = "Player"
+    host._updating_inspector = True
+
+    assert EditorSelectionController(host).selected_scene_object() is None
+
+
+def test_selection_controller_publishes_and_refreshes_selected_change() -> None:
+    host, selected, inspected, _status = _host()
+    published = []
+    host._scene_snapshot = [{"name": "Player"}]
+    host._selected_name = "Player"
+    host._scene_controller.publish_snapshot = published.append
+
+    EditorSelectionController(host).publish_selected_change(select=True, inspect=True)
+
+    assert published == [host._scene_snapshot]
+    assert selected == ["Player"]
+    assert inspected == ["Player"]

@@ -29,3 +29,29 @@ class EditorSelectionController:
             return False
         h._selected_name = name
         return True
+
+    def selected_scene_object(self) -> tuple[str, dict[str, Any]] | None:
+        h = self.host
+        name = h._selected_name
+        if getattr(h, "_updating_inspector", False) or name not in h._objects_by_name:
+            return None
+        return str(name), h._objects_by_name[name]
+
+    def publish_scene(self) -> None:
+        h = self.host
+        h._scene_controller.publish_snapshot(h._scene_snapshot)
+
+    def publish_selected_change(self, *, select: bool = False, inspect: bool = False) -> None:
+        h = self.host
+        self.publish_scene()
+        selected = self.selected_scene_object()
+        if selected is None:
+            return
+        name, _obj = selected
+        if select:
+            h._scene_controller.select(name)
+        if inspect:
+            h._update_inspector(name)
+
+    def refresh_inspector(self, name: str) -> None:
+        self.host._update_inspector(name)
