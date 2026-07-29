@@ -38,8 +38,6 @@ class EditorCommandController:
         h = self.host
         for label in ("Novo", "Abrir", "Salvar"):
             h.editor_menus["Arquivo"].addAction(h.toolbar_actions[label])
-        for label in ("Select", "Move", "Rotate", "Scale", "Snap: OFF"):
-            h.editor_menus["Ferramentas"].addAction(h.toolbar_actions[label])
         for label in ("Play", "Pause", "Stop"):
             h.editor_menus["Executar"].addAction(h.toolbar_actions[label])
         validate_action = h.editor_menus["Build"].addAction("Validar projeto...")

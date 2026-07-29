@@ -62,30 +62,33 @@ class InterfaceSmokeTest(QMainWindow):
 
     def _build_menu(self) -> None:
         self.editor_menus = {}
-        for name in ("Arquivo", "Editar", "Janela", "Criar", "Ferramentas", "Build", "Executar", "Ajuda"):
+        for name in ("Arquivo", "Editar", "Janela", "Criar", "Build", "Executar", "Ajuda"):
             menu = self.menuBar().addMenu(name)
             self.editor_menus[name] = menu
 
-        # Ferramentas contém editores e utilitários. Janela fica reservada
-        # exclusivamente a layout e visibilidade de painéis.
-        tool_items = [
-            ("Editor de Lógica Visual", "visual_scripting", "editor.visual_scripting.visual_scripting_dock", "VisualScriptingEditorDock"),
-            ("UI Builder", "ui_builder", "editor.ui_builder.ui_builder_dock", "UIBuilderDock"),
-            ("Ecossistema de Extensões / Plugins", "extension_manager", "editor.extension_manager.extension_dock", "ExtensionManagerDock"),
-            ("Grafo de Dependências de Assets", "dependency_viewer", "editor.tools.dependency_viewer_dock", "DependencyViewerDock"),
-            ("Build Pipeline & Export", "build_report", "editor.tools.build_report_dock", "BuildReportDock"),
-            ("Auditor de Capacidades de Assets", "asset_auditor", "editor.tools.asset_auditor_dock", "AssetAuditorDock"),
-            ("Assistente de Build & Export Wizard", "build_wizard", "editor.wizards.build_wizard_dock", "BuildWizardDock"),
-            ("Configurações do Projeto", "project_settings", "editor.wizards.project_settings_dock", "ProjectSettingsDock"),
-        ]
+        window_menu = self.editor_menus["Janela"]
+        animator_action = QAction("Animator", self)
+        animator_action.triggered.connect(lambda checked=False: self._show_animation_workspace())
+        window_menu.addAction(animator_action)
 
-        tools_menu = self.editor_menus["Ferramentas"]
-        for label, attr_name, mod_path, class_name in tool_items:
-            act = QAction(label, self)
-            act.triggered.connect(
-                lambda checked=False, m=mod_path, c=class_name, a=attr_name: self._show_visual_tool_dock(m, c, a)
+        logic_action = QAction("Editor de Lógica Visual", self)
+        logic_action.triggered.connect(
+            lambda checked=False: self._show_visual_tool_dock(
+                "editor.visual_scripting.visual_scripting_dock",
+                "VisualScriptingEditorDock",
+                "visual_scripting",
             )
-            tools_menu.addAction(act)
+        )
+        window_menu.addAction(logic_action)
+
+    def _show_animation_workspace(self) -> None:
+        handler = getattr(self, "_show_animation_window", None)
+        if callable(handler):
+            handler()
+            return
+        self.animation_window.show()
+        self.animation_window.raise_()
+        self.animation_window.activateWindow()
 
     def _show_visual_tool_dock(self, module_path: str, class_name: str, attr_name: str) -> None:
         """Instancia e exibe a dock do editor visual dinamicamente ao ser clicada no menu."""

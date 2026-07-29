@@ -56,8 +56,9 @@ def test_logic_uses_modern_integrated_dock_and_animation_stays_independent():
     assert '"VisualScriptingEditorDock"' in editor
     assert "def show(self" in editor
     assert "def _show_animation_window" in animation
-    assert 'editor_icon("play")' in editor
-    assert 'tools_menu = h.editor_menus["Ferramentas"]' in editor
+    assert 'QAction("Animator", self)' in interface
+    assert 'QAction("Editor de Lógica Visual", self)' in interface
+    assert 'h.editor_menus["Ferramentas"]' not in editor
     assert 'h.editor_menus["Janela"].addAction' not in editor
     assert 'editor_icon("animation")' not in editor
     assert 'editor_icon("script")' not in editor

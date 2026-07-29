@@ -6,10 +6,8 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QMessageBox
 
-from editor.ui.icons import editor_icon
 from editor.widgets.logic_graph_picker import LogicGraphPickerDialog
 from engine.logic.graph_asset import (
     create_logic_node,
@@ -41,11 +39,6 @@ class LogicWorkspaceController:
         h.logic_workspace.stop_requested.connect(
             lambda: h._editor_commands.dispatch({"type": "stop"})
         )
-        animation_action = QAction(editor_icon("play"), "Editor de Animação", h)
-        animation_action.triggered.connect(h._show_animation_window)
-        tools_menu = h.editor_menus["Ferramentas"]
-        tools_menu.addSeparator()
-        tools_menu.addAction(animation_action)
         self._connected = True
         return True
 
