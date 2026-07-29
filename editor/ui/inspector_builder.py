@@ -379,8 +379,6 @@ def _build_runtime_debug_component(window, main_layout):
 
 
 def _finalize_inspector(window, scroll, inspector, main_layout):
-    # O cabeçalho e corpo de scripts/custom agora são inseridos de forma modular dinâmica para cada script ativo
-    window.script_containers = []
 
     window.add_component_button = QPushButton("＋ Adicionar Componente")
     window.add_component_button.setObjectName("InspectorAddComponentButton")

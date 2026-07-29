@@ -143,12 +143,6 @@ class SceneObjectController:
         h._objects_by_name.pop(name, None)
         if h._selected_name == name:
             h._selected_name = None
-            for header, body in h.script_containers:
-                h.inspector_layout.removeWidget(header)
-                h.inspector_layout.removeWidget(body)
-                header.deleteLater()
-                body.deleteLater()
-            h.script_containers.clear()
             h._clear_inspector_view()
         h._refresh_hierarchy()
         h._scene_controller.publish_snapshot(h._scene_snapshot)

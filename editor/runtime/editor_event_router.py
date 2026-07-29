@@ -74,20 +74,7 @@ class EditorEventRouter:
         if path is None:
             return None
         extension = path.suffix.lower()
-        if extension == ".py":
-            if watched is editor.viewport_host:
-                pos = event.position()
-                scale = max(1.0, float(editor.viewport_host.devicePixelRatioF()))
-                editor._commands.put({
-                    "type": "script_drop_at", "path": str(path.resolve()),
-                    "screen_x": float(pos.x()) * scale, "screen_y": float(pos.y()) * scale,
-                })
-                return self._accept(event)
-            target = self._target_name(watched, event)
-            if target in editor._objects_by_name:
-                editor._script_workspace.attach(target, path)
-                return self._accept(event)
-        elif extension == ".zanim":
+        if extension == ".zanim":
             target = self._target_name(watched, event)
             if target in editor._objects_by_name:
                 editor._apply_animation_asset_path_to_object(path, target)

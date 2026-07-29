@@ -178,9 +178,6 @@ class InspectorComponentController(InspectorControllerUIMediaMixin):
         if selected is None:
             return
         name, obj = selected
-        if component == "script":
-            self._attach_next_script()
-            return
         if component == "animator":
             h._choose_animation_component()
             return
@@ -224,29 +221,6 @@ class InspectorComponentController(InspectorControllerUIMediaMixin):
             h._component_expanded[card_key] = True
         h._selection.publish_selected_change(select=True, inspect=True)
         h._log("INFO", f"Componente adicionado em {name}: {component}")
-
-    def _attach_next_script(self) -> None:
-        h = self.host
-        selected = self._selected()
-        if selected is None:
-            return
-        name, obj = selected
-        available = h._script_workspace.available_scripts()
-        if not available:
-            h.statusBar().showMessage("Nenhum script encontrado em Assets/Scripts")
-            return
-        attached = set(obj.get("scripts", []))
-        preferred = next((path for path in available if path.name == "player_controller_2d.py"), None)
-        ordered = ([preferred] if preferred is not None else []) + [path for path in available if path != preferred]
-        for path in ordered:
-            try:
-                relative = str(path.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
-            except ValueError:
-                relative = str(path.resolve())
-            if relative not in attached:
-                h._script_workspace.attach(name, path)
-                return
-        h.statusBar().showMessage("Todos os scripts disponíveis já estão anexados")
 
     def toggle_renderer(self, checked: bool) -> None:
         selected = self._selected()

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from pathlib import Path
 from typing import Any
 
 
@@ -125,11 +124,6 @@ class ViewportEventController:
         dock = getattr(self.host, "_dock_visual_scripting", None)
         if dock is not None and hasattr(dock, "apply_runtime_trace"):
             dock.apply_runtime_trace(message)
-
-    def attach_script(self, message: dict) -> None:
-        self.host._attach_script(
-            str(message.get("name", "")), Path(str(message.get("path", "")))
-        )
 
     def stats(self, message: dict) -> None:
         h = self.host

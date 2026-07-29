@@ -26,7 +26,6 @@ def test_viewport_handler_map_is_complete(tmp_path: Path) -> None:
         _handle_logic_trace_event=handler,
         _handle_animator_state_event=handler,
         _handle_animation_event=handler,
-        _handle_attach_script_event=handler,
         _handle_stats_event=handler,
     )
     handlers = EditorBootstrapController(host, tmp_path)._viewport_handlers()
@@ -35,5 +34,5 @@ def test_viewport_handler_map_is_complete(tmp_path: Path) -> None:
         "selected", "transform_begin", "transform_end", "transform", "play_state",
         "scene_snapshot", "runtime_objects", "viewport_mode", "script_log",
         "logic_trace", "logic_trace_clear", "animator_state", "animation_event",
-        "attach_script", "stats",
+        "stats",
     }

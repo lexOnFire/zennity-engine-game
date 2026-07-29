@@ -378,12 +378,6 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
             self._inspector_view.render_ui(name, obj)
             self._inspector_view.render_logic(name)
             self._inspector_view.render_runtime(obj)
-            for header, body in self.script_containers:
-                self.inspector_layout.removeWidget(header)
-                self.inspector_layout.removeWidget(body)
-                header.deleteLater()
-                body.deleteLater()
-            self.script_containers.clear()
         finally:
             self._updating_inspector = False
     def _handle_selected_event(self, message: dict) -> None:
@@ -411,9 +405,6 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._viewport_event_controller.logic_trace(message)
 
 
-
-    def _handle_attach_script_event(self, message: dict) -> None:
-        self._viewport_event_controller.attach_script(message)
 
     def _handle_stats_event(self, message: dict) -> None:
         self._viewport_event_controller.stats(message)

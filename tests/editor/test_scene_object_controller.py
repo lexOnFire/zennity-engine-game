@@ -23,7 +23,7 @@ def _host():
     host = SimpleNamespace(
         _scene_snapshot=[obj], _objects_by_name={"Player": obj}, _selected_name="Player",
         _play_session=SimpleNamespace(is_running=False), _scene_controller=_SceneBridge(),
-        _commands=SimpleQueue(), history=0, inspected=[], script_containers=[],
+        _commands=SimpleQueue(), history=0, inspected=[],
     )
     host._record_history = lambda: setattr(host, "history", host.history + 1)
     host._refresh_hierarchy = lambda: None

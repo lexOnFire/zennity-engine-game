@@ -32,6 +32,7 @@ The official editor entrypoint is `editor.phase1_main`.
 | Snap | Present in isolated viewport control commands | Keep | Routed through the Phase 1 viewport facade.
 | Animation | Integrated into detached Animator workspace | Keep | Old floating dock shell was removed in prior cleanup.
 | Visual Graph | Modern hub is central | Keep | Behavior Tree, Dialogue, Material, Animator graph remain hub modes.
+| Python scripts in Phase 1 | Legacy component/workspace and `Assets/Scripts` | Discard | Gameplay authoring is centered on Logic Graphs.
 | UI Builder / Build / Diagnostics | Internal tools, not primary menu entries | Improve later | Keep code, do not expose as top-level visual clutter.
 | Legacy windows/premium editor | Compatibility/reference paths | Discard later | Do not evolve as independent editors.
 
@@ -74,10 +75,12 @@ The official editor entrypoint is `editor.phase1_main`.
 - Routed hierarchy selection and viewport selection through the shared selection facade.
 - Moved selected-object lookup and scene publication paths from `InspectorComponentController` into the selection facade.
 - Routed Inspector UI/media scene publication and auto-canvas registration through the selection facade.
+- Removed the legacy Python script workspace, Inspector script plugins and `Assets/Scripts`.
+- Cleared script bindings from bundled demo assets so graph-based logic is the official authoring path.
 
 ## Next Blocks
 
-1. Continue moving workspace-specific scene mutations behind controller facades without changing behavior.
+1. Continue moving workspace-specific graph scene mutations behind controller facades without changing behavior.
 2. Expand viewport command tests for selection and transform gizmos.
 3. Consolidate Animation, Visual Graph, Behavior Tree, Dialogue, UI Builder and Material Graph under a single Phase 1 workspace registry.
 4. Mark legacy editor windows as reference-only, then remove them after all useful behavior is represented in Phase 1.

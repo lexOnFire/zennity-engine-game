@@ -26,7 +26,6 @@ from editor.runtime.viewport_process_controller import ViewportProcessController
 from editor.scene_history_controller import SceneHistoryController
 from editor.scene_object_controller import SceneObjectController
 from editor.scene_persistence import EditorScenePersistence
-from editor.script_workspace_controller import ScriptWorkspaceController
 from editor.controllers.selection_controller import EditorSelectionController
 from editor.controllers.tool_controller import ToolController
 from editor.controllers.viewport_controller import ViewportController
@@ -73,7 +72,6 @@ class EditorBootstrapController:
         h._inspector_components = InspectorComponentController(h)
         h._inspector_view = InspectorViewRenderer(h)
         h._animation_workspace = AnimationWorkspaceController(h)
-        h._script_workspace = ScriptWorkspaceController(h)
         h._logic_workspace_controller = LogicWorkspaceController(h)
         h._prefab_workspace = PrefabWorkspaceController(h)
         h._scene_objects = SceneObjectController(h)
@@ -113,7 +111,6 @@ class EditorBootstrapController:
         h._connect_inspector_to_viewport()
         h._configure_animation_workspace()
         h._logic_workspace_controller.connect()
-        h.script_containers = []
         h._clear_inspector_view()
         h.add_component_button.clicked.connect(h._open_add_component_menu)
         h.viewport_tabs.currentChanged.connect(h._change_view_mode)
@@ -138,6 +135,5 @@ class EditorBootstrapController:
             "logic_trace_clear": h._handle_logic_trace_event,
             "animator_state": h._handle_animator_state_event,
             "animation_event": h._handle_animation_event,
-            "attach_script": h._handle_attach_script_event,
             "stats": h._handle_stats_event,
         }

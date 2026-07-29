@@ -54,7 +54,7 @@ def test_native_ui_button_hit_test_keeps_script_event() -> None:
     assert button["event"] == "start"
 
 
-def test_delete_object_does_not_access_removed_shared_script_selector() -> None:
+def test_delete_object_does_not_access_removed_script_ui() -> None:
     source = Path("editor/scene_object_controller.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
     delete_method = next(
@@ -69,7 +69,7 @@ def test_delete_object_does_not_access_removed_shared_script_selector() -> None:
     assert "script_selector" not in attributes
     assert "create_script_button" not in attributes
     assert "edit_script_button" not in attributes
-    assert "script_containers" in attributes
+    assert "script_containers" not in attributes
 
 
 def test_native_ui_clear_caches_releases_fonts_and_surfaces() -> None:

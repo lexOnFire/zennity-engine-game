@@ -29,7 +29,7 @@ def test_animator_component_opens_picker_before_mutating_object() -> None:
     source = _source("editor/inspector_controller.py")
     operations = _source("editor/animation_workspace_operations.py") + _source("editor/animation_asset_operations.py") + _source("editor/animation_preview_operations.py")
     add_start = source.index("def add_component")
-    add_method = source[add_start:source.index("def _attach_next_script", add_start)]
+    add_method = source[add_start:source.index("def toggle_renderer", add_start)]
     choose_start = operations.index("def _choose_animation_component")
     choose_method = operations[choose_start:]
 

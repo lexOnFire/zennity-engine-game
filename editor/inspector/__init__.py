@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from editor.inspector.plugin import InspectorPlugin
 from editor.inspector.plugin_registry import InspectorPluginRegistry
-from editor.inspector.script_plugin import ScriptInspectorPlugin
 
 _registry: InspectorPluginRegistry | None = None
 
@@ -14,7 +13,6 @@ def _build_registry() -> InspectorPluginRegistry:
 
     register_default_inspector_plugins()
     register_asset_component_plugins()
-    inspector_plugin_registry.register(ScriptInspectorPlugin())
     return inspector_plugin_registry
 
 
@@ -30,6 +28,5 @@ inspector_plugin_registry: InspectorPluginRegistry = _get_registry()  # type: ig
 __all__ = [
     "InspectorPlugin",
     "InspectorPluginRegistry",
-    "ScriptInspectorPlugin",
     "inspector_plugin_registry",
 ]
