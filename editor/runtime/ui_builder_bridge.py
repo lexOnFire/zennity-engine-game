@@ -39,7 +39,7 @@ class UIBuilderBridge:
                 dock=None,
                 shortcuts=["Ctrl+Shift+U"],
                 commands=["ui.add_widget", "ui.delete_widget", "ui.export_layout"],
-                menu="Ferramentas",
+                menu="Interno",
                 icon="ui",
                 category="Editor",
             )

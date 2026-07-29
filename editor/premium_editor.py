@@ -248,7 +248,7 @@ class ZennityPremiumEditor(QMainWindow):
 
     def _build_menu(self) -> None:
         bar = self.menuBar()
-        for name in ["Arquivo", "Editar", "Janela", "Criar", "Ferramentas", "Build + Executar", "Ajuda"]:
+        for name in ["Arquivo", "Editar", "Janela", "Criar", "Build + Executar", "Ajuda"]:
             menu = bar.addMenu(name)
             if name == "Janela":
                 menu.addAction("Salvar Layout", self.save_layout)

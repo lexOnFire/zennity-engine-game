@@ -1,6 +1,6 @@
 """Subgraphs & Macro Nodes Framework — Sprint 14 (Visual Scripting 2.0).
 
-Ferramentas de produtividade avançadas:
+Recursos de produtividade avançados:
   - Subgraphs: Nó composto que esconde uma sub-rede de nós em um único nó legível.
   - Macro Nodes: Receitas de macros reutilizáveis que podem ser expandidas ou recolhidas (Collapse / Expand).
   - Command Palette: Menu de comandos rápidos de busca (Ctrl+K).

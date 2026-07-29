@@ -19,11 +19,19 @@ def test_main_menu_exposes_only_one_graph_editor_entry() -> None:
         encoding="utf-8"
     )
     assert source.count('QAction("Editor de Lógica Visual"') == 1
+    assert source.count('QAction("Animator"') == 1
+    assert "Ferramentas & Editores" not in source
+    assert "menu_tools" not in source
     for obsolete_entry in (
         "dock_behavior_tree.toggleViewAction",
         "dock_dialogue.toggleViewAction",
         "dock_material.toggleViewAction",
         "dock_animation_studio.toggleViewAction",
+        "dock_ui_builder.toggleViewAction",
+        "dock_extension_manager.toggleViewAction",
+        "dock_dependency_viewer.toggleViewAction",
+        "dock_build_wizard.toggleViewAction",
+        "dock_project_settings.toggleViewAction",
     ):
         assert obsolete_entry not in source
 

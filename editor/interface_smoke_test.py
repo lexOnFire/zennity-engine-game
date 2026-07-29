@@ -110,7 +110,7 @@ class InterfaceSmokeTest(QMainWindow):
         dock_widget.activateWindow()
 
     def _build_toolbar(self) -> None:
-        toolbar = QToolBar("Ferramentas")
+        toolbar = QToolBar("Comandos")
         toolbar.setObjectName("CommandBar")
         toolbar.setMovable(False)
         toolbar.setIconSize(QSize(17, 17))

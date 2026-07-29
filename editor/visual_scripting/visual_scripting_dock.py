@@ -163,7 +163,7 @@ class VisualScriptingEditorDock(QMainWindow):
 
         self.vertical_splitter.setSizes([650, 260])
 
-        # Central única para todos os sistemas baseados em grafo. Ferramentas
+        # Central única para todos os sistemas baseados em grafo. Modos
         # especializadas não criam mais janelas concorrentes no editor.
         self.graph_mode_tabs = QTabWidget(self.main_container)
         self.graph_mode_tabs.setObjectName("GraphModeTabs")

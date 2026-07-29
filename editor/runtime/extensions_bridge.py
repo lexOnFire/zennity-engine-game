@@ -44,7 +44,7 @@ class ExtensionsBridge:
                 shortcuts=["Ctrl+Shift+E"],
                 commands=["extensions.reload", "extensions.install",
                           "extensions.disable", "extensions.list"],
-                menu="Ferramentas",
+                menu="Interno",
                 icon="extension",
                 category="Editor",
             )

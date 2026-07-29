@@ -104,7 +104,7 @@ def test_graph_bridge_registers_behavior_tree_tool():
     assert tool.id == "behavior_tree"
     assert "bt.add_node" in tool.commands
     assert "Ctrl+Shift+B" in tool.shortcuts
-    assert tool.menu == "Ferramentas"
+    assert tool.menu == "Editor de Lógica Visual"
 
 
 def test_graph_bridge_registers_dialogue_tool():

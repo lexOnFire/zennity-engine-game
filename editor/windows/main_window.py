@@ -32,6 +32,7 @@ from editor.widgets.code_editor_dock import CodeEditorDock
 from editor.widgets.profiler_dock import ProfilerDock
 from editor.widgets.logic_graph_editor import LogicGraphEditor
 from editor.visual_scripting.visual_scripting_dock import VisualScriptingEditorDock
+from editor.animation_studio.animation_studio_dock import AnimationStudioDock
 from editor.ui_builder.ui_builder_dock import UIBuilderDock
 from editor.extension_manager.extension_dock import ExtensionManagerDock
 from editor.tools.dependency_viewer_dock import DependencyViewerDock
@@ -133,8 +134,8 @@ class MainWindow(MainWindowMenusMixin, QMainWindow):
             ("assets", self.dock_assets, "Projeto"),
             ("console", self.dock_console, "Diagnóstico"),
             ("profiler", self.dock_profiler, "Diagnóstico"),
-            ("ui_builder", self.dock_ui_builder, "Ferramentas"),
-            ("extensions", self.dock_extension_manager, "Ferramentas"),
+            ("ui_builder", self.dock_ui_builder, "Interno"),
+            ("extensions", self.dock_extension_manager, "Interno"),
             ("build_report", self.dock_build_report, "Build"),
             ("build_wizard", self.dock_build_wizard, "Build"),
         ):
@@ -146,6 +147,7 @@ class MainWindow(MainWindowMenusMixin, QMainWindow):
             inspector=self.dock_inspector,
             viewport=self.viewport,
             viewmodel=self.scene_view_model,
+            animation_dock=self.dock_animation_studio,
             visual_scripting_dock=self.dock_visual_scripting,
             behavior_tree_dock=self.dock_visual_scripting.graph_tool_adapter("behavior_tree"),
             dialogue_dock=self.dock_visual_scripting.graph_tool_adapter("dialogue"),
@@ -190,6 +192,7 @@ class MainWindow(MainWindowMenusMixin, QMainWindow):
 
         # Docks Visuais e Editores Especiais
         self.logic_workspace = LogicGraphEditor(parent=self)
+        self.dock_animation_studio = AnimationStudioDock(self)
         self.dock_visual_scripting = VisualScriptingEditorDock(self)
         self.dock_ui_builder       = UIBuilderDock(self)
         self.dock_extension_manager = ExtensionManagerDock(self)
@@ -201,6 +204,7 @@ class MainWindow(MainWindowMenusMixin, QMainWindow):
 
         # Oculta por padrão para não sobrecarregar a UI inicial
         for d in (
+            self.dock_animation_studio,
             self.dock_visual_scripting,
             self.dock_ui_builder, self.dock_extension_manager,
             self.dock_dependency_viewer, self.dock_build_report,
@@ -215,6 +219,7 @@ class MainWindow(MainWindowMenusMixin, QMainWindow):
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_console)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_profiler)
         self.addDockWidget(Qt.RightDockWidgetArea,  self.dock_code_editor)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_animation_studio)
 
         # Adiciona docks no painel central/inferior
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_ui_builder)
@@ -432,7 +437,7 @@ class MainWindow(MainWindowMenusMixin, QMainWindow):
         self.vp_container.viewport.update()
         EventBus.emit(EVENT_PLAY_STATE_CHANGED, state="stop")
 
-    # ── Ferramentas e grade ──────────────────────────────────────────────────
+    # ── Transform tools e grade ───────────────────────────────────────────────
 
     def on_transform_tool_changed(self, tool_name: str) -> None:
         action_map = {

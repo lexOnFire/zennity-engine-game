@@ -55,7 +55,7 @@ class DiagnosticsBridge:
                 shortcuts=["Ctrl+Shift+P"],
                 commands=["diagnostics.reset", "diagnostics.export",
                           "diagnostics.measure", "diagnostics.snapshot"],
-                menu="Ferramentas",
+                menu="Interno",
                 icon="profiler",
                 category="Debug",
             )

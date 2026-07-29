@@ -115,7 +115,7 @@ def test_animation_bridge_registers_tool():
     assert tool.id == "animation.studio"
     assert "animation.play" in tool.commands
     assert "Ctrl+Shift+A" in tool.shortcuts
-    assert tool.menu == "Ferramentas"
+    assert tool.menu == "Janela"
 
 
 def test_animation_bridge_open_document():

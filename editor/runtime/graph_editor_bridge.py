@@ -30,7 +30,7 @@ _TOOL_CONFIGS = {
             "bt.validate", "bt.simulate",
         ],
         "icon": "brain",
-        "menu": "Ferramentas",
+        "menu": "Editor de Lógica Visual",
     },
     "dialogue": {
         "label": "Dialogue Graph Editor",
@@ -40,7 +40,7 @@ _TOOL_CONFIGS = {
             "dlg.preview", "dlg.export",
         ],
         "icon": "dialogue",
-        "menu": "Ferramentas",
+        "menu": "Editor de Lógica Visual",
     },
     "material_graph": {
         "label": "Material Graph Editor",
@@ -50,7 +50,7 @@ _TOOL_CONFIGS = {
             "mat.compile", "mat.preview",
         ],
         "icon": "material",
-        "menu": "Ferramentas",
+        "menu": "Editor de Lógica Visual",
     },
 }
 
@@ -98,7 +98,7 @@ class GraphEditorBridge:
                 dock=None,
                 shortcuts=cfg.get("shortcuts", []),
                 commands=cfg.get("commands", []),
-                menu=cfg.get("menu", "Ferramentas"),
+                menu=cfg.get("menu", "Editor de Lógica Visual"),
                 icon=cfg.get("icon", ""),
                 category="Editor",
             )

@@ -289,7 +289,7 @@ def test_tool_definition_registry():
         label="Animation Studio",
         shortcuts=["Ctrl+Shift+A"],
         commands=["animation.play", "animation.stop"],
-        menu="Ferramentas",
+        menu="Janela",
         category="Editor",
     )
     registry.register(anim_tool)
@@ -299,7 +299,7 @@ def test_tool_definition_registry():
         label="Editor de Lógica Visual",
         shortcuts=["Ctrl+Shift+L"],
         commands=["graph.add_node", "graph.delete_node"],
-        menu="Ferramentas",
+        menu="Janela",
         category="Editor",
     )
     registry.register(vs_tool)

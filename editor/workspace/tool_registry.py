@@ -1,4 +1,4 @@
-"""Tool Registry — registra Ferramentas (não Docks).
+"""Tool Registry — registra ferramentas internas do editor.
 
 Cada ferramenta possui: dock, toolbar, atalhos, comandos e menu.
 A ferramenta ativa controla viewport, atalhos e gizmos.
@@ -33,7 +33,7 @@ class ToolDefinition:
     toolbar: Any = None
     shortcuts: list[str] = field(default_factory=list)
     commands: list[str] = field(default_factory=list)
-    menu: str = "Ferramentas"
+    menu: str = "Janela"
     icon: str = ""
     category: str = "Editor"
 

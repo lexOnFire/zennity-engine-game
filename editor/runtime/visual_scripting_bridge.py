@@ -73,7 +73,7 @@ class VisualLogicBridge:
                 commands=["graph.add_node", "graph.delete_node",
                           "graph.add_edge", "graph.delete_edge",
                           "graph.execute", "graph.reset"],
-                menu="Ferramentas",
+                menu="Janela",
                 icon="graph",
                 category="Editor",
             )

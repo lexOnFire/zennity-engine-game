@@ -53,7 +53,7 @@ class AnimationStudioBridge:
                 shortcuts=["Ctrl+Shift+A"],
                 commands=["animation.play", "animation.pause", "animation.stop",
                           "animation.add_keyframe", "animation.hot_reload"],
-                menu="Ferramentas",
+                menu="Janela",
                 icon="animation",
                 category="Editor",
             )

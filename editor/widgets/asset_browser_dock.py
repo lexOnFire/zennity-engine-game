@@ -29,7 +29,7 @@ class AssetBrowserDock(QDockWidget):
         layout = QVBoxLayout(content)
         layout.setContentsMargins(4, 4, 4, 4)
         
-        # 1. Barra de Ferramentas Superior
+        # 1. Barra superior de comandos
         navbar = QWidget()
         nav_layout = QHBoxLayout(navbar)
         nav_layout.setContentsMargins(0, 0, 0, 4)
