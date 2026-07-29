@@ -915,7 +915,7 @@ def test_recipe_catalog_filters_by_topic_and_keeps_every_recipe_valid():
     action_ids = {recipe["id"] for recipe in find_logic_recipes("", "Action")}
     assert {"sprite_on_start", "animation_asset_on_start", "sound_on_start"} <= action_ids
     assert "move_x_every_frame" not in action_ids
-    assert len(LOGIC_RECIPES) >= 14
+    assert len(LOGIC_RECIPES) >= 22
     for recipe in LOGIC_RECIPES:
         fragment = build_logic_recipe(str(recipe["id"]))
         graph = default_logic_graph(str(recipe["id"]))
@@ -923,6 +923,27 @@ def test_recipe_catalog_filters_by_topic_and_keeps_every_recipe_valid():
         graph["edges"] = fragment["edges"]
         errors = [issue for issue in validate_logic_graph(graph) if issue["level"] == "error"]
         assert not errors, recipe["id"]
+
+
+def test_code_editing_recipes_are_searchable_and_build_editable_graphs():
+    recipe_ids = {recipe["id"] for recipe in find_logic_recipes("code edit")}
+    expected = {
+        "code_edit_spin_on_update",
+        "code_edit_diagonal_move",
+        "code_edit_key_teleport",
+        "code_edit_timer_spawn",
+        "code_edit_tunable_jump",
+        "code_edit_patrol_bounds",
+        "code_edit_scroll_speeds",
+        "code_edit_number_driven_move",
+    }
+    assert expected <= recipe_ids
+    fragment = build_logic_recipe("code_edit_diagonal_move", (10.0, 20.0))
+    node_types = [node["type"] for node in fragment["nodes"]]
+    move = next(node for node in fragment["nodes"] if node["type"] == "move_by")
+    assert node_types == ["event_update", "move_by"]
+    assert move["properties"] == {"x": 120.0, "y": -60.0}
+    assert "target.x += 120.0 * dt" in node_code_preview(move)
 
 
 def test_visual_asset_actions_call_image_animation_and_sound_apis():
@@ -1241,7 +1262,7 @@ def test_permanent_motion_nodes_expose_handles_and_query_outputs():
         assert ("movement", "movement") in node_port_definitions(node_type)["inputs"]
     outputs = node_port_definitions("get_continuous_motion")["outputs"]
     assert {"x", "y", "speed", "paused", "active"}.issubset({name for name, _kind in outputs})
-    assert "alterar_movimento" in node_code_preview(create_logic_node("update_continuous_motion"))
+    assert "update_motion" in node_code_preview(create_logic_node("update_continuous_motion"))
     assert any(recipe["id"] == "controlled_permanent_motion" for recipe in LOGIC_RECIPES)
 
 
