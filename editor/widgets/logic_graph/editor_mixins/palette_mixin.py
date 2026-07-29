@@ -138,8 +138,9 @@ class LogicGraphPaletteMixin:
         self._refresh_recipes(self.recipe_search.text(), category)
 
     def _refresh_recipes(self, query: str = "", topic: str | None = None) -> None:
-        selected_topic = str(topic or self.category_combo.currentText() or "Movement")
-        self.recipe_topic_label.setText(tr(f"graph.categories.{selected_topic.lower()}", selected_topic))
+        selected_topic = str(topic or self.category_combo.currentData() or "Movement")
+        topic_label = self.category_combo.currentText() if topic is None else selected_topic
+        self.recipe_topic_label.setText(tr(f"graph.categories.{selected_topic.lower()}", topic_label))
         self.recipe_list.clear()
         for recipe in find_logic_recipes(query, "" if selected_topic == "All" else selected_topic):
             item = QListWidgetItem(str(recipe["title"]))

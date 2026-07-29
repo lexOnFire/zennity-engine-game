@@ -88,3 +88,19 @@ def test_code_preview_value_edit_updates_multiple_node_values(monkeypatch, tmp_p
     assert node_item.node["properties"]["y"] == -45
     assert "target.x += 180 * dt" in node_item.code_item.toPlainText()
     assert "target.y += -45 * dt" in node_item.code_item.toPlainText()
+
+
+def test_recipe_search_uses_internal_category_and_recovers_when_cleared(tmp_path):
+    _app()
+    editor = LogicGraphEditor(project_root=tmp_path)
+    editor.category_combo.setCurrentIndex(editor.category_combo.findData("Movement"))
+    editor._refresh_recipes("")
+    initial_count = editor.recipe_list.count()
+
+    editor.recipe_search.setText("move")
+    searched_count = editor.recipe_list.count()
+    editor.recipe_search.clear()
+
+    assert initial_count > 0
+    assert searched_count > 0
+    assert editor.recipe_list.count() == initial_count
