@@ -1,4 +1,4 @@
-"""Stable scripting API exposed by the isolated viewport Play Mode."""
+"""Stable logic API exposed by the isolated viewport Play Mode."""
 from __future__ import annotations
 
 import math
@@ -17,7 +17,7 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
 
 
 class PlayAnimatorAPI:
-    """Comandos simples expostos como ``game.animator`` nos scripts."""
+    """Comandos simples expostos como ``game.animator`` na lógica de Play Mode."""
 
     def __init__(self, obj: dict[str, Any]) -> None:
         self._obj = obj
@@ -48,9 +48,9 @@ class PlayBehaviorAPI:
     def __init__(self, obj: dict[str, Any]) -> None:
         self._obj = obj
         self._runner: BehaviorControllerRunner | None = None
-        self._game: PlayScriptAPI | None = None
+        self._game: PlayLogicAPI | None = None
 
-    def bind(self, runner: BehaviorControllerRunner, game: PlayScriptAPI) -> None:
+    def bind(self, runner: BehaviorControllerRunner, game: PlayLogicAPI) -> None:
         self._runner = runner
         self._game = game
 
@@ -80,8 +80,8 @@ class PlayBehaviorAPI:
         return dict(self._runner.parameters) if self._runner else {}
 
 
-class PlayScriptAPI:
-    """API pequena e estável entregue aos scripts no Play Mode."""
+class PlayLogicAPI:
+    """API pequena e estável entregue aos grafos durante o Play Mode."""
 
     _KEY_ALIASES = {
         "a": "left", "d": "right", "w": "up", "s": "down",
@@ -153,7 +153,7 @@ class PlayScriptAPI:
 
     @property
     def state(self) -> dict[str, Any]:
-        return self.obj.setdefault("_script_state", {})
+        return self.obj.setdefault("_logic_state", {})
 
     @property
     def grounded(self) -> bool:
@@ -188,13 +188,13 @@ class PlayScriptAPI:
         self.obj["_jump_requested"] = True
         self.obj["_jump_force"] = float(force)
 
-    def find(self, tag: str) -> "PlayScriptAPI | None":
+    def find(self, tag: str) -> "PlayLogicAPI | None":
         wanted = str(tag).lower()
         for name, obj in self._world.items():
             if obj is self.obj:
                 continue
             if str(obj.get("tag", obj.get("name", ""))).lower() == wanted:
-                return PlayScriptAPI(name, obj, self._events, self._world, self.runtime_world)
+                return PlayLogicAPI(name, obj, self._events, self._world, self.runtime_world)
         return None
 
     def create_object(
@@ -207,57 +207,57 @@ class PlayScriptAPI:
         color: str = "#58a6ff",
         texture: str = "",
         tag: str = "Untagged",
-    ) -> "PlayScriptAPI":
+    ) -> "PlayLogicAPI":
         """Cria um objeto temporário na cena atual e devolve sua referência."""
         obj = self.runtime_world.create_object(
             name=name, x=x, y=y, width=width, height=height,
             color=color, texture=texture, tag=tag,
         )
         self.log(f"objeto criado: {obj['name']}")
-        return PlayScriptAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
+        return PlayLogicAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
 
-    def create_object_from_pool(self, pool_key: str, **values: Any) -> "PlayScriptAPI":
+    def create_object_from_pool(self, pool_key: str, **values: Any) -> "PlayLogicAPI":
         obj = self.runtime_world.create_object(pool_key=f"logic:{pool_key}", **values)
         self.log(f"objeto criado/reutilizado: {obj['name']}")
-        return PlayScriptAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
+        return PlayLogicAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
 
     def create_prefab(
         self, path: str, x: float | None = None, y: float | None = None, **options: Any
-    ) -> "PlayScriptAPI":
+    ) -> "PlayLogicAPI":
         obj = self.runtime_world.instantiate_prefab(path, x=x, y=y, **options)
         self.log(f"prefab criado: {obj['name']}")
-        return PlayScriptAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
+        return PlayLogicAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
 
     def create_prefab_from_pool(
         self, path: str, x: float | None, y: float | None, pool_key: str, **options: Any
-    ) -> "PlayScriptAPI":
+    ) -> "PlayLogicAPI":
         obj = self.runtime_world.instantiate_prefab(
             path, x=x, y=y, pool_key=f"logic:{pool_key}", **options
         )
         self.log(f"prefab criado/reutilizado: {obj['name']}")
-        return PlayScriptAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
+        return PlayLogicAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
 
     def prefab_parameter(self, name: str, default: Any = None) -> Any:
         """Lê uma propriedade exposta recebida na criação desta instância."""
         values = self.obj.get("prefab_parameters")
         return deepcopy(values.get(str(name), default)) if isinstance(values, dict) else deepcopy(default)
 
-    def clone_object(self, other: "PlayScriptAPI", name: str = "") -> "PlayScriptAPI":
-        source = other.obj if isinstance(other, PlayScriptAPI) else self.obj
+    def clone_object(self, other: "PlayLogicAPI", name: str = "") -> "PlayLogicAPI":
+        source = other.obj if isinstance(other, PlayLogicAPI) else self.obj
         obj = self.runtime_world.clone_object(source, name)
-        return PlayScriptAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
+        return PlayLogicAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
 
-    def clone_object_from_pool(self, other: "PlayScriptAPI", name: str, pool_key: str) -> "PlayScriptAPI":
-        source = other.obj if isinstance(other, PlayScriptAPI) else self.obj
+    def clone_object_from_pool(self, other: "PlayLogicAPI", name: str, pool_key: str) -> "PlayLogicAPI":
+        source = other.obj if isinstance(other, PlayLogicAPI) else self.obj
         obj = self.runtime_world.clone_object(source, name, pool_key)
-        return PlayScriptAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
+        return PlayLogicAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
 
     def can_spawn(self, spawn_group: str, maximum: int = 0) -> bool:
         return self.runtime_world.can_spawn(spawn_group, maximum)
 
     def configure_spawned(
         self,
-        created: "PlayScriptAPI",
+        created: "PlayLogicAPI",
         *,
         spawn_group: str,
         lifetime: float = 0.0,
@@ -295,7 +295,7 @@ class PlayScriptAPI:
     def remove_component(self, component: str) -> bool:
         return self.runtime_world.remove_component(self.obj, component)
 
-    def distance_to(self, other: "PlayScriptAPI") -> float:
+    def distance_to(self, other: "PlayLogicAPI") -> float:
         return math.hypot(other.x - self.x, other.y - self.y)
 
     def play_animation(self, clip_name: str) -> None:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from editor.isolated_viewport import PlayScriptAPI, hydrate_behavior_controllers
+from editor.isolated_viewport import PlayLogicAPI, hydrate_behavior_controllers
 from engine.behavior.controller_asset import BehaviorControllerRunner, save_behavior_controller
 
 
@@ -48,7 +48,7 @@ def test_game_behavior_api_changes_parameters_and_state(tmp_path) -> None:
         encoding="utf-8",
     )
     obj: dict = {}
-    api = PlayScriptAPI("Player", obj, None, {"Player": obj})
+    api = PlayLogicAPI("Player", obj, None, {"Player": obj})
     runner = BehaviorControllerRunner(_controller(str(script)), tmp_path)
     api.behavior.bind(runner, api)
     runner.start(api)
@@ -58,7 +58,7 @@ def test_game_behavior_api_changes_parameters_and_state(tmp_path) -> None:
     assert runner.update(api, 0.016)
     assert api.behavior.state == "Move"
     assert api.behavior.parameters["move"] is True
-    assert obj["_script_state"]["entered"] == "Move"
+    assert obj["_logic_state"]["entered"] == "Move"
 
 
 def test_repository_behavior_demo_scene_references_controller() -> None:
@@ -69,4 +69,4 @@ def test_repository_behavior_demo_scene_references_controller() -> None:
     scene = json.loads((root / "Assets/Scenes/BehaviorControllerDemo.zscene").read_text(encoding="utf-8"))
     enemy = next(item for item in scene["objects"] if item["name"] == "BehaviorEnemy")
     assert enemy["editor_data"]["behavior"]["controller_path"] == "Assets/Behaviors/EnemyDemo.zbehavior"
-    assert "Assets/Scripts/behavior_demo/behavior_debug.py" in enemy["components"]["scripts"]
+    assert "scripts" not in enemy.get("components", {})

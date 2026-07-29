@@ -24,8 +24,8 @@ class ViewportRuntimeInitializer:
     def __init__(
         self,
         objects: dict[str, dict[str, Any]],
-        script_instances: dict[str, Any],
-        script_apis: dict[str, Any],
+        logic_modules: dict[str, Any],
+        logic_apis: dict[str, Any],
         animator_controllers: dict[str, Any],
         behavior_runners: dict[str, Any],
         logic_runtimes: dict[str, list[tuple[str, Any]]],
@@ -40,8 +40,8 @@ class ViewportRuntimeInitializer:
         project_root: Path,
     ) -> None:
         self.objects = objects
-        self.script_instances = script_instances
-        self.script_apis = script_apis
+        self.logic_modules = logic_modules
+        self.logic_apis = logic_apis
         self.animator_controllers = animator_controllers
         self.behavior_runners = behavior_runners
         self.logic_runtimes = logic_runtimes
@@ -84,7 +84,7 @@ class ViewportRuntimeInitializer:
         active_names = set(self.objects)
         for stale_name in set(self.logic_runtimes) - active_names:
             self.logic_runtimes.pop(stale_name, None)
-            self.script_apis.pop(stale_name, None)
+            self.logic_apis.pop(stale_name, None)
             self.animator_controllers.pop(stale_name, None)
         pending = [
             (name, obj) for name, obj in list(self.objects.items())
@@ -104,8 +104,8 @@ class ViewportRuntimeInitializer:
 
     def _clear_runtime_state(self) -> None:
         self.logic_runtimes.clear()
-        self.script_instances.clear()
-        self.script_apis.clear()
+        self.logic_modules.clear()
+        self.logic_apis.clear()
         self.animator_controllers.clear()
         self.behavior_runners.clear()
         self.initialized_ids.clear()
@@ -151,7 +151,7 @@ class ViewportRuntimeInitializer:
             if not isinstance(graph, dict):
                 continue
             try:
-                api = self.script_apis.setdefault(name, self.api_factory(name, obj))
+                api = self.logic_apis.setdefault(name, self.api_factory(name, obj))
                 runtime = LogicGraphRuntime(
                     graph, self.logic_blackboard, name, self.logic_event_bus,
                     self.subgraph_loader,

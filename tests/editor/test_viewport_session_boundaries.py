@@ -16,16 +16,16 @@ def test_viewport_runtime_has_cohesive_file_boundaries() -> None:
     session = Path("editor/runtime/viewport_session.py").read_text(encoding="utf-8")
 
     assert len(facade.splitlines()) < 120
-    assert "class PlayScriptAPI" not in facade
+    assert "class PlayLogicAPI" not in facade
     assert "def hydrate_logic_graphs(" not in facade
-    assert "class PlayScriptAPI" not in session
+    assert "class PlayLogicAPI" not in session
     assert "def hydrate_logic_graphs(" not in session
     assert _class_size("editor/runtime/viewport_session.py", "ViewportSession") < 500
-    assert _class_size("editor/runtime/viewport_script_api.py", "PlayScriptAPI") < 500
+    assert _class_size("editor/runtime/viewport_logic_api.py", "PlayLogicAPI") < 500
 
 
 def test_exporter_packages_extracted_viewport_boundaries() -> None:
     exporter = Path("engine/build/project_exporter.py").read_text(encoding="utf-8")
 
     assert "viewport_asset_hydration.py" in exporter
-    assert "viewport_script_api.py" in exporter
+    assert "viewport_logic_api.py" in exporter

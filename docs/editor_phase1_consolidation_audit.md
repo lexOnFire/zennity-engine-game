@@ -78,10 +78,13 @@ The official editor entrypoint is `editor.phase1_main`.
 - Removed the legacy Python script workspace, Inspector script plugins and `Assets/Scripts`.
 - Cleared script bindings from bundled demo assets so graph-based logic is the official authoring path.
 - Renamed runtime event payloads from `script_instructions`/`script_log` to `logic_events`/`runtime_log`.
+- Renamed Play Mode runtime API/updater files and classes to logic terminology:
+  `PlayLogicAPI`, `ViewportLogicEventUpdater`, `viewport_logic_api.py` and
+  `viewport_logic_event_updater.py`.
+- Renamed Play Mode lifecycle callbacks from script naming to logic naming.
 
 ## Next Blocks
 
-1. Rename remaining legacy runtime class/file names such as `PlayScriptAPI` and `ViewportScriptUpdater`.
-2. Continue moving workspace-specific graph scene mutations behind controller facades without changing behavior.
-3. Expand viewport command tests for selection and transform gizmos.
-4. Consolidate Animation, Visual Graph, Behavior Tree, Dialogue, UI Builder and Material Graph under a single Phase 1 workspace registry.
+1. Continue moving workspace-specific graph scene mutations behind controller facades without changing behavior.
+2. Expand viewport command tests for selection and transform gizmos.
+3. Consolidate Animation, Visual Graph, Behavior Tree, Dialogue, UI Builder and Material Graph under a single Phase 1 workspace registry.

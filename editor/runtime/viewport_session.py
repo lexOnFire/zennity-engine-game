@@ -36,7 +36,7 @@ try:
     from editor.runtime.viewport_physics_stepper import ViewportPhysicsStepper
     from editor.runtime.viewport_animation_updater import ViewportAnimationUpdater
     from editor.runtime.viewport_session_orchestrator import ViewportSessionOrchestrator
-    from editor.runtime.viewport_script_updater import ViewportScriptUpdater
+    from editor.runtime.viewport_logic_event_updater import ViewportLogicEventUpdater
     from editor.runtime.viewport_contact_processor import ViewportContactProcessor
     from editor.runtime.viewport_runtime_initializer import ViewportRuntimeInitializer
     from editor.runtime.viewport_asset_hydration import (
@@ -46,7 +46,7 @@ try:
         hydrate_logic_graphs,
         load_project_subgraph,
     )
-    from editor.runtime.viewport_script_api import PlayScriptAPI, _send
+    from editor.runtime.viewport_logic_api import PlayLogicAPI, _send
     from engine.animation.controller_asset import AnimatorControllerRuntime
     from engine.behavior.controller_asset import BehaviorControllerRunner
     from engine.logic.runtime import LogicGraphRuntime
@@ -68,7 +68,7 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .viewport_physics_stepper import ViewportPhysicsStepper
     from .viewport_animation_updater import ViewportAnimationUpdater
     from .viewport_session_orchestrator import ViewportSessionOrchestrator
-    from .viewport_script_updater import ViewportScriptUpdater
+    from .viewport_logic_event_updater import ViewportLogicEventUpdater
     from .viewport_contact_processor import ViewportContactProcessor
     from .viewport_runtime_initializer import ViewportRuntimeInitializer
     from .viewport_asset_hydration import (
@@ -78,7 +78,7 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
         hydrate_logic_graphs,
         load_project_subgraph,
     )
-    from .viewport_script_api import PlayScriptAPI, _send
+    from .viewport_logic_api import PlayLogicAPI, _send
     from .controller_asset import AnimatorControllerRuntime
     from .behavior_controller import BehaviorControllerRunner
     from .logic_runtime import LogicGraphRuntime
@@ -168,8 +168,8 @@ class ViewportSession(ViewportSessionLifecycleMixin):
         self.edit_snapshot = deepcopy(self.objects)
         self.velocities_y = {}
         self.grounded = {}
-        self.script_instances = {}
-        self.script_apis = {}
+        self.logic_modules = {}
+        self.logic_apis = {}
         self.animator_controllers = {}
         self.behavior_runners = {}
         self.logic_runtimes = {}
@@ -209,19 +209,19 @@ class ViewportSession(ViewportSessionLifecycleMixin):
             self.start_audio_sources, self.stop_audio_sources, self.play_audio_file
         )
         self.runtime_initializer = ViewportRuntimeInitializer(
-            self.objects, self.script_instances, self.script_apis, self.animator_controllers, self.behavior_runners,
+            self.objects, self.logic_modules, self.logic_apis, self.animator_controllers, self.behavior_runners,
             self.logic_runtimes, self.initialized_runtime_ids, self.animator_event_signatures, self.runtime_world,
             (hydrate_animation_asset_clips, hydrate_animator_controllers, hydrate_logic_graphs),
-            lambda name, obj: PlayScriptAPI(name, obj, self.events, self.objects, self.runtime_world),
+            lambda name, obj: PlayLogicAPI(name, obj, self.events, self.objects, self.runtime_world),
             lambda path: load_project_subgraph(path, Path.cwd()),
             lambda event: _send(self.events, event), self.play_audio_file, Path.cwd()
         )
         
         self.play_commands = ViewportPlayCommandHandler(
-            self.objects, self.logic_runtimes, self.script_apis, lambda event: _send(self.events, event),
+            self.objects, self.logic_runtimes, self.logic_apis, lambda event: _send(self.events, event),
             self.resize_viewport, lambda: self.zoom,
             lambda value: set_channels_paused(self.audio_channels, value), self.stop_audio_sources,
-            self.physics_scheduler.reset, self.hud_entries.clear, self.start_scripts_with_config, self.stop_scripts
+            self.physics_scheduler.reset, self.hud_entries.clear, self.start_logic_with_config, self.stop_logic
         )
         self.navigation_events = ViewportNavigationEventHandler(
             self.pygame, self.objects, self.native_ui, lambda event: _send(self.events, event), self.screen_to_world
@@ -234,18 +234,18 @@ class ViewportSession(ViewportSessionLifecycleMixin):
         self.physics_stepper = ViewportPhysicsStepper()
         self.animation_updater = ViewportAnimationUpdater(
             self.objects, self.animation_system, self.animator_controllers, self.animator_event_signatures,
-            self.script_instances,
-            lambda name, obj: self.script_apis.get(name) or PlayScriptAPI(name, obj, self.events, self.objects, self.runtime_world),
+            self.logic_modules,
+            lambda name, obj: self.logic_apis.get(name) or PlayLogicAPI(name, obj, self.events, self.objects, self.runtime_world),
             self.dispatch_animation_state_hook, lambda event: _send(self.events, event)
         )
         self.session_orchestrator = ViewportSessionOrchestrator(
-            self.objects, self.logic_runtimes, self.behavior_runners, self.script_instances, self.script_apis,
+            self.objects, self.logic_runtimes, self.behavior_runners, self.logic_modules, self.logic_apis,
             self.animator_controllers, lambda: self.runtime_initializer.logic_event_bus, self.runtime_world, self.hud_entries,
             lambda event: _send(self.events, event), self.play_audio_file,
             lambda value: set_channels_paused(self.audio_channels, value), self.dispatch_animation_state_hook
         )
-        self.script_updater = ViewportScriptUpdater(
-            self.objects, self.script_instances, self.script_apis, self.animator_controllers, self.hud_entries,
+        self.logic_event_updater = ViewportLogicEventUpdater(
+            self.objects, self.logic_modules, self.logic_apis, self.animator_controllers, self.hud_entries,
             normalize_ui, self.play_audio_file, self.dispatch_animation_state_hook,
             lambda event: _send(self.events, event)
         )
@@ -283,8 +283,8 @@ class ViewportSession(ViewportSessionLifecycleMixin):
         obj = self.objects.get(object_name)
         if obj is None:
             return
-        api = self.script_apis.get(object_name) or PlayScriptAPI(object_name, obj, self.events, self.objects, self.runtime_world)
-        for path, module in list(self.script_instances.get(object_name, [])):
+        api = self.logic_apis.get(object_name) or PlayLogicAPI(object_name, obj, self.events, self.objects, self.runtime_world)
+        for path, module in list(self.logic_modules.get(object_name, [])):
             hook = getattr(module, hook_name, None)
             if not callable(hook):
                 continue
@@ -311,7 +311,7 @@ class ViewportSession(ViewportSessionLifecycleMixin):
         for name in self.logic_runtimes:
             if name in self.objects:
                 return name, self.objects[name]
-        for name in self.script_instances:
+        for name in self.logic_modules:
             if name in self.objects:
                 return name, self.objects[name]
         return None, None
@@ -357,9 +357,9 @@ class ViewportSession(ViewportSessionLifecycleMixin):
         other_obj = self.objects.get(other_name)
         if obj is None or other_obj is None:
             return
-        game = self.script_apis.get(name) or PlayScriptAPI(name, obj, self.events, self.objects, self.runtime_world)
-        other = PlayScriptAPI(other_name, other_obj, self.events, self.objects, self.runtime_world)
-        for path, module in list(self.script_instances.get(name, [])):
+        game = self.logic_apis.get(name) or PlayLogicAPI(name, obj, self.events, self.objects, self.runtime_world)
+        other = PlayLogicAPI(other_name, other_obj, self.events, self.objects, self.runtime_world)
+        for path, module in list(self.logic_modules.get(name, [])):
             hook = getattr(module, hook_name, None)
             if not callable(hook):
                 continue
@@ -420,14 +420,14 @@ class ViewportSession(ViewportSessionLifecycleMixin):
         _attach_native_window(self.pygame, self.parent_window_id, width, height)
         return self.screen
 
-    def start_scripts_with_config(self, config):
+    def start_logic_with_config(self, config):
         self.scene_blackboard_config = deepcopy(config)
         self.runtime_initializer.start(self.scene_blackboard_config)
         
-    def stop_scripts(self):
+    def stop_logic(self):
         self.runtime_initializer.stop(self.active_contacts)
         
-    def restart_scripts(self):
+    def restart_logic(self):
         self.runtime_initializer.start(self.scene_blackboard_config)
 
     def process_commands(self):

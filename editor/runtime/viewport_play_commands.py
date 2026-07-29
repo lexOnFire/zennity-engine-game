@@ -32,7 +32,7 @@ class ViewportPlayCommandHandler:
         self,
         objects: dict[str, dict[str, Any]],
         logic_runtimes: dict[str, list[tuple[str, Any]]],
-        script_apis: dict[str, Any],
+        logic_apis: dict[str, Any],
         emit: Callable[[dict[str, Any]], None],
         resize: Callable[[int, int], Any],
         zoom: Callable[[], float],
@@ -40,12 +40,12 @@ class ViewportPlayCommandHandler:
         stop_audio: Callable[[], None],
         reset_physics: Callable[[], None],
         clear_hud: Callable[[], None],
-        start_scripts: Callable[[dict[str, Any]], None],
-        stop_scripts: Callable[[], None],
+        start_logic: Callable[[dict[str, Any]], None],
+        stop_logic: Callable[[], None],
     ) -> None:
         self.objects = objects
         self.logic_runtimes = logic_runtimes
-        self.script_apis = script_apis
+        self.logic_apis = logic_apis
         self.emit = emit
         self.resize = resize
         self.zoom = zoom
@@ -53,8 +53,8 @@ class ViewportPlayCommandHandler:
         self.stop_audio = stop_audio
         self.reset_physics = reset_physics
         self.clear_hud = clear_hud
-        self.start_scripts = start_scripts
-        self.stop_scripts = stop_scripts
+        self.start_logic = start_logic
+        self.stop_logic = stop_logic
 
     def handle(self, command: dict[str, Any], state: ViewportProcessState) -> ViewportProcessState | None:
         command_type = str(command.get("type", ""))
@@ -91,7 +91,7 @@ class ViewportPlayCommandHandler:
         elif command_type == "stop":
             self.stop_audio()
             if state.playing:
-                self.stop_scripts()
+                self.stop_logic()
                 self.objects.clear()
                 self.objects.update(deepcopy(state.edit_snapshot))
                 state.playing = False
@@ -121,7 +121,7 @@ class ViewportPlayCommandHandler:
             state.grounded = {}
             self.reset_physics()
             self.clear_hud()
-            self.start_scripts(state.scene_blackboard_config)
+            self.start_logic(state.scene_blackboard_config)
             self.emit({"type": "play_state", "state": "play"})
         elif state.paused:
             state.paused = False
@@ -168,7 +168,7 @@ class ViewportPlayCommandHandler:
         elif action == "restart" and matched:
             any_paused = False
             for object_name, graph_path, runtime in matched:
-                api = self.script_apis.get(object_name)
+                api = self.logic_apis.get(object_name)
                 if api is None:
                     continue
                 try:

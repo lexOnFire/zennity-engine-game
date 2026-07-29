@@ -38,7 +38,7 @@ class ViewportSessionLifecycleMixin:
             )
             self.paused = self.paused or debug_pause_requested
             self.restart_requested = (
-                self.script_updater.update(
+                self.logic_event_updater.update(
                     input_state,
                     dt,
                     self.velocities_y,
@@ -55,9 +55,9 @@ class ViewportSessionLifecycleMixin:
                     self.grounded,
                     self.active_contacts,
                     self.stop_audio_sources,
-                    self.stop_scripts,
+                    self.stop_logic,
                     self.physics_scheduler.reset,
-                    self.restart_scripts,
+                    self.restart_logic,
                     self.start_audio_sources,
                 )
                 self.restart_requested = False
@@ -173,7 +173,7 @@ class ViewportSessionLifecycleMixin:
         self._teardown_complete = True
         self.running = False
 
-        self.stop_scripts()
+        self.stop_logic()
         self.audio_system.shutdown()
         tuple(self.command_queue.drain())
         self.native_ui.clear_caches()

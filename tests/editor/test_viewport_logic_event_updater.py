@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from editor.runtime.viewport_script_updater import ViewportScriptUpdater
+from editor.runtime.viewport_logic_event_updater import ViewportLogicEventUpdater
 
 
 class StubAPI:
@@ -24,7 +24,7 @@ class StubHud:
         self.entries.pop(key, None)
 
 
-def test_script_updater_applies_instructions_and_preserves_hook_order() -> None:
+def test_logic_event_updater_applies_instructions_and_preserves_hook_order() -> None:
     calls: list[tuple] = []
     obj = {"logic_events": [
         {"command": "play_animation", "value": "Run"},
@@ -38,7 +38,7 @@ def test_script_updater_applies_instructions_and_preserves_hook_order() -> None:
         _zennity_update_hook=lambda current_api, dt: calls.append(("update", dt)),
     )
     hud = StubHud()
-    updater = ViewportScriptUpdater(
+    updater = ViewportLogicEventUpdater(
         {"Player": obj}, {"Player": [("player.py", module)]}, {"Player": api}, {}, hud,
         lambda value: value, lambda *args: None, lambda *args: None, lambda event: None,
     )
@@ -56,7 +56,7 @@ def test_script_updater_applies_instructions_and_preserves_hook_order() -> None:
     ]
 
 
-def test_script_updater_isolates_failed_modules_and_applies_jump() -> None:
+def test_logic_event_updater_isolates_failed_modules_and_applies_jump() -> None:
     events: list[dict] = []
     obj = {"_jump_requested": True, "_jump_force": 500.0}
     module = SimpleNamespace(
@@ -64,7 +64,7 @@ def test_script_updater_isolates_failed_modules_and_applies_jump() -> None:
         _zennity_update_hook=lambda api, dt: (_ for _ in ()).throw(RuntimeError("boom")),
     )
     instances = {"Player": [("broken.py", module)]}
-    updater = ViewportScriptUpdater(
+    updater = ViewportLogicEventUpdater(
         {"Player": obj}, instances, {"Player": StubAPI()}, {}, StubHud(),
         lambda value: value, lambda *args: None, lambda *args: None, events.append,
     )

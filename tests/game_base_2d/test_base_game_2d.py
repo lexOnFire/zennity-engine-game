@@ -20,10 +20,10 @@ def test_scene_is_complete_and_uses_graph_authoring() -> None:
 
 
 def test_play_api_supports_hud_destroy_and_restart() -> None:
-    from editor.isolated_viewport import PlayScriptAPI
+    from editor.isolated_viewport import PlayLogicAPI
 
     obj = {"name": "Player", "active": True}
-    game = PlayScriptAPI("Player", obj, None)
+    game = PlayLogicAPI("Player", obj, None)
     game.set_hud("health", "VIDA: 3", (255, 100, 100), "top-left", 24)
     game.set_ui_text("HUD_Vida", "VIDA: 3")
     game.remove_hud("health")

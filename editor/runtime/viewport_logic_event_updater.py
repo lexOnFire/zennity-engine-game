@@ -1,17 +1,17 @@
-"""Legacy Python-script updates for the isolated viewport runtime."""
+"""Logic event updates for the isolated viewport runtime."""
 from __future__ import annotations
 
 from typing import Any, Callable
 
 
-class ViewportScriptUpdater:
-    """Execute script instructions and update hooks outside the frame loop."""
+class ViewportLogicEventUpdater:
+    """Executes logic events and update hooks outside the frame loop."""
 
     def __init__(
         self,
         objects: dict[str, dict[str, Any]],
-        script_instances: dict[str, list[tuple[str, Any]]],
-        script_apis: dict[str, Any],
+        logic_modules: dict[str, list[tuple[str, Any]]],
+        logic_apis: dict[str, Any],
         animator_controllers: dict[str, Any],
         hud_entries: Any,
         normalize_ui: Callable[[Any], dict[str, Any] | None],
@@ -20,8 +20,8 @@ class ViewportScriptUpdater:
         emit: Callable[[dict[str, Any]], None],
     ) -> None:
         self.objects = objects
-        self.script_instances = script_instances
-        self.script_apis = script_apis
+        self.logic_modules = logic_modules
+        self.logic_apis = logic_apis
         self.animator_controllers = animator_controllers
         self.hud_entries = hud_entries
         self.normalize_ui = normalize_ui
@@ -37,9 +37,9 @@ class ViewportScriptUpdater:
         grounded: dict[str, bool],
     ) -> bool:
         restart_requested = False
-        for name, instances in list(self.script_instances.items()):
+        for name, instances in list(self.logic_modules.items()):
             obj = self.objects.get(name)
-            api = self.script_apis.get(name)
+            api = self.logic_apis.get(name)
             if obj is None or api is None:
                 continue
             instructions = obj.pop("logic_events", [])
@@ -108,7 +108,7 @@ class ViewportScriptUpdater:
         elif command == "stop_animation":
             obj["_current_animation_name"] = "Nenhum"
         elif command == "play_sound" and value:
-            self.play_audio(f"script:{name}", str(value))
+            self.play_audio(f"logic:{name}", str(value))
         elif command == "set_hud" and isinstance(value, dict):
             self.hud_entries.set_entry(dict(value))
         elif command == "remove_hud":

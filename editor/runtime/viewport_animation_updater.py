@@ -8,14 +8,14 @@ class ViewportAnimationUpdater:
     def __init__(
         self, objects: dict[str, dict[str, Any]], animation_system: Any,
         controllers: dict[str, Any], event_signatures: dict[str, tuple[Any, ...]],
-        script_instances: dict[str, list[tuple[str, Any]]], api_factory: Callable[[str, dict[str, Any]], Any],
+        logic_modules: dict[str, list[tuple[str, Any]]], api_factory: Callable[[str, dict[str, Any]], Any],
         state_hook: Callable[[str, str, str], None], emit: Callable[[dict[str, Any]], None],
     ) -> None:
         self.objects = objects
         self.animation_system = animation_system
         self.controllers = controllers
         self.event_signatures = event_signatures
-        self.script_instances = script_instances
+        self.logic_modules = logic_modules
         self.api_factory = api_factory
         self.state_hook = state_hook
         self.emit = emit
@@ -72,7 +72,7 @@ class ViewportAnimationUpdater:
             for event in events_by_frame.get(frame, []):
                 api = self.api_factory(object_name, obj)
                 api.state["animation_event_payload"] = event.get("payload")
-                for path, module in list(self.script_instances.get(object_name, [])):
+                for path, module in list(self.logic_modules.get(object_name, [])):
                     hook = getattr(module, "on_animation_event", None)
                     if not callable(hook):
                         continue
