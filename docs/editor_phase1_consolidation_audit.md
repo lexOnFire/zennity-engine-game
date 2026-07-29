@@ -29,7 +29,7 @@ The official editor entrypoint is `editor.phase1_main`.
 | F focus selected | Missing in isolated viewport command path | Migrate | Added as `focus_selected`.
 | G grid toggle | Missing in isolated viewport command path | Migrate | Added as `toggle_grid`.
 | Viewport pan/zoom | Present in isolated viewport navigation | Keep | Middle mouse pan and wheel zoom already live in runtime.
-| Snap | Present in isolated viewport control commands | Keep | Continue improving controls/UI.
+| Snap | Present in isolated viewport control commands | Keep | Routed through the Phase 1 viewport facade.
 | Animation | Integrated into detached Animator workspace | Keep | Old floating dock shell was removed in prior cleanup.
 | Visual Graph | Modern hub is central | Keep | Behavior Tree, Dialogue, Material, Animator graph remain hub modes.
 | UI Builder / Build / Diagnostics | Internal tools, not primary menu entries | Improve later | Keep code, do not expose as top-level visual clutter.
@@ -66,11 +66,12 @@ The official editor entrypoint is `editor.phase1_main`.
 - Added isolated viewport commands for `focus_selected` and `toggle_grid`.
 - Extracted editor-only viewport view commands to `ViewportEditorViewCommandHandler`.
 - Added direct behavior tests for `F` focus selected and `G` grid toggle.
+- Added `editor/controllers/viewport_controller.py`.
+- Routed tool selection, focus selected, grid toggle and snap status through the Phase 1 viewport facade.
 
 ## Next Blocks
 
 1. Move scene/hierarchy/inspector orchestration behind controller facades without changing behavior.
-2. Add a dedicated viewport controller facade for command routing and status feedback.
-3. Expand viewport command tests for snap, selection and transform gizmos.
-4. Consolidate Animation, Visual Graph, Behavior Tree, Dialogue, UI Builder and Material Graph under a single Phase 1 workspace registry.
-5. Mark legacy editor windows as reference-only, then remove them after all useful behavior is represented in Phase 1.
+2. Expand viewport command tests for selection and transform gizmos.
+3. Consolidate Animation, Visual Graph, Behavior Tree, Dialogue, UI Builder and Material Graph under a single Phase 1 workspace registry.
+4. Mark legacy editor windows as reference-only, then remove them after all useful behavior is represented in Phase 1.

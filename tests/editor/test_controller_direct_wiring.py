@@ -54,9 +54,13 @@ def test_adapter_surface_is_below_twenty_methods() -> None:
 
 
 def test_isolated_editor_installs_global_transform_tool_shortcuts() -> None:
-    source = Path("editor/editor_command_controller.py").read_text(encoding="utf-8")
+    shortcuts = Path("editor/services/shortcut_service.py").read_text(encoding="utf-8")
+    controller = Path("editor/controllers/tool_controller.py").read_text(encoding="utf-8")
 
-    assert 'shortcuts = {"select": "Q", "move": "W", "rotate": "E", "scale": "R"}' in source
-    assert "QShortcut(QKeySequence(shortcut_key), h)" in source
-    assert "shortcut.setContext(Qt.ApplicationShortcut)" in source
-    assert 'h._commands.put({"type": "set_tool", "tool": name})' in source
+    assert 'ShortcutBinding("tool.select", "Q", "Select")' in shortcuts
+    assert 'ShortcutBinding("tool.move", "W", "Move")' in shortcuts
+    assert 'ShortcutBinding("tool.rotate", "E", "Rotate")' in shortcuts
+    assert 'ShortcutBinding("tool.scale", "R", "Scale")' in shortcuts
+    assert "QShortcut(QKeySequence(binding.sequence), self.host)" in shortcuts
+    assert "shortcut.setContext(Qt.ApplicationShortcut)" in shortcuts
+    assert "h._viewport_commands.set_tool(next_tool)" in controller

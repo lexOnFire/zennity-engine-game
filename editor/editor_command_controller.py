@@ -63,10 +63,7 @@ class EditorCommandController:
         h._snap_enabled = bool(enabled)
         action = h.toolbar_actions["Snap: OFF"]
         action.setText("Snap: ON" if enabled else "Snap: OFF")
-        h._commands.put({
-            "type": "set_snap", "enabled": bool(enabled), "size": 16.0, "angle": 15.0,
-        })
-        h.statusBar().showMessage("Snap ativado" if enabled else "Snap desativado")
+        h._viewport_commands.set_snap(bool(enabled), size=16.0, angle=15.0)
 
     def connect_toolbar_actions(self) -> None:
         h = self.host

@@ -5,52 +5,46 @@ from editor.runtime.editor_context import EditorContext
 from editor.runtime.tool_manager import EditorTool
 
 
-class _Commands:
+class _ViewportCommands:
     def __init__(self) -> None:
-        self.items = []
+        self.calls = []
 
-    def put(self, item: dict) -> None:
-        self.items.append(item)
+    def set_tool(self, tool: EditorTool | str) -> None:
+        tool_value = tool.value if isinstance(tool, EditorTool) else str(tool)
+        self.calls.append(("set_tool", tool_value))
 
+    def focus_selected(self) -> None:
+        self.calls.append(("focus_selected",))
 
-class _Status:
-    def __init__(self) -> None:
-        self.messages = []
-
-    def showMessage(self, message: str) -> None:
-        self.messages.append(message)
+    def toggle_grid(self) -> None:
+        self.calls.append(("toggle_grid",))
 
 
 class _Host(SimpleNamespace):
     def __init__(self) -> None:
         super().__init__(
             editor_context=EditorContext(),
-            _commands=_Commands(),
+            _viewport_commands=_ViewportCommands(),
             _tool_actions={},
             _selected_name=None,
         )
-        self.status = _Status()
-
-    def statusBar(self) -> _Status:
-        return self.status
 
 
-def test_tool_controller_activates_tool_manager_and_viewport_command() -> None:
+def test_tool_controller_activates_tool_manager_and_viewport_controller() -> None:
     host = _Host()
     controller = ToolController(host)
 
     controller.activate_tool(EditorTool.MOVE)
 
     assert host.editor_context.tools.active_tool == EditorTool.MOVE
-    assert host._commands.items == [{"type": "set_tool", "tool": "move"}]
-    assert host.status.messages[-1] == "Ferramenta ativa: Move"
+    assert host._viewport_commands.calls == [("set_tool", "move")]
 
 
-def test_tool_controller_focus_and_grid_are_viewport_commands() -> None:
+def test_tool_controller_focus_and_grid_are_viewport_controller_calls() -> None:
     host = _Host()
     controller = ToolController(host)
 
     controller.focus_selected()
     controller.toggle_grid()
 
-    assert host._commands.items == [{"type": "focus_selected"}, {"type": "toggle_grid"}]
+    assert host._viewport_commands.calls == [("focus_selected",), ("toggle_grid",)]

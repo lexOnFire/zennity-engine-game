@@ -71,18 +71,13 @@ class ToolController:
         h = self.host
         next_tool = tool if isinstance(tool, EditorTool) else EditorTool(str(tool))
         h.editor_context.tools.set_active_tool(next_tool)
-        h._commands.put({"type": "set_tool", "tool": next_tool.value})
-        h.statusBar().showMessage(f"Ferramenta ativa: {next_tool.value.title()}")
+        h._viewport_commands.set_tool(next_tool)
 
     def focus_selected(self) -> None:
-        h = self.host
-        h._commands.put({"type": "focus_selected"})
-        h.statusBar().showMessage("Foco no objeto selecionado")
+        self.host._viewport_commands.focus_selected()
 
     def toggle_grid(self) -> None:
-        h = self.host
-        h._commands.put({"type": "toggle_grid"})
-        h.statusBar().showMessage("Grade alternada")
+        self.host._viewport_commands.toggle_grid()
 
     def _sync_tool_action(self, tool: EditorTool) -> None:
         action = self.host._tool_actions.get(tool.value)
