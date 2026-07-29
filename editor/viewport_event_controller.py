@@ -13,10 +13,7 @@ class ViewportEventController:
         self.host = host
 
     def selected(self, message: dict) -> None:
-        h = self.host
-        h._selected_name = message["name"]
-        h._update_inspector(h._selected_name)
-        h.statusBar().showMessage(f"Viewport: {h._selected_name} selecionado")
+        self.host._selection.select(str(message["name"]), source="Viewport")
 
     def transform(self, message: dict) -> None:
         h = self.host

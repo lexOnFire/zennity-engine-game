@@ -65,16 +65,16 @@ class HierarchyController:
         prefab_action.triggered.connect(
             lambda _checked=False: self.select_and_save_prefab(item_name)
         )
-        delete_action.triggered.connect(lambda _checked=False: h._delete_object(item_name))
+        delete_action.triggered.connect(lambda _checked=False: h._scene_objects.delete(item_name))
         menu.exec(h.hierarchy_tree.viewport().mapToGlobal(position))
 
     def select_and_duplicate(self, name: str) -> None:
-        self.host._selected_name = name
-        self.host._scene_objects.duplicate_selected()
+        if self.host._selection.select_for_action(name):
+            self.host._scene_objects.duplicate_selected()
 
     def select_and_save_prefab(self, name: str) -> None:
-        self.host._selected_name = name
-        self.host._prefab_workspace.save_selected()
+        if self.host._selection.select_for_action(name):
+            self.host._prefab_workspace.save_selected()
 
     def select_item(self, item: QTreeWidgetItem) -> None:
         h = self.host
@@ -83,11 +83,8 @@ class HierarchyController:
         in_runtime = h._runtime_playing and name in h._runtime_objects_by_name
         if not (in_scene or in_runtime):
             return
-        h._scene_controller.select(name)
-        h._selected_name = name
-        h._update_inspector(name)
         source = "Runtime" if in_runtime and not in_scene else "Interface"
-        h.statusBar().showMessage(f"{source}: {name} selecionado")
+        h._selection.select(name, source=source)
 
     def refresh(self, *, force: bool = False) -> bool:
         return self.renderer.refresh(force=force)

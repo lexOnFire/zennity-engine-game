@@ -61,6 +61,18 @@ def test_tool_controller_uses_shortcut_service_and_tool_manager() -> None:
     assert "h._tool_controller.configure()" in bootstrap
 
 
+def test_phase1_uses_selection_controller_for_hierarchy_selection() -> None:
+    hierarchy = _source("editor/hierarchy_controller.py")
+    selection = _source("editor/controllers/selection_controller.py")
+    viewport_events = _source("editor/viewport_event_controller.py")
+    bootstrap = _source("editor/editor_bootstrap_controller.py")
+    assert "class EditorSelectionController" in selection
+    assert "h._selection = EditorSelectionController(h)" in bootstrap
+    assert "h._selection.select(name, source=source)" in hierarchy
+    assert "self.host._selection.select_for_action(name)" in hierarchy
+    assert 'self.host._selection.select(str(message["name"]), source="Viewport")' in viewport_events
+
+
 def test_viewport_handles_focus_and_grid_commands() -> None:
     source = _source("editor/runtime/viewport_session.py")
     handler = _source("editor/runtime/viewport_editor_view_commands.py")

@@ -70,10 +70,12 @@ The official editor entrypoint is `editor.phase1_main`.
 - Routed tool selection, focus selected, grid toggle and snap status through the Phase 1 viewport facade.
 - Moved Reset/New/Duplicate/Delete scene routing toward `SceneObjectController`.
 - Removed another set of scene state mutations from `EditorCommandController`.
+- Added `EditorSelectionController` as the Phase 1 selection facade.
+- Routed hierarchy selection and viewport selection through the shared selection facade.
 
 ## Next Blocks
 
-1. Continue moving hierarchy and inspector orchestration behind controller facades without changing behavior.
+1. Continue moving inspector orchestration behind controller facades without changing behavior.
 2. Expand viewport command tests for selection and transform gizmos.
 3. Consolidate Animation, Visual Graph, Behavior Tree, Dialogue, UI Builder and Material Graph under a single Phase 1 workspace registry.
 4. Mark legacy editor windows as reference-only, then remove them after all useful behavior is represented in Phase 1.
