@@ -90,6 +90,10 @@ class LogicGraphEditor(
 ):
     message = Signal(str, str)
     asset_changed = Signal()
+    node_selected = Signal(object)
+    node_added = Signal(object)
+    node_deleted = Signal(object)
+    edge_added = Signal(object)
     debug_command = Signal(str)
     play_requested = Signal()
     stop_requested = Signal()

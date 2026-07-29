@@ -241,7 +241,7 @@ class LogicFlipControl(QGraphicsTextItem):
         font.setPointSizeF(8.0)
         self.setFont(font)
         self.setPos(node.width - 52.0, 2.0)
-        self.setToolTip("Virar bloco e mostrar o código equivalente")
+        self.setToolTip("Show editable code preview")
         self.setCursor(Qt.PointingHandCursor)
 
     def mousePressEvent(self, event) -> None:
@@ -425,6 +425,7 @@ class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGrap
         code_font.setFamily("Consolas")
         code_font.setPointSizeF(7.8)
         self.code_item.setFont(code_font)
+        self.code_item.setToolTip("Double-click this node to edit the code values.")
         self.code_item.setVisible(False)
 
         self.input_ports: dict[str, LogicPortItem] = {}
@@ -596,6 +597,9 @@ class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGrap
         self.setToolTip(self.target_item.toolTip() if text else "")
 
     def mouseDoubleClickEvent(self, event) -> None:
+        if self._show_code and self.editor.edit_node_code_value(self):
+            event.accept()
+            return
         self.editor.toggle_breakpoint(self.node_id)
         event.accept()
 

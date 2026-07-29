@@ -8,7 +8,7 @@ Integra:
 - Serviço oficial AnimationPlayerService para amostragem no Runtime
 """
 from __future__ import annotations
-from typing import List, Optional
+from typing import Any, List, Optional
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QDockWidget,

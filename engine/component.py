@@ -7,13 +7,10 @@ Todo código novo deve importar de engine.core:
     from engine.core import Component, Transform   # correto
     from engine.core import Component         # legado (ainda funciona)
 """
-import traceback
 import warnings
 
-print("=" * 80)
-print("engine.component foi importado por:")
-traceback.print_stack(limit=12)
-print("=" * 80)
+from engine.core import Component, Transform
+
 
 warnings.warn(
     "engine.component está deprecado. "
@@ -21,3 +18,5 @@ warnings.warn(
     DeprecationWarning,
     stacklevel=2,
 )
+
+__all__ = ["Component", "Transform"]

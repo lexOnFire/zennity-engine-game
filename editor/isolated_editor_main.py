@@ -5,13 +5,17 @@ Execute a partir da raiz do projeto:
 """
 from __future__ import annotations
 
+import faulthandler
+import logging
 import multiprocessing as mp
 import sys
 import json
+import traceback
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+from PySide6.QtCore import QtMsgType, qInstallMessageHandler
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
@@ -39,6 +43,39 @@ from engine.animation.clip_asset import (
     default_animation_asset,
     save_animation_asset,
 )
+
+
+_CRASH_LOG_HANDLE = None
+
+
+def _install_crash_logging(project_root: Path) -> None:
+    """Registra rastros de falhas silenciosas em .zennity_crash.log."""
+    global _CRASH_LOG_HANDLE
+    if _CRASH_LOG_HANDLE is not None:
+        return
+
+    log_path = project_root / ".zennity_crash.log"
+    _CRASH_LOG_HANDLE = log_path.open("a", encoding="utf-8", buffering=1)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        handlers=[logging.StreamHandler(_CRASH_LOG_HANDLE)],
+        force=True,
+    )
+    faulthandler.enable(file=_CRASH_LOG_HANDLE, all_threads=True)
+
+    def excepthook(exc_type, exc, tb) -> None:
+        logging.critical("Exceção não tratada no editor", exc_info=(exc_type, exc, tb))
+        traceback.print_exception(exc_type, exc, tb, file=_CRASH_LOG_HANDLE)
+        sys.__excepthook__(exc_type, exc, tb)
+
+    def qt_message_handler(mode, context, message) -> None:
+        level = logging.ERROR if mode in {QtMsgType.QtCriticalMsg, QtMsgType.QtFatalMsg} else logging.WARNING
+        logging.log(level, "Qt: %s", message)
+
+    sys.excepthook = excepthook
+    qInstallMessageHandler(qt_message_handler)
+    logging.info("Crash logging instalado em %s", log_path)
 
 
 class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
@@ -388,8 +425,37 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._session_controller.shutdown()
         super().closeEvent(event)
 
+    def _refresh_assets(self) -> None:
+        """Atualiza o painel de Assets após criar ou salvar arquivos."""
+        candidates = (
+            getattr(self, "assets_panel", None),
+            getattr(self, "asset_browser", None),
+            getattr(self, "resources_panel", None),
+            getattr(self, "project_panel", None),
+            getattr(self, "asset_manager_panel", None),
+        )
+
+        for panel in candidates:
+            if panel is None:
+                continue
+
+            for method_name in (
+                "refresh",
+                "refresh_assets",
+                "reload",
+                "reload_assets",
+                "scan_assets",
+                "rescan",
+            ):
+                method = getattr(panel, method_name, None)
+
+                if callable(method):
+                    method()
+                    return
+
 
 def main() -> None:
+    _install_crash_logging(Path.cwd())
     context = mp.get_context("spawn")
     
     from engine.core.bootstrap import EngineBootstrap

@@ -1,0 +1,122 @@
+{
+  "format_version": 2,
+  "scene_name": "navetest",
+  "engine_version": "Zennity 0.1.0",
+  "objects": [
+    {
+      "name": "Player_nave",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "tag": "Untagged",
+      "layer": "Default",
+      "id": "5da13707-8570-4282-99ef-0008e933752c",
+      "transform": {
+        "position": [
+          0.0,
+          80.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          144.0,
+          144.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": "Empty",
+        "color": [
+          255,
+          255,
+          255
+        ],
+        "texture": "Assets/Materials/nave_IDLE.PNG",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "editor_data": {
+        "animator": {
+          "active_clip": "nave_Idle",
+          "speed": 1.0,
+          "clips": {
+            "nave_Idle": {
+              "texture": "Assets/Materials/nave_IDLE.PNG",
+              "frame_width": 224,
+              "frame_height": 200,
+              "start_frame": 0,
+              "frame_count": 8,
+              "frames": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+              ],
+              "fps": 8.0,
+              "loop": true,
+              "events": [],
+              "tracks": [],
+              "asset_path": "Assets/Animations/nave_Idle.zanim"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "paisagem",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "tag": "Untagged",
+      "layer": "Default",
+      "id": "4863c5d3-a0ab-4638-9f26-0b850ff26f07",
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1312.0,
+          704.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": "Empty",
+        "color": [
+          255,
+          255,
+          255
+        ],
+        "texture": "Assets/Materials/CEU_INFI.png",
+        "layer": "Background",
+        "order": 0
+      },
+      "components": {}
+    }
+  ],
+  "blackboard": {
+    "variables": {}
+  }
+}

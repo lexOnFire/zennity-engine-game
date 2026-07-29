@@ -1,6 +1,6 @@
 """Metadata Generator. Extracts and formats metadata for tooling and documentation."""
 import json
-from typing import Dict, Any, Type
+from typing import Any, Dict, List, Type
 from engine.metadata.core import MetadataDefinition
 from engine.core.context import EngineContext
 from engine.metadata.manager import MetadataManager

@@ -28,6 +28,16 @@ def test_main_menu_exposes_only_one_graph_editor_entry() -> None:
         assert obsolete_entry not in source
 
 
+def test_main_window_reuses_official_logic_workspace() -> None:
+    source = (ROOT / "editor" / "windows" / "main_window.py").read_text(
+        encoding="utf-8"
+    )
+    assert "self.logic_workspace = LogicGraphEditor(parent=self)" in source
+    assert source.index("self.logic_workspace = LogicGraphEditor(parent=self)") < source.index(
+        "self.dock_visual_scripting = VisualScriptingEditorDock(self)"
+    )
+
+
 def test_specialized_graph_editor_has_real_document_actions() -> None:
     source = (ROOT / "editor" / "widgets" / "generic_graph_editor.py").read_text(
         encoding="utf-8"

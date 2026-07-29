@@ -1,0 +1,21 @@
+{
+  "format": "zennity.animation_clip",
+  "version": 1,
+  "name": "nave_WALK",
+  "texture": "Assets/Materials/nave_WALK.PNG",
+  "frame_width": 225,
+  "frame_height": 256,
+  "frames": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "fps": 8.0,
+  "loop": true,
+  "events": [],
+  "tracks": []
+}

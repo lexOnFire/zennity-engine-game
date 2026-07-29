@@ -129,6 +129,7 @@ class LogicGraphPaletteMixin:
         node = create_logic_node(node_type, (center.x() + offset, center.y() + offset))
         self.graph["nodes"].append(node)
         self._create_node_item(node)
+        self.node_added.emit(node)
         self.mark_dirty()
         self._update_validation()
 
@@ -217,6 +218,7 @@ class LogicGraphPaletteMixin:
         self.graph["nodes"].append(node)
         self.scene.clearSelection()
         self._create_node_item(node).setSelected(True)
+        self.node_added.emit(node)
         self.mark_dirty()
         self._update_validation()
         self.message.emit("INFO", f"Subgrafo adicionado: {Path(path).stem}")

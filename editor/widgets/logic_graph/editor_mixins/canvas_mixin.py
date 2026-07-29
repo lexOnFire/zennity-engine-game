@@ -75,11 +75,57 @@ from editor.widgets.logic_graph.definitions import (
 
 class LogicGraphCanvasMixin:
     _clipboard_mime = "application/x-zennity-logic-selection"
+
+    def _release_scene_interaction(self) -> None:
+        if not hasattr(self, "scene"):
+            return
+        try:
+            self.cancel_connection(refresh=False)
+        except (AttributeError, RuntimeError):
+            pass
+        try:
+            self.scene.clearSelection()
+        except RuntimeError:
+            pass
+        try:
+            grabber = self.scene.mouseGrabberItem()
+            if grabber is not None:
+                grabber.ungrabMouse()
+        except RuntimeError:
+            pass
+        try:
+            focus_item = self.scene.focusItem()
+            if focus_item is not None:
+                focus_item.clearFocus()
+        except RuntimeError:
+            pass
+
+    def _remove_scene_item(self, item: QGraphicsItem | None) -> None:
+        if item is None:
+            return
+        try:
+            item.setSelected(False)
+            item.ungrabMouse()
+        except RuntimeError:
+            pass
+        try:
+            if item.scene() is self.scene:
+                self.scene.removeItem(item)
+        except RuntimeError:
+            pass
+
+    def _clear_logic_scene(self) -> None:
+        self._release_scene_interaction()
+        try:
+            self.scene.clear()
+        except RuntimeError:
+            pass
+
     def refresh_connections(self) -> None:
         if not hasattr(self, "scene"):
             return
         for item in self.edge_items:
-            self.scene.removeItem(item)
+            self._remove_scene_item(item)
         self.edge_items.clear()
         for edge in self.graph.get("edges", []):
             source = self.node_items.get(str(edge.get("from_node")))
@@ -297,14 +343,16 @@ class LogicGraphCanvasMixin:
             edge for edge in self.graph["edges"]
             if not (edge["to_node"] == destination.node.node_id and edge.get("to_port", "in") == destination.name)
         ]
-        self.graph["edges"].append({
+        edge = {
             "id": uuid.uuid4().hex,
             "from_node": source.node.node_id,
             "from_port": source.name,
             "to_node": destination.node.node_id,
             "to_port": destination.name,
             "kind": source.data_type,
-        })
+        }
+        self.graph["edges"].append(edge)
+        self.edge_added.emit(edge)
         self.cancel_connection(refresh=False)
         self.refresh_connections()
         self.mark_dirty()
@@ -334,6 +382,7 @@ class LogicGraphCanvasMixin:
         node = create_logic_node(node_type, (position.x(), position.y()))
         self.graph["nodes"].append(node)
         item = self._create_node_item(node)
+        self.node_added.emit(node)
         target = (
             item.input_ports.get(port_name)
             if origin.direction == "output"
@@ -344,7 +393,7 @@ class LogicGraphCanvasMixin:
 
     def cancel_connection(self, refresh: bool = True) -> None:
         if self._connection_preview is not None and self._connection_preview.scene() is self.scene:
-            self.scene.removeItem(self._connection_preview)
+            self._remove_scene_item(self._connection_preview)
         self._connection_preview = None
         self._connection_origin = None
         self._connection_candidate = None
@@ -379,14 +428,16 @@ class LogicGraphCanvasMixin:
             edge for edge in self.graph["edges"]
             if not (edge["to_node"] == target.node_id and edge.get("to_port", "in") == target_port.name)
         ]
-        self.graph["edges"].append({
+        edge = {
             "id": uuid.uuid4().hex,
             "from_node": source.node_id,
             "from_port": source_port.name,
             "to_node": target.node_id,
             "to_port": target_port.name,
             "kind": "flow",
-        })
+        }
+        self.graph["edges"].append(edge)
+        self.edge_added.emit(edge)
         self.refresh_connections()
         self.mark_dirty()
         self._update_validation()
@@ -399,26 +450,26 @@ class LogicGraphCanvasMixin:
         if not node_ids and not edge_ids and not group_ids and not comment_ids:
             return
         self.graph["nodes"] = [node for node in self.graph["nodes"] if node["id"] not in node_ids]
+        deleted_nodes = [item.node for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)]
         self.graph["edges"] = [
             edge for edge in self.graph["edges"]
             if edge["id"] not in edge_ids and edge["from_node"] not in node_ids and edge["to_node"] not in node_ids
         ]
         for node_id in node_ids:
             item = self.node_items.pop(node_id, None)
-            if item is not None:
-                self.scene.removeItem(item)
+            self._remove_scene_item(item)
         layout = self.graph.setdefault("editor", {"groups": [], "comments": []})
         layout["groups"] = [group for group in layout.get("groups", []) if str(group.get("id")) not in group_ids]
         layout["comments"] = [comment for comment in layout.get("comments", []) if str(comment.get("id")) not in comment_ids]
         for group_id in group_ids:
             item = self.group_items.pop(group_id, None)
-            if item is not None:
-                self.scene.removeItem(item)
+            self._remove_scene_item(item)
         for comment_id in comment_ids:
             item = self.comment_items.pop(comment_id, None)
-            if item is not None:
-                self.scene.removeItem(item)
+            self._remove_scene_item(item)
         self.refresh_connections()
+        for node in deleted_nodes:
+            self.node_deleted.emit(node)
         self.mark_dirty()
         self._update_validation()
 
@@ -450,6 +501,7 @@ class LogicGraphCanvasMixin:
         self.graph["edges"].extend(copied_edges)
         for node in copies:
             self._create_node_item(node).setSelected(True)
+            self.node_added.emit(node)
         self.refresh_connections()
         self.mark_dirty()
         self._update_validation()
@@ -513,6 +565,9 @@ class LogicGraphCanvasMixin:
         self.graph["edges"].extend(edges)
         for node in nodes:
             self._create_node_item(node).setSelected(True)
+            self.node_added.emit(node)
+        for edge in edges:
+            self.edge_added.emit(edge)
         self.refresh_connections()
         self.mark_dirty()
         self._update_validation()

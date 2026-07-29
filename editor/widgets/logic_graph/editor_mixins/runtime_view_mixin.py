@@ -94,7 +94,7 @@ class LogicGraphRuntimeViewMixin:
         self.target_type.blockSignals(False)
         self.target_value.blockSignals(False)
         self._loading_graph = True
-        self.scene.clear()
+        self._clear_logic_scene()
         self.node_items.clear()
         self.edge_items.clear()
         self.group_items.clear()

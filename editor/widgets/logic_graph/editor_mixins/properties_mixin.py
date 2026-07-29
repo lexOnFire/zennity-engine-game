@@ -19,7 +19,11 @@ from editor.widgets.logic_graph.views import LogicGraphView, LogicMiniMapView
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPainterPathStroker, QPen, QBrush
 from PySide6.QtWidgets import (
     QCheckBox,
+    QDialog,
+    QDialogButtonBox,
+    QDoubleSpinBox,
     QFileDialog,
+    QFormLayout,
     QFrame,
     QComboBox,
     QGraphicsEllipseItem,
@@ -75,6 +79,92 @@ from editor.widgets.logic_graph.definitions import (
 )
 
 class LogicGraphPropertiesMixin:
+    CODE_EDITABLE_PROPERTIES = {
+        "compare_number": (("value", "Comparison value"),),
+        "cooldown": (("seconds", "Cooldown seconds"),),
+        "create_object": (
+            ("x", "X position"),
+            ("y", "Y position"),
+            ("max_instances", "Max instances"),
+            ("lifetime", "Lifetime seconds"),
+        ),
+        "destroy_after_time": (("seconds", "Lifetime seconds"),),
+        "event_timer": (("seconds", "Timer seconds"),),
+        "jump": (("force", "Jump force"),),
+        "move": (("speed", "Movement speed"),),
+        "move_by": (("x", "X speed"), ("y", "Y speed")),
+        "number_value": (("value", "Number value"),),
+        "patrol_axis": (
+            ("minimum", "Minimum position"),
+            ("maximum", "Maximum position"),
+            ("speed", "Patrol speed"),
+        ),
+        "rotate": (("degrees", "Rotation degrees"),),
+        "set_position": (("x", "X position"), ("y", "Y position")),
+        "start_continuous_motion": (("x", "X speed"), ("y", "Y speed")),
+        "start_texture_scroll": (("speed_x", "Texture scroll X speed"), ("speed_y", "Texture scroll Y speed")),
+        "update_continuous_motion": (("x", "X speed"), ("y", "Y speed")),
+    }
+
+    def edit_node_code_value(self, node_item: LogicNodeItem) -> bool:
+        node_type = str(node_item.node.get("type", ""))
+        edit_fields = self.CODE_EDITABLE_PROPERTIES.get(node_type)
+        if edit_fields is None:
+            self.message.emit("INFO", "Select the node and edit its values in Properties.")
+            return False
+        properties = node_item.node.setdefault("properties", {})
+        updates = self._request_code_value_edits(node_item.node, edit_fields, properties)
+        if updates is None:
+            return True
+        for key, value in updates.items():
+            properties[key] = self._coerce_code_edit_value(properties.get(key), value)
+        node_item.refresh_text()
+        self._selection_changed()
+        self.mark_dirty()
+        self._update_validation()
+        self.message.emit("INFO", f"Updated code values for {node_item.node.get('title', node_type)}")
+        return True
+
+    def _request_code_value_edits(
+        self,
+        node: dict[str, Any],
+        fields: tuple[tuple[str, str], ...],
+        properties: dict[str, Any],
+    ) -> dict[str, float] | None:
+        dialog = QDialog(self)
+        dialog.setWindowTitle(f"Edit {node.get('title', 'node')} code values")
+        form = QFormLayout(dialog)
+        editors: dict[str, QDoubleSpinBox] = {}
+        for key, label in fields:
+            editor = QDoubleSpinBox(dialog)
+            editor.setDecimals(3)
+            editor.setRange(-1_000_000.0, 1_000_000.0)
+            editor.setKeyboardTracking(False)
+            current = properties.get(key, 0)
+            editor.setValue(self._safe_code_float(current))
+            form.addRow(label, editor)
+            editors[key] = editor
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, dialog)
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        form.addRow(buttons)
+        if dialog.exec() != QDialog.Accepted:
+            return None
+        return {key: editor.value() for key, editor in editors.items()}
+
+    @staticmethod
+    def _safe_code_float(value: Any) -> float:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return 0.0
+
+    @staticmethod
+    def _coerce_code_edit_value(current: Any, value: float) -> int | float:
+        if isinstance(current, int) and float(value).is_integer():
+            return int(value)
+        return int(value) if float(value).is_integer() else value
+
     def _selection_changed(self) -> None:
         selected = [item for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)]
         self._updating_properties = True
@@ -85,8 +175,10 @@ class LogicGraphPropertiesMixin:
             self.breakpoint_condition_edit.clear()
             self.breakpoint_condition_edit.setEnabled(False)
             self._updating_properties = False
+            self.node_selected.emit(None)
             return
         node = selected[0].node
+        self.node_selected.emit(node)
         asset_kind = self._asset_kind_for_node(str(node.get("type", "")))
         self.property_asset_button.setVisible(asset_kind is not None)
         self.selected_label.setText(f"{node['title']}\n{node['category']} • {node['type']}")
@@ -158,7 +250,7 @@ class LogicGraphPropertiesMixin:
         if str(node.get("type", "")) == "create_prefab":
             self._sync_prefab_node_interface(node)
             old_item = selected[0]
-            self.scene.removeItem(old_item)
+            self._remove_scene_item(old_item)
             self.node_items.pop(old_item.node_id, None)
             self.scene.clearSelection()
             selected = [self._create_node_item(node)]
@@ -210,7 +302,7 @@ class LogicGraphPropertiesMixin:
         if key == "path" and str(node_item.node.get("type", "")) == "create_prefab":
             self._sync_prefab_node_interface(node_item.node)
             node = node_item.node
-            self.scene.removeItem(node_item)
+            self._remove_scene_item(node_item)
             self.node_items.pop(node_item.node_id, None)
             self.scene.clearSelection()
             node_item = self._create_node_item(node)
@@ -218,7 +310,7 @@ class LogicGraphPropertiesMixin:
             self.refresh_connections()
         if key == "type" and node_item.node.get("type") in {"subgraph_input", "subgraph_return"}:
             node = node_item.node
-            self.scene.removeItem(node_item)
+            self._remove_scene_item(node_item)
             self.node_items.pop(node_item.node_id, None)
             self.scene.clearSelection()
             self._create_node_item(node).setSelected(True)

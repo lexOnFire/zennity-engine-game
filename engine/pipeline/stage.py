@@ -9,7 +9,7 @@ Padroniza os fluxos de:
 """
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import Any, Dict, List, Optional
 
 
 class PipelineTask:

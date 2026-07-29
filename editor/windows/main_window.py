@@ -30,6 +30,7 @@ from editor.widgets.console_dock import ConsoleDock
 from editor.widgets.inspector_dock import InspectorDock
 from editor.widgets.code_editor_dock import CodeEditorDock
 from editor.widgets.profiler_dock import ProfilerDock
+from editor.widgets.logic_graph_editor import LogicGraphEditor
 from editor.visual_scripting.visual_scripting_dock import VisualScriptingEditorDock
 from editor.ui_builder.ui_builder_dock import UIBuilderDock
 from editor.extension_manager.extension_dock import ExtensionManagerDock
@@ -188,6 +189,7 @@ class MainWindow(MainWindowMenusMixin, QMainWindow):
         self.dock_profiler  = ProfilerDock(self)
 
         # Docks Visuais e Editores Especiais
+        self.logic_workspace = LogicGraphEditor(parent=self)
         self.dock_visual_scripting = VisualScriptingEditorDock(self)
         self.dock_ui_builder       = UIBuilderDock(self)
         self.dock_extension_manager = ExtensionManagerDock(self)

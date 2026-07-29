@@ -354,8 +354,27 @@ class AnimationAssetOperations:
         self._animation_asset_dirty = False
         self._update_animation_asset_status()
         self._refresh_animation_library()
-        self._refresh_assets()
-        self._log("INFO", f"Animação salva: {self._project_relative_path(path)} — use 'Aplicar ao selecionado' para anexá-la")
+        refresh_assets = getattr(self, "_refresh_assets", None)
+
+        if callable(refresh_assets):
+            refresh_assets()
+        else:
+            assets_panel = getattr(self, "assets_panel", None)
+            if assets_panel is None:
+                assets_panel = getattr(self, "asset_browser", None)
+            if assets_panel is None:
+                assets_panel = getattr(self, "resources_panel", None)
+
+            refresh_panel = getattr(assets_panel, "refresh", None)
+            if not callable(refresh_panel):
+                refresh_panel = getattr(assets_panel, "refresh_assets", None)
+
+            if callable(refresh_panel):
+                refresh_panel()
+        self._log(
+            "INFO",
+            f"Animação salva: {self._project_relative_path(path)} — use 'Aplicar ao selecionado' para anexá-la",
+        )
 
     def _duplicate_animation_asset(self) -> None:
         original_path = self._current_animation_asset_path

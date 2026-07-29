@@ -99,7 +99,7 @@ class DiagnosticsBridge:
             self._name = scope_name
             self._start: float = 0.0
 
-        def __enter__(self) -> "_MeasureContext":
+        def __enter__(self) -> "DiagnosticsBridge._MeasureContext":
             self._start = time.perf_counter()
             return self
 
@@ -107,7 +107,7 @@ class DiagnosticsBridge:
             elapsed_ms = (time.perf_counter() - self._start) * 1000.0
             self._bridge._on_scope_completed(self._name, elapsed_ms)
 
-    def measure(self, scope_name: str) -> "_MeasureContext":
+    def measure(self, scope_name: str) -> "DiagnosticsBridge._MeasureContext":
         """Mede o tempo de execução de um bloco e emite Runtime.log.
 
         Uso:
