@@ -39,6 +39,7 @@ from editor.ui.icons import TOOLBAR_ICONS, component_title, editor_icon
 from editor.ui.empty_state import EmptyStateWidget
 from editor.widgets.logic_graph_editor import LogicGraphEditor
 from editor.ui.detached_workspace import DetachedWorkspaceWindow
+from editor.services.workspace_registry import WorkspaceRegistry
 
 
 class InterfaceSmokeTest(QMainWindow):
@@ -61,6 +62,7 @@ class InterfaceSmokeTest(QMainWindow):
         self.statusBar().showMessage("Teste isolado: não há Pygame nem renderização de cena.")
 
     def _build_menu(self) -> None:
+        self._workspace_registry = WorkspaceRegistry(self)
         self.editor_menus = {}
         for name in ("Arquivo", "Editar", "Janela", "Criar", "Build", "Executar", "Ajuda"):
             menu = self.menuBar().addMenu(name)
@@ -68,46 +70,19 @@ class InterfaceSmokeTest(QMainWindow):
 
         window_menu = self.editor_menus["Janela"]
         animator_action = QAction("Animator", self)
-        animator_action.triggered.connect(lambda checked=False: self._show_animation_workspace())
+        animator_action.triggered.connect(lambda checked=False: self._workspace_registry.open("animation"))
         window_menu.addAction(animator_action)
 
         logic_action = QAction("Editor de Lógica Visual", self)
-        logic_action.triggered.connect(
-            lambda checked=False: self._show_visual_tool_dock(
-                "editor.visual_scripting.visual_scripting_dock",
-                "VisualScriptingEditorDock",
-                "visual_scripting",
-            )
-        )
+        logic_action.triggered.connect(lambda checked=False: self._workspace_registry.open("logic"))
         window_menu.addAction(logic_action)
 
     def _show_animation_workspace(self) -> None:
-        handler = getattr(self, "_show_animation_window", None)
-        if callable(handler):
-            handler()
-            return
-        self.animation_window.show()
-        self.animation_window.raise_()
-        self.animation_window.activateWindow()
+        self._workspace_registry.open("animation")
 
     def _show_visual_tool_dock(self, module_path: str, class_name: str, attr_name: str) -> None:
         """Instancia e exibe a dock do editor visual dinamicamente ao ser clicada no menu."""
-        dock_attr = f"_dock_{attr_name}"
-        dock_widget = getattr(self, dock_attr, None)
-        if dock_widget is None:
-            import importlib
-            mod = importlib.import_module(module_path)
-            cls = getattr(mod, class_name)
-            dock_widget = cls(self)
-            setattr(self, dock_attr, dock_widget)
-            if isinstance(dock_widget, QDockWidget):
-                self.addDockWidget(Qt.RightDockWidgetArea, dock_widget)
-            if hasattr(dock_widget, "configure_independent_window"):
-                dock_widget.configure_independent_window()
-
-        dock_widget.show()
-        dock_widget.raise_()
-        dock_widget.activateWindow()
+        self._workspace_registry.open_dynamic(module_path, class_name, attr_name)
 
     def _build_toolbar(self) -> None:
         toolbar = QToolBar("Comandos")

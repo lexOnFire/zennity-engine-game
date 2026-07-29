@@ -94,12 +94,16 @@ class LogicWorkspaceController:
                 h.statusBar().showMessage(
                     "Selecione um objeto na Hierarchy para definir o alvo da lógica"
                 )
-        h._show_visual_tool_dock(
-            "editor.visual_scripting.visual_scripting_dock",
-            "VisualScriptingEditorDock",
-            "visual_scripting",
-        )
-        dock = getattr(h, "_dock_visual_scripting", None)
+        registry = getattr(h, "_workspace_registry", None)
+        if registry is not None:
+            dock = registry.open("logic")
+        else:
+            h._show_visual_tool_dock(
+                "editor.visual_scripting.visual_scripting_dock",
+                "VisualScriptingEditorDock",
+                "visual_scripting",
+            )
+            dock = getattr(h, "_dock_visual_scripting", None)
         if dock is not None and hasattr(dock, "sync_from_host"):
             self._attach_graph_hub_bridges(dock)
             dock.setWindowTitle(

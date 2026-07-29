@@ -85,9 +85,12 @@ The official editor entrypoint is `editor.phase1_main`.
 - Added `LogicBindingController` so Logic Graph asset/object bindings are managed
   behind a focused Phase 1 controller instead of directly inside the visual
   workspace window controller.
+- Added `WorkspaceRegistry` as the single Phase 1 path for opening Animator,
+  Visual Logic, Behavior Tree, Dialogue, Material Graph and UI Builder
+  workspaces.
 
 ## Next Blocks
 
 1. Continue moving workspace-specific graph scene mutations behind controller facades without changing behavior.
 2. Expand viewport command tests for selection and transform gizmos.
-3. Consolidate Animation, Visual Graph, Behavior Tree, Dialogue, UI Builder and Material Graph under a single Phase 1 workspace registry.
+3. Connect additional Phase 1 menu/actions to `WorkspaceRegistry` as they become official surfaces.

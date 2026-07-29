@@ -36,6 +36,7 @@ from editor.runtime.hierarchy_commands import (
     can_reparent,
 )
 from editor.runtime.tool_manager import EditorTool
+from editor.services.workspace_registry import WorkspaceRegistry
 from editor.widgets.game_viewport import GameViewportWidget
 from editor.widgets.phase1_viewport import Phase1ViewportWidget
 from editor.widgets.render_pipeline_profiler import RenderPipelineProfilerPanel
@@ -50,6 +51,7 @@ class Phase1EditorUIBuilderMixin:
 
     def _build_menu(self) -> None:
         bar = self.menuBar()
+        self._workspace_registry = WorkspaceRegistry(self)
         file_menu = bar.addMenu("Arquivo")
         edit_menu = bar.addMenu("Editar")
         window_menu = bar.addMenu("Janela")
@@ -97,56 +99,21 @@ class Phase1EditorUIBuilderMixin:
         prefab_menu.addAction(self.act_instantiate_prefab)
 
         animator_action = QAction("Animator", self)
-        animator_action.triggered.connect(lambda checked=False: self._show_animation_workspace())
+        animator_action.triggered.connect(lambda checked=False: self._workspace_registry.open("animation"))
         window_menu.addAction(animator_action)
 
         logic_action = QAction("Editor de Lógica Visual", self)
-        logic_action.triggered.connect(
-            lambda checked=False: self._show_visual_tool_dock(
-                "editor.visual_scripting.visual_scripting_dock",
-                "VisualScriptingEditorDock",
-                "visual_scripting",
-            )
-        )
+        logic_action.triggered.connect(lambda checked=False: self._workspace_registry.open("logic"))
         window_menu.addAction(logic_action)
 
         self._unused_menu_refs = (edit_menu, window_menu, help_menu)
 
     def _show_animation_workspace(self) -> None:
-        handler = getattr(self, "_show_animation_window", None)
-        if callable(handler):
-            handler()
-            return
-        animation_window = getattr(self, "animation_window", None)
-        if animation_window is not None:
-            animation_window.show()
-            animation_window.raise_()
-            animation_window.activateWindow()
-            return
-        self._show_visual_tool_dock(
-            "editor.animation_studio.animation_studio_dock",
-            "AnimationStudioDock",
-            "animation_studio",
-        )
+        self._workspace_registry.open("animation")
 
     def _show_visual_tool_dock(self, module_path: str, class_name: str, attr_name: str) -> None:
         """Instancia e exibe a dock do editor visual dinamicamente ao ser clicada no menu."""
-        dock_attr = f"_dock_{attr_name}"
-        dock_widget = getattr(self, dock_attr, None)
-        if dock_widget is None:
-            import importlib
-            mod = importlib.import_module(module_path)
-            cls = getattr(mod, class_name)
-            dock_widget = cls(self)
-            setattr(self, dock_attr, dock_widget)
-            if isinstance(dock_widget, QDockWidget):
-                self.addDockWidget(Qt.RightDockWidgetArea, dock_widget)
-            if hasattr(dock_widget, "configure_independent_window"):
-                dock_widget.configure_independent_window()
-
-        dock_widget.show()
-        dock_widget.raise_()
-        dock_widget.activateWindow()
+        self._workspace_registry.open_dynamic(module_path, class_name, attr_name)
 
     def _build_toolbar(self) -> None:
         toolbar = QToolBar("MainToolBar")
