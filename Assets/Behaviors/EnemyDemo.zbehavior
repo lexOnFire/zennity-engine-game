@@ -20,6 +20,7 @@
   "states": {
     "Patrol": {
       "script": "",
+      "logic_graph": "Assets/Logic/NebulaDefense/NebulaEnemy.zlogic",
       "position": [
         40.0,
         150.0
@@ -27,6 +28,7 @@
     },
     "Chase": {
       "script": "",
+      "logic_graph": "Assets/Logic/NebulaDefense/NebulaEnemy.zlogic",
       "position": [
         270.0,
         150.0
@@ -34,6 +36,7 @@
     },
     "Attack": {
       "script": "",
+      "logic_graph": "Assets/Logic/NebulaDefense/NebulaEnemy.zlogic",
       "position": [
         500.0,
         150.0
