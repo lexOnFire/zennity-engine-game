@@ -77,10 +77,11 @@ The official editor entrypoint is `editor.phase1_main`.
 - Routed Inspector UI/media scene publication and auto-canvas registration through the selection facade.
 - Removed the legacy Python script workspace, Inspector script plugins and `Assets/Scripts`.
 - Cleared script bindings from bundled demo assets so graph-based logic is the official authoring path.
+- Renamed runtime event payloads from `script_instructions`/`script_log` to `logic_events`/`runtime_log`.
 
 ## Next Blocks
 
-1. Continue moving workspace-specific graph scene mutations behind controller facades without changing behavior.
-2. Expand viewport command tests for selection and transform gizmos.
-3. Consolidate Animation, Visual Graph, Behavior Tree, Dialogue, UI Builder and Material Graph under a single Phase 1 workspace registry.
-4. Mark legacy editor windows as reference-only, then remove them after all useful behavior is represented in Phase 1.
+1. Rename remaining legacy runtime class/file names such as `PlayScriptAPI` and `ViewportScriptUpdater`.
+2. Continue moving workspace-specific graph scene mutations behind controller facades without changing behavior.
+3. Expand viewport command tests for selection and transform gizmos.
+4. Consolidate Animation, Visual Graph, Behavior Tree, Dialogue, UI Builder and Material Graph under a single Phase 1 workspace registry.

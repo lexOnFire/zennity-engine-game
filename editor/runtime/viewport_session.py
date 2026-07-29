@@ -252,7 +252,7 @@ class ViewportSession(ViewportSessionLifecycleMixin):
         self.contact_processor = ViewportContactProcessor(self.objects, self.active_contacts, self.dispatch_contact)
 
     def runtime_log(self, level, message):
-        _send(self.events, {"type": "script_log", "level": level, "message": message})
+        _send(self.events, {"type": "runtime_log", "level": level, "message": message})
         
     def start_audio_sources(self):
         self.stop_audio_sources()
@@ -264,11 +264,11 @@ class ViewportSession(ViewportSessionLifecycleMixin):
                 continue
             found += 1
             if not audio.get("autoplay") or not audio.get("path"):
-                _send(self.events, {"type": "script_log", "level": "INFO", "message": f"{name}: Audio Source não inicia (Ao iniciar={bool(audio.get('autoplay'))}, arquivo={bool(audio.get('path'))})"})
+                _send(self.events, {"type": "runtime_log", "level": "INFO", "message": f"{name}: Audio Source não inicia (Ao iniciar={bool(audio.get('autoplay'))}, arquivo={bool(audio.get('path'))})"})
                 continue
             enabled += 1
             self.play_audio_file(name, str(audio["path"]), float(audio.get("volume", 1.0)), bool(audio.get("loop", False)))
-        _send(self.events, {"type": "script_log", "level": "INFO", "message": f"Play processou {found} Audio Source(s); {enabled} iniciado(s)"})
+        _send(self.events, {"type": "runtime_log", "level": "INFO", "message": f"Play processou {found} Audio Source(s); {enabled} iniciado(s)"})
 
     def ensure_audio_mixer(self):
         return self.audio_system.ensure_mixer()
@@ -291,7 +291,7 @@ class ViewportSession(ViewportSessionLifecycleMixin):
             try:
                 hook(api, state_name)
             except Exception as exc:
-                _send(self.events, {"type": "script_log", "level": "ERROR", "message": f"{object_name}:{path}:{hook_name}: {exc}"})
+                _send(self.events, {"type": "runtime_log", "level": "ERROR", "message": f"{object_name}:{path}:{hook_name}: {exc}"})
                 
     def game_camera(self):
         return next(
@@ -366,7 +366,7 @@ class ViewportSession(ViewportSessionLifecycleMixin):
             try:
                 hook(game, other)
             except Exception as exc:
-                _send(self.events, {"type": "script_log", "level": "ERROR", "message": f"{name}:{path}:{hook_name}: {exc}"})
+                _send(self.events, {"type": "runtime_log", "level": "ERROR", "message": f"{name}:{path}:{hook_name}: {exc}"})
                 
         logic_event = {
             "on_collision": "event_collision_enter",
@@ -384,7 +384,7 @@ class ViewportSession(ViewportSessionLifecycleMixin):
                     })
                 except Exception as exc:
                     _send(self.events, {
-                        "type": "script_log", "level": "ERROR",
+                        "type": "runtime_log", "level": "ERROR",
                         "message": f"{name}:{graph_path}:{logic_event}: {exc}",
                     })
 

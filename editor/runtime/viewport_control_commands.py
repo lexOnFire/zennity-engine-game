@@ -86,11 +86,11 @@ class ViewportAudioCommandHandler:
                 for object_name, config in incoming.items():
                     if object_name in self.objects and isinstance(config, dict):
                         self.objects[object_name]["audio"] = dict(config)
-            self.emit({"type": "script_log", "level": "INFO", "message": "Comando dedicado de áudio recebido pelo Play Mode"})
+            self.emit({"type": "runtime_log", "level": "INFO", "message": "Comando dedicado de áudio recebido pelo Play Mode"})
             self.start_sources()
         elif command_type == "stop_all_audio":
             self.stop_sources()
-            self.emit({"type": "script_log", "level": "INFO", "message": "Todos os áudios foram interrompidos"})
+            self.emit({"type": "runtime_log", "level": "INFO", "message": "Todos os áudios foram interrompidos"})
         elif command_type == "preview_audio":
             self.play_file(
                 "__preview__", str(command.get("path", "")),
@@ -101,6 +101,6 @@ class ViewportAudioCommandHandler:
             if channel is not None:
                 channel.stop()
             self.sounds.pop("__preview__", None)
-            self.emit({"type": "script_log", "level": "INFO", "message": "Prévia de áudio interrompida"})
+            self.emit({"type": "runtime_log", "level": "INFO", "message": "Prévia de áudio interrompida"})
         return True
 

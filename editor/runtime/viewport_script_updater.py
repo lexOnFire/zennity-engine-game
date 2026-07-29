@@ -42,7 +42,7 @@ class ViewportScriptUpdater:
             api = self.script_apis.get(name)
             if obj is None or api is None:
                 continue
-            instructions = obj.pop("script_instructions", [])
+            instructions = obj.pop("logic_events", [])
             api.begin_frame(input_state)
             for path, module in list(instances):
                 try:
@@ -52,7 +52,7 @@ class ViewportScriptUpdater:
                 except Exception as exc:
                     instances.remove((path, module))
                     self.emit({
-                        "type": "script_log", "level": "ERROR",
+                        "type": "runtime_log", "level": "ERROR",
                         "message": f"{name}:{path}: {exc}",
                     })
             self._apply_jump(name, obj, velocities_y, grounded)

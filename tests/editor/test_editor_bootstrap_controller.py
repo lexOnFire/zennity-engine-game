@@ -22,7 +22,7 @@ def test_viewport_handler_map_is_complete(tmp_path: Path) -> None:
         _handle_scene_snapshot_event=handler,
         _handle_runtime_objects_event=handler,
         _handle_viewport_mode_event=handler,
-        _handle_script_log_event=handler,
+        _handle_runtime_log_event=handler,
         _handle_logic_trace_event=handler,
         _handle_animator_state_event=handler,
         _handle_animation_event=handler,
@@ -32,7 +32,7 @@ def test_viewport_handler_map_is_complete(tmp_path: Path) -> None:
 
     assert set(handlers) == {
         "selected", "transform_begin", "transform_end", "transform", "play_state",
-        "scene_snapshot", "runtime_objects", "viewport_mode", "script_log",
+        "scene_snapshot", "runtime_objects", "viewport_mode", "runtime_log",
         "logic_trace", "logic_trace_clear", "animator_state", "animation_event",
         "stats",
     }

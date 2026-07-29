@@ -71,7 +71,7 @@ class ViewportRuntimeInitializer:
         self.start_spawned_objects()
         loaded = sum(len(entries) for entries in self.logic_runtimes.values())
         self.emit({
-            "type": "script_log", "level": "INFO",
+            "type": "runtime_log", "level": "INFO",
             "message": f"Play Mode carregou {loaded} Logic Graph(s); scripts Python estão desativados",
         })
 
@@ -124,7 +124,7 @@ class ViewportRuntimeInitializer:
         for hydrator in self.hydrators:
             for level, object_name, message in hydrator(selected, self.project_root):
                 self.emit({
-                    "type": "script_log", "level": level,
+                    "type": "runtime_log", "level": level,
                     "message": f"{object_name}: {message}",
                 })
 
@@ -161,6 +161,6 @@ class ViewportRuntimeInitializer:
                 self.logic_runtimes.setdefault(name, []).append((path, runtime))
             except Exception as exc:
                 self.emit({
-                    "type": "script_log", "level": "ERROR",
+                    "type": "runtime_log", "level": "ERROR",
                     "message": f"{name}: Logic Graph: {exc}",
                 })

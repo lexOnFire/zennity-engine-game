@@ -23,7 +23,7 @@ class PlayAnimatorAPI:
         self._obj = obj
 
     def _send(self, command: str, value: Any) -> None:
-        self._obj.setdefault("script_instructions", []).append({"command": command, "value": value})
+        self._obj.setdefault("logic_events", []).append({"command": command, "value": value})
 
     def play(self, state: str) -> None:
         self._send("animator_play", str(state))
@@ -299,7 +299,7 @@ class PlayScriptAPI:
         return math.hypot(other.x - self.x, other.y - self.y)
 
     def play_animation(self, clip_name: str) -> None:
-        self.obj.setdefault("script_instructions", []).append({"command": "play_animation", "value": clip_name})
+        self.obj.setdefault("logic_events", []).append({"command": "play_animation", "value": clip_name})
 
     def play_animation_asset(self, asset_path: str) -> None:
         """Carrega e inicia um ``.zanim`` durante o Play Mode."""
@@ -319,14 +319,14 @@ class PlayScriptAPI:
         self.obj["_animation_raw_frame"] = -1
 
     def stop_animation(self) -> None:
-        self.obj.setdefault("script_instructions", []).append({"command": "stop_animation", "value": None})
+        self.obj.setdefault("logic_events", []).append({"command": "stop_animation", "value": None})
 
     @property
     def current_animation(self) -> str:
         return str(self.obj.get("_current_animation_name", "Nenhum"))
 
     def play_sound(self, sound_path: str) -> None:
-        self.obj.setdefault("script_instructions", []).append({"command": "play_sound", "value": str(sound_path)})
+        self.obj.setdefault("logic_events", []).append({"command": "play_sound", "value": str(sound_path)})
 
     def set_sprite(self, image_path: str) -> None:
         """Troca a textura principal do objeto sem recriá-lo."""
@@ -374,7 +374,7 @@ class PlayScriptAPI:
             state["offset_y"] = 0.0
 
     def send(self, command: str, value: Any = None) -> None:
-        self.obj.setdefault("script_instructions", []).append({"command": str(command), "value": value})
+        self.obj.setdefault("logic_events", []).append({"command": str(command), "value": value})
 
     def set_hud(
         self,
@@ -406,7 +406,7 @@ class PlayScriptAPI:
         self.runtime_world.destroy_object(self.obj)
 
     def log(self, message: str) -> None:
-        _send(self._events, {"type": "script_log", "level": "INFO", "message": f"{self.name}: {message}"})
+        _send(self._events, {"type": "runtime_log", "level": "INFO", "message": f"{self.name}: {message}"})
 
 
 def _send(events: Any, payload: dict[str, Any]) -> None:

@@ -79,7 +79,7 @@ class ViewportAnimationUpdater:
                     try:
                         hook(api, str(event.get("name", "")))
                     except Exception as exc:
-                        self.emit({"type": "script_log", "level": "ERROR", "message": f"{object_name}:{path}:on_animation_event: {exc}"})
+                        self.emit({"type": "runtime_log", "level": "ERROR", "message": f"{object_name}:{path}:on_animation_event: {exc}"})
                 self.emit({"type": "animation_event", "name": object_name, "state": name,
                            "event": str(event.get("name", "")), "frame": frame, "payload": event.get("payload")})
         obj["_animation_time"], obj["_animation_frame"], obj["_animation_raw_frame"] = result.elapsed, result.frame, result.raw_frame

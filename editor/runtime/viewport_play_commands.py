@@ -162,7 +162,7 @@ class ViewportPlayCommandHandler:
                     self._emit_trace(object_name, graph_path, runtime)
                 except Exception as exc:
                     self._emit_trace(object_name, graph_path, runtime, exc)
-                    self.emit({"type": "script_log", "level": "ERROR", "message": f"{object_name}:{graph_path}: {exc}"})
+                    self.emit({"type": "runtime_log", "level": "ERROR", "message": f"{object_name}:{graph_path}: {exc}"})
             state.paused = True
             self.pause_audio(True)
         elif action == "restart" and matched:

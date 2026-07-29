@@ -52,7 +52,7 @@ class ViewportSessionOrchestrator:
                 except Exception as exc:
                     self._emit_trace(name, graph_path, runtime, exc)
                     runtimes.remove((graph_path, runtime))
-                    self.emit({"type": "script_log", "level": "ERROR", "message": f"{name}:{graph_path}: {exc}"})
+                    self.emit({"type": "runtime_log", "level": "ERROR", "message": f"{name}:{graph_path}: {exc}"})
             restart_requested = self._apply_logic_instructions(name, obj) or restart_requested
             self._apply_jump(name, obj, velocities_y, grounded)
         if trace_due:
@@ -77,10 +77,10 @@ class ViewportSessionOrchestrator:
                 if isinstance(behavior, dict):
                     behavior["parameters"] = dict(runner.parameters)
                 if changed:
-                    self.emit({"type": "script_log", "level": "INFO", "message": f"{name}: Behavior {previous} → {runner.current_state}"})
+                    self.emit({"type": "runtime_log", "level": "INFO", "message": f"{name}: Behavior {previous} → {runner.current_state}"})
             except Exception as exc:
                 self.behavior_runners.pop(name, None)
-                self.emit({"type": "script_log", "level": "ERROR", "message": f"{name}: Behavior Controller: {exc}"})
+                self.emit({"type": "runtime_log", "level": "ERROR", "message": f"{name}: Behavior Controller: {exc}"})
 
     def finish_frame(self, delta_time: float, velocities_y: dict[str, float], grounded: dict[str, bool]) -> None:
         for api in self.script_apis.values():
@@ -104,7 +104,7 @@ class ViewportSessionOrchestrator:
 
     def _apply_logic_instructions(self, name: str, obj: dict[str, Any]) -> bool:
         restart = False
-        for instruction in obj.pop("script_instructions", []):
+        for instruction in obj.pop("logic_events", []):
             if not isinstance(instruction, dict):
                 continue
             command, value = instruction.get("command"), instruction.get("value")

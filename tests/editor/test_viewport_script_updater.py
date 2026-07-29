@@ -26,7 +26,7 @@ class StubHud:
 
 def test_script_updater_applies_instructions_and_preserves_hook_order() -> None:
     calls: list[tuple] = []
-    obj = {"script_instructions": [
+    obj = {"logic_events": [
         {"command": "play_animation", "value": "Run"},
         {"command": "set_hud", "value": {"key": "score", "text": "1"}},
         {"command": "restart_scene"},

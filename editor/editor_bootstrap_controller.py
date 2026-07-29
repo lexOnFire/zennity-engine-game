@@ -130,7 +130,7 @@ class EditorBootstrapController:
             "scene_snapshot": h._handle_scene_snapshot_event,
             "runtime_objects": h._handle_runtime_objects_event,
             "viewport_mode": h._handle_viewport_mode_event,
-            "script_log": h._handle_script_log_event,
+            "runtime_log": h._handle_runtime_log_event,
             "logic_trace": h._handle_logic_trace_event,
             "logic_trace_clear": h._handle_logic_trace_event,
             "animator_state": h._handle_animator_state_event,

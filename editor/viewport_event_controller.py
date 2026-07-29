@@ -111,7 +111,7 @@ class ViewportEventController:
         state = "embutida" if message.get("embedded") else "em janela separada (fallback)"
         self.host.statusBar().showMessage(f"Viewport {state}")
 
-    def script_log(self, message: dict) -> None:
+    def runtime_log(self, message: dict) -> None:
         self.host._log(
             str(message.get("level", "INFO")), str(message.get("message", ""))
         )

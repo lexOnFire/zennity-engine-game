@@ -398,8 +398,8 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
     def _handle_viewport_mode_event(self, message: dict) -> None:
         self._viewport_event_controller.viewport_mode(message)
 
-    def _handle_script_log_event(self, message: dict) -> None:
-        self._viewport_event_controller.script_log(message)
+    def _handle_runtime_log_event(self, message: dict) -> None:
+        self._viewport_event_controller.runtime_log(message)
 
     def _handle_logic_trace_event(self, message: dict) -> None:
         self._viewport_event_controller.logic_trace(message)
