@@ -27,6 +27,7 @@ from editor.scene_history_controller import SceneHistoryController
 from editor.scene_object_controller import SceneObjectController
 from editor.scene_persistence import EditorScenePersistence
 from editor.script_workspace_controller import ScriptWorkspaceController
+from editor.controllers.tool_controller import ToolController
 from editor.viewport_event_controller import ViewportEventController
 
 
@@ -75,6 +76,7 @@ class EditorBootstrapController:
         h._prefab_workspace = PrefabWorkspaceController(h)
         h._scene_objects = SceneObjectController(h)
         h._editor_commands = EditorCommandController(h)
+        h._tool_controller = ToolController(h)
         h._project_workflow = ProjectWorkflowController(h)
         h._viewport_event_controller = ViewportEventController(h)
         h._play_controller = IsolatedPlayModeController()
@@ -91,7 +93,7 @@ class EditorBootstrapController:
         h.statusBar().showMessage("Zennity Phase 1 pronto — Viewport em processo dedicado.")
         h._editor_commands.connect_toolbar_actions()
         h._editor_commands.configure_main_menus()
-        h._editor_commands.configure_tools()
+        h._tool_controller.configure()
         h._configure_create_menu()
         h._connect_create_panel()
         h._configure_edit_menu()

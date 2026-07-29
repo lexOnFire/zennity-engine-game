@@ -49,6 +49,9 @@ The official editor entrypoint is `editor.phase1_main`.
 - Added `editor/editor_app/application.py` and `editor/editor_app/bootstrap.py`.
 - Made `editor/phase1_main.py` a thin official entrypoint.
 - Added `editor/services/shortcut_service.py`.
+- Added `editor/controllers/tool_controller.py`.
+- Moved tool activation out of `EditorCommandController`.
+- Connected Phase 1 tool activation to `EditorContext.tools`.
 - Standardized shortcuts:
   - `Q` select
   - `W` move

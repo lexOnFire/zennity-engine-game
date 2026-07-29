@@ -42,12 +42,16 @@ def test_standard_shortcuts_cover_phase1_migration_block() -> None:
     }
 
 
-def test_editor_command_controller_uses_shortcut_service() -> None:
-    source = _source("editor/editor_command_controller.py")
+def test_tool_controller_uses_shortcut_service_and_tool_manager() -> None:
+    source = _source("editor/controllers/tool_controller.py")
+    bootstrap = _source("editor/editor_bootstrap_controller.py")
     assert "ShortcutService(host)" in source
     assert "ShortcutService.STANDARD_BINDINGS" in source
-    assert '"viewport.focus_selected": focus_selected' in source
-    assert '"viewport.toggle_grid": toggle_grid' in source
+    assert "h.editor_context.tools.set_active_tool(next_tool)" in source
+    assert '"viewport.focus_selected": self.focus_selected' in source
+    assert '"viewport.toggle_grid": self.toggle_grid' in source
+    assert "h._tool_controller = ToolController(h)" in bootstrap
+    assert "h._tool_controller.configure()" in bootstrap
 
 
 def test_viewport_handles_focus_and_grid_commands() -> None:
