@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QLabel,
     QComboBox,
+    QLineEdit,
     QSplitter,
     QTreeWidget,
     QTreeWidgetItem,
@@ -69,6 +70,9 @@ class GenericGraphEditorWidget(QWidget):
 
         self.btn_validate = QPushButton("✔️ Validate", self)
         self.btn_validate.clicked.connect(self.validate_graph)
+        self.btn_starter = QPushButton("⚡ Estrutura inicial", self)
+        self.btn_starter.setToolTip("Adiciona os blocos essenciais deste tipo de grafo")
+        self.btn_starter.clicked.connect(self.create_starter_graph)
         self.btn_new = QPushButton("＋ Novo", self)
         self.btn_open = QPushButton("📂 Abrir", self)
         self.btn_save = QPushButton("💾 Salvar", self)
@@ -80,11 +84,23 @@ class GenericGraphEditorWidget(QWidget):
         toolbar.addStretch(1)
         toolbar.addWidget(self.btn_auto_layout)
         toolbar.addWidget(self.btn_validate)
+        toolbar.addWidget(self.btn_starter)
         toolbar.addWidget(self.btn_zoom_fit)
         toolbar.addWidget(self.btn_new)
         toolbar.addWidget(self.btn_open)
         toolbar.addWidget(self.btn_save)
         layout.addLayout(toolbar)
+        utility_bar = QHBoxLayout()
+        self.search_edit = QLineEdit(self)
+        self.search_edit.setPlaceholderText(
+            f"Pesquisar blocos de {graph_category_filter}..."
+        )
+        self.search_edit.textChanged.connect(self.populate_node_palette)
+        self.document_status = QLabel("Novo documento • sem alterações", self)
+        self.document_status.setStyleSheet("color: #7f8ca3;")
+        utility_bar.addWidget(self.search_edit, 1)
+        utility_bar.addWidget(self.document_status)
+        layout.addLayout(utility_bar)
 
         # ── Splitter Principal: Paleta | Canvas | Inspector ────────────────
         # Outer splitter: (Paleta + Canvas) | Inspector
@@ -150,13 +166,10 @@ class GenericGraphEditorWidget(QWidget):
             tags = [t.lower() for t in getattr(ndef, "tags", [])]
 
             # Filtro por tipo de editor
-            is_matching_category = (
-                not self.category_filter
-                or (self.category_filter.lower() in cat.lower())
-                or cat.lower() in [
-                    "events", "flow", "variables", "movement", "physics",
-                    "math", "ai", "animation", "audio", "objects", "ui", "transform",
-                ]
+            requested = self.category_filter.casefold()
+            category = str(cat).casefold()
+            is_matching_category = not requested or (
+                category == requested or category.startswith(f"{requested}/")
             )
 
             if is_matching_category:
@@ -211,7 +224,47 @@ class GenericGraphEditorWidget(QWidget):
         val_service = context.services.get_optional(GraphValidationService)
         if not val_service:
             return []
-        return val_service.validate_graph([], [])
+        data = self.canvas.graph_data()
+        connections = [
+            {
+                **edge,
+                "from_node": edge.get("source_node", ""),
+                "to_node": edge.get("target_node", ""),
+            }
+            for edge in data["edges"]
+        ]
+        errors = val_service.validate_graph(data["nodes"], connections)
+        if errors:
+            self.document_status.setText(
+                f"Validação • {len(errors)} problema(s) encontrado(s)"
+            )
+            self.document_status.setToolTip(
+                "\n".join(str(error) for error in errors)
+            )
+        else:
+            self.document_status.setText("Validação • grafo pronto")
+            self.document_status.setToolTip("")
+        return errors
+
+    def create_starter_graph(self) -> None:
+        """Create a useful editable baseline for the active graph domain."""
+        starters = {
+            "behavior tree": ("bt.sequence", "bt.wait"),
+            "dialogue": ("dialogue.speech", "dialogue.end"),
+            "material": ("material.color_constant", "material.pbr_output"),
+            "animation": ("animation.parameter", "animation.state"),
+        }
+        node_ids = starters.get(self.category_filter.casefold(), ())
+        if not node_ids or self.canvas.scene.nodes:
+            self.document_status.setText(
+                "Estrutura inicial disponível somente em documento vazio"
+            )
+            return
+        for index, node_id in enumerate(node_ids):
+            self.canvas._spawn_pos = QPointF(80 + index * 300, 120)
+            self.canvas._spawn_node(node_id)
+        self.auto_layout()
+        self._mark_dirty()
 
     # ── Clipboard ──────────────────────────────────────────────────────────
     def copy_selection(self) -> None:
@@ -251,6 +304,7 @@ class GenericGraphEditorWidget(QWidget):
         self.canvas.new_document()
         self.current_path = None
         self.is_dirty = False
+        self.document_status.setText("Novo documento • sem alterações")
         self.document_changed.emit(None)
 
     def graph_data(self) -> dict[str, Any]:
@@ -276,6 +330,7 @@ class GenericGraphEditorWidget(QWidget):
         self.current_path = source.resolve()
         self.canvas.current_path = self.current_path
         self.is_dirty = False
+        self.document_status.setText(f"Aberto • {self.current_path.name}")
         self.document_changed.emit(self.current_path)
         return True
 
@@ -314,8 +369,11 @@ class GenericGraphEditorWidget(QWidget):
         self.current_path = path.resolve()
         self.canvas.current_path = self.current_path
         self.is_dirty = False
+        self.document_status.setText(f"Salvo • {self.current_path.name}")
         self.document_changed.emit(self.current_path)
         return True
 
     def _mark_dirty(self) -> None:
         self.is_dirty = True
+        name = self.current_path.name if self.current_path else "novo documento"
+        self.document_status.setText(f"Editando • {name}")

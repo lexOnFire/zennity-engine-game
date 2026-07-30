@@ -3,7 +3,7 @@ import json
 from PySide6.QtWidgets import QApplication
 
 from editor.ui_builder.ui_builder_dock import UIBuilderDock
-from engine.ui.runtime import UIButton, UIContainer, UILabel, widget_from_dict
+from engine.ui.runtime import UIButton, UIContainer, UIImage, UILabel, widget_from_dict
 
 
 def _app():
@@ -57,3 +57,28 @@ def test_builder_add_edit_duplicate_delete_and_persist(tmp_path):
     restored = UIBuilderDock(project_root=tmp_path)
     assert restored.load_document(path)
     assert restored.preview_canvas.canvas_runtime.children[0].children[0].text == "Zennity"
+
+
+def test_ui_image_uses_project_asset_picker(tmp_path, monkeypatch):
+    _app()
+    dock = UIBuilderDock(project_root=tmp_path)
+    image = UIImage("Logo")
+    dock.add_widget(image)
+
+    class _Picker:
+        selected_path = "Assets/Images/logo.png"
+
+        def __init__(self, project_root, kind, parent):
+            assert project_root == tmp_path.resolve()
+            assert kind == "image"
+
+        def exec(self):
+            return True
+
+    monkeypatch.setattr(
+        "editor.ui_builder.ui_builder_dock.LogicAssetPickerDialog", _Picker
+    )
+    dock.choose_image_asset()
+
+    assert dock.txt_asset.isReadOnly()
+    assert image.texture_path == "Assets/Images/logo.png"

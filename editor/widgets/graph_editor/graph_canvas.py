@@ -253,9 +253,35 @@ class GraphCanvas(QGraphicsView):
             super().keyPressEvent(event)
 
     # ── Node Spawning ──────────────────────────────────────────────────────────
-    def _spawn_node(self, node_def_id: str) -> None:
+    @staticmethod
+    def _node_definition(node_def_id: str):
+        """Resolve nodes from the canonical metadata catalog with legacy fallback."""
         from engine.graphs.registry import GraphRegistry
-        node_def = GraphRegistry.get_node(node_def_id)
+
+        definition = GraphRegistry.get_node(node_def_id)
+        if definition is not None:
+            return definition
+        from engine.core.context import EngineContext
+        from engine.core.metadata import NodeDefinition
+        from engine.metadata.manager import MetadataManager
+
+        context = EngineContext.current()
+        manager = (
+            context.services.get_optional(MetadataManager)
+            if context is not None else None
+        )
+        if manager is None:
+            return None
+        return next(
+            (
+                item for item in manager.get_all(NodeDefinition)
+                if str(item.id) == str(node_def_id)
+            ),
+            None,
+        )
+
+    def _spawn_node(self, node_def_id: str) -> None:
+        node_def = self._node_definition(node_def_id)
         if not node_def:
             return
 
@@ -298,10 +324,8 @@ class GraphCanvas(QGraphicsView):
         if not data:
             return
 
-        from engine.graphs.registry import GraphRegistry
-
         for n_data in data.get("nodes", []):
-            node_def = GraphRegistry.get_node(n_data["type"])
+            node_def = self._node_definition(n_data["type"])
             if node_def:
                 item = GraphNodeItem(node_def, dict(n_data))
                 self.scene.add_node(item)

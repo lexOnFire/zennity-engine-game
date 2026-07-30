@@ -140,6 +140,11 @@ class ViewportEventController:
                 fps=float(message.get("fps", 0.0)),
                 object_count=int(message.get("objects", 0)),
             )
+            dock.update_runtime_stats(
+                fps=float(message.get("fps", 0.0)),
+                object_count=int(message.get("objects", 0)),
+                frame_ms=message.get("frame_ms"),
+            )
         command_stats = h._commands.stats()
         h.profiler_label.setText(
             f"FPS: {message.get('fps', 0):.0f}\n"

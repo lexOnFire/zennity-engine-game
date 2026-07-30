@@ -8,6 +8,7 @@ Implementa o layout profissional completo de 4 áreas + Mini Live Viewport:
   - Painel Inferior com Mini Live Viewport (Preview de Runtime em Tempo Real) & Watch Variables.
 """
 from __future__ import annotations
+from pathlib import Path
 from typing import Optional
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
@@ -17,6 +18,7 @@ from PySide6.QtWidgets import (
 
 from editor.widgets.logic_graph_editor import LogicGraphEditor
 from editor.widgets.generic_graph_editor import GenericGraphEditorWidget
+from editor.ui_builder.ui_builder_dock import UIBuilderDock
 from editor.visual_scripting.mini_live_viewport import (
     MiniLiveViewportWidget,
     ViewportMode,
@@ -158,7 +160,10 @@ class VisualScriptingEditorDock(QMainWindow):
         # Visual Profiler Tab (Fase 9)
         self.profiler_text = QTextEdit(self.watches_tabs)
         self.profiler_text.setReadOnly(True)
-        self.profiler_text.setText("📊 Visual Profiler AAA\n• Physics: 1.2ms\n• Scripts: 2.4ms\n• Animation: 0.8ms\n• Render: 3.1ms")
+        self.profiler_text.setText(
+            "📊 Visual Profiler\nAguardando dados da execução.\n"
+            "Pressione Play para acompanhar FPS, objetos e custo do frame."
+        )
         self.profiler_text.setStyleSheet("background-color: #0d1117; color: #7ee787; font-family: Consolas; font-size: 10px;")
         self.watches_tabs.addTab(self.profiler_text, "📊 Visual Profiler")
 
@@ -178,10 +183,13 @@ class VisualScriptingEditorDock(QMainWindow):
         self.dialogue_graph_editor = self._new_specialized_graph("Dialogue")
         self.material_graph_editor = self._new_specialized_graph("Material")
         self.animator_graph_editor = self._new_specialized_graph("Animation")
+        self.ui_builder = UIBuilderDock(self, project_root=Path.cwd())
+        self.ui_builder.setFeatures(UIBuilderDock.NoDockWidgetFeatures)
         self.graph_mode_tabs.addTab(self.behavior_tree_editor, "Behavior Tree")
         self.graph_mode_tabs.addTab(self.dialogue_graph_editor, "Dialogue")
         self.graph_mode_tabs.addTab(self.material_graph_editor, "Material")
         self.graph_mode_tabs.addTab(self.animator_graph_editor, "Animator Graph")
+        self.graph_mode_tabs.addTab(self.ui_builder, "UI & HUD")
         self._graph_tool_adapters = {
             "behavior_tree": _GraphToolAdapter(self, "behavior_tree", self.behavior_tree_editor),
             "dialogue": _GraphToolAdapter(self, "dialogue", self.dialogue_graph_editor),
@@ -223,7 +231,12 @@ class VisualScriptingEditorDock(QMainWindow):
         ):
             button.setEnabled(logic_mode)
         self.search_bar.setEnabled(logic_mode)
-        labels = ("LOGIC GRAPH", "BEHAVIOR TREE", "DIALOGUE", "MATERIAL", "ANIMATOR GRAPH")
+        self.btn_auto_layout.setEnabled(index != 5)
+        self.btn_validate.setEnabled(index != 5)
+        labels = (
+            "LOGIC GRAPH", "BEHAVIOR TREE", "DIALOGUE", "MATERIAL",
+            "ANIMATOR GRAPH", "UI & HUD",
+        )
         self.document_label.setText(labels[index] if 0 <= index < len(labels) else "GRAPH")
 
     def open_graph_tool(self, tool_id: str) -> None:
@@ -235,6 +248,7 @@ class VisualScriptingEditorDock(QMainWindow):
             "dialogue": 2,
             "material_graph": 3,
             "animator_graph": 4,
+            "ui": 5,
         }
         self.graph_mode_tabs.setCurrentIndex(indexes.get(tool_id, 0))
         self.show()
@@ -451,11 +465,53 @@ class VisualScriptingEditorDock(QMainWindow):
         self.btn_new.clicked.connect(self._new_for_active_object)
         self.btn_open.clicked.connect(self.graph_editor.open_dialog)
         self.btn_save.clicked.connect(self.graph_editor.save)
-        self.btn_auto_layout.clicked.connect(self.graph_editor.organize_graph)
-        self.btn_validate.clicked.connect(self._validate)
+        self.btn_auto_layout.clicked.connect(self._auto_layout_active)
+        self.btn_validate.clicked.connect(self._validate_active)
         self.btn_explain.clicked.connect(self.trigger_explain_mode)
         self.search_bar.textChanged.connect(self.graph_editor.node_search.setText)
         self.graph_editor.asset_changed.connect(self.sync_from_host)
+
+    def _active_graph_editor(self):
+        index = self.graph_mode_tabs.currentIndex()
+        if index == 0:
+            return self.graph_editor
+        if 1 <= index <= 4:
+            return self.graph_mode_tabs.widget(index)
+        return None
+
+    def _auto_layout_active(self) -> None:
+        editor = self._active_graph_editor()
+        if editor is None:
+            return
+        callback = getattr(editor, "organize_graph", None) or getattr(
+            editor, "auto_layout", None
+        )
+        if callback is not None:
+            callback()
+
+    def _validate_active(self) -> None:
+        editor = self._active_graph_editor()
+        if editor is self.graph_editor:
+            self._validate()
+        elif editor is not None:
+            editor.validate_graph()
+
+    def update_runtime_stats(
+        self, *, fps: float, object_count: int, frame_ms: float | None = None
+    ) -> None:
+        """Display live measurements instead of placeholder profiler values."""
+        milliseconds = (
+            float(frame_ms) if frame_ms is not None
+            else (1000.0 / fps if fps > 0 else 0.0)
+        )
+        budget = "OK" if milliseconds <= 16.67 else "ACIMA DO ORÇAMENTO"
+        self.profiler_text.setText(
+            "📊 Visual Profiler — dados ao vivo\n"
+            f"• FPS: {fps:.1f}\n"
+            f"• Frame: {milliseconds:.2f} ms ({budget})\n"
+            f"• Objetos ativos: {object_count}\n"
+            f"• Meta: 60 FPS / 16.67 ms"
+        )
 
     def _new_for_active_object(self) -> None:
         """Create a blank graph already bound to the selected scene object."""

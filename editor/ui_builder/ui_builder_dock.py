@@ -18,6 +18,7 @@ from engine.ui.runtime import (
     UIButton, UICanvas, UIContainer, UIImage, UIInput, UILabel, UIPanel,
     UIScrollView, UIWidget, widget_from_dict,
 )
+from editor.widgets.logic_asset_picker import LogicAssetPickerDialog
 
 
 class UICanvasPreviewWidget(QWidget):
@@ -172,6 +173,15 @@ class UIBuilderDock(QDockWidget):
             spin.setRange(0, 8192)
         self.txt_text = QLineEdit(self)
         self.txt_asset = QLineEdit(self)
+        self.txt_asset.setReadOnly(True)
+        self.txt_asset.setPlaceholderText("Nenhuma imagem selecionada")
+        self.btn_asset = QPushButton("Selecionar...", self)
+        self.btn_asset.clicked.connect(self.choose_image_asset)
+        asset_row = QWidget(self)
+        asset_layout = QHBoxLayout(asset_row)
+        asset_layout.setContentsMargins(0, 0, 0, 0)
+        asset_layout.addWidget(self.txt_asset, 1)
+        asset_layout.addWidget(self.btn_asset)
         self.check_visible = QCheckBox("Visível", self)
         self.check_visible.setChecked(True)
         self.combo_layout = QComboBox(self)
@@ -182,7 +192,7 @@ class UIBuilderDock(QDockWidget):
         form.addRow("Largura", self.spin_width)
         form.addRow("Altura", self.spin_height)
         form.addRow("Texto", self.txt_text)
-        form.addRow("Asset", self.txt_asset)
+        form.addRow("Imagem", asset_row)
         form.addRow("Layout", self.combo_layout)
         form.addRow(self.check_visible)
         splitter.addWidget(self.tree_hierarchy)
@@ -246,9 +256,12 @@ class UIBuilderDock(QDockWidget):
         for control in (
             self.txt_name, self.spin_x, self.spin_y, self.spin_width, self.spin_height,
             self.txt_text, self.txt_asset, self.combo_layout, self.check_visible,
-            self.btn_duplicate, self.btn_delete,
+            self.btn_asset, self.btn_duplicate, self.btn_delete,
         ):
             control.setEnabled(enabled)
+        image_enabled = isinstance(widget, UIImage)
+        self.txt_asset.setEnabled(image_enabled)
+        self.btn_asset.setEnabled(image_enabled)
         if widget is not None:
             self.txt_name.setText(widget.name)
             self.spin_x.setValue(int(widget.x))
@@ -261,6 +274,15 @@ class UIBuilderDock(QDockWidget):
             self.combo_layout.setCurrentText(str(getattr(widget, "layout_mode", "Free")))
         self._updating_inspector = False
         self.preview_canvas.update()
+
+    def choose_image_asset(self) -> None:
+        widget = self.preview_canvas.selected_widget
+        if not isinstance(widget, UIImage):
+            return
+        picker = LogicAssetPickerDialog(self.project_root, "image", self)
+        if picker.exec() and picker.selected_path:
+            self.txt_asset.setText(picker.selected_path)
+            self.apply_inspector()
 
     def _tree_selection_changed(self) -> None:
         items = self.tree_hierarchy.selectedItems()
