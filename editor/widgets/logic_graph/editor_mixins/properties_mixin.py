@@ -232,6 +232,10 @@ class LogicGraphPropertiesMixin:
             "create_prefab": "prefab",
             "play_animation_asset": "animation",
             "play_sound": "audio",
+            "add_sprite_renderer": "image",
+            "add_animator": "animation",
+            "add_audio_source": "audio",
+            "add_ui_image": "image",
         }.get(str(node_type))
 
     def _choose_selected_node_asset(self) -> None:
@@ -246,6 +250,8 @@ class LogicGraphPropertiesMixin:
         if not picker.exec() or not picker.selected_path:
             return
         property_name = "texture" if str(node.get("type", "")) == "create_object" else "path"
+        if str(node.get("type", "")) == "add_sprite_renderer":
+            property_name = "texture"
         node.setdefault("properties", {})[property_name] = picker.selected_path
         if str(node.get("type", "")) == "create_prefab":
             self._sync_prefab_node_interface(node)

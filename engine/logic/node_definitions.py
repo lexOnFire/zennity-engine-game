@@ -465,6 +465,108 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
 # Definitions retained from the pre-extraction public catalog.  Keeping them
 # here makes the declarative module the single source of truth.
 NODE_DEFINITIONS.update({
+    "add_sprite_renderer": {
+        "title": "Adicionar Sprite Renderer",
+        "category": "Components",
+        "inputs": [("in", "flow"), ("target", "object")],
+        "outputs": [("next", "flow")],
+        "properties": {
+            "texture": "", "color": "#ffffff",
+            "render_layer": "Default", "sort_order": 0,
+        },
+    },
+    "add_animator": {
+        "title": "Adicionar Animator 2D",
+        "category": "Components",
+        "inputs": [("in", "flow"), ("target", "object")],
+        "outputs": [("next", "flow")],
+        "properties": {"path": "", "speed": 1.0, "loop": True},
+    },
+    "add_rigidbody": {
+        "title": "Adicionar RigidBody 2D",
+        "category": "Components",
+        "inputs": [("in", "flow"), ("target", "object")],
+        "outputs": [("next", "flow")],
+        "properties": {
+            "mass": 1.0, "gravity_scale": 1.0,
+            "use_gravity": True, "is_kinematic": False,
+        },
+    },
+    "add_box_collider": {
+        "title": "Adicionar Box Collider",
+        "category": "Components",
+        "inputs": [("in", "flow"), ("target", "object")],
+        "outputs": [("next", "flow")],
+        "properties": {
+            "width": 32.0, "height": 32.0,
+            "offset_x": 0.0, "offset_y": 0.0, "is_trigger": False,
+        },
+    },
+    "add_circle_collider": {
+        "title": "Adicionar Circle Collider",
+        "category": "Components",
+        "inputs": [("in", "flow"), ("target", "object")],
+        "outputs": [("next", "flow")],
+        "properties": {
+            "radius": 16.0, "offset_x": 0.0,
+            "offset_y": 0.0, "is_trigger": False,
+        },
+    },
+    "add_camera": {
+        "title": "Adicionar Camera 2D",
+        "category": "Components",
+        "inputs": [("in", "flow"), ("target", "object")],
+        "outputs": [("next", "flow")],
+        "properties": {
+            "active": True, "zoom": 1.0, "width": 1280.0,
+            "height": 720.0, "background_color": [22, 24, 31],
+            "follow_target": "",
+        },
+    },
+    "add_audio_source": {
+        "title": "Adicionar Audio Source",
+        "category": "Components",
+        "inputs": [("in", "flow"), ("target", "object")],
+        "outputs": [("next", "flow")],
+        "properties": {
+            "path": "", "volume": 1.0,
+            "loop": False, "autoplay": False,
+        },
+    },
+    "add_ui_canvas": {
+        "title": "Adicionar Canvas",
+        "category": "Components",
+        "inputs": [("in", "flow"), ("target", "object")],
+        "outputs": [("next", "flow")],
+        "properties": {"visible": True},
+    },
+    "add_ui_text": {
+        "title": "Adicionar UI Text",
+        "category": "Components",
+        "inputs": [("in", "flow"), ("target", "object")],
+        "outputs": [("next", "flow")],
+        "properties": {
+            "text": "Text", "font_size": 24,
+            "color": "#ffffff", "visible": True,
+        },
+    },
+    "add_ui_image": {
+        "title": "Adicionar UI Image",
+        "category": "Components",
+        "inputs": [("in", "flow"), ("target", "object")],
+        "outputs": [("next", "flow")],
+        "properties": {"path": "", "color": "#ffffff", "visible": True},
+    },
+    "add_ui_button": {
+        "title": "Adicionar UI Button",
+        "category": "Components",
+        "inputs": [("in", "flow"), ("target", "object")],
+        "outputs": [("next", "flow")],
+        "properties": {
+            "text": "Button", "event": "button_clicked",
+            "color": "#4c9aff", "visible": True, "interactable": True,
+        },
+    },
     "create_object": {"title": "Create Object", "category": "Objects", "properties": {
         "name": "NewObject", "x": 0.0, "y": 0.0, "width": 64.0, "height": 64.0,
         "color": "#58a6ff", "texture": "", "tag": "Untagged", "relative": False,

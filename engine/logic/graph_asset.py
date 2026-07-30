@@ -218,7 +218,11 @@ def node_port_definitions(node_type: str | Mapping[str, Any]) -> dict[str, list[
     type_name = str(node.get("type", "")) if node is not None else str(node_type)
     definition = NODE_PORT_DEFINITIONS.get(type_name)
     if definition is None:
-        return {"inputs": [("in", "flow")], "outputs": [("next", "flow")]}
+        declarative = NODE_DEFINITIONS.get(type_name, {})
+        definition = {
+            "inputs": list(declarative.get("inputs", [("in", "flow")])),
+            "outputs": list(declarative.get("outputs", [("next", "flow")])),
+        }
     ports = {
         "inputs": list(definition.get("inputs", [])),
         "outputs": list(definition.get("outputs", [])),

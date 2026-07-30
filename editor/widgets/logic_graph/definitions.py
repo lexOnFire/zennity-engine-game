@@ -32,6 +32,7 @@ CATEGORY_COLORS = {
     "Logic": QColor("#f0a64b"),
     "Condition": QColor("#50c878"),
     "Objects": QColor("#47b8c8"),
+    "Components": QColor("#ff9f43"),
     "Variables": QColor("#d5b84b"),
     "Subgraphs": QColor("#b48ead"),
     "Math": QColor("#e07a5f"),
