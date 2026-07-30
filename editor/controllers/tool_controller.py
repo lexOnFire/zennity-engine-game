@@ -29,6 +29,7 @@ class ToolController:
         group.setExclusive(True)
         h._tool_actions = {}
         h._tool_shortcuts = []
+        action_bound_commands: set[str] = set()
 
         for action in h.findChildren(QAction):
             label = action.toolTip() if action.toolTip() else action.text()
@@ -40,14 +41,20 @@ class ToolController:
             action.setChecked(tool == h.editor_context.tools.active_tool)
             group.addAction(action)
             h._tool_actions[tool.value] = action
+            action_bound_commands.add(f"tool.{tool.value}")
             action.triggered.connect(
                 lambda checked=False, next_tool=tool: checked
                 and self.activate_tool(next_tool)
             )
 
         h.editor_context.tools.subscribe(self._sync_tool_action)
+        fallback_bindings = (
+            binding
+            for binding in ShortcutService.STANDARD_BINDINGS
+            if binding.command_id not in action_bound_commands
+        )
         self.shortcut_service.register(
-            ShortcutService.STANDARD_BINDINGS,
+            fallback_bindings,
             {
                 "tool.select": lambda: self.activate_tool(EditorTool.SELECT),
                 "tool.move": lambda: self.activate_tool(EditorTool.MOVE),
