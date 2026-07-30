@@ -45,6 +45,7 @@ CATEGORY_COLORS = {
     "Condition": QColor("#42e68b"),
     "Objetos": QColor("#47b8c8"),
     "Objects": QColor("#34c8e8"),
+    "Components": QColor("#ff9f43"),
     "Variáveis": QColor("#d5b84b"),
     "Variables": QColor("#ffd84a"),
     "Subgrafos": QColor("#b48ead"),

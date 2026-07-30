@@ -450,6 +450,9 @@ class VisualScriptingEditorDock(QMainWindow):
         self.btn_save.clicked.connect(self.graph_editor.save)
         self.btn_auto_layout.clicked.connect(self.graph_editor.organize_graph)
         self.btn_validate.clicked.connect(self._validate)
+        self.btn_explain.clicked.connect(self.trigger_explain_mode)
+        self.search_bar.textChanged.connect(self.graph_editor.node_search.setText)
+        self.graph_editor.asset_changed.connect(self.sync_from_host)
 
     def _new_for_active_object(self) -> None:
         """Create a blank graph already bound to the selected scene object."""
@@ -461,9 +464,6 @@ class VisualScriptingEditorDock(QMainWindow):
             controller.create_blank_for_selected()
             return
         self.graph_editor.new_graph()
-        self.btn_explain.clicked.connect(self.trigger_explain_mode)
-        self.search_bar.textChanged.connect(self.graph_editor.node_search.setText)
-        self.graph_editor.asset_changed.connect(self.sync_from_host)
 
     def _open_initial_document(self) -> None:
         """Open the selected object's graph, or the most useful project graph."""

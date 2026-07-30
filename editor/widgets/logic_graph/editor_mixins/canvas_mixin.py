@@ -104,7 +104,8 @@ class LogicGraphCanvasMixin:
             return
         try:
             item.setSelected(False)
-            item.ungrabMouse()
+            if self.scene.mouseGrabberItem() is item:
+                item.ungrabMouse()
         except RuntimeError:
             pass
         try:
@@ -123,10 +124,17 @@ class LogicGraphCanvasMixin:
     def refresh_connections(self) -> None:
         if not hasattr(self, "scene"):
             return
-        for item in self.edge_items:
-            self._remove_scene_item(item)
-        self.edge_items.clear()
+        existing = {item.edge_id: item for item in self.edge_items}
+        active_ids = {
+            str(edge.get("id", "")) for edge in self.graph.get("edges", [])
+        }
+        for edge_id, item in tuple(existing.items()):
+            if edge_id not in active_ids:
+                self._remove_scene_item(item)
+                existing.pop(edge_id, None)
+        next_items: list[LogicEdgeItem] = []
         for edge in self.graph.get("edges", []):
+            edge_id = str(edge.get("id", ""))
             source = self.node_items.get(str(edge.get("from_node")))
             target = self.node_items.get(str(edge.get("to_node")))
             if source is None or target is None:
@@ -138,9 +146,16 @@ class LogicGraphCanvasMixin:
             path = self._connection_path(start, end)
             source_port = source.output_ports.get(from_port)
             data_type = source_port.data_type if source_port is not None else str(edge.get("kind", "flow"))
-            connection = LogicEdgeItem(path, str(edge.get("id")), data_type)
-            self.scene.addItem(connection)
-            self.edge_items.append(connection)
+            connection = existing.get(edge_id)
+            if connection is None or connection.data_type != data_type:
+                if connection is not None:
+                    self._remove_scene_item(connection)
+                connection = LogicEdgeItem(path, edge_id, data_type)
+                self.scene.addItem(connection)
+            else:
+                connection.setPath(path)
+            next_items.append(connection)
+        self.edge_items[:] = next_items
         fanout_counts: dict[str, int] = {}
         port_counts: dict[tuple[str, str], int] = {}
         for edge in self.graph.get("edges", []):

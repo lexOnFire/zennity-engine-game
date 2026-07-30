@@ -38,6 +38,34 @@ def test_logic_clipboard_preserves_internal_connections(tmp_path):
     assert len(editor.graph["edges"]) == 2
 
 
+def test_dragging_node_updates_edge_without_recreating_qgraphics_item(tmp_path):
+    _app()
+    editor = LogicGraphEditor(project_root=tmp_path)
+    first = create_logic_node("event_start", (10.0, 20.0))
+    second = create_logic_node("move_by", (280.0, 20.0))
+    editor.set_graph({
+        **editor.graph,
+        "nodes": [first, second],
+        "edges": [{
+            "id": "stable-edge",
+            "from_node": first["id"],
+            "from_port": "next",
+            "to_node": second["id"],
+            "to_port": "in",
+            "kind": "flow",
+        }],
+    })
+    edge_item = editor.edge_items[0]
+    original_path = edge_item.path()
+
+    for offset in range(1, 40):
+        editor.node_items[second["id"]].setPos(280.0 + offset, 20.0)
+
+    assert editor.edge_items == [edge_item]
+    assert edge_item.scene() is editor.scene
+    assert edge_item.path() != original_path
+
+
 def test_recovery_path_remains_a_loadable_zlogic_path(tmp_path):
     _app()
     editor = LogicGraphEditor(project_root=tmp_path)
