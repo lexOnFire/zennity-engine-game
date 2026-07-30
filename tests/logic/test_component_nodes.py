@@ -53,13 +53,14 @@ def test_runtime_world_applies_graph_components_to_viewport_schema() -> None:
 
     RuntimeWorld.add_component(
         obj, "SpriteRenderer",
-        {"texture": "Assets/player.png", "sort_order": 3},
+        {"texture": "Assets/player.png", "color": "#ff8040", "sort_order": 3},
     )
     RuntimeWorld.add_component(obj, "CircleCollider", {"radius": 12})
     RuntimeWorld.add_component(obj, "UIButton", {"text": "Play"})
 
     assert obj["renderer_enabled"] is False
     assert obj["texture"] == "Assets/player.png"
+    assert obj["color"] == (255, 128, 64)
     assert obj["sort_order"] == 3
     assert obj["collider"] == {"radius": 12, "type": "circle"}
     assert obj["ui"]["type"] == "button"

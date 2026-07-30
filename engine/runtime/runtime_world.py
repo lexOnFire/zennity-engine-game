@@ -329,7 +329,11 @@ class RuntimeWorld:
             obj["renderer_enabled"] = True
             for name in ("texture", "color", "render_layer", "sort_order"):
                 if name in values:
-                    obj[name] = values[name]
+                    obj[name] = (
+                        normalize_color(values[name])
+                        if name == "color"
+                        else values[name]
+                    )
             return
         if key in {"box_collider", "circlecollider", "circle_collider"}:
             values.setdefault(

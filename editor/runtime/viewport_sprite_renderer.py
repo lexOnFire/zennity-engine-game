@@ -5,6 +5,23 @@ from pathlib import Path
 from typing import Any, Callable
 
 
+def _safe_color(value: Any, fallback: tuple[int, int, int]) -> tuple[int, int, int]:
+    """Accept editor hex colors and sanitize legacy runtime snapshots."""
+    if isinstance(value, str):
+        raw = value.strip().lstrip("#")
+        if len(raw) in {6, 8}:
+            try:
+                return tuple(int(raw[index:index + 2], 16) for index in (0, 2, 4))
+            except ValueError:
+                pass
+    if isinstance(value, (list, tuple)) and len(value) >= 3:
+        try:
+            return tuple(max(0, min(255, int(channel))) for channel in value[:3])
+        except (TypeError, ValueError):
+            pass
+    return fallback
+
+
 class ViewportSpriteRenderer:
     LAYER_ORDER = {"Background": 0, "Default": 1, "Foreground": 2, "UI": 3}
 
@@ -42,17 +59,23 @@ class ViewportSpriteRenderer:
 
     def _surface_for(self, obj: dict[str, Any], width: int, height: int) -> Any:
         source, _clip = self._source_surface(obj)
+        color = _safe_color(obj.get("color"), (255, 255, 255))
         if source is not None:
             scroll = obj.get("_texture_scroll")
             if isinstance(scroll, dict):
                 return self.prepare_scrolling(
-                    source, (width, height), obj.get("color", (255, 255, 255)),
+                    source, (width, height), color,
                     offset_x=float(scroll.get("offset_x", 0.0)), offset_y=float(scroll.get("offset_y", 0.0)),
                     repeat_x=bool(scroll.get("repeat_x", False)), repeat_y=bool(scroll.get("repeat_y", True)),
                 )
-            return self.prepare_sprite(source, (width, height), obj.get("color", (255, 255, 255)))
+            return self.prepare_sprite(source, (width, height), color)
         surface = self.pygame.Surface((width, height), self.pygame.SRCALPHA)
-        self.pygame.draw.rect(surface, tuple(obj.get("color", (180, 180, 180))), surface.get_rect(), border_radius=4)
+        self.pygame.draw.rect(
+            surface,
+            _safe_color(obj.get("color"), (180, 180, 180)),
+            surface.get_rect(),
+            border_radius=4,
+        )
         return surface
 
     def _source_surface(self, obj: dict[str, Any]) -> tuple[Any | None, dict[str, Any] | None]:
