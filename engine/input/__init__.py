@@ -1,3 +1,5 @@
+"""Public input subsystem for the Zennity Engine."""
+
 import pygame
 from typing import Any, Tuple
 
