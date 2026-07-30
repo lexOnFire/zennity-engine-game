@@ -51,6 +51,7 @@ class VisualScriptingEditorDock(QMainWindow):
         self.setWindowTitle("⚡ Visual Scripting Editor 2.0")
         self.setObjectName("VisualScriptingEditorDock")
         self._host = parent
+        self._scene_workspace_signature: tuple[tuple[str, str], ...] = ()
 
         # Container Principal
         self.main_container = QWidget(self)
@@ -624,6 +625,49 @@ class VisualScriptingEditorDock(QMainWindow):
             )
         else:
             self.mini_viewport.unified_viewport.selected_object_id = ""
+        self._sync_scene_workspace()
+
+    def _sync_scene_workspace(self) -> None:
+        """Preload all visual documents declared by the active scene."""
+        document = getattr(self._host, "_scene_document", None)
+        workspace = (
+            document.get("visual_logic_workspace", {})
+            if isinstance(document, dict) else {}
+        )
+        if not isinstance(workspace, dict):
+            return
+        signature = tuple(
+            sorted((str(key), str(value)) for key, value in workspace.items())
+        )
+        if not signature or signature == self._scene_workspace_signature:
+            return
+        # Set before opening: LogicGraphEditor emits asset_changed synchronously.
+        self._scene_workspace_signature = signature
+        editors = {
+            "logic": self.graph_editor,
+            "behavior_tree": self.behavior_tree_editor,
+            "dialogue": self.dialogue_graph_editor,
+            "material": self.material_graph_editor,
+            "animator": self.animator_graph_editor,
+            "ui": self.ui_builder,
+        }
+        opened = 0
+        for key, editor in editors.items():
+            asset_value = workspace.get(key)
+            if not asset_value:
+                continue
+            path = Path(str(asset_value))
+            path = path if path.is_absolute() else Path.cwd() / path
+            callback = (
+                getattr(editor, "open_asset", None)
+                or getattr(editor, "load_document", None)
+            )
+            if callback is not None and path.is_file() and callback(path):
+                opened += 1
+        if opened:
+            self.runtime_logs_text.append(
+                f"[Workspace] {opened} documento(s) da cena carregado(s)."
+            )
 
     def set_object_context(
         self, object_name: str | None, graph_count: int = 0

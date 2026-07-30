@@ -8,6 +8,12 @@ from engine.core.bootstrap import EngineBootstrap
 from engine.logic.graph_asset import load_logic_graph, validate_logic_graph
 from engine.ui.runtime import UICanvas, widget_from_dict
 from editor.widgets.generic_graph_editor import GenericGraphEditorWidget
+from editor.scene_persistence import EditorScenePersistence
+from editor.runtime.viewport_asset_hydration import (
+    hydrate_animator_controllers,
+    hydrate_behavior_controllers,
+    hydrate_logic_graphs,
+)
 
 
 DEMO = Path("Assets/Demos/PortalStation")
@@ -18,6 +24,7 @@ def test_portal_station_demo_covers_every_visual_editor_tab() -> None:
         "PortalTerminal.zlogic", "StationDrone.zbehavior",
         "StationGuide.zdialogue", "PortalGlow.zmat",
         "PortalAnimator.zanimator", "PortalHUD.zui",
+        "PortalStation.zscene",
     }
     assert expected <= {path.name for path in DEMO.iterdir()}
 
@@ -51,6 +58,32 @@ def test_portal_station_ui_is_editable_ui_canvas() -> None:
     canvas = widget_from_dict(payload["canvas"])
     assert isinstance(canvas, UICanvas)
     assert canvas.children[0].children[-1].name == "ActivatePortal"
+
+
+def test_portal_station_scene_loads_as_one_runtime_ready_experience() -> None:
+    payload, snapshots, typed = EditorScenePersistence(Path.cwd()).load(
+        DEMO / "PortalStation.zscene"
+    )
+    objects = {item["name"]: item for item in snapshots}
+
+    assert typed
+    assert payload["visual_logic_workspace"].keys() == {
+        "logic", "behavior_tree", "dialogue", "material", "animator", "ui"
+    }
+    assert {"PortalCore", "PortalTerminal", "StationDrone", "PortalUICanvas"} <= objects.keys()
+    assert objects["PortalTerminal"]["logic_assets"] == [
+        "Assets/Demos/PortalStation/PortalTerminal.zlogic"
+    ]
+    assert objects["StationDrone"]["behavior"]["controller_path"].endswith(
+        "StationDroneRuntime.zbehavior"
+    )
+
+    assert hydrate_logic_graphs(objects, Path.cwd())
+    assert objects["PortalTerminal"]["logic_graphs"][0]["graph"]["name"] == "PortalTerminal"
+    assert hydrate_behavior_controllers(objects, Path.cwd())
+    assert objects["StationDrone"]["behavior"]["controller"]["initial_state"] == "Patrol"
+    assert hydrate_animator_controllers(objects, Path.cwd())
+    assert objects["PortalCore"]["animator"]["controller"]["initial_state"] == "Closed"
 
 
 @pytest.mark.parametrize(

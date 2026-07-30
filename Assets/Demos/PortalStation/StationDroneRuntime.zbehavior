@@ -1,0 +1,21 @@
+{
+  "format": "zennity.behavior_controller",
+  "version": 1,
+  "name": "StationDroneRuntime",
+  "initial_state": "Patrol",
+  "parameters": {
+    "portal_distance": {"type": "float", "default": 500.0},
+    "portal_active": {"type": "bool", "default": false}
+  },
+  "states": {
+    "Patrol": {"script": "", "enabled": true, "position": [40.0, 120.0]},
+    "Inspect": {"script": "", "enabled": true, "position": [280.0, 120.0]},
+    "Guard": {"script": "", "enabled": true, "position": [520.0, 120.0]}
+  },
+  "transitions": [
+    {"from": "Patrol", "to": "Inspect", "conditions": [{"parameter": "portal_distance", "operator": "<", "value": 240.0}], "priority": 5},
+    {"from": "Inspect", "to": "Guard", "conditions": [{"parameter": "portal_active", "operator": "==", "value": true}], "priority": 10},
+    {"from": "Inspect", "to": "Patrol", "conditions": [{"parameter": "portal_distance", "operator": ">=", "value": 240.0}], "priority": 1}
+  ]
+}
+

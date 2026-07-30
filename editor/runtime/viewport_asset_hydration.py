@@ -115,10 +115,37 @@ def hydrate_logic_graphs(
     results: list[tuple[str, str, str]] = []
     for obj in objects.values():
         obj.pop("logic_graphs", None)
+    loaded_paths: set[Path] = set()
+    for object_name, obj in objects.items():
+        configured = obj.get("logic_assets", [])
+        if not isinstance(configured, list):
+            continue
+        for asset_value in configured:
+            path = Path(str(asset_value))
+            path = path if path.is_absolute() else project_root / path
+            try:
+                resolved = path.resolve()
+                graph = load_logic_graph(resolved)
+                obj.setdefault("logic_graphs", []).append({
+                    "path": resolved.relative_to(project_root.resolve()).as_posix(),
+                    "graph": graph,
+                })
+                loaded_paths.add(resolved)
+                results.append((
+                    "INFO", object_name,
+                    f"Logic Graph explícito carregado: {path.name}",
+                ))
+            except (OSError, ValueError) as exc:
+                results.append((
+                    "ERROR", object_name,
+                    f"falha ao carregar Logic Graph explícito {asset_value}: {exc}",
+                ))
     directory = project_root / "Assets" / "Logic"
     if not directory.is_dir():
         return results
     for path in sorted(directory.rglob("*.zlogic"), key=lambda item: str(item).lower()):
+        if path.resolve() in loaded_paths:
+            continue
         try:
             graph = load_logic_graph(path)
             if not bool(graph.get("enabled", True)):
