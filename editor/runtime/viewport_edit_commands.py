@@ -98,6 +98,9 @@ class ViewportEditCommandHandler:
         base, width, height, color, rigidbody = presets.get(kind, presets["Sprite"])
         name = self._unique_name(base)
         obj = {"id": str(uuid.uuid4()), "name": name, "x": world_x, "y": world_y, "w": width, "h": height, "rotation": 0.0, "color": color, "mesh_type": kind}
+        if kind == "Empty":
+            obj["mesh_type"] = None
+            obj["renderer_enabled"] = False
         if rigidbody is not None:
             obj["rigidbody"] = rigidbody
             obj["collider"] = {"type": "box"}

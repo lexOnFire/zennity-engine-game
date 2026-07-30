@@ -28,6 +28,7 @@ def _host():
         _runtime_objects_by_name={"Ghost": {}}, _runtime_animator_states={"Player": {}},
         _drag_history_snapshot=[obj], autosave_scheduled=0,
     )
+    host.native_viewport_size = lambda: (800, 600)
     host._scene_history = SimpleNamespace(clear=lambda: setattr(host, "history", 0))
     host._autosave = SimpleNamespace(
         schedule=lambda: setattr(host, "autosave_scheduled", host.autosave_scheduled + 1)
@@ -59,17 +60,18 @@ def test_new_scene_is_fully_clean_and_detached_from_previous_project() -> None:
     assert host.autosave_scheduled == 1
 
 
-def test_empty_object_has_no_renderer_physics_collision_or_logic() -> None:
+def test_object_creation_is_requested_at_viewport_center() -> None:
     host = _host()
 
     SceneObjectController(host).create("Empty")
 
-    created = host._scene_snapshot[-1]
-    assert created["mesh_type"] is None
-    assert created["renderer_enabled"] is False
-    assert "rigidbody" not in created
-    assert "collider" not in created
-    assert "logic" not in created
+    assert host._commands.get() == {
+        "type": "create_object_at",
+        "kind": "Empty",
+        "screen_x": 400.0,
+        "screen_y": 300.0,
+    }
+    assert host.history == 1
 
 
 def test_scene_object_controller_generates_stable_unique_names() -> None:
@@ -79,6 +81,27 @@ def test_scene_object_controller_generates_stable_unique_names() -> None:
 
     assert controller.unique_name("Enemy") == "Enemy"
     assert controller.unique_name("Player") == "Player_3"
+
+
+def test_rename_updates_logic_graph_references_before_scene_name(monkeypatch) -> None:
+    host = _host()
+    calls = []
+    host._logic_workspace_controller = SimpleNamespace(
+        rename_object_references=lambda old, new: calls.append((old, new)) or [
+            "PlayerLogic.zlogic"
+        ]
+    )
+    monkeypatch.setattr(
+        "editor.scene_object_controller.QInputDialog.getText",
+        lambda *_args, **_kwargs: ("Hero", True),
+    )
+
+    SceneObjectController(host).rename("Player")
+
+    assert calls == [("Player", "Hero")]
+    assert "Player" not in host._objects_by_name
+    assert host._objects_by_name["Hero"]["name"] == "Hero"
+    assert host._selected_name == "Hero"
 
 
 def test_scene_object_controller_duplicates_with_new_identity() -> None:

@@ -64,30 +64,8 @@ class SceneObjectController:
         h = self.host
         if h._play_session.is_running or kind not in self.PRESETS:
             return
-        h._record_history()
-        base, width, height, color, rigidbody = self.PRESETS[kind]
-        name = self.unique_name(base)
-        obj = {
-            "id": str(uuid.uuid4()), "name": name, "x": 450.0, "y": 250.0,
-            "w": width, "h": height, "rotation": 0.0, "color": color,
-            "mesh_type": kind,
-        }
-        if kind == "Empty":
-            obj["mesh_type"] = None
-            obj["renderer_enabled"] = False
-        if rigidbody is not None:
-            obj["rigidbody"] = deepcopy(rigidbody)
-            obj["collider"] = {"type": "box"}
-        if kind == "Trigger":
-            obj["collider"]["is_trigger"] = True
-        if kind == "Camera":
-            obj["component_names"] = ["Camera2D"]
-            obj["camera"] = {"active": True, "zoom": 1.0}
-        h._scene_snapshot.append(obj)
-        h._objects_by_name[name] = obj
-        h._selected_name = name
-        self._publish_selected(name)
-        h._log("INFO", f"Objeto criado: {name}")
+        width, height = h.native_viewport_size()
+        self.create_at(kind, width / 2.0, height / 2.0)
 
     def create_at(self, kind: str, screen_x: float, screen_y: float) -> None:
         h = self.host
@@ -136,6 +114,16 @@ class SceneObjectController:
             new_name != old_name and new_name in h._objects_by_name
         ):
             return
+        if new_name == old_name:
+            return
+        try:
+            changed_graphs = h._logic_workspace_controller.rename_object_references(
+                old_name, new_name
+            )
+        except (OSError, ValueError) as exc:
+            h.statusBar().showMessage(f"Renomeação cancelada: {exc}")
+            h._log("ERROR", f"Falha ao atualizar Logic Graphs: {exc}")
+            return
         h._record_history()
         obj = h._objects_by_name.pop(old_name)
         obj["name"] = new_name
@@ -143,6 +131,11 @@ class SceneObjectController:
         if h._selected_name == old_name:
             h._selected_name = new_name
         self._publish_selected(new_name)
+        h._log(
+            "INFO",
+            f"Objeto renomeado: {old_name} → {new_name}; "
+            f"{len(changed_graphs)} Logic Graph(s) atualizado(s)",
+        )
 
     def delete(self, name: str) -> None:
         h = self.host

@@ -132,6 +132,25 @@ class LogicWorkspaceController:
     def graphs_for_object(self, object_name: str) -> list[tuple[Path, dict]]:
         return self.bindings.graphs_for_object(object_name)
 
+    def rename_object_references(self, old_name: str, new_name: str) -> list[Path]:
+        h = self.host
+        editor = h.logic_workspace
+        current_path = editor.current_path.resolve() if editor.current_path else None
+        if current_path is not None and getattr(editor, "_dirty", False):
+            editor._autosave_timer.stop()
+            editor._autosave()
+        changed = h._logic_assets_repository.rename_object_references(
+            old_name, new_name
+        )
+        if current_path is not None and current_path in {
+            path.resolve() for path in changed
+        }:
+            editor.set_graph(load_logic_graph(current_path), current_path)
+        dock = getattr(h, "_dock_visual_scripting", None)
+        if dock is not None and hasattr(dock, "sync_from_host"):
+            dock.sync_from_host()
+        return changed
+
     def save_binding(self, path: Path, graph: dict) -> None:
         self.bindings.save_binding(path, graph)
 

@@ -70,6 +70,26 @@ def test_edit_handler_creates_unique_sprite_and_emits_snapshot() -> None:
     assert [event["type"] for event in emitted] == ["scene_snapshot", "selected"]
 
 
+def test_edit_handler_creates_empty_object_without_visual_or_physics() -> None:
+    objects = {}
+    handler, emitted = _handler(objects)
+
+    handled, selected = handler.handle(
+        {"type": "create_object_at", "kind": "Empty", "screen_x": 400, "screen_y": 300},
+        playing=False,
+        selected_name=None,
+    )
+
+    created = objects[selected]
+    assert handled
+    assert (created["x"], created["y"]) == (410.0, 320.0)
+    assert created["mesh_type"] is None
+    assert created["renderer_enabled"] is False
+    assert "rigidbody" not in created
+    assert "collider" not in created
+    assert [event["type"] for event in emitted] == ["scene_snapshot", "selected"]
+
+
 def test_edit_handler_ignores_commands_owned_by_other_subsystems() -> None:
     handler, emitted = _handler({})
     assert handler.handle({"type": "play"}, playing=False, selected_name=None) == (False, None)
