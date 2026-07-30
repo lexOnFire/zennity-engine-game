@@ -165,6 +165,7 @@ class LogicGraphEditor(
         self.property_tree.itemChanged.connect(self._property_changed)
         self.property_tree.itemDoubleClicked.connect(self._choose_exposed_property_asset)
         self.property_asset_button.clicked.connect(self._choose_selected_node_asset)
+        self.property_color_button.clicked.connect(self._choose_selected_node_color)
         self.new_button.clicked.connect(self.new_graph)
         self.new_subgraph_button.clicked.connect(self.new_subgraph)
         self.open_button.clicked.connect(self.open_dialog)

@@ -19,6 +19,7 @@ from editor.widgets.logic_graph.views import LogicGraphView, LogicMiniMapView
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPainterPathStroker, QPen, QBrush
 from PySide6.QtWidgets import (
     QCheckBox,
+    QColorDialog,
     QDialog,
     QDialogButtonBox,
     QDoubleSpinBox,
@@ -172,6 +173,7 @@ class LogicGraphPropertiesMixin:
         if len(selected) != 1:
             self.selected_label.setText("Selecione um nó para editar seus valores")
             self.property_asset_button.hide()
+            self.property_color_button.hide()
             self.breakpoint_condition_edit.clear()
             self.breakpoint_condition_edit.setEnabled(False)
             self._updating_properties = False
@@ -181,6 +183,24 @@ class LogicGraphPropertiesMixin:
         self.node_selected.emit(node)
         asset_kind = self._asset_kind_for_node(str(node.get("type", "")))
         self.property_asset_button.setVisible(asset_kind is not None)
+        color_property = next(
+            (
+                key for key in ("color", "background_color")
+                if key in node.get("properties", {})
+            ),
+            None,
+        )
+        self.property_color_button.setVisible(color_property is not None)
+        if color_property is not None:
+            color = self._qcolor(node["properties"].get(color_property))
+            self.property_color_button.setText(
+                "Escolher cor de fundo..."
+                if color_property == "background_color"
+                else "Escolher cor..."
+            )
+            self.property_color_button.setStyleSheet(
+                f"border-left: 18px solid {color.name()};"
+            )
         if asset_kind is not None:
             asset_label = ASSET_KINDS[asset_kind][0]
             self.property_asset_button.setText(f"Escolher {asset_label}...")
@@ -214,7 +234,9 @@ class LogicGraphPropertiesMixin:
                 json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value,
             ])
             item.setData(0, Qt.UserRole, str(key))
-            if asset_kind is not None and str(key) == asset_property:
+            if str(key) == color_property:
+                item.setToolTip(1, "Use o seletor visual de cor abaixo")
+            elif asset_kind is not None and str(key) == asset_property:
                 item.setToolTip(1, "Use o botão abaixo para escolher na biblioteca")
             else:
                 item.setFlags(item.flags() | Qt.ItemIsEditable)
@@ -288,6 +310,51 @@ class LogicGraphPropertiesMixin:
         self.mark_dirty()
         self._update_validation()
         self.message.emit("INFO", f"Asset vinculado ao bloco: {picker.selected_path}")
+
+    @staticmethod
+    def _qcolor(value: Any) -> QColor:
+        if isinstance(value, str):
+            color = QColor(value)
+            return color if color.isValid() else QColor("#ffffff")
+        if isinstance(value, (list, tuple)) and len(value) >= 3:
+            try:
+                return QColor(*(int(channel) for channel in value[:3]))
+            except (TypeError, ValueError):
+                pass
+        return QColor("#ffffff")
+
+    def _choose_selected_node_color(self) -> None:
+        selected = [
+            item for item in self.scene.selectedItems()
+            if isinstance(item, LogicNodeItem)
+        ]
+        if len(selected) != 1:
+            return
+        node_item = selected[0]
+        properties = node_item.node.setdefault("properties", {})
+        key = next(
+            (name for name in ("color", "background_color") if name in properties),
+            None,
+        )
+        if key is None:
+            return
+        chosen = QColorDialog.getColor(
+            self._qcolor(properties.get(key)),
+            self,
+            "Escolher cor",
+        )
+        if not chosen.isValid():
+            return
+        properties[key] = (
+            [chosen.red(), chosen.green(), chosen.blue()]
+            if key == "background_color"
+            else chosen.name()
+        )
+        node_item.refresh_text()
+        self._selection_changed()
+        self.mark_dirty()
+        self._update_validation()
+        self.message.emit("INFO", f"Cor atualizada: {chosen.name()}")
 
     def _update_breakpoint_condition(self) -> None:
         selected = [item for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)]
