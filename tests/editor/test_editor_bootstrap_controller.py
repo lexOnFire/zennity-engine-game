@@ -17,6 +17,7 @@ def test_viewport_handler_map_is_complete(tmp_path: Path) -> None:
     handler = lambda message: message
     host = SimpleNamespace(
         _handle_selected_event=handler,
+        _handle_tool_changed_event=handler,
         _handle_transform_event=handler,
         _handle_play_state_event=handler,
         _handle_scene_snapshot_event=handler,
@@ -31,7 +32,7 @@ def test_viewport_handler_map_is_complete(tmp_path: Path) -> None:
     handlers = EditorBootstrapController(host, tmp_path)._viewport_handlers()
 
     assert set(handlers) == {
-        "selected", "transform_begin", "transform_end", "transform", "play_state",
+        "selected", "tool_changed", "transform_begin", "transform_end", "transform", "play_state",
         "scene_snapshot", "runtime_objects", "viewport_mode", "runtime_log",
         "logic_trace", "logic_trace_clear", "animator_state", "animation_event",
         "stats",

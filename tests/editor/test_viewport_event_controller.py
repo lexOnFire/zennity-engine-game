@@ -65,3 +65,13 @@ def test_selected_event_updates_inspector_and_status() -> None:
 
     assert host.inspected == ["Player"]
     assert status.messages == ["Viewport: Player selecionado"]
+
+
+def test_tool_changed_event_activates_editor_tool_controller() -> None:
+    host, _ = _host()
+    activated = []
+    host._tool_controller = SimpleNamespace(activate_tool=activated.append)
+
+    ViewportEventController(host).tool_changed({"tool": "rotate"})
+
+    assert activated == ["rotate"]

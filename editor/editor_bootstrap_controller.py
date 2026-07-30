@@ -62,6 +62,7 @@ class EditorBootstrapController:
         h._commands = h._viewport_controller.commands
         h._events = h._viewport_controller.events
         h._scene_controller = SceneSelectionController(h._commands)
+        h._viewport_event_controller = ViewportEventController(h)
         h._viewport_events = ViewportEventDispatcher(self._viewport_handlers())
         h._session_controller = EditorSessionController(h)
         h._hierarchy_view = HierarchyViewRenderer(h)
@@ -80,7 +81,6 @@ class EditorBootstrapController:
         h._viewport_commands = ViewportController(h)
         h._tool_controller = ToolController(h)
         h._project_workflow = ProjectWorkflowController(h)
-        h._viewport_event_controller = ViewportEventController(h)
         h._play_controller = IsolatedPlayModeController()
         h._play_session = h._play_controller.session
         self._composed = True
@@ -123,6 +123,7 @@ class EditorBootstrapController:
         h = self.host
         return {
             "selected": h._handle_selected_event,
+            "tool_changed": h._handle_tool_changed_event,
             "transform_begin": h._handle_transform_event,
             "transform_end": h._handle_transform_event,
             "transform": h._handle_transform_event,

@@ -14,6 +14,10 @@ class ViewportEventController:
     def selected(self, message: dict) -> None:
         self.host._selection.select(str(message["name"]), source="Viewport")
 
+    def tool_changed(self, message: dict) -> None:
+        """Mirror a shortcut handled by the focused Pygame viewport."""
+        self.host._tool_controller.activate_tool(str(message["tool"]))
+
     def transform(self, message: dict) -> None:
         h = self.host
         event_type = message.get("type")

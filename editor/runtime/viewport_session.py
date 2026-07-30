@@ -31,6 +31,7 @@ try:
     from editor.runtime.viewport_play_commands import ViewportPlayCommandHandler, ViewportProcessState
     from editor.runtime.viewport_navigation_events import ViewportNavigationEventHandler, ViewportNavigationState
     from editor.runtime.viewport_transform_events import ViewportTransformEventHandler, ViewportTransformState
+    from editor.runtime.viewport_tool_shortcuts import ViewportToolShortcutHandler
     from editor.runtime.viewport_overlay_renderer import ViewportOverlayRenderer
     from editor.runtime.viewport_sprite_renderer import ViewportSpriteRenderer
     from editor.runtime.viewport_physics_stepper import ViewportPhysicsStepper
@@ -63,6 +64,7 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .viewport_play_commands import ViewportPlayCommandHandler, ViewportProcessState
     from .viewport_navigation_events import ViewportNavigationEventHandler, ViewportNavigationState
     from .viewport_transform_events import ViewportTransformEventHandler, ViewportTransformState
+    from .viewport_tool_shortcuts import ViewportToolShortcutHandler
     from .viewport_overlay_renderer import ViewportOverlayRenderer
     from .viewport_sprite_renderer import ViewportSpriteRenderer
     from .viewport_physics_stepper import ViewportPhysicsStepper
@@ -225,6 +227,9 @@ class ViewportSession(ViewportSessionLifecycleMixin):
         )
         self.navigation_events = ViewportNavigationEventHandler(
             self.pygame, self.objects, self.native_ui, lambda event: _send(self.events, event), self.screen_to_world
+        )
+        self.tool_shortcuts = ViewportToolShortcutHandler(
+            self.pygame, lambda event: _send(self.events, event)
         )
         self.transform_events = ViewportTransformEventHandler(
             self.pygame, self.objects, lambda event: _send(self.events, event), self.world_to_screen
@@ -487,6 +492,12 @@ class ViewportSession(ViewportSessionLifecycleMixin):
 
     def process_events(self):
         for event in self.pygame.event.get():
+            shortcut_tool = self.tool_shortcuts.handle(
+                event, playing=self.playing, view_mode=self.view_mode
+            )
+            if shortcut_tool is not None:
+                self.active_tool = shortcut_tool
+                continue
             handled, navigation_state = self.navigation_events.handle(
                 event,
                 ViewportNavigationState(self.running, self.panning, self.pan_last, self.camera_x, self.camera_y, self.zoom),

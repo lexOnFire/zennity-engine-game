@@ -383,6 +383,9 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
     def _handle_selected_event(self, message: dict) -> None:
         self._viewport_event_controller.selected(message)
 
+    def _handle_tool_changed_event(self, message: dict) -> None:
+        self._viewport_event_controller.tool_changed(message)
+
     def _handle_transform_event(self, message: dict) -> None:
         self._viewport_event_controller.transform(message)
 
