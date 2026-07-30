@@ -8,11 +8,20 @@
   "nodes": [
     {"id": "start", "type": "event_start", "title": "On Start", "category": "Events", "position": [80, 180], "editor": {"collapsed": false, "width": 220, "height": 150}, "properties": {}},
     {"id": "hud", "type": "set_hud", "title": "Atualizar HUD", "category": "Action", "position": [390, 180], "editor": {"collapsed": false, "width": 220, "height": 156}, "properties": {"text": "PORTAL STATION • encontre o terminal"}},
-    {"id": "log", "type": "log_message", "title": "Registrar mensagem", "category": "Action", "position": [700, 180], "editor": {"collapsed": false, "width": 220, "height": 156}, "properties": {"text": "Demo Portal Station inicializada"}}
+    {"id": "log", "type": "log_message", "title": "Registrar mensagem", "category": "Action", "position": [700, 180], "editor": {"collapsed": false, "width": 220, "height": 156}, "properties": {"text": "Demo Portal Station inicializada"}},
+    {"id": "activate", "type": "event_custom", "title": "Ativar Portal", "category": "Events", "position": [80, 500], "editor": {"collapsed": false, "width": 220, "height": 156}, "properties": {"name": "activate_portal"}},
+    {"id": "find-portal", "type": "find_tag", "title": "Localizar Portal", "category": "Objects", "position": [390, 500], "editor": {"collapsed": false, "width": 220, "height": 156}, "properties": {"tag": "Portal"}},
+    {"id": "rotate-portal", "type": "rotate", "title": "Energizar Portal", "category": "Position", "position": [700, 500], "editor": {"collapsed": false, "width": 220, "height": 156}, "properties": {"degrees": 45.0}},
+    {"id": "active-hud", "type": "set_hud", "title": "Confirmar Ativação", "category": "Action", "position": [1010, 500], "editor": {"collapsed": false, "width": 220, "height": 156}, "properties": {"text": "PORTAL ATIVO • sistema pronto para travessia"}},
+    {"id": "active-log", "type": "log_message", "title": "Registrar Ativação", "category": "Action", "position": [1320, 500], "editor": {"collapsed": false, "width": 220, "height": 156}, "properties": {"text": "Portal ativado pelo botão da UI"}}
   ],
   "edges": [
     {"id": "flow-start-hud", "from_node": "start", "from_port": "next", "to_node": "hud", "to_port": "in", "kind": "flow", "order": 0},
-    {"id": "flow-hud-log", "from_node": "hud", "from_port": "next", "to_node": "log", "to_port": "in", "kind": "flow", "order": 0}
+    {"id": "flow-hud-log", "from_node": "hud", "from_port": "next", "to_node": "log", "to_port": "in", "kind": "flow", "order": 0},
+    {"id": "flow-activate-find", "from_node": "activate", "from_port": "next", "to_node": "find-portal", "to_port": "in", "kind": "flow", "order": 0},
+    {"id": "flow-find-rotate", "from_node": "find-portal", "from_port": "next", "to_node": "rotate-portal", "to_port": "in", "kind": "flow", "order": 0},
+    {"id": "data-portal-target", "from_node": "find-portal", "from_port": "object", "to_node": "rotate-portal", "to_port": "target", "kind": "object", "order": 0},
+    {"id": "flow-rotate-hud", "from_node": "rotate-portal", "from_port": "next", "to_node": "active-hud", "to_port": "in", "kind": "flow", "order": 0},
+    {"id": "flow-active-log", "from_node": "active-hud", "from_port": "next", "to_node": "active-log", "to_port": "in", "kind": "flow", "order": 0}
   ]
 }
-

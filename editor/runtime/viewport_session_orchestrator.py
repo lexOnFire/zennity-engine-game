@@ -121,6 +121,10 @@ class ViewportSessionOrchestrator:
                 self.hud_entries.remove_entry(str(value))
             elif command == "restart_scene":
                 restart = True
+            elif command:
+                # UI buttons and other runtime producers use their command name
+                # as a first-class custom event for Visual Logic graphs.
+                self.logic_event_bus().emit(str(command), value, name)
         return restart
 
     @staticmethod

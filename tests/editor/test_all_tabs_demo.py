@@ -6,6 +6,9 @@ from PySide6.QtWidgets import QApplication
 
 from engine.core.bootstrap import EngineBootstrap
 from engine.logic.graph_asset import load_logic_graph, validate_logic_graph
+from engine.logic.blackboard import BlackboardStore
+from engine.logic.event_bus import LogicEventBus
+from engine.logic.runtime.core import LogicGraphRuntime
 from engine.ui.runtime import UICanvas, widget_from_dict
 from editor.widgets.generic_graph_editor import GenericGraphEditorWidget
 from editor.scene_persistence import EditorScenePersistence
@@ -14,6 +17,8 @@ from editor.runtime.viewport_asset_hydration import (
     hydrate_behavior_controllers,
     hydrate_logic_graphs,
 )
+from editor.runtime.viewport_logic_api import PlayLogicAPI
+from editor.runtime.viewport_session_orchestrator import ViewportSessionOrchestrator
 
 
 DEMO = Path("Assets/Demos/PortalStation")
@@ -84,6 +89,48 @@ def test_portal_station_scene_loads_as_one_runtime_ready_experience() -> None:
     assert objects["StationDrone"]["behavior"]["controller"]["initial_state"] == "Patrol"
     assert hydrate_animator_controllers(objects, Path.cwd())
     assert objects["PortalCore"]["animator"]["controller"]["initial_state"] == "Closed"
+
+
+def test_portal_button_event_changes_gameplay_state() -> None:
+    graph = load_logic_graph(DEMO / "PortalTerminal.zlogic")
+    terminal = {
+        "name": "PortalTerminal", "tag": "Interactable",
+        "active": True, "rotation": 0.0,
+        "logic_events": [{"command": "activate_portal", "value": {"source": "PortalUIButton"}}],
+    }
+    portal = {
+        "name": "PortalCore", "tag": "Portal",
+        "active": True, "rotation": 0.0,
+    }
+    objects = {"PortalTerminal": terminal, "PortalCore": portal}
+    bus = LogicEventBus()
+    api = PlayLogicAPI("PortalTerminal", terminal, None, objects)
+    runtime = LogicGraphRuntime(
+        graph, BlackboardStore(), "PortalTerminal", bus
+    )
+    runtime.start(api)
+    hud_values = []
+    orchestrator = ViewportSessionOrchestrator(
+        objects=objects,
+        logic_runtimes={"PortalTerminal": [("PortalTerminal.zlogic", runtime)]},
+        behavior_runners={}, logic_modules={},
+        logic_apis={"PortalTerminal": api}, animator_controllers={},
+        logic_event_bus=lambda: bus,
+        runtime_world=api.runtime_world,
+        hud_entries=type("_Hud", (), {
+            "set_entry": lambda _self, value: hud_values.append(value),
+            "remove_entry": lambda *_args: None,
+        })(),
+        emit=lambda _message: None, play_audio=lambda *_args: None,
+        pause_audio=lambda _paused: None, state_hook=lambda *_args: None,
+    )
+
+    orchestrator._apply_logic_instructions("PortalTerminal", terminal)
+    bus.dispatch()
+    orchestrator._apply_logic_instructions("PortalTerminal", terminal)
+
+    assert portal["rotation"] == 45.0
+    assert hud_values[-1]["text"] == "PORTAL ATIVO • sistema pronto para travessia"
 
 
 @pytest.mark.parametrize(

@@ -12,3 +12,11 @@ abaixo são carregados automaticamente:
 6. **UI & HUD** — `PortalHUD.zui`: painel, título, objetivo e botão.
 
 Selecione uma aba, clique em **Abrir** e carregue seu arquivo desta pasta.
+
+## Interação
+
+1. Abra `PortalStation.zscene`.
+2. Pressione **Play** e mantenha a Game View ativa.
+3. Clique em **ATIVAR PORTAL**.
+4. O botão emite `activate_portal`; o Logic Graph encontra o objeto com a tag
+   `Portal`, gira o núcleo em 45 graus, atualiza o HUD e registra a ativação.
