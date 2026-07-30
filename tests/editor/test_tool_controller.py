@@ -1,5 +1,7 @@
 from types import SimpleNamespace
 
+from PySide6.QtWidgets import QApplication, QGraphicsView, QMainWindow, QWidget
+
 from editor.controllers.tool_controller import ToolController
 from editor.runtime.editor_context import EditorContext
 from editor.runtime.tool_manager import EditorTool
@@ -48,3 +50,24 @@ def test_tool_controller_focus_and_grid_are_viewport_controller_calls() -> None:
     controller.toggle_grid()
 
     assert host._viewport_commands.calls == [("focus_selected",), ("toggle_grid",)]
+
+
+def test_scene_shortcuts_are_blocked_for_graph_canvas_and_external_window() -> None:
+    app = QApplication.instance() or QApplication([])
+    host = QMainWindow()
+    controller = ToolController(host)
+    central = QWidget(host)
+    host.setCentralWidget(central)
+    graph = QGraphicsView(central)
+    graph.setObjectName("LogicGraphView")
+    regular = QWidget(central)
+    external = QGraphicsView()
+
+    try:
+        assert not controller._scene_shortcuts_allowed(graph)
+        assert controller._scene_shortcuts_allowed(regular)
+        assert not controller._scene_shortcuts_allowed(external)
+    finally:
+        external.deleteLater()
+        host.deleteLater()
+        app.processEvents()

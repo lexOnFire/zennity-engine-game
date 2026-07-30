@@ -150,6 +150,7 @@ class EditorSessionController:
             "_hierarchy_controller",
             "_asset_browser",
             "_console_controller",
+            "_tool_controller",
         ):
             controller = getattr(self.editor, controller_name, None)
             disconnect = getattr(controller, "disconnect", None)

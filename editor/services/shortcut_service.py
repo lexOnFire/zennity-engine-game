@@ -37,10 +37,14 @@ class ShortcutService:
     def __init__(self, host: Any) -> None:
         self.host = host
         self._shortcuts: list[QShortcut] = []
+        self._shortcuts_by_command: dict[str, QShortcut] = {}
 
     @property
     def shortcuts(self) -> tuple[QShortcut, ...]:
         return tuple(self._shortcuts)
+
+    def shortcut_for(self, command_id: str) -> QShortcut | None:
+        return self._shortcuts_by_command.get(command_id)
 
     def bind_action(self, action: QAction, sequence: str) -> None:
         action.setShortcut(QKeySequence(sequence))
@@ -59,3 +63,4 @@ class ShortcutService:
             shortcut.setContext(Qt.ApplicationShortcut)
             shortcut.activated.connect(handler)
             self._shortcuts.append(shortcut)
+            self._shortcuts_by_command[binding.command_id] = shortcut

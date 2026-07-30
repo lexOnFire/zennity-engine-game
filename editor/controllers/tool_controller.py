@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from PySide6.QtGui import QAction, QActionGroup
+from PySide6.QtWidgets import QApplication, QWidget
 
 from editor.runtime.tool_manager import EditorTool
 from editor.services.shortcut_service import ShortcutService
@@ -18,10 +19,17 @@ class ToolController:
         EditorTool.ROTATE: "E",
         EditorTool.SCALE: "R",
     }
+    SCENE_EDIT_COMMANDS = (
+        "edit.duplicate",
+        "edit.undo",
+        "edit.redo",
+        "edit.delete",
+    )
 
     def __init__(self, host: Any) -> None:
         self.host = host
         self.shortcut_service = ShortcutService(host)
+        self._application: QApplication | None = None
 
     def configure(self) -> None:
         h = self.host
@@ -72,6 +80,11 @@ class ToolController:
         )
         h._tool_shortcuts.extend(self.shortcut_service.shortcuts)
         h._tool_action_group = group
+        application = QApplication.instance()
+        if application is not None:
+            self._application = application
+            application.focusChanged.connect(self._sync_edit_shortcut_scope)
+            self._sync_edit_shortcut_scope(None, application.focusWidget())
         self._sync_tool_action(h.editor_context.tools.active_tool)
 
     def activate_tool(self, tool: EditorTool | str) -> None:
@@ -85,6 +98,38 @@ class ToolController:
 
     def toggle_grid(self) -> None:
         self.host._viewport_commands.toggle_grid()
+
+    def disconnect(self) -> None:
+        if self._application is None:
+            return
+        try:
+            self._application.focusChanged.disconnect(self._sync_edit_shortcut_scope)
+        except (RuntimeError, TypeError):
+            pass
+        self._application = None
+
+    def _sync_edit_shortcut_scope(
+        self, _previous: QWidget | None, current: QWidget | None
+    ) -> None:
+        enabled = self._scene_shortcuts_allowed(current)
+        for command_id in self.SCENE_EDIT_COMMANDS:
+            shortcut = self.shortcut_service.shortcut_for(command_id)
+            if shortcut is not None:
+                shortcut.setEnabled(enabled)
+
+    def _scene_shortcuts_allowed(self, widget: QWidget | None) -> bool:
+        if widget is None:
+            return True
+        window = widget.window()
+        if window is not self.host:
+            return False
+        current: QWidget | None = widget
+        while current is not None:
+            marker = f"{type(current).__name__} {current.objectName()}".lower()
+            if "graph" in marker or "nodecanvas" in marker:
+                return False
+            current = current.parentWidget()
+        return True
 
     def _sync_tool_action(self, tool: EditorTool) -> None:
         action = self.host._tool_actions.get(tool.value)
