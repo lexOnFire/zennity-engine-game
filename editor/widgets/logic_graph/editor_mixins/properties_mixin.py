@@ -51,7 +51,7 @@ from PySide6.QtWidgets import (
 )
 
 from editor.ui.icons import editor_icon
-from editor.widgets.logic_asset_picker import LogicAssetPickerDialog
+from editor.widgets.logic_asset_picker import ASSET_KINDS, LogicAssetPickerDialog
 from engine.logic.graph_asset import (
     NODE_DEFINITIONS,
     UNIQUE_EVENT_TYPES,
@@ -181,6 +181,19 @@ class LogicGraphPropertiesMixin:
         self.node_selected.emit(node)
         asset_kind = self._asset_kind_for_node(str(node.get("type", "")))
         self.property_asset_button.setVisible(asset_kind is not None)
+        if asset_kind is not None:
+            asset_label = ASSET_KINDS[asset_kind][0]
+            self.property_asset_button.setText(f"Escolher {asset_label}...")
+            self.property_asset_button.setToolTip(
+                f"Abre a biblioteca de {asset_label.lower()} do projeto"
+            )
+        asset_property = (
+            "texture"
+            if str(node.get("type", "")) in {
+                "create_object", "add_sprite_renderer",
+            }
+            else "path"
+        )
         self.selected_label.setText(f"{node['title']}\n{node['category']} • {node['type']}")
         breakpoints = self.graph.get("debug", {}).get("breakpoints", [])
         has_breakpoint = str(node["id"]) in breakpoints
@@ -201,7 +214,10 @@ class LogicGraphPropertiesMixin:
                 json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value,
             ])
             item.setData(0, Qt.UserRole, str(key))
-            item.setFlags(item.flags() | Qt.ItemIsEditable)
+            if asset_kind is not None and str(key) == asset_property:
+                item.setToolTip(1, "Use o botão abaixo para escolher na biblioteca")
+            else:
+                item.setFlags(item.flags() | Qt.ItemIsEditable)
             self.property_tree.addTopLevelItem(item)
         if str(node.get("type", "")) == "create_prefab":
             exposed = node.get("properties", {}).get("exposed_properties", [])
@@ -219,7 +235,10 @@ class LogicGraphPropertiesMixin:
                 ])
                 item.setData(0, Qt.UserRole, f"prefab_parameter:{name}")
                 item.setToolTip(0, str(definition.get("description", definition.get("target", ""))))
-                item.setFlags(item.flags() | Qt.ItemIsEditable)
+                if str(definition.get("asset_kind", "")) in ASSET_KINDS:
+                    item.setToolTip(1, "Dê duplo clique para escolher na biblioteca")
+                else:
+                    item.setFlags(item.flags() | Qt.ItemIsEditable)
                 self.property_tree.addTopLevelItem(item)
         self._updating_properties = False
 
@@ -227,9 +246,11 @@ class LogicGraphPropertiesMixin:
     def _asset_kind_for_node(node_type: str) -> str | None:
         return {
             "set_sprite": "image",
+            "set_texture_scroll": "image",
             "start_texture_scroll": "image",
             "create_object": "image",
             "create_prefab": "prefab",
+            "call_subgraph": "logic",
             "play_animation_asset": "animation",
             "play_sound": "audio",
             "add_sprite_renderer": "image",

@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-import shutil
 import uuid
 from pathlib import Path
 from typing import Any
 
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QColorDialog, QFileDialog
+from PySide6.QtWidgets import QColorDialog
 
 from editor.runtime.native_ui import normalize_ui
 from editor.runtime.sprite_rendering import assign_sprite_texture
+from editor.widgets.logic_asset_picker import LogicAssetPickerDialog
 
 
 class InspectorControllerUIMediaMixin:
@@ -23,29 +23,10 @@ class InspectorControllerUIMediaMixin:
             return
         _, obj = selected
         h = self.host
-        filename, _ = QFileDialog.getOpenFileName(
-            h,
-            "Selecionar textura",
-            str(Path.cwd() / "Assets"),
-            "Imagens (*.png *.jpg *.jpeg *.bmp *.webp)",
-        )
-        if not filename:
+        picker = LogicAssetPickerDialog(Path.cwd(), "image", h)
+        if not picker.exec() or not picker.selected_path:
             return
-        path = Path(filename)
-        try:
-            texture = path.resolve().relative_to(Path.cwd().resolve()).as_posix()
-        except ValueError:
-            textures_dir = Path.cwd() / "Assets" / "Textures"
-            textures_dir.mkdir(parents=True, exist_ok=True)
-            destination = textures_dir / path.name
-            index = 1
-            while destination.exists() and destination.read_bytes() != path.read_bytes():
-                destination = textures_dir / f"{path.stem}_{index}{path.suffix}"
-                index += 1
-            if not destination.exists():
-                shutil.copy2(path, destination)
-            texture = destination.relative_to(Path.cwd()).as_posix()
-            h._refresh_assets()
+        texture = picker.selected_path
         h._record_history()
         assign_sprite_texture(obj, texture)
         h.sprite_texture_field.setText(texture)
@@ -133,20 +114,10 @@ class InspectorControllerUIMediaMixin:
         if self._selected() is None:
             return
         h = self.host
-        filename, _ = QFileDialog.getOpenFileName(
-            h,
-            "Selecionar imagem da UI",
-            str(Path.cwd() / "Assets"),
-            "Imagens (*.png *.jpg *.jpeg *.bmp *.webp)",
-        )
-        if not filename:
+        picker = LogicAssetPickerDialog(Path.cwd(), "image", h)
+        if not picker.exec() or not picker.selected_path:
             return
-        path = Path(filename)
-        try:
-            value = path.resolve().relative_to(Path.cwd().resolve()).as_posix()
-        except ValueError:
-            value = str(path.resolve())
-        h.ui_image_path_field.setText(value)
+        h.ui_image_path_field.setText(picker.selected_path)
         self.send_ui()
 
     def send_ui(self) -> None:

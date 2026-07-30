@@ -7,7 +7,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog, QDialogButtonBox, QLabel, QLineEdit, QTreeWidget,
-    QTreeWidgetItem, QVBoxLayout, QWidget,
+    QTreeWidgetItem, QTabWidget, QVBoxLayout, QWidget,
 )
 
 
@@ -16,6 +16,13 @@ ASSET_KINDS = {
     "animation": ("Animação", {".zanim"}),
     "audio": ("Áudio", {".wav", ".ogg", ".mp3", ".flac"}),
     "prefab": ("Prefab", {".zprefab"}),
+    "logic": ("Logic Graph", {".zlogic"}),
+    "scene": ("Cena", {".zscene"}),
+    "material": ("Material", {".zmat", ".zmaterial"}),
+    "animator": ("Animator", {".zanimator"}),
+    "ui": ("Interface", {".zui"}),
+    "font": ("Fonte", {".ttf", ".otf"}),
+    "tilemap": ("Tilemap", {".ztilemap", ".tmx", ".tsx"}),
 }
 
 
@@ -51,11 +58,33 @@ class LogicAssetPickerDialog(QDialog):
         self.search.setPlaceholderText(f"Pesquisar {label.lower()}...")
         self.search.setClearButtonEnabled(True)
         layout.addWidget(self.search)
-        self.tree = QTreeWidget()
-        self.tree.setHeaderLabels(["Asset", "Tipo", "Pasta"])
-        self.tree.setRootIsDecorated(False)
-        self.tree.setAlternatingRowColors(True)
-        layout.addWidget(self.tree, 1)
+        self.tabs = QTabWidget(self)
+        self.tabs.setObjectName("AssetTypeTabs")
+        self._trees: dict[str, QTreeWidget] = {}
+        self._entries_by_kind = {
+            asset_kind: self._assets_for(extensions)
+            for asset_kind, (_name, extensions) in ASSET_KINDS.items()
+        }
+        initial_index = 0
+        for index, (asset_kind, (asset_label, _extensions)) in enumerate(
+            ASSET_KINDS.items()
+        ):
+            tree = QTreeWidget(self.tabs)
+            tree.setHeaderLabels(["Asset", "Tipo", "Pasta"])
+            tree.setRootIsDecorated(False)
+            tree.setAlternatingRowColors(True)
+            tree.currentItemChanged.connect(self._selection_changed)
+            tree.itemDoubleClicked.connect(
+                lambda item, _column: self._accept_item(item)
+            )
+            self._trees[asset_kind] = tree
+            self.tabs.addTab(tree, asset_label)
+            compatible = asset_kind == kind
+            self.tabs.setTabEnabled(index, compatible)
+            if compatible:
+                initial_index = index
+        self.tabs.setCurrentIndex(initial_index)
+        layout.addWidget(self.tabs, 1)
         self.summary = QLabel()
         self.summary.setObjectName("PanelHint")
         self.summary.setWordWrap(True)
@@ -68,36 +97,42 @@ class LogicAssetPickerDialog(QDialog):
         layout.addWidget(self.buttons)
 
         self.search.textChanged.connect(self._rebuild)
-        self.tree.currentItemChanged.connect(self._selection_changed)
-        self.tree.itemDoubleClicked.connect(lambda item, _column: self._accept_item(item))
+        self.tabs.currentChanged.connect(lambda _index: self._rebuild(self.search.text()))
         self.buttons.accepted.connect(self._accept_current)
         self.buttons.rejected.connect(self.reject)
-        self._entries = self._assets()
         self._rebuild("")
 
-    def _assets(self) -> list[Path]:
+    @property
+    def tree(self) -> QTreeWidget:
+        return self._trees[self.kind]
+
+    def _assets_for(self, extensions: set[str]) -> list[Path]:
         directory = self.project_root / "Assets"
         if not directory.is_dir():
             return []
         return sorted(
-            (path for path in directory.rglob("*") if path.is_file() and path.suffix.lower() in self.extensions),
+            (
+                path for path in directory.rglob("*")
+                if path.is_file() and path.suffix.lower() in extensions
+            ),
             key=lambda path: str(path.relative_to(directory)).casefold(),
         )
 
     def _rebuild(self, query: str) -> None:
         wanted = _search_key(query).strip()
-        self.tree.clear()
+        tree = self.tree
+        tree.clear()
         label, _extensions = ASSET_KINDS[self.kind]
-        for path in self._entries:
+        for path in self._entries_by_kind[self.kind]:
             relative = path.relative_to(self.project_root).as_posix()
             if wanted and wanted not in _search_key(relative):
                 continue
             item = QTreeWidgetItem([path.name, label, path.parent.relative_to(self.project_root).as_posix()])
             item.setData(0, Qt.UserRole, relative)
-            self.tree.addTopLevelItem(item)
-        self.tree.resizeColumnToContents(0)
-        if self.tree.topLevelItemCount():
-            self.tree.setCurrentItem(self.tree.topLevelItem(0))
+            tree.addTopLevelItem(item)
+        tree.resizeColumnToContents(0)
+        if tree.topLevelItemCount():
+            tree.setCurrentItem(tree.topLevelItem(0))
         else:
             self.summary.setText(f"Nenhum asset compatível encontrado em Assets ({', '.join(sorted(self.extensions))}).")
             self.buttons.button(QDialogButtonBox.Ok).setEnabled(False)
