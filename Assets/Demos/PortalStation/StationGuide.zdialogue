@@ -1,0 +1,16 @@
+{
+  "format": "zennity.generic_graph", "version": 1, "category": "Dialogue",
+  "nodes": [
+    {"id": "welcome", "type": "dialogue.speech", "position": [60, 180], "inputs": {"speaker": "ORION", "text": "Bem-vindo à Portal Station."}},
+    {"id": "choice", "type": "dialogue.choice", "position": [380, 180], "inputs": {"prompt": "Deseja ativar o portal?"}},
+    {"id": "accepted", "type": "dialogue.speech", "position": [700, 80], "inputs": {"speaker": "ORION", "text": "Portal carregando. Afaste-se do núcleo."}},
+    {"id": "end", "type": "dialogue.end", "position": [1010, 180]}
+  ],
+  "edges": [
+    {"id": "dlg-1", "source_node": "welcome", "source_port": "out", "target_node": "choice", "target_port": "in", "type": "exec"},
+    {"id": "dlg-2", "source_node": "choice", "source_port": "option_1", "target_node": "accepted", "target_port": "in", "type": "exec"},
+    {"id": "dlg-3", "source_node": "accepted", "source_port": "out", "target_node": "end", "target_port": "in", "type": "exec"},
+    {"id": "dlg-4", "source_node": "choice", "source_port": "option_2", "target_node": "end", "target_port": "in", "type": "exec"}
+  ]
+}
+

@@ -18,6 +18,15 @@ class ViewportEventController:
         """Mirror a shortcut handled by the focused Pygame viewport."""
         self.host._tool_controller.activate_tool(str(message["tool"]))
 
+    def delete_selected_requested(self, _message: dict) -> None:
+        """Delete the editor selection when Delete was pressed in native viewport."""
+        h = self.host
+        if h._play_session.is_running:
+            return
+        selected = h._selected_name
+        if selected in h._objects_by_name:
+            h._scene_objects.delete(selected)
+
     def transform(self, message: dict) -> None:
         h = self.host
         event_type = message.get("type")

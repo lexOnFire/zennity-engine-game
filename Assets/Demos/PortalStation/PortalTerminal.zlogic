@@ -1,0 +1,18 @@
+{
+  "format": "zennity.logic_graph", "version": 1, "enabled": true,
+  "name": "PortalTerminal",
+  "target": {"type": "name", "value": "PortalTerminal"},
+  "debug": {"breakpoints": [], "breakpoint_conditions": {}, "watches": ["portal_ready"]},
+  "variables": {"portal_ready": {"type": "bool", "scope": "object", "default": false}},
+  "editor": {"groups": [], "comments": []},
+  "nodes": [
+    {"id": "start", "type": "event_start", "title": "On Start", "category": "Events", "position": [80, 180], "editor": {"collapsed": false, "width": 220, "height": 150}, "properties": {}},
+    {"id": "hud", "type": "set_hud", "title": "Atualizar HUD", "category": "Action", "position": [390, 180], "editor": {"collapsed": false, "width": 220, "height": 156}, "properties": {"text": "PORTAL STATION • encontre o terminal"}},
+    {"id": "log", "type": "log_message", "title": "Registrar mensagem", "category": "Action", "position": [700, 180], "editor": {"collapsed": false, "width": 220, "height": 156}, "properties": {"text": "Demo Portal Station inicializada"}}
+  ],
+  "edges": [
+    {"id": "flow-start-hud", "from_node": "start", "from_port": "next", "to_node": "hud", "to_port": "in", "kind": "flow", "order": 0},
+    {"id": "flow-hud-log", "from_node": "hud", "from_port": "next", "to_node": "log", "to_port": "in", "kind": "flow", "order": 0}
+  ]
+}
+

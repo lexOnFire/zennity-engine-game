@@ -1,0 +1,18 @@
+{
+  "format": "zennity.ui", "version": 1,
+  "canvas": {
+    "name": "PortalHUD", "type": "UICanvas",
+    "x": 0.0, "y": 0.0, "width": 1920.0, "height": 1080.0, "visible": true,
+    "children": [{
+      "name": "MissionPanel", "type": "UIPanel",
+      "x": 48.0, "y": 48.0, "width": 520.0, "height": 180.0,
+      "visible": true, "bg_color": "#101a2e",
+      "children": [
+        {"name": "StationTitle", "type": "UILabel", "x": 28.0, "y": 22.0, "width": 450.0, "height": 40.0, "visible": true, "text": "PORTAL STATION", "text_color": "#62d9ff", "font_size": 28, "children": []},
+        {"name": "MissionText", "type": "UILabel", "x": 28.0, "y": 76.0, "width": 450.0, "height": 36.0, "visible": true, "text": "Objetivo: ative o terminal do portal", "text_color": "#ffffff", "font_size": 18, "children": []},
+        {"name": "ActivatePortal", "type": "UIButton", "x": 28.0, "y": 124.0, "width": 210.0, "height": 42.0, "visible": true, "text": "ATIVAR PORTAL", "children": []}
+      ]
+    }]
+  }
+}
+

@@ -127,6 +127,7 @@ class EditorBootstrapController:
         return {
             "selected": h._handle_selected_event,
             "tool_changed": h._handle_tool_changed_event,
+            "delete_selected_requested": h._handle_delete_selected_requested,
             "transform_begin": h._handle_transform_event,
             "transform_end": h._handle_transform_event,
             "transform": h._handle_transform_event,

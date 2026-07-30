@@ -496,7 +496,8 @@ class ViewportSession(ViewportSessionLifecycleMixin):
                 event, playing=self.playing, view_mode=self.view_mode
             )
             if shortcut_tool is not None:
-                self.active_tool = shortcut_tool
+                if shortcut_tool != "delete":
+                    self.active_tool = shortcut_tool
                 continue
             handled, navigation_state = self.navigation_events.handle(
                 event,

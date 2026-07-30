@@ -22,6 +22,9 @@ class ViewportToolShortcutHandler:
             return None
         if bool(getattr(event, "repeat", False)):
             return None
+        if getattr(event, "key", None) == self.pygame.K_DELETE:
+            self.emit({"type": "delete_selected_requested"})
+            return "delete"
         tool = self._tools.get(getattr(event, "key", None))
         if tool is None:
             return None
