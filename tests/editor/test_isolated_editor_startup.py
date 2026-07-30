@@ -1,13 +1,20 @@
 """Regression coverage for the real isolated-editor bootstrap."""
 
+import inspect
 from queue import Queue
 
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QGraphicsView
 
-from editor.isolated_editor_main import IsolatedEditorWindow
+from editor.isolated_editor_main import IsolatedEditorWindow, main
 from editor.runtime.tool_manager import EditorTool
+
+
+def test_isolated_editor_keeps_pygame_runtime_out_of_qt_process() -> None:
+    source = inspect.getsource(main)
+
+    assert "EngineBootstrap.boot" not in source
 
 
 def test_isolated_editor_bootstrap_connects_camera_inspector_fields() -> None:

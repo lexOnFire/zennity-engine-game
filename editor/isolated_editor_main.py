@@ -453,10 +453,9 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
 def main() -> None:
     _install_crash_logging(Path.cwd())
     context = mp.get_context("spawn")
-    
-    from engine.core.bootstrap import EngineBootstrap
-    engine_context = EngineBootstrap.boot()
-    
+
+    # The Qt editor must not boot the complete runtime in this process.
+    # Pygame/SDL belongs exclusively to the isolated viewport child process.
     viewport_controller = ViewportProcessController.create(context)
     commands = viewport_controller.command_queue
     events = viewport_controller.events
