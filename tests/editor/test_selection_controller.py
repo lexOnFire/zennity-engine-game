@@ -29,6 +29,10 @@ def _host():
 
 def test_selection_controller_selects_scene_object_and_updates_inspector() -> None:
     host, selected, inspected, status = _host()
+    logic_selections = []
+    host._logic_workspace_controller = SimpleNamespace(
+        selection_changed=logic_selections.append
+    )
 
     result = EditorSelectionController(host).select("Player")
 
@@ -36,6 +40,7 @@ def test_selection_controller_selects_scene_object_and_updates_inspector() -> No
     assert host._selected_name == "Player"
     assert selected == ["Player"]
     assert inspected == ["Player"]
+    assert logic_selections == ["Player"]
     assert status.messages == ["Interface: Player selecionado"]
 
 

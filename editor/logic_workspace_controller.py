@@ -160,12 +160,12 @@ class LogicWorkspaceController:
         if selected is None:
             return
         assets = self.assets()
-        if not assets:
-            h.statusBar().showMessage("Nenhum Logic Graph disponível; use Criar novo")
-            self.create_for_selected()
-            return
         picker = LogicGraphPickerDialog(assets, h)
-        if picker.exec() and picker.selected_path is not None:
+        if not picker.exec():
+            return
+        if picker.create_new:
+            self.create_blank_for_selected()
+        elif picker.selected_path is not None:
             self.bindings.bind_existing_to_object(picker.selected_path, selected)
             h._component_expanded["logic"] = True
             h._log("INFO", f"{picker.selected_path.name} vinculado a {selected}")
@@ -179,6 +179,34 @@ class LogicWorkspaceController:
         h._component_expanded["logic"] = True
         self.show(preferred_path=path)
         h._log("INFO", f"Logic Graph criado para {selected}: {path.name}")
+
+    def create_blank_for_selected(self) -> None:
+        h = self.host
+        selected = self._selected_scene_name()
+        if selected is None:
+            return
+        path = self.bindings.create_blank_for_object(selected)
+        h._component_expanded["logic"] = True
+        self.show(preferred_path=path)
+        h._log("INFO", f"Logic Graph vazio criado para {selected}: {path.name}")
+
+    def selection_changed(self, object_name: str) -> None:
+        """Keep an open Visual Logic window aligned with scene selection."""
+        h = self.host
+        dock = getattr(h, "_dock_visual_scripting", None)
+        if dock is None:
+            return
+        bindings = self.graphs_for_object(object_name)
+        if hasattr(dock, "set_object_context"):
+            dock.set_object_context(object_name, len(bindings))
+        if not dock.isVisible():
+            return
+        context_path = bindings[0][0] if bindings else None
+        if h.logic_workspace.open_for_object(object_name, context_path):
+            dock.setWindowTitle(
+                f"⚡ Visual Scripting Editor 2.0 — {object_name}"
+            )
+            dock.sync_from_host()
 
     def selected_path(self) -> Path | None:
         value = self.host.logic_graph_combo.currentData()

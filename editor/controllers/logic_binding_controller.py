@@ -35,6 +35,14 @@ class LogicBindingController:
         return graph
 
     def create_for_object(self, object_name: str) -> Path:
+        return self._create_for_object(object_name, with_start_event=True)
+
+    def create_blank_for_object(self, object_name: str) -> Path:
+        return self._create_for_object(object_name, with_start_event=False)
+
+    def _create_for_object(
+        self, object_name: str, *, with_start_event: bool
+    ) -> Path:
         directory = self.project_root / "Assets" / "Logic"
         directory.mkdir(parents=True, exist_ok=True)
         safe_name = "".join(char if char.isalnum() else "_" for char in object_name).strip("_") or "Object"
@@ -45,7 +53,10 @@ class LogicBindingController:
             suffix += 1
         graph = default_logic_graph(path.stem)
         graph["target"] = {"type": "name", "value": object_name}
-        graph["nodes"] = [create_logic_node("event_start", (80.0, 100.0))]
+        graph["nodes"] = (
+            [create_logic_node("event_start", (80.0, 100.0))]
+            if with_start_event else []
+        )
         self.save_binding(path, graph)
         return path
 

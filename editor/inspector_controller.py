@@ -125,7 +125,7 @@ class IsolatedInspectorController(InspectorControllerUIMediaMixin):
         self._bind(h.logic_graph_combo.currentIndexChanged, h._logic_workspace_controller.update_summary)
         self._bind(h.logic_open_button.clicked, h._logic_workspace_controller.open_selected)
         self._bind(h.logic_link_button.clicked, h._logic_workspace_controller.choose_component)
-        self._bind(h.logic_new_button.clicked, h._logic_workspace_controller.create_for_selected)
+        self._bind(h.logic_new_button.clicked, h._logic_workspace_controller.create_blank_for_selected)
         self._bind(h.logic_unlink_button.clicked, h._logic_workspace_controller.detach_selected)
         self._connected = True
         return True

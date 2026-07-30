@@ -20,6 +20,9 @@ class EditorSelectionController:
         h._selected_name = name
         if inspect:
             h._update_inspector(name)
+        logic_workspace = getattr(h, "_logic_workspace_controller", None)
+        if logic_workspace is not None:
+            logic_workspace.selection_changed(name)
         h.statusBar().showMessage(f"{source}: {name} selecionado")
         return True
 

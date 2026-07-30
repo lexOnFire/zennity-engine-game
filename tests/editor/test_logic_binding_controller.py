@@ -59,6 +59,18 @@ def test_logic_binding_controller_creates_graph_for_object(tmp_path: Path) -> No
     assert host.refreshed == ["Player"]
 
 
+def test_logic_binding_controller_creates_blank_graph_for_object(tmp_path: Path) -> None:
+    host = _host(tmp_path)
+    controller = LogicBindingController(host, tmp_path)
+
+    path = controller.create_blank_for_object("Player")
+    graph = host._logic_assets_repository.saved[-1][1]
+
+    assert path.is_file()
+    assert graph["target"] == {"type": "name", "value": "Player"}
+    assert graph["nodes"] == []
+
+
 def test_logic_binding_controller_detaches_all_object_graphs(tmp_path: Path) -> None:
     host = _host(tmp_path)
     controller = LogicBindingController(host, tmp_path)

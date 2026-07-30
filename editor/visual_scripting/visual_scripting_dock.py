@@ -73,8 +73,11 @@ class VisualScriptingEditorDock(QMainWindow):
         brand_title.setObjectName("VisualBrandTitle")
         self.document_label = QLabel("NO GRAPH", brand_box)
         self.document_label.setObjectName("VisualDocumentLabel")
+        self.object_context_label = QLabel("OBJETO ATIVO: NENHUM", brand_box)
+        self.object_context_label.setObjectName("VisualObjectContext")
         brand_layout.addWidget(brand_title)
         brand_layout.addWidget(self.document_label)
+        brand_layout.addWidget(self.object_context_label)
         toolbar_layout.addWidget(brand_box)
         toolbar_layout.addSpacing(8)
 
@@ -263,6 +266,12 @@ class VisualScriptingEditorDock(QMainWindow):
                 font-size: 9px;
                 font-weight: 600;
             }
+            QLabel#VisualObjectContext {
+                color: #69f0ae;
+                font-size: 10px;
+                font-weight: 700;
+                letter-spacing: 0.6px;
+            }
             QPushButton {
                 min-height: 30px;
                 padding: 0 11px;
@@ -436,11 +445,22 @@ class VisualScriptingEditorDock(QMainWindow):
         self.btn_play.clicked.connect(self._play)
         self.btn_pause.clicked.connect(self._pause)
         self.btn_stop.clicked.connect(self._stop)
-        self.btn_new.clicked.connect(self.graph_editor.new_graph)
+        self.btn_new.clicked.connect(self._new_for_active_object)
         self.btn_open.clicked.connect(self.graph_editor.open_dialog)
         self.btn_save.clicked.connect(self.graph_editor.save)
         self.btn_auto_layout.clicked.connect(self.graph_editor.organize_graph)
         self.btn_validate.clicked.connect(self._validate)
+
+    def _new_for_active_object(self) -> None:
+        """Create a blank graph already bound to the selected scene object."""
+        host = self.parent()
+        controller = getattr(host, "_logic_workspace_controller", None)
+        selected = getattr(host, "_selected_name", None)
+        objects = getattr(host, "_objects_by_name", {})
+        if controller is not None and selected in objects:
+            controller.create_blank_for_selected()
+            return
+        self.graph_editor.new_graph()
         self.btn_explain.clicked.connect(self.trigger_explain_mode)
         self.search_bar.textChanged.connect(self.graph_editor.node_search.setText)
         self.graph_editor.asset_changed.connect(self.sync_from_host)
@@ -522,6 +542,11 @@ class VisualScriptingEditorDock(QMainWindow):
         })
         selected = getattr(host, "_selected_name", None)
         objects = getattr(host, "_objects_by_name", {})
+        repository = getattr(host, "_logic_assets_repository", None)
+        graph_count = len(
+            repository.for_object(selected, objects.get(selected, {}))
+        ) if repository is not None and selected in objects else 0
+        self.set_object_context(selected, graph_count)
         active_objects = runtime or objects
         if selected in active_objects:
             self.mini_viewport.set_target_object(active_objects[selected])
@@ -530,6 +555,17 @@ class VisualScriptingEditorDock(QMainWindow):
             )
         else:
             self.mini_viewport.unified_viewport.selected_object_id = ""
+
+    def set_object_context(
+        self, object_name: str | None, graph_count: int = 0
+    ) -> None:
+        if object_name:
+            suffix = "grafo" if graph_count == 1 else "grafos"
+            self.object_context_label.setText(
+                f"OBJETO ATIVO: {object_name}  •  {graph_count} {suffix}"
+            )
+        else:
+            self.object_context_label.setText("OBJETO ATIVO: NENHUM")
 
     def apply_runtime_trace(self, message: dict) -> None:
         if message.get("type") != "logic_trace":
