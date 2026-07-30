@@ -195,9 +195,11 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
 
     def _record_history(self, snapshot: list[dict] | None = None) -> None:
         self._history_controller.record(snapshot)
+        self._autosave.schedule()
 
     def _restore_history(self, snapshot: list[dict]) -> None:
         self._history_controller.restore(snapshot)
+        self._autosave.schedule()
 
     def _undo(self) -> None:
         self._history_controller.undo()

@@ -29,21 +29,28 @@ class SceneObjectController:
 
     def new_scene(self) -> None:
         h = self.host
-        h._record_history()
+        h._scene_history.clear()
         h._scene_snapshot = []
         h._objects_by_name = {}
+        h._runtime_objects_by_name.clear()
+        h._runtime_animator_states.clear()
         h._scene_document = {
-            "format_version": 1,
+            "format_version": 2,
             "scene_name": "Untitled",
-            "engine_version": "Zennity 0.1.0",
+            "engine_version": "Zennity 1.0.1",
+            "blackboard": {"variables": {}},
             "objects": [],
         }
         h._current_scene_path = None
         h._selected_name = None
+        h._drag_history_snapshot = None
+        h._clear_inspector_view()
+        h.logic_workspace.clear_runtime_trace()
         h._refresh_hierarchy()
         h._scene_controller.publish_snapshot([])
+        h._autosave.schedule()
         h.statusBar().showMessage("Nova cena criada")
-        h._log("INFO", "Nova cena criada")
+        h._log("INFO", "Nova cena limpa criada, sem objetos ou vínculos anteriores")
 
     def unique_name(self, base: str) -> str:
         if base not in self.host._objects_by_name:
@@ -65,6 +72,9 @@ class SceneObjectController:
             "w": width, "h": height, "rotation": 0.0, "color": color,
             "mesh_type": kind,
         }
+        if kind == "Empty":
+            obj["mesh_type"] = None
+            obj["renderer_enabled"] = False
         if rigidbody is not None:
             obj["rigidbody"] = deepcopy(rigidbody)
             obj["collider"] = {"type": "box"}

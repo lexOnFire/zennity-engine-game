@@ -26,6 +26,7 @@ from editor.runtime.viewport_process_controller import ViewportProcessController
 from editor.scene_history_controller import SceneHistoryController
 from editor.scene_object_controller import SceneObjectController
 from editor.scene_persistence import EditorScenePersistence
+from editor.scene_autosave_controller import SceneAutosaveController
 from editor.controllers.selection_controller import EditorSelectionController
 from editor.controllers.tool_controller import ToolController
 from editor.controllers.viewport_controller import ViewportController
@@ -55,6 +56,7 @@ class EditorBootstrapController:
         h._console_records = h._console_controller.records
         h._asset_browser = AssetBrowserController(h, self.project_root)
         h._scene_persistence = EditorScenePersistence(self.project_root)
+        h._autosave = SceneAutosaveController(h, self.project_root)
         h._viewport_controller = viewport_controller or ViewportProcessController.from_queues(
             commands, events, viewport_process,
         )
@@ -115,6 +117,7 @@ class EditorBootstrapController:
         h.add_component_button.clicked.connect(h._open_add_component_menu)
         h.viewport_tabs.currentChanged.connect(h._change_view_mode)
         h._session_controller.configure()
+        h._autosave.start()
         h._scene_controller.publish_snapshot(h._scene_snapshot)
         h._log("INFO", "Zennity Phase 1 iniciado com Viewport em processo separado")
         self._configured = True

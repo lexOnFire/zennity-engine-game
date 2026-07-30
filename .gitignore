@@ -41,6 +41,9 @@ Thumbs.db
 *.backup
 *.bak
 .zennity/
+.zennity_autosave.json
+.zennity_autosave_manifest.json
+.zennity_session.lock
 estado_reintegracao.txt
 
 # Local CI and GitHub diagnostics

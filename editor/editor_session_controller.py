@@ -127,6 +127,9 @@ class EditorSessionController:
         if self._closed:
             return
         self._closed = True
+        autosave = getattr(self.editor, "_autosave", None)
+        if autosave is not None:
+            autosave.stop()
         if self._configured:
             for timer_name in (
                 "_viewport_resize_timer",

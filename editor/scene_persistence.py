@@ -56,7 +56,13 @@ class EditorScenePersistence:
         }
         payload["format_version"] = max(2, int(payload.get("format_version", 1)))
         payload["scene_name"] = str(payload.get("scene_name") or path.stem)
-        payload["blackboard"] = {"variables": self.collect_logic_variables("scene")}
+        blackboard = payload.get("blackboard")
+        if not isinstance(blackboard, dict):
+            blackboard = {}
+        variables = blackboard.get("variables")
+        payload["blackboard"] = {
+            "variables": deepcopy(variables) if isinstance(variables, dict) else {}
+        }
         existing = payload.get("objects", [])
         existing_by_id = {
             str(item.get("id")): item for item in existing
