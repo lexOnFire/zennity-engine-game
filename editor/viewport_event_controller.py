@@ -68,6 +68,9 @@ class ViewportEventController:
         h.toolbar_actions["Pause"].setEnabled(running)
         h.toolbar_actions["Stop"].setEnabled(running)
         h.logic_workspace.set_play_state(running)
+        dock = getattr(h, "_dock_visual_scripting", None)
+        if dock is not None and hasattr(dock, "set_play_state"):
+            dock.set_play_state(state)
         h.statusBar().showMessage({
             "play": "Viewport: PLAY", "pause": "Viewport: PAUSE",
             "edit": "Viewport: EDIT — cena restaurada",

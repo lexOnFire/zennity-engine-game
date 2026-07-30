@@ -17,7 +17,10 @@ from PySide6.QtWidgets import (
 
 from editor.widgets.logic_graph_editor import LogicGraphEditor
 from editor.widgets.generic_graph_editor import GenericGraphEditorWidget
-from editor.visual_scripting.mini_live_viewport import MiniLiveViewportWidget
+from editor.visual_scripting.mini_live_viewport import (
+    MiniLiveViewportWidget,
+    ViewportMode,
+)
 
 
 class _GraphToolAdapter:
@@ -496,25 +499,35 @@ class VisualScriptingEditorDock(QMainWindow):
             dispatcher.dispatch({"type": command})
 
     def _play(self) -> None:
+        # request_play saves the graph and emits the single official Play command.
         self.graph_editor.request_play()
-        self.mini_viewport.start_play_mode()
-        if hasattr(self._host, "on_play_clicked"):
-            self._host.on_play_clicked()
-        self.sync_from_host()
-        self._sync_timer.start(16)
 
     def _pause(self) -> None:
         self._dispatch("pause")
-        self.mini_viewport.toggle_pause_mode()
-        if hasattr(self._host, "on_pause_clicked"):
-            self._host.on_pause_clicked()
 
     def _stop(self) -> None:
-        self._sync_timer.stop()
+        # stop_requested is wired to the same command controller as the main toolbar.
         self.graph_editor.stop_requested.emit()
-        self.mini_viewport.stop_play_mode()
-        if hasattr(self._host, "on_stop_clicked"):
-            self._host.on_stop_clicked()
+
+    def set_play_state(self, state: str) -> None:
+        """Mirror the state confirmed by the real viewport process."""
+        modes = {
+            "play": ViewportMode.GAME,
+            "pause": ViewportMode.DEBUG,
+            "edit": ViewportMode.EDITOR,
+        }
+        mode = modes.get(str(state))
+        if mode is None:
+            return
+        self.mini_viewport.set_viewport_mode(mode)
+        running = state in {"play", "pause"}
+        self.btn_play.setEnabled(state != "play")
+        self.btn_pause.setEnabled(running)
+        self.btn_stop.setEnabled(running)
+        if running:
+            self._sync_timer.start(33)
+        else:
+            self._sync_timer.stop()
         self.sync_from_host()
 
     def _validate(self) -> None:

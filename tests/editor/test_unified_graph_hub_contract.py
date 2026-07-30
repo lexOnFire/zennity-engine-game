@@ -53,3 +53,10 @@ def test_specialized_graph_editor_has_real_document_actions() -> None:
     for method in ("new_document", "open_dialog", "load_document", "save"):
         assert f"def {method}(" in source
     assert "self.canvas._spawn_node(ndef.id)" in source
+
+
+def test_viewport_events_are_the_single_source_for_visual_logic_play_state() -> None:
+    source = (ROOT / "editor" / "viewport_event_controller.py").read_text(
+        encoding="utf-8"
+    )
+    assert "dock.set_play_state(state)" in source
