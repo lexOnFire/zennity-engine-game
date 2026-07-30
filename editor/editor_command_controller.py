@@ -40,6 +40,9 @@ class EditorCommandController:
         h = self.host
         for label in ("Novo", "Abrir", "Salvar"):
             h.editor_menus["Arquivo"].addAction(h.toolbar_actions[label])
+        save_as_action = h.editor_menus["Arquivo"].addAction("Salvar como...")
+        save_as_action.setShortcut("Ctrl+Shift+S")
+        save_as_action.triggered.connect(h._project_workflow.save_scene_as)
         for label in ("Play", "Pause", "Stop"):
             h.editor_menus["Executar"].addAction(h.toolbar_actions[label])
         validate_action = h.editor_menus["Build"].addAction("Validar projeto...")
