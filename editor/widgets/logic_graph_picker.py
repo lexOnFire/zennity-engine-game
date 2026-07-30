@@ -49,7 +49,7 @@ class LogicGraphPickerDialog(QDialog):
         self.description = QLabel("Selecione um grafo para ver o resumo.")
         self.description.setWordWrap(True)
         layout.addWidget(self.description)
-        self.create_button = QPushButton("＋ Criar novo do zero")
+        self.create_button = QPushButton("＋ Criar novo")
         self.create_button.setObjectName("CreateBlankLogicGraphButton")
         self.create_button.setProperty("uiRole", "primary")
         self.create_button.setToolTip(
