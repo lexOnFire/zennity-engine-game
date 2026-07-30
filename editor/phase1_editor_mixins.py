@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction, QActionGroup
+from PySide6.QtGui import QAction, QActionGroup, QKeySequence
 from PySide6.QtWidgets import (
     QComboBox,
     QDockWidget,
@@ -182,13 +182,15 @@ class Phase1EditorUIBuilderMixin:
         group = QActionGroup(self)
         group.setExclusive(True)
 
-        for label, tool in (
-            ("Select", EditorTool.SELECT),
-            ("Move", EditorTool.MOVE),
-            ("Rotate", EditorTool.ROTATE),
-            ("Scale", EditorTool.SCALE),
+        for label, tool, shortcut in (
+            ("Select", EditorTool.SELECT, "Q"),
+            ("Move", EditorTool.MOVE, "W"),
+            ("Rotate", EditorTool.ROTATE, "E"),
+            ("Scale", EditorTool.SCALE, "R"),
         ):
             action = QAction(label, self, checkable=True)
+            action.setShortcut(QKeySequence(shortcut))
+            action.setShortcutContext(Qt.ApplicationShortcut)
             action.setChecked(tool == self.editor_context.tools.active_tool)
             action.triggered.connect(
                 lambda checked=False, next_tool=tool: self.editor_context.tools.set_active_tool(next_tool)
