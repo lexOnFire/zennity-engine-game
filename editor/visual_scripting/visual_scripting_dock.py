@@ -164,14 +164,9 @@ class VisualScriptingEditorDock(QMainWindow):
         self.watches_tabs.addTab(self.runtime_timeline, "⏱️ Runtime Timeline")
 
         # Visual Profiler Tab (Fase 9)
-        self.profiler_text = QTextEdit(self.watches_tabs)
-        self.profiler_text.setReadOnly(True)
-        self.profiler_text.setText(
-            "📊 Visual Profiler\nAguardando dados da execução.\n"
-            "Pressione Play para acompanhar FPS, objetos e custo do frame."
-        )
-        self.profiler_text.setStyleSheet("background-color: #0d1117; color: #7ee787; font-family: Consolas; font-size: 10px;")
-        self.watches_tabs.addTab(self.profiler_text, "📊 Visual Profiler")
+        from editor.visual_scripting.visual_profiler_widget import VisualProfilerWidget
+        self.profiler_widget = VisualProfilerWidget(self.watches_tabs)
+        self.watches_tabs.addTab(self.profiler_widget, "📊 Visual Profiler")
 
         self.bottom_panel.addWidget(self.watches_tabs)
 

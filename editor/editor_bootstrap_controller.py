@@ -141,4 +141,5 @@ class EditorBootstrapController:
             "animator_state": h._handle_animator_state_event,
             "animation_event": h._handle_animation_event,
             "stats": h._handle_stats_event,
+            "runtime_metrics": h._handle_runtime_metrics_event,
         }

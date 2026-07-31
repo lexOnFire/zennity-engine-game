@@ -167,6 +167,10 @@ class ViewportEventController:
             f"IPC: {command_stats['sent']} enviados • {command_stats['coalesced']} unidos"
         )
 
+    def runtime_metrics(self, message: dict) -> None:
+        from editor.core.event_bus import EventBus
+        EventBus.emit("runtime_metrics", **message)
+
     def poll(self) -> None:
         h = self.host
         while True:

@@ -417,6 +417,9 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
     def _handle_stats_event(self, message: dict) -> None:
         self._viewport_event_controller.stats(message)
 
+    def _handle_runtime_metrics_event(self, message: dict) -> None:
+        self._viewport_event_controller.runtime_metrics(message)
+
     def _read_viewport_events(self) -> None:
         self._viewport_event_controller.poll()
 
