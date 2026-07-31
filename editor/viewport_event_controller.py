@@ -12,6 +12,8 @@ class ViewportEventController:
         self.host = host
 
     def selected(self, message: dict) -> None:
+        if hasattr(self.host, "_play_session") and getattr(self.host._play_session, "is_running", False):
+            return
         self.host._selection.select(str(message["name"]), source="Viewport")
 
     def tool_changed(self, message: dict) -> None:

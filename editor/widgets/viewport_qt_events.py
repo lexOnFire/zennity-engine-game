@@ -30,7 +30,8 @@ class ViewportQtEventsMixin:
                 button=self._qt_btn_to_pg(event.button()),
             )
             self.active_scene.handle_event(pg_ev)
-            self._sync_selection_to_model()
+            if not getattr(self.active_scene, "playing", False):
+                self._sync_selection_to_model()
         self.request_render("mouse-press")
         event.accept()
 
@@ -43,7 +44,8 @@ class ViewportQtEventsMixin:
                 button=self._qt_btn_to_pg(event.button()),
             )
             self.active_scene.handle_event(pg_ev)
-            self._sync_selection_to_model()
+            if not getattr(self.active_scene, "playing", False):
+                self._sync_selection_to_model()
         self.request_render("mouse-release")
         event.accept()
 

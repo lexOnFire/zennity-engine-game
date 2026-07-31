@@ -56,8 +56,8 @@
       "title": "Move",
       "category": "Movement",
       "position": [
-        -12.16,
-        -151.05
+        1.61,
+        -198.48
       ],
       "editor": {
         "collapsed": false,
@@ -67,38 +67,23 @@
       "properties": {}
     },
     {
-      "id": "d923939f6fd24f62ba4788d96fbc5032",
-      "type": "create_object",
-      "title": "Create Object",
-      "category": "Spawning",
-      "position": [
-        -314.81,
-        7.4
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 240.0
-      },
-      "properties": {
-        "texture": "Assets/Materials/disparo.PNG"
-      }
-    },
-    {
       "id": "b09b9bd7e0f644a181e264efd671d7df",
       "type": "start_continuous_motion",
       "title": "Start Continuous Motion",
       "category": "Movement",
       "position": [
-        23.8,
-        2.27
+        -21.99,
+        80.85
       ],
       "editor": {
         "collapsed": false,
         "width": 220.0,
         "height": 212.0
       },
-      "properties": {}
+      "properties": {
+        "x": 0,
+        "y": -200
+      }
     },
     {
       "id": "a180226dc3734b6fb51aaa732b4d5d70",
@@ -106,8 +91,64 @@
       "title": "Key Pressed",
       "category": "Input",
       "position": [
-        -632.12,
-        -3.53
+        -592.65,
+        85.73
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "3601ab84b87b48a0b739e5dc79920a3a",
+      "type": "create_object",
+      "title": "Create Object",
+      "category": "Spawning",
+      "position": [
+        -331.15,
+        96.36
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 220.0,
+        "height": 240.0
+      },
+      "properties": {
+        "x": 0,
+        "y": 0,
+        "max_instances": 0,
+        "lifetime": 0,
+        "texture": "Assets/Materials/disparo.PNG"
+      }
+    },
+    {
+      "id": "e498c1f310694d66b958a7d3c8b2edca",
+      "type": "cooldown",
+      "title": "Cooldown",
+      "category": "Logic",
+      "position": [
+        -851.4,
+        74.48
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "seconds": 0.09
+      }
+    },
+    {
+      "id": "be614c86bf834664bd83e99bf372ecfb",
+      "type": "destroy_after_time",
+      "title": "Destroy After Time",
+      "category": "Action",
+      "position": [
+        299.63,
+        123.49
       ],
       "editor": {
         "collapsed": false,
@@ -137,31 +178,49 @@
       "order": 1
     },
     {
-      "id": "a4489fd54e13499bb3c653bdeb370a6e",
-      "from_node": "d923939f6fd24f62ba4788d96fbc5032",
+      "id": "4a191fb4db2f4ce6a7c58f133b8b3ef9",
+      "from_node": "3601ab84b87b48a0b739e5dc79920a3a",
       "from_port": "next",
       "to_node": "b09b9bd7e0f644a181e264efd671d7df",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 2
-    },
-    {
-      "id": "41b71e02d9064976add4ef5aed2bed0f",
-      "from_node": "a180226dc3734b6fb51aaa732b4d5d70",
-      "from_port": "true",
-      "to_node": "d923939f6fd24f62ba4788d96fbc5032",
       "to_port": "in",
       "kind": "flow",
       "order": 3
     },
     {
-      "id": "4af11674f8e44459bb7d48409cf6c377",
+      "id": "d499dcc6c42044dfb69efb43b073349f",
+      "from_node": "b09b9bd7e0f644a181e264efd671d7df",
+      "from_port": "next",
+      "to_node": "be614c86bf834664bd83e99bf372ecfb",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 6
+    },
+    {
+      "id": "c5004f608b78454783c1616abf3ea1e6",
       "from_node": "bf50a39053374596838b98cab96d664c",
+      "from_port": "next",
+      "to_node": "e498c1f310694d66b958a7d3c8b2edca",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 4
+    },
+    {
+      "id": "0c6f3150e6764af69940820cf41550f6",
+      "from_node": "e498c1f310694d66b958a7d3c8b2edca",
       "from_port": "next",
       "to_node": "a180226dc3734b6fb51aaa732b4d5d70",
       "to_port": "in",
       "kind": "flow",
-      "order": 4
+      "order": 5
+    },
+    {
+      "id": "04d11eaa484142af8ce71c1a09d5a1ba",
+      "from_node": "a180226dc3734b6fb51aaa732b4d5d70",
+      "from_port": "true",
+      "to_node": "3601ab84b87b48a0b739e5dc79920a3a",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 6
     }
   ]
 }

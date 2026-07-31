@@ -51,7 +51,7 @@
       "properties": {
         "path": "Assets/Materials/CEU_INFI.png",
         "speed_x": 0.0,
-        "speed_y": 160.0,
+        "speed_y": -160.0,
         "repeat_x": false,
         "repeat_y": true,
         "parallax": 1.0,

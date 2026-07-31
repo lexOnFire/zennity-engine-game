@@ -445,7 +445,7 @@ class ViewportWidget(ViewportQtEventsMixin, QOpenGLWidget):
 
     def _sync_selection_to_model(self) -> None:
         """Propaga a mudança de selected_index da cena para o ViewModel por UUID."""
-        if not self.viewmodel or not self.active_scene:
+        if not self.viewmodel or not self.active_scene or getattr(self.active_scene, "playing", False):
             return
 
         idx = getattr(self.active_scene, "selected_index", -1)
