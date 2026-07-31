@@ -253,9 +253,6 @@
             }
           ]
         },
-        "animator": {
-          "controller": "Assets/Animations/NewController.zanimator"
-        },
         "rigidbody": {
           "mass": 1.0,
           "gravity_scale": 1.0,
@@ -282,7 +279,10 @@
           "is_trigger": false
         }
       },
-      "static": false
+      "static": false,
+      "animator": {
+        "controller_path": "Assets/Animations/NewController.zanimator"
+      }
     },
     {
       "id": "base-platform-0001",
@@ -615,33 +615,17 @@
             0.0
           ],
           "is_trigger": true
-        },
-        "behavior": {
-          "items": [
-            {
-              "type": "BehaviorTree",
-              "enabled": true,
-              "properties": {
-                "behavior_path": "Assets/Behaviors/Showcase_Enemy.zbehavior",
-                "active": true
-              }
-            }
-          ]
-        },
-        "dialogue": {
-          "items": [
-            {
-              "type": "DialogueSystem",
-              "enabled": true,
-              "properties": {
-                "dialogue_path": "Assets/Dialogues/Showcase_NPC.zdialogue",
-                "auto_start": true
-              }
-            }
-          ]
         }
       },
-      "static": false
+      "static": false,
+      "behavior": {
+        "controller_path": "Assets/Behaviors/Showcase_Enemy.zbehavior",
+        "active": true
+      },
+      "dialogue": {
+        "asset_path": "Assets/Dialogues/Showcase_NPC.zdialogue",
+        "auto_start": true
+      }
     },
     {
       "id": "base-coin-0001",
@@ -1022,41 +1006,13 @@
       "components": {
         "items": [
           {
-            "type": "Canvas",
+            "type": "UICanvas",
             "enabled": true,
             "properties": {
-              "visible": true,
-              "x": 16.0,
-              "y": 16.0,
-              "width": 180.0,
-              "height": 42.0,
-              "z_order": 0,
-              "text": "",
-              "font_size": 24,
-              "color": [
-                255,
-                255,
-                255
-              ],
-              "alpha": 255,
-              "interactable": true,
-              "event": "click",
-              "target": "",
-              "sprite_path": ""
+              "layout_path": "Assets/UI/MainUI.zui"
             }
           }
-        ],
-        "ui": {
-          "items": [
-            {
-              "type": "UICanvas",
-              "enabled": true,
-              "properties": {
-                "layout_path": "Assets/UI/MainUI.zui"
-              }
-            }
-          ]
-        }
+        ]
       },
       "static": false
     },
