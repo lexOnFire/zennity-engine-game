@@ -17,25 +17,6 @@ class ViewportProcessState:
     selected_name: str | None
     playing: bool
     paused: bool
-"""Play-session and debugger commands for the isolated viewport."""
-from __future__ import annotations
-
-from copy import deepcopy
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Callable
-
-
-@dataclass
-class ViewportProcessState:
-    running: bool
-    screen: Any
-    camera_x: float
-    camera_y: float
-    edit_snapshot: dict[str, dict[str, Any]]
-    selected_name: str | None
-    playing: bool
-    paused: bool
     velocities_y: dict[str, float]
     grounded: dict[str, bool]
     scene_blackboard_config: dict[str, Any]
@@ -143,6 +124,17 @@ class ViewportPlayCommandHandler:
             self.reset_physics()
             self.clear_hud()
             self.start_logic(state.scene_blackboard_config)
+            self.emit({"type": "play_state", "state": "play"})
+        elif state.paused:
+            state.paused = False
+            self.pause_audio(False)
+            self.emit({"type": "play_state", "state": "play"})
+
+    def _handle_logic_debug(self, command: dict[str, Any], state: ViewportProcessState) -> None:
+        requested_graph = Path(str(command.get("graph", ""))).as_posix().casefold()
+        requested_name = Path(requested_graph).name.casefold()
+        action = str(command.get("command", "sync")).lower()
+        breakpoints = command.get("breakpoints", [])
         conditions = command.get("breakpoint_conditions", {})
         watches = command.get("watches", [])
         variables = command.get("variables", {})
@@ -191,9 +183,27 @@ class ViewportPlayCommandHandler:
             self.pause_audio(state.paused)
             self.emit({"type": "play_state", "state": "pause" if state.paused else "play"})
 
+    def _handle_logic_hot_reload(self, command: dict[str, Any], state: ViewportProcessState) -> None:
+        import json
+        if not state.playing:
+            return
+        path = command.get("path", "")
+        content = command.get("content", "")
+        if not path or not content:
+            return
+        try:
+            graph_data = json.loads(content)
+            requested_graph = Path(str(path)).as_posix().casefold()
+            for object_name, runtimes in self.logic_runtimes.items():
+                for graph_path, runtime in runtimes:
+                    current = Path(str(graph_path)).as_posix().casefold()
+                    if current == requested_graph:
+                        runtime.hot_reload(graph_data)
+        except Exception as e:
+            print(f"Logic Hot Reload failed: {e}")
+
     def _emit_trace(self, object_name: str, graph_path: str, runtime: Any, error: Exception | None = None) -> None:
         event = {"type": "logic_trace", "object": object_name, "graph": graph_path, **runtime.debug_snapshot()}
         if error is not None:
             event["error"] = str(error)
         self.emit(event)
-
