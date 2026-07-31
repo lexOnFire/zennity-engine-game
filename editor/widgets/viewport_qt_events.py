@@ -21,9 +21,31 @@ class ViewportQtEventsMixin:
             return 3
         return 0
 
+    _held_qt_keys: set[int] = set()
+
+    def _purge_stuck_keys(self) -> None:
+        if not self.active_scene:
+            return
+        key_map = {
+            Qt.Key_A: pygame.K_a,
+            Qt.Key_D: pygame.K_d,
+            Qt.Key_W: pygame.K_w,
+            Qt.Key_S: pygame.K_s,
+            Qt.Key_Left: pygame.K_LEFT,
+            Qt.Key_Right: pygame.K_RIGHT,
+            Qt.Key_Up: pygame.K_UP,
+            Qt.Key_Down: pygame.K_DOWN,
+            Qt.Key_Space: pygame.K_SPACE,
+        }
+        for qt_k, pg_k in key_map.items():
+            if qt_k not in self._held_qt_keys:
+                ev = pygame.event.Event(pygame.KEYUP, key=pg_k, mod=pygame.KMOD_NONE, unicode="")
+                self.active_scene.handle_event(ev)
+
     def mousePressEvent(self, event: QMouseEvent) -> None:
         self._qt_mouse_pos = (event.x(), event.y())
         if self.active_scene:
+            self._purge_stuck_keys()
             pg_ev = pygame.event.Event(
                 pygame.MOUSEBUTTONDOWN,
                 pos=self._qt_mouse_pos,
@@ -38,6 +60,7 @@ class ViewportQtEventsMixin:
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         self._qt_mouse_pos = (event.x(), event.y())
         if self.active_scene:
+            self._purge_stuck_keys()
             pg_ev = pygame.event.Event(
                 pygame.MOUSEBUTTONUP,
                 pos=self._qt_mouse_pos,
@@ -105,6 +128,7 @@ class ViewportQtEventsMixin:
         return _map.get(qt_key)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
+        self._held_qt_keys.add(event.key())
         if event.key() == Qt.Key_F:
             self.focus_camera_on_selected()
             event.accept()
@@ -142,6 +166,8 @@ class ViewportQtEventsMixin:
             super().keyPressEvent(event)
 
     def keyReleaseEvent(self, event: QKeyEvent) -> None:
+        if not event.isAutoRepeat():
+            self._held_qt_keys.discard(event.key())
         if not self.active_scene:
             return
         if event.isAutoRepeat():
@@ -164,6 +190,7 @@ class ViewportQtEventsMixin:
             super().keyReleaseEvent(event)
 
     def focusOutEvent(self, event) -> None:
+        self._held_qt_keys.clear()
         if self.active_scene:
             for key in (pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN, pygame.K_SPACE):
                 pg_ev = pygame.event.Event(pygame.KEYUP, key=key, mod=pygame.KMOD_NONE, unicode="")
