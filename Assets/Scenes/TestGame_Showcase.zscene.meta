@@ -1,0 +1,10 @@
+{
+  "guid": "7e2af7d5-4877-4164-bf9e-f8cbd0818093",
+  "uuid": "7e2af7d5-4877-4164-bf9e-f8cbd0818093",
+  "type": "scene",
+  "importer": "generic_importer",
+  "source_path": "Assets/Scenes/TestGame_Showcase.zscene",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "97938be03e2c38c8c5b966c7602730645b5b29cf94171c1b7c4256008a6df252"
+}

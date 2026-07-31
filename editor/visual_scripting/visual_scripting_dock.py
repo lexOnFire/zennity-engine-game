@@ -503,18 +503,14 @@ class VisualScriptingEditorDock(QMainWindow):
     def update_runtime_stats(
         self, *, fps: float, object_count: int, frame_ms: float | None = None
     ) -> None:
-        """Display live measurements instead of placeholder profiler values."""
+        """Display live measurements using the new profiler widget."""
         milliseconds = (
             float(frame_ms) if frame_ms is not None
             else (1000.0 / fps if fps > 0 else 0.0)
         )
-        budget = "OK" if milliseconds <= 16.67 else "ACIMA DO ORÇAMENTO"
-        self.profiler_text.setText(
-            "📊 Visual Profiler — dados ao vivo\n"
-            f"• FPS: {fps:.1f}\n"
-            f"• Frame: {milliseconds:.2f} ms ({budget})\n"
-            f"• Objetos ativos: {object_count}\n"
-            f"• Meta: 60 FPS / 16.67 ms"
+        budget = "OK" if milliseconds <= 16.67 else "ACIMA"
+        self.profiler_widget.fps_label.setText(
+            f"FPS: {fps:.0f} | Frame: {milliseconds:.2f} ms ({budget}) | Obj: {object_count}"
         )
 
     def _new_for_active_object(self) -> None:
