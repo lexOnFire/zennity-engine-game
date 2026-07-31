@@ -1,96 +1,40 @@
 {
-  "format": "zennity.behavior_controller",
+  "format": "zennity.generic_graph",
   "version": 1,
-  "name": "EnemyDemo",
-  "initial_state": "Patrol",
-  "parameters": {
-    "player_distance": {
-      "type": "float",
-      "default": 999.0
+  "category": "Behavior Tree",
+  "name": "EnemyAI",
+  "nodes": [
+    {
+      "id": "root",
+      "type": "bt.selector",
+      "position": [0, 0]
     },
-    "attack": {
-      "type": "trigger",
-      "default": false
+    {
+      "id": "seq1",
+      "type": "bt.sequence",
+      "position": [300, -100]
     },
-    "attack_finished": {
-      "type": "trigger",
-      "default": false
+    {
+      "id": "patrol",
+      "type": "bt.wait",
+      "position": [300, 100],
+      "properties": { "duration": 2.0 }
     }
-  },
-  "states": {
-    "Patrol": {
-      "script": "",
-      "logic_graph": "Assets/Logic/NebulaDefense/NebulaEnemy.zlogic",
-      "position": [
-        40.0,
-        150.0
-      ]
-    },
-    "Chase": {
-      "script": "",
-      "logic_graph": "Assets/Logic/NebulaDefense/NebulaEnemy.zlogic",
-      "position": [
-        270.0,
-        150.0
-      ]
-    },
-    "Attack": {
-      "script": "",
-      "logic_graph": "Assets/Logic/NebulaDefense/NebulaEnemy.zlogic",
-      "position": [
-        500.0,
-        150.0
-      ]
-    }
-  },
-  "transitions": [
+  ],
+  "edges": [
     {
-      "from": "Patrol",
-      "to": "Chase",
-      "conditions": [
-        {
-          "parameter": "player_distance",
-          "operator": "<",
-          "value": 300.0
-        }
-      ],
-      "priority": 1
+      "id": "e1",
+      "source_node": "root",
+      "source_port": "out_0",
+      "target_node": "seq1",
+      "target_port": "in"
     },
     {
-      "from": "Chase",
-      "to": "Patrol",
-      "conditions": [
-        {
-          "parameter": "player_distance",
-          "operator": ">=",
-          "value": 300.0
-        }
-      ],
-      "priority": 1
-    },
-    {
-      "from": "*",
-      "to": "Attack",
-      "conditions": [
-        {
-          "parameter": "attack",
-          "operator": "trigger",
-          "value": true
-        }
-      ],
-      "priority": 10
-    },
-    {
-      "from": "Attack",
-      "to": "Chase",
-      "conditions": [
-        {
-          "parameter": "attack_finished",
-          "operator": "trigger",
-          "value": true
-        }
-      ],
-      "priority": 5
+      "id": "e2",
+      "source_node": "root",
+      "source_port": "out_1",
+      "target_node": "patrol",
+      "target_port": "in"
     }
   ]
 }

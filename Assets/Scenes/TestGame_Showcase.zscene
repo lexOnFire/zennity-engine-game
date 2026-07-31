@@ -4,6 +4,46 @@
   "engine_version": "0.1.0",
   "objects": [
     {
+      "id": "ui-canvas-0001",
+      "uuid": "ui-canvas-0001",
+      "name": "HUD_Canvas",
+      "tag": "UI",
+      "layer": "0",
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [ 0.0, 0.0, 0.0 ],
+        "rotation": [ 0.0, 0.0, 0.0 ],
+        "rz": 0.0,
+        "scale": [ 1.0, 1.0, 1.0 ]
+      },
+      "visual": {
+        "mesh_type": "None",
+        "sprite_path": null,
+        "asset_uuid": null,
+        "color": [ 255, 255, 255 ],
+        "material": "None",
+        "enabled": false,
+        "texture": "",
+        "layer": "UI",
+        "order": 100
+      },
+      "components": {
+        "ui": {
+          "items": [
+            {
+              "type": "UICanvas",
+              "enabled": true,
+              "properties": {
+                "layout_path": "Assets/UI/MainUI.zui"
+              }
+            }
+          ]
+        }
+      },
+      "static": true
+    },
+    {
       "id": "base-camera-0001",
       "uuid": "base-camera-0001",
       "name": "MainCamera",
@@ -227,13 +267,13 @@
         "sprite_path": null,
         "asset_uuid": null,
         "color": [
-          79,
-          125,
+          255,
+          255,
           255
         ],
         "material": "None",
         "enabled": true,
-        "texture": "",
+        "texture": "Assets/Textures/personagem 1.PNG",
         "layer": "Default",
         "order": 0
       },
@@ -252,6 +292,9 @@
               }
             }
           ]
+        },
+        "animator": {
+          "controller": "Assets/Animations/NewController.zanimator"
         },
         "rigidbody": {
           "mass": 1.0,
@@ -596,7 +639,7 @@
           76,
           86
         ],
-        "material": "None",
+        "material": "Assets/Materials/Showcase_Shader.zmaterial",
         "enabled": true,
         "texture": "",
         "layer": "Default",
@@ -612,6 +655,30 @@
             0.0
           ],
           "is_trigger": true
+        },
+        "behavior": {
+          "items": [
+            {
+              "type": "BehaviorTree",
+              "enabled": true,
+              "properties": {
+                "behavior_path": "Assets/Behaviors/Showcase_Enemy.zbehavior",
+                "active": true
+              }
+            }
+          ]
+        },
+        "dialogue": {
+          "items": [
+            {
+              "type": "DialogueSystem",
+              "enabled": true,
+              "properties": {
+                "dialogue_path": "Assets/Dialogues/Showcase_NPC.zdialogue",
+                "auto_start": true
+              }
+            }
+          ]
         }
       },
       "static": false

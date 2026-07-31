@@ -1,0 +1,28 @@
+{
+  "format": "zennity.generic_graph",
+  "version": 1,
+  "category": "Dialogue",
+  "name": "NPC_Dialogue",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "dlg.start",
+      "position": [0, 0]
+    },
+    {
+      "id": "say1",
+      "type": "dlg.say",
+      "position": [300, 0],
+      "properties": { "text": "Hello there! Welcome to Zennity Engine Demo!" }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source_node": "start",
+      "source_port": "next",
+      "target_node": "say1",
+      "target_port": "in"
+    }
+  ]
+}
