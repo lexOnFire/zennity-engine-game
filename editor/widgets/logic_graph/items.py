@@ -110,6 +110,25 @@ class LogicPortItem(QGraphicsEllipseItem):
             self.setPen(QPen(self.base_color.lighter(135), 2.2))
             self.setScale(1.0)
 
+    def paint(self, painter: QPainter, option, widget=None) -> None:
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        rect = self.rect()
+        if self.data_type == "flow":
+            path = QPainterPath()
+            path.moveTo(rect.left(), rect.top())
+            path.lineTo(rect.left() + rect.width() * 0.55, rect.top())
+            path.lineTo(rect.right(), rect.center().y())
+            path.lineTo(rect.left() + rect.width() * 0.55, rect.bottom())
+            path.lineTo(rect.left(), rect.bottom())
+            path.closeSubpath()
+            painter.fillPath(path, QBrush(self.base_color if self.brush().color() != QColor("#0b0e14") else QColor("#0e1218")))
+            painter.strokePath(path, QPen(self.base_color, 2.0))
+        else:
+            painter.setPen(self.pen())
+            painter.setBrush(self.brush())
+            painter.drawEllipse(rect)
+            painter.fillPath(QPainterPath(), QBrush())
+
     def hoverEnterEvent(self, event) -> None:
         if self.node.editor._connection_origin is None:
             self.setScale(1.22)
@@ -152,11 +171,14 @@ class LogicEdgeItem(QGraphicsPathItem):
             else "Fluxo de execução" if self.data_type == "flow" else f"Valor: {self.data_type}"
         )
 
-    def itemChange(self, change, value):
-        result = super().itemChange(change, value)
-        if change == QGraphicsItem.ItemSelectedHasChanged:
-            self._refresh_pen(bool(value))
-        return result
+    def paint(self, painter: QPainter, option, widget=None) -> None:
+        super().paint(painter, option, widget)
+        if self._runtime_active and not self.path().isEmpty():
+            painter.setRenderHint(QPainter.Antialiasing, True)
+            pt = self.path().pointAtPercent(0.5)
+            painter.setBrush(QBrush(QColor("#00e5ff")))
+            painter.setPen(QPen(QColor("#ffffff"), 1.5))
+            painter.drawEllipse(pt, 5.0, 5.0)
 
     def set_runtime_active(self, active: bool) -> None:
         self._runtime_active = bool(active)

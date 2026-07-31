@@ -93,6 +93,16 @@ class LogicGraphView(QGraphicsView):
             self.editor.delete_selected()
             event.accept()
             return
+        if event.key() == Qt.Key_C and not (event.modifiers() & Qt.ControlModifier):
+            if hasattr(self.editor, "add_comment_box"):
+                self.editor.add_comment_box()
+            event.accept()
+            return
+        if event.key() == Qt.Key_F and (event.modifiers() & Qt.ShiftModifier or event.modifiers() & Qt.ControlModifier):
+            if hasattr(self.editor, "auto_arrange_nodes"):
+                self.editor.auto_arrange_nodes()
+            event.accept()
+            return
         if event.key() == Qt.Key_Escape:
             self.editor.cancel_connection()
             event.accept()
