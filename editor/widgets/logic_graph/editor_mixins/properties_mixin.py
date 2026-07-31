@@ -220,15 +220,22 @@ class LogicGraphPropertiesMixin:
         condition = self.graph.get("debug", {}).get("breakpoint_conditions", {}).get(str(node["id"]), "")
         self.breakpoint_condition_edit.setEnabled(has_breakpoint)
         self.breakpoint_condition_edit.setText(str(condition))
+        node_type = str(node.get("type", ""))
+        default_props = NODE_DEFINITIONS.get(node_type, {}).get("properties", {})
+        properties = node.setdefault("properties", {})
+        for prop_key, prop_val in default_props.items():
+            if prop_key not in properties:
+                properties[prop_key] = deepcopy(prop_val)
+
         title_item = QTreeWidgetItem(["title", str(node["title"])])
         title_item.setData(0, Qt.UserRole, "title")
         title_item.setFlags(title_item.flags() | Qt.ItemIsEditable)
         self.property_tree.addTopLevelItem(title_item)
-        for key, value in node.get("properties", {}).items():
+        for key, value in properties.items():
             if key in {"exposed_properties", "parameters"}:
                 continue
             item = QTreeWidgetItem([
-                NODE_PROPERTY_LABELS.get(str(node.get("type", "")), {}).get(
+                NODE_PROPERTY_LABELS.get(node_type, {}).get(
                     str(key), PROPERTY_LABELS.get(str(key), str(key))
                 ),
                 json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value,

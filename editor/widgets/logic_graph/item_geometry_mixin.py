@@ -29,7 +29,8 @@ class LogicNodeItemGeometryMixin:
         self.target_item.setPos(10.0, self.expanded_height - 45.0)
         self.debug_item.setTextWidth(self.width - 22.0)
         self.debug_item.setPos(10.0, self.expanded_height - 25.0)
-        self.code_item.setTextWidth(self.width - 18.0)
+        self.code_item.setTextWidth(self.width - 24.0)
+        self.code_item.setPos(12.0, self.HEADER_HEIGHT + 6.0)
         self.resize_handle.setPos(
             self.width - self.resize_handle.SIZE - 3.0,
             self.expanded_height - self.resize_handle.SIZE - 3.0,

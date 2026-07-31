@@ -601,7 +601,13 @@ class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGrap
         else:
             summary = str(self.node.get("category", ""))
         self.summary_item.setPlainText(summary)
-        self.code_item.setPlainText(node_code_preview(self.node))
+        code_str = node_code_preview(self.node)
+        self.code_item.setHtml(
+            f"<div style='font-family: Consolas, monospace; font-size: 11px; color: #00e5ff; "
+            f"line-height: 1.35; padding: 4px; border-radius: 4px; background: rgba(0, 0, 0, 0.4);'>"
+            f"{code_str.replace('<', '&lt;').replace('>', '&gt;').replace(chr(10), '<br>')}"
+            f"</div>"
+        )
 
     def set_fanout_count(self, count: int) -> None:
         self._fanout_count = max(0, int(count))

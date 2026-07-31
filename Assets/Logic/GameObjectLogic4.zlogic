@@ -24,8 +24,8 @@
       "title": "Event Update",
       "category": "Events",
       "position": [
-        120.0,
-        100.0
+        -806.37,
+        -234.42
       ],
       "editor": {
         "collapsed": false,
@@ -33,7 +33,135 @@
         "height": 150.0
       },
       "properties": {}
+    },
+    {
+      "id": "483e0f469b83405ab500b2d094a22261",
+      "type": "input_axis",
+      "title": "Read Key Axis",
+      "category": "Input",
+      "position": [
+        -335.81,
+        -209.23
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "fd6fe0d5a0b64cf984caf0f289dcd71e",
+      "type": "move",
+      "title": "Move",
+      "category": "Movement",
+      "position": [
+        -12.16,
+        -151.05
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "d923939f6fd24f62ba4788d96fbc5032",
+      "type": "create_object",
+      "title": "Create Object",
+      "category": "Spawning",
+      "position": [
+        -314.81,
+        7.4
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 240.0
+      },
+      "properties": {
+        "texture": "Assets/Materials/disparo.PNG"
+      }
+    },
+    {
+      "id": "b09b9bd7e0f644a181e264efd671d7df",
+      "type": "start_continuous_motion",
+      "title": "Start Continuous Motion",
+      "category": "Movement",
+      "position": [
+        23.8,
+        2.27
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 212.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "a180226dc3734b6fb51aaa732b4d5d70",
+      "type": "key_pressed",
+      "title": "Key Pressed",
+      "category": "Input",
+      "position": [
+        -632.12,
+        -3.53
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {}
     }
   ],
-  "edges": []
+  "edges": [
+    {
+      "id": "d573d7f63ea045309de4a4a7b5d4b79a",
+      "from_node": "bf50a39053374596838b98cab96d664c",
+      "from_port": "next",
+      "to_node": "483e0f469b83405ab500b2d094a22261",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "709efe2d0f9941fd910136b936d7c585",
+      "from_node": "483e0f469b83405ab500b2d094a22261",
+      "from_port": "next",
+      "to_node": "fd6fe0d5a0b64cf984caf0f289dcd71e",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    },
+    {
+      "id": "a4489fd54e13499bb3c653bdeb370a6e",
+      "from_node": "d923939f6fd24f62ba4788d96fbc5032",
+      "from_port": "next",
+      "to_node": "b09b9bd7e0f644a181e264efd671d7df",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 2
+    },
+    {
+      "id": "41b71e02d9064976add4ef5aed2bed0f",
+      "from_node": "a180226dc3734b6fb51aaa732b4d5d70",
+      "from_port": "true",
+      "to_node": "d923939f6fd24f62ba4788d96fbc5032",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 3
+    },
+    {
+      "id": "4af11674f8e44459bb7d48409cf6c377",
+      "from_node": "bf50a39053374596838b98cab96d664c",
+      "from_port": "next",
+      "to_node": "a180226dc3734b6fb51aaa732b4d5d70",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 4
+    }
+  ]
 }
