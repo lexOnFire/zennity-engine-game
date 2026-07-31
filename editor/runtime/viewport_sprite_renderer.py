@@ -4,6 +4,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable
 
+try:
+    from engine.graphics.material_graph import MaterialGraph, load_material_graph
+except ModuleNotFoundError:
+    MaterialGraph = None
+    load_material_graph = None
+
 
 def _safe_color(value: Any, fallback: tuple[int, int, int]) -> tuple[int, int, int]:
     """Accept editor hex colors and sanitize legacy runtime snapshots."""
@@ -30,6 +36,7 @@ class ViewportSpriteRenderer:
         self.prepare_sprite = prepare_sprite
         self.prepare_scrolling = prepare_scrolling
         self.texture_cache: dict[str, tuple[float, Any]] = {}
+        self.material_cache: dict[str, tuple[float, dict[str, Any]]] = {}
 
     def draw(
         self, screen: Any, objects: dict[str, dict[str, Any]], *, view_mode: str,
@@ -58,8 +65,13 @@ class ViewportSpriteRenderer:
                 )
 
     def _surface_for(self, obj: dict[str, Any], width: int, height: int) -> Any:
-        source, _clip = self._source_surface(obj)
-        color = _safe_color(obj.get("color"), (255, 255, 255))
+        material = self._material_values(obj)
+        render_obj = obj
+        if material.get("texture") and not obj.get("texture"):
+            render_obj = dict(obj)
+            render_obj["texture"] = material["texture"]
+        source, _clip = self._source_surface(render_obj)
+        color = self._material_color(obj, material)
         if source is not None:
             scroll = obj.get("_texture_scroll")
             if isinstance(scroll, dict):
@@ -68,15 +80,49 @@ class ViewportSpriteRenderer:
                     offset_x=float(scroll.get("offset_x", 0.0)), offset_y=float(scroll.get("offset_y", 0.0)),
                     repeat_x=bool(scroll.get("repeat_x", False)), repeat_y=bool(scroll.get("repeat_y", True)),
                 )
-            return self.prepare_sprite(source, (width, height), color)
+            surface = self.prepare_sprite(source, (width, height), color)
+            surface.set_alpha(max(0, min(255, int(float(material.get("alpha", 1.0)) * 255))))
+            return surface
         surface = self.pygame.Surface((width, height), self.pygame.SRCALPHA)
         self.pygame.draw.rect(
             surface,
-            _safe_color(obj.get("color"), (180, 180, 180)),
+            color,
             surface.get_rect(),
             border_radius=4,
         )
+        surface.set_alpha(max(0, min(255, int(float(material.get("alpha", 1.0)) * 255))))
         return surface
+
+    def _material_values(self, obj: dict[str, Any]) -> dict[str, Any]:
+        value = str(obj.get("material", "")).strip()
+        if not value.lower().endswith(".zmat") or MaterialGraph is None or load_material_graph is None:
+            return {}
+        path = Path(value)
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        try:
+            modified = path.stat().st_mtime
+            cached = self.material_cache.get(str(path))
+            if cached is None or cached[0] != modified:
+                result = MaterialGraph(load_material_graph(path)).evaluate_cpu()
+                cached = (modified, result)
+                self.material_cache[str(path)] = cached
+            return cached[1]
+        except (OSError, ValueError, TypeError):
+            return {}
+
+    @staticmethod
+    def _material_color(obj: dict[str, Any], material: dict[str, Any]) -> tuple[int, int, int]:
+        if not material:
+            return _safe_color(obj.get("color"), (255, 255, 255))
+        base = material.get("base_color", [1.0, 1.0, 1.0, 1.0])
+        glow = material.get("emissive", [0.0, 0.0, 0.0, 1.0])
+        if not isinstance(base, (list, tuple)) or not isinstance(glow, (list, tuple)):
+            return _safe_color(obj.get("color"), (255, 255, 255))
+        return tuple(
+            max(0, min(255, int((float(base[index]) + float(glow[index])) * 255)))
+            for index in range(3)
+        )
 
     def _source_surface(self, obj: dict[str, Any]) -> tuple[Any | None, dict[str, Any] | None]:
         texture = str(obj.get("texture", "")).strip()
