@@ -76,7 +76,7 @@ class LogicGraphCanvasMixin:
     _clipboard_mime = "application/x-zennity-logic-selection"
 
     def _release_scene_interaction(self) -> None:
-        if not hasattr(self, "scene"):
+        if not hasattr(self, "scene") or self.scene is None:
             return
         try:
             self.cancel_connection(refresh=False)
@@ -88,7 +88,7 @@ class LogicGraphCanvasMixin:
             pass
         try:
             grabber = self.scene.mouseGrabberItem()
-            if grabber is not None:
+            if grabber is not None and grabber.scene() is not None:
                 grabber.ungrabMouse()
         except RuntimeError:
             pass
@@ -100,11 +100,11 @@ class LogicGraphCanvasMixin:
             pass
 
     def _remove_scene_item(self, item: QGraphicsItem | None) -> None:
-        if item is None:
+        if item is None or not hasattr(self, "scene") or self.scene is None:
             return
         try:
             item.setSelected(False)
-            if self.scene.mouseGrabberItem() is item:
+            if item.scene() is not None and self.scene.mouseGrabberItem() is item:
                 item.ungrabMouse()
         except RuntimeError:
             pass
@@ -318,29 +318,50 @@ class LogicGraphCanvasMixin:
         if not choices:
             self.cancel_connection()
             return
+
+        origin_dir = origin.direction
+        origin_node_id = origin.node.node_id
+        origin_port_name = origin.name
+        origin_data_type = origin.data_type
+
+        # Cancela a linha temporária e libera o mouse grab da cena ANTES do diálogo modal
+        self.cancel_connection(refresh=False)
+        self._release_scene_interaction()
+
         selected, accepted = QInputDialog.getItem(
             self, "Criar e conectar", "Nó compatível:", [item[0] for item in choices], 0, False
         )
         if not accepted:
-            self.cancel_connection()
             return
+
         _label, node_type, port_name = next(item for item in choices if item[0] == selected)
         node = create_logic_node(node_type, (position.x(), position.y()))
         self.graph["nodes"].append(node)
-        item = self._create_node_item(node)
+        self._create_node_item(node)
         self.node_added.emit(node)
-        target = (
-            item.input_ports.get(port_name)
-            if origin.direction == "output"
-            else item.output_ports.get(port_name)
-        )
-        self._connection_candidate = target
-        self.finish_connection(target.scene_position() if target is not None else position)
+
+        source_node_id = origin_node_id if origin_dir == "output" else node["id"]
+        source_port = origin_port_name if origin_dir == "output" else port_name
+        dest_node_id = node["id"] if origin_dir == "output" else origin_node_id
+        dest_port = port_name if origin_dir == "output" else origin_port_name
+
+        edge = {
+            "id": uuid.uuid4().hex,
+            "from_node": source_node_id,
+            "from_port": source_port,
+            "to_node": dest_node_id,
+            "to_port": dest_port,
+            "kind": origin_data_type,
+        }
+        self.graph["edges"].append(edge)
+        self.edge_added.emit(edge)
+        self.refresh_connections()
+        self.mark_dirty()
+        self._update_validation()
 
     def cancel_connection(self, refresh: bool = True) -> None:
         if self._connection_preview is not None and self._connection_preview.scene() is self.scene:
             self._remove_scene_item(self._connection_preview)
-        self._connection_preview = None
         self._connection_origin = None
         self._connection_candidate = None
         for item in self.node_items.values():

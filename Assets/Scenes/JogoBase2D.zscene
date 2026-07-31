@@ -1,5 +1,5 @@
 {
-  "format_version": 1,
+  "format_version": 2,
   "scene_name": "Jogo Base 2D",
   "engine_version": "0.1.0",
   "objects": [
@@ -8,7 +8,7 @@
       "uuid": "base-camera-0001",
       "name": "MainCamera",
       "tag": "MainCamera",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -38,7 +38,11 @@
           180,
           255
         ],
-        "material": null
+        "material": "None",
+        "enabled": true,
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
         "items": [
@@ -63,14 +67,15 @@
             }
           }
         ]
-      }
+      },
+      "static": false
     },
     {
       "id": "base-sky-0001",
       "uuid": "base-sky-0001",
       "name": "Ceu",
       "tag": "Environment",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -100,16 +105,21 @@
           35,
           58
         ],
-        "material": null
+        "material": "None",
+        "enabled": true,
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
-      "components": {}
+      "components": {},
+      "static": false
     },
     {
       "id": "base-ground-0001",
       "uuid": "base-ground-0001",
       "name": "Chao",
       "tag": "Ground",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -139,19 +149,13 @@
           132,
           82
         ],
-        "material": null
+        "material": "None",
+        "enabled": true,
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 1280.0,
-          "height": 80.0,
-          "offset": [
-            0.0,
-            0.0
-          ],
-          "is_trigger": false
-        },
         "rigidbody": {
           "mass": 1.0,
           "gravity_scale": 0.0,
@@ -166,15 +170,26 @@
             0.0,
             0.0
           ]
+        },
+        "collider": {
+          "type": "box",
+          "width": 1280.0,
+          "height": 80.0,
+          "offset": [
+            0.0,
+            0.0
+          ],
+          "is_trigger": false
         }
-      }
+      },
+      "static": false
     },
     {
       "id": "base-player-0001",
       "uuid": "base-player-0001",
       "name": "Player",
       "tag": "Player",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -204,19 +219,13 @@
           125,
           255
         ],
-        "material": null
+        "material": "None",
+        "enabled": true,
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 42.0,
-          "height": 58.0,
-          "offset": [
-            0.0,
-            0.0
-          ],
-          "is_trigger": false
-        },
         "rigidbody": {
           "mass": 1.0,
           "gravity_scale": 1.0,
@@ -231,15 +240,26 @@
             0.0,
             0.0
           ]
+        },
+        "collider": {
+          "type": "box",
+          "width": 42.0,
+          "height": 58.0,
+          "offset": [
+            0.0,
+            0.0
+          ],
+          "is_trigger": false
         }
-      }
+      },
+      "static": false
     },
     {
       "id": "base-platform-0001",
       "uuid": "base-platform-0001",
       "name": "Plataforma_1",
       "tag": "Ground",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -269,19 +289,13 @@
           157,
           104
         ],
-        "material": null
+        "material": "None",
+        "enabled": true,
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 180.0,
-          "height": 24.0,
-          "offset": [
-            0.0,
-            0.0
-          ],
-          "is_trigger": false
-        },
         "rigidbody": {
           "mass": 1.0,
           "gravity_scale": 0.0,
@@ -296,15 +310,26 @@
             0.0,
             0.0
           ]
+        },
+        "collider": {
+          "type": "box",
+          "width": 180.0,
+          "height": 24.0,
+          "offset": [
+            0.0,
+            0.0
+          ],
+          "is_trigger": false
         }
-      }
+      },
+      "static": false
     },
     {
       "id": "base-platform-0002",
       "uuid": "base-platform-0002",
       "name": "Plataforma_2",
       "tag": "Ground",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -334,19 +359,13 @@
           157,
           104
         ],
-        "material": null
+        "material": "None",
+        "enabled": true,
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 170.0,
-          "height": 24.0,
-          "offset": [
-            0.0,
-            0.0
-          ],
-          "is_trigger": false
-        },
         "rigidbody": {
           "mass": 1.0,
           "gravity_scale": 0.0,
@@ -361,15 +380,26 @@
             0.0,
             0.0
           ]
+        },
+        "collider": {
+          "type": "box",
+          "width": 170.0,
+          "height": 24.0,
+          "offset": [
+            0.0,
+            0.0
+          ],
+          "is_trigger": false
         }
-      }
+      },
+      "static": false
     },
     {
       "id": "base-platform-0003",
       "uuid": "base-platform-0003",
       "name": "PlataformaMovel",
       "tag": "Ground",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -399,19 +429,13 @@
           152,
           62
         ],
-        "material": null
+        "material": "None",
+        "enabled": true,
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 160.0,
-          "height": 24.0,
-          "offset": [
-            0.0,
-            0.0
-          ],
-          "is_trigger": false
-        },
         "rigidbody": {
           "mass": 1.0,
           "gravity_scale": 0.0,
@@ -426,15 +450,26 @@
             0.0,
             0.0
           ]
+        },
+        "collider": {
+          "type": "box",
+          "width": 160.0,
+          "height": 24.0,
+          "offset": [
+            0.0,
+            0.0
+          ],
+          "is_trigger": false
         }
-      }
+      },
+      "static": false
     },
     {
       "id": "base-platform-0004",
       "uuid": "base-platform-0004",
       "name": "Plataforma_4",
       "tag": "Ground",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -464,19 +499,13 @@
           157,
           104
         ],
-        "material": null
+        "material": "None",
+        "enabled": true,
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 180.0,
-          "height": 24.0,
-          "offset": [
-            0.0,
-            0.0
-          ],
-          "is_trigger": false
-        },
         "rigidbody": {
           "mass": 1.0,
           "gravity_scale": 0.0,
@@ -491,15 +520,26 @@
             0.0,
             0.0
           ]
+        },
+        "collider": {
+          "type": "box",
+          "width": 180.0,
+          "height": 24.0,
+          "offset": [
+            0.0,
+            0.0
+          ],
+          "is_trigger": false
         }
-      }
+      },
+      "static": false
     },
     {
       "id": "base-enemy-0001",
       "uuid": "base-enemy-0001",
       "name": "Inimigo",
       "tag": "Enemy",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -529,7 +569,11 @@
           76,
           86
         ],
-        "material": null
+        "material": "None",
+        "enabled": true,
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
         "collider": {
@@ -542,14 +586,15 @@
           ],
           "is_trigger": true
         }
-      }
+      },
+      "static": false
     },
     {
       "id": "base-coin-0001",
       "uuid": "base-coin-0001",
       "name": "Moeda_1",
       "tag": "Coin",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -579,7 +624,11 @@
           205,
           62
         ],
-        "material": null
+        "material": "None",
+        "enabled": true,
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
         "collider": {
@@ -589,16 +638,19 @@
             0.0,
             0.0
           ],
-          "is_trigger": true
+          "is_trigger": true,
+          "width": 24.0,
+          "height": 24.0
         }
-      }
+      },
+      "static": false
     },
     {
       "id": "base-coin-0002",
       "uuid": "base-coin-0002",
       "name": "Moeda_2",
       "tag": "Coin",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -628,7 +680,11 @@
           205,
           62
         ],
-        "material": null
+        "material": "None",
+        "enabled": true,
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
         "collider": {
@@ -638,16 +694,19 @@
             0.0,
             0.0
           ],
-          "is_trigger": true
+          "is_trigger": true,
+          "width": 24.0,
+          "height": 24.0
         }
-      }
+      },
+      "static": false
     },
     {
       "id": "base-coin-0003",
       "uuid": "base-coin-0003",
       "name": "Moeda_3",
       "tag": "Coin",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -677,7 +736,11 @@
           205,
           62
         ],
-        "material": null
+        "material": "None",
+        "enabled": true,
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
         "collider": {
@@ -687,16 +750,19 @@
             0.0,
             0.0
           ],
-          "is_trigger": true
+          "is_trigger": true,
+          "width": 24.0,
+          "height": 24.0
         }
-      }
+      },
+      "static": false
     },
     {
       "id": "base-coin-0004",
       "uuid": "base-coin-0004",
       "name": "Moeda_4",
       "tag": "Coin",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -726,7 +792,11 @@
           205,
           62
         ],
-        "material": null
+        "material": "None",
+        "enabled": true,
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
         "collider": {
@@ -736,16 +806,19 @@
             0.0,
             0.0
           ],
-          "is_trigger": true
+          "is_trigger": true,
+          "width": 24.0,
+          "height": 24.0
         }
-      }
+      },
+      "static": false
     },
     {
       "id": "base-coin-0005",
       "uuid": "base-coin-0005",
       "name": "Moeda_5",
       "tag": "Coin",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -775,7 +848,11 @@
           205,
           62
         ],
-        "material": null
+        "material": "None",
+        "enabled": true,
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
         "collider": {
@@ -785,16 +862,19 @@
             0.0,
             0.0
           ],
-          "is_trigger": true
+          "is_trigger": true,
+          "width": 24.0,
+          "height": 24.0
         }
-      }
+      },
+      "static": false
     },
     {
       "id": "base-goal-0001",
       "uuid": "base-goal-0001",
       "name": "PortalFinal",
       "tag": "Goal",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -824,7 +904,11 @@
           82,
           255
         ],
-        "material": null
+        "material": "None",
+        "enabled": true,
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
         "collider": {
@@ -837,14 +921,15 @@
           ],
           "is_trigger": true
         }
-      }
+      },
+      "static": false
     },
     {
       "id": "base-ui-canvas",
       "uuid": "base-ui-canvas",
       "name": "HUD_Canvas",
       "tag": "UI",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -875,7 +960,10 @@
           255,
           255
         ],
-        "material": null
+        "material": "None",
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
         "items": [
@@ -884,18 +972,35 @@
             "enabled": true,
             "properties": {
               "visible": true,
-              "z_order": 0
+              "x": 16.0,
+              "y": 16.0,
+              "width": 180.0,
+              "height": 42.0,
+              "z_order": 0,
+              "text": "",
+              "font_size": 24,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "sprite_path": ""
             }
           }
         ]
-      }
+      },
+      "static": false
     },
     {
       "id": "base-ui-panel",
       "uuid": "base-ui-panel",
       "name": "HUD_Painel",
       "tag": "UI",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -926,7 +1031,10 @@
           255,
           255
         ],
-        "material": null
+        "material": "None",
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
         "items": [
@@ -934,30 +1042,36 @@
             "type": "Image",
             "enabled": true,
             "properties": {
+              "visible": true,
               "x": 10,
               "y": 10,
               "width": 245,
               "height": 54,
-              "visible": true,
               "z_order": 0,
-              "sprite_path": "",
+              "text": "",
+              "font_size": 24,
               "color": [
                 10,
                 18,
                 34
               ],
-              "alpha": 210
+              "alpha": 210,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "sprite_path": ""
             }
           }
         ]
-      }
+      },
+      "static": false
     },
     {
       "id": "base-ui-health",
       "uuid": "base-ui-health",
       "name": "HUD_Vida",
       "tag": "UI",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -988,7 +1102,10 @@
           255,
           255
         ],
-        "material": null
+        "material": "None",
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
         "items": [
@@ -996,28 +1113,36 @@
             "type": "Label",
             "enabled": true,
             "properties": {
-              "text": "VIDA: 3/3",
+              "visible": true,
               "x": 22,
               "y": 24,
+              "width": 180.0,
+              "height": 42.0,
+              "z_order": 1,
+              "text": "VIDA: 3/3",
               "font_size": 24,
               "color": [
                 255,
                 115,
                 125
               ],
-              "visible": true,
-              "z_order": 1
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "sprite_path": ""
             }
           }
         ]
-      }
+      },
+      "static": false
     },
     {
       "id": "base-ui-coins",
       "uuid": "base-ui-coins",
       "name": "HUD_Moedas",
       "tag": "UI",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -1048,7 +1173,10 @@
           255,
           255
         ],
-        "material": null
+        "material": "None",
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
         "items": [
@@ -1056,28 +1184,36 @@
             "type": "Label",
             "enabled": true,
             "properties": {
-              "text": "MOEDAS: 0/5",
+              "visible": true,
               "x": 1040,
               "y": 24,
+              "width": 180.0,
+              "height": 42.0,
+              "z_order": 1,
+              "text": "MOEDAS: 0/5",
               "font_size": 24,
               "color": [
                 255,
                 218,
                 82
               ],
-              "visible": true,
-              "z_order": 1
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "sprite_path": ""
             }
           }
         ]
-      }
+      },
+      "static": false
     },
     {
       "id": "base-ui-controls",
       "uuid": "base-ui-controls",
       "name": "HUD_Controles",
       "tag": "UI",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -1108,7 +1244,10 @@
           255,
           255
         ],
-        "material": null
+        "material": "None",
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
         "items": [
@@ -1116,28 +1255,36 @@
             "type": "Label",
             "enabled": true,
             "properties": {
-              "text": "A/D: mover   ESPAÇO: pular   R: reiniciar",
+              "visible": true,
               "x": 20,
               "y": 680,
+              "width": 180.0,
+              "height": 42.0,
+              "z_order": 1,
+              "text": "A/D: mover   ESPAÇO: pular   R: reiniciar",
               "font_size": 19,
               "color": [
                 180,
                 195,
                 220
               ],
-              "visible": true,
-              "z_order": 1
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "sprite_path": ""
             }
           }
         ]
-      }
+      },
+      "static": false
     },
     {
       "id": "base-ui-result",
       "uuid": "base-ui-result",
       "name": "HUD_Resultado",
       "tag": "UI",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -1168,7 +1315,10 @@
           255,
           255
         ],
-        "material": null
+        "material": "None",
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
         "items": [
@@ -1176,28 +1326,36 @@
             "type": "Label",
             "enabled": true,
             "properties": {
-              "text": "",
+              "visible": true,
               "x": 350,
               "y": 320,
+              "width": 180.0,
+              "height": 42.0,
+              "z_order": 3,
+              "text": "",
               "font_size": 34,
               "color": [
                 117,
                 255,
                 151
               ],
-              "visible": true,
-              "z_order": 3
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "sprite_path": ""
             }
           }
         ]
-      }
+      },
+      "static": false
     },
     {
       "id": "base-ui-restart",
       "uuid": "base-ui-restart",
       "name": "HUD_Reiniciar",
       "tag": "UI",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -1228,7 +1386,10 @@
           255,
           255
         ],
-        "material": null
+        "material": "None",
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
         "items": [
@@ -1236,33 +1397,36 @@
             "type": "Button",
             "enabled": true,
             "properties": {
-              "text": "Reiniciar",
+              "visible": true,
               "x": 570,
               "y": 650,
               "width": 140,
               "height": 42,
+              "z_order": 2,
+              "text": "Reiniciar",
               "font_size": 18,
               "color": [
                 255,
                 255,
                 255
               ],
-              "visible": true,
-              "z_order": 2,
+              "alpha": 255,
               "interactable": true,
               "event": "restart_game",
-              "target": "Player"
+              "target": "Player",
+              "sprite_path": ""
             }
           }
         ]
-      }
+      },
+      "static": false
     },
     {
       "id": "base-death-0001",
       "uuid": "base-death-0001",
       "name": "LimiteDaFase",
       "tag": "DeathZone",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -1292,7 +1456,11 @@
           28,
           38
         ],
-        "material": null
+        "material": "None",
+        "enabled": true,
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
         "collider": {
@@ -1305,7 +1473,11 @@
           ],
           "is_trigger": true
         }
-      }
+      },
+      "static": false
     }
-  ]
+  ],
+  "blackboard": {
+    "variables": {}
+  }
 }

@@ -35,13 +35,13 @@
       "title": "On Update",
       "category": "Events",
       "position": [
-        20.0,
+        80.0,
         80.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {}
     },
@@ -51,13 +51,13 @@
       "title": "Tecla está segurada?",
       "category": "Condition",
       "position": [
-        260.0,
-        20.0
+        370.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
         "key": "A"
@@ -69,13 +69,13 @@
       "title": "Mover continuamente",
       "category": "Position",
       "position": [
-        520.0,
-        20.0
+        660.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 212.0
       },
       "properties": {
         "x": -260.0,
@@ -88,13 +88,13 @@
       "title": "Tecla está segurada?",
       "category": "Condition",
       "position": [
-        260.0,
-        160.0
+        370.0,
+        250.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
         "key": "D"
@@ -106,13 +106,13 @@
       "title": "Mover continuamente",
       "category": "Position",
       "position": [
-        520.0,
-        160.0
+        660.0,
+        250.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 212.0
       },
       "properties": {
         "x": 260.0,
@@ -125,13 +125,13 @@
       "title": "Tecla está segurada?",
       "category": "Condition",
       "position": [
-        260.0,
-        300.0
+        370.0,
+        420.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
         "key": "W"
@@ -143,13 +143,13 @@
       "title": "Mover continuamente",
       "category": "Position",
       "position": [
-        520.0,
-        300.0
+        660.0,
+        420.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 212.0
       },
       "properties": {
         "x": 0.0,
@@ -162,13 +162,13 @@
       "title": "Tecla está segurada?",
       "category": "Condition",
       "position": [
-        260.0,
-        440.0
+        370.0,
+        590.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
         "key": "S"
@@ -180,13 +180,13 @@
       "title": "Mover continuamente",
       "category": "Position",
       "position": [
-        520.0,
-        440.0
+        660.0,
+        590.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 212.0
       },
       "properties": {
         "x": 0.0,
@@ -199,13 +199,13 @@
       "title": "On Key Pressed (once)",
       "category": "Events",
       "position": [
-        20.0,
-        650.0
+        80.0,
+        250.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {
         "key": "SPACE"
@@ -217,13 +217,13 @@
       "title": "Criar Prefab",
       "category": "Objects",
       "position": [
-        300.0,
-        650.0
+        370.0,
+        760.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 632.0
       },
       "properties": {
         "path": "Assets/Prefabs/NebulaDefense/NebulaBolt.zprefab",
@@ -265,6 +265,7 @@
             "type": "number",
             "default": 680.0,
             "target": "gameplay.speed",
+            "port": "param_speed",
             "minimum": 0.0
           },
           {
@@ -273,6 +274,7 @@
             "type": "number",
             "default": 1.0,
             "target": "gameplay.damage",
+            "port": "param_damage",
             "minimum": 0.0
           },
           {
@@ -280,14 +282,16 @@
             "label": "Direção X",
             "type": "number",
             "default": 1.0,
-            "target": "gameplay.direction_x"
+            "target": "gameplay.direction_x",
+            "port": "param_direction_x"
           },
           {
             "name": "direction_y",
             "label": "Direção Y",
             "type": "number",
             "default": 0.0,
-            "target": "gameplay.direction_y"
+            "target": "gameplay.direction_y",
+            "port": "param_direction_y"
           },
           {
             "name": "lifetime",
@@ -295,8 +299,9 @@
             "type": "number",
             "default": 2.2,
             "target": "gameplay.lifetime",
-            "semantic": "lifetime",
-            "minimum": 0.0
+            "port": "param_lifetime",
+            "minimum": 0.0,
+            "semantic": "lifetime"
           },
           {
             "name": "image",
@@ -304,6 +309,7 @@
             "type": "image",
             "default": "",
             "target": "texture",
+            "port": "param_image",
             "asset_kind": "image"
           },
           {
@@ -312,6 +318,7 @@
             "type": "animation",
             "default": "",
             "target": "animator.asset_path",
+            "port": "param_animation",
             "asset_kind": "animation"
           },
           {
@@ -320,6 +327,7 @@
             "type": "audio",
             "default": "Assets/Audio/jump-sound-531048.mp3",
             "target": "gameplay.sound",
+            "port": "param_sound",
             "asset_kind": "audio"
           },
           {
@@ -328,6 +336,7 @@
             "type": "number",
             "default": 30.0,
             "target": "w",
+            "port": "param_width",
             "minimum": 1.0
           },
           {
@@ -336,6 +345,7 @@
             "type": "number",
             "default": 10.0,
             "target": "h",
+            "port": "param_height",
             "minimum": 1.0
           },
           {
@@ -347,21 +357,24 @@
               221,
               255
             ],
-            "target": "color"
+            "target": "color",
+            "port": "param_color"
           },
           {
             "name": "tag",
             "label": "Tag",
             "type": "text",
             "default": "ProjectileNebula",
-            "target": "tag"
+            "target": "tag",
+            "port": "param_tag"
           },
           {
             "name": "layer",
             "label": "Layer",
             "type": "text",
             "default": "Default",
-            "target": "layer"
+            "target": "layer",
+            "port": "param_layer"
           }
         ],
         "lifetime": 2.2,
@@ -376,13 +389,13 @@
       "title": "On Key Pressed (once)",
       "category": "Events",
       "position": [
-        20.0,
-        800.0
+        80.0,
+        420.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {
         "key": "M"
@@ -394,13 +407,13 @@
       "title": "Criar Prefab",
       "category": "Objects",
       "position": [
-        300.0,
-        800.0
+        370.0,
+        930.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 632.0
       },
       "properties": {
         "path": "Assets/Prefabs/NebulaDefense/NebulaMissile.zprefab",
@@ -440,16 +453,18 @@
             "name": "speed",
             "label": "Velocidade",
             "type": "number",
-            "default": 680.0,
+            "default": 420.0,
             "target": "gameplay.speed",
+            "port": "param_speed",
             "minimum": 0.0
           },
           {
             "name": "damage",
             "label": "Dano",
             "type": "number",
-            "default": 1.0,
+            "default": 3.0,
             "target": "gameplay.damage",
+            "port": "param_damage",
             "minimum": 0.0
           },
           {
@@ -457,23 +472,26 @@
             "label": "Direção X",
             "type": "number",
             "default": 1.0,
-            "target": "gameplay.direction_x"
+            "target": "gameplay.direction_x",
+            "port": "param_direction_x"
           },
           {
             "name": "direction_y",
             "label": "Direção Y",
             "type": "number",
             "default": 0.0,
-            "target": "gameplay.direction_y"
+            "target": "gameplay.direction_y",
+            "port": "param_direction_y"
           },
           {
             "name": "lifetime",
             "label": "Tempo de vida",
             "type": "number",
-            "default": 2.2,
+            "default": 4.0,
             "target": "gameplay.lifetime",
-            "semantic": "lifetime",
-            "minimum": 0.0
+            "port": "param_lifetime",
+            "minimum": 0.0,
+            "semantic": "lifetime"
           },
           {
             "name": "image",
@@ -481,6 +499,7 @@
             "type": "image",
             "default": "",
             "target": "texture",
+            "port": "param_image",
             "asset_kind": "image"
           },
           {
@@ -489,6 +508,7 @@
             "type": "animation",
             "default": "",
             "target": "animator.asset_path",
+            "port": "param_animation",
             "asset_kind": "animation"
           },
           {
@@ -497,22 +517,25 @@
             "type": "audio",
             "default": "Assets/Audio/jump-sound-531048.mp3",
             "target": "gameplay.sound",
+            "port": "param_sound",
             "asset_kind": "audio"
           },
           {
             "name": "width",
             "label": "Escala X",
             "type": "number",
-            "default": 30.0,
+            "default": 48.0,
             "target": "w",
+            "port": "param_width",
             "minimum": 1.0
           },
           {
             "name": "height",
             "label": "Escala Y",
             "type": "number",
-            "default": 10.0,
+            "default": 16.0,
             "target": "h",
+            "port": "param_height",
             "minimum": 1.0
           },
           {
@@ -520,25 +543,28 @@
             "label": "Cor",
             "type": "color",
             "default": [
-              86,
-              221,
-              255
+              255,
+              168,
+              62
             ],
-            "target": "color"
+            "target": "color",
+            "port": "param_color"
           },
           {
             "name": "tag",
             "label": "Tag",
             "type": "text",
             "default": "ProjectileNebula",
-            "target": "tag"
+            "target": "tag",
+            "port": "param_tag"
           },
           {
             "name": "layer",
             "label": "Layer",
             "type": "text",
             "default": "Default",
-            "target": "layer"
+            "target": "layer",
+            "port": "param_layer"
           }
         ],
         "lifetime": 4.0,
@@ -553,13 +579,13 @@
       "title": "Ao entrar na área",
       "category": "Events",
       "position": [
-        20.0,
-        980.0
+        80.0,
+        590.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "tag": ""
@@ -571,13 +597,13 @@
       "title": "Ler Tag do objeto",
       "category": "Objects",
       "position": [
-        260.0,
-        900.0
+        370.0,
+        1100.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {}
     },
@@ -587,13 +613,13 @@
       "title": "Comparar texto",
       "category": "Condition",
       "position": [
-        500.0,
-        980.0
+        660.0,
+        760.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
         "operator": "==",
@@ -606,13 +632,13 @@
       "title": "Sequência",
       "category": "Logic",
       "position": [
-        760.0,
-        980.0
+        950.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 212.0
       },
       "properties": {
         "outputs": 3
@@ -624,13 +650,13 @@
       "title": "Ler variável",
       "category": "Variables",
       "position": [
-        1020.0,
-        860.0
+        80.0,
+        760.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "name": "lives",
@@ -643,13 +669,13 @@
       "title": "Subtrair",
       "category": "Math",
       "position": [
-        1260.0,
-        860.0
+        370.0,
+        1270.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "a": 0.0,
@@ -662,13 +688,13 @@
       "title": "Definir variável",
       "category": "Variables",
       "position": [
-        1500.0,
-        860.0
+        1240.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "name": "lives",
@@ -682,13 +708,13 @@
       "title": "Comparar número",
       "category": "Condition",
       "position": [
-        1740.0,
-        860.0
+        1530.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
         "operator": "<=",
@@ -701,13 +727,13 @@
       "title": "Ativar / Desativar",
       "category": "Action",
       "position": [
-        1980.0,
-        820.0
+        1820.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
         "active": false
@@ -719,13 +745,13 @@
       "title": "Atualizar HUD",
       "category": "Action",
       "position": [
-        1980.0,
-        940.0
+        1820.0,
+        250.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "text": "FIM DE JOGO — pressione R para reiniciar"
@@ -737,13 +763,13 @@
       "title": "Definir posição",
       "category": "Action",
       "position": [
-        1020.0,
-        1040.0
+        1240.0,
+        250.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 212.0
       },
       "properties": {
         "x": 120.0,
@@ -756,13 +782,13 @@
       "title": "Tocar som",
       "category": "Action",
       "position": [
-        1020.0,
-        1180.0
+        1240.0,
+        420.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "path": "Assets/Audio/freesound_community-videogame-death-sound-43894.mp3",

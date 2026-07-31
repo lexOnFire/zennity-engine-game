@@ -1,0 +1,92 @@
+{
+  "format_version": 2,
+  "scene_name": "Untitled",
+  "engine_version": "Zennity 1.0.1",
+  "blackboard": {
+    "variables": {}
+  },
+  "objects": [
+    {
+      "name": "backgraund",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "tag": "Untagged",
+      "layer": "Default",
+      "id": "64b7136e-c39b-4486-92d1-29936f6f6e34",
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1610.5402875672805,
+          758.9068292936136,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          174,
+          174,
+          174
+        ],
+        "texture": "",
+        "layer": "Background",
+        "order": 0
+      },
+      "components": {}
+    },
+    {
+      "name": "GameObject",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "tag": "Untagged",
+      "layer": "Default",
+      "id": "e66286fd-6f6d-46be-a6d5-23cde49c9088",
+      "transform": {
+        "position": [
+          50.30045844487154,
+          62.27348080871846,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          119.19912931277736,
+          114.54035700026105,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          255,
+          255,
+          255
+        ],
+        "texture": "Assets/Materials/nave_player.PNG",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {}
+    }
+  ]
+}

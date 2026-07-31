@@ -12,18 +12,35 @@
       "active": true,
       "enabled": true,
       "transform": {
-        "position": [640.0, 360.0, 0.0],
-        "rotation": [0.0, 0.0, 0.0],
+        "position": [
+          640.0,
+          360.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
         "rz": 0.0,
-        "scale": [48.0, 30.0, 1.0]
+        "scale": [
+          48.0,
+          30.0,
+          1.0
+        ]
       },
       "visual": {
         "mesh_type": "Camera",
-        "color": [24, 32, 48],
+        "color": [
+          24,
+          32,
+          48
+        ],
         "enabled": true,
         "texture": "",
         "layer": "Default",
-        "order": 0
+        "order": 0,
+        "material": "Default_Material"
       },
       "components": {
         "items": [
@@ -32,7 +49,11 @@
             "enabled": true,
             "properties": {
               "zoom": 1.0,
-              "clear_color": [24, 32, 48]
+              "clear_color": [
+                24,
+                32,
+                48
+              ]
             }
           }
         ]
@@ -48,18 +69,35 @@
       "active": true,
       "enabled": true,
       "transform": {
-        "position": [300.0, 300.0, 0.0],
-        "rotation": [0.0, 0.0, 0.0],
+        "position": [
+          300.0,
+          300.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
         "rz": 0.0,
-        "scale": [36.0, 48.0, 1.0]
+        "scale": [
+          36.0,
+          48.0,
+          1.0
+        ]
       },
       "visual": {
         "mesh_type": "Sprite",
-        "color": [70, 160, 245],
+        "color": [
+          70,
+          160,
+          245
+        ],
         "enabled": true,
         "texture": "Assets/Textures/personagem 1.PNG",
         "layer": "Default",
-        "order": 10
+        "order": 10,
+        "material": "Default_Material"
       },
       "rigidbody": {
         "is_kinematic": false,
@@ -74,9 +112,7 @@
       "animator": {
         "controller_path": "Assets/Animations/NewController.zanimator"
       },
-      "components": {
-        "items": []
-      },
+      "components": {},
       "static": false
     },
     {
@@ -88,18 +124,35 @@
       "active": true,
       "enabled": true,
       "transform": {
-        "position": [500.0, 300.0, 0.0],
-        "rotation": [0.0, 0.0, 0.0],
+        "position": [
+          500.0,
+          300.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
         "rz": 0.0,
-        "scale": [40.0, 48.0, 1.0]
+        "scale": [
+          40.0,
+          48.0,
+          1.0
+        ]
       },
       "visual": {
         "mesh_type": "Sprite",
-        "color": [180, 100, 240],
+        "color": [
+          180,
+          100,
+          240
+        ],
         "enabled": true,
         "texture": "",
         "layer": "Default",
-        "order": 5
+        "order": 5,
+        "material": "Default_Material"
       },
       "collider": {
         "type": "circle",
@@ -114,9 +167,7 @@
         "asset_path": "Assets/Dialogues/Showcase_NPC.zdialogue",
         "auto_start": false
       },
-      "components": {
-        "items": []
-      },
+      "components": {},
       "static": true
     },
     {
@@ -128,18 +179,35 @@
       "active": true,
       "enabled": true,
       "transform": {
-        "position": [700.0, 200.0, 0.0],
-        "rotation": [0.0, 0.0, 0.0],
+        "position": [
+          700.0,
+          200.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
         "rz": 0.0,
-        "scale": [32.0, 32.0, 1.0]
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
       },
       "visual": {
         "mesh_type": "Sprite",
-        "color": [245, 180, 50],
+        "color": [
+          245,
+          180,
+          50
+        ],
         "enabled": true,
         "texture": "",
         "layer": "Default",
-        "order": 4
+        "order": 4,
+        "material": "Default_Material"
       },
       "collider": {
         "type": "box",
@@ -152,9 +220,7 @@
         "volume": 0.8,
         "autoplay": false
       },
-      "components": {
-        "items": []
-      },
+      "components": {},
       "static": true
     },
     {
@@ -166,18 +232,35 @@
       "active": true,
       "enabled": true,
       "transform": {
-        "position": [0.0, 0.0, 0.0],
-        "rotation": [0.0, 0.0, 0.0],
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
         "rz": 0.0,
-        "scale": [1.0, 1.0, 1.0]
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
       },
       "visual": {
         "mesh_type": "UI",
-        "color": [255, 255, 255],
+        "color": [
+          255,
+          255,
+          255
+        ],
         "enabled": false,
         "texture": "",
         "layer": "Default",
-        "order": 0
+        "order": 0,
+        "material": "Default_Material"
       },
       "components": {
         "items": [
@@ -192,5 +275,8 @@
       },
       "static": false
     }
-  ]
+  ],
+  "blackboard": {
+    "variables": {}
+  }
 }

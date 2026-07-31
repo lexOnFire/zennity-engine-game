@@ -1,0 +1,123 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "GameObjectLogic3",
+  "target": {
+    "type": "name",
+    "value": "GameObject"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "dc31c48fd9ae489ea9d13c8f7353a5f1",
+      "type": "key_held",
+      "title": "Key Held?",
+      "category": "Condition",
+      "position": [
+        370.0,
+        80.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "key": "A"
+      }
+    },
+    {
+      "id": "d3af619b580b4d50b76849fb7a18f611",
+      "type": "event_update",
+      "title": "A Cada Frame",
+      "category": "Events",
+      "position": [
+        80.0,
+        80.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "0c3998da03e84eef95ba26bcee74ba2f",
+      "type": "move_x",
+      "title": "Mover X",
+      "category": "Movement",
+      "position": [
+        660.0,
+        80.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "speed": 180.0,
+        "space": "local"
+      }
+    },
+    {
+      "id": "52d592e4b40d4e5d95c91b99e7811933",
+      "type": "move_towards",
+      "title": "Mover na Direção de",
+      "category": "Movement",
+      "position": [
+        660.0,
+        250.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 240.0
+      },
+      "properties": {
+        "speed": 180.0,
+        "space": "world"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "40afde072ab94a2089145829245a12c8",
+      "from_node": "d3af619b580b4d50b76849fb7a18f611",
+      "from_port": "next",
+      "to_node": "dc31c48fd9ae489ea9d13c8f7353a5f1",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "9967c7ce491e4b7cb9e5550315891bc2",
+      "from_node": "dc31c48fd9ae489ea9d13c8f7353a5f1",
+      "from_port": "true",
+      "to_node": "0c3998da03e84eef95ba26bcee74ba2f",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    },
+    {
+      "id": "9aa0001cf08c42f2a4400bd117656a2a",
+      "from_node": "dc31c48fd9ae489ea9d13c8f7353a5f1",
+      "from_port": "true",
+      "to_node": "52d592e4b40d4e5d95c91b99e7811933",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 2
+    }
+  ]
+}

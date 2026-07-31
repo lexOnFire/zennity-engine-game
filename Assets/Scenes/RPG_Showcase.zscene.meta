@@ -1,0 +1,10 @@
+{
+  "guid": "3f1db8dd-cb4f-4e2e-addc-8faefa97553d",
+  "uuid": "3f1db8dd-cb4f-4e2e-addc-8faefa97553d",
+  "type": "scene",
+  "importer": "generic_importer",
+  "source_path": "Assets/Scenes/RPG_Showcase.zscene",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "3c4325a69062084b2c4a064dffcc5a476edb61d94dabd6829468808514414d3c"
+}
