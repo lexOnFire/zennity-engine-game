@@ -24,7 +24,7 @@
       "title": "On Start",
       "category": "Events",
       "position": [
-        20.0,
+        120.0,
         100.0
       ],
       "editor": {
@@ -40,7 +40,7 @@
       "title": "Start Scrolling Background",
       "category": "Action",
       "position": [
-        300.0,
+        440.0,
         100.0
       ],
       "editor": {

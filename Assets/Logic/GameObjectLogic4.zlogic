@@ -1,0 +1,39 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "GameObjectLogic4",
+  "target": {
+    "type": "name",
+    "value": "GameObject"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "bf50a39053374596838b98cab96d664c",
+      "type": "event_update",
+      "title": "Event Update",
+      "category": "Events",
+      "position": [
+        120.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    }
+  ],
+  "edges": []
+}

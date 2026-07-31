@@ -24,8 +24,8 @@
       "title": "On Start",
       "category": "Events",
       "position": [
-        20.0,
-        -260.0
+        120.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
@@ -40,8 +40,8 @@
       "title": "Ler parâmetro do Prefab",
       "category": "Objects",
       "position": [
-        260.0,
-        -360.0
+        120.0,
+        300.0
       ],
       "editor": {
         "collapsed": false,
@@ -60,8 +60,8 @@
       "title": "Ler parâmetro do Prefab",
       "category": "Objects",
       "position": [
-        260.0,
-        -240.0
+        120.0,
+        500.0
       ],
       "editor": {
         "collapsed": false,
@@ -80,8 +80,8 @@
       "title": "Multiplicar",
       "category": "Math",
       "position": [
-        520.0,
-        -320.0
+        440.0,
+        500.0
       ],
       "editor": {
         "collapsed": false,
@@ -99,8 +99,8 @@
       "title": "Ler parâmetro do Prefab",
       "category": "Objects",
       "position": [
-        260.0,
-        -100.0
+        120.0,
+        700.0
       ],
       "editor": {
         "collapsed": false,
@@ -119,8 +119,8 @@
       "title": "Multiplicar",
       "category": "Math",
       "position": [
-        520.0,
-        -140.0
+        440.0,
+        700.0
       ],
       "editor": {
         "collapsed": false,
@@ -138,8 +138,8 @@
       "title": "Iniciar movimento permanente",
       "category": "Position",
       "position": [
-        780.0,
-        -260.0
+        440.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
@@ -161,8 +161,8 @@
       "title": "Ler parâmetro do Prefab",
       "category": "Objects",
       "position": [
-        520.0,
-        20.0
+        120.0,
+        900.0
       ],
       "editor": {
         "collapsed": false,
@@ -181,8 +181,8 @@
       "title": "Tocar som",
       "category": "Action",
       "position": [
-        780.0,
-        20.0
+        440.0,
+        300.0
       ],
       "editor": {
         "collapsed": false,
@@ -199,8 +199,8 @@
       "title": "Ao entrar na área",
       "category": "Events",
       "position": [
-        20.0,
-        120.0
+        120.0,
+        1100.0
       ],
       "editor": {
         "collapsed": false,
@@ -215,8 +215,8 @@
       "title": "Ler Tag do objeto",
       "category": "Objects",
       "position": [
-        280.0,
-        20.0
+        440.0,
+        1100.0
       ],
       "editor": {
         "collapsed": false,
@@ -231,8 +231,8 @@
       "title": "Comparar texto",
       "category": "Condition",
       "position": [
-        520.0,
-        120.0
+        440.0,
+        900.0
       ],
       "editor": {
         "collapsed": false,
@@ -250,8 +250,8 @@
       "title": "Destruir objeto",
       "category": "Action",
       "position": [
-        780.0,
-        120.0
+        760.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,

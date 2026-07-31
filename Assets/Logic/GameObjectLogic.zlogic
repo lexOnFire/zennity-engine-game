@@ -24,8 +24,8 @@
       "title": "Ao Iniciar",
       "category": "Events",
       "position": [
-        80.0,
-        80.0
+        120.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
@@ -40,8 +40,8 @@
       "title": "start_texture_scroll",
       "category": "Custom",
       "position": [
-        370.0,
-        80.0
+        440.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,

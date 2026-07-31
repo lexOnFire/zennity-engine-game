@@ -30,8 +30,8 @@
       "title": "A Cada Frame",
       "category": "Events",
       "position": [
-        0.0,
-        0.0
+        120.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
@@ -46,8 +46,8 @@
       "title": "input_axis",
       "category": "Custom",
       "position": [
-        250.49,
-        -29.21
+        440.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
@@ -65,8 +65,8 @@
       "title": "multiply",
       "category": "Custom",
       "position": [
-        595.1,
-        -284.84
+        440.0,
+        300.0
       ],
       "editor": {
         "collapsed": false,
@@ -81,8 +81,8 @@
       "title": "Obter Variável",
       "category": "Variables",
       "position": [
-        170.09,
-        -306.36
+        120.0,
+        300.0
       ],
       "editor": {
         "collapsed": false,
@@ -100,8 +100,8 @@
       "title": "move_by",
       "category": "Custom",
       "position": [
-        879.58,
-        -221.58
+        760.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
@@ -118,8 +118,8 @@
       "title": "Key Pressed Now?",
       "category": "Condition",
       "position": [
-        113.01,
-        217.12
+        120.0,
+        500.0
       ],
       "editor": {
         "collapsed": false,
@@ -136,8 +136,8 @@
       "title": "Se / Senão",
       "category": "Logic",
       "position": [
-        458.62,
-        251.37
+        440.0,
+        500.0
       ],
       "editor": {
         "collapsed": false,
@@ -154,8 +154,8 @@
       "title": "move_by",
       "category": "Custom",
       "position": [
-        727.17,
-        249.95
+        760.0,
+        300.0
       ],
       "editor": {
         "collapsed": false,

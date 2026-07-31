@@ -24,8 +24,8 @@
       "title": "A Cada Frame",
       "category": "Events",
       "position": [
-        -396.87,
-        -151.51
+        120.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
@@ -40,8 +40,8 @@
       "title": "Start Continuous Motion",
       "category": "Position",
       "position": [
-        -20.67,
-        -53.57
+        440.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,

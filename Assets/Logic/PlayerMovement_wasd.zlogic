@@ -1,7 +1,7 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
-  "enabled": true,
+  "enabled": false,
   "name": "PlayerMovement",
   "target": {
     "type": "name",
@@ -30,8 +30,8 @@
       "title": "On Update",
       "category": "Events",
       "position": [
-        -363.77,
-        26.44
+        120.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
@@ -46,8 +46,8 @@
       "title": "Read Input Axis",
       "category": "Movement",
       "position": [
-        24.17,
-        -18.95
+        440.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
@@ -65,8 +65,8 @@
       "title": "If / Else",
       "category": "Logic",
       "position": [
-        396.46,
-        -2.29
+        760.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
@@ -83,8 +83,8 @@
       "title": "Move",
       "category": "Movement",
       "position": [
-        950.0,
-        80.0
+        1080.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
@@ -101,8 +101,8 @@
       "title": "Key Pressed Now?",
       "category": "Condition",
       "position": [
-        -205.63,
-        263.92
+        440.0,
+        300.0
       ],
       "editor": {
         "collapsed": false,
@@ -119,8 +119,8 @@
       "title": "Create Object",
       "category": "Objects",
       "position": [
-        532.9,
-        250.65
+        760.0,
+        300.0
       ],
       "editor": {
         "collapsed": true,
@@ -151,8 +151,8 @@
       "title": "Read Input Axis",
       "category": "Movement",
       "position": [
-        370.0,
-        420.0
+        440.0,
+        500.0
       ],
       "editor": {
         "collapsed": true,
@@ -170,8 +170,8 @@
       "title": "If / Else",
       "category": "Logic",
       "position": [
-        660.0,
-        420.0
+        760.0,
+        500.0
       ],
       "editor": {
         "collapsed": true,
@@ -188,8 +188,8 @@
       "title": "Move By",
       "category": "Position",
       "position": [
-        1240.0,
-        80.0
+        1400.0,
+        500.0
       ],
       "editor": {
         "collapsed": false,
@@ -207,8 +207,8 @@
       "title": "Compare Number",
       "category": "Condition",
       "position": [
-        950.0,
-        250.0
+        1080.0,
+        500.0
       ],
       "editor": {
         "collapsed": true,
@@ -226,8 +226,8 @@
       "title": "Compare Number",
       "category": "Condition",
       "position": [
-        950.0,
-        420.0
+        1080.0,
+        700.0
       ],
       "editor": {
         "collapsed": true,
@@ -245,8 +245,8 @@
       "title": "Move By",
       "category": "Position",
       "position": [
-        1240.0,
-        250.0
+        1400.0,
+        700.0
       ],
       "editor": {
         "collapsed": false,
@@ -264,8 +264,8 @@
       "title": "Start Continuous Motion",
       "category": "Position",
       "position": [
-        1240.0,
-        420.0
+        1400.0,
+        300.0
       ],
       "editor": {
         "collapsed": true,
@@ -287,8 +287,8 @@
       "title": "Girar",
       "category": "Movement",
       "position": [
-        950.0,
-        590.0
+        1080.0,
+        300.0
       ],
       "editor": {
         "collapsed": false,
@@ -306,8 +306,8 @@
       "title": "Tocar Animação",
       "category": "Action",
       "position": [
-        1240.0,
-        590.0
+        1400.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
@@ -324,8 +324,8 @@
       "title": "Tocar Animação",
       "category": "Action",
       "position": [
-        1530.0,
-        80.0
+        1720.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
@@ -342,8 +342,8 @@
       "title": "Tocar Animação",
       "category": "Action",
       "position": [
-        1530.0,
-        250.0
+        1720.0,
+        300.0
       ],
       "editor": {
         "collapsed": false,
