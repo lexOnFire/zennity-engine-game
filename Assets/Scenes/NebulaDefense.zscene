@@ -1,5 +1,5 @@
 {
-  "format_version": 1,
+  "format_version": 2,
   "scene_name": "Nebula Defense",
   "engine_version": "0.1.0",
   "description": "Shooter 2D completo criado somente com Logic Graphs e Prefabs seguros.",
@@ -29,8 +29,8 @@
       "enabled": true,
       "transform": {
         "position": [
-          640,
-          360,
+          640.0,
+          360.0,
           0.0
         ],
         "rotation": [
@@ -40,8 +40,8 @@
         ],
         "rz": 0.0,
         "scale": [
-          32,
-          32,
+          32.0,
+          32.0,
           1.0
         ]
       },
@@ -55,10 +55,10 @@
           255
         ],
         "layer": "Default",
-        "order": 0
+        "order": 0,
+        "material": "Default_Material"
       },
       "components": {
-        "scripts": [],
         "camera": {
           "active": true,
           "zoom": 1.0,
@@ -69,7 +69,8 @@
           ],
           "priority": 10
         }
-      }
+      },
+      "static": false
     },
     {
       "id": "nebula-background",
@@ -81,8 +82,8 @@
       "enabled": true,
       "transform": {
         "position": [
-          640,
-          360,
+          640.0,
+          360.0,
           0.0
         ],
         "rotation": [
@@ -92,8 +93,8 @@
         ],
         "rz": 0.0,
         "scale": [
-          1280,
-          720,
+          1280.0,
+          720.0,
           1.0
         ]
       },
@@ -107,11 +108,11 @@
           255
         ],
         "layer": "Default",
-        "order": -100
+        "order": -100,
+        "material": "Default_Material"
       },
-      "components": {
-        "scripts": []
-      }
+      "components": {},
+      "static": false
     },
     {
       "id": "nebula-player",
@@ -123,8 +124,8 @@
       "enabled": true,
       "transform": {
         "position": [
-          120,
-          360,
+          120.0,
+          360.0,
           0.0
         ],
         "rotation": [
@@ -134,8 +135,8 @@
         ],
         "rz": 0.0,
         "scale": [
-          52,
-          36,
+          52.0,
+          36.0,
           1.0
         ]
       },
@@ -149,24 +150,25 @@
           255
         ],
         "layer": "Default",
-        "order": 20
+        "order": 20,
+        "material": "Default_Material"
       },
       "components": {
-        "scripts": [],
-        "collider": {
-          "type": "box",
-          "width": 48.0,
-          "height": 32.0,
-          "is_trigger": false
-        },
         "rigidbody": {
           "mass": 1.0,
           "use_gravity": false,
           "is_kinematic": false,
           "gravity_scale": 0.0,
           "drag": 8.0
+        },
+        "collider": {
+          "type": "box",
+          "width": 48.0,
+          "height": 32.0,
+          "is_trigger": false
         }
-      }
+      },
+      "static": false
     },
     {
       "id": "nebula-spawner",
@@ -178,8 +180,8 @@
       "enabled": true,
       "transform": {
         "position": [
-          0,
-          0,
+          0.0,
+          0.0,
           0.0
         ],
         "rotation": [
@@ -189,8 +191,8 @@
         ],
         "rz": 0.0,
         "scale": [
-          1,
-          1,
+          1.0,
+          1.0,
           1.0
         ]
       },
@@ -204,11 +206,11 @@
           0
         ],
         "layer": "Default",
-        "order": 0
+        "order": 0,
+        "material": "Default_Material"
       },
-      "components": {
-        "scripts": []
-      }
+      "components": {},
+      "static": false
     },
     {
       "id": "nebula-manager",
@@ -220,8 +222,8 @@
       "enabled": true,
       "transform": {
         "position": [
-          0,
-          0,
+          0.0,
+          0.0,
           0.0
         ],
         "rotation": [
@@ -231,8 +233,8 @@
         ],
         "rz": 0.0,
         "scale": [
-          1,
-          1,
+          1.0,
+          1.0,
           1.0
         ]
       },
@@ -246,10 +248,10 @@
           0
         ],
         "layer": "Default",
-        "order": 0
+        "order": 0,
+        "material": "Default_Material"
       },
       "components": {
-        "scripts": [],
         "audio": {
           "path": "Assets/Audio/8bit-music-for-game-68698.mp3",
           "volume": 0.38,
@@ -257,7 +259,8 @@
           "autoplay": true,
           "enabled": true
         }
-      }
+      },
+      "static": false
     },
     {
       "id": "boundary-top",
@@ -269,8 +272,8 @@
       "enabled": true,
       "transform": {
         "position": [
-          640,
-          20,
+          640.0,
+          20.0,
           0.0
         ],
         "rotation": [
@@ -280,8 +283,8 @@
         ],
         "rz": 0.0,
         "scale": [
-          1280,
-          40,
+          1280.0,
+          40.0,
           1.0
         ]
       },
@@ -295,23 +298,24 @@
           58
         ],
         "layer": "Default",
-        "order": 0
+        "order": 0,
+        "material": "Default_Material"
       },
       "components": {
-        "scripts": [],
-        "collider": {
-          "type": "box",
-          "width": 1280.0,
-          "height": 40.0,
-          "is_trigger": false
-        },
         "rigidbody": {
           "mass": 1.0,
           "use_gravity": false,
           "is_kinematic": true,
           "gravity_scale": 0.0
+        },
+        "collider": {
+          "type": "box",
+          "width": 1280.0,
+          "height": 40.0,
+          "is_trigger": false
         }
-      }
+      },
+      "static": false
     },
     {
       "id": "boundary-bottom",
@@ -323,8 +327,8 @@
       "enabled": true,
       "transform": {
         "position": [
-          640,
-          700,
+          640.0,
+          700.0,
           0.0
         ],
         "rotation": [
@@ -334,8 +338,8 @@
         ],
         "rz": 0.0,
         "scale": [
-          1280,
-          40,
+          1280.0,
+          40.0,
           1.0
         ]
       },
@@ -349,23 +353,24 @@
           58
         ],
         "layer": "Default",
-        "order": 0
+        "order": 0,
+        "material": "Default_Material"
       },
       "components": {
-        "scripts": [],
-        "collider": {
-          "type": "box",
-          "width": 1280.0,
-          "height": 40.0,
-          "is_trigger": false
-        },
         "rigidbody": {
           "mass": 1.0,
           "use_gravity": false,
           "is_kinematic": true,
           "gravity_scale": 0.0
+        },
+        "collider": {
+          "type": "box",
+          "width": 1280.0,
+          "height": 40.0,
+          "is_trigger": false
         }
-      }
+      },
+      "static": false
     },
     {
       "id": "boundary-left",
@@ -377,8 +382,8 @@
       "enabled": true,
       "transform": {
         "position": [
-          20,
-          360,
+          20.0,
+          360.0,
           0.0
         ],
         "rotation": [
@@ -388,8 +393,8 @@
         ],
         "rz": 0.0,
         "scale": [
-          40,
-          720,
+          40.0,
+          720.0,
           1.0
         ]
       },
@@ -403,23 +408,24 @@
           58
         ],
         "layer": "Default",
-        "order": 0
+        "order": 0,
+        "material": "Default_Material"
       },
       "components": {
-        "scripts": [],
-        "collider": {
-          "type": "box",
-          "width": 40.0,
-          "height": 720.0,
-          "is_trigger": false
-        },
         "rigidbody": {
           "mass": 1.0,
           "use_gravity": false,
           "is_kinematic": true,
           "gravity_scale": 0.0
+        },
+        "collider": {
+          "type": "box",
+          "width": 40.0,
+          "height": 720.0,
+          "is_trigger": false
         }
-      }
+      },
+      "static": false
     },
     {
       "id": "boundary-right",
@@ -431,8 +437,8 @@
       "enabled": true,
       "transform": {
         "position": [
-          1260,
-          360,
+          1260.0,
+          360.0,
           0.0
         ],
         "rotation": [
@@ -442,8 +448,8 @@
         ],
         "rz": 0.0,
         "scale": [
-          40,
-          720,
+          40.0,
+          720.0,
           1.0
         ]
       },
@@ -457,23 +463,24 @@
           58
         ],
         "layer": "Default",
-        "order": 0
+        "order": 0,
+        "material": "Default_Material"
       },
       "components": {
-        "scripts": [],
-        "collider": {
-          "type": "box",
-          "width": 40.0,
-          "height": 720.0,
-          "is_trigger": false
-        },
         "rigidbody": {
           "mass": 1.0,
           "use_gravity": false,
           "is_kinematic": true,
           "gravity_scale": 0.0
+        },
+        "collider": {
+          "type": "box",
+          "width": 40.0,
+          "height": 720.0,
+          "is_trigger": false
         }
-      }
+      },
+      "static": false
     }
   ]
 }

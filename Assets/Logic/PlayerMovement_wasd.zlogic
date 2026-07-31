@@ -1,7 +1,7 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
-  "enabled": false,
+  "enabled": true,
   "name": "PlayerMovement",
   "target": {
     "type": "name",
@@ -101,11 +101,11 @@
       "title": "Key Pressed Now?",
       "category": "Condition",
       "position": [
-        370.0,
-        250.0
+        10.88,
+        176.73
       ],
       "editor": {
-        "collapsed": true,
+        "collapsed": false,
         "width": 220.0,
         "height": 184.0
       },

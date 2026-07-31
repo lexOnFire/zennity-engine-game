@@ -227,13 +227,13 @@
         "sprite_path": null,
         "asset_uuid": null,
         "color": [
-          255,
-          255,
+          79,
+          125,
           255
         ],
         "material": "None",
         "enabled": true,
-        "texture": "Assets/Textures/personagem 1.PNG",
+        "texture": "",
         "layer": "Default",
         "order": 0
       },
@@ -279,10 +279,7 @@
           "is_trigger": false
         }
       },
-      "static": false,
-      "animator": {
-        "controller_path": "Assets/Animations/NewController.zanimator"
-      }
+      "static": false
     },
     {
       "id": "base-platform-0001",
@@ -599,7 +596,7 @@
           76,
           86
         ],
-        "material": "Assets/Materials/Showcase_Shader.zmaterial",
+        "material": "None",
         "enabled": true,
         "texture": "",
         "layer": "Default",
@@ -617,15 +614,7 @@
           "is_trigger": true
         }
       },
-      "static": false,
-      "behavior": {
-        "controller_path": "Assets/Behaviors/Showcase_Enemy.zbehavior",
-        "active": true
-      },
-      "dialogue": {
-        "asset_path": "Assets/Dialogues/Showcase_NPC.zdialogue",
-        "auto_start": true
-      }
+      "static": false
     },
     {
       "id": "base-coin-0001",
@@ -1006,10 +995,27 @@
       "components": {
         "items": [
           {
-            "type": "UICanvas",
+            "type": "Canvas",
             "enabled": true,
             "properties": {
-              "layout_path": "Assets/UI/MainUI.zui"
+              "visible": true,
+              "x": 16.0,
+              "y": 16.0,
+              "width": 180.0,
+              "height": 42.0,
+              "z_order": 0,
+              "text": "",
+              "font_size": 24,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "sprite_path": ""
             }
           }
         ]

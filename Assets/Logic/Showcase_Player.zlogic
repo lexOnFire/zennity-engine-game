@@ -35,8 +35,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {}
     },
@@ -46,13 +46,13 @@
       "title": "input_axis",
       "category": "Custom",
       "position": [
-        250.0,
-        0.0
+        250.49,
+        -29.21
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "negative": "A",
@@ -65,13 +65,13 @@
       "title": "multiply",
       "category": "Custom",
       "position": [
-        500.0,
-        0.0
+        595.1,
+        -284.84
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {}
     },
@@ -81,13 +81,13 @@
       "title": "Obter Variável",
       "category": "Variables",
       "position": [
-        250.0,
-        -150.0
+        170.09,
+        -306.36
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "name": "speed",
@@ -100,13 +100,13 @@
       "title": "move_by",
       "category": "Custom",
       "position": [
-        750.0,
-        0.0
+        879.58,
+        -221.58
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 212.0
       },
       "properties": {
         "y": 0
@@ -118,13 +118,13 @@
       "title": "Key Pressed Now?",
       "category": "Condition",
       "position": [
-        250.0,
-        200.0
+        113.01,
+        217.12
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
         "key": "SPACE"
@@ -136,13 +136,13 @@
       "title": "Se / Senão",
       "category": "Logic",
       "position": [
-        500.0,
-        200.0
+        458.62,
+        251.37
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "condition": true
@@ -154,13 +154,13 @@
       "title": "move_by",
       "category": "Custom",
       "position": [
-        750.0,
-        200.0
+        727.17,
+        249.95
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 212.0
       },
       "properties": {
         "x": 0,

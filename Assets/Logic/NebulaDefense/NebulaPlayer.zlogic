@@ -5,7 +5,7 @@
   "name": "Nebula Player Controls",
   "target": {
     "type": "name",
-    "value": "NebulaPilot"
+    "value": "Player"
   },
   "debug": {
     "breakpoints": [],
@@ -561,7 +561,9 @@
         "width": 210.0,
         "height": 0.0
       },
-      "properties": {}
+      "properties": {
+        "tag": ""
+      }
     },
     {
       "id": "other_tag",
@@ -631,8 +633,8 @@
         "height": 0.0
       },
       "properties": {
-        "scope": "project",
-        "name": "lives"
+        "name": "lives",
+        "scope": "project"
       }
     },
     {
@@ -669,8 +671,8 @@
         "height": 0.0
       },
       "properties": {
-        "scope": "project",
         "name": "lives",
+        "scope": "project",
         "value": 2.0
       }
     },
@@ -763,7 +765,8 @@
         "height": 0.0
       },
       "properties": {
-        "path": "Assets/Audio/freesound_community-videogame-death-sound-43894.mp3"
+        "path": "Assets/Audio/freesound_community-videogame-death-sound-43894.mp3",
+        "volume": 1.0
       }
     }
   ],
