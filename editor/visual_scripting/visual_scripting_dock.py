@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 
 from editor.widgets.logic_graph_editor import LogicGraphEditor
 from editor.widgets.generic_graph_editor import GenericGraphEditorWidget
+from editor.widgets.animator_controller_editor import AnimatorControllerEditorDialog
 from editor.ui_builder.ui_builder_dock import UIBuilderDock
 from editor.visual_scripting.mini_live_viewport import (
     MiniLiveViewportWidget,
@@ -183,7 +184,9 @@ class VisualScriptingEditorDock(QMainWindow):
         self.behavior_tree_editor = self._new_specialized_graph("Behavior Tree")
         self.dialogue_graph_editor = self._new_specialized_graph("Dialogue")
         self.material_graph_editor = self._new_specialized_graph("Material")
-        self.animator_graph_editor = self._new_specialized_graph("Animation")
+        self.animator_graph_editor = AnimatorControllerEditorDialog(
+            Path.cwd(), parent=self, embedded=True
+        )
         self.ui_builder = UIBuilderDock(self, project_root=Path.cwd())
         self.ui_builder.setFeatures(UIBuilderDock.NoDockWidgetFeatures)
         self.graph_mode_tabs.addTab(self.behavior_tree_editor, "Behavior Tree")

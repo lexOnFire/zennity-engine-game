@@ -213,7 +213,10 @@ class ViewportSession(ViewportSessionLifecycleMixin):
         self.runtime_initializer = ViewportRuntimeInitializer(
             self.objects, self.logic_modules, self.logic_apis, self.animator_controllers, self.behavior_runners,
             self.logic_runtimes, self.initialized_runtime_ids, self.animator_event_signatures, self.runtime_world,
-            (hydrate_animation_asset_clips, hydrate_animator_controllers, hydrate_logic_graphs),
+            (
+                hydrate_animation_asset_clips, hydrate_animator_controllers,
+                hydrate_behavior_controllers, hydrate_logic_graphs,
+            ),
             lambda name, obj: PlayLogicAPI(name, obj, self.events, self.objects, self.runtime_world),
             lambda path: load_project_subgraph(path, Path.cwd()),
             lambda event: _send(self.events, event), self.play_audio_file, Path.cwd()

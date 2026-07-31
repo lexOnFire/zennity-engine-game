@@ -1,6 +1,7 @@
 """Asset hydration boundaries used by the isolated viewport runtime."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -99,8 +100,20 @@ def hydrate_behavior_controllers(
         if not path.is_absolute():
             path = project_root / path
         try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+            if (
+                isinstance(raw, dict)
+                and raw.get("format") == "zennity.generic_graph"
+                and str(raw.get("category", "")).casefold() == "behavior tree"
+            ):
+                behavior["graph"] = raw
+                behavior.pop("controller", None)
+                count = len(raw.get("nodes", []))
+                results.append(("INFO", object_name, f"Behavior Tree carregada: {path.name} ({count} nó(s))"))
+                continue
             controller = load_behavior_controller(path)
             behavior["controller"] = controller
+            behavior.pop("graph", None)
             behavior.setdefault("parameters", {})
             results.append(("INFO", object_name, f"behavior carregado: {path.name} ({len(controller['states'])} estado(s))"))
         except (OSError, ValueError) as exc:

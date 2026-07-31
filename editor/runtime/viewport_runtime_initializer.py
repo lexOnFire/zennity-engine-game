@@ -6,6 +6,8 @@ from typing import Any, Callable
 
 try:
     from engine.animation.controller_asset import AnimatorControllerRuntime
+    from engine.behavior.controller_asset import BehaviorControllerRunner
+    from engine.behavior.graph_runtime import BehaviorGraphRunner
     from engine.logic.blackboard import BlackboardStore, load_blackboard_asset
     from engine.logic.event_bus import LogicEventBus
     from engine.logic.runtime import LogicGraphRuntime
@@ -65,6 +67,7 @@ class ViewportRuntimeInitializer:
         self._hydrate(self.objects)
         for name, obj in initial_objects:
             self._initialize_animation(name, obj)
+            self._initialize_behavior(name, obj)
         for name, obj in initial_objects:
             self._initialize_logic(name, obj)
         self.initialized_ids.update(str(obj.get("id", name)) for name, obj in initial_objects)
@@ -94,6 +97,7 @@ class ViewportRuntimeInitializer:
             self.initialized_ids.add(str(obj.get("id", name)))
             self._hydrate({name: obj})
             self._initialize_animation(name, obj)
+            self._initialize_behavior(name, obj)
             self._initialize_logic(name, obj)
             audio = obj.get("audio")
             if isinstance(audio, dict) and audio.get("autoplay") and audio.get("path"):
@@ -141,6 +145,26 @@ class ViewportRuntimeInitializer:
             obj["_animator_state"] = runtime.current_state
         obj["_current_animation_name"] = str(animator.get("active_clip", "Idle"))
         obj["_animation_time"], obj["_animation_frame"], obj["_animation_raw_frame"] = 0.0, 0, -1
+
+    def _initialize_behavior(self, name: str, obj: dict[str, Any]) -> None:
+        behavior = obj.get("behavior")
+        if not isinstance(behavior, dict):
+            return
+        api = self.logic_apis.setdefault(name, self.api_factory(name, obj))
+        graph = behavior.get("graph")
+        controller = behavior.get("controller")
+        if isinstance(graph, dict):
+            runner = BehaviorGraphRunner(graph, self.project_root)
+        elif isinstance(controller, dict):
+            runner = BehaviorControllerRunner(
+                controller, self.project_root, behavior.get("parameters", {})
+            )
+        else:
+            return
+        self.behavior_runners[name] = runner
+        api.behavior.bind(runner, api)
+        runner.start(api)
+        obj["_behavior_state"] = runner.current_state
 
     def _initialize_logic(self, name: str, obj: dict[str, Any]) -> None:
         entries = obj.get("logic_graphs", [])

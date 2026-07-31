@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
     QComboBox, QDialog, QDialogButtonBox, QFormLayout, QHBoxLayout,
     QCheckBox, QDoubleSpinBox, QGraphicsItem, QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsRectItem,
     QGraphicsScene, QGraphicsSimpleTextItem, QGraphicsView, QInputDialog, QLabel,
-    QLineEdit, QMessageBox, QPushButton, QSpinBox, QSplitter, QTabWidget, QTreeWidget,
+    QFileDialog, QLineEdit, QMessageBox, QPushButton, QSpinBox, QSplitter, QTabWidget, QTreeWidget,
     QTreeWidgetItem, QVBoxLayout, QWidget,
 )
 from engine.animation.controller_asset import (
@@ -20,8 +20,14 @@ from editor.widgets.animator_graph import AnimatorGraphView, TransitionEditorDia
 class AnimatorControllerEditorDialog(QDialog):
     """Edita estados, parâmetros e transições sem expor o JSON ao usuário."""
 
-    def __init__(self, project_root: Path, path: Path | None = None, parent=None) -> None:
+    def __init__(
+        self, project_root: Path, path: Path | None = None, parent=None,
+        *, embedded: bool = False,
+    ) -> None:
         super().__init__(parent)
+        self.embedded = bool(embedded)
+        if self.embedded:
+            self.setWindowFlags(Qt.Widget)
         self.project_root = Path(project_root).resolve()
         self.path = path.resolve() if path else None
         self.data = load_animator_controller(self.path) if self.path else default_animator_controller()
@@ -55,6 +61,13 @@ class AnimatorControllerEditorDialog(QDialog):
         layout.addLayout(header)
 
         toolbar = QHBoxLayout()
+        if self.embedded:
+            self.new_button = QPushButton("＋ Novo controller")
+            self.open_button = QPushButton("📂 Abrir controller")
+            self.new_button.clicked.connect(self.new_document)
+            self.open_button.clicked.connect(self.open_dialog)
+            toolbar.addWidget(self.new_button)
+            toolbar.addWidget(self.open_button)
         self.undo_button = QPushButton("Desfazer")
         self.redo_button = QPushButton("Refazer")
         self.rename_state_button = QPushButton("Renomear")
@@ -100,7 +113,7 @@ class AnimatorControllerEditorDialog(QDialog):
         layout.addWidget(self.validation_label)
         buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
         buttons.accepted.connect(self._save)
-        buttons.rejected.connect(self.reject)
+        buttons.rejected.connect(self._cancel_or_reload)
         layout.addWidget(buttons)
         self.undo_button.clicked.connect(self._undo)
         self.redo_button.clicked.connect(self._redo)
@@ -488,6 +501,56 @@ class AnimatorControllerEditorDialog(QDialog):
         self._runtime_parameters = dict(parameters or {})
         self._refresh_all()
 
+    @property
+    def current_path(self) -> Path | None:
+        return self.path
+
+    def new_document(self) -> None:
+        self.path = None
+        self.saved_path = None
+        self.data = default_animator_controller()
+        self.name_field.setText(str(self.data["name"]))
+        self._undo_stack.clear()
+        self._redo_stack.clear()
+        self._reset_preview()
+        self._refresh_all()
+
+    def load_document(self, path: str | Path) -> bool:
+        try:
+            self.path = Path(path).resolve()
+            self.saved_path = self.path
+            self.data = load_animator_controller(self.path)
+            self.name_field.setText(str(self.data["name"]))
+            self._undo_stack.clear()
+            self._redo_stack.clear()
+            self._reset_preview()
+            self._refresh_all()
+            return True
+        except (OSError, ValueError) as exc:
+            QMessageBox.warning(self, "Animator Controller", str(exc))
+            return False
+
+    def open_dialog(self) -> None:
+        filename, _ = QFileDialog.getOpenFileName(
+            self, "Abrir Animator Controller",
+            str(self.project_root / "Assets" / "Animations"),
+            "Zennity Animator (*.zanimator);;Todos os arquivos (*.*)",
+        )
+        if filename:
+            self.load_document(filename)
+
+    def save(self) -> None:
+        self._save()
+
+    def _cancel_or_reload(self) -> None:
+        if not self.embedded:
+            self.reject()
+            return
+        if self.path and self.path.is_file():
+            self.load_document(self.path)
+        else:
+            self.new_document()
+
     def _save(self) -> None:
         name = self.name_field.text().strip()
         if not name:
@@ -500,4 +563,5 @@ class AnimatorControllerEditorDialog(QDialog):
             self.path = self.project_root / "Assets" / "Animations" / f"{safe_name}.zanimator"
         save_animator_controller(self.path, self.data)
         self.saved_path = self.path
-        self.accept()
+        if not self.embedded:
+            self.accept()
