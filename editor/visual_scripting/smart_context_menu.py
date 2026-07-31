@@ -10,6 +10,9 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QLineEdit, QListWidget, QListWidgetItem, QLabel
 
 
+from engine.logic.node_definitions import NODE_DEFINITIONS
+
+
 class SmartContextMenu(QDialog):
     """Popup de inserção de nós com filtro por texto e contexto de pinos."""
 
@@ -19,7 +22,7 @@ class SmartContextMenu(QDialog):
         super().__init__(parent)
         self.pin_context = pin_context or {}
         self.setWindowTitle("Criar Nó (Blueprint Style)")
-        self.resize(320, 420)
+        self.resize(340, 450)
         self.setWindowFlags(Qt.Popup | Qt.FramelessWindowHint)
 
         layout = QVBoxLayout(self)
@@ -27,7 +30,7 @@ class SmartContextMenu(QDialog):
 
         # Header / Search Line
         self.search_field = QLineEdit(self)
-        self.search_field.setPlaceholderText("Buscar nó... (ex: Add, Branch, Move)")
+        self.search_field.setPlaceholderText("Buscar nó... (ex: Add, Branch, Move, Timer)")
         self.search_field.setStyleSheet("""
             QLineEdit {
                 background-color: #1a1d22;
@@ -75,31 +78,25 @@ class SmartContextMenu(QDialog):
         self._populate_nodes()
 
     def _populate_nodes(self) -> None:
-        self.all_nodes = [
-            ("Event: Start", "Eventos", "Disparado na inicialização"),
-            ("Event: Update", "Eventos", "Disparado a cada frame"),
-            ("Branch (If/Else)", "Controle", "Desvia o fluxo condicionalmente"),
-            ("Sequence", "Controle", "Executa saídas em sequência"),
-            ("For Loop", "Controle", "Executa um loop N vezes"),
-            ("Vector Add", "Matemática", "Soma dois vetores"),
-            ("Math: Multiply", "Matemática", "Multiplica valores numéricos"),
-            ("Get Key Down", "Input", "Verifica se uma tecla foi pressionada"),
-            ("Move Object", "Transform", "Move o objeto na cena"),
-            ("Play Sound", "Áudio", "Toca um clipe de áudio"),
-            ("Spawn Prefab", "Spawning", "Instancia um objeto"),
-        ]
+        self.all_nodes = []
+        for node_type, definition in NODE_DEFINITIONS.items():
+            title = str(definition.get("title", node_type))
+            category = str(definition.get("category", "Geral"))
+            desc = f"{category} • Conector nativo de {title}"
+            self.all_nodes.append((title, category, desc, node_type))
 
+        self.all_nodes.sort(key=lambda item: (item[1].lower(), item[0].lower()))
         self._filter_nodes(self.search_field.text())
 
     def _filter_nodes(self, text: str) -> None:
         self.node_list.clear()
         query = text.lower().strip()
 
-        for name, category, desc in self.all_nodes:
-            if not query or query in name.lower() or query in category.lower():
-                item = QListWidgetItem(f"[{category}] {name}")
-                item.setToolTip(desc)
-                item.setData(Qt.UserRole, name)
+        for title, category, desc, node_type in self.all_nodes:
+            if not query or query in title.lower() or query in category.lower() or query in node_type.lower():
+                item = QListWidgetItem(f"[{category}] {title}")
+                item.setToolTip(f"{desc} ({node_type})")
+                item.setData(Qt.UserRole, node_type)
                 self.node_list.addItem(item)
 
     def _on_item_chosen(self, item: QListWidgetItem) -> None:
