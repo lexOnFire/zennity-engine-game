@@ -6,6 +6,7 @@ from engine.dialogue.dialogue_nodes import (
     EndNode,
     DialogueEventNode,
 )
+from engine.dialogue.runtime import DialogueSession
 
 __all__ = [
     "DialogueProvider",
@@ -14,4 +15,5 @@ __all__ = [
     "ConditionNode",
     "EndNode",
     "DialogueEventNode",
+    "DialogueSession",
 ]

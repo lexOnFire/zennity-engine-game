@@ -15,6 +15,7 @@ from editor.scene_persistence import EditorScenePersistence
 from editor.runtime.viewport_asset_hydration import (
     hydrate_animator_controllers,
     hydrate_behavior_controllers,
+    hydrate_dialogues,
     hydrate_logic_graphs,
 )
 from editor.runtime.viewport_logic_api import PlayLogicAPI
@@ -89,6 +90,8 @@ def test_portal_station_scene_loads_as_one_runtime_ready_experience() -> None:
     assert objects["StationDrone"]["behavior"]["controller"]["initial_state"] == "Patrol"
     assert hydrate_animator_controllers(objects, Path.cwd())
     assert objects["PortalCore"]["animator"]["controller"]["initial_state"] == "Closed"
+    assert hydrate_dialogues(objects, Path.cwd())
+    assert objects["PortalTerminal"]["dialogue"]["graph"]["category"] == "Dialogue"
 
 
 def test_portal_button_event_changes_gameplay_state() -> None:

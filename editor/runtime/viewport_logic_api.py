@@ -9,6 +9,7 @@ from typing import Any
 try:
     from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
     from engine.behavior.controller_asset import BehaviorControllerRunner
+    from engine.dialogue.runtime import DialogueSession
     from engine.runtime.runtime_world import RuntimeWorld
 except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .clip_asset import animation_asset_to_clip, load_animation_asset
@@ -80,6 +81,56 @@ class PlayBehaviorAPI:
         return dict(self._runner.parameters) if self._runner else {}
 
 
+class PlayDialogueAPI:
+    """Sessão de diálogo controlável por Logic Graph, UI ou scripts de estado."""
+
+    def __init__(self, obj: dict[str, Any]) -> None:
+        self._obj = obj
+        self._session: DialogueSession | None = None
+
+    def bind(self, session: DialogueSession) -> None:
+        self._session = session
+
+    def start(self) -> dict[str, Any]:
+        return self._present(self._session.start()) if self._session else {}
+
+    def advance(self) -> dict[str, Any]:
+        return self._present(self._session.advance()) if self._session else {}
+
+    def choose(self, option: int | str) -> dict[str, Any]:
+        return self._present(self._session.choose(option)) if self._session else {}
+
+    def set_variable(self, name: str, value: Any) -> None:
+        if self._session:
+            self._session.set_variable(name, value)
+
+    @property
+    def state(self) -> dict[str, Any]:
+        return self._session.snapshot() if self._session else {}
+
+    def _present(self, state: dict[str, Any]) -> dict[str, Any]:
+        if state.get("finished"):
+            self._obj.setdefault("logic_events", []).append(
+                {"command": "remove_hud", "value": "dialogue"}
+            )
+            return state
+        speaker = state.get("speaker")
+        prefix = f"{speaker}: " if speaker else ""
+        options = state.get("options", [])
+        suffix = ""
+        if options:
+            suffix = "  " + "  ".join(f"[{item['index']}]" for item in options)
+        self._obj.setdefault("logic_events", []).append({
+            "command": "set_hud",
+            "value": {
+                "key": "dialogue", "text": f"{prefix}{state.get('text', '')}{suffix}",
+                "position": "bottom-center", "font_size": 22,
+                "color": (255, 255, 255),
+            },
+        })
+        return state
+
+
 class PlayLogicAPI:
     """API pequena e estável entregue aos grafos durante o Play Mode."""
 
@@ -98,6 +149,7 @@ class PlayLogicAPI:
         self._previous_input: dict[str, bool] = {}
         self.animator = PlayAnimatorAPI(obj)
         self.behavior = PlayBehaviorAPI(obj)
+        self.dialogue = PlayDialogueAPI(obj)
 
     @property
     def x(self) -> float:

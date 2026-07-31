@@ -44,6 +44,7 @@ try:
         hydrate_animation_asset_clips,
         hydrate_animator_controllers,
         hydrate_behavior_controllers,
+        hydrate_dialogues,
         hydrate_logic_graphs,
         load_project_subgraph,
     )
@@ -77,6 +78,7 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
         hydrate_animation_asset_clips,
         hydrate_animator_controllers,
         hydrate_behavior_controllers,
+        hydrate_dialogues,
         hydrate_logic_graphs,
         load_project_subgraph,
     )
@@ -215,7 +217,7 @@ class ViewportSession(ViewportSessionLifecycleMixin):
             self.logic_runtimes, self.initialized_runtime_ids, self.animator_event_signatures, self.runtime_world,
             (
                 hydrate_animation_asset_clips, hydrate_animator_controllers,
-                hydrate_behavior_controllers, hydrate_logic_graphs,
+                hydrate_behavior_controllers, hydrate_dialogues, hydrate_logic_graphs,
             ),
             lambda name, obj: PlayLogicAPI(name, obj, self.events, self.objects, self.runtime_world),
             lambda path: load_project_subgraph(path, Path.cwd()),

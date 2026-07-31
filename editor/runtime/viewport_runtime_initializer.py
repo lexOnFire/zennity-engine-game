@@ -8,6 +8,7 @@ try:
     from engine.animation.controller_asset import AnimatorControllerRuntime
     from engine.behavior.controller_asset import BehaviorControllerRunner
     from engine.behavior.graph_runtime import BehaviorGraphRunner
+    from engine.dialogue.runtime import DialogueSession
     from engine.logic.blackboard import BlackboardStore, load_blackboard_asset
     from engine.logic.event_bus import LogicEventBus
     from engine.logic.runtime import LogicGraphRuntime
@@ -68,6 +69,7 @@ class ViewportRuntimeInitializer:
         for name, obj in initial_objects:
             self._initialize_animation(name, obj)
             self._initialize_behavior(name, obj)
+            self._initialize_dialogue(name, obj)
         for name, obj in initial_objects:
             self._initialize_logic(name, obj)
         self.initialized_ids.update(str(obj.get("id", name)) for name, obj in initial_objects)
@@ -98,6 +100,7 @@ class ViewportRuntimeInitializer:
             self._hydrate({name: obj})
             self._initialize_animation(name, obj)
             self._initialize_behavior(name, obj)
+            self._initialize_dialogue(name, obj)
             self._initialize_logic(name, obj)
             audio = obj.get("audio")
             if isinstance(audio, dict) and audio.get("autoplay") and audio.get("path"):
@@ -165,6 +168,21 @@ class ViewportRuntimeInitializer:
         api.behavior.bind(runner, api)
         runner.start(api)
         obj["_behavior_state"] = runner.current_state
+
+    def _initialize_dialogue(self, name: str, obj: dict[str, Any]) -> None:
+        dialogue = obj.get("dialogue")
+        if not isinstance(dialogue, dict) or not isinstance(dialogue.get("graph"), dict):
+            return
+        api = self.logic_apis.setdefault(name, self.api_factory(name, obj))
+        session = DialogueSession(
+            dialogue["graph"],
+            dialogue.get("variables", {}),
+            lambda event_name, payload: api.send(event_name, payload),
+        )
+        api.dialogue.bind(session)
+        obj["_dialogue_session"] = session
+        if dialogue.get("auto_start", False):
+            api.dialogue.start()
 
     def _initialize_logic(self, name: str, obj: dict[str, Any]) -> None:
         entries = obj.get("logic_graphs", [])

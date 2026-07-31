@@ -121,6 +121,38 @@ def hydrate_behavior_controllers(
     return results
 
 
+def hydrate_dialogues(
+    objects: dict[str, dict[str, Any]], project_root: Path
+) -> list[tuple[str, str, str]]:
+    """Carrega Dialogue Graphs associados aos objetos da cena."""
+    results: list[tuple[str, str, str]] = []
+    for object_name, obj in objects.items():
+        asset_value = obj.get("dialogue_asset")
+        dialogue = obj.get("dialogue")
+        if not asset_value and isinstance(dialogue, dict):
+            asset_value = dialogue.get("asset_path")
+        if not asset_value:
+            continue
+        path = Path(str(asset_value))
+        path = path if path.is_absolute() else project_root / path
+        try:
+            graph = json.loads(path.read_text(encoding="utf-8"))
+            if (
+                not isinstance(graph, dict)
+                or graph.get("format") != "zennity.generic_graph"
+                or str(graph.get("category", "")).casefold() != "dialogue"
+            ):
+                raise ValueError("asset não é um Dialogue Graph")
+            settings = dialogue if isinstance(dialogue, dict) else {}
+            settings["asset_path"] = str(asset_value)
+            settings["graph"] = graph
+            obj["dialogue"] = settings
+            results.append(("INFO", object_name, f"Dialogue carregado: {path.name}"))
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            results.append(("ERROR", object_name, f"falha ao carregar Dialogue {asset_value}: {exc}"))
+    return results
+
+
 def hydrate_logic_graphs(
     objects: dict[str, dict[str, Any]], project_root: Path
 ) -> list[tuple[str, str, str]]:
