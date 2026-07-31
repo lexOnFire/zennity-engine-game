@@ -5,7 +5,7 @@
   "name": "PlayerMovement",
   "target": {
     "type": "name",
-    "value": "Player"
+    "value": "GameObject"
   },
   "debug": {
     "breakpoints": [],
@@ -46,8 +46,8 @@
       "title": "Read Input Axis",
       "category": "Movement",
       "position": [
-        370.0,
-        80.0
+        24.17,
+        -18.95
       ],
       "editor": {
         "collapsed": false,
@@ -65,8 +65,8 @@
       "title": "If / Else",
       "category": "Logic",
       "position": [
-        660.0,
-        80.0
+        396.46,
+        -2.29
       ],
       "editor": {
         "collapsed": false,
@@ -101,8 +101,8 @@
       "title": "Key Pressed Now?",
       "category": "Condition",
       "position": [
-        10.88,
-        176.73
+        -205.63,
+        263.92
       ],
       "editor": {
         "collapsed": false,
@@ -353,27 +353,6 @@
       "properties": {
         "path": "Assets/Animations/nave_Idle.zanim"
       }
-    },
-    {
-      "id": "db7251b686a446dd83b250a90ca4dfbe",
-      "type": "add_sprite_renderer",
-      "title": "Adicionar Sprite Renderer",
-      "category": "Components",
-      "position": [
-        68.43,
-        -100.05
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {
-        "texture": "Assets/Materials/nave_player.PNG",
-        "color": "red",
-        "render_layer": "Default",
-        "sort_order": 0
-      }
     }
   ],
   "edges": [
@@ -520,15 +499,6 @@
       "to_port": "in",
       "kind": "flow",
       "order": 15
-    },
-    {
-      "id": "c98170ad1f0f4cdcbe78846510bde7b2",
-      "from_node": "update",
-      "from_port": "next",
-      "to_node": "db7251b686a446dd83b250a90ca4dfbe",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 16
     }
   ]
 }
