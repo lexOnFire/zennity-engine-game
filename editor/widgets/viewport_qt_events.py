@@ -135,13 +135,17 @@ class ViewportQtEventsMixin:
                 unicode=event.text(),
             )
             self.active_scene.handle_event(pg_ev)
-            self._sync_selection_to_model()
+            if not getattr(self.active_scene, "playing", False):
+                self._sync_selection_to_model()
             event.accept()
         else:
             super().keyPressEvent(event)
 
     def keyReleaseEvent(self, event: QKeyEvent) -> None:
         if not self.active_scene:
+            return
+        if event.isAutoRepeat():
+            event.accept()
             return
         pg_key = self._qt_key_to_pg(event.key())
         if pg_key is not None:
@@ -158,3 +162,10 @@ class ViewportQtEventsMixin:
             event.accept()
         else:
             super().keyReleaseEvent(event)
+
+    def focusOutEvent(self, event) -> None:
+        if self.active_scene:
+            for key in (pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN, pygame.K_SPACE):
+                pg_ev = pygame.event.Event(pygame.KEYUP, key=key, mod=pygame.KMOD_NONE, unicode="")
+                self.active_scene.handle_event(pg_ev)
+        super().focusOutEvent(event)

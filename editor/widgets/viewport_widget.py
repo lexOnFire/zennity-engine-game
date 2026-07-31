@@ -47,6 +47,9 @@ class ViewportWidget(ViewportQtEventsMixin, QOpenGLWidget):
         self.setObjectName("ViewportWidget")
         self.setFocusPolicy(Qt.StrongFocus)
         self.setMouseTracking(True)
+        self.setAttribute(Qt.WA_OpaquePaintEvent, True)
+        self.setAttribute(Qt.WA_NoSystemBackground, True)
+        self.setAutoFillBackground(False)
 
         pygame.init()
         pygame.font.init()
@@ -411,7 +414,9 @@ class ViewportWidget(ViewportQtEventsMixin, QOpenGLWidget):
                      self._vp_w * 4, QImage.Format_RGBA8888)
 
         p = QPainter(self)
+        p.setCompositionMode(QPainter.CompositionMode_Source)
         p.drawImage(0, 0, img)
+        p.setCompositionMode(QPainter.CompositionMode_SourceOver)
         if self.active_scene and getattr(self.active_scene, "playing", False):
             from PySide6.QtGui import QPen, QColor, QFont
             import math
