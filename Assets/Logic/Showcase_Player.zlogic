@@ -1,13 +1,17 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
-  "enabled": true,
+  "enabled": false,
   "name": "PlayerMovement",
   "target": {
     "type": "name",
     "value": "Player"
   },
-  "debug": {},
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
   "variables": {
     "speed": {
       "type": "number",
@@ -15,55 +19,153 @@
       "default": 300.0
     }
   },
-  "editor": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
   "nodes": [
     {
       "id": "update",
       "type": "event_update",
-      "position": [ 0, 0 ],
+      "title": "A Cada Frame",
+      "category": "Events",
+      "position": [
+        0.0,
+        0.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
       "properties": {}
     },
     {
       "id": "axis",
       "type": "input_axis",
-      "position": [ 250, 0 ],
-      "properties": { "negative": "A", "positive": "D" }
+      "title": "input_axis",
+      "category": "Custom",
+      "position": [
+        250.0,
+        0.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "negative": "A",
+        "positive": "D"
+      }
     },
     {
       "id": "mult_speed",
       "type": "multiply",
-      "position": [ 500, 0 ],
+      "title": "multiply",
+      "category": "Custom",
+      "position": [
+        500.0,
+        0.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
       "properties": {}
     },
     {
       "id": "get_speed",
       "type": "get_variable",
-      "position": [ 250, -150 ],
-      "properties": { "name": "speed" }
+      "title": "Obter Variável",
+      "category": "Variables",
+      "position": [
+        250.0,
+        -150.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "speed",
+        "scope": "object"
+      }
     },
     {
       "id": "move_horiz",
       "type": "move_by",
-      "position": [ 750, 0 ],
-      "properties": { "y": 0 }
+      "title": "move_by",
+      "category": "Custom",
+      "position": [
+        750.0,
+        0.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "y": 0
+      }
     },
     {
       "id": "space_pressed",
       "type": "key_pressed",
-      "position": [ 250, 200 ],
-      "properties": { "key": "SPACE" }
+      "title": "Key Pressed Now?",
+      "category": "Condition",
+      "position": [
+        250.0,
+        200.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "key": "SPACE"
+      }
     },
     {
       "id": "if_jump",
       "type": "if_else",
-      "position": [ 500, 200 ],
-      "properties": {}
+      "title": "Se / Senão",
+      "category": "Logic",
+      "position": [
+        500.0,
+        200.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "condition": true
+      }
     },
     {
       "id": "do_jump",
       "type": "move_by",
-      "position": [ 750, 200 ],
-      "properties": { "x": 0, "y": -600 }
+      "title": "move_by",
+      "category": "Custom",
+      "position": [
+        750.0,
+        200.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "x": 0,
+        "y": -600
+      }
     }
   ],
   "edges": [
