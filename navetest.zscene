@@ -1,20 +1,23 @@
 {
   "format_version": 2,
-  "scene_name": "navetest",
-  "engine_version": "Zennity 0.1.0",
+  "scene_name": "Untitled",
+  "engine_version": "Zennity 1.0.1",
+  "blackboard": {
+    "variables": {}
+  },
   "objects": [
     {
-      "name": "Player_nave",
+      "name": "background",
       "active": true,
       "enabled": true,
       "static": false,
       "tag": "Untagged",
       "layer": "Default",
-      "id": "5da13707-8570-4282-99ef-0008e933752c",
+      "id": "c449da3c-b9c9-4dd1-b1e2-87a17ebdeac8",
       "transform": {
         "position": [
-          0.0,
-          80.0,
+          -30.816030720000057,
+          70.44043263999998,
           0.0
         ],
         "rotation": [
@@ -24,99 +27,198 @@
         ],
         "rz": 0.0,
         "scale": [
-          144.0,
-          144.0,
+          1337.8941337600002,
+          753.7923686400001,
           1.0
         ]
       },
       "visual": {
         "enabled": true,
         "material": "Default_Material",
-        "mesh_type": "Empty",
-        "color": [
-          255,
-          255,
-          255
-        ],
-        "texture": "Assets/Materials/nave_IDLE.PNG",
-        "layer": "Default",
-        "order": 0
-      },
-      "components": {},
-      "editor_data": {
-        "animator": {
-          "active_clip": "nave_Idle",
-          "speed": 1.0,
-          "clips": {
-            "nave_Idle": {
-              "texture": "Assets/Materials/nave_IDLE.PNG",
-              "frame_width": 224,
-              "frame_height": 200,
-              "start_frame": 0,
-              "frame_count": 8,
-              "frames": [
-                0,
-                1,
-                2,
-                3,
-                4,
-                5,
-                6,
-                7
-              ],
-              "fps": 8.0,
-              "loop": true,
-              "events": [],
-              "tracks": [],
-              "asset_path": "Assets/Animations/nave_Idle.zanim"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "paisagem",
-      "active": true,
-      "enabled": true,
-      "static": false,
-      "tag": "Untagged",
-      "layer": "Default",
-      "id": "4863c5d3-a0ab-4638-9f26-0b850ff26f07",
-      "transform": {
-        "position": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "rotation": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "rz": 0.0,
-        "scale": [
-          1312.0,
-          704.0,
-          1.0
-        ]
-      },
-      "visual": {
-        "enabled": true,
-        "material": "Default_Material",
-        "mesh_type": "Empty",
+        "mesh_type": null,
         "color": [
           255,
           255,
           255
         ],
         "texture": "Assets/Materials/CEU_INFI.png",
-        "layer": "Background",
+        "layer": "Default",
         "order": 0
       },
       "components": {}
+    },
+    {
+      "name": "Player",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "tag": "Untagged",
+      "layer": "Default",
+      "id": "8b62f3d0-320a-4cda-865a-7bbac88b4a5c",
+      "transform": {
+        "position": [
+          -22.0,
+          137.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          112.0,
+          108.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": false,
+        "material": "Default_Material",
+        "mesh_type": "UI",
+        "color": [
+          255,
+          255,
+          255
+        ],
+        "texture": "Assets/Materials/naveBoss.PNG",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {
+        "items": [
+          {
+            "type": "Label",
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "x": 16.0,
+              "y": 16.0,
+              "width": 180.0,
+              "height": 42.0,
+              "z_order": 0,
+              "text": "Texto",
+              "font_size": 24,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "sprite_path": ""
+            }
+          }
+        ],
+        "rigidbody": {
+          "is_kinematic": true,
+          "use_gravity": false,
+          "gravity_scale": 1.0
+        },
+        "collider": {
+          "type": "box",
+          "width": 112.0,
+          "height": 108.0
+        }
+      }
+    },
+    {
+      "name": "spawn",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "tag": "Untagged",
+      "layer": "Default",
+      "id": "bc704231-ac60-4ac4-a626-8f5cf59422e1",
+      "transform": {
+        "position": [
+          17.883199999999988,
+          -16.431999999999988,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          40.0,
+          40.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": false,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          160,
+          164,
+          174
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {}
+    },
+    {
+      "name": "Camera2D",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "tag": "Untagged",
+      "layer": "Default",
+      "id": "a2d46460-278e-4396-a4d4-e16437641492",
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          96.0,
+          54.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": "Camera",
+        "color": [
+          110,
+          190,
+          210
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {
+        "camera": {
+          "active": true,
+          "zoom": 1.0,
+          "width": 1280.0,
+          "height": 720.0,
+          "follow_target": "Player",
+          "background_color": [
+            8,
+            31,
+            1
+          ]
+        }
+      }
     }
-  ],
-  "blackboard": {
-    "variables": {}
-  }
+  ]
 }

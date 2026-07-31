@@ -5,7 +5,7 @@
   "name": "Nebula Enemy Spawner",
   "target": {
     "type": "name",
-    "value": "NebulaSpawner"
+    "value": "spawn"
   },
   "debug": {
     "breakpoints": [],
@@ -24,17 +24,18 @@
       "title": "Após um tempo",
       "category": "Events",
       "position": [
-        40.0,
-        120.0
+        -840.32,
+        -318.63
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {
-        "seconds": 1.15,
-        "repeat": true
+        "interval": 1.0,
+        "repeat": true,
+        "seconds": 1.15
       }
     },
     {
@@ -43,74 +44,279 @@
       "title": "Número aleatório",
       "category": "Math",
       "position": [
-        300.0,
-        20.0
+        -714.97,
+        -81.24
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
+        "min": 0.0,
+        "max": 1.0,
         "minimum": 80.0,
         "maximum": 640.0
       }
     },
     {
-      "id": "spawn_enemy",
-      "type": "create_prefab",
-      "title": "Criar Prefab",
+      "id": "f971f97879f2434686c12da4411db38a",
+      "type": "create_object",
+      "title": "Create Object",
       "category": "Objects",
       "position": [
-        560.0,
-        120.0
+        -438.32,
+        -304.3
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 240.0
       },
       "properties": {
-        "path": "Assets/Prefabs/NebulaDefense/NebulaDrone.zprefab",
-        "override_position": true,
-        "x": 1160.0,
-        "y": 360.0,
-        "relative": false,
-        "override_rotation": false,
-        "rotation": 0.0,
-        "override_scale": false,
+        "name": "NewObject",
+        "x": "",
+        "y": "",
         "width": 64.0,
         "height": 64.0,
-        "include_camera": false,
-        "include_audio": false,
-        "include_logic": false,
-        "parameters": {},
-        "exposed_properties": [],
-        "lifetime": 10.0,
-        "max_instances": 9,
-        "max_distance": 1500.0,
-        "use_pool": true
+        "color": "#58a6ff",
+        "texture": "Assets/Textures/formiga_2.PNG",
+        "tag": "Untagged",
+        "relative": false,
+        "inherit_source": true,
+        "inherit_logic": false,
+        "lifetime": 0,
+        "max_instances": 0,
+        "max_distance": 0.0,
+        "use_pool": false
+      }
+    },
+    {
+      "id": "c0a17be8895c44bb9b064cdf445c4649",
+      "type": "start_continuous_motion",
+      "title": "Start Continuous Motion",
+      "category": "Position",
+      "position": [
+        290.09,
+        189.77
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 212.0
+      },
+      "properties": {
+        "movement": "Movement",
+        "x": 100.0,
+        "y": 0.0,
+        "space": "global",
+        "acceleration": 0.0,
+        "deceleration": 0.0
+      }
+    },
+    {
+      "id": "84571557e9d4420fa56aca5c73afd6f8",
+      "type": "set_position",
+      "title": "Definir Posição",
+      "category": "Position",
+      "position": [
+        -17.03,
+        207.89
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 212.0
+      },
+      "properties": {
+        "x": -443,
+        "y": ""
+      }
+    },
+    {
+      "id": "cfa9964d95c44920b61c6eb49b8f552a",
+      "type": "random_number",
+      "title": "Número aleatório",
+      "category": "Math",
+      "position": [
+        -427.79,
+        124.23
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "min": 0.0,
+        "max": 1.0,
+        "minimum": -600,
+        "maximum": 640.0
+      }
+    },
+    {
+      "id": "981e2cde95bc4635bb834344bb0e429a",
+      "type": "set_sprite",
+      "title": "Trocar Imagem",
+      "category": "Action",
+      "position": [
+        -147.29,
+        -204.07
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "path": "Assets/Textures/formiga_2.PNG"
+      }
+    },
+    {
+      "id": "d8a22bf786c14eb1a4abf8bbe226293d",
+      "type": "destroy_after_time",
+      "title": "Destroy After Time",
+      "category": "Action",
+      "position": [
+        388.7,
+        -107.37
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "seconds": 2
+      }
+    },
+    {
+      "id": "d64ad5ec5bae46d5aa3b8480bd305532",
+      "type": "play_animation_asset",
+      "title": "Tocar Animação",
+      "category": "Action",
+      "position": [
+        587.23,
+        237.78
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "path": "Assets/Animations/enemy.zanim"
+      }
+    },
+    {
+      "id": "104af3cdca274e8cacde578749abb2fa",
+      "type": "play_animation_asset",
+      "title": "Tocar Animação",
+      "category": "Action",
+      "position": [
+        657.8,
+        -74.9
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "path": "Assets/Animations/explosion.zanim"
       }
     }
   ],
   "edges": [
     {
-      "id": "spawn_timer_next_spawn_enemy_in",
-      "from_node": "spawn_timer",
+      "id": "5115ed05aa9e4b059a1ecd465fdbe930",
+      "from_node": "f971f97879f2434686c12da4411db38a",
       "from_port": "next",
-      "to_node": "spawn_enemy",
+      "to_node": "84571557e9d4420fa56aca5c73afd6f8",
       "to_port": "in",
       "kind": "flow",
-      "order": 0
+      "order": 2
     },
     {
-      "id": "random_y_value_spawn_enemy_y",
+      "id": "0cac21ecfd2f4ce7bc69a1f69048c31a",
+      "from_node": "84571557e9d4420fa56aca5c73afd6f8",
+      "from_port": "next",
+      "to_node": "c0a17be8895c44bb9b064cdf445c4649",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 3
+    },
+    {
+      "id": "57d829063c0244eba3ca392b4a43a7a5",
+      "from_node": "spawn_timer",
+      "from_port": "next",
+      "to_node": "f971f97879f2434686c12da4411db38a",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 2
+    },
+    {
+      "id": "9681175087854d309d434ba1b762ed39",
       "from_node": "random_y",
       "from_port": "value",
-      "to_node": "spawn_enemy",
+      "to_node": "f971f97879f2434686c12da4411db38a",
+      "to_port": "x",
+      "kind": "number",
+      "order": 3
+    },
+    {
+      "id": "636f729e98464db8b2663c0831c61930",
+      "from_node": "random_y",
+      "from_port": "value",
+      "to_node": "f971f97879f2434686c12da4411db38a",
       "to_port": "y",
       "kind": "number",
-      "order": 0
+      "order": 4
+    },
+    {
+      "id": "768166f59ded4c3dab43a5eb7f46127d",
+      "from_node": "cfa9964d95c44920b61c6eb49b8f552a",
+      "from_port": "value",
+      "to_node": "84571557e9d4420fa56aca5c73afd6f8",
+      "to_port": "y",
+      "kind": "number",
+      "order": 5
+    },
+    {
+      "id": "ff20d8d867c441e994c5a26d2918ae1a",
+      "from_node": "f971f97879f2434686c12da4411db38a",
+      "from_port": "next",
+      "to_node": "981e2cde95bc4635bb834344bb0e429a",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 6
+    },
+    {
+      "id": "e889033e768541b8a3cdb6c62e4c46de",
+      "from_node": "c0a17be8895c44bb9b064cdf445c4649",
+      "from_port": "next",
+      "to_node": "d8a22bf786c14eb1a4abf8bbe226293d",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 7
+    },
+    {
+      "id": "9b4fda8a4c854b598249f0649d26a09d",
+      "from_node": "c0a17be8895c44bb9b064cdf445c4649",
+      "from_port": "next",
+      "to_node": "d64ad5ec5bae46d5aa3b8480bd305532",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 8
+    },
+    {
+      "id": "537558d76ce64b569ff431ea00e22548",
+      "from_node": "d8a22bf786c14eb1a4abf8bbe226293d",
+      "from_port": "next",
+      "to_node": "104af3cdca274e8cacde578749abb2fa",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 9
     }
   ]
 }

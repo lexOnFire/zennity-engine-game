@@ -1,0 +1,73 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "GameObjectLogic",
+  "target": {
+    "type": "name",
+    "value": "background"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "59f76c3e76574234bb75bd591a6eeb72",
+      "type": "event_start",
+      "title": "Ao Iniciar",
+      "category": "Events",
+      "position": [
+        80.0,
+        80.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "441c3d8b899d41b5b526ee549e192a9e",
+      "type": "start_texture_scroll",
+      "title": "start_texture_scroll",
+      "category": "Custom",
+      "position": [
+        370.0,
+        80.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 240.0
+      },
+      "properties": {
+        "path": "Assets/Materials/CEU_INFI.png",
+        "speed_x": 0,
+        "speed_y": 100,
+        "repeat_x": false,
+        "repeat_y": true,
+        "parallax": 1.0,
+        "send_to_background": true
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "9312632878f448e6a87a6636980a9c8c",
+      "from_node": "59f76c3e76574234bb75bd591a6eeb72",
+      "from_port": "next",
+      "to_node": "441c3d8b899d41b5b526ee549e192a9e",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    }
+  ]
+}

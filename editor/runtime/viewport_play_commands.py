@@ -17,6 +17,25 @@ class ViewportProcessState:
     selected_name: str | None
     playing: bool
     paused: bool
+"""Play-session and debugger commands for the isolated viewport."""
+from __future__ import annotations
+
+from copy import deepcopy
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Callable
+
+
+@dataclass
+class ViewportProcessState:
+    running: bool
+    screen: Any
+    camera_x: float
+    camera_y: float
+    edit_snapshot: dict[str, dict[str, Any]]
+    selected_name: str | None
+    playing: bool
+    paused: bool
     velocities_y: dict[str, float]
     grounded: dict[str, bool]
     scene_blackboard_config: dict[str, Any]
@@ -25,7 +44,7 @@ class ViewportProcessState:
 class ViewportPlayCommandHandler:
     COMMAND_TYPES = frozenset({
         "shutdown", "viewport_size", "scene_snapshot", "logic_debug_command",
-        "play", "pause", "stop",
+        "play", "pause", "stop", "logic_hot_reload",
     })
 
     def __init__(
@@ -102,6 +121,8 @@ class ViewportPlayCommandHandler:
                 self.clear_hud()
                 self.emit({"type": "play_state", "state": "edit"})
                 self.emit({"type": "scene_snapshot", "objects": list(self.objects.values())})
+        elif command_type == "logic_hot_reload":
+            self._handle_logic_hot_reload(command, state)
         return state
 
     def _play(self, command: dict[str, Any], state: ViewportProcessState) -> None:
@@ -122,17 +143,6 @@ class ViewportPlayCommandHandler:
             self.reset_physics()
             self.clear_hud()
             self.start_logic(state.scene_blackboard_config)
-            self.emit({"type": "play_state", "state": "play"})
-        elif state.paused:
-            state.paused = False
-            self.pause_audio(False)
-            self.emit({"type": "play_state", "state": "play"})
-
-    def _handle_logic_debug(self, command: dict[str, Any], state: ViewportProcessState) -> None:
-        requested_graph = Path(str(command.get("graph", ""))).as_posix().casefold()
-        requested_name = Path(requested_graph).name.casefold()
-        action = str(command.get("command", "sync")).lower()
-        breakpoints = command.get("breakpoints", [])
         conditions = command.get("breakpoint_conditions", {})
         watches = command.get("watches", [])
         variables = command.get("variables", {})

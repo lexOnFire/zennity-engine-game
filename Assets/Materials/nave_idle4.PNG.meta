@@ -1,0 +1,12 @@
+{
+  "guid": "368aa931-d891-4856-b62f-bbef31dcad88",
+  "uuid": "368aa931-d891-4856-b62f-bbef31dcad88",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/nave_idle4.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "7501f3022785857865ec45e262a6834ce2c846a716fe58a6d31e3dc6f55ff902"
+}

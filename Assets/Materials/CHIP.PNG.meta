@@ -1,0 +1,12 @@
+{
+  "guid": "d699857d-a85a-4dca-aa30-8ba985d2f78a",
+  "uuid": "d699857d-a85a-4dca-aa30-8ba985d2f78a",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/CHIP.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "4495275c524d3f33435011a98dad39f9ec81aea5ad6b211c98732d6ad3505c76"
+}

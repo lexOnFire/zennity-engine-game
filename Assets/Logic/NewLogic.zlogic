@@ -1,11 +1,11 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
-  "enabled": true,
+  "enabled": false,
   "name": "NewLogic",
   "target": {
     "type": "name",
-    "value": "GameObject"
+    "value": "background"
   },
   "debug": {
     "breakpoints": [],
@@ -17,51 +17,6 @@
     "groups": [],
     "comments": []
   },
-  "nodes": [
-    {
-      "id": "d9e5fe842fd64a84bd45be3623574ab8",
-      "type": "event_update",
-      "title": "A Cada Frame",
-      "category": "Events",
-      "position": [
-        -450.38,
-        -282.73
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "295c1d4e10bd45948fdf797b75b27f1a",
-      "type": "set_sprite",
-      "title": "Trocar Imagem",
-      "category": "Action",
-      "position": [
-        -152.89,
-        -174.62
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 184.0
-      },
-      "properties": {
-        "path": "Assets/Materials/CEU_INFI.png"
-      }
-    }
-  ],
-  "edges": [
-    {
-      "id": "7ba7a7fc47924a958500f92a56ab69e3",
-      "from_node": "d9e5fe842fd64a84bd45be3623574ab8",
-      "from_port": "next",
-      "to_node": "295c1d4e10bd45948fdf797b75b27f1a",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 0
-    }
-  ]
+  "nodes": [],
+  "edges": []
 }

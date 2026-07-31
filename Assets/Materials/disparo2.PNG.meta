@@ -1,0 +1,12 @@
+{
+  "guid": "69135c13-7837-4dae-a77c-801812e9409e",
+  "uuid": "69135c13-7837-4dae-a77c-801812e9409e",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/disparo2.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "d963954516dbc552a33fa79ddd1330f9f1ef8de12556ad761cd4107882d990b1"
+}

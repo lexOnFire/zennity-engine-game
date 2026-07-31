@@ -1,7 +1,7 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
-  "enabled": true,
+  "enabled": false,
   "name": "PlayerMovement",
   "target": {
     "type": "name",
@@ -30,8 +30,8 @@
       "title": "On Update",
       "category": "Events",
       "position": [
-        -735.91,
-        -205.83
+        -363.77,
+        26.44
       ],
       "editor": {
         "collapsed": false,
@@ -46,8 +46,8 @@
       "title": "Read Input Axis",
       "category": "Movement",
       "position": [
-        -315.54,
-        -305.43
+        370.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
@@ -65,8 +65,8 @@
       "title": "If / Else",
       "category": "Logic",
       "position": [
-        119.89,
-        -494.95
+        660.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
@@ -83,8 +83,8 @@
       "title": "Move",
       "category": "Movement",
       "position": [
-        506.57,
-        -684.28
+        950.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
@@ -101,11 +101,11 @@
       "title": "Key Pressed Now?",
       "category": "Condition",
       "position": [
-        -400.41,
-        217.84
+        370.0,
+        250.0
       ],
       "editor": {
-        "collapsed": false,
+        "collapsed": true,
         "width": 220.0,
         "height": 184.0
       },
@@ -119,8 +119,8 @@
       "title": "Create Object",
       "category": "Objects",
       "position": [
-        136.22,
-        488.35
+        532.9,
+        250.65
       ],
       "editor": {
         "collapsed": true,
@@ -131,16 +131,16 @@
         "name": "Projectile",
         "x": 5,
         "y": -55,
-        "width": 150,
-        "height": 20,
+        "width": 50,
+        "height": 15,
         "color": "#ffd166",
         "texture": "Assets/Materials/projetil1_.PNG",
         "tag": "Projectile",
         "relative": true,
         "inherit_source": false,
         "inherit_logic": false,
-        "lifetime": 3.0,
-        "max_instances": 20,
+        "lifetime": 3,
+        "max_instances": 100,
         "max_distance": 1200.0,
         "use_pool": true
       }
@@ -151,8 +151,8 @@
       "title": "Read Input Axis",
       "category": "Movement",
       "position": [
-        154.97,
-        43.7
+        370.0,
+        420.0
       ],
       "editor": {
         "collapsed": true,
@@ -189,10 +189,10 @@
       "category": "Position",
       "position": [
         1240.0,
-        250.0
+        80.0
       ],
       "editor": {
-        "collapsed": true,
+        "collapsed": false,
         "width": 220.0,
         "height": 212.0
       },
@@ -246,10 +246,10 @@
       "category": "Position",
       "position": [
         1240.0,
-        420.0
+        250.0
       ],
       "editor": {
-        "collapsed": true,
+        "collapsed": false,
         "width": 220.0,
         "height": 212.0
       },
@@ -265,7 +265,7 @@
       "category": "Position",
       "position": [
         1240.0,
-        590.0
+        420.0
       ],
       "editor": {
         "collapsed": true,
@@ -287,8 +287,8 @@
       "title": "Girar",
       "category": "Movement",
       "position": [
-        831.42,
-        538.89
+        950.0,
+        590.0
       ],
       "editor": {
         "collapsed": false,
@@ -296,7 +296,83 @@
         "height": 184.0
       },
       "properties": {
-        "speed": -90.0
+        "speed": -90.0,
+        "degrees": -90
+      }
+    },
+    {
+      "id": "541a38b8fd554b4a9a6b27989e1d90c4",
+      "type": "play_animation_asset",
+      "title": "Tocar Animação",
+      "category": "Action",
+      "position": [
+        1240.0,
+        590.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "path": "Assets/Animations/nave_Idle.zanim"
+      }
+    },
+    {
+      "id": "b704cc00376149c9989f7fbac10a528e",
+      "type": "play_animation_asset",
+      "title": "Tocar Animação",
+      "category": "Action",
+      "position": [
+        1530.0,
+        80.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "path": "Assets/Animations/nave_Idle.zanim"
+      }
+    },
+    {
+      "id": "5936f0f2c9c34f73b5f2cc79ac0edd3a",
+      "type": "play_animation_asset",
+      "title": "Tocar Animação",
+      "category": "Action",
+      "position": [
+        1530.0,
+        250.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "path": "Assets/Animations/nave_Idle.zanim"
+      }
+    },
+    {
+      "id": "db7251b686a446dd83b250a90ca4dfbe",
+      "type": "add_sprite_renderer",
+      "title": "Adicionar Sprite Renderer",
+      "category": "Components",
+      "position": [
+        68.43,
+        -100.05
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "texture": "Assets/Materials/nave_player.PNG",
+        "color": "red",
+        "render_layer": "Default",
+        "sort_order": 0
       }
     }
   ],
@@ -315,15 +391,6 @@
       "from_node": "update",
       "from_port": "next",
       "to_node": "space",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 4
-    },
-    {
-      "id": "aede7dbe58d9466c86f5ca61b22b977b",
-      "from_node": "space",
-      "from_port": "true",
-      "to_node": "0d60c09c535445f0b35f94fd8e6d3747",
       "to_port": "in",
       "kind": "flow",
       "order": 4
@@ -410,13 +477,58 @@
       "order": 12
     },
     {
-      "id": "e3e792aeb97c4d238cefb1cf3f4262d1",
+      "id": "d077bbcf4fac47979178e6f733c15a4e",
+      "from_node": "move",
+      "from_port": "next",
+      "to_node": "541a38b8fd554b4a9a6b27989e1d90c4",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 13
+    },
+    {
+      "id": "e96c3abb1e6b44a4991b0e99d95ac0fc",
+      "from_node": "09cc189c00fb4f2088fdd99bcf0d0c36",
+      "from_port": "next",
+      "to_node": "b704cc00376149c9989f7fbac10a528e",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 14
+    },
+    {
+      "id": "1f49419ec75e417aa9042aabdaf89a83",
+      "from_node": "ee7b7d296f0e4258af8d5aabe598f96d",
+      "from_port": "next",
+      "to_node": "5936f0f2c9c34f73b5f2cc79ac0edd3a",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 15
+    },
+    {
+      "id": "97fd35f29b4945b69bed09e257b63688",
       "from_node": "c92e37facdb64a3ebbf8f8c79f084fe8",
       "from_port": "next",
       "to_node": "b5f2051af56a4a67bc28e5e9f913a4ba",
       "to_port": "in",
       "kind": "flow",
-      "order": 13
+      "order": 14
+    },
+    {
+      "id": "b1430d4851744a8dbe48c38017821b37",
+      "from_node": "space",
+      "from_port": "true",
+      "to_node": "0d60c09c535445f0b35f94fd8e6d3747",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 15
+    },
+    {
+      "id": "c98170ad1f0f4cdcbe78846510bde7b2",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "db7251b686a446dd83b250a90ca4dfbe",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 16
     }
   ]
 }

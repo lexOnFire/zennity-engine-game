@@ -1,0 +1,12 @@
+{
+  "guid": "ebfde4aa-a82e-456e-b9dd-53e376c10fe7",
+  "uuid": "ebfde4aa-a82e-456e-b9dd-53e376c10fe7",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/minicao foguete.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "b172089e653fb0f48fbcfd2e0acb829b6b198e4c8fe18cee5a66332cf2c1f3ea"
+}

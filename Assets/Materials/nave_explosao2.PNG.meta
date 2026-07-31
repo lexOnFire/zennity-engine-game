@@ -1,0 +1,12 @@
+{
+  "guid": "43a6f8b1-4fd3-47d3-af71-58031635be5d",
+  "uuid": "43a6f8b1-4fd3-47d3-af71-58031635be5d",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/nave_explosao2.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "539e77c6e2510ee8fb352abed2eee29a81617ff96707ebd483a1763ba30b31a1"
+}

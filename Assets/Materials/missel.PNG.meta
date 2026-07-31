@@ -1,0 +1,12 @@
+{
+  "guid": "73da320f-44ef-432a-b689-cee9a7a8030c",
+  "uuid": "73da320f-44ef-432a-b689-cee9a7a8030c",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/missel.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "0978a32a0a358a6c742a9b86f4f71210de1782886dc6a7eb4c572f5c49b48fe4"
+}

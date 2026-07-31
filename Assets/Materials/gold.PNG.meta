@@ -1,0 +1,12 @@
+{
+  "guid": "a038be96-f868-4cc6-977c-ddc5fe7c2b08",
+  "uuid": "a038be96-f868-4cc6-977c-ddc5fe7c2b08",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/gold.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "7939a0b85fcb4dffb3994905d400457366db9a454a12a4505a046f6ac8bd9000"
+}

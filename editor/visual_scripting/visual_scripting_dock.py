@@ -93,6 +93,9 @@ class VisualScriptingEditorDock(QMainWindow):
         self.btn_pause = QPushButton("⏸ Pause", self.toolbar_widget)
         self.btn_stop = QPushButton("⏹ Stop", self.toolbar_widget)
         self.btn_stop.setObjectName("VisualStopButton")
+        
+        self.btn_hot_reload = QPushButton("🔥 Hot Reload", self.toolbar_widget)
+        self.btn_hot_reload.setEnabled(False)
 
         self.btn_auto_layout = QPushButton("✨ Auto Layout", self.toolbar_widget)
         self.btn_validate = QPushButton("✔️ Validar Grafo", self.toolbar_widget)
@@ -111,6 +114,7 @@ class VisualScriptingEditorDock(QMainWindow):
         toolbar_layout.addWidget(self.btn_play)
         toolbar_layout.addWidget(self.btn_pause)
         toolbar_layout.addWidget(self.btn_stop)
+        toolbar_layout.addWidget(self.btn_hot_reload)
         toolbar_layout.addSpacing(12)
         toolbar_layout.addWidget(self.btn_new)
         toolbar_layout.addWidget(self.btn_open)
@@ -230,7 +234,7 @@ class VisualScriptingEditorDock(QMainWindow):
     def _on_graph_mode_changed(self, index: int) -> None:
         logic_mode = index == 0
         for button in (
-            self.btn_play, self.btn_pause, self.btn_stop, self.btn_new,
+            self.btn_play, self.btn_pause, self.btn_stop, self.btn_hot_reload, self.btn_new,
             self.btn_open, self.btn_save, self.btn_debug, self.btn_explain,
         ):
             button.setEnabled(logic_mode)
@@ -466,6 +470,7 @@ class VisualScriptingEditorDock(QMainWindow):
         self.btn_play.clicked.connect(self._play)
         self.btn_pause.clicked.connect(self._pause)
         self.btn_stop.clicked.connect(self._stop)
+        self.btn_hot_reload.clicked.connect(self._trigger_hot_reload)
         self.btn_new.clicked.connect(self._new_for_active_object)
         self.btn_open.clicked.connect(self.graph_editor.open_dialog)
         self.btn_save.clicked.connect(self.graph_editor.save)
@@ -569,6 +574,16 @@ class VisualScriptingEditorDock(QMainWindow):
         # stop_requested is wired to the same command controller as the main toolbar.
         self.graph_editor.stop_requested.emit()
 
+    def _trigger_hot_reload(self) -> None:
+        """Salva o documento atual e dispara notificação de hot reload para o runtime."""
+        if hasattr(self.graph_editor, "is_dirty") and self.graph_editor.is_dirty:
+            self.graph_editor.save()
+        elif hasattr(self.graph_editor, "save"):
+            # Sempre salva para ter certeza que as modificações estão no disco
+            self.graph_editor.save()
+        self._dispatch("logic_hot_reload")
+        self.runtime_logs_text.append("[HOT RELOAD] Sinal enviado para atualizar grafo em tempo de execução.")
+
     def set_play_state(self, state: str) -> None:
         """Mirror the state confirmed by the real viewport process."""
         modes = {
@@ -584,6 +599,7 @@ class VisualScriptingEditorDock(QMainWindow):
         self.btn_play.setEnabled(state != "play")
         self.btn_pause.setEnabled(running)
         self.btn_stop.setEnabled(running)
+        self.btn_hot_reload.setEnabled(running)
         if running:
             self._sync_timer.start(33)
         else:

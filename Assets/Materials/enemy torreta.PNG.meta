@@ -1,0 +1,12 @@
+{
+  "guid": "bb8ea904-708c-4a52-8845-fc089d49d1ce",
+  "uuid": "bb8ea904-708c-4a52-8845-fc089d49d1ce",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/enemy torreta.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "c923bbc4aa155a18a41bbbc8b0c776f64f46a0cdaa8cba1e5f565b4a796a433f"
+}

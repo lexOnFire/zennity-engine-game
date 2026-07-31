@@ -12,7 +12,9 @@ from engine.ui.runtime import (
     UIInput,
     UIContainer,
 )
+from engine.ui.data_binding import UIDataBindingManager, UIBinding
 from engine.ui.runtime_components import Canvas, LabelComponent, ButtonComponent
+
 
 # Aliases de compatibilidade retroativa
 UIElement = UIWidget
@@ -45,8 +47,10 @@ __all__ = [
     "Button",
     "ProgressBar",
     "Panel",
-    "UIManager",
+    "UIDataBindingManager",
+    "UIBinding",
     "Canvas",
     "LabelComponent",
     "ButtonComponent",
 ]
+

@@ -1,0 +1,12 @@
+{
+  "guid": "12578849-eff7-4207-804a-d27398ef9d7e",
+  "uuid": "12578849-eff7-4207-804a-d27398ef9d7e",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/explosion2.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "d6bdf65a022dabcc2c1bf42f43ae0ca7bc16e2e030bf44991a50fea3f2ec6c3b"
+}
