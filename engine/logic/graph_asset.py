@@ -197,19 +197,57 @@ for _node_type, _definition in NODE_DEFINITIONS.items():
         },
     )
 
-NODE_DEFINITIONS.setdefault(
-    "key_pressed",
-    {
-        "title": "Key Pressed Now?",
-        "category": "Condition",
-        "properties": {"key": "SPACE"},
-    },
+NODE_DEFINITIONS["key_pressed"].update(
+    title="Key Pressed Now?", category="Condition", properties={"key": "SPACE"}
 )
 NODE_DEFINITIONS["key_held"].update(title="Key Held?", category="Condition")
 NODE_PORT_DEFINITIONS.setdefault(
     "key_pressed",
     {"inputs": [("in", "flow")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
 )
+
+# Explicit editor/runtime contracts for object creation and inspector components.
+# Keeping defaults here makes newly created nodes immediately editable and ensures
+# exported graphs remain self-contained.
+NODE_DEFINITIONS["create_object"].setdefault("properties", {}).update({
+    "name": "Object", "x": 0.0, "y": 0.0, "width": 32.0, "height": 32.0,
+    "color": "#4c9aff", "texture": "", "tag": "", "relative": True,
+    "inherit_source": True, "inherit_logic": False, "lifetime": 0.0,
+    "max_instances": 0, "max_distance": 0.0, "use_pool": False,
+})
+NODE_DEFINITIONS["start_continuous_motion"].setdefault("properties", {}).update({
+    "movement": "Movement", "x": 100.0, "y": 0.0, "space": "global",
+    "acceleration": 0.0, "deceleration": 0.0,
+})
+NODE_DEFINITIONS["number_value"].setdefault("properties", {})["value"] = 0.0
+NODE_DEFINITIONS["bool_value"].setdefault("properties", {})["value"] = True
+NODE_DEFINITIONS["text_value"].setdefault("properties", {})["value"] = ""
+
+_COMPONENT_NODE_DEFAULTS = {
+    "add_sprite_renderer": {"texture": "", "color": "#ffffff", "sort_order": 0},
+    "add_animator": {"controller": "", "autoplay": True},
+    "add_rigidbody": {"body_type": "dynamic", "mass": 1.0, "gravity_scale": 1.0},
+    "add_box_collider": {"width": 32.0, "height": 32.0, "is_trigger": False},
+    "add_circle_collider": {"radius": 16.0, "is_trigger": False},
+    "add_camera": {"background_color": [22, 24, 31], "zoom": 1.0, "active": True},
+    "add_audio_source": {"path": "", "volume": 1.0, "loop": False, "autoplay": False},
+    "add_ui_canvas": {"sort_order": 0},
+    "add_ui_text": {"text": "Text", "color": "#ffffff", "font_size": 24},
+    "add_ui_image": {"texture": "", "color": "#ffffff"},
+    "add_ui_button": {"text": "Button", "color": "#4c9aff"},
+}
+for _node_type, _properties in _COMPONENT_NODE_DEFAULTS.items():
+    NODE_DEFINITIONS[_node_type] = {
+        "title": _node_type.removeprefix("add_").replace("_", " ").title(),
+        "category": "Components",
+        "inputs": [("in", "flow"), ("target", "object")],
+        "outputs": [("next", "flow")],
+        "properties": _properties,
+    }
+    NODE_PORT_DEFINITIONS[_node_type] = {
+        "inputs": [("in", "flow"), ("target", "object")],
+        "outputs": [("next", "flow")],
+    }
 
 
 def node_port_definitions(node_type: str | Mapping[str, Any]) -> dict[str, list[tuple[str, str]]]:

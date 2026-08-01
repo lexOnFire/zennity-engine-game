@@ -124,10 +124,9 @@ class EditorBootstrapController:
 
     def _viewport_handlers(self) -> dict[str, Any]:
         h = self.host
-        return {
+        handlers = {
             "selected": h._handle_selected_event,
             "tool_changed": h._handle_tool_changed_event,
-            "delete_selected_requested": h._handle_delete_selected_requested,
             "transform_begin": h._handle_transform_event,
             "transform_end": h._handle_transform_event,
             "transform": h._handle_transform_event,
@@ -141,5 +140,13 @@ class EditorBootstrapController:
             "animator_state": h._handle_animator_state_event,
             "animation_event": h._handle_animation_event,
             "stats": h._handle_stats_event,
-            "runtime_metrics": h._handle_runtime_metrics_event,
         }
+        optional = {
+            "delete_selected_requested": "_handle_delete_selected_requested",
+            "runtime_metrics": "_handle_runtime_metrics_event",
+        }
+        for event, attribute in optional.items():
+            handler = getattr(h, attribute, None)
+            if handler is not None:
+                handlers[event] = handler
+        return handlers

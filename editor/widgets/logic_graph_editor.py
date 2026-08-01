@@ -79,13 +79,13 @@ from .logic_graph.definitions import (
 
 from .logic_graph.editor_mixins import (
     LogicGraphPaletteMixin, LogicGraphRuntimeViewMixin, LogicGraphCanvasMixin,
-    LogicGraphPropertiesMixin, LogicGraphPersistenceMixin,
+    LogicGraphClipboardMixin, LogicGraphPropertiesMixin, LogicGraphPersistenceMixin,
 )
 from editor.widgets.logic_graph.editor_mixins.blackboard_mixin import LogicGraphBlackboardMixin
 
 
 class LogicGraphEditor(
-    LogicGraphPaletteMixin, LogicGraphRuntimeViewMixin, LogicGraphCanvasMixin,
+    LogicGraphPaletteMixin, LogicGraphRuntimeViewMixin, LogicGraphCanvasMixin, LogicGraphClipboardMixin,
     LogicGraphPropertiesMixin, LogicGraphPersistenceMixin, LogicGraphBlackboardMixin, QWidget,
 ):
     message = Signal(str, str)
