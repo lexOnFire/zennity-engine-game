@@ -213,7 +213,7 @@ class LogicMoveNode: pass
     ],
     outputs=[PinDefinition("exec", PinType.EXEC)]
 )
-class LogicSetPositionNode: pass
+class LogicSetPosNode: pass
 
 @register_node(
     id="logic.transform.rotate",

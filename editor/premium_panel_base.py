@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QDockWidget, QVBoxLayout, QWidget, QHBoxLayout, QLabel
 
-class Panel(QDockWidget):
+class EditorDockPanel(QDockWidget):
     def __init__(self, title: str) -> None:
         super().__init__(title)
         self.setObjectName("PremiumPanel")
@@ -13,3 +13,6 @@ class Panel(QDockWidget):
         
         # O custom title bar foi removido para permitir o uso da title bar padrão
         # do QDockWidget, que possui os botões Float e Close essenciais.
+
+
+Panel = EditorDockPanel

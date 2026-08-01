@@ -9,7 +9,7 @@ import pygame
 from engine.core.component import Component
 
 
-class UIElement(Component):
+class RuntimeUIElement(Component):
     """Base oficial para componentes de UI em Runtime Screen Space."""
 
     component_type = "UIElement"
@@ -45,7 +45,7 @@ class UIElement(Component):
         if self.game_object is None:
             return False
         for component in getattr(self.game_object, "components", []):
-            if component is self or isinstance(component, UIElement):
+            if component is self or isinstance(component, RuntimeUIElement):
                 continue
             if getattr(component, "required", False) or type(component).__name__ == "Transform":
                 continue
@@ -71,7 +71,7 @@ class UIElement(Component):
         self.z_order = int(data.get("z_order", self.z_order))
 
 
-class Canvas(UIElement):
+class Canvas(RuntimeUIElement):
     """Agrupa elementos de UI e define a ordem de renderizacao do HUD."""
 
     component_type = "Canvas"
@@ -81,7 +81,7 @@ class Canvas(UIElement):
         super().__init__(x=0.0, y=0.0, width=0.0, height=0.0, visible=visible, z_order=z_order)
 
 
-class LabelComponent(UIElement):
+class LabelComponent(RuntimeUIElement):
     component_type = "Label"
 
     def __init__(
@@ -111,7 +111,7 @@ class LabelComponent(UIElement):
         self.color = tuple(data.get("color", self.color))
 
 
-class ImageComponent(UIElement):
+class ImageComponent(RuntimeUIElement):
     component_type = "Image"
     _surface_cache: OrderedDict[str, tuple[tuple[int, int], pygame.Surface]] = OrderedDict()
     _transformed_cache: OrderedDict[tuple[str, int, int, int, float], pygame.Surface] = OrderedDict()
@@ -470,7 +470,7 @@ class InfiniteBackground(Component):
         self.scale_to_screen = bool(data.get("scale_to_screen", self.scale_to_screen))
 
 
-class ButtonComponent(UIElement):
+class ButtonComponent(RuntimeUIElement):
     component_type = "Button"
 
     def __init__(
@@ -497,3 +497,6 @@ class ButtonComponent(UIElement):
         super().deserialize_properties(data)
         self.text = str(data.get("text", self.text))
         self.interactable = bool(data.get("interactable", self.interactable))
+
+
+UIElement = RuntimeUIElement

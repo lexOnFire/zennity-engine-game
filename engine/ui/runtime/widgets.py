@@ -28,7 +28,7 @@ class UIWidget:
     def serialize(self) -> dict:
         data = {
             "name": self.name,
-            "type": self.__class__.__name__,
+            "type": getattr(self, "widget_type", self.__class__.__name__),
             "x": self.x,
             "y": self.y,
             "width": self.width,
@@ -45,13 +45,15 @@ class UIWidget:
         return data
 
 
-class UICanvas(UIWidget):
+class RuntimeUICanvas(UIWidget):
     """Container Raiz de Interface para renderização."""
 
     def __init__(self, name: str = "Canvas") -> None:
         super().__init__(name)
         self.width = 1920.0
         self.height = 1080.0
+
+    widget_type = "UICanvas"
 
 
 class UIPanel(UIWidget):
@@ -81,12 +83,14 @@ class UILabel(UIWidget):
         self.text_color: str = "#FFFFFF"
 
 
-class UIImage(UIWidget):
+class RuntimeUIImage(UIWidget):
     """Exibição de Imagem ou Sprite."""
 
     def __init__(self, name: str = "Image") -> None:
         super().__init__(name)
         self.texture_path: str = ""
+
+    widget_type = "UIImage"
 
 
 class UIScrollView(UIWidget):
@@ -115,8 +119,12 @@ class UIContainer(UIWidget):
 
 WIDGET_TYPES = {
     cls.__name__: cls
-    for cls in (UICanvas, UIPanel, UIButton, UILabel, UIImage, UIScrollView, UIInput, UIContainer)
+    for cls in (RuntimeUICanvas, UIPanel, UIButton, UILabel, RuntimeUIImage, UIScrollView, UIInput, UIContainer)
 }
+WIDGET_TYPES.update({"UICanvas": RuntimeUICanvas, "UIImage": RuntimeUIImage})
+
+UICanvas = RuntimeUICanvas
+UIImage = RuntimeUIImage
 
 
 def widget_from_dict(data: dict[str, Any]) -> UIWidget:

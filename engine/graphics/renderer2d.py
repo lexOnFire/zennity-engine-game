@@ -75,7 +75,7 @@ class TextRenderer(Component):
         screen.blit(self._rendered_surface, rect)
 
 
-class Particle:
+class LegacyParticle:
     def __init__(self, x: float, y: float, vx: float, vy: float, 
                  color: Tuple[int, int, int], lifetime: float, size: float) -> None:
         self.x = x
@@ -88,7 +88,7 @@ class Particle:
         self.size = size
 
 
-class ParticleSystem(Component):
+class LegacyParticleSystem(Component):
     """Emits simple colored circle particles with velocity and gravity."""
     def __init__(self, color: Tuple[int, int, int] = (255, 100, 0),
                  emission_rate: float = 20, particle_lifetime: float = 1.0,
@@ -100,7 +100,7 @@ class ParticleSystem(Component):
         self.particle_speed = particle_speed
         self.gravity = gravity
         
-        self.particles: List[Particle] = []
+        self.particles: List[LegacyParticle] = []
         self._spawn_timer = 0.0
 
     def update(self, dt: float) -> None:
@@ -131,7 +131,7 @@ class ParticleSystem(Component):
                 lifetime = random.uniform(0.7, 1.3) * self.particle_lifetime
                 size = random.uniform(2, 6)
                 
-                p = Particle(world_pos[0], world_pos[1], vx, vy, self.color, lifetime, size)
+                p = LegacyParticle(world_pos[0], world_pos[1], vx, vy, self.color, lifetime, size)
                 self.particles.append(p)
                 
                 self._spawn_timer -= spawn_interval
@@ -168,3 +168,7 @@ class ParticleSystem(Component):
             pygame.draw.circle(
                 screen, faded_color, (int(screen_x), int(screen_y)), size
             )
+
+
+Particle = LegacyParticle
+ParticleSystem = LegacyParticleSystem

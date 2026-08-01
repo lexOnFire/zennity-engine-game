@@ -13,7 +13,7 @@ warnings.warn(
 Tilemap = TileMap
 
 
-class Tileset:
+class LegacyTileset:
     """
     Data structure representing a collection of tiles extracted from a texture.
     """
@@ -139,13 +139,13 @@ class Tilemap(Component):
             self.deserialize_properties(properties)
 
 
-class TilemapRenderer(Component):
+class LegacyTilemapRenderer(Component):
     """
     Renderer component for a Tilemap. Separated for performance and single-responsibility.
     """
     component_type = "TilemapRenderer"
 
-    def __init__(self, tileset: Optional[Tileset] = None):
+    def __init__(self, tileset: Optional[LegacyTileset] = None):
         super().__init__()
         self.tileset = tileset
         
@@ -204,3 +204,7 @@ class TilemapRenderer(Component):
                     scaled_surf = tile_surf
                     
                 screen.blit(scaled_surf, (int(screen_x), int(screen_y)))
+
+
+Tileset = LegacyTileset
+TilemapRenderer = LegacyTilemapRenderer
