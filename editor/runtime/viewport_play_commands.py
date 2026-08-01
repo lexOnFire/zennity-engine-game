@@ -41,6 +41,7 @@ class ViewportPlayCommandHandler:
         reset_physics: Callable[[], None],
         clear_hud: Callable[[], None],
         start_logic: Callable[[dict[str, Any]], None],
+        start_audio: Callable[[], None],
         stop_logic: Callable[[], None],
     ) -> None:
         self.objects = objects
@@ -54,6 +55,7 @@ class ViewportPlayCommandHandler:
         self.reset_physics = reset_physics
         self.clear_hud = clear_hud
         self.start_logic = start_logic
+        self.start_audio = start_audio
         self.stop_logic = stop_logic
 
     def handle(self, command: dict[str, Any], state: ViewportProcessState) -> ViewportProcessState | None:
@@ -124,6 +126,7 @@ class ViewportPlayCommandHandler:
             self.reset_physics()
             self.clear_hud()
             self.start_logic(state.scene_blackboard_config)
+            self.start_audio()
             self.emit({"type": "play_state", "state": "play"})
         elif state.paused:
             state.paused = False

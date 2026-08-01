@@ -241,7 +241,8 @@ class ViewportSession(ViewportSessionLifecycleMixin):
             self.objects, self.logic_runtimes, self.logic_apis, lambda event: _send(self.events, event),
             self.resize_viewport, lambda: self.zoom,
             lambda value: set_channels_paused(self.audio_channels, value), self.stop_audio_sources,
-            self.physics_scheduler.reset, self.hud_entries.clear, self.start_logic_with_config, self.stop_logic
+            self.physics_scheduler.reset, self.hud_entries.clear, self.start_logic_with_config,
+            self.start_audio_sources, self.stop_logic
         )
         self.navigation_events = ViewportNavigationEventHandler(
             self.pygame, self.objects, self.native_ui, lambda event: _send(self.events, event), self.screen_to_world

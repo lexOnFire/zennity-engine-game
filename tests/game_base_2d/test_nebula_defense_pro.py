@@ -66,3 +66,21 @@ def test_pro_player_moves_when_w_is_held() -> None:
 
     assert game.x == 0.0
     assert game.y == -170.0
+
+
+def test_pro_game_manager_queues_audio_on_start() -> None:
+    graph = load_logic_graph(LOGIC / "NebulaGameManagerPro.zlogic")
+
+    class Game:
+        name = "GameManagerPro"
+
+        def __init__(self) -> None:
+            self.sounds: list[str] = []
+
+        def play_sound(self, path: str) -> None:
+            self.sounds.append(path)
+
+    game = Game()
+    LogicGraphRuntime(graph, BlackboardStore(), game.name).start(game)
+
+    assert game.sounds == ["Assets/Audio/jump-sound-531048.mp3"]
