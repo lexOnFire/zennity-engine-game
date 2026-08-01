@@ -33,7 +33,9 @@ def reset_mocks(monkeypatch):
     pygame.draw.rect.reset_mock()
 
 
-def _screen(): return pygame.Surface((640, 480))
+def _screen():
+    from conftest import SurfaceProxy
+    return SurfaceProxy((640, 480))
 
 
 def _bar(**kw):

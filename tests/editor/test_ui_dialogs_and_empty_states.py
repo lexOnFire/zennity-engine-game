@@ -10,7 +10,7 @@ def _source(path: str) -> str:
 
 def test_empty_state_is_reusable_and_used_by_bottom_panels() -> None:
     component = _source("editor/ui/empty_state.py")
-    interface = _source("editor/interface_smoke_test.py")
+    interface = _source("editor/ui/docks_builder.py") + _source("editor/ui/bottom_panels_builder.py")
     theme = _source("editor/ui/theme.py")
 
     assert "class EmptyStateWidget(QWidget)" in component
@@ -22,17 +22,17 @@ def test_empty_state_is_reusable_and_used_by_bottom_panels() -> None:
 
 
 def test_asset_preview_is_responsive_and_has_explicit_visual_state() -> None:
-    interface = _source("editor/interface_smoke_test.py")
-    runtime = _source("editor/isolated_editor_main.py")
+    interface = _source("editor/ui/docks_builder.py") + _source("editor/ui/bottom_panels_builder.py")
+    runtime = _source("editor/isolated_editor_main.py") + _source("editor/asset_browser_controller.py")
     theme = _source("editor/ui/theme.py")
     preview_section = interface[interface.index("# Asset Preview aprimorado"):interface.index("console_row = QSplitter")]
 
     assert 'preview.setObjectName("AssetPreviewPanel")' in preview_section
-    assert 'self.preview_label.setObjectName("AssetPreviewThumbnail")' in preview_section
-    assert 'self.preview_details_label.setObjectName("AssetPreviewDetails")' in preview_section
+    assert 'window.preview_label.setObjectName("AssetPreviewThumbnail")' in preview_section
+    assert 'window.preview_details_label.setObjectName("AssetPreviewDetails")' in preview_section
     assert ".setFixedSize(" not in preview_section
     assert "setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)" in preview_section
-    assert 'self._set_asset_preview_state("content")' in runtime
+    assert 'self.set_preview_state("content")' in runtime
     assert 'QLabel#AssetPreviewThumbnail[uiState="empty"]' in theme
 
 

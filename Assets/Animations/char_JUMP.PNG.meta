@@ -1,0 +1,11 @@
+{
+  "guid": "424539c4-7943-4e00-81b8-b4f215094bff",
+  "uuid": "424539c4-7943-4e00-81b8-b4f215094bff",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Animations/char_JUMP.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": []
+}

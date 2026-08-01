@@ -17,7 +17,7 @@ RUNTIME_SOURCES = (
     "engine/logic/graph_asset.py",
     "engine/logic/blackboard.py",
     "engine/logic/event_bus.py",
-    "engine/logic/runtime.py",
+    "engine/logic/runtime/core.py",
     "engine/prefabs/prefab_asset.py",
     "engine/runtime/runtime_world.py",
     "engine/build/runtime_scene_loader.py",
@@ -154,7 +154,11 @@ def test_validator_reports_broken_logic_graph_connections(tmp_path: Path) -> Non
 
 
 def test_validation_ui_and_export_gate_are_integrated() -> None:
-    editor = Path("editor/isolated_editor_main.py").read_text(encoding="utf-8")
+    editor = (
+        Path("editor/isolated_editor_main.py").read_text(encoding="utf-8")
+        + Path("editor/editor_command_controller.py").read_text(encoding="utf-8")
+        + Path("editor/project_workflow_controller.py").read_text(encoding="utf-8")
+    )
     dialog = Path("editor/widgets/project_validation_dialog.py").read_text(encoding="utf-8")
 
     assert 'addAction("Validar projeto...")' in editor

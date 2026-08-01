@@ -6,6 +6,7 @@ from typing import Any
 
 from engine.physics.collider import BoxCollider, CircleCollider
 from engine.physics.rigidbody import RigidBody
+from engine.physics.spatial_hash import BroadPhaseStats, SpatialHashBroadPhase
 from engine.time import Time
 
 
@@ -19,13 +20,15 @@ class PhysicsContact:
 class PhysicsWorld:
     """Runtime-only physics registry and collision detection world."""
 
-    def __init__(self, runtime_scene: Any | None = None) -> None:
+    def __init__(self, runtime_scene: Any | None = None, broad_phase_cell_size: float = 128.0) -> None:
         self.runtime_scene = runtime_scene
         self.rigidbodies: list[RigidBody] = []
         self.colliders: list[Any] = []
         self.contacts: set[tuple[int, int]] = set()
         self.trigger_contacts: set[tuple[int, int]] = set()
         self.detected_contacts: list[PhysicsContact] = []
+        self.broad_phase = SpatialHashBroadPhase(cell_size=broad_phase_cell_size)
+        self.broad_phase_stats = BroadPhaseStats()
 
     def register_rigidbody(self, body: RigidBody) -> None:
         if body not in self.rigidbodies:
@@ -85,23 +88,28 @@ class PhysicsWorld:
         self.detected_contacts = []
 
         colliders = [c for c in self.colliders if self._component_active(c)]
-        for index, a in enumerate(colliders):
-            for b in colliders[index + 1 :]:
-                if not self._same_scene(a, b):
-                    continue
-                if not self._intersects(a, b):
-                    continue
-                pair = self._pair_key(a, b)
-                is_trigger = bool(getattr(a, "is_trigger", False) or getattr(b, "is_trigger", False))
-                self.detected_contacts.append(PhysicsContact(a, b, is_trigger))
-                if is_trigger:
-                    next_triggers.add(pair)
-                    if pair not in self.trigger_contacts:
-                        self._emit_trigger_enter(a, b)
-                else:
-                    next_contacts.add(pair)
-                    if pair not in self.contacts:
-                        self._emit_collision_enter(a, b)
+        candidates = self.broad_phase.candidate_pairs(
+            colliders,
+            bounds_for=self._collider_bounds,
+            scene_for=lambda collider: getattr(getattr(collider, "game_object", None), "scene", None),
+        )
+        self.broad_phase_stats = self.broad_phase.stats
+        for a, b in candidates:
+            if not self._same_scene(a, b):
+                continue
+            if not self._intersects(a, b):
+                continue
+            pair = self._pair_key(a, b)
+            is_trigger = bool(getattr(a, "is_trigger", False) or getattr(b, "is_trigger", False))
+            self.detected_contacts.append(PhysicsContact(a, b, is_trigger))
+            if is_trigger:
+                next_triggers.add(pair)
+                if pair not in self.trigger_contacts:
+                    self._emit_trigger_enter(a, b)
+            else:
+                next_contacts.add(pair)
+                if pair not in self.contacts:
+                    self._emit_collision_enter(a, b)
 
         for pair in self.trigger_contacts - next_triggers:
             a, b = self._pair_from_key(pair)
@@ -168,6 +176,14 @@ class PhysicsWorld:
         if a_type == "CircleCollider" and b_type == "BoxCollider":
             return self._box_circle_intersects(b, a)
         return False
+
+    def _collider_bounds(self, collider: Any) -> tuple[float, float, float, float]:
+        if self._collider_type(collider) == "BoxCollider":
+            rect = collider.rect
+            return float(rect.left), float(rect.top), float(rect.right), float(rect.bottom)
+        center_x, center_y = collider.center
+        radius = float(collider.radius)
+        return center_x - radius, center_y - radius, center_x + radius, center_y + radius
 
     def _is_supported_collider(self, collider: Any) -> bool:
         return self._collider_type(collider) in {"BoxCollider", "CircleCollider"}

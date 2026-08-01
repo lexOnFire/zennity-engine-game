@@ -19,6 +19,10 @@ class AssetInfo:
     modified_time: float
     metadata_path: Path
 
+    @property
+    def guid(self) -> str:
+        return self.uuid
+
 
 @dataclass
 class AssetMeta:
@@ -29,8 +33,13 @@ class AssetMeta:
     import_settings: dict[str, Any] = field(default_factory=dict)
     dependencies: list[str] = field(default_factory=list)
 
+    @property
+    def guid(self) -> str:
+        return self.uuid
+
     def to_dict(self) -> dict[str, Any]:
         return {
+            "guid": self.uuid,
             "uuid": self.uuid,
             "type": self.type.value,
             "importer": self.importer,
@@ -42,7 +51,7 @@ class AssetMeta:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "AssetMeta":
         return cls(
-            uuid=str(data["uuid"]),
+            uuid=str(data.get("guid") or data["uuid"]),
             type=AssetType(str(data.get("type", AssetType.UNKNOWN.value))),
             importer=str(data.get("importer", "generic")),
             source_path=str(data.get("source_path", "")),

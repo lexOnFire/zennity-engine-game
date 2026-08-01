@@ -60,14 +60,18 @@ def _make_app(**kwargs):
     for p in patches:
         p.start()
 
-    app = Application(
-        width  = kwargs.get("width",  800),
-        height = kwargs.get("height", 600),
-        title  = kwargs.get("title",  "Test"),
-        fps    = kwargs.get("fps",    60),
-    )
-
-    return app, patches
+    try:
+        app = Application(
+            width  = kwargs.get("width",  800),
+            height = kwargs.get("height", 600),
+            title  = kwargs.get("title",  "Test"),
+            fps    = kwargs.get("fps",    60),
+        )
+        return app, patches
+    except Exception:
+        for p in patches:
+            p.stop()
+        raise
 
 
 def _stop_patches(patches):

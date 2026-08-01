@@ -18,6 +18,10 @@ __all__ = [
     "BoxCollider",
     "CircleCollider",
     "CollisionInfo",
+    "PhysicsContact",
+    "PhysicsWorld",
+    "BroadPhaseStats",
+    "SpatialHashBroadPhase",
 ]
 
 _EXPORTS = {
@@ -25,6 +29,10 @@ _EXPORTS = {
     "BoxCollider":    ("engine.physics.collider",  "BoxCollider"),
     "CircleCollider": ("engine.physics.collider",  "CircleCollider"),
     "CollisionInfo":  ("engine.physics.collider",  "CollisionInfo"),
+    "PhysicsContact": ("engine.physics.physics_world", "PhysicsContact"),
+    "PhysicsWorld": ("engine.physics.physics_world", "PhysicsWorld"),
+    "BroadPhaseStats": ("engine.physics.spatial_hash", "BroadPhaseStats"),
+    "SpatialHashBroadPhase": ("engine.physics.spatial_hash", "SpatialHashBroadPhase"),
 }
 
 

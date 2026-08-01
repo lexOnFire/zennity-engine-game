@@ -1,0 +1,35 @@
+{
+  "graph": {
+    "categories": {
+      "movement": "Movement",
+      "math": "Math",
+      "logic": "Logic",
+      "events": "Events",
+      "actions": "Actions",
+      "audio": "Audio",
+      "physics": "Physics",
+      "scene": "Scene",
+      "input": "Input",
+      "time": "Time",
+      "transform": "Transform"
+    },
+    "nodes": {
+      "move_towards": {
+        "title": "Move Towards",
+        "description": "Moves the current transform towards the target with the given speed. Returns True when reached."
+      },
+      "start": {
+        "title": "Start",
+        "description": "Triggered once when the logic script is initialized (usually on Awake/Start)."
+      },
+      "update": {
+        "title": "Update",
+        "description": "Triggered every frame. Use dt (delta time) for smooth frame-independent movement."
+      },
+      "is_grounded": {
+        "title": "Is Grounded",
+        "description": "Checks if the object's collider is touching the ground. Useful for jumping and animations."
+      }
+    }
+  }
+}

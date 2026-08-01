@@ -1,5 +1,6 @@
 {
-  "uuid": "d2f6ec31-bec8-4ee1-b263-3ef6df70569f",
+  "guid": "6d0f1398-cb2c-44a8-9dbd-078020d4de09",
+  "uuid": "6d0f1398-cb2c-44a8-9dbd-078020d4de09",
   "type": "prefab",
   "importer": "generic_importer",
   "source_path": "Assets/Prefabs/NebulaDefense/NebulaMissile.zprefab",

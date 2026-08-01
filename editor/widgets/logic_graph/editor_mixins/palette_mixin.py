@@ -1,0 +1,260 @@
+"""Workspace visual para criar e editar assets ``.zlogic``."""
+
+from __future__ import annotations
+
+import json
+import unicodedata
+import uuid
+from copy import deepcopy
+from pathlib import Path
+from typing import Any
+
+from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal
+from editor.widgets.logic_graph.items import (
+    LogicPortItem, LogicEdgeItem, LogicGroupResizeHandle, LogicGroupItem,
+    LogicCommentItem, LogicFlipControl, LogicCollapseControl, LogicResizeHandle,
+    LogicNodeItem
+)
+from editor.widgets.logic_graph.views import LogicGraphView, LogicMiniMapView
+from PySide6.QtGui import QColor, QPainter, QPainterPath, QPainterPathStroker, QPen, QBrush
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QFileDialog,
+    QFrame,
+    QComboBox,
+    QGraphicsEllipseItem,
+    QGraphicsItem,
+    QGraphicsPathItem,
+    QGraphicsRectItem,
+    QGraphicsScene,
+    QGraphicsTextItem,
+    QGraphicsView,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QInputDialog,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QPushButton,
+    QSplitter,
+    QTabWidget,
+    QToolButton,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
+
+from editor.ui.icons import editor_icon
+from editor.widgets.logic_asset_picker import LogicAssetPickerDialog
+from engine.logic.graph_asset import (
+    NODE_DEFINITIONS,
+    UNIQUE_EVENT_TYPES,
+    consolidate_logic_events,
+    create_logic_node,
+    default_logic_graph,
+    load_logic_graph,
+    merge_logic_fragment,
+    normalize_logic_graph,
+    node_port_definitions,
+    save_logic_graph,
+    subgraph_interface,
+    validate_logic_graph,
+)
+from engine.logic.blackboard import coerce_variable_value, save_blackboard_asset
+
+from engine.logic.recipes import build_logic_recipe, find_logic_recipes, logic_recipe
+
+from engine.i18n import tr
+from editor.widgets.logic_graph.definitions import (
+    CATEGORY_COLORS,
+    NODE_DESCRIPTIONS,
+    NODE_PROPERTY_LABELS,
+    PORT_COLORS,
+    PROPERTY_LABELS,
+)
+
+class LogicGraphPaletteMixin:
+    @staticmethod
+    def _search_key(value: Any) -> str:
+        normalized = unicodedata.normalize("NFKD", str(value).casefold())
+        return "".join(character for character in normalized if not unicodedata.combining(character))
+
+    def _refresh_palette(self, category: str | None = None) -> None:
+        if category is not None:
+            self._palette_category = category
+        query = self._search_key(self.node_search.text()).strip()
+        self.palette.clear()
+        for node_type, definition in NODE_DEFINITIONS.items():
+            node_category = str(definition.get("category", "Custom"))
+            searchable = self._search_key(
+                f"{definition.get('title', '')} {node_category} {node_type} "
+                f"{' '.join(str(key) for key in definition.get('properties', {}))} "
+                f"{NODE_DESCRIPTIONS.get(node_type, '')}"
+            )
+            if query:
+                if query not in searchable:
+                    continue
+            elif self._palette_category != "All" and node_category != self._palette_category:
+                continue
+            label = str(definition["title"])
+            if query:
+                label = f"{label}  —  {node_category}"
+            item = QListWidgetItem(label)
+            item.setData(Qt.UserRole, node_type)
+            description = NODE_DESCRIPTIONS.get(node_type, "Arraste as portas para conectar este bloco ao fluxo.")
+            item.setToolTip(f"{node_category} • {description}")
+            self.palette.addItem(item)
+        self.palette_count.setText(f"{self.palette.count()} bloco(s)" + (" encontrados" if query else " nesta categoria"))
+
+    def _add_palette_item(self, item: QListWidgetItem) -> None:
+        node_type = str(item.data(Qt.UserRole))
+        if node_type in UNIQUE_EVENT_TYPES:
+            existing = next(
+                (node_item for node_item in self.node_items.values() if node_item.node.get("type") == node_type),
+                None,
+            )
+            if existing is not None:
+                self.scene.clearSelection()
+                existing.setSelected(True)
+                self.view.centerOn(existing)
+                self.message.emit(
+                    "INFO",
+                    "Esse evento já existe; conecte outra ação usando a mesma saída",
+                )
+                return
+        center = self.view.mapToScene(self.view.viewport().rect().center())
+        offset = len(self.node_items) * 18.0
+        node = create_logic_node(node_type, (center.x() + offset, center.y() + offset))
+        self.graph["nodes"].append(node)
+        self._create_node_item(node)
+        self.mark_dirty()
+        self._update_validation()
+
+    def _category_changed(self, category: str) -> None:
+        self._refresh_palette(category)
+        self._refresh_recipes(self.recipe_search.text(), category)
+
+    def _refresh_recipes(self, query: str = "", topic: str | None = None) -> None:
+        selected_topic = str(topic or self.category_combo.currentText() or "Movement")
+        self.recipe_topic_label.setText(tr(f"graph.categories.{selected_topic.lower()}", selected_topic))
+        self.recipe_list.clear()
+        for recipe in find_logic_recipes(query, "" if selected_topic == "All" else selected_topic):
+            item = QListWidgetItem(str(recipe["title"]))
+            item.setData(Qt.UserRole, str(recipe["id"]))
+            item.setToolTip(f"{recipe['category']} • {recipe['summary']}")
+            self.recipe_list.addItem(item)
+        if self.recipe_list.count():
+            self.recipe_list.setCurrentRow(0)
+        else:
+            self.recipe_summary.setText(
+                f"Nenhuma receita de {selected_topic} encontrada. Tente outra busca ou escolha outro tópico."
+            )
+            self.recipe_apply_button.setEnabled(False)
+
+    def _recipe_selection_changed(self, current: QListWidgetItem | None, _previous: QListWidgetItem | None) -> None:
+        recipe_id = str(current.data(Qt.UserRole)) if current is not None else ""
+        if not recipe_id:
+            self.recipe_apply_button.setEnabled(False)
+            return
+        recipe = logic_recipe(recipe_id)
+        steps = "\n".join(f"{index}. {step}" for index, step in enumerate(recipe["steps"], 1))
+        self.recipe_summary.setText(f"{recipe['summary']}\n\n{steps}")
+        self.recipe_apply_button.setEnabled(True)
+
+    def _insert_selected_recipe(self) -> None:
+        current = self.recipe_list.currentItem()
+        recipe_id = str(current.data(Qt.UserRole)) if current is not None else ""
+        if not recipe_id:
+            return
+        center = self.view.mapToScene(self.view.viewport().rect().center())
+        fragment = build_logic_recipe(recipe_id, (center.x(), center.y()))
+        merged, reused_events = merge_logic_fragment(self.graph_data(), fragment)
+        current_path = self.current_path
+        self.set_graph(merged, current_path)
+        self.mark_dirty()
+        recipe = logic_recipe(recipe_id)
+        reused_message = f" • {reused_events} evento(s) reutilizado(s)" if reused_events else ""
+        self.message.emit("INFO", f"Receita inserida: {recipe['title']}{reused_message}")
+
+    def _refresh_subgraph_assets(self) -> None:
+        self.subgraph_list.clear()
+        directory = self.project_root / "Assets" / "Logic"
+        if not directory.is_dir():
+            return
+        for path in sorted(directory.rglob("*.zlogic"), key=lambda entry: str(entry).casefold()):
+            try:
+                if self.current_path is not None and path.resolve() == self.current_path.resolve():
+                    continue
+                graph = load_logic_graph(path)
+            except (OSError, ValueError, json.JSONDecodeError):
+                continue
+            if not any(node.get("type") == "subgraph_start" for node in graph.get("nodes", [])):
+                continue
+            interface = subgraph_interface(graph)
+            item = QListWidgetItem(
+                f"{graph.get('name', path.stem)}  ·  {len(interface['inputs'])} entrada(s) / {len(interface['outputs'])} saída(s)"
+            )
+            item.setData(Qt.UserRole, path.relative_to(self.project_root).as_posix())
+            item.setData(Qt.UserRole + 1, interface)
+            item.setToolTip(path.relative_to(self.project_root).as_posix())
+            self.subgraph_list.addItem(item)
+
+    def _add_subgraph_asset(self, item: QListWidgetItem) -> None:
+        path = str(item.data(Qt.UserRole) or "").strip()
+        interface = item.data(Qt.UserRole + 1)
+        if not path or not isinstance(interface, dict):
+            return
+        center = self.view.mapToScene(self.view.viewport().rect().center())
+        node = create_logic_node("call_subgraph", (center.x(), center.y()))
+        node["title"] = f"Executar {Path(path).stem}"
+        node["properties"] = {
+            "path": path,
+            "inputs": deepcopy(interface.get("inputs", [])),
+            "outputs": deepcopy(interface.get("outputs", [])),
+        }
+        self.graph["nodes"].append(node)
+        self.scene.clearSelection()
+        self._create_node_item(node).setSelected(True)
+        self.mark_dirty()
+        self._update_validation()
+        self.message.emit("INFO", f"Subgrafo adicionado: {Path(path).stem}")
+
+    def _sync_subgraph_call_interfaces(self, graph: dict[str, Any]) -> None:
+        """Mantém chamadas existentes alinhadas ao asset reutilizável salvo."""
+        for node in graph.get("nodes", []):
+            if node.get("type") != "call_subgraph":
+                continue
+            properties = node.setdefault("properties", {})
+            path = Path(str(properties.get("path", "")))
+            if not path.is_absolute():
+                path = self.project_root / path
+            try:
+                resolved = path.resolve()
+                if not resolved.is_relative_to(self.project_root) or not resolved.is_file():
+                    continue
+                interface = subgraph_interface(load_logic_graph(resolved))
+            except (OSError, ValueError, json.JSONDecodeError):
+                continue
+            properties["inputs"] = deepcopy(interface["inputs"])
+            properties["outputs"] = deepcopy(interface["outputs"])
+
+    def _create_node_item(self, node: dict[str, Any]) -> LogicNodeItem:
+        item = LogicNodeItem(self, node)
+        self.scene.addItem(item)
+        self.node_items[item.node_id] = item
+        return item
+
+    def _create_group_item(self, data: dict[str, Any]) -> LogicGroupItem:
+        item = LogicGroupItem(self, data)
+        self.scene.addItem(item)
+        self.group_items[item.group_id] = item
+        return item
+
+    def _create_comment_item(self, data: dict[str, Any]) -> LogicCommentItem:
+        item = LogicCommentItem(self, data)
+        self.scene.addItem(item)
+        self.comment_items[item.comment_id] = item
+        return item
+

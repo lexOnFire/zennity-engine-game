@@ -1,10 +1,15 @@
 name: Python Tests
 
 on:
+  workflow_dispatch:
   push:
-    branches: [main, zen/fix-phase1-tests]
+    branches: [main, release/v1.0.0-rc2, "release/**", "refactor/pre-v1-architecture-baseline"]
   pull_request:
-    branches: [main]
+    branches: [main, release/v1.0.0-rc2, "release/**"]
+
+concurrency:
+  group: python-tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
@@ -58,10 +63,17 @@ jobs:
           python -m pip install -r requirements.txt -r requirements-dev.txt
 
       - name: Run tests
-        run: python -m pytest
+        run: python -m pytest > pytest-output.txt 2>&1 || (cat pytest-output.txt && exit 1)
 
-  windows-release-candidate:
-    name: Windows / Python 3.12 / Export smoke
+      - name: Upload failing test log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-output-${{ matrix.python-version }}
+          path: pytest-output.txt
+
+  windows-tests:
+    name: Windows / Python 3.12 / Full suite
     runs-on: windows-latest
     env:
       SDL_VIDEODRIVER: dummy
@@ -79,4 +91,103 @@ jobs:
             requirements-dev.txt
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -r requirements.txt -r requirements-dev.txt
-      - run: python -m pytest tests/editor/test_project_exporter.py tests/editor/test_play_session_stability.py tests/logic tests/runtime -v
+      - name: Run full test suite
+        run: python -m pytest
+
+  memory-stability:
+    name: Editor memory stability / Python 3.12
+    runs-on: ubuntu-latest
+    env:
+      SDL_VIDEODRIVER: dummy
+      SDL_AUDIODRIVER: dummy
+      PYGAME_HIDE_SUPPORT_PROMPT: "1"
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+      - name: Install Qt headless system libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libegl1 libegl-mesa0 libgl1 libgl1-mesa-dri libxkbcommon0 libxkbcommon-x11-0 libxcb-cursor0 libxcb-xinerama0
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -r requirements-dev.txt
+      - name: Run memory stability test in an isolated process
+        run: python -m pytest tests/integration/test_memory_leak.py
+
+  critical-coverage:
+    name: Critical architecture / Coverage 70%
+    runs-on: ubuntu-latest
+    env:
+      SDL_VIDEODRIVER: dummy
+      SDL_AUDIODRIVER: dummy
+      PYGAME_HIDE_SUPPORT_PROMPT: "1"
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+      - name: Install Qt headless system libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libegl1 libegl-mesa0 libgl1 libgl1-mesa-dri libxkbcommon0 libxkbcommon-x11-0 libxcb-cursor0 libxcb-xinerama0
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -r requirements-dev.txt
+      - name: Measure critical architecture boundaries
+        run: python -m pytest --cov=engine --cov=editor --cov-report=
+      - name: Report critical coverage
+        shell: bash
+        run: |
+          # Keep the blocking budget focused on deterministic architecture boundaries.
+          # Large UI/integration orchestrators remain visible in the full report, but
+          # receive dedicated integration-test budgets instead of distorting this gate.
+          INCLUDE='engine/scene/scene_document.py,engine/runtime/lifecycle_scheduler.py,engine/runtime/runtime_world.py,engine/logic/runtime/*.py,engine/logic/runtime/nodes/*.py,editor/runtime/isolated_play_mode_controller.py'
+          python -m coverage json --include="$INCLUDE" -o critical-coverage.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("critical-coverage.json").read_text(encoding="utf-8"))
+          percent = float(report["totals"]["percent_covered"])
+          print(f"::notice title=Critical coverage::Measured critical-architecture coverage: {percent:.2f}%")
+          Path("critical-coverage.txt").write_text(f"{percent:.2f}\n", encoding="utf-8")
+          PY
+      - name: Enforce critical coverage budget
+        run: >-
+          python -m coverage report
+          --include="engine/scene/scene_document.py,engine/runtime/lifecycle_scheduler.py,engine/runtime/runtime_world.py,engine/logic/runtime/*.py,engine/logic/runtime/nodes/*.py,editor/runtime/isolated_play_mode_controller.py"
+          --fail-under=70
+
+  package-smoke:
+    name: Build and install wheel / Python 3.12
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Build distributions
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+      - name: Install wheel without source tree
+        run: |
+          python -m venv package-venv
+          package-venv/bin/python -m pip install dist/*.whl
+          cd /tmp
+          "$GITHUB_WORKSPACE/package-venv/bin/python" -c "import engine, editor; from editor.ui.icons import icon_path; assert icon_path('play').is_file()"

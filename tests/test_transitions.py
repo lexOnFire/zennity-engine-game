@@ -34,23 +34,8 @@ def _pygame():
 
 # ── _FakeSurface ────────────────────────────────────────────────────────────────────
 
-class _FakeSurface:
-    """Surface mínimo: rastreia blit/fill, responde a get_size/get_alpha/set_alpha."""
-    _fake = True
+from conftest import SurfaceProxy as _FakeSurface
 
-    def __init__(self, size=(800, 600), flags=0):
-        self._size  = tuple(size)
-        self._flags = flags
-        self._alpha = 255
-        self.blit      = MagicMock()
-        self.fill      = MagicMock()
-        self.set_alpha = MagicMock(side_effect=lambda a: setattr(self, "_alpha", a))
-
-    def get_size(self):  return self._size
-    def get_alpha(self): return self._alpha
-
-
-# ── helpers ──────────────────────────────────────────────────────────────────────────
 
 def _advance(t: Transition, dt: float, steps: int = 1):
     for _ in range(steps):
@@ -179,7 +164,7 @@ class TestTransitionBase:
         t   = Transition()
         scr = _FakeSurface()
         t.draw(scr)
-        scr.blit.assert_not_called()
+        scr.blit_mock.assert_not_called()
 
     def test_snapshot_out_none_initially(self):
         assert Transition().snapshot_out is None
@@ -210,8 +195,8 @@ class TestFadeTransition:
         f.snapshot_out = _fake_snap()
         f.update(0.1)
         f.draw(scr)
-        assert scr.blit.call_count >= 1
-        assert scr.blit.call_args_list[0][0][0] is f.snapshot_out
+        assert scr.blit_mock.call_count >= 1
+        assert scr.blit_mock.call_args_list[0][0][0] is f.snapshot_out
 
     def test_draw_during_out_blits_overlay(self):
         """Dois blits durante OUT: snapshot + overlay."""
@@ -220,7 +205,7 @@ class TestFadeTransition:
         f.snapshot_out = _fake_snap()
         f.update(0.5)
         f.draw(scr)
-        assert scr.blit.call_count == 2
+        assert scr.blit_mock.call_count == 2
 
     def test_draw_during_in_blits_snapshot_in(self):
         f = FadeTransition(duration_out=0.1, duration_in=1.0)
@@ -231,14 +216,14 @@ class TestFadeTransition:
         f.update(0.0)  # IN
         f.update(0.1)
         f.draw(scr)
-        assert scr.blit.call_args_list[0][0][0] is f.snapshot_in
+        assert scr.blit_mock.call_args_list[0][0][0] is f.snapshot_in
 
     def test_draw_noop_when_done(self):
         f = FadeTransition(duration_out=0.01, duration_in=0.01)
         scr = _FakeSurface()
         _run_to_done(f)
         f.draw(scr)
-        scr.blit.assert_not_called()
+        scr.blit_mock.assert_not_called()
 
     def test_draw_no_overlay_when_in_progress_zero(self):
         f = FadeTransition(duration_out=0.01, duration_in=1.0)
@@ -247,9 +232,9 @@ class TestFadeTransition:
         f.snapshot_in  = _fake_snap()
         _run_to_swap(f)
         f.update(0.0)
-        scr.blit.reset_mock()
+        scr.blit_mock.reset_mock()
         f.draw(scr)
-        assert scr.blit.call_count >= 1
+        assert scr.blit_mock.call_count >= 1
 
 
 # ── TestSlideTransition ──────────────────────────────────────────────────────────────────────
@@ -269,8 +254,8 @@ class TestSlideTransition:
         s.snapshot_out = _fake_snap()
         s.update(0.1)
         s.draw(scr)
-        assert scr.blit.call_count >= 1
-        assert scr.blit.call_args_list[0][0][0] is s.snapshot_out
+        assert scr.blit_mock.call_count >= 1
+        assert scr.blit_mock.call_args_list[0][0][0] is s.snapshot_out
 
     def test_draw_during_in_blits_snapshot_in(self):
         s = SlideTransition(duration_out=0.1, duration_in=0.5)
@@ -281,7 +266,7 @@ class TestSlideTransition:
         s.update(0.0)
         s.update(0.1)
         s.draw(scr)
-        blitted = [c[0][0] for c in scr.blit.call_args_list]
+        blitted = [c[0][0] for c in scr.blit_mock.call_args_list]
         assert s.snapshot_in in blitted
 
     def test_slide_left_position_at_start_of_in(self):
@@ -294,7 +279,7 @@ class TestSlideTransition:
         _run_to_swap(s)
         s.update(0.0)
         s.draw(scr)
-        last_pos = scr.blit.call_args_list[-1][0][1]
+        last_pos = scr.blit_mock.call_args_list[-1][0][1]
         assert last_pos[0] == pytest.approx(800, abs=5)
 
     def test_slide_right_position_at_start_of_in(self):
@@ -307,7 +292,7 @@ class TestSlideTransition:
         _run_to_swap(s)
         s.update(0.0)
         s.draw(scr)
-        last_pos = scr.blit.call_args_list[-1][0][1]
+        last_pos = scr.blit_mock.call_args_list[-1][0][1]
         assert last_pos[0] == pytest.approx(-800, abs=5)
 
     def test_slide_up_y_position_at_start(self):
@@ -320,7 +305,7 @@ class TestSlideTransition:
         _run_to_swap(s)
         s.update(0.0)
         s.draw(scr)
-        last_pos = scr.blit.call_args_list[-1][0][1]
+        last_pos = scr.blit_mock.call_args_list[-1][0][1]
         assert last_pos[1] == pytest.approx(600, abs=5)
 
     def test_slide_down_y_position_at_start(self):
@@ -333,7 +318,7 @@ class TestSlideTransition:
         _run_to_swap(s)
         s.update(0.0)
         s.draw(scr)
-        last_pos = scr.blit.call_args_list[-1][0][1]
+        last_pos = scr.blit_mock.call_args_list[-1][0][1]
         assert last_pos[1] == pytest.approx(-600, abs=5)
 
     def test_draw_noop_when_done(self):
@@ -341,7 +326,7 @@ class TestSlideTransition:
         scr = _FakeSurface()
         _run_to_done(s)
         s.draw(scr)
-        scr.blit.assert_not_called()
+        scr.blit_mock.assert_not_called()
 
 
 # ── TestWipeTransition ──────────────────────────────────────────────────────────────────────
@@ -359,8 +344,8 @@ class TestWipeTransition:
         w.snapshot_out = _fake_snap()
         w.update(0.3)
         w.draw(scr)
-        assert scr.blit.call_count >= 1
-        assert scr.blit.call_args_list[0][0][0] is w.snapshot_out
+        assert scr.blit_mock.call_count >= 1
+        assert scr.blit_mock.call_args_list[0][0][0] is w.snapshot_out
 
     def test_draw_during_out_draws_rect(self):
         """Deve chamar pygame.draw.rect durante OUT."""
@@ -401,7 +386,7 @@ class TestWipeTransition:
         w.update(0.0)
         w.update(0.1)
         w.draw(scr)
-        blitted = [c[0][0] for c in scr.blit.call_args_list]
+        blitted = [c[0][0] for c in scr.blit_mock.call_args_list]
         assert w.snapshot_in in blitted
 
     def test_draw_noop_when_done(self):
@@ -409,7 +394,7 @@ class TestWipeTransition:
         scr = _FakeSurface()
         _run_to_done(w)
         w.draw(scr)
-        scr.blit.assert_not_called()
+        scr.blit_mock.assert_not_called()
 
 
 # ── TestCrossfadeTransition ───────────────────────────────────────────────────────────────
@@ -426,7 +411,7 @@ class TestCrossfadeTransition:
         c.snapshot_out = _fake_snap()
         c.update(0.1)
         c.draw(scr)
-        assert scr.blit.call_count >= 1 or scr.fill.call_count >= 1
+        assert scr.blit_mock.call_count >= 1 or scr.fill_mock.call_count >= 1
 
     def test_draw_during_in_fills_black_first(self):
         c = CrossfadeTransition(duration=2.0)
@@ -436,10 +421,10 @@ class TestCrossfadeTransition:
         _run_to_swap(c)
         c.update(0.0)
         c.update(0.1)
-        scr.fill.reset_mock()
-        scr.blit.reset_mock()
+        scr.fill_mock.reset_mock()
+        scr.blit_mock.reset_mock()
         c.draw(scr)
-        assert scr.fill.call_count >= 1
+        assert scr.fill_mock.call_count >= 1
 
     def test_draw_during_in_sets_alpha(self):
         c = CrossfadeTransition(duration=2.0)
@@ -451,17 +436,17 @@ class TestCrossfadeTransition:
         c.update(0.2)
         c.draw(scr)
         assert c._alpha_surf is not None
-        assert c._alpha_surf._alpha is not None
+        assert c._alpha_surf.get_alpha() is not None
 
     def test_draw_noop_when_done(self):
         c = CrossfadeTransition(duration=0.02)
         scr = _FakeSurface()
         _run_to_done(c)
-        scr.blit.reset_mock()
-        scr.fill.reset_mock()
+        scr.blit_mock.reset_mock()
+        scr.fill_mock.reset_mock()
         c.draw(scr)
-        scr.blit.assert_not_called()
-        scr.fill.assert_not_called()
+        scr.blit_mock.assert_not_called()
+        scr.fill_mock.assert_not_called()
 
     def test_alpha_surf_recreated_on_resize(self):
         c = CrossfadeTransition(duration=2.0)

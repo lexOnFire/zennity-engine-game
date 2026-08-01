@@ -232,6 +232,27 @@ class RuntimeWorld:
             values["prefab_path"] = str(path)
             values["pool_key"] = pool_key or f"prefab:{Path(path).as_posix().casefold()}"
             return self.create_object(**values)
+        values = self._extract_complex_prefab_values(
+            isolated_object, payload, resolved_parameters, definitions,
+            x, y, rotation, width, height
+        )
+        self._apply_prefab_component_policy(values, include_camera, include_audio, include_logic)
+        values["prefab_path"] = str(path)
+        values["pool_key"] = pool_key or f"prefab:{Path(path).as_posix().casefold()}"
+        return self.create_object(**values)
+
+    def _extract_complex_prefab_values(
+        self,
+        isolated_object: dict[str, Any],
+        payload: dict[str, Any],
+        resolved_parameters: dict[str, Any],
+        definitions: list[Any],
+        x: float | None,
+        y: float | None,
+        rotation: float | None,
+        width: float | None,
+        height: float | None,
+    ) -> dict[str, Any]:
         transform = isolated_object.get("transform") if isinstance(isolated_object.get("transform"), dict) else {}
         position = _vector(transform.get("position"), (0.0, 0.0, 0.0))
         scale = _vector(transform.get("scale"), (64.0, 64.0, 1.0))
@@ -293,10 +314,7 @@ class RuntimeWorld:
             ui.setdefault("visible", bool(item.get("enabled", True)))
             values["ui"] = ui
             break
-        values["prefab_path"] = str(path)
-        values["pool_key"] = pool_key or f"prefab:{Path(path).as_posix().casefold()}"
-        self._apply_prefab_component_policy(values, include_camera, include_audio, include_logic)
-        return self.create_object(**values)
+        return values
 
     @staticmethod
     def _apply_prefab_component_policy(

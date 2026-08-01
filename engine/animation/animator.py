@@ -248,7 +248,7 @@ class Animator(Component):
         frame = self._current.frames[self._frame_index]
 
         # Importa aqui para evitar import circular
-        from engine.graphics.renderer2d import SpriteRenderer
+        from engine.graphics.renderer import SpriteRenderer
         sr = self.game_object.get_component(SpriteRenderer) if self.game_object else None
         if sr:
             sr.image = frame
@@ -369,8 +369,3 @@ class Animator(Component):
     def __repr__(self) -> str:
         clip = self._current.name if self._current else "None"
         return f"<Animator clip='{clip}' frame={self._frame_index}>"
-
-
-from engine.core.component_registry import register_component
-
-register_component(Animator)

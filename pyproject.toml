@@ -1,28 +1,39 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "zennity-engine"
-version = "0.1.0"
+version = "1.0.1"
 description = "Engine 2D modular construida em cima do Pygame com arquitetura ECS inspirada em Unity"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "lexOnFire"}]
 requires-python = ">=3.10"
-dependencies = ["pygame-ce>=2.4.0"]
+dependencies = [
+    "numpy>=1.20.0",
+    "pygame-ce>=2.5.0",
+    "PySide6>=6.5.0",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
 
 [project.optional-dependencies]
 editor = ["PySide6>=6.7"]
 dev   = ["pytest>=8.0", "pytest-env>=1.1"]
 
+[project.scripts]
+zennity-editor = "editor.phase1_main:main"
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["engine*", "editor*"]
 
-[tool.pytest.ini_options]
-pythonpath = ["."]
-env = [
-    "SDL_VIDEODRIVER=dummy",
-    "SDL_AUDIODRIVER=dummy",
-    "PYGAME_HIDE_SUPPORT_PROMPT=1",
-]
-testpaths = ["tests"]
-addopts = "-v --tb=short"
+[tool.setuptools.package-data]
+editor = ["themes/*.qss", "ui/svg/*.svg"]

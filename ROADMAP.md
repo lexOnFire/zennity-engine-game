@@ -1,12 +1,26 @@
 # Zennity Engine — Roadmap
 
-> Última atualização: 2026-07-16
+> Última atualização: 2026-08-01
+
 
 ---
 
 ## Versões e Objetivos
 
-### v0.5.0-alpha — Export Foundation (Milestone 5) 🔄
+### v1.0.0 — Architecture & Release Readiness ✅
+
+- [x] Baseline pré-v1: controllers do editor, composition root e lifecycle de sessão
+- [x] Play Mode determinístico, `SceneDocument`, lifecycle scheduler e serialização consolidada
+- [x] Broad phase espacial, caches de render, dirty flags e remoção dos patches prioritários
+- [x] Decompor builders e workspaces restantes do editor oficial
+- [x] Decompor Logic Graph Editor e Runtime
+- [x] Concluir extração do processo da Viewport e validar teardown de recursos
+- [x] Consolidar entrypoints legados, imports e casing de Assets
+- [x] Aplicar budgets de performance/memória e fechar o release gate multiplataforma
+
+Plano detalhado: [`docs/architecture/PRE_V1_COMPLETION_ROADMAP.md`](docs/architecture/PRE_V1_COMPLETION_ROADMAP.md).
+
+### v0.5.0-alpha — Export Foundation (Milestone 5) ✅
 - [x] UI Foundation com tokens, tema único, papéis semânticos e primeira migração do editor
 - [x] UI Polish da Animation Workspace, Console, Profiler e Build Report sobre o tema central
 - [x] UI Polish de diálogos, estados vazios e Asset Preview responsivo
@@ -17,7 +31,7 @@
 - [x] Export Profiles com ExportProfile, ExportProfileManager, perfis Debug/Release e persistência JSON (Fase 32)
 - [x] Desktop Packaging com DesktopPackagePlan, planner por BuildConfig/Profile e testes multiplataforma (Fase 33)
 - [x] Build Report UI com validação da cena, referências de assets, métricas, lista de arquivos e relatório JSON
-- [ ] Release Candidate Stabilization
+- [x] Release Candidate Stabilization
   - [x] Gerar runtime de desenvolvimento autocontido e validar cena/componentes exportados
   - [x] Tornar Play/Pause/Stop determinístico, restaurar seleção/cena e pausar áudio
   - [x] Adicionar validação de projeto integrada ao editor e bloquear exportação com erros
@@ -26,7 +40,7 @@
   - [x] Ordenar fan-out dos Logic Graphs e adicionar Once, Cooldown, Prefab e operações de componentes
   - [x] Tornar salvamento de cena atômico, com backup automático da versão anterior
   - [x] Consolidar os workflows de CI e adicionar matriz Linux 3.10–3.12 e gate Windows 3.12
-  - [ ] Validar o fluxo completo no Windows com Python 3.12
+  - [x] Validar o fluxo completo no Windows com Python 3.12
   - [x] Executar regressão headless completa disponível no ambiente de desenvolvimento
   - [x] Validar Play/Pause/Stop com Logic Graph, física, áudio, HUD e animação
   - [x] Executar a validação do projeto exportado em processo separado do editor

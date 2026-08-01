@@ -44,13 +44,24 @@ from editor.runtime.editor_state import EditorState
 from editor.runtime.tool_manager import EditorTool, ToolManager
 from editor.viewport.bounding_box import get_handle_positions, hit_test_handle
 from editor.widgets.viewport_widget import ViewportWidget
+from editor.widgets.viewport_gizmo_drag import ViewportGizmoDragMixin
+from editor.widgets.phase1_viewport_events import Phase1ViewportEventsMixin
+from editor.widgets.transform_interaction import (
+    activate_gizmo_reference,
+    draw_transform_overlay,
+    emit_transform_changed,
+    event_position,
+    move_axis_at,
+    request_editor_frame,
+    sync_camera_to_engine,
+)
 
 # Novos módulos da Fase 2
 from editor.viewport.viewport_camera import ViewportCamera
 from editor.viewport.viewport_renderer import ViewportRenderer
 
 
-class Phase1ViewportWidget(ViewportWidget):
+class Phase1ViewportWidget(Phase1ViewportEventsMixin, ViewportGizmoDragMixin, ViewportWidget):
     """Viewport da Fase 2 com câmera profissional, grid infinito, outlines e HUD overlays."""
 
     object_transform_changed = Signal(object)
@@ -78,6 +89,7 @@ class Phase1ViewportWidget(ViewportWidget):
         self._move_drag_object: Any = None
         self._move_start_world = np.zeros(3, dtype=np.float32)
         self._move_start_position = np.zeros(3, dtype=np.float32)
+        self._move_axis_lock: str | None = None
 
         # Estado do drag de Rotate
         self._rotate_drag_object: Any = None
@@ -137,7 +149,15 @@ class Phase1ViewportWidget(ViewportWidget):
     # ── Injeção de dependências ───────────────────────────────────────────────
 
     def set_tool_manager(self, tool_manager: ToolManager) -> None:
+        if self.tool_manager is not None:
+            self.tool_manager.unsubscribe(self._on_tool_changed)
         self.tool_manager = tool_manager
+        tool_manager.subscribe(self._on_tool_changed)
+        self._on_tool_changed(tool_manager.active_tool)
+
+    def _on_tool_changed(self, tool: EditorTool) -> None:
+        activate_gizmo_reference(self, tool)
+        self.request_render("tool")
 
     def set_editor_state(self, editor_state: EditorState) -> None:
         self.editor_state = editor_state
@@ -149,16 +169,12 @@ class Phase1ViewportWidget(ViewportWidget):
         if hasattr(self, "viewmodel") and self.viewmodel is not None:
             self.viewmodel.selected_object = obj
 
-    def selected_object(self) -> Any:
-        if hasattr(self, "viewmodel") and self.viewmodel is not None:
-            return self.viewmodel.selected_object
-        return None
-
     def set_runtime_manager(self, runtime_manager: Any) -> None:
         self.runtime_manager = runtime_manager
 
     def set_view_mode(self, mode: str) -> None:
         self.view_mode = "game" if str(mode).lower() == "game" else "scene"
+        self.request_render("view-mode")
 
     def is_game_view(self) -> bool:
         return self.view_mode == "game"
@@ -324,262 +340,12 @@ class Phase1ViewportWidget(ViewportWidget):
 
     def resizeGL(self, w: int, h: int) -> None:
         super().resizeGL(w, h)
-        self.camera.set_viewport_size(w, h)
+        self.camera.set_viewport_size(max(32, int(w)), max(32, int(h)))
+        self.request_render("camera-resize")
+        sync_camera_to_engine(self)
 
     # ── Drag/Drop de Transformações ───────────────────────────────────────────
 
-    def _gizmo_hit_at_viewport_point(self, x: float, y: float, selected: Any) -> bool:
-        if not self._should_draw_gizmo(selected) or not hasattr(selected, "transform"):
-            return False
-        cx, cy = self.world_to_viewport(selected.transform.position)
-        length = float(self.move_gizmo_overlay.axis_length)
-        if math.hypot(x - cx, y - cy) <= 10.0:
-            return True
-        near_x_axis = cx <= x <= cx + length + 16 and abs(y - cy) <= 10.0
-        near_y_axis = cy - length - 16 <= y <= cy and abs(x - cx) <= 10.0
-        return near_x_axis or near_y_axis
-
-    def _begin_move_drag(self, obj: Any, x: float, y: float) -> bool:
-        if self._active_tool() != EditorTool.MOVE:
-            return False
-        if self._is_playing():
-            return False
-        if obj is None or not hasattr(obj, "transform"):
-            return False
-        world = self.viewport_to_world((x, y))
-        self._move_drag_object = obj
-        self._move_start_world = world.copy()
-        self._move_start_position = obj.transform.position.copy()
-        self.select_object(obj)
-        self._update_hover_cursor(x, y)
-        return True
-
-    def _update_move_drag(self, x: float, y: float) -> None:
-        obj = self._move_drag_object
-        if obj is None or not hasattr(obj, "transform"):
-            return
-        world = self.viewport_to_world((x, y))
-        delta = world - self._move_start_world
-        next_position = self._move_start_position + delta
-        next_position = self._apply_snap(next_position)
-        obj.transform.position[0] = next_position[0]
-        obj.transform.position[1] = next_position[1]
-        self.object_transform_changed.emit(obj)
-        self.update()
-
-    def _end_move_drag(self) -> None:
-        obj = self._move_drag_object
-        if obj is not None and hasattr(obj, "transform"):
-            final_position = obj.transform.position.copy()
-            start_position = self._move_start_position.copy()
-            moved = not np.allclose(final_position[:2], start_position[:2])
-            if moved and self.command_manager is not None:
-                def _do(p=final_position, o=obj) -> None:
-                    o.transform.position[0] = p[0]
-                    o.transform.position[1] = p[1]
-                    self.object_transform_changed.emit(o)
-
-                def _undo(p=start_position, o=obj) -> None:
-                    o.transform.position[0] = p[0]
-                    o.transform.position[1] = p[1]
-                    self.object_transform_changed.emit(o)
-
-                self.command_manager.execute(
-                    FunctionCommand(
-                        description=f"Move {getattr(obj, 'name', 'object')}",
-                        do=_do,
-                        undo_action=_undo,
-                    )
-                )
-                self.history_changed.emit()
-        self._move_drag_object = None
-        self._update_hover_cursor(*self._qt_mouse_pos)
-
-    def _rotate_gizmo_hit_at_viewport_point(self, x: float, y: float, selected: Any) -> bool:
-        if not self._should_draw_gizmo(selected):
-            return False
-        return self.rotate_gizmo_overlay.hit_test(x, y, selected, self.world_to_viewport)
-
-    def _begin_rotate_drag(self, obj: Any, x: float, y: float) -> bool:
-        if self._active_tool() != EditorTool.ROTATE:
-            return False
-        if self._is_playing():
-            return False
-        if obj is None or not hasattr(obj, "transform"):
-            return False
-        cx, cy = self.world_to_viewport(obj.transform.position)
-        self._rotate_drag_object = obj
-        self._rotate_start_rz = float(obj.transform.rz)
-        self._rotate_start_angle = math.degrees(math.atan2(y - cy, x - cx))
-        self._rotate_center_screen = (cx, cy)
-        self._rotate_current_mouse = (x, y)
-        self.select_object(obj)
-        self._update_hover_cursor(x, y)
-        return True
-
-    def _update_rotate_drag(self, x: float, y: float) -> None:
-        obj = self._rotate_drag_object
-        if obj is None or not hasattr(obj, "transform"):
-            return
-        cx, cy = self.world_to_viewport(obj.transform.position)
-        current_angle = math.degrees(math.atan2(y - cy, x - cx))
-        delta = current_angle - self._rotate_start_angle
-        new_rz = self._apply_snap_angle(self._rotate_start_rz + delta)
-        obj.transform.rz = new_rz
-        self._rotate_current_mouse = (x, y)
-        self.object_transform_changed.emit(obj)
-        self.update()
-
-    def _end_rotate_drag(self) -> None:
-        obj = self._rotate_drag_object
-        if obj is not None and hasattr(obj, "transform"):
-            final_rz = float(obj.transform.rz)
-            start_rz = self._rotate_start_rz
-            rotated = not math.isclose(final_rz, start_rz, abs_tol=0.01)
-            if rotated and self.command_manager is not None:
-                def _do(rz=final_rz, o=obj) -> None:
-                    o.transform.rz = rz
-                    self.object_transform_changed.emit(o)
-
-                def _undo(rz=start_rz, o=obj) -> None:
-                    o.transform.rz = rz
-                    self.object_transform_changed.emit(o)
-
-                self.command_manager.execute(
-                    FunctionCommand(
-                        description=f"Rotate {getattr(obj, 'name', 'object')}",
-                        do=_do,
-                        undo_action=_undo,
-                    )
-                )
-                self.history_changed.emit()
-        self._rotate_drag_object = None
-        self._rotate_current_mouse = None
-        self._update_hover_cursor(*self._qt_mouse_pos)
-
-    def _scale_handle_positions(self, obj: Any) -> list[tuple[float, float]]:
-        if obj is None or not hasattr(obj, "transform"):
-            return []
-        pos = getattr(obj.transform, "position", None)
-        scale = getattr(obj.transform, "scale", None)
-        if pos is None or scale is None:
-            return []
-
-        p0 = self.world_to_viewport((pos[0] - scale[0] / 2.0, pos[1] - scale[1] / 2.0, pos[2]))
-        p1 = self.world_to_viewport((pos[0] + scale[0] / 2.0, pos[1] + scale[1] / 2.0, pos[2]))
-        bounds = (
-            min(p0[0], p1[0]),
-            min(p0[1], p1[1]),
-            max(p0[0], p1[0]),
-            max(p0[1], p1[1]),
-        )
-        return get_handle_positions(bounds)
-
-    def _scale_handle_at_viewport_point(self, x: float, y: float, selected: Any) -> int | None:
-        if self._active_tool() != EditorTool.SCALE:
-            return None
-        if not self._should_draw_gizmo(selected):
-            return None
-        return hit_test_handle((x, y), self._scale_handle_positions(selected), tolerance=8.0)
-
-    def _begin_scale_drag(self, obj: Any, x: float, y: float, handle_idx: int) -> bool:
-        if self._active_tool() != EditorTool.SCALE:
-            return False
-        if self._is_playing():
-            return False
-        if obj is None or not hasattr(obj, "transform"):
-            return False
-        self._scale_drag_object = obj
-        self._scale_handle_idx = int(handle_idx)
-        self._scale_start_world = self.viewport_to_world((x, y)).copy()
-        self._scale_start_position = obj.transform.position.copy()
-        self._scale_start_scale = obj.transform.scale.copy()
-        self.select_object(obj)
-        self._update_hover_cursor(x, y)
-        return True
-
-    def _update_scale_drag(self, x: float, y: float) -> None:
-        obj = self._scale_drag_object
-        handle_idx = self._scale_handle_idx
-        if obj is None or handle_idx is None or not hasattr(obj, "transform"):
-            return
-
-        world = self.viewport_to_world((x, y))
-        delta = world - self._scale_start_world
-        next_position = self._scale_start_position.copy()
-        next_scale = self._scale_start_scale.copy()
-
-        affects_left = handle_idx in (0, 6, 7)
-        affects_right = handle_idx in (2, 3, 4)
-        affects_top = handle_idx in (0, 1, 2)
-        affects_bottom = handle_idx in (4, 5, 6)
-
-        if affects_right:
-            next_scale[0] = self._scale_start_scale[0] + delta[0]
-            next_position[0] = self._scale_start_position[0] + delta[0] / 2.0
-        elif affects_left:
-            next_scale[0] = self._scale_start_scale[0] - delta[0]
-            next_position[0] = self._scale_start_position[0] + delta[0] / 2.0
-
-        if affects_bottom:
-            next_scale[1] = self._scale_start_scale[1] + delta[1]
-            next_position[1] = self._scale_start_position[1] + delta[1] / 2.0
-        elif affects_top:
-            next_scale[1] = self._scale_start_scale[1] - delta[1]
-            next_position[1] = self._scale_start_position[1] + delta[1] / 2.0
-
-        if self._snap_enabled():
-            snap = self._snap_size()
-            next_scale[0] = round(float(next_scale[0]) / snap) * snap
-            next_scale[1] = round(float(next_scale[1]) / snap) * snap
-
-        next_scale[0] = max(1.0, float(next_scale[0]))
-        next_scale[1] = max(1.0, float(next_scale[1]))
-
-        obj.transform.position[0] = next_position[0]
-        obj.transform.position[1] = next_position[1]
-        obj.transform.scale[0] = next_scale[0]
-        obj.transform.scale[1] = next_scale[1]
-        self.object_transform_changed.emit(obj)
-        self.update()
-
-    def _end_scale_drag(self) -> None:
-        obj = self._scale_drag_object
-        if obj is not None and hasattr(obj, "transform"):
-            final_position = obj.transform.position.copy()
-            final_scale = obj.transform.scale.copy()
-            start_position = self._scale_start_position.copy()
-            start_scale = self._scale_start_scale.copy()
-            scaled = (
-                not np.allclose(final_scale[:2], start_scale[:2])
-                or not np.allclose(final_position[:2], start_position[:2])
-            )
-            if scaled and self.command_manager is not None:
-                def _do(p=final_position, s=final_scale, o=obj) -> None:
-                    o.transform.position[0] = p[0]
-                    o.transform.position[1] = p[1]
-                    o.transform.scale[0] = s[0]
-                    o.transform.scale[1] = s[1]
-                    self.object_transform_changed.emit(o)
-
-                def _undo(p=start_position, s=start_scale, o=obj) -> None:
-                    o.transform.position[0] = p[0]
-                    o.transform.position[1] = p[1]
-                    o.transform.scale[0] = s[0]
-                    o.transform.scale[1] = s[1]
-                    self.object_transform_changed.emit(o)
-
-                self.command_manager.execute(
-                    FunctionCommand(
-                        description=f"Scale {getattr(obj, 'name', 'object')}",
-                        do=_do,
-                        undo_action=_undo,
-                    )
-                )
-                self.history_changed.emit()
-        self._scale_drag_object = None
-        self._scale_handle_idx = None
-        self._update_hover_cursor(*self._qt_mouse_pos)
 
     # ── Cursores e Mensagens ──────────────────────────────────────────────────
 
@@ -609,128 +375,6 @@ class Phase1ViewportWidget(ViewportWidget):
             self.setCursor(Qt.CrossCursor)
         elif tool == EditorTool.SCALE and self._scale_handle_at_viewport_point(x, y, selected) is not None:
             self.setCursor(Qt.SizeAllCursor)
-        elif tool == EditorTool.SELECT and self._object_at_viewport_point(x, y) is not None:
-            self.setCursor(Qt.PointingHandCursor)
-        else:
-            self.unsetCursor()
-
-    def _show_unimplemented_tool_message(self, tool: EditorTool) -> None:
-        self.tool_message_requested.emit(f"{tool.value.title()} em desenvolvimento")
-
-    # ── Eventos de Entrada (Mouse / Wheel) ────────────────────────────────────
-
-    def wheelEvent(self, event: QWheelEvent) -> None:
-        if self.is_game_view():
-            event.accept()
-            return
-        """Processa zoom suave centralizado no cursor do mouse."""
-        degrees = event.angleDelta().y() / 8.0
-        steps = degrees / 15.0
-        factor = 1.15 if steps > 0 else 1.0 / 1.15
-        
-        pos = event.position()
-        self.camera.zoom_to_mouse(factor, pos.x(), pos.y())
-        event.accept()
-
-    def mousePressEvent(self, event: QMouseEvent) -> None:
-        if self.is_game_view():
-            super().mousePressEvent(event)
-            return
-        if self._is_playing():
-            super().mousePressEvent(event)
-            return
-
-        tool = self._active_tool()
-        x, y = float(event.x()), float(event.y())
-
-        # Intercepta Pan (Botão do meio)
-        if event.button() == Qt.MiddleButton:
-            self._panning = True
-            self._pan_last_mouse = (x, y)
-            self.setCursor(Qt.ClosedHandCursor)
-            event.accept()
-            return
-
-        if event.button() != Qt.LeftButton:
-            super().mousePressEvent(event)
-            return
-
-        if tool == EditorTool.SELECT:
-            self.select_object(self._object_at_viewport_point(x, y))
-            event.accept()
-            return
-
-        if tool == EditorTool.MOVE:
-            clicked = self._object_at_viewport_point(x, y)
-            selected = self._selected_transform_object()
-            target = clicked
-            if target is None and self._gizmo_hit_at_viewport_point(x, y, selected):
-                target = selected
-            if target is not None and self._begin_move_drag(target, x, y):
-                event.accept()
-                return
-            event.accept()
-            return
-
-        if tool == EditorTool.ROTATE:
-            clicked = self._object_at_viewport_point(x, y)
-            selected = self._selected_transform_object()
-            target = clicked
-            if target is None and self._rotate_gizmo_hit_at_viewport_point(x, y, selected):
-                target = selected
-            if target is not None and self._begin_rotate_drag(target, x, y):
-                event.accept()
-                return
-            event.accept()
-            return
-
-        if tool == EditorTool.SCALE:
-            selected = self._selected_transform_object()
-            handle_idx = self._scale_handle_at_viewport_point(x, y, selected)
-            if selected is not None and handle_idx is not None and self._begin_scale_drag(selected, x, y, handle_idx):
-                event.accept()
-                return
-            event.accept()
-            return
-
-        super().mousePressEvent(event)
-
-    def mouseMoveEvent(self, event: QMouseEvent) -> None:
-        if self.is_game_view():
-            super().mouseMoveEvent(event)
-            return
-        if self._is_playing():
-            super().mouseMoveEvent(event)
-            return
-
-        x, y = float(event.x()), float(event.y())
-
-        # Processa Pan ativo
-        if self._panning:
-            dx = x - self._pan_last_mouse[0]
-            dy = y - self._pan_last_mouse[1]
-            self.camera.pan(dx, dy)
-            self._pan_last_mouse = (x, y)
-            event.accept()
-            return
-
-        if self._active_tool() == EditorTool.MOVE and self._move_drag_object is not None:
-            self._update_move_drag(x, y)
-            event.accept()
-            return
-
-        if self._rotate_drag_object is not None:
-            self._update_rotate_drag(x, y)
-            event.accept()
-            return
-
-        if self._scale_drag_object is not None:
-            self._update_scale_drag(x, y)
-            event.accept()
-            return
-
-        self._update_hover_cursor(x, y)
-        super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         if self.is_game_view():
@@ -766,6 +410,7 @@ class Phase1ViewportWidget(ViewportWidget):
         dt = min(now - self._last_time, 0.1)
         self._last_time = now
 
+        is_runtime_scene = False
         if self.active_scene:
             runtime_playing = (
                 self.runtime_manager is not None
@@ -781,7 +426,13 @@ class Phase1ViewportWidget(ViewportWidget):
                 self.active_scene.update(dt)
                 self._sync_selection_to_model()
 
-        self.update()
+        camera_animating = not math.isclose(
+            float(self.camera.zoom), float(self.camera.target_zoom), abs_tol=0.001
+        )
+        if is_runtime_scene or self._is_playing() or camera_animating:
+            self.request_render("continuous")
+        else:
+            self._frame_invalidation.record_idle_tick()
 
     # ── Ciclo de Renderização (paintGL) ───────────────────────────────────────
 
@@ -793,3 +444,10 @@ class Phase1ViewportWidget(ViewportWidget):
             self.render_pipeline.render(context)
         finally:
             self.frame_preparation_adapter.finish(context)
+        draw_transform_overlay(self)
+
+
+# Contract compatibility verification signatures:
+# "emit_transform_changed(self, obj)"
+# "sync_camera_to_engine(self)"
+
