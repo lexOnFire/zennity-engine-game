@@ -1,0 +1,263 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "GameObjectLogic4",
+  "target": {
+    "type": "name",
+    "value": "PlayerNave"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "bf50a39053374596838b98cab96d664c",
+      "type": "event_update",
+      "title": "Event Update",
+      "category": "Events",
+      "position": [
+        -1545.16,
+        -282.3
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "483e0f469b83405ab500b2d094a22261",
+      "type": "input_axis",
+      "title": "Read Key Axis",
+      "category": "Input",
+      "position": [
+        -1008.37,
+        -225.35
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "fd6fe0d5a0b64cf984caf0f289dcd71e",
+      "type": "move",
+      "title": "Move",
+      "category": "Movement",
+      "position": [
+        -681.09,
+        -371.88
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "268a06e8901e4a928d18a92e7146cd4a",
+      "type": "event_key_pressed",
+      "title": "Event Key Pressed",
+      "category": "Events",
+      "position": [
+        -1544.35,
+        -74.81
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {
+        "key": "SPACE"
+      }
+    },
+    {
+      "id": "8e4c5c02291f40a7b18cac9fb4f02721",
+      "type": "create_object",
+      "title": "Create Object",
+      "category": "Spawning",
+      "position": [
+        -1068.03,
+        -107.99
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 240.0
+      },
+      "properties": {
+        "name": "Projectile",
+        "x": 0.0,
+        "y": 0.0,
+        "width": 50,
+        "height": 15,
+        "color": "#ffffff",
+        "texture": "Assets/Materials/disparo.PNG",
+        "tag": "Projectile",
+        "relative": true,
+        "inherit_source": false,
+        "inherit_logic": false,
+        "lifetime": 3.0,
+        "max_instances": 20,
+        "max_distance": 1200.0,
+        "use_pool": true
+      }
+    },
+    {
+      "id": "dd79446099b9432581d4e39c925dd8a1",
+      "type": "start_continuous_motion",
+      "title": "Start Continuous Motion",
+      "category": "Movement",
+      "position": [
+        -573.58,
+        69.23
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 220.0,
+        "height": 212.0
+      },
+      "properties": {
+        "x": 0.0,
+        "y": -420.0
+      }
+    },
+    {
+      "id": "0fb17bb14d604f9b85d4d741d8dceabb",
+      "type": "rotate",
+      "title": "Rotate",
+      "category": "Movement",
+      "position": [
+        -842.13,
+        62.84
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "606c8115e3fa4506a0d7d4bfcb2cac3f",
+      "type": "add_component",
+      "title": "Add Component",
+      "category": "Math",
+      "position": [
+        -560.73,
+        -81.27
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "abebb785ef314ca3967f617d9d545ab2",
+      "type": "play_sound",
+      "title": "Play Sound",
+      "category": "Audio",
+      "position": [
+        -1288.74,
+        162.94
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "path": "Assets/Audio/freesound_community-videogame-death-sound-43894.mp3"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "d573d7f63ea045309de4a4a7b5d4b79a",
+      "from_node": "bf50a39053374596838b98cab96d664c",
+      "from_port": "next",
+      "to_node": "483e0f469b83405ab500b2d094a22261",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "3e37367a94c044b5a84358dea94566d6",
+      "from_node": "483e0f469b83405ab500b2d094a22261",
+      "from_port": "value",
+      "to_node": "fd6fe0d5a0b64cf984caf0f289dcd71e",
+      "to_port": "value",
+      "kind": "number",
+      "order": 6
+    },
+    {
+      "id": "6933cb37b415448097ef4be9524362d5",
+      "from_node": "483e0f469b83405ab500b2d094a22261",
+      "from_port": "next",
+      "to_node": "fd6fe0d5a0b64cf984caf0f289dcd71e",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 7
+    },
+    {
+      "id": "df0b96738e7b40908f22ed7a2e71c086",
+      "from_node": "268a06e8901e4a928d18a92e7146cd4a",
+      "from_port": "next",
+      "to_node": "8e4c5c02291f40a7b18cac9fb4f02721",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 6
+    },
+    {
+      "id": "e9b4323d4f7b4a45932702c93d55d53a",
+      "from_node": "8e4c5c02291f40a7b18cac9fb4f02721",
+      "from_port": "next",
+      "to_node": "0fb17bb14d604f9b85d4d741d8dceabb",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 5
+    },
+    {
+      "id": "7c02cf9790d14847b49a7f84a1b8fc16",
+      "from_node": "8e4c5c02291f40a7b18cac9fb4f02721",
+      "from_port": "next",
+      "to_node": "606c8115e3fa4506a0d7d4bfcb2cac3f",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 5
+    },
+    {
+      "id": "f856a904c68e41fb96ae1d530dee073f",
+      "from_node": "606c8115e3fa4506a0d7d4bfcb2cac3f",
+      "from_port": "next",
+      "to_node": "dd79446099b9432581d4e39c925dd8a1",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 6
+    },
+    {
+      "id": "748061616a1e4295b0943334fd347b53",
+      "from_node": "268a06e8901e4a928d18a92e7146cd4a",
+      "from_port": "next",
+      "to_node": "abebb785ef314ca3967f617d9d545ab2",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 7
+    }
+  ]
+}

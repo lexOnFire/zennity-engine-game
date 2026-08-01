@@ -1,0 +1,504 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "PlayerMovement",
+  "target": {
+    "type": "name",
+    "value": "HeroRPG"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {
+    "speed": {
+      "type": "number",
+      "scope": "object",
+      "default": 220.0
+    }
+  },
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "update",
+      "type": "event_update",
+      "title": "On Update",
+      "category": "Events",
+      "position": [
+        120.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "axis",
+      "type": "input_axis",
+      "title": "Read Input Axis",
+      "category": "Movement",
+      "position": [
+        440.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "negative": "A",
+        "positive": "D"
+      }
+    },
+    {
+      "id": "moving",
+      "type": "if_else",
+      "title": "If / Else",
+      "category": "Logic",
+      "position": [
+        760.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "condition": "axis != 0"
+      }
+    },
+    {
+      "id": "move",
+      "type": "move",
+      "title": "Move",
+      "category": "Movement",
+      "position": [
+        1080.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "speed": 220.0
+      }
+    },
+    {
+      "id": "space",
+      "type": "key_pressed",
+      "title": "Key Pressed Now?",
+      "category": "Condition",
+      "position": [
+        440.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "key": "SPACE"
+      }
+    },
+    {
+      "id": "0d60c09c535445f0b35f94fd8e6d3747",
+      "type": "create_object",
+      "title": "Create Object",
+      "category": "Objects",
+      "position": [
+        760.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 220.0,
+        "height": 240.0
+      },
+      "properties": {
+        "name": "Projectile",
+        "x": 5,
+        "y": -55,
+        "width": 50,
+        "height": 15,
+        "color": "#ffd166",
+        "texture": "Assets/Materials/projetil1_.PNG",
+        "tag": "Projectile",
+        "relative": true,
+        "inherit_source": false,
+        "inherit_logic": false,
+        "lifetime": 3,
+        "max_instances": 100,
+        "max_distance": 1200.0,
+        "use_pool": true
+      }
+    },
+    {
+      "id": "f65e33327296427fb4c54589d2688637",
+      "type": "input_axis",
+      "title": "Read Input Axis",
+      "category": "Movement",
+      "position": [
+        440.0,
+        500.0
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "negative": "W",
+        "positive": "S"
+      }
+    },
+    {
+      "id": "4584ae64086a4f218e35a3a5d5a2f04d",
+      "type": "if_else",
+      "title": "If / Else",
+      "category": "Logic",
+      "position": [
+        760.0,
+        500.0
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "condition": "axis != 0"
+      }
+    },
+    {
+      "id": "09cc189c00fb4f2088fdd99bcf0d0c36",
+      "type": "move_by",
+      "title": "Move By",
+      "category": "Position",
+      "position": [
+        1400.0,
+        500.0
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 220.0,
+        "height": 212.0
+      },
+      "properties": {
+        "x": 0,
+        "y": 220
+      }
+    },
+    {
+      "id": "96fd1b6dfef142f6b2aed7dff3c1906c",
+      "type": "compare_number",
+      "title": "Compare Number",
+      "category": "Condition",
+      "position": [
+        1080.0,
+        500.0
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "operator": ">",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "ebc47c3d9eac405aad65d7e7565b3894",
+      "type": "compare_number",
+      "title": "Compare Number",
+      "category": "Condition",
+      "position": [
+        1080.0,
+        700.0
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "operator": "<",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "ee7b7d296f0e4258af8d5aabe598f96d",
+      "type": "move_by",
+      "title": "Move By",
+      "category": "Position",
+      "position": [
+        1394.86,
+        749.46
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 220.0,
+        "height": 212.0
+      },
+      "properties": {
+        "x": 0,
+        "y": -220
+      }
+    },
+    {
+      "id": "b5f2051af56a4a67bc28e5e9f913a4ba",
+      "type": "start_continuous_motion",
+      "title": "Start Continuous Motion",
+      "category": "Position",
+      "position": [
+        1400.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 220.0,
+        "height": 212.0
+      },
+      "properties": {
+        "movement": "Movement",
+        "x": 0.0,
+        "y": -400,
+        "space": "global",
+        "acceleration": 0,
+        "deceleration": 0.0
+      }
+    },
+    {
+      "id": "c92e37facdb64a3ebbf8f8c79f084fe8",
+      "type": "rotate",
+      "title": "Girar",
+      "category": "Movement",
+      "position": [
+        1080.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "speed": -90.0,
+        "degrees": -90
+      }
+    },
+    {
+      "id": "541a38b8fd554b4a9a6b27989e1d90c4",
+      "type": "play_animation_asset",
+      "title": "Tocar Animação",
+      "category": "Action",
+      "position": [
+        1400.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "path": "Assets/Animations/nave_Idle.zanim"
+      }
+    },
+    {
+      "id": "b704cc00376149c9989f7fbac10a528e",
+      "type": "play_animation_asset",
+      "title": "Tocar Animação",
+      "category": "Action",
+      "position": [
+        1720.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "path": "Assets/Animations/nave_Idle.zanim"
+      }
+    },
+    {
+      "id": "5936f0f2c9c34f73b5f2cc79ac0edd3a",
+      "type": "play_animation_asset",
+      "title": "Tocar Animação",
+      "category": "Action",
+      "position": [
+        1720.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "path": "Assets/Animations/nave_Idle.zanim"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "axis",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e5",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "space",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 4
+    },
+    {
+      "id": "cafd1dff77a04523b5298c5a319aed11",
+      "from_node": "moving",
+      "from_port": "true",
+      "to_node": "move",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 5
+    },
+    {
+      "id": "864f56f85737471c953b672a17666d9c",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "f65e33327296427fb4c54589d2688637",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 6
+    },
+    {
+      "id": "ce260472e7914600ba18c503d5c66da2",
+      "from_node": "axis",
+      "from_port": "next",
+      "to_node": "moving",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 7
+    },
+    {
+      "id": "2697822ca02849e1930113bf73527f79",
+      "from_node": "f65e33327296427fb4c54589d2688637",
+      "from_port": "next",
+      "to_node": "4584ae64086a4f218e35a3a5d5a2f04d",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 8
+    },
+    {
+      "id": "c5156cbd07fe41a980118fe571c3bcb3",
+      "from_node": "4584ae64086a4f218e35a3a5d5a2f04d",
+      "from_port": "true",
+      "to_node": "96fd1b6dfef142f6b2aed7dff3c1906c",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 9
+    },
+    {
+      "id": "2a7f59cd2f974332b86b635bfb88a25f",
+      "from_node": "96fd1b6dfef142f6b2aed7dff3c1906c",
+      "from_port": "true",
+      "to_node": "09cc189c00fb4f2088fdd99bcf0d0c36",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 10
+    },
+    {
+      "id": "e5d4edd375dd4792b05f15da5ae1af9d",
+      "from_node": "4584ae64086a4f218e35a3a5d5a2f04d",
+      "from_port": "true",
+      "to_node": "ebc47c3d9eac405aad65d7e7565b3894",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 11
+    },
+    {
+      "id": "f999b24a455b44228b9fb31705870f41",
+      "from_node": "ebc47c3d9eac405aad65d7e7565b3894",
+      "from_port": "true",
+      "to_node": "ee7b7d296f0e4258af8d5aabe598f96d",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 12
+    },
+    {
+      "id": "1f4120e967cc4270b8d623a88e779475",
+      "from_node": "0d60c09c535445f0b35f94fd8e6d3747",
+      "from_port": "next",
+      "to_node": "c92e37facdb64a3ebbf8f8c79f084fe8",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 12
+    },
+    {
+      "id": "d077bbcf4fac47979178e6f733c15a4e",
+      "from_node": "move",
+      "from_port": "next",
+      "to_node": "541a38b8fd554b4a9a6b27989e1d90c4",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 13
+    },
+    {
+      "id": "e96c3abb1e6b44a4991b0e99d95ac0fc",
+      "from_node": "09cc189c00fb4f2088fdd99bcf0d0c36",
+      "from_port": "next",
+      "to_node": "b704cc00376149c9989f7fbac10a528e",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 14
+    },
+    {
+      "id": "1f49419ec75e417aa9042aabdaf89a83",
+      "from_node": "ee7b7d296f0e4258af8d5aabe598f96d",
+      "from_port": "next",
+      "to_node": "5936f0f2c9c34f73b5f2cc79ac0edd3a",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 15
+    },
+    {
+      "id": "97fd35f29b4945b69bed09e257b63688",
+      "from_node": "c92e37facdb64a3ebbf8f8c79f084fe8",
+      "from_port": "next",
+      "to_node": "b5f2051af56a4a67bc28e5e9f913a4ba",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 14
+    },
+    {
+      "id": "b1430d4851744a8dbe48c38017821b37",
+      "from_node": "space",
+      "from_port": "true",
+      "to_node": "0d60c09c535445f0b35f94fd8e6d3747",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 15
+    }
+  ]
+}

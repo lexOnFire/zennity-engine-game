@@ -1,0 +1,39 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "NewLogic",
+  "target": {
+    "type": "name",
+    "value": "paisagem"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "68e02e0616ac4bdda8d9a09643e4c596",
+      "type": "event_start",
+      "title": "On Start",
+      "category": "Events",
+      "position": [
+        -660.56,
+        -315.04
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    }
+  ],
+  "edges": []
+}

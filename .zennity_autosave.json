@@ -1,0 +1,166 @@
+{
+  "_autosave_meta": {
+    "saved_at": 1785543865.811758,
+    "save_count": 10,
+    "pid": 4100
+  },
+  "snapshot": {
+    "scene_path": "C:\\Users\\alexs\\OneDrive\\Documentos\\Nova pasta\\zennity-engine-game\\bug_falha.zscene",
+    "scene_document": {
+      "format_version": 2,
+      "scene_name": "Untitled",
+      "engine_version": "Zennity 1.0.1",
+      "blackboard": {
+        "variables": {}
+      },
+      "objects": [
+        {
+          "name": "backgraund",
+          "active": true,
+          "enabled": true,
+          "static": false,
+          "tag": "Untagged",
+          "layer": "Default",
+          "id": "64b7136e-c39b-4486-92d1-29936f6f6e34",
+          "transform": {
+            "position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rotation": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rz": 0.0,
+            "scale": [
+              1610.5402875672805,
+              758.9068292936136,
+              1.0
+            ]
+          },
+          "visual": {
+            "enabled": true,
+            "material": "Default_Material",
+            "mesh_type": null,
+            "color": [
+              174,
+              174,
+              174
+            ],
+            "texture": "",
+            "layer": "Background",
+            "order": 0
+          },
+          "components": {
+            "audio": {
+              "path": "Assets/Audio/8bit-music-for-game-68698.mp3",
+              "volume": 1.0,
+              "loop": true,
+              "autoplay": true
+            }
+          }
+        },
+        {
+          "name": "PlayerNave",
+          "active": true,
+          "enabled": true,
+          "static": false,
+          "tag": "Untagged",
+          "layer": "Default",
+          "id": "e66286fd-6f6d-46be-a6d5-23cde49c9088",
+          "transform": {
+            "position": [
+              50.30045844487154,
+              170.27348080871846,
+              0.0
+            ],
+            "rotation": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rz": 0.0,
+            "scale": [
+              119.19912931277736,
+              114.54035700026105,
+              1.0
+            ]
+          },
+          "visual": {
+            "enabled": true,
+            "material": "Default_Material",
+            "mesh_type": null,
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "texture": "Assets/Materials/nave_player.PNG",
+            "layer": "Default",
+            "order": 0
+          },
+          "components": {}
+        }
+      ]
+    },
+    "objects": [
+      {
+        "id": "64b7136e-c39b-4486-92d1-29936f6f6e34",
+        "name": "backgraund",
+        "x": 0.0,
+        "y": 0.0,
+        "w": 1610.5402875672805,
+        "h": 758.9068292936136,
+        "rotation": 0.0,
+        "color": [
+          174,
+          174,
+          174
+        ],
+        "mesh_type": null,
+        "renderer_enabled": true,
+        "material": "Default_Material",
+        "texture": "",
+        "render_layer": "Background",
+        "sort_order": 0,
+        "active": true,
+        "static": false,
+        "tag": "Untagged",
+        "layer": "Default",
+        "audio": {
+          "path": "Assets/Audio/8bit-music-for-game-68698.mp3",
+          "volume": 1.0,
+          "loop": true,
+          "autoplay": true
+        }
+      },
+      {
+        "id": "e66286fd-6f6d-46be-a6d5-23cde49c9088",
+        "name": "PlayerNave",
+        "x": 50.30045844487154,
+        "y": 170.27348080871846,
+        "w": 119.19912931277736,
+        "h": 114.54035700026105,
+        "rotation": 0.0,
+        "color": [
+          255,
+          255,
+          255
+        ],
+        "mesh_type": null,
+        "renderer_enabled": true,
+        "material": "Default_Material",
+        "texture": "Assets/Materials/nave_player.PNG",
+        "render_layer": "Default",
+        "sort_order": 0,
+        "active": true,
+        "static": false,
+        "tag": "Untagged",
+        "layer": "Default"
+      }
+    ],
+    "selected": null
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "PlayerLogic",
+  "target": {
+    "type": "name",
+    "value": "Player"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "e0d2652220244daea794f994226a0d68",
+      "type": "play_animation_asset",
+      "title": "Tocar Animação",
+      "category": "Action",
+      "position": [
+        -68.44,
+        125.8
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "path": "Assets/Animations/nave_Idle.zanim"
+      }
+    },
+    {
+      "id": "e055987778744925b99df3d8f3bdf5c6",
+      "type": "event_update",
+      "title": "A Cada Frame",
+      "category": "Events",
+      "position": [
+        -358.67,
+        62.15
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "5848953646ab422ca8231b7d89602d96",
+      "from_node": "e055987778744925b99df3d8f3bdf5c6",
+      "from_port": "next",
+      "to_node": "e0d2652220244daea794f994226a0d68",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    }
+  ]
+}

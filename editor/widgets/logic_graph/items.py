@@ -179,7 +179,7 @@ class LogicCommentItem(QGraphicsRectItem):
         width = float(data.get("width", 260.0))
         super().__init__(0.0, 0.0, width, 78.0)
         self.editor = editor
-        self.data = data
+        self.comment_data = data
         self.comment_id = str(data["id"])
         self.setPos(*data.get("position", [0.0, 0.0]))
         self.setZValue(1)
@@ -196,10 +196,10 @@ class LogicCommentItem(QGraphicsRectItem):
 
     def mouseDoubleClickEvent(self, event) -> None:
         text_value, accepted = QInputDialog.getMultiLineText(
-            None, "Editar comentário", "Texto", str(self.data.get("text", "Comentário"))
+            None, "Editar comentário", "Texto", str(self.comment_data.get("text", "Comentário"))
         )
         if accepted:
-            self.data["text"] = text_value
+            self.comment_data["text"] = text_value
             self.text_item.setPlainText(text_value)
             self.editor.mark_dirty()
         event.accept()
@@ -208,7 +208,7 @@ class LogicCommentItem(QGraphicsRectItem):
         result = super().itemChange(change, value)
         if change == QGraphicsItem.ItemPositionHasChanged and hasattr(self, "editor"):
             position = value if isinstance(value, QPointF) else self.pos()
-            self.data["position"] = [round(position.x(), 2), round(position.y(), 2)]
+            self.comment_data["position"] = [round(position.x(), 2), round(position.y(), 2)]
             self.editor.mark_dirty()
         return result
 

@@ -1,9 +1,0 @@
-{
-  "guid": "c2a3662b-2791-4d58-98cf-ec6a6105feea",
-  "uuid": "c2a3662b-2791-4d58-98cf-ec6a6105feea",
-  "type": "script",
-  "importer": "script_importer",
-  "source_path": "Assets/Scripts/projectile.py",
-  "import_settings": {},
-  "dependencies": []
-}

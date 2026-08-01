@@ -130,9 +130,9 @@ class LogicGraphPersistenceMixin:
         for node_id, item in self.node_items.items():
             item.node["position"] = [round(item.pos().x(), 2), round(item.pos().y(), 2)]
         for item in self.group_items.values():
-            item.data["position"] = [round(item.pos().x(), 2), round(item.pos().y(), 2)]
+            item.group_data["position"] = [round(item.pos().x(), 2), round(item.pos().y(), 2)]
         for item in self.comment_items.values():
-            item.data["position"] = [round(item.pos().x(), 2), round(item.pos().y(), 2)]
+            item.comment_data["position"] = [round(item.pos().x(), 2), round(item.pos().y(), 2)]
         data = deepcopy(self.graph)
         data["enabled"] = self.graph_enabled_check.isChecked()
         data["target"] = {

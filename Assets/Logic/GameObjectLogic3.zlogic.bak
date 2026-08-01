@@ -1,0 +1,70 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "GameObjectLogic3",
+  "target": {
+    "type": "name",
+    "value": "GameObject"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "b74e675a80e34a6eb1a653d88e474f32",
+      "type": "key_held",
+      "title": "Key Held?",
+      "category": "Condition",
+      "position": [
+        -316.45,
+        507.1
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "key": "d"
+      }
+    },
+    {
+      "id": "4c2e226ab2034035a03032725abf25a0",
+      "type": "move_x",
+      "title": "Mover X",
+      "category": "Movement",
+      "position": [
+        -27.37,
+        545.82
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "speed": 180.0,
+        "space": "local"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "044418432cd245758da7dec074f8a9cd",
+      "from_node": "b74e675a80e34a6eb1a653d88e474f32",
+      "from_port": "true",
+      "to_node": "4c2e226ab2034035a03032725abf25a0",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    }
+  ]
+}

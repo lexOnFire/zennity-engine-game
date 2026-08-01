@@ -1,0 +1,67 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "PlayerLogic",
+  "target": {
+    "type": "name",
+    "value": "Player"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "926f96dab3d14aecba87cc295b1a3b90",
+      "type": "event_start",
+      "title": "Ao Iniciar",
+      "category": "Events",
+      "position": [
+        -244.63,
+        30.6
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "e0d2652220244daea794f994226a0d68",
+      "type": "play_animation_asset",
+      "title": "Tocar Animação",
+      "category": "Action",
+      "position": [
+        68.37,
+        47.11
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "path": "Assets/Animations/nave_Idle.zanim"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "4ea5eab984144ffca0b298347159c2a5",
+      "from_node": "926f96dab3d14aecba87cc295b1a3b90",
+      "from_port": "next",
+      "to_node": "e0d2652220244daea794f994226a0d68",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    }
+  ]
+}
