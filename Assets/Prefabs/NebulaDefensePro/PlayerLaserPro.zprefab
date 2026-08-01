@@ -1,0 +1,53 @@
+{
+  "format_version": 2,
+  "prefab_name": "PlayerLaserPro",
+  "exposed_properties": [
+    {
+      "name": "speed",
+      "label": "Velocidade",
+      "type": "number",
+      "default": 800.0,
+      "target": "gameplay.speed"
+    },
+    {
+      "name": "damage",
+      "label": "Dano",
+      "type": "number",
+      "default": 25.0,
+      "target": "gameplay.damage"
+    }
+  ],
+  "object": {
+    "name": "PlayerLaserPro",
+    "x": 0.0,
+    "y": 0.0,
+    "w": 8.0,
+    "h": 24.0,
+    "rotation": 0.0,
+    "color": [
+      0,
+      240,
+      255
+    ],
+    "tag": "PlayerLaser",
+    "layer": "Default",
+    "renderer_enabled": true,
+    "collider": {
+      "type": "box",
+      "width": 8.0,
+      "height": 24.0,
+      "is_trigger": true
+    },
+    "rigidbody": {
+      "mass": 0.1,
+      "use_gravity": false,
+      "is_kinematic": true,
+      "gravity_scale": 0.0
+    },
+    "gameplay": {
+      "speed": 800.0,
+      "damage": 25.0,
+      "sound": "Assets/Audio/jump-sound-531048.mp3"
+    }
+  }
+}

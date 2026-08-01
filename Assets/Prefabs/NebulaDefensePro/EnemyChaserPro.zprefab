@@ -1,0 +1,45 @@
+{
+  "format_version": 2,
+  "prefab_name": "EnemyChaserPro",
+  "exposed_properties": [
+    {
+      "name": "speed",
+      "label": "Velocidade",
+      "type": "number",
+      "default": 160.0,
+      "target": "gameplay.speed"
+    }
+  ],
+  "object": {
+    "name": "EnemyChaserPro",
+    "x": 0.0,
+    "y": 0.0,
+    "w": 36.0,
+    "h": 36.0,
+    "rotation": 0.0,
+    "color": [
+      255,
+      140,
+      0
+    ],
+    "tag": "Enemy",
+    "layer": "Default",
+    "renderer_enabled": true,
+    "collider": {
+      "type": "box",
+      "width": 36.0,
+      "height": 36.0,
+      "is_trigger": true
+    },
+    "rigidbody": {
+      "mass": 1.0,
+      "use_gravity": false,
+      "is_kinematic": true,
+      "gravity_scale": 0.0
+    },
+    "gameplay": {
+      "hp": 50.0,
+      "score_value": 25.0
+    }
+  }
+}

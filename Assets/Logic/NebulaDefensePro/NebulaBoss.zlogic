@@ -1,0 +1,72 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "Nebula Boss AI",
+  "target": {
+    "type": "name",
+    "value": "BossShipPro"
+  },
+  "variables": {
+    "boss_hp": {
+      "type": "number",
+      "default": 200.0
+    }
+  },
+  "nodes": [
+    {
+      "id": "update",
+      "type": "event_update",
+      "title": "A Cada Frame",
+      "category": "Eventos",
+      "position": [
+        20.0,
+        80.0
+      ],
+      "properties": {}
+    },
+    {
+      "id": "move_oscil",
+      "type": "move_by",
+      "title": "Oscilar X",
+      "category": "Position",
+      "position": [
+        260.0,
+        80.0
+      ],
+      "properties": {
+        "x": 120.0,
+        "y": 0.0
+      }
+    },
+    {
+      "id": "timer_shoot",
+      "type": "event_timer",
+      "title": "Temporizador Míssil",
+      "category": "Eventos",
+      "position": [
+        20.0,
+        240.0
+      ],
+      "properties": {
+        "interval": 1.4,
+        "repeat": true
+      }
+    },
+    {
+      "id": "spawn_missile",
+      "type": "instantiate_prefab",
+      "title": "Lançar Míssil",
+      "category": "Ações",
+      "position": [
+        280.0,
+        240.0
+      ],
+      "properties": {
+        "prefab": "Assets/Prefabs/NebulaDefensePro/BossMissilePro.zprefab",
+        "offset_x": 0.0,
+        "offset_y": 40.0
+      }
+    }
+  ]
+}

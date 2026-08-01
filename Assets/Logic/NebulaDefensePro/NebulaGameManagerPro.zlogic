@@ -1,0 +1,76 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "Nebula Game Manager Pro",
+  "target": {
+    "type": "name",
+    "value": "GameManagerPro"
+  },
+  "variables": {
+    "score": {
+      "type": "number",
+      "default": 0.0
+    },
+    "wave": {
+      "type": "number",
+      "default": 1.0
+    }
+  },
+  "nodes": [
+    {
+      "id": "start",
+      "type": "event_start",
+      "title": "Ao Iniciar",
+      "category": "Eventos",
+      "position": [
+        20.0,
+        80.0
+      ],
+      "properties": {}
+    },
+    {
+      "id": "play_bgm",
+      "type": "play_music",
+      "title": "Tocar Trilha sonora",
+      "category": "Áudio",
+      "position": [
+        260.0,
+        80.0
+      ],
+      "properties": {
+        "music": "Assets/Audio/jump-sound-531048.mp3",
+        "loop": true
+      }
+    },
+    {
+      "id": "timer_spawn",
+      "type": "event_timer",
+      "title": "Spawn Inimigos",
+      "category": "Eventos",
+      "position": [
+        20.0,
+        240.0
+      ],
+      "properties": {
+        "interval": 1.8,
+        "repeat": true
+      }
+    },
+    {
+      "id": "spawn_scout",
+      "type": "instantiate_prefab",
+      "title": "Spawn Scout",
+      "category": "Ações",
+      "position": [
+        280.0,
+        240.0
+      ],
+      "properties": {
+        "prefab": "Assets/Prefabs/NebulaDefensePro/EnemyScoutPro.zprefab",
+        "offset_x": 0.0,
+        "offset_y": -320.0
+      }
+    }
+  ]
+}

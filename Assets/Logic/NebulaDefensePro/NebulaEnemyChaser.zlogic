@@ -1,0 +1,62 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "Nebula Enemy Chaser AI",
+  "target": {
+    "type": "tag",
+    "value": "EnemyChaser"
+  },
+  "variables": {},
+  "nodes": [
+    {
+      "id": "update",
+      "type": "event_update",
+      "title": "A Cada Frame",
+      "category": "Eventos",
+      "position": [
+        20.0,
+        80.0
+      ],
+      "properties": {}
+    },
+    {
+      "id": "chase_player",
+      "type": "move_towards",
+      "title": "Perseguir Nave",
+      "category": "Movimento",
+      "position": [
+        260.0,
+        80.0
+      ],
+      "properties": {
+        "speed": 160.0,
+        "target_name": "PlayerShip"
+      }
+    },
+    {
+      "id": "on_hit",
+      "type": "event_collision_enter",
+      "title": "Ao Colidir",
+      "category": "Eventos",
+      "position": [
+        20.0,
+        260.0
+      ],
+      "properties": {
+        "tag": "PlayerLaser"
+      }
+    },
+    {
+      "id": "destroy_self",
+      "type": "destroy_object",
+      "title": "Destruir Chaser",
+      "category": "Ações",
+      "position": [
+        280.0,
+        260.0
+      ],
+      "properties": {}
+    }
+  ]
+}

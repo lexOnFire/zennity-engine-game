@@ -1,0 +1,201 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "Nebula Player Controller Pro",
+  "target": {
+    "type": "name",
+    "value": "PlayerShip"
+  },
+  "variables": {
+    "hp": {
+      "type": "number",
+      "default": 100.0
+    },
+    "shield": {
+      "type": "number",
+      "default": 100.0
+    },
+    "triple_shot": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "editor": {
+    "comments": [
+      {
+        "id": "help-controls",
+        "text": "WASD: Movimento 8 direções • Espaço: Disparar Lasers • Teclas Clamped nas bordas da tela",
+        "position": [
+          10.0,
+          -80.0
+        ],
+        "width": 640.0,
+        "color": "#2d5b6b"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "update",
+      "type": "event_update",
+      "title": "A Cada Frame",
+      "category": "Eventos",
+      "position": [
+        20.0,
+        80.0
+      ],
+      "properties": {}
+    },
+    {
+      "id": "key_w",
+      "type": "key_held",
+      "title": "Tecla W",
+      "category": "Condition",
+      "position": [
+        260.0,
+        20.0
+      ],
+      "properties": {
+        "key": "W"
+      }
+    },
+    {
+      "id": "move_up",
+      "type": "move_by",
+      "title": "Mover Cima",
+      "category": "Position",
+      "position": [
+        500.0,
+        20.0
+      ],
+      "properties": {
+        "x": 0.0,
+        "y": -340.0
+      }
+    },
+    {
+      "id": "key_s",
+      "type": "key_held",
+      "title": "Tecla S",
+      "category": "Condition",
+      "position": [
+        260.0,
+        140.0
+      ],
+      "properties": {
+        "key": "S"
+      }
+    },
+    {
+      "id": "move_down",
+      "type": "move_by",
+      "title": "Mover Baixo",
+      "category": "Position",
+      "position": [
+        500.0,
+        140.0
+      ],
+      "properties": {
+        "x": 0.0,
+        "y": 340.0
+      }
+    },
+    {
+      "id": "key_a",
+      "type": "key_held",
+      "title": "Tecla A",
+      "category": "Condition",
+      "position": [
+        260.0,
+        260.0
+      ],
+      "properties": {
+        "key": "A"
+      }
+    },
+    {
+      "id": "move_left",
+      "type": "move_by",
+      "title": "Mover Esquerda",
+      "category": "Position",
+      "position": [
+        500.0,
+        260.0
+      ],
+      "properties": {
+        "x": -380.0,
+        "y": 0.0
+      }
+    },
+    {
+      "id": "key_d",
+      "type": "key_held",
+      "title": "Tecla D",
+      "category": "Condition",
+      "position": [
+        260.0,
+        380.0
+      ],
+      "properties": {
+        "key": "D"
+      }
+    },
+    {
+      "id": "move_right",
+      "type": "move_by",
+      "title": "Mover Direita",
+      "category": "Position",
+      "position": [
+        500.0,
+        380.0
+      ],
+      "properties": {
+        "x": 380.0,
+        "y": 0.0
+      }
+    },
+    {
+      "id": "key_shoot",
+      "type": "event_key_pressed",
+      "title": "Espaço Dispara",
+      "category": "Eventos",
+      "position": [
+        20.0,
+        520.0
+      ],
+      "properties": {
+        "key": "SPACE"
+      }
+    },
+    {
+      "id": "spawn_laser",
+      "type": "instantiate_prefab",
+      "title": "Disparar Laser",
+      "category": "Ações",
+      "position": [
+        300.0,
+        520.0
+      ],
+      "properties": {
+        "prefab": "Assets/Prefabs/NebulaDefensePro/PlayerLaserPro.zprefab",
+        "offset_x": 0.0,
+        "offset_y": -30.0
+      }
+    },
+    {
+      "id": "play_shoot_sfx",
+      "type": "play_sound",
+      "title": "SFX Laser",
+      "category": "Áudio",
+      "position": [
+        580.0,
+        520.0
+      ],
+      "properties": {
+        "sound": "Assets/Audio/jump-sound-531048.mp3",
+        "volume": 0.7
+      }
+    }
+  ]
+}
