@@ -223,7 +223,8 @@ class ViewportSession(ViewportSessionLifecycleMixin):
         )
         self.audio_commands = ViewportAudioCommandHandler(
             self.objects, self.audio_channels, self.audio_sounds, lambda event: _send(self.events, event),
-            self.start_audio_sources, self.stop_audio_sources, self.play_audio_file
+            self.start_audio_sources, self.stop_audio_sources, self.play_audio_file,
+            self.audio_system.set_output_device,
         )
         self.runtime_initializer = ViewportRuntimeInitializer(
             self.objects, self.logic_modules, self.logic_apis, self.animator_controllers, self.behavior_runners,
@@ -281,6 +282,12 @@ class ViewportSession(ViewportSessionLifecycleMixin):
         
     def start_audio_sources(self):
         self.stop_audio_sources()
+        requested_device = next((
+            str(obj["audio"].get("device", "")) for obj in self.objects.values()
+            if isinstance(obj.get("audio"), dict) and obj["audio"].get("autoplay")
+            and obj["audio"].get("path")
+        ), "")
+        self.audio_system.set_output_device(requested_device)
         found = 0
         enabled = 0
         for name, obj in self.objects.items():

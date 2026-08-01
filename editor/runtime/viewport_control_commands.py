@@ -67,6 +67,7 @@ class ViewportAudioCommandHandler:
         start_sources: Callable[[], None],
         stop_sources: Callable[[], None],
         play_file: Callable[[str, str, float, bool], None],
+        select_output: Callable[[str], None],
     ) -> None:
         self.objects = objects
         self.channels = channels
@@ -75,6 +76,7 @@ class ViewportAudioCommandHandler:
         self.start_sources = start_sources
         self.stop_sources = stop_sources
         self.play_file = play_file
+        self.select_output = select_output
 
     def handle(self, command: dict[str, Any]) -> bool:
         command_type = str(command.get("type", ""))
@@ -92,6 +94,7 @@ class ViewportAudioCommandHandler:
             self.stop_sources()
             self.emit({"type": "runtime_log", "level": "INFO", "message": "Todos os áudios foram interrompidos"})
         elif command_type == "preview_audio":
+            self.select_output(str(command.get("device", "")))
             self.play_file(
                 "__preview__", str(command.get("path", "")),
                 float(command.get("volume", 1.0)), bool(command.get("loop", False)),

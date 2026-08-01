@@ -100,6 +100,17 @@ class AudioPlaybackSystem:
         self._device_provider = device_provider
         self._configured = False
         self.output_device = "Padrão do sistema"
+        self._requested_device = ""
+
+    def set_output_device(self, device: str) -> None:
+        requested = str(device).strip()
+        if requested == self._requested_device:
+            return
+        self.stop_all()
+        if self.pygame.mixer.get_init():
+            self.pygame.mixer.quit()
+        self._requested_device = requested
+        self._configured = False
 
     @staticmethod
     def preferred_device(devices: list[str], requested: str = "") -> str | None:
@@ -142,7 +153,8 @@ class AudioPlaybackSystem:
             if not self._configured:
                 devices = self._available_devices()
                 selected = self.preferred_device(
-                    devices, os.environ.get("ZENNITY_AUDIO_DEVICE", ""),
+                    devices,
+                    self._requested_device or os.environ.get("ZENNITY_AUDIO_DEVICE", ""),
                 )
                 if selected:
                     if self.pygame.mixer.get_init():

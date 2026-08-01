@@ -294,6 +294,9 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
     def _get_available_audio_files(self) -> list[str]:
         return self._inspector_components.available_audio_files()
 
+    def _get_available_audio_outputs(self) -> list[str]:
+        return self._inspector_components.available_audio_outputs()
+
     def _send_inspector_audio(self) -> None:
         self._inspector_components.send_audio()
 

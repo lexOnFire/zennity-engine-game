@@ -81,6 +81,7 @@ class IsolatedInspectorController(InspectorControllerUIMediaMixin):
         self._bind(h.btn_collapse_audio.clicked, lambda: h._toggle_inspector_card("audio"))
         self._bind(h.btn_delete_audio.clicked, lambda: h.show_audio_chk.setChecked(False))
         self._bind(h.audio_path_combo.activated, lambda _idx: h._send_inspector_audio())
+        self._bind(h.audio_output_combo.activated, lambda _idx: h._send_inspector_audio())
         self._bind(h.audio_volume_field.valueChanged, lambda _value: h._send_inspector_audio())
         self._bind(h.audio_loop_field.toggled, lambda _value: h._send_inspector_audio())
         self._bind(h.audio_autoplay_field.toggled, lambda _value: h._send_inspector_audio())
@@ -265,8 +266,10 @@ class InspectorComponentController(InspectorControllerUIMediaMixin):
         h = self.host
         h._record_history()
         chosen = h.audio_path_combo.currentData() or h.audio_path_combo.currentText()
+        output = h.audio_output_combo.currentData() or h.audio_output_combo.currentText()
         audio.update({
             "path": "" if chosen == "Nenhum" else chosen,
+            "device": "" if output == "Padrão do sistema" else str(output),
             "volume": float(h.audio_volume_field.value()),
             "loop": h.audio_loop_field.isChecked(),
             "autoplay": h.audio_autoplay_field.isChecked(),
@@ -286,6 +289,7 @@ class InspectorComponentController(InspectorControllerUIMediaMixin):
             "type": "preview_audio", "name": name,
             "path": str(audio["path"]), "volume": float(audio.get("volume", 1.0)),
             "loop": bool(audio.get("loop", False)),
+            "device": str(audio.get("device", "")),
         })
 
     def toggle_rigidbody(self, checked: bool) -> None:
@@ -391,6 +395,21 @@ class InspectorComponentController(InspectorControllerUIMediaMixin):
                 except ValueError:
                     result.append(str(path).replace("\\", "/"))
         return sorted(result, key=str.lower)
+
+    @staticmethod
+    def available_audio_outputs() -> list[str]:
+        try:
+            import pygame
+            was_initialized = bool(pygame.mixer.get_init())
+            if not was_initialized:
+                pygame.mixer.init()
+            from pygame._sdl2.audio import get_audio_device_names
+            devices = list(get_audio_device_names(False))
+            if not was_initialized:
+                pygame.mixer.quit()
+            return devices
+        except (ImportError, pygame.error):
+            return []
 
     def _toggle_dictionary_component(
         self, key: str, checked: bool, default: dict[str, Any]

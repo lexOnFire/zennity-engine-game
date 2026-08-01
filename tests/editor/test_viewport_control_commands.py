@@ -32,8 +32,9 @@ def test_audio_commands_route_preview_without_owning_play_state() -> None:
     handler = ViewportAudioCommandHandler(
         {}, {}, {}, calls.append, lambda: calls.append("start"),
         lambda: calls.append("stop"), lambda *args: calls.append(args),
+        lambda device: calls.append(("device", device)),
     )
 
     assert handler.handle({"type": "preview_audio", "path": "tone.wav", "volume": 0.5})
-    assert calls == [("__preview__", "tone.wav", 0.5, False)]
+    assert calls == [("device", ""), ("__preview__", "tone.wav", 0.5, False)]
     assert not handler.handle({"type": "play"})

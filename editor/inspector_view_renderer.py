@@ -59,6 +59,13 @@ class InspectorViewRenderer:
         if audio:
             index = h.audio_path_combo.findData(current_path)
             h.audio_path_combo.setCurrentIndex(index if index >= 0 else 0)
+        h.audio_output_combo.clear()
+        h.audio_output_combo.addItem("Padrão do sistema", "")
+        for device in h._get_available_audio_outputs():
+            h.audio_output_combo.addItem(device, device)
+        current_device = str((audio or {}).get("device", ""))
+        device_index = h.audio_output_combo.findData(current_device)
+        h.audio_output_combo.setCurrentIndex(device_index if device_index >= 0 else 0)
         h.audio_volume_field.setValue(float((audio or {}).get("volume", 1.0)))
         h.audio_loop_field.setChecked(bool((audio or {}).get("loop", False)))
         h.audio_autoplay_field.setChecked(bool((audio or {}).get("autoplay", False)))
