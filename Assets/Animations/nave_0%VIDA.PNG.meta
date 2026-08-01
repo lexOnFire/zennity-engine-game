@@ -1,0 +1,11 @@
+{
+  "guid": "43b34746-3cfd-4ffe-97fc-16aac9b1477f",
+  "uuid": "43b34746-3cfd-4ffe-97fc-16aac9b1477f",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Animations/nave_0%VIDA.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": []
+}

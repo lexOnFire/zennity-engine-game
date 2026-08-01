@@ -59,3 +59,9 @@ scratch/
 zennity-engine-game/
 .coverage
 htmlcov/
+*.exe
+*.winmd
+dump_ui.py
+ui_dump.txt
+search.txt
+

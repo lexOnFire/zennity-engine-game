@@ -1,0 +1,11 @@
+{
+  "guid": "2bd1ef16-39db-4448-8f05-a51c2e0a5536",
+  "uuid": "2bd1ef16-39db-4448-8f05-a51c2e0a5536",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Animations/projetil4_.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": []
+}

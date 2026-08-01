@@ -189,6 +189,9 @@ class ViewportSession(ViewportSessionLifecycleMixin):
         self.native_ui = NativeUIRenderer()
         self.command_queue = ViewportCommandQueue(self.commands)
         
+        self._init_handlers_and_subsystems()
+
+    def _init_handlers_and_subsystems(self) -> None:
         self.edit_commands = ViewportEditCommandHandler(
             self.objects, lambda event: _send(self.events, event),
             self.world_to_screen, self.screen_to_world, lambda: self.view_transform()[2]
@@ -240,6 +243,7 @@ class ViewportSession(ViewportSessionLifecycleMixin):
             lambda event: _send(self.events, event)
         )
         self.contact_processor = ViewportContactProcessor(self.objects, self.active_contacts, self.dispatch_contact)
+
 
     def runtime_log(self, level, message):
         _send(self.events, {"type": "script_log", "level": level, "message": message})

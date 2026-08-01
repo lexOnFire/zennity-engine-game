@@ -1,0 +1,11 @@
+{
+  "guid": "913c83d6-045a-4564-a668-edf72cc94d74",
+  "uuid": "913c83d6-045a-4564-a668-edf72cc94d74",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Animations/ChatGPT Image 25 de jul. de 2026, 23_15_17.png",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": []
+}

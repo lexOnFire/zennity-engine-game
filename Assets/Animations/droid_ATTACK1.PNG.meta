@@ -1,0 +1,11 @@
+{
+  "guid": "b0b77cd0-e4df-42ef-ba4e-c72e31dd9cf8",
+  "uuid": "b0b77cd0-e4df-42ef-ba4e-c72e31dd9cf8",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Animations/droid_ATTACK1.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": []
+}

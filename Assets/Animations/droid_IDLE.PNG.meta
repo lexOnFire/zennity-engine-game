@@ -1,0 +1,11 @@
+{
+  "guid": "867fae0a-ad5b-45e5-b67f-d5bd0c80be6f",
+  "uuid": "867fae0a-ad5b-45e5-b67f-d5bd0c80be6f",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Animations/droid_IDLE.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": []
+}

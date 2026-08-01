@@ -1,7 +1,13 @@
-from __future__ import annotations
-
+import warnings
 from pathlib import Path
 from typing import Any
+
+warnings.warn(
+    "editor.phase1_editor está deprecado (legado embutido). O entrypoint oficial é editor.phase1_main.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QAction, QActionGroup, QKeySequence, QShortcut

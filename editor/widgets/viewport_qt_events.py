@@ -11,6 +11,11 @@ from PySide6.QtGui import QKeyEvent, QMouseEvent, QWheelEvent
 
 class ViewportQtEventsMixin:
     """Isola os manipuladores de eventos de entrada Qt da ViewportWidget."""
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._held_qt_keys = set()
+
 
     def _qt_btn_to_pg(self, btn: Qt.MouseButton) -> int:
         if btn == Qt.LeftButton:
@@ -123,6 +128,9 @@ class ViewportQtEventsMixin:
 
         pg_key = self._qt_key_to_pg(event.key())
         if pg_key is not None:
+            if not hasattr(self, "_held_qt_keys"):
+                self._held_qt_keys = set()
+            self._held_qt_keys.add(event.key())
             mod = pygame.KMOD_NONE
             if event.modifiers() & Qt.ControlModifier:
                 mod |= pygame.KMOD_CTRL
@@ -143,6 +151,8 @@ class ViewportQtEventsMixin:
             return
         pg_key = self._qt_key_to_pg(event.key())
         if pg_key is not None:
+            if hasattr(self, "_held_qt_keys"):
+                self._held_qt_keys.discard(event.key())
             mod = pygame.KMOD_NONE
             if event.modifiers() & Qt.ControlModifier:
                 mod |= pygame.KMOD_CTRL
@@ -156,3 +166,22 @@ class ViewportQtEventsMixin:
             event.accept()
         else:
             super().keyReleaseEvent(event)
+
+    def focusOutEvent(self, event) -> None:
+        if not self.active_scene:
+            super().focusOutEvent(event)
+            return
+        if hasattr(self, "_held_qt_keys"):
+            for qt_key in list(self._held_qt_keys):
+                pg_key = self._qt_key_to_pg(qt_key)
+                if pg_key is not None:
+                    pg_ev = pygame.event.Event(
+                        pygame.KEYUP,
+                        key=pg_key,
+                        mod=pygame.KMOD_NONE,
+                        unicode="",
+                    )
+                    self.active_scene.handle_event(pg_ev)
+            self._held_qt_keys.clear()
+        super().focusOutEvent(event)
+

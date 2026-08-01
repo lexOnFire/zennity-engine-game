@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
 )
 
 from editor.ui.icons import editor_icon
+from engine.i18n import tr
 
 from .views import LogicGraphView, LogicMiniMapView
 
@@ -87,6 +88,10 @@ def build_logic_graph_ui(self) -> None:
     self.target_value.setMaximumWidth(150)
     toolbar.addWidget(self.target_type)
     toolbar.addWidget(self.target_value)
+    self.help_button = QPushButton("Ajuda")
+    self.help_button.setToolTip(tr("editor.help.tooltip", "Dicionário de nós e documentação"))
+    self.help_button.clicked.connect(lambda: right_tabs.setCurrentWidget(self.help_dock))
+    toolbar.addWidget(self.help_button)
     toolbar.addStretch(1)
     self.fit_button = QPushButton("Enquadrar")
     self.undo_button = QPushButton("Desfazer")
@@ -124,7 +129,18 @@ def build_logic_graph_ui(self) -> None:
     categories.setSpacing(6)
     categories.addWidget(QLabel("Categoria"))
     self.category_combo = QComboBox()
-    self.category_combo.addItems(("Movimento", "Posição", "Ação", "Lógica", "Condição", "Eventos", "Objetos", "Variáveis", "Matemática", "Texto", "Subgrafos", "Todos"))
+    self.category_combo.addItem(tr("graph.categories.movement", "Movimento"), "Movement")
+    self.category_combo.addItem(tr("graph.categories.position", "Posição"), "Position")
+    self.category_combo.addItem(tr("graph.categories.action", "Ação"), "Action")
+    self.category_combo.addItem(tr("graph.categories.logic", "Lógica"), "Logic")
+    self.category_combo.addItem(tr("graph.categories.condition", "Condição"), "Condition")
+    self.category_combo.addItem(tr("graph.categories.events", "Eventos"), "Events")
+    self.category_combo.addItem(tr("graph.categories.objects", "Objetos"), "Objects")
+    self.category_combo.addItem(tr("graph.categories.variables", "Variáveis"), "Variables")
+    self.category_combo.addItem(tr("graph.categories.math", "Matemática"), "Math")
+    self.category_combo.addItem(tr("graph.categories.text", "Texto"), "Text")
+    self.category_combo.addItem(tr("graph.categories.subgraphs", "Subgrafos"), "Subgraphs")
+    self.category_combo.addItem(tr("graph.categories.all", "Todos"), "All")
     self.category_combo.setMinimumWidth(150)
     self.category_combo.setToolTip("Filtra a biblioteca de blocos por categoria")
     categories.addWidget(self.category_combo)
@@ -256,6 +272,9 @@ def build_logic_graph_ui(self) -> None:
 
     self.scene = QGraphicsScene(self)
     self.scene.setSceneRect(-2000.0, -1400.0, 4000.0, 2800.0)
+    canvas_splitter = QSplitter(Qt.Vertical)
+    canvas_splitter.setChildrenCollapsible(False)
+    
     canvas_panel = QWidget()
     canvas_layout = QVBoxLayout(canvas_panel)
     canvas_layout.setContentsMargins(0, 0, 0, 0)
@@ -267,8 +286,17 @@ def build_logic_graph_ui(self) -> None:
     self.minimap = LogicMiniMapView(self.scene, self)
     minimap_row.addWidget(self.minimap)
     canvas_layout.addLayout(minimap_row)
-    splitter.addWidget(canvas_panel)
+    canvas_splitter.addWidget(canvas_panel)
+    
+    from editor.widgets.phase1_viewport import Phase1ViewportWidget
+    self.mini_viewport = Phase1ViewportWidget()
+    canvas_splitter.addWidget(self.mini_viewport)
+    
+    splitter.addWidget(canvas_splitter)
 
+    right_tabs = QTabWidget()
+    right_tabs.setObjectName("LogicRightTabs")
+    
     properties_panel = QFrame()
     properties_panel.setObjectName("LogicPropertiesPanel")
     properties_layout = QVBoxLayout(properties_panel)
@@ -331,7 +359,13 @@ def build_logic_graph_ui(self) -> None:
     property_hint.setWordWrap(True)
     properties_layout.addWidget(property_hint)
     properties_panel.setMinimumWidth(230)
-    splitter.addWidget(properties_panel)
+    right_tabs.addTab(properties_panel, tr("editor.tabs.properties", "Propriedades"))
+    
+    from .help_dock import LogicHelpDock
+    self.help_dock = LogicHelpDock()
+    right_tabs.addTab(self.help_dock, tr("editor.tabs.help", "Ajuda"))
+    
+    splitter.addWidget(right_tabs)
     splitter.setStretchFactor(0, 0)
     splitter.setStretchFactor(1, 1)
     splitter.setStretchFactor(2, 0)

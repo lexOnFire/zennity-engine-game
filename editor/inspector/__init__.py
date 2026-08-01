@@ -1,7 +1,13 @@
-from __future__ import annotations
-
+import warnings
 from editor.inspector.plugin import InspectorPlugin
 from editor.inspector.plugin_registry import InspectorPluginRegistry
+
+warnings.warn(
+    "editor.inspector (Inspector Plugin System) está deprecado e agendado para remoção na v2.0.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 from editor.inspector.script_plugin import ScriptInspectorPlugin
 
 _registry: InspectorPluginRegistry | None = None

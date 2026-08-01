@@ -5,6 +5,8 @@ import random
 from copy import deepcopy
 from typing import Any, Mapping
 
+from .registry import registry
+
 
 def evaluate_output(
     runtime: Any,
@@ -133,6 +135,10 @@ def evaluate_output(
         raw = runtime._read_input(node_id, "condition", properties.get("condition", False), game, dt, resolving)
         value = runtime._condition(raw)
     else:
-        value = runtime.values.get(node_id, properties.get(port))
+        evaluator = registry.evaluators.get(node_type)
+        if evaluator:
+            value = evaluator(runtime, node_id, port, node, game, dt, resolving)
+        else:
+            value = runtime.values.get(node_id, properties.get(port))
     return runtime._store(node_id, port, value)
 
