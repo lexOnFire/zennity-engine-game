@@ -18,6 +18,7 @@ class EditorEventRouter:
         ".zanim", ".zanimator", ".zlogic", ".png", ".jpg", ".jpeg", ".bmp", ".webp",
     }
     IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".webp"}
+    INPUT_RESET_EVENTS = {QEvent.FocusOut, QEvent.WindowDeactivate, QEvent.ApplicationDeactivate}
 
     def __init__(self, editor: Any) -> None:
         self.editor = editor
@@ -53,6 +54,9 @@ class EditorEventRouter:
 
     def _runtime_input(self, event: Any) -> bool | None:
         editor = self.editor
+        if editor._runtime_playing and event.type() in self.INPUT_RESET_EVENTS:
+            self.reset_runtime_input("foco alterado")
+            return None
         key = self.KEY_MAP.get(event.key()) if event.type() in {
             QEvent.ShortcutOverride, QEvent.KeyPress, QEvent.KeyRelease,
         } else None
@@ -67,6 +71,16 @@ class EditorEventRouter:
             editor._commands.put({"type": "runtime_input", "keys": dict(editor._runtime_keys)})
             editor.statusBar().showMessage(f"Play Input: {key} {'ON' if pressed else 'OFF'}")
         return True
+
+    def reset_runtime_input(self, reason: str = "") -> None:
+        editor = self.editor
+        if not getattr(editor, "_runtime_playing", False):
+            return
+        changed = any(editor._runtime_keys.values())
+        editor._runtime_keys = {key: False for key in editor._runtime_keys}
+        editor._commands.put({"type": "runtime_input", "keys": dict(editor._runtime_keys)})
+        if changed and reason:
+            editor.statusBar().showMessage(f"Play Input liberado: {reason}")
 
     def _drop(self, watched: Any, event: Any) -> bool | None:
         editor = self.editor

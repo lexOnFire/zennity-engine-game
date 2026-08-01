@@ -43,6 +43,8 @@ class ViewportControlCommandHandler:
             mode = str(command.get("mode", "scene")).lower()
             if mode in {"scene", "game"}:
                 values["view_mode"] = mode
+                for key in self.forwarded_input:
+                    self.forwarded_input[key] = False
         elif command_type == "set_snap":
             values["snap_enabled"] = bool(command.get("enabled", False))
             values["snap_size"] = max(0.01, float(command.get("size", 16.0)))

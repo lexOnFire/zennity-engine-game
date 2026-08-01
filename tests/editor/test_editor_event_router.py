@@ -55,6 +55,23 @@ def test_runtime_input_uses_static_key_map_and_sends_only_state_changes() -> Non
     assert "KEY_MAP" not in router.__dict__
 
 
+def test_runtime_input_is_released_when_editor_focus_changes() -> None:
+    commands = Commands()
+    editor = SimpleNamespace(
+        _runtime_playing=True,
+        _runtime_keys={"left": True, "right": False},
+        _commands=commands,
+        statusBar=lambda: SimpleNamespace(showMessage=lambda _message: None),
+    )
+    router = EditorEventRouter(editor)
+
+    assert router._runtime_input(SimpleNamespace(type=lambda: QEvent.FocusOut)) is None
+    assert editor._runtime_keys == {"left": False, "right": False}
+    assert commands.values[-1] == {
+        "type": "runtime_input", "keys": {"left": False, "right": False},
+    }
+
+
 def test_editor_event_filter_only_delegates_and_falls_back() -> None:
     source = open("editor/isolated_editor_main.py", encoding="utf-8").read()
     block = source[source.index("    def eventFilter"):source.index("    def _flush_viewport_resize")]

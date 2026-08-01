@@ -176,6 +176,8 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
 
     def _change_view_mode(self, index: int) -> None:
         mode = "game" if int(index) == 1 else "scene"
+        if hasattr(self, "_event_router"):
+            self._event_router.reset_runtime_input("troca de Scene/Game")
         self._commands.put({
             "type": "set_view_mode",
             "mode": mode,
