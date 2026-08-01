@@ -1,5 +1,13 @@
+import warnings
 import sys
 import os
+
+warnings.warn(
+    "editor.windows.main_window está deprecado (janela legada). O entrypoint oficial é editor.phase1_main.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QMenuBar, QMenu, QToolBar, QStatusBar,
     QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox,

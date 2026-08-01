@@ -1,0 +1,9 @@
+{
+  "guid": "46b55962-bbbc-4755-9afc-f259d0f71300",
+  "uuid": "46b55962-bbbc-4755-9afc-f259d0f71300",
+  "type": "script",
+  "importer": "script_importer",
+  "source_path": "Assets/Scripts/enemy_ai.py",
+  "import_settings": {},
+  "dependencies": []
+}

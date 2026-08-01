@@ -1,0 +1,11 @@
+{
+  "guid": "017330ac-3248-473b-b682-253646a4a722",
+  "uuid": "017330ac-3248-473b-b682-253646a4a722",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Animations/projetil6_.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": []
+}

@@ -1,6 +1,17 @@
+import warnings
 import pygame
 from typing import Dict, List, Tuple, Optional, Any
 from ..core.component import Component
+from engine.tilemap.tilemap import TileMap, TilemapRenderer, TileLayer
+
+warnings.warn(
+    "engine.graphics.tilemap está deprecado. Use engine.tilemap.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+Tilemap = TileMap
+
 
 class Tileset:
     """

@@ -4,7 +4,7 @@ import random
 from typing import Any, Mapping
 from ..registry import registry
 
-@registry.register_executor('input_axis')
+@registry.register_executor(('input_axis', 'read_key_axis'))
 def execute_input_axis(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
     node_id = str(node['id'])
     node_type = str(node.get('type'))
@@ -52,7 +52,7 @@ def execute_compare_text(runtime, node: Mapping[str, Any], game: Any, dt: float)
     condition = bool(runtime._evaluate_output(node_id, "value", game, dt, set()))
     return ["true" if condition else "false"]
 
-@registry.register_evaluator('input_axis')
+@registry.register_evaluator(('input_axis', 'read_key_axis'))
 def evaluate_input_axis(runtime, node_id: str, port: str, node: Mapping[str, Any], game: Any, dt: float, branch: set[str]) -> Any:
     node_type = str(node.get('type'))
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}

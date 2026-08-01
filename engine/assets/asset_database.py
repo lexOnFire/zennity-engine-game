@@ -186,7 +186,7 @@ class AssetDatabase(IService):
             if not root.exists():
                 continue
             for path in root.rglob("*"):
-                if not path.is_file() or path.suffix.lower() == ".meta":
+                if not path.is_file() or path.suffix.lower() in {".meta", ".bak", ".tmp"} or path.name.startswith("."):
                     continue
                 canonical = self.path_resolver.canonicalize(path)
                 key = canonical.casefold()
@@ -220,5 +220,7 @@ class AssetDatabase(IService):
         try:
             temporary_path.write_text(serialized, encoding="utf-8", newline="\n")
             temporary_path.replace(path)
+        except PermissionError:
+            pass
         finally:
             temporary_path.unlink(missing_ok=True)

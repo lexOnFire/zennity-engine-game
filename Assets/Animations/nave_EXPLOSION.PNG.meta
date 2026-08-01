@@ -1,0 +1,11 @@
+{
+  "guid": "35d33219-d274-4903-9871-75ae4cb47dad",
+  "uuid": "35d33219-d274-4903-9871-75ae4cb47dad",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Animations/nave_EXPLOSION.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": []
+}

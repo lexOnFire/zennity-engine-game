@@ -1,0 +1,11 @@
+{
+  "guid": "9500c6cf-cfa9-4239-8ec9-406a5209608a",
+  "uuid": "9500c6cf-cfa9-4239-8ec9-406a5209608a",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Animations/projetil9_.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": []
+}

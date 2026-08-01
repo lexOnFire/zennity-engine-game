@@ -1,0 +1,45 @@
+{
+  "format_version": 2,
+  "prefab_name": "EnemyScoutPro",
+  "exposed_properties": [
+    {
+      "name": "speed",
+      "label": "Velocidade",
+      "type": "number",
+      "default": 220.0,
+      "target": "gameplay.speed"
+    }
+  ],
+  "object": {
+    "name": "EnemyScoutPro",
+    "x": 0.0,
+    "y": 0.0,
+    "w": 40.0,
+    "h": 40.0,
+    "rotation": 0.0,
+    "color": [
+      255,
+      60,
+      60
+    ],
+    "tag": "Enemy",
+    "layer": "Default",
+    "renderer_enabled": true,
+    "collider": {
+      "type": "box",
+      "width": 40.0,
+      "height": 40.0,
+      "is_trigger": true
+    },
+    "rigidbody": {
+      "mass": 1.0,
+      "use_gravity": false,
+      "is_kinematic": true,
+      "gravity_scale": 0.0
+    },
+    "gameplay": {
+      "hp": 25.0,
+      "score_value": 10.0
+    }
+  }
+}
