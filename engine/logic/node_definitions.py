@@ -446,6 +446,16 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
         "outputs": [('next', 'flow')],
         "properties": {},
     },
+    "set_ui_text": {
+        "title": "Atualizar texto da UI", "category": "UI",
+        "inputs": [('in', 'flow'), ('text', 'text')], "outputs": [('next', 'flow')],
+        "properties": {"object": "", "text": ""},
+    },
+    "set_ui_progress_bar": {
+        "title": "Atualizar barra da UI", "category": "UI",
+        "inputs": [('in', 'flow'), ('value', 'number')], "outputs": [('next', 'flow')],
+        "properties": {"object": "", "value": 100.0, "max_value": 100.0},
+    },
     "random_number": {
         "title": "Random Number",
         "category": "Logic",

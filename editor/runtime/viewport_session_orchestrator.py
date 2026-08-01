@@ -119,6 +119,17 @@ class ViewportSessionOrchestrator:
                 self.hud_entries.set_entry(dict(value))
             elif command == "remove_hud":
                 self.hud_entries.remove_entry(str(value))
+            elif command == "set_ui_text" and isinstance(value, dict):
+                target = self.objects.get(str(value.get("object", "")))
+                ui = target.get("ui") if isinstance(target, dict) else None
+                if isinstance(ui, dict) and ui.get("type") in {"text", "button"}:
+                    ui["text"] = str(value.get("text", ""))
+            elif command == "set_ui_progress" and isinstance(value, dict):
+                target = self.objects.get(str(value.get("object", "")))
+                ui = target.get("ui") if isinstance(target, dict) else None
+                if isinstance(ui, dict) and ui.get("type") == "progress_bar":
+                    ui["value"] = float(value.get("value", 0.0))
+                    ui["max_value"] = max(0.0001, float(value.get("max_value", 100.0)))
             elif command == "restart_scene":
                 restart = True
             elif command:

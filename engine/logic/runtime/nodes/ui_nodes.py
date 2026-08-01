@@ -5,14 +5,29 @@ from typing import Any, Mapping
 from ..registry import registry
 
 
+def _input(runtime: Any, node_id: str, port: str, default: Any, game: Any, dt: float) -> Any:
+    reader = getattr(runtime, "_read_input", None)
+    if callable(reader):
+        return reader(node_id, port, default, game, dt, set())
+    evaluator = getattr(runtime, "_evaluate_input")
+    value = evaluator(node_id, port, game, dt, set())
+    return default if value is None else value
+
+
 @registry.register_executor('set_ui_text')
 def execute_set_ui_text(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
     """Define o texto de um elemento de UI (UILabel / LabelComponent)."""
     node_id = str(node['id'])
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
 
+    text_val = str(_input(runtime, node_id, "text", properties.get("text", ""), game, dt))
+    object_name = str(properties.get("object", properties.get("object_name", ""))).strip()
+
+    if object_name and callable(getattr(game, "set_ui_text", None)):
+        game.set_ui_text(object_name, text_val)
+        return ["next"]
+
     target = runtime._read_target(node_id, game, dt, set())
-    text_val = str(runtime._evaluate_input(node_id, "text", game, dt, set()) or properties.get("text", ""))
 
     if target is not None:
         if hasattr(target, "text"):
@@ -33,8 +48,15 @@ def execute_set_ui_progress_bar(runtime, node: Mapping[str, Any], game: Any, dt:
     node_id = str(node['id'])
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
 
+    value_val = float(_input(runtime, node_id, "value", properties.get("value", 0.0), game, dt))
+    maximum = float(properties.get("max_value", 100.0))
+    object_name = str(properties.get("object", properties.get("object_name", ""))).strip()
+
+    if object_name and callable(getattr(game, "set_ui_progress", None)):
+        game.set_ui_progress(object_name, value_val, maximum)
+        return ["next"]
+
     target = runtime._read_target(node_id, game, dt, set())
-    value_val = float(runtime._evaluate_input(node_id, "value", game, dt, set()) or properties.get("value", 0.0))
 
     if target is not None:
         if hasattr(target, "set_value"):

@@ -147,6 +147,8 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "play_animation_asset": {"inputs": [("in", "flow"), ("path", "text")], "outputs": [("next", "flow")]},
     "stop_animation": {"inputs": [("in", "flow")], "outputs": [("next", "flow")]},
     "play_sound": {"inputs": [("in", "flow"), ("path", "text")], "outputs": [("next", "flow")]},
+    "set_ui_text": {"inputs": [("in", "flow"), ("text", "text")], "outputs": [("next", "flow")]},
+    "set_ui_progress_bar": {"inputs": [("in", "flow"), ("value", "number")], "outputs": [("next", "flow")]},
     "set_sprite": {"inputs": [("in", "flow"), ("target", "object"), ("path", "text")], "outputs": [("next", "flow")]},
     "start_texture_scroll": {
         "inputs": [

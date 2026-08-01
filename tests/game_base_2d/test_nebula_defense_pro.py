@@ -34,6 +34,9 @@ def test_pro_scene_hydrates_logic_and_native_hud() -> None:
     assert objects["ScoreText"]["ui"]["type"] == "text"
     assert objects["ShieldBar"]["ui"]["type"] == "progress_bar"
     assert objects["HealthBar"]["ui"]["value"] == 100.0
+    assert objects["WaveText"]["ui"]["anchor"] == "top_right"
+    assert objects["ShieldBar"]["ui"]["anchor"] == "bottom_left"
+    assert objects["HealthBar"]["ui"]["margin_y"] == 60.0
     assert objects["PlayerShip"]["collider"]["is_trigger"] is False
 
 

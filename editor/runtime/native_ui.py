@@ -43,6 +43,9 @@ def normalize_ui(data: Any) -> dict[str, Any] | None:
         "interactable": True,
         "event": "click",
         "target": "",
+        "anchor": "",
+        "margin_x": 16.0,
+        "margin_y": 16.0,
         "value": 100.0,
         "max_value": 100.0,
         "fill_color": [46, 204, 113],
@@ -142,11 +145,23 @@ class NativeUIRenderer:
         return None
 
     @staticmethod
-    def _rect(ui: dict[str, Any]) -> pygame.Rect:
-        return pygame.Rect(
-            int(ui.get("x", 0)), int(ui.get("y", 0)),
-            max(1, int(ui.get("width", 1))), max(1, int(ui.get("height", 1))),
-        )
+    def _rect(ui: dict[str, Any], screen: pygame.Surface | None = None) -> pygame.Rect:
+        width = max(1, int(ui.get("width", 1)))
+        height = max(1, int(ui.get("height", 1)))
+        x, y = int(ui.get("x", 0)), int(ui.get("y", 0))
+        if screen is not None:
+            screen_width, screen_height = screen.get_size()
+            anchor = str(ui.get("anchor", "")).strip().lower().replace("-", "_")
+            margin_x, margin_y = int(ui.get("margin_x", 16)), int(ui.get("margin_y", 16))
+            if anchor in {"top_right", "bottom_right"}:
+                x = screen_width - width - margin_x
+            elif anchor in {"top_left", "bottom_left"}:
+                x = margin_x
+            if anchor in {"bottom_left", "bottom_right"}:
+                y = screen_height - height - margin_y
+            elif anchor in {"top_left", "top_right"}:
+                y = margin_y
+        return pygame.Rect(x, y, width, height)
 
     def _font(self, size: int, bold: bool = False) -> pygame.font.Font:
         key = (max(8, min(160, int(size))), bool(bold))
@@ -157,10 +172,10 @@ class NativeUIRenderer:
     def _draw_text(self, ui: dict[str, Any], screen: pygame.Surface) -> None:
         color = tuple(ui.get("color", (255, 255, 255)))[:3]
         surface = self._font(int(ui.get("font_size", 24))).render(str(ui.get("text", "")), True, color)
-        screen.blit(surface, (int(ui.get("x", 0)), int(ui.get("y", 0))))
+        screen.blit(surface, self._rect(ui, screen).topleft)
 
     def _draw_image(self, ui: dict[str, Any], screen: pygame.Surface) -> None:
-        rect = self._rect(ui)
+        rect = self._rect(ui, screen)
         path_text = str(ui.get("path", ""))
         surface = self._load_image(path_text) if path_text else None
         if surface is None:
@@ -176,7 +191,7 @@ class NativeUIRenderer:
         screen.blit(surface, rect.topleft)
 
     def _draw_button(self, ui: dict[str, Any], screen: pygame.Surface) -> None:
-        rect = self._rect(ui)
+        rect = self._rect(ui, screen)
         enabled = bool(ui.get("interactable", True))
         pygame.draw.rect(screen, (56, 91, 155) if enabled else (60, 60, 65), rect, border_radius=6)
         pygame.draw.rect(screen, (115, 151, 216) if enabled else (90, 90, 95), rect, 1, border_radius=6)
@@ -186,7 +201,7 @@ class NativeUIRenderer:
         screen.blit(text, (rect.centerx - text.get_width() // 2, rect.centery - text.get_height() // 2))
 
     def _draw_progress_bar(self, ui: dict[str, Any], screen: pygame.Surface) -> None:
-        rect = self._rect(ui)
+        rect = self._rect(ui, screen)
         maximum = max(0.0001, float(ui.get("max_value", 100.0)))
         ratio = max(0.0, min(1.0, float(ui.get("value", maximum)) / maximum))
         pygame.draw.rect(screen, tuple(ui.get("bg_color", (28, 35, 48)))[:3], rect, border_radius=4)

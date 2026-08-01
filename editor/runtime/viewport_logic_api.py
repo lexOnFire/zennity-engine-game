@@ -449,6 +449,12 @@ class PlayLogicAPI:
         """Atualiza um componente UI Text pelo nome do objeto da Hierarchy."""
         self.send("set_ui_text", {"object": str(object_name), "text": str(text)})
 
+    def set_ui_progress(self, object_name: str, value: float, maximum: float = 100.0) -> None:
+        """Atualiza uma barra de progresso nativa pelo nome na Hierarchy."""
+        self.send("set_ui_progress", {
+            "object": str(object_name), "value": float(value), "max_value": float(maximum),
+        })
+
     def restart(self) -> None:
         """Restaura o snapshot capturado quando o Play Mode começou."""
         self.send("restart_scene")

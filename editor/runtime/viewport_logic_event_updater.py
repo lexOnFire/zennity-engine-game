@@ -119,6 +119,13 @@ class ViewportLogicEventUpdater:
             if target is not None and ui is not None and ui["type"] in {"text", "button"}:
                 ui["text"] = str(value.get("text", ""))
                 target["ui"] = ui
+        elif command == "set_ui_progress" and isinstance(value, dict):
+            target = self.objects.get(str(value.get("object", "")))
+            ui = self.normalize_ui(target.get("ui")) if target is not None else None
+            if target is not None and ui is not None and ui["type"] == "progress_bar":
+                ui["value"] = float(value.get("value", 0.0))
+                ui["max_value"] = max(0.0001, float(value.get("max_value", 100.0)))
+                target["ui"] = ui
         return command == "restart_scene"
 
     @staticmethod

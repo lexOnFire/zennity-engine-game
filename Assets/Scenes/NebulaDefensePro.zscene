@@ -164,11 +164,6 @@
         "material": "Default_Material"
       },
       "components": {
-        "collider": {
-          "width": 50.0,
-          "height": 50.0,
-          "is_trigger": false
-        },
         "logic_graph": {
           "graph_path": "Assets/Logic/NebulaDefensePro/NebulaPlayerPro.zlogic"
         },
@@ -177,10 +172,17 @@
           "use_gravity": false,
           "is_kinematic": true,
           "gravity_scale": 0.0
+        },
+        "collider": {
+          "width": 50.0,
+          "height": 50.0,
+          "is_trigger": false
         }
       },
       "editor_data": {
-        "logic_assets": ["Assets/Logic/NebulaDefensePro/NebulaPlayerPro.zlogic"]
+        "logic_assets": [
+          "Assets/Logic/NebulaDefensePro/NebulaPlayerPro.zlogic"
+        ]
       },
       "static": false
     },
@@ -224,11 +226,6 @@
         "material": "Default_Material"
       },
       "components": {
-        "collider": {
-          "width": 160.0,
-          "height": 90.0,
-          "is_trigger": true
-        },
         "logic_graph": {
           "graph_path": "Assets/Logic/NebulaDefensePro/NebulaBoss.zlogic"
         },
@@ -237,10 +234,17 @@
           "use_gravity": false,
           "is_kinematic": true,
           "gravity_scale": 0.0
+        },
+        "collider": {
+          "width": 160.0,
+          "height": 90.0,
+          "is_trigger": true
         }
       },
       "editor_data": {
-        "logic_assets": ["Assets/Logic/NebulaDefensePro/NebulaBoss.zlogic"]
+        "logic_assets": [
+          "Assets/Logic/NebulaDefensePro/NebulaBoss.zlogic"
+        ]
       },
       "static": false
     },
@@ -289,7 +293,9 @@
         }
       },
       "editor_data": {
-        "logic_assets": ["Assets/Logic/NebulaDefensePro/NebulaGameManagerPro.zlogic"]
+        "logic_assets": [
+          "Assets/Logic/NebulaDefensePro/NebulaGameManagerPro.zlogic"
+        ]
       },
       "static": false
     },
@@ -338,7 +344,42 @@
           "order": 100
         },
         "items": [
-          {"type":"Canvas","enabled":true,"properties":{"visible":true,"z_order":100}}
+          {
+            "type": "Canvas",
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "x": 16.0,
+              "y": 16.0,
+              "width": 180.0,
+              "height": 42.0,
+              "z_order": 100,
+              "text": "",
+              "font_size": 24,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
+              "sprite_path": ""
+            }
+          }
         ]
       },
       "children": [
@@ -464,28 +505,333 @@
       "static": false
     },
     {
-      "id":"score-text","name":"ScoreText","tag":"UI","layer":"UI","active":true,"enabled":true,"static":false,
-      "transform":{"position":[40.0,30.0,0.0],"rotation":[0.0,0.0,0.0],"rz":0.0,"scale":[240.0,40.0,1.0]},
-      "visual":{"enabled":false,"material":"Default_Material","mesh_type":null,"color":[255,255,255],"texture":"","layer":"UI","order":101},
-      "components":{"items":[{"type":"Label","enabled":true,"properties":{"text":"SCORE: 0000","x":40.0,"y":30.0,"width":240.0,"height":40.0,"font_size":24,"color":[255,255,255],"z_order":101}}]}
+      "id": "score-text",
+      "name": "ScoreText",
+      "tag": "UI",
+      "layer": "UI",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "transform": {
+        "position": [
+          40.0,
+          30.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          240.0,
+          40.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": false,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          255,
+          255,
+          255
+        ],
+        "texture": "",
+        "layer": "UI",
+        "order": 101
+      },
+      "components": {
+        "items": [
+          {
+            "type": "Label",
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "x": 40.0,
+              "y": 30.0,
+              "width": 240.0,
+              "height": 40.0,
+              "z_order": 101,
+              "text": "SCORE: 0000",
+              "font_size": 24,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
+              "sprite_path": ""
+            }
+          }
+        ]
+      }
     },
     {
-      "id":"wave-text","name":"WaveText","tag":"UI","layer":"UI","active":true,"enabled":true,"static":false,
-      "transform":{"position":[1060.0,30.0,0.0],"rotation":[0.0,0.0,0.0],"rz":0.0,"scale":[180.0,40.0,1.0]},
-      "visual":{"enabled":false,"material":"Default_Material","mesh_type":null,"color":[0,240,255],"texture":"","layer":"UI","order":101},
-      "components":{"items":[{"type":"Label","enabled":true,"properties":{"text":"WAVE 1","x":1060.0,"y":30.0,"width":180.0,"height":40.0,"font_size":28,"color":[0,240,255],"z_order":101}}]}
+      "id": "wave-text",
+      "name": "WaveText",
+      "tag": "UI",
+      "layer": "UI",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "transform": {
+        "position": [
+          1060.0,
+          30.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          180.0,
+          40.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": false,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          0,
+          240,
+          255
+        ],
+        "texture": "",
+        "layer": "UI",
+        "order": 101
+      },
+      "components": {
+        "items": [
+          {
+            "type": "Label",
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "x": 1060.0,
+              "y": 30.0,
+              "anchor": "top_right",
+              "margin_x": 40.0,
+              "margin_y": 30.0,
+              "width": 180.0,
+              "height": 40.0,
+              "z_order": 101,
+              "text": "WAVE 1",
+              "font_size": 28,
+              "color": [
+                0,
+                240,
+                255
+              ],
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
+              "sprite_path": ""
+            }
+          }
+        ]
+      }
     },
     {
-      "id":"shield-bar","name":"ShieldBar","tag":"UI","layer":"UI","active":true,"enabled":true,"static":false,
-      "transform":{"position":[40.0,670.0,0.0],"rotation":[0.0,0.0,0.0],"rz":0.0,"scale":[220.0,20.0,1.0]},
-      "visual":{"enabled":false,"material":"Default_Material","mesh_type":null,"color":[0,200,255],"texture":"","layer":"UI","order":101},
-      "components":{"items":[{"type":"ProgressBar","enabled":true,"properties":{"x":40.0,"y":670.0,"width":220.0,"height":20.0,"value":100.0,"max_value":100.0,"fill_color":[0,200,255],"bg_color":[20,30,50],"z_order":101}}]}
+      "id": "shield-bar",
+      "name": "ShieldBar",
+      "tag": "UI",
+      "layer": "UI",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "transform": {
+        "position": [
+          40.0,
+          670.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          220.0,
+          20.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": false,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          0,
+          200,
+          255
+        ],
+        "texture": "",
+        "layer": "UI",
+        "order": 101
+      },
+      "components": {
+        "items": [
+          {
+            "type": "ProgressBar",
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "x": 39.0,
+              "y": 670.0,
+              "anchor": "bottom_left",
+              "margin_x": 40.0,
+              "margin_y": 30.0,
+              "width": 219.0,
+              "height": 20.0,
+              "z_order": 101.0,
+              "text": "",
+              "font_size": 24.0,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "alpha": 255.0,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                0,
+                200,
+                255
+              ],
+              "bg_color": [
+                20,
+                30,
+                50
+              ],
+              "sprite_path": ""
+            }
+          }
+        ]
+      }
     },
     {
-      "id":"hp-bar","name":"HealthBar","tag":"UI","layer":"UI","active":true,"enabled":true,"static":false,
-      "transform":{"position":[40.0,640.0,0.0],"rotation":[0.0,0.0,0.0],"rz":0.0,"scale":[220.0,20.0,1.0]},
-      "visual":{"enabled":false,"material":"Default_Material","mesh_type":null,"color":[0,255,100],"texture":"","layer":"UI","order":101},
-      "components":{"items":[{"type":"ProgressBar","enabled":true,"properties":{"x":40.0,"y":640.0,"width":220.0,"height":20.0,"value":100.0,"max_value":100.0,"fill_color":[0,255,100],"bg_color":[20,50,30],"z_order":101}}]}
+      "id": "hp-bar",
+      "name": "HealthBar",
+      "tag": "UI",
+      "layer": "UI",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "transform": {
+        "position": [
+          40.0,
+          640.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          220.0,
+          20.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": false,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          0,
+          255,
+          100
+        ],
+        "texture": "",
+        "layer": "UI",
+        "order": 101
+      },
+      "components": {
+        "items": [
+          {
+            "type": "ProgressBar",
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "x": 40.0,
+              "y": 640.0,
+              "anchor": "bottom_left",
+              "margin_x": 40.0,
+              "margin_y": 60.0,
+              "width": 220.0,
+              "height": 20.0,
+              "z_order": 101,
+              "text": "",
+              "font_size": 24,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                0,
+                255,
+                100
+              ],
+              "bg_color": [
+                20,
+                50,
+                30
+              ],
+              "sprite_path": ""
+            }
+          }
+        ]
+      }
     }
   ]
 }

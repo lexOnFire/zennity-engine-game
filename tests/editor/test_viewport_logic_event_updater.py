@@ -77,3 +77,26 @@ def test_logic_event_updater_isolates_failed_modules_and_applies_jump() -> None:
     assert velocities["Player"] == -500.0
     assert grounded["Player"] is False
     assert events[0]["level"] == "ERROR"
+
+
+def test_logic_event_updater_updates_native_progress_bar() -> None:
+    manager = {"logic_events": [{
+        "command": "set_ui_progress",
+        "value": {"object": "HealthBar", "value": 65.0, "max_value": 100.0},
+    }]}
+    health = {"ui": {"type": "progress_bar", "value": 100.0, "max_value": 100.0}}
+    module = SimpleNamespace(
+        _zennity_update_mode="simple",
+        _zennity_update_hook=lambda _api, _dt: None,
+        on_instruction=lambda _api, _instruction: None,
+    )
+    updater = ViewportLogicEventUpdater(
+        {"Manager": manager, "HealthBar": health}, {"Manager": [("manager.py", module)]},
+        {"Manager": StubAPI()}, {}, StubHud(),
+        lambda value: value, lambda *args: None, lambda *args: None, lambda event: None,
+    )
+
+    updater.update({}, 0.1, {}, {})
+
+    assert health["ui"]["value"] == 65.0
+    assert health["ui"]["max_value"] == 100.0

@@ -81,3 +81,20 @@ def test_native_ui_clear_caches_releases_fonts_and_surfaces() -> None:
 
     assert renderer._fonts == {}
     assert renderer._images == {}
+
+
+def test_native_ui_anchors_hud_inside_resized_viewport() -> None:
+    renderer = NativeUIRenderer()
+    screen = pygame.Surface((800, 450))
+
+    wave = renderer._rect({
+        "width": 180, "height": 40, "anchor": "top_right",
+        "margin_x": 40, "margin_y": 30,
+    }, screen)
+    health = renderer._rect({
+        "width": 220, "height": 20, "anchor": "bottom_left",
+        "margin_x": 40, "margin_y": 60,
+    }, screen)
+
+    assert wave.topleft == (580, 30)
+    assert health.topleft == (40, 370)
