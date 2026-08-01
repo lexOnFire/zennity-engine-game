@@ -18,7 +18,11 @@
       },
       "mission": {
         "type": "text",
-        "value": "Ative o terminal do portal"
+        "value": "Colete 3 células de energia e ative o portal"
+      },
+      "energy": {
+        "type": "number",
+        "value": 0.0
       }
     }
   },
@@ -297,6 +301,34 @@
       }
     },
     {
+      "id":"portal-pilot","name":"PortalPilot","tag":"Player","active":true,"enabled":true,"static":false,"layer":"Default",
+      "transform":{"position":[-430.0,160.0,0.0],"rotation":[0.0,0.0,0.0],"rz":0.0,"scale":[52.0,72.0,1.0]},
+      "visual":{"enabled":true,"mesh_type":"Rectangle","color":[116,255,184],"texture":"","material":"Default_Material","layer":"Default","order":4},
+      "components":{"rigidbody":{"is_kinematic":true,"use_gravity":false},"collider":{"type":"box","width":52.0,"height":72.0,"is_trigger":false}},
+      "editor_data":{"logic_assets":["Assets/Demos/PortalStation/PortalPilot.zlogic"]}
+    },
+    {
+      "id":"energy-cell-a","name":"EnergyCellA","tag":"EnergyCell","active":true,"enabled":true,"static":false,"layer":"Default",
+      "transform":{"position":[-260.0,30.0,0.0],"rotation":[0.0,0.0,0.0],"rz":0.0,"scale":[34.0,34.0,1.0]},
+      "visual":{"enabled":true,"mesh_type":"Circle","color":[255,221,77],"texture":"","material":"Assets/Demos/PortalStation/PortalGlow.zmat","layer":"Default","order":4},
+      "components":{"collider":{"type":"circle","radius":17.0,"is_trigger":true}},
+      "editor_data":{"logic_assets":["Assets/Demos/PortalStation/EnergyCell.zlogic"]}
+    },
+    {
+      "id":"energy-cell-b","name":"EnergyCellB","tag":"EnergyCell","active":true,"enabled":true,"static":false,"layer":"Default",
+      "transform":{"position":[20.0,180.0,0.0],"rotation":[0.0,0.0,0.0],"rz":0.0,"scale":[34.0,34.0,1.0]},
+      "visual":{"enabled":true,"mesh_type":"Circle","color":[255,221,77],"texture":"","material":"Assets/Demos/PortalStation/PortalGlow.zmat","layer":"Default","order":4},
+      "components":{"collider":{"type":"circle","radius":17.0,"is_trigger":true}},
+      "editor_data":{"logic_assets":["Assets/Demos/PortalStation/EnergyCell.zlogic"]}
+    },
+    {
+      "id":"energy-cell-c","name":"EnergyCellC","tag":"EnergyCell","active":true,"enabled":true,"static":false,"layer":"Default",
+      "transform":{"position":[190.0,-20.0,0.0],"rotation":[0.0,0.0,0.0],"rz":0.0,"scale":[34.0,34.0,1.0]},
+      "visual":{"enabled":true,"mesh_type":"Circle","color":[255,221,77],"texture":"","material":"Assets/Demos/PortalStation/PortalGlow.zmat","layer":"Default","order":4},
+      "components":{"collider":{"type":"circle","radius":17.0,"is_trigger":true}},
+      "editor_data":{"logic_assets":["Assets/Demos/PortalStation/EnergyCell.zlogic"]}
+    },
+    {
       "id": "portal-ui-canvas",
       "name": "PortalUICanvas",
       "tag": "UI",
@@ -499,6 +531,12 @@
           }
         ]
       }
+    },
+    {
+      "id":"portal-ui-energy","name":"PortalUIEnergy","tag":"UI","active":true,"enabled":true,"static":true,"layer":"UI",
+      "transform":{"position":[0.0,0.0,0.0],"rotation":[0.0,0.0,0.0],"rz":0.0,"scale":[1.0,1.0,1.0]},
+      "visual":{"enabled":false,"mesh_type":"Empty","color":[255,221,77],"texture":"","material":"Default_Material","layer":"UI","order":0},
+      "components":{"items":[{"type":"ProgressBar","enabled":true,"properties":{"visible":true,"anchor":"bottom_left","margin_x":38.0,"margin_y":38.0,"x":38.0,"y":620.0,"width":260.0,"height":22.0,"z_order":4,"value":0.0,"max_value":3.0,"fill_color":[255,221,77],"bg_color":[28,35,48]}}]}
     },
     {
       "id": "portal-ui-button",

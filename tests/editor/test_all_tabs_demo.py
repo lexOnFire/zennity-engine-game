@@ -28,6 +28,7 @@ DEMO = Path("Assets/Demos/PortalStation")
 def test_portal_station_demo_covers_every_visual_editor_tab() -> None:
     expected = {
         "PortalTerminal.zlogic", "StationDrone.zbehavior",
+        "PortalPilot.zlogic", "EnergyCell.zlogic",
         "StationGuide.zdialogue", "PortalGlow.zmat",
         "PortalAnimator.zanimator", "PortalHUD.zui",
         "PortalStation.zscene",
@@ -36,12 +37,9 @@ def test_portal_station_demo_covers_every_visual_editor_tab() -> None:
 
 
 def test_portal_station_logic_graph_is_valid() -> None:
-    graph = load_logic_graph(DEMO / "PortalTerminal.zlogic")
-    errors = [
-        issue for issue in validate_logic_graph(graph)
-        if issue.get("level") == "error"
-    ]
-    assert errors == []
+    for path in DEMO.glob("*.zlogic"):
+        graph = load_logic_graph(path)
+        assert validate_logic_graph(graph) == [], path.name
 
 
 def test_portal_station_specialized_graphs_are_editable_documents() -> None:
@@ -76,13 +74,20 @@ def test_portal_station_scene_loads_as_one_runtime_ready_experience() -> None:
     assert payload["visual_logic_workspace"].keys() == {
         "logic", "behavior_tree", "dialogue", "material", "animator", "ui"
     }
-    assert {"PortalCore", "PortalTerminal", "StationDrone", "PortalUICanvas"} <= objects.keys()
+    assert {
+        "PortalCore", "PortalTerminal", "StationDrone", "PortalUICanvas",
+        "PortalPilot", "EnergyCellA", "EnergyCellB", "EnergyCellC", "PortalUIEnergy",
+    } <= objects.keys()
     assert objects["PortalTerminal"]["logic_assets"] == [
         "Assets/Demos/PortalStation/PortalTerminal.zlogic"
     ]
     assert objects["StationDrone"]["behavior"]["controller_path"].endswith(
         "StationDroneRuntime.zbehavior"
     )
+    assert objects["PortalPilot"]["logic_assets"] == [
+        "Assets/Demos/PortalStation/PortalPilot.zlogic"
+    ]
+    assert objects["PortalUIEnergy"]["ui"]["max_value"] == 3.0
 
     assert hydrate_logic_graphs(objects, Path.cwd())
     assert objects["PortalTerminal"]["logic_graphs"][0]["graph"]["name"] == "PortalTerminal"
@@ -108,10 +113,10 @@ def test_portal_button_event_changes_gameplay_state() -> None:
     objects = {"PortalTerminal": terminal, "PortalCore": portal}
     bus = LogicEventBus()
     api = PlayLogicAPI("PortalTerminal", terminal, None, objects)
-    runtime = LogicGraphRuntime(
-        graph, BlackboardStore(), "PortalTerminal", bus
-    )
+    store = BlackboardStore()
+    runtime = LogicGraphRuntime(graph, store, "PortalTerminal", bus)
     runtime.start(api)
+    store.set("project", "energy", 3.0, "PortalTerminal")
     hud_values = []
     orchestrator = ViewportSessionOrchestrator(
         objects=objects,
@@ -134,6 +139,46 @@ def test_portal_button_event_changes_gameplay_state() -> None:
 
     assert portal["rotation"] == 45.0
     assert hud_values[-1]["text"] == "PORTAL ATIVO • sistema pronto para travessia"
+
+
+def test_energy_cell_collection_updates_blackboard_hud_audio_and_object() -> None:
+    graph = load_logic_graph(DEMO / "EnergyCell.zlogic")
+    cell = {"name": "EnergyCellA", "tag": "EnergyCell", "active": True, "x": 0.0, "y": 0.0}
+    energy_ui = {"name": "PortalUIEnergy", "ui": {"type": "progress_bar", "value": 0.0, "max_value": 3.0}}
+    player = {"name": "PortalPilot", "tag": "Player", "active": True}
+    objects = {"EnergyCellA": cell, "PortalUIEnergy": energy_ui, "PortalPilot": player}
+    api = PlayLogicAPI("EnergyCellA", cell, None, objects)
+    store = BlackboardStore()
+    runtime = LogicGraphRuntime(graph, store, "EnergyCellA")
+    runtime.start(api)
+
+    runtime.trigger_event("event_trigger_enter", api, payload=type("Other", (), {"tag": "Player"})())
+
+    assert store.get("project", "energy", "EnergyCellA") == 1.0
+    assert cell["active"] is False
+    commands = [event["command"] for event in cell["logic_events"]]
+    assert "set_ui_progress" in commands
+    assert "play_sound" in commands
+
+
+def test_portal_pilot_moves_with_wasd() -> None:
+    graph = load_logic_graph(DEMO / "PortalPilot.zlogic")
+
+    class Game:
+        name = "PortalPilot"
+        x = y = rotation = 0.0
+        @staticmethod
+        def key(name): return name == "d"
+        @staticmethod
+        def key_pressed(_name): return False
+        def move(self, dx, dy=0.0): self.x += dx; self.y += dy
+
+    game = Game()
+    runtime = LogicGraphRuntime(graph, BlackboardStore(), game.name)
+    runtime.start(game)
+    runtime.update(game, 0.5)
+
+    assert game.x == 120.0 and game.y == 0.0
 
 
 @pytest.mark.parametrize(

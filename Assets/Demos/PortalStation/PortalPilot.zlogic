@@ -1,0 +1,26 @@
+{
+  "format":"zennity.logic_graph","version":1,"enabled":true,"name":"Portal Pilot Controller",
+  "target":{"type":"name","value":"PortalPilot"},
+  "variables":{},"editor":{"groups":[],"comments":[{"id":"controls","text":"WASD move o piloto pela estação","position":[20,-80],"width":420,"color":"#22556b"}]},
+  "nodes":[
+    {"id":"update","type":"event_update","title":"A Cada Frame","category":"Events","position":[20,80],"properties":{}},
+    {"id":"w","type":"key_held","title":"W","category":"Condition","position":[260,20],"properties":{"key":"W"}},
+    {"id":"s","type":"key_held","title":"S","category":"Condition","position":[260,140],"properties":{"key":"S"}},
+    {"id":"a","type":"key_held","title":"A","category":"Condition","position":[260,260],"properties":{"key":"A"}},
+    {"id":"d","type":"key_held","title":"D","category":"Condition","position":[260,380],"properties":{"key":"D"}},
+    {"id":"up","type":"move_by","title":"Mover cima","category":"Movement","position":[520,20],"properties":{"x":0,"y":-240}},
+    {"id":"down","type":"move_by","title":"Mover baixo","category":"Movement","position":[520,140],"properties":{"x":0,"y":240}},
+    {"id":"left","type":"move_by","title":"Mover esquerda","category":"Movement","position":[520,260],"properties":{"x":-240,"y":0}},
+    {"id":"right","type":"move_by","title":"Mover direita","category":"Movement","position":[520,380],"properties":{"x":240,"y":0}}
+  ],
+  "edges":[
+    {"id":"u-w","from_node":"update","from_port":"next","to_node":"w","to_port":"in","kind":"flow","order":0},
+    {"id":"u-s","from_node":"update","from_port":"next","to_node":"s","to_port":"in","kind":"flow","order":1},
+    {"id":"u-a","from_node":"update","from_port":"next","to_node":"a","to_port":"in","kind":"flow","order":2},
+    {"id":"u-d","from_node":"update","from_port":"next","to_node":"d","to_port":"in","kind":"flow","order":3},
+    {"id":"w-up","from_node":"w","from_port":"true","to_node":"up","to_port":"in","kind":"flow","order":0},
+    {"id":"s-down","from_node":"s","from_port":"true","to_node":"down","to_port":"in","kind":"flow","order":0},
+    {"id":"a-left","from_node":"a","from_port":"true","to_node":"left","to_port":"in","kind":"flow","order":0},
+    {"id":"d-right","from_node":"d","from_port":"true","to_node":"right","to_port":"in","kind":"flow","order":0}
+  ]
+}
