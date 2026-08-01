@@ -1,13 +1,19 @@
 # Changelog
 
-- Logic Graphs agora possuem grupos redimensionáveis, comentários, minimapa, alinhamento, distribuição, organização automática e histórico de desfazer/refazer.
-- A validação visual destaca conexões inválidas, fluxos inalcançáveis e ciclos de execução perigosos antes do Play.
-- Física fixa, áudio, animação e HUD da Viewport passaram a usar serviços independentes e exportáveis; foi adicionada uma ponte explícita para o ECS oficial.
-- Criar objeto pela Lógica Visual agora pode copiar profundamente o objeto original sem compartilhar componentes; Logic Graphs da cópia ficam desligados por padrão para evitar criação recursiva.
-- Adicionados o evento de tecla acionada uma vez, a condição de tecla mantida e os blocos para iniciar/parar movimento permanente.
-- Ações encadeadas depois de Criar/Clonar/Instanciar Prefab agora recebem o novo objeto como alvo implícito, evitando que o movimento seja aplicado por engano ao Player.
+## v1.0.0 — Architecture & Release Readiness (2026-08-01)
+
+### Refactored & Consolidated
+* **Decomposição Estrutural**: Decomposição das 5 maiores classes do projeto (`ZennityPhase1Editor`, `LogicGraphRuntime`, `Phase1ViewportWidget`, `MainWindow`, `ViewportWidget`) para estarem todas estritamente abaixo do limite de 500 linhas da Definition of Done.
+* **Decomposição de Métodos**: Decompostos construtores e gerenciadores extensos (`ViewportSession.__init__`, `RuntimeWorld.instantiate_prefab`).
+* **Clean Architecture & Unificação de Renderizadores**: Alias e importações unificadas para `engine.graphics.renderer` e `engine.tilemap.tilemap`.
+* **Deprecation Strategy para v2.0**: Adicionados `DeprecationWarning`s explícitos para módulos legados embutidos (`phase1_editor`, `main_window`, `inspector_dock`, `premium_panels`, `editor/inspector/*`).
+* **Estabilidade de Suíte Sequencial**: Implementado reset global de historico de Mocks (`_reset_all_mocks`) garantindo 100% de aprovação sequencial dos 2.207 testes.
+* **Fix UnboundLocalError**: Corrigida inicialização de `is_runtime_scene` em `Phase1ViewportWidget._tick` quando `active_scene` é nulo, com teste de regressão dedicado.
+
+---
 
 ## Pre-Beta Stabilization
+
 
 ### Fixed & Stabilized
 * Corrigido consumo excessivo de memoria nos testes de Input usando estados de tecla esparsos em vez de listas gigantes.
