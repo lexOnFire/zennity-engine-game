@@ -6,6 +6,7 @@ Não importam a janela do editor e podem ser testados sem iniciar Qt.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
 from typing import Any, Callable
 
@@ -87,20 +88,77 @@ class AnimationPlaybackSystem:
 class AudioPlaybackSystem:
     """Controla mixer, sons e canais sem conhecer o loop da Viewport."""
 
-    def __init__(self, pygame_module: Any, project_root: Path, log: Callable[[str, str], None]) -> None:
+    def __init__(
+        self, pygame_module: Any, project_root: Path, log: Callable[[str, str], None],
+        device_provider: Callable[[], list[str]] | None = None,
+    ) -> None:
         self.pygame = pygame_module
         self.project_root = Path(project_root)
         self.log = log
         self.channels: dict[str, Any] = {}
         self.sounds: dict[str, Any] = {}
+        self._device_provider = device_provider
+        self._configured = False
+        self.output_device = "Padrão do sistema"
+
+    @staticmethod
+    def preferred_device(devices: list[str], requested: str = "") -> str | None:
+        """Escolhe uma saída física e evita endpoints virtuais/mix quando possível."""
+        available = [str(name).strip() for name in devices if str(name).strip()]
+        if not available:
+            return None
+        requested = requested.strip().casefold()
+        if requested:
+            exact = next((name for name in available if name.casefold() == requested), None)
+            if exact:
+                return exact
+            partial = next((name for name in available if requested in name.casefold()), None)
+            if partial:
+                return partial
+        positive = ("headphones", "headset", "speakers", "speaker", "fone", "alto-falante")
+        negative = ("virtual", "spatial", "mix", "microphone", "chat", "capture")
+        return max(
+            available,
+            key=lambda name: (
+                sum(5 for word in positive if word in name.casefold())
+                - sum(4 for word in negative if word in name.casefold()),
+                -available.index(name),
+            ),
+        )
+
+    def _available_devices(self) -> list[str]:
+        if self._device_provider is not None:
+            return list(self._device_provider())
+        if not str(getattr(self.pygame, "__name__", "")).startswith("pygame"):
+            return []
+        try:
+            from pygame._sdl2.audio import get_audio_device_names
+            return list(get_audio_device_names(False))
+        except (ImportError, self.pygame.error):
+            return []
 
     def ensure_mixer(self) -> bool:
         try:
-            if not self.pygame.mixer.get_init():
-                self.pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+            if not self._configured:
+                devices = self._available_devices()
+                selected = self.preferred_device(
+                    devices, os.environ.get("ZENNITY_AUDIO_DEVICE", ""),
+                )
+                if selected:
+                    if self.pygame.mixer.get_init():
+                        self.pygame.mixer.quit()
+                    self.pygame.mixer.init(
+                        frequency=44100, size=-16, channels=2, buffer=512,
+                        devicename=selected,
+                    )
+                    self.output_device = selected
+                elif not self.pygame.mixer.get_init():
+                    self.pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+                self._configured = True
+                self.log("INFO", f"Saída de áudio: {self.output_device}")
             self.pygame.mixer.set_num_channels(max(16, self.pygame.mixer.get_num_channels()))
             return True
-        except self.pygame.error as exc:
+        except (TypeError, self.pygame.error) as exc:
             self.log("WARNING", f"Áudio indisponível: {exc}")
             return False
 
@@ -150,6 +208,7 @@ class AudioPlaybackSystem:
         try:
             if self.pygame.mixer.get_init():
                 self.pygame.mixer.quit()
+            self._configured = False
         except self.pygame.error:
             pass
 
