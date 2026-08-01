@@ -397,3 +397,12 @@ def test_bounding_box_draw_no_selection_no_crash() -> None:
     # Sem seleção (selected=None), deve retornar silenciosamente sem erro
     box_renderer.draw(painter, None, lambda x: (0, 0))
     outline_renderer.draw(painter, None, lambda x: (0, 0))
+
+
+def test_tick_handles_null_active_scene_regression(phase1_editor: ZennityPhase1Editor) -> None:
+    """Regressão: garante que _tick() não lança UnboundLocalError quando active_scene é None."""
+    viewport = phase1_editor.viewport
+    viewport.active_scene = None
+    # Deve executar _tick() sem lançar UnboundLocalError em is_runtime_scene
+    viewport._tick()
+

@@ -20,11 +20,11 @@ def test_editor_play_stop_cycle_memory_stability(qapp: QApplication) -> None:
     editor = ZennityPhase1Editor()
     import pygame
 
-    def _reset_pygame_mocks():
-        # Limpa o histórico de chamadas acumulado nos mocks globais do pygame para não falsear o teste de memória
+    def _reset_all_mocks():
+        # Limpa o histórico de chamadas acumulado em todos os mocks para isolar a medição de memória
         import sys
         for mod_name in list(sys.modules.keys()):
-            if "pygame" in mod_name:
+            if "pygame" in mod_name or "editor" in mod_name or "engine" in mod_name:
                 mod = sys.modules[mod_name]
                 for name in dir(mod):
                     attr = getattr(mod, name, None)
@@ -33,6 +33,13 @@ def test_editor_play_stop_cycle_memory_stability(qapp: QApplication) -> None:
                             attr.reset_mock()
                         except Exception:
                             pass
+        for obj in gc.get_objects():
+            if type(obj).__name__ in ("Mock", "MagicMock", "NonCallableMagicMock", "_CallList"):
+                if hasattr(obj, "reset_mock"):
+                    try:
+                        obj.reset_mock()
+                    except Exception:
+                        pass
 
     # Executa ciclos iniciais para aquecer caches e alocações internas estáveis
     for _ in range(10):
@@ -41,7 +48,7 @@ def test_editor_play_stop_cycle_memory_stability(qapp: QApplication) -> None:
         editor.console.log.clear()
         editor.editor_context.commands.clear()
         editor.editor_context.selection.clear()
-        _reset_pygame_mocks()
+        _reset_all_mocks()
         qapp.processEvents()
 
     # Coleta inicial
@@ -56,13 +63,13 @@ def test_editor_play_stop_cycle_memory_stability(qapp: QApplication) -> None:
         editor.console.log.clear()
         editor.editor_context.commands.clear()
         editor.editor_context.selection.clear()
-        _reset_pygame_mocks()
+        _reset_all_mocks()
         qapp.processEvents()
 
     # Coleta final e liberação
     for _ in range(5):
         gc.collect()
-        _reset_pygame_mocks()
+        _reset_all_mocks()
         qapp.processEvents()
 
     final_objects = gc.get_objects()
