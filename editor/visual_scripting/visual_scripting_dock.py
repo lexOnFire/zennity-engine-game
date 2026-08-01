@@ -167,6 +167,7 @@ class VisualScriptingEditorDock(QMainWindow):
         # Visual Profiler Tab (Fase 9)
         from editor.visual_scripting.visual_profiler_widget import VisualProfilerWidget
         self.profiler_widget = VisualProfilerWidget(self.watches_tabs)
+        self.profiler_text = self.profiler_widget  # Legacy public attribute.
         self.watches_tabs.addTab(self.profiler_widget, "📊 Visual Profiler")
 
         self.bottom_panel.addWidget(self.watches_tabs)
@@ -335,7 +336,7 @@ class VisualScriptingEditorDock(QMainWindow):
         if profiler_widget is not None:
             profiler_widget.fps_label.setText(summary)
         profiler_text = getattr(self, "profiler_text", None)
-        if profiler_text is not None:
+        if callable(getattr(profiler_text, "setPlainText", None)):
             profiler_text.setPlainText(summary)
 
     def _new_for_active_object(self) -> None:
