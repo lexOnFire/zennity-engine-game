@@ -17,7 +17,7 @@ class AssetValidationStage(PipelineStage):
         return True
 
 
-class AssetCookingStage(PipelineStage):
+class SingleAssetCookingStage(PipelineStage):
     """Estágio de Transformação/Cooking de Raw Asset para Engine Binary Format."""
 
     def __init__(self) -> None:
@@ -29,3 +29,6 @@ class AssetCookingStage(PipelineStage):
         task.metadata["cooked_size_bytes"] = len(raw) * 128
         task.logs.append(f"Asset cooked para formato binário otimizado: {task.output_data}")
         return True
+
+
+AssetCookingStage = SingleAssetCookingStage

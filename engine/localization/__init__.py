@@ -3,6 +3,6 @@ from .events import LocalizationChangedEvent
 try:
     from .keys import LocaleKeys
 except ImportError:
-    class LocaleKeys: pass
+    LocaleKeys = object
 
 __all__ = ["LocalizationManager", "tr", "LocaleKeys", "LocalizationChangedEvent"]

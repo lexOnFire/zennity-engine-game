@@ -94,7 +94,7 @@ class PerformanceChartWidget(QWidget):
         painter.end()
 
 
-class ProfilerDock(QDockWidget):
+class ViewportProfilerDock(QDockWidget):
     """
     Painel acoplável do Profiler de Performance e Estatísticas de Física.
     Componente 'View' na arquitetura MVVM do editor (Semana 15).
@@ -194,3 +194,6 @@ class ProfilerDock(QDockWidget):
                 sz = pygame.display.get_surface().get_size()
                 base += (sz[0] * sz[1] * 4) / (1024 * 1024)
             return base
+
+
+ProfilerDock = ViewportProfilerDock

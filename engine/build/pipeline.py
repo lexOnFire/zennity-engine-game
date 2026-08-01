@@ -17,7 +17,7 @@ class BuildProfile:
 
 
 @dataclass
-class BuildReport:
+class PipelineBuildReport:
     """Relatório detalhado de execução da Build."""
 
     success: bool = True
@@ -32,9 +32,9 @@ class BuildPipeline:
     """Pipeline unificado de compilação, empacotamento e exportação de jogos."""
 
     @classmethod
-    def execute_build(cls, profile: BuildProfile) -> BuildReport:
+    def execute_build(cls, profile: BuildProfile) -> PipelineBuildReport:
         start_t = time.perf_counter()
-        report = BuildReport(success=True)
+        report = PipelineBuildReport(success=True)
 
         # Simula empacotamento de cenas e assets
         report.total_assets_bundled = len(profile.scenes) * 10 + 25
@@ -42,3 +42,6 @@ class BuildPipeline:
         report.duration_seconds = round(time.perf_counter() - start_t, 3)
 
         return report
+
+
+BuildReport = PipelineBuildReport
