@@ -65,7 +65,17 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .viewport_play_commands import ViewportPlayCommandHandler, ViewportProcessState
     from .viewport_navigation_events import ViewportNavigationEventHandler, ViewportNavigationState
     from .viewport_transform_events import ViewportTransformEventHandler, ViewportTransformState
-    from .viewport_tool_shortcuts import ViewportToolShortcutHandler
+    try:
+        from .viewport_tool_shortcuts import ViewportToolShortcutHandler
+    except ModuleNotFoundError:
+        class ViewportToolShortcutHandler:
+            """No-op editor shortcut adapter for standalone exported games."""
+
+            def __init__(self, *_args, **_kwargs) -> None:
+                pass
+
+            def handle(self, *_args, **_kwargs):
+                return None
     from .viewport_overlay_renderer import ViewportOverlayRenderer
     from .viewport_sprite_renderer import ViewportSpriteRenderer
     from .viewport_physics_stepper import ViewportPhysicsStepper
