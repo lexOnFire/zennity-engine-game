@@ -112,6 +112,12 @@ class InspectorViewRenderer:
             return
 
         clips = h._animation_clips(animator)
+        if not clips:
+            h.animator_clip_combo.clear()
+            h.animator_current_lbl.setText("Nenhum")
+            h.animator_preview.setText("Sem clipes")
+            h._animation_bound_key = None
+            return
         active_clip = str(animator.get("active_clip", next(iter(clips))))
         if active_clip not in clips:
             active_clip = next(iter(clips))
