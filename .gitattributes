@@ -1,0 +1,26 @@
+* text=auto
+
+*.py text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+
+*.meta text eol=lf
+*.zanim text eol=lf
+*.zanimator text eol=lf
+*.zbehavior text eol=lf
+*.zmat text eol=lf
+*.zmaterial text eol=lf
+*.zui text eol=lf
+*.zdialogue text eol=lf
+*.zlogic text eol=lf
+*.zscene text eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.wav binary
+*.ogg binary
+*.mp3 binary
