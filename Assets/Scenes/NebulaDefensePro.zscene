@@ -1,0 +1,425 @@
+{
+  "format_version": 1,
+  "scene_name": "Nebula Defense Pro",
+  "engine_version": "1.0.0",
+  "description": "Showcase completo 2D usando todos os subsistemas da Engine e grafos de Lógica Visual.",
+  "instructions": "WASD para mover a nave, Espaço para disparar lasers. Destrua ondas de inimigos e vença o Chefe!",
+  "blackboard": {
+    "variables": {
+      "score": {
+        "type": "number",
+        "scope": "project",
+        "default": 0.0
+      },
+      "wave": {
+        "type": "number",
+        "scope": "project",
+        "default": 1.0
+      },
+      "player_hp": {
+        "type": "number",
+        "scope": "project",
+        "default": 100.0
+      },
+      "player_shield": {
+        "type": "number",
+        "scope": "project",
+        "default": 100.0
+      }
+    }
+  },
+  "objects": [
+    {
+      "id": "main-camera",
+      "uuid": "main-camera-pro",
+      "name": "MainCamera",
+      "tag": "MainCamera",
+      "layer": "Default",
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          640.0,
+          360.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": false,
+        "mesh_type": "Quadrado",
+        "texture": "",
+        "color": [
+          255,
+          255,
+          255
+        ],
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {
+        "camera": {
+          "active": true,
+          "zoom": 1.0,
+          "background_color": [
+            6,
+            10,
+            28
+          ],
+          "priority": 10
+        }
+      }
+    },
+    {
+      "id": "bg-space",
+      "uuid": "bg-space-pro",
+      "name": "BackgroundSpacePro",
+      "tag": "Environment",
+      "layer": "Default",
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          640.0,
+          360.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1280.0,
+          720.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "mesh_type": "Quadrado",
+        "texture": "Assets/Scenes/Cenário espacial em pixel-art detalhado.png",
+        "color": [
+          255,
+          255,
+          255
+        ],
+        "layer": "Background",
+        "order": -10
+      },
+      "components": {}
+    },
+    {
+      "id": "player-ship",
+      "uuid": "player-ship-pro",
+      "name": "PlayerShip",
+      "tag": "Player",
+      "layer": "Default",
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          640.0,
+          600.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          50.0,
+          50.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "mesh_type": "Quadrado",
+        "texture": "",
+        "color": [
+          0,
+          200,
+          255
+        ],
+        "layer": "Default",
+        "order": 10
+      },
+      "components": {
+        "rigidbody": {
+          "mass": 1.0,
+          "use_gravity": false,
+          "is_kinematic": true,
+          "gravity_scale": 0.0
+        },
+        "box_collider": {
+          "width": 50.0,
+          "height": 50.0,
+          "is_trigger": false
+        },
+        "logic_graph": {
+          "graph_path": "Assets/Logic/NebulaDefensePro/NebulaPlayerPro.zlogic"
+        }
+      }
+    },
+    {
+      "id": "boss-ship",
+      "uuid": "boss-ship-pro",
+      "name": "BossShipPro",
+      "tag": "Boss",
+      "layer": "Default",
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          640.0,
+          140.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          160.0,
+          90.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "mesh_type": "Quadrado",
+        "texture": "",
+        "color": [
+          220,
+          20,
+          60
+        ],
+        "layer": "Default",
+        "order": 5
+      },
+      "components": {
+        "rigidbody": {
+          "mass": 10.0,
+          "use_gravity": false,
+          "is_kinematic": true,
+          "gravity_scale": 0.0
+        },
+        "box_collider": {
+          "width": 160.0,
+          "height": 90.0,
+          "is_trigger": true
+        },
+        "logic_graph": {
+          "graph_path": "Assets/Logic/NebulaDefensePro/NebulaBoss.zlogic"
+        }
+      }
+    },
+    {
+      "id": "game-manager",
+      "uuid": "game-manager-pro",
+      "name": "GameManagerPro",
+      "tag": "Manager",
+      "layer": "Default",
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": false
+      },
+      "components": {
+        "logic_graph": {
+          "graph_path": "Assets/Logic/NebulaDefensePro/NebulaGameManagerPro.zlogic"
+        }
+      }
+    },
+    {
+      "id": "hud-canvas",
+      "uuid": "hud-canvas-pro",
+      "name": "HUD_Canvas",
+      "tag": "UI",
+      "layer": "UI",
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          640.0,
+          360.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1280.0,
+          720.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": false
+      },
+      "components": {
+        "canvas": {
+          "render_mode": "ScreenSpaceOverlay",
+          "order": 100
+        }
+      },
+      "children": [
+        {
+          "id": "score-text",
+          "name": "ScoreText",
+          "transform": {
+            "position": [
+              40.0,
+              30.0,
+              0.0
+            ],
+            "scale": [
+              200.0,
+              40.0,
+              1.0
+            ]
+          },
+          "components": {
+            "label": {
+              "text": "SCORE: 0000",
+              "font_size": 24,
+              "color": [
+                255,
+                255,
+                255
+              ]
+            }
+          }
+        },
+        {
+          "id": "wave-text",
+          "name": "WaveText",
+          "transform": {
+            "position": [
+              560.0,
+              30.0,
+              0.0
+            ],
+            "scale": [
+              160.0,
+              40.0,
+              1.0
+            ]
+          },
+          "components": {
+            "label": {
+              "text": "WAVE 1",
+              "font_size": 28,
+              "color": [
+                0,
+                240,
+                255
+              ]
+            }
+          }
+        },
+        {
+          "id": "shield-bar",
+          "name": "ShieldBar",
+          "transform": {
+            "position": [
+              40.0,
+              670.0,
+              0.0
+            ],
+            "scale": [
+              220.0,
+              20.0,
+              1.0
+            ]
+          },
+          "components": {
+            "progress_bar": {
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                0,
+                200,
+                255
+              ],
+              "bg_color": [
+                20,
+                30,
+                50
+              ]
+            }
+          }
+        },
+        {
+          "id": "hp-bar",
+          "name": "HealthBar",
+          "transform": {
+            "position": [
+              40.0,
+              640.0,
+              0.0
+            ],
+            "scale": [
+              220.0,
+              20.0,
+              1.0
+            ]
+          },
+          "components": {
+            "progress_bar": {
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                0,
+                255,
+                100
+              ],
+              "bg_color": [
+                20,
+                50,
+                30
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
