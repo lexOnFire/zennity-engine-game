@@ -57,7 +57,7 @@
         260.0
       ],
       "properties": {
-        "sound": "Assets/Audio/jump-sound-531048.mp3",
+        "path": "Assets/Audio/jump-sound-531048.mp3",
         "volume": 1.0
       }
     },
@@ -72,5 +72,10 @@
       ],
       "properties": {}
     }
+  ],
+  "edges": [
+    {"id":"update_move","from_node":"update","from_port":"next","to_node":"move_down","to_port":"in","kind":"flow","order":0},
+    {"id":"hit_sound","from_node":"on_hit","from_port":"next","to_node":"play_exp_sfx","to_port":"in","kind":"flow","order":0},
+    {"id":"sound_destroy","from_node":"play_exp_sfx","from_port":"next","to_node":"destroy_self","to_port":"in","kind":"flow","order":0}
   ]
 }

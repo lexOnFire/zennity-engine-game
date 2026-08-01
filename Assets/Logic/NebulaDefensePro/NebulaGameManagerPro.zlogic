@@ -31,7 +31,7 @@
     },
     {
       "id": "play_bgm",
-      "type": "play_music",
+      "type": "play_sound",
       "title": "Tocar Trilha sonora",
       "category": "Áudio",
       "position": [
@@ -39,7 +39,7 @@
         80.0
       ],
       "properties": {
-        "music": "Assets/Audio/jump-sound-531048.mp3",
+        "path": "Assets/Audio/jump-sound-531048.mp3",
         "loop": true
       }
     },
@@ -53,13 +53,13 @@
         240.0
       ],
       "properties": {
-        "interval": 1.8,
+        "seconds": 1.8,
         "repeat": true
       }
     },
     {
       "id": "spawn_scout",
-      "type": "instantiate_prefab",
+      "type": "create_prefab",
       "title": "Spawn Scout",
       "category": "Ações",
       "position": [
@@ -67,10 +67,19 @@
         240.0
       ],
       "properties": {
-        "prefab": "Assets/Prefabs/NebulaDefensePro/EnemyScoutPro.zprefab",
-        "offset_x": 0.0,
-        "offset_y": -320.0
+        "path": "Assets/Prefabs/NebulaDefensePro/EnemyScoutPro.zprefab",
+        "override_position": true,
+        "x": 0.0,
+        "y": -320.0,
+        "relative": true,
+        "use_pool": true,
+        "max_instances": 24,
+        "lifetime": 8.0
       }
     }
+  ],
+  "edges": [
+    {"id":"start_bgm","from_node":"start","from_port":"next","to_node":"play_bgm","to_port":"in","kind":"flow","order":0},
+    {"id":"timer_scout","from_node":"timer_spawn","from_port":"next","to_node":"spawn_scout","to_port":"in","kind":"flow","order":0}
   ]
 }

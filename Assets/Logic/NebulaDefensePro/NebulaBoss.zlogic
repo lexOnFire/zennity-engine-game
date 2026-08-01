@@ -49,13 +49,13 @@
         240.0
       ],
       "properties": {
-        "interval": 1.4,
+        "seconds": 1.4,
         "repeat": true
       }
     },
     {
       "id": "spawn_missile",
-      "type": "instantiate_prefab",
+      "type": "create_prefab",
       "title": "Lançar Míssil",
       "category": "Ações",
       "position": [
@@ -63,10 +63,19 @@
         240.0
       ],
       "properties": {
-        "prefab": "Assets/Prefabs/NebulaDefensePro/BossMissilePro.zprefab",
-        "offset_x": 0.0,
-        "offset_y": 40.0
+        "path": "Assets/Prefabs/NebulaDefensePro/BossMissilePro.zprefab",
+        "override_position": true,
+        "x": 0.0,
+        "y": 40.0,
+        "relative": true,
+        "use_pool": true,
+        "max_instances": 16,
+        "lifetime": 5.0
       }
     }
+  ],
+  "edges": [
+    {"id":"update_move","from_node":"update","from_port":"next","to_node":"move_oscil","to_port":"in","kind":"flow","order":0},
+    {"id":"timer_missile","from_node":"timer_shoot","from_port":"next","to_node":"spawn_missile","to_port":"in","kind":"flow","order":0}
   ]
 }

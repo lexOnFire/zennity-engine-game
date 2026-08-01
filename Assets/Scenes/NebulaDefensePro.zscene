@@ -1,5 +1,5 @@
 {
-  "format_version": 1,
+  "format_version": 2,
   "scene_name": "Nebula Defense Pro",
   "engine_version": "1.0.0",
   "description": "Showcase completo 2D usando todos os subsistemas da Engine e grafos de Lógica Visual.",
@@ -39,8 +39,8 @@
       "enabled": true,
       "transform": {
         "position": [
-          640.0,
-          360.0,
+          24.0,
+          -348.0,
           0.0
         ],
         "rotation": [
@@ -50,8 +50,8 @@
         ],
         "rz": 0.0,
         "scale": [
-          32.0,
-          32.0,
+          181.0,
+          101.0,
           1.0
         ]
       },
@@ -65,7 +65,8 @@
           255
         ],
         "layer": "Default",
-        "order": 0
+        "order": 0,
+        "material": "Default_Material"
       },
       "components": {
         "camera": {
@@ -78,7 +79,8 @@
           ],
           "priority": 10
         }
-      }
+      },
+      "static": false
     },
     {
       "id": "bg-space",
@@ -90,8 +92,8 @@
       "enabled": true,
       "transform": {
         "position": [
-          640.0,
-          360.0,
+          24.000000000000025,
+          -347.0344549036621,
           0.0
         ],
         "rotation": [
@@ -101,8 +103,8 @@
         ],
         "rz": 0.0,
         "scale": [
-          1280.0,
-          720.0,
+          770.8859716422102,
+          557.4323221743012,
           1.0
         ]
       },
@@ -116,9 +118,11 @@
           255
         ],
         "layer": "Background",
-        "order": -10
+        "order": -10,
+        "material": "Default_Material"
       },
-      "components": {}
+      "components": {},
+      "static": false
     },
     {
       "id": "player-ship",
@@ -130,8 +134,8 @@
       "enabled": true,
       "transform": {
         "position": [
-          640.0,
-          600.0,
+          23.24665078133627,
+          -115.69236983029242,
           0.0
         ],
         "rotation": [
@@ -156,24 +160,29 @@
           255
         ],
         "layer": "Default",
-        "order": 10
+        "order": 10,
+        "material": "Default_Material"
       },
       "components": {
-        "rigidbody": {
-          "mass": 1.0,
-          "use_gravity": false,
-          "is_kinematic": true,
-          "gravity_scale": 0.0
-        },
-        "box_collider": {
+        "collider": {
           "width": 50.0,
           "height": 50.0,
           "is_trigger": false
         },
         "logic_graph": {
           "graph_path": "Assets/Logic/NebulaDefensePro/NebulaPlayerPro.zlogic"
+        },
+        "rigidbody": {
+          "mass": 1.0,
+          "use_gravity": false,
+          "is_kinematic": true,
+          "gravity_scale": 0.0
         }
-      }
+      },
+      "editor_data": {
+        "logic_assets": ["Assets/Logic/NebulaDefensePro/NebulaPlayerPro.zlogic"]
+      },
+      "static": false
     },
     {
       "id": "boss-ship",
@@ -185,8 +194,8 @@
       "enabled": true,
       "transform": {
         "position": [
-          640.0,
-          140.0,
+          10.344818301220673,
+          -516.6472512798266,
           0.0
         ],
         "rotation": [
@@ -211,24 +220,29 @@
           60
         ],
         "layer": "Default",
-        "order": 5
+        "order": 5,
+        "material": "Default_Material"
       },
       "components": {
-        "rigidbody": {
-          "mass": 10.0,
-          "use_gravity": false,
-          "is_kinematic": true,
-          "gravity_scale": 0.0
-        },
-        "box_collider": {
+        "collider": {
           "width": 160.0,
           "height": 90.0,
           "is_trigger": true
         },
         "logic_graph": {
           "graph_path": "Assets/Logic/NebulaDefensePro/NebulaBoss.zlogic"
+        },
+        "rigidbody": {
+          "mass": 10.0,
+          "use_gravity": false,
+          "is_kinematic": true,
+          "gravity_scale": 0.0
         }
-      }
+      },
+      "editor_data": {
+        "logic_assets": ["Assets/Logic/NebulaDefensePro/NebulaBoss.zlogic"]
+      },
+      "static": false
     },
     {
       "id": "game-manager",
@@ -257,13 +271,27 @@
         ]
       },
       "visual": {
-        "enabled": false
+        "enabled": false,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
         "logic_graph": {
           "graph_path": "Assets/Logic/NebulaDefensePro/NebulaGameManagerPro.zlogic"
         }
-      }
+      },
+      "editor_data": {
+        "logic_assets": ["Assets/Logic/NebulaDefensePro/NebulaGameManagerPro.zlogic"]
+      },
+      "static": false
     },
     {
       "id": "hud-canvas",
@@ -286,19 +314,32 @@
         ],
         "rz": 0.0,
         "scale": [
-          1280.0,
-          720.0,
+          752.0,
+          1.0,
           1.0
         ]
       },
       "visual": {
-        "enabled": false
+        "enabled": false,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
         "canvas": {
           "render_mode": "ScreenSpaceOverlay",
           "order": 100
-        }
+        },
+        "items": [
+          {"type":"Canvas","enabled":true,"properties":{"visible":true,"z_order":100}}
+        ]
       },
       "children": [
         {
@@ -419,7 +460,32 @@
             }
           }
         }
-      ]
+      ],
+      "static": false
+    },
+    {
+      "id":"score-text","name":"ScoreText","tag":"UI","layer":"UI","active":true,"enabled":true,"static":false,
+      "transform":{"position":[40.0,30.0,0.0],"rotation":[0.0,0.0,0.0],"rz":0.0,"scale":[240.0,40.0,1.0]},
+      "visual":{"enabled":false,"material":"Default_Material","mesh_type":null,"color":[255,255,255],"texture":"","layer":"UI","order":101},
+      "components":{"items":[{"type":"Label","enabled":true,"properties":{"text":"SCORE: 0000","x":40.0,"y":30.0,"width":240.0,"height":40.0,"font_size":24,"color":[255,255,255],"z_order":101}}]}
+    },
+    {
+      "id":"wave-text","name":"WaveText","tag":"UI","layer":"UI","active":true,"enabled":true,"static":false,
+      "transform":{"position":[1060.0,30.0,0.0],"rotation":[0.0,0.0,0.0],"rz":0.0,"scale":[180.0,40.0,1.0]},
+      "visual":{"enabled":false,"material":"Default_Material","mesh_type":null,"color":[0,240,255],"texture":"","layer":"UI","order":101},
+      "components":{"items":[{"type":"Label","enabled":true,"properties":{"text":"WAVE 1","x":1060.0,"y":30.0,"width":180.0,"height":40.0,"font_size":28,"color":[0,240,255],"z_order":101}}]}
+    },
+    {
+      "id":"shield-bar","name":"ShieldBar","tag":"UI","layer":"UI","active":true,"enabled":true,"static":false,
+      "transform":{"position":[40.0,670.0,0.0],"rotation":[0.0,0.0,0.0],"rz":0.0,"scale":[220.0,20.0,1.0]},
+      "visual":{"enabled":false,"material":"Default_Material","mesh_type":null,"color":[0,200,255],"texture":"","layer":"UI","order":101},
+      "components":{"items":[{"type":"ProgressBar","enabled":true,"properties":{"x":40.0,"y":670.0,"width":220.0,"height":20.0,"value":100.0,"max_value":100.0,"fill_color":[0,200,255],"bg_color":[20,30,50],"z_order":101}}]}
+    },
+    {
+      "id":"hp-bar","name":"HealthBar","tag":"UI","layer":"UI","active":true,"enabled":true,"static":false,
+      "transform":{"position":[40.0,640.0,0.0],"rotation":[0.0,0.0,0.0],"rz":0.0,"scale":[220.0,20.0,1.0]},
+      "visual":{"enabled":false,"material":"Default_Material","mesh_type":null,"color":[0,255,100],"texture":"","layer":"UI","order":101},
+      "components":{"items":[{"type":"ProgressBar","enabled":true,"properties":{"x":40.0,"y":640.0,"width":220.0,"height":20.0,"value":100.0,"max_value":100.0,"fill_color":[0,255,100],"bg_color":[20,50,30],"z_order":101}}]}
     }
   ]
 }

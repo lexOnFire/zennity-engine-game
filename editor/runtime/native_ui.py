@@ -12,7 +12,7 @@ from typing import Any, Iterable
 import pygame
 
 
-UI_TYPES = {"canvas", "text", "image", "button"}
+UI_TYPES = {"canvas", "text", "image", "button", "progress_bar"}
 
 
 def normalize_ui(data: Any) -> dict[str, Any] | None:
@@ -20,7 +20,10 @@ def normalize_ui(data: Any) -> dict[str, Any] | None:
     if not isinstance(data, dict):
         return None
     kind = str(data.get("type", "")).strip().lower()
-    aliases = {"label": "text", "uilabel": "text", "uiimage": "image", "uibutton": "button"}
+    aliases = {
+        "label": "text", "uilabel": "text", "uiimage": "image", "uibutton": "button",
+        "progressbar": "progress_bar", "progress": "progress_bar",
+    }
     kind = aliases.get(kind, kind)
     if kind not in UI_TYPES:
         return None
@@ -40,6 +43,10 @@ def normalize_ui(data: Any) -> dict[str, Any] | None:
         "interactable": True,
         "event": "click",
         "target": "",
+        "value": 100.0,
+        "max_value": 100.0,
+        "fill_color": [46, 204, 113],
+        "bg_color": [28, 35, 48],
     }
     defaults.update(data)
     defaults["type"] = kind
@@ -59,6 +66,7 @@ def scene_item_to_ui(item: Any) -> dict[str, Any] | None:
         "uiimage": "image",
         "button": "button",
         "uibutton": "button",
+        "progressbar": "progress_bar",
     }.get(type_name)
     if kind is None:
         return None
@@ -75,7 +83,10 @@ def ui_to_scene_item(data: Any) -> dict[str, Any] | None:
     ui = normalize_ui(data)
     if ui is None:
         return None
-    type_name = {"canvas": "Canvas", "text": "Label", "image": "Image", "button": "Button"}[ui["type"]]
+    type_name = {
+        "canvas": "Canvas", "text": "Label", "image": "Image", "button": "Button",
+        "progress_bar": "ProgressBar",
+    }[ui["type"]]
     properties = {key: value for key, value in ui.items() if key != "type"}
     if "path" in properties:
         properties["sprite_path"] = properties.pop("path")
@@ -119,6 +130,8 @@ class NativeUIRenderer:
                 self._draw_image(ui, screen)
             elif kind == "button":
                 self._draw_button(ui, screen)
+            elif kind == "progress_bar":
+                self._draw_progress_bar(ui, screen)
 
     def button_at(self, objects: Any, position: tuple[int, int]) -> tuple[dict[str, Any], dict[str, Any]] | None:
         for obj, ui in reversed(self.components(objects)):
@@ -171,6 +184,17 @@ class NativeUIRenderer:
             str(ui.get("text", "Botao")), True, tuple(ui.get("color", (255, 255, 255)))[:3]
         )
         screen.blit(text, (rect.centerx - text.get_width() // 2, rect.centery - text.get_height() // 2))
+
+    def _draw_progress_bar(self, ui: dict[str, Any], screen: pygame.Surface) -> None:
+        rect = self._rect(ui)
+        maximum = max(0.0001, float(ui.get("max_value", 100.0)))
+        ratio = max(0.0, min(1.0, float(ui.get("value", maximum)) / maximum))
+        pygame.draw.rect(screen, tuple(ui.get("bg_color", (28, 35, 48)))[:3], rect, border_radius=4)
+        fill = rect.copy()
+        fill.width = max(0, round(rect.width * ratio))
+        if fill.width:
+            pygame.draw.rect(screen, tuple(ui.get("fill_color", (46, 204, 113)))[:3], fill, border_radius=4)
+        pygame.draw.rect(screen, (150, 170, 200), rect, 1, border_radius=4)
 
     def _load_image(self, path_text: str) -> pygame.Surface | None:
         path = Path(path_text)

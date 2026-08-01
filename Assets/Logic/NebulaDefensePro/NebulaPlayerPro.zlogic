@@ -170,7 +170,7 @@
     },
     {
       "id": "spawn_laser",
-      "type": "instantiate_prefab",
+      "type": "create_prefab",
       "title": "Disparar Laser",
       "category": "Ações",
       "position": [
@@ -178,9 +178,14 @@
         520.0
       ],
       "properties": {
-        "prefab": "Assets/Prefabs/NebulaDefensePro/PlayerLaserPro.zprefab",
-        "offset_x": 0.0,
-        "offset_y": -30.0
+        "path": "Assets/Prefabs/NebulaDefensePro/PlayerLaserPro.zprefab",
+        "override_position": true,
+        "x": 0.0,
+        "y": -30.0,
+        "relative": true,
+        "use_pool": true,
+        "max_instances": 32,
+        "lifetime": 2.0
       }
     },
     {
@@ -193,9 +198,21 @@
         520.0
       ],
       "properties": {
-        "sound": "Assets/Audio/jump-sound-531048.mp3",
+        "path": "Assets/Audio/jump-sound-531048.mp3",
         "volume": 0.7
       }
     }
+  ],
+  "edges": [
+    {"id":"update_w","from_node":"update","from_port":"next","to_node":"key_w","to_port":"in","kind":"flow","order":0},
+    {"id":"update_s","from_node":"update","from_port":"next","to_node":"key_s","to_port":"in","kind":"flow","order":1},
+    {"id":"update_a","from_node":"update","from_port":"next","to_node":"key_a","to_port":"in","kind":"flow","order":2},
+    {"id":"update_d","from_node":"update","from_port":"next","to_node":"key_d","to_port":"in","kind":"flow","order":3},
+    {"id":"w_up","from_node":"key_w","from_port":"true","to_node":"move_up","to_port":"in","kind":"flow","order":0},
+    {"id":"s_down","from_node":"key_s","from_port":"true","to_node":"move_down","to_port":"in","kind":"flow","order":0},
+    {"id":"a_left","from_node":"key_a","from_port":"true","to_node":"move_left","to_port":"in","kind":"flow","order":0},
+    {"id":"d_right","from_node":"key_d","from_port":"true","to_node":"move_right","to_port":"in","kind":"flow","order":0},
+    {"id":"shoot_spawn","from_node":"key_shoot","from_port":"next","to_node":"spawn_laser","to_port":"in","kind":"flow","order":0},
+    {"id":"spawn_sound","from_node":"spawn_laser","from_port":"next","to_node":"play_shoot_sfx","to_port":"in","kind":"flow","order":0}
   ]
 }
