@@ -590,7 +590,9 @@ class VisualScriptingEditorDock(QMainWindow):
         self.btn_play.setEnabled(state != "play")
         self.btn_pause.setEnabled(running)
         self.btn_stop.setEnabled(running)
-        self.btn_hot_reload.setEnabled(running)
+        hot_reload = getattr(self, "btn_hot_reload", None)
+        if hot_reload is not None:
+            hot_reload.setEnabled(running)
         if running:
             self._sync_timer.start(33)
         else:

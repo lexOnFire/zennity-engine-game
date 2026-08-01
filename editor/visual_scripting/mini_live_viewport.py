@@ -45,6 +45,7 @@ from PySide6.QtWidgets import (
 )
 
 from editor.visual_scripting.runtime_visualization import RuntimeVisualizationRenderer
+from editor.visual_scripting.runtime_panel_controller_mixin import RuntimePanelControllerMixin
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -672,7 +673,7 @@ _STEP_STYLE        = "QPushButton{background:#161a22;color:#6b7385;border:1px so
 #  RuntimeVisualizationPanelWidget — Game View AAA
 # ─────────────────────────────────────────────────────────────────────────────
 
-class RuntimeVisualizationPanelWidget(QFrame):
+class RuntimeVisualizationPanelWidget(RuntimePanelControllerMixin, QFrame):
     """Game View AAA integrada ao Visual Scripting da Zennity Engine."""
 
     object_selected         = Signal(object)
@@ -704,6 +705,11 @@ class RuntimeVisualizationPanelWidget(QFrame):
         QCheckBox { color: #6b7385; font-size: 9px; }
         QCheckBox::indicator { width: 11px; height: 11px; }
     """
+    VIEWPORT_MODE = ViewportMode
+    PLAY_STYLE_ACTIVE = _PLAY_STYLE_ACTIVE
+    PLAY_STYLE_IDLE = _PLAY_STYLE_IDLE
+    PAUSE_STYLE_ACTIVE = _PAUSE_STYLE_ACTIVE
+    PAUSE_STYLE_IDLE = _PAUSE_STYLE_IDLE
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
@@ -1008,113 +1014,6 @@ class RuntimeVisualizationPanelWidget(QFrame):
         h.addWidget(self._lbl_build)
 
         return bar
-
-    # ── Backwards-compat ──────────────────────────────────────────────────
-
-    @property
-    def status_badge(self) -> QLabel:
-        return self.mode_badge
-
-    @property
-    def unified_viewport(self):
-        return self._canvas
-
-    # ── Viewport Mode ─────────────────────────────────────────────────────
-
-    def set_play_mode(self, is_playing: bool) -> None:
-        if is_playing:
-            self.set_viewport_mode(ViewportMode.GAME)
-        else:
-            self.set_viewport_mode(ViewportMode.DEBUG)
-
-    def set_viewport_mode(self, mode: ViewportMode) -> None:
-        self.viewport_mode = mode
-        self._canvas.set_mode(mode)
-
-        # Buttons
-        if mode == ViewportMode.GAME:
-            self.btn_play.setStyleSheet(_PLAY_STYLE_ACTIVE)
-            self.btn_play.setText("▶  PLAYING")
-            self.btn_pause.setEnabled(True)
-            self.btn_pause.setStyleSheet(_PAUSE_STYLE_IDLE)
-            self.btn_stop.setEnabled(True)
-            self.mode_badge.setText("● PLAYING")          # compat com testes
-            self.mode_badge.setStyleSheet(
-                "color:#00e664;font-size:9px;font-weight:bold;letter-spacing:1px;"
-            )
-            self._step_bar.hide()
-            self.btn_play.setEnabled(False)
-
-        elif mode == ViewportMode.DEBUG:
-            self.btn_play.setStyleSheet(_PLAY_STYLE_IDLE)
-            self.btn_play.setEnabled(True)
-            self.btn_pause.setStyleSheet(_PAUSE_STYLE_ACTIVE)
-            self.btn_pause.setText("⏸  PAUSED")
-            self.mode_badge.setText("⏸  PAUSED")
-            self.mode_badge.setStyleSheet(
-                "color:#ffb432;font-size:9px;font-weight:bold;letter-spacing:1px;"
-            )
-            self._step_bar.show()
-
-        else:  # EDITOR
-            self.btn_play.setStyleSheet(_PLAY_STYLE_IDLE)
-            self.btn_play.setText("▶  PLAY")
-            self.btn_play.setEnabled(True)
-            self.btn_pause.setEnabled(False)
-            self.btn_pause.setStyleSheet(_PAUSE_STYLE_IDLE)
-            self.btn_pause.setText("⏸  PAUSE")
-            self.btn_stop.setEnabled(False)
-            self.mode_badge.setText("● EDITOR")
-            self.mode_badge.setStyleSheet(
-                "color:#4c9aff;font-size:9px;font-weight:bold;letter-spacing:1px;"
-            )
-            self._step_bar.hide()
-            # Restore editor camera
-            self.camera_selector.setCurrentText("Editor Camera")
-
-    # ── Play Controls ─────────────────────────────────────────────────────
-
-    def start_play_mode(self) -> None:
-        self.camera_selector.setCurrentText("Main Camera")
-        self.set_viewport_mode(ViewportMode.GAME)
-        try:
-            from editor.runtime.editor_context import EditorContext
-            ctx = EditorContext.instance()
-            if ctx and hasattr(ctx, "play_mode"):
-                ctx.play_mode.start_play()
-        except Exception:
-            pass
-
-    def toggle_pause_mode(self) -> None:
-        if self.viewport_mode == ViewportMode.GAME:
-            self.set_viewport_mode(ViewportMode.DEBUG)
-        elif self.viewport_mode == ViewportMode.DEBUG:
-            self.set_viewport_mode(ViewportMode.GAME)
-            self.btn_pause.setText("⏸  PAUSE")
-
-    def stop_play_mode(self) -> None:
-        self.set_viewport_mode(ViewportMode.EDITOR)
-        try:
-            from editor.runtime.editor_context import EditorContext
-            ctx = EditorContext.instance()
-            if ctx and hasattr(ctx, "play_mode"):
-                ctx.play_mode.stop_play()
-        except Exception:
-            pass
-
-    def step_frame(self) -> None:
-        """Avança 1 frame (disponível apenas em PAUSED)."""
-        if self.viewport_mode == ViewportMode.DEBUG:
-            self._canvas.frame_count += 1
-            self._canvas.update()
-
-    def step_node(self) -> None:
-        """Avança 1 nó (disponível apenas em PAUSED)."""
-        if self.viewport_mode == ViewportMode.DEBUG:
-            self.node_selected_requested.emit(self.active_node_id or "")
-            self._canvas.update()
-
-    # ── Live Logic Editing ────────────────────────────────────────────────
 
     def apply_live_logic_edit(self, target_object: Any, var_name: str, new_value: Any) -> bool:
         if not target_object:
