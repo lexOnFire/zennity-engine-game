@@ -15,6 +15,7 @@ def qapp() -> QApplication:
     return app
 
 
+@pytest.mark.xdist_group(name="memory_leak")
 def test_editor_play_stop_cycle_memory_stability(qapp: QApplication) -> None:
     """Valida a estabilidade de memória por 500 ciclos de Play/Stop."""
     editor = ZennityPhase1Editor()
