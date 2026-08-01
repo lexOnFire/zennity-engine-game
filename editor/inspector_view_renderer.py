@@ -181,11 +181,15 @@ class InspectorViewRenderer:
         labels = {
             "canvas": "🖥 Canvas", "text": "🔤 UI Text",
             "image": "🖼 UI Image", "button": "🔘 UI Button",
+            "progress_bar": "📊 UI Progress Bar",
         }
-        h.show_ui_chk.setText(labels[kind])
+        h.show_ui_chk.setText(labels.get(kind, f"UI {kind.replace('_', ' ').title()}"))
         h.show_ui_chk.setChecked(bool(ui.get("visible", True)))
         h.ui_type_field.setText(
-            {"canvas": "Canvas", "text": "Texto", "image": "Imagem", "button": "Botão"}[kind]
+            {
+                "canvas": "Canvas", "text": "Texto", "image": "Imagem",
+                "button": "Botão", "progress_bar": "Barra de progresso",
+            }.get(kind, kind.replace("_", " ").title())
         )
         h.ui_text_field.setText(str(ui.get("text", "")))
         h.ui_text_field.setEnabled(kind in {"text", "button"})
@@ -197,7 +201,7 @@ class InspectorViewRenderer:
                 and (key != "alpha" or kind == "image")
             )
         color = tuple(ui.get("color", (255, 255, 255)))[:3]
-        h.ui_color_button.setEnabled(kind in {"text", "image", "button"})
+        h.ui_color_button.setEnabled(kind in {"text", "image", "button", "progress_bar"})
         h.ui_color_button.setStyleSheet(
             f"background: rgb({int(color[0])}, {int(color[1])}, {int(color[2])});"
         )
