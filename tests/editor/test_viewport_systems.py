@@ -106,3 +106,16 @@ def test_audio_prefers_physical_headphones_over_virtual_mix(tmp_path) -> None:
     assert system.output_device == "Headphones (HyperX Cloud III Wireless)"
     assert pygame.mixer.init_calls[-1]["devicename"] == system.output_device
     assert ("INFO", f"Saída de áudio: {system.output_device}") in logs
+
+
+def test_audio_device_change_does_not_query_a_stopped_subsystem(tmp_path) -> None:
+    pygame = _FakePygame()
+    system = AudioPlaybackSystem(
+        pygame, tmp_path, lambda *_args: None,
+        lambda: (_ for _ in ()).throw(RuntimeError("audio system not initialised")),
+    )
+
+    system.set_output_device("Headphones")
+
+    assert system.ensure_mixer()
+    assert pygame.mixer.init_calls[-1]["devicename"] == "Headphones"

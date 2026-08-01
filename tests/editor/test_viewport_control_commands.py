@@ -38,3 +38,16 @@ def test_audio_commands_route_preview_without_owning_play_state() -> None:
     assert handler.handle({"type": "preview_audio", "path": "tone.wav", "volume": 0.5})
     assert calls == [("device", ""), ("__preview__", "tone.wav", 0.5, False)]
     assert not handler.handle({"type": "play"})
+
+
+def test_audio_preview_failure_is_reported_without_escaping() -> None:
+    events = []
+    handler = ViewportAudioCommandHandler(
+        {}, {}, {}, events.append, lambda: None, lambda: None,
+        lambda *_args: (_ for _ in ()).throw(RuntimeError("device failed")),
+        lambda _device: None,
+    )
+
+    assert handler.handle({"type": "preview_audio", "path": "tone.wav"})
+    assert events[-1]["level"] == "ERROR"
+    assert "viewport preservada" in events[-1]["message"]

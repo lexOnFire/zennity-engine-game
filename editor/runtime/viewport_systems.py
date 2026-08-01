@@ -107,8 +107,6 @@ class AudioPlaybackSystem:
         if requested == self._requested_device:
             return
         self.stop_all()
-        if self.pygame.mixer.get_init():
-            self.pygame.mixer.quit()
         self._requested_device = requested
         self._configured = False
 
@@ -142,28 +140,37 @@ class AudioPlaybackSystem:
             return list(self._device_provider())
         if not str(getattr(self.pygame, "__name__", "")).startswith("pygame"):
             return []
+        initialized_here = False
         try:
+            if not self.pygame.mixer.get_init():
+                self.pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+                initialized_here = True
             from pygame._sdl2.audio import get_audio_device_names
             return list(get_audio_device_names(False))
-        except (ImportError, self.pygame.error):
+        except Exception:
             return []
+        finally:
+            if initialized_here and self.pygame.mixer.get_init():
+                self.pygame.mixer.quit()
 
     def ensure_mixer(self) -> bool:
         try:
             if not self._configured:
-                devices = self._available_devices()
-                selected = self.preferred_device(
-                    devices,
-                    self._requested_device or os.environ.get("ZENNITY_AUDIO_DEVICE", ""),
-                )
+                requested = self._requested_device or os.environ.get("ZENNITY_AUDIO_DEVICE", "")
+                selected = requested.strip() or self.preferred_device(self._available_devices())
                 if selected:
                     if self.pygame.mixer.get_init():
                         self.pygame.mixer.quit()
-                    self.pygame.mixer.init(
-                        frequency=44100, size=-16, channels=2, buffer=512,
-                        devicename=selected,
-                    )
-                    self.output_device = selected
+                    try:
+                        self.pygame.mixer.init(
+                            frequency=44100, size=-16, channels=2, buffer=512,
+                            devicename=selected,
+                        )
+                        self.output_device = selected
+                    except (TypeError, self.pygame.error) as exc:
+                        self.log("WARNING", f"Saída '{selected}' indisponível; usando padrão: {exc}")
+                        self.pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+                        self.output_device = "Padrão do sistema"
                 elif not self.pygame.mixer.get_init():
                     self.pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
                 self._configured = True

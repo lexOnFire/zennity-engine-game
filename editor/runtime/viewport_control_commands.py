@@ -94,11 +94,17 @@ class ViewportAudioCommandHandler:
             self.stop_sources()
             self.emit({"type": "runtime_log", "level": "INFO", "message": "Todos os áudios foram interrompidos"})
         elif command_type == "preview_audio":
-            self.select_output(str(command.get("device", "")))
-            self.play_file(
-                "__preview__", str(command.get("path", "")),
-                float(command.get("volume", 1.0)), bool(command.get("loop", False)),
-            )
+            try:
+                self.select_output(str(command.get("device", "")))
+                self.play_file(
+                    "__preview__", str(command.get("path", "")),
+                    float(command.get("volume", 1.0)), bool(command.get("loop", False)),
+                )
+            except Exception as exc:
+                self.emit({
+                    "type": "runtime_log", "level": "ERROR",
+                    "message": f"Falha na prévia de áudio (viewport preservada): {exc}",
+                })
         else:
             channel = self.channels.pop("__preview__", None)
             if channel is not None:
