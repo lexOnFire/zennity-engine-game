@@ -478,78 +478,9 @@ class LogicGraphCanvasMixin:
         self.message.emit("INFO", f"Breakpoint {'adicionado' if enabled else 'removido'}: {item.node.get('title', item.node_id)}")
 
     def add_comment_box(self) -> None:
-        selected_nodes = [item for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)]
-        if selected_nodes:
-            min_x = min(item.pos().x() for item in selected_nodes) - 20.0
-            min_y = min(item.pos().y() for item in selected_nodes) - 40.0
-            max_x = max(item.pos().x() + item.width for item in selected_nodes) + 20.0
-            max_y = max(item.pos().y() + item.height for item in selected_nodes) + 20.0
-            width = max(260.0, max_x - min_x)
-            height = max(120.0, max_y - min_y)
-            pos = [min_x, min_y]
-        else:
-            center = self.view.mapToScene(self.view.viewport().rect().center())
-            pos = [center.x() - 130.0, center.y() - 60.0]
-            width, height = 260.0, 120.0
-
-        comment_data = {
-            "id": uuid.uuid4().hex,
-            "text": "Lógica do Jogo / Comentário",
-            "position": pos,
-            "width": width,
-            "height": height,
-            "color": "#1e3a5f",
-        }
-        self.graph.setdefault("comments", []).append(comment_data)
-        item = LogicCommentItem(self, comment_data)
-        self.scene.addItem(item)
-        self.comment_items[comment_data["id"]] = item
-        self.mark_dirty()
-        self.message.emit("INFO", "Caixa de comentário criada (Atalho: C)")
+        from editor.widgets.logic_graph.editor_mixins.layout_helpers import add_comment_box as _add_comment_box
+        _add_comment_box(self)
 
     def auto_arrange_nodes(self) -> None:
-        nodes = self.graph.get("nodes", [])
-        if not nodes:
-            return
-        edges = self.graph.get("edges", [])
-        graph_map: dict[str, list[str]] = {}
-        for edge in edges:
-            graph_map.setdefault(edge["from_node"], []).append(edge["to_node"])
-
-        start_nodes = [n for n in nodes if str(n.get("type", "")).startswith("event_") or not any(e["to_node"] == n["id"] for e in edges)]
-        visited = set()
-        columns: list[list[dict]] = []
-
-        current_layer = start_nodes or nodes[:1]
-        while current_layer:
-            columns.append(current_layer)
-            for n in current_layer:
-                visited.add(n["id"])
-            next_layer = []
-            for n in current_layer:
-                for target_id in graph_map.get(n["id"], []):
-                    if target_id not in visited:
-                        target_node = next((item for item in nodes if item["id"] == target_id), None)
-                        if target_node and target_node not in next_layer:
-                            next_layer.append(target_node)
-            current_layer = next_layer
-
-        unvisited = [n for n in nodes if n["id"] not in visited]
-        if unvisited:
-            columns.append(unvisited)
-
-        start_x, start_y = 100.0, 100.0
-        col_width = 300.0
-        row_height = 180.0
-
-        for col_idx, col_nodes in enumerate(columns):
-            for row_idx, node in enumerate(col_nodes):
-                x = start_x + col_idx * col_width
-                y = start_y + row_idx * row_height
-                node["position"] = [x, y]
-                if node["id"] in self.node_items:
-                    self.node_items[node["id"]].setPos(x, y)
-
-        self.refresh_connections()
-        self.mark_dirty()
-        self.message.emit("INFO", "Grafo re-organizado com sucesso (Auto-Layout Shift+F)")
+        from editor.widgets.logic_graph.editor_mixins.layout_helpers import auto_arrange_nodes as _auto_arrange_nodes
+        _auto_arrange_nodes(self)

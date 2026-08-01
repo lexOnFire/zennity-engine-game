@@ -25,24 +25,10 @@ from editor.visual_scripting.mini_live_viewport import (
     ViewportMode,
 )
 from editor.visual_scripting.modern_theme import apply_visual_scripting_theme
-
-
-class _GraphToolAdapter:
-    """Expose one hub tab through the bridge/tool contracts."""
-
-    def __init__(self, hub: "VisualScriptingEditorDock", tool_id: str, graph_editor) -> None:
-        self.hub = hub
-        self.tool_id = tool_id
-        self.graph_editor = graph_editor
-
-    def show(self) -> None:
-        self.hub.open_graph_tool(self.tool_id)
-
-    def raise_(self) -> None:
-        self.hub.raise_()
-
-    def activateWindow(self) -> None:
-        self.hub.activateWindow()
+from editor.visual_scripting.dock_workspace_sync import (
+    GraphToolAdapter as _GraphToolAdapter,
+    sync_scene_workspace,
+)
 
 
 class VisualScriptingEditorDock(QMainWindow):
@@ -419,98 +405,6 @@ class VisualScriptingEditorDock(QMainWindow):
         hot_reload = getattr(self, "btn_hot_reload", None)
         if hot_reload is not None:
             hot_reload.setEnabled(running)
-        if running:
-            self._sync_timer.start(33)
-        else:
-            self._sync_timer.stop()
-        self.sync_from_host()
-
-    def _validate(self) -> None:
-        from engine.logic.graph_asset import validate_logic_graph
-        issues = validate_logic_graph(self.graph_editor.graph_data())
-        errors = [item for item in issues if item.get("level") == "error"]
-        self.runtime_logs_text.append(
-            f"[VALIDATE] {len(issues)} aviso(s), {len(errors)} erro(s)."
-        )
-
-    def sync_from_host(self) -> None:
-        """Mirror the active editor/runtime scene in the integrated Game View."""
-        host = self._host
-        if self.graph_editor.current_path is not None:
-            self.document_label.setText(
-                self.graph_editor.current_path.name.upper()
-            )
-        runtime = getattr(host, "_runtime_objects_by_name", {})
-        source = list(runtime.values()) if runtime else list(
-            getattr(host, "_scene_snapshot", [])
-        )
-        self.mini_viewport.unified_viewport.apply_snapshot({
-            "objects": source,
-            "object_count": len(source),
-        })
-        selected = getattr(host, "_selected_name", None)
-        objects = getattr(host, "_objects_by_name", {})
-        repository = getattr(host, "_logic_assets_repository", None)
-        graph_count = len(
-            repository.for_object(selected, objects.get(selected, {}))
-        ) if repository is not None and selected in objects else 0
-        self.set_object_context(selected, graph_count)
-        active_objects = runtime or objects
-        if selected in active_objects:
-            self.mini_viewport.set_target_object(active_objects[selected])
-            self.mini_viewport.unified_viewport.selected_object_id = str(
-                active_objects[selected].get("id", "")
-            )
-        else:
-            self.mini_viewport.unified_viewport.selected_object_id = ""
-        self._sync_scene_workspace()
-
-    def _sync_scene_workspace(self) -> None:
-        """Preload all visual documents declared by the active scene."""
-        document = getattr(self._host, "_scene_document", None)
-        workspace = (
-            document.get("visual_logic_workspace", {})
-            if isinstance(document, dict) else {}
-        )
-        if not isinstance(workspace, dict):
-            return
-        signature = tuple(
-            sorted((str(key), str(value)) for key, value in workspace.items())
-        )
-        if not signature or signature == self._scene_workspace_signature:
-            return
-        # Set before opening: LogicGraphEditor emits asset_changed synchronously.
-        self._scene_workspace_signature = signature
-        editors = {
-            "logic": self.graph_editor,
-            "behavior_tree": self.behavior_tree_editor,
-            "dialogue": self.dialogue_graph_editor,
-            "material": self.material_graph_editor,
-            "animator": self.animator_graph_editor,
-            "ui": self.ui_builder,
-        }
-        opened = 0
-        for key, editor in editors.items():
-            asset_value = workspace.get(key)
-            if not asset_value:
-                continue
-            path = Path(str(asset_value))
-            path = path if path.is_absolute() else Path.cwd() / path
-            callback = (
-                getattr(editor, "open_asset", None)
-                or getattr(editor, "load_document", None)
-            )
-            if callback is not None and path.is_file() and callback(path):
-                opened += 1
-        if opened:
-            self.runtime_logs_text.append(
-                f"[Workspace] {opened} documento(s) da cena carregado(s)."
-            )
-
-    def set_object_context(
-        self, object_name: str | None, graph_count: int = 0
-    ) -> None:
-        if object_name:
             suffix = "grafo" if graph_count == 1 else "grafos"
             self.object_context_label.setText(
                 f"OBJETO ATIVO: {object_name}  •  {graph_count} {suffix}"
