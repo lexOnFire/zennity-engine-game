@@ -28,8 +28,14 @@ def _safe_color(value: Any, fallback: tuple[int, int, int]) -> tuple[int, int, i
     return fallback
 
 
+try:
+    from editor.runtime.viewport_render_order import LAYER_ORDER, sort_objects_for_rendering
+except ModuleNotFoundError:
+    from .viewport_render_order import LAYER_ORDER, sort_objects_for_rendering
+
+
 class ViewportSpriteRenderer:
-    LAYER_ORDER = {"Background": 0, "Default": 1, "Foreground": 2, "UI": 3}
+    LAYER_ORDER = LAYER_ORDER
 
     def __init__(self, pygame: Any, prepare_sprite: Callable[..., Any], prepare_scrolling: Callable[..., Any]) -> None:
         self.pygame = pygame
@@ -43,10 +49,7 @@ class ViewportSpriteRenderer:
         selected_name: str | None, active_tool: str, render_zoom: float,
         world_to_screen: Callable[[float, float], tuple[float, float]], overlay_renderer: Any,
     ) -> None:
-        ordered = sorted(objects.items(), key=lambda item: (
-            self.LAYER_ORDER.get(str(item[1].get("render_layer", "Default")), 1),
-            int(item[1].get("sort_order", 0)),
-        ))
+        ordered = sort_objects_for_rendering(objects)
         for name, obj in ordered:
             if not obj.get("active", True) or not obj.get("renderer_enabled", True):
                 continue

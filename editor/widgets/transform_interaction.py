@@ -36,16 +36,10 @@ def activate_gizmo_reference(viewport: Any, tool: EditorTool) -> None:
     if tool not in (EditorTool.MOVE, EditorTool.ROTATE, EditorTool.SCALE):
         return
     obj = viewport._selected_transform_object()
-    scene = getattr(viewport, "active_scene", None)
-    objects = list(getattr(scene, "editable_objects", [])) if scene is not None else []
-    if obj is None:
-        index = int(getattr(scene, "selected_index", -1)) if scene is not None else -1
-        obj = objects[index] if 0 <= index < len(objects) else next(
-            (candidate for candidate in objects if getattr(candidate, "name", "") != "EditorCamera"),
-            None,
-        )
     if obj is None or not hasattr(obj, "transform"):
         return
+    scene = getattr(viewport, "active_scene", None)
+    objects = list(getattr(scene, "editable_objects", [])) if scene is not None else []
     viewport.select_object(obj)
     if obj in objects and hasattr(scene, "selected_index"):
         scene.selected_index = objects.index(obj)

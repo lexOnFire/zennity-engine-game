@@ -24,9 +24,6 @@ def sync_tool_selection(editor: Any) -> None:
     selected = getattr(selection, "selected", None)
     obj = selected or _scene_selected_object(editor)
     if obj is None:
-        objects = list(getattr(scene, "editable_objects", []))
-        obj = objects[0] if objects else None
-    if obj is None:
         return
 
     editor.select_object(obj)

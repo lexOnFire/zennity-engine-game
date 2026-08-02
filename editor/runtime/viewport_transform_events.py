@@ -7,6 +7,12 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 
+try:
+    from editor.runtime.viewport_render_order import sort_objects_for_hit_testing
+except ModuleNotFoundError:
+    from .viewport_render_order import sort_objects_for_hit_testing
+
+
 @dataclass
 class ViewportTransformState:
     dragging: bool
@@ -100,26 +106,35 @@ class ViewportTransformEventHandler:
             self._select_body(position, state, active_tool, zoom)
 
     def _select_body(self, position: tuple[int, int], state: ViewportTransformState, active_tool: str, zoom: float) -> None:
-        for name, obj in reversed(list(self.objects.items())):
+        hit_candidates: list[tuple[str, dict[str, Any]]] = []
+        for name, obj in sort_objects_for_hit_testing(self.objects):
             object_x, object_y = self.world_to_screen(float(obj["x"]), float(obj["y"]))
             angle = math.radians(-float(obj.get("rotation", 0.0)))
             mouse_x, mouse_y = position[0] - object_x, position[1] - object_y
             local_x = mouse_x * math.cos(angle) - mouse_y * math.sin(angle)
             local_y = mouse_x * math.sin(angle) + mouse_y * math.cos(angle)
-            if abs(local_x) > obj["w"] * zoom / 2 or abs(local_y) > obj["h"] * zoom / 2:
-                continue
-            state.selected_name = name
-            state.drag_start_mouse = (float(position[0]), float(position[1]))
-            state.drag_start_object = deepcopy(obj)
-            self.emit({"type": "selected", "name": name})
-            if active_tool != "select" and not self._is_locked(obj):
-                state.dragging = True
-                self.emit({"type": "transform_begin", "name": name})
-                if active_tool == "scale":
-                    state.drag_handle = 8
-            else:
-                state.dragging = False
+            if abs(local_x) <= float(obj["w"]) * zoom / 2.0 and abs(local_y) <= float(obj["h"]) * zoom / 2.0:
+                hit_candidates.append((name, obj))
+
+        if not hit_candidates:
             return
+
+        chosen_name, chosen_obj = next(
+            ((name, obj) for name, obj in hit_candidates if not self._is_locked(obj)),
+            hit_candidates[0],
+        )
+
+        state.selected_name = chosen_name
+        state.drag_start_mouse = (float(position[0]), float(position[1]))
+        state.drag_start_object = deepcopy(chosen_obj)
+        self.emit({"type": "selected", "name": chosen_name})
+        if active_tool != "select" and not self._is_locked(chosen_obj):
+            state.dragging = True
+            self.emit({"type": "transform_begin", "name": chosen_name})
+            if active_tool == "scale":
+                state.drag_handle = 8
+        else:
+            state.dragging = False
 
     def _start_drag(self, position: tuple[int, int], state: ViewportTransformState, obj: dict[str, Any]) -> None:
         state.dragging = True

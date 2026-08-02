@@ -134,10 +134,14 @@ class ViewportQtEventsMixin:
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
         self._held_qt_keys.add(event.key())
-        if event.key() == Qt.Key_F:
-            self.focus_camera_on_selected()
-            event.accept()
-            return
+        if not getattr(getattr(self, "active_scene", None), "playing", False):
+            if event.key() in (Qt.Key_Q, Qt.Key_W, Qt.Key_E, Qt.Key_R, Qt.Key_T, Qt.Key_F):
+                if event.key() == Qt.Key_F:
+                    self.focus_camera_on_selected()
+                    event.accept()
+                    return
+                super().keyPressEvent(event)
+                return
 
         if not self.active_scene:
             return
