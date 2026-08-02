@@ -3,6 +3,7 @@
 ## v1.0.0 — Architecture & Release Readiness (2026-08-01)
 
 ### Refactored & Consolidated
+* **Métricas AST auditáveis**: a auditoria pré-v1 registra data, commit, contagens reais e margem das cinco classes monitoradas; um novo gate impede classes acima de 500 linhas e divergência futura da tabela.
 * **Suítes core consolidadas**: removidas as cópias divergentes de `EventBus`, `Time`, `Input` e `GameObject` da raiz de `tests/`; a cobertura complementar foi migrada para `tests/core/`. Testes de runtime e Tilemap com nomes conflitantes foram reposicionados conforme sua responsabilidade.
 * **Profiler oficial consolidado**: `editor.profiler.ProfilerDock` passa a ser a única implementação; o caminho `editor.widgets.profiler_dock` permanece somente como shim com `DeprecationWarning` até v2.0.
 * **Decomposição Estrutural**: Decomposição das 5 maiores classes do projeto (`ZennityPhase1Editor`, `LogicGraphRuntime`, `Phase1ViewportWidget`, `MainWindow`, `ViewportWidget`) para estarem todas estritamente abaixo do limite de 500 linhas da Definition of Done.
