@@ -85,6 +85,15 @@ class ViewportOverlayRenderer:
         if locked:
             self._draw_lock_icon(screen, corner_x, corner_y)
             return
+        if active_tool == "move":
+            self._draw_move(screen, object_x, object_y, radians)
+        elif active_tool == "rotate":
+            radius = int(max(object_width, object_height) / 2 + 20)
+            pg.draw.circle(screen, (245, 194, 78), (int(object_x), int(object_y)), radius, 2)
+            end = (int(object_x + math.cos(radians) * radius), int(object_y + math.sin(radians) * radius))
+            pg.draw.line(screen, (255, 235, 150), (int(object_x), int(object_y)), end, 1)
+        elif active_tool == "scale":
+            self._draw_scale(screen, obj, object_x, object_y, radians, render_zoom)
 
     def _draw_lock_icon(self, screen: Any, x: int, y: int) -> None:
         """Draw a vector padlock icon at screen coordinates (x, y)."""
@@ -100,15 +109,6 @@ class ViewportOverlayRenderer:
         pg.draw.rect(screen, (255, 196, 92), body_rect, border_radius=2)
 
         pg.draw.circle(screen, (20, 24, 35), (x + 7, y - 2), 2)
-        if active_tool == "move":
-            self._draw_move(screen, object_x, object_y, radians)
-        elif active_tool == "rotate":
-            radius = int(max(object_width, object_height) / 2 + 20)
-            pg.draw.circle(screen, (245, 194, 78), (int(object_x), int(object_y)), radius, 2)
-            end = (int(object_x + math.cos(radians) * radius), int(object_y + math.sin(radians) * radius))
-            pg.draw.line(screen, (255, 235, 150), (int(object_x), int(object_y)), end, 1)
-        elif active_tool == "scale":
-            self._draw_scale(screen, obj, object_x, object_y, radians, render_zoom)
 
     def _draw_move(self, screen: Any, x: float, y: float, radians: float) -> None:
         pg = self.pygame
