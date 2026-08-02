@@ -34,23 +34,32 @@ class LogicGraphView(QGraphicsView):
         )
 
     def drawBackground(self, painter: QPainter, rect: QRectF) -> None:
+        visible_rect = self.mapToScene(self.viewport().rect()).boundingRect()
+        rect = rect.intersected(visible_rect)
         painter.fillRect(rect, QColor("#12141c"))
+
         spacing = 24
         left = int(rect.left()) - (int(rect.left()) % spacing)
         top = int(rect.top()) - (int(rect.top()) % spacing)
+        right = int(rect.right()) + spacing
+        bottom = int(rect.bottom()) + spacing
+
         painter.setPen(QPen(QColor("#181b24"), 1))
-        for x in range(left, int(rect.right()) + spacing, spacing):
+        for x in range(left, right, spacing):
             painter.drawLine(x, int(rect.top()), x, int(rect.bottom()))
-        for y in range(top, int(rect.bottom()) + spacing, spacing):
+        for y in range(top, bottom, spacing):
             painter.drawLine(int(rect.left()), y, int(rect.right()), y)
 
         major = spacing * 5
         major_left = int(rect.left()) - (int(rect.left()) % major)
         major_top = int(rect.top()) - (int(rect.top()) % major)
+        major_right = int(rect.right()) + major
+        major_bottom = int(rect.bottom()) + major
+
         painter.setPen(QPen(QColor("#212533"), 1))
-        for x in range(major_left, int(rect.right()) + major, major):
+        for x in range(major_left, major_right, major):
             painter.drawLine(x, int(rect.top()), x, int(rect.bottom()))
-        for y in range(major_top, int(rect.bottom()) + major, major):
+        for y in range(major_top, major_bottom, major):
             painter.drawLine(int(rect.left()), y, int(rect.right()), y)
 
     def wheelEvent(self, event) -> None:

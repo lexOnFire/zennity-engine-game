@@ -181,5 +181,3 @@ class LogicHelpDock(QWidget):
             return
         self.search_bar.setText(node_id_or_name)
         self._filter_help(node_id_or_name)
-        self.show()
-        self.raise_()
