@@ -31,24 +31,27 @@ from editor.visual_scripting.dock_workspace_sync import (
 )
 
 
-class VisualScriptingEditorDock(QWidget):
-    """Integrated workspace for Visual Scripting 2.0."""
+class VisualScriptingEditorDock(QMainWindow):
+    """Independent dedicated tool window for Visual Scripting 2.0."""
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
-        super().__init__(parent)
+        super().__init__(parent, Qt.Window)
         self.setWindowTitle("⚡ Visual Scripting Editor 2.0 — Zennity Engine")
         self.setObjectName("VisualScriptingEditorDock")
         self._host = parent
+        self.resize(1400, 860)
         self.setMinimumSize(960, 640)
 
         # Container Principal
-        self.main_container = self
-        root_layout = QVBoxLayout(self)
+        self.main_container = QWidget(self)
+        self.main_container.setObjectName("VisualScriptingSurface")
+        self.setCentralWidget(self.main_container)
+
+        root_layout = QVBoxLayout(self.main_container)
         root_layout.setContentsMargins(0, 0, 0, 0)
         root_layout.setSpacing(0)
 
-        shared_editor = getattr(parent, "logic_workspace", None)
-        self.graph_editor = shared_editor or LogicGraphEditor(parent=self.main_container)
+        self.graph_editor = LogicGraphEditor(parent=self.main_container)
         self.graph_editor.set_embedded_mode(False)
         root_layout.addWidget(self.graph_editor)
 
@@ -117,7 +120,13 @@ class VisualScriptingEditorDock(QWidget):
         apply_visual_scripting_theme(self)
 
     def configure_independent_window(self) -> None:
-        """Configures integrated workspace size."""
+        """Configures independent tool window size and flags."""
+        self.setWindowFlags(
+            Qt.Window
+            | Qt.WindowMinMaxButtonsHint
+            | Qt.WindowCloseButtonHint
+        )
+        self.resize(1400, 860)
         self.setMinimumSize(960, 640)
 
     def closeEvent(self, event) -> None:
