@@ -127,13 +127,10 @@ class VisualScriptingEditorDock(QMainWindow):
     @staticmethod
     def _new_specialized_graph(category: str) -> GenericGraphEditorWidget:
         """Create a metadata-backed graph editor inside the unified hub."""
-        try:
-            from engine.core.context import EngineContext
-            if EngineContext.current() is None:
-                from engine.core.bootstrap import EngineBootstrap
-                EngineBootstrap.boot()
-        except Exception:
-            pass
+        from editor.visual_scripting.editor_metadata_context import (
+            ensure_editor_metadata_context,
+        )
+        ensure_editor_metadata_context()
         return GenericGraphEditorWidget(graph_category_filter=category)
 
     def _on_graph_mode_changed(self, index: int) -> None:
