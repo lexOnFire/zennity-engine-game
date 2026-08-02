@@ -31,23 +31,19 @@ from editor.visual_scripting.dock_workspace_sync import (
 )
 
 
-class VisualScriptingEditorDock(QMainWindow):
-    """Independent native tool window for Visual Scripting 2.0."""
+class VisualScriptingEditorDock(QWidget):
+    """Integrated workspace for Visual Scripting 2.0."""
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
-        super().__init__(parent, Qt.Window)
+        super().__init__(parent)
         self.setWindowTitle("⚡ Visual Scripting Editor 2.0 — Zennity Engine")
         self.setObjectName("VisualScriptingEditorDock")
         self._host = parent
-        self.resize(1400, 860)
         self.setMinimumSize(960, 640)
 
         # Container Principal
-        self.main_container = QWidget(self)
-        self.main_container.setObjectName("VisualScriptingSurface")
-        self.setCentralWidget(self.main_container)
-
-        root_layout = QVBoxLayout(self.main_container)
+        self.main_container = self
+        root_layout = QVBoxLayout(self)
         root_layout.setContentsMargins(0, 0, 0, 0)
         root_layout.setSpacing(0)
 
@@ -121,13 +117,7 @@ class VisualScriptingEditorDock(QMainWindow):
         apply_visual_scripting_theme(self)
 
     def configure_independent_window(self) -> None:
-        """Turn this tool into an independent editor window."""
-        self.setWindowFlags(
-            Qt.Window
-            | Qt.WindowMinMaxButtonsHint
-            | Qt.WindowCloseButtonHint
-        )
-        self.resize(1400, 860)
+        """Configures integrated workspace size."""
         self.setMinimumSize(960, 640)
 
     def closeEvent(self, event) -> None:

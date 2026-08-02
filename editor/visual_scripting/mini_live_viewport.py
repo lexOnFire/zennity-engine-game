@@ -785,6 +785,10 @@ class RuntimeVisualizationPanelWidget(RuntimePanelControllerMixin, QFrame):
 
         self._build_ui()
 
+    def set_mode(self, mode: ViewportMode) -> None:
+        if hasattr(self, "_canvas") and self._canvas is not None:
+            self._canvas.set_mode(mode)
+
     # ── UI Builder ────────────────────────────────────────────────────────
 
     def _build_ui(self) -> None:

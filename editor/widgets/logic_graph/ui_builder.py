@@ -396,16 +396,10 @@ def build_logic_graph_ui(self) -> None:
     mv_header.addWidget(fps_badge)
     mv_layout.addLayout(mv_header)
 
-    try:
-        from editor.visual_scripting.mini_live_viewport import MiniLiveViewportWidget, ViewportMode
-        self.mini_live_viewport = MiniLiveViewportWidget(mini_viewport_frame)
-        self.mini_live_viewport.set_mode(ViewportMode.GAME)
-        mv_layout.addWidget(self.mini_live_viewport, 1)
-    except Exception:
-        mv_placeholder = QLabel("Gameplay Runtime Preview")
-        mv_placeholder.setStyleSheet("background: #000; color: #64748b; font-size: 12px;")
-        mv_placeholder.setAlignment(Qt.AlignCenter)
-        mv_layout.addWidget(mv_placeholder, 1)
+    from editor.visual_scripting.mini_live_viewport import MiniLiveViewportWidget, ViewportMode
+    self.mini_live_viewport = MiniLiveViewportWidget(mini_viewport_frame)
+    self.mini_live_viewport.set_mode(ViewportMode.GAME)
+    mv_layout.addWidget(self.mini_live_viewport, 1)
 
     right_panel.addWidget(mini_viewport_frame)
 
