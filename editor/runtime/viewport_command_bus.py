@@ -8,7 +8,7 @@ from typing import Any
 class ViewportCommandBus:
     """Adiciona sequência e elimina comandos de estado pequenos e idênticos."""
 
-    COALESCED_TYPES = {"viewport_size", "runtime_input", "set_tool", "set_snap", "set_view_mode"}
+    COALESCED_TYPES = {"viewport_size", "runtime_input", "select_object", "set_tool", "set_snap", "set_view_mode"}
 
     def __init__(self, queue: Any) -> None:
         self.queue = queue
