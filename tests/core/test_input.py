@@ -116,6 +116,13 @@ class TestMousePosition:
         Input._mouse_rel = (5, -3)
         assert Input.get_mouse_rel() == (5, -3)
 
+    def test_mouse_state_defaults_to_origin(self):
+        from engine.input import Input
+        Input._mouse_position = (0, 0)
+        Input._mouse_rel = (0, 0)
+        assert Input.get_mouse_position() == (0, 0)
+        assert Input.get_mouse_rel() == (0, 0)
+
 
 # ===========================================================================
 # 5. Mouse buttons
@@ -166,6 +173,12 @@ class TestMouseButton:
         Input._mouse_current = (False, False, True)
         assert Input.get_mouse_button(2) is True
 
+    def test_button_up_invalid_index_is_safe(self):
+        from engine.input import Input
+        Input._mouse_previous = (False, False, False)
+        Input._mouse_current = (False, False, False)
+        assert Input.get_mouse_button_up(99) is False
+
 
 # ===========================================================================
 # 6. Axes
@@ -202,6 +215,16 @@ class TestAxes:
         Input._keys_current = _make_keys(pygame.K_LEFT, pygame.K_RIGHT)
         assert Input.get_axis_horizontal() == pytest.approx(0.0)
 
+    def test_horizontal_wasd_both_cancel(self):
+        from engine.input import Input
+        Input._keys_current = _make_keys(pygame.K_a, pygame.K_d)
+        assert Input.get_axis_horizontal() == pytest.approx(0.0)
+
+    def test_horizontal_arrow_and_wasd_cancel(self):
+        from engine.input import Input
+        Input._keys_current = _make_keys(pygame.K_LEFT, pygame.K_d)
+        assert Input.get_axis_horizontal() == pytest.approx(0.0)
+
     def test_vertical_up_arrow(self):
         from engine.input import Input
         Input._keys_current = _make_keys(pygame.K_UP)
@@ -232,6 +255,16 @@ class TestAxes:
         Input._keys_current = _make_keys(pygame.K_UP, pygame.K_DOWN)
         assert Input.get_axis_vertical() == pytest.approx(0.0)
 
+    def test_vertical_wasd_both_cancel(self):
+        from engine.input import Input
+        Input._keys_current = _make_keys(pygame.K_w, pygame.K_s)
+        assert Input.get_axis_vertical() == pytest.approx(0.0)
+
+    def test_vertical_arrow_and_wasd_cancel(self):
+        from engine.input import Input
+        Input._keys_current = _make_keys(pygame.K_UP, pygame.K_s)
+        assert Input.get_axis_vertical() == pytest.approx(0.0)
+
 
 # ===========================================================================
 # 7. update() rotaciona os estados
@@ -250,3 +283,19 @@ class TestUpdate:
             Input.update()
             assert Input._keys_previous is old_current
             assert Input._keys_current is new_keys
+
+    def test_update_rotates_mouse_and_fetches_position_and_relative_motion(self):
+        from engine.input import Input
+        from unittest.mock import patch
+
+        Input._mouse_current = (True, False, False)
+        with patch("engine.input.pygame.key.get_pressed", return_value=_make_keys()), \
+             patch("engine.input.pygame.mouse.get_pressed", return_value=(False, True, False)), \
+             patch("engine.input.pygame.mouse.get_pos", return_value=(100, 200)), \
+             patch("engine.input.pygame.mouse.get_rel", return_value=(3, -7)):
+            Input.update()
+
+        assert Input._mouse_previous == (True, False, False)
+        assert Input._mouse_current == (False, True, False)
+        assert Input.get_mouse_position() == (100, 200)
+        assert Input.get_mouse_rel() == (3, -7)

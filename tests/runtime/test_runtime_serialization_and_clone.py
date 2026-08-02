@@ -1,12 +1,10 @@
-"""tests/test_runtime_lifecycle.py
+"""Testes de clonagem e serialização usados pelo runtime.
 
-Testes de regressão para o ciclo de vida do Play Mode:
-  - Play → Stop normal
-  - Stop sem Play (idempotência)
-  - Double-Stop (idempotência)
+Testes de regressão para:
   - Integridade da clonagem de GameObjects
   - Round-trip de serialização de cena
   - Round-trip de serialização de prefab
+  - Reset do contexto e chamadas seguras do RuntimeManager
 """
 from __future__ import annotations
 

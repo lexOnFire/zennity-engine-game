@@ -1,3 +1,5 @@
+"""Compatibilidade pública do Tilemap legado durante o sunset para v2.0."""
+
 import pytest
 import pygame
 from engine.graphics.tilemap import Tileset, Tilemap, TilemapRenderer
