@@ -87,7 +87,10 @@ class AutosaveManager:
             try:
                 self._qt_timer.stop()
             except Exception:  # noqa: BLE001
-                pass
+                logger.debug(
+                    "AutosaveManager: falha ao interromper o QTimer durante shutdown.",
+                    exc_info=True,
+                )
         logger.info("AutosaveManager encerrado normalmente.")
 
     def flush(self) -> bool:

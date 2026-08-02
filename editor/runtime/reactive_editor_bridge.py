@@ -16,7 +16,11 @@ automaticamente via EventBus (domínio Selection.*).
 """
 from __future__ import annotations
 
+import logging
 from typing import Any
+
+
+logger = logging.getLogger(__name__)
 
 
 class ReactiveEditorBridge:
@@ -49,7 +53,10 @@ class ReactiveEditorBridge:
             EventBus.subscribe(EVENT_OBJECT_DELETED, self._on_scene_hierarchy_changed)
             EventBus.subscribe(EVENT_HIERARCHY_UPDATED, self._on_scene_hierarchy_changed)
         except Exception:
-            pass
+            logger.debug(
+                "ReactiveEditorBridge: falha ao assinar eventos de hierarquia.",
+                exc_info=True,
+            )
 
     # ── Attach ────────────────────────────────────────────────────────────────
 
@@ -90,7 +97,10 @@ class ReactiveEditorBridge:
             if hasattr(self._hierarchy, "select_object_in_tree"):
                 self._hierarchy.select_object_in_tree(obj)
         except Exception:
-            pass
+            logger.debug(
+                "ReactiveEditorBridge: falha ao sincronizar a Hierarchy.",
+                exc_info=True,
+            )
 
     def _sync_inspector(self, obj: Any) -> None:
         if self._inspector is None:
@@ -99,7 +109,10 @@ class ReactiveEditorBridge:
             if hasattr(self._inspector, "load_object"):
                 self._inspector.load_object(obj)
         except Exception:
-            pass
+            logger.debug(
+                "ReactiveEditorBridge: falha ao sincronizar o Inspector.",
+                exc_info=True,
+            )
 
     def _sync_viewport(self, obj: Any) -> None:
         if self._viewport is None:
@@ -160,4 +173,7 @@ def _patch_hierarchy_selection(hierarchy_dock: Any, selection_service: Any) -> N
         hierarchy_dock.tree.itemSelectionChanged.connect(patched_handler)
         hierarchy_dock._reactive_selection_handler = patched_handler
     except Exception:
-        pass
+        logger.debug(
+            "ReactiveEditorBridge: falha ao instalar o handler reativo da Hierarchy.",
+            exc_info=True,
+        )

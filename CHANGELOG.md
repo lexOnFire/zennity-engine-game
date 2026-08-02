@@ -10,6 +10,7 @@
 * **Clean Architecture & Unificação de Renderizadores**: Alias e importações unificadas para `engine.graphics.renderer` e `engine.tilemap.tilemap`.
 * **Deprecation Strategy para v2.0**: Adicionados `DeprecationWarning`s explícitos para módulos legados embutidos (`phase1_editor`, `main_window`, `inspector_dock`, `premium_panels`, `editor/inspector/*`).
 * **Estabilidade de Suíte Sequencial**: Implementado reset global de historico de Mocks (`_reset_all_mocks`) garantindo 100% de aprovação sequencial dos 2.207 testes.
+* **Observabilidade de falhas toleradas**: listeners de undo/redo, sincronização reativa de Hierarchy/Inspector e encerramento do timer de autosave agora registram logs `DEBUG` com traceback sem alterar o fallback do editor.
 * **Fix UnboundLocalError**: Corrigida inicialização de `is_runtime_scene` em `Phase1ViewportWidget._tick` quando `active_scene` é nulo, com teste de regressão dedicado.
 
 ---
