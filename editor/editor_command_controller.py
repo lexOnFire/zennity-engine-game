@@ -199,9 +199,24 @@ class EditorCommandController:
             duplicate_action.setShortcut("Ctrl+D")
             duplicate_action.triggered.connect(h._scene_objects.duplicate_selected)
             delete_action = menu.addAction("Excluir")
-            delete_action.setShortcut("Delete")
-            delete_action.triggered.connect(
-                lambda _checked=False: h._selected_name is not None
-                and h._scene_objects.delete(h._selected_name)
-            )
+            delete_action.setShortcut(Qt.Key_Delete)
+            delete_action.setShortcutContext(Qt.ApplicationShortcut)
+            delete_action.setShortcutVisibleInContextMenu(True)
+            
+            def _try_delete_selected(_checked: bool = False) -> None:
+                focus = QApplication.focusWidget()
+                from PySide6.QtWidgets import QLineEdit, QTextEdit
+                if isinstance(focus, (QLineEdit, QTextEdit)):
+                    return
+                if h._selected_name is not None and not h._play_session.is_running:
+                    h._scene_objects.delete(h._selected_name)
+
+            delete_action.triggered.connect(_try_delete_selected)
+            h.addAction(delete_action)
+            
+            # Registrar atalho de atração de Delete em janela
+            from PySide6.QtGui import QShortcut, QKeySequence
+            delete_shortcut = QShortcut(QKeySequence(Qt.Key_Delete), h)
+            delete_shortcut.setContext(Qt.ApplicationShortcut)
+            delete_shortcut.activated.connect(_try_delete_selected)
             break

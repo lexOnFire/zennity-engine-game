@@ -44,6 +44,17 @@ class HierarchyController:
         )
         h.hierarchy_tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self._bind(h.hierarchy_tree.customContextMenuRequested, h._open_hierarchy_menu)
+        
+        # Conectar atalho da tecla Delete/Backspace na árvore de hierarquia
+        orig_key_press = h.hierarchy_tree.keyPressEvent
+        def hierarchy_key_press(event) -> None:
+            if event.key() in (Qt.Key_Delete, Qt.Key_Backspace):
+                if h._selected_name is not None and not h._play_session.is_running:
+                    h._scene_objects.delete(h._selected_name)
+                    return
+            orig_key_press(event)
+        h.hierarchy_tree.keyPressEvent = hierarchy_key_press
+
         self._connected = True
         return True
 
