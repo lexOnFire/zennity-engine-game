@@ -5,115 +5,104 @@ from __future__ import annotations
 VISUAL_SCRIPTING_QSS = """
             QMainWindow#VisualScriptingEditorDock,
             QWidget#VisualScriptingSurface {
-                background: #080b11;
-                color: #d9e0ee;
-                font-family: "Segoe UI";
+                background: #0b0d14;
+                color: #f1f5f9;
+                font-family: "Segoe UI", sans-serif;
                 font-size: 12px;
             }
             QWidget#VisualCommandBar {
-                background: #101622;
-                border: 1px solid #232d3d;
-                border-radius: 10px;
+                background: #0d0f17;
+                border-bottom: 1px solid #1c2230;
             }
             QLabel#VisualBrandTitle {
-                color: #f4f7ff;
-                font-size: 11px;
-                font-weight: 700;
-                letter-spacing: 1px;
+                color: #38bdf8;
+                font-size: 13px;
+                font-weight: bold;
             }
             QLabel#VisualDocumentLabel {
-                color: #7c8ba5;
-                font-size: 9px;
-                font-weight: 600;
+                color: #f8fafc;
+                font-size: 12px;
+                font-weight: bold;
             }
             QLabel#VisualObjectContext {
-                color: #69f0ae;
-                font-size: 10px;
-                font-weight: 700;
-                letter-spacing: 0.6px;
+                color: #94a3b8;
+                font-size: 12px;
+                font-weight: 500;
             }
             QPushButton {
-                min-height: 30px;
-                padding: 0 11px;
-                color: #b9c4d6;
-                background: #171e2b;
-                border: 1px solid #2a3547;
-                border-radius: 7px;
+                min-height: 28px;
+                padding: 0 14px;
+                color: #cbd5e1;
+                background: #1a202c;
+                border: 1px solid #2d3748;
+                border-radius: 6px;
                 font-weight: 600;
             }
             QPushButton:hover {
-                color: #ffffff;
-                background: #222c3d;
-                border-color: #4a5a75;
+                color: #f8fafc;
+                background: #2d3748;
             }
             QPushButton:pressed { background: #0f1520; }
             QPushButton:disabled {
-                color: #596579;
-                background: #101621;
-                border-color: #202938;
+                color: #475569;
+                background: #121722;
+                border-color: #1e293b;
             }
             QPushButton#VisualPlayButton {
-                color: #07140d;
-                background: #4ee59a;
-                border-color: #79f2b5;
+                color: #0f172a;
+                background: #06b6d4;
+                border: none;
+                font-weight: bold;
             }
-            QPushButton#VisualPlayButton:hover { background: #69f0ac; }
+            QPushButton#VisualPlayButton:hover { background: #22d3ee; }
             QPushButton#VisualStopButton {
-                color: #ffecef;
-                background: #a9364b;
-                border-color: #d34b64;
-            }
-            QPushButton#VisualExplainButton {
-                color: #ffffff;
-                background: #6847d9;
-                border-color: #8f73f2;
+                color: #f8fafc;
+                background: #1a202c;
+                border: 1px solid #2d3748;
             }
             QLineEdit {
-                min-height: 32px;
-                padding: 0 12px;
-                color: #e8edfa;
-                selection-background-color: #7658e8;
-                background: #0b1019;
-                border: 1px solid #2a3547;
-                border-radius: 16px;
+                min-height: 28px;
+                padding: 0 10px;
+                color: #f1f5f9;
+                selection-background-color: #38bdf8;
+                background: #181b24;
+                border: 1px solid #282e3e;
+                border-radius: 6px;
             }
             QLineEdit:focus {
-                border: 1px solid #8a6cff;
-                background: #101622;
+                border: 1px solid #3b82f6;
             }
             QSplitter::handle {
-                background: #171e2a;
-                border-radius: 2px;
+                background: #1e2430;
             }
-            QSplitter::handle:vertical { height: 5px; }
-            QSplitter::handle:horizontal { width: 5px; }
+            QSplitter::handle:vertical { height: 2px; }
+            QSplitter::handle:horizontal { width: 2px; }
             QTabWidget::pane {
-                background: #0d121b;
-                border: 1px solid #232c3b;
-                border-radius: 7px;
-                top: -1px;
+                background: #0b0d14;
+                border: none;
             }
             QTabBar::tab {
-                min-height: 28px;
-                padding: 0 13px;
-                color: #78869e;
-                background: #101620;
+                min-height: 26px;
+                padding: 0 14px;
+                color: #94a3b8;
+                background: #141824;
                 border: 1px solid transparent;
                 border-bottom: 2px solid transparent;
+                font-size: 11px;
+                font-weight: bold;
             }
-            QTabBar::tab:hover { color: #dce4f2; background: #171f2d; }
+            QTabBar::tab:hover { color: #f8fafc; background: #1a202c; }
             QTabBar::tab:selected {
-                color: #ffffff;
-                background: #171f2d;
-                border-bottom: 2px solid #8a6cff;
+                color: #f8fafc;
+                background: #1e2536;
+                border-bottom: 2px solid #38bdf8;
             }
             QListWidget, QTreeWidget, QTextEdit {
-                color: #c9d2e3;
-                background: #0b1018;
-                border: 1px solid #222c3b;
+                color: #cbd5e1;
+                background: #141720;
+                border: 1px solid #1e2430;
                 border-radius: 6px;
                 outline: none;
-                alternate-background-color: #101722;
             }
             QListWidget::item, QTreeWidget::item {
                 min-height: 25px;
