@@ -33,6 +33,11 @@ def test_ai_provider_boots_metadata(qapp):
     assert "bt.inverter" in node_ids
     assert "bt.wait" in node_ids
     assert "bt.move_to" in node_ids
+    assert {
+        "bt.repeat", "bt.cooldown", "bt.target_in_range",
+        "bt.parameter_condition", "bt.chase", "bt.patrol",
+        "bt.attack", "bt.play_animation",
+    } <= node_ids
 
 
 def test_generic_graph_editor_widget(qapp):
@@ -54,7 +59,7 @@ def test_behavior_tree_library_is_localized_searchable_and_filterable(qapp):
         editor.node_palette.topLevelItem(index).text(0)
         for index in range(editor.node_palette.topLevelItemCount())
     }
-    assert {"Composição", "Decoradores", "Ações"} <= categories
+    assert {"Composição", "Decoradores", "Condições", "Ações"} <= categories
 
     editor.search_edit.setText("perseguição")
     visible_nodes = [

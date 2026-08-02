@@ -73,12 +73,21 @@ BT_NODE_GUIDE = {
         "use": "Perseguição, patrulha, retorno ao posto e aproximação de combate.",
         "tip": "Forneça uma posição válida e ajuste a velocidade ao timestep do jogo.",
     },
+    "bt.repeat": {"name": "Repetir", "summary": "Repete o filho um número de vezes ou continuamente.", "use": "Rotinas, rondas e comportamentos persistentes.", "tip": "Use zero como contagem para repetição contínua."},
+    "bt.cooldown": {"name": "Cooldown", "summary": "Bloqueia o filho durante um intervalo após o sucesso.", "use": "Cadência de ataque, habilidades e decisões espaçadas.", "tip": "Coloque o ataque como filho direto do Cooldown."},
+    "bt.target_in_range": {"name": "Alvo no alcance", "summary": "Testa se um alvo existe dentro da distância configurada.", "use": "Visão, alcance de combate e ativação de inimigos.", "tip": "Use antes de Perseguir ou Atacar dentro de uma Sequência."},
+    "bt.parameter_condition": {"name": "Condição de parâmetro", "summary": "Compara um parâmetro do Behavior Tree.", "use": "Estados como alerta, vida baixa ou chefe enfurecido.", "tip": "Operadores aceitos: ==, !=, >, >=, < e <=."},
+    "bt.chase": {"name": "Perseguir alvo", "summary": "Move até um alvo mantendo uma distância de parada.", "use": "Inimigos, aliados seguidores e NPCs de escolta.", "tip": "Use uma distância de parada compatível com o alcance do ataque."},
+    "bt.patrol": {"name": "Patrulhar", "summary": "Alterna continuamente entre dois pontos.", "use": "Guardas, plataformas móveis e NPCs em ronda.", "tip": "Informe os pontos como x,y no Inspector."},
+    "bt.attack": {"name": "Atacar alvo", "summary": "Aplica dano ao alvo quando ele está no alcance.", "use": "Combate corpo a corpo e perigos por contato.", "tip": "Combine com Cooldown para evitar dano a cada frame."},
+    "bt.play_animation": {"name": "Reproduzir animação", "summary": "Ativa um estado ou clip no Animator.", "use": "Sincronizar Idle, Walk, Attack e outras respostas visuais.", "tip": "O nome deve corresponder ao estado configurado no Animator."},
 }
 
 BT_CATEGORY_LABELS = {
     "Composite": "Composição",
     "Decorator": "Decoradores",
     "Action": "Ações",
+    "Condition": "Condições",
 }
 
 
@@ -158,7 +167,7 @@ class GenericGraphEditorWidget(QWidget):
         palette_layout.setContentsMargins(4, 4, 4, 4)
         palette_layout.setSpacing(6)
         self.palette_category = QComboBox(palette_panel)
-        self.palette_category.addItems(("Todas", "Composição", "Decoradores", "Ações"))
+        self.palette_category.addItems(("Todas", "Composição", "Decoradores", "Condições", "Ações"))
         self.palette_category.currentTextChanged.connect(self._on_palette_category_changed)
         self.node_palette = QTreeWidget(palette_panel)
         self.node_palette.setHeaderLabel("Paleta de Nós")

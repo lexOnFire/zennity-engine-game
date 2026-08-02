@@ -86,3 +86,116 @@ class BTMoveToNode:
             PinDefinition(id="out", pin_type=PinType.EXEC),
         ],
     )
+
+
+class BTRepeatNode:
+    """Repete o filho uma quantidade definida; zero significa continuamente."""
+
+    __node_definition__ = NodeDefinition(
+        id="bt.repeat", title_key="Repetir", category_key="Behavior Tree/Decorator",
+        description_key="Repete o nó filho. Use 0 para repetir continuamente.",
+        inputs=[PinDefinition(id="in", pin_type=PinType.EXEC),
+                PinDefinition(id="count", pin_type=PinType.INT, default_value=0)],
+        outputs=[PinDefinition(id="child", pin_type=PinType.EXEC)],
+        tags=["loop", "repetir", "patrulha"],
+    )
+
+
+class BTCooldownNode:
+    """Impede nova execução do filho até o intervalo terminar."""
+
+    __node_definition__ = NodeDefinition(
+        id="bt.cooldown", title_key="Cooldown", category_key="Behavior Tree/Decorator",
+        description_key="Executa o filho somente quando o tempo de recarga estiver pronto.",
+        inputs=[PinDefinition(id="in", pin_type=PinType.EXEC),
+                PinDefinition(id="seconds", pin_type=PinType.FLOAT, default_value=1.0)],
+        outputs=[PinDefinition(id="child", pin_type=PinType.EXEC)],
+        tags=["intervalo", "recarga", "ataque"],
+    )
+
+
+class BTTargetInRangeNode:
+    """Condição de distância até um objeto identificado por tag."""
+
+    __node_definition__ = NodeDefinition(
+        id="bt.target_in_range", title_key="Alvo no alcance", category_key="Behavior Tree/Condition",
+        description_key="Retorna sucesso quando o alvo existe e está dentro da distância.",
+        inputs=[PinDefinition(id="in", pin_type=PinType.EXEC),
+                PinDefinition(id="target", pin_type=PinType.STRING, default_value="Player"),
+                PinDefinition(id="distance", pin_type=PinType.FLOAT, default_value=150.0)],
+        outputs=[PinDefinition(id="out", pin_type=PinType.EXEC)],
+        tags=["distância", "visão", "alcance", "jogador"],
+    )
+
+
+class BTParameterConditionNode:
+    """Condição sobre um parâmetro do Behavior Tree."""
+
+    __node_definition__ = NodeDefinition(
+        id="bt.parameter_condition", title_key="Condição de parâmetro", category_key="Behavior Tree/Condition",
+        description_key="Compara um parâmetro com um valor usando ==, !=, >, >=, < ou <=.",
+        inputs=[PinDefinition(id="in", pin_type=PinType.EXEC),
+                PinDefinition(id="parameter", pin_type=PinType.STRING, default_value="alert"),
+                PinDefinition(id="operator", pin_type=PinType.STRING, default_value="=="),
+                PinDefinition(id="value", pin_type=PinType.STRING, default_value="true")],
+        outputs=[PinDefinition(id="out", pin_type=PinType.EXEC)],
+        tags=["variável", "condição", "estado"],
+    )
+
+
+class BTChaseNode:
+    """Persegue um objeto até atingir a distância de parada."""
+
+    __node_definition__ = NodeDefinition(
+        id="bt.chase", title_key="Perseguir alvo", category_key="Behavior Tree/Action",
+        description_key="Move em direção ao alvo e termina ao alcançar a distância de parada.",
+        inputs=[PinDefinition(id="in", pin_type=PinType.EXEC),
+                PinDefinition(id="target", pin_type=PinType.STRING, default_value="Player"),
+                PinDefinition(id="speed", pin_type=PinType.FLOAT, default_value=120.0),
+                PinDefinition(id="stop_distance", pin_type=PinType.FLOAT, default_value=48.0)],
+        outputs=[PinDefinition(id="out", pin_type=PinType.EXEC)],
+        tags=["perseguir", "inimigo", "movimento"],
+    )
+
+
+class BTPatrolNode:
+    """Alterna continuamente entre dois pontos do cenário."""
+
+    __node_definition__ = NodeDefinition(
+        id="bt.patrol", title_key="Patrulhar", category_key="Behavior Tree/Action",
+        description_key="Move continuamente entre os pontos A e B.",
+        inputs=[PinDefinition(id="in", pin_type=PinType.EXEC),
+                PinDefinition(id="point_a", pin_type=PinType.VECTOR2, default_value="0,0"),
+                PinDefinition(id="point_b", pin_type=PinType.VECTOR2, default_value="200,0"),
+                PinDefinition(id="speed", pin_type=PinType.FLOAT, default_value=80.0)],
+        outputs=[PinDefinition(id="out", pin_type=PinType.EXEC)],
+        tags=["patrulha", "rota", "movimento"],
+    )
+
+
+class BTAttackNode:
+    """Aplica dano a um alvo dentro do alcance."""
+
+    __node_definition__ = NodeDefinition(
+        id="bt.attack", title_key="Atacar alvo", category_key="Behavior Tree/Action",
+        description_key="Aplica dano ao campo health/vida do alvo quando estiver no alcance.",
+        inputs=[PinDefinition(id="in", pin_type=PinType.EXEC),
+                PinDefinition(id="target", pin_type=PinType.STRING, default_value="Player"),
+                PinDefinition(id="damage", pin_type=PinType.FLOAT, default_value=10.0),
+                PinDefinition(id="range", pin_type=PinType.FLOAT, default_value=64.0)],
+        outputs=[PinDefinition(id="out", pin_type=PinType.EXEC)],
+        tags=["ataque", "dano", "combate"],
+    )
+
+
+class BTPlayAnimationNode:
+    """Solicita uma animação no Animator do objeto."""
+
+    __node_definition__ = NodeDefinition(
+        id="bt.play_animation", title_key="Reproduzir animação", category_key="Behavior Tree/Action",
+        description_key="Ativa um estado ou clip de animação e retorna sucesso.",
+        inputs=[PinDefinition(id="in", pin_type=PinType.EXEC),
+                PinDefinition(id="animation", pin_type=PinType.STRING, default_value="Idle")],
+        outputs=[PinDefinition(id="out", pin_type=PinType.EXEC)],
+        tags=["animar", "estado", "clip"],
+    )

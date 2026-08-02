@@ -9,6 +9,8 @@ from engine.ai.behavior_tree_nodes import (
     BTInverterNode,
     BTWaitNode,
     BTMoveToNode,
+    BTRepeatNode, BTCooldownNode, BTTargetInRangeNode, BTParameterConditionNode,
+    BTChaseNode, BTPatrolNode, BTAttackNode, BTPlayAnimationNode,
 )
 
 
@@ -36,3 +38,11 @@ class AIProvider(EngineProvider):
         manager.register(BTInverterNode.__node_definition__)
         manager.register(BTWaitNode.__node_definition__)
         manager.register(BTMoveToNode.__node_definition__)
+        manager.register(BTRepeatNode.__node_definition__)
+        manager.register(BTCooldownNode.__node_definition__)
+        manager.register(BTTargetInRangeNode.__node_definition__)
+        manager.register(BTParameterConditionNode.__node_definition__)
+        manager.register(BTChaseNode.__node_definition__)
+        manager.register(BTPatrolNode.__node_definition__)
+        manager.register(BTAttackNode.__node_definition__)
+        manager.register(BTPlayAnimationNode.__node_definition__)
