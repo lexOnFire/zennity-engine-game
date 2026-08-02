@@ -41,6 +41,33 @@ def test_generic_graph_editor_widget(qapp):
     editor = GenericGraphEditorWidget(graph_category_filter="Behavior Tree")
     assert editor.category_filter == "Behavior Tree"
     assert editor.node_palette.topLevelItemCount() >= 1
+    assert editor.inspector_tabs.tabText(0) == "Propriedades"
+    assert editor.inspector_tabs.tabText(1) == "Ajuda"
+    assert "Behavior Tree" in editor.help_browser.toPlainText()
+
+
+def test_behavior_tree_library_is_localized_searchable_and_filterable(qapp):
+    EngineBootstrap.boot()
+    editor = GenericGraphEditorWidget(graph_category_filter="Behavior Tree")
+
+    categories = {
+        editor.node_palette.topLevelItem(index).text(0)
+        for index in range(editor.node_palette.topLevelItemCount())
+    }
+    assert {"Composição", "Decoradores", "Ações"} <= categories
+
+    editor.search_edit.setText("perseguição")
+    visible_nodes = [
+        editor.node_palette.topLevelItem(index).child(child).text(0)
+        for index in range(editor.node_palette.topLevelItemCount())
+        for child in range(editor.node_palette.topLevelItem(index).childCount())
+    ]
+    assert visible_nodes == ["Mover até"]
+
+    editor.search_edit.clear()
+    editor.palette_category.setCurrentText("Decoradores")
+    assert editor.node_palette.topLevelItemCount() == 1
+    assert editor.node_palette.topLevelItem(0).text(0) == "Decoradores"
 
 
 def test_behavior_tree_editor_dock_specialization(qapp):

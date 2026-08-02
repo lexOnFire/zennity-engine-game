@@ -29,6 +29,8 @@ from PySide6.QtWidgets import (
     QSplitter,
     QTreeWidget,
     QTreeWidgetItem,
+    QTabWidget,
+    QTextBrowser,
     QFileDialog,
     QMessageBox,
 )
@@ -38,6 +40,46 @@ from engine.metadata.manager import MetadataManager
 from engine.core.metadata import NodeDefinition, PinType
 from editor.widgets.graph_editor.graph_canvas import GraphCanvas
 from editor.widgets.graph_editor.inspector.graph_inspector import GraphNodeInspector
+
+
+BT_NODE_GUIDE = {
+    "bt.selector": {
+        "name": "Seletor",
+        "summary": "Tenta os filhos em ordem até encontrar um que tenha sucesso.",
+        "use": "Escolhas e alternativas: perseguir o jogador; se não puder, patrulhar.",
+        "tip": "Ordene as opções da mais importante para a alternativa de segurança.",
+    },
+    "bt.sequence": {
+        "name": "Sequência",
+        "summary": "Executa os filhos em ordem e falha assim que um deles falhar.",
+        "use": "Planos compostos: localizar alvo, aproximar e então atacar.",
+        "tip": "Coloque condições antes das ações para impedir ações inválidas.",
+    },
+    "bt.inverter": {
+        "name": "Inversor",
+        "summary": "Troca Success por Failure e Failure por Success no único filho.",
+        "use": "Transformar uma condição, como “não está vendo o jogador”.",
+        "tip": "Conecte somente um filho; Running continua sendo Running.",
+    },
+    "bt.wait": {
+        "name": "Esperar",
+        "summary": "Mantém o ramo em Running durante o tempo configurado.",
+        "use": "Pausas de patrulha, intervalo entre ataques e tempo de reação.",
+        "tip": "Use duração curta para a IA continuar responsiva.",
+    },
+    "bt.move_to": {
+        "name": "Mover até",
+        "summary": "Move o objeto até a posição-alvo usando a velocidade informada.",
+        "use": "Perseguição, patrulha, retorno ao posto e aproximação de combate.",
+        "tip": "Forneça uma posição válida e ajuste a velocidade ao timestep do jogo.",
+    },
+}
+
+BT_CATEGORY_LABELS = {
+    "Composite": "Composição",
+    "Decorator": "Decoradores",
+    "Action": "Ações",
+}
 
 
 class GenericGraphEditorWidget(QWidget):
@@ -52,6 +94,7 @@ class GenericGraphEditorWidget(QWidget):
         self.category_filter = graph_category_filter
         self.current_path: Path | None = None
         self.is_dirty = False
+        self._palette_category_filter = "Todas"
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
@@ -109,11 +152,30 @@ class GenericGraphEditorWidget(QWidget):
         # Inner splitter: Paleta | Canvas
         inner_splitter = QSplitter(Qt.Horizontal)
 
-        # Paleta de Nós (TreeWidget)
-        self.node_palette = QTreeWidget(inner_splitter)
+        # Paleta de Nós
+        palette_panel = QWidget(inner_splitter)
+        palette_layout = QVBoxLayout(palette_panel)
+        palette_layout.setContentsMargins(4, 4, 4, 4)
+        palette_layout.setSpacing(6)
+        self.palette_category = QComboBox(palette_panel)
+        self.palette_category.addItems(("Todas", "Composição", "Decoradores", "Ações"))
+        self.palette_category.currentTextChanged.connect(self._on_palette_category_changed)
+        self.node_palette = QTreeWidget(palette_panel)
         self.node_palette.setHeaderLabel("Paleta de Nós")
         self.node_palette.itemDoubleClicked.connect(self._on_node_double_clicked)
-        inner_splitter.addWidget(self.node_palette)
+        self.palette_summary = QLabel(palette_panel)
+        self.palette_summary.setWordWrap(True)
+        self.palette_summary.setStyleSheet("color: #7f8ca3; font-size: 10px;")
+        if self.category_filter.casefold() == "behavior tree":
+            palette_layout.addWidget(self.palette_category)
+            self.palette_summary.setText(
+                "Duplo clique adiciona um nó. Monte a árvore da esquerda para a direita."
+            )
+        else:
+            self.palette_category.hide()
+        palette_layout.addWidget(self.node_palette, 1)
+        palette_layout.addWidget(self.palette_summary)
+        inner_splitter.addWidget(palette_panel)
 
         # Canvas do Graph Framework
         self.canvas = GraphCanvas(inner_splitter)
@@ -122,11 +184,18 @@ class GenericGraphEditorWidget(QWidget):
 
         outer_splitter.addWidget(inner_splitter)
 
-        # Inspector lateral (Item 3)
-        self.graph_inspector = GraphNodeInspector(outer_splitter)
+        # Inspector lateral + ajuda contextual
+        self.inspector_tabs = QTabWidget(outer_splitter)
+        self.graph_inspector = GraphNodeInspector(self.inspector_tabs)
         self.graph_inspector.setMinimumWidth(200)
         self.graph_inspector.setMaximumWidth(280)
-        outer_splitter.addWidget(self.graph_inspector)
+        self.help_browser = QTextBrowser(self.inspector_tabs)
+        self.help_browser.setOpenExternalLinks(True)
+        self.inspector_tabs.addTab(self.graph_inspector, "Propriedades")
+        self.inspector_tabs.addTab(self.help_browser, "Ajuda")
+        self.inspector_tabs.setMinimumWidth(240)
+        self.inspector_tabs.setMaximumWidth(340)
+        outer_splitter.addWidget(self.inspector_tabs)
         outer_splitter.setSizes([780, 240])
 
         layout.addWidget(outer_splitter, 1)
@@ -142,6 +211,7 @@ class GenericGraphEditorWidget(QWidget):
         )
 
         self.clipboard_nodes: List[dict] = []
+        self._show_behavior_help(None)
         self.populate_node_palette()
 
     # ── Node Palette ───────────────────────────────────────────────────────
@@ -164,6 +234,8 @@ class GenericGraphEditorWidget(QWidget):
             node_id = str(getattr(ndef, "id", "")).lower()
             name_key = str(getattr(ndef, "name_key", "")).lower()
             tags = [t.lower() for t in getattr(ndef, "tags", [])]
+            guide = BT_NODE_GUIDE.get(str(getattr(ndef, "id", "")), {})
+            guide_text = " ".join(str(value) for value in guide.values()).lower()
 
             # Filtro por tipo de editor
             requested = self.category_filter.casefold()
@@ -177,6 +249,7 @@ class GenericGraphEditorWidget(QWidget):
                     not query
                     or query in node_id
                     or query in name_key
+                    or query in guide_text
                     or query in cat.lower()
                     or any(query in tag for tag in tags)
                 )
@@ -184,19 +257,69 @@ class GenericGraphEditorWidget(QWidget):
                 if matches_search:
                     category_nodes.setdefault(cat, []).append(ndef)
 
-        for cat_name, ndefs in category_nodes.items():
-            cat_item = QTreeWidgetItem(self.node_palette, [cat_name])
+        visible_count = 0
+        for cat_name, ndefs in sorted(category_nodes.items()):
+            section = str(cat_name).split("/")[-1]
+            localized_category = BT_CATEGORY_LABELS.get(section, section)
+            if (
+                self.category_filter.casefold() == "behavior tree"
+                and self._palette_category_filter != "Todas"
+                and localized_category != self._palette_category_filter
+            ):
+                continue
+            cat_item = QTreeWidgetItem(self.node_palette, [localized_category])
             cat_item.setExpanded(True)
-            for ndef in ndefs:
-                display_name = getattr(ndef, "name_key", ndef.id)
-                node_item = QTreeWidgetItem(cat_item, [f"{display_name} ({ndef.id})"])
+            for ndef in sorted(ndefs, key=lambda item: str(item.id)):
+                guide = BT_NODE_GUIDE.get(str(ndef.id), {})
+                display_name = guide.get("name") or getattr(ndef, "name_key", ndef.id)
+                node_item = QTreeWidgetItem(cat_item, [display_name])
                 node_item.setData(0, Qt.UserRole, ndef)
+                node_item.setToolTip(0, guide.get("summary", str(ndef.id)))
+                visible_count += 1
+        if self.category_filter.casefold() == "behavior tree":
+            self.node_palette.setHeaderLabel(f"Biblioteca Behavior Tree • {visible_count} nós")
+
+    def _on_palette_category_changed(self, category: str) -> None:
+        self._palette_category_filter = category
+        self.populate_node_palette(self.search_edit.text())
 
     # ── Graph↔Inspector Sync (Item 3) ─────────────────────────────────────
     def _on_node_selected(self, node_item) -> None:
         """Relay canvas selection to the graph inspector and the outer signal."""
         self.graph_inspector.inspect_node(node_item)
+        node_def = getattr(node_item, "node_def", None) if node_item is not None else None
+        self._show_behavior_help(node_def)
         self.node_selected.emit(node_item)
+
+    def _show_behavior_help(self, node_def: Any | None) -> None:
+        if self.category_filter.casefold() != "behavior tree":
+            self.help_browser.setHtml(
+                "<h3>Ajuda do grafo</h3><p>Selecione um nó para consultar seus metadados.</p>"
+            )
+            return
+        node_id = str(getattr(node_def, "id", ""))
+        guide = BT_NODE_GUIDE.get(node_id)
+        if guide is None:
+            self.help_browser.setHtml(
+                "<h2>Behavior Tree</h2>"
+                "<p>Selecione um nó para ver como ele funciona.</p>"
+                "<h3>Estados</h3><ul>"
+                "<li><b>Success</b>: a tarefa terminou corretamente.</li>"
+                "<li><b>Failure</b>: a tarefa não pôde ser concluída.</li>"
+                "<li><b>Running</b>: a tarefa continuará no próximo frame.</li>"
+                "</ul><h3>Como começar</h3>"
+                "<p>Use uma Sequência para um plano ou um Seletor para alternativas. "
+                "Depois conecte Ações e Decoradores.</p>"
+            )
+            return
+        self.help_browser.setHtml(
+            f"<h2>{guide['name']}</h2><code>{node_id}</code>"
+            f"<h3>O que faz</h3><p>{guide['summary']}</p>"
+            f"<h3>Uso em jogos</h3><p>{guide['use']}</p>"
+            f"<h3>Boa prática</h3><p>{guide['tip']}</p>"
+            "<p><b>Dica:</b> edite os valores na aba Propriedades e conecte "
+            "as saídas na ordem em que devem ser avaliadas.</p>"
+        )
 
     # ── Auto Layout ────────────────────────────────────────────────────────
     def auto_layout(self) -> None:
