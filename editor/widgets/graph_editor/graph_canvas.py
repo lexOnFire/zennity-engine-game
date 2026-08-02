@@ -16,7 +16,7 @@ import uuid
 from typing import Optional, Any
 from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPathItem
 from PySide6.QtCore import Qt, Signal, QPointF
-from PySide6.QtGui import QUndoStack, QPainter, QPen, QColor, QBrush, QPainterPath, QKeyEvent
+from PySide6.QtGui import QUndoStack, QPainter, QPen, QColor, QBrush, QPainterPath, QKeyEvent, QKeySequence, QShortcut
 
 from .node_item import GraphNodeItem
 from .edge_item import GraphEdgeItem
@@ -203,6 +203,17 @@ class GraphCanvas(QGraphicsView):
         self.setRenderHint(QPainter.Antialiasing)
         self.setDragMode(QGraphicsView.ScrollHandDrag)
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
+        self.setFocusPolicy(Qt.StrongFocus)
+
+        # A QGraphicsView nem sempre recebe keyPressEvent depois que um item
+        # filho ganha foco. O atalho com escopo no canvas mantém Delete local
+        # ao grafo e impede que a janela principal exclua o objeto da cena.
+        self.delete_shortcut = QShortcut(QKeySequence(Qt.Key_Delete), self)
+        self.delete_shortcut.setContext(Qt.WidgetWithChildrenShortcut)
+        self.delete_shortcut.activated.connect(self.delete_selection)
+        self.backspace_shortcut = QShortcut(QKeySequence(Qt.Key_Backspace), self)
+        self.backspace_shortcut.setContext(Qt.WidgetWithChildrenShortcut)
+        self.backspace_shortcut.activated.connect(self.delete_selection)
 
         self.palette = CommandPaletteWidget(self)
         self.palette.hide()
@@ -245,12 +256,20 @@ class GraphCanvas(QGraphicsView):
     # ── Keyboard Events ────────────────────────────────────────────────────────
     def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() in (Qt.Key_Delete, Qt.Key_Backspace):
-            self.scene.delete_selected()
-            self.asset_changed.emit()
+            self.delete_selection()
         elif event.key() == Qt.Key_Escape:
             self.scene.cancel_connection()
         else:
             super().keyPressEvent(event)
+
+    def delete_selection(self) -> bool:
+        """Delete selected graph items and report whether the graph changed."""
+        if not self.scene.selectedItems():
+            return False
+        self.scene.delete_selected()
+        self.asset_changed.emit()
+        self.setFocus(Qt.ShortcutFocusReason)
+        return True
 
     # ── Node Spawning ──────────────────────────────────────────────────────────
     @staticmethod

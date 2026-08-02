@@ -1,4 +1,5 @@
 import pytest
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
 @pytest.fixture(scope="module", autouse=True)
@@ -73,6 +74,41 @@ def test_behavior_tree_library_is_localized_searchable_and_filterable(qapp):
     editor.palette_category.setCurrentText("Decoradores")
     assert editor.node_palette.topLevelItemCount() == 1
     assert editor.node_palette.topLevelItem(0).text(0) == "Decoradores"
+
+
+def test_palette_selection_updates_contextual_help(qapp):
+    EngineBootstrap.boot()
+    editor = GenericGraphEditorWidget(graph_category_filter="Behavior Tree")
+    actions = next(
+        editor.node_palette.topLevelItem(index)
+        for index in range(editor.node_palette.topLevelItemCount())
+        if editor.node_palette.topLevelItem(index).text(0) == "Ações"
+    )
+    chase = next(
+        actions.child(index)
+        for index in range(actions.childCount())
+        if actions.child(index).text(0) == "Perseguir alvo"
+    )
+
+    editor.node_palette.itemClicked.emit(chase, 0)
+
+    assert "Perseguir alvo" in editor.help_browser.toPlainText()
+    assert "distância de parada" in editor.help_browser.toPlainText()
+
+
+def test_delete_removes_selected_behavior_node_and_marks_document_dirty(qapp):
+    EngineBootstrap.boot()
+    editor = GenericGraphEditorWidget(graph_category_filter="Behavior Tree")
+    changed = []
+    editor.canvas.asset_changed.connect(lambda: changed.append(True))
+    editor.canvas._spawn_node("bt.chase")
+    node = next(iter(editor.canvas.scene.nodes.values()))
+    node.setSelected(True)
+
+    assert editor.canvas.delete_selection() is True
+    assert editor.canvas.scene.nodes == {}
+    assert changed
+    assert editor.canvas.delete_shortcut.context() == Qt.WidgetWithChildrenShortcut
 
 
 def test_behavior_tree_editor_dock_specialization(qapp):

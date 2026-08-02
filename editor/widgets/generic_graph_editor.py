@@ -128,6 +128,7 @@ class GenericGraphEditorWidget(QWidget):
         self.btn_new = QPushButton("＋ Novo", self)
         self.btn_open = QPushButton("📂 Abrir", self)
         self.btn_save = QPushButton("💾 Salvar", self)
+        self.btn_delete = QPushButton("🗑 Excluir", self)
         self.btn_new.clicked.connect(self.new_document)
         self.btn_open.clicked.connect(self.open_dialog)
         self.btn_save.clicked.connect(self.save)
@@ -141,6 +142,7 @@ class GenericGraphEditorWidget(QWidget):
         toolbar.addWidget(self.btn_new)
         toolbar.addWidget(self.btn_open)
         toolbar.addWidget(self.btn_save)
+        toolbar.addWidget(self.btn_delete)
         layout.addLayout(toolbar)
         utility_bar = QHBoxLayout()
         self.search_edit = QLineEdit(self)
@@ -171,6 +173,7 @@ class GenericGraphEditorWidget(QWidget):
         self.palette_category.currentTextChanged.connect(self._on_palette_category_changed)
         self.node_palette = QTreeWidget(palette_panel)
         self.node_palette.setHeaderLabel("Paleta de Nós")
+        self.node_palette.itemClicked.connect(self._on_palette_item_selected)
         self.node_palette.itemDoubleClicked.connect(self._on_node_double_clicked)
         self.palette_summary = QLabel(palette_panel)
         self.palette_summary.setWordWrap(True)
@@ -188,6 +191,9 @@ class GenericGraphEditorWidget(QWidget):
 
         # Canvas do Graph Framework
         self.canvas = GraphCanvas(inner_splitter)
+        # Canvas exists after the toolbar is composed; bind the explicit action
+        # here so mouse users have the same reliable deletion path as Delete.
+        self.btn_delete.clicked.connect(self.canvas.delete_selection)
         inner_splitter.addWidget(self.canvas)
         inner_splitter.setSizes([180, 600])
 
@@ -414,6 +420,12 @@ class GenericGraphEditorWidget(QWidget):
             self.canvas._spawn_pos = center
             self.canvas._spawn_node(ndef.id)
             self.node_added.emit(ndef.id)
+
+    def _on_palette_item_selected(self, item: QTreeWidgetItem, _column: int) -> None:
+        """Preview documentation for a library item without spawning it."""
+        node_def = item.data(0, Qt.UserRole)
+        if isinstance(node_def, NodeDefinition):
+            self._show_behavior_help(node_def)
 
     def _on_zoom_fit(self) -> None:
         if self.canvas.scene.nodes:
