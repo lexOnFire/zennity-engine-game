@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from queue import Queue
 
 from editor.controllers.selection_controller import EditorSelectionController
 from editor.viewport_event_controller import ViewportEventController
@@ -56,6 +57,35 @@ def test_runtime_objects_refresh_only_when_membership_changes() -> None:
 
     assert host.refreshed == 1
     assert host._runtime_objects_by_name["Enemy"]["x"] == 2
+
+
+def test_runtime_objects_only_repaints_inspector_when_selected_data_changes() -> None:
+    host, _ = _host()
+    host._runtime_playing = True
+    controller = ViewportEventController(host)
+    snapshot = {"name": "Player", "x": 1, "y": 2}
+
+    controller.runtime_objects({"objects": [snapshot]})
+    controller.runtime_objects({"objects": [snapshot]})
+
+    assert host.inspected == ["Player"]
+
+
+def test_poll_is_bounded_and_coalesces_high_frequency_runtime_updates() -> None:
+    host, _ = _host()
+    host._events = Queue()
+    dispatched = []
+    host._viewport_events = SimpleNamespace(dispatch=dispatched.append)
+    controller = ViewportEventController(host)
+    controller.MAX_EVENTS_PER_POLL = 4
+    for x in range(6):
+        host._events.put({"type": "runtime_objects", "objects": [{"name": "Player", "x": x}]})
+
+    controller.poll()
+
+    assert len(dispatched) == 1
+    assert dispatched[0]["objects"][0]["x"] == 3
+    assert host._events.qsize() == 2
 
 
 def test_selected_event_updates_inspector_and_status() -> None:

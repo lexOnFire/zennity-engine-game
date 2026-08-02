@@ -161,7 +161,9 @@ class ViewportSessionLifecycleMixin:
 
     def sync_stats(self) -> None:
         now_ms = self.pygame.time.get_ticks()
-        if self.playing and now_ms - self.last_runtime_sync_ms >= 33:
+        # A UI do editor não precisa receber uma cópia completa da cena a cada
+        # frame. 10 Hz mantém Inspector/Hierarchy fluidos sem saturar o IPC/Qt.
+        if self.playing and now_ms - self.last_runtime_sync_ms >= 100:
             self.last_runtime_sync_ms = now_ms
             _send(
                 self.events,

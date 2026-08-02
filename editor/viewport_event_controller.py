@@ -8,6 +8,9 @@ from typing import Any
 class ViewportEventController:
     """Owns viewport event state transitions and presentation updates."""
 
+    MAX_EVENTS_PER_POLL = 64
+    COALESCED_EVENT_TYPES = frozenset({"runtime_objects", "stats", "runtime_metrics"})
+
     def __init__(self, host: Any) -> None:
         self.host = host
 
@@ -109,6 +112,7 @@ class ViewportEventController:
     def runtime_objects(self, message: dict) -> None:
         h = self.host
         previous_names = set(h._runtime_objects_by_name)
+        previous_selected = h._runtime_objects_by_name.get(h._selected_name)
         h._runtime_objects_by_name = {
             str(item.get("name")): deepcopy(item)
             for item in message.get("objects", [])
@@ -116,13 +120,14 @@ class ViewportEventController:
         }
         if set(h._runtime_objects_by_name) != previous_names:
             h._refresh_hierarchy()
-        if h._selected_name in h._runtime_objects_by_name:
+        current_selected = h._runtime_objects_by_name.get(h._selected_name)
+        if current_selected is not None and current_selected != previous_selected:
             h._update_inspector(str(h._selected_name))
         elif h._selected_name in previous_names and h._selected_name not in h._objects_by_name:
             h._selected_name = None
             h._clear_inspector_view()
         dock = getattr(h, "_dock_visual_scripting", None)
-        if dock is not None:
+        if dock is not None and (not hasattr(dock, "isVisible") or dock.isVisible()):
             dock.sync_from_host()
 
     def viewport_mode(self, message: dict) -> None:
@@ -175,9 +180,26 @@ class ViewportEventController:
 
     def poll(self) -> None:
         h = self.host
-        while True:
+        pending: dict[str, dict] = {}
+        processed = 0
+
+        def dispatch_pending() -> None:
+            for queued_message in pending.values():
+                h._viewport_events.dispatch(queued_message)
+            pending.clear()
+
+        while processed < self.MAX_EVENTS_PER_POLL:
             try:
                 message = h._events.get_nowait()
             except Exception:
-                return
-            h._viewport_events.dispatch(message)
+                break
+            processed += 1
+            event_type = str(message.get("type", ""))
+            if event_type in self.COALESCED_EVENT_TYPES:
+                pending[event_type] = message
+            else:
+                # Preserve event boundaries such as play/stop: snapshots queued
+                # before a state transition must be observed before it.
+                dispatch_pending()
+                h._viewport_events.dispatch(message)
+        dispatch_pending()
