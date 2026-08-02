@@ -84,7 +84,16 @@ class SpriteRenderer(Component):
         world_pos = self.game_object.transform.get_world_position()
         wx, wy = float(world_pos[0]), float(world_pos[1])
 
-        cam = Camera._active
+        # BUG FIX: `Camera._active` never existed on the Camera class — this
+        # raised AttributeError on every SpriteRenderer.draw() call, which
+        # silently aborted the frame (Engine.run() only logs the traceback).
+        # Resolve the active camera the same way TilemapRenderer/ParticleSystem
+        # do: prefer the modern Camera (via CameraManager), fall back to the
+        # legacy Camera2D, and finally to "no camera" (raw world coordinates).
+        cam = Camera.main
+        if cam is None:
+            from engine.graphics.camera2d import Camera2D
+            cam = Camera2D.main
         zoom = cam.zoom if cam is not None else 1.0
         color = getattr(self, "color", (255, 255, 255))
         alpha = getattr(self, "alpha", 255)
@@ -123,10 +132,19 @@ class SpriteRenderer(Component):
         else:
             surf = self._cached_final_surface
 
-        if cam is not None:
-            sx, sy = cam.world_to_screen(wx, wy)
-            draw_x = sx - surf.get_width() // 2
-            draw_y = sy - surf.get_height() // 2
+        if cam is not None and cam.game_object is not None:
+            # BUG FIX: world_to_screen() requires screen_width/screen_height —
+            # the old call site passed only (wx, wy), which raised a
+            # TypeError (missing 2 required positional arguments).
+            sx, sy = cam.world_to_screen((wx, wy), screen.get_width(), screen.get_height())
+            # BUG FIX: world_to_screen() returns numpy float32/float64 scalars
+            # (cam_pos comes from a numpy Transform array). pygame-ce's
+            # Surface.blit() rejects numpy scalar types as a blit dest with
+            # "invalid destination position for blit" — cast to plain
+            # Python int, exactly like every other draw call in the engine
+            # (TileMap, ParticleSystem, the demos) already does.
+            draw_x = int(sx) - surf.get_width() // 2
+            draw_y = int(sy) - surf.get_height() // 2
         else:
             draw_x = int(wx) - surf.get_width() // 2
             draw_y = int(wy) - surf.get_height() // 2

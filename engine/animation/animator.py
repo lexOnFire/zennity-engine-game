@@ -251,7 +251,10 @@ class Animator(Component):
         from engine.graphics.renderer import SpriteRenderer
         sr = self.game_object.get_component(SpriteRenderer) if self.game_object else None
         if sr:
-            sr.image = frame
+            # BUG FIX: SpriteRenderer exposes its image via the `.surface`
+            # property (with setter) — it has no `.image` attribute, so this
+            # assignment silently did nothing and the sprite never animated.
+            sr.surface = frame
 
     def _fire_events(self) -> None:
         if self._current is None:

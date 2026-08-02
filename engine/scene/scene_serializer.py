@@ -11,6 +11,8 @@ from engine.core.component import Transform
 from engine.core.component_registry import component_registry
 from engine.physics.collider import BoxCollider, CircleCollider
 from engine.physics.rigidbody import RigidBody
+from engine.graphics.camera import Camera
+from engine.audio import AudioSource
 from engine.scene.scene_format import DEFAULT_SCENE_NAME, ENGINE_VERSION, SCENE_FORMAT_VERSION
 
 
@@ -220,6 +222,41 @@ def _deserialize_rigidbody(data: dict[str, Any]) -> RigidBody:
     return rigidbody
 
 
+def _deserialize_camera(data: dict[str, Any]) -> Camera:
+    """
+    BUG FIX: components.camera (the dict shape written by the real editor,
+    editor/scene_persistence.py) had no deserializer at all — a scene's
+    MainCamera silently lost its Camera component on load through this path.
+    """
+    clear_color = data.get("background_color", data.get("clear_color", (30, 30, 30)))
+    return Camera(
+        zoom=float(data.get("zoom", 1.0)),
+        clear_color=tuple(clear_color),
+        viewport_rect=tuple(data.get("viewport_rect", (0.0, 0.0, 1.0, 1.0))),
+        priority=int(data.get("priority", 0)),
+        active=bool(data.get("active", True)),
+    )
+
+
+def _deserialize_audio_source(data: dict[str, Any]) -> AudioSource:
+    """
+    BUG FIX: components.audio (the dict shape written by the real editor) had
+    no deserializer at all. Accepts both the editor's runtime field names
+    (path/autoplay) and the older component-item names (audio_clip/
+    play_on_awake) for robustness.
+    """
+    clip = data.get("path", data.get("audio_clip", ""))
+    play_on_awake = data.get("autoplay", data.get("play_on_awake", False))
+    return AudioSource(
+        audio_clip=str(clip),
+        volume=float(data.get("volume", 1.0)),
+        pitch=float(data.get("pitch", 1.0)),
+        loop=bool(data.get("loop", False)),
+        play_on_awake=bool(play_on_awake),
+        mute=bool(data.get("mute", False)),
+    )
+
+
 def _component_from_item(data: dict[str, Any]) -> Any:
     component = component_registry.create(data)
     return component
@@ -264,6 +301,16 @@ def deserialize_game_object(data: dict[str, Any]) -> GameObject:
     obj.transform.scale = np.array(_vector(transform.get("scale"), 3, 1.0), dtype=np.float32)
 
     components = data.get("components", {}) or {}
+
+    # BUG FIX: this used to be `if items: ... else: collider/rigidbody`, as if
+    # a GameObject could only ever be described one way or the other. But the
+    # real editor (editor/scene_persistence.py) always writes collider/
+    # rigidbody/camera/audio as their own sibling dict keys *and* writes
+    # "items" whenever the object also has a UI element — so any real scene
+    # with, say, a Player that has both a BoxCollider and a UI Label on it
+    # (or simply any object saved by the actual editor) silently lost its
+    # collider/rigidbody/camera/audio on load through this path. Both forms
+    # are independent and must both be applied.
     component_items = components.get("items")
     if isinstance(component_items, list):
         for item in component_items:
@@ -271,16 +318,24 @@ def deserialize_game_object(data: dict[str, Any]) -> GameObject:
                 component = _component_from_item(item)
                 if not isinstance(component, Transform):
                     obj.add_component(component)
-    else:
-        collider_data = components.get("collider")
-        if isinstance(collider_data, dict):
-            collider = _deserialize_collider(collider_data)
-            if collider is not None:
-                obj.add_component(collider)
 
-        rigidbody_data = components.get("rigidbody")
-        if isinstance(rigidbody_data, dict):
-            obj.add_component(_deserialize_rigidbody(rigidbody_data))
+    collider_data = components.get("collider")
+    if isinstance(collider_data, dict):
+        collider = _deserialize_collider(collider_data)
+        if collider is not None:
+            obj.add_component(collider)
+
+    rigidbody_data = components.get("rigidbody")
+    if isinstance(rigidbody_data, dict):
+        obj.add_component(_deserialize_rigidbody(rigidbody_data))
+
+    camera_data = components.get("camera")
+    if isinstance(camera_data, dict):
+        obj.add_component(_deserialize_camera(camera_data))
+
+    audio_data = components.get("audio")
+    if isinstance(audio_data, dict):
+        obj.add_component(_deserialize_audio_source(audio_data))
 
     scripts = components.get("scripts")
     if isinstance(scripts, list):

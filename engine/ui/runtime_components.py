@@ -499,4 +499,57 @@ class ButtonComponent(RuntimeUIElement):
         self.interactable = bool(data.get("interactable", self.interactable))
 
 
+class ProgressBarComponent(RuntimeUIElement):
+    """
+    Componente de barra de progresso em Runtime Screen Space (HP/MP/XP bars).
+
+    BUG FIX: cenas de projeto reais (ex.: Assets/Scenes/NebulaDefensePro.zscene)
+    já salvam componentes do tipo "ProgressBar", mas nenhuma classe com esse
+    nome existia em engine.ui.runtime_components nem estava registrada em
+    component_registry — o carregador caía no fallback genérico (Component
+    vazio) e a barra perdia todo o comportamento/propriedades silenciosamente.
+    """
+
+    component_type = "ProgressBar"
+
+    def __init__(
+        self,
+        x: float = 0.0,
+        y: float = 0.0,
+        width: float = 180.0,
+        height: float = 18.0,
+        value: float = 100.0,
+        max_value: float = 100.0,
+        fill_color: tuple[int, int, int] = (46, 204, 113),
+        bg_color: tuple[int, int, int] = (28, 35, 48),
+        visible: bool = True,
+        z_order: int = 0,
+    ) -> None:
+        super().__init__(x=x, y=y, width=width, height=height, visible=visible, z_order=z_order)
+        self.value = float(value)
+        self.max_value = max(0.0001, float(max_value))
+        self.fill_color = tuple(fill_color)
+        self.bg_color = tuple(bg_color)
+
+    def set_value(self, value: float) -> None:
+        self.value = max(0.0, min(self.max_value, float(value)))
+
+    def serialize_properties(self) -> dict[str, Any]:
+        data = super().serialize_properties()
+        data.update({
+            "value": float(self.value),
+            "max_value": float(self.max_value),
+            "fill_color": list(self.fill_color),
+            "bg_color": list(self.bg_color),
+        })
+        return data
+
+    def deserialize_properties(self, data: dict[str, Any]) -> None:
+        super().deserialize_properties(data)
+        self.value = float(data.get("value", self.value))
+        self.max_value = max(0.0001, float(data.get("max_value", self.max_value)))
+        self.fill_color = tuple(data.get("fill_color", self.fill_color))
+        self.bg_color = tuple(data.get("bg_color", self.bg_color))
+
+
 UIElement = RuntimeUIElement
