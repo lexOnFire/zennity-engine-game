@@ -165,31 +165,102 @@ def build_logic_graph_ui(self) -> None:
 
     palette_panel = QFrame()
     palette_panel.setObjectName("LogicPalettePanel")
-    palette_layout = QVBoxLayout(palette_panel)
+    palette_panel.setStyleSheet(
+        "QFrame#LogicPalettePanel { background-color: #141720; border-right: 1px solid #1e2430; }"
+        "QLineEdit { background-color: #1a1e2a; color: #f1f5f9; border: 1px solid #282f42; border-radius: 6px; padding: 6px 10px; font-size: 12px; }"
+        "QLineEdit:focus { border: 1px solid #3b82f6; }"
+        "QListWidget#LogicNodePalette { background-color: #141720; border: none; outline: none; }"
+        "QTabWidget::pane { border: none; background: transparent; }"
+        "QTabBar::tab { background: #181c28; color: #94a3b8; padding: 6px 12px; border-top-left-radius: 4px; border-top-right-radius: 4px; font-size: 11px; font-weight: bold; }"
+        "QTabBar::tab:selected { background: #232a3b; color: #f8fafc; border-bottom: 2px solid #3b82f6; }"
+    )
+    
+    # Layout horizontal dividindo o Rail Vertical da Biblioteca
+    outer_palette_layout = QHBoxLayout(palette_panel)
+    outer_palette_layout.setContentsMargins(0, 0, 0, 0)
+    outer_palette_layout.setSpacing(0)
+
+    # Rail vertical de navegação (Graph, Variables, Events, Components, Debug)
+    nav_rail = QFrame()
+    nav_rail.setFixedWidth(58)
+    nav_rail.setStyleSheet(
+        "QFrame { background-color: #0f121a; border-right: 1px solid #1e2430; }"
+        "QToolButton { background: transparent; color: #94a3b8; border: none; font-size: 10px; font-weight: bold; border-left: 3px solid transparent; }"
+        "QToolButton:hover { color: #f1f5f9; background-color: #1a202c; }"
+        "QToolButton:checked { color: #3b82f6; background-color: #1c2436; border-left: 3px solid #3b82f6; }"
+    )
+    rail_layout = QVBoxLayout(nav_rail)
+    rail_layout.setContentsMargins(0, 8, 0, 8)
+    rail_layout.setSpacing(12)
+
+    self.rail_buttons = {}
+    for name, icon_str, tab_index in (
+        ("Graph", "🌐", 0),
+        ("Variables", "{x}", 3),
+        ("Events", "⚡", 0),
+        ("Components", "📦", 0),
+        ("Debug", "🪲", 1),
+    ):
+        btn = QToolButton()
+        btn.setText(f"{icon_str}\n{name}")
+        btn.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+        btn.setCheckable(True)
+        btn.setFixedWidth(56)
+        btn.setHeight = 48
+        if name == "Graph":
+            btn.setChecked(True)
+        rail_layout.addWidget(btn)
+        self.rail_buttons[name] = btn
+
+    rail_layout.addStretch(1)
+    outer_palette_layout.addWidget(nav_rail)
+
+    # Conteúdo da biblioteca de nós
+    library_content = QWidget()
+    palette_layout = QVBoxLayout(library_content)
     palette_layout.setContentsMargins(8, 8, 8, 8)
+
     self.library_tabs = QTabWidget()
     self.library_tabs.setObjectName("LogicLibraryTabs")
     palette_layout.addWidget(self.library_tabs, 1)
 
+    # Conectar botões do rail às abas da biblioteca
+    def _switch_rail_tab(target_index: int, clicked_name: str) -> None:
+        self.library_tabs.setCurrentIndex(target_index)
+        for name, btn in self.rail_buttons.items():
+            btn.setChecked(name == clicked_name)
+
+    self.rail_buttons["Graph"].clicked.connect(lambda: _switch_rail_tab(0, "Graph"))
+    self.rail_buttons["Variables"].clicked.connect(lambda: _switch_rail_tab(3, "Variables"))
+    self.rail_buttons["Events"].clicked.connect(lambda: _switch_rail_tab(0, "Events"))
+    self.rail_buttons["Components"].clicked.connect(lambda: _switch_rail_tab(0, "Components"))
+    self.rail_buttons["Debug"].clicked.connect(lambda: _switch_rail_tab(1, "Debug"))
+
     blocks_page = QWidget()
     blocks_layout = QVBoxLayout(blocks_page)
-    blocks_layout.setContentsMargins(5, 6, 5, 6)
+    blocks_layout.setContentsMargins(4, 6, 4, 6)
     blocks_layout.setSpacing(6)
+    
+    # Header da biblioteca
+    lib_header = QLabel("Biblioteca de Nós")
+    lib_header.setStyleSheet("font-weight: bold; font-size: 13px; color: #f1f5f9; padding-bottom: 2px;")
+    blocks_layout.addWidget(lib_header)
+
     self.node_search = QLineEdit()
-    self.node_search.setPlaceholderText("Pesquisar blocos...  ex.: colisão, som, somar")
+    self.node_search.setPlaceholderText("Buscar nós...")
     self.node_search.setClearButtonEnabled(True)
     blocks_layout.addWidget(self.node_search)
+    
     self.palette = QListWidget()
     self.palette.setObjectName("LogicNodePalette")
     self.palette.setToolTip("Duplo clique para adicionar um nó")
     blocks_layout.addWidget(self.palette, 1)
+    
     self.palette_count = QLabel()
     self.palette_count.setObjectName("PanelHint")
+    self.palette_count.setStyleSheet("color: #64748b; font-size: 11px;")
     blocks_layout.addWidget(self.palette_count)
-    blocks_hint = QLabel("Duplo clique adiciona o bloco. Arraste uma porta para conectar.")
-    blocks_hint.setObjectName("PanelHint")
-    blocks_hint.setWordWrap(True)
-    blocks_layout.addWidget(blocks_hint)
+    
     self.library_tabs.addTab(blocks_page, "Blocos")
 
     recipes_page = QWidget()
@@ -269,7 +340,9 @@ def build_logic_graph_ui(self) -> None:
     data_hint.setWordWrap(True)
     data_layout.addWidget(data_hint)
     self.library_tabs.addTab(data_page, "Dados")
-    palette_panel.setMinimumWidth(250)
+    
+    outer_palette_layout.addWidget(library_content, 1)
+    palette_panel.setMinimumWidth(300)
     self.content_splitter.addWidget(palette_panel)
 
     self.scene = QGraphicsScene(self)
