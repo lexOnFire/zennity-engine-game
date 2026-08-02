@@ -152,6 +152,12 @@ class LogicGraphEditor(
         from .logic_graph.ui_builder import build_logic_graph_ui
 
         build_logic_graph_ui(self)
+        qss_path = Path(__file__).parent.parent / "themes" / "modern_logic_graph.qss"
+        if qss_path.exists():
+            try:
+                self.setStyleSheet(qss_path.read_text(encoding="utf-8"))
+            except OSError:
+                pass
     def _connect_ui(self) -> None:
         self.category_combo.currentIndexChanged.connect(lambda _idx: self._category_changed(str(self.category_combo.currentData() or "")))
         self.node_search.textChanged.connect(lambda _text: self._refresh_palette(str(self.category_combo.currentData() or "")))
