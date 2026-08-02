@@ -37,7 +37,7 @@ from editor.widgets.asset_browser_dock import AssetBrowserDock
 from editor.widgets.console_dock import ConsoleDock
 from editor.widgets.inspector_dock import InspectorDock
 from editor.widgets.code_editor_dock import CodeEditorDock
-from editor.widgets.profiler_dock import ProfilerDock
+from editor.profiler import ProfilerDock
 from editor.widgets.logic_graph_editor import LogicGraphEditor
 from editor.visual_scripting.visual_scripting_dock import VisualScriptingEditorDock
 from editor.animation_studio.animation_studio_dock import AnimationStudioDock

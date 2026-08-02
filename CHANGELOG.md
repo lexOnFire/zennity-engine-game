@@ -3,6 +3,7 @@
 ## v1.0.0 — Architecture & Release Readiness (2026-08-01)
 
 ### Refactored & Consolidated
+* **Profiler oficial consolidado**: `editor.profiler.ProfilerDock` passa a ser a única implementação; o caminho `editor.widgets.profiler_dock` permanece somente como shim com `DeprecationWarning` até v2.0.
 * **Decomposição Estrutural**: Decomposição das 5 maiores classes do projeto (`ZennityPhase1Editor`, `LogicGraphRuntime`, `Phase1ViewportWidget`, `MainWindow`, `ViewportWidget`) para estarem todas estritamente abaixo do limite de 500 linhas da Definition of Done.
 * **Decomposição de Métodos**: Decompostos construtores e gerenciadores extensos (`ViewportSession.__init__`, `RuntimeWorld.instantiate_prefab`).
 * **Clean Architecture & Unificação de Renderizadores**: Alias e importações unificadas para `engine.graphics.renderer` e `engine.tilemap.tilemap`.

@@ -22,6 +22,7 @@ class ProfilerGraphWidget(QWidget):
 
     def __init__(self, counter_name: str = "fps", parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
+        self.setObjectName("ProfilerChart")
         self.counter_name = counter_name
         self.history: list[float] = []
 
@@ -62,6 +63,7 @@ class ProfilerDock(QDockWidget):
         self.setMinimumHeight(240)
 
         container = QWidget(self)
+        container.setObjectName("ProfilerPanel")
         main_layout = QVBoxLayout(container)
         main_layout.setContentsMargins(4, 4, 4, 4)
 
@@ -78,6 +80,14 @@ class ProfilerDock(QDockWidget):
 
         self.lbl_draw_calls = QLabel("Draws: 12", self)
         self.lbl_draw_calls.setStyleSheet("font-weight: bold; color: #E74C3C; font-size: 14px;")
+
+        for label in (
+            self.lbl_fps,
+            self.lbl_frame_time,
+            self.lbl_memory,
+            self.lbl_draw_calls,
+        ):
+            label.setObjectName("ProfilerMetric")
 
         stats_layout.addWidget(self.lbl_fps)
         stats_layout.addWidget(self.lbl_frame_time)
