@@ -1,0 +1,187 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "Enemy Damage",
+  "target": {
+    "type": "self",
+    "value": ""
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {
+    "hp": {
+      "type": "number",
+      "scope": "scene",
+      "default": 100.0
+    }
+  },
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "trig",
+      "type": "event_trigger_enter",
+      "title": "On Trigger Enter",
+      "category": "Events",
+      "position": [
+        80,
+        80
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "get_hp",
+      "type": "get_variable",
+      "title": "Get Variable",
+      "category": "Variables",
+      "position": [
+        80,
+        260
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "scope": "scene",
+        "name": "hp"
+      }
+    },
+    {
+      "id": "sub_18",
+      "type": "subtract_number",
+      "title": "Subtract",
+      "category": "Math",
+      "position": [
+        380,
+        260
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 18.0
+      }
+    },
+    {
+      "id": "clamp_hp",
+      "type": "clamp_number",
+      "title": "Clamp Number",
+      "category": "Math",
+      "position": [
+        680,
+        260
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "value": 0.0,
+        "minimum": 0.0,
+        "maximum": 100.0
+      }
+    },
+    {
+      "id": "set_hp",
+      "type": "set_variable",
+      "title": "Set Variable",
+      "category": "Variables",
+      "position": [
+        980,
+        80
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "scope": "scene",
+        "name": "hp",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "play_hit",
+      "type": "play_sound",
+      "title": "Play Sound",
+      "category": "Actions",
+      "position": [
+        1280,
+        80
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "path": "Assets/Audio/_zennity_run/hit.wav"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_trig_sethp",
+      "from_node": "trig",
+      "from_port": "next",
+      "to_node": "set_hp",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_sethp_sound",
+      "from_node": "set_hp",
+      "from_port": "next",
+      "to_node": "play_hit",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    },
+    {
+      "id": "e_gethp_sub",
+      "from_node": "get_hp",
+      "from_port": "value",
+      "to_node": "sub_18",
+      "to_port": "a",
+      "kind": "number",
+      "order": 2
+    },
+    {
+      "id": "e_sub_clamp",
+      "from_node": "sub_18",
+      "from_port": "value",
+      "to_node": "clamp_hp",
+      "to_port": "value",
+      "kind": "number",
+      "order": 3
+    },
+    {
+      "id": "e_clamp_sethp",
+      "from_node": "clamp_hp",
+      "from_port": "value",
+      "to_node": "set_hp",
+      "to_port": "value",
+      "kind": "number",
+      "order": 4
+    }
+  ]
+}

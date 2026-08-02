@@ -1,0 +1,183 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "Coin Pickup",
+  "target": {
+    "type": "self",
+    "value": ""
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {
+    "score": {
+      "type": "number",
+      "scope": "scene",
+      "default": 0.0
+    }
+  },
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "trig",
+      "type": "event_trigger_enter",
+      "title": "On Trigger Enter",
+      "category": "Events",
+      "position": [
+        80,
+        80
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "get_score",
+      "type": "get_variable",
+      "title": "Get Variable",
+      "category": "Variables",
+      "position": [
+        80,
+        260
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "scope": "scene",
+        "name": "score"
+      }
+    },
+    {
+      "id": "add_ten",
+      "type": "add_number",
+      "title": "Add",
+      "category": "Math",
+      "position": [
+        380,
+        260
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 10.0
+      }
+    },
+    {
+      "id": "set_score",
+      "type": "set_variable",
+      "title": "Set Variable",
+      "category": "Variables",
+      "position": [
+        680,
+        80
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "scope": "scene",
+        "name": "score",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "play_coin",
+      "type": "play_sound",
+      "title": "Play Sound",
+      "category": "Actions",
+      "position": [
+        980,
+        80
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "path": "Assets/Audio/_zennity_run/coin.wav"
+      }
+    },
+    {
+      "id": "destroy_self",
+      "type": "destroy_object",
+      "title": "Destroy Object",
+      "category": "Actions",
+      "position": [
+        1280,
+        80
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_trig_setscore",
+      "from_node": "trig",
+      "from_port": "next",
+      "to_node": "set_score",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_setscore_sound",
+      "from_node": "set_score",
+      "from_port": "next",
+      "to_node": "play_coin",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    },
+    {
+      "id": "e_sound_destroy",
+      "from_node": "play_coin",
+      "from_port": "next",
+      "to_node": "destroy_self",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 2
+    },
+    {
+      "id": "e_getscore_add",
+      "from_node": "get_score",
+      "from_port": "value",
+      "to_node": "add_ten",
+      "to_port": "a",
+      "kind": "number",
+      "order": 3
+    },
+    {
+      "id": "e_add_setscore",
+      "from_node": "add_ten",
+      "from_port": "value",
+      "to_node": "set_score",
+      "to_port": "value",
+      "kind": "number",
+      "order": 4
+    }
+  ]
+}

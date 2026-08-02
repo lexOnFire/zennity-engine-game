@@ -4,6 +4,17 @@ from __future__ import annotations
 from typing import Any, Mapping
 from ..registry import registry
 
+# BUG FIX: this module used to call target.get_component("Label"),
+# .get_component("ProgressBar") and .get_component("UIElement") with plain
+# strings. GameObject.get_component() does `isinstance(comp, component_type)`
+# internally, so passing a string instead of the actual class raised
+# `TypeError: isinstance() arg 2 must be a type...` every time this fallback
+# path executed (whenever a set_ui_text/set_ui_progress_bar/set_ui_visible
+# node's "object" property was left empty) — the exception then propagates
+# out of _execute() and aborts the whole Logic Graph. Import the real classes
+# instead.
+from engine.ui.runtime_components import LabelComponent, ProgressBarComponent, RuntimeUIElement
+
 
 def _input(runtime: Any, node_id: str, port: str, default: Any, game: Any, dt: float) -> Any:
     reader = getattr(runtime, "_read_input", None)
@@ -35,7 +46,7 @@ def execute_set_ui_text(runtime, node: Mapping[str, Any], game: Any, dt: float) 
         elif hasattr(target, "set_text"):
             target.set_text(text_val)
         else:
-            comp = target.get_component("Label") or target.get_component("LabelComponent") or target.get_component("UILabel")
+            comp = target.get_component(LabelComponent)
             if comp is not None and hasattr(comp, "text"):
                 comp.text = text_val
 
@@ -64,7 +75,7 @@ def execute_set_ui_progress_bar(runtime, node: Mapping[str, Any], game: Any, dt:
         elif hasattr(target, "value"):
             target.value = value_val
         else:
-            comp = target.get_component("ProgressBar")
+            comp = target.get_component(ProgressBarComponent)
             if comp is not None:
                 if hasattr(comp, "set_value"):
                     comp.set_value(value_val)
@@ -87,7 +98,7 @@ def execute_set_ui_visible(runtime, node: Mapping[str, Any], game: Any, dt: floa
         if hasattr(target, "visible"):
             target.visible = visible_val
         if hasattr(target, "get_component"):
-            comp = target.get_component("UIElement")
+            comp = target.get_component(RuntimeUIElement)
             if comp is not None:
                 comp.visible = visible_val
 

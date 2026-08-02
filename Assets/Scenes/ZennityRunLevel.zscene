@@ -1507,7 +1507,12 @@
       },
       "enabled": true,
       "static": false,
-      "layer": "Default"
+      "layer": "Default",
+      "editor_data": {
+        "logic_graphs": [
+          "Assets/Logic/ZennityRun/CoinPickup.zlogic"
+        ]
+      }
     },
     {
       "id": "zr-coin-1",
@@ -1556,7 +1561,12 @@
       },
       "enabled": true,
       "static": false,
-      "layer": "Default"
+      "layer": "Default",
+      "editor_data": {
+        "logic_graphs": [
+          "Assets/Logic/ZennityRun/CoinPickup.zlogic"
+        ]
+      }
     },
     {
       "id": "zr-coin-2",
@@ -1605,7 +1615,12 @@
       },
       "enabled": true,
       "static": false,
-      "layer": "Default"
+      "layer": "Default",
+      "editor_data": {
+        "logic_graphs": [
+          "Assets/Logic/ZennityRun/CoinPickup.zlogic"
+        ]
+      }
     },
     {
       "id": "zr-coin-3",
@@ -1654,7 +1669,12 @@
       },
       "enabled": true,
       "static": false,
-      "layer": "Default"
+      "layer": "Default",
+      "editor_data": {
+        "logic_graphs": [
+          "Assets/Logic/ZennityRun/CoinPickup.zlogic"
+        ]
+      }
     },
     {
       "id": "zr-enemy-0",
@@ -1704,7 +1724,10 @@
         "behavior": {
           "controller_path": "Assets/Behaviors/ZennityRunPatrol.zbehavior",
           "parameters": {}
-        }
+        },
+        "logic_graphs": [
+          "Assets/Logic/ZennityRun/EnemyDamage.zlogic"
+        ]
       },
       "enabled": true,
       "static": false,
@@ -1758,7 +1781,10 @@
         "behavior": {
           "controller_path": "Assets/Behaviors/ZennityRunPatrol.zbehavior",
           "parameters": {}
-        }
+        },
+        "logic_graphs": [
+          "Assets/Logic/ZennityRun/EnemyDamage.zlogic"
+        ]
       },
       "enabled": true,
       "static": false,
@@ -1897,6 +1923,17 @@
     }
   ],
   "blackboard": {
-    "variables": {}
+    "variables": {
+      "score": {
+        "type": "number",
+        "scope": "scene",
+        "default": 0.0
+      },
+      "hp": {
+        "type": "number",
+        "scope": "scene",
+        "default": 100.0
+      }
+    }
   }
 }
