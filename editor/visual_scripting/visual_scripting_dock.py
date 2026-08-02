@@ -405,6 +405,60 @@ class VisualScriptingEditorDock(QMainWindow):
         hot_reload = getattr(self, "btn_hot_reload", None)
         if hot_reload is not None:
             hot_reload.setEnabled(running)
+        if running:
+            self._sync_timer.start(33)
+        else:
+            self._sync_timer.stop()
+        self.sync_from_host()
+
+    def _validate(self) -> None:
+        from engine.logic.graph_asset import validate_logic_graph
+        issues = validate_logic_graph(self.graph_editor.graph_data())
+        errors = [item for item in issues if item.get("level") == "error"]
+        self.runtime_logs_text.append(
+            f"[VALIDATE] {len(issues)} aviso(s), {len(errors)} erro(s)."
+        )
+
+    def sync_from_host(self) -> None:
+        """Mirror the active editor/runtime scene in the integrated Game View."""
+        host = self._host
+        if self.graph_editor.current_path is not None:
+            self.document_label.setText(
+                self.graph_editor.current_path.name.upper()
+            )
+        runtime = getattr(host, "_runtime_objects_by_name", {})
+        source = list(runtime.values()) if runtime else list(
+            getattr(host, "_scene_snapshot", [])
+        )
+        self.mini_viewport.unified_viewport.apply_snapshot({
+            "objects": source,
+            "object_count": len(source),
+        })
+        selected = getattr(host, "_selected_name", None)
+        objects = getattr(host, "_objects_by_name", {})
+        repository = getattr(host, "_logic_assets_repository", None)
+        graph_count = len(
+            repository.for_object(selected, objects.get(selected, {}))
+        ) if repository is not None and selected in objects else 0
+        self.set_object_context(selected, graph_count)
+        active_objects = runtime or objects
+        if selected in active_objects:
+            self.mini_viewport.set_target_object(active_objects[selected])
+            self.mini_viewport.unified_viewport.selected_object_id = str(
+                active_objects[selected].get("id", "")
+            )
+        else:
+            self.mini_viewport.unified_viewport.selected_object_id = ""
+        self._sync_scene_workspace()
+
+    def _sync_scene_workspace(self) -> None:
+        """Preload all visual documents declared by the active scene."""
+        sync_scene_workspace(self)
+
+    def set_object_context(
+        self, object_name: str | None, graph_count: int = 0
+    ) -> None:
+        if object_name:
             suffix = "grafo" if graph_count == 1 else "grafos"
             self.object_context_label.setText(
                 f"OBJETO ATIVO: {object_name}  •  {graph_count} {suffix}"
