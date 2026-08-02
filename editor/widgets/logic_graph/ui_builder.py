@@ -415,12 +415,12 @@ def build_logic_graph_ui(self) -> None:
     properties_panel = QFrame()
     properties_panel.setObjectName("LogicPropertiesPanel")
     properties_layout = QVBoxLayout(properties_panel)
-    properties_layout.setContentsMargins(8, 8, 8, 8)
-    properties_layout.setSpacing(6)
+    properties_layout.setContentsMargins(10, 10, 10, 10)
+    properties_layout.setSpacing(8)
     
     prop_header = QHBoxLayout()
-    properties_title = QLabel("Propriedades do Nó")
-    properties_title.setStyleSheet("font-weight: bold; font-size: 12px; color: #f8fafc;")
+    properties_title = QLabel("PROPRIEDADES DO NÓ")
+    properties_title.setStyleSheet("font-weight: bold; font-size: 11px; color: #94a3b8; letter-spacing: 0.5px;")
     valid_badge = QLabel("Válido ✔")
     valid_badge.setStyleSheet("color: #22c55e; font-weight: bold; font-size: 11px;")
     prop_header.addWidget(properties_title)
@@ -428,40 +428,21 @@ def build_logic_graph_ui(self) -> None:
     prop_header.addWidget(valid_badge)
     properties_layout.addLayout(prop_header)
 
-    self.selected_label = QLabel("Mover Personagem")
-    self.selected_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #38bdf8; padding: 4px 0;")
+    self.selected_label = QLabel("Nenhum nó selecionado")
+    self.selected_label.setStyleSheet("font-size: 13px; font-weight: bold; color: #f8fafc; padding: 2px 0;")
     properties_layout.addWidget(self.selected_label)
-    
-    properties_layout.addWidget(QLabel("Descrição", styleSheet="color: #94a3b8; font-size: 11px; font-weight: bold;"))
-    desc_label = QLabel("Move o personagem com base na direção informada.")
-    desc_label.setWordWrap(True)
-    desc_label.setStyleSheet("color: #cbd5e1; font-size: 11px; background: #161922; border-radius: 4px; padding: 6px;")
-    properties_layout.addWidget(desc_label)
 
-    properties_layout.addWidget(QLabel("Categoria", styleSheet="color: #94a3b8; font-size: 11px; font-weight: bold;"))
-    cat_combo = QComboBox()
-    cat_combo.addItem("Movimento")
-    properties_layout.addWidget(cat_combo)
-
-    properties_layout.addWidget(QLabel("Cor", styleSheet="color: #94a3b8; font-size: 11px; font-weight: bold;"))
-    color_row = QHBoxLayout()
-    color_badge = QLabel("  6B5CE7FF  ✎")
-    color_badge.setStyleSheet("background-color: #6b5ce7; color: #ffffff; font-weight: bold; font-size: 11px; border-radius: 4px; padding: 4px 10px;")
-    color_row.addWidget(color_badge)
-    color_row.addStretch(1)
-    properties_layout.addLayout(color_row)
-
-    properties_layout.addWidget(QLabel("Portas", styleSheet="color: #94a3b8; font-size: 11px; font-weight: bold;"))
+    # Tabela de Propriedades principal (espaçosa e limpa)
     self.property_tree = QTreeWidget()
     self.property_tree.setObjectName("LogicPropertyTree")
-    self.property_tree.setHeaderLabels(["Porta", "Tipo", "Valor"])
-    self.property_tree.setColumnWidth(0, 110)
+    self.property_tree.setHeaderLabels(["Propriedade", "Valor"])
+    self.property_tree.setColumnWidth(0, 120)
+    self.property_tree.setStyleSheet(
+        "QTreeWidget { background: #141720; border: 1px solid #1e2430; border-radius: 6px; color: #cbd5e1; font-size: 11px; }"
+        "QHeaderView::section { background: #181c28; color: #94a3b8; font-weight: bold; font-size: 10px; border: none; padding: 4px; }"
+        "QTreeWidget::item { min-height: 24px; padding: 2px 4px; }"
+    )
     properties_layout.addWidget(self.property_tree, 1)
-
-    properties_layout.addWidget(QLabel("Documentação", styleSheet="color: #94a3b8; font-size: 11px; font-weight: bold;"))
-    doc_link = QLabel('<a href="https://docs.zennity.com" style="color: #38bdf8; text-decoration: underline;">docs.zennity.com/nodes/mover-personagem ⎘</a>')
-    doc_link.setOpenExternalLinks(True)
-    properties_layout.addWidget(doc_link)
 
     self.property_asset_button = QPushButton("Selecionar asset do projeto...")
     self.property_asset_button.hide()
@@ -493,7 +474,7 @@ def build_logic_graph_ui(self) -> None:
     right_tabs.addTab(self.help_dock, tr("editor.tabs.help", "Ajuda"))
     
     right_panel.addWidget(right_tabs)
-    right_panel.setSizes([320, 380])
+    right_panel.setSizes([340, 360])
 
     self.content_splitter.addWidget(right_panel)
     self.content_splitter.setStretchFactor(0, 0)

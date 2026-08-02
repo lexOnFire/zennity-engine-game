@@ -35,7 +35,7 @@ class VisualScriptingEditorDock(QMainWindow):
     """Independent native window for Visual Scripting 2.0."""
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
-        super().__init__(parent, Qt.Window)
+        super().__init__(parent)
         self.setWindowTitle("⚡ Visual Scripting Editor 2.0")
         self.setObjectName("VisualScriptingEditorDock")
         self._host = parent
