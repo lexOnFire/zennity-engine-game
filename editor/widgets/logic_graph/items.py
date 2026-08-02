@@ -31,47 +31,49 @@ if TYPE_CHECKING:
     from editor.widgets.logic_graph_editor import LogicGraphEditor
 
 CATEGORY_COLORS = {
-    "Eventos": QColor("#d66ba0"),
-    "Events": QColor("#ff4fa3"),
-    "Movimento": QColor("#4c9aff"),
-    "Movement": QColor("#4c8dff"),
-    "Posição": QColor("#3fb6a8"),
-    "Position": QColor("#20d6c7"),
-    "Ação": QColor("#ae7df0"),
-    "Action": QColor("#a970ff"),
-    "Lógica": QColor("#f0a64b"),
-    "Logic": QColor("#ffad42"),
-    "Condição": QColor("#50c878"),
-    "Condition": QColor("#42e68b"),
-    "Objetos": QColor("#47b8c8"),
-    "Objects": QColor("#34c8e8"),
-    "Components": QColor("#ff9f43"),
-    "Variáveis": QColor("#d5b84b"),
-    "Variables": QColor("#ffd84a"),
-    "Subgrafos": QColor("#b48ead"),
-    "Subgraphs": QColor("#d184ff"),
-    "Matemática": QColor("#e07a5f"),
-    "Math": QColor("#ff725e"),
-    "Texto": QColor("#81b29a"),
-    "Text": QColor("#6fd6a8"),
-    "Personalizado": QColor("#7f8b9c"),
-    "Custom": QColor("#8b98ad"),
+    "Eventos": QColor("#a62b2b"),
+    "Events": QColor("#a62b2b"),
+    "Movimento": QColor("#463ca6"),
+    "Movement": QColor("#463ca6"),
+    "Posição": QColor("#1e7874"),
+    "Position": QColor("#1e7874"),
+    "Ação": QColor("#663399"),
+    "Action": QColor("#663399"),
+    "Lógica": QColor("#8c6812"),
+    "Logic": QColor("#8c6812"),
+    "Fluxo": QColor("#8c6812"),
+    "Flow": QColor("#8c6812"),
+    "Condição": QColor("#1b7a63"),
+    "Condition": QColor("#1b7a63"),
+    "Objetos": QColor("#2b6ba6"),
+    "Objects": QColor("#2b6ba6"),
+    "Components": QColor("#a6582b"),
+    "Variáveis": QColor("#1b7a63"),
+    "Variables": QColor("#1b7a63"),
+    "Subgrafos": QColor("#7a2b91"),
+    "Subgraphs": QColor("#7a2b91"),
+    "Matemática": QColor("#a63c2b"),
+    "Math": QColor("#a63c2b"),
+    "Texto": QColor("#1e7874"),
+    "Text": QColor("#1e7874"),
+    "Personalizado": QColor("#3f495a"),
+    "Custom": QColor("#3f495a"),
 }
 
 PORT_COLORS = {
-    "flow": QColor("#d9dde7"),
-    "number": QColor("#58a6ff"),
-    "bool": QColor("#50c878"),
-    "text": QColor("#e6b85c"),
-    "object": QColor("#47b8c8"),
-    "movement": QColor("#ff8c69"),
-    "any": QColor("#ae7df0"),
+    "flow": QColor("#e2e8f0"),
+    "number": QColor("#38bdf8"),
+    "bool": QColor("#34d399"),
+    "text": QColor("#facc15"),
+    "object": QColor("#a855f7"),
+    "movement": QColor("#fb923c"),
+    "any": QColor("#c084fc"),
 }
 
 class LogicPortItem(QGraphicsEllipseItem):
     """Porta interativa que inicia e conclui uma conexão por arraste."""
 
-    SIZE = 11.0
+    SIZE = 10.0
 
     def __init__(self, node: "LogicNodeItem", name: str, direction: str, data_type: str, y: float) -> None:
         x = -self.SIZE / 2 if direction == "input" else node.width - self.SIZE / 2
@@ -81,8 +83,8 @@ class LogicPortItem(QGraphicsEllipseItem):
         self.direction = str(direction)
         self.data_type = str(data_type)
         self.base_color = PORT_COLORS.get(self.data_type, PORT_COLORS["any"])
-        self.setPen(QPen(self.base_color.lighter(135), 2.2))
-        self.setBrush(QBrush(QColor("#0b0e14")))
+        self.setPen(QPen(self.base_color, 2.0))
+        self.setBrush(QBrush(QColor("#12151d")))
         self.setTransformOriginPoint(self.boundingRect().center())
         self.setAcceptHoverEvents(True)
         self.setAcceptedMouseButtons(Qt.LeftButton)
@@ -94,40 +96,48 @@ class LogicPortItem(QGraphicsEllipseItem):
 
     def set_connection_state(self, state: str = "normal") -> None:
         if state == "candidate":
-            self.setBrush(QBrush(QColor("#7ee787")))
-            self.setPen(QPen(QColor("#ffffff"), 1.8))
-            self.setScale(1.5)
+            self.setBrush(QBrush(QColor("#34d399")))
+            self.setPen(QPen(QColor("#ffffff"), 2.0))
+            self.setScale(1.4)
         elif state == "compatible":
-            self.setBrush(QBrush(self.base_color.lighter(130)))
-            self.setPen(QPen(QColor("#f3f5f9"), 1.2))
-            self.setScale(1.16)
+            self.setBrush(QBrush(self.base_color))
+            self.setPen(QPen(QColor("#ffffff"), 1.4))
+            self.setScale(1.2)
         elif state == "invalid":
-            self.setBrush(QBrush(QColor("#5b606c")))
-            self.setPen(QPen(QColor("#777d89"), 1.0))
-            self.setScale(0.9)
+            self.setBrush(QBrush(QColor("#374151")))
+            self.setPen(QPen(QColor("#4b5563"), 1.0))
+            self.setScale(0.85)
         else:
-            self.setBrush(QBrush(QColor("#0b0e14")))
-            self.setPen(QPen(self.base_color.lighter(135), 2.2))
+            self.setBrush(QBrush(QColor("#12151d")))
+            self.setPen(QPen(self.base_color, 2.0))
             self.setScale(1.0)
 
     def paint(self, painter: QPainter, option, widget=None) -> None:
         painter.setRenderHint(QPainter.Antialiasing, True)
         rect = self.rect()
+        painter.setPen(self.pen())
+        painter.setBrush(self.brush())
+        painter.drawEllipse(rect)
+
+        # Para portas de fluxo ("flow"), desenhar uma seta/triângulo pequeno ao lado
         if self.data_type == "flow":
-            path = QPainterPath()
-            path.moveTo(rect.left(), rect.top())
-            path.lineTo(rect.left() + rect.width() * 0.55, rect.top())
-            path.lineTo(rect.right(), rect.center().y())
-            path.lineTo(rect.left() + rect.width() * 0.55, rect.bottom())
-            path.lineTo(rect.left(), rect.bottom())
-            path.closeSubpath()
-            painter.fillPath(path, QBrush(self.base_color if self.brush().color() != QColor("#0b0e14") else QColor("#0e1218")))
-            painter.strokePath(path, QPen(self.base_color, 2.0))
-        else:
-            painter.setPen(self.pen())
-            painter.setBrush(self.brush())
-            painter.drawEllipse(rect)
-            painter.fillPath(QPainterPath(), QBrush())
+            arrow_path = QPainterPath()
+            cy = rect.center().y()
+            if self.direction == "input":
+                # Triângulo apontando para a direita logo antes do círculo
+                arrow_x = rect.left() - 6.0
+                arrow_path.moveTo(arrow_x, cy - 4.0)
+                arrow_path.lineTo(arrow_x + 5.0, cy)
+                arrow_path.lineTo(arrow_x, cy + 4.0)
+            else:
+                # Triângulo apontando para a direita logo após o círculo
+                arrow_x = rect.right() + 1.0
+                arrow_path.moveTo(arrow_x, cy - 4.0)
+                arrow_path.lineTo(arrow_x + 5.0, cy)
+                arrow_path.lineTo(arrow_x, cy + 4.0)
+            arrow_path.closeSubpath()
+            painter.fillPath(arrow_path, QBrush(self.base_color))
+            painter.strokePath(arrow_path, QPen(self.base_color, 1.0))
 
     def hoverEnterEvent(self, event) -> None:
         if self.node.editor._connection_origin is None:
@@ -161,7 +171,7 @@ class LogicEdgeItem(QGraphicsPathItem):
         self.base_color = PORT_COLORS.get(data_type, PORT_COLORS["any"])
         self._runtime_active = False
         self._validation_level = ""
-        self.setPen(QPen(self.base_color, 2.4, Qt.SolidLine, Qt.RoundCap))
+        self.setPen(QPen(self.base_color, 2.0, Qt.SolidLine, Qt.RoundCap))
         self.setZValue(0)
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         self.setData(0, edge_id)
@@ -178,7 +188,7 @@ class LogicEdgeItem(QGraphicsPathItem):
             pt = self.path().pointAtPercent(0.5)
             painter.setBrush(QBrush(QColor("#00e5ff")))
             painter.setPen(QPen(QColor("#ffffff"), 1.5))
-            painter.drawEllipse(pt, 5.0, 5.0)
+            painter.drawEllipse(pt, 4.0, 4.0)
 
     def set_runtime_active(self, active: bool) -> None:
         self._runtime_active = bool(active)
@@ -191,16 +201,16 @@ class LogicEdgeItem(QGraphicsPathItem):
 
     def _refresh_pen(self, selected: bool) -> None:
         if self._runtime_active:
-            self.setPen(QPen(QColor("#55f29a"), 4.2, Qt.SolidLine, Qt.RoundCap))
+            self.setPen(QPen(QColor("#55f29a"), 3.2, Qt.SolidLine, Qt.RoundCap))
         elif self._validation_level == "error":
-            self.setPen(QPen(QColor("#ff5d62"), 3.4, Qt.DashLine))
+            self.setPen(QPen(QColor("#ff5d62"), 2.8, Qt.DashLine))
         elif self._validation_level == "warning":
-            self.setPen(QPen(QColor("#e6b85c"), 3.0, Qt.DashLine))
+            self.setPen(QPen(QColor("#e6b85c"), 2.5, Qt.DashLine))
         else:
             style = Qt.DashLine if self.data_type == "object" else Qt.SolidLine
             self.setPen(QPen(
                 QColor("#ffffff") if selected else self.base_color,
-                3.6 if selected else (3.0 if self.data_type == "object" else 2.4),
+                2.8 if selected else 2.0,
                 style,
                 Qt.RoundCap,
             ))
@@ -486,65 +496,32 @@ class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGrap
     def paint(self, painter: QPainter, option, widget=None) -> None:
         painter.setRenderHint(QPainter.Antialiasing, True)
         outer = QPainterPath()
-        outer.addRoundedRect(self.rect(), 9.0, 9.0)
-        body_gradient = QLinearGradient(0.0, 0.0, 0.0, self.height)
-        body_gradient.setColorAt(0.0, self.category_color.darker(340))
-        body_gradient.setColorAt(0.42, QColor("#141a26"))
-        body_gradient.setColorAt(1.0, QColor("#0d1119"))
-        painter.fillPath(outer, QBrush(body_gradient))
+        outer.addRoundedRect(self.rect(), 11.0, 11.0)
+        
+        # Fundo do card em tom flat limpo
+        painter.fillPath(outer, QBrush(QColor("#171a22")))
 
-        header_rect = QRectF(
-            1.0, 1.0, self.width - 2.0,
-            min(self.HEADER_HEIGHT, self.height - 2.0),
-        )
+        # Header com a cor sólida da categoria
+        header_height = min(self.HEADER_HEIGHT, self.height)
+        header_rect = QRectF(0.0, 0.0, self.width, header_height)
         header = QPainterPath()
-        header.addRoundedRect(header_rect, 8.0, 8.0)
-        gradient = QLinearGradient(0.0, 0.0, self.width, 0.0)
-        gradient.setColorAt(0.0, self.category_color.darker(112))
-        gradient.setColorAt(0.62, self.category_color.darker(155))
-        gradient.setColorAt(1.0, self.category_color.darker(230))
-        painter.fillPath(header, QBrush(gradient))
+        header.addRoundedRect(header_rect, 10.0, 10.0)
+        
+        # Preenchimento sólido da cor da categoria
+        painter.fillPath(header, QBrush(self.category_color))
         if self.height > self.HEADER_HEIGHT:
             painter.fillRect(
-                QRectF(1.0, self.HEADER_HEIGHT - 8.0, self.width - 2.0, 9.0),
-                QBrush(gradient),
+                QRectF(0.0, self.HEADER_HEIGHT - 6.0, self.width, 6.0),
+                QBrush(self.category_color),
             )
 
-        painter.fillRect(
-            QRectF(0.0, 0.0, self.width, 3.0),
-            QBrush(self.category_color.lighter(125)),
-        )
-
-        if not self.collapsed:
-            rows = max(len(self.input_definitions), len(self.output_definitions), 1)
-            for index in range(rows):
-                row_y = self.PORT_START_Y - 15.0 + index * self.PORT_SPACING
-                if index % 2 == 0:
-                    painter.fillRect(
-                        QRectF(7.0, row_y, self.width - 14.0, self.PORT_SPACING),
-                        QColor(
-                            self.category_color.red(),
-                            self.category_color.green(),
-                            self.category_color.blue(),
-                            18,
-                        ),
-                    )
-            footer_y = self.height - 34.0
-            painter.setPen(QPen(QColor("#252d3b"), 1.0))
-            painter.drawLine(
-                QPointF(10.0, footer_y),
-                QPointF(self.width - 10.0, footer_y),
-            )
-
+        # Borda e seleção
         if self.isSelected():
-            painter.setPen(QPen(QColor(124, 92, 255, 55), 7.0))
-            painter.drawPath(outer)
+            painter.setPen(QPen(QColor("#3b82f6"), 2.2))
         elif self._hovered:
-            hover = QColor(self.category_color)
-            hover.setAlpha(90)
-            painter.setPen(QPen(hover, 4.0))
-            painter.drawPath(outer)
-        painter.setPen(self.pen())
+            painter.setPen(QPen(QColor("#6b7280"), 1.6))
+        else:
+            painter.setPen(QPen(QColor("#272c3a"), 1.2))
         painter.drawPath(outer)
 
     def hoverEnterEvent(self, event) -> None:

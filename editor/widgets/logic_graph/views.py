@@ -29,16 +29,16 @@ class LogicGraphView(QGraphicsView):
         self.setCacheMode(QGraphicsView.CacheBackground)
         self.setStyleSheet(
             "QGraphicsView#LogicGraphView {"
-            "background: #0b0e14; border: 1px solid #202633; border-radius: 6px;"
+            "background: #12141c; border: 1px solid #1f2430; border-radius: 6px;"
             "}"
         )
 
     def drawBackground(self, painter: QPainter, rect: QRectF) -> None:
-        painter.fillRect(rect, QColor("#0b0e14"))
+        painter.fillRect(rect, QColor("#12141c"))
         spacing = 24
         left = int(rect.left()) - (int(rect.left()) % spacing)
         top = int(rect.top()) - (int(rect.top()) % spacing)
-        painter.setPen(QPen(QColor("#151b26"), 1))
+        painter.setPen(QPen(QColor("#181b24"), 1))
         for x in range(left, int(rect.right()) + spacing, spacing):
             painter.drawLine(x, int(rect.top()), x, int(rect.bottom()))
         for y in range(top, int(rect.bottom()) + spacing, spacing):
@@ -47,7 +47,7 @@ class LogicGraphView(QGraphicsView):
         major = spacing * 5
         major_left = int(rect.left()) - (int(rect.left()) % major)
         major_top = int(rect.top()) - (int(rect.top()) % major)
-        painter.setPen(QPen(QColor("#202838"), 1))
+        painter.setPen(QPen(QColor("#212533"), 1))
         for x in range(major_left, int(rect.right()) + major, major):
             painter.drawLine(x, int(rect.top()), x, int(rect.bottom()))
         for y in range(major_top, int(rect.bottom()) + major, major):
