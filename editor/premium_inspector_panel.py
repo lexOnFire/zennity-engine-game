@@ -67,7 +67,7 @@ class RealInspectorPanel(InspectorPanel):
         self.object_tag.setObjectName("InspectorCombo")
         self.object_tag.setEditable(True)
         self.object_tag.setInsertPolicy(QComboBox.InsertAtBottom)
-        self.object_tag.addItems(["Untagged", "Player", "Enemy", "Food", "Item", "Collectible"])
+        self.object_tag.addItems(["Untagged", "Player", "Enemy", "Food", "Item", "Collectible", "+ Criar Nova Tag..."])
         self.object_tag.currentTextChanged.connect(self._on_tag_changed)
         self.object_layer = QComboBox()
         self.object_layer.setObjectName("InspectorCombo")
@@ -219,12 +219,34 @@ class RealInspectorPanel(InspectorPanel):
     def _on_tag_changed(self, new_tag: str) -> None:
         if getattr(self, "_is_loading_object", False) or not self.current_object:
             return
-        tag_str = str(new_tag).strip() or "Untagged"
+        tag_str = str(new_tag).strip()
+        if tag_str == "+ Criar Nova Tag...":
+            from PySide6.QtWidgets import QInputDialog
+            custom_tag, ok = QInputDialog.getText(self, "Criar Nova Tag", "Digite o nome da nova Tag:")
+            if ok and custom_tag.strip():
+                tag_str = custom_tag.strip()
+            else:
+                curr = self.current_object.get("tag") if isinstance(self.current_object, dict) else getattr(self.current_object, "tag", "Untagged")
+                self.object_tag.blockSignals(True)
+                self.object_tag.setCurrentText(str(curr or "Untagged"))
+                self.object_tag.blockSignals(False)
+                return
+
+        if not tag_str:
+            tag_str = "Untagged"
+
         curr_tag = self.current_object.get("tag") if isinstance(self.current_object, dict) else getattr(self.current_object, "tag", None)
         if curr_tag == tag_str:
             return
+
         if self.object_tag.findText(tag_str) == -1:
-            self.object_tag.addItem(tag_str)
+            idx = max(0, self.object_tag.count() - 1)
+            self.object_tag.insertItem(idx, tag_str)
+
+        self.object_tag.blockSignals(True)
+        self.object_tag.setCurrentText(tag_str)
+        self.object_tag.blockSignals(False)
+
         if isinstance(self.current_object, dict):
             self.current_object["tag"] = tag_str
         else:

@@ -38,6 +38,8 @@ class HierarchyDock(QDockWidget):
         self.tree.setHeaderHidden(True)
         self.tree.setColumnCount(1)
         self.tree.setSelectionMode(QTreeWidget.ExtendedSelection)
+        self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.tree.customContextMenuRequested.connect(self.show_context_menu)
         self.tree.itemSelectionChanged.connect(self.on_item_selection_changed)
         self.tree.itemDoubleClicked.connect(self.on_item_double_clicked)
         self.tree.itemChanged.connect(self.on_item_changed)
@@ -94,6 +96,31 @@ class HierarchyDock(QDockWidget):
         # Adiciona filhos recursivamente
         for child in obj.children:
             self.add_object_node(item, child)
+
+    def show_context_menu(self, pos) -> None:
+        """Exibe o menu de contexto de clique com o botão direito na Hierarquia."""
+        from PySide6.QtWidgets import QMenu
+        item = self.tree.itemAt(pos)
+        obj = item.data(0, Qt.UserRole) if item else None
+
+        menu = QMenu(self)
+        act_create = menu.addAction("➕ Criar Novo Objeto")
+        act_rename = menu.addAction("✏️ Renomear Objeto") if item else None
+        act_duplicate = menu.addAction("📄 Duplicar Objeto") if item else None
+        act_delete = menu.addAction("🗑️ Excluir Objeto") if item else None
+
+        chosen = menu.exec(self.tree.mapToGlobal(pos))
+        if not chosen or not self.viewmodel:
+            return
+
+        if chosen == act_create:
+            self.viewmodel.create_object("Quadrado")
+        elif chosen == act_rename and item:
+            self.tree.editItem(item, 0)
+        elif chosen == act_duplicate:
+            self.viewmodel.duplicate_selected()
+        elif chosen == act_delete:
+            self.viewmodel.delete_selected()
 
     @Slot()
     def on_item_selection_changed(self) -> None:
@@ -182,5 +209,11 @@ class HierarchyDock(QDockWidget):
         """Submete o novo nome para o ViewModel após a edição."""
         obj = item.data(0, Qt.UserRole)
         if obj and self.viewmodel:
-            new_name = item.text(column)
-            self.viewmodel.rename_object(obj, new_name)
+            raw_name = item.text(column)
+            clean_name = raw_name
+            for prefix in ("📦 ", "📁 ", "📷 ", "💡 ", "🖼️ "):
+                if clean_name.startswith(prefix):
+                    clean_name = clean_name[len(prefix):]
+            clean_name = clean_name.strip()
+            if clean_name and clean_name != obj.name:
+                self.viewmodel.rename_object(obj, clean_name)
