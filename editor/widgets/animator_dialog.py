@@ -2,13 +2,13 @@ from __future__ import annotations
 from copy import deepcopy
 from pathlib import Path
 from PySide6.QtCore import QPointF, Qt, Signal, QTimer
-from PySide6.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen, QPolygonF
+from PySide6.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen, QPolygonF, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QComboBox, QDialog, QDialogButtonBox, QFormLayout, QHBoxLayout,
     QCheckBox, QDoubleSpinBox, QGraphicsItem, QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsRectItem,
     QGraphicsScene, QGraphicsSimpleTextItem, QGraphicsView, QInputDialog, QLabel,
     QFileDialog, QLineEdit, QMessageBox, QPushButton, QSpinBox, QSplitter, QTabWidget, QTreeWidget,
-    QTreeWidgetItem, QVBoxLayout, QWidget,
+    QTreeWidgetItem, QVBoxLayout, QWidget, QTextBrowser,
 )
 from engine.animation.controller_asset import (
     AnimatorControllerRuntime, default_animator_controller, load_animator_controller,
@@ -99,6 +99,8 @@ class AnimatorControllerEditorDialog(AnimatorDocumentMixin, QDialog):
         self.edit_transition_button = QPushButton("Editar transição selecionada")
         transition_page.layout().addWidget(self.edit_transition_button)
         tabs.addTab(transition_page, "Transições")
+        self.help_browser = QTextBrowser()
+        tabs.addTab(self.help_browser, "Ajuda")
         self.graph = AnimatorGraphView()
         self.graph.setMinimumWidth(520)
         splitter = QSplitter(Qt.Horizontal)
@@ -130,6 +132,41 @@ class AnimatorControllerEditorDialog(AnimatorDocumentMixin, QDialog):
         self.initial_combo.activated.connect(self._change_initial_state)
         self.edit_transition_button.clicked.connect(self._edit_selected_transition)
         self.transitions_tree.itemDoubleClicked.connect(lambda _item, _column: self._edit_selected_transition())
+        self.states_tree.itemSelectionChanged.connect(self._update_context_help)
+        self.parameters_tree.itemSelectionChanged.connect(self._update_context_help)
+        self.transitions_tree.itemSelectionChanged.connect(self._update_context_help)
+        for target in (self.graph, self.states_tree, self.parameters_tree, self.transitions_tree):
+            shortcut = QShortcut(QKeySequence(Qt.Key_Delete), target)
+            shortcut.setContext(Qt.WidgetWithChildrenShortcut)
+            shortcut.activated.connect(self._delete_current_selection)
+        self._update_context_help()
+
+    def _delete_current_selection(self) -> None:
+        focus = self.focusWidget()
+        if focus is self.parameters_tree:
+            self._remove_parameter()
+        elif focus is self.transitions_tree:
+            self._remove_transition()
+        else:
+            self._remove_state()
+
+    def _update_context_help(self) -> None:
+        if self.transitions_tree.currentItem() is not None and self.transitions_tree.hasFocus():
+            title = "Transição"
+            text = "Liga dois estados. Condições, prioridade e Exit Time determinam quando a troca acontece."
+        elif self.parameters_tree.currentItem() is not None and self.parameters_tree.hasFocus():
+            title = "Parâmetro"
+            text = "Valor bool, float ou trigger usado pelas condições das transições e atualizado no Play."
+        elif self._selected_state_name():
+            title = "Estado de animação"
+            text = "Representa uma animação e sua velocidade. O estado inicial é ativado quando o Animator começa."
+        else:
+            title = "Animator Graph"
+            text = "Crie estados, parâmetros e transições para controlar animações durante o jogo."
+        self.help_browser.setHtml(
+            f"<h2>{title}</h2><p>{text}</p>"
+            "<p>Use duplo clique para editar. Delete remove a seleção atual. Play Preview testa as transições sem alterar a cena.</p>"
+        )
 
     @staticmethod
     def _tree(headers: tuple[str, ...]) -> QTreeWidget:

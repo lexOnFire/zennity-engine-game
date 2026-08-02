@@ -29,6 +29,8 @@ def test_builder_add_edit_duplicate_delete_and_persist(tmp_path):
     dock = UIBuilderDock(project_root=tmp_path)
     container = UIContainer("Menu")
     dock.add_widget(container)
+    assert dock.inspector_tabs.tabText(1) == "Ajuda"
+    assert "Container" in dock.help_browser.toPlainText()
     dock.select_widget(container)
     label = UILabel("Title")
     dock.add_widget(label)

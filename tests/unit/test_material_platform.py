@@ -69,3 +69,9 @@ def test_material_graph_editor_dock_specialization(qapp):
     dock = MaterialGraphEditorDock()
     assert dock.graph_editor.category_filter == "Material"
     assert dock.graph_editor.node_palette.topLevelItemCount() >= 1
+    assert dock.graph_editor.palette_category.findText("Texturas") >= 0
+    dock.graph_editor.palette_category.setCurrentText("Saída")
+    category = dock.graph_editor.node_palette.topLevelItem(0)
+    output = category.child(0)
+    dock.graph_editor.node_palette.itemClicked.emit(output, 0)
+    assert "resultado final" in dock.graph_editor.help_browser.toPlainText()

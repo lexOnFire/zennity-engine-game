@@ -7,11 +7,11 @@ from pathlib import Path
 from typing import Optional
 
 from PySide6.QtCore import QPoint, QRectF, Qt, Signal
-from PySide6.QtGui import QColor, QPainter, QPen
+from PySide6.QtGui import QColor, QPainter, QPen, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QDockWidget, QFileDialog, QFormLayout, QHBoxLayout,
     QLabel, QLineEdit, QMessageBox, QPushButton, QSpinBox, QSplitter,
-    QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget,
+    QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget, QTabWidget, QTextBrowser,
 )
 
 from engine.ui.runtime import (
@@ -164,7 +164,8 @@ class UIBuilderDock(QDockWidget):
         self.tree_hierarchy = QTreeWidget(splitter)
         self.tree_hierarchy.setHeaderLabel("Hierarquia de UI")
         self.preview_canvas = UICanvasPreviewWidget(splitter)
-        self.inspector_panel = QWidget(splitter)
+        self.inspector_tabs = QTabWidget(splitter)
+        self.inspector_panel = QWidget(self.inspector_tabs)
         form = QFormLayout(self.inspector_panel)
         self.txt_name = QLineEdit(self)
         self.spin_x, self.spin_y = QSpinBox(self), QSpinBox(self)
@@ -197,7 +198,10 @@ class UIBuilderDock(QDockWidget):
         form.addRow(self.check_visible)
         splitter.addWidget(self.tree_hierarchy)
         splitter.addWidget(self.preview_canvas)
-        splitter.addWidget(self.inspector_panel)
+        self.help_browser = QTextBrowser(self.inspector_tabs)
+        self.inspector_tabs.addTab(self.inspector_panel, "Propriedades")
+        self.inspector_tabs.addTab(self.help_browser, "Ajuda")
+        splitter.addWidget(self.inspector_tabs)
         splitter.setSizes([220, 700, 250])
         root.addWidget(splitter, 1)
         self.setWidget(container)
@@ -205,6 +209,10 @@ class UIBuilderDock(QDockWidget):
         self.tree_hierarchy.itemSelectionChanged.connect(self._tree_selection_changed)
         self.preview_canvas.selection_changed.connect(self.select_widget)
         self.preview_canvas.widget_moved.connect(self._widget_moved)
+        for target in (self.tree_hierarchy, self.preview_canvas):
+            shortcut = QShortcut(QKeySequence(Qt.Key_Delete), target)
+            shortcut.setContext(Qt.WidgetWithChildrenShortcut)
+            shortcut.activated.connect(self.delete_selected)
         self.txt_name.editingFinished.connect(self.apply_inspector)
         self.txt_text.editingFinished.connect(self.apply_inspector)
         self.txt_asset.editingFinished.connect(self.apply_inspector)
@@ -273,7 +281,26 @@ class UIBuilderDock(QDockWidget):
             self.check_visible.setChecked(widget.visible)
             self.combo_layout.setCurrentText(str(getattr(widget, "layout_mode", "Free")))
         self._updating_inspector = False
+        self._update_help(widget)
         self.preview_canvas.update()
+
+    def _update_help(self, widget: UIWidget | None) -> None:
+        guides = {
+            UIButton: ("Button", "Botão interativo para confirmar ações, abrir menus ou executar lógica."),
+            UILabel: ("Label", "Texto informativo para HUD, placar, títulos e mensagens."),
+            UIImage: ("Image", "Imagem do projeto para ícones, retratos, fundos e barras personalizadas."),
+            UIInput: ("Input", "Campo para entrada de texto do jogador."),
+            UIPanel: ("Panel", "Área visual que agrupa e destaca outros elementos."),
+            UIScrollView: ("Scroll View", "Contêiner rolável para listas maiores que a tela."),
+            UIContainer: ("Container", "Agrupa elementos e controla sua organização."),
+            UICanvas: ("Canvas", "Raiz da interface e referência para posicionamento em tela."),
+        }
+        title, description = guides.get(type(widget), ("UI & HUD", "Selecione um elemento na hierarquia ou na prévia."))
+        self.help_browser.setHtml(
+            f"<h2>{title}</h2><p>{description}</p>"
+            "<h3>Como editar</h3><p>Arraste na prévia para posicionar e use Propriedades para tamanho, texto e visibilidade.</p>"
+            "<p><b>Delete</b> remove o elemento selecionado. Duplicar cria uma cópia deslocada.</p>"
+        )
 
     def choose_image_asset(self) -> None:
         widget = self.preview_canvas.selected_widget

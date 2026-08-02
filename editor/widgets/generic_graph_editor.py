@@ -90,6 +90,33 @@ BT_CATEGORY_LABELS = {
     "Condition": "Condições",
 }
 
+DIALOGUE_NODE_GUIDE = {
+    "dialogue.speech": {"name": "Fala", "summary": "Exibe texto associado a um personagem.", "use": "Conversas, tutoriais e narrativa.", "tip": "Mantenha cada fala curta e conecte à próxima etapa."},
+    "dialogue.choice": {"name": "Escolha", "summary": "Apresenta opções que levam a caminhos diferentes.", "use": "Decisões, respostas e missões ramificadas.", "tip": "Conecte cada saída a uma consequência clara."},
+    "dialogue.condition": {"name": "Condição", "summary": "Escolhe um ramo usando uma variável do diálogo.", "use": "Reputação, itens coletados e progresso da missão.", "tip": "Garanta que a variável seja definida antes da condição."},
+    "dialogue.event": {"name": "Evento", "summary": "Dispara um evento durante a conversa.", "use": "Entregar item, iniciar missão, tocar som ou mudar a cena.", "tip": "Use nomes de evento únicos e descritivos."},
+    "dialogue.end": {"name": "Encerrar diálogo", "summary": "Finaliza a sessão de diálogo.", "use": "Fechar HUD e devolver controle ao jogador.", "tip": "Todo caminho deve alcançar um encerramento."},
+}
+
+MATERIAL_NODE_GUIDE = {
+    "material.texture_sample": {"name": "Amostra de textura", "summary": "Lê cor e canais de uma textura usando coordenadas UV.", "use": "Sprites, detalhes de superfície e máscaras.", "tip": "Escolha uma textura do projeto e conecte RGB à cor base."},
+    "material.color_constant": {"name": "Cor constante", "summary": "Fornece uma cor RGBA uniforme.", "use": "Tint, cor base, emissivo e mistura.", "tip": "Alpha 1 é opaco; alpha 0 é transparente."},
+    "material.float_constant": {"name": "Número", "summary": "Fornece um valor numérico reutilizável.", "use": "Metallic, roughness, intensidade e máscaras.", "tip": "Para propriedades normalizadas, use valores entre 0 e 1."},
+    "material.vector_math": {"name": "Operação vetorial", "summary": "Combina cores ou vetores com uma operação matemática.", "use": "Tint, multiplicação de textura e efeitos.", "tip": "Multiply preserva detalhes; Add aumenta luminosidade."},
+    "material.pbr_output": {"name": "Saída do material", "summary": "Define o resultado final renderizado pelo material.", "use": "Cor base, metal, aspereza, normal, emissivo e alpha.", "tip": "Todo material utilizável deve possuir uma saída."},
+}
+
+DOMAIN_GUIDES = {
+    "behavior tree": BT_NODE_GUIDE,
+    "dialogue": DIALOGUE_NODE_GUIDE,
+    "material": MATERIAL_NODE_GUIDE,
+}
+
+DOMAIN_CATEGORY_LABELS = {
+    "behavior tree": BT_CATEGORY_LABELS,
+    "material": {"Texture": "Texturas", "Constant": "Constantes", "Math": "Matemática", "Output": "Saída"},
+}
+
 
 class GenericGraphEditorWidget(QWidget):
     """Widget de Editor de Grafos Genérico da Zennity Engine (Migrado para Editor Framework 2.0)."""
@@ -169,7 +196,11 @@ class GenericGraphEditorWidget(QWidget):
         palette_layout.setContentsMargins(4, 4, 4, 4)
         palette_layout.setSpacing(6)
         self.palette_category = QComboBox(palette_panel)
-        self.palette_category.addItems(("Todas", "Composição", "Decoradores", "Condições", "Ações"))
+        category_options = {
+            "behavior tree": ("Todas", "Composição", "Decoradores", "Condições", "Ações"),
+            "material": ("Todas", "Texturas", "Constantes", "Matemática", "Saída"),
+        }.get(self.category_filter.casefold(), ("Todos",))
+        self.palette_category.addItems(category_options)
         self.palette_category.currentTextChanged.connect(self._on_palette_category_changed)
         self.node_palette = QTreeWidget(palette_panel)
         self.node_palette.setHeaderLabel("Paleta de Nós")
@@ -178,10 +209,10 @@ class GenericGraphEditorWidget(QWidget):
         self.palette_summary = QLabel(palette_panel)
         self.palette_summary.setWordWrap(True)
         self.palette_summary.setStyleSheet("color: #7f8ca3; font-size: 10px;")
-        if self.category_filter.casefold() == "behavior tree":
+        if self.category_filter.casefold() in {"behavior tree", "material"}:
             palette_layout.addWidget(self.palette_category)
             self.palette_summary.setText(
-                "Duplo clique adiciona um nó. Monte a árvore da esquerda para a direita."
+                "Duplo clique adiciona um nó. Selecione um item para consultar a Ajuda."
             )
         else:
             self.palette_category.hide()
@@ -226,7 +257,7 @@ class GenericGraphEditorWidget(QWidget):
         )
 
         self.clipboard_nodes: List[dict] = []
-        self._show_behavior_help(None)
+        self._show_context_help(None)
         self.populate_node_palette()
 
     # ── Node Palette ───────────────────────────────────────────────────────
@@ -249,7 +280,9 @@ class GenericGraphEditorWidget(QWidget):
             node_id = str(getattr(ndef, "id", "")).lower()
             name_key = str(getattr(ndef, "name_key", "")).lower()
             tags = [t.lower() for t in getattr(ndef, "tags", [])]
-            guide = BT_NODE_GUIDE.get(str(getattr(ndef, "id", "")), {})
+            guide = DOMAIN_GUIDES.get(self.category_filter.casefold(), {}).get(
+                str(getattr(ndef, "id", "")), {}
+            )
             guide_text = " ".join(str(value) for value in guide.values()).lower()
 
             # Filtro por tipo de editor
@@ -275,24 +308,25 @@ class GenericGraphEditorWidget(QWidget):
         visible_count = 0
         for cat_name, ndefs in sorted(category_nodes.items()):
             section = str(cat_name).split("/")[-1]
-            localized_category = BT_CATEGORY_LABELS.get(section, section)
+            localized_category = DOMAIN_CATEGORY_LABELS.get(
+                self.category_filter.casefold(), {}
+            ).get(section, self.category_filter if section == self.category_filter else section)
             if (
-                self.category_filter.casefold() == "behavior tree"
-                and self._palette_category_filter != "Todas"
+                self.category_filter.casefold() in DOMAIN_CATEGORY_LABELS
+                and self._palette_category_filter not in {"Todas", "Todos"}
                 and localized_category != self._palette_category_filter
             ):
                 continue
             cat_item = QTreeWidgetItem(self.node_palette, [localized_category])
             cat_item.setExpanded(True)
             for ndef in sorted(ndefs, key=lambda item: str(item.id)):
-                guide = BT_NODE_GUIDE.get(str(ndef.id), {})
+                guide = DOMAIN_GUIDES.get(self.category_filter.casefold(), {}).get(str(ndef.id), {})
                 display_name = guide.get("name") or getattr(ndef, "name_key", ndef.id)
                 node_item = QTreeWidgetItem(cat_item, [display_name])
                 node_item.setData(0, Qt.UserRole, ndef)
                 node_item.setToolTip(0, guide.get("summary", str(ndef.id)))
                 visible_count += 1
-        if self.category_filter.casefold() == "behavior tree":
-            self.node_palette.setHeaderLabel(f"Biblioteca Behavior Tree • {visible_count} nós")
+        self.node_palette.setHeaderLabel(f"Biblioteca {self.category_filter} • {visible_count} nós")
 
     def _on_palette_category_changed(self, category: str) -> None:
         self._palette_category_filter = category
@@ -303,18 +337,21 @@ class GenericGraphEditorWidget(QWidget):
         """Relay canvas selection to the graph inspector and the outer signal."""
         self.graph_inspector.inspect_node(node_item)
         node_def = getattr(node_item, "node_def", None) if node_item is not None else None
-        self._show_behavior_help(node_def)
+        self._show_context_help(node_def)
         self.node_selected.emit(node_item)
 
-    def _show_behavior_help(self, node_def: Any | None) -> None:
-        if self.category_filter.casefold() != "behavior tree":
-            self.help_browser.setHtml(
-                "<h3>Ajuda do grafo</h3><p>Selecione um nó para consultar seus metadados.</p>"
-            )
-            return
+    def _show_context_help(self, node_def: Any | None) -> None:
+        domain = self.category_filter.casefold()
         node_id = str(getattr(node_def, "id", ""))
-        guide = BT_NODE_GUIDE.get(node_id)
+        guide = DOMAIN_GUIDES.get(domain, {}).get(node_id)
         if guide is None:
+            if domain != "behavior tree":
+                self.help_browser.setHtml(
+                    f"<h2>{self.category_filter}</h2>"
+                    "<p>Selecione um item da biblioteca ou um nó do canvas para ver sua documentação.</p>"
+                    "<p><b>Duplo clique</b> adiciona o item. <b>Delete</b> ou o botão Excluir remove a seleção.</p>"
+                )
+                return
             self.help_browser.setHtml(
                 "<h2>Behavior Tree</h2>"
                 "<p>Selecione um nó para ver como ele funciona.</p>"
@@ -425,7 +462,7 @@ class GenericGraphEditorWidget(QWidget):
         """Preview documentation for a library item without spawning it."""
         node_def = item.data(0, Qt.UserRole)
         if isinstance(node_def, NodeDefinition):
-            self._show_behavior_help(node_def)
+            self._show_context_help(node_def)
 
     def _on_zoom_fit(self) -> None:
         if self.canvas.scene.nodes:

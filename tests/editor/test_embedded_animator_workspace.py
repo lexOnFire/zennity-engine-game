@@ -12,6 +12,8 @@ def test_embedded_animator_uses_official_controller_format(tmp_path: Path):
     try:
         assert editor.embedded
         assert not editor.isWindow()
+        assert editor.editor_tabs.tabText(3) == "Ajuda"
+        assert "Animator Graph" in editor.help_browser.toPlainText()
         editor.name_field.setText("Player")
         editor.save()
         path = tmp_path / "Assets" / "Animations" / "Player.zanimator"

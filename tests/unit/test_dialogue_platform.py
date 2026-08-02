@@ -61,3 +61,10 @@ def test_dialogue_graph_editor_dock_specialization(qapp):
     dock.graph_editor.auto_layout()
     dock.graph_editor.copy_selection()
     assert dock.graph_editor.clipboard_nodes == [{"copied": True}]
+    category = dock.graph_editor.node_palette.topLevelItem(0)
+    speech = next(
+        category.child(i) for i in range(category.childCount())
+        if category.child(i).text(0) == "Fala"
+    )
+    dock.graph_editor.node_palette.itemClicked.emit(speech, 0)
+    assert "Conversas" in dock.graph_editor.help_browser.toPlainText()
