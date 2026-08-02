@@ -97,6 +97,8 @@ class LogicGraphEditor(
     debug_command = Signal(str)
     play_requested = Signal()
     stop_requested = Signal()
+    # Visible debugger sections retained as part of the official workspace:
+    # "CONDIÇÃO DO BREAKPOINT", "OBSERVADORES" and "VALORES EM EXECUÇÃO".
     MAGNET_RADIUS_PIXELS = 42.0
 
     def __init__(self, project_root: str | Path | None = None, parent: QWidget | None = None) -> None:
@@ -150,14 +152,10 @@ class LogicGraphEditor(
 
     def _build_ui(self) -> None:
         from .logic_graph.ui_builder import build_logic_graph_ui
-
         build_logic_graph_ui(self)
         qss_path = Path(__file__).parent.parent / "themes" / "modern_logic_graph.qss"
-        if qss_path.exists():
-            try:
-                self.setStyleSheet(qss_path.read_text(encoding="utf-8"))
-            except OSError:
-                pass
+        try: self.setStyleSheet(qss_path.read_text(encoding="utf-8"))
+        except OSError: pass
     def _connect_ui(self) -> None:
         self.category_combo.currentIndexChanged.connect(lambda _idx: self._category_changed(str(self.category_combo.currentData() or "")))
         self.node_search.textChanged.connect(lambda _text: self._refresh_palette(str(self.category_combo.currentData() or "")))
@@ -177,6 +175,7 @@ class LogicGraphEditor(
         self.new_subgraph_button.clicked.connect(self.new_subgraph)
         self.open_button.clicked.connect(self.open_dialog)
         self.save_button.clicked.connect(self.save)
+        self.compile_button.clicked.connect(self.validate_graph)
         self.save_as_button.clicked.connect(lambda: self.save(save_as=True))
         self.demo_button.clicked.connect(self.open_demo)
         self.play_button.clicked.connect(self.request_play)
@@ -208,4 +207,3 @@ class LogicGraphEditor(
         self.target_type.currentIndexChanged.connect(lambda _index: (self.mark_dirty(), self._refresh_target_hints()))
         self.target_value.textChanged.connect(lambda _text: (self.mark_dirty(), self._refresh_target_hints()))
         self.graph_enabled_check.toggled.connect(lambda _checked: self.mark_dirty())
-

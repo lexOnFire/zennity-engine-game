@@ -41,6 +41,7 @@ class VisualScriptingEditorDock(QMainWindow):
         self._host = parent
         self.resize(1400, 860)
         self.setMinimumSize(960, 640)
+        self._scene_workspace_signature: tuple = ()
 
         # Container Principal
         self.main_container = QWidget(self)
@@ -51,9 +52,40 @@ class VisualScriptingEditorDock(QMainWindow):
         root_layout.setContentsMargins(0, 0, 0, 0)
         root_layout.setSpacing(0)
 
-        self.graph_editor = LogicGraphEditor(parent=self.main_container)
+        shared_editor = getattr(parent, "logic_workspace", None)
+        self.graph_editor = shared_editor or LogicGraphEditor(parent=self.main_container)
+        # Reparent the shared workspace without briefly drawing its old shell;
+        # this window then promotes the same widget to the full modern surface.
+        self.graph_editor.set_embedded_mode(True)
         self.graph_editor.set_embedded_mode(False)
-        root_layout.addWidget(self.graph_editor)
+
+        # A janela continua sendo o único hub oficial. Cada domínio possui uma
+        # aba editável, sem abrir janelas ou runtimes paralelos.
+        self.graph_mode_tabs = QTabWidget(self.main_container)
+        self.graph_mode_tabs.setObjectName("GraphModeTabs")
+        self.graph_mode_tabs.addTab(self.graph_editor, "Logic Graph")
+        self.behavior_tree_editor = self._new_specialized_graph("Behavior Tree")
+        self.dialogue_graph_editor = self._new_specialized_graph("Dialogue")
+        self.material_graph_editor = self._new_specialized_graph("Material")
+        self.animator_graph_editor = AnimatorControllerEditorDialog(
+            Path.cwd(), parent=self, embedded=True
+        )
+        self.ui_builder = UIBuilderDock(self, project_root=Path.cwd())
+        self.ui_builder.setFeatures(UIBuilderDock.NoDockWidgetFeatures)
+        self.graph_mode_tabs.addTab(self.behavior_tree_editor, "Behavior Tree")
+        self.graph_mode_tabs.addTab(self.dialogue_graph_editor, "Dialogue")
+        self.graph_mode_tabs.addTab(self.material_graph_editor, "Material")
+        self.graph_mode_tabs.addTab(self.animator_graph_editor, "Animator Graph")
+        self.graph_mode_tabs.addTab(self.ui_builder, "UI & HUD")
+        root_layout.addWidget(self.graph_mode_tabs)
+        self._graph_tool_adapters = {
+            "behavior_tree": _GraphToolAdapter(self, "behavior_tree", self.behavior_tree_editor),
+            "dialogue": _GraphToolAdapter(self, "dialogue", self.dialogue_graph_editor),
+            "material_graph": _GraphToolAdapter(self, "material_graph", self.material_graph_editor),
+            "animator_graph": _GraphToolAdapter(self, "animator_graph", self.animator_graph_editor),
+            "ui": _GraphToolAdapter(self, "ui", self.ui_builder),
+        }
+        self.graph_mode_tabs.currentChanged.connect(self._on_graph_mode_changed)
 
         # Mapeamento de propriedades e botões mantendo compatibilidade total
         self.toolbar_widget = self.graph_editor.header_widget
@@ -61,13 +93,13 @@ class VisualScriptingEditorDock(QMainWindow):
         self.btn_pause = self.graph_editor.pause_button
         self.btn_stop = self.graph_editor.stop_button
         self.btn_save = self.graph_editor.save_button
-        self.btn_new = self.graph_editor.save_button
-        self.btn_open = self.graph_editor.save_button
-        self.btn_auto_layout = self.graph_editor.save_button
+        self.btn_new = self.graph_editor.new_button
+        self.btn_open = self.graph_editor.open_button
+        self.btn_auto_layout = self.graph_editor.organize_button
         self.btn_validate = self.graph_editor.compile_button
         self.btn_hot_reload = self.graph_editor.save_button
-        self.btn_debug = self.graph_editor.save_button
-        self.btn_explain = self.graph_editor.save_button
+        self.btn_debug = self.graph_editor.breakpoint_button
+        self.btn_explain = self.graph_editor.help_button
         self.search_bar = self.graph_editor.node_search
         self.document_label = self.graph_editor.asset_label
         self.object_context_label = self.graph_editor.validation_label
@@ -104,11 +136,26 @@ class VisualScriptingEditorDock(QMainWindow):
             pass
         return GenericGraphEditorWidget(graph_category_filter=category)
 
-    def _active_graph_editor(self):
-        return self.graph_editor
+    def _on_graph_mode_changed(self, index: int) -> None:
+        labels = (
+            "LOGIC GRAPH", "BEHAVIOR TREE", "DIALOGUE", "MATERIAL",
+            "ANIMATOR GRAPH", "UI & HUD",
+        )
+        logic_mode = index == 0
+        for button in (self.btn_play, self.btn_pause, self.btn_stop):
+            button.setVisible(logic_mode)
+        self.document_label.setText(
+            labels[index] if 0 <= index < len(labels) else "VISUAL LOGIC"
+        )
 
     def open_graph_tool(self, tool_id: str) -> None:
         """Open this single window directly on a requested graph domain."""
+        indexes = {
+            "visual_scripting": 0, "logic_graph": 0, "behavior_tree": 1,
+            "dialogue": 2, "material_graph": 3, "animator_graph": 4,
+            "ui": 5,
+        }
+        self.graph_mode_tabs.setCurrentIndex(indexes.get(tool_id, 0))
         self.show()
         self.raise_()
         self.activateWindow()
@@ -136,12 +183,13 @@ class VisualScriptingEditorDock(QMainWindow):
 
     def _connect_signals(self) -> None:
         self.graph_editor.asset_changed.connect(self.sync_from_host)
+        self.graph_editor.pause_button.clicked.connect(self._pause)
 
     def _active_graph_editor(self):
         index = self.graph_mode_tabs.currentIndex()
         if index == 0:
             return self.graph_editor
-        if 1 <= index <= 4:
+        if 1 <= index <= 5:
             return self.graph_mode_tabs.widget(index)
         return None
 
@@ -172,6 +220,9 @@ class VisualScriptingEditorDock(QMainWindow):
         )
         budget = "OK" if milliseconds <= 16.67 else "ACIMA"
         summary = f"FPS: {fps:.1f} | Frame: {milliseconds:.2f} ms ({budget}) | Obj: {object_count}"
+        fps_badge = getattr(getattr(self, "graph_editor", None), "fps_badge", None)
+        if fps_badge is not None:
+            fps_badge.setText(f"{fps:.0f} FPS")
         profiler_widget = getattr(self, "profiler_widget", None)
         if profiler_widget is not None:
             profiler_widget.fps_label.setText(summary)
@@ -252,7 +303,21 @@ class VisualScriptingEditorDock(QMainWindow):
         if mode is None:
             return
         self.mini_viewport.set_viewport_mode(mode)
+        graph_editor = getattr(self, "graph_editor", None)
+        title = getattr(graph_editor, "mini_viewport_title", None)
+        if title is not None:
+            title.setText({
+                "play": "● Mini Viewport — Play Mode",
+                "pause": "● Mini Viewport — Pausado",
+                "edit": "● Mini Viewport — Editor",
+            }[state])
+            color = "#22c55e" if state == "play" else "#e6b85c" if state == "pause" else "#60a5fa"
+            title.setStyleSheet(
+                f"color: {color}; font-weight: bold; font-size: 11px;"
+            )
         running = state in {"play", "pause"}
+        if graph_editor is not None:
+            graph_editor.set_play_state(running)
         self.btn_play.setEnabled(state != "play")
         self.btn_pause.setEnabled(running)
         self.btn_stop.setEnabled(running)
@@ -266,8 +331,7 @@ class VisualScriptingEditorDock(QMainWindow):
         self.sync_from_host()
 
     def _validate(self) -> None:
-        from engine.logic.graph_asset import validate_logic_graph
-        issues = validate_logic_graph(self.graph_editor.graph_data())
+        issues = self.graph_editor.validate_graph()
         errors = [item for item in issues if item.get("level") == "error"]
         self.runtime_logs_text.append(
             f"[VALIDATE] {len(issues)} aviso(s), {len(errors)} erro(s)."

@@ -199,8 +199,8 @@ class MainWindow(MainWindowMenusMixin, QMainWindow):
         self.dock_profiler  = ProfilerDock(self)
 
         # Docks Visuais e Editores Especiais
+        self.logic_workspace = LogicGraphEditor(parent=self)
         self.dock_visual_scripting = VisualScriptingEditorDock(self)
-        self.logic_workspace       = self.dock_visual_scripting.graph_editor
         self.dock_animation_studio = AnimationStudioDock(self)
         self.dock_ui_builder       = UIBuilderDock(self)
         self.dock_extension_manager = ExtensionManagerDock(self)

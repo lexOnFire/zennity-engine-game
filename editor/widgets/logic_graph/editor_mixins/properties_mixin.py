@@ -172,6 +172,9 @@ class LogicGraphPropertiesMixin:
         self.property_tree.clear()
         if len(selected) != 1:
             self.selected_label.setText("Selecione um nó para editar seus valores")
+            if hasattr(self, "validation_badge"):
+                self.validation_badge.setText("Sem seleção")
+                self.validation_badge.setStyleSheet("color: #64748b; font-weight: bold; font-size: 11px;")
             self.property_asset_button.hide()
             self.property_color_button.hide()
             self.breakpoint_condition_edit.clear()
@@ -180,6 +183,9 @@ class LogicGraphPropertiesMixin:
             self.node_selected.emit(None)
             return
         node = selected[0].node
+        if hasattr(self, "validation_badge"):
+            self.validation_badge.setText("Válido  ✓")
+            self.validation_badge.setStyleSheet("color: #22c55e; font-weight: bold; font-size: 11px;")
         self.node_selected.emit(node)
         asset_kind = self._asset_kind_for_node(str(node.get("type", "")))
         self.property_asset_button.setVisible(asset_kind is not None)

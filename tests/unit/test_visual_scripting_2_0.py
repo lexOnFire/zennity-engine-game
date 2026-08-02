@@ -33,6 +33,14 @@ def test_visual_scripting_2_0_dock_layout(qapp):
     assert dock.mini_viewport.transport_toolbar.isHidden()
     assert dock.btn_play is not None
     assert dock.btn_stop is not None
+    assert dock.graph_mode_tabs.count() == 6
+    assert dock.btn_new is dock.graph_editor.new_button
+    assert dock.btn_open is dock.graph_editor.open_button
+    assert dock.btn_auto_layout is dock.graph_editor.organize_button
+    assert not dock.graph_editor.trace_console.toPlainText()
+    assert dock.graph_editor.fps_badge.text() == "— FPS"
+    dock.deleteLater()
+    qapp.processEvents()
 
 
 def test_visual_scripting_can_be_a_native_independent_window(qapp):
@@ -60,6 +68,19 @@ def test_mini_live_viewport_highlight_execution(qapp):
     viewport.highlight_execution_node("node_123", "MovePlayer")
     assert viewport.active_node_id == "node_123"
     assert viewport.active_node_name == "MovePlayer"
+
+
+def test_logic_compiler_reports_real_document_state(qapp):
+    from editor.widgets.logic_graph_editor import LogicGraphEditor
+
+    editor = LogicGraphEditor()
+    issues = editor.validate_graph()
+
+    assert isinstance(issues, list)
+    assert "Compilação" in editor.compilation_status_text.text()
+    assert "00:00:01.427" not in editor.trace_console.toPlainText()
+    editor.deleteLater()
+    qapp.processEvents()
 
 
 def test_visual_scripting_dock_runtime_execution_sync(qapp):

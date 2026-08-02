@@ -421,6 +421,44 @@ class LogicGraphPersistenceMixin:
             + (f" • {errors} erro(s) • {warnings} aviso(s)" if errors else f" • {warnings} aviso(s)" if warnings else " • válido")
         )
 
+    def validate_graph(self) -> list[dict[str, str]]:
+        """Compile the current document and publish truthful diagnostics."""
+        issues = validate_logic_graph(self.graph_data())
+        errors = [issue for issue in issues if issue.get("level") == "error"]
+        warnings = [issue for issue in issues if issue.get("level") == "warning"]
+        self._update_validation()
+        if hasattr(self, "errors_console"):
+            lines = [
+                f"[{str(issue.get('level', 'warning')).upper()}] "
+                f"{issue.get('message', 'Problema sem descrição')}"
+                for issue in issues
+            ]
+            self.errors_console.setPlainText("\n".join(lines))
+        if hasattr(self, "compilation_status_icon"):
+            if errors:
+                color, icon = "#ff5d62", "✕"
+                summary = f"Compilação falhou\n{len(errors)} erro(s), {len(warnings)} aviso(s)"
+            elif warnings:
+                color, icon = "#e6b85c", "!"
+                summary = f"Compilação concluída com avisos\n{len(warnings)} aviso(s)"
+            else:
+                color, icon = "#22c55e", "✓"
+                summary = "Compilação concluída com sucesso\nNenhum erro encontrado"
+            self.compilation_status_icon.setText(icon)
+            self.compilation_status_icon.setStyleSheet(
+                f"color: {color}; font-size: 32px; font-weight: bold;"
+            )
+            self.compilation_status_text.setText(summary)
+            self.compilation_status_text.setStyleSheet(
+                f"color: {color}; font-size: 11px; font-weight: bold;"
+            )
+            self.footer_tabs.setCurrentIndex(1 if errors else 0)
+        self.message.emit(
+            "ERROR" if errors else "WARNING" if warnings else "INFO",
+            f"Compilação: {len(errors)} erro(s), {len(warnings)} aviso(s)",
+        )
+        return issues
+
     def _confirm_discard(self) -> bool:
         if not self._dirty:
             return True

@@ -789,8 +789,7 @@ class RuntimeVisualizationPanelWidget(RuntimePanelControllerMixin, QFrame):
         self._build_ui()
 
     def set_mode(self, mode: ViewportMode) -> None:
-        if hasattr(self, "_canvas") and self._canvas is not None:
-            self._canvas.set_mode(mode)
+        self.set_viewport_mode(mode)
 
     # ── UI Builder ────────────────────────────────────────────────────────
 
@@ -1125,6 +1124,17 @@ class RuntimeVisualizationPanelWidget(RuntimePanelControllerMixin, QFrame):
             dt = max(0.001, now - last_t)
             self._canvas.last_frame_time = now
             self._canvas.frame_ms = dt * 1000.0
+            measured_fps = min(240.0, 1.0 / dt)
+            self.fps = measured_fps if self.fps <= 0 else (
+                self.fps * 0.88 + measured_fps * 0.12
+            )
+            self._canvas.fps = self.fps
+            self._canvas.push_fps(self.fps)
+            self._lbl_fps.setText(f"FPS {self.fps:5.1f}")
+            self._lbl_frame_ms.setText(f"Frame {self._canvas.frame_ms:.1f}ms")
+            external_fps_label = getattr(self, "external_fps_label", None)
+            if external_fps_label is not None:
+                external_fps_label.setText(f"{self.fps:.0f} FPS")
 
             if self.viewport_mode == ViewportMode.GAME:
                 start_t = getattr(self._canvas, "play_start_time", now)
