@@ -98,7 +98,9 @@ def build_logic_graph_ui(self) -> None:
     self.connect_button = QPushButton("Conectar selecionados")
     self.delete_button = QPushButton("Excluir selecionado")
 
-    self.toolbar_widget = QWidget()
+    # Compatibility placeholder for older bindings. It is not in a layout,
+    # so it needs an owner to prevent Qt from creating a blank native window.
+    self.toolbar_widget = QWidget(self)
     self.toolbar_widget.setObjectName("LogicToolbar")
     self.toolbar_widget.hide()  # Toolbar secundária oculta para manter o visual limpo da casca
 

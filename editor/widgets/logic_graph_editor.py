@@ -140,11 +140,15 @@ class LogicGraphEditor(
         """Show only the production graph surface when hosted by VS 2.0."""
         for widget in (
             getattr(self, "header_widget", None),
-            getattr(self, "toolbar_widget", None),
             getattr(self, "category_widget", None),
         ):
             if widget is not None:
                 widget.setVisible(not embedded)
+        # Compatibility-only toolbar: it is intentionally not part of the
+        # layout. Never promote it to a top-level window when modes change.
+        toolbar = getattr(self, "toolbar_widget", None)
+        if toolbar is not None:
+            toolbar.hide()
         layout = self.layout()
         if layout is not None:
             layout.setContentsMargins(2, 2, 2, 2)

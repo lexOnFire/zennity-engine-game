@@ -38,3 +38,20 @@ def test_editor_metadata_context_does_not_create_a_display(monkeypatch) -> None:
     assert not pygame.display.get_init()
     window.deleteLater()
     app.processEvents()
+
+
+def test_switching_logic_workspace_modes_never_shows_compatibility_toolbar() -> None:
+    from PySide6.QtWidgets import QApplication
+    from editor.widgets.logic_graph_editor import LogicGraphEditor
+
+    app = QApplication.instance() or QApplication([])
+    editor = LogicGraphEditor()
+    editor.set_embedded_mode(True)
+    editor.set_embedded_mode(False)
+    app.processEvents()
+
+    assert editor.toolbar_widget.parent() is editor
+    assert not editor.toolbar_widget.isVisible()
+    assert not editor.toolbar_widget.isWindow()
+    editor.deleteLater()
+    app.processEvents()
