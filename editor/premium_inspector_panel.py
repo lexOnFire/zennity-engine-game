@@ -65,7 +65,10 @@ class RealInspectorPanel(InspectorPanel):
         meta_layout.setSpacing(6)
         self.object_tag = QComboBox()
         self.object_tag.setObjectName("InspectorCombo")
-        self.object_tag.addItems(["Untagged", "Player", "Enemy"])
+        self.object_tag.setEditable(True)
+        self.object_tag.setInsertPolicy(QComboBox.InsertAtBottom)
+        self.object_tag.addItems(["Untagged", "Player", "Enemy", "Food", "Item", "Collectible"])
+        self.object_tag.currentTextChanged.connect(self._on_tag_changed)
         self.object_layer = QComboBox()
         self.object_layer.setObjectName("InspectorCombo")
         self.object_layer.addItems(["Default", "UI", "World"])
@@ -144,7 +147,12 @@ class RealInspectorPanel(InspectorPanel):
             self.name.setText(display_name)
         self.object_enabled.setChecked(bool(getattr(obj, "active", True)))
         self.object_static.setChecked(bool(getattr(obj, "is_static", False)))
-        self.object_tag.setCurrentText(str(getattr(obj, "tag", "Untagged")))
+        
+        current_tag = str(getattr(obj, "tag", "Untagged"))
+        if self.object_tag.findText(current_tag) == -1:
+            self.object_tag.addItem(current_tag)
+        self.object_tag.setCurrentText(current_tag)
+        self.object_layer.setCurrentText(str(getattr(obj, "layer", "Default")))
         self.object_layer.setCurrentText(str(getattr(obj, "layer", "Default")))
 
         # --- FASE 8.1: Integração com PropertyBindingGroup & EventBus ---
@@ -195,6 +203,20 @@ class RealInspectorPanel(InspectorPanel):
         runtime_layout.addWidget(info_label)
 
         self.component_list_layout.addWidget(runtime_group)
+
+    def _on_tag_changed(self, new_tag: str) -> None:
+        if not self.current_object:
+            return
+        tag_str = str(new_tag).strip() or "Untagged"
+        if getattr(self.current_object, "tag", None) == tag_str:
+            return
+        if self.object_tag.findText(tag_str) == -1:
+            self.object_tag.addItem(tag_str)
+        if isinstance(self.current_object, dict):
+            self.current_object["tag"] = tag_str
+        else:
+            setattr(self.current_object, "tag", tag_str)
+        self._on_property_changed_notify("tag", tag_str)
 
     def _on_property_changed_notify(self, prop_name: str, new_val: Any) -> None:
         """Notifica alterações via EventBus no domínio Scene.*"""
