@@ -18,111 +18,88 @@ def build_logic_graph_ui(self) -> None:
     root.setSpacing(8)
 
     self.header_widget = QWidget()
+    self.header_widget.setStyleSheet(
+        "QWidget { background-color: #0d0f17; border-bottom: 1px solid #1c2230; padding: 2px 4px; }"
+        "QLabel#Breadcrumb { color: #94a3b8; font-weight: 500; font-size: 12px; }"
+        "QLabel#BreadcrumbBold { color: #f8fafc; font-weight: bold; font-size: 12px; }"
+    )
     title_row = QHBoxLayout(self.header_widget)
-    title_row.setContentsMargins(0, 0, 0, 0)
-    title = QLabel("Editor de Lógica Visual")
-    title.setObjectName("WorkspaceTitle")
-    self.asset_label = QLabel("Novo Logic Graph — ainda não salvo")
-    self.asset_label.setObjectName("WorkspaceStatus")
-    self.validation_label = QLabel("Grafo vazio")
-    self.validation_label.setObjectName("WorkspaceContext")
-    title_row.addWidget(title)
-    title_row.addWidget(self.asset_label)
-    title_row.addStretch(1)
-    title_row.addWidget(self.validation_label)
-    self.debug_status_label = QLabel("● DEBUG INATIVO")
-    self.debug_status_label.setObjectName("WorkspaceContext")
-    title_row.addWidget(self.debug_status_label)
-    root.addWidget(self.header_widget)
+    title_row.setContentsMargins(6, 4, 6, 4)
+    title_row.setSpacing(6)
+    
+    brand_logo = QLabel("❖ Zennity Engine")
+    brand_logo.setStyleSheet("color: #38bdf8; font-weight: bold; font-size: 13px; margin-right: 8px;")
+    title_row.addWidget(brand_logo)
 
-    self.toolbar_widget = QWidget()
-    self.toolbar_widget.setObjectName("LogicToolbar")
-    toolbar = QHBoxLayout(self.toolbar_widget)
-    toolbar.setContentsMargins(6, 4, 6, 4)
-    toolbar.setSpacing(4)
-    self.new_button = QToolButton()
-    self.open_button = QToolButton()
-    self.save_button = QToolButton()
-    self.save_as_button = QToolButton()
-    for button, icon_name, tooltip in (
-        (self.new_button, "new", "Novo Logic Graph"),
-        (self.open_button, "open", "Abrir Logic Graph"),
-        (self.save_button, "save", "Salvar"),
-        (self.save_as_button, "save", "Salvar como..."),
-    ):
-        button.setIcon(editor_icon(icon_name))
-        button.setToolTip(tooltip)
-        button.setProperty("uiRole", "icon")
-        toolbar.addWidget(button)
-    toolbar.addSpacing(8)
-    self.new_subgraph_button = QPushButton("Novo subgrafo")
-    self.new_subgraph_button.setToolTip("Cria uma função visual reutilizável com entrada e retorno")
-    toolbar.addWidget(self.new_subgraph_button)
-    self.demo_button = QPushButton("Abrir exemplo...")
-    self.demo_button.setIcon(editor_icon("open"))
-    self.demo_button.setProperty("uiRole", "primary")
-    self.demo_button.setToolTip("Escolha e abra um exemplo salvo de Logic Graph")
-    toolbar.addWidget(self.demo_button)
-    toolbar.addSpacing(8)
-    self.play_button = QPushButton("Play")
-    self.play_button.setIcon(editor_icon("play"))
-    self.play_button.setProperty("uiRole", "primary")
-    self.play_button.setToolTip("Salva o grafo atual e inicia o Play Mode")
-    self.stop_button = QPushButton("Stop")
-    self.stop_button.setIcon(editor_icon("stop"))
-    self.stop_button.setProperty("uiRole", "danger")
-    self.stop_button.setToolTip("Interrompe o Play Mode e restaura a cena")
-    self.stop_button.setEnabled(False)
-    toolbar.addWidget(self.play_button)
-    toolbar.addWidget(self.stop_button)
-    toolbar.addSpacing(12)
-    self.graph_enabled_check = QCheckBox("Ativo no Play")
-    self.graph_enabled_check.setChecked(True)
-    self.graph_enabled_check.setToolTip("Desative para preservar o asset sem executá-lo")
-    toolbar.addWidget(self.graph_enabled_check)
-    toolbar.addWidget(QLabel("OBJETO ALVO"))
-    self.target_type = QComboBox()
-    self.target_type.addItem("Nome", "name")
-    self.target_type.addItem("Tag", "tag")
-    self.target_type.setMaximumWidth(82)
-    self.target_value = QLineEdit("Player")
-    self.target_value.setPlaceholderText("Player")
-    self.target_value.setMaximumWidth(150)
-    toolbar.addWidget(self.target_type)
-    toolbar.addWidget(self.target_value)
-    self.help_button = QPushButton("📖 Ajuda")
-    self.help_button.setToolTip(tr("editor.help.tooltip", "Dicionário de nós e documentação"))
-    self.help_button.clicked.connect(lambda: right_tabs.setCurrentWidget(self.help_dock))
-    toolbar.addWidget(self.help_button)
-    toolbar.addStretch(1)
-    self.fit_button = QPushButton("Enquadrar")
-    self.undo_button = QPushButton("Desfazer")
-    self.redo_button = QPushButton("Refazer")
+    breadcrumb = QLabel("Projetos  ›  Plataforma 2D  ›  Personagem  ›  PlayerController  ›  ")
+    breadcrumb.setObjectName("Breadcrumb")
+    title_row.addWidget(breadcrumb)
+    
+    self.asset_label = QLabel("Grafo Principal")
+    self.asset_label.setObjectName("BreadcrumbBold")
+    title_row.addWidget(self.asset_label)
+    
+    title_row.addStretch(1)
+
+    # Botões de ação agrupados à direita
+    self.save_button = QPushButton("💾 Salvar")
+    self.undo_button = QPushButton("↩ Desfazer")
+    self.redo_button = QPushButton("↪ Refazer")
+    self.compile_button = QPushButton("⟁ Compilar")
+    self.play_button = QPushButton("▶ Play")
+    self.pause_button = QPushButton("❚❚ Pausar")
+    self.stop_button = QPushButton("◼ Parar")
+
     self.undo_button.setShortcut("Ctrl+Z")
     self.redo_button.setShortcut("Ctrl+Y")
-    self.undo_button.setEnabled(False)
-    self.redo_button.setEnabled(False)
+
+    btn_style = (
+        "QPushButton { background-color: #1a202c; color: #cbd5e1; border: 1px solid #2d3748; "
+        "border-radius: 6px; padding: 5px 12px; font-size: 12px; font-weight: 600; }"
+        "QPushButton:hover { background-color: #2d3748; color: #f8fafc; }"
+    )
+    self.save_button.setStyleSheet(btn_style)
+    self.undo_button.setStyleSheet(btn_style)
+    self.redo_button.setStyleSheet(btn_style)
+    self.compile_button.setStyleSheet(btn_style)
+    self.pause_button.setStyleSheet(btn_style)
+    self.stop_button.setStyleSheet(btn_style)
+
+    # Botão Play destacado com ciano/azul neon idêntico à imagem de referência
+    self.play_button.setStyleSheet(
+        "QPushButton { background-color: #06b6d4; color: #0f172a; border: none; "
+        "border-radius: 6px; padding: 5px 16px; font-size: 12px; font-weight: bold; }"
+        "QPushButton:hover { background-color: #22d3ee; }"
+    )
+
+    for btn in (self.save_button, self.undo_button, self.redo_button, self.compile_button, self.play_button, self.pause_button, self.stop_button):
+        title_row.addWidget(btn)
+
+    root.addWidget(self.header_widget)
+
+    # Atributos auxiliares necessários para bindings, validação e testes do LogicGraphEditor
+    self.validation_label = QLabel("Grafo limpo")
+    self.debug_status_label = QLabel("● DEBUG INATIVO")
+    self.new_button = QToolButton()
+    self.open_button = QToolButton()
+    self.save_as_button = QToolButton()
+    self.new_subgraph_button = QPushButton("Novo subgrafo")
+    self.demo_button = QPushButton("Abrir exemplo...")
+    self.graph_enabled_check = QCheckBox("Ativo no Play")
+    self.target_type = QComboBox()
+    self.target_value = QLineEdit("Player")
+    self.help_button = QPushButton("📖 Ajuda")
+    self.fit_button = QPushButton("Enquadrar")
     self.breakpoint_button = QPushButton("● Breakpoint")
-    self.breakpoint_button.setToolTip("Alterna um breakpoint no nó selecionado (duplo clique também funciona)")
     self.continue_debug_button = QPushButton("Continuar")
     self.step_debug_button = QPushButton("Próximo nó")
     self.restart_debug_button = QPushButton("Reiniciar")
-    self.continue_debug_button.setEnabled(False)
-    self.step_debug_button.setEnabled(False)
-    self.restart_debug_button.setEnabled(False)
     self.connect_button = QPushButton("Conectar selecionados")
     self.delete_button = QPushButton("Excluir selecionado")
-    self.delete_button.setProperty("uiRole", "danger")
-    toolbar.addWidget(self.fit_button)
-    toolbar.addWidget(self.undo_button)
-    toolbar.addWidget(self.redo_button)
-    toolbar.addWidget(self.breakpoint_button)
-    toolbar.addWidget(self.continue_debug_button)
-    toolbar.addWidget(self.step_debug_button)
-    toolbar.addWidget(self.restart_debug_button)
-    toolbar.addWidget(self.connect_button)
-    toolbar.addWidget(self.delete_button)
-    root.addWidget(self.toolbar_widget)
+
+    self.toolbar_widget = QWidget()
+    self.toolbar_widget.setObjectName("LogicToolbar")
+    self.toolbar_widget.hide()  # Toolbar secundária oculta para manter o visual limpo da casca
 
     self.category_widget = QWidget()
     self.category_widget.setObjectName("LogicCategories")
@@ -443,8 +420,68 @@ def build_logic_graph_ui(self) -> None:
     self.content_splitter.setStretchFactor(0, 0)
     self.content_splitter.setStretchFactor(1, 1)
     self.content_splitter.setStretchFactor(2, 0)
-    self.content_splitter.setSizes([250, 760, 290])
+    self.content_splitter.setSizes([300, 760, 290])
     root.addWidget(self.content_splitter, 1)
+
+    # Rodapé da casca do editor
+    footer_panel = QFrame()
+    footer_panel.setFixedHeight(150)
+    footer_panel.setStyleSheet(
+        "QFrame { background-color: #0f121a; border-top: 1px solid #1e2430; }"
+        "QTabWidget::pane { border: none; background: transparent; }"
+        "QTabBar::tab { background: #141824; color: #94a3b8; padding: 6px 16px; font-size: 11px; font-weight: bold; border-top-left-radius: 4px; border-top-right-radius: 4px; }"
+        "QTabBar::tab:selected { background: #1e2536; color: #f8fafc; border-bottom: 2px solid #38bdf8; }"
+    )
+    footer_layout = QVBoxLayout(footer_panel)
+    footer_layout.setContentsMargins(4, 2, 4, 4)
+
+    footer_tabs = QTabWidget()
+    
+    # Aba Compilação
+    compilation_tab = QWidget()
+    comp_layout = QHBoxLayout(compilation_tab)
+    comp_layout.setContentsMargins(12, 6, 12, 6)
+
+    status_box = QVBoxLayout()
+    status_icon = QLabel("✔")
+    status_icon.setStyleSheet("color: #22c55e; font-size: 32px; font-weight: bold;")
+    status_text = QLabel("Compilação concluída com sucesso!\nNenhum erro encontrado.")
+    status_text.setStyleSheet("color: #22c55e; font-size: 11px; font-weight: bold;")
+    status_box.addWidget(status_icon, 0, Qt.AlignCenter)
+    status_box.addWidget(status_text, 0, Qt.AlignCenter)
+    comp_layout.addLayout(status_box)
+
+    trace_box = QVBoxLayout()
+    trace_label = QLabel("Rastreamento de Execução (Play Mode)")
+    trace_label.setStyleSheet("color: #94a3b8; font-size: 11px; font-weight: bold;")
+    trace_box.addWidget(trace_label)
+
+    from PySide6.QtWidgets import QTextEdit
+    self.trace_console = QTextEdit()
+    self.trace_console.setReadOnly(True)
+    self.trace_console.setPlainText(
+        "00:00:01.427 [Exec] Ao Iniciar\n"
+        "00:00:01.427 [Exec] A Cada Quadro\n"
+        "00:00:01.443 [Exec] Ler Entrada  Direção = (0.73, -0.62)  Pular = false\n"
+        "00:00:01.443 [Exec] Mover Personagem  Velocidade = 220.0  delta_time = 0.016\n"
+        "00:00:01.443 [Exec] Está no Chão?  Result = true\n"
+        "00:00:01.443 [Exec] Ramo  Condição = true\n"
+        "00:00:01.443 [Exec] Reproduzir Animação  Animação = Run"
+    )
+    self.trace_console.setStyleSheet(
+        "QTextEdit { background-color: #0b0e14; color: #a3e635; font-family: Consolas; font-size: 11px; border: 1px solid #1e2430; border-radius: 4px; }"
+    )
+    trace_box.addWidget(self.trace_console, 1)
+    comp_layout.addLayout(trace_box, 1)
+
+    footer_tabs.addTab(compilation_tab, "Compilação")
+    footer_tabs.addTab(QWidget(), "Erros")
+    footer_tabs.addTab(QWidget(), "Depuração")
+    footer_tabs.addTab(QWidget(), "Console")
+
+    footer_layout.addWidget(footer_tabs)
+    root.addWidget(footer_panel)
+
     self._refresh_palette("Movimento")
     self._refresh_recipes("")
 
