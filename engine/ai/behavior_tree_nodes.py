@@ -8,14 +8,14 @@ class BTSelectorNode:
 
     __node_definition__ = NodeDefinition(
         id="bt.selector",
-        title_key="node.bt.selector",
+        title_key="Seletor (Selector)",
         category_key="Behavior Tree/Composite",
         inputs=[
-            PinDefinition(id="in", pin_type=PinType.EXEC),
+            PinDefinition(id="in", label_key="In (Entrada)", pin_type=PinType.EXEC),
         ],
         outputs=[
-            PinDefinition(id="out_1", pin_type=PinType.EXEC),
-            PinDefinition(id="out_2", pin_type=PinType.EXEC),
+            PinDefinition(id="out_1", label_key="Opção 1", pin_type=PinType.EXEC),
+            PinDefinition(id="out_2", label_key="Opção 2", pin_type=PinType.EXEC),
         ],
     )
 
@@ -25,14 +25,14 @@ class BTSequenceNode:
 
     __node_definition__ = NodeDefinition(
         id="bt.sequence",
-        title_key="node.bt.sequence",
+        title_key="Sequência (Sequence)",
         category_key="Behavior Tree/Composite",
         inputs=[
-            PinDefinition(id="in", pin_type=PinType.EXEC),
+            PinDefinition(id="in", label_key="In (Entrada)", pin_type=PinType.EXEC),
         ],
         outputs=[
-            PinDefinition(id="out_1", pin_type=PinType.EXEC),
-            PinDefinition(id="out_2", pin_type=PinType.EXEC),
+            PinDefinition(id="out_1", label_key="Passo 1", pin_type=PinType.EXEC),
+            PinDefinition(id="out_2", label_key="Passo 2", pin_type=PinType.EXEC),
         ],
     )
 
@@ -42,13 +42,13 @@ class BTInverterNode:
 
     __node_definition__ = NodeDefinition(
         id="bt.inverter",
-        title_key="node.bt.inverter",
+        title_key="Inversor (Inverter)",
         category_key="Behavior Tree/Decorator",
         inputs=[
-            PinDefinition(id="in", pin_type=PinType.EXEC),
+            PinDefinition(id="in", label_key="In (Entrada)", pin_type=PinType.EXEC),
         ],
         outputs=[
-            PinDefinition(id="child", pin_type=PinType.EXEC),
+            PinDefinition(id="child", label_key="Filho", pin_type=PinType.EXEC),
         ],
     )
 
@@ -58,14 +58,14 @@ class BTWaitNode:
 
     __node_definition__ = NodeDefinition(
         id="bt.wait",
-        title_key="node.bt.wait",
+        title_key="Esperar (Wait)",
         category_key="Behavior Tree/Action",
         inputs=[
-            PinDefinition(id="in", pin_type=PinType.EXEC),
-            PinDefinition(id="duration", pin_type=PinType.FLOAT, default_value=1.0),
+            PinDefinition(id="in", label_key="In (Entrada)", pin_type=PinType.EXEC),
+            PinDefinition(id="duration", label_key="Duração (s)", pin_type=PinType.FLOAT, default_value=1.0),
         ],
         outputs=[
-            PinDefinition(id="out", pin_type=PinType.EXEC),
+            PinDefinition(id="out", label_key="Próximo", pin_type=PinType.EXEC),
         ],
     )
 
@@ -75,15 +75,15 @@ class BTMoveToNode:
 
     __node_definition__ = NodeDefinition(
         id="bt.move_to",
-        title_key="node.bt.move_to",
+        title_key="Mover Até (MoveTo)",
         category_key="Behavior Tree/Action",
         inputs=[
-            PinDefinition(id="in", pin_type=PinType.EXEC),
-            PinDefinition(id="target_pos", pin_type=PinType.VECTOR3),
-            PinDefinition(id="speed", pin_type=PinType.FLOAT, default_value=5.0),
+            PinDefinition(id="in", label_key="In (Entrada)", pin_type=PinType.EXEC),
+            PinDefinition(id="target_pos", label_key="Posição Alvo", pin_type=PinType.VECTOR3),
+            PinDefinition(id="speed", label_key="Velocidade", pin_type=PinType.FLOAT, default_value=5.0),
         ],
         outputs=[
-            PinDefinition(id="out", pin_type=PinType.EXEC),
+            PinDefinition(id="out", label_key="Próximo", pin_type=PinType.EXEC),
         ],
     )
 

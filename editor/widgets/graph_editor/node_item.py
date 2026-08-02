@@ -24,6 +24,56 @@ CATEGORY_COLORS = {
     "logic.category.text": QColor("#81b29a"),
 }
 
+def format_readable_title(raw: str, node_id: str) -> str:
+    if raw and not raw.startswith("node.") and not raw.startswith("bt."):
+        return raw
+    titles = {
+        "bt.sequence": "Sequência (Sequence)",
+        "bt.selector": "Seletor (Selector)",
+        "bt.inverter": "Inversor (Inverter)",
+        "bt.wait": "Esperar (Wait)",
+        "bt.move_to": "Mover Até (MoveTo)",
+        "bt.repeat": "Repetir (Repeat)",
+        "bt.cooldown": "Cooldown (Recarga)",
+        "bt.target_in_range": "Alvo no Alcance",
+        "bt.parameter_condition": "Condição de Parâmetro",
+        "bt.chase": "Perseguir Alvo",
+        "bt.patrol": "Patrulhar",
+        "bt.attack": "Atacar Alvo",
+        "bt.play_animation": "Reproduzir Animação",
+    }
+    return titles.get(node_id, titles.get(raw, node_id.replace("bt.", "").replace("_", " ").title()))
+
+
+def format_readable_pin_label(raw: str, pin_id: str) -> str:
+    if raw and not raw.startswith("pin.") and not raw.endswith(".label"):
+        return raw
+    labels = {
+        "in": "In",
+        "out": "Out",
+        "out_1": "Saída 1",
+        "out_2": "Saída 2",
+        "child": "Filho",
+        "duration": "Duração (s)",
+        "target_pos": "Posição Alvo",
+        "speed": "Velocidade",
+        "target": "Alvo",
+        "count": "Contagem",
+        "seconds": "Segundos",
+        "distance": "Distância",
+        "parameter": "Parâmetro",
+        "operator": "Operador",
+        "value": "Valor",
+        "stop_distance": "Dist. Parada",
+        "point_a": "Ponto A",
+        "point_b": "Ponto B",
+        "damage": "Dano",
+        "range": "Alcance",
+        "animation": "Animação",
+    }
+    return labels.get(pin_id, pin_id.replace("_", " ").title())
+
+
 class GraphNodeItem(QGraphicsRectItem):
     """Nó visual genérico guiado por NodeDefinition."""
     
@@ -62,7 +112,9 @@ class GraphNodeItem(QGraphicsRectItem):
         self.header.setPen(Qt.NoPen)
         self.header.setBrush(QBrush(color.darker(155)))
         
-        self.title_item = QGraphicsTextItem(tr(self.node_def.name_key), self)
+        raw_name = tr(self.node_def.name_key, fallback=self.node_def.name_key)
+        title_text = format_readable_title(raw_name, self.node_def.id)
+        self.title_item = QGraphicsTextItem(title_text, self)
         self.title_item.setDefaultTextColor(QColor("#f2f4f8"))
         self.title_item.setPos(10.0, 3.0)
         font = self.title_item.font()
@@ -80,7 +132,9 @@ class GraphNodeItem(QGraphicsRectItem):
             self.input_ports[pin.id] = port
             
             if not pin.hide_label:
-                label = QGraphicsTextItem(tr(pin.label_key), self)
+                raw_pin_label = tr(pin.label_key, fallback=getattr(pin, "label", pin.id))
+                pin_text = format_readable_pin_label(raw_pin_label, pin.id)
+                label = QGraphicsTextItem(pin_text, self)
                 label.setDefaultTextColor(QColor("#aeb6c5"))
                 label.setPos(9.0, y - 12.0)
                 self.port_labels.append(label)
@@ -91,11 +145,12 @@ class GraphNodeItem(QGraphicsRectItem):
             self.output_ports[pin.id] = port
             
             if not pin.hide_label:
-                label = QGraphicsTextItem(tr(pin.label_key), self)
+                raw_pin_label = tr(pin.label_key, fallback=getattr(pin, "label", pin.id))
+                pin_text = format_readable_pin_label(raw_pin_label, pin.id)
+                label = QGraphicsTextItem(pin_text, self)
                 label.setDefaultTextColor(QColor("#aeb6c5"))
-                label.setTextWidth(76.0)
-                # Alinhamento simples à direita
-                label.setPos(self.width - 84.0, y - 12.0) 
+                text_w = label.boundingRect().width()
+                label.setPos(self.width - text_w - 14.0, y - 12.0) 
                 self.port_labels.append(label)
                 
     @property

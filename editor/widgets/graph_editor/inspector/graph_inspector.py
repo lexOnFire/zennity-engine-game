@@ -85,6 +85,9 @@ class _Divider(QFrame):
         self.setStyleSheet("border: none; border-top: 1px solid #2e3240; margin: 4px 0;")
 
 
+from editor.widgets.graph_editor.node_item import format_readable_title, format_readable_pin_label
+
+
 class GraphNodeInspector(QWidget):
     """Inspector de propriedades para nós do grafo visual."""
 
@@ -160,15 +163,23 @@ class GraphNodeInspector(QWidget):
     def _build_header(self, node_def, instance_data: dict) -> None:
         cat_key = str(getattr(node_def, "category_key", "") or getattr(node_def, "category", "logic")).lower()
         # Extract last segment (e.g. "logic.category.events" → "events")
-        cat_simple = cat_key.split(".")[-1]
+        cat_simple = cat_key.split("/")[-1].split(".")[-1]
+        cat_labels = {
+            "composite": "COMPOSIÇÃO",
+            "decorator": "DECORADOR",
+            "action": "AÇÃO",
+            "condition": "CONDIÇÃO",
+        }
+        cat_display = cat_labels.get(cat_simple.lower(), cat_simple.upper())
         cat_color = CATEGORY_COLORS.get(cat_simple, "#7f8b9c")
 
         # Node name + category badge
-        name_text = tr(getattr(node_def, "name_key", node_def.id), fallback=node_def.id)
+        raw_name = tr(getattr(node_def, "name_key", node_def.id), fallback=node_def.id)
+        name_text = format_readable_title(raw_name, node_def.id)
         name_label = QLabel(f"<b>{name_text}</b>")
         name_label.setStyleSheet("color: #f2f4f8; font-size: 13px; padding: 2px 0;")
 
-        cat_label = QLabel(f"{_color_dot(cat_color)} {cat_simple.upper()}")
+        cat_label = QLabel(f"{_color_dot(cat_color)} {cat_display}")
         cat_label.setStyleSheet(f"color: {cat_color}; font-size: 10px; letter-spacing: 1px;")
         cat_label.setTextFormat(Qt.RichText)
 
@@ -188,7 +199,7 @@ class GraphNodeInspector(QWidget):
         if not inputs:
             return
 
-        self._layout.addWidget(_SectionHeader("Inputs", "#4c9aff"))
+        self._layout.addWidget(_SectionHeader("ENTRADAS (INPUTS)", "#4c9aff"))
         form = QFormLayout()
         form.setContentsMargins(0, 4, 0, 4)
         form.setHorizontalSpacing(8)
@@ -200,14 +211,15 @@ class GraphNodeInspector(QWidget):
         for pin in inputs:
             pin_id = str(pin.id)
             pin_type_str = str(pin.pin_type).lower().replace("pintype.", "")
-            label_text = tr(pin.label_key, fallback=pin_id)
+            raw_pin_label = tr(pin.label_key, fallback=pin_id)
+            label_text = format_readable_pin_label(raw_pin_label, pin_id)
             color = PIN_TYPE_COLORS.get(pin_type_str, "#ae7df0")
 
             # Label
             lbl = QLabel(f'{_color_dot(color)} {label_text}')
             lbl.setTextFormat(Qt.RichText)
             lbl.setStyleSheet("color: #aeb6c5; font-size: 10px;")
-            lbl.setToolTip(f"Type: {pin_type_str}")
+            lbl.setToolTip(f"Tipo: {pin_type_str}")
 
             # Editor widget based on type
             current_val = saved_props.get(pin_id, getattr(pin, "default_value", None))
@@ -225,10 +237,12 @@ class GraphNodeInspector(QWidget):
         if not outputs:
             return
 
-        self._layout.addWidget(_SectionHeader("Outputs", "#50c878"))
+        self._layout.addWidget(_SectionHeader("SAÍDAS (OUTPUTS)", "#50c878"))
         for pin in outputs:
+            pin_id = str(pin.id)
             pin_type_str = str(pin.pin_type).lower().replace("pintype.", "")
-            label_text = tr(pin.label_key, fallback=str(pin.id))
+            raw_pin_label = tr(pin.label_key, fallback=pin_id)
+            label_text = format_readable_pin_label(raw_pin_label, pin_id)
             color = PIN_TYPE_COLORS.get(pin_type_str, "#ae7df0")
 
             row = QLabel(f'{_color_dot(color)} {label_text}  <span style="color:#444d5e;">[{pin_type_str}]</span>')
