@@ -325,6 +325,7 @@ class LogicGraphPropertiesMixin:
             "create_object": "image",
             "create_prefab": "prefab",
             "call_subgraph": "logic",
+            "start_behavior_tree": "behavior",
             "play_animation_asset": "animation",
             "play_sound": "audio",
             "add_sprite_renderer": "image",

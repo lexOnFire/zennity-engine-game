@@ -17,6 +17,7 @@ ASSET_KINDS = {
     "audio": ("Áudio", {".wav", ".ogg", ".mp3", ".flac"}),
     "prefab": ("Prefab", {".zprefab"}),
     "logic": ("Logic Graph", {".zlogic"}),
+    "behavior": ("Behavior Tree", {".zbehavior"}),
     "scene": ("Cena", {".zscene"}),
     "material": ("Material", {".zmat", ".zmaterial"}),
     "animator": ("Animator", {".zanimator"}),

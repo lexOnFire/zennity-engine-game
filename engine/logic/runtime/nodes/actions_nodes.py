@@ -138,3 +138,17 @@ def execute_log_message(runtime, node: Mapping[str, Any], game: Any, dt: float) 
     game.log(str(text))
     return ["next"]
 
+@registry.register_executor('start_behavior_tree')
+def execute_start_behavior_tree(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
+    node_id = str(node['id'])
+    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
+    target = runtime._read_target(node_id, game, dt, set())
+    path = str(runtime._read_input(node_id, "path", properties.get("path", ""), game, dt, set()))
+    if path:
+        if hasattr(target, "start_behavior_tree"):
+            target.start_behavior_tree(path)
+        elif hasattr(game, "start_behavior_tree"):
+            game.start_behavior_tree(path)
+    return ["next"]
+
+

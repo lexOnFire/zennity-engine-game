@@ -117,6 +117,13 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
         "outputs": [],
         "properties": {},
     },
+    "start_behavior_tree": {
+        "title": "Start Behavior Tree",
+        "category": "Action",
+        "inputs": [('in', 'flow'), ('target', 'object'), ('path', 'text')],
+        "outputs": [('next', 'flow')],
+        "properties": {"path": "Assets/Behaviors/patrol_comida.zbehavior"},
+    },
     "divide_number": {
         "title": "Divide Number",
         "category": "Math",

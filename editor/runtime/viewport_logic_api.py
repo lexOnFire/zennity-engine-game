@@ -240,6 +240,32 @@ class PlayLogicAPI:
         self.obj["_jump_requested"] = True
         self.obj["_jump_force"] = float(force)
 
+    def start_behavior_tree(self, path: str) -> bool:
+        """Carrega e executa uma Behavior Tree (.zbehavior) no objeto atual."""
+        import json
+        clean_path = str(path).strip()
+        if not clean_path:
+            return False
+        behavior = self.obj.setdefault("behavior", {})
+        behavior["controller_path"] = clean_path
+        project_root = getattr(self._world, "project_root", Path.cwd())
+        p = Path(clean_path)
+        if not p.is_absolute():
+            p = project_root / p
+        try:
+            if p.exists():
+                raw = json.loads(p.read_text(encoding="utf-8"))
+                if isinstance(raw, dict) and raw.get("format") == "zennity.generic_graph":
+                    behavior["graph"] = raw
+                    from engine.behavior.graph_runtime import BehaviorGraphRunner
+                    runner = BehaviorGraphRunner(raw, project_root=project_root)
+                    runner.start(self)
+                    self._behavior_runner = runner
+                    return True
+        except Exception:
+            pass
+        return False
+
     def find(self, tag: str) -> "PlayLogicAPI | None":
         wanted = str(tag).lower()
         for name, obj in self._world.items():
