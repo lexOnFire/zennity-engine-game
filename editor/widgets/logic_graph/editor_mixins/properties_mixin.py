@@ -215,6 +215,11 @@ class LogicGraphPropertiesMixin:
             else "path"
         )
         self.selected_label.setText(f"{node['title']}\n{node['category']} • {node['type']}")
+        if hasattr(self, "help_dock") and self.help_dock is not None:
+            try:
+                self.help_dock.show_node_help(node.get("type") or node["title"])
+            except Exception:
+                pass
         breakpoints = self.graph.get("debug", {}).get("breakpoints", [])
         has_breakpoint = str(node["id"]) in breakpoints
         condition = self.graph.get("debug", {}).get("breakpoint_conditions", {}).get(str(node["id"]), "")
