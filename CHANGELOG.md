@@ -20,6 +20,7 @@
 
 
 ### Fixed & Stabilized
+* `tools/generate_ai_context.py` não utiliza mais `shell=True`; comandos Git e pytest são executados com argumentos explícitos e o interpretador Python ativo.
 * Corrigido consumo excessivo de memoria nos testes de Input usando estados de tecla esparsos em vez de listas gigantes.
 * `engine.input.Input` agora aceita estados de teclado do tipo dict, lista ou ScancodeWrapper.
 * Ambiente de testes padronizado para Qt/Pygame headless via `tests/conftest.py`.
