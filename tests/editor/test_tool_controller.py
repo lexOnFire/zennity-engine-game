@@ -54,7 +54,7 @@ def test_tool_controller_focus_and_grid_are_viewport_controller_calls() -> None:
     assert host._viewport_commands.calls == [("focus_selected",), ("toggle_grid",)]
 
 
-def test_tool_controller_reasserts_selection_when_shortcut_changes_tool() -> None:
+def test_tool_controller_does_not_requeue_selection_when_shortcut_changes_tool() -> None:
     host = _Host()
     selected = []
     host._selected_name = "Player"
@@ -63,7 +63,7 @@ def test_tool_controller_reasserts_selection_when_shortcut_changes_tool() -> Non
 
     ToolController(host).activate_tool(EditorTool.ROTATE)
 
-    assert selected == ["Player"]
+    assert selected == []
 
 
 def test_scene_shortcuts_are_blocked_for_graph_canvas_and_external_window() -> None:
