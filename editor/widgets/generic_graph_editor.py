@@ -4,8 +4,11 @@ Plataforma visual unificada reutilizada por:
 - Behavior Tree Editor
 - Dialogue Graph Editor
 - Material Graph Editor
-- Visual Scripting / Logic Graph
-- Animator State Machine
+- Dependency Viewer
+
+O Logic Graph de gameplay usa o motor especializado ``logic_graph``. Este widget
+pode ser hospedado no hub Visual Scripting para ferramentas de domínio, mas não
+abre, salva nem executa assets ``.zlogic``.
 
 Item 3 — Graph↔Inspector Sync:
   Conecta o Signal node_selected do GraphCanvas ao GraphNodeInspector lateral.
