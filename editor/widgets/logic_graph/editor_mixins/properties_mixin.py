@@ -168,8 +168,42 @@ class LogicGraphPropertiesMixin:
 
     def _selection_changed(self) -> None:
         selected = [item for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)]
+        selected_groups = [item for item in self.scene.selectedItems() if isinstance(item, LogicGroupItem)]
         self._updating_properties = True
         self.property_tree.clear()
+
+        if len(selected_groups) == 1 and not selected:
+            group_item = selected_groups[0]
+            group_data = group_item.group_data
+            title = str(group_data.get("title", "Grupo"))
+            color = str(group_data.get("color", "#2d3545"))
+
+            self.selected_label.setText(f"{title}\nOrganização • Grupo")
+            if hasattr(self, "validation_badge"):
+                self.validation_badge.setText("Grupo  📁")
+                self.validation_badge.setStyleSheet("color: #3b82f6; font-weight: bold; font-size: 11px;")
+
+            self.property_asset_button.hide()
+            self.property_color_button.show()
+            self.property_color_button.setText("Escolher cor do grupo...")
+            self.property_color_button.setStyleSheet(f"border-left: 18px solid {color};")
+            self.breakpoint_condition_edit.clear()
+            self.breakpoint_condition_edit.setEnabled(False)
+
+            title_item = QTreeWidgetItem(["title", title])
+            title_item.setData(0, Qt.UserRole, "group_title")
+            title_item.setFlags(title_item.flags() | Qt.ItemIsEditable)
+            self.property_tree.addTopLevelItem(title_item)
+
+            color_item = QTreeWidgetItem(["color", color])
+            color_item.setData(0, Qt.UserRole, "group_color")
+            color_item.setToolTip(1, "Use o seletor visual de cor abaixo")
+            color_item.setFlags(color_item.flags() | Qt.ItemIsEditable)
+            self.property_tree.addTopLevelItem(color_item)
+
+            self._updating_properties = False
+            return
+
         if len(selected) != 1:
             self.selected_label.setText("Selecione um nó para editar seus valores")
             if hasattr(self, "validation_badge"):
@@ -346,6 +380,23 @@ class LogicGraphPropertiesMixin:
             item for item in self.scene.selectedItems()
             if isinstance(item, LogicNodeItem)
         ]
+        selected_groups = [
+            item for item in self.scene.selectedItems()
+            if isinstance(item, LogicGroupItem)
+        ]
+
+        if len(selected_groups) == 1 and not selected:
+            group_item = selected_groups[0]
+            current_color = QColor(str(group_item.group_data.get("color", "#2d3545")))
+            chosen = QColorDialog.getColor(current_color, self, "Escolher Cor do Grupo")
+            if chosen.isValid():
+                group_item.group_data["color"] = chosen.name()
+                group_item._apply_style()
+                self._selection_changed()
+                self.mark_dirty()
+                self.message.emit("INFO", f"Cor do grupo atualizada: {chosen.name()}")
+            return
+
         if len(selected) != 1:
             return
         node_item = selected[0]
@@ -394,6 +445,22 @@ class LogicGraphPropertiesMixin:
         if self._updating_properties or column != 1:
             return
         selected = [entry for entry in self.scene.selectedItems() if isinstance(entry, LogicNodeItem)]
+        selected_groups = [entry for entry in self.scene.selectedItems() if isinstance(entry, LogicGroupItem)]
+
+        if len(selected_groups) == 1 and not selected:
+            group_item = selected_groups[0]
+            key = str(item.data(0, Qt.UserRole) or item.text(0))
+            text = item.text(1).strip()
+            if key in {"group_title", "title"}:
+                group_item.title_item.setPlainText(text)
+                group_item.group_data["title"] = text
+                self.selected_label.setText(f"{text}\nOrganização • Grupo")
+            elif key in {"group_color", "color"}:
+                group_item.group_data["color"] = text
+                group_item._apply_style()
+            self.mark_dirty()
+            return
+
         if len(selected) != 1:
             return
         node_item = selected[0]
