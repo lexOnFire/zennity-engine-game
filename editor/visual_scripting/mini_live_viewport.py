@@ -189,6 +189,9 @@ class _GameViewCanvas(QWidget):
         # FPS sparkline
         self._sparkline = _FPSSparkline()
         self._pulse: float = 0.0
+        self.play_start_time: float = time.time()
+        self.last_frame_time: float = time.time()
+        self.frame_ms: float = 16.0
 
         # Border flash for node execution
         self._node_flash_until: float = 0.0
@@ -1112,33 +1115,42 @@ class RuntimeVisualizationPanelWidget(RuntimePanelControllerMixin, QFrame):
     # ── Tick ──────────────────────────────────────────────────────────────
 
     def _on_tick(self) -> None:
-        now = time.time()
+        if not self.isVisible():
+            return
+        try:
+            now = time.time()
 
-        # Simulated FPS delta
-        dt = now - self._canvas.last_frame_time
-        self._canvas.last_frame_time = now
-        self._canvas.frame_ms = dt * 1000.0
+            # Simulated FPS delta
+            last_t = getattr(self._canvas, "last_frame_time", now)
+            dt = max(0.001, now - last_t)
+            self._canvas.last_frame_time = now
+            self._canvas.frame_ms = dt * 1000.0
 
-        if self.viewport_mode == ViewportMode.GAME:
-            elapsed = now - self._canvas.play_start_time
-            m, s = int(elapsed) // 60, int(elapsed) % 60
-            self._lbl_runtime.setText(f"Runtime {m:02d}:{s:02d}")
+            if self.viewport_mode == ViewportMode.GAME:
+                start_t = getattr(self._canvas, "play_start_time", now)
+                elapsed = max(0.0, now - start_t)
+                m, s = int(elapsed) // 60, int(elapsed) % 60
+                self._lbl_runtime.setText(f"Runtime {m:02d}:{s:02d}")
 
-        if not self.is_replaying:
-            snapshot = {
-                "timestamp":      now,
-                "node_id":        self.active_node_id,
-                "node_name":      self.active_node_name,
-                "highlight_until": self.highlight_timer,
-                "fps":            self.fps,
-                "objects":        list(self._canvas.game_objects),
-                "draw_calls":     self._canvas.draw_calls,
-                "object_count":   self._canvas.object_count,
-            }
-            self.replay_buffer.append(snapshot)
-            self.timeline_slider.setValue(len(self.replay_buffer))
+            if not self.is_replaying:
+                snapshot = {
+                    "timestamp":      now,
+                    "node_id":        self.active_node_id,
+                    "node_name":      self.active_node_name,
+                    "highlight_until": self.highlight_timer,
+                    "fps":            self.fps,
+                    "objects":        list(self._canvas.game_objects),
+                    "draw_calls":     self._canvas.draw_calls,
+                    "object_count":   self._canvas.object_count,
+                }
+                self.replay_buffer.append(snapshot)
+                if len(self.replay_buffer) > 120:
+                    self.replay_buffer.pop(0)
+                self.timeline_slider.setValue(len(self.replay_buffer))
 
-        self._canvas.update()
+            self._canvas.update()
+        except Exception:
+            pass
 
     # ── Replay ────────────────────────────────────────────────────────────
 
