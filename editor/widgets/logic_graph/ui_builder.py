@@ -398,7 +398,8 @@ def build_logic_graph_ui(self) -> None:
 
     try:
         from editor.visual_scripting.mini_live_viewport import MiniLiveViewportWidget, ViewportMode
-        self.mini_live_viewport = MiniLiveViewportWidget(mode=ViewportMode.LIVE, parent=mini_viewport_frame)
+        self.mini_live_viewport = MiniLiveViewportWidget(mini_viewport_frame)
+        self.mini_live_viewport.set_mode(ViewportMode.GAME)
         mv_layout.addWidget(self.mini_live_viewport, 1)
     except Exception:
         mv_placeholder = QLabel("Gameplay Runtime Preview")
@@ -408,10 +409,7 @@ def build_logic_graph_ui(self) -> None:
 
     right_panel.addWidget(mini_viewport_frame)
 
-    # 2. Painel Inferior Direito — Propriedades do Nó
-    right_tabs = QTabWidget()
-    right_tabs.setObjectName("LogicRightTabs")
-    
+    # 2. Painel Inferior Direito — Propriedades do Nó (Direto, sem abas redundantes)
     properties_panel = QFrame()
     properties_panel.setObjectName("LogicPropertiesPanel")
     properties_layout = QVBoxLayout(properties_panel)
@@ -467,13 +465,9 @@ def build_logic_graph_ui(self) -> None:
     self.add_watch_button.hide()
     self.remove_watch_button = QPushButton()
     self.remove_watch_button.hide()
+    self.help_dock = QWidget()
 
-    right_tabs.addTab(properties_panel, tr("editor.tabs.properties", "Propriedades"))
-    from .help_dock import LogicHelpDock
-    self.help_dock = LogicHelpDock()
-    right_tabs.addTab(self.help_dock, tr("editor.tabs.help", "Ajuda"))
-    
-    right_panel.addWidget(right_tabs)
+    right_panel.addWidget(properties_panel)
     right_panel.setSizes([340, 360])
 
     self.content_splitter.addWidget(right_panel)

@@ -31,7 +31,7 @@ from editor.visual_scripting.dock_workspace_sync import (
 )
 
 
-class VisualScriptingEditorDock(QMainWindow):
+class VisualScriptingEditorDock(QWidget):
     """Independent native window for Visual Scripting 2.0."""
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
@@ -42,11 +42,8 @@ class VisualScriptingEditorDock(QMainWindow):
         self._scene_workspace_signature: tuple[tuple[str, str], ...] = ()
 
         # Container Principal
-        self.main_container = QWidget(self)
-        self.main_container.setObjectName("VisualScriptingSurface")
-        self.setCentralWidget(self.main_container)
-
-        root_layout = QVBoxLayout(self.main_container)
+        self.main_container = self
+        root_layout = QVBoxLayout(self)
         root_layout.setContentsMargins(0, 0, 0, 0)
         root_layout.setSpacing(0)
 
