@@ -140,20 +140,32 @@ class RealInspectorPanel(InspectorPanel):
             self._clear_component_controls()
             return
 
-        display_name = getattr(obj, "name", str(obj))
-        self.header.setEnabled(True)
-        self.object_name.setText(display_name)
-        if hasattr(self, "name"):
-            self.name.setText(display_name)
-        self.object_enabled.setChecked(bool(getattr(obj, "active", True)))
-        self.object_static.setChecked(bool(getattr(obj, "is_static", False)))
-        
-        current_tag = str(getattr(obj, "tag", "Untagged"))
-        if self.object_tag.findText(current_tag) == -1:
-            self.object_tag.addItem(current_tag)
-        self.object_tag.setCurrentText(current_tag)
-        self.object_layer.setCurrentText(str(getattr(obj, "layer", "Default")))
-        self.object_layer.setCurrentText(str(getattr(obj, "layer", "Default")))
+        self._is_loading_object = True
+        try:
+            display_name = getattr(obj, "name", str(obj))
+            self.header.setEnabled(True)
+            self.object_name.setText(display_name)
+            if hasattr(self, "name"):
+                self.name.setText(display_name)
+            self.object_enabled.setChecked(bool(getattr(obj, "active", True)))
+            self.object_static.setChecked(bool(getattr(obj, "is_static", False)))
+
+            current_tag = str(getattr(obj, "tag", "Untagged") if not isinstance(obj, dict) else obj.get("tag", "Untagged"))
+            
+            self.object_tag.blockSignals(True)
+            if self.object_tag.findText(current_tag) == -1:
+                self.object_tag.addItem(current_tag)
+            self.object_tag.setCurrentText(current_tag)
+            self.object_tag.blockSignals(False)
+
+            current_layer = str(getattr(obj, "layer", "Default") if not isinstance(obj, dict) else obj.get("layer", "Default"))
+            self.object_layer.blockSignals(True)
+            if self.object_layer.findText(current_layer) == -1:
+                self.object_layer.addItem(current_layer)
+            self.object_layer.setCurrentText(current_layer)
+            self.object_layer.blockSignals(False)
+        finally:
+            self._is_loading_object = False
 
         # --- FASE 8.1: Integração com PropertyBindingGroup & EventBus ---
         from editor.core.property_binding import PropertyBindingGroup
@@ -205,10 +217,11 @@ class RealInspectorPanel(InspectorPanel):
         self.component_list_layout.addWidget(runtime_group)
 
     def _on_tag_changed(self, new_tag: str) -> None:
-        if not self.current_object:
+        if getattr(self, "_is_loading_object", False) or not self.current_object:
             return
         tag_str = str(new_tag).strip() or "Untagged"
-        if getattr(self.current_object, "tag", None) == tag_str:
+        curr_tag = self.current_object.get("tag") if isinstance(self.current_object, dict) else getattr(self.current_object, "tag", None)
+        if curr_tag == tag_str:
             return
         if self.object_tag.findText(tag_str) == -1:
             self.object_tag.addItem(tag_str)

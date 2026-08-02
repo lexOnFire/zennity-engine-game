@@ -42,3 +42,29 @@ def test_inspector_tag_combo_is_editable_and_supports_custom_tags() -> None:
     panel.load_object(food_obj)
     assert panel.object_tag.currentText() == "Comida"
     assert panel.object_tag.findText("Comida") != -1
+
+
+def test_object_switching_preserves_individual_tags() -> None:
+    _app()
+    panel = RealInspectorPanel()
+
+    obj_food = SimpleNamespace(name="FoodObj", active=True, is_static=False, tag="Food", layer="Default")
+    obj_enemy = SimpleNamespace(name="EnemyObj", active=True, is_static=False, tag="Enemy", layer="Default")
+
+    # Load food object
+    panel.load_object(obj_food)
+    assert panel.object_tag.currentText() == "Food"
+    assert obj_food.tag == "Food"
+
+    # Switch to enemy object
+    panel.load_object(obj_enemy)
+    assert panel.object_tag.currentText() == "Enemy"
+    assert obj_enemy.tag == "Enemy"
+    assert obj_food.tag == "Food"  # Ensure Food object wasn't overwritten!
+
+    # Switch back to food object
+    panel.load_object(obj_food)
+    assert panel.object_tag.currentText() == "Food"
+    assert obj_food.tag == "Food"
+    assert obj_enemy.tag == "Enemy"
+
