@@ -18,13 +18,19 @@ class ViewportToolShortcutHandler:
         }
 
     def handle(self, event: Any, *, playing: bool, view_mode: str) -> str | None:
-        if playing or view_mode != "scene" or event.type != self.pygame.KEYDOWN:
+        if playing or event.type != self.pygame.KEYDOWN:
             return None
         if bool(getattr(event, "repeat", False)):
             return None
-        if getattr(event, "key", None) == self.pygame.K_DELETE:
+        delete_keys = {self.pygame.K_DELETE}
+        keypad_delete = getattr(self.pygame, "K_KP_PERIOD", None)
+        if keypad_delete is not None:
+            delete_keys.add(keypad_delete)
+        if getattr(event, "key", None) in delete_keys:
             self.emit({"type": "delete_selected_requested"})
             return "delete"
+        if view_mode != "scene":
+            return None
         tool = self._tools.get(getattr(event, "key", None))
         if tool is None:
             return None

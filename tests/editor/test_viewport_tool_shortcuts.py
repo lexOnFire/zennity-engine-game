@@ -11,6 +11,7 @@ class _Pygame:
     K_e = 12
     K_r = 13
     K_DELETE = 14
+    K_KP_PERIOD = 15
 
 
 def test_viewport_shortcuts_select_transform_tools_in_edit_scene_mode() -> None:
@@ -47,3 +48,23 @@ def test_delete_is_forwarded_from_focused_edit_viewport() -> None:
 
     assert result == "delete"
     assert emitted == [{"type": "delete_selected_requested"}]
+
+
+def test_delete_is_forwarded_in_edit_game_view_and_from_keypad() -> None:
+    emitted = []
+    handler = ViewportToolShortcutHandler(_Pygame, emitted.append)
+
+    assert handler.handle(
+        SimpleNamespace(type=_Pygame.KEYDOWN, key=_Pygame.K_DELETE, repeat=False),
+        playing=False,
+        view_mode="game",
+    ) == "delete"
+    assert handler.handle(
+        SimpleNamespace(type=_Pygame.KEYDOWN, key=_Pygame.K_KP_PERIOD, repeat=False),
+        playing=False,
+        view_mode="scene",
+    ) == "delete"
+    assert emitted == [
+        {"type": "delete_selected_requested"},
+        {"type": "delete_selected_requested"},
+    ]
