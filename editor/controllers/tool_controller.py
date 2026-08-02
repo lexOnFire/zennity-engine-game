@@ -92,6 +92,9 @@ class ToolController:
         next_tool = tool if isinstance(tool, EditorTool) else EditorTool(str(tool))
         h.editor_context.tools.set_active_tool(next_tool)
         h._viewport_commands.set_tool(next_tool)
+        selected = getattr(h, "_selected_name", None)
+        if selected in getattr(h, "_objects_by_name", {}):
+            h._scene_controller.select(selected)
 
     def focus_selected(self) -> None:
         self.host._viewport_commands.focus_selected()

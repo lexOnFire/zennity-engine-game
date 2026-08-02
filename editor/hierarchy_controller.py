@@ -67,11 +67,16 @@ class HierarchyController:
         menu = QMenu(h)
         rename_action = menu.addAction("Renomear")
         duplicate_action = menu.addAction("Duplicar")
+        locked = bool(h._objects_by_name[item_name].get("editor_locked", False))
+        lock_action = menu.addAction("Destravar transformação" if locked else "Travar transformação")
         prefab_action = menu.addAction("Criar Prefab")
         delete_action = menu.addAction("Excluir")
         rename_action.triggered.connect(lambda _checked=False: h._rename_object(item_name))
         duplicate_action.triggered.connect(
             lambda _checked=False: self.select_and_duplicate(item_name)
+        )
+        lock_action.triggered.connect(
+            lambda _checked=False: h._scene_objects.set_transform_locked(item_name, not locked)
         )
         prefab_action.triggered.connect(
             lambda _checked=False: self.select_and_save_prefab(item_name)

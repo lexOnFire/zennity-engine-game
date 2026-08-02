@@ -35,7 +35,7 @@ def _host():
     )
     host.logic_workspace = SimpleNamespace(clear_runtime_trace=lambda: None)
     host._record_history = lambda: setattr(host, "history", host.history + 1)
-    host._refresh_hierarchy = lambda: None
+    host._refresh_hierarchy = lambda **_kwargs: None
     host._update_inspector = lambda name: host.inspected.append(name)
     host._clear_inspector_view = lambda: None
     host.statusBar = lambda: SimpleNamespace(showMessage=lambda _message: None)
@@ -155,3 +155,14 @@ def test_scene_object_controller_resets_to_initial_scene() -> None:
     assert host._objects_by_name == {"Player": host._scene_snapshot[0]}
     assert host._scene_controller.snapshots == 1
     assert host.inspected == ["Player"]
+
+
+def test_scene_object_controller_persists_transform_lock() -> None:
+    host = _host()
+
+    SceneObjectController(host).set_transform_locked("Player", True)
+
+    assert host._objects_by_name["Player"]["editor_locked"] is True
+    assert host.history == 1
+    assert host._scene_controller.snapshots == 1
+    assert host._scene_controller.selected == ["Player"]

@@ -35,6 +35,14 @@ class ViewportEventController:
     def transform(self, message: dict) -> None:
         h = self.host
         event_type = message.get("type")
+        obj = h._objects_by_name.get(message.get("name"))
+        if obj is not None and obj.get("editor_locked", False):
+            h._drag_history_snapshot = None
+            h._scene_controller.publish_snapshot(h._scene_snapshot)
+            if h._selected_name == message.get("name"):
+                h._scene_controller.select(h._selected_name)
+            h.statusBar().showMessage(f"{message['name']} está com a transformação travada")
+            return
         if event_type == "transform_begin":
             h._drag_history_snapshot = deepcopy(h._scene_snapshot)
             return

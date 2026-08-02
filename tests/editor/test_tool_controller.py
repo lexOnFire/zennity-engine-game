@@ -29,6 +29,8 @@ class _Host(SimpleNamespace):
             _viewport_commands=_ViewportCommands(),
             _tool_actions={},
             _selected_name=None,
+            _objects_by_name={},
+            _scene_controller=SimpleNamespace(select=lambda _name: None),
         )
 
 
@@ -50,6 +52,18 @@ def test_tool_controller_focus_and_grid_are_viewport_controller_calls() -> None:
     controller.toggle_grid()
 
     assert host._viewport_commands.calls == [("focus_selected",), ("toggle_grid",)]
+
+
+def test_tool_controller_reasserts_selection_when_shortcut_changes_tool() -> None:
+    host = _Host()
+    selected = []
+    host._selected_name = "Player"
+    host._objects_by_name = {"Player": {"name": "Player"}}
+    host._scene_controller = SimpleNamespace(select=selected.append)
+
+    ToolController(host).activate_tool(EditorTool.ROTATE)
+
+    assert selected == ["Player"]
 
 
 def test_scene_shortcuts_are_blocked_for_graph_canvas_and_external_window() -> None:

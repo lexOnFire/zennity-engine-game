@@ -62,6 +62,9 @@ class ViewportTransformEventHandler:
         state.move_axis = ""
         if active_tool == "move" and state.selected_name in self.objects:
             obj = self.objects[state.selected_name]
+            if self._is_locked(obj):
+                self._select_body(position, state, active_tool, zoom)
+                return
             object_x, object_y = self.world_to_screen(float(obj["x"]), float(obj["y"]))
             angle = math.radians(float(obj.get("rotation", 0.0)))
             direction_x = (math.cos(angle), math.sin(angle))
@@ -76,6 +79,9 @@ class ViewportTransformEventHandler:
                 self._start_drag(position, state, obj)
         if not state.dragging and active_tool == "scale" and state.selected_name in self.objects:
             obj = self.objects[state.selected_name]
+            if self._is_locked(obj):
+                self._select_body(position, state, active_tool, zoom)
+                return
             object_x, object_y = self.world_to_screen(float(obj["x"]), float(obj["y"]))
             angle = math.radians(float(obj.get("rotation", 0.0)))
             half_w, half_h = float(obj["w"]) * zoom / 2.0, float(obj["h"]) * zoom / 2.0
@@ -106,7 +112,7 @@ class ViewportTransformEventHandler:
             state.drag_start_mouse = (float(position[0]), float(position[1]))
             state.drag_start_object = deepcopy(obj)
             self.emit({"type": "selected", "name": name})
-            if active_tool != "select":
+            if active_tool != "select" and not self._is_locked(obj):
                 state.dragging = True
                 self.emit({"type": "transform_begin", "name": name})
                 if active_tool == "scale":
@@ -128,6 +134,9 @@ class ViewportTransformEventHandler:
         if state.selected_name not in self.objects:
             return
         obj = self.objects[state.selected_name]
+        if self._is_locked(obj):
+            state.dragging = False
+            return
         if active_tool == "move":
             self._move(position, obj, state, zoom, snap_enabled, snap_size)
         elif active_tool == "rotate":
@@ -208,3 +217,7 @@ class ViewportTransformEventHandler:
         if not enabled or step <= 0.0:
             return value
         return round(value / step) * step
+
+    @staticmethod
+    def _is_locked(obj: dict[str, Any]) -> bool:
+        return bool(obj.get("editor_locked", False))

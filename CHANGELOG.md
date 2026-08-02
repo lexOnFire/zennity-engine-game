@@ -3,6 +3,8 @@
 ## v1.0.0 — Architecture & Release Readiness (2026-08-01)
 
 ### Refactored & Consolidated
+* **Bloqueio de transformação na Hierarquia**: objetos podem ser travados/destravados pelo menu de contexto, permanecem selecionáveis e inspecionáveis, mas não podem ser movidos, girados ou escalados acidentalmente; o cadeado e o contorno da viewport indicam o estado.
+* **Atalhos Q/W/E/R sincronizados**: trocar a ferramenta agora reafirma imediatamente a seleção na viewport, eliminando o desaparecimento temporário do objeto e dos gizmos até uma nova seleção.
 * **Fronteiras de Graph documentadas**: o Logic Graph especializado (`engine.logic`) e o framework genérico (`engine.graphs`) permanecem separados por domínio dentro de um único hub visual; novos gates impedem dependências cruzadas entre os canvases.
 * **Métricas AST auditáveis**: a auditoria pré-v1 registra data, commit, contagens reais e margem das cinco classes monitoradas; um novo gate impede classes acima de 500 linhas e divergência futura da tabela.
 * **Suítes core consolidadas**: removidas as cópias divergentes de `EventBus`, `Time`, `Input` e `GameObject` da raiz de `tests/`; a cobertura complementar foi migrada para `tests/core/`. Testes de runtime e Tilemap com nomes conflitantes foram reposicionados conforme sua responsabilidade.

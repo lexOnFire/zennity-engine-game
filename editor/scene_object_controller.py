@@ -150,6 +150,25 @@ class SceneObjectController:
         h._refresh_hierarchy()
         h._scene_controller.publish_snapshot(h._scene_snapshot)
 
+    def set_transform_locked(self, name: str, locked: bool) -> None:
+        """Prevent accidental viewport transforms while keeping the object selectable."""
+        h = self.host
+        obj = h._objects_by_name.get(name)
+        if h._play_session.is_running or obj is None:
+            return
+        next_value = bool(locked)
+        if bool(obj.get("editor_locked", False)) == next_value:
+            return
+        h._record_history()
+        obj["editor_locked"] = next_value
+        h._refresh_hierarchy(force=True)
+        h._scene_controller.publish_snapshot(h._scene_snapshot)
+        if h._selected_name == name:
+            h._scene_controller.select(name)
+            h._update_inspector(name)
+        state = "travada" if next_value else "destravada"
+        h.statusBar().showMessage(f"Transformação de {name} {state}")
+
     def duplicate_selected(self) -> None:
         h = self.host
         if h._play_session.is_running or h._selected_name not in h._objects_by_name:

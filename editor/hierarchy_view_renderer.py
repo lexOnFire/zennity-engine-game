@@ -32,7 +32,10 @@ class HierarchyViewRenderer:
     def _signature(self) -> tuple[Any, ...]:
         editor = self.editor
         scene_name = editor._scene_document.get("scene_name", "MainScene") if editor._scene_document else "MainScene"
-        permanent = tuple((str(obj.get("id", "")), str(obj.get("name", ""))) for obj in editor._scene_snapshot)
+        permanent = tuple(
+            (str(obj.get("id", "")), str(obj.get("name", "")), bool(obj.get("editor_locked", False)))
+            for obj in editor._scene_snapshot
+        )
         spawned = tuple(sorted(
             (str(obj.get("id", name)), str(obj.get("name", name)))
             for name, obj in editor._runtime_objects_by_name.items()
@@ -52,8 +55,11 @@ class HierarchyViewRenderer:
             selected_item = None
             for obj in editor._scene_snapshot:
                 name = str(obj["name"])
-                item = QTreeWidgetItem([self._icon(name) + name])
+                lock_icon = "🔒 " if obj.get("editor_locked", False) else ""
+                item = QTreeWidgetItem([lock_icon + self._icon(name) + name])
                 item.setData(0, Qt.UserRole, name)
+                if obj.get("editor_locked", False):
+                    item.setToolTip(0, "Transformação bloqueada: o objeto pode ser selecionado, mas não movido, girado ou escalado")
                 root.addChild(item)
                 if name == editor._selected_name:
                     selected_item = item

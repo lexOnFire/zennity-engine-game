@@ -91,3 +91,30 @@ def test_transform_handler_scales_from_body_with_snap() -> None:
 
     assert handled and state.drag_handle == 8
     assert (objects["Player"]["w"], objects["Player"]["h"]) == (64.0, 80.0)
+
+
+def test_locked_object_remains_selectable_but_cannot_be_transformed() -> None:
+    objects = {"Floor": {
+        "name": "Floor", "x": 0.0, "y": 0.0, "w": 100.0, "h": 20.0,
+        "rotation": 0.0, "editor_locked": True,
+    }}
+    emitted = []
+    handler = ViewportTransformEventHandler(_Pygame, objects, emitted.append, lambda x, y: (x, y))
+    state = ViewportTransformState(False, None, (0.0, 0.0))
+
+    down = SimpleNamespace(type=_Pygame.MOUSEBUTTONDOWN, button=1, pos=(0, 0))
+    _, state = handler.handle(
+        down, state, playing=False, view_mode="scene", active_tool="move", zoom=1.0,
+        snap_enabled=False, snap_size=16.0, snap_angle=15.0,
+    )
+    motion = SimpleNamespace(type=_Pygame.MOUSEMOTION, pos=(40, 40))
+    handled, state = handler.handle(
+        motion, state, playing=False, view_mode="scene", active_tool="move", zoom=1.0,
+        snap_enabled=False, snap_size=16.0, snap_angle=15.0,
+    )
+
+    assert state.selected_name == "Floor"
+    assert state.dragging is False
+    assert handled is False
+    assert (objects["Floor"]["x"], objects["Floor"]["y"]) == (0.0, 0.0)
+    assert emitted == [{"type": "selected", "name": "Floor"}]

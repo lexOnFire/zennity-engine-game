@@ -60,7 +60,10 @@ class ViewportOverlayRenderer:
         rotated_x = offset_x * math.cos(radians) - offset_y * math.sin(radians)
         rotated_y = offset_x * math.sin(radians) + offset_y * math.cos(radians)
         collider_x, collider_y = world_to_screen(obj["x"] + rotated_x, obj["y"] + rotated_y)
-        color = (255, 187, 72) if (collider or {}).get("is_trigger") else (125, 212, 255)
+        locked = bool(obj.get("editor_locked", False))
+        color = (255, 196, 92) if locked else (
+            (255, 187, 72) if (collider or {}).get("is_trigger") else (125, 212, 255)
+        )
         if (collider or {}).get("type") == "circle":
             radius = max(1, int(float(collider.get("radius", min(obj["w"], obj["h"]) / 2.0)) * render_zoom))
             pg.draw.circle(screen, color, (int(collider_x), int(collider_y)), radius, 2)
@@ -69,6 +72,8 @@ class ViewportOverlayRenderer:
             pg.draw.rect(surface, color, surface.get_rect().inflate(-6, -6), width=2, border_radius=4)
             rotated = pg.transform.rotate(surface, -angle)
             screen.blit(rotated, rotated.get_rect(center=(int(collider_x), int(collider_y))))
+        if locked:
+            return
         if active_tool == "move":
             self._draw_move(screen, object_x, object_y, radians)
         elif active_tool == "rotate":
