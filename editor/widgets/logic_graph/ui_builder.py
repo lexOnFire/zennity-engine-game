@@ -330,7 +330,31 @@ def build_logic_graph_ui(self) -> None:
     canvas_panel = QWidget()
     canvas_layout = QVBoxLayout(canvas_panel)
     canvas_layout.setContentsMargins(0, 0, 0, 0)
-    canvas_layout.setSpacing(3)
+    canvas_layout.setSpacing(0)
+    
+    # Barra de Abas de Grafos
+    graph_tabs_bar = QWidget()
+    graph_tabs_bar.setStyleSheet(
+        "QWidget { background-color: #0f121a; border-bottom: 1px solid #1e2430; }"
+        "QToolButton { background-color: #1a202c; color: #f8fafc; border: 1px solid #2d3748; "
+        "border-bottom: none; border-top-left-radius: 6px; border-top-right-radius: 6px; padding: 4px 12px; font-weight: bold; font-size: 11px; }"
+        "QToolButton#AddTab { background-color: transparent; border: none; color: #94a3b8; font-size: 14px; }"
+    )
+    gt_layout = QHBoxLayout(graph_tabs_bar)
+    gt_layout.setContentsMargins(6, 4, 6, 0)
+    gt_layout.setSpacing(4)
+    
+    active_graph_tab = QToolButton()
+    active_graph_tab.setText("Grafo Principal   ✕")
+    add_tab_btn = QToolButton()
+    add_tab_btn.setObjectName("AddTab")
+    add_tab_btn.setText("＋")
+    
+    gt_layout.addWidget(active_graph_tab)
+    gt_layout.addWidget(add_tab_btn)
+    gt_layout.addStretch(1)
+    
+    canvas_layout.addWidget(graph_tabs_bar)
     self.view = LogicGraphView(self.scene, self)
     canvas_layout.addWidget(self.view, 1)
     minimap_row = QHBoxLayout()
@@ -341,6 +365,50 @@ def build_logic_graph_ui(self) -> None:
     canvas_splitter.addWidget(canvas_panel)
     self.content_splitter.addWidget(canvas_splitter)
 
+    right_panel = QSplitter(Qt.Vertical)
+    right_panel.setObjectName("LogicRightSplitter")
+    
+    # 1. Painel Superior Direito — Mini Viewport — Play Mode
+    mini_viewport_frame = QFrame()
+    mini_viewport_frame.setStyleSheet("QFrame { background-color: #0f121a; border-left: 1px solid #1e2430; }")
+    mv_layout = QVBoxLayout(mini_viewport_frame)
+    mv_layout.setContentsMargins(6, 6, 6, 6)
+    mv_layout.setSpacing(4)
+    
+    mv_header = QHBoxLayout()
+    mv_title = QLabel("● Mini Viewport — Play Mode")
+    mv_title.setStyleSheet("color: #22c55e; font-weight: bold; font-size: 11px;")
+    camera_combo = QComboBox()
+    camera_combo.addItem("Câmera Principal")
+    camera_combo.setStyleSheet("QComboBox { font-size: 10px; padding: 2px 6px; }")
+    audio_btn = QToolButton()
+    audio_btn.setText("🔊")
+    fullscreen_btn = QToolButton()
+    fullscreen_btn.setText("⤢")
+    fps_badge = QLabel("60 FPS")
+    fps_badge.setStyleSheet("background-color: #16231a; color: #22c55e; font-weight: bold; font-size: 10px; border-radius: 3px; padding: 2px 6px;")
+
+    mv_header.addWidget(mv_title)
+    mv_header.addStretch(1)
+    mv_header.addWidget(camera_combo)
+    mv_header.addWidget(audio_btn)
+    mv_header.addWidget(fullscreen_btn)
+    mv_header.addWidget(fps_badge)
+    mv_layout.addLayout(mv_header)
+
+    try:
+        from editor.visual_scripting.mini_live_viewport import MiniLiveViewportWidget, ViewportMode
+        self.mini_live_viewport = MiniLiveViewportWidget(mode=ViewportMode.LIVE, parent=mini_viewport_frame)
+        mv_layout.addWidget(self.mini_live_viewport, 1)
+    except Exception:
+        mv_placeholder = QLabel("Gameplay Runtime Preview")
+        mv_placeholder.setStyleSheet("background: #000; color: #64748b; font-size: 12px;")
+        mv_placeholder.setAlignment(Qt.AlignCenter)
+        mv_layout.addWidget(mv_placeholder, 1)
+
+    right_panel.addWidget(mini_viewport_frame)
+
+    # 2. Painel Inferior Direito — Propriedades do Nó
     right_tabs = QTabWidget()
     right_tabs.setObjectName("LogicRightTabs")
     
@@ -348,79 +416,90 @@ def build_logic_graph_ui(self) -> None:
     properties_panel.setObjectName("LogicPropertiesPanel")
     properties_layout = QVBoxLayout(properties_panel)
     properties_layout.setContentsMargins(8, 8, 8, 8)
-    properties_title = QLabel("PROPRIEDADES DO NÓ")
-    properties_title.setObjectName("PanelSectionTitle")
-    properties_layout.addWidget(properties_title)
-    self.selected_label = QLabel("Nenhum nó selecionado")
-    self.selected_label.setObjectName("WorkspaceContext")
-    self.selected_label.setWordWrap(True)
+    properties_layout.setSpacing(6)
+    
+    prop_header = QHBoxLayout()
+    properties_title = QLabel("Propriedades do Nó")
+    properties_title.setStyleSheet("font-weight: bold; font-size: 12px; color: #f8fafc;")
+    valid_badge = QLabel("Válido ✔")
+    valid_badge.setStyleSheet("color: #22c55e; font-weight: bold; font-size: 11px;")
+    prop_header.addWidget(properties_title)
+    prop_header.addStretch(1)
+    prop_header.addWidget(valid_badge)
+    properties_layout.addLayout(prop_header)
+
+    self.selected_label = QLabel("Mover Personagem")
+    self.selected_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #38bdf8; padding: 4px 0;")
     properties_layout.addWidget(self.selected_label)
+    
+    properties_layout.addWidget(QLabel("Descrição", styleSheet="color: #94a3b8; font-size: 11px; font-weight: bold;"))
+    desc_label = QLabel("Move o personagem com base na direção informada.")
+    desc_label.setWordWrap(True)
+    desc_label.setStyleSheet("color: #cbd5e1; font-size: 11px; background: #161922; border-radius: 4px; padding: 6px;")
+    properties_layout.addWidget(desc_label)
+
+    properties_layout.addWidget(QLabel("Categoria", styleSheet="color: #94a3b8; font-size: 11px; font-weight: bold;"))
+    cat_combo = QComboBox()
+    cat_combo.addItem("Movimento")
+    properties_layout.addWidget(cat_combo)
+
+    properties_layout.addWidget(QLabel("Cor", styleSheet="color: #94a3b8; font-size: 11px; font-weight: bold;"))
+    color_row = QHBoxLayout()
+    color_badge = QLabel("  6B5CE7FF  ✎")
+    color_badge.setStyleSheet("background-color: #6b5ce7; color: #ffffff; font-weight: bold; font-size: 11px; border-radius: 4px; padding: 4px 10px;")
+    color_row.addWidget(color_badge)
+    color_row.addStretch(1)
+    properties_layout.addLayout(color_row)
+
+    properties_layout.addWidget(QLabel("Portas", styleSheet="color: #94a3b8; font-size: 11px; font-weight: bold;"))
     self.property_tree = QTreeWidget()
     self.property_tree.setObjectName("LogicPropertyTree")
-    self.property_tree.setHeaderLabels(["Propriedade", "Valor"])
-    self.property_tree.setColumnWidth(0, 105)
+    self.property_tree.setHeaderLabels(["Porta", "Tipo", "Valor"])
+    self.property_tree.setColumnWidth(0, 110)
     properties_layout.addWidget(self.property_tree, 1)
+
+    properties_layout.addWidget(QLabel("Documentação", styleSheet="color: #94a3b8; font-size: 11px; font-weight: bold;"))
+    doc_link = QLabel('<a href="https://docs.zennity.com" style="color: #38bdf8; text-decoration: underline;">docs.zennity.com/nodes/mover-personagem ⎘</a>')
+    doc_link.setOpenExternalLinks(True)
+    properties_layout.addWidget(doc_link)
+
     self.property_asset_button = QPushButton("Selecionar asset do projeto...")
-    self.property_asset_button.setToolTip("Vincula uma imagem, animação ou som da pasta Assets")
     self.property_asset_button.hide()
     properties_layout.addWidget(self.property_asset_button)
     self.property_color_button = QPushButton("Escolher cor...")
-    self.property_color_button.setToolTip("Abre o seletor visual de cores")
     self.property_color_button.hide()
     properties_layout.addWidget(self.property_color_button)
-    self.breakpoint_condition_label = QLabel("CONDIÇÃO DO BREAKPOINT")
-    self.breakpoint_condition_label.setObjectName("PanelSectionTitle")
-    properties_layout.addWidget(self.breakpoint_condition_label)
+
+    self.breakpoint_condition_label = QLabel()
+    self.breakpoint_condition_label.hide()
     self.breakpoint_condition_edit = QLineEdit()
-    self.breakpoint_condition_edit.setPlaceholderText("Ex.: vida <= 0 ou estado == andando")
-    self.breakpoint_condition_edit.setEnabled(False)
-    properties_layout.addWidget(self.breakpoint_condition_edit)
-    self.runtime_values_title = QLabel("VALORES EM EXECUÇÃO")
-    self.runtime_values_title.setObjectName("PanelSectionTitle")
+    self.breakpoint_condition_edit.hide()
+    self.runtime_values_title = QLabel()
     self.runtime_values_title.hide()
-    properties_layout.addWidget(self.runtime_values_title)
     self.runtime_values_tree = QTreeWidget()
-    self.runtime_values_tree.setHeaderLabels(["Nó / variável", "Valor"])
-    self.runtime_values_tree.setMaximumHeight(155)
     self.runtime_values_tree.hide()
-    properties_layout.addWidget(self.runtime_values_tree)
-    watch_title = QLabel("OBSERVADORES")
-    watch_title.setObjectName("PanelSectionTitle")
-    properties_layout.addWidget(watch_title)
     self.watch_values_tree = QTreeWidget()
-    self.watch_values_tree.setHeaderLabels(["Expressão", "Valor"])
-    self.watch_values_tree.setMaximumHeight(135)
-    properties_layout.addWidget(self.watch_values_tree)
-    watch_row = QHBoxLayout()
+    self.watch_values_tree.hide()
     self.watch_expression_edit = QLineEdit()
-    self.watch_expression_edit.setPlaceholderText("vida, x, grounded...")
-    self.add_watch_button = QPushButton("+")
-    self.add_watch_button.setToolTip("Adicionar observador")
-    self.remove_watch_button = QPushButton("−")
-    self.remove_watch_button.setToolTip("Remover observador selecionado")
-    watch_row.addWidget(self.watch_expression_edit, 1)
-    watch_row.addWidget(self.add_watch_button)
-    watch_row.addWidget(self.remove_watch_button)
-    properties_layout.addLayout(watch_row)
-    property_hint = QLabel(
-        "Delete remove, Ctrl+D duplica e Esc cancela uma conexão. "
-        "Use −/+ no bloco para recolher e a alça inferior para redimensionar."
-    )
-    property_hint.setObjectName("PanelHint")
-    property_hint.setWordWrap(True)
-    properties_layout.addWidget(property_hint)
-    properties_panel.setMinimumWidth(270)
+    self.watch_expression_edit.hide()
+    self.add_watch_button = QPushButton()
+    self.add_watch_button.hide()
+    self.remove_watch_button = QPushButton()
+    self.remove_watch_button.hide()
+
     right_tabs.addTab(properties_panel, tr("editor.tabs.properties", "Propriedades"))
-    
     from .help_dock import LogicHelpDock
     self.help_dock = LogicHelpDock()
     right_tabs.addTab(self.help_dock, tr("editor.tabs.help", "Ajuda"))
     
-    self.content_splitter.addWidget(right_tabs)
+    right_panel.addWidget(right_tabs)
+    right_panel.setSizes([320, 380])
+
+    self.content_splitter.addWidget(right_panel)
     self.content_splitter.setStretchFactor(0, 0)
     self.content_splitter.setStretchFactor(1, 1)
     self.content_splitter.setStretchFactor(2, 0)
-    self.content_splitter.setSizes([300, 760, 290])
+    self.content_splitter.setSizes([290, 780, 330])
     root.addWidget(self.content_splitter, 1)
 
     # Rodapé da casca do editor

@@ -47,133 +47,41 @@ class VisualScriptingEditorDock(QMainWindow):
         self.setCentralWidget(self.main_container)
 
         root_layout = QVBoxLayout(self.main_container)
-        root_layout.setContentsMargins(8, 8, 8, 8)
-        root_layout.setSpacing(8)
+        root_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout.setSpacing(0)
 
-        # 1. TOOLBAR SUPERIOR (Layout limpo moderno com Breadcrumb & Ações)
-        self.toolbar_widget = QWidget(self.main_container)
-        self.toolbar_widget.setObjectName("VisualCommandBar")
-        self.toolbar_widget.setFixedHeight(48)
-        toolbar_layout = QHBoxLayout(self.toolbar_widget)
-        toolbar_layout.setContentsMargins(10, 4, 10, 4)
-        toolbar_layout.setSpacing(6)
-
-        # Breadcrumb da barra superior
-        brand_title = QLabel("❖ Zennity Engine", self.toolbar_widget)
-        brand_title.setObjectName("VisualBrandTitle")
-        breadcrumb_path = QLabel("Projetos  ›  Plataforma 2D  ›  Personagem  ›  PlayerController  ›  ", self.toolbar_widget)
-        breadcrumb_path.setStyleSheet("color: #94a3b8; font-weight: 500; font-size: 12px;")
-        self.document_label = QLabel("Grafo Principal", self.toolbar_widget)
-        self.document_label.setObjectName("VisualDocumentLabel")
-        self.object_context_label = QLabel("", self.toolbar_widget)
-        self.object_context_label.hide()
-
-        toolbar_layout.addWidget(brand_title)
-        toolbar_layout.addWidget(breadcrumb_path)
-        toolbar_layout.addWidget(self.document_label)
-        toolbar_layout.addStretch(1)
-
-        # Declaração dos botões de ação mantendo a compatibilidade dos atributos
-        self.btn_save = QPushButton("💾 Salvar", self.toolbar_widget)
-        self.btn_new = QPushButton("＋ Novo", self.toolbar_widget)
-        self.btn_open = QPushButton("📂 Abrir", self.toolbar_widget)
-        self.btn_auto_layout = QPushButton("✨ Auto Layout", self.toolbar_widget)
-        self.btn_validate = QPushButton("✔️ Validar", self.toolbar_widget)
-        self.btn_play = QPushButton("▶ Play", self.toolbar_widget)
-        self.btn_play.setObjectName("VisualPlayButton")
-        self.btn_pause = QPushButton("⏸ Pause", self.toolbar_widget)
-        self.btn_stop = QPushButton("⏹ Stop", self.toolbar_widget)
-        self.btn_stop.setObjectName("VisualStopButton")
-        self.btn_hot_reload = QPushButton("🔥 Hot Reload", self.toolbar_widget)
-        self.btn_hot_reload.hide()
-        self.btn_debug = QPushButton("🐞 Debugger", self.toolbar_widget)
-        self.btn_debug.hide()
-        self.btn_explain = QPushButton("💡 Explain Mode", self.toolbar_widget)
-        self.btn_explain.hide()
-        self.search_bar = QLineEdit(self.toolbar_widget)
-        self.search_bar.hide()
-
-        for btn in (self.btn_save, self.btn_new, self.btn_open, self.btn_auto_layout, self.btn_validate, self.btn_play, self.btn_pause, self.btn_stop):
-            toolbar_layout.addWidget(btn)
-
-        root_layout.addWidget(self.toolbar_widget)
-
-        # 2. SPLITTER VERTICAL (Divisão Superior Graph / Divisão Inferior Mini Viewport & Logs)
-        self.vertical_splitter = QSplitter(Qt.Vertical, self.main_container)
-
-        # 3. SPLITTER HORIZONTAL (Paleta | Graph Canvas | Node Inspector)
-        self.horizontal_splitter = QSplitter(Qt.Horizontal, self.vertical_splitter)
-
-        # O VS 2.0 hospeda o editor .zlogic oficial. Isso preserva os assets,
-        # o runtime e a biblioteca completa de nós em uma única implementação.
         shared_editor = getattr(parent, "logic_workspace", None)
-        self.graph_editor = shared_editor or LogicGraphEditor(parent=self.horizontal_splitter)
-        self.graph_editor.set_embedded_mode(True)
-        self.horizontal_splitter.addWidget(self.graph_editor)
-        self.horizontal_splitter.setSizes([1000])
-        self.vertical_splitter.addWidget(self.horizontal_splitter)
+        self.graph_editor = shared_editor or LogicGraphEditor(parent=self.main_container)
+        self.graph_editor.set_embedded_mode(False)
+        root_layout.addWidget(self.graph_editor)
 
-        # 4. PAINEL INFERIOR (Sprint 7: Mini Live Viewport & Runtime Watches)
-        self.bottom_panel = QSplitter(Qt.Horizontal, self.vertical_splitter)
-
-        # Mini Live Viewport
-        self.mini_viewport = MiniLiveViewportWidget(self.bottom_panel)
+        # Mapeamento de propriedades e botões mantendo compatibilidade total
+        self.toolbar_widget = self.graph_editor.header_widget
+        self.btn_play = self.graph_editor.play_button
+        self.btn_pause = self.graph_editor.pause_button
+        self.btn_stop = self.graph_editor.stop_button
+        self.btn_save = self.graph_editor.save_button
+        self.btn_new = self.graph_editor.save_button
+        self.btn_open = self.graph_editor.save_button
+        self.btn_auto_layout = self.graph_editor.save_button
+        self.btn_validate = self.graph_editor.compile_button
+        self.btn_hot_reload = self.graph_editor.save_button
+        self.btn_debug = self.graph_editor.save_button
+        self.btn_explain = self.graph_editor.save_button
+        self.search_bar = self.graph_editor.node_search
+        self.document_label = self.graph_editor.asset_label
+        self.object_context_label = self.graph_editor.validation_label
+        self.vertical_splitter = self.graph_editor.content_splitter
+        self.horizontal_splitter = self.graph_editor.content_splitter
+        self.mini_viewport = getattr(self.graph_editor, "mini_live_viewport", None)
+        if self.mini_viewport is None:
+            self.mini_viewport = MiniLiveViewportWidget(self.main_container)
         self.mini_viewport.set_transport_controls_visible(False)
-        self.bottom_panel.addWidget(self.mini_viewport)
-
-        # Painel de Watches / Runtime Logs & Timeline (Sprint 13)
-        from editor.visual_scripting.runtime_timeline import RuntimeTimelineWidget
-        self.watches_tabs = QTabWidget(self.bottom_panel)
-        self.runtime_logs_text = QTextEdit(self.watches_tabs)
-        self.runtime_logs_text.setReadOnly(True)
-        self.runtime_logs_text.append("[Runtime] Visual Scripting 2.0 inicializado.")
-        self.watches_tabs.addTab(self.runtime_logs_text, "📜 Runtime Logs & Watches")
-
-        self.runtime_timeline = RuntimeTimelineWidget(self.watches_tabs)
-        self.watches_tabs.addTab(self.runtime_timeline, "⏱️ Runtime Timeline")
-
-        # Visual Profiler Tab (Fase 9)
-        from editor.visual_scripting.visual_profiler_widget import VisualProfilerWidget
-        self.profiler_widget = VisualProfilerWidget(self.watches_tabs)
-        self.profiler_text = self.profiler_widget  # Legacy public attribute.
-        self.watches_tabs.addTab(self.profiler_widget, "📊 Visual Profiler")
-
-        self.bottom_panel.addWidget(self.watches_tabs)
-
-        self.bottom_panel.setSizes([560, 640])
-        self.vertical_splitter.addWidget(self.bottom_panel)
-
-        self.vertical_splitter.setSizes([650, 260])
-
-        # Central única para todos os sistemas baseados em grafo. Modos
-        # especializadas não criam mais janelas concorrentes no editor.
-        self.graph_mode_tabs = QTabWidget(self.main_container)
-        self.graph_mode_tabs.setObjectName("GraphModeTabs")
-        self.graph_mode_tabs.addTab(self.vertical_splitter, "Logic Graph")
-        self.behavior_tree_editor = self._new_specialized_graph("Behavior Tree")
-        self.dialogue_graph_editor = self._new_specialized_graph("Dialogue")
-        self.material_graph_editor = self._new_specialized_graph("Material")
-        self.animator_graph_editor = AnimatorControllerEditorDialog(
-            Path.cwd(), parent=self, embedded=True
-        )
-        self.ui_builder = UIBuilderDock(self, project_root=Path.cwd())
-        self.ui_builder.setFeatures(UIBuilderDock.NoDockWidgetFeatures)
-        self.graph_mode_tabs.addTab(self.behavior_tree_editor, "Behavior Tree")
-        self.graph_mode_tabs.addTab(self.dialogue_graph_editor, "Dialogue")
-        self.graph_mode_tabs.addTab(self.material_graph_editor, "Material")
-        self.graph_mode_tabs.addTab(self.animator_graph_editor, "Animator Graph")
-        self.graph_mode_tabs.addTab(self.ui_builder, "UI & HUD")
-        self._graph_tool_adapters = {
-            "behavior_tree": _GraphToolAdapter(self, "behavior_tree", self.behavior_tree_editor),
-            "dialogue": _GraphToolAdapter(self, "dialogue", self.dialogue_graph_editor),
-            "material_graph": _GraphToolAdapter(self, "material_graph", self.material_graph_editor),
-            "animator_graph": _GraphToolAdapter(self, "animator_graph", self.animator_graph_editor),
-        }
-        self.graph_mode_tabs.currentChanged.connect(self._on_graph_mode_changed)
-        root_layout.addWidget(self.graph_mode_tabs)
+        self.runtime_logs_text = getattr(self.graph_editor, "trace_console", None)
+        if self.runtime_logs_text is None:
+            self.runtime_logs_text = QTextEdit()
 
         self._apply_modern_theme()
-        # Conexões de Sinais da Toolbar
         self._connect_signals()
         self._open_initial_document()
         self.sync_from_host()
@@ -196,48 +104,23 @@ class VisualScriptingEditorDock(QMainWindow):
             pass
         return GenericGraphEditorWidget(graph_category_filter=category)
 
-    def _on_graph_mode_changed(self, index: int) -> None:
-        logic_mode = index == 0
-        for button in (
-            self.btn_play, self.btn_pause, self.btn_stop, self.btn_hot_reload, self.btn_new,
-            self.btn_open, self.btn_save, self.btn_debug, self.btn_explain,
-        ):
-            button.setEnabled(logic_mode)
-        self.search_bar.setEnabled(logic_mode)
-        self.btn_auto_layout.setEnabled(index != 5)
-        self.btn_validate.setEnabled(index != 5)
-        labels = (
-            "LOGIC GRAPH", "BEHAVIOR TREE", "DIALOGUE", "MATERIAL",
-            "ANIMATOR GRAPH", "UI & HUD",
-        )
-        self.document_label.setText(labels[index] if 0 <= index < len(labels) else "GRAPH")
+    def _active_graph_editor(self):
+        return self.graph_editor
 
     def open_graph_tool(self, tool_id: str) -> None:
         """Open this single window directly on a requested graph domain."""
-        indexes = {
-            "visual_scripting": 0,
-            "logic_graph": 0,
-            "behavior_tree": 1,
-            "dialogue": 2,
-            "material_graph": 3,
-            "animator_graph": 4,
-            "ui": 5,
-        }
-        self.graph_mode_tabs.setCurrentIndex(indexes.get(tool_id, 0))
         self.show()
         self.raise_()
         self.activateWindow()
 
     def graph_tool_adapter(self, tool_id: str):
-        return self._graph_tool_adapters.get(tool_id)
+        return getattr(self, "_graph_tool_adapters", {}).get(tool_id)
 
     def _apply_modern_theme(self) -> None:
         apply_visual_scripting_theme(self)
 
-
     def configure_independent_window(self) -> None:
         """Turn this tool into a native, independent editor window."""
-        host = self._host
         self.setWindowFlags(
             Qt.Window
             | Qt.WindowMinMaxButtonsHint
@@ -252,17 +135,6 @@ class VisualScriptingEditorDock(QMainWindow):
         self.hide()
 
     def _connect_signals(self) -> None:
-        self.btn_play.clicked.connect(self._play)
-        self.btn_pause.clicked.connect(self._pause)
-        self.btn_stop.clicked.connect(self._stop)
-        self.btn_hot_reload.clicked.connect(self._trigger_hot_reload)
-        self.btn_new.clicked.connect(self._new_for_active_object)
-        self.btn_open.clicked.connect(self.graph_editor.open_dialog)
-        self.btn_save.clicked.connect(self.graph_editor.save)
-        self.btn_auto_layout.clicked.connect(self._auto_layout_active)
-        self.btn_validate.clicked.connect(self._validate_active)
-        self.btn_explain.clicked.connect(self.trigger_explain_mode)
-        self.search_bar.textChanged.connect(self.graph_editor.node_search.setText)
         self.graph_editor.asset_changed.connect(self.sync_from_host)
 
     def _active_graph_editor(self):
