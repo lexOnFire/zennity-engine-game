@@ -278,6 +278,57 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
     def _clear_inspector_view(self) -> None:
         self._inspector_controller.clear()
 
+    def _on_inspector_tag_changed(self, new_tag: str) -> None:
+        if getattr(self, "_updating_inspector", False) or not self._selected_name:
+            return
+        obj = self._objects_by_name.get(self._selected_name)
+        if not obj:
+            return
+        tag_str = str(new_tag).strip()
+        if tag_str == "+ Criar Nova Tag...":
+            from PySide6.QtWidgets import QInputDialog
+            custom_tag, ok = QInputDialog.getText(self, "Criar Nova Tag", "Digite o nome da nova Tag:")
+            if ok and custom_tag.strip():
+                tag_str = custom_tag.strip()
+            else:
+                curr = str(obj.get("tag", "Untagged"))
+                if hasattr(self, "tag_combo"):
+                    self.tag_combo.blockSignals(True)
+                    self.tag_combo.setCurrentText(curr)
+                    self.tag_combo.blockSignals(False)
+                return
+
+        if not tag_str:
+            tag_str = "Untagged"
+
+        if hasattr(self, "tag_combo"):
+            if self.tag_combo.findText(tag_str) < 0:
+                idx = max(0, self.tag_combo.count() - 1) if self.tag_combo.findText("+ Criar Nova Tag...") >= 0 else self.tag_combo.count()
+                self.tag_combo.insertItem(idx, tag_str)
+
+            self.tag_combo.blockSignals(True)
+            self.tag_combo.setCurrentText(tag_str)
+            self.tag_combo.blockSignals(False)
+
+        obj["tag"] = tag_str
+        if hasattr(self, "_notify_scene_changed"):
+            self._notify_scene_changed()
+
+    def _send_inspector_identity(self) -> None:
+        if not self._selected_name or getattr(self, "_updating_inspector", False):
+            return
+        obj = self._objects_by_name.get(self._selected_name)
+        if not obj:
+            return
+        if hasattr(self, "tag_combo"):
+            tag_val = str(self.tag_combo.currentText()).strip() or "Untagged"
+            if tag_val != "+ Criar Nova Tag...":
+                obj["tag"] = tag_val
+        if hasattr(self, "layer_combo"):
+            obj["layer"] = str(self.layer_combo.currentText()).strip() or "Default"
+        if hasattr(self, "_notify_scene_changed"):
+            self._notify_scene_changed()
+
     def _toggle_renderer_component(self, checked: bool) -> None:
         self._inspector_components.toggle_renderer(checked)
 

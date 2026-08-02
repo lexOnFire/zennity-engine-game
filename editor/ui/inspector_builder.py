@@ -65,7 +65,7 @@ def _build_inspector_shell(window):
     window.tag_combo = QComboBox()
     window.tag_combo.setEditable(True)
     window.tag_combo.setInsertPolicy(QComboBox.InsertAtBottom)
-    window.tag_combo.addItems(["Untagged", "Player", "Enemy", "Food", "Item", "Collectible", "MainCamera"])
+    window.tag_combo.addItems(["Untagged", "Player", "Enemy", "Food", "Item", "Collectible", "MainCamera", "+ Criar Nova Tag..."])
     tag_layer_layout.addWidget(window.tag_combo)
     tag_layer_layout.addWidget(QLabel("Layer"))
     window.layer_combo = QComboBox()

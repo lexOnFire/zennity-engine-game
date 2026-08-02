@@ -23,6 +23,23 @@ class InspectorViewRenderer:
         for key in ("x", "y", "w", "h", "rotation"):
             h.inspector_fields[key].setValue(float(obj[key]))
 
+        if hasattr(h, "tag_combo"):
+            h.tag_combo.blockSignals(True)
+            current_tag = str(obj.get("tag", "Untagged"))
+            if h.tag_combo.findText(current_tag) < 0:
+                idx = max(0, h.tag_combo.count() - 1) if h.tag_combo.findText("+ Criar Nova Tag...") >= 0 else h.tag_combo.count()
+                h.tag_combo.insertItem(idx, current_tag)
+            h.tag_combo.setCurrentText(current_tag)
+            h.tag_combo.blockSignals(False)
+
+        if hasattr(h, "layer_combo"):
+            h.layer_combo.blockSignals(True)
+            current_layer = str(obj.get("layer", "Default"))
+            if h.layer_combo.findText(current_layer) < 0:
+                h.layer_combo.addItem(current_layer)
+            h.layer_combo.setCurrentText(current_layer)
+            h.layer_combo.blockSignals(False)
+
     def render_renderer(self, obj: dict[str, Any]) -> None:
         h = self.host
         enabled = bool(obj.get("renderer_enabled", True))

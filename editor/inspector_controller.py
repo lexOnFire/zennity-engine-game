@@ -57,6 +57,10 @@ class IsolatedInspectorController(InspectorControllerUIMediaMixin):
         h = self.host
         for field in h.inspector_fields.values():
             self._bind(field.valueChanged, lambda _value: h._send_inspector_transform())
+        if hasattr(h, "tag_combo"):
+            self._bind(h.tag_combo.currentTextChanged, lambda text: getattr(h, "_on_inspector_tag_changed", lambda _t: None)(text))
+        if hasattr(h, "layer_combo"):
+            self._bind(h.layer_combo.currentTextChanged, lambda _text: getattr(h, "_send_inspector_identity", lambda: None)())
         for field in h.physics_fields.values():
             self._bind(field.toggled, lambda _checked: h._send_inspector_physics())
         for field in h.collider_fields.values():
