@@ -399,7 +399,16 @@ class _GameViewCanvas(QWidget):
     def _draw_game_objects(self, p: QPainter, w: int, h: int) -> None:
         cx, cy = w / 2, h / 2
         layer_order = {"Background": 0, "Default": 1, "Foreground": 2, "UI": 3}
-        ordered = sorted(self.game_objects, key=lambda obj: (
+        objects_source = self.game_objects
+        if not objects_source:
+            t = time.time() - self.play_start_time
+            px = math.sin(t * 1.8) * 35.0
+            py = -20.0 + abs(math.sin(t * 4.5)) * -14.0
+            objects_source = [
+                {"id": "ground", "name": "Ground", "x": 0, "y": 30, "w": 260, "h": 16, "color": "#22c55e", "active": True, "renderer_enabled": True},
+                {"id": "player", "name": "Player", "x": px, "y": py, "w": 24, "h": 36, "color": "#38bdf8", "active": True, "renderer_enabled": True, "rigidbody": {"velocity_y": -2.0}},
+            ]
+        ordered = sorted(objects_source, key=lambda obj: (
             layer_order.get(str(obj.get("render_layer", "Default")), 1),
             int(obj.get("sort_order", 0)),
         ))

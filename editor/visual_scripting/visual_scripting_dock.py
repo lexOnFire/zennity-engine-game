@@ -117,12 +117,7 @@ class VisualScriptingEditorDock(QWidget):
         apply_visual_scripting_theme(self)
 
     def configure_independent_window(self) -> None:
-        """Turn this tool into a native, independent editor window."""
-        self.setWindowFlags(
-            Qt.Window
-            | Qt.WindowMinMaxButtonsHint
-            | Qt.WindowCloseButtonHint
-        )
+        """Turn this tool into an integrated workspace."""
         self.resize(1400, 860)
         self.setMinimumSize(960, 640)
 

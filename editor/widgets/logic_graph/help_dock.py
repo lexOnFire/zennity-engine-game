@@ -4,6 +4,13 @@ from PySide6.QtGui import QFont
 from engine.localization import tr
 
 NODE_HELP_DATABASE: dict[str, dict[str, str]] = {
+    "jump": {
+        "title": "Pular (Jump)",
+        "category": "Movimento",
+        "desc": "Aplica um impulso vertical instantâneo para fazer o personagem saltar.",
+        "usage": "Combine com a verificação <code>Está no Chão?</code> para evitar pulos no ar. Você pode ajustar a força do pulo no painel de propriedades.",
+        "ports": "<b>[In] Exec</b>: Gatilho do pulo.<br><b>[In] Força</b>: Impulso vertical (ex.: 12.0 N).<br><b>[Out] Exec</b>: Saída de execução."
+    },
     "on_start": {
         "title": "Ao Iniciar (On Start)",
         "category": "Eventos",
@@ -46,6 +53,20 @@ NODE_HELP_DATABASE: dict[str, dict[str, str]] = {
         "usage": "Conecte a saída de <code>Ler Entrada</code> na entrada de Direção deste nó para controlar o personagem em tempo real.",
         "ports": "<b>[In] Exec</b>: Gatilho.<br><b>[In] Direção</b>: Vetor2.<br><b>[In] Velocidade</b>: Velocidade em pixels/segundo (ex.: 220.0).<br><b>[Out] Exec</b>: Saída do fluxo."
     },
+    "get_continuous_motion": {
+        "title": "Obter Movimento Contínuo (Get Continuous Motion)",
+        "category": "Movimento",
+        "desc": "Consulta o vetor de velocidade e direção do movimento contínuo ativo no objeto.",
+        "usage": "Utilize para verificar se o objeto está se movendo e qual a sua velocidade atual em cada eixo.",
+        "ports": "<b>[In] Exec</b>: Consulta.<br><b>[Out] Velocidade X</b>: Velocidade horizontal.<br><b>[Out] Velocidade Y</b>: Velocidade vertical."
+    },
+    "motion_state_query": {
+        "title": "Consulta de Estado de Movimento (Motion State Query)",
+        "category": "Movimento",
+        "desc": "Verifica o estado físico atual do personagem (se está parado, correndo, pulando ou caindo).",
+        "usage": "Ideal para acionar transições de animação no Animator com base no estado físico real.",
+        "ports": "<b>[In] Exec</b>: Consulta.<br><b>[Out] Em Movimento</b>: Booleano.<br><b>[Out] No Ar</b>: Booleano."
+    },
     "is_grounded": {
         "title": "Está no Chão? (Is Grounded)",
         "category": "Física",
@@ -73,6 +94,13 @@ NODE_HELP_DATABASE: dict[str, dict[str, str]] = {
         "desc": "Solicita ao componente Animator para iniciar a reprodução de uma animação específica.",
         "usage": "Alterne entre os clipes de animação como <code>Idle</code>, <code>Run</code>, <code>Jump</code> com base na velocidade do personagem.",
         "ports": "<b>[In] Exec</b>: Gatilho.<br><b>[In] Animação</b>: Nome do clipe (ex.: Run).<br><b>[In] Loop</b>: Recomenda repetição contínua."
+    },
+    "set_position": {
+        "title": "Definir Posição (Set Position)",
+        "category": "Transform",
+        "desc": "Teleporta ou define a posição exata (X, Y) do objeto na cena.",
+        "usage": "Utilize para respawnar o personagem ou mover objetos instantaneamente.",
+        "ports": "<b>[In] Exec</b>: Gatilho.<br><b>[In] X</b>: Posição X.<br><b>[In] Y</b>: Posição Y."
     },
 }
 
@@ -109,11 +137,23 @@ class LogicHelpDock(QWidget):
         self._filter_help("")
 
     def _filter_help(self, query: str):
-        query_clean = query.lower().strip()
+        query_clean = query.lower().strip().replace(" ", "_")
+        raw_query = query.lower().strip()
         
-        # 1. Checa no banco interno pré-cadastrado
-        matched_keys = [k for k in NODE_HELP_DATABASE if not query_clean or query_clean in k or query_clean in NODE_HELP_DATABASE[k]["title"].lower()]
-        
+        # Match inteligente no dicionário pré-cadastrado
+        matched_keys = []
+        for k, data in NODE_HELP_DATABASE.items():
+            if not raw_query:
+                matched_keys.append(k)
+            elif (
+                raw_query in k 
+                or query_clean in k 
+                or raw_query in data["title"].lower() 
+                or raw_query in data["category"].lower()
+                or raw_query in data["desc"].lower()
+            ):
+                matched_keys.append(k)
+
         html = []
         if matched_keys:
             for k in matched_keys[:4]:
@@ -127,37 +167,19 @@ class LogicHelpDock(QWidget):
             self.help_text.setHtml("".join(html))
             return
 
-        # 2. Tenta buscar na Metadata da Engine como fallback
-        try:
-            from engine.core.context import EngineContext
-            from engine.metadata.manager import MetadataManager
-            from engine.core.metadata.node import NodeDefinition
-            context = EngineContext.current()
-            if context:
-                manager = context.services.get_optional(MetadataManager)
-                if manager:
-                    nodes = manager.get_all(NodeDefinition)
-                    for definition in nodes:
-                        if query_clean in definition.id.lower() or query_clean in definition.title_key.lower():
-                            title = tr(definition.title_key, fallback=definition.title_key)
-                            desc = tr(definition.description_key, fallback=definition.description_key)
-                            html.append(f"<h3 style='color:#38bdf8;'>{title} ({definition.id})</h3>")
-                            html.append(f"<p>{desc}</p>")
-                            self.help_text.setHtml("".join(html))
-                            return
-        except Exception:
-            pass
-
+        # Fallback genérico quando o nó pesquisado não está no dicionário estático
+        pretty_title = query.strip().capitalize()
         self.help_text.setHtml(
-            f"<h3 style='color:#38bdf8;'>Dicionário de Nós</h3>"
-            f"<p>Selecione um nó no canvas ou biblioteca para visualizar sua documentação detalhada, utilidade e mapa de portas.</p>"
+            f"<h3 style='color:#38bdf8; margin: 4px 0;'>{pretty_title}</h3>"
+            f"<p style='color:#94a3b8; font-size:10px; margin: 2px 0;'><b>Categoria:</b> Grafo / Lógica Visual</p>"
+            f"<p style='margin: 4px 0;'>Nó executor/avaliador do Visual Scripting. Processa a lógica do grafo quando acionado no fluxo.</p>"
+            f"<div style='background:#181c28; padding:6px; border-radius:4px; margin:4px 0;'><b>Como Usar:</b><br>Conecte os pinos de entrada e saída no fluxo de execução do seu grafo de personagem ou objeto.</div>"
         )
 
     def show_node_help(self, node_id_or_name: str):
         if not node_id_or_name:
             return
-        node_key = str(node_id_or_name).lower().strip().replace(" ", "_")
         self.search_bar.setText(node_id_or_name)
-        self._filter_help(node_key)
+        self._filter_help(node_id_or_name)
         self.show()
         self.raise_()
