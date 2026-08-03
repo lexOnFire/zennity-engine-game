@@ -1,10 +1,4 @@
-* text=auto
-
-*.py text eol=lf
-*.md text eol=lf
-*.yml text eol=lf
-*.yaml text eol=lf
-*.json text eol=lf
+﻿* text=auto eol=lf
 
 *.meta text eol=lf
 *.zanim text eol=lf
@@ -16,11 +10,13 @@
 *.zdialogue text eol=lf
 *.zlogic text eol=lf
 *.zscene text eol=lf
+*.zprefab text eol=lf
+*.zblackboard text eol=lf
 
 *.png binary
 *.jpg binary
-*.jpeg binary
-*.gif binary
+*.PNG binary
 *.wav binary
-*.ogg binary
 *.mp3 binary
+*.ogg binary
+*.zip binary
