@@ -284,16 +284,43 @@ def build_hero_animator(player: GameObject, sheet: SpriteSheet, facing_flag) -> 
 
     sr = player.add_component(SpriteRenderer(idle_r[0]))
     anim = player.add_component(Animator(default_clip="idle_r"))
-    for clip in [
-        AnimationClip("idle_r", idle_r, fps=6),
-        AnimationClip("idle_l", idle_l, fps=6),
-        AnimationClip("run_r",  run_r,  fps=12),
-        AnimationClip("run_l",  run_l,  fps=12),
-        AnimationClip("jump_r", jump_r, fps=4, loop=True),
-        AnimationClip("jump_l", jump_l, fps=4, loop=True),
-        AnimationClip("fall_r", fall_r, fps=4, loop=True),
-        AnimationClip("fall_l", fall_l, fps=4, loop=True),
-    ]:
+
+    # BUG FIX (limitação #9): AnimationClip.serialize()/deserialize() não
+    # persistia `frames` — só sobrevivia o tween de propriedades. Agora que
+    # AnimationClip aceita `frame_source` (spritesheet + recorte + flip),
+    # passamos essa referência aqui para que, se este Animator/clip for
+    # salvo em .zscene, os frames de sprite-cycle voltem a existir no load.
+    def _src(frame_range):
+        return {
+            "sheet": sheet.image_path,
+            "frame_width": sheet.frame_width,
+            "frame_height": sheet.frame_height,
+            "spacing": sheet.spacing,
+            "margin": sheet.margin,
+            "scale": sheet.scale,
+            "color_key": list(sheet.color_key) if sheet.color_key else None,
+            "frame_range": list(frame_range),
+        }
+
+    # Os frames "_l" já chegam pré-espelhados (SpriteSheet.flip_h acima), então
+    # são passados com flip_h=False para o construtor (senão seriam espelhados
+    # de novo = volta ao normal). O flag `.flip_h` é setado manualmente depois
+    # só para fins de serialização, indicando que o `frame_source` (que
+    # descreve o recorte NÃO espelhado da sheet) precisa ser espelhado ao
+    # recarregar via deserialize().
+    clips = [
+        AnimationClip("idle_r", idle_r, fps=6, frame_source=_src((0, 4))),
+        AnimationClip("idle_l", idle_l, fps=6, frame_source=_src((0, 4))),
+        AnimationClip("run_r",  run_r,  fps=12, frame_source=_src((4, 8))),
+        AnimationClip("run_l",  run_l,  fps=12, frame_source=_src((4, 8))),
+        AnimationClip("jump_r", jump_r, fps=4, loop=True, frame_source=_src((8, 9))),
+        AnimationClip("jump_l", jump_l, fps=4, loop=True, frame_source=_src((8, 9))),
+        AnimationClip("fall_r", fall_r, fps=4, loop=True, frame_source=_src((9, 10))),
+        AnimationClip("fall_l", fall_l, fps=4, loop=True, frame_source=_src((9, 10))),
+    ]
+    for clip in clips:
+        if clip.name.endswith("_l"):
+            clip.flip_h = True
         anim.add_clip(clip)
 
     rb = player.get_component(RigidBody)

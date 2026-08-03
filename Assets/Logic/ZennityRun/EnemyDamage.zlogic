@@ -135,6 +135,27 @@
       "properties": {
         "path": "Assets/Audio/_zennity_run/hit.wav"
       }
+    },
+    {
+      "id": "update_hud_hp",
+      "type": "set_ui_progress_bar",
+      "title": "Set UI Progress Bar",
+      "category": "UI",
+      "position": [
+        1280,
+        260
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "object": "HUD",
+        "widget": "hp_bar",
+        "value": 0.0,
+        "max_value": 100.0
+      }
     }
   ],
   "edges": [
@@ -182,6 +203,24 @@
       "to_port": "value",
       "kind": "number",
       "order": 4
+    },
+    {
+      "id": "e_clamp_uibar",
+      "from_node": "clamp_hp",
+      "from_port": "value",
+      "to_node": "update_hud_hp",
+      "to_port": "value",
+      "kind": "number",
+      "order": 5
+    },
+    {
+      "id": "e_sound_hud",
+      "from_node": "play_hit",
+      "from_port": "next",
+      "to_node": "update_hud_hp",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 6
     }
   ]
 }

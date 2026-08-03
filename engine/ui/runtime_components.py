@@ -22,6 +22,7 @@ class RuntimeUIElement(Component):
         height: float = 30.0,
         visible: bool = True,
         z_order: int = 0,
+        widget_name: str = "",
     ) -> None:
         super().__init__()
         self.x = float(x)
@@ -30,6 +31,14 @@ class RuntimeUIElement(Component):
         self.height = float(height)
         self.visible = bool(visible)
         self.z_order = int(z_order)
+        # BUG FIX (ambiguidade de HUD): quando um GameObject composto (ex.:
+        # "HUD") tem vários componentes de UI do MESMO tipo (duas Labels: uma
+        # de título, outra de contador de moedas), `get_component(LabelComponent)`
+        # sempre retorna só o primeiro da lista — não há como o Logic Graph
+        # apontar para o widget certo. `widget_name` é um identificador livre
+        # (definido no editor) que os nós set_ui_text/set_ui_progress_bar/
+        # set_ui_visible usam para desambiguar; veja ui_nodes.py `_find_widget`.
+        self.widget_name = str(widget_name)
 
     def on_runtime_start(self) -> None:
         """Isola objetos puramente UI do world draw sem esconder objetos mistos."""
@@ -60,6 +69,7 @@ class RuntimeUIElement(Component):
             "height": float(self.height),
             "visible": bool(self.visible),
             "z_order": int(self.z_order),
+            "widget_name": str(self.widget_name),
         }
 
     def deserialize_properties(self, data: dict[str, Any]) -> None:
@@ -69,6 +79,7 @@ class RuntimeUIElement(Component):
         self.height = float(data.get("height", self.height))
         self.visible = bool(data.get("visible", self.visible))
         self.z_order = int(data.get("z_order", self.z_order))
+        self.widget_name = str(data.get("widget_name", self.widget_name))
 
 
 class Canvas(RuntimeUIElement):

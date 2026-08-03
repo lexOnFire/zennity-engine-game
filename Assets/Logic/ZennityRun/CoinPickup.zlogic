@@ -131,6 +131,63 @@
         "height": 0.0
       },
       "properties": {}
+    },
+    {
+      "id": "score_to_text",
+      "type": "to_text",
+      "title": "To Text",
+      "category": "String",
+      "position": [
+        680,
+        260
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "value": 0.0
+      }
+    },
+    {
+      "id": "coins_label_text",
+      "type": "join_text",
+      "title": "Join Text",
+      "category": "String",
+      "position": [
+        980,
+        260
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": "Moedas: ",
+        "b": ""
+      }
+    },
+    {
+      "id": "update_hud_coins",
+      "type": "set_ui_text",
+      "title": "Set UI Text",
+      "category": "UI",
+      "position": [
+        1280,
+        260
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "object": "HUD",
+        "widget": "coins_label",
+        "text": ""
+      }
     }
   ],
   "edges": [
@@ -153,15 +210,6 @@
       "order": 1
     },
     {
-      "id": "e_sound_destroy",
-      "from_node": "play_coin",
-      "from_port": "next",
-      "to_node": "destroy_self",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 2
-    },
-    {
       "id": "e_getscore_add",
       "from_node": "get_score",
       "from_port": "value",
@@ -178,6 +226,51 @@
       "to_port": "value",
       "kind": "number",
       "order": 4
+    },
+    {
+      "id": "e_add_totext",
+      "from_node": "add_ten",
+      "from_port": "value",
+      "to_node": "score_to_text",
+      "to_port": "value",
+      "kind": "number",
+      "order": 5
+    },
+    {
+      "id": "e_totext_join",
+      "from_node": "score_to_text",
+      "from_port": "value",
+      "to_node": "coins_label_text",
+      "to_port": "b",
+      "kind": "text",
+      "order": 6
+    },
+    {
+      "id": "e_join_uitext",
+      "from_node": "coins_label_text",
+      "from_port": "value",
+      "to_node": "update_hud_coins",
+      "to_port": "text",
+      "kind": "text",
+      "order": 7
+    },
+    {
+      "id": "e_sound_hud",
+      "from_node": "play_coin",
+      "from_port": "next",
+      "to_node": "update_hud_coins",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 8
+    },
+    {
+      "id": "e_hud_destroy",
+      "from_node": "update_hud_coins",
+      "from_port": "next",
+      "to_node": "destroy_self",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 9
     }
   ]
 }

@@ -16,6 +16,30 @@ from ..registry import registry
 from engine.ui.runtime_components import LabelComponent, ProgressBarComponent, RuntimeUIElement
 
 
+def _find_widget(target: Any, component_type: type, widget_name: str) -> Any:
+    """Resolve QUAL componente de UI usar quando `target` tem vários do
+    mesmo tipo (ex.: GameObject "HUD" com duas LabelComponent — título e
+    contador de moedas). Sem isso, get_component() sempre pegava o primeiro
+    da lista, então um Logic Graph não conseguia atualizar especificamente
+    a segunda Label/ProgressBar de um HUD composto.
+
+    Se `widget_name` for informado (propriedade "widget"/"widget_name" no
+    nó), procura entre TODOS os componentes desse tipo o que tiver
+    `.widget_name` igual. Caso contrário — ou se nenhum bater — cai no
+    comportamento antigo (primeiro componente do tipo), preservando
+    compatibilidade com cenas/nós existentes que não usam widget_name.
+    """
+    if target is None or not hasattr(target, "get_components"):
+        return target.get_component(component_type) if target is not None else None
+
+    candidates = target.get_components(component_type)
+    if widget_name:
+        for comp in candidates:
+            if str(getattr(comp, "widget_name", "")) == widget_name:
+                return comp
+    return candidates[0] if candidates else None
+
+
 def _input(runtime: Any, node_id: str, port: str, default: Any, game: Any, dt: float) -> Any:
     reader = getattr(runtime, "_read_input", None)
     if callable(reader):
@@ -39,14 +63,15 @@ def execute_set_ui_text(runtime, node: Mapping[str, Any], game: Any, dt: float) 
         return ["next"]
 
     target = runtime._read_target(node_id, game, dt, set())
+    widget_name = str(properties.get("widget", properties.get("widget_name", ""))).strip()
 
     if target is not None:
-        if hasattr(target, "text"):
+        if hasattr(target, "text") and not widget_name:
             target.text = text_val
-        elif hasattr(target, "set_text"):
+        elif hasattr(target, "set_text") and not widget_name:
             target.set_text(text_val)
         else:
-            comp = target.get_component(LabelComponent)
+            comp = _find_widget(target, LabelComponent, widget_name)
             if comp is not None and hasattr(comp, "text"):
                 comp.text = text_val
 
@@ -68,14 +93,15 @@ def execute_set_ui_progress_bar(runtime, node: Mapping[str, Any], game: Any, dt:
         return ["next"]
 
     target = runtime._read_target(node_id, game, dt, set())
+    widget_name = str(properties.get("widget", properties.get("widget_name", ""))).strip()
 
     if target is not None:
-        if hasattr(target, "set_value"):
+        if hasattr(target, "set_value") and not widget_name:
             target.set_value(value_val)
-        elif hasattr(target, "value"):
+        elif hasattr(target, "value") and not widget_name:
             target.value = value_val
         else:
-            comp = target.get_component(ProgressBarComponent)
+            comp = _find_widget(target, ProgressBarComponent, widget_name)
             if comp is not None:
                 if hasattr(comp, "set_value"):
                     comp.set_value(value_val)
@@ -93,15 +119,15 @@ def execute_set_ui_visible(runtime, node: Mapping[str, Any], game: Any, dt: floa
 
     target = runtime._read_target(node_id, game, dt, set())
     visible_val = bool(runtime._evaluate_input(node_id, "visible", game, dt, set()) if "visible" in node.get("inputs", {}) else properties.get("visible", True))
+    widget_name = str(properties.get("widget", properties.get("widget_name", ""))).strip()
 
     if target is not None:
-        if hasattr(target, "visible"):
+        if hasattr(target, "visible") and not widget_name:
             target.visible = visible_val
-        if hasattr(target, "get_component"):
-            comp = target.get_component(RuntimeUIElement)
+        if hasattr(target, "get_components"):
+            comp = _find_widget(target, RuntimeUIElement, widget_name)
             if comp is not None:
                 comp.visible = visible_val
-
 
     return ["next"]
 

@@ -1877,6 +1877,46 @@
       "components": {
         "items": [
           {
+            "type": "Label",
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "x": 16.0,
+              "y": 16.0,
+              "width": 0.0,
+              "height": 0.0,
+              "z_order": 0,
+              "widget_name": "title_label",
+              "text": "Zennity Run",
+              "font_size": 22,
+              "color": [
+                255,
+                255,
+                255
+              ]
+            }
+          },
+          {
+            "type": "Label",
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "x": 16.0,
+              "y": 44.0,
+              "width": 0.0,
+              "height": 0.0,
+              "z_order": 0,
+              "widget_name": "coins_label",
+              "text": "Moedas: 0",
+              "font_size": 20,
+              "color": [
+                255,
+                220,
+                90
+              ]
+            }
+          },
+          {
             "type": "ProgressBar",
             "enabled": true,
             "properties": {
@@ -1912,7 +1952,8 @@
                 18,
                 18
               ],
-              "sprite_path": ""
+              "sprite_path": "",
+              "widget_name": "hp_bar"
             }
           }
         ]
