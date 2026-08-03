@@ -43,6 +43,8 @@ class ViewportControlCommandHandler:
             mode = str(command.get("mode", "scene")).lower()
             if mode in {"scene", "game"}:
                 values["view_mode"] = mode
+                for key in self.forwarded_input:
+                    self.forwarded_input[key] = False
         elif command_type == "set_snap":
             values["snap_enabled"] = bool(command.get("enabled", False))
             values["snap_size"] = max(0.01, float(command.get("size", 16.0)))
@@ -67,6 +69,7 @@ class ViewportAudioCommandHandler:
         start_sources: Callable[[], None],
         stop_sources: Callable[[], None],
         play_file: Callable[[str, str, float, bool], None],
+        select_output: Callable[[str], None],
     ) -> None:
         self.objects = objects
         self.channels = channels
@@ -75,6 +78,7 @@ class ViewportAudioCommandHandler:
         self.start_sources = start_sources
         self.stop_sources = stop_sources
         self.play_file = play_file
+        self.select_output = select_output
 
     def handle(self, command: dict[str, Any]) -> bool:
         command_type = str(command.get("type", ""))
@@ -86,21 +90,28 @@ class ViewportAudioCommandHandler:
                 for object_name, config in incoming.items():
                     if object_name in self.objects and isinstance(config, dict):
                         self.objects[object_name]["audio"] = dict(config)
-            self.emit({"type": "script_log", "level": "INFO", "message": "Comando dedicado de áudio recebido pelo Play Mode"})
+            self.emit({"type": "runtime_log", "level": "INFO", "message": "Comando dedicado de áudio recebido pelo Play Mode"})
             self.start_sources()
         elif command_type == "stop_all_audio":
             self.stop_sources()
-            self.emit({"type": "script_log", "level": "INFO", "message": "Todos os áudios foram interrompidos"})
+            self.emit({"type": "runtime_log", "level": "INFO", "message": "Todos os áudios foram interrompidos"})
         elif command_type == "preview_audio":
-            self.play_file(
-                "__preview__", str(command.get("path", "")),
-                float(command.get("volume", 1.0)), bool(command.get("loop", False)),
-            )
+            try:
+                self.select_output(str(command.get("device", "")))
+                self.play_file(
+                    "__preview__", str(command.get("path", "")),
+                    float(command.get("volume", 1.0)), bool(command.get("loop", False)),
+                )
+            except Exception as exc:
+                self.emit({
+                    "type": "runtime_log", "level": "ERROR",
+                    "message": f"Falha na prévia de áudio (viewport preservada): {exc}",
+                })
         else:
             channel = self.channels.pop("__preview__", None)
             if channel is not None:
                 channel.stop()
             self.sounds.pop("__preview__", None)
-            self.emit({"type": "script_log", "level": "INFO", "message": "Prévia de áudio interrompida"})
+            self.emit({"type": "runtime_log", "level": "INFO", "message": "Prévia de áudio interrompida"})
         return True
 

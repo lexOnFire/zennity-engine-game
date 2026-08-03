@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import json
-import unicodedata
 import uuid
 from copy import deepcopy
-from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal
@@ -18,6 +16,7 @@ from editor.widgets.logic_graph.items import (
 from editor.widgets.logic_graph.views import LogicGraphView, LogicMiniMapView
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPainterPathStroker, QPen, QBrush
 from PySide6.QtWidgets import (
+    QApplication,
     QCheckBox,
     QFileDialog,
     QFrame,
@@ -71,15 +70,71 @@ from editor.widgets.logic_graph.definitions import (
     PORT_COLORS,
     PROPERTY_LABELS,
 )
+from editor.widgets.logic_graph.target_hints import refresh_target_hints
 
 class LogicGraphCanvasMixin:
+    _clipboard_mime = "application/x-zennity-logic-selection"
+
+    def _release_scene_interaction(self) -> None:
+        if not hasattr(self, "scene") or self.scene is None:
+            return
+        try:
+            self.cancel_connection(refresh=False)
+        except (AttributeError, RuntimeError):
+            pass
+        try:
+            self.scene.clearSelection()
+        except RuntimeError:
+            pass
+        try:
+            grabber = self.scene.mouseGrabberItem()
+            if grabber is not None and grabber.scene() is not None:
+                grabber.ungrabMouse()
+        except RuntimeError:
+            pass
+        try:
+            focus_item = self.scene.focusItem()
+            if focus_item is not None:
+                focus_item.clearFocus()
+        except RuntimeError:
+            pass
+
+    def _remove_scene_item(self, item: QGraphicsItem | None) -> None:
+        if item is None or not hasattr(self, "scene") or self.scene is None:
+            return
+        try:
+            item.setSelected(False)
+            if item.scene() is not None and self.scene.mouseGrabberItem() is item:
+                item.ungrabMouse()
+        except RuntimeError:
+            pass
+        try:
+            if item.scene() is self.scene:
+                self.scene.removeItem(item)
+        except RuntimeError:
+            pass
+
+    def _clear_logic_scene(self) -> None:
+        self._release_scene_interaction()
+        try:
+            self.scene.clear()
+        except RuntimeError:
+            pass
+
     def refresh_connections(self) -> None:
         if not hasattr(self, "scene"):
             return
-        for item in self.edge_items:
-            self.scene.removeItem(item)
-        self.edge_items.clear()
+        existing = {item.edge_id: item for item in self.edge_items}
+        active_ids = {
+            str(edge.get("id", "")) for edge in self.graph.get("edges", [])
+        }
+        for edge_id, item in tuple(existing.items()):
+            if edge_id not in active_ids:
+                self._remove_scene_item(item)
+                existing.pop(edge_id, None)
+        next_items: list[LogicEdgeItem] = []
         for edge in self.graph.get("edges", []):
+            edge_id = str(edge.get("id", ""))
             source = self.node_items.get(str(edge.get("from_node")))
             target = self.node_items.get(str(edge.get("to_node")))
             if source is None or target is None:
@@ -91,9 +146,16 @@ class LogicGraphCanvasMixin:
             path = self._connection_path(start, end)
             source_port = source.output_ports.get(from_port)
             data_type = source_port.data_type if source_port is not None else str(edge.get("kind", "flow"))
-            connection = LogicEdgeItem(path, str(edge.get("id")), data_type)
-            self.scene.addItem(connection)
-            self.edge_items.append(connection)
+            connection = existing.get(edge_id)
+            if connection is None or connection.data_type != data_type:
+                if connection is not None:
+                    self._remove_scene_item(connection)
+                connection = LogicEdgeItem(path, edge_id, data_type)
+                self.scene.addItem(connection)
+            else:
+                connection.setPath(path)
+            next_items.append(connection)
+        self.edge_items[:] = next_items
         fanout_counts: dict[str, int] = {}
         port_counts: dict[tuple[str, str], int] = {}
         for edge in self.graph.get("edges", []):
@@ -118,75 +180,7 @@ class LogicGraphCanvasMixin:
 
     def _refresh_target_hints(self) -> None:
         """Explica visualmente qual referência de objeto percorre cada fluxo."""
-        creators = {"create_object", "create_prefab", "clone_object"}
-        nodes = {str(node.get("id")): node for node in self.graph.get("nodes", [])}
-        flow_next: dict[str, list[str]] = {}
-        explicit_targets: set[str] = set()
-        for edge in self.graph.get("edges", []):
-            source_id = str(edge.get("from_node", ""))
-            target_id = str(edge.get("to_node", ""))
-            source_item = self.node_items.get(source_id)
-            source_port = source_item.output_ports.get(str(edge.get("from_port", "next"))) if source_item else None
-            kind = source_port.data_type if source_port is not None else str(edge.get("kind", "flow"))
-            if kind == "flow":
-                flow_next.setdefault(source_id, []).append(target_id)
-            if kind == "object" and str(edge.get("to_port", "")) == "target":
-                explicit_targets.add(target_id)
-
-        implicit_sources: dict[str, set[str]] = {}
-
-        def spread(source_id: str, label: str) -> None:
-            pending = list(flow_next.get(source_id, []))
-            visited: set[str] = set()
-            while pending:
-                node_id = pending.pop(0)
-                if node_id in visited:
-                    continue
-                visited.add(node_id)
-                implicit_sources.setdefault(node_id, set()).add(label)
-                if str(nodes.get(node_id, {}).get("type", "")) in creators:
-                    continue
-                pending.extend(flow_next.get(node_id, []))
-
-        for node_id, node in nodes.items():
-            node_type = str(node.get("type", ""))
-            properties = node.get("properties", {})
-            if node_type == "create_object":
-                label = str(properties.get("name", "NovoObjeto"))
-                spread(node_id, label)
-            elif node_type == "create_prefab":
-                label = Path(str(properties.get("path", "Prefab"))).stem or "Prefab"
-                spread(node_id, label)
-            elif node_type == "clone_object":
-                spread(node_id, str(properties.get("name", "Cópia")) or "Cópia")
-            elif node_type == "event_object_created":
-                spread(node_id, "objeto recém-criado")
-
-        graph_target = str(self.graph.get("target", {}).get("value", "Player"))
-        for node_id, item in self.node_items.items():
-            node_type = str(nodes.get(node_id, {}).get("type", ""))
-            if node_type in creators:
-                properties = nodes[node_id].get("properties", {})
-                created_name = (
-                    Path(str(properties.get("path", ""))).stem
-                    if node_type == "create_prefab"
-                    else str(properties.get("name", ""))
-                ) or ("Prefab" if node_type == "create_prefab" else "Nova instância")
-                item.set_target_hint(f"NOVO ALVO → {created_name}", False)
-                continue
-            if "target" not in item.input_ports:
-                item.set_target_hint()
-                continue
-            if node_id in explicit_targets:
-                item.set_target_hint("ALVO → referência conectada", False)
-                continue
-            labels = implicit_sources.get(node_id, set())
-            if len(labels) == 1:
-                item.set_target_hint(f"ALVO IMPLÍCITO → {next(iter(labels))}", True)
-            elif len(labels) > 1:
-                item.set_target_hint("ALVO IMPLÍCITO → depende do fluxo", True)
-            else:
-                item.set_target_hint(f"ALVO ATUAL → {graph_target}", False)
+        refresh_target_hints(self.graph, self.node_items)
 
     @staticmethod
     def _connection_path(start: QPointF, end: QPointF) -> QPainterPath:
@@ -271,7 +265,7 @@ class LogicGraphCanvasMixin:
         if origin is None:
             return
         if target is None or target is origin:
-            self.cancel_connection()
+            self._create_node_from_connection(origin, scene_position)
             return
         if not self._ports_compatible(origin, target):
             self.message.emit("WARNING", "Portas incompatíveis: conecte fluxo com fluxo e valores do mesmo tipo")
@@ -295,23 +289,79 @@ class LogicGraphCanvasMixin:
             edge for edge in self.graph["edges"]
             if not (edge["to_node"] == destination.node.node_id and edge.get("to_port", "in") == destination.name)
         ]
-        self.graph["edges"].append({
+        edge = {
             "id": uuid.uuid4().hex,
             "from_node": source.node.node_id,
             "from_port": source.name,
             "to_node": destination.node.node_id,
             "to_port": destination.name,
             "kind": source.data_type,
-        })
+        }
+        self.graph["edges"].append(edge)
+        self.edge_added.emit(edge)
         self.cancel_connection(refresh=False)
+        self.refresh_connections()
+        self.mark_dirty()
+        self._update_validation()
+
+    def _create_node_from_connection(self, origin: LogicPortItem, position: QPointF) -> None:
+        """Offer compatible nodes when a wire is released on empty canvas."""
+        direction = "input" if origin.direction == "output" else "output"
+        choices: list[tuple[str, str, str]] = []
+        for node_type, definition in NODE_DEFINITIONS.items():
+            ports = node_port_definitions({"type": node_type, "properties": definition.get("properties", {})})
+            for port_name, data_type in ports.get(f"{direction}s", []):
+                if data_type == origin.data_type or "any" in {data_type, origin.data_type}:
+                    label = f"{definition.get('title', node_type)} — {port_name} ({data_type})"
+                    choices.append((label, node_type, port_name))
+        choices.sort(key=lambda value: value[0].casefold())
+        if not choices:
+            self.cancel_connection()
+            return
+
+        origin_dir = origin.direction
+        origin_node_id = origin.node.node_id
+        origin_port_name = origin.name
+        origin_data_type = origin.data_type
+
+        # Cancela a linha temporária e libera o mouse grab da cena ANTES do diálogo modal
+        self.cancel_connection(refresh=False)
+        self._release_scene_interaction()
+
+        selected, accepted = QInputDialog.getItem(
+            self, "Criar e conectar", "Nó compatível:", [item[0] for item in choices], 0, False
+        )
+        if not accepted:
+            return
+
+        _label, node_type, port_name = next(item for item in choices if item[0] == selected)
+        node = create_logic_node(node_type, (position.x(), position.y()))
+        self.graph["nodes"].append(node)
+        self._create_node_item(node)
+        self.node_added.emit(node)
+
+        source_node_id = origin_node_id if origin_dir == "output" else node["id"]
+        source_port = origin_port_name if origin_dir == "output" else port_name
+        dest_node_id = node["id"] if origin_dir == "output" else origin_node_id
+        dest_port = port_name if origin_dir == "output" else origin_port_name
+
+        edge = {
+            "id": uuid.uuid4().hex,
+            "from_node": source_node_id,
+            "from_port": source_port,
+            "to_node": dest_node_id,
+            "to_port": dest_port,
+            "kind": origin_data_type,
+        }
+        self.graph["edges"].append(edge)
+        self.edge_added.emit(edge)
         self.refresh_connections()
         self.mark_dirty()
         self._update_validation()
 
     def cancel_connection(self, refresh: bool = True) -> None:
         if self._connection_preview is not None and self._connection_preview.scene() is self.scene:
-            self.scene.removeItem(self._connection_preview)
-        self._connection_preview = None
+            self._remove_scene_item(self._connection_preview)
         self._connection_origin = None
         self._connection_candidate = None
         for item in self.node_items.values():
@@ -345,14 +395,16 @@ class LogicGraphCanvasMixin:
             edge for edge in self.graph["edges"]
             if not (edge["to_node"] == target.node_id and edge.get("to_port", "in") == target_port.name)
         ]
-        self.graph["edges"].append({
+        edge = {
             "id": uuid.uuid4().hex,
             "from_node": source.node_id,
             "from_port": source_port.name,
             "to_node": target.node_id,
             "to_port": target_port.name,
             "kind": "flow",
-        })
+        }
+        self.graph["edges"].append(edge)
+        self.edge_added.emit(edge)
         self.refresh_connections()
         self.mark_dirty()
         self._update_validation()
@@ -365,58 +417,26 @@ class LogicGraphCanvasMixin:
         if not node_ids and not edge_ids and not group_ids and not comment_ids:
             return
         self.graph["nodes"] = [node for node in self.graph["nodes"] if node["id"] not in node_ids]
+        deleted_nodes = [item.node for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)]
         self.graph["edges"] = [
             edge for edge in self.graph["edges"]
             if edge["id"] not in edge_ids and edge["from_node"] not in node_ids and edge["to_node"] not in node_ids
         ]
         for node_id in node_ids:
             item = self.node_items.pop(node_id, None)
-            if item is not None:
-                self.scene.removeItem(item)
+            self._remove_scene_item(item)
         layout = self.graph.setdefault("editor", {"groups": [], "comments": []})
         layout["groups"] = [group for group in layout.get("groups", []) if str(group.get("id")) not in group_ids]
         layout["comments"] = [comment for comment in layout.get("comments", []) if str(comment.get("id")) not in comment_ids]
         for group_id in group_ids:
             item = self.group_items.pop(group_id, None)
-            if item is not None:
-                self.scene.removeItem(item)
+            self._remove_scene_item(item)
         for comment_id in comment_ids:
             item = self.comment_items.pop(comment_id, None)
-            if item is not None:
-                self.scene.removeItem(item)
+            self._remove_scene_item(item)
         self.refresh_connections()
-        self.mark_dirty()
-        self._update_validation()
-
-    def duplicate_selected(self) -> None:
-        selected = [item for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)]
-        if not selected:
-            return
-        old_ids = {item.node_id for item in selected}
-        id_map: dict[str, str] = {}
-        copies: list[dict[str, Any]] = []
-        for item in selected:
-            node = deepcopy(item.node)
-            new_id = uuid.uuid4().hex
-            id_map[item.node_id] = new_id
-            node["id"] = new_id
-            node["position"] = [float(item.pos().x()) + 32.0, float(item.pos().y()) + 32.0]
-            copies.append(node)
-        copied_edges = []
-        for edge in self.graph["edges"]:
-            if edge["from_node"] not in old_ids or edge["to_node"] not in old_ids:
-                continue
-            copied = deepcopy(edge)
-            copied["id"] = uuid.uuid4().hex
-            copied["from_node"] = id_map[edge["from_node"]]
-            copied["to_node"] = id_map[edge["to_node"]]
-            copied_edges.append(copied)
-        self.scene.clearSelection()
-        self.graph["nodes"].extend(copies)
-        self.graph["edges"].extend(copied_edges)
-        for node in copies:
-            self._create_node_item(node).setSelected(True)
-        self.refresh_connections()
+        for node in deleted_nodes:
+            self.node_deleted.emit(node)
         self.mark_dirty()
         self._update_validation()
 
@@ -457,3 +477,10 @@ class LogicGraphCanvasMixin:
         self.debug_command.emit("sync")
         self.message.emit("INFO", f"Breakpoint {'adicionado' if enabled else 'removido'}: {item.node.get('title', item.node_id)}")
 
+    def add_comment_box(self) -> None:
+        from editor.widgets.logic_graph.editor_mixins.layout_helpers import add_comment_box as _add_comment_box
+        _add_comment_box(self)
+
+    def auto_arrange_nodes(self) -> None:
+        from editor.widgets.logic_graph.editor_mixins.layout_helpers import auto_arrange_nodes as _auto_arrange_nodes
+        _auto_arrange_nodes(self)

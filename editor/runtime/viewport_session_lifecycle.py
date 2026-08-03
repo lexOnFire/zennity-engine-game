@@ -13,8 +13,15 @@ class ViewportSessionLifecycleMixin:
     """Isola renderização, step, sync_stats e teardown da ViewportSession."""
 
     def step(self) -> None:
+        import time
+        t_start = time.perf_counter()
+        if not hasattr(self, "frame_categories"):
+            self.frame_categories = {"physics": 0.0, "scripts": 0.0, "animation": 0.0, "audio": 0.0, "rendering": 0.0, "overhead": 0.0}
+            self.frame_accumulators = {"physics": 0.0, "scripts": 0.0, "animation": 0.0, "audio": 0.0, "rendering": 0.0, "overhead": 0.0, "count": 0}
+
         width, height = self.screen.get_size()
         dt = self.clock.get_time() / 1000.0
+        t_scripts = time.perf_counter()
         if self.playing and not self.paused:
             self.runtime_initializer.start_spawned_objects()
             keys = self.pygame.key.get_pressed()
@@ -38,7 +45,7 @@ class ViewportSessionLifecycleMixin:
             )
             self.paused = self.paused or debug_pause_requested
             self.restart_requested = (
-                self.script_updater.update(
+                self.logic_event_updater.update(
                     input_state,
                     dt,
                     self.velocities_y,
@@ -55,12 +62,16 @@ class ViewportSessionLifecycleMixin:
                     self.grounded,
                     self.active_contacts,
                     self.stop_audio_sources,
-                    self.stop_scripts,
+                    self.stop_logic,
                     self.physics_scheduler.reset,
-                    self.restart_scripts,
+                    self.restart_logic,
                     self.start_audio_sources,
                 )
                 self.restart_requested = False
+            
+            self.frame_categories["scripts"] = (time.perf_counter() - t_scripts) * 1000.0
+            t_physics = time.perf_counter()
+            
             physics_steps = self.physics_scheduler.consume(dt)
             motion_axes_by_name = {
                 name: obj.pop("_logic_motion_axes", set()) for name, obj in self.objects.items()
@@ -74,16 +85,28 @@ class ViewportSessionLifecycleMixin:
                 self.fixed_physics_dt,
             )
             self.contact_processor.process()
+            
+            self.frame_categories["physics"] = (time.perf_counter() - t_physics) * 1000.0
+            t_anim = time.perf_counter()
+            
             self.animation_updater.update(dt)
-            for obj in self.objects.values():
+            
+            self.frame_categories["animation"] = (time.perf_counter() - t_anim) * 1000.0
+            
+        for obj in self.objects.values():
                 scroll = obj.get("_texture_scroll")
                 if not isinstance(scroll, dict) or not scroll.get("enabled", False):
                     continue
                 factor = max(0.0, float(scroll.get("parallax", 1.0)))
                 scroll["offset_x"] = float(scroll.get("offset_x", 0.0)) + float(scroll.get("speed_x", 0.0)) * factor * dt
                 scroll["offset_y"] = float(scroll.get("offset_y", 0.0)) + float(scroll.get("speed_y", 0.0)) * factor * dt
+                
+        if hasattr(self, "frame_categories"):
+            self.frame_categories["overhead"] = (time.perf_counter() - t_start) * 1000.0 - sum(self.frame_categories.values())
 
     def render(self) -> None:
+        import time
+        t_render = time.perf_counter()
         width, height = self.screen.get_size()
         bg_color = (22, 24, 31)
         active_cam = self.game_camera()
@@ -102,7 +125,7 @@ class ViewportSessionLifecycleMixin:
                 active_cam["y"] = float(tgt["y"])
 
         self.screen.fill(bg_color)
-        if self.view_mode == "scene":
+        if self.view_mode == "scene" and self.show_grid:
             self.overlay_renderer.draw_scene(
                 self.screen,
                 self.objects,
@@ -129,23 +152,32 @@ class ViewportSessionLifecycleMixin:
         if self.playing and self.hud_entries:
             self.overlay_renderer.draw_hud(self.screen, self.hud_entries, width, height)
         self.pygame.display.flip()
+        
+        if hasattr(self, "frame_categories"):
+            self.frame_categories["rendering"] = (time.perf_counter() - t_render) * 1000.0
+            for k, v in self.frame_categories.items():
+                self.frame_accumulators[k] += v
+            self.frame_accumulators["count"] += 1
 
     def sync_stats(self) -> None:
         now_ms = self.pygame.time.get_ticks()
+        # A UI do editor não precisa receber uma cópia completa da cena a cada
+        # frame. 10 Hz mantém Inspector/Hierarchy fluidos sem saturar o IPC/Qt.
+        if self.playing and now_ms - self.last_runtime_sync_ms >= 100:
+            self.last_runtime_sync_ms = now_ms
+            _send(
+                self.events,
+                {
+                    "type": "runtime_objects",
+                    "objects": self.runtime_object_snapshot(),
+                    "selected": self.selected_name,
+                },
+            )
         if now_ms - self.last_stats_ms >= 500:
             self.last_stats_ms = now_ms
             runtime_mode = "PAUSE" if self.paused else ("PLAY" if self.playing else "EDIT")
             player_name, _player = self.controlled_object()
             world_stats = self.runtime_world.stats()
-            if self.playing:
-                _send(
-                    self.events,
-                    {
-                        "type": "runtime_objects",
-                        "objects": self.runtime_object_snapshot(),
-                        "selected": self.selected_name,
-                    },
-                )
             _send(
                 self.events,
                 {
@@ -164,6 +196,19 @@ class ViewportSessionLifecycleMixin:
                     "pooled": world_stats["pooled"],
                 },
             )
+            
+            if hasattr(self, "frame_accumulators") and self.frame_accumulators["count"] > 0:
+                count = self.frame_accumulators["count"]
+                avg_cats = {k: v / count for k, v in self.frame_accumulators.items() if k != "count"}
+                frame_time_ms = sum(avg_cats.values())
+                for k in self.frame_accumulators:
+                    self.frame_accumulators[k] = 0.0 if k != "count" else 0
+                _send(self.events, {
+                    "type": "runtime_metrics",
+                    "fps": self.clock.get_fps(),
+                    "frame_time_ms": frame_time_ms,
+                    "categories": avg_cats
+                })
 
     def teardown(self) -> bool:
         """Libera deterministicamente todos os recursos pertencentes à sessão."""
@@ -172,7 +217,7 @@ class ViewportSessionLifecycleMixin:
         self._teardown_complete = True
         self.running = False
 
-        self.stop_scripts()
+        self.stop_logic()
         self.audio_system.shutdown()
         tuple(self.command_queue.drain())
         self.native_ui.clear_caches()

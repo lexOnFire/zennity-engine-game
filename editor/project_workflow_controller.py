@@ -21,17 +21,19 @@ class ProjectWorkflowController:
         self.host = host
         self.project_root = (project_root or Path.cwd()).resolve()
 
-    def save_scene(self) -> bool:
+    def save_scene(self, *, save_as: bool = False) -> bool:
         h = self.host
-        filename, _ = QFileDialog.getSaveFileName(
-            h,
-            "Salvar cena",
-            str(h._current_scene_path or "Untitled.zscene"),
-            self.SCENE_FILTER,
-        )
-        if not filename:
-            return False
-        path = Path(filename)
+        path = Path(h._current_scene_path) if h._current_scene_path else None
+        if save_as or path is None:
+            filename, _ = QFileDialog.getSaveFileName(
+                h,
+                "Salvar cena como" if save_as else "Salvar cena",
+                str(path or self.project_root / "Untitled.zscene"),
+                self.SCENE_FILTER,
+            )
+            if not filename:
+                return False
+            path = Path(filename)
         try:
             payload = h._scene_persistence.save(
                 path, h._scene_snapshot, h._scene_document
@@ -41,9 +43,13 @@ class ProjectWorkflowController:
             return False
         h._scene_document = payload
         h._current_scene_path = path
-        h.statusBar().showMessage(f"Cena salva: {filename}")
-        h._log("INFO", f"Cena salva: {filename}")
+        h.statusBar().showMessage(f"Cena salva: {path}")
+        h._log("INFO", f"Cena salva: {path}")
         return True
+
+    def save_scene_as(self) -> bool:
+        """Always ask for a destination, preserving Save for in-place updates."""
+        return self.save_scene(save_as=True)
 
     def collect_logic_variables(self, scope: str) -> dict[str, dict[str, Any]]:
         return self.host._scene_persistence.collect_logic_variables(scope)

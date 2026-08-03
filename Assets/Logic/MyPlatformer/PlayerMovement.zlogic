@@ -1,0 +1,931 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "Player Movement + Coins + Enemy + Flag (MyPlatformer)",
+  "target": {
+    "type": "name",
+    "value": "Player"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "update",
+      "type": "event_update",
+      "title": "Event Update",
+      "category": "Events",
+      "position": [
+        0.0,
+        0.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 100.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "axis",
+      "type": "input_axis",
+      "title": "Read Key Axis",
+      "category": "Input",
+      "position": [
+        0.0,
+        160.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 120.0
+      },
+      "properties": {
+        "negative": "A",
+        "positive": "D"
+      }
+    },
+    {
+      "id": "move_node",
+      "type": "move",
+      "title": "Move",
+      "category": "Movement",
+      "position": [
+        260.0,
+        0.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 120.0
+      },
+      "properties": {
+        "speed": 180.0
+      }
+    },
+    {
+      "id": "jump_key",
+      "type": "event_key_pressed",
+      "title": "Event Key Pressed",
+      "category": "Events",
+      "position": [
+        0.0,
+        320.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 100.0
+      },
+      "properties": {
+        "key": "SPACE"
+      }
+    },
+    {
+      "id": "grounded",
+      "type": "is_grounded",
+      "title": "Is Grounded",
+      "category": "Action",
+      "position": [
+        260.0,
+        320.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 120.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "jump_force",
+      "type": "number_value",
+      "title": "Number Value",
+      "category": "Math",
+      "position": [
+        260.0,
+        460.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 180.0,
+        "height": 100.0
+      },
+      "properties": {
+        "value": 420.0
+      }
+    },
+    {
+      "id": "jump_node",
+      "type": "jump",
+      "title": "Jump",
+      "category": "Movement",
+      "position": [
+        520.0,
+        320.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 180.0,
+        "height": 100.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "trigger",
+      "type": "event_trigger_enter",
+      "title": "Event Trigger Enter",
+      "category": "Events",
+      "position": [
+        0.0,
+        620.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 100.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "other_tag",
+      "type": "get_tag",
+      "title": "Get Tag",
+      "category": "Objects",
+      "position": [
+        260.0,
+        660.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 180.0,
+        "height": 100.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "is_coin",
+      "type": "compare_text",
+      "title": "Compare Text",
+      "category": "Logic",
+      "position": [
+        520.0,
+        620.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 120.0
+      },
+      "properties": {
+        "operator": "==",
+        "value": "Coin"
+      }
+    },
+    {
+      "id": "score_get",
+      "type": "get_variable",
+      "title": "Get Variable",
+      "category": "Variables",
+      "position": [
+        780.0,
+        560.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 100.0
+      },
+      "properties": {
+        "name": "score",
+        "scope": "scene"
+      }
+    },
+    {
+      "id": "one_value",
+      "type": "number_value",
+      "title": "Number Value",
+      "category": "Math",
+      "position": [
+        780.0,
+        680.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 160.0,
+        "height": 100.0
+      },
+      "properties": {
+        "value": 1.0
+      }
+    },
+    {
+      "id": "score_add",
+      "type": "add_number",
+      "title": "Add Number",
+      "category": "Math",
+      "position": [
+        1020.0,
+        600.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 160.0,
+        "height": 100.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "score_set",
+      "type": "set_variable",
+      "title": "Set Variable",
+      "category": "Variables",
+      "position": [
+        1260.0,
+        560.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 100.0
+      },
+      "properties": {
+        "name": "score",
+        "scope": "scene",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "coins_prefix",
+      "type": "text_value",
+      "title": "Text Value",
+      "category": "Text",
+      "position": [
+        1520.0,
+        460.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 100.0
+      },
+      "properties": {
+        "value": "Moedas: "
+      }
+    },
+    {
+      "id": "score_to_text",
+      "type": "to_text",
+      "title": "To Text",
+      "category": "Text",
+      "position": [
+        1520.0,
+        700.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 180.0,
+        "height": 100.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "coins_join",
+      "type": "join_text",
+      "title": "Join Text",
+      "category": "Text",
+      "position": [
+        1780.0,
+        580.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 180.0,
+        "height": 100.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "destroy_coin",
+      "type": "destroy_object",
+      "title": "Destroy Object",
+      "category": "Action",
+      "position": [
+        1260.0,
+        700.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 100.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "coins_label",
+      "type": "set_ui_text",
+      "title": "Atualizar texto da UI",
+      "category": "UI",
+      "position": [
+        1520.0,
+        560.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 120.0
+      },
+      "properties": {
+        "object": "CoinsLabel",
+        "text": ""
+      }
+    },
+    {
+      "id": "collision",
+      "type": "event_collision_enter",
+      "title": "Event Collision Enter",
+      "category": "Events",
+      "position": [
+        0.0,
+        900.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 100.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "col_other_tag",
+      "type": "get_tag",
+      "title": "Get Tag",
+      "category": "Objects",
+      "position": [
+        260.0,
+        940.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 180.0,
+        "height": 100.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "is_enemy",
+      "type": "compare_text",
+      "title": "Compare Text",
+      "category": "Logic",
+      "position": [
+        520.0,
+        900.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 120.0
+      },
+      "properties": {
+        "operator": "==",
+        "value": "Enemy"
+      }
+    },
+    {
+      "id": "hp_get",
+      "type": "get_variable",
+      "title": "Get Variable",
+      "category": "Variables",
+      "position": [
+        780.0,
+        840.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 100.0
+      },
+      "properties": {
+        "name": "hp",
+        "scope": "scene"
+      }
+    },
+    {
+      "id": "dmg_value",
+      "type": "number_value",
+      "title": "Number Value",
+      "category": "Math",
+      "position": [
+        780.0,
+        960.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 160.0,
+        "height": 100.0
+      },
+      "properties": {
+        "value": -20.0
+      }
+    },
+    {
+      "id": "hp_sub",
+      "type": "add_number",
+      "title": "Add Number",
+      "category": "Math",
+      "position": [
+        1020.0,
+        880.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 160.0,
+        "height": 100.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "hp_set",
+      "type": "set_variable",
+      "title": "Set Variable",
+      "category": "Variables",
+      "position": [
+        1260.0,
+        840.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 100.0
+      },
+      "properties": {
+        "name": "hp",
+        "scope": "scene",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "hp_label",
+      "type": "set_ui_progress_bar",
+      "title": "Atualizar barra da UI",
+      "category": "UI",
+      "position": [
+        1520.0,
+        840.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 120.0
+      },
+      "properties": {
+        "object": "HPBar",
+        "value": 100.0,
+        "max_value": 100.0
+      }
+    },
+    {
+      "id": "hp_dead_check",
+      "type": "compare_number",
+      "title": "Compare Number",
+      "category": "Logic",
+      "position": [
+        1260.0,
+        980.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 120.0
+      },
+      "properties": {
+        "operator": "<=",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "restart",
+      "type": "restart_scene",
+      "title": "Restart Scene",
+      "category": "Action",
+      "position": [
+        1520.0,
+        980.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 100.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "is_flag",
+      "type": "compare_text",
+      "title": "Compare Text",
+      "category": "Logic",
+      "position": [
+        520.0,
+        1120.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 120.0
+      },
+      "properties": {
+        "operator": "==",
+        "value": "Flag"
+      }
+    },
+    {
+      "id": "win_text",
+      "type": "set_ui_text",
+      "title": "Atualizar texto da UI",
+      "category": "UI",
+      "position": [
+        780.0,
+        1120.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 120.0
+      },
+      "properties": {
+        "object": "TitleLabel",
+        "text": "Você venceu!"
+      }
+    },
+    {
+      "id": "win_log",
+      "type": "log_message",
+      "title": "Log Message",
+      "category": "Action",
+      "position": [
+        1040.0,
+        1120.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 100.0
+      },
+      "properties": {
+        "text": "Player alcançou a bandeira -- vitória!"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_update_axis",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "axis",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_axis_move",
+      "from_node": "axis",
+      "from_port": "next",
+      "to_node": "move_node",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_axisval_move",
+      "from_node": "axis",
+      "from_port": "value",
+      "to_node": "move_node",
+      "to_port": "value",
+      "kind": "number",
+      "order": 1
+    },
+    {
+      "id": "e_jumpkey_grounded",
+      "from_node": "jump_key",
+      "from_port": "next",
+      "to_node": "grounded",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_grounded_jump",
+      "from_node": "grounded",
+      "from_port": "true",
+      "to_node": "jump_node",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_force_jump",
+      "from_node": "jump_force",
+      "from_port": "value",
+      "to_node": "jump_node",
+      "to_port": "force",
+      "kind": "number",
+      "order": 0
+    },
+    {
+      "id": "e_triggerother_tag",
+      "from_node": "trigger",
+      "from_port": "other",
+      "to_node": "other_tag",
+      "to_port": "target",
+      "kind": "object",
+      "order": 0
+    },
+    {
+      "id": "e_tag_iscoin",
+      "from_node": "other_tag",
+      "from_port": "value",
+      "to_node": "is_coin",
+      "to_port": "value",
+      "kind": "text",
+      "order": 0
+    },
+    {
+      "id": "e_trigger_iscoin",
+      "from_node": "trigger",
+      "from_port": "next",
+      "to_node": "is_coin",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    },
+    {
+      "id": "e_iscoin_scoreget",
+      "from_node": "is_coin",
+      "from_port": "true",
+      "to_node": "score_get",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_scoreget_add_a",
+      "from_node": "score_get",
+      "from_port": "value",
+      "to_node": "score_add",
+      "to_port": "a",
+      "kind": "number",
+      "order": 0
+    },
+    {
+      "id": "e_one_add_b",
+      "from_node": "one_value",
+      "from_port": "value",
+      "to_node": "score_add",
+      "to_port": "b",
+      "kind": "number",
+      "order": 1
+    },
+    {
+      "id": "e_scoreget_scoreset",
+      "from_node": "score_get",
+      "from_port": "next",
+      "to_node": "score_set",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_add_scoreset",
+      "from_node": "score_add",
+      "from_port": "value",
+      "to_node": "score_set",
+      "to_port": "value",
+      "kind": "number",
+      "order": 1
+    },
+    {
+      "id": "e_scoreset_destroy",
+      "from_node": "score_set",
+      "from_port": "next",
+      "to_node": "destroy_coin",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_triggerother_destroy",
+      "from_node": "trigger",
+      "from_port": "other",
+      "to_node": "destroy_coin",
+      "to_port": "target",
+      "kind": "object",
+      "order": 1
+    },
+    {
+      "id": "e_scoreset_coinslabel",
+      "from_node": "score_set",
+      "from_port": "next",
+      "to_node": "coins_label",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    },
+    {
+      "id": "e_scoreadd_totext",
+      "from_node": "score_add",
+      "from_port": "value",
+      "to_node": "score_to_text",
+      "to_port": "value",
+      "kind": "number",
+      "order": 0
+    },
+    {
+      "id": "e_prefix_join_a",
+      "from_node": "coins_prefix",
+      "from_port": "value",
+      "to_node": "coins_join",
+      "to_port": "a",
+      "kind": "text",
+      "order": 0
+    },
+    {
+      "id": "e_totext_join_b",
+      "from_node": "score_to_text",
+      "from_port": "value",
+      "to_node": "coins_join",
+      "to_port": "b",
+      "kind": "text",
+      "order": 1
+    },
+    {
+      "id": "e_join_coinslabel",
+      "from_node": "coins_join",
+      "from_port": "value",
+      "to_node": "coins_label",
+      "to_port": "text",
+      "kind": "text",
+      "order": 0
+    },
+    {
+      "id": "e_collision_tag",
+      "from_node": "collision",
+      "from_port": "other",
+      "to_node": "col_other_tag",
+      "to_port": "target",
+      "kind": "object",
+      "order": 0
+    },
+    {
+      "id": "e_collision_isenemy",
+      "from_node": "collision",
+      "from_port": "next",
+      "to_node": "is_enemy",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_coltag_isenemy",
+      "from_node": "col_other_tag",
+      "from_port": "value",
+      "to_node": "is_enemy",
+      "to_port": "value",
+      "kind": "text",
+      "order": 1
+    },
+    {
+      "id": "e_isenemy_hpget",
+      "from_node": "is_enemy",
+      "from_port": "true",
+      "to_node": "hp_get",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_hpget_sub_a",
+      "from_node": "hp_get",
+      "from_port": "value",
+      "to_node": "hp_sub",
+      "to_port": "a",
+      "kind": "number",
+      "order": 0
+    },
+    {
+      "id": "e_dmg_sub_b",
+      "from_node": "dmg_value",
+      "from_port": "value",
+      "to_node": "hp_sub",
+      "to_port": "b",
+      "kind": "number",
+      "order": 1
+    },
+    {
+      "id": "e_hpget_hpset",
+      "from_node": "hp_get",
+      "from_port": "next",
+      "to_node": "hp_set",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_hpsub_hpset",
+      "from_node": "hp_sub",
+      "from_port": "value",
+      "to_node": "hp_set",
+      "to_port": "value",
+      "kind": "number",
+      "order": 1
+    },
+    {
+      "id": "e_hpset_hplabel",
+      "from_node": "hp_set",
+      "from_port": "next",
+      "to_node": "hp_label",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_hpsub_hplabel",
+      "from_node": "hp_sub",
+      "from_port": "value",
+      "to_node": "hp_label",
+      "to_port": "value",
+      "kind": "number",
+      "order": 1
+    },
+    {
+      "id": "e_hplabel_deadcheck",
+      "from_node": "hp_label",
+      "from_port": "next",
+      "to_node": "hp_dead_check",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_hpsub_deadcheck",
+      "from_node": "hp_sub",
+      "from_port": "value",
+      "to_node": "hp_dead_check",
+      "to_port": "value",
+      "kind": "number",
+      "order": 1
+    },
+    {
+      "id": "e_deadcheck_restart",
+      "from_node": "hp_dead_check",
+      "from_port": "true",
+      "to_node": "restart",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_trigger_isflag",
+      "from_node": "trigger",
+      "from_port": "next",
+      "to_node": "is_flag",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 2
+    },
+    {
+      "id": "e_tag_isflag",
+      "from_node": "other_tag",
+      "from_port": "value",
+      "to_node": "is_flag",
+      "to_port": "value",
+      "kind": "text",
+      "order": 1
+    },
+    {
+      "id": "e_isflag_wintext",
+      "from_node": "is_flag",
+      "from_port": "true",
+      "to_node": "win_text",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_wintext_winlog",
+      "from_node": "win_text",
+      "from_port": "next",
+      "to_node": "win_log",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    }
+  ]
+}

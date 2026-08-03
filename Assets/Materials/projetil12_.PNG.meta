@@ -1,0 +1,12 @@
+{
+  "guid": "ac6d8969-b457-4e34-ae9d-9d227f8abd1e",
+  "uuid": "ac6d8969-b457-4e34-ae9d-9d227f8abd1e",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/projetil12_.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "8f77e70de2974da0d58b7c69646c3cb3c1a3448e5bf682034027081210154a83"
+}

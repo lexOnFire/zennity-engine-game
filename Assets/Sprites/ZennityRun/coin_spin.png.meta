@@ -1,0 +1,12 @@
+{
+  "guid": "d092831d-0ec1-49e5-9b4b-232d854a9407",
+  "uuid": "d092831d-0ec1-49e5-9b4b-232d854a9407",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Sprites/ZennityRun/coin_spin.png",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "a9d05e27719d253bf4dadcd8ced3f9135d5913136cf5b9379ef52b1ef548b99f"
+}

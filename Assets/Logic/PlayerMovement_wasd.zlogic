@@ -1,7 +1,7 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
-  "enabled": true,
+  "enabled": false,
   "name": "PlayerMovement",
   "target": {
     "type": "name",
@@ -30,13 +30,13 @@
       "title": "On Update",
       "category": "Events",
       "position": [
-        80.0,
-        80.0
+        120.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 134.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {}
     },
@@ -46,13 +46,13 @@
       "title": "Read Input Axis",
       "category": "Movement",
       "position": [
-        370.0,
-        80.0
+        440.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 134.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "negative": "A",
@@ -65,13 +65,13 @@
       "title": "If / Else",
       "category": "Logic",
       "position": [
-        660.0,
-        80.0
+        760.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 134.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "condition": "axis != 0"
@@ -83,34 +83,16 @@
       "title": "Move",
       "category": "Movement",
       "position": [
-        950.0,
-        80.0
+        1080.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 134.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "speed": 220.0
-      }
-    },
-    {
-      "id": "idle",
-      "type": "play_animation",
-      "title": "Play Animation",
-      "category": "Action",
-      "position": [
-        950.0,
-        250.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 134.0
-      },
-      "properties": {
-        "state": "Idle"
       }
     },
     {
@@ -119,13 +101,13 @@
       "title": "Key Pressed Now?",
       "category": "Condition",
       "position": [
-        370.0,
-        250.0
+        440.0,
+        300.0
       ],
       "editor": {
-        "collapsed": true,
-        "width": 210.0,
-        "height": 146.0
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
         "key": "SPACE"
@@ -137,53 +119,30 @@
       "title": "Create Object",
       "category": "Objects",
       "position": [
-        660.0,
-        250.0
+        760.0,
+        300.0
       ],
       "editor": {
         "collapsed": true,
-        "width": 210.0,
-        "height": 190.0
+        "width": 220.0,
+        "height": 240.0
       },
       "properties": {
         "name": "Projectile",
-        "x": 0.0,
-        "y": 0.0,
-        "width": 10,
-        "height": 20,
+        "x": 5,
+        "y": -55,
+        "width": 50,
+        "height": 15,
         "color": "#ffd166",
-        "texture": "",
+        "texture": "Assets/Materials/projetil1_.PNG",
         "tag": "Projectile",
         "relative": true,
         "inherit_source": false,
         "inherit_logic": false,
-        "lifetime": 3.0,
-        "max_instances": 20,
+        "lifetime": 3,
+        "max_instances": 100,
         "max_distance": 1200.0,
         "use_pool": true
-      }
-    },
-    {
-      "id": "0a2f66d09e4d425185bc0ab938c3dda8",
-      "type": "start_continuous_motion",
-      "title": "Start Continuous Motion",
-      "category": "Position",
-      "position": [
-        950.0,
-        420.0
-      ],
-      "editor": {
-        "collapsed": true,
-        "width": 210.0,
-        "height": 168.0
-      },
-      "properties": {
-        "movement": "Movement",
-        "x": 0,
-        "y": -420,
-        "space": "global",
-        "acceleration": 0.0,
-        "deceleration": 0.0
       }
     },
     {
@@ -192,13 +151,13 @@
       "title": "Read Input Axis",
       "category": "Movement",
       "position": [
-        370.0,
-        420.0
+        440.0,
+        500.0
       ],
       "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 134.0
+        "collapsed": true,
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "negative": "W",
@@ -211,13 +170,13 @@
       "title": "If / Else",
       "category": "Logic",
       "position": [
-        660.0,
-        420.0
+        760.0,
+        500.0
       ],
       "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 134.0
+        "collapsed": true,
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "condition": "axis != 0"
@@ -229,13 +188,13 @@
       "title": "Move By",
       "category": "Position",
       "position": [
-        1240.0,
-        80.0
+        1400.0,
+        500.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 168.0
+        "width": 220.0,
+        "height": 212.0
       },
       "properties": {
         "x": 0,
@@ -248,13 +207,13 @@
       "title": "Compare Number",
       "category": "Condition",
       "position": [
-        950.0,
-        590.0
+        1080.0,
+        500.0
       ],
       "editor": {
         "collapsed": true,
-        "width": 210.0,
-        "height": 146.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
         "operator": ">",
@@ -267,13 +226,13 @@
       "title": "Compare Number",
       "category": "Condition",
       "position": [
-        950.0,
-        760.0
+        1080.0,
+        700.0
       ],
       "editor": {
         "collapsed": true,
-        "width": 210.0,
-        "height": 146.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
         "operator": "<",
@@ -286,17 +245,113 @@
       "title": "Move By",
       "category": "Position",
       "position": [
-        1240.0,
-        250.0
+        1400.0,
+        700.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 168.0
+        "width": 220.0,
+        "height": 212.0
       },
       "properties": {
         "x": 0,
         "y": -220
+      }
+    },
+    {
+      "id": "b5f2051af56a4a67bc28e5e9f913a4ba",
+      "type": "start_continuous_motion",
+      "title": "Start Continuous Motion",
+      "category": "Position",
+      "position": [
+        1400.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 220.0,
+        "height": 212.0
+      },
+      "properties": {
+        "movement": "Movement",
+        "x": 0.0,
+        "y": -400,
+        "space": "global",
+        "acceleration": 0,
+        "deceleration": 0.0
+      }
+    },
+    {
+      "id": "c92e37facdb64a3ebbf8f8c79f084fe8",
+      "type": "rotate",
+      "title": "Girar",
+      "category": "Movement",
+      "position": [
+        1080.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "degrees": -90,
+        "speed": -90.0
+      }
+    },
+    {
+      "id": "541a38b8fd554b4a9a6b27989e1d90c4",
+      "type": "play_animation_asset",
+      "title": "Tocar Animação",
+      "category": "Action",
+      "position": [
+        1400.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "path": "Assets/Animations/nave_Idle.zanim"
+      }
+    },
+    {
+      "id": "b704cc00376149c9989f7fbac10a528e",
+      "type": "play_animation_asset",
+      "title": "Tocar Animação",
+      "category": "Action",
+      "position": [
+        1720.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "path": "Assets/Animations/nave_Idle.zanim"
+      }
+    },
+    {
+      "id": "5936f0f2c9c34f73b5f2cc79ac0edd3a",
+      "type": "play_animation_asset",
+      "title": "Tocar Animação",
+      "category": "Action",
+      "position": [
+        1720.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "path": "Assets/Animations/nave_Idle.zanim"
       }
     }
   ],
@@ -311,37 +366,10 @@
       "order": 0
     },
     {
-      "id": "e4",
-      "from_node": "moving",
-      "from_port": "false",
-      "to_node": "idle",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 3
-    },
-    {
       "id": "e5",
       "from_node": "update",
       "from_port": "next",
       "to_node": "space",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 4
-    },
-    {
-      "id": "3bd37abec63c43a79bd9a8be5997cd85",
-      "from_node": "0d60c09c535445f0b35f94fd8e6d3747",
-      "from_port": "next",
-      "to_node": "0a2f66d09e4d425185bc0ab938c3dda8",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 6
-    },
-    {
-      "id": "aede7dbe58d9466c86f5ca61b22b977b",
-      "from_node": "space",
-      "from_port": "true",
-      "to_node": "0d60c09c535445f0b35f94fd8e6d3747",
       "to_port": "in",
       "kind": "flow",
       "order": 4
@@ -417,6 +445,60 @@
       "to_port": "in",
       "kind": "flow",
       "order": 12
+    },
+    {
+      "id": "1f4120e967cc4270b8d623a88e779475",
+      "from_node": "0d60c09c535445f0b35f94fd8e6d3747",
+      "from_port": "next",
+      "to_node": "c92e37facdb64a3ebbf8f8c79f084fe8",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 12
+    },
+    {
+      "id": "d077bbcf4fac47979178e6f733c15a4e",
+      "from_node": "move",
+      "from_port": "next",
+      "to_node": "541a38b8fd554b4a9a6b27989e1d90c4",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 13
+    },
+    {
+      "id": "e96c3abb1e6b44a4991b0e99d95ac0fc",
+      "from_node": "09cc189c00fb4f2088fdd99bcf0d0c36",
+      "from_port": "next",
+      "to_node": "b704cc00376149c9989f7fbac10a528e",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 14
+    },
+    {
+      "id": "1f49419ec75e417aa9042aabdaf89a83",
+      "from_node": "ee7b7d296f0e4258af8d5aabe598f96d",
+      "from_port": "next",
+      "to_node": "5936f0f2c9c34f73b5f2cc79ac0edd3a",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 15
+    },
+    {
+      "id": "97fd35f29b4945b69bed09e257b63688",
+      "from_node": "c92e37facdb64a3ebbf8f8c79f084fe8",
+      "from_port": "next",
+      "to_node": "b5f2051af56a4a67bc28e5e9f913a4ba",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 14
+    },
+    {
+      "id": "b1430d4851744a8dbe48c38017821b37",
+      "from_node": "space",
+      "from_port": "true",
+      "to_node": "0d60c09c535445f0b35f94fd8e6d3747",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 15
     }
   ]
 }

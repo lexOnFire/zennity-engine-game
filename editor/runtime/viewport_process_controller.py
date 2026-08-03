@@ -22,6 +22,7 @@ class ViewportProcessController:
         self.commands = ViewportCommandBus(command_queue)
         self.process = process
         self._shutdown_requested = False
+        self._queues_closed = False
 
     @classmethod
     def create(cls, context: Any) -> "ViewportProcessController":
@@ -65,9 +66,22 @@ class ViewportProcessController:
             self._shutdown_requested = True
 
         process = self.process
-        if process is None or not process.is_alive():
+        if process is not None and process.is_alive():
+            process.join(timeout=graceful_timeout)
+            if process.is_alive():
+                process.terminate()
+                process.join(timeout=kill_timeout)
+        self._close_queues()
+
+    def _close_queues(self) -> None:
+        """Stop multiprocessing feeder threads after the child has exited."""
+        if self._queues_closed:
             return
-        process.join(timeout=graceful_timeout)
-        if process.is_alive():
-            process.terminate()
-            process.join(timeout=kill_timeout)
+        self._queues_closed = True
+        for queue in (self.command_queue, self.events):
+            close = getattr(queue, "close", None)
+            if callable(close):
+                close()
+            join_thread = getattr(queue, "join_thread", None)
+            if callable(join_thread):
+                join_thread()

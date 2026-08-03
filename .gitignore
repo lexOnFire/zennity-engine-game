@@ -39,6 +39,11 @@ Thumbs.db
 
 # Recovery/Backup
 *.backup
+*.bak
+.zennity/
+.zennity_autosave.json
+.zennity_autosave_manifest.json
+.zennity_session.lock
 estado_reintegracao.txt
 
 # Local CI and GitHub diagnostics
@@ -59,3 +64,12 @@ scratch/
 zennity-engine-game/
 .coverage
 htmlcov/
+*.exe
+*.winmd
+dump_ui.py
+ui_dump.txt
+search.txt
+
+
+# Sprites/tiles procedurais gerados em runtime por zennity_run.py
+Assets/_zennity_run_tmp/

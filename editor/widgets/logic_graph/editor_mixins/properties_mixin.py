@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import unicodedata
-import uuid
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
@@ -19,7 +18,12 @@ from editor.widgets.logic_graph.views import LogicGraphView, LogicMiniMapView
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPainterPathStroker, QPen, QBrush
 from PySide6.QtWidgets import (
     QCheckBox,
+    QColorDialog,
+    QDialog,
+    QDialogButtonBox,
+    QDoubleSpinBox,
     QFileDialog,
+    QFormLayout,
     QFrame,
     QComboBox,
     QGraphicsEllipseItem,
@@ -32,7 +36,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QInputDialog,
     QListWidget,
     QListWidgetItem,
     QMessageBox,
@@ -47,7 +50,7 @@ from PySide6.QtWidgets import (
 )
 
 from editor.ui.icons import editor_icon
-from editor.widgets.logic_asset_picker import LogicAssetPickerDialog
+from editor.widgets.logic_asset_picker import ASSET_KINDS, LogicAssetPickerDialog
 from engine.logic.graph_asset import (
     NODE_DEFINITIONS,
     UNIQUE_EVENT_TYPES,
@@ -75,41 +78,218 @@ from editor.widgets.logic_graph.definitions import (
 )
 
 class LogicGraphPropertiesMixin:
+    CODE_EDITABLE_PROPERTIES = {
+        "compare_number": (("value", "Comparison value"),),
+        "cooldown": (("seconds", "Cooldown seconds"),),
+        "create_object": (
+            ("x", "X position"),
+            ("y", "Y position"),
+            ("max_instances", "Max instances"),
+            ("lifetime", "Lifetime seconds"),
+        ),
+        "destroy_after_time": (("seconds", "Lifetime seconds"),),
+        "event_timer": (("seconds", "Timer seconds"),),
+        "jump": (("force", "Jump force"),),
+        "move": (("speed", "Movement speed"),),
+        "move_by": (("x", "X speed"), ("y", "Y speed")),
+        "number_value": (("value", "Number value"),),
+        "patrol_axis": (
+            ("minimum", "Minimum position"),
+            ("maximum", "Maximum position"),
+            ("speed", "Patrol speed"),
+        ),
+        "rotate": (("degrees", "Rotation degrees"),),
+        "set_position": (("x", "X position"), ("y", "Y position")),
+        "start_continuous_motion": (("x", "X speed"), ("y", "Y speed")),
+        "start_texture_scroll": (("speed_x", "Texture scroll X speed"), ("speed_y", "Texture scroll Y speed")),
+        "update_continuous_motion": (("x", "X speed"), ("y", "Y speed")),
+    }
+
+    def edit_node_code_value(self, node_item: LogicNodeItem) -> bool:
+        node_type = str(node_item.node.get("type", ""))
+        edit_fields = self.CODE_EDITABLE_PROPERTIES.get(node_type)
+        if edit_fields is None:
+            self.message.emit("INFO", "Select the node and edit its values in Properties.")
+            return False
+        properties = node_item.node.setdefault("properties", {})
+        updates = self._request_code_value_edits(node_item.node, edit_fields, properties)
+        if updates is None:
+            return True
+        for key, value in updates.items():
+            properties[key] = self._coerce_code_edit_value(properties.get(key), value)
+        node_item.refresh_text()
+        self._selection_changed()
+        self.mark_dirty()
+        self._update_validation()
+        self.message.emit("INFO", f"Updated code values for {node_item.node.get('title', node_type)}")
+        return True
+
+    def _request_code_value_edits(
+        self,
+        node: dict[str, Any],
+        fields: tuple[tuple[str, str], ...],
+        properties: dict[str, Any],
+    ) -> dict[str, float] | None:
+        dialog = QDialog(self)
+        dialog.setWindowTitle(f"Edit {node.get('title', 'node')} code values")
+        form = QFormLayout(dialog)
+        editors: dict[str, QDoubleSpinBox] = {}
+        for key, label in fields:
+            editor = QDoubleSpinBox(dialog)
+            editor.setDecimals(3)
+            editor.setRange(-1_000_000.0, 1_000_000.0)
+            editor.setKeyboardTracking(False)
+            current = properties.get(key, 0)
+            editor.setValue(self._safe_code_float(current))
+            form.addRow(label, editor)
+            editors[key] = editor
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, dialog)
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        form.addRow(buttons)
+        if dialog.exec() != QDialog.Accepted:
+            return None
+        return {key: editor.value() for key, editor in editors.items()}
+
+    @staticmethod
+    def _safe_code_float(value: Any) -> float:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return 0.0
+
+    @staticmethod
+    def _coerce_code_edit_value(current: Any, value: float) -> int | float:
+        if isinstance(current, int) and float(value).is_integer():
+            return int(value)
+        return int(value) if float(value).is_integer() else value
+
     def _selection_changed(self) -> None:
         selected = [item for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)]
+        selected_groups = [item for item in self.scene.selectedItems() if isinstance(item, LogicGroupItem)]
         self._updating_properties = True
         self.property_tree.clear()
+
+        if len(selected_groups) == 1 and not selected:
+            group_item = selected_groups[0]
+            group_data = group_item.group_data
+            title = str(group_data.get("title", "Grupo"))
+            color = str(group_data.get("color", "#2d3545"))
+
+            self.selected_label.setText(f"{title}\nOrganização • Grupo")
+            if hasattr(self, "validation_badge"):
+                self.validation_badge.setText("Grupo  📁")
+                self.validation_badge.setStyleSheet("color: #3b82f6; font-weight: bold; font-size: 11px;")
+
+            self.property_asset_button.hide()
+            self.property_color_button.show()
+            self.property_color_button.setText("Escolher cor do grupo...")
+            self.property_color_button.setStyleSheet(f"border-left: 18px solid {color};")
+            self.breakpoint_condition_edit.clear()
+            self.breakpoint_condition_edit.setEnabled(False)
+
+            title_item = QTreeWidgetItem(["title", title])
+            title_item.setData(0, Qt.UserRole, "group_title")
+            title_item.setFlags(title_item.flags() | Qt.ItemIsEditable)
+            self.property_tree.addTopLevelItem(title_item)
+
+            color_item = QTreeWidgetItem(["color", color])
+            color_item.setData(0, Qt.UserRole, "group_color")
+            color_item.setToolTip(1, "Use o seletor visual de cor abaixo")
+            color_item.setFlags(color_item.flags() | Qt.ItemIsEditable)
+            self.property_tree.addTopLevelItem(color_item)
+
+            self._updating_properties = False
+            return
+
         if len(selected) != 1:
             self.selected_label.setText("Selecione um nó para editar seus valores")
+            if hasattr(self, "validation_badge"):
+                self.validation_badge.setText("Sem seleção")
+                self.validation_badge.setStyleSheet("color: #64748b; font-weight: bold; font-size: 11px;")
             self.property_asset_button.hide()
+            self.property_color_button.hide()
             self.breakpoint_condition_edit.clear()
             self.breakpoint_condition_edit.setEnabled(False)
             self._updating_properties = False
+            self.node_selected.emit(None)
             return
         node = selected[0].node
+        if hasattr(self, "validation_badge"):
+            self.validation_badge.setText("Válido  ✓")
+            self.validation_badge.setStyleSheet("color: #22c55e; font-weight: bold; font-size: 11px;")
+        self.node_selected.emit(node)
         asset_kind = self._asset_kind_for_node(str(node.get("type", "")))
         self.property_asset_button.setVisible(asset_kind is not None)
+        color_property = next(
+            (
+                key for key in ("color", "background_color")
+                if key in node.get("properties", {})
+            ),
+            None,
+        )
+        self.property_color_button.setVisible(color_property is not None)
+        if color_property is not None:
+            color = self._qcolor(node["properties"].get(color_property))
+            self.property_color_button.setText(
+                "Escolher cor de fundo..."
+                if color_property == "background_color"
+                else "Escolher cor..."
+            )
+            self.property_color_button.setStyleSheet(
+                f"border-left: 18px solid {color.name()};"
+            )
+        if asset_kind is not None:
+            asset_label = ASSET_KINDS[asset_kind][0]
+            self.property_asset_button.setText(f"Escolher {asset_label}...")
+            self.property_asset_button.setToolTip(
+                f"Abre a biblioteca de {asset_label.lower()} do projeto"
+            )
+        asset_property = (
+            "texture"
+            if str(node.get("type", "")) in {
+                "create_object", "add_sprite_renderer",
+            }
+            else "path"
+        )
         self.selected_label.setText(f"{node['title']}\n{node['category']} • {node['type']}")
+        if hasattr(self, "help_dock") and self.help_dock is not None:
+            try:
+                self.help_dock.show_node_help(node.get("type") or node["title"])
+            except Exception:
+                pass
         breakpoints = self.graph.get("debug", {}).get("breakpoints", [])
         has_breakpoint = str(node["id"]) in breakpoints
         condition = self.graph.get("debug", {}).get("breakpoint_conditions", {}).get(str(node["id"]), "")
         self.breakpoint_condition_edit.setEnabled(has_breakpoint)
         self.breakpoint_condition_edit.setText(str(condition))
+        node_type = str(node.get("type", ""))
+        default_props = NODE_DEFINITIONS.get(node_type, {}).get("properties", {})
+        properties = node.setdefault("properties", {})
+        for prop_key, prop_val in default_props.items():
+            if prop_key not in properties:
+                properties[prop_key] = deepcopy(prop_val)
+
         title_item = QTreeWidgetItem(["title", str(node["title"])])
         title_item.setData(0, Qt.UserRole, "title")
         title_item.setFlags(title_item.flags() | Qt.ItemIsEditable)
         self.property_tree.addTopLevelItem(title_item)
-        for key, value in node.get("properties", {}).items():
+        for key, value in properties.items():
             if key in {"exposed_properties", "parameters"}:
                 continue
             item = QTreeWidgetItem([
-                NODE_PROPERTY_LABELS.get(str(node.get("type", "")), {}).get(
+                NODE_PROPERTY_LABELS.get(node_type, {}).get(
                     str(key), PROPERTY_LABELS.get(str(key), str(key))
                 ),
                 json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value,
             ])
             item.setData(0, Qt.UserRole, str(key))
-            item.setFlags(item.flags() | Qt.ItemIsEditable)
+            if str(key) == color_property:
+                item.setToolTip(1, "Use o seletor visual de cor abaixo")
+            elif asset_kind is not None and str(key) == asset_property:
+                item.setToolTip(1, "Use o botão abaixo para escolher na biblioteca")
+            else:
+                item.setFlags(item.flags() | Qt.ItemIsEditable)
             self.property_tree.addTopLevelItem(item)
         if str(node.get("type", "")) == "create_prefab":
             exposed = node.get("properties", {}).get("exposed_properties", [])
@@ -127,7 +307,10 @@ class LogicGraphPropertiesMixin:
                 ])
                 item.setData(0, Qt.UserRole, f"prefab_parameter:{name}")
                 item.setToolTip(0, str(definition.get("description", definition.get("target", ""))))
-                item.setFlags(item.flags() | Qt.ItemIsEditable)
+                if str(definition.get("asset_kind", "")) in ASSET_KINDS:
+                    item.setToolTip(1, "Dê duplo clique para escolher na biblioteca")
+                else:
+                    item.setFlags(item.flags() | Qt.ItemIsEditable)
                 self.property_tree.addTopLevelItem(item)
         self._updating_properties = False
 
@@ -135,11 +318,18 @@ class LogicGraphPropertiesMixin:
     def _asset_kind_for_node(node_type: str) -> str | None:
         return {
             "set_sprite": "image",
+            "set_texture_scroll": "image",
             "start_texture_scroll": "image",
             "create_object": "image",
             "create_prefab": "prefab",
+            "call_subgraph": "logic",
+            "start_behavior_tree": "behavior",
             "play_animation_asset": "animation",
             "play_sound": "audio",
+            "add_sprite_renderer": "image",
+            "add_animator": "animation",
+            "add_audio_source": "audio",
+            "add_ui_image": "image",
         }.get(str(node_type))
 
     def _choose_selected_node_asset(self) -> None:
@@ -154,11 +344,13 @@ class LogicGraphPropertiesMixin:
         if not picker.exec() or not picker.selected_path:
             return
         property_name = "texture" if str(node.get("type", "")) == "create_object" else "path"
+        if str(node.get("type", "")) == "add_sprite_renderer":
+            property_name = "texture"
         node.setdefault("properties", {})[property_name] = picker.selected_path
         if str(node.get("type", "")) == "create_prefab":
             self._sync_prefab_node_interface(node)
             old_item = selected[0]
-            self.scene.removeItem(old_item)
+            self._remove_scene_item(old_item)
             self.node_items.pop(old_item.node_id, None)
             self.scene.clearSelection()
             selected = [self._create_node_item(node)]
@@ -169,6 +361,68 @@ class LogicGraphPropertiesMixin:
         self.mark_dirty()
         self._update_validation()
         self.message.emit("INFO", f"Asset vinculado ao bloco: {picker.selected_path}")
+
+    @staticmethod
+    def _qcolor(value: Any) -> QColor:
+        if isinstance(value, str):
+            color = QColor(value)
+            return color if color.isValid() else QColor("#ffffff")
+        if isinstance(value, (list, tuple)) and len(value) >= 3:
+            try:
+                return QColor(*(int(channel) for channel in value[:3]))
+            except (TypeError, ValueError):
+                pass
+        return QColor("#ffffff")
+
+    def _choose_selected_node_color(self) -> None:
+        selected = [
+            item for item in self.scene.selectedItems()
+            if isinstance(item, LogicNodeItem)
+        ]
+        selected_groups = [
+            item for item in self.scene.selectedItems()
+            if isinstance(item, LogicGroupItem)
+        ]
+
+        if len(selected_groups) == 1 and not selected:
+            group_item = selected_groups[0]
+            current_color = QColor(str(group_item.group_data.get("color", "#2d3545")))
+            chosen = QColorDialog.getColor(current_color, self, "Escolher Cor do Grupo")
+            if chosen.isValid():
+                group_item.group_data["color"] = chosen.name()
+                group_item._apply_style()
+                self._selection_changed()
+                self.mark_dirty()
+                self.message.emit("INFO", f"Cor do grupo atualizada: {chosen.name()}")
+            return
+
+        if len(selected) != 1:
+            return
+        node_item = selected[0]
+        properties = node_item.node.setdefault("properties", {})
+        key = next(
+            (name for name in ("color", "background_color") if name in properties),
+            None,
+        )
+        if key is None:
+            return
+        chosen = QColorDialog.getColor(
+            self._qcolor(properties.get(key)),
+            self,
+            "Escolher cor",
+        )
+        if not chosen.isValid():
+            return
+        properties[key] = (
+            [chosen.red(), chosen.green(), chosen.blue()]
+            if key == "background_color"
+            else chosen.name()
+        )
+        node_item.refresh_text()
+        self._selection_changed()
+        self.mark_dirty()
+        self._update_validation()
+        self.message.emit("INFO", f"Cor atualizada: {chosen.name()}")
 
     def _update_breakpoint_condition(self) -> None:
         selected = [item for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)]
@@ -190,6 +444,22 @@ class LogicGraphPropertiesMixin:
         if self._updating_properties or column != 1:
             return
         selected = [entry for entry in self.scene.selectedItems() if isinstance(entry, LogicNodeItem)]
+        selected_groups = [entry for entry in self.scene.selectedItems() if isinstance(entry, LogicGroupItem)]
+
+        if len(selected_groups) == 1 and not selected:
+            group_item = selected_groups[0]
+            key = str(item.data(0, Qt.UserRole) or item.text(0))
+            text = item.text(1).strip()
+            if key in {"group_title", "title"}:
+                group_item.title_item.setPlainText(text)
+                group_item.group_data["title"] = text
+                self.selected_label.setText(f"{text}\nOrganização • Grupo")
+            elif key in {"group_color", "color"}:
+                group_item.group_data["color"] = text
+                group_item._apply_style()
+            self.mark_dirty()
+            return
+
         if len(selected) != 1:
             return
         node_item = selected[0]
@@ -210,7 +480,7 @@ class LogicGraphPropertiesMixin:
         if key == "path" and str(node_item.node.get("type", "")) == "create_prefab":
             self._sync_prefab_node_interface(node_item.node)
             node = node_item.node
-            self.scene.removeItem(node_item)
+            self._remove_scene_item(node_item)
             self.node_items.pop(node_item.node_id, None)
             self.scene.clearSelection()
             node_item = self._create_node_item(node)
@@ -218,7 +488,7 @@ class LogicGraphPropertiesMixin:
             self.refresh_connections()
         if key == "type" and node_item.node.get("type") in {"subgraph_input", "subgraph_return"}:
             node = node_item.node
-            self.scene.removeItem(node_item)
+            self._remove_scene_item(node_item)
             self.node_items.pop(node_item.node_id, None)
             self.scene.clearSelection()
             self._create_node_item(node).setSelected(True)
@@ -279,98 +549,4 @@ class LogicGraphPropertiesMixin:
         properties["parameters"] = resolve_prefab_parameters(definitions, previous)
         return True
 
-    def add_group(self) -> None:
-        center = self.view.mapToScene(self.view.viewport().rect().center())
-        data = {
-            "id": uuid.uuid4().hex,
-            "title": "Novo grupo",
-            "position": [center.x() - 230.0, center.y() - 140.0],
-            "size": [460.0, 280.0],
-            "color": "#35506b",
-        }
-        self.graph.setdefault("editor", {}).setdefault("groups", []).append(data)
-        self.scene.clearSelection()
-        self._create_group_item(data).setSelected(True)
-        self.mark_dirty()
-        self.minimap.refresh()
-
-    def add_comment(self) -> None:
-        center = self.view.mapToScene(self.view.viewport().rect().center())
-        text_value, accepted = QInputDialog.getMultiLineText(self, "Novo comentário", "Texto", "Explique esta parte do grafo")
-        if not accepted:
-            return
-        data = {
-            "id": uuid.uuid4().hex,
-            "text": text_value,
-            "position": [center.x() - 130.0, center.y() - 40.0],
-            "width": 260.0,
-            "color": "#6b5b2f",
-        }
-        self.graph.setdefault("editor", {}).setdefault("comments", []).append(data)
-        self.scene.clearSelection()
-        self._create_comment_item(data).setSelected(True)
-        self.mark_dirty()
-        self.minimap.refresh()
-
-    def organize_graph(self) -> None:
-        """Organiza o fluxo em colunas estáveis sem alterar a lógica."""
-        if not self.graph.get("nodes"):
-            return
-        node_ids = [str(node["id"]) for node in self.graph["nodes"]]
-        incoming = {node_id: 0 for node_id in node_ids}
-        outgoing: dict[str, list[str]] = {node_id: [] for node_id in node_ids}
-        for edge in self.graph.get("edges", []):
-            source = str(edge.get("from_node", ""))
-            target = str(edge.get("to_node", ""))
-            if source in outgoing and target in incoming:
-                outgoing[source].append(target)
-                incoming[target] += 1
-        queue = [node_id for node_id in node_ids if incoming[node_id] == 0]
-        levels = {node_id: 0 for node_id in queue}
-        visited: list[str] = []
-        while queue:
-            node_id = queue.pop(0)
-            visited.append(node_id)
-            for target in outgoing[node_id]:
-                levels[target] = max(levels.get(target, 0), levels[node_id] + 1)
-                incoming[target] -= 1
-                if incoming[target] == 0:
-                    queue.append(target)
-        for node_id in node_ids:
-            if node_id not in visited:
-                levels[node_id] = max(levels.values(), default=0) + 1
-        rows: dict[int, list[str]] = {}
-        for node_id in node_ids:
-            rows.setdefault(levels.get(node_id, 0), []).append(node_id)
-        for level, ids in sorted(rows.items()):
-            for row, node_id in enumerate(ids):
-                self.node_items[node_id].setPos(80.0 + level * 290.0, 80.0 + row * 170.0)
-        self.refresh_connections()
-        self.mark_dirty()
-        self.fit_graph()
-        self.message.emit("INFO", "Grafo organizado por ordem de execução")
-
-    def align_selected(self) -> None:
-        selected = [item for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)]
-        if len(selected) < 2:
-            self.message.emit("WARNING", "Selecione dois ou mais blocos para alinhar")
-            return
-        x = min(item.pos().x() for item in selected)
-        for item in selected:
-            item.setPos(x, item.pos().y())
-        self.mark_dirty()
-
-    def distribute_selected(self) -> None:
-        selected = sorted(
-            (item for item in self.scene.selectedItems() if isinstance(item, LogicNodeItem)),
-            key=lambda item: item.pos().y(),
-        )
-        if len(selected) < 3:
-            self.message.emit("WARNING", "Selecione três ou mais blocos para distribuir")
-            return
-        top, bottom = selected[0].pos().y(), selected[-1].pos().y()
-        spacing = (bottom - top) / (len(selected) - 1)
-        for index, item in enumerate(selected):
-            item.setPos(item.pos().x(), top + index * spacing)
-        self.mark_dirty()
 

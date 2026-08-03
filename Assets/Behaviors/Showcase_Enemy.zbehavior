@@ -1,0 +1,40 @@
+{
+  "format": "zennity.generic_graph",
+  "version": 1,
+  "category": "Behavior Tree",
+  "name": "EnemyAI",
+  "nodes": [
+    {
+      "id": "root",
+      "type": "bt.selector",
+      "position": [0, 0]
+    },
+    {
+      "id": "seq1",
+      "type": "bt.sequence",
+      "position": [300, -100]
+    },
+    {
+      "id": "patrol",
+      "type": "bt.wait",
+      "position": [300, 100],
+      "properties": { "duration": 2.0 }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source_node": "root",
+      "source_port": "out_0",
+      "target_node": "seq1",
+      "target_port": "in"
+    },
+    {
+      "id": "e2",
+      "source_node": "root",
+      "source_port": "out_1",
+      "target_node": "patrol",
+      "target_port": "in"
+    }
+  ]
+}

@@ -40,6 +40,21 @@ def test_edit_handler_blocks_editor_mutation_during_play() -> None:
     assert emitted == []
 
 
+def test_edit_handler_blocks_creation_during_play() -> None:
+    objects = {"Player": {"name": "Player"}}
+    handler, emitted = _handler(objects)
+
+    handled, selected = handler.handle(
+        {"type": "create_object_at", "kind": "Enemy", "screen_x": 10, "screen_y": 20},
+        playing=True,
+        selected_name="Player",
+    )
+
+    assert handled and selected == "Player"
+    assert list(objects) == ["Player"]
+    assert emitted == []
+
+
 def test_edit_handler_creates_unique_sprite_and_emits_snapshot() -> None:
     objects = {"hero": {"name": "hero"}}
     handler, emitted = _handler(objects)
@@ -52,6 +67,26 @@ def test_edit_handler_creates_unique_sprite_and_emits_snapshot() -> None:
 
     assert handled and selected == "hero_2"
     assert objects["hero_2"]["x"] == 15.0 and objects["hero_2"]["y"] == 27.0
+    assert [event["type"] for event in emitted] == ["scene_snapshot", "selected"]
+
+
+def test_edit_handler_creates_empty_object_without_visual_or_physics() -> None:
+    objects = {}
+    handler, emitted = _handler(objects)
+
+    handled, selected = handler.handle(
+        {"type": "create_object_at", "kind": "Empty", "screen_x": 400, "screen_y": 300},
+        playing=False,
+        selected_name=None,
+    )
+
+    created = objects[selected]
+    assert handled
+    assert (created["x"], created["y"]) == (410.0, 320.0)
+    assert created["mesh_type"] is None
+    assert created["renderer_enabled"] is False
+    assert "rigidbody" not in created
+    assert "collider" not in created
     assert [event["type"] for event in emitted] == ["scene_snapshot", "selected"]
 
 

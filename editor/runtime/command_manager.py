@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import logging
 from typing import Callable, Protocol
+
+
+logger = logging.getLogger(__name__)
 
 
 class Command(Protocol):
@@ -143,4 +147,8 @@ class CommandManager:
             try:
                 cb(arg)
             except Exception:
-                pass
+                logger.debug(
+                    "CommandManager: listener falhou após o comando %r.",
+                    getattr(arg, "description", arg),
+                    exc_info=True,
+                )

@@ -1,0 +1,10 @@
+{
+  "guid": "a621f53d-a1a3-4b18-bfbc-6f329655fc00",
+  "uuid": "a621f53d-a1a3-4b18-bfbc-6f329655fc00",
+  "type": "material",
+  "importer": "generic_importer",
+  "source_path": "Assets/Demos/PortalStation/PortalGlow.zmat",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "55fe35bf3da25b58fb256d7ca93928c463e7f37a47c4edf37221ca62ba3626ac"
+}

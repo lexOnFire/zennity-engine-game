@@ -1,0 +1,12 @@
+{
+  "guid": "2632cbf6-4487-4a26-ac89-2c7446a6b389",
+  "uuid": "2632cbf6-4487-4a26-ac89-2c7446a6b389",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Sprites/MyPlatformer/flag.png",
+  "import_settings": {
+    "filter_mode": "nearest"
+  },
+  "dependencies": [],
+  "hash": "71ef587dacad0d670cb7360225bf68a57300533bf3c3c4a41a7771886c12c99a"
+}

@@ -8,3 +8,4 @@ from . import misc_nodes
 from . import math_nodes
 from . import scene_nodes
 from . import string_nodes
+from . import ui_nodes

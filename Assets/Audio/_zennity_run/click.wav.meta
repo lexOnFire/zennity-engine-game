@@ -1,0 +1,12 @@
+{
+  "guid": "8a07e34a-2f5e-43a9-9614-513a753001f9",
+  "uuid": "8a07e34a-2f5e-43a9-9614-513a753001f9",
+  "type": "audio",
+  "importer": "audio_importer",
+  "source_path": "Assets/Audio/_zennity_run/click.wav",
+  "import_settings": {
+    "load_type": "decompress_on_load"
+  },
+  "dependencies": [],
+  "hash": "08327dcc015626a35e709d731442f1fcdde6d6cb9379460dec1b9814eaddf071"
+}

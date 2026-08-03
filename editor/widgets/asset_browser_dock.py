@@ -29,7 +29,7 @@ class AssetBrowserDock(QDockWidget):
         layout = QVBoxLayout(content)
         layout.setContentsMargins(4, 4, 4, 4)
         
-        # 1. Barra de Ferramentas Superior
+        # 1. Barra superior de comandos
         navbar = QWidget()
         nav_layout = QHBoxLayout(navbar)
         nav_layout.setContentsMargins(0, 0, 0, 4)
@@ -63,9 +63,21 @@ class AssetBrowserDock(QDockWidget):
         nav_layout.addWidget(self.btn_up)
         nav_layout.addWidget(self.lbl_path)
         nav_layout.addStretch()
+
+        # FASE UX ASSET BROWSER: Filtros por Categoria & Favoritos
+        from PySide6.QtWidgets import QComboBox
+        self.combo_category_filter = QComboBox()
+        self.combo_category_filter.addItems(["Todos os Tipos", "Cenas", "Texturas", "Sons", "Scripts", "Materiais", "Favoritos ⭐"])
+        self.combo_category_filter.setFixedWidth(120)
+        self.combo_category_filter.currentTextChanged.connect(self._on_category_filter_changed)
+        nav_layout.addWidget(self.combo_category_filter)
+
         nav_layout.addWidget(self.txt_search)
         
         layout.addWidget(navbar)
+
+        # Registro de Favoritos
+        self.favorites: set[str] = set()
         
         # 2. Splitter para dividir a árvore de pastas e a grade de arquivos
         splitter = QSplitter(Qt.Horizontal)
@@ -86,6 +98,8 @@ class AssetBrowserDock(QDockWidget):
         self.list_files.setGridSize(QSize(95, 95))
         self.list_files.setIconSize(QSize(48, 48))
         self.list_files.setWordWrap(True)
+        self.list_files.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.list_files.customContextMenuRequested.connect(self.on_context_menu_requested)
         self.list_files.clicked.connect(self.on_file_list_clicked)
         self.list_files.doubleClicked.connect(self.on_file_list_double_clicked)
         splitter.addWidget(self.list_files)
@@ -188,12 +202,69 @@ class AssetBrowserDock(QDockWidget):
 
     @Slot(str)
     def on_search_changed(self, text: str) -> None:
-        """Aplica filtros de nome para busca de arquivos."""
+        """Aplica o filtro de pesquisa no model."""
+        if self.model:
+            if text:
+                self.model.setNameFilters([f"*{text}*"])
+                self.model.setNameFilterDisables(False)
+            else:
+                self.model.setNameFilters([])
+                self.model.setNameFilterDisables(True)
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # FASE UX ASSET BROWSER: Favoritos & Filtros por Categoria API
+    # ──────────────────────────────────────────────────────────────────────────
+
+    @Slot(object)
+    def on_context_menu_requested(self, pos) -> None:
+        index = self.list_files.indexAt(pos)
+        if not index.isValid():
+            return
+        
+        from PySide6.QtWidgets import QMenu
+        menu = QMenu(self)
+        
+        rename_action = menu.addAction("Renomear Seguro")
+        is_fav = self.model.filePath(index) in self.favorites
+        fav_action = menu.addAction("Remover dos Favoritos" if is_fav else "Adicionar aos Favoritos")
+        reimport_action = menu.addAction("Reimportar")
+        
+        action = menu.exec(self.list_files.viewport().mapToGlobal(pos))
+        
+        if action == rename_action:
+            self.list_files.edit(index)
+        elif action == fav_action:
+            self.toggle_favorite(self.model.filePath(index))
+            self.model.layoutChanged.emit()
+        elif action == reimport_action:
+            import logging
+            logging.info(f"Reimportando: {self.model.filePath(index)}")
+
+    def toggle_favorite(self, file_path: str) -> bool:
+        """Adiciona ou remove um arquivo dos favoritos."""
+        if file_path in self.favorites:
+            self.favorites.remove(file_path)
+            is_fav = False
+        else:
+            self.favorites.add(file_path)
+            is_fav = True
+        return is_fav
+
+    def _on_category_filter_changed(self, category: str) -> None:
+        """Filtra os arquivos exibidos com base na categoria selecionada."""
         if not self.model:
             return
-        if text.strip():
-            # Busca de forma geral no diretório
-            self.model.setNameFilters([f"*{text}*"])
+        ext_map = {
+            "Cenas": ["*.zscene"],
+            "Texturas": ["*.png", "*.jpg", "*.tga"],
+            "Sons": ["*.wav", "*.mp3", "*.ogg"],
+            "Scripts": ["*.py", "*.zvs"],
+            "Materiais": ["*.zmat"],
+        }
+        filters = ext_map.get(category, [])
+        if filters:
+            self.model.setNameFilters(filters)
+            self.model.setNameFilterDisables(False)
         else:
-            # Reseta para as extensões padrão
-            self.model.setNameFilters(["*.png", "*.jpg", "*.json", "*.wav", "*.ogg", "*.obj", "*.zprefab", "*.zscene", "*.zmat", "*.zanim", "*.zanimator", "*.zlogic", "*.zblackboard"])
+            self.model.setNameFilters([])
+            self.model.setNameFilterDisables(True)

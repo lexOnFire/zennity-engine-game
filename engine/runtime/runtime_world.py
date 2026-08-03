@@ -232,6 +232,27 @@ class RuntimeWorld:
             values["prefab_path"] = str(path)
             values["pool_key"] = pool_key or f"prefab:{Path(path).as_posix().casefold()}"
             return self.create_object(**values)
+        values = self._extract_complex_prefab_values(
+            isolated_object, payload, resolved_parameters, definitions,
+            x, y, rotation, width, height
+        )
+        self._apply_prefab_component_policy(values, include_camera, include_audio, include_logic)
+        values["prefab_path"] = str(path)
+        values["pool_key"] = pool_key or f"prefab:{Path(path).as_posix().casefold()}"
+        return self.create_object(**values)
+
+    def _extract_complex_prefab_values(
+        self,
+        isolated_object: dict[str, Any],
+        payload: dict[str, Any],
+        resolved_parameters: dict[str, Any],
+        definitions: list[Any],
+        x: float | None,
+        y: float | None,
+        rotation: float | None,
+        width: float | None,
+        height: float | None,
+    ) -> dict[str, Any]:
         transform = isolated_object.get("transform") if isinstance(isolated_object.get("transform"), dict) else {}
         position = _vector(transform.get("position"), (0.0, 0.0, 0.0))
         scale = _vector(transform.get("scale"), (64.0, 64.0, 1.0))
@@ -293,10 +314,7 @@ class RuntimeWorld:
             ui.setdefault("visible", bool(item.get("enabled", True)))
             values["ui"] = ui
             break
-        values["prefab_path"] = str(path)
-        values["pool_key"] = pool_key or f"prefab:{Path(path).as_posix().casefold()}"
-        self._apply_prefab_component_policy(values, include_camera, include_audio, include_logic)
-        return self.create_object(**values)
+        return values
 
     @staticmethod
     def _apply_prefab_component_policy(
@@ -316,9 +334,42 @@ class RuntimeWorld:
     @staticmethod
     def add_component(obj: MutableMapping[str, Any], component: str, properties: Mapping[str, Any] | None = None) -> None:
         key = str(component).strip().casefold().replace(" ", "_")
-        aliases = {"boxcollider": "collider", "box_collider": "collider", "rigidbody2d": "rigidbody", "rigid_body": "rigidbody", "audiosource": "audio", "audio_source": "audio", "camera2d": "camera", "animator2d": "animator"}
+        aliases = {
+            "boxcollider": "box_collider", "rigidbody2d": "rigidbody",
+            "rigid_body": "rigidbody", "audiosource": "audio",
+            "audio_source": "audio", "camera2d": "camera",
+            "animator2d": "animator", "spriterenderer": "sprite_renderer",
+            "uitext": "ui_text", "uiimage": "ui_image", "uibutton": "ui_button",
+        }
         key = aliases.get(key, key)
-        obj[key] = deepcopy(dict(properties or {}))
+        values = deepcopy(dict(properties or {}))
+        if key == "sprite_renderer":
+            obj["renderer_enabled"] = True
+            for name in ("texture", "color", "render_layer", "sort_order"):
+                if name in values:
+                    obj[name] = (
+                        normalize_color(values[name])
+                        if name == "color"
+                        else values[name]
+                    )
+            return
+        if key in {"box_collider", "circlecollider", "circle_collider"}:
+            values.setdefault(
+                "type", "circle" if "circle" in key else "box"
+            )
+            obj["collider"] = values
+            return
+        if key in {"canvas", "ui_text", "ui_image", "ui_button"}:
+            values["type"] = {
+                "canvas": "canvas", "ui_text": "text",
+                "ui_image": "image", "ui_button": "button",
+            }[key]
+            values.setdefault("visible", True)
+            obj["ui"] = values
+            obj["renderer_enabled"] = False
+            obj["mesh_type"] = "UI"
+            return
+        obj[key] = values
         if key == "collider":
             obj[key].setdefault("type", "box")
         elif key == "rigidbody":
@@ -328,7 +379,16 @@ class RuntimeWorld:
     @staticmethod
     def remove_component(obj: MutableMapping[str, Any], component: str) -> bool:
         key = str(component).strip().casefold().replace(" ", "_")
-        aliases = {"boxcollider": "collider", "rigidbody2d": "rigidbody", "audiosource": "audio", "camera2d": "camera"}
+        aliases = {
+            "boxcollider": "collider", "box_collider": "collider",
+            "circlecollider": "collider", "circle_collider": "collider",
+            "rigidbody2d": "rigidbody", "audiosource": "audio",
+            "audio_source": "audio", "camera2d": "camera",
+            "animator2d": "animator", "spriterenderer": "renderer_enabled",
+            "sprite_renderer": "renderer_enabled", "canvas": "ui",
+            "uitext": "ui", "ui_text": "ui", "uiimage": "ui",
+            "ui_image": "ui", "uibutton": "ui", "ui_button": "ui",
+        }
         return obj.pop(aliases.get(key, key), None) is not None
 
     def destroy_object(self, obj: MutableMapping[str, Any]) -> None:

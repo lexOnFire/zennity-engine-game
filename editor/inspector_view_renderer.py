@@ -23,6 +23,23 @@ class InspectorViewRenderer:
         for key in ("x", "y", "w", "h", "rotation"):
             h.inspector_fields[key].setValue(float(obj[key]))
 
+        if hasattr(h, "tag_combo"):
+            h.tag_combo.blockSignals(True)
+            current_tag = str(obj.get("tag", "Untagged"))
+            if h.tag_combo.findText(current_tag) < 0:
+                idx = max(0, h.tag_combo.count() - 1) if h.tag_combo.findText("+ Criar Nova Tag...") >= 0 else h.tag_combo.count()
+                h.tag_combo.insertItem(idx, current_tag)
+            h.tag_combo.setCurrentText(current_tag)
+            h.tag_combo.blockSignals(False)
+
+        if hasattr(h, "layer_combo"):
+            h.layer_combo.blockSignals(True)
+            current_layer = str(obj.get("layer", "Default"))
+            if h.layer_combo.findText(current_layer) < 0:
+                h.layer_combo.addItem(current_layer)
+            h.layer_combo.setCurrentText(current_layer)
+            h.layer_combo.blockSignals(False)
+
     def render_renderer(self, obj: dict[str, Any]) -> None:
         h = self.host
         enabled = bool(obj.get("renderer_enabled", True))
@@ -59,6 +76,13 @@ class InspectorViewRenderer:
         if audio:
             index = h.audio_path_combo.findData(current_path)
             h.audio_path_combo.setCurrentIndex(index if index >= 0 else 0)
+        h.audio_output_combo.clear()
+        h.audio_output_combo.addItem("Padrão do sistema", "")
+        for device in h._get_available_audio_outputs():
+            h.audio_output_combo.addItem(device, device)
+        current_device = str((audio or {}).get("device", ""))
+        device_index = h.audio_output_combo.findData(current_device)
+        h.audio_output_combo.setCurrentIndex(device_index if device_index >= 0 else 0)
         h.audio_volume_field.setValue(float((audio or {}).get("volume", 1.0)))
         h.audio_loop_field.setChecked(bool((audio or {}).get("loop", False)))
         h.audio_autoplay_field.setChecked(bool((audio or {}).get("autoplay", False)))
@@ -105,6 +129,12 @@ class InspectorViewRenderer:
             return
 
         clips = h._animation_clips(animator)
+        if not clips:
+            h.animator_clip_combo.clear()
+            h.animator_current_lbl.setText("Nenhum")
+            h.animator_preview.setText("Sem clipes")
+            h._animation_bound_key = None
+            return
         active_clip = str(animator.get("active_clip", next(iter(clips))))
         if active_clip not in clips:
             active_clip = next(iter(clips))
@@ -181,11 +211,15 @@ class InspectorViewRenderer:
         labels = {
             "canvas": "🖥 Canvas", "text": "🔤 UI Text",
             "image": "🖼 UI Image", "button": "🔘 UI Button",
+            "progress_bar": "📊 UI Progress Bar",
         }
-        h.show_ui_chk.setText(labels[kind])
+        h.show_ui_chk.setText(labels.get(kind, f"UI {kind.replace('_', ' ').title()}"))
         h.show_ui_chk.setChecked(bool(ui.get("visible", True)))
         h.ui_type_field.setText(
-            {"canvas": "Canvas", "text": "Texto", "image": "Imagem", "button": "Botão"}[kind]
+            {
+                "canvas": "Canvas", "text": "Texto", "image": "Imagem",
+                "button": "Botão", "progress_bar": "Barra de progresso",
+            }.get(kind, kind.replace("_", " ").title())
         )
         h.ui_text_field.setText(str(ui.get("text", "")))
         h.ui_text_field.setEnabled(kind in {"text", "button"})
@@ -197,7 +231,7 @@ class InspectorViewRenderer:
                 and (key != "alpha" or kind == "image")
             )
         color = tuple(ui.get("color", (255, 255, 255)))[:3]
-        h.ui_color_button.setEnabled(kind in {"text", "image", "button"})
+        h.ui_color_button.setEnabled(kind in {"text", "image", "button", "progress_bar"})
         h.ui_color_button.setStyleSheet(
             f"background: rgb({int(color[0])}, {int(color[1])}, {int(color[2])});"
         )
@@ -237,6 +271,31 @@ class InspectorViewRenderer:
             h.logic_summary_label.setText(
                 "Adicione Lógica Visual para controlar este objeto sem scripts."
             )
+
+    def render_behavior(self, name: str, obj: dict[str, Any]) -> None:
+        """Sync the Behavior Tree card with the object's linked .zbehavior file."""
+        h = self.host
+        behavior = obj.get("behavior") if isinstance(obj.get("behavior"), dict) else None
+        controller_path = str((behavior or {}).get("controller_path", ""))
+        present = behavior is not None
+        h._set_inspector_card_present("behavior", present)
+        if not hasattr(h, "behavior_path_field"):
+            return
+        h.behavior_path_field.setText(controller_path)
+        if controller_path:
+            from pathlib import Path
+            stem = Path(controller_path).stem
+            path = Path(controller_path)
+            root = getattr(getattr(h, "_behavior_tree_controller", None), "project_root", Path.cwd())
+            resolved = path if path.is_absolute() else root / path
+            valid = resolved.is_file()
+            h.behavior_status_label.setText(f"🌳 {stem}  •  {'vinculado' if valid else 'arquivo não encontrado'}")
+            h.behavior_open_button.setEnabled(valid)
+            h.behavior_unlink_button.setEnabled(True)
+        else:
+            h.behavior_status_label.setText("Nenhum Behavior Tree vinculado")
+            h.behavior_open_button.setEnabled(False)
+            h.behavior_unlink_button.setEnabled(False)
 
     def render_runtime(self, obj: dict[str, Any]) -> None:
         h = self.host

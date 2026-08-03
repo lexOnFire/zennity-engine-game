@@ -1,9 +1,0 @@
-{
-  "guid": "0d4b8030-04d9-43d9-9c19-b3bc81a460d7",
-  "uuid": "0d4b8030-04d9-43d9-9c19-b3bc81a460d7",
-  "type": "script",
-  "importer": "script_importer",
-  "source_path": "Assets/Scripts/builtin_jump.py",
-  "import_settings": {},
-  "dependencies": []
-}

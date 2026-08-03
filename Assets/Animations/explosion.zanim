@@ -1,0 +1,18 @@
+{
+  "format": "zennity.animation_clip",
+  "version": 1,
+  "name": "explosion",
+  "texture": "Assets/Materials/explosion2.PNG",
+  "frame_width": 310,
+  "frame_height": 222,
+  "frames": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "fps": 6.0,
+  "loop": true,
+  "events": [],
+  "tracks": []
+}

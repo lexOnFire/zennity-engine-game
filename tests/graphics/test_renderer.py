@@ -57,16 +57,21 @@ else:
         _pg.transform = _transform
         sys.modules["pygame.transform"] = _transform
 
-# stub Camera para não depender do módulo real
-if "engine.graphics.camera" not in sys.modules:
-    _cam_mod = ModuleType("engine.graphics.camera")
-    class _StubCamera:
-        _active = None
-    _cam_mod.Camera = _StubCamera
-    sys.modules["engine.graphics.camera"] = _cam_mod
-else:
-    _cam_mod = sys.modules["engine.graphics.camera"]
-    _StubCamera = _cam_mod.Camera
+# stub Camera/Camera2D para não depender dos módulos reais. draw() resolve a
+# câmera ativa via engine.graphics.active_camera.get_active_camera(), que lê
+# Camera.main (com fallback pra Camera2D.main) -- não mais Camera._active.
+# Estas classes são só os holders de estado; o registro em sys.modules
+# acontece na fixture reset_camera via monkeypatch.setitem (não aqui, a nível
+# de módulo) para não vazar pra outros arquivos de teste da mesma sessão
+# pytest -- sys.modules é global ao processo, e um teste que rode depois
+# deste (ex.: tests/unit/test_camera_system.py) precisa do Camera real.
+class _StubCamera:
+    main = None
+
+
+class _StubCamera2D:
+    main = None
+
 
 from engine.graphics.renderer import SpriteRenderer  # noqa: E402
 
@@ -81,9 +86,19 @@ def reset_camera(monkeypatch):
     monkeypatch.setattr(_transform, "scale", scale_mock, raising=False)
     monkeypatch.setattr(_pg, "transform", _transform, raising=False)
 
-    _StubCamera._active = None
+    _cam_mod = ModuleType("engine.graphics.camera")
+    _cam_mod.Camera = _StubCamera
+    monkeypatch.setitem(sys.modules, "engine.graphics.camera", _cam_mod)
+
+    _cam2d_mod = ModuleType("engine.graphics.camera2d")
+    _cam2d_mod.Camera2D = _StubCamera2D
+    monkeypatch.setitem(sys.modules, "engine.graphics.camera2d", _cam2d_mod)
+
+    _StubCamera.main = None
+    _StubCamera2D.main = None
     yield
-    _StubCamera._active = None
+    _StubCamera.main = None
+    _StubCamera2D.main = None
 
 
 def _make_go(x=0.0, y=0.0):
@@ -230,7 +245,7 @@ class TestDrawWithCam:
         cam = MagicMock()
         cam.world_to_screen = MagicMock(return_value=(sx, sy))
         cam.zoom = zoom
-        _StubCamera._active = cam
+        _StubCamera.main = cam
         return cam
 
     def test_draw_uses_camera_world_to_screen(self):
@@ -239,7 +254,9 @@ class TestDrawWithCam:
         r.game_object = _make_go(50.0, 30.0)
         screen = _make_surface(640, 480)
         r.draw(screen)
-        cam.world_to_screen.assert_called_once_with(50.0, 30.0)
+        args = cam.world_to_screen.call_args[0]
+        assert args[0][0] == 50.0 and args[0][1] == 30.0
+        assert args[1:] == (640, 480)
 
     def test_draw_position_centered_on_screen(self):
         self._active_cam(sx=300.0, sy=200.0, zoom=1.0)

@@ -1,0 +1,12 @@
+{
+  "guid": "6f457189-292b-4ada-a54b-ca77e30789f4",
+  "uuid": "6f457189-292b-4ada-a54b-ca77e30789f4",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/prata.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "4e2fd36c4ddf789bef913549604e6e55040f98850b2b491d6206b9f0b37cc953"
+}

@@ -1,0 +1,282 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "PortalTerminal",
+  "target": {
+    "type": "name",
+    "value": "PortalTerminal"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": [
+      "portal_ready"
+    ]
+  },
+  "variables": {
+    "portal_ready": {
+      "type": "bool",
+      "scope": "object",
+      "default": false
+    },
+    "energy": {
+      "type": "number",
+      "scope": "project",
+      "default": 0.0
+    }
+  },
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "start",
+      "type": "event_start",
+      "title": "On Start",
+      "category": "Events",
+      "position": [
+        120.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "hud",
+      "type": "set_hud",
+      "title": "Atualizar HUD",
+      "category": "Action",
+      "position": [
+        440.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "text": "PORTAL STATION • encontre o terminal"
+      }
+    },
+    {
+      "id": "log",
+      "type": "log_message",
+      "title": "Registrar mensagem",
+      "category": "Action",
+      "position": [
+        760.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "text": "Demo Portal Station inicializada"
+      }
+    },
+    {
+      "id": "activate",
+      "type": "event_custom",
+      "title": "Ativar Portal",
+      "category": "Events",
+      "position": [
+        120.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "name": "activate_portal"
+      }
+    },
+    {
+      "id": "find-portal",
+      "type": "find_tag",
+      "title": "Localizar Portal",
+      "category": "Objects",
+      "position": [
+        440.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "tag": "Portal"
+      }
+    },
+    {
+      "id": "rotate-portal",
+      "type": "rotate",
+      "title": "Energizar Portal",
+      "category": "Position",
+      "position": [
+        760.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "degrees": 45.0
+      }
+    },
+    {
+      "id": "active-hud",
+      "type": "set_hud",
+      "title": "Confirmar Ativação",
+      "category": "Action",
+      "position": [
+        1080.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "text": "PORTAL ATIVO • sistema pronto para travessia"
+      }
+    },
+    {
+      "id": "active-log",
+      "type": "log_message",
+      "title": "Registrar Ativação",
+      "category": "Action",
+      "position": [
+        1400.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "text": "Portal ativado pelo botão da UI"
+      }
+    },
+    {
+      "id": "get-energy", "type": "get_variable", "title": "Energia coletada",
+      "category": "Variables", "position": [440.0, 500.0],
+      "properties": {"name": "energy", "scope": "project"}
+    },
+    {
+      "id": "energy-ready", "type": "compare_number", "title": "Energia completa?",
+      "category": "Condition", "position": [680.0, 500.0],
+      "properties": {"operator": ">=", "value": 3.0}
+    },
+    {
+      "id": "locked-hud", "type": "set_hud", "title": "Portal bloqueado",
+      "category": "UI", "position": [920.0, 560.0],
+      "properties": {"text": "PORTAL BLOQUEADO • colete as 3 células de energia"}
+    },
+    {
+      "id": "activate-sound", "type": "play_sound", "title": "Som de ativação",
+      "category": "Audio", "position": [1640.0, 100.0],
+      "properties": {"path": "Assets/Audio/game-start-317318.mp3"}
+    }
+  ],
+  "edges": [
+    {
+      "id": "flow-start-hud",
+      "from_node": "start",
+      "from_port": "next",
+      "to_node": "hud",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "flow-hud-log",
+      "from_node": "hud",
+      "from_port": "next",
+      "to_node": "log",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "flow-activate-energy",
+      "from_node": "activate",
+      "from_port": "next",
+      "to_node": "get-energy",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id":"flow-energy-compare","from_node":"get-energy","from_port":"next",
+      "to_node":"energy-ready","to_port":"in","kind":"flow","order":0
+    },
+    {
+      "id":"data-energy-compare","from_node":"get-energy","from_port":"value",
+      "to_node":"energy-ready","to_port":"value","kind":"number","order":0
+    },
+    {
+      "id":"flow-ready-find","from_node":"energy-ready","from_port":"true",
+      "to_node":"find-portal","to_port":"in","kind":"flow","order":0
+    },
+    {
+      "id":"flow-locked-hud","from_node":"energy-ready","from_port":"false",
+      "to_node":"locked-hud","to_port":"in","kind":"flow","order":0
+    },
+    {
+      "id": "flow-find-rotate",
+      "from_node": "find-portal",
+      "from_port": "next",
+      "to_node": "rotate-portal",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "data-portal-target",
+      "from_node": "find-portal",
+      "from_port": "object",
+      "to_node": "rotate-portal",
+      "to_port": "target",
+      "kind": "object",
+      "order": 0
+    },
+    {
+      "id": "flow-rotate-hud",
+      "from_node": "rotate-portal",
+      "from_port": "next",
+      "to_node": "active-hud",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "flow-active-log",
+      "from_node": "active-hud",
+      "from_port": "next",
+      "to_node": "active-log",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id":"flow-log-sound","from_node":"active-log","from_port":"next",
+      "to_node":"activate-sound","to_port":"in","kind":"flow","order":0
+    }
+  ]
+}

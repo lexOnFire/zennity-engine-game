@@ -1,0 +1,17 @@
+{
+  "format": "zennity.animation_clip",
+  "version": 1,
+  "name": "enemy",
+  "texture": "Assets/Materials/enemy.PNG",
+  "frame_width": 358,
+  "frame_height": 256,
+  "frames": [
+    0,
+    1,
+    2
+  ],
+  "fps": 8.0,
+  "loop": true,
+  "events": [],
+  "tracks": []
+}

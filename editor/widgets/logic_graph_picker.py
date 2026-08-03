@@ -8,7 +8,7 @@ from typing import Any
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog, QDialogButtonBox, QLabel, QLineEdit, QTreeWidget,
-    QTreeWidgetItem, QVBoxLayout, QWidget,
+    QTreeWidgetItem, QVBoxLayout, QWidget, QPushButton,
 )
 
 
@@ -27,6 +27,7 @@ class LogicGraphPickerDialog(QDialog):
         self.resize(540, 460)
         self._entries = entries
         self.selected_path: Path | None = None
+        self.create_new = False
 
         layout = QVBoxLayout(self)
         title = QLabel("Vincular Lógica Visual")
@@ -48,6 +49,13 @@ class LogicGraphPickerDialog(QDialog):
         self.description = QLabel("Selecione um grafo para ver o resumo.")
         self.description.setWordWrap(True)
         layout.addWidget(self.description)
+        self.create_button = QPushButton("＋ Criar novo")
+        self.create_button.setObjectName("CreateBlankLogicGraphButton")
+        self.create_button.setProperty("uiRole", "primary")
+        self.create_button.setToolTip(
+            "Cria um Logic Graph vazio e já o vincula ao objeto selecionado"
+        )
+        layout.addWidget(self.create_button)
         self.buttons = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
         self.buttons.button(QDialogButtonBox.Ok).setText("Vincular")
         self.buttons.button(QDialogButtonBox.Ok).setEnabled(False)
@@ -59,6 +67,7 @@ class LogicGraphPickerDialog(QDialog):
         self.tree.itemDoubleClicked.connect(lambda item, _column: self._accept_item(item))
         self.buttons.accepted.connect(self._accept_current)
         self.buttons.rejected.connect(self.reject)
+        self.create_button.clicked.connect(self._accept_create_new)
         self._rebuild("")
 
     def _rebuild(self, query: str) -> None:
@@ -101,3 +110,8 @@ class LogicGraphPickerDialog(QDialog):
         current = self.tree.currentItem()
         if current is not None:
             self._accept_item(current)
+
+    def _accept_create_new(self) -> None:
+        self.create_new = True
+        self.selected_path = None
+        self.accept()

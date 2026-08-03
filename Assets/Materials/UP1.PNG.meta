@@ -1,0 +1,12 @@
+{
+  "guid": "19945276-13fe-4261-b686-fc0576c59337",
+  "uuid": "19945276-13fe-4261-b686-fc0576c59337",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/UP1.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "b6ce1aab6c4556ab113e06adcac2d4c92903840f42743805f769ea1f149a4b95"
+}

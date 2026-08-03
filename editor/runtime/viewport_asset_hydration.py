@@ -1,6 +1,7 @@
 """Asset hydration boundaries used by the isolated viewport runtime."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -99,12 +100,56 @@ def hydrate_behavior_controllers(
         if not path.is_absolute():
             path = project_root / path
         try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+            if (
+                isinstance(raw, dict)
+                and raw.get("format") == "zennity.generic_graph"
+                and str(raw.get("category", "")).casefold() == "behavior tree"
+            ):
+                behavior["graph"] = raw
+                behavior.pop("controller", None)
+                count = len(raw.get("nodes", []))
+                results.append(("INFO", object_name, f"Behavior Tree carregada: {path.name} ({count} nó(s))"))
+                continue
             controller = load_behavior_controller(path)
             behavior["controller"] = controller
+            behavior.pop("graph", None)
             behavior.setdefault("parameters", {})
             results.append(("INFO", object_name, f"behavior carregado: {path.name} ({len(controller['states'])} estado(s))"))
         except (OSError, ValueError) as exc:
             results.append(("ERROR", object_name, f"falha ao carregar behavior {asset_path}: {exc}"))
+    return results
+
+
+def hydrate_dialogues(
+    objects: dict[str, dict[str, Any]], project_root: Path
+) -> list[tuple[str, str, str]]:
+    """Carrega Dialogue Graphs associados aos objetos da cena."""
+    results: list[tuple[str, str, str]] = []
+    for object_name, obj in objects.items():
+        asset_value = obj.get("dialogue_asset")
+        dialogue = obj.get("dialogue")
+        if not asset_value and isinstance(dialogue, dict):
+            asset_value = dialogue.get("asset_path")
+        if not asset_value:
+            continue
+        path = Path(str(asset_value))
+        path = path if path.is_absolute() else project_root / path
+        try:
+            graph = json.loads(path.read_text(encoding="utf-8"))
+            if (
+                not isinstance(graph, dict)
+                or graph.get("format") != "zennity.generic_graph"
+                or str(graph.get("category", "")).casefold() != "dialogue"
+            ):
+                raise ValueError("asset não é um Dialogue Graph")
+            settings = dialogue if isinstance(dialogue, dict) else {}
+            settings["asset_path"] = str(asset_value)
+            settings["graph"] = graph
+            obj["dialogue"] = settings
+            results.append(("INFO", object_name, f"Dialogue carregado: {path.name}"))
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            results.append(("ERROR", object_name, f"falha ao carregar Dialogue {asset_value}: {exc}"))
     return results
 
 
@@ -115,10 +160,37 @@ def hydrate_logic_graphs(
     results: list[tuple[str, str, str]] = []
     for obj in objects.values():
         obj.pop("logic_graphs", None)
+    loaded_paths: set[Path] = set()
+    for object_name, obj in objects.items():
+        configured = obj.get("logic_assets", [])
+        if not isinstance(configured, list):
+            continue
+        for asset_value in configured:
+            path = Path(str(asset_value))
+            path = path if path.is_absolute() else project_root / path
+            try:
+                resolved = path.resolve()
+                graph = load_logic_graph(resolved)
+                obj.setdefault("logic_graphs", []).append({
+                    "path": resolved.relative_to(project_root.resolve()).as_posix(),
+                    "graph": graph,
+                })
+                loaded_paths.add(resolved)
+                results.append((
+                    "INFO", object_name,
+                    f"Logic Graph explícito carregado: {path.name}",
+                ))
+            except (OSError, ValueError) as exc:
+                results.append((
+                    "ERROR", object_name,
+                    f"falha ao carregar Logic Graph explícito {asset_value}: {exc}",
+                ))
     directory = project_root / "Assets" / "Logic"
     if not directory.is_dir():
         return results
     for path in sorted(directory.rglob("*.zlogic"), key=lambda item: str(item).lower()):
+        if path.resolve() in loaded_paths:
+            continue
         try:
             graph = load_logic_graph(path)
             if not bool(graph.get("enabled", True)):

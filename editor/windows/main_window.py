@@ -1,5 +1,13 @@
+import warnings
 import sys
 import os
+
+warnings.warn(
+    "editor.windows.main_window está deprecado (janela legada). O entrypoint oficial é editor.phase1_main.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QMenuBar, QMenu, QToolBar, QStatusBar,
     QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox,
@@ -23,13 +31,23 @@ from editor.viewmodels.asset_viewmodel import AssetViewModel
 # Serialização
 from editor.core.serializer import save_scene_to_file, load_scene_from_file
 
-# Widgets do Editor
+# Widgets e Docks do Editor
 from editor.widgets.hierarchy_dock import HierarchyDock
 from editor.widgets.asset_browser_dock import AssetBrowserDock
 from editor.widgets.console_dock import ConsoleDock
 from editor.widgets.inspector_dock import InspectorDock
 from editor.widgets.code_editor_dock import CodeEditorDock
-from editor.widgets.profiler_dock import ProfilerDock
+from editor.profiler import ProfilerDock
+from editor.widgets.logic_graph_editor import LogicGraphEditor
+from editor.visual_scripting.visual_scripting_dock import VisualScriptingEditorDock
+from editor.animation_studio.animation_studio_dock import AnimationStudioDock
+from editor.ui_builder.ui_builder_dock import UIBuilderDock
+from editor.extension_manager.extension_dock import ExtensionManagerDock
+from editor.tools.dependency_viewer_dock import DependencyViewerDock
+from editor.tools.build_report_dock import BuildReportDock
+from editor.tools.asset_auditor_dock import AssetAuditorDock
+from editor.wizards.build_wizard_dock import BuildWizardDock
+from editor.wizards.project_settings_dock import ProjectSettingsDock
 
 # ── NOVO: Container com abas Scene / Game ─────────────────────────────────────
 from editor.widgets.viewport_tab_bar import ViewportContainer
@@ -37,6 +55,9 @@ from editor.widgets.viewport_tab_bar import ViewportContainer
 # Diálogos
 from editor.windows.main_window_menus import MainWindowMenusMixin
 from editor.windows.preferences_dialog import PreferencesDialog
+from editor.runtime.editor_context import EditorContext
+from editor.runtime.editor_bridge_orchestrator import EditorBridgeOrchestrator
+from editor.workspace.workspace_manager import WorkspaceManager as QtWorkspaceManager
 
 
 class MainWindow(MainWindowMenusMixin, QMainWindow):
@@ -57,6 +78,7 @@ class MainWindow(MainWindowMenusMixin, QMainWindow):
 
         # Configura as opções de Docking
         self.setDockOptions(QMainWindow.AnimatedDocks | QMainWindow.AllowTabbedDocks)
+        self.editor_context = EditorContext()
 
         # Inicializa o Model e o ViewModel de Cena
         self.scene_model = SceneModel()
@@ -78,6 +100,7 @@ class MainWindow(MainWindowMenusMixin, QMainWindow):
         self.dock_assets.set_models(self.asset_model, self.asset_view_model)
         # set_viewmodel é chamado via container — propaga para o viewport interno
         self.vp_container.set_viewmodel(self.scene_view_model)
+        self._configure_editor_framework()
 
         # ── Inscrições no EventBus ────────────────────────────────────────────
         EventBus.subscribe(EVENT_HIERARCHY_UPDATED, self.update_object_count_status)
@@ -108,6 +131,41 @@ class MainWindow(MainWindowMenusMixin, QMainWindow):
             self.apply_default_layout()
 
         self.statusBar().showMessage("Zennity Editor pronto.", 5000)
+
+    def _configure_editor_framework(self) -> None:
+        """Install the shared context, workspace and bridges once."""
+        self.workspace_manager = QtWorkspaceManager(self, self.editor_context)
+        self.editor_context.attach_workspace(self.workspace_manager)
+        for panel_id, dock, category in (
+            ("hierarchy", self.dock_hierarchy, "Cena"),
+            ("inspector", self.dock_inspector, "Cena"),
+            ("assets", self.dock_assets, "Projeto"),
+            ("console", self.dock_console, "Diagnóstico"),
+            ("profiler", self.dock_profiler, "Diagnóstico"),
+            ("ui_builder", self.dock_ui_builder, "Interno"),
+            ("extensions", self.dock_extension_manager, "Interno"),
+            ("build_report", self.dock_build_report, "Build"),
+            ("build_wizard", self.dock_build_wizard, "Build"),
+        ):
+            self.workspace_manager.register_panel(panel_id, dock, category)
+
+        self.bridge_orchestrator = EditorBridgeOrchestrator(self.editor_context)
+        self.bridge_orchestrator.setup(
+            hierarchy=self.dock_hierarchy,
+            inspector=self.dock_inspector,
+            viewport=self.viewport,
+            viewmodel=self.scene_view_model,
+            animation_dock=self.dock_animation_studio,
+            visual_scripting_dock=self.dock_visual_scripting,
+            behavior_tree_dock=self.dock_visual_scripting.graph_tool_adapter("behavior_tree"),
+            dialogue_dock=self.dock_visual_scripting.graph_tool_adapter("dialogue"),
+            material_dock=self.dock_visual_scripting.graph_tool_adapter("material_graph"),
+            profiler_dock=self.dock_profiler,
+            extension_dock=self.dock_extension_manager,
+            ui_builder_dock=self.dock_ui_builder,
+            build_wizard_dock=self.dock_build_wizard,
+            build_report_dock=self.dock_build_report,
+        )
 
     # ──────────────────────────────────────────────────────────────────────────
     # Widget central
@@ -140,12 +198,46 @@ class MainWindow(MainWindowMenusMixin, QMainWindow):
         self.dock_code_editor.hide()
         self.dock_profiler  = ProfilerDock(self)
 
+        # Docks Visuais e Editores Especiais
+        self.logic_workspace = LogicGraphEditor(parent=self)
+        self.dock_visual_scripting = VisualScriptingEditorDock(self)
+        self.dock_animation_studio = AnimationStudioDock(self)
+        self.dock_ui_builder       = UIBuilderDock(self)
+        self.dock_extension_manager = ExtensionManagerDock(self)
+        self.dock_dependency_viewer = DependencyViewerDock(self)
+        self.dock_build_report     = BuildReportDock(self)
+        self.dock_asset_auditor    = AssetAuditorDock(self)
+        self.dock_build_wizard     = BuildWizardDock(self)
+        self.dock_project_settings = ProjectSettingsDock(self)
+
+        # Oculta por padrão para não sobrecarregar a UI inicial
+        for d in (
+            self.dock_animation_studio,
+            self.dock_visual_scripting,
+            self.dock_ui_builder, self.dock_extension_manager,
+            self.dock_dependency_viewer, self.dock_build_report,
+            self.dock_asset_auditor, self.dock_build_wizard,
+            self.dock_project_settings
+        ):
+            d.hide()
+
         self.addDockWidget(Qt.LeftDockWidgetArea,   self.dock_hierarchy)
         self.addDockWidget(Qt.RightDockWidgetArea,  self.dock_inspector)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_assets)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_console)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_profiler)
         self.addDockWidget(Qt.RightDockWidgetArea,  self.dock_code_editor)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_animation_studio)
+
+        # Adiciona docks no painel central/inferior
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_ui_builder)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_extension_manager)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_dependency_viewer)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_build_report)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_asset_auditor)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock_build_wizard)
+        self.addDockWidget(Qt.RightDockWidgetArea,  self.dock_project_settings)
+        self.dock_visual_scripting.configure_independent_window()
 
         self.tabifyDockWidget(self.dock_console, self.dock_profiler)
         self.splitDockWidget(self.dock_assets, self.dock_console, Qt.Horizontal)
@@ -353,7 +445,7 @@ class MainWindow(MainWindowMenusMixin, QMainWindow):
         self.vp_container.viewport.update()
         EventBus.emit(EVENT_PLAY_STATE_CHANGED, state="stop")
 
-    # ── Ferramentas e grade ──────────────────────────────────────────────────
+    # ── Transform tools e grade ───────────────────────────────────────────────
 
     def on_transform_tool_changed(self, tool_name: str) -> None:
         action_map = {

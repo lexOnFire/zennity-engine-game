@@ -1,0 +1,32 @@
+{
+  "format": "zennity.animation_clip",
+  "version": 1,
+  "name": "nave_Idle",
+  "texture": "Assets/Materials/nave_IDLE.PNG",
+  "frame_width": 224,
+  "frame_height": 199,
+  "frames": [
+    0
+  ],
+  "fps": 8.0,
+  "loop": true,
+  "events": [],
+  "tracks": [
+    {
+      "name": "Transform",
+      "enabled": true,
+      "type": "TransformTrack",
+      "position_keyframes": [],
+      "rotation_keyframes": [],
+      "scale_keyframes": []
+    },
+    {
+      "name": "Opacity",
+      "enabled": true,
+      "type": "PropertyTrack",
+      "component_type": "",
+      "property_name": "opacity",
+      "keyframes": []
+    }
+  ]
+}

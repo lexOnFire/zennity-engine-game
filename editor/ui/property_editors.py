@@ -1,6 +1,57 @@
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QMouseEvent
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QLineEdit, QToolButton, QVBoxLayout, QFrame
+from pathlib import Path
+from PySide6.QtCore import Qt, Signal, QUrl
+from PySide6.QtGui import QMouseEvent, QDragEnterEvent, QDropEvent
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QLineEdit, QToolButton, QVBoxLayout, QFrame, QComboBox
+
+
+class AssetPickerComboBox(QComboBox):
+    """QComboBox com suporte nativo a Drag & Drop de assets do Asset Browser ou do Explorador de Arquivos.
+    
+    Aceita arquivos arrastados com extensões filtradas (ex: imagens, scripts). Converte o
+    caminho absoluto para um caminho relativo ao projeto quando possível.
+    """
+    asset_dropped = Signal(str)
+
+    def __init__(self, accepted_extensions: list[str] | None = None, parent=None):
+        super().__init__(parent)
+        self._accepted_extensions = {ext.lower() for ext in (accepted_extensions or [])}
+        self.setAcceptDrops(True)
+        self.setToolTip("Arraste um arquivo de asset aqui ou selecione no menu.")
+
+    def dragEnterEvent(self, event: QDragEnterEvent) -> None:
+        if event.mimeData().hasUrls():
+            for url in event.mimeData().urls():
+                if url.isLocalFile():
+                    path = Path(url.toLocalFile())
+                    if not self._accepted_extensions or path.suffix.lower() in self._accepted_extensions:
+                        event.acceptProposedAction()
+                        return
+        event.ignore()
+
+    def dropEvent(self, event: QDropEvent) -> None:
+        if event.mimeData().hasUrls():
+            for url in event.mimeData().urls():
+                if url.isLocalFile():
+                    path = Path(url.toLocalFile())
+                    if not self._accepted_extensions or path.suffix.lower() in self._accepted_extensions:
+                        rel_path = self._to_project_relative(path)
+                        # Adiciona ao combo se não existir
+                        if self.findText(rel_path) == -1:
+                            self.addItem(rel_path)
+                        self.setCurrentText(rel_path)
+                        self.asset_dropped.emit(rel_path)
+                        event.acceptProposedAction()
+                        return
+        event.ignore()
+
+    def _to_project_relative(self, path: Path) -> str:
+        """Converte caminho absoluto em caminho relativo ao diretório de trabalho."""
+        try:
+            return path.resolve().relative_to(Path.cwd().resolve()).as_posix()
+        except ValueError:
+            return path.as_posix()
+
+
 
 class DragScrubLabel(QLabel):
     dragged = Signal(float)

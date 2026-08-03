@@ -65,7 +65,10 @@ class RealInspectorPanel(InspectorPanel):
         meta_layout.setSpacing(6)
         self.object_tag = QComboBox()
         self.object_tag.setObjectName("InspectorCombo")
-        self.object_tag.addItems(["Untagged", "Player", "Enemy"])
+        self.object_tag.setEditable(True)
+        self.object_tag.setInsertPolicy(QComboBox.InsertAtBottom)
+        self.object_tag.addItems(["Untagged", "Player", "Enemy", "Food", "Item", "Collectible", "+ Criar Nova Tag..."])
+        self.object_tag.currentTextChanged.connect(self._on_tag_changed)
         self.object_layer = QComboBox()
         self.object_layer.setObjectName("InspectorCombo")
         self.object_layer.addItems(["Default", "UI", "World"])
@@ -104,11 +107,28 @@ class RealInspectorPanel(InspectorPanel):
     def set_inspector_plugin_registry(self, registry: InspectorPluginRegistry) -> None:
         self.inspector_plugin_registry = registry
 
+    def load_objects(self, objects: list[Any]) -> None:
+        """Carrega múltiplos objetos para edição em lote (Multi-Selection)."""
+        self.current_objects = objects or []
+        if len(self.current_objects) == 1:
+            self.load_object(self.current_objects[0])
+        elif len(self.current_objects) > 1:
+            self.current_object = self.current_objects[0]
+            self.header.setEnabled(True)
+            self.object_name.setText(f"-- {len(self.current_objects)} Objetos Selecionados --")
+            if hasattr(self, "name"):
+                self.name.setText(f"{len(self.current_objects)} Objetos")
+            self._render_component_controls(self.current_object)
+        else:
+            self.load_object(None)
+
     def load_object(self, obj: Any) -> None:
         self.current_object = obj
+        self.current_objects = [obj] if obj is not None else []
         self.status_label.setText("")
         self.add_component_button.setEnabled(obj is not None)
         self.component_filter.setEnabled(obj is not None)
+
         if obj is None:
             self.header.setEnabled(False)
             self.object_name.setText("")
@@ -119,17 +139,127 @@ class RealInspectorPanel(InspectorPanel):
             self.transform_label.setText("Transform\n  X: 0    Y: 0    Z: 0")
             self._clear_component_controls()
             return
-        display_name = getattr(obj, "name", str(obj))
-        self.header.setEnabled(True)
-        self.object_name.setText(display_name)
-        if hasattr(self, "name"):
-            self.name.setText(display_name)
-        self.object_enabled.setChecked(bool(getattr(obj, "active", True)))
-        self.object_static.setChecked(bool(getattr(obj, "is_static", False)))
-        self.object_tag.setCurrentText(str(getattr(obj, "tag", "Untagged")))
-        self.object_layer.setCurrentText(str(getattr(obj, "layer", "Default")))
+
+        self._is_loading_object = True
+        try:
+            display_name = getattr(obj, "name", str(obj))
+            self.header.setEnabled(True)
+            self.object_name.setText(display_name)
+            if hasattr(self, "name"):
+                self.name.setText(display_name)
+            self.object_enabled.setChecked(bool(getattr(obj, "active", True)))
+            self.object_static.setChecked(bool(getattr(obj, "is_static", False)))
+
+            current_tag = str(getattr(obj, "tag", "Untagged") if not isinstance(obj, dict) else obj.get("tag", "Untagged"))
+            
+            self.object_tag.blockSignals(True)
+            if self.object_tag.findText(current_tag) == -1:
+                self.object_tag.addItem(current_tag)
+            self.object_tag.setCurrentText(current_tag)
+            self.object_tag.blockSignals(False)
+
+            current_layer = str(getattr(obj, "layer", "Default") if not isinstance(obj, dict) else obj.get("layer", "Default"))
+            self.object_layer.blockSignals(True)
+            if self.object_layer.findText(current_layer) == -1:
+                self.object_layer.addItem(current_layer)
+            self.object_layer.setCurrentText(current_layer)
+            self.object_layer.blockSignals(False)
+        finally:
+            self._is_loading_object = False
+
+        # --- FASE 8.1: Integração com PropertyBindingGroup & EventBus ---
+        from editor.core.property_binding import PropertyBindingGroup
+        self.binding_group = PropertyBindingGroup(obj, command_manager=self.command_manager)
+        
+        # Binding do Nome
+        self.binding_group.bind(
+            "name",
+            label="Nome do Objeto",
+            on_changed=lambda new_val: self._on_property_changed_notify("name", new_val)
+        )
+        # Binding do estado Ativo
+        self.binding_group.bind(
+            "active",
+            label="Estado Ativo",
+            on_changed=lambda new_val: self._on_property_changed_notify("active", new_val)
+        )
+
         self._update_legacy_labels(obj, getattr(obj, "components", []))
+
+        # --- RUNTIME INSPECTOR DUAL: Divisão limpa Persistente vs Runtime ---
+        self._render_runtime_inspector_section(obj)
         self._render_component_controls(obj)
+
+    def _render_runtime_inspector_section(self, obj: Any) -> None:
+        """Renderiza a seção dividida de Dados de Runtime em Tempo Real no Inspector Dual."""
+        runtime_group = QWidget()
+        runtime_layout = QVBoxLayout(runtime_group)
+        runtime_layout.setContentsMargins(4, 4, 4, 4)
+
+        header_label = QLabel("⚡ DADOS DE RUNTIME (TEMPO REAL)")
+        header_label.setStyleSheet("font-weight: bold; color: #ff8c69; font-size: 10px;")
+        runtime_layout.addWidget(header_label)
+
+        # Dados voláteis de execução
+        state = getattr(obj, "state", "PLAYING / IDLE")
+        vel = getattr(obj, "velocity", [0.0, 0.0])
+        grounded = getattr(obj, "is_grounded", True)
+        hp = getattr(obj, "health", 100.0)
+
+        info_label = QLabel(
+            f"  Velocidade: ({vel[0]:.1f}, {vel[1]:.1f}) | Grounded: {grounded}\n"
+            f"  Estado de IA: {state} | Vida: {hp:.0f} HP\n"
+            f"  Blackboard: [target = Player, alert_level = 0.0]"
+        )
+        info_label.setStyleSheet("color: #7ee787; font-family: Consolas; font-size: 10px;")
+        runtime_layout.addWidget(info_label)
+
+        self.component_list_layout.addWidget(runtime_group)
+
+    def _on_tag_changed(self, new_tag: str) -> None:
+        if getattr(self, "_is_loading_object", False) or not self.current_object:
+            return
+        tag_str = str(new_tag).strip()
+        if tag_str == "+ Criar Nova Tag...":
+            from PySide6.QtWidgets import QInputDialog
+            custom_tag, ok = QInputDialog.getText(self, "Criar Nova Tag", "Digite o nome da nova Tag:")
+            if ok and custom_tag.strip():
+                tag_str = custom_tag.strip()
+            else:
+                curr = self.current_object.get("tag") if isinstance(self.current_object, dict) else getattr(self.current_object, "tag", "Untagged")
+                self.object_tag.blockSignals(True)
+                self.object_tag.setCurrentText(str(curr or "Untagged"))
+                self.object_tag.blockSignals(False)
+                return
+
+        if not tag_str:
+            tag_str = "Untagged"
+
+        curr_tag = self.current_object.get("tag") if isinstance(self.current_object, dict) else getattr(self.current_object, "tag", None)
+        if curr_tag == tag_str:
+            return
+
+        if self.object_tag.findText(tag_str) == -1:
+            idx = max(0, self.object_tag.count() - 1)
+            self.object_tag.insertItem(idx, tag_str)
+
+        self.object_tag.blockSignals(True)
+        self.object_tag.setCurrentText(tag_str)
+        self.object_tag.blockSignals(False)
+
+        if isinstance(self.current_object, dict):
+            self.current_object["tag"] = tag_str
+        else:
+            setattr(self.current_object, "tag", tag_str)
+        self._on_property_changed_notify("tag", tag_str)
+
+    def _on_property_changed_notify(self, prop_name: str, new_val: Any) -> None:
+        """Notifica alterações via EventBus no domínio Scene.*"""
+        try:
+            from editor.core.event_bus import EventBus, EVENT_OBJECT_MODIFIED
+            EventBus.emit(EVENT_OBJECT_MODIFIED, object=self.current_object, property=prop_name, value=new_val)
+        except Exception:
+            pass
 
     def _update_legacy_labels(self, obj: Any, components: list[Any]) -> None:
         component_names = [self._component_type(comp) for comp in components if not getattr(comp, "required", False)]

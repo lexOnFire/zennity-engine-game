@@ -1,0 +1,10 @@
+{
+  "guid": "8c30b8f3-1196-4451-a278-6fc2182161d6",
+  "uuid": "8c30b8f3-1196-4451-a278-6fc2182161d6",
+  "type": "prefab",
+  "importer": "generic_importer",
+  "source_path": "Assets/Prefabs/NebulaDefensePro/PowerupShieldPro.zprefab",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "a5645bd2741ab4bdd58fec9f56e50cfef71f68c99506bc75b8dbad02f9484fb0"
+}

@@ -102,14 +102,16 @@ class CreatePanel(Panel):
 class PrefabsPanel(Panel):
     asset_selected = Signal(object)
 
-    def __init__(self) -> None:
+    def __init__(self, *, initial_refresh: bool = True) -> None:
         super().__init__("Prefabs")
         self.asset_model = AssetBrowserModel()
         self.asset_viewmodel = AssetBrowserViewModel(self.asset_model)
+        self._prefabs_loaded = False
         self.tree = QTreeWidget()
         self.tree.setHeaderLabels(["Nome", "Path"])
         self.layout.addWidget(self.tree)
-        self.refresh_prefabs()
+        if initial_refresh:
+            self.refresh_prefabs()
         self.tree.itemSelectionChanged.connect(self._selected)
 
     def refresh_prefabs(self) -> None:
@@ -118,6 +120,11 @@ class PrefabsPanel(Panel):
         for asset in self.asset_viewmodel.assets_by_type("prefab"):
             item = QTreeWidgetItem(self.tree, [asset.name, asset.path])
             item.setData(0, Qt.UserRole, asset)
+        self._prefabs_loaded = True
+
+    def ensure_prefabs_loaded(self) -> None:
+        if not self._prefabs_loaded:
+            self.refresh_prefabs()
 
     def _selected(self) -> None:
         item = self.tree.currentItem()
@@ -248,7 +255,7 @@ class ZennityPremiumEditor(QMainWindow):
 
     def _build_menu(self) -> None:
         bar = self.menuBar()
-        for name in ["Arquivo", "Editar", "Janela", "Criar", "Ferramentas", "Build + Executar", "Ajuda"]:
+        for name in ["Arquivo", "Editar", "Janela", "Criar", "Build + Executar", "Ajuda"]:
             menu = bar.addMenu(name)
             if name == "Janela":
                 menu.addAction("Salvar Layout", self.save_layout)
@@ -264,6 +271,9 @@ class ZennityPremiumEditor(QMainWindow):
         tb = QToolBar("MainToolBar")
         tb.setObjectName("CommandBar")
         tb.setMovable(False)
+        tb.setFloatable(False)
+        tb.setAllowedAreas(Qt.TopToolBarArea)
+        tb.setStyleSheet("QToolBar::handle { width: 0px; image: none; }")
         tb.setIconSize(QSize(16, 16))
         self.addToolBar(tb)
         for text in ["Open", "Save", "Undo", "Redo"]:

@@ -1,0 +1,10 @@
+{
+  "guid": "e8061114-36a7-4d10-b0f4-09f4248b42a4",
+  "uuid": "e8061114-36a7-4d10-b0f4-09f4248b42a4",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Logic/ZennityRun/CoinPickup.zlogic",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "7676480c0b5741088f4136f7f14cb7bab85be16565324a8cdb07042740a2ecaa"
+}

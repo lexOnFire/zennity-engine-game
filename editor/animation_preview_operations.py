@@ -71,6 +71,52 @@ class AnimationPreviewOperations:
     def _toggle_animation_preview_playback(self) -> None:
         self._animation_workspace.toggle_preview()
 
+    def _refresh_animation_frame_editor_from_fields(self, *_args) -> None:
+        texture = str(self.animator_sheet_combo.currentData() or "")
+        path = Path(texture)
+        if texture and not path.is_absolute():
+            path = Path.cwd() / path
+        self.animation_frame_editor.set_source(
+            path if texture else "",
+            int(self.animator_frame_width.value()),
+            int(self.animator_frame_height.value()),
+            list(self._animation_frames),
+        )
+        if not self._updating_inspector:
+            self._mark_animation_asset_dirty()
+            self._set_animation_preview_frame(self._animator_preview_index)
+
+    def _reset_animation_frames_from_range(self, *_args) -> None:
+        if self._updating_inspector:
+            return
+        start = max(0, int(self.animator_start_frame.value()))
+        count = max(1, int(self.animator_frame_count.value()))
+        self._animation_frames = list(range(start, start + count))
+        self.animation_frame_editor.set_frames(self._animation_frames)
+        self._animation_asset_dirty = True
+        self._animator_preview_index = min(self._animator_preview_index, count - 1)
+        self._refresh_animation_timeline(animation_asset_to_clip(self._animation_asset_from_editor()))
+        self._set_animation_preview_frame(self._animator_preview_index)
+        self._update_animation_asset_status()
+
+    def _set_animation_frames(self, frames: list[int]) -> None:
+        if self._updating_inspector:
+            return
+        normalized = [max(0, int(frame)) for frame in frames] or [0]
+        self._animation_frames = normalized
+        self.animator_start_frame.blockSignals(True)
+        self.animator_frame_count.blockSignals(True)
+        self.animator_start_frame.setValue(float(normalized[0]))
+        self.animator_frame_count.setValue(float(len(normalized)))
+        self.animator_start_frame.blockSignals(False)
+        self.animator_frame_count.blockSignals(False)
+        self._animation_asset_dirty = True
+        self._animator_preview_index = min(self._animator_preview_index, len(normalized) - 1)
+        clip = animation_asset_to_clip(self._animation_asset_from_editor())
+        self._refresh_animation_timeline(clip)
+        self._set_animation_preview_frame(self._animator_preview_index)
+        self._update_animation_asset_status()
+
     def _add_animation_clip(self) -> None:
         if self._selected_name not in self._objects_by_name:
             return

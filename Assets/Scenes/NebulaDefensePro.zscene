@@ -1,0 +1,843 @@
+{
+  "format_version": 2,
+  "scene_name": "Nebula Defense Pro",
+  "engine_version": "1.0.0",
+  "description": "Showcase completo 2D usando todos os subsistemas da Engine e grafos de Lógica Visual.",
+  "instructions": "WASD para mover a nave, Espaço para disparar lasers. Destrua ondas de inimigos e vença o Chefe!",
+  "blackboard": {
+    "variables": {
+      "score": {
+        "type": "number",
+        "scope": "project",
+        "default": 0.0
+      },
+      "wave": {
+        "type": "number",
+        "scope": "project",
+        "default": 1.0
+      },
+      "player_hp": {
+        "type": "number",
+        "scope": "project",
+        "default": 100.0
+      },
+      "player_shield": {
+        "type": "number",
+        "scope": "project",
+        "default": 100.0
+      }
+    }
+  },
+  "objects": [
+    {
+      "id": "main-camera",
+      "uuid": "main-camera-pro",
+      "name": "MainCamera",
+      "tag": "MainCamera",
+      "layer": "Default",
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          24.0,
+          -348.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          181.0,
+          101.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": false,
+        "mesh_type": "Quadrado",
+        "texture": "",
+        "color": [
+          255,
+          255,
+          255
+        ],
+        "layer": "Default",
+        "order": 0,
+        "material": "Default_Material"
+      },
+      "components": {
+        "camera": {
+          "active": true,
+          "zoom": 1.0,
+          "background_color": [
+            6,
+            10,
+            28
+          ],
+          "priority": 10
+        }
+      },
+      "static": false
+    },
+    {
+      "id": "bg-space",
+      "uuid": "bg-space-pro",
+      "name": "BackgroundSpacePro",
+      "tag": "Environment",
+      "layer": "Default",
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          24.000000000000025,
+          -347.0344549036621,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          770.8859716422102,
+          557.4323221743012,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "mesh_type": "Quadrado",
+        "texture": "Assets/Scenes/Cenário espacial em pixel-art detalhado.png",
+        "color": [
+          255,
+          255,
+          255
+        ],
+        "layer": "Background",
+        "order": -10,
+        "material": "Default_Material"
+      },
+      "components": {},
+      "static": false
+    },
+    {
+      "id": "player-ship",
+      "uuid": "player-ship-pro",
+      "name": "PlayerShip",
+      "tag": "Player",
+      "layer": "Default",
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          23.24665078133627,
+          -115.69236983029242,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          50.0,
+          50.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "mesh_type": "Quadrado",
+        "texture": "",
+        "color": [
+          0,
+          200,
+          255
+        ],
+        "layer": "Default",
+        "order": 10,
+        "material": "Default_Material"
+      },
+      "components": {
+        "logic_graph": {
+          "graph_path": "Assets/Logic/NebulaDefensePro/NebulaPlayerPro.zlogic"
+        },
+        "rigidbody": {
+          "mass": 1.0,
+          "use_gravity": false,
+          "is_kinematic": true,
+          "gravity_scale": 0.0
+        },
+        "collider": {
+          "width": 50.0,
+          "height": 50.0,
+          "is_trigger": false
+        }
+      },
+      "editor_data": {
+        "logic_assets": [
+          "Assets/Logic/NebulaDefensePro/NebulaPlayerPro.zlogic"
+        ]
+      },
+      "static": false
+    },
+    {
+      "id": "boss-ship",
+      "uuid": "boss-ship-pro",
+      "name": "BossShipPro",
+      "tag": "Boss",
+      "layer": "Default",
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          10.344818301220673,
+          -516.6472512798266,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          160.0,
+          90.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "mesh_type": "Quadrado",
+        "texture": "",
+        "color": [
+          220,
+          20,
+          60
+        ],
+        "layer": "Default",
+        "order": 5,
+        "material": "Default_Material"
+      },
+      "components": {
+        "logic_graph": {
+          "graph_path": "Assets/Logic/NebulaDefensePro/NebulaBoss.zlogic"
+        },
+        "rigidbody": {
+          "mass": 10.0,
+          "use_gravity": false,
+          "is_kinematic": true,
+          "gravity_scale": 0.0
+        },
+        "collider": {
+          "width": 160.0,
+          "height": 90.0,
+          "is_trigger": true
+        }
+      },
+      "editor_data": {
+        "logic_assets": [
+          "Assets/Logic/NebulaDefensePro/NebulaBoss.zlogic"
+        ]
+      },
+      "static": false
+    },
+    {
+      "id": "game-manager",
+      "uuid": "game-manager-pro",
+      "name": "GameManagerPro",
+      "tag": "Manager",
+      "layer": "Default",
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": false,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {
+        "logic_graph": {
+          "graph_path": "Assets/Logic/NebulaDefensePro/NebulaGameManagerPro.zlogic"
+        }
+      },
+      "editor_data": {
+        "logic_assets": [
+          "Assets/Logic/NebulaDefensePro/NebulaGameManagerPro.zlogic"
+        ]
+      },
+      "static": false
+    },
+    {
+      "id": "hud-canvas",
+      "uuid": "hud-canvas-pro",
+      "name": "HUD_Canvas",
+      "tag": "UI",
+      "layer": "UI",
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          640.0,
+          360.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          752.0,
+          1.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": false,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {
+        "canvas": {
+          "render_mode": "ScreenSpaceOverlay",
+          "order": 100
+        },
+        "items": [
+          {
+            "type": "Canvas",
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "x": 16.0,
+              "y": 16.0,
+              "width": 180.0,
+              "height": 42.0,
+              "z_order": 100,
+              "text": "",
+              "font_size": 24,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
+              "sprite_path": ""
+            }
+          }
+        ]
+      },
+      "children": [
+        {
+          "id": "score-text",
+          "name": "ScoreText",
+          "transform": {
+            "position": [
+              40.0,
+              30.0,
+              0.0
+            ],
+            "scale": [
+              200.0,
+              40.0,
+              1.0
+            ]
+          },
+          "components": {
+            "label": {
+              "text": "SCORE: 0000",
+              "font_size": 24,
+              "color": [
+                255,
+                255,
+                255
+              ]
+            }
+          }
+        },
+        {
+          "id": "wave-text",
+          "name": "WaveText",
+          "transform": {
+            "position": [
+              560.0,
+              30.0,
+              0.0
+            ],
+            "scale": [
+              160.0,
+              40.0,
+              1.0
+            ]
+          },
+          "components": {
+            "label": {
+              "text": "WAVE 1",
+              "font_size": 28,
+              "color": [
+                0,
+                240,
+                255
+              ]
+            }
+          }
+        },
+        {
+          "id": "shield-bar",
+          "name": "ShieldBar",
+          "transform": {
+            "position": [
+              40.0,
+              670.0,
+              0.0
+            ],
+            "scale": [
+              220.0,
+              20.0,
+              1.0
+            ]
+          },
+          "components": {
+            "progress_bar": {
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                0,
+                200,
+                255
+              ],
+              "bg_color": [
+                20,
+                30,
+                50
+              ]
+            }
+          }
+        },
+        {
+          "id": "hp-bar",
+          "name": "HealthBar",
+          "transform": {
+            "position": [
+              40.0,
+              640.0,
+              0.0
+            ],
+            "scale": [
+              220.0,
+              20.0,
+              1.0
+            ]
+          },
+          "components": {
+            "progress_bar": {
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                0,
+                255,
+                100
+              ],
+              "bg_color": [
+                20,
+                50,
+                30
+              ]
+            }
+          }
+        }
+      ],
+      "static": false
+    },
+    {
+      "id": "score-text",
+      "name": "ScoreText",
+      "tag": "UI",
+      "layer": "UI",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "transform": {
+        "position": [
+          40.0,
+          30.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          240.0,
+          40.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": false,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          255,
+          255,
+          255
+        ],
+        "texture": "",
+        "layer": "UI",
+        "order": 101
+      },
+      "components": {
+        "items": [
+          {
+            "type": "Label",
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "x": 40.0,
+              "y": 30.0,
+              "width": 240.0,
+              "height": 40.0,
+              "z_order": 101,
+              "text": "SCORE: 0000",
+              "font_size": 24,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
+              "sprite_path": ""
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "wave-text",
+      "name": "WaveText",
+      "tag": "UI",
+      "layer": "UI",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "transform": {
+        "position": [
+          1060.0,
+          30.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          180.0,
+          40.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": false,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          0,
+          240,
+          255
+        ],
+        "texture": "",
+        "layer": "UI",
+        "order": 101
+      },
+      "components": {
+        "items": [
+          {
+            "type": "Label",
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "x": 1060.0,
+              "y": 30.0,
+              "width": 180.0,
+              "height": 40.0,
+              "z_order": 101,
+              "text": "WAVE 1",
+              "font_size": 28,
+              "color": [
+                0,
+                240,
+                255
+              ],
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "anchor": "top_right",
+              "margin_x": 40.0,
+              "margin_y": 30.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
+              "sprite_path": ""
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "shield-bar",
+      "name": "ShieldBar",
+      "tag": "UI",
+      "layer": "UI",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "transform": {
+        "position": [
+          40.0,
+          670.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          220.0,
+          20.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": false,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          0,
+          200,
+          255
+        ],
+        "texture": "",
+        "layer": "UI",
+        "order": 101
+      },
+      "components": {
+        "items": [
+          {
+            "type": "ProgressBar",
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "x": 39.0,
+              "y": 670.0,
+              "width": 219.0,
+              "height": 20.0,
+              "z_order": 101.0,
+              "text": "",
+              "font_size": 24.0,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "alpha": 255.0,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "anchor": "bottom_left",
+              "margin_x": 40.0,
+              "margin_y": 30.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                0,
+                200,
+                255
+              ],
+              "bg_color": [
+                20,
+                30,
+                50
+              ],
+              "sprite_path": ""
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "hp-bar",
+      "name": "HealthBar",
+      "tag": "UI",
+      "layer": "UI",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "transform": {
+        "position": [
+          40.0,
+          640.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          220.0,
+          20.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": false,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          0,
+          255,
+          100
+        ],
+        "texture": "",
+        "layer": "UI",
+        "order": 101
+      },
+      "components": {
+        "items": [
+          {
+            "type": "ProgressBar",
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "x": 40.0,
+              "y": 640.0,
+              "width": 220.0,
+              "height": 20.0,
+              "z_order": 101,
+              "text": "",
+              "font_size": 24,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "anchor": "bottom_left",
+              "margin_x": 40.0,
+              "margin_y": 60.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                0,
+                255,
+                100
+              ],
+              "bg_color": [
+                20,
+                50,
+                30
+              ],
+              "sprite_path": ""
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

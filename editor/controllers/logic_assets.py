@@ -3,12 +3,21 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
 
 from engine.logic.graph_asset import load_logic_graph, save_logic_graph
 
 
 class LogicAssetRepository:
+    OBJECT_NAME_KEYS = frozenset({
+        "object",
+        "object_name",
+        "target_name",
+        "target_object",
+        "follow_target",
+    })
+
     def __init__(self, project_root: Path) -> None:
         self.project_root = Path(project_root)
         self._cache: dict[Path, tuple[int, dict]] = {}
@@ -54,4 +63,71 @@ class LogicAssetRepository:
             if (target_type == "name" and wanted == object_name.casefold()) or (target_type == "tag" and wanted == tag):
                 result.append((path, graph))
         return result
+
+    def rename_object_references(self, old_name: str, new_name: str) -> list[Path]:
+        """Persistently rename explicit object references across Logic Graph assets."""
+        changed: list[tuple[Path, dict, dict]] = []
+        for path, source in self.assets():
+            graph = deepcopy(source)
+            if self._rename_graph_references(graph, old_name, new_name):
+                changed.append((path, source, graph))
+        saved: list[tuple[Path, dict]] = []
+        try:
+            for path, source, graph in changed:
+                self.save(path, graph)
+                saved.append((path, source))
+        except (OSError, ValueError):
+            for path, source in reversed(saved):
+                self.save(path, source)
+            raise
+        return [path for path, _source, _graph in changed]
+
+    @classmethod
+    def _rename_graph_references(
+        cls, graph: dict, old_name: str, new_name: str
+    ) -> bool:
+        changed = False
+        target = graph.get("target")
+        if (
+            isinstance(target, dict)
+            and str(target.get("type", "name")) == "name"
+            and str(target.get("value", "")).casefold() == old_name.casefold()
+        ):
+            target["value"] = new_name
+            changed = True
+        return cls._rename_nested_references(
+            graph.get("nodes", []), old_name, new_name
+        ) or cls._rename_nested_references(
+            graph.get("variables", {}), old_name, new_name
+        ) or changed
+
+    @classmethod
+    def _rename_nested_references(
+        cls, value, old_name: str, new_name: str
+    ) -> bool:
+        changed = False
+        if isinstance(value, list):
+            for item in value:
+                changed = cls._rename_nested_references(
+                    item, old_name, new_name
+                ) or changed
+            return changed
+        if not isinstance(value, dict):
+            return False
+        is_object_value = str(value.get("type", "")).casefold() == "object"
+        for key, item in value.items():
+            if (
+                isinstance(item, str)
+                and item.casefold() == old_name.casefold()
+                and (str(key) in cls.OBJECT_NAME_KEYS or (
+                    is_object_value and str(key) in {"value", "default"}
+                ))
+            ):
+                value[key] = new_name
+                changed = True
+            else:
+                changed = cls._rename_nested_references(
+                    item, old_name, new_name
+                ) or changed
+        return changed
 

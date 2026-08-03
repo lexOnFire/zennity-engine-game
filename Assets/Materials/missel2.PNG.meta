@@ -1,0 +1,12 @@
+{
+  "guid": "8331d511-f1df-4452-b414-f8a64714c809",
+  "uuid": "8331d511-f1df-4452-b414-f8a64714c809",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/missel2.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "143514b47c4751deb01572f8413d8b6ff1ef05178be5e02d225aed839553f62c"
+}

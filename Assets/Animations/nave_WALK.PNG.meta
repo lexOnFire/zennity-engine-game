@@ -1,0 +1,12 @@
+{
+  "guid": "ae23543f-d4e1-4083-88ab-05fe375f25ac",
+  "uuid": "ae23543f-d4e1-4083-88ab-05fe375f25ac",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Animations/nave_WALK.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "0cb3042e4e5536286f2b50473ca33d6ba018d418103d77e1337a9eefdc9e76b4"
+}

@@ -71,11 +71,11 @@ class ViewportNavigationEventHandler:
         target = self.objects.get(target_name)
         event_name = str(ui.get("event", "click")) or "click"
         if target is not None:
-            target.setdefault("script_instructions", []).append({
+            target.setdefault("logic_events", []).append({
                 "command": event_name,
                 "value": {"source": owner.get("name"), "type": "ui_button"},
             })
         self.emit({
-            "type": "script_log", "level": "INFO",
+            "type": "runtime_log", "level": "INFO",
             "message": f"UI Button: {owner.get('name')} → {target_name}.{event_name}",
         })

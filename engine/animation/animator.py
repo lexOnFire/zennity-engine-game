@@ -17,7 +17,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 import pygame
 
-from engine.component import Component
+from engine.core import Component
 from engine.time import Time
 from .clip import AnimationClip
 
@@ -248,10 +248,13 @@ class Animator(Component):
         frame = self._current.frames[self._frame_index]
 
         # Importa aqui para evitar import circular
-        from engine.graphics.renderer2d import SpriteRenderer
+        from engine.graphics.renderer import SpriteRenderer
         sr = self.game_object.get_component(SpriteRenderer) if self.game_object else None
         if sr:
-            sr.image = frame
+            # BUG FIX: SpriteRenderer exposes its image via the `.surface`
+            # property (with setter) — it has no `.image` attribute, so this
+            # assignment silently did nothing and the sprite never animated.
+            sr.surface = frame
 
     def _fire_events(self) -> None:
         if self._current is None:

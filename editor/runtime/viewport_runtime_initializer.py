@@ -6,6 +6,9 @@ from typing import Any, Callable
 
 try:
     from engine.animation.controller_asset import AnimatorControllerRuntime
+    from engine.behavior.controller_asset import BehaviorControllerRunner
+    from engine.behavior.graph_runtime import BehaviorGraphRunner
+    from engine.dialogue.runtime import DialogueSession
     from engine.logic.blackboard import BlackboardStore, load_blackboard_asset
     from engine.logic.event_bus import LogicEventBus
     from engine.logic.runtime import LogicGraphRuntime
@@ -24,8 +27,8 @@ class ViewportRuntimeInitializer:
     def __init__(
         self,
         objects: dict[str, dict[str, Any]],
-        script_instances: dict[str, Any],
-        script_apis: dict[str, Any],
+        logic_modules: dict[str, Any],
+        logic_apis: dict[str, Any],
         animator_controllers: dict[str, Any],
         behavior_runners: dict[str, Any],
         logic_runtimes: dict[str, list[tuple[str, Any]]],
@@ -40,8 +43,8 @@ class ViewportRuntimeInitializer:
         project_root: Path,
     ) -> None:
         self.objects = objects
-        self.script_instances = script_instances
-        self.script_apis = script_apis
+        self.logic_modules = logic_modules
+        self.logic_apis = logic_apis
         self.animator_controllers = animator_controllers
         self.behavior_runners = behavior_runners
         self.logic_runtimes = logic_runtimes
@@ -64,14 +67,33 @@ class ViewportRuntimeInitializer:
         initial_objects = list(self.objects.items())
         self._hydrate(self.objects)
         for name, obj in initial_objects:
-            self._initialize_animation(name, obj)
+            # BUG FIX: estas três chamadas não tinham try/except (diferente de
+            # _initialize_logic, alguns linhas abaixo, que já é protegido).
+            # Uma exceção em QUALQUER objeto (ex.: um Animator Controller mal
+            # formado) propagava pra fora de start() inteiro, abortando a
+            # inicialização de TODOS os objetos processados depois dele na
+            # mesma lista — incluindo Logic Graphs de objetos completamente
+            # não relacionados que nem chegavam a rodar. Isola cada chamada
+            # por objeto e reporta no runtime_log em vez de derrubar tudo.
+            for step, fn in (
+                ("animação", self._initialize_animation),
+                ("behavior tree", self._initialize_behavior),
+                ("diálogo", self._initialize_dialogue),
+            ):
+                try:
+                    fn(name, obj)
+                except Exception as exc:
+                    self.emit({
+                        "type": "runtime_log", "level": "ERROR",
+                        "message": f"{name}: falha ao inicializar {step}: {exc}",
+                    })
         for name, obj in initial_objects:
             self._initialize_logic(name, obj)
         self.initialized_ids.update(str(obj.get("id", name)) for name, obj in initial_objects)
         self.start_spawned_objects()
         loaded = sum(len(entries) for entries in self.logic_runtimes.values())
         self.emit({
-            "type": "script_log", "level": "INFO",
+            "type": "runtime_log", "level": "INFO",
             "message": f"Play Mode carregou {loaded} Logic Graph(s); scripts Python estão desativados",
         })
 
@@ -84,7 +106,7 @@ class ViewportRuntimeInitializer:
         active_names = set(self.objects)
         for stale_name in set(self.logic_runtimes) - active_names:
             self.logic_runtimes.pop(stale_name, None)
-            self.script_apis.pop(stale_name, None)
+            self.logic_apis.pop(stale_name, None)
             self.animator_controllers.pop(stale_name, None)
         pending = [
             (name, obj) for name, obj in list(self.objects.items())
@@ -93,7 +115,18 @@ class ViewportRuntimeInitializer:
         for name, obj in pending:
             self.initialized_ids.add(str(obj.get("id", name)))
             self._hydrate({name: obj})
-            self._initialize_animation(name, obj)
+            for step, fn in (
+                ("animação", self._initialize_animation),
+                ("behavior tree", self._initialize_behavior),
+                ("diálogo", self._initialize_dialogue),
+            ):
+                try:
+                    fn(name, obj)
+                except Exception as exc:
+                    self.emit({
+                        "type": "runtime_log", "level": "ERROR",
+                        "message": f"{name}: falha ao inicializar {step}: {exc}",
+                    })
             self._initialize_logic(name, obj)
             audio = obj.get("audio")
             if isinstance(audio, dict) and audio.get("autoplay") and audio.get("path"):
@@ -103,9 +136,16 @@ class ViewportRuntimeInitializer:
                 )
 
     def _clear_runtime_state(self) -> None:
+        for name, runner in list(self.behavior_runners.items()):
+            api = self.logic_apis.get(name)
+            if api is not None:
+                try:
+                    runner.stop(api)
+                except Exception as exc:
+                    self.emit({"type": "runtime_log", "level": "WARNING", "message": f"{name}: falha ao encerrar Behavior Tree: {exc}"})
         self.logic_runtimes.clear()
-        self.script_instances.clear()
-        self.script_apis.clear()
+        self.logic_modules.clear()
+        self.logic_apis.clear()
         self.animator_controllers.clear()
         self.behavior_runners.clear()
         self.initialized_ids.clear()
@@ -124,7 +164,7 @@ class ViewportRuntimeInitializer:
         for hydrator in self.hydrators:
             for level, object_name, message in hydrator(selected, self.project_root):
                 self.emit({
-                    "type": "script_log", "level": level,
+                    "type": "runtime_log", "level": level,
                     "message": f"{object_name}: {message}",
                 })
 
@@ -142,6 +182,41 @@ class ViewportRuntimeInitializer:
         obj["_current_animation_name"] = str(animator.get("active_clip", "Idle"))
         obj["_animation_time"], obj["_animation_frame"], obj["_animation_raw_frame"] = 0.0, 0, -1
 
+    def _initialize_behavior(self, name: str, obj: dict[str, Any]) -> None:
+        behavior = obj.get("behavior")
+        if not isinstance(behavior, dict) or not bool(behavior.get("auto_start", True)):
+            return
+        api = self.logic_apis.setdefault(name, self.api_factory(name, obj))
+        graph = behavior.get("graph")
+        controller = behavior.get("controller")
+        if isinstance(graph, dict):
+            runner = BehaviorGraphRunner(graph, self.project_root)
+        elif isinstance(controller, dict):
+            runner = BehaviorControllerRunner(
+                controller, self.project_root, behavior.get("parameters", {})
+            )
+        else:
+            return
+        self.behavior_runners[name] = runner
+        api.behavior.bind(runner, api)
+        runner.start(api)
+        obj["_behavior_state"] = runner.current_state
+
+    def _initialize_dialogue(self, name: str, obj: dict[str, Any]) -> None:
+        dialogue = obj.get("dialogue")
+        if not isinstance(dialogue, dict) or not isinstance(dialogue.get("graph"), dict):
+            return
+        api = self.logic_apis.setdefault(name, self.api_factory(name, obj))
+        session = DialogueSession(
+            dialogue["graph"],
+            dialogue.get("variables", {}),
+            lambda event_name, payload: api.send(event_name, payload),
+        )
+        api.dialogue.bind(session)
+        obj["_dialogue_session"] = session
+        if dialogue.get("auto_start", False):
+            api.dialogue.start()
+
     def _initialize_logic(self, name: str, obj: dict[str, Any]) -> None:
         entries = obj.get("logic_graphs", [])
         if not isinstance(entries, list):
@@ -151,7 +226,7 @@ class ViewportRuntimeInitializer:
             if not isinstance(graph, dict):
                 continue
             try:
-                api = self.script_apis.setdefault(name, self.api_factory(name, obj))
+                api = self.logic_apis.setdefault(name, self.api_factory(name, obj))
                 runtime = LogicGraphRuntime(
                     graph, self.logic_blackboard, name, self.logic_event_bus,
                     self.subgraph_loader,
@@ -161,6 +236,6 @@ class ViewportRuntimeInitializer:
                 self.logic_runtimes.setdefault(name, []).append((path, runtime))
             except Exception as exc:
                 self.emit({
-                    "type": "script_log", "level": "ERROR",
+                    "type": "runtime_log", "level": "ERROR",
                     "message": f"{name}: Logic Graph: {exc}",
                 })

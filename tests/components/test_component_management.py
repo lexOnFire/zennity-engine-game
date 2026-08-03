@@ -136,16 +136,22 @@ def test_inspector_available_components_respects_unique_components(qapp) -> None
 
 
 def test_serialization_reflects_added_and_removed_components() -> None:
+    # RigidBody tem chave dedicada (components.rigidbody) desde a consolidação
+    # do scene_serializer -- ver _serialize_component_items em
+    # engine/scene/scene_serializer.py. Só componentes sem tratamento
+    # dedicado (ex.: ScriptComponent) aparecem em components.items.
     obj = GameObject("Player")
     add = AddComponentCommand(obj, "RigidBody")
     add.execute()
     obj.add_component(ScriptComponent("Assets/Scripts/player.py"))
 
     data = serialize_game_object(obj)
-    assert [item["type"] for item in data["components"]["items"]] == ["RigidBody", "ScriptComponent"]
+    assert data["components"]["rigidbody"] is not None
+    assert [item["type"] for item in data["components"]["items"]] == ["ScriptComponent"]
 
     RemoveComponentCommand(obj, add.component).execute()
     data = serialize_game_object(obj)
+    assert "rigidbody" not in data["components"]
     assert [item["type"] for item in data["components"]["items"]] == ["ScriptComponent"]
 
     restored = deserialize_game_object(data)

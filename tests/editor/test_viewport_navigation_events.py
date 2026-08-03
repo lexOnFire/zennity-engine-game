@@ -36,5 +36,5 @@ def test_navigation_handler_routes_game_ui_clicks() -> None:
     event = SimpleNamespace(type=_Pygame.MOUSEBUTTONDOWN, button=1, pos=(20, 30))
 
     assert handler.handle(event, _state(), playing=True, view_mode="game")[0]
-    assert objects["Player"]["script_instructions"][0]["command"] == "jump"
-    assert emitted[-1]["type"] == "script_log"
+    assert objects["Player"]["logic_events"][0]["command"] == "jump"
+    assert emitted[-1]["type"] == "runtime_log"

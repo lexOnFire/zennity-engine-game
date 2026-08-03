@@ -1,8 +1,20 @@
+import warnings
+from pathlib import Path
 import pygame
 from typing import Dict, List, Tuple, Optional, Any
 from ..core.component import Component
+from engine.tilemap.tilemap import TileMap, TilemapRenderer, TileLayer
 
-class Tileset:
+warnings.warn(
+    "engine.graphics.tilemap está deprecado. Use engine.tilemap.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+Tilemap = TileMap
+
+
+class LegacyTileset:
     """
     Data structure representing a collection of tiles extracted from a texture.
     """
@@ -128,16 +140,63 @@ class Tilemap(Component):
             self.deserialize_properties(properties)
 
 
-class TilemapRenderer(Component):
+class LegacyTilemapRenderer(Component):
     """
     Renderer component for a Tilemap. Separated for performance and single-responsibility.
+
+    BUG FIX: o Tileset é um objeto (não primitivo), e Component.serialize()
+    só reflete primitivos -- então um TilemapRenderer salvo em .zscene perdia
+    a referência da textura e voltava invisível ao recarregar a cena, sem erro
+    nenhum. Agora o caminho da textura e o tile_size são gravados como
+    properties e o Tileset é reconstruído no load.
     """
     component_type = "TilemapRenderer"
 
-    def __init__(self, tileset: Optional[Tileset] = None):
+    def __init__(
+        self,
+        tileset: Optional[LegacyTileset] = None,
+        texture_path: str = "",
+        tile_size: int = 32,
+    ):
         super().__init__()
         self.tileset = tileset
-        
+        self.texture_path = str(texture_path or "")
+        self.tile_size = int(tile_size)
+        if self.tileset is None and self.texture_path:
+            self._rebuild_tileset()
+
+    def _rebuild_tileset(self) -> None:
+        """Recarrega o Tileset a partir de ``texture_path``.
+
+        Tolerante a falhas de propósito: uma textura ausente ou um ambiente
+        sem vídeo não podem impedir o carregamento da cena inteira -- o
+        tilemap apenas fica sem visual, como já ficava antes desta correção.
+        """
+        path = self.texture_path
+        if not path:
+            self.tileset = None
+            return
+        try:
+            candidate = Path(path)
+            if not candidate.is_absolute():
+                candidate = Path.cwd() / candidate
+            surface = pygame.image.load(str(candidate))
+            self.tileset = LegacyTileset(surface, self.tile_size)
+        except Exception:
+            self.tileset = None
+
+    def serialize_properties(self) -> dict:
+        return {
+            "texture_path": self.texture_path,
+            "tile_size": int(self.tile_size),
+        }
+
+    def deserialize_properties(self, data: dict) -> None:
+        self.texture_path = str(data.get("texture_path", self.texture_path) or "")
+        self.tile_size = int(data.get("tile_size", self.tile_size))
+        if self.texture_path:
+            self._rebuild_tileset()
+
     def draw(self, screen: pygame.Surface) -> None:
         if not self.tileset:
             return
@@ -147,10 +206,8 @@ class TilemapRenderer(Component):
             return
             
         # Get camera
-        from engine.graphics.camera import Camera
-        from engine.graphics.camera2d import Camera2D
-        
-        camera = Camera.main or Camera2D.main
+        from engine.graphics.active_camera import get_active_camera
+        camera = get_active_camera()
         
         world_pos = self.transform.get_world_position()
         zoom = 1.0
@@ -193,3 +250,7 @@ class TilemapRenderer(Component):
                     scaled_surf = tile_surf
                     
                 screen.blit(scaled_surf, (int(screen_x), int(screen_y)))
+
+
+Tileset = LegacyTileset
+TilemapRenderer = LegacyTilemapRenderer

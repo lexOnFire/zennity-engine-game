@@ -1,0 +1,12 @@
+{
+  "guid": "8447a947-094a-4743-abe3-09ec8279a94f",
+  "uuid": "8447a947-094a-4743-abe3-09ec8279a94f",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/char_JUMP.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "fd7d8e2bfca00a8f301b3583793b06730791732dcb71801d1e368bb9b3c1586a"
+}

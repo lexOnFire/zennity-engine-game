@@ -77,11 +77,20 @@ class AnimationClip:
         keyframes: Optional[List[Keyframe | dict[str, Any]]] = None,
         duration: float | None = None,
         properties: Optional[List[str]] = None,
+        frame_source: Optional[dict[str, Any]] = None,
     ) -> None:
         self.name = name
         self.fps = max(fps, 0.01)
         self.loop = loop
         self._duration = float(duration) if duration is not None else None
+        self.flip_h = bool(flip_h)
+        # BUG FIX (limitação #9): serialize()/deserialize() antigos não
+        # persistiam `frames` (as imagens de sprite-cycle), só as keyframes
+        # de propriedade sobreviviam a um save/load via .zscene. Guardamos
+        # aqui uma descrição serializável de ONDE os frames vieram (qual
+        # spritesheet, recorte, flip) para reconstruí-los no deserialize.
+        # Ver `frame_source` em serialize()/deserialize() abaixo.
+        self.frame_source: Optional[dict[str, Any]] = dict(frame_source) if frame_source else None
 
         if flip_h:
             self.frames = [pygame.transform.flip(f, True, False) for f in frames]
@@ -159,7 +168,7 @@ class AnimationClip:
         return result
 
     def serialize(self) -> dict[str, Any]:
-        return {
+        data: dict[str, Any] = {
             "name": self.name,
             "duration": float(self.duration),
             "loop": bool(self.loop),
@@ -167,18 +176,71 @@ class AnimationClip:
             "properties": list(self.properties),
             "keyframes": [keyframe.serialize() for keyframe in self.keyframes],
         }
+        if self.frame_source is not None:
+            # Persiste a referência à spritesheet + recorte de frames usados,
+            # para que os frames de sprite-cycle sobrevivam a save/load.
+            data["frame_source"] = dict(self.frame_source)
+            data["flip_h"] = bool(self.flip_h)
+        return data
 
     @classmethod
     def deserialize(cls, data: dict[str, Any]) -> "AnimationClip":
+        frame_source = data.get("frame_source")
+        frames: List[pygame.Surface] = []
+        if isinstance(frame_source, dict) and frame_source.get("sheet"):
+            frames = cls._load_frames_from_source(frame_source)
+
         return cls(
             name=str(data.get("name", "Clip")),
-            frames=[],
+            frames=frames,
             fps=float(data.get("fps", 10.0)),
             loop=bool(data.get("loop", True)),
+            flip_h=bool(data.get("flip_h", False)) if frames else False,
             keyframes=[Keyframe.deserialize(item) for item in data.get("keyframes", []) if isinstance(item, dict)],
             duration=float(data["duration"]) if data.get("duration") is not None else None,
             properties=list(data.get("properties", [])),
+            frame_source=dict(frame_source) if isinstance(frame_source, dict) else None,
         )
+
+    @staticmethod
+    def _load_frames_from_source(source: dict[str, Any]) -> List[pygame.Surface]:
+        """Reconstrói a lista de frames a partir de uma referência de spritesheet.
+
+        `source` tem o formato:
+            {
+                "sheet": "Assets/.../sheet.png",
+                "frame_width": 32, "frame_height": 32,
+                "spacing": 0, "margin": 0, "scale": 1.0,
+                "color_key": [255, 0, 255] | None,
+                "frame_range": [start, end],   # exclusive end, tipo sheet.get_range()
+            }
+        Se o arquivo não puder ser carregado (asset ausente, pygame sem
+        vídeo inicializado, etc.) retorna [] silenciosamente — o clip ainda
+        funciona para tweening de propriedades, só perde o ciclo de sprites.
+        """
+        try:
+            from engine.animation.spritesheet import SpriteSheet
+
+            color_key = source.get("color_key")
+            sheet = SpriteSheet(
+                image_path=str(source["sheet"]),
+                frame_width=int(source.get("frame_width", 32)),
+                frame_height=int(source.get("frame_height", 32)),
+                spacing=int(source.get("spacing", 0)),
+                margin=int(source.get("margin", 0)),
+                scale=float(source.get("scale", 1.0)),
+                color_key=tuple(color_key) if color_key else None,
+            ).load()
+
+            frame_range = source.get("frame_range")
+            if frame_range and len(frame_range) == 2:
+                return sheet.get_range(int(frame_range[0]), int(frame_range[1]))
+            frame_indices = source.get("frame_indices")
+            if frame_indices:
+                return [sheet.get(int(i)) for i in frame_indices]
+            return sheet.frames
+        except Exception:
+            return []
 
     def _lerp_value(self, a: Any, b: Any, alpha: float) -> Any:
         if isinstance(a, (int, float)) and isinstance(b, (int, float)):

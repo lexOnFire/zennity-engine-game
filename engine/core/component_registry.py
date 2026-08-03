@@ -63,7 +63,10 @@ from engine.core.component import Transform
 from engine.graphics.camera import Camera
 from engine.audio import AudioSource, AudioListener
 from engine.animation.animator import Animator
-from engine.ui.runtime_components import Canvas, LabelComponent, ImageComponent, InfiniteBackground, ButtonComponent
+from engine.ui.runtime_components import (
+    Canvas, LabelComponent, ImageComponent, InfiniteBackground, ButtonComponent,
+    ProgressBarComponent,
+)
 from engine.graphics.tilemap import Tilemap, TilemapRenderer
 from engine.components.script_component import ScriptComponent
 from engine.physics.rigidbody import RigidBody
@@ -76,11 +79,20 @@ component_registry.register(AudioSource)
 component_registry.register(AudioListener)
 component_registry.register(Animator)
 component_registry.register(Canvas)
+# BUG FIX: real project scenes (RPG_Showcase.zscene, TestGame_Showcase.zscene)
+# serialize the HUD root component as type "UICanvas", but only "Canvas" was
+# ever registered — "UICanvas" resolved to nothing and silently degraded to a
+# bare Component on load. Register the same class under both names.
+component_registry.register(Canvas, "UICanvas")
 component_registry.register(LabelComponent)
 component_registry.register(ImageComponent)
 component_registry.register(InfiniteBackground)
 component_registry.register(InfiniteBackground, "Infinite Background")
 component_registry.register(ButtonComponent)
+# BUG FIX: NebulaDefensePro.zscene saves "ProgressBar" components, which had
+# no matching class anywhere in engine.ui.runtime_components and was never
+# registered — see ProgressBarComponent in runtime_components.py.
+component_registry.register(ProgressBarComponent)
 component_registry.register(Tilemap)
 component_registry.register(TilemapRenderer)
 component_registry.register(ScriptComponent, "Script")

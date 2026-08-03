@@ -66,7 +66,10 @@ def test_serialize_scene_with_object_transform() -> None:
     saved = data["objects"][0]
     assert saved["id"] == "player-id"
     assert saved["tag"] == "Player"
-    assert saved["layer"] == 3
+    # CONSOLIDATION: layer agora é sempre string (bate com o que o editor
+    # real grava em produção — ver engine/scene/scene_format.py). Um int
+    # de entrada ainda é aceito e convertido, não gera mais erro.
+    assert saved["layer"] == "3"
     assert saved["transform"]["position"] == [10.0, 20.0, 0.0]
     assert saved["transform"]["rz"] == pytest.approx(45.0)
     assert saved["transform"]["scale"] == [2.0, 3.0, 1.0]
@@ -107,7 +110,8 @@ def test_deserialize_game_object_restores_transform_and_identity() -> None:
     assert obj.id == "stable-id"
     assert obj.name == "Platform"
     assert obj.tag == "Ground"
-    assert obj.layer == 2
+    # CONSOLIDATION: layer é normalizado para string mesmo vindo de int.
+    assert obj.layer == "2"
     assert not obj.active
     assert not obj.enabled
     assert obj.mesh_type == "rect"

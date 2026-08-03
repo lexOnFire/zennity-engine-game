@@ -1,27 +1,34 @@
 from __future__ import annotations
 from copy import deepcopy
 from pathlib import Path
-from PySide6.QtCore import QPointF, Qt, Signal
-from PySide6.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen, QPolygonF
+from PySide6.QtCore import QPointF, Qt, Signal, QTimer
+from PySide6.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen, QPolygonF, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QComboBox, QDialog, QDialogButtonBox, QFormLayout, QHBoxLayout,
     QCheckBox, QDoubleSpinBox, QGraphicsItem, QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsRectItem,
     QGraphicsScene, QGraphicsSimpleTextItem, QGraphicsView, QInputDialog, QLabel,
-    QLineEdit, QMessageBox, QPushButton, QSpinBox, QSplitter, QTabWidget, QTreeWidget,
-    QTreeWidgetItem, QVBoxLayout, QWidget,
+    QFileDialog, QLineEdit, QMessageBox, QPushButton, QSpinBox, QSplitter, QTabWidget, QTreeWidget,
+    QTreeWidgetItem, QVBoxLayout, QWidget, QTextBrowser,
 )
 from engine.animation.controller_asset import (
     AnimatorControllerRuntime, default_animator_controller, load_animator_controller,
     save_animator_controller, validate_animator_controller,
 )
 from editor.widgets.animator_graph import AnimatorGraphView, TransitionEditorDialog
+from editor.widgets.animator_document_mixin import AnimatorDocumentMixin
 
 
-class AnimatorControllerEditorDialog(QDialog):
+class AnimatorControllerEditorDialog(AnimatorDocumentMixin, QDialog):
     """Edita estados, parâmetros e transições sem expor o JSON ao usuário."""
 
-    def __init__(self, project_root: Path, path: Path | None = None, parent=None) -> None:
+    def __init__(
+        self, project_root: Path, path: Path | None = None, parent=None,
+        *, embedded: bool = False,
+    ) -> None:
         super().__init__(parent)
+        self.embedded = bool(embedded)
+        if self.embedded:
+            self.setWindowFlags(Qt.Widget)
         self.project_root = Path(project_root).resolve()
         self.path = path.resolve() if path else None
         self.data = load_animator_controller(self.path) if self.path else default_animator_controller()
@@ -34,6 +41,12 @@ class AnimatorControllerEditorDialog(QDialog):
         self._preview_parameters = {
             name: parameter["default"] for name, parameter in self.data["parameters"].items()
         }
+        self._preview_timer = QTimer(self)
+        self._preview_timer.setInterval(16)  # ~60 FPS
+        self._preview_timer.timeout.connect(self._tick_preview)
+        self._preview_runtime: AnimatorControllerRuntime | None = None
+        self._preview_elapsed = 0.0
+
         self.setWindowTitle("Animator Controller")
         self.resize(1040, 650)
         self._build_ui()
@@ -49,13 +62,21 @@ class AnimatorControllerEditorDialog(QDialog):
         layout.addLayout(header)
 
         toolbar = QHBoxLayout()
+        if self.embedded:
+            self.new_button = QPushButton("＋ Novo controller")
+            self.open_button = QPushButton("📂 Abrir controller")
+            self.new_button.clicked.connect(self.new_document)
+            self.open_button.clicked.connect(self.open_dialog)
+            toolbar.addWidget(self.new_button)
+            toolbar.addWidget(self.open_button)
         self.undo_button = QPushButton("Desfazer")
         self.redo_button = QPushButton("Refazer")
         self.rename_state_button = QPushButton("Renomear")
         self.duplicate_state_button = QPushButton("Duplicar")
         self.delete_state_button = QPushButton("Excluir")
         self.test_parameter_button = QPushButton("Testar parâmetro")
-        self.evaluate_button = QPushButton("Avaliar transições")
+        self.evaluate_button = QPushButton("Play Preview")
+        self.evaluate_button.setCheckable(True)
         for button in (
             self.undo_button, self.redo_button, self.rename_state_button,
             self.duplicate_state_button, self.delete_state_button,
@@ -78,6 +99,8 @@ class AnimatorControllerEditorDialog(QDialog):
         self.edit_transition_button = QPushButton("Editar transição selecionada")
         transition_page.layout().addWidget(self.edit_transition_button)
         tabs.addTab(transition_page, "Transições")
+        self.help_browser = QTextBrowser()
+        tabs.addTab(self.help_browser, "Ajuda")
         self.graph = AnimatorGraphView()
         self.graph.setMinimumWidth(520)
         splitter = QSplitter(Qt.Horizontal)
@@ -93,7 +116,7 @@ class AnimatorControllerEditorDialog(QDialog):
         layout.addWidget(self.validation_label)
         buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
         buttons.accepted.connect(self._save)
-        buttons.rejected.connect(self.reject)
+        buttons.rejected.connect(self._cancel_or_reload)
         layout.addWidget(buttons)
         self.undo_button.clicked.connect(self._undo)
         self.redo_button.clicked.connect(self._redo)
@@ -109,6 +132,41 @@ class AnimatorControllerEditorDialog(QDialog):
         self.initial_combo.activated.connect(self._change_initial_state)
         self.edit_transition_button.clicked.connect(self._edit_selected_transition)
         self.transitions_tree.itemDoubleClicked.connect(lambda _item, _column: self._edit_selected_transition())
+        self.states_tree.itemSelectionChanged.connect(self._update_context_help)
+        self.parameters_tree.itemSelectionChanged.connect(self._update_context_help)
+        self.transitions_tree.itemSelectionChanged.connect(self._update_context_help)
+        for target in (self.graph, self.states_tree, self.parameters_tree, self.transitions_tree):
+            shortcut = QShortcut(QKeySequence(Qt.Key_Delete), target)
+            shortcut.setContext(Qt.WidgetWithChildrenShortcut)
+            shortcut.activated.connect(self._delete_current_selection)
+        self._update_context_help()
+
+    def _delete_current_selection(self) -> None:
+        focus = self.focusWidget()
+        if focus is self.parameters_tree:
+            self._remove_parameter()
+        elif focus is self.transitions_tree:
+            self._remove_transition()
+        else:
+            self._remove_state()
+
+    def _update_context_help(self) -> None:
+        if self.transitions_tree.currentItem() is not None and self.transitions_tree.hasFocus():
+            title = "Transição"
+            text = "Liga dois estados. Condições, prioridade e Exit Time determinam quando a troca acontece."
+        elif self.parameters_tree.currentItem() is not None and self.parameters_tree.hasFocus():
+            title = "Parâmetro"
+            text = "Valor bool, float ou trigger usado pelas condições das transições e atualizado no Play."
+        elif self._selected_state_name():
+            title = "Estado de animação"
+            text = "Representa uma animação e sua velocidade. O estado inicial é ativado quando o Animator começa."
+        else:
+            title = "Animator Graph"
+            text = "Crie estados, parâmetros e transições para controlar animações durante o jogo."
+        self.help_browser.setHtml(
+            f"<h2>{title}</h2><p>{text}</p>"
+            "<p>Use duplo clique para editar. Delete remove a seleção atual. Play Preview testa as transições sem alterar a cena.</p>"
+        )
 
     @staticmethod
     def _tree(headers: tuple[str, ...]) -> QTreeWidget:
@@ -442,11 +500,35 @@ class AnimatorControllerEditorDialog(QDialog):
         self._refresh_all()
 
     def _evaluate_preview(self) -> None:
-        runtime = AnimatorControllerRuntime(self.data, self._preview_parameters)
-        runtime.play(self._preview_state)
-        runtime.update()
-        self._preview_state = runtime.current_state
-        self._preview_parameters = dict(runtime.parameters)
+        if self.evaluate_button.isChecked():
+            self._preview_runtime = AnimatorControllerRuntime(self.data, self._preview_parameters)
+            self._preview_runtime.play(self._preview_state)
+            self._preview_elapsed = 0.0
+            self._preview_timer.start()
+            self.evaluate_button.setText("Stop Preview")
+        else:
+            self._preview_timer.stop()
+            self._preview_runtime = None
+            self.evaluate_button.setText("Play Preview")
+
+    def _tick_preview(self) -> None:
+        if not self._preview_runtime:
+            return
+        dt = 0.016
+        self._preview_elapsed += dt
+        
+        normalized = 1.0
+        state_data = self.data["states"].get(self._preview_runtime.current_state)
+        if state_data:
+            speed = max(0.001, float(state_data.get("speed", 1.0)))
+            # Na ausência de duração real da animação na UI, usamos um loop fictício de 1s para o preview visual do Exit Time
+            normalized = (self._preview_elapsed * speed) % 1.0
+
+        if self._preview_runtime.update(normalized, dt):
+            self._preview_elapsed = 0.0  # Reset on state change
+
+        self._preview_state = self._preview_runtime.current_state
+        self._preview_parameters = dict(self._preview_runtime.parameters)
         self._active_state = ""
         self._refresh_all()
         self.graph.select_state(self._preview_state)
@@ -456,17 +538,3 @@ class AnimatorControllerEditorDialog(QDialog):
         self._active_state = str(state or "")
         self._runtime_parameters = dict(parameters or {})
         self._refresh_all()
-
-    def _save(self) -> None:
-        name = self.name_field.text().strip()
-        if not name:
-            QMessageBox.warning(self, "Nome obrigatório", "Informe um nome para o controller.")
-            return
-        self.data["name"] = name
-        self.data["initial_state"] = self.initial_combo.currentText()
-        if self.path is None:
-            safe_name = "".join(character if character.isalnum() or character in "-_" else "_" for character in name)
-            self.path = self.project_root / "Assets" / "Animations" / f"{safe_name}.zanimator"
-        save_animator_controller(self.path, self.data)
-        self.saved_path = self.path
-        self.accept()

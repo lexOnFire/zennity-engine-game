@@ -1,0 +1,22 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": false,
+  "name": "PlayerLogic3",
+  "target": {
+    "type": "name",
+    "value": "toca"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [],
+  "edges": []
+}

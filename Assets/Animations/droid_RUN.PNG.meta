@@ -1,0 +1,12 @@
+{
+  "guid": "4f788188-78f7-40ce-9f4b-32aa0ed0d289",
+  "uuid": "4f788188-78f7-40ce-9f4b-32aa0ed0d289",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Animations/droid_RUN.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "75736d655fe4962d4d4cced8afee854c05fd024a8340897f52529e2f45bb7bf1"
+}

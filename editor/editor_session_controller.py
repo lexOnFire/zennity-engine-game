@@ -17,6 +17,7 @@ class EditorSessionController:
         self._configured = False
         self._closed = False
         self._filter_targets: set[Any] = set()
+        self._viewport_was_alive = False
 
     def configure(self) -> None:
         if self._configured:
@@ -54,6 +55,10 @@ class EditorSessionController:
             application.installEventFilter(editor)
 
         editor._event_timer = self._timer(editor._read_viewport_events, interval=33)
+        editor._viewport_monitor_timer = self._timer(
+            self._check_viewport_process,
+            interval=1000,
+        )
         editor._animator_preview_timer = self._timer(
             editor._tick_animation_preview, interval=125,
         )
@@ -71,7 +76,35 @@ class EditorSessionController:
     def attach_viewport_process(self, process: Any) -> None:
         self.editor._viewport_controller.attach(process)
         self.editor._viewport_process = process
+        self._viewport_was_alive = self._is_process_alive(process)
         self._closed = False
+
+    def _check_viewport_process(self) -> None:
+        process = getattr(self.editor, "_viewport_process", None)
+        if process is None:
+            return
+        is_alive = self._is_process_alive(process)
+        if is_alive:
+            self._viewport_was_alive = True
+            return
+        if not self._viewport_was_alive:
+            return
+
+        self._viewport_was_alive = False
+        exit_code = getattr(process, "exitcode", None)
+        message = f"Viewport Pygame encerrou inesperadamente (exitcode={exit_code})."
+        log = getattr(self.editor, "_log", None)
+        if callable(log):
+            log("ERROR", message)
+        try:
+            self.editor.statusBar().showMessage(message)
+        except Exception:
+            pass
+
+    @staticmethod
+    def _is_process_alive(process: Any) -> bool:
+        is_alive = getattr(process, "is_alive", None)
+        return bool(callable(is_alive) and is_alive())
 
     def native_viewport_size(self) -> tuple[int, int]:
         host = self.editor.viewport_host
@@ -94,9 +127,15 @@ class EditorSessionController:
         if self._closed:
             return
         self._closed = True
+        autosave = getattr(self.editor, "_autosave", None)
+        if autosave is not None:
+            autosave.stop()
         if self._configured:
             for timer_name in (
-                "_viewport_resize_timer", "_event_timer", "_animator_preview_timer",
+                "_viewport_resize_timer",
+                "_event_timer",
+                "_viewport_monitor_timer",
+                "_animator_preview_timer",
             ):
                 timer = getattr(self.editor, timer_name, None)
                 if timer is not None:
@@ -111,6 +150,7 @@ class EditorSessionController:
             "_hierarchy_controller",
             "_asset_browser",
             "_console_controller",
+            "_tool_controller",
         ):
             controller = getattr(self.editor, controller_name, None)
             disconnect = getattr(controller, "disconnect", None)

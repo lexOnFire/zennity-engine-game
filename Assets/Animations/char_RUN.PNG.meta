@@ -1,0 +1,12 @@
+{
+  "guid": "ae7d9cc2-0017-425b-981e-193d51ca324a",
+  "uuid": "ae7d9cc2-0017-425b-981e-193d51ca324a",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Animations/char_RUN.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "707a953b806cc975fbceb92f8749d07c0a8ed827b88b628ddc0072154c8c9fd5"
+}

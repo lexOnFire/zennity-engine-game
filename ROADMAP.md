@@ -1,6 +1,7 @@
 # Zennity Engine — Roadmap
 
-> Última atualização: 2026-07-24
+> Última atualização: 2026-08-01
+
 
 ---
 

@@ -1,0 +1,26 @@
+{
+  "format": "zennity.ui",
+  "version": 1,
+  "canvas": {
+    "name": "MainCanvas",
+    "type": "UICanvas",
+    "x": 0.0,
+    "y": 0.0,
+    "width": 1920.0,
+    "height": 1080.0,
+    "visible": true,
+    "children": [
+      {
+        "name": "vida",
+        "type": "UIPanel",
+        "x": 504.111441307578,
+        "y": 144.704309063893,
+        "width": 100.0,
+        "height": 40.0,
+        "visible": true,
+        "children": [],
+        "bg_color": "#2B2B36"
+      }
+    ]
+  }
+}

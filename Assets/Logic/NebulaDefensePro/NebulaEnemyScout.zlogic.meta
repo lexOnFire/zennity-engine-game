@@ -1,0 +1,10 @@
+{
+  "guid": "d6243bc6-5e27-472a-8862-80e55b4501f0",
+  "uuid": "d6243bc6-5e27-472a-8862-80e55b4501f0",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Logic/NebulaDefensePro/NebulaEnemyScout.zlogic",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "4ebf01af6d5e1dce7d7cf31fa13cc78752e95925f03277a14781a831eb40c632"
+}

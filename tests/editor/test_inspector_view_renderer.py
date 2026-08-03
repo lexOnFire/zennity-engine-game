@@ -17,6 +17,12 @@ class Field:
     def setEnabled(self, value) -> None:
         self.enabled = value
 
+    def setText(self, value) -> None:
+        self.value = value
+
+    def setStyleSheet(self, value) -> None:
+        self.style = value
+
 
 def test_physics_renderer_projects_box_and_rigidbody_without_mutating_model() -> None:
     cards = []
@@ -62,3 +68,33 @@ def test_renderer_card_is_hidden_for_camera_objects() -> None:
     InspectorViewRenderer(host).render_renderer({"camera": {}, "renderer_enabled": True})
 
     assert ("sprite", False) in cards
+
+
+def test_ui_renderer_accepts_native_progress_bar() -> None:
+    cards = []
+    host = SimpleNamespace(
+        _set_inspector_card_present=lambda key, present: cards.append((key, present)),
+        show_ui_chk=Field(),
+        ui_type_field=Field(),
+        ui_text_field=Field(),
+        ui_position_fields={key: Field() for key in ("x", "y", "width", "height", "font_size", "alpha")},
+        ui_color_button=Field(),
+        ui_image_path_field=Field(),
+        ui_image_button=Field(),
+        ui_interactable_field=Field(),
+        ui_event_field=Field(),
+        ui_target_combo=SimpleNamespace(
+            clear=lambda: None, addItem=lambda _value: None, addItems=lambda _values: None,
+            setCurrentText=lambda _value: None, setEnabled=lambda _value: None,
+        ),
+        _objects_by_name={"HealthBar": {}},
+    )
+
+    InspectorViewRenderer(host).render_ui(
+        "HealthBar",
+        {"ui": {"type": "progress_bar", "value": 75.0, "max_value": 100.0}},
+    )
+
+    assert ("ui", True) in cards
+    assert host.show_ui_chk.value is True
+    assert host.ui_type_field.value == "Barra de progresso"

@@ -1,0 +1,10 @@
+{
+  "guid": "660b62e5-ecdc-41e3-968c-300627102c67",
+  "uuid": "660b62e5-ecdc-41e3-968c-300627102c67",
+  "type": "prefab",
+  "importer": "generic_importer",
+  "source_path": "Assets/Prefabs/NebulaDefensePro/BossMissilePro.zprefab",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "fd6f9ac66d1966d7f810d1bb7402834d54b44dc99f9fc49daf4e2752740819b7"
+}

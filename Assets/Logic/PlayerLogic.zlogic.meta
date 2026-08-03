@@ -1,0 +1,10 @@
+{
+  "guid": "7e4eda9c-6dcc-47ca-81d7-ff39a00c8c2a",
+  "uuid": "7e4eda9c-6dcc-47ca-81d7-ff39a00c8c2a",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Logic/PlayerLogic.zlogic",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "d7b8f5a4ff0c1a57609c3c5ca16bd2c87a5622162071cd6f6a56a8a752f319c8"
+}

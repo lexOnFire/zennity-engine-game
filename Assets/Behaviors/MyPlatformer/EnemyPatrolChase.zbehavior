@@ -1,0 +1,21 @@
+{
+  "format": "zennity.generic_graph",
+  "version": 1,
+  "category": "Behavior Tree",
+  "nodes": [
+    {
+      "id": "patrol_leaf",
+      "type": "bt.patrol",
+      "position": [
+        0.0,
+        0.0
+      ],
+      "properties": {
+        "point_a": "420,168",
+        "point_b": "600,168",
+        "speed": 55.0
+      }
+    }
+  ],
+  "edges": []
+}

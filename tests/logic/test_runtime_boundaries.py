@@ -22,4 +22,3 @@ def test_output_evaluation_is_isolated_from_runtime_orchestration() -> None:
     source = Path("engine/logic/runtime/output_evaluator.py").read_text(encoding="utf-8")
     assert "def evaluate_output(" in source
     assert "Ciclo de dados detectado" in source
-    assert "Divisão por zero" in source

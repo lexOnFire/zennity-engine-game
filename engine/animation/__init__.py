@@ -18,6 +18,11 @@ from .controller_asset import (
     validate_animator_controller,
 )
 
+from .animation_player_service import AnimationPlayerService, AnimationPlaybackState, TrackPlaybackState
+from .curve import AnimationCurveEngine, AnimationKeyframe, CurveInterpolation
+from .preview_provider import AnimationPreviewProvider
+from .tracks import AnimationTrack, TransformTrack, SpriteTrack, AudioTrack, EventTrack, PropertyTrack
+
 __all__ = [
     "SpriteSheet",
     "AnimationClip",
@@ -36,4 +41,17 @@ __all__ = [
     "normalize_animator_controller",
     "save_animator_controller",
     "validate_animator_controller",
+    "AnimationPlayerService",
+    "AnimationPlaybackState",
+    "TrackPlaybackState",
+    "AnimationCurveEngine",
+    "AnimationKeyframe",
+    "CurveInterpolation",
+    "AnimationPreviewProvider",
+    "AnimationTrack",
+    "TransformTrack",
+    "SpriteTrack",
+    "AudioTrack",
+    "EventTrack",
+    "PropertyTrack",
 ]

@@ -2,7 +2,7 @@
 from typing import Optional, Tuple
 import numpy as np
 import pygame
-from engine.component import Component
+from engine.core import Component
 
 
 class OrbitCameraController(Component):

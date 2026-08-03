@@ -1,0 +1,12 @@
+{
+  "guid": "645373b2-6b0b-4104-9f71-f27f4c24e2de",
+  "uuid": "645373b2-6b0b-4104-9f71-f27f4c24e2de",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Sprites/MyPlatformer/player.png",
+  "import_settings": {
+    "filter_mode": "nearest"
+  },
+  "dependencies": [],
+  "hash": "1646d80e7d91fa0014b96589d150afeb1fe8ddba5a5d54e4c6f48b37a257798c"
+}

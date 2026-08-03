@@ -356,3 +356,48 @@ class TestEdgeCases:
         EventBus.emit_deferred("ev", n=2)
         EventBus.flush()
         assert cb.call_args_list == [call(n=1), call(n=2)]
+
+    def test_flush_processes_only_events_queued_at_call_time(self):
+        calls = []
+
+        def enqueue_again():
+            calls.append("called")
+            EventBus.emit_deferred("ev")
+
+        EventBus.subscribe("ev", enqueue_again)
+        EventBus.emit_deferred("ev")
+        EventBus.flush()
+
+        assert calls == ["called"]
+        assert EventBus.pending_count() == 1
+
+    def test_multiple_once_callbacks_each_fire_once(self):
+        first, second = MagicMock(), MagicMock()
+        EventBus.once("ev", first)
+        EventBus.once("ev", second)
+        EventBus.emit("ev")
+        EventBus.emit("ev")
+        first.assert_called_once()
+        second.assert_called_once()
+
+    def test_event_names_are_case_sensitive_and_support_dots(self):
+        upper, dotted = MagicMock(), MagicMock()
+        EventBus.subscribe("Player.Death", upper)
+        EventBus.subscribe("player.death", dotted)
+        EventBus.emit("player.death", killer="spike")
+        upper.assert_not_called()
+        dotted.assert_called_once_with(killer="spike")
+
+    def test_clear_all_drops_deferred_queue(self):
+        cb = MagicMock()
+        EventBus.subscribe("ev", cb)
+        EventBus.emit_deferred("ev")
+        EventBus.clear()
+        EventBus.flush()
+        cb.assert_not_called()
+
+    def test_instances_share_global_state(self):
+        cb = MagicMock()
+        EventBus.subscribe("ev", cb)
+        EventBus().publish("ev")
+        cb.assert_called_once()

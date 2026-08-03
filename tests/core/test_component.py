@@ -5,25 +5,16 @@ Testes unitários de engine/core/component.py.
 
 Estratégia:
   - Sem pygame, sem Scene: Component e Transform são puro Python + numpy.
-  - engine.graphics.math3d é mockado onde necessário (get_model_matrix)
-    para evitar importar OpenGL/pygame em contexto de teste puro.
+  - Usa engine.graphics.math3d real para evitar contaminar sys.modules entre testes.
   - Cada teste cria seus próprios objetos — sem estado compartilhado.
 """
 from __future__ import annotations
 
-import sys
-from types import ModuleType
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
 
-# ── stub mínimo de math3d (evita importar OpenGL) ───────────────────────────
-_math3d = ModuleType("engine.graphics.math3d")
-_math3d.translation_matrix = lambda x, y, z: np.eye(4, dtype=np.float32)
-_math3d.rotation_matrix    = lambda rx, ry, rz: np.eye(4, dtype=np.float32)
-_math3d.scale_matrix       = lambda sx, sy, sz: np.eye(4, dtype=np.float32)
-sys.modules.setdefault("engine.graphics.math3d", _math3d)
 
 from engine.core.component import Component, Transform  # noqa: E402
 from engine.game_object import GameObject               # noqa: E402

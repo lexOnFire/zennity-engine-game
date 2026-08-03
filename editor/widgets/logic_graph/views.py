@@ -26,16 +26,41 @@ class LogicGraphView(QGraphicsView):
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
         self.setViewportUpdateMode(QGraphicsView.BoundingRectViewportUpdate)
+        self.setCacheMode(QGraphicsView.CacheBackground)
+        self.setStyleSheet(
+            "QGraphicsView#LogicGraphView {"
+            "background: #12141c; border: 1px solid #1f2430; border-radius: 6px;"
+            "}"
+        )
 
     def drawBackground(self, painter: QPainter, rect: QRectF) -> None:
-        painter.fillRect(rect, QColor("#17191f"))
-        spacing = 22
+        visible_rect = self.mapToScene(self.viewport().rect()).boundingRect()
+        rect = rect.intersected(visible_rect)
+        painter.fillRect(rect, QColor("#12141c"))
+
+        spacing = 24
         left = int(rect.left()) - (int(rect.left()) % spacing)
         top = int(rect.top()) - (int(rect.top()) % spacing)
-        painter.setPen(QPen(QColor("#2b2e37"), 1))
-        for x in range(left, int(rect.right()) + spacing, spacing):
-            for y in range(top, int(rect.bottom()) + spacing, spacing):
-                painter.drawPoint(x, y)
+        right = int(rect.right()) + spacing
+        bottom = int(rect.bottom()) + spacing
+
+        painter.setPen(QPen(QColor("#181b24"), 1))
+        for x in range(left, right, spacing):
+            painter.drawLine(x, int(rect.top()), x, int(rect.bottom()))
+        for y in range(top, bottom, spacing):
+            painter.drawLine(int(rect.left()), y, int(rect.right()), y)
+
+        major = spacing * 5
+        major_left = int(rect.left()) - (int(rect.left()) % major)
+        major_top = int(rect.top()) - (int(rect.top()) % major)
+        major_right = int(rect.right()) + major
+        major_bottom = int(rect.bottom()) + major
+
+        painter.setPen(QPen(QColor("#212533"), 1))
+        for x in range(major_left, major_right, major):
+            painter.drawLine(x, int(rect.top()), x, int(rect.bottom()))
+        for y in range(major_top, major_bottom, major):
+            painter.drawLine(int(rect.left()), y, int(rect.right()), y)
 
     def wheelEvent(self, event) -> None:
         if event.modifiers() & Qt.ControlModifier:
@@ -61,8 +86,30 @@ class LogicGraphView(QGraphicsView):
             self.editor.duplicate_selected()
             event.accept()
             return
+        if event.key() == Qt.Key_C and event.modifiers() & Qt.ControlModifier:
+            self.editor.copy_selected()
+            event.accept()
+            return
+        if event.key() == Qt.Key_X and event.modifiers() & Qt.ControlModifier:
+            self.editor.cut_selected()
+            event.accept()
+            return
+        if event.key() == Qt.Key_V and event.modifiers() & Qt.ControlModifier:
+            self.editor.paste_selected()
+            event.accept()
+            return
         if event.key() in (Qt.Key_Delete, Qt.Key_Backspace):
             self.editor.delete_selected()
+            event.accept()
+            return
+        if event.key() == Qt.Key_C and not (event.modifiers() & Qt.ControlModifier):
+            if hasattr(self.editor, "add_comment_box"):
+                self.editor.add_comment_box()
+            event.accept()
+            return
+        if event.key() == Qt.Key_F and (event.modifiers() & Qt.ShiftModifier or event.modifiers() & Qt.ControlModifier):
+            if hasattr(self.editor, "auto_arrange_nodes"):
+                self.editor.auto_arrange_nodes()
             event.accept()
             return
         if event.key() == Qt.Key_Escape:

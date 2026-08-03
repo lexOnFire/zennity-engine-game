@@ -5,13 +5,17 @@ Execute a partir da raiz do projeto:
 """
 from __future__ import annotations
 
+import faulthandler
+import logging
 import multiprocessing as mp
 import sys
 import json
+import traceback
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+from PySide6.QtCore import QtMsgType, qInstallMessageHandler
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
@@ -22,9 +26,12 @@ from PySide6.QtWidgets import (
 from PySide6.QtWidgets import QTreeWidgetItem, QWidget
 
 from editor.interface_smoke_test import InterfaceSmokeTest
+from editor.inspector_component_delegates_mixin import InspectorComponentDelegatesMixin
 from editor.controllers.logic_assets import LogicAssetRepository
 from editor.isolated_viewport import run_viewport
 from editor.runtime.viewport_process_controller import ViewportProcessController
+from editor.runtime.editor_context import EditorContext
+from editor.runtime.editor_bridge_orchestrator import EditorBridgeOrchestrator
 from editor.editor_bootstrap_controller import EditorBootstrapController
 from editor.animation_workspace_operations import AnimationWorkspaceOperations
 from editor.widgets.component_picker import ComponentPickerDialog
@@ -39,7 +46,40 @@ from engine.animation.clip_asset import (
 )
 
 
-class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
+_CRASH_LOG_HANDLE = None
+
+
+def _install_crash_logging(project_root: Path) -> None:
+    """Registra rastros de falhas silenciosas em .zennity_crash.log."""
+    global _CRASH_LOG_HANDLE
+    if _CRASH_LOG_HANDLE is not None:
+        return
+
+    log_path = project_root / ".zennity_crash.log"
+    _CRASH_LOG_HANDLE = log_path.open("a", encoding="utf-8", buffering=1)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        handlers=[logging.StreamHandler(_CRASH_LOG_HANDLE)],
+        force=True,
+    )
+    faulthandler.enable(file=_CRASH_LOG_HANDLE, all_threads=True)
+
+    def excepthook(exc_type, exc, tb) -> None:
+        logging.critical("Exceção não tratada no editor", exc_info=(exc_type, exc, tb))
+        traceback.print_exception(exc_type, exc, tb, file=_CRASH_LOG_HANDLE)
+        sys.__excepthook__(exc_type, exc, tb)
+
+    def qt_message_handler(mode, context, message) -> None:
+        level = logging.ERROR if mode in {QtMsgType.QtCriticalMsg, QtMsgType.QtFatalMsg} else logging.WARNING
+        logging.log(level, "Qt: %s", message)
+
+    sys.excepthook = excepthook
+    qInstallMessageHandler(qt_message_handler)
+    logging.info("Crash logging instalado em %s", log_path)
+
+
+class IsolatedEditorWindow(InspectorComponentDelegatesMixin, AnimationWorkspaceOperations, InterfaceSmokeTest):
     def __init__(
         self,
         viewport_process: mp.Process | None,
@@ -49,11 +89,16 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
     ) -> None:
         self._last_build_report = None
         self._last_validation_report = None
+        self.editor_context = EditorContext(Path.cwd())
         self._logic_assets_repository = LogicAssetRepository(Path.cwd())
         super().__init__()
+        self.bridge_orchestrator = EditorBridgeOrchestrator(self.editor_context)
+        self.bridge_orchestrator.setup(animation_dock=self.animation_track_studio)
+        self._graph_hub_bridges_attached = False
         self._current_animation_asset_path: Path | None = None
         self._animation_draft_name = "NewAnimation"
         self._animation_events: list[dict] = []
+        self._animation_frames: list[int] = [0]
         self._animation_asset_dirty = False
         self._animation_preview_playing = True
         self._animation_bound_key: tuple[str, str] | None = None
@@ -66,6 +111,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
             "sprite": True,
             "audio": False,
             "logic": False,
+            "behavior": False,
             "rigidbody": False,
             "collider": False,
             "camera": False,
@@ -132,6 +178,8 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
 
     def _change_view_mode(self, index: int) -> None:
         mode = "game" if int(index) == 1 else "scene"
+        if hasattr(self, "_event_router"):
+            self._event_router.reset_runtime_input("troca de Scene/Game")
         self._commands.put({
             "type": "set_view_mode",
             "mode": mode,
@@ -151,9 +199,11 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
 
     def _record_history(self, snapshot: list[dict] | None = None) -> None:
         self._history_controller.record(snapshot)
+        self._autosave.schedule()
 
     def _restore_history(self, snapshot: list[dict]) -> None:
         self._history_controller.restore(snapshot)
+        self._autosave.schedule()
 
     def _undo(self) -> None:
         self._history_controller.undo()
@@ -230,62 +280,56 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
     def _clear_inspector_view(self) -> None:
         self._inspector_controller.clear()
 
-    def _toggle_renderer_component(self, checked: bool) -> None:
-        self._inspector_components.toggle_renderer(checked)
+    def _on_inspector_tag_changed(self, new_tag: str) -> None:
+        if getattr(self, "_updating_inspector", False) or not self._selected_name:
+            return
+        obj = self._objects_by_name.get(self._selected_name)
+        if not obj:
+            return
+        tag_str = str(new_tag).strip()
+        if tag_str == "+ Criar Nova Tag...":
+            from PySide6.QtWidgets import QInputDialog
+            custom_tag, ok = QInputDialog.getText(self, "Criar Nova Tag", "Digite o nome da nova Tag:")
+            if ok and custom_tag.strip():
+                tag_str = custom_tag.strip()
+            else:
+                curr = str(obj.get("tag", "Untagged"))
+                if hasattr(self, "tag_combo"):
+                    self.tag_combo.blockSignals(True)
+                    self.tag_combo.setCurrentText(curr)
+                    self.tag_combo.blockSignals(False)
+                return
 
-    def _choose_sprite_texture(self) -> None:
-        self._inspector_components.choose_sprite_texture()
+        if not tag_str:
+            tag_str = "Untagged"
 
-    def _choose_sprite_color(self) -> None:
-        self._inspector_components.choose_sprite_color()
+        if hasattr(self, "tag_combo"):
+            if self.tag_combo.findText(tag_str) < 0:
+                idx = max(0, self.tag_combo.count() - 1) if self.tag_combo.findText("+ Criar Nova Tag...") >= 0 else self.tag_combo.count()
+                self.tag_combo.insertItem(idx, tag_str)
 
-    def _send_inspector_renderer(self, record_history: bool = True) -> None:
-        self._inspector_components.send_renderer(record_history)
+            self.tag_combo.blockSignals(True)
+            self.tag_combo.setCurrentText(tag_str)
+            self.tag_combo.blockSignals(False)
 
-    def _toggle_audio_component(self, checked: bool) -> None:
-        self._inspector_components.toggle_audio(checked)
+        obj["tag"] = tag_str
+        if hasattr(self, "_notify_scene_changed"):
+            self._notify_scene_changed()
 
-    def _get_available_audio_files(self) -> list[str]:
-        return self._inspector_components.available_audio_files()
-
-    def _send_inspector_audio(self) -> None:
-        self._inspector_components.send_audio()
-
-    def _test_selected_audio(self) -> None:
-        self._inspector_components.preview_audio()
-
-    def _toggle_rigidbody_component(self, checked: bool) -> None:
-        self._inspector_components.toggle_rigidbody(checked)
-
-    def _toggle_collider_component(self, checked: bool) -> None:
-        self._inspector_components.toggle_collider(checked)
-
-    def _toggle_camera_component(self, checked: bool) -> None:
-        self._inspector_components.toggle_camera(checked)
-
-    def _send_inspector_camera(self) -> None:
-        self._inspector_components.send_camera()
-
-    def _choose_camera_color(self) -> None:
-        self._inspector_components.choose_camera_color()
-
-    def _toggle_ui_visibility(self, checked: bool) -> None:
-        self._inspector_components.toggle_ui_visibility(checked)
-
-    def _delete_ui_component(self) -> None:
-        self._inspector_components.delete_ui()
-
-    def _choose_ui_color(self) -> None:
-        self._inspector_components.choose_ui_color()
-
-    def _choose_ui_image(self) -> None:
-        self._inspector_components.choose_ui_image()
-
-    def _send_inspector_ui(self) -> None:
-        self._inspector_components.send_ui()
-
-    def _ensure_canvas(self) -> None:
-        self._inspector_components.ensure_canvas()
+    def _send_inspector_identity(self) -> None:
+        if not self._selected_name or getattr(self, "_updating_inspector", False):
+            return
+        obj = self._objects_by_name.get(self._selected_name)
+        if not obj:
+            return
+        if hasattr(self, "tag_combo"):
+            tag_val = str(self.tag_combo.currentText()).strip() or "Untagged"
+            if tag_val != "+ Criar Nova Tag...":
+                obj["tag"] = tag_val
+        if hasattr(self, "layer_combo"):
+            obj["layer"] = str(self.layer_combo.currentText()).strip() or "Default"
+        if hasattr(self, "_notify_scene_changed"):
+            self._notify_scene_changed()
 
     def _open_add_component_menu(self) -> None:
         if self._play_session.is_running:
@@ -298,10 +342,6 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
 
     def _add_component(self, component: str) -> None:
         self._inspector_components.add_component(component)
-
-
-    def _send_inspector_physics(self) -> None:
-        self._inspector_components.send_physics()
 
     def _send_inspector_transform(self) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
@@ -333,17 +373,18 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
             self._inspector_view.render_camera(name, obj)
             self._inspector_view.render_ui(name, obj)
             self._inspector_view.render_logic(name)
+            self._inspector_view.render_behavior(name, obj)
             self._inspector_view.render_runtime(obj)
-            for header, body in self.script_containers:
-                self.inspector_layout.removeWidget(header)
-                self.inspector_layout.removeWidget(body)
-                header.deleteLater()
-                body.deleteLater()
-            self.script_containers.clear()
         finally:
             self._updating_inspector = False
     def _handle_selected_event(self, message: dict) -> None:
         self._viewport_event_controller.selected(message)
+
+    def _handle_tool_changed_event(self, message: dict) -> None:
+        self._viewport_event_controller.tool_changed(message)
+
+    def _handle_delete_selected_requested(self, message: dict) -> None:
+        self._viewport_event_controller.delete_selected_requested(message)
 
     def _handle_transform_event(self, message: dict) -> None:
         self._viewport_event_controller.transform(message)
@@ -360,19 +401,19 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
     def _handle_viewport_mode_event(self, message: dict) -> None:
         self._viewport_event_controller.viewport_mode(message)
 
-    def _handle_script_log_event(self, message: dict) -> None:
-        self._viewport_event_controller.script_log(message)
+    def _handle_runtime_log_event(self, message: dict) -> None:
+        self._viewport_event_controller.runtime_log(message)
 
     def _handle_logic_trace_event(self, message: dict) -> None:
         self._viewport_event_controller.logic_trace(message)
 
 
 
-    def _handle_attach_script_event(self, message: dict) -> None:
-        self._viewport_event_controller.attach_script(message)
-
     def _handle_stats_event(self, message: dict) -> None:
         self._viewport_event_controller.stats(message)
+
+    def _handle_runtime_metrics_event(self, message: dict) -> None:
+        self._viewport_event_controller.runtime_metrics(message)
 
     def _read_viewport_events(self) -> None:
         self._viewport_event_controller.poll()
@@ -381,9 +422,41 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         self._session_controller.shutdown()
         super().closeEvent(event)
 
+    def _refresh_assets(self) -> None:
+        """Atualiza o painel de Assets após criar ou salvar arquivos."""
+        candidates = (
+            getattr(self, "assets_panel", None),
+            getattr(self, "asset_browser", None),
+            getattr(self, "resources_panel", None),
+            getattr(self, "project_panel", None),
+            getattr(self, "asset_manager_panel", None),
+        )
+
+        for panel in candidates:
+            if panel is None:
+                continue
+
+            for method_name in (
+                "refresh",
+                "refresh_assets",
+                "reload",
+                "reload_assets",
+                "scan_assets",
+                "rescan",
+            ):
+                method = getattr(panel, method_name, None)
+
+                if callable(method):
+                    method()
+                    return
+
 
 def main() -> None:
+    _install_crash_logging(Path.cwd())
     context = mp.get_context("spawn")
+
+    # The Qt editor must not boot the complete runtime in this process.
+    # Pygame/SDL belongs exclusively to the isolated viewport child process.
     viewport_controller = ViewportProcessController.create(context)
     commands = viewport_controller.command_queue
     events = viewport_controller.events

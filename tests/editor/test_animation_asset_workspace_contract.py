@@ -18,6 +18,7 @@ def test_animation_workspace_exposes_library_timeline_and_asset_actions() -> Non
         "animation_delete_button",
         "animation_apply_button",
         "animation_demo_button",
+        "animation_frame_editor",
     ):
         assert f"window.{widget_name}" in source
 
@@ -58,10 +59,11 @@ def test_animation_workspace_is_resizable_and_properties_scroll() -> None:
     source = (ROOT / "editor" / "ui" / "workspace_builder.py").read_text(encoding="utf-8")
 
     assert "window.animation_content_splitter = QSplitter(Qt.Horizontal)" in source
-    assert "window.animation_content_splitter.setSizes([170, 430, 250])" in source
+    assert "window.animation_content_splitter.setSizes([230, 700, 310])" in source
     assert "window.animation_properties_scroll.setWidgetResizable(True)" in source
     assert "window.animator_preview.setMinimumHeight(160)" in source
     assert "window.animator_preview.setMinimumSize(320, 260)" not in source
+    assert "window.animation_frame_editor = AnimationFrameEditor()" in source
 
 
 def test_animation_workspace_separates_asset_object_timeline_and_clip_properties() -> None:

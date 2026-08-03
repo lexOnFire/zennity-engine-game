@@ -8,6 +8,7 @@ from PySide6.QtCore import Qt
 
 from editor.animation_workspace_controller import AnimationWorkspaceController
 from editor.asset_browser_controller import AssetBrowserController
+from editor.behavior_tree_inspector_controller import BehaviorTreeInspectorController
 from editor.console_controller import ConsoleController
 from editor.editor_command_controller import EditorCommandController
 from editor.editor_session_controller import EditorSessionController
@@ -26,7 +27,10 @@ from editor.runtime.viewport_process_controller import ViewportProcessController
 from editor.scene_history_controller import SceneHistoryController
 from editor.scene_object_controller import SceneObjectController
 from editor.scene_persistence import EditorScenePersistence
-from editor.script_workspace_controller import ScriptWorkspaceController
+from editor.scene_autosave_controller import SceneAutosaveController
+from editor.controllers.selection_controller import EditorSelectionController
+from editor.controllers.tool_controller import ToolController
+from editor.controllers.viewport_controller import ViewportController
 from editor.viewport_event_controller import ViewportEventController
 
 
@@ -53,6 +57,7 @@ class EditorBootstrapController:
         h._console_records = h._console_controller.records
         h._asset_browser = AssetBrowserController(h, self.project_root)
         h._scene_persistence = EditorScenePersistence(self.project_root)
+        h._autosave = SceneAutosaveController(h, self.project_root)
         h._viewport_controller = viewport_controller or ViewportProcessController.from_queues(
             commands, events, viewport_process,
         )
@@ -60,6 +65,7 @@ class EditorBootstrapController:
         h._commands = h._viewport_controller.commands
         h._events = h._viewport_controller.events
         h._scene_controller = SceneSelectionController(h._commands)
+        h._viewport_event_controller = ViewportEventController(h)
         h._viewport_events = ViewportEventDispatcher(self._viewport_handlers())
         h._session_controller = EditorSessionController(h)
         h._hierarchy_view = HierarchyViewRenderer(h)
@@ -69,14 +75,16 @@ class EditorBootstrapController:
         h._inspector_controller = IsolatedInspectorController(h)
         h._inspector_components = InspectorComponentController(h)
         h._inspector_view = InspectorViewRenderer(h)
+        h._behavior_tree_controller = BehaviorTreeInspectorController(h, self.project_root)
         h._animation_workspace = AnimationWorkspaceController(h)
-        h._script_workspace = ScriptWorkspaceController(h)
         h._logic_workspace_controller = LogicWorkspaceController(h)
         h._prefab_workspace = PrefabWorkspaceController(h)
         h._scene_objects = SceneObjectController(h)
         h._editor_commands = EditorCommandController(h)
+        h._selection = EditorSelectionController(h)
+        h._viewport_commands = ViewportController(h)
+        h._tool_controller = ToolController(h)
         h._project_workflow = ProjectWorkflowController(h)
-        h._viewport_event_controller = ViewportEventController(h)
         h._play_controller = IsolatedPlayModeController()
         h._play_session = h._play_controller.session
         self._composed = True
@@ -91,7 +99,7 @@ class EditorBootstrapController:
         h.statusBar().showMessage("Zennity Phase 1 pronto — Viewport em processo dedicado.")
         h._editor_commands.connect_toolbar_actions()
         h._editor_commands.configure_main_menus()
-        h._editor_commands.configure_tools()
+        h._tool_controller.configure()
         h._configure_create_menu()
         h._connect_create_panel()
         h._configure_edit_menu()
@@ -107,19 +115,20 @@ class EditorBootstrapController:
         h._connect_inspector_to_viewport()
         h._configure_animation_workspace()
         h._logic_workspace_controller.connect()
-        h.script_containers = []
         h._clear_inspector_view()
         h.add_component_button.clicked.connect(h._open_add_component_menu)
         h.viewport_tabs.currentChanged.connect(h._change_view_mode)
         h._session_controller.configure()
+        h._autosave.start()
         h._scene_controller.publish_snapshot(h._scene_snapshot)
         h._log("INFO", "Zennity Phase 1 iniciado com Viewport em processo separado")
         self._configured = True
 
     def _viewport_handlers(self) -> dict[str, Any]:
         h = self.host
-        return {
+        handlers = {
             "selected": h._handle_selected_event,
+            "tool_changed": h._handle_tool_changed_event,
             "transform_begin": h._handle_transform_event,
             "transform_end": h._handle_transform_event,
             "transform": h._handle_transform_event,
@@ -127,11 +136,19 @@ class EditorBootstrapController:
             "scene_snapshot": h._handle_scene_snapshot_event,
             "runtime_objects": h._handle_runtime_objects_event,
             "viewport_mode": h._handle_viewport_mode_event,
-            "script_log": h._handle_script_log_event,
+            "runtime_log": h._handle_runtime_log_event,
             "logic_trace": h._handle_logic_trace_event,
             "logic_trace_clear": h._handle_logic_trace_event,
             "animator_state": h._handle_animator_state_event,
             "animation_event": h._handle_animation_event,
-            "attach_script": h._handle_attach_script_event,
             "stats": h._handle_stats_event,
         }
+        optional = {
+            "delete_selected_requested": "_handle_delete_selected_requested",
+            "runtime_metrics": "_handle_runtime_metrics_event",
+        }
+        for event, attribute in optional.items():
+            handler = getattr(h, attribute, None)
+            if handler is not None:
+                handlers[event] = handler
+        return handlers

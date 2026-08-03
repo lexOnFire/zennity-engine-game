@@ -22,6 +22,7 @@ Rodar:
 import sys
 import os
 import pygame
+import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -33,6 +34,8 @@ from engine.physics.collider      import BoxCollider
 from engine.physics.tilemap_collider import TilemapCollider
 from engine.tilemap   import TileMap, TileLayer, Tileset, TileData
 from engine.animation import SpriteSheet, AnimationClip, Animator
+from engine.graphics.camera2d import Camera2D
+from engine.tilemap import TilemapRenderer
 
 # ─────────────────────────────────────────────
 SW, SH   = 800, 600
@@ -158,7 +161,8 @@ def _build_tilemap() -> TileMap:
     for row in range(MH-3, MH):
         for c in range(MW):
             col_data[row*MW+c] = 1 if row == MH-3 else 2
-    for c in range(MW): col_data[(MH-1)*MW+c] = 4
+    for c in range(MW):
+        col_data[(MH-1)*MW+c] = 4
     for (sc,row,ln) in [(2,14,5),(8,12,4),(13,10,5),(20,13,4),(24,11,5)]:
         for c in range(sc, min(sc+ln, MW)):
             col_data[row*MW+c] = 1
@@ -172,9 +176,6 @@ def _build_tilemap() -> TileMap:
 
 
 # ─────────────────────────────────────────────
-from engine.graphics.camera2d import Camera2D
-from engine.tilemap import TilemapRenderer
-from typing import List
 
 class AnimatorDemoScene(Scene):
     def start(self):

@@ -1,0 +1,12 @@
+{
+  "guid": "33d6f0d5-2240-41aa-9c0e-482d9b56c5be",
+  "uuid": "33d6f0d5-2240-41aa-9c0e-482d9b56c5be",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Sprites/MyPlatformer/enemy.png",
+  "import_settings": {
+    "filter_mode": "nearest"
+  },
+  "dependencies": [],
+  "hash": "9b8456d29ff3b467f368d619f0a9c91954ee6592e50324628e247c6c063978cd"
+}

@@ -40,4 +40,27 @@ EXTENSION_TYPES: dict[str, AssetType] = {
 
 
 def detect_asset_type(path: str | Path) -> AssetType:
-    return EXTENSION_TYPES.get(Path(path).suffix.lower(), AssetType.UNKNOWN)
+    suffix = Path(path).suffix.lower()
+    
+    # Try dynamic metadata first
+    from engine.core.context import EngineContext
+    context = EngineContext.current()
+    if context:
+        from engine.metadata.manager import MetadataManager
+        from engine.core.metadata import AssetTypeDefinition
+        manager = context.services.get_optional(MetadataManager)
+        if manager:
+            # Query all AssetTypeDefinitions and see which one has the extension
+            definitions = manager.get_all(AssetTypeDefinition)
+            for d in definitions:
+                if suffix in getattr(d, "extensions", []):
+                    # We map definition ID back to AssetType enum if possible, or create a new enum entry
+                    # Assuming id matches the enum value string
+                    try:
+                        return AssetType(d.id)
+                    except ValueError:
+                        # Fallback for dynamic types not in Enum
+                        pass
+    
+    # Fallback to static mapping
+    return EXTENSION_TYPES.get(suffix, AssetType.UNKNOWN)

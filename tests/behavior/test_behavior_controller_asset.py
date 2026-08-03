@@ -66,6 +66,20 @@ def test_validation_reports_missing_script(tmp_path):
     assert len([issue for issue in issues if issue["level"] == "error"]) == 3
 
 
+def test_validation_accepts_visual_logic_graphs(tmp_path):
+    graph_path = tmp_path / "Assets" / "Logic" / "enemy.zlogic"
+    graph_path.parent.mkdir(parents=True)
+    graph_path.write_text("{}", encoding="utf-8")
+    data = controller_data()
+    for state in data["states"].values():
+        state["logic_graph"] = "Assets/Logic/enemy.zlogic"
+
+    normalized = normalize_behavior_controller(data)
+
+    assert normalized["states"]["Patrol"]["logic_graph"] == "Assets/Logic/enemy.zlogic"
+    assert validate_behavior_controller(normalized, tmp_path) == []
+
+
 def test_runner_calls_exit_before_enter_on_transition(tmp_path):
     events: list[str] = []
     script = tmp_path / "state.py"

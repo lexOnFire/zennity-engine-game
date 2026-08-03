@@ -25,7 +25,7 @@ def test_stop_restores_all_nested_components_and_selection() -> None:
         "x": 10.0,
         "audio": {"path": "theme.ogg", "autoplay": True},
         "animator": {"active_clip": "andar", "clips": {"andar": {"frame": 0}}},
-        "scripts": ["Assets/Scripts/player.py"],
+        "logic_graphs": [{"path": "Assets/Logic/PlayerMovement.zlogic"}],
         "ui": {"type": "text", "text": "VIDA: 3"},
         "rigidbody": {"velocity_y": 0.0},
     }]
@@ -34,7 +34,7 @@ def test_stop_restores_all_nested_components_and_selection() -> None:
     runtime[0]["x"] = 999.0
     runtime[0]["audio"]["path"] = "changed.ogg"
     runtime[0]["animator"]["clips"]["andar"]["frame"] = 7
-    runtime[0]["scripts"].append("runtime_only.py")
+    runtime[0]["logic_graphs"].append({"path": "Assets/Logic/runtime_only.zlogic"})
     runtime[0]["ui"]["text"] = "VIDA: 0"
     runtime[0]["rigidbody"]["velocity_y"] = 500.0
 
@@ -164,7 +164,7 @@ def test_viewport_has_one_runtime_lifecycle_and_initializes_spawned_prefabs() ->
     )
     initializer_source = Path("editor/runtime/viewport_runtime_initializer.py").read_text(encoding="utf-8")
 
-    assert viewport_source.count("    def stop_scripts(self):") == 1
+    assert viewport_source.count("    def stop_logic(self):") == 1
     assert viewport_source.count("    def game_camera(self):") == 1
     assert "class ViewportRuntimeInitializer" in initializer_source
     assert "def start_spawned_objects(self)" in initializer_source

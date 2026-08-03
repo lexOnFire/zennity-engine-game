@@ -1,0 +1,37 @@
+{
+  "format_version": 2,
+  "prefab_name": "BossMissilePro",
+  "exposed_properties": [],
+  "object": {
+    "name": "BossMissilePro",
+    "x": 0.0,
+    "y": 0.0,
+    "w": 16.0,
+    "h": 28.0,
+    "rotation": 0.0,
+    "color": [
+      255,
+      0,
+      128
+    ],
+    "tag": "EnemyProjectile",
+    "layer": "Default",
+    "renderer_enabled": true,
+    "collider": {
+      "type": "box",
+      "width": 16.0,
+      "height": 28.0,
+      "is_trigger": true
+    },
+    "rigidbody": {
+      "mass": 0.5,
+      "use_gravity": false,
+      "is_kinematic": true,
+      "gravity_scale": 0.0
+    },
+    "gameplay": {
+      "speed": 350.0,
+      "damage": 20.0
+    }
+  }
+}

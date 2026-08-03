@@ -1,11 +1,11 @@
 """Toolbar, menu and Play Mode command coordination."""
 from __future__ import annotations
 
-from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtGui import QAction, QActionGroup
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QToolBar
 
 
@@ -20,6 +20,9 @@ class EditorCommandController:
         h = self.host
         toolbar = QToolBar("Ligação com Viewport")
         toolbar.setMovable(False)
+        toolbar.setFloatable(False)
+        toolbar.setAllowedAreas(Qt.TopToolBarArea)
+        toolbar.setStyleSheet("QToolBar::handle { width: 0px; image: none; }")
         h.addToolBar(toolbar)
         for label, payload in (
             ("Selecionar Player", {"type": "select_object", "name": "Player"}),
@@ -37,8 +40,9 @@ class EditorCommandController:
         h = self.host
         for label in ("Novo", "Abrir", "Salvar"):
             h.editor_menus["Arquivo"].addAction(h.toolbar_actions[label])
-        for label in ("Select", "Move", "Rotate", "Scale", "Snap: OFF"):
-            h.editor_menus["Ferramentas"].addAction(h.toolbar_actions[label])
+        save_as_action = h.editor_menus["Arquivo"].addAction("Salvar como...")
+        save_as_action.setShortcut("Ctrl+Shift+S")
+        save_as_action.triggered.connect(h._project_workflow.save_scene_as)
         for label in ("Play", "Pause", "Stop"):
             h.editor_menus["Executar"].addAction(h.toolbar_actions[label])
         validate_action = h.editor_menus["Build"].addAction("Validar projeto...")
@@ -61,10 +65,7 @@ class EditorCommandController:
         h._snap_enabled = bool(enabled)
         action = h.toolbar_actions["Snap: OFF"]
         action.setText("Snap: ON" if enabled else "Snap: OFF")
-        h._commands.put({
-            "type": "set_snap", "enabled": bool(enabled), "size": 16.0, "angle": 15.0,
-        })
-        h.statusBar().showMessage("Snap ativado" if enabled else "Snap desativado")
+        h._viewport_commands.set_snap(bool(enabled), size=16.0, angle=15.0)
 
     def connect_toolbar_actions(self) -> None:
         h = self.host
@@ -81,26 +82,6 @@ class EditorCommandController:
                     lambda checked=False, message=payload: self.dispatch(message)
                 )
 
-    def configure_tools(self) -> None:
-        h = self.host
-        group = QActionGroup(h)
-        group.setExclusive(True)
-        shortcuts = {"select": "Q", "move": "W", "rotate": "E", "scale": "R"}
-        for action in h.findChildren(QAction):
-            label = action.toolTip() if action.toolTip() else action.text()
-            tool = label.lower()
-            if tool not in shortcuts:
-                continue
-            action.setCheckable(True)
-            action.setShortcut(shortcuts[tool])
-            action.setChecked(tool == "select")
-            group.addAction(action)
-            action.triggered.connect(
-                lambda checked=False, name=tool: checked
-                and h._commands.put({"type": "set_tool", "tool": name})
-            )
-        h._tool_action_group = group
-
     def dispatch(self, message: dict) -> None:
         h = self.host
         command_type = str(message.get("type", ""))
@@ -108,7 +89,7 @@ class EditorCommandController:
             h.statusBar().showMessage("Pare o Play Mode antes de alterar a cena")
             return
         if command_type == "new_scene":
-            h._new_scene()
+            h._scene_objects.new_scene()
             return
         if command_type == "save_scene":
             h._save_scene_snapshot()
@@ -117,13 +98,7 @@ class EditorCommandController:
             h._load_scene_snapshot()
             return
         if command_type == "reset_from_interface":
-            h._record_history()
-            h._scene_snapshot = deepcopy(h._initial_scene_snapshot)
-            h._objects_by_name = {item["name"]: item for item in h._scene_snapshot}
-            h._refresh_hierarchy()
-            h._scene_controller.publish_snapshot(h._scene_snapshot)
-            if h._selected_name in h._objects_by_name:
-                h._update_inspector(h._selected_name)
+            h._scene_objects.reset_to_initial()
             return
         if command_type in {"play", "pause", "stop"}:
             self._dispatch_play_command(message, command_type)
@@ -222,11 +197,22 @@ class EditorCommandController:
             menu.addSeparator()
             duplicate_action = menu.addAction("Duplicar")
             duplicate_action.setShortcut("Ctrl+D")
-            duplicate_action.triggered.connect(h._duplicate_selected)
+            duplicate_action.triggered.connect(h._scene_objects.duplicate_selected)
             delete_action = menu.addAction("Excluir")
-            delete_action.setShortcut("Delete")
-            delete_action.triggered.connect(
-                lambda _checked=False: h._selected_name is not None
-                and h._delete_object(h._selected_name)
-            )
+            delete_action.setShortcut(Qt.Key_Delete)
+            # Delete belongs to the main editor window. ApplicationShortcut
+            # conflicts with graph/UI/Animator editors opened as tool windows.
+            delete_action.setShortcutContext(Qt.WindowShortcut)
+            delete_action.setShortcutVisibleInContextMenu(True)
+            
+            def _try_delete_selected(_checked: bool = False) -> None:
+                focus = QApplication.focusWidget()
+                from PySide6.QtWidgets import QLineEdit, QTextEdit
+                if isinstance(focus, (QLineEdit, QTextEdit)):
+                    return
+                if h._selected_name is not None and not h._play_session.is_running:
+                    h._scene_objects.delete(h._selected_name)
+
+            delete_action.triggered.connect(_try_delete_selected)
+            h.addAction(delete_action)
             break

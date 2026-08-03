@@ -9,6 +9,7 @@ from editor.project_workflow_controller import ProjectWorkflowController
 class _Persistence:
     def __init__(self) -> None:
         self.scopes = []
+        self.saved = []
 
     def collect_logic_variables(self, scope: str):
         self.scopes.append(scope)
@@ -16,6 +17,10 @@ class _Persistence:
 
     def load(self, path: Path):
         return ({"scene_name": path.stem}, [{"name": "Player", "id": "p1"}], True)
+
+    def save(self, path: Path, snapshots, document):
+        self.saved.append((path, snapshots, document))
+        return {"scene_name": path.stem, "objects": list(snapshots)}
 
 
 class _SceneBridge:
@@ -71,3 +76,44 @@ def test_project_workflow_loads_typed_scene_and_publishes_snapshot(tmp_path: Pat
     assert host.history == 1
     assert host._scene_controller.snapshots == [[{"name": "Player", "id": "p1"}]]
     assert status.messages == [f"Cena aberta: {scene}"]
+
+
+def test_save_updates_loaded_scene_without_opening_dialog(
+    tmp_path: Path, monkeypatch
+) -> None:
+    host, status = _host()
+    scene = tmp_path / "Level.zscene"
+    host._current_scene_path = scene
+    host._scene_snapshot = [{"name": "Player", "x": 42}]
+    dialog_calls = []
+    monkeypatch.setattr(
+        "editor.project_workflow_controller.QFileDialog.getSaveFileName",
+        lambda *_args, **_kwargs: dialog_calls.append(True) or ("", ""),
+    )
+
+    saved = ProjectWorkflowController(host, tmp_path).save_scene()
+
+    assert saved is True
+    assert dialog_calls == []
+    assert host._scene_persistence.saved[0][0] == scene
+    assert host._current_scene_path == scene
+    assert status.messages[-1] == f"Cena salva: {scene}"
+
+
+def test_save_untitled_scene_asks_for_destination_once(
+    tmp_path: Path, monkeypatch
+) -> None:
+    host, _ = _host()
+    scene = tmp_path / "NewScene.zscene"
+    dialog_calls = []
+    monkeypatch.setattr(
+        "editor.project_workflow_controller.QFileDialog.getSaveFileName",
+        lambda *_args, **_kwargs: dialog_calls.append(True) or (str(scene), ""),
+    )
+    workflow = ProjectWorkflowController(host, tmp_path)
+
+    assert workflow.save_scene() is True
+    assert workflow.save_scene() is True
+
+    assert len(dialog_calls) == 1
+    assert [entry[0] for entry in host._scene_persistence.saved] == [scene, scene]

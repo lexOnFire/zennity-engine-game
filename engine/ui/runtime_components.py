@@ -9,8 +9,31 @@ import pygame
 from engine.core.component import Component
 
 
-class UIElement(Component):
-    """Base oficial para componentes de UI em Runtime Screen Space."""
+class RuntimeUIElement(Component):
+    """Base oficial para componentes de UI em Runtime Screen Space.
+
+    CONSOLIDAÇÃO (mapa dos 4 sistemas de UI paralelos da engine): este módulo
+    (``engine.ui.runtime_components``) é o ÚNICO formato de PERSISTÊNCIA
+    oficial de UI em ``.zscene`` (via ``component_registry``). Os outros três
+    sistemas de UI da engine são consumidores ou tradutores deste, nunca o
+    contrário:
+      - ``engine.ui`` (base.py/canvas.py/label.py/...) é a API "code-first"
+        usada por jogos escritos 100% em Python sem passar pelo editor visual
+        (zennity_run.py, demos/demo_ui.py) — não participa da persistência
+        `.zscene` nem do pipeline de export.
+      - ``engine.ui.runtime`` (runtime/widgets.py) é usado só pelo UI Builder
+        do editor (editor/ui_builder/ui_builder_dock.py) para desenhar/editar
+        visualmente; salva num formato próprio ("zennity.ui") que hoje não
+        alimenta nenhum runtime de jogo.
+      - ``editor/runtime/native_ui.py`` é o motor de RENDERIZAÇÃO do Play Mode
+        isolado e também do jogo EXPORTADO (é copiado literalmente para
+        dentro do pacote final por engine/build/project_exporter.py) — ele
+        converte de/para este módulo via scene_item_to_ui()/ui_to_scene_item(),
+        nunca define seu próprio schema de dados persistente.
+    Ao adicionar um campo novo aqui, sempre checar se `native_ui.normalize_ui`
+    precisa do mesmo default (ele preserva chaves desconhecidas via dict
+    merge, então não quebra, mas os defaults ficam divergentes se esquecido).
+    """
 
     component_type = "UIElement"
 
@@ -22,6 +45,10 @@ class UIElement(Component):
         height: float = 30.0,
         visible: bool = True,
         z_order: int = 0,
+        widget_name: str = "",
+        anchor: str = "",
+        margin_x: float = 16.0,
+        margin_y: float = 16.0,
     ) -> None:
         super().__init__()
         self.x = float(x)
@@ -30,6 +57,24 @@ class UIElement(Component):
         self.height = float(height)
         self.visible = bool(visible)
         self.z_order = int(z_order)
+        # BUG FIX (ambiguidade de HUD): quando um GameObject composto (ex.:
+        # "HUD") tem vários componentes de UI do MESMO tipo (duas Labels: uma
+        # de título, outra de contador de moedas), `get_component(LabelComponent)`
+        # sempre retorna só o primeiro da lista — não há como o Logic Graph
+        # apontar para o widget certo. `widget_name` é um identificador livre
+        # (definido no editor) que os nós set_ui_text/set_ui_progress_bar/
+        # set_ui_visible usam para desambiguar; veja ui_nodes.py `_find_widget`.
+        self.widget_name = str(widget_name)
+        # CONSOLIDAÇÃO: editor/runtime/native_ui.py já normaliza "anchor"/
+        # "margin_x"/"margin_y" (posicionamento relativo a um canto da tela,
+        # 4 opções) no snapshot de Play Mode, mas este componente serializável
+        # não tinha esses campos — hoje o editor ainda não expõe um controle
+        # de Inspector para editá-los, então não é um bug ativo, mas sem isso
+        # o valor se perderia silenciosamente no primeiro save/load assim que
+        # esse controle existir. Adicionado agora, antes de virar bug.
+        self.anchor = str(anchor)
+        self.margin_x = float(margin_x)
+        self.margin_y = float(margin_y)
 
     def on_runtime_start(self) -> None:
         """Isola objetos puramente UI do world draw sem esconder objetos mistos."""
@@ -45,7 +90,7 @@ class UIElement(Component):
         if self.game_object is None:
             return False
         for component in getattr(self.game_object, "components", []):
-            if component is self or isinstance(component, UIElement):
+            if component is self or isinstance(component, RuntimeUIElement):
                 continue
             if getattr(component, "required", False) or type(component).__name__ == "Transform":
                 continue
@@ -60,6 +105,10 @@ class UIElement(Component):
             "height": float(self.height),
             "visible": bool(self.visible),
             "z_order": int(self.z_order),
+            "widget_name": str(self.widget_name),
+            "anchor": str(self.anchor),
+            "margin_x": float(self.margin_x),
+            "margin_y": float(self.margin_y),
         }
 
     def deserialize_properties(self, data: dict[str, Any]) -> None:
@@ -69,9 +118,13 @@ class UIElement(Component):
         self.height = float(data.get("height", self.height))
         self.visible = bool(data.get("visible", self.visible))
         self.z_order = int(data.get("z_order", self.z_order))
+        self.widget_name = str(data.get("widget_name", self.widget_name))
+        self.anchor = str(data.get("anchor", self.anchor))
+        self.margin_x = float(data.get("margin_x", self.margin_x))
+        self.margin_y = float(data.get("margin_y", self.margin_y))
 
 
-class Canvas(UIElement):
+class Canvas(RuntimeUIElement):
     """Agrupa elementos de UI e define a ordem de renderizacao do HUD."""
 
     component_type = "Canvas"
@@ -81,7 +134,7 @@ class Canvas(UIElement):
         super().__init__(x=0.0, y=0.0, width=0.0, height=0.0, visible=visible, z_order=z_order)
 
 
-class LabelComponent(UIElement):
+class LabelComponent(RuntimeUIElement):
     component_type = "Label"
 
     def __init__(
@@ -111,7 +164,7 @@ class LabelComponent(UIElement):
         self.color = tuple(data.get("color", self.color))
 
 
-class ImageComponent(UIElement):
+class ImageComponent(RuntimeUIElement):
     component_type = "Image"
     _surface_cache: OrderedDict[str, tuple[tuple[int, int], pygame.Surface]] = OrderedDict()
     _transformed_cache: OrderedDict[tuple[str, int, int, int, float], pygame.Surface] = OrderedDict()
@@ -159,15 +212,11 @@ class ImageComponent(UIElement):
         zoom = 1.0
         world_pos = transform.get_world_position()
         try:
-            from engine.graphics.camera import Camera
-            from engine.graphics.camera2d import Camera2D
-            main_cam = Camera.main
+            from engine.graphics.active_camera import get_active_camera
+            main_cam = get_active_camera()
             if main_cam:
                 x, y = main_cam.world_to_screen(world_pos, screen.get_width(), screen.get_height())
                 zoom = float(getattr(main_cam, "zoom", 1.0))
-            elif Camera2D.main:
-                x, y = Camera2D.main.world_to_screen(world_pos, screen.get_width(), screen.get_height())
-                zoom = float(getattr(Camera2D.main, "zoom", 1.0))
             else:
                 x, y = float(world_pos[0]), float(world_pos[1])
         except Exception:
@@ -421,9 +470,8 @@ class InfiniteBackground(Component):
         cam_x = cam_y = 0.0
         if self.parallax:
             try:
-                from engine.graphics.camera import Camera
-                from engine.graphics.camera2d import Camera2D
-                cam = Camera.main or Camera2D.main
+                from engine.graphics.active_camera import get_active_camera
+                cam = get_active_camera()
                 if cam is not None and getattr(cam, "transform", None) is not None:
                     cam_x = float(cam.transform.position[0]) * self.parallax
                     cam_y = float(cam.transform.position[1]) * self.parallax
@@ -470,7 +518,7 @@ class InfiniteBackground(Component):
         self.scale_to_screen = bool(data.get("scale_to_screen", self.scale_to_screen))
 
 
-class ButtonComponent(UIElement):
+class ButtonComponent(RuntimeUIElement):
     component_type = "Button"
 
     def __init__(
@@ -497,3 +545,59 @@ class ButtonComponent(UIElement):
         super().deserialize_properties(data)
         self.text = str(data.get("text", self.text))
         self.interactable = bool(data.get("interactable", self.interactable))
+
+
+class ProgressBarComponent(RuntimeUIElement):
+    """
+    Componente de barra de progresso em Runtime Screen Space (HP/MP/XP bars).
+
+    BUG FIX: cenas de projeto reais (ex.: Assets/Scenes/NebulaDefensePro.zscene)
+    já salvam componentes do tipo "ProgressBar", mas nenhuma classe com esse
+    nome existia em engine.ui.runtime_components nem estava registrada em
+    component_registry — o carregador caía no fallback genérico (Component
+    vazio) e a barra perdia todo o comportamento/propriedades silenciosamente.
+    """
+
+    component_type = "ProgressBar"
+
+    def __init__(
+        self,
+        x: float = 0.0,
+        y: float = 0.0,
+        width: float = 180.0,
+        height: float = 18.0,
+        value: float = 100.0,
+        max_value: float = 100.0,
+        fill_color: tuple[int, int, int] = (46, 204, 113),
+        bg_color: tuple[int, int, int] = (28, 35, 48),
+        visible: bool = True,
+        z_order: int = 0,
+    ) -> None:
+        super().__init__(x=x, y=y, width=width, height=height, visible=visible, z_order=z_order)
+        self.value = float(value)
+        self.max_value = max(0.0001, float(max_value))
+        self.fill_color = tuple(fill_color)
+        self.bg_color = tuple(bg_color)
+
+    def set_value(self, value: float) -> None:
+        self.value = max(0.0, min(self.max_value, float(value)))
+
+    def serialize_properties(self) -> dict[str, Any]:
+        data = super().serialize_properties()
+        data.update({
+            "value": float(self.value),
+            "max_value": float(self.max_value),
+            "fill_color": list(self.fill_color),
+            "bg_color": list(self.bg_color),
+        })
+        return data
+
+    def deserialize_properties(self, data: dict[str, Any]) -> None:
+        super().deserialize_properties(data)
+        self.value = float(data.get("value", self.value))
+        self.max_value = max(0.0001, float(data.get("max_value", self.max_value)))
+        self.fill_color = tuple(data.get("fill_color", self.fill_color))
+        self.bg_color = tuple(data.get("bg_color", self.bg_color))
+
+
+UIElement = RuntimeUIElement

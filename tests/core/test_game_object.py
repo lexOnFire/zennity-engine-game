@@ -188,6 +188,24 @@ class TestGetComponent:
         go = GameObject()
         assert go.get_component(Transform) is go.transform
 
+    def test_get_components_returns_empty_list_when_missing(self):
+        class Missing(Component):
+            pass
+
+        assert GameObject().get_components(Missing) == []
+
+    def test_get_components_filters_unrelated_types(self):
+        class First(Component):
+            pass
+
+        class Second(Component):
+            pass
+
+        go = GameObject()
+        first = go.add_component(First())
+        go.add_component(Second())
+        assert go.get_components(First) == [first]
+
 
 # ─────────────────────────────────────────────────────────────────
 class TestRemoveComponent:
@@ -277,6 +295,16 @@ class TestHierarchy:
         parent.add_child(child)
         assert child.scene is scene
 
+    def test_remove_child_not_present_is_safe(self):
+        GameObject("Parent").remove_child(GameObject("Unrelated"))
+
+    def test_multiple_children_are_preserved(self):
+        parent = GameObject("Parent")
+        children = [GameObject(f"Child{i}") for i in range(5)]
+        for child in children:
+            parent.add_child(child)
+        assert parent.children == children
+
 
 # ─────────────────────────────────────────────────────────────────
 class TestUpdate:
@@ -314,6 +342,15 @@ class TestUpdate:
         parent.update(0.016)
         comp.update.assert_not_called()
 
+    def test_update_calls_all_components(self):
+        go = GameObject()
+        first, second = make_component(), make_component()
+        go.add_component(first)
+        go.add_component(second)
+        go.update(0.016)
+        first.update.assert_called_once_with(0.016)
+        second.update.assert_called_once_with(0.016)
+
 
 # ─────────────────────────────────────────────────────────────────
 class TestDraw:
@@ -342,6 +379,16 @@ class TestDraw:
         go.active = False
         go.draw(MagicMock())
         comp.draw.assert_not_called()
+
+    def test_draw_calls_all_components(self):
+        go = GameObject()
+        first, second = make_component(), make_component()
+        go.add_component(first)
+        go.add_component(second)
+        screen = MagicMock()
+        go.draw(screen)
+        first.draw.assert_called_once_with(screen)
+        second.draw.assert_called_once_with(screen)
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -374,6 +421,12 @@ class TestDestroy:
         parent.destroy()
         comp.destroy.assert_called_once()
         assert child.active is False
+
+    def test_destroy_clears_children_collection(self):
+        parent = GameObject("Parent")
+        parent.add_child(GameObject("Child"))
+        parent.destroy()
+        assert parent.children == []
 
     def test_destroy_removes_from_parent(self):
         parent = GameObject("P")

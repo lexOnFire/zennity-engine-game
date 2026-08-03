@@ -67,3 +67,6 @@ __all__ = [
     "UpdateSystem", "RenderSystem",
     "_builtin_physics_system",
 ]
+
+from .services import EngineServices, IService
+from .events import ServiceInitializedEvent, EngineShutdownEvent

@@ -1,0 +1,12 @@
+{
+  "guid": "85cae964-dfec-4df2-a342-6ac1eb33f529",
+  "uuid": "85cae964-dfec-4df2-a342-6ac1eb33f529",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Sprites/ZennityRun/player_sheet.png",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "51a2da33c0cca0ee84d14e88d0cd1d54a45eaf8b88069e863bb778e22addc611"
+}

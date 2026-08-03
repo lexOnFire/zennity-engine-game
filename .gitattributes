@@ -1,0 +1,22 @@
+﻿* text=auto eol=lf
+
+*.meta text eol=lf
+*.zanim text eol=lf
+*.zanimator text eol=lf
+*.zbehavior text eol=lf
+*.zmat text eol=lf
+*.zmaterial text eol=lf
+*.zui text eol=lf
+*.zdialogue text eol=lf
+*.zlogic text eol=lf
+*.zscene text eol=lf
+*.zprefab text eol=lf
+*.zblackboard text eol=lf
+
+*.png binary
+*.jpg binary
+*.PNG binary
+*.wav binary
+*.mp3 binary
+*.ogg binary
+*.zip binary

@@ -51,3 +51,16 @@ def test_adapter_surface_is_below_twenty_methods() -> None:
     import ast
     tree = ast.parse(Path("editor/editor_integration_adapters.py").read_text(encoding="utf-8"))
     assert not any(isinstance(node, ast.ClassDef) for node in tree.body)
+
+
+def test_isolated_editor_installs_global_transform_tool_shortcuts() -> None:
+    shortcuts = Path("editor/services/shortcut_service.py").read_text(encoding="utf-8")
+    controller = Path("editor/controllers/tool_controller.py").read_text(encoding="utf-8")
+
+    assert 'ShortcutBinding("tool.select", "Q", "Select")' in shortcuts
+    assert 'ShortcutBinding("tool.move", "W", "Move")' in shortcuts
+    assert 'ShortcutBinding("tool.rotate", "E", "Rotate")' in shortcuts
+    assert 'ShortcutBinding("tool.scale", "R", "Scale")' in shortcuts
+    assert "QShortcut(QKeySequence(binding.sequence), self.host)" in shortcuts
+    assert "shortcut.setContext(Qt.ApplicationShortcut)" in shortcuts
+    assert "h._viewport_commands.set_tool(next_tool)" in controller

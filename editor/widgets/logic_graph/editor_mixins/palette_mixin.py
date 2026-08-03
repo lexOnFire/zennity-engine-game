@@ -66,6 +66,7 @@ from engine.logic.blackboard import coerce_variable_value, save_blackboard_asset
 
 from engine.logic.recipes import build_logic_recipe, find_logic_recipes, logic_recipe
 
+from engine.localization import tr
 from editor.widgets.logic_graph.definitions import (
     CATEGORY_COLORS,
     NODE_DESCRIPTIONS,
@@ -73,6 +74,55 @@ from editor.widgets.logic_graph.definitions import (
     PORT_COLORS,
     PROPERTY_LABELS,
 )
+
+from PySide6.QtCore import QPointF, QRectF, QSize, Qt, QTimer, Signal
+from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPainterPathStroker, QPen
+from PySide6.QtWidgets import QStyle, QStyledItemDelegate
+
+class CategoryNodeDelegate(QStyledItemDelegate):
+    """Delegate visual moderno para exibir barra de cor da categoria e chevron na lista."""
+
+    def paint(self, painter: QPainter, option, index) -> None:
+        painter.save()
+        painter.setRenderHint(QPainter.Antialiasing, True)
+
+        rect = option.rect
+        is_selected = bool(option.state & QStyle.State_Selected)
+        is_hovered = bool(option.state & QStyle.State_MouseOver)
+
+        if is_selected:
+            bg_color = QColor("#272d3e")
+        elif is_hovered:
+            bg_color = QColor("#1e2330")
+        else:
+            bg_color = QColor("#161922")
+
+        painter.fillRect(rect, bg_color)
+
+        category_name = index.data(Qt.UserRole + 1) or "Custom"
+        color = CATEGORY_COLORS.get(str(category_name), CATEGORY_COLORS["Custom"])
+        bar_rect = QRectF(rect.left() + 4.0, rect.top() + 5.0, 3.5, rect.height() - 10.0)
+        painter.fillRect(bar_rect, QBrush(color))
+
+        text = str(index.data(Qt.DisplayRole) or "")
+        painter.setPen(QPen(QColor("#f1f5f9" if is_selected else "#cbd5e1")))
+        font = painter.font()
+        font.setPointSizeF(8.8)
+        font.setFamily("Segoe UI")
+        painter.setFont(font)
+        text_rect = QRectF(rect.left() + 15.0, rect.top(), rect.width() - 36.0, rect.height())
+        painter.drawText(text_rect, int(Qt.AlignVCenter | Qt.AlignLeft), text)
+
+        painter.setPen(QPen(QColor("#64748b"), 1.4))
+        chevron_x = rect.right() - 14.0
+        cy = rect.center().y()
+        painter.drawLine(int(chevron_x), int(cy - 3), int(chevron_x + 3), int(cy))
+        painter.drawLine(int(chevron_x + 3), int(cy), int(chevron_x), int(cy + 3))
+
+        painter.restore()
+
+    def sizeHint(self, option, index) -> QSize:
+        return QSize(option.rect.width(), 30)
 
 class LogicGraphPaletteMixin:
     @staticmethod
@@ -85,8 +135,10 @@ class LogicGraphPaletteMixin:
             self._palette_category = category
         query = self._search_key(self.node_search.text()).strip()
         self.palette.clear()
+        if self.palette.itemDelegate().__class__ != CategoryNodeDelegate:
+            self.palette.setItemDelegate(CategoryNodeDelegate(self.palette))
         for node_type, definition in NODE_DEFINITIONS.items():
-            node_category = str(definition.get("category", "Personalizado"))
+            node_category = str(definition.get("category", "Custom"))
             searchable = self._search_key(
                 f"{definition.get('title', '')} {node_category} {node_type} "
                 f"{' '.join(str(key) for key in definition.get('properties', {}))} "
@@ -95,13 +147,14 @@ class LogicGraphPaletteMixin:
             if query:
                 if query not in searchable:
                     continue
-            elif self._palette_category != "Todos" and node_category != self._palette_category:
+            elif self._palette_category != "All" and node_category != self._palette_category:
                 continue
             label = str(definition["title"])
             if query:
                 label = f"{label}  —  {node_category}"
             item = QListWidgetItem(label)
             item.setData(Qt.UserRole, node_type)
+            item.setData(Qt.UserRole + 1, node_category)
             description = NODE_DESCRIPTIONS.get(node_type, "Arraste as portas para conectar este bloco ao fluxo.")
             item.setToolTip(f"{node_category} • {description}")
             self.palette.addItem(item)
@@ -128,6 +181,7 @@ class LogicGraphPaletteMixin:
         node = create_logic_node(node_type, (center.x() + offset, center.y() + offset))
         self.graph["nodes"].append(node)
         self._create_node_item(node)
+        self.node_added.emit(node)
         self.mark_dirty()
         self._update_validation()
 
@@ -136,10 +190,11 @@ class LogicGraphPaletteMixin:
         self._refresh_recipes(self.recipe_search.text(), category)
 
     def _refresh_recipes(self, query: str = "", topic: str | None = None) -> None:
-        selected_topic = str(topic or self.category_combo.currentText() or "Movimento")
-        self.recipe_topic_label.setText(f"Receitas de {selected_topic}")
+        selected_topic = str(topic or self.category_combo.currentData() or "Movement")
+        topic_label = self.category_combo.currentText() if topic is None else selected_topic
+        self.recipe_topic_label.setText(tr(f"graph.categories.{selected_topic.lower()}", topic_label))
         self.recipe_list.clear()
-        for recipe in find_logic_recipes(query, "" if selected_topic == "Todos" else selected_topic):
+        for recipe in find_logic_recipes(query, "" if selected_topic == "All" else selected_topic):
             item = QListWidgetItem(str(recipe["title"]))
             item.setData(Qt.UserRole, str(recipe["id"]))
             item.setToolTip(f"{recipe['category']} • {recipe['summary']}")
@@ -216,6 +271,7 @@ class LogicGraphPaletteMixin:
         self.graph["nodes"].append(node)
         self.scene.clearSelection()
         self._create_node_item(node).setSelected(True)
+        self.node_added.emit(node)
         self.mark_dirty()
         self._update_validation()
         self.message.emit("INFO", f"Subgrafo adicionado: {Path(path).stem}")

@@ -54,7 +54,7 @@ def test_native_ui_button_hit_test_keeps_script_event() -> None:
     assert button["event"] == "start"
 
 
-def test_delete_object_does_not_access_removed_shared_script_selector() -> None:
+def test_delete_object_does_not_access_removed_script_ui() -> None:
     source = Path("editor/scene_object_controller.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
     delete_method = next(
@@ -69,7 +69,7 @@ def test_delete_object_does_not_access_removed_shared_script_selector() -> None:
     assert "script_selector" not in attributes
     assert "create_script_button" not in attributes
     assert "edit_script_button" not in attributes
-    assert "script_containers" in attributes
+    assert "script_containers" not in attributes
 
 
 def test_native_ui_clear_caches_releases_fonts_and_surfaces() -> None:
@@ -81,3 +81,20 @@ def test_native_ui_clear_caches_releases_fonts_and_surfaces() -> None:
 
     assert renderer._fonts == {}
     assert renderer._images == {}
+
+
+def test_native_ui_anchors_hud_inside_resized_viewport() -> None:
+    renderer = NativeUIRenderer()
+    screen = pygame.Surface((800, 450))
+
+    wave = renderer._rect({
+        "width": 180, "height": 40, "anchor": "top_right",
+        "margin_x": 40, "margin_y": 30,
+    }, screen)
+    health = renderer._rect({
+        "width": 220, "height": 20, "anchor": "bottom_left",
+        "margin_x": 40, "margin_y": 60,
+    }, screen)
+
+    assert wave.topleft == (580, 30)
+    assert health.topleft == (40, 370)

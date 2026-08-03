@@ -1,10 +1,25 @@
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from engine.assets.asset_types import AssetType
+
+
+def compute_file_hash(path: Path) -> str:
+    """Calcula o hash SHA-256 incremental de um arquivo."""
+    if not path.exists() or not path.is_file():
+        return ""
+    hasher = hashlib.sha256()
+    try:
+        with open(path, "rb") as f:
+            while chunk := f.read(65536):
+                hasher.update(chunk)
+        return hasher.hexdigest()
+    except Exception:
+        return ""
 
 
 @dataclass(frozen=True)
@@ -32,6 +47,7 @@ class AssetMeta:
     source_path: str
     import_settings: dict[str, Any] = field(default_factory=dict)
     dependencies: list[str] = field(default_factory=list)
+    hash: str = ""
 
     @property
     def guid(self) -> str:
@@ -46,6 +62,7 @@ class AssetMeta:
             "source_path": self.source_path,
             "import_settings": self.import_settings,
             "dependencies": self.dependencies,
+            "hash": self.hash,
         }
 
     @classmethod
@@ -57,4 +74,5 @@ class AssetMeta:
             source_path=str(data.get("source_path", "")),
             import_settings=dict(data.get("import_settings", {}) or {}),
             dependencies=list(data.get("dependencies", []) or []),
+            hash=str(data.get("hash", "")),
         )

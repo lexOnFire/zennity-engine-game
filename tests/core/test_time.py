@@ -34,7 +34,7 @@ def make_time():
         with patch("engine.time.pygame.time.Clock") as MockClock:
             clock_inst = MagicMock()
             clock_inst.tick.return_value = tick_ms
-            clock_inst.get_fps.return_value = float(1000 / tick_ms)
+            clock_inst.get_fps.return_value = float(1000 / tick_ms) if tick_ms else 0.0
             MockClock.return_value = clock_inst
             t = Time(target_fps=target_fps, dt_cap=dt_cap)
             t._clock = clock_inst
@@ -113,6 +113,11 @@ class TestTick:
         t.tick()
         assert t.fps_actual > 0
 
+    def test_clock_receives_target_fps(self, make_time):
+        t = make_time(tick_ms=16, target_fps=30)
+        t.tick()
+        t._clock.tick.assert_called_once_with(30)
+
 
 # ===========================================================================
 # 3. dt_cap
@@ -133,6 +138,18 @@ class TestDtCap:
         t = make_time(tick_ms=8, dt_cap=0.1)
         t.tick()
         assert t.delta == pytest.approx(0.008)
+
+    def test_custom_cap_is_stored_and_applied(self, make_time):
+        t = make_time(tick_ms=200, dt_cap=0.05)
+        t.tick()
+        assert t.dt_cap == pytest.approx(0.05)
+        assert t.delta == pytest.approx(0.05)
+
+    def test_delta_exactly_at_cap_is_unchanged(self, make_time):
+        t = make_time(tick_ms=50, dt_cap=0.05)
+        t.tick()
+        assert t.raw_delta == pytest.approx(0.05)
+        assert t.delta == pytest.approx(0.05)
 
 
 # ===========================================================================
@@ -246,6 +263,11 @@ class TestElapsed:
             assert t.elapsed >= prev
             prev = t.elapsed
 
+    def test_zero_duration_frame_does_not_change_elapsed(self, make_time):
+        t = make_time(tick_ms=0)
+        t.tick()
+        assert t.elapsed == pytest.approx(0.0)
+
 
 # ===========================================================================
 # 7. Slow-mo / fast-forward
@@ -317,6 +339,12 @@ class TestCurrent:
         make_time()  # instância 1
         t2 = make_time()  # instância 2
         assert Time.current() is t2
+
+    def test_current_exposes_latest_delta(self, make_time):
+        from engine.time import Time
+        t = make_time(tick_ms=16)
+        t.tick()
+        assert Time.current().delta == pytest.approx(0.016)
 
 
 # ===========================================================================

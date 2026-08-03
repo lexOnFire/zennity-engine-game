@@ -6,18 +6,11 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QMessageBox
 
-from editor.ui.icons import editor_icon
+from editor.controllers.logic_binding_controller import LogicBindingController
 from editor.widgets.logic_graph_picker import LogicGraphPickerDialog
-from engine.logic.graph_asset import (
-    create_logic_node,
-    default_logic_graph,
-    load_logic_graph,
-    save_logic_graph,
-    validate_logic_graph,
-)
+from engine.logic.graph_asset import load_logic_graph, validate_logic_graph
 
 
 class LogicWorkspaceController:
@@ -26,6 +19,7 @@ class LogicWorkspaceController:
     def __init__(self, host: Any, project_root: Path | None = None) -> None:
         self.host = host
         self.project_root = (project_root or Path.cwd()).resolve()
+        self.bindings = LogicBindingController(host, self.project_root)
         self._connected = False
 
     def connect(self) -> bool:
@@ -41,13 +35,6 @@ class LogicWorkspaceController:
         h.logic_workspace.stop_requested.connect(
             lambda: h._editor_commands.dispatch({"type": "stop"})
         )
-        animation_action = QAction(editor_icon("play"), "Editor de Animação", h)
-        animation_action.triggered.connect(h._show_animation_window)
-        logic_action = QAction(editor_icon("snap"), "Editor de Lógica Visual", h)
-        logic_action.triggered.connect(self.show)
-        h.editor_menus["Janela"].addSeparator()
-        h.editor_menus["Janela"].addAction(animation_action)
-        h.editor_menus["Janela"].addAction(logic_action)
         self._connected = True
         return True
 
@@ -76,86 +63,150 @@ class LogicWorkspaceController:
 
     def show(self, *, preferred_path: Path | None = None) -> None:
         h = self.host
-        selected = h._selected_name if h._selected_name in h._objects_by_name else None
+        selected = self._selected_scene_name()
         if selected is not None:
             bindings = self.graphs_for_object(selected)
             context_path = preferred_path or (bindings[0][0] if bindings else None)
             if not h.logic_workspace.open_for_object(selected, context_path):
                 return
-            h.logic_window.setWindowTitle(f"Zennity — Lógica Visual — {selected}")
             source = context_path.name if context_path is not None else "novo rascunho"
             h.statusBar().showMessage(f"Lógica Visual: {selected} • {source}")
         elif preferred_path is not None:
             if not h.logic_workspace.open_asset(preferred_path):
                 return
-            h.logic_window.setWindowTitle("Zennity — Editor de Lógica Visual")
         else:
-            h.statusBar().showMessage(
-                "Selecione um objeto na Hierarchy para definir o alvo da lógica"
+            assets = self.assets()
+            if assets and h.logic_workspace.current_path is None:
+                fallback_path, _graph = max(
+                    assets,
+                    key=lambda entry: (
+                        str(entry[1].get("target", {}).get("value", ""))
+                        in self._scene_object_names(),
+                        len(entry[1].get("nodes", [])),
+                    ),
+                )
+                if not h.logic_workspace.open_asset(fallback_path):
+                    return
+                h.statusBar().showMessage(
+                    f"Lógica Visual: {fallback_path.name} • selecione um objeto para vincular"
+                )
+            else:
+                h.statusBar().showMessage(
+                    "Selecione um objeto na Hierarchy para definir o alvo da lógica"
+                )
+        registry = getattr(h, "_workspace_registry", None)
+        if registry is not None:
+            dock = registry.open("logic")
+        else:
+            h._show_visual_tool_dock(
+                "editor.visual_scripting.visual_scripting_dock",
+                "VisualScriptingEditorDock",
+                "visual_scripting",
             )
-        h.logic_window.show()
-        h.logic_window.raise_()
-        h.logic_window.activateWindow()
+            dock = getattr(h, "_dock_visual_scripting", None)
+        if dock is not None and hasattr(dock, "sync_from_host"):
+            self._attach_graph_hub_bridges(dock)
+            dock.setWindowTitle(
+                f"⚡ Visual Scripting Editor 2.0"
+                f"{f' — {selected}' if selected else ''}"
+            )
+            dock.sync_from_host()
         h._log("INFO", f"Editor de Lógica Visual aberto{f' para {selected}' if selected else ''}")
 
+    def _attach_graph_hub_bridges(self, dock: Any) -> None:
+        h = self.host
+        if getattr(h, "_graph_hub_bridges_attached", False):
+            return
+        orchestrator = getattr(h, "bridge_orchestrator", None)
+        if orchestrator is None:
+            return
+        orchestrator.visual_scripting.attach_dock(dock)
+        orchestrator.behavior_tree.attach_dock(dock.graph_tool_adapter("behavior_tree"))
+        orchestrator.dialogue.attach_dock(dock.graph_tool_adapter("dialogue"))
+        orchestrator.material_graph.attach_dock(dock.graph_tool_adapter("material_graph"))
+        h._graph_hub_bridges_attached = True
+
     def assets(self) -> list[tuple[Path, dict]]:
-        return self.host._logic_assets_repository.assets()
+        return self.bindings.assets()
 
     def graphs_for_object(self, object_name: str) -> list[tuple[Path, dict]]:
+        return self.bindings.graphs_for_object(object_name)
+
+    def rename_object_references(self, old_name: str, new_name: str) -> list[Path]:
         h = self.host
-        return h._logic_assets_repository.for_object(
-            object_name, h._objects_by_name.get(object_name, {})
+        editor = h.logic_workspace
+        current_path = editor.current_path.resolve() if editor.current_path else None
+        if current_path is not None and getattr(editor, "_dirty", False):
+            editor._autosave_timer.stop()
+            editor._autosave()
+        changed = h._logic_assets_repository.rename_object_references(
+            old_name, new_name
         )
+        if current_path is not None and current_path in {
+            path.resolve() for path in changed
+        }:
+            editor.set_graph(load_logic_graph(current_path), current_path)
+        dock = getattr(h, "_dock_visual_scripting", None)
+        if dock is not None and hasattr(dock, "sync_from_host"):
+            dock.sync_from_host()
+        return changed
 
     def save_binding(self, path: Path, graph: dict) -> None:
-        h = self.host
-        h._logic_assets_repository.save(path, graph)
-        h._asset_browser.refresh()
-        if h._selected_name in h._objects_by_name:
-            h._update_inspector(h._selected_name)
+        self.bindings.save_binding(path, graph)
 
     def choose_component(self) -> None:
         h = self.host
-        if h._selected_name not in h._objects_by_name:
+        selected = self._selected_scene_name()
+        if selected is None:
             return
         assets = self.assets()
-        if not assets:
-            h.statusBar().showMessage("Nenhum Logic Graph disponível; use Criar novo")
-            self.create_for_selected()
-            return
         picker = LogicGraphPickerDialog(assets, h)
-        if picker.exec() and picker.selected_path is not None:
-            graph = deepcopy(load_logic_graph(picker.selected_path))
-            graph["enabled"] = True
-            graph["target"] = {"type": "name", "value": h._selected_name}
+        if not picker.exec():
+            return
+        if picker.create_new:
+            self.create_blank_for_selected()
+        elif picker.selected_path is not None:
+            self.bindings.bind_existing_to_object(picker.selected_path, selected)
             h._component_expanded["logic"] = True
-            self.save_binding(picker.selected_path, graph)
-            h._log("INFO", f"{picker.selected_path.name} vinculado a {h._selected_name}")
+            h._log("INFO", f"{picker.selected_path.name} vinculado a {selected}")
 
     def create_for_selected(self) -> None:
         h = self.host
-        if h._selected_name not in h._objects_by_name:
+        selected = self._selected_scene_name()
+        if selected is None:
             return
-        directory = self.project_root / "Assets" / "Logic"
-        directory.mkdir(parents=True, exist_ok=True)
-        safe_name = "".join(
-            char if char.isalnum() else "_" for char in h._selected_name
-        ).strip("_") or "Object"
-        path = directory / f"{safe_name}Logic.zlogic"
-        suffix = 2
-        while path.exists():
-            path = directory / f"{safe_name}Logic{suffix}.zlogic"
-            suffix += 1
-        graph = default_logic_graph(path.stem)
-        graph["target"] = {"type": "name", "value": h._selected_name}
-        graph["nodes"] = [create_logic_node("event_start", (80.0, 100.0))]
-        save_logic_graph(path, graph)
-        h._logic_assets_repository.invalidate(path)
+        path = self.bindings.create_for_object(selected)
         h._component_expanded["logic"] = True
-        h._asset_browser.refresh()
-        h._update_inspector(h._selected_name)
         self.show(preferred_path=path)
-        h._log("INFO", f"Logic Graph criado para {h._selected_name}: {path.name}")
+        h._log("INFO", f"Logic Graph criado para {selected}: {path.name}")
+
+    def create_blank_for_selected(self) -> None:
+        h = self.host
+        selected = self._selected_scene_name()
+        if selected is None:
+            return
+        path = self.bindings.create_blank_for_object(selected)
+        h._component_expanded["logic"] = True
+        self.show(preferred_path=path)
+        h._log("INFO", f"Logic Graph vazio criado para {selected}: {path.name}")
+
+    def selection_changed(self, object_name: str) -> None:
+        """Keep an open Visual Logic window aligned with scene selection."""
+        h = self.host
+        dock = getattr(h, "_dock_visual_scripting", None)
+        if dock is None:
+            return
+        bindings = self.graphs_for_object(object_name)
+        if hasattr(dock, "set_object_context"):
+            dock.set_object_context(object_name, len(bindings))
+        if not dock.isVisible():
+            return
+        context_path = bindings[0][0] if bindings else None
+        if h.logic_workspace.open_for_object(object_name, context_path):
+            dock.setWindowTitle(
+                f"⚡ Visual Scripting Editor 2.0 — {object_name}"
+            )
+            dock.sync_from_host()
 
     def selected_path(self) -> Path | None:
         value = self.host.logic_graph_combo.currentData()
@@ -170,33 +221,26 @@ class LogicWorkspaceController:
         path = self.selected_path()
         if path is None or not path.is_file():
             return
-        graph = deepcopy(load_logic_graph(path))
-        graph["enabled"] = False
-        self.save_binding(path, graph)
+        self.bindings.detach(path)
         self.host._log("INFO", f"Logic Graph desvinculado: {path.name}")
 
     def remove_all(self) -> None:
         h = self.host
-        if h._selected_name not in h._objects_by_name:
+        selected = self._selected_scene_name()
+        if selected is None:
             return
-        bindings = self.graphs_for_object(h._selected_name)
+        bindings = self.graphs_for_object(selected)
         if not bindings:
             return
         answer = QMessageBox.question(
             h,
             "Desvincular lógica",
-            f"Desvincular {len(bindings)} Logic Graph(s) de {h._selected_name}? Os arquivos serão preservados.",
+            f"Desvincular {len(bindings)} Logic Graph(s) de {selected}? Os arquivos serão preservados.",
         )
         if answer != QMessageBox.Yes:
             return
-        for path, source in bindings:
-            graph = deepcopy(source)
-            graph["enabled"] = False
-            save_logic_graph(path, graph)
-            h._logic_assets_repository.invalidate(path)
-        h._asset_browser.refresh()
-        h._update_inspector(h._selected_name)
-        h._log("INFO", f"Lógica Visual desvinculada de {h._selected_name}")
+        self.bindings.detach_all_for_object(selected)
+        h._log("INFO", f"Lógica Visual desvinculada de {selected}")
 
     def update_summary(self) -> None:
         h = self.host
@@ -224,3 +268,14 @@ class LogicWorkspaceController:
             h.logic_unlink_button.setEnabled(True)
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             h.logic_summary_label.setText(f"Asset inválido: {exc}")
+
+    def _selected_scene_name(self) -> str | None:
+        selection = getattr(self.host, "_selection", None)
+        if selection is not None and hasattr(selection, "selected_scene_name"):
+            return selection.selected_scene_name()
+        selected = getattr(self.host, "_selected_name", None)
+        objects = getattr(self.host, "_objects_by_name", {})
+        return selected if selected in objects else None
+
+    def _scene_object_names(self) -> set[str]:
+        return set(getattr(self.host, "_objects_by_name", {}))

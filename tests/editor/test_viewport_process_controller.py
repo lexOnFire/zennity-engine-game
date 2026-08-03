@@ -6,9 +6,17 @@ from editor.runtime.viewport_process_controller import ViewportProcessController
 class FakeQueue:
     def __init__(self) -> None:
         self.items = []
+        self.closed = False
+        self.joined = False
 
     def put_nowait(self, item) -> None:
         self.items.append(item)
+
+    def close(self) -> None:
+        self.closed = True
+
+    def join_thread(self) -> None:
+        self.joined = True
 
 
 class FakeProcess:
@@ -77,6 +85,8 @@ def test_shutdown_requests_graceful_exit_then_forces_stuck_process() -> None:
     assert queue.items[0]["type"] == "shutdown"
     assert process.join_timeouts == [1.5, 2.0]
     assert process.terminated
+    assert queue.closed
+    assert queue.joined
 
 
 def test_shutdown_is_idempotent() -> None:
@@ -87,3 +97,5 @@ def test_shutdown_is_idempotent() -> None:
     controller.shutdown()
 
     assert [item["type"] for item in queue.items] == ["shutdown"]
+    assert queue.closed
+    assert queue.joined

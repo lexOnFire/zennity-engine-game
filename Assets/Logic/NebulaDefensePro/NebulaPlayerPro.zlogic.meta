@@ -1,0 +1,10 @@
+{
+  "guid": "5fff8f9b-b10a-46be-a6ba-60b9947b5927",
+  "uuid": "5fff8f9b-b10a-46be-a6ba-60b9947b5927",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Logic/NebulaDefensePro/NebulaPlayerPro.zlogic",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "cc652e387a6b887fb896df28e14aa065d83e99dc2696c6a4db7b6604f00b7e49"
+}

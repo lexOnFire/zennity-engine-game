@@ -53,7 +53,7 @@ class EnemyAI(Component):
         dx, dy = tx - ex, ty - ey
         dist = math.hypot(dx, dy)
 
-        if dist <= self.stop_distance:
+        if dist <= max(0.0001, self.stop_distance):
             return
 
         # Normaliza e aplica velocidade
@@ -73,7 +73,7 @@ class EnemyAI(Component):
             return
         # Procura por tag na cena
         for go in getattr(scene, "game_objects", []):
-            if go.tag == self.target_tag:
+            if getattr(go, "tag", "") == self.target_tag:
                 self._target = go
                 return
 

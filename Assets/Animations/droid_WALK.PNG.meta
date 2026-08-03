@@ -1,0 +1,12 @@
+{
+  "guid": "b699ae96-9530-4155-bc09-e0cffd94df9b",
+  "uuid": "b699ae96-9530-4155-bc09-e0cffd94df9b",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Animations/droid_WALK.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "5876a386250fe492859290584b63b20d9eb781af764b4599ee5a0090b20e9a4a"
+}

@@ -230,6 +230,21 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin):
         if not self.debug_paused:
             self.update(game, float(dt))
 
+    def hot_reload(self, new_graph: Mapping[str, Any]) -> None:
+        """Substitui o grafo em tempo de execução mantendo o estado das variáveis (Blackboard)."""
+        self.graph = normalize_logic_graph(new_graph)
+        self.nodes = {node["id"]: node for node in self.graph["nodes"]}
+        self.outgoing = {}
+        self.incoming = {}
+        for edge in self.graph["edges"]:
+            self.outgoing.setdefault(edge["from_node"], []).append(edge)
+            self.incoming[(str(edge["to_node"]), str(edge.get("to_port", "in")))] = edge
+        for edges in self.outgoing.values():
+            edges.sort(key=lambda edge: (int(edge.get("order", 0)), str(edge.get("id", ""))))
+        # We also need to re-register variables in case they changed, but preserve existing values
+        self.blackboard.register(self.graph.get("variables", {}), self.object_key)
+        self.variables = self.blackboard.values_for_object(self.object_key)
+
 
     def _receive_custom_event(self, node_id: str, event: LogicEvent) -> None:
         self._event_trace_pending = True
@@ -360,9 +375,25 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin):
 
     def _execute(self, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
         node_type = str(node["type"])
+        
+        from engine.core.context import EngineContext
+        from engine.metadata.manager import MetadataManager
+        from engine.core.metadata.node import NodeDefinition
+        from .registry import registry
+        
+        context = EngineContext.current()
+        if context:
+            manager = context.services.get_optional(MetadataManager)
+            if manager:
+                node_def = manager.get(NodeDefinition, node_type)
+                if node_def and node_def.executor:
+                    return node_def.executor(self, node, game, dt)
+                    
+        # Fallback for isolated tests
         executor = registry.executors.get(node_type)
         if executor:
             return executor(self, node, game, dt)
+            
         return ["next"]
 
     def _read_input(

@@ -1,0 +1,14 @@
+{
+  "format": "zennity.generic_graph", "version": 1, "category": "Material",
+  "nodes": [
+    {"id": "color", "type": "material.color_constant", "position": [80, 100], "inputs": {"color": [0.1, 0.65, 1.0, 1.0]}},
+    {"id": "metallic", "type": "material.float_constant", "position": [80, 300], "inputs": {"value": 0.25}},
+    {"id": "output", "type": "material.pbr_output", "position": [520, 180]}
+  ],
+  "edges": [
+    {"id": "mat-1", "source_node": "color", "source_port": "rgba", "target_node": "output", "target_port": "base_color", "type": "vec4"},
+    {"id": "mat-2", "source_node": "color", "source_port": "rgba", "target_node": "output", "target_port": "emissive", "type": "vec4"},
+    {"id": "mat-3", "source_node": "metallic", "source_port": "out", "target_node": "output", "target_port": "metallic", "type": "float"}
+  ]
+}
+

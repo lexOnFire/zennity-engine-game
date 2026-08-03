@@ -1,9 +1,0 @@
-{
-  "guid": "dbc44aaf-55b2-4470-9f11-550fda88e666",
-  "uuid": "dbc44aaf-55b2-4470-9f11-550fda88e666",
-  "type": "script",
-  "importer": "script_importer",
-  "source_path": "Assets/Scripts/behavior_demo/attack.py",
-  "import_settings": {},
-  "dependencies": []
-}

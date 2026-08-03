@@ -1,5 +1,12 @@
-from __future__ import annotations
+import warnings
 from typing import Any
+
+warnings.warn(
+    "editor.widgets.inspector_dock está deprecado (legado embutido).",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 
 from PySide6.QtWidgets import QDockWidget
 from editor.premium_panels import RealInspectorPanel

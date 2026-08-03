@@ -82,6 +82,19 @@ class AssetBrowserController:
         if path.is_dir():
             return "📁 "
         extension = path.suffix.lower()
+        
+        from engine.core.context import EngineContext
+        from engine.metadata.manager import MetadataManager
+        from engine.core.metadata.asset import AssetTypeDefinition
+        
+        context = EngineContext.current()
+        if context:
+            manager = context.services.get_optional(MetadataManager)
+            if manager:
+                for asset_type in manager.get_all(AssetTypeDefinition):
+                    if extension in asset_type.extensions:
+                        return asset_type.icon or "📄 "
+                        
         if extension in {".png", ".jpg", ".jpeg"}:
             return "🖼️ "
         if extension in {".ogg", ".wav", ".mp3"}:

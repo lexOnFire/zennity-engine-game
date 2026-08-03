@@ -380,7 +380,10 @@ zennity-engine-game/
 ├── demos/                 # Exemplos práticos e demonstrativos
 ├── examples/              # Projetos exemplo oficiais da Beta
 ├── scripts/               # Scripts utilitários e de comportamento do usuário
-└── tests/                 # Suites completas de testes unitários (pytest)
+├── tools/                 # Ferramentas auxiliares e definições de contexto/agentes IA (tools/ai/)
+├── tests/                 # Suites completas de testes unitários (pytest)
+├── ARCHITECTURE.md        # Documentação arquitetural e diagramas Mermaid
+└── ARCHITECTURE_GOVERNANCE.md # Governança de arquitetura, estabilidade de APIs e política SemVer
 ```
 
 ---

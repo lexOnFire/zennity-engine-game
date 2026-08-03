@@ -24,7 +24,7 @@ def test_bootstrap_uses_focused_controllers_directly() -> None:
     for call in (
         "h._editor_commands.connect_toolbar_actions()",
         "h._editor_commands.configure_main_menus()",
-        "h._editor_commands.configure_tools()",
+        "h._tool_controller.configure()",
         "h._asset_browser.refresh()",
         "h._prefab_workspace.refresh()",
         "h._logic_workspace_controller.connect()",
