@@ -10,7 +10,30 @@ from engine.core.component import Component
 
 
 class RuntimeUIElement(Component):
-    """Base oficial para componentes de UI em Runtime Screen Space."""
+    """Base oficial para componentes de UI em Runtime Screen Space.
+
+    CONSOLIDAÇÃO (mapa dos 4 sistemas de UI paralelos da engine): este módulo
+    (``engine.ui.runtime_components``) é o ÚNICO formato de PERSISTÊNCIA
+    oficial de UI em ``.zscene`` (via ``component_registry``). Os outros três
+    sistemas de UI da engine são consumidores ou tradutores deste, nunca o
+    contrário:
+      - ``engine.ui`` (base.py/canvas.py/label.py/...) é a API "code-first"
+        usada por jogos escritos 100% em Python sem passar pelo editor visual
+        (zennity_run.py, demos/demo_ui.py) — não participa da persistência
+        `.zscene` nem do pipeline de export.
+      - ``engine.ui.runtime`` (runtime/widgets.py) é usado só pelo UI Builder
+        do editor (editor/ui_builder/ui_builder_dock.py) para desenhar/editar
+        visualmente; salva num formato próprio ("zennity.ui") que hoje não
+        alimenta nenhum runtime de jogo.
+      - ``editor/runtime/native_ui.py`` é o motor de RENDERIZAÇÃO do Play Mode
+        isolado e também do jogo EXPORTADO (é copiado literalmente para
+        dentro do pacote final por engine/build/project_exporter.py) — ele
+        converte de/para este módulo via scene_item_to_ui()/ui_to_scene_item(),
+        nunca define seu próprio schema de dados persistente.
+    Ao adicionar um campo novo aqui, sempre checar se `native_ui.normalize_ui`
+    precisa do mesmo default (ele preserva chaves desconhecidas via dict
+    merge, então não quebra, mas os defaults ficam divergentes se esquecido).
+    """
 
     component_type = "UIElement"
 
@@ -23,6 +46,9 @@ class RuntimeUIElement(Component):
         visible: bool = True,
         z_order: int = 0,
         widget_name: str = "",
+        anchor: str = "",
+        margin_x: float = 16.0,
+        margin_y: float = 16.0,
     ) -> None:
         super().__init__()
         self.x = float(x)
@@ -39,6 +65,16 @@ class RuntimeUIElement(Component):
         # (definido no editor) que os nós set_ui_text/set_ui_progress_bar/
         # set_ui_visible usam para desambiguar; veja ui_nodes.py `_find_widget`.
         self.widget_name = str(widget_name)
+        # CONSOLIDAÇÃO: editor/runtime/native_ui.py já normaliza "anchor"/
+        # "margin_x"/"margin_y" (posicionamento relativo a um canto da tela,
+        # 4 opções) no snapshot de Play Mode, mas este componente serializável
+        # não tinha esses campos — hoje o editor ainda não expõe um controle
+        # de Inspector para editá-los, então não é um bug ativo, mas sem isso
+        # o valor se perderia silenciosamente no primeiro save/load assim que
+        # esse controle existir. Adicionado agora, antes de virar bug.
+        self.anchor = str(anchor)
+        self.margin_x = float(margin_x)
+        self.margin_y = float(margin_y)
 
     def on_runtime_start(self) -> None:
         """Isola objetos puramente UI do world draw sem esconder objetos mistos."""
@@ -70,6 +106,9 @@ class RuntimeUIElement(Component):
             "visible": bool(self.visible),
             "z_order": int(self.z_order),
             "widget_name": str(self.widget_name),
+            "anchor": str(self.anchor),
+            "margin_x": float(self.margin_x),
+            "margin_y": float(self.margin_y),
         }
 
     def deserialize_properties(self, data: dict[str, Any]) -> None:
@@ -80,6 +119,9 @@ class RuntimeUIElement(Component):
         self.visible = bool(data.get("visible", self.visible))
         self.z_order = int(data.get("z_order", self.z_order))
         self.widget_name = str(data.get("widget_name", self.widget_name))
+        self.anchor = str(data.get("anchor", self.anchor))
+        self.margin_x = float(data.get("margin_x", self.margin_x))
+        self.margin_y = float(data.get("margin_y", self.margin_y))
 
 
 class Canvas(RuntimeUIElement):
