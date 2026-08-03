@@ -1,0 +1,2087 @@
+{
+  "format_version": 2,
+  "scene_name": "MyPlatformer",
+  "engine_version": "Zennity 0.1.0",
+  "objects": [
+    {
+      "id": "mp-Ground-0",
+      "name": "Ground_0",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          16.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-1",
+      "name": "Ground_1",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          48.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-2",
+      "name": "Ground_2",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          80.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-3",
+      "name": "Ground_3",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          112.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-4",
+      "name": "Ground_4",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          144.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-5",
+      "name": "Ground_5",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          176.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-6",
+      "name": "Ground_6",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          208.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-7",
+      "name": "Ground_7",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          240.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-8",
+      "name": "Ground_8",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          272.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-9",
+      "name": "Ground_9",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          304.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-10",
+      "name": "Ground_10",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          336.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-11",
+      "name": "Ground_11",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          368.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-12",
+      "name": "Ground_12",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          400.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-13",
+      "name": "Ground_13",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          432.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-14",
+      "name": "Ground_14",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          464.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-15",
+      "name": "Ground_15",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          496.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-16",
+      "name": "Ground_16",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          528.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-17",
+      "name": "Ground_17",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          560.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-18",
+      "name": "Ground_18",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          592.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-19",
+      "name": "Ground_19",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          624.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-20",
+      "name": "Ground_20",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          656.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-21",
+      "name": "Ground_21",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          688.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-22",
+      "name": "Ground_22",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          720.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-23",
+      "name": "Ground_23",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          752.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Ground-24",
+      "name": "Ground_24",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          784.0,
+          240.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Ground",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Platform-13",
+      "name": "Platform_13",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          432.0,
+          176.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Platform",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_platform.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Platform-14",
+      "name": "Platform_14",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          464.0,
+          176.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Platform",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_platform.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Platform-15",
+      "name": "Platform_15",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          496.0,
+          176.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Platform",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_platform.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Platform-16",
+      "name": "Platform_16",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          528.0,
+          176.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Platform",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_platform.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Platform-17",
+      "name": "Platform_17",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          560.0,
+          176.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Platform",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_platform.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-Platform-18",
+      "name": "Platform_18",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          592.0,
+          176.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Platform",
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_platform.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {},
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-ground-collision",
+      "name": "GroundCollisionTilemap",
+      "tag": "Environment",
+      "active": true,
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": null,
+        "color": [
+          0,
+          0,
+          0
+        ],
+        "texture": "",
+        "enabled": false,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {
+        "items": [
+          {
+            "type": "Tilemap",
+            "enabled": true,
+            "properties": {
+              "width": 25,
+              "height": 9,
+              "tile_size": 32,
+              "layers": [
+                {
+                  "0,7": 1,
+                  "1,7": 1,
+                  "2,7": 1,
+                  "3,7": 1,
+                  "4,7": 1,
+                  "5,7": 1,
+                  "6,7": 1,
+                  "7,7": 1,
+                  "8,7": 1,
+                  "9,7": 1,
+                  "10,7": 1,
+                  "11,7": 1,
+                  "12,7": 1,
+                  "13,7": 1,
+                  "14,7": 1,
+                  "15,7": 1,
+                  "16,7": 1,
+                  "17,7": 1,
+                  "18,7": 1,
+                  "19,7": 1,
+                  "20,7": 1,
+                  "21,7": 1,
+                  "22,7": 1,
+                  "23,7": 1,
+                  "24,7": 1
+                },
+                {
+                  "13,5": 1,
+                  "14,5": 1,
+                  "15,5": 1,
+                  "16,5": 1,
+                  "17,5": 1,
+                  "18,5": 1
+                }
+              ]
+            }
+          },
+          {
+            "type": "TilemapRenderer",
+            "enabled": true,
+            "properties": {}
+          }
+        ]
+      },
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-player",
+      "name": "Player",
+      "tag": "Player",
+      "active": true,
+      "transform": {
+        "position": [
+          64.0,
+          204.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          48.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Player",
+        "color": [
+          66,
+          135,
+          245
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/player.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 1
+      },
+      "components": {
+        "rigidbody": {
+          "mass": 1.0,
+          "gravity_scale": 1.0,
+          "drag": 0.0,
+          "use_gravity": true,
+          "is_kinematic": false
+        },
+        "collider": {
+          "type": "box",
+          "width": 20.0,
+          "height": 26.0,
+          "is_trigger": false,
+          "offset_x": 0.0,
+          "offset_y": 0.0
+        }
+      },
+      "enabled": true,
+      "static": false,
+      "layer": "Default",
+      "editor_data": {
+        "logic_assets": [
+          "Assets/Logic/MyPlatformer/PlayerMovement.zlogic"
+        ]
+      }
+    },
+    {
+      "id": "mp-enemy",
+      "name": "Enemy",
+      "tag": "Enemy",
+      "active": true,
+      "transform": {
+        "position": [
+          420.0,
+          168.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Enemy",
+        "color": [
+          214,
+          61,
+          61
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/enemy.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 1
+      },
+      "components": {
+        "rigidbody": {
+          "mass": 1.0,
+          "gravity_scale": 0.0,
+          "drag": 0.0,
+          "use_gravity": false,
+          "is_kinematic": true
+        },
+        "collider": {
+          "type": "box",
+          "width": 26.0,
+          "height": 24.0,
+          "is_trigger": false
+        }
+      },
+      "enabled": true,
+      "static": false,
+      "layer": "Default",
+      "editor_data": {
+        "behavior": {
+          "controller_path": "Assets/Behaviors/MyPlatformer/EnemyPatrolChase.zbehavior",
+          "parameters": {}
+        }
+      }
+    },
+    {
+      "id": "mp-coin-0",
+      "name": "Coin_0",
+      "tag": "Coin",
+      "active": true,
+      "transform": {
+        "position": [
+          200.0,
+          216.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          16.0,
+          16.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Coin",
+        "color": [
+          255,
+          208,
+          60
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/coin.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 1
+      },
+      "components": {
+        "collider": {
+          "type": "circle",
+          "radius": 7.0,
+          "is_trigger": true
+        }
+      },
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-coin-1",
+      "name": "Coin_1",
+      "tag": "Coin",
+      "active": true,
+      "transform": {
+        "position": [
+          500.0,
+          150.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          16.0,
+          16.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Coin",
+        "color": [
+          255,
+          208,
+          60
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/coin.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 1
+      },
+      "components": {
+        "collider": {
+          "type": "circle",
+          "radius": 7.0,
+          "is_trigger": true
+        }
+      },
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-coin-2",
+      "name": "Coin_2",
+      "tag": "Coin",
+      "active": true,
+      "transform": {
+        "position": [
+          700.0,
+          216.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          16.0,
+          16.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Coin",
+        "color": [
+          255,
+          208,
+          60
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/coin.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 1
+      },
+      "components": {
+        "collider": {
+          "type": "circle",
+          "radius": 7.0,
+          "is_trigger": true
+        }
+      },
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-flag",
+      "name": "Flag",
+      "tag": "Flag",
+      "active": true,
+      "transform": {
+        "position": [
+          770.0,
+          208.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          24.0,
+          40.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Flag",
+        "color": [
+          60,
+          200,
+          90
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/flag.png",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 1
+      },
+      "components": {
+        "collider": {
+          "type": "box",
+          "width": 20.0,
+          "height": 36.0,
+          "is_trigger": true
+        }
+      },
+      "enabled": true,
+      "static": true,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-camera",
+      "name": "MainCamera",
+      "tag": "MainCamera",
+      "active": true,
+      "transform": {
+        "position": [
+          400.0,
+          210.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": null,
+        "color": [
+          120,
+          178,
+          230
+        ],
+        "texture": "",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {
+        "camera": {
+          "active": true,
+          "zoom": 0.75,
+          "background_color": [
+            120,
+            178,
+            230
+          ],
+          "priority": 10
+        }
+      },
+      "enabled": true,
+      "static": false,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-hud-canvas",
+      "name": "HUDCanvas",
+      "tag": "UI",
+      "active": true,
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {
+        "items": [
+          {
+            "type": "Canvas",
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "x": 0.0,
+              "y": 0.0,
+              "width": 0.0,
+              "height": 0.0,
+              "z_order": 0,
+              "text": "",
+              "font_size": 24,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
+              "widget_name": "hud_canvas",
+              "sprite_path": ""
+            }
+          }
+        ]
+      },
+      "enabled": true,
+      "static": false,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-hud-title",
+      "name": "TitleLabel",
+      "tag": "UI",
+      "active": true,
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {
+        "items": [
+          {
+            "type": "Label",
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "x": 16.0,
+              "y": 16.0,
+              "width": 0.0,
+              "height": 0.0,
+              "z_order": 1,
+              "text": "MyPlatformer",
+              "font_size": 22,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
+              "widget_name": "title_label",
+              "sprite_path": ""
+            }
+          }
+        ]
+      },
+      "enabled": true,
+      "static": false,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-hud-coins",
+      "name": "CoinsLabel",
+      "tag": "UI",
+      "active": true,
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {
+        "items": [
+          {
+            "type": "Label",
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "x": 16.0,
+              "y": 44.0,
+              "width": 0.0,
+              "height": 0.0,
+              "z_order": 1,
+              "text": "Moedas: 0",
+              "font_size": 20,
+              "color": [
+                255,
+                220,
+                90
+              ],
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
+              "widget_name": "coins_label",
+              "sprite_path": ""
+            }
+          }
+        ]
+      },
+      "enabled": true,
+      "static": false,
+      "layer": "Default"
+    },
+    {
+      "id": "mp-hud-hp",
+      "name": "HPBar",
+      "tag": "UI",
+      "active": true,
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {
+        "items": [
+          {
+            "type": "ProgressBar",
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "x": 14.0,
+              "y": 72.0,
+              "width": 179.0,
+              "height": 17.0,
+              "z_order": 0,
+              "text": "",
+              "font_size": 24,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                210,
+                60,
+                60
+              ],
+              "bg_color": [
+                45,
+                18,
+                18
+              ],
+              "widget_name": "hp_bar",
+              "sprite_path": ""
+            }
+          }
+        ]
+      },
+      "enabled": true,
+      "static": false,
+      "layer": "Default"
+    }
+  ],
+  "blackboard": {
+    "variables": {
+      "score": {
+        "type": "number",
+        "scope": "scene",
+        "default": 0.0
+      },
+      "hp": {
+        "type": "number",
+        "scope": "scene",
+        "default": 100.0
+      }
+    }
+  }
+}

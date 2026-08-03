@@ -1,0 +1,12 @@
+{
+  "guid": "72129b4a-2dc9-40ba-ad01-8c047e1a2a8e",
+  "uuid": "72129b4a-2dc9-40ba-ad01-8c047e1a2a8e",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Sprites/MyPlatformer/tile_ground.png",
+  "import_settings": {
+    "filter_mode": "nearest"
+  },
+  "dependencies": [],
+  "hash": "926cf2e9aca0e550814b7f8221e61795caa3402ccfcca60fd60cad49f1201adb"
+}

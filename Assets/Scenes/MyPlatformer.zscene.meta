@@ -1,0 +1,10 @@
+{
+  "guid": "290aec5c-2f11-404f-a233-74655b4058cb",
+  "uuid": "290aec5c-2f11-404f-a233-74655b4058cb",
+  "type": "scene",
+  "importer": "generic_importer",
+  "source_path": "Assets/Scenes/MyPlatformer.zscene",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "8235a1e332727fe8bc58c597b320c93e6de9ce89b70a2b04a426f1bb46c29b9b"
+}

@@ -1,0 +1,12 @@
+{
+  "guid": "20d76c3b-f45a-463f-969b-e3bf629d4ef8",
+  "uuid": "20d76c3b-f45a-463f-969b-e3bf629d4ef8",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Sprites/MyPlatformer/tile_platform.png",
+  "import_settings": {
+    "filter_mode": "nearest"
+  },
+  "dependencies": [],
+  "hash": "57b5d12fd250eb2bf553c183994bdecfb7590a580e7c0aeb345d3dcc13118bc1"
+}

@@ -1,0 +1,12 @@
+{
+  "guid": "12653244-1615-4e71-95a0-bc75b7f04a55",
+  "uuid": "12653244-1615-4e71-95a0-bc75b7f04a55",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Sprites/MyPlatformer/coin.png",
+  "import_settings": {
+    "filter_mode": "nearest"
+  },
+  "dependencies": [],
+  "hash": "6f3fbcbe1b61346aa041ea99de144c16521292cf491089a97f139c506c966fd1"
+}
