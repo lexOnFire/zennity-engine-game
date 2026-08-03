@@ -152,26 +152,49 @@ class BoxCollider(Component):
             if rb is None or rb.is_kinematic:
                 continue
 
-            # Busca por TilemapRenderer ativo na cena usando cache persistente
+            # Busca por TilemapRenderer ativo na cena usando cache persistente.
+            # BUG FIX: só o TilemapRenderer do sistema "real" (engine.tilemap)
+            # era reconhecido aqui, mas o editor só cria/serializa o par
+            # legado (engine.graphics.tilemap) -- ver LegacyTilemapCollisionAdapter
+            # em engine/physics/tilemap_collider.py para o porquê. Agora os
+            # dois são procurados, o real tendo prioridade se ambos existirem.
             scene_id = id(scene)
             if scene_id not in BoxCollider._scene_tilemap_components:
                 tm_comp = None
+                tm_comp_is_legacy = False
                 if hasattr(scene, "game_objects"):
                     from engine.tilemap.tilemap import TilemapRenderer
+                    from engine.graphics.tilemap import TilemapRenderer as LegacyTilemapRenderer
+                    from engine.graphics.tilemap import Tilemap as LegacyTilemap
                     for go in scene.game_objects:
                         found = go.get_component(TilemapRenderer)
                         if found is not None and found.tilemap is not None:
-                            tm_comp = found
+                            tm_comp = found.tilemap
                             break
-                BoxCollider._scene_tilemap_components[scene_id] = tm_comp
+                    if tm_comp is None:
+                        for go in scene.game_objects:
+                            legacy_renderer = go.get_component(LegacyTilemapRenderer)
+                            if legacy_renderer is None:
+                                continue
+                            legacy_tilemap = go.get_component(LegacyTilemap)
+                            if legacy_tilemap is not None and any(legacy_tilemap.layers):
+                                tm_comp = legacy_tilemap
+                                tm_comp_is_legacy = True
+                                break
+                BoxCollider._scene_tilemap_components[scene_id] = (tm_comp, tm_comp_is_legacy)
 
-            tm_comp = BoxCollider._scene_tilemap_components[scene_id]
+            tm_comp, tm_comp_is_legacy = BoxCollider._scene_tilemap_components[scene_id]
             if tm_comp is not None:
-                cache_key = (scene_id, id(tm_comp.tilemap))
+                cache_key = (scene_id, id(tm_comp))
                 if cache_key not in BoxCollider._scene_tilemaps:
                     from engine.physics.tilemap_collider import TilemapCollider
-                    BoxCollider._scene_tilemaps[cache_key] = TilemapCollider(tm_comp.tilemap, layer_name="collision")
-                
+                    if tm_comp_is_legacy:
+                        from engine.physics.tilemap_collider import LegacyTilemapCollisionAdapter
+                        tilemap_for_collider = LegacyTilemapCollisionAdapter(tm_comp)
+                    else:
+                        tilemap_for_collider = tm_comp
+                    BoxCollider._scene_tilemaps[cache_key] = TilemapCollider(tilemap_for_collider, layer_name="collision")
+
                 tm_collider = BoxCollider._scene_tilemaps[cache_key]
                 tm_collider.resolve(a.game_object)
 

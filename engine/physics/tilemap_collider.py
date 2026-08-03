@@ -42,6 +42,51 @@ if TYPE_CHECKING:
     from engine.game_object import GameObject
 
 
+class LegacyTilemapCollisionAdapter:
+    """
+    Adapta engine.graphics.tilemap.Tilemap (o componente que o editor de
+    fato cria/serializa via .zscene -- dict esparso de camadas, sem nenhum
+    metadado de solidez por tile) pra interface que TilemapCollider espera
+    (get_solid_rects_in_region), permitindo reusar a mesma resolução de
+    colisão do sistema real.
+
+    BUG FIX: BoxCollider.check_all() só reconhecia colisão de tilemap via
+    isinstance(comp, engine.tilemap.tilemap.TilemapRenderer) -- a classe do
+    sistema "real". Só que component_registry.py registra exclusivamente o
+    par legado (Tilemap/TilemapRenderer de engine/graphics/tilemap.py) como
+    componente serializável, então TODO tilemap criado no editor nunca batia
+    nesse isinstance -- nunca tinha colisão sólida em Play Mode nem no jogo
+    exportado. Como o formato legado não tem flag "solid" por tile, qualquer
+    tile não-vazio (id != 0) em qualquer camada é tratado como sólido --
+    cobre o caso comum de chão/parede de plataforma sem exigir migração de
+    formato de dados nem mudança no editor.
+    """
+
+    def __init__(self, legacy_tilemap) -> None:
+        self._tilemap = legacy_tilemap
+        self.tile_width = int(legacy_tilemap.tile_size)
+        self.tile_height = int(legacy_tilemap.tile_size)
+
+    def get_solid_rects_in_region(
+        self, x: float, y: float, w: float, h: float, layer_name: str = "collision",
+    ) -> List[pygame.Rect]:
+        tw, th = self.tile_width, self.tile_height
+        if tw <= 0 or th <= 0:
+            return []
+        col_start = int(x // tw)
+        col_end = int((x + w) // tw)
+        row_start = int(y // th)
+        row_end = int((y + h) // th)
+        rects: List[pygame.Rect] = []
+        for layer in self._tilemap.layers:
+            for (tx, ty), tile_id in layer.items():
+                if tile_id == 0:
+                    continue
+                if col_start <= tx <= col_end and row_start <= ty <= row_end:
+                    rects.append(pygame.Rect(tx * tw, ty * th, tw, th))
+        return rects
+
+
 class TilemapCollider:
     """
     Resolvedor de colisões entre GameObjects e um TileMap.
