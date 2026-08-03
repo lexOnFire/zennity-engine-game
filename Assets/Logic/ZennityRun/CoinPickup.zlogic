@@ -188,6 +188,24 @@
         "widget": "coins_label",
         "text": ""
       }
+    },
+    {
+      "id": "debug_log",
+      "type": "log_message",
+      "title": "Log Message",
+      "category": "Debug",
+      "position": [
+        1580,
+        260
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "text": "CoinPickup: HUD atualizado"
+      }
     }
   ],
   "edges": [
@@ -267,10 +285,28 @@
       "id": "e_hud_destroy",
       "from_node": "update_hud_coins",
       "from_port": "next",
-      "to_node": "destroy_self",
+      "to_node": "debug_log",
       "to_port": "in",
       "kind": "flow",
       "order": 9
+    },
+    {
+      "id": "e_hud_log",
+      "from_node": "coins_label_text",
+      "from_port": "value",
+      "to_node": "debug_log",
+      "to_port": "text",
+      "kind": "text",
+      "order": 10
+    },
+    {
+      "id": "e_log_destroy",
+      "from_node": "debug_log",
+      "from_port": "next",
+      "to_node": "destroy_self",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 11
     }
   ]
 }
