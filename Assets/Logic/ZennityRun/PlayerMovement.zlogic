@@ -122,6 +122,78 @@
       "properties": {
         "force": 520.0
       }
+    },
+    {
+      "id": "moving_check",
+      "type": "if_else",
+      "title": "If Else",
+      "category": "Flow",
+      "position": [
+        680,
+        80
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "condition": "axis != 0"
+      }
+    },
+    {
+      "id": "play_run",
+      "type": "play_animation",
+      "title": "Play Animation",
+      "category": "Actions",
+      "position": [
+        980,
+        40
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "state": "Run"
+      }
+    },
+    {
+      "id": "play_idle",
+      "type": "play_animation",
+      "title": "Play Animation",
+      "category": "Actions",
+      "position": [
+        980,
+        140
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "state": "Idle"
+      }
+    },
+    {
+      "id": "play_jump",
+      "type": "play_animation",
+      "title": "Play Animation",
+      "category": "Actions",
+      "position": [
+        980,
+        440
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "state": "Jump"
+      }
     }
   ],
   "edges": [
@@ -160,6 +232,42 @@
       "to_port": "in",
       "kind": "flow",
       "order": 3
+    },
+    {
+      "id": "e_move_movingcheck",
+      "from_node": "move",
+      "from_port": "next",
+      "to_node": "moving_check",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 4
+    },
+    {
+      "id": "e_movingcheck_run",
+      "from_node": "moving_check",
+      "from_port": "true",
+      "to_node": "play_run",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 5
+    },
+    {
+      "id": "e_movingcheck_idle",
+      "from_node": "moving_check",
+      "from_port": "false",
+      "to_node": "play_idle",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 6
+    },
+    {
+      "id": "e_jump_playjump",
+      "from_node": "jump_node",
+      "from_port": "next",
+      "to_node": "play_jump",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 7
     }
   ]
 }

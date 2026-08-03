@@ -33,7 +33,7 @@
           168,
           64
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_ground.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -81,7 +81,7 @@
           168,
           64
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_ground.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -129,7 +129,7 @@
           168,
           64
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_ground.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -177,7 +177,7 @@
           168,
           64
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_ground.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -225,7 +225,7 @@
           168,
           64
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_ground.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -273,7 +273,7 @@
           168,
           64
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_ground.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -321,7 +321,7 @@
           168,
           64
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_ground.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -369,7 +369,7 @@
           168,
           64
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_ground.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -417,7 +417,7 @@
           168,
           64
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_ground.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -465,7 +465,7 @@
           168,
           64
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_ground.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -513,7 +513,7 @@
           168,
           64
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_ground.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -561,7 +561,7 @@
           168,
           64
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_ground.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -609,7 +609,7 @@
           168,
           64
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_ground.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -657,7 +657,7 @@
           168,
           64
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_ground.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -705,7 +705,7 @@
           168,
           64
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_ground.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -753,7 +753,7 @@
           168,
           64
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_ground.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -801,7 +801,7 @@
           168,
           64
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_ground.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -849,7 +849,7 @@
           168,
           64
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_ground.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -897,7 +897,7 @@
           168,
           64
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_ground.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -945,7 +945,7 @@
           168,
           64
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_ground.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -971,7 +971,7 @@
       "transform": {
         "position": [
           144.0,
-          144.0,
+          174.1056,
           0.0
         ],
         "rotation": [
@@ -993,7 +993,7 @@
           122,
           132
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_platform.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -1019,7 +1019,7 @@
       "transform": {
         "position": [
           176.0,
-          144.0,
+          174.1056,
           0.0
         ],
         "rotation": [
@@ -1041,7 +1041,7 @@
           122,
           132
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_platform.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -1067,7 +1067,7 @@
       "transform": {
         "position": [
           208.0,
-          144.0,
+          174.1056,
           0.0
         ],
         "rotation": [
@@ -1089,7 +1089,7 @@
           122,
           132
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_platform.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -1115,7 +1115,7 @@
       "transform": {
         "position": [
           240.0,
-          144.0,
+          174.1056,
           0.0
         ],
         "rotation": [
@@ -1137,7 +1137,7 @@
           122,
           132
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_platform.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -1185,7 +1185,7 @@
           122,
           132
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_platform.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -1233,7 +1233,7 @@
           122,
           132
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_platform.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -1281,7 +1281,7 @@
           122,
           132
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_platform.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -1329,7 +1329,7 @@
           122,
           132
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/tile_platform.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -1365,8 +1365,8 @@
         ],
         "rz": 0.0,
         "scale": [
-          24.0,
-          30.0,
+          32.0,
+          32.0,
           1.0
         ]
       },
@@ -1377,7 +1377,7 @@
           100,
           70
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/player_sheet.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -1410,7 +1410,14 @@
       "editor_data": {
         "logic_assets": [
           "Assets/Logic/ZennityRun/PlayerMovement.zlogic"
-        ]
+        ],
+        "animator": {
+          "controller_path": "Assets/Animations/ZennityRun/PlayerZennityRun.zanimator",
+          "active_clip": "Idle",
+          "speed": 1.0,
+          "clips": {},
+          "parameters": {}
+        }
       }
     },
     {
@@ -1483,8 +1490,8 @@
         ],
         "rz": 0.0,
         "scale": [
-          12.0,
-          12.0,
+          16.0,
+          16.0,
           1.0
         ]
       },
@@ -1495,7 +1502,7 @@
           205,
           45
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/coin_spin.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -1516,7 +1523,14 @@
       "editor_data": {
         "logic_assets": [
           "Assets/Logic/ZennityRun/CoinPickup.zlogic"
-        ]
+        ],
+        "animator": {
+          "controller_path": "Assets/Animations/ZennityRun/CoinZennityRun.zanimator",
+          "active_clip": "Spin",
+          "speed": 1.0,
+          "clips": {},
+          "parameters": {}
+        }
       }
     },
     {
@@ -1537,8 +1551,8 @@
         ],
         "rz": 0.0,
         "scale": [
-          12.0,
-          12.0,
+          16.0,
+          16.0,
           1.0
         ]
       },
@@ -1549,7 +1563,7 @@
           205,
           45
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/coin_spin.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -1570,7 +1584,14 @@
       "editor_data": {
         "logic_assets": [
           "Assets/Logic/ZennityRun/CoinPickup.zlogic"
-        ]
+        ],
+        "animator": {
+          "controller_path": "Assets/Animations/ZennityRun/CoinZennityRun.zanimator",
+          "active_clip": "Spin",
+          "speed": 1.0,
+          "clips": {},
+          "parameters": {}
+        }
       }
     },
     {
@@ -1591,8 +1612,8 @@
         ],
         "rz": 0.0,
         "scale": [
-          12.0,
-          12.0,
+          16.0,
+          16.0,
           1.0
         ]
       },
@@ -1603,7 +1624,7 @@
           205,
           45
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/coin_spin.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -1624,7 +1645,14 @@
       "editor_data": {
         "logic_assets": [
           "Assets/Logic/ZennityRun/CoinPickup.zlogic"
-        ]
+        ],
+        "animator": {
+          "controller_path": "Assets/Animations/ZennityRun/CoinZennityRun.zanimator",
+          "active_clip": "Spin",
+          "speed": 1.0,
+          "clips": {},
+          "parameters": {}
+        }
       }
     },
     {
@@ -1645,8 +1673,8 @@
         ],
         "rz": 0.0,
         "scale": [
-          12.0,
-          12.0,
+          16.0,
+          16.0,
           1.0
         ]
       },
@@ -1657,7 +1685,7 @@
           205,
           45
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/coin_spin.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -1678,7 +1706,14 @@
       "editor_data": {
         "logic_assets": [
           "Assets/Logic/ZennityRun/CoinPickup.zlogic"
-        ]
+        ],
+        "animator": {
+          "controller_path": "Assets/Animations/ZennityRun/CoinZennityRun.zanimator",
+          "active_clip": "Spin",
+          "speed": 1.0,
+          "clips": {},
+          "parameters": {}
+        }
       }
     },
     {
@@ -1699,8 +1734,8 @@
         ],
         "rz": 0.0,
         "scale": [
-          26.0,
-          26.0,
+          32.0,
+          32.0,
           1.0
         ]
       },
@@ -1711,25 +1746,25 @@
           70,
           200
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/enemy_slime.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 26.0,
-          "height": 26.0,
-          "is_trigger": true
-        },
         "rigidbody": {
           "mass": 1.0,
           "gravity_scale": 0.0,
           "drag": 0.0,
           "use_gravity": false,
           "is_kinematic": true
+        },
+        "collider": {
+          "type": "box",
+          "width": 26.0,
+          "height": 26.0,
+          "is_trigger": true
         }
       },
       "editor_data": {
@@ -1739,7 +1774,14 @@
         },
         "logic_assets": [
           "Assets/Logic/ZennityRun/EnemyDamage.zlogic"
-        ]
+        ],
+        "animator": {
+          "controller_path": "Assets/Animations/ZennityRun/EnemyZennityRun.zanimator",
+          "active_clip": "Idle",
+          "speed": 1.0,
+          "clips": {},
+          "parameters": {}
+        }
       },
       "enabled": true,
       "static": false,
@@ -1763,8 +1805,8 @@
         ],
         "rz": 0.0,
         "scale": [
-          26.0,
-          26.0,
+          32.0,
+          32.0,
           1.0
         ]
       },
@@ -1775,25 +1817,25 @@
           70,
           200
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/enemy_slime.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 26.0,
-          "height": 26.0,
-          "is_trigger": true
-        },
         "rigidbody": {
           "mass": 1.0,
           "gravity_scale": 0.0,
           "drag": 0.0,
           "use_gravity": false,
           "is_kinematic": true
+        },
+        "collider": {
+          "type": "box",
+          "width": 26.0,
+          "height": 26.0,
+          "is_trigger": true
         }
       },
       "editor_data": {
@@ -1803,7 +1845,14 @@
         },
         "logic_assets": [
           "Assets/Logic/ZennityRun/EnemyDamage.zlogic"
-        ]
+        ],
+        "animator": {
+          "controller_path": "Assets/Animations/ZennityRun/EnemyZennityRun.zanimator",
+          "active_clip": "Idle",
+          "speed": 1.0,
+          "clips": {},
+          "parameters": {}
+        }
       },
       "enabled": true,
       "static": false,
@@ -1827,7 +1876,7 @@
         ],
         "rz": 0.0,
         "scale": [
-          8.0,
+          24.0,
           64.0,
           1.0
         ]
@@ -1839,7 +1888,7 @@
           200,
           120
         ],
-        "texture": "",
+        "texture": "Assets/Sprites/ZennityRun/flag.png",
         "enabled": true,
         "material": "Default_Material",
         "layer": "Default",
@@ -1905,7 +1954,34 @@
               "width": 0.0,
               "height": 0.0,
               "z_order": 0,
-              "widget_name": "hud_canvas"
+              "text": "",
+              "font_size": 24,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
+              "widget_name": "hud_canvas",
+              "sprite_path": ""
             }
           }
         ]
@@ -1962,14 +2038,34 @@
               "width": 0.0,
               "height": 0.0,
               "z_order": 1,
-              "widget_name": "title_label",
               "text": "Zennity Run",
               "font_size": 22,
               "color": [
                 255,
                 255,
                 255
-              ]
+              ],
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
+              "widget_name": "title_label",
+              "sprite_path": ""
             }
           }
         ]
@@ -2026,14 +2122,34 @@
               "width": 0.0,
               "height": 0.0,
               "z_order": 1,
-              "widget_name": "coins_label",
               "text": "Moedas: 0",
               "font_size": 20,
               "color": [
                 255,
                 220,
                 90
-              ]
+              ],
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
+              "widget_name": "coins_label",
+              "sprite_path": ""
             }
           }
         ]
@@ -2085,12 +2201,25 @@
             "enabled": true,
             "properties": {
               "visible": true,
-              "x": 16.0,
+              "x": 14.0,
               "y": 76.0,
               "width": 180.0,
-              "height": 18.0,
-              "z_order": 1,
-              "widget_name": "hp_bar",
+              "height": 16.0,
+              "z_order": 1.0,
+              "text": "",
+              "font_size": 24.0,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "alpha": 255.0,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
               "value": 100.0,
               "max_value": 100.0,
               "fill_color": [
@@ -2102,7 +2231,9 @@
                 45,
                 18,
                 18
-              ]
+              ],
+              "widget_name": "hp_bar",
+              "sprite_path": ""
             }
           }
         ]

@@ -1,0 +1,18 @@
+{
+  "format": "zennity.animator_controller",
+  "version": 1,
+  "name": "CoinZennityRun",
+  "initial_state": "Spin",
+  "parameters": {},
+  "states": {
+    "Spin": {
+      "animation": "Assets/Animations/ZennityRun/CoinSpin.zanim",
+      "speed": 1.0,
+      "position": [
+        40.0,
+        40.0
+      ]
+    }
+  },
+  "transitions": []
+}
