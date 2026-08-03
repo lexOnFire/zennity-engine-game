@@ -29,6 +29,7 @@ class IsolatedInspectorController(InspectorControllerUIMediaMixin):
         "camera": ("camera_header", "camera_body", "btn_collapse_camera"),
         "ui": ("ui_component_header", "ui_component_body", "btn_collapse_ui"),
         "logic": ("logic_component_header", "logic_component_body", "btn_collapse_logic"),
+        "behavior": ("behavior_component_header", "behavior_component_body", "btn_collapse_behavior"),
         "runtime": ("runtime_debug_header", "runtime_debug_body", "btn_collapse_runtime"),
     }
 
@@ -132,6 +133,15 @@ class IsolatedInspectorController(InspectorControllerUIMediaMixin):
         self._bind(h.logic_link_button.clicked, h._logic_workspace_controller.choose_component)
         self._bind(h.logic_new_button.clicked, h._logic_workspace_controller.create_blank_for_selected)
         self._bind(h.logic_unlink_button.clicked, h._logic_workspace_controller.detach_selected)
+        # Behavior Tree card
+        bt_ctrl = getattr(h, "_behavior_tree_controller", None)
+        if bt_ctrl is not None:
+            self._bind(h.btn_collapse_behavior.clicked, lambda: h._toggle_inspector_card("behavior"))
+            self._bind(h.btn_delete_behavior.clicked, bt_ctrl.unlink)
+            self._bind(h.behavior_pick_button.clicked, bt_ctrl.pick)
+            self._bind(h.behavior_new_button.clicked, bt_ctrl.create_new)
+            self._bind(h.behavior_open_button.clicked, bt_ctrl.open_editor)
+            self._bind(h.behavior_unlink_button.clicked, bt_ctrl.unlink)
         self._connected = True
         return True
 
@@ -209,6 +219,8 @@ class InspectorComponentController(InspectorControllerUIMediaMixin):
             names = obj.setdefault("component_names", [])
             if "Camera2D" not in names:
                 names.append("Camera2D")
+        elif component == "behavior":
+            obj.setdefault("behavior", {"controller_path": "", "auto_start": False})
         elif component.startswith("ui_"):
             kind = component.removeprefix("ui_")
             if kind != "canvas":
@@ -221,6 +233,7 @@ class InspectorComponentController(InspectorControllerUIMediaMixin):
         card_key = {
             "sprite": "sprite", "audio": "audio", "rigidbody": "rigidbody",
             "box": "collider", "circle": "collider", "camera": "camera",
+            "behavior": "behavior",
         }.get(component, "ui" if component.startswith("ui_") else None)
         if card_key is not None:
             h._component_expanded[card_key] = True

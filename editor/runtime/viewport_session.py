@@ -233,7 +233,10 @@ class ViewportSession(ViewportSessionLifecycleMixin):
                 hydrate_animation_asset_clips, hydrate_animator_controllers,
                 hydrate_behavior_controllers, hydrate_dialogues, hydrate_logic_graphs,
             ),
-            lambda name, obj: PlayLogicAPI(name, obj, self.events, self.objects, self.runtime_world),
+            lambda name, obj: PlayLogicAPI(
+                name, obj, self.events, self.objects, self.runtime_world,
+                self.behavior_runners, Path.cwd(),
+            ),
             lambda path: load_project_subgraph(path, Path.cwd()),
             lambda event: _send(self.events, event), self.play_audio_file, Path.cwd()
         )
@@ -260,7 +263,10 @@ class ViewportSession(ViewportSessionLifecycleMixin):
         self.animation_updater = ViewportAnimationUpdater(
             self.objects, self.animation_system, self.animator_controllers, self.animator_event_signatures,
             self.logic_modules,
-            lambda name, obj: self.logic_apis.get(name) or PlayLogicAPI(name, obj, self.events, self.objects, self.runtime_world),
+            lambda name, obj: self.logic_apis.get(name) or PlayLogicAPI(
+                name, obj, self.events, self.objects, self.runtime_world,
+                self.behavior_runners, Path.cwd(),
+            ),
             self.dispatch_animation_state_hook, lambda event: _send(self.events, event)
         )
         self.session_orchestrator = ViewportSessionOrchestrator(
@@ -315,7 +321,10 @@ class ViewportSession(ViewportSessionLifecycleMixin):
         obj = self.objects.get(object_name)
         if obj is None:
             return
-        api = self.logic_apis.get(object_name) or PlayLogicAPI(object_name, obj, self.events, self.objects, self.runtime_world)
+        api = self.logic_apis.get(object_name) or PlayLogicAPI(
+            object_name, obj, self.events, self.objects, self.runtime_world,
+            self.behavior_runners, Path.cwd(),
+        )
         for path, module in list(self.logic_modules.get(object_name, [])):
             hook = getattr(module, hook_name, None)
             if not callable(hook):
@@ -389,8 +398,14 @@ class ViewportSession(ViewportSessionLifecycleMixin):
         other_obj = self.objects.get(other_name)
         if obj is None or other_obj is None:
             return
-        game = self.logic_apis.get(name) or PlayLogicAPI(name, obj, self.events, self.objects, self.runtime_world)
-        other = PlayLogicAPI(other_name, other_obj, self.events, self.objects, self.runtime_world)
+        game = self.logic_apis.get(name) or PlayLogicAPI(
+            name, obj, self.events, self.objects, self.runtime_world,
+            self.behavior_runners, Path.cwd(),
+        )
+        other = PlayLogicAPI(
+            other_name, other_obj, self.events, self.objects, self.runtime_world,
+            self.behavior_runners, Path.cwd(),
+        )
         for path, module in list(self.logic_modules.get(name, [])):
             hook = getattr(module, hook_name, None)
             if not callable(hook):

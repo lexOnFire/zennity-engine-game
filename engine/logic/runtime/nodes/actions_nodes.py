@@ -146,12 +146,11 @@ def execute_start_behavior_tree(runtime, node: Mapping[str, Any], game: Any, dt:
     node_id = str(node['id'])
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
     target = runtime._read_target(node_id, game, dt, set())
-    path = str(runtime._read_input(node_id, "path", properties.get("path", ""), game, dt, set()))
-    if path:
-        if hasattr(target, "start_behavior_tree"):
-            target.start_behavior_tree(path)
-        elif hasattr(game, "start_behavior_tree"):
-            game.start_behavior_tree(path)
+    raw_path = runtime._read_input(node_id, "path", properties.get("path", ""), game, dt, set())
+    path = "" if raw_path is None else str(raw_path).strip()
+    if hasattr(target, "start_behavior_tree"):
+        target.start_behavior_tree(path)
+    elif hasattr(game, "start_behavior_tree"):
+        game.start_behavior_tree(path)
     return ["next"]
-
 

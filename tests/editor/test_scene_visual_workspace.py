@@ -43,3 +43,27 @@ def test_scene_workspace_preloads_every_visual_tab() -> None:
     assert all(len(editor.opened) == 1 for editor in editors)
     assert all(editor.opened[0].is_relative_to(root) for editor in editors)
     assert messages == ["[Workspace] 6 documento(s) da cena carregado(s)."]
+
+
+def test_scene_workspace_accepts_owned_behavior_tree_entry() -> None:
+    editor = _Editor()
+    dock = SimpleNamespace(
+        _host=SimpleNamespace(
+            _scene_document={"visual_logic_workspace": {
+                "behavior_tree": {
+                    "path": "Assets/Demos/PortalStation/StationDrone.zbehavior",
+                    "object": "StationDrone",
+                }
+            }},
+            _objects_by_name={},
+        ),
+        _scene_workspace_signature=(),
+        graph_editor=_Editor(), behavior_tree_editor=editor,
+        dialogue_graph_editor=_Editor(), material_graph_editor=_Editor(),
+        animator_graph_editor=_Editor(), ui_builder=_Editor(),
+        runtime_logs_text=SimpleNamespace(append=lambda _message: None),
+    )
+
+    VisualScriptingEditorDock._sync_scene_workspace(dock)
+
+    assert editor.opened[0].name == "StationDrone.zbehavior"

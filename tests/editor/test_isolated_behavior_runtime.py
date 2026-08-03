@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from editor.isolated_viewport import PlayLogicAPI, hydrate_behavior_controllers
+from editor.runtime.viewport_runtime_initializer import ViewportRuntimeInitializer
 from engine.behavior.controller_asset import BehaviorControllerRunner, save_behavior_controller
 
 
@@ -70,3 +71,38 @@ def test_repository_behavior_demo_scene_references_controller() -> None:
     enemy = next(item for item in scene["objects"] if item["name"] == "BehaviorEnemy")
     assert enemy["editor_data"]["behavior"]["controller_path"] == "Assets/Behaviors/EnemyDemo.zbehavior"
     assert "scripts" not in enemy.get("components", {})
+
+
+def test_runtime_initializer_stops_registered_behavior_runners() -> None:
+    stopped = []
+    runner = type("Runner", (), {"stop": lambda self, api: stopped.append(api)})()
+    api = object()
+    initializer = ViewportRuntimeInitializer.__new__(ViewportRuntimeInitializer)
+    initializer.behavior_runners = {"Enemy": runner}
+    initializer.logic_apis = {"Enemy": api}
+    initializer.logic_runtimes = {}
+    initializer.logic_modules = {}
+    initializer.animator_controllers = {}
+    initializer.initialized_ids = set()
+    initializer.animator_event_signatures = {}
+    initializer.emit = lambda _event: None
+
+    initializer._clear_runtime_state()
+
+    assert stopped == [api]
+    assert initializer.behavior_runners == {}
+
+
+def test_linked_behavior_without_auto_start_waits_for_logic_node() -> None:
+    initializer = ViewportRuntimeInitializer.__new__(ViewportRuntimeInitializer)
+    initializer.api_factory = lambda *_args: (_ for _ in ()).throw(AssertionError("não deve iniciar"))
+    initializer.logic_apis = {}
+    initializer.behavior_runners = {}
+
+    initializer._initialize_behavior(
+        "Enemy",
+        {"behavior": {"controller_path": "Assets/Behaviors/Enemy.zbehavior", "auto_start": False}},
+    )
+
+    assert initializer.logic_apis == {}
+    assert initializer.behavior_runners == {}

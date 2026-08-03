@@ -379,6 +379,11 @@ def _build_logic_component(window, main_layout):
     build_logic_component(window, main_layout)
 
 
+def _build_behavior_tree_component(window, main_layout):
+    from editor.ui.inspector_builder_extra import build_behavior_tree_component
+    build_behavior_tree_component(window, main_layout)
+
+
 def _build_runtime_debug_component(window, main_layout):
     from editor.ui.inspector_builder_extra import build_runtime_debug_component
     build_runtime_debug_component(window, main_layout)
@@ -410,5 +415,6 @@ def build_inspector_dock(window):
     _build_camera_component(window, main_layout)
     _build_native_ui_component(window, main_layout)
     _build_logic_component(window, main_layout)
+    _build_behavior_tree_component(window, main_layout)
     _build_runtime_debug_component(window, main_layout)
     _finalize_inspector(window, scroll, inspector, main_layout)

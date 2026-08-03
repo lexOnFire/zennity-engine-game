@@ -272,6 +272,31 @@ class InspectorViewRenderer:
                 "Adicione Lógica Visual para controlar este objeto sem scripts."
             )
 
+    def render_behavior(self, name: str, obj: dict[str, Any]) -> None:
+        """Sync the Behavior Tree card with the object's linked .zbehavior file."""
+        h = self.host
+        behavior = obj.get("behavior") if isinstance(obj.get("behavior"), dict) else None
+        controller_path = str((behavior or {}).get("controller_path", ""))
+        present = behavior is not None
+        h._set_inspector_card_present("behavior", present)
+        if not hasattr(h, "behavior_path_field"):
+            return
+        h.behavior_path_field.setText(controller_path)
+        if controller_path:
+            from pathlib import Path
+            stem = Path(controller_path).stem
+            path = Path(controller_path)
+            root = getattr(getattr(h, "_behavior_tree_controller", None), "project_root", Path.cwd())
+            resolved = path if path.is_absolute() else root / path
+            valid = resolved.is_file()
+            h.behavior_status_label.setText(f"🌳 {stem}  •  {'vinculado' if valid else 'arquivo não encontrado'}")
+            h.behavior_open_button.setEnabled(valid)
+            h.behavior_unlink_button.setEnabled(True)
+        else:
+            h.behavior_status_label.setText("Nenhum Behavior Tree vinculado")
+            h.behavior_open_button.setEnabled(False)
+            h.behavior_unlink_button.setEnabled(False)
+
     def render_runtime(self, obj: dict[str, Any]) -> None:
         h = self.host
         lifecycle = obj.get("spawn_lifecycle") if isinstance(obj.get("spawn_lifecycle"), dict) else {}

@@ -8,12 +8,14 @@ from typing import Any
 
 try:
     from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
-    from engine.behavior.controller_asset import BehaviorControllerRunner
+    from engine.behavior.controller_asset import BehaviorControllerRunner, load_behavior_controller
+    from engine.behavior.graph_runtime import BehaviorGraphRunner
     from engine.dialogue.runtime import DialogueSession
     from engine.runtime.runtime_world import RuntimeWorld
 except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
     from .clip_asset import animation_asset_to_clip, load_animation_asset
-    from .behavior_controller import BehaviorControllerRunner
+    from .behavior_controller import BehaviorControllerRunner, load_behavior_controller
+    from .behavior_graph_runtime import BehaviorGraphRunner
     from .runtime_world import RuntimeWorld
 
 
@@ -139,12 +141,20 @@ class PlayLogicAPI:
         "space": "jump", "r": "restart",
     }
 
-    def __init__(self, name: str, obj: dict[str, Any], events: Any, world: dict[str, dict[str, Any]] | None = None, runtime_world: RuntimeWorld | None = None) -> None:
+    def __init__(
+        self, name: str, obj: dict[str, Any], events: Any,
+        world: dict[str, dict[str, Any]] | None = None,
+        runtime_world: RuntimeWorld | None = None,
+        behavior_runners: dict[str, Any] | None = None,
+        project_root: str | Path | None = None,
+    ) -> None:
         self.name = name
         self.obj = obj
         self._events = events
         self._world = world if world is not None else {name: obj}
         self.runtime_world = runtime_world or RuntimeWorld(self._world)
+        self._behavior_runners = behavior_runners
+        self._project_root = Path(project_root or Path.cwd()).resolve()
         self._input: dict[str, bool] = {}
         self._previous_input: dict[str, bool] = {}
         self.animator = PlayAnimatorAPI(obj)
@@ -243,28 +253,49 @@ class PlayLogicAPI:
     def start_behavior_tree(self, path: str) -> bool:
         """Carrega e executa uma Behavior Tree (.zbehavior) no objeto atual."""
         import json
-        clean_path = str(path).strip()
-        if not clean_path:
-            return False
         behavior = self.obj.setdefault("behavior", {})
+        clean_path = str(path).strip() or str(behavior.get("controller_path", "")).strip()
+        if not clean_path:
+            _send(self._events, {"type": "runtime_log", "level": "ERROR", "message": f"{self.name}: nenhum Behavior Tree vinculado"})
+            return False
         behavior["controller_path"] = clean_path
-        project_root = getattr(self._world, "project_root", Path.cwd())
         p = Path(clean_path)
         if not p.is_absolute():
-            p = project_root / p
+            p = self._project_root / p
         try:
-            if p.exists():
-                raw = json.loads(p.read_text(encoding="utf-8"))
-                if isinstance(raw, dict) and raw.get("format") == "zennity.generic_graph":
-                    behavior["graph"] = raw
-                    from engine.behavior.graph_runtime import BehaviorGraphRunner
-                    runner = BehaviorGraphRunner(raw, project_root=project_root)
-                    runner.start(self)
-                    self._behavior_runner = runner
-                    return True
-        except Exception:
-            pass
-        return False
+            if p.suffix.lower() != ".zbehavior" or not p.is_file():
+                raise ValueError(f"asset não encontrado: {clean_path}")
+            resolved_path = str(p.resolve())
+            existing = self._behavior_runners.get(self.name) if self._behavior_runners is not None else None
+            if existing is not None and behavior.get("_active_path") == resolved_path:
+                return True
+            raw = json.loads(p.read_text(encoding="utf-8"))
+            if not isinstance(raw, dict):
+                raise ValueError("documento inválido")
+            if raw.get("format") == "zennity.generic_graph":
+                runner = BehaviorGraphRunner(raw, project_root=self._project_root)
+                behavior["graph"] = raw
+                behavior.pop("controller", None)
+            else:
+                controller = load_behavior_controller(p)
+                runner = BehaviorControllerRunner(
+                    controller, self._project_root, behavior.get("parameters", {})
+                )
+                behavior["controller"] = controller
+                behavior.pop("graph", None)
+            previous = existing
+            if previous is not None:
+                previous.stop(self)
+            self.behavior.bind(runner, self)
+            runner.start(self)
+            if self._behavior_runners is not None:
+                self._behavior_runners[self.name] = runner
+            behavior["_active_path"] = resolved_path
+            self.obj["_behavior_state"] = runner.current_state
+            return True
+        except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
+            _send(self._events, {"type": "runtime_log", "level": "ERROR", "message": f"{self.name}: falha ao iniciar Behavior Tree '{clean_path}': {exc}"})
+            return False
 
     def find(self, tag: str) -> "PlayLogicAPI | None":
         wanted = str(tag).lower()
@@ -272,7 +303,7 @@ class PlayLogicAPI:
             if obj is self.obj:
                 continue
             if str(obj.get("tag", obj.get("name", ""))).lower() == wanted:
-                return PlayLogicAPI(name, obj, self._events, self._world, self.runtime_world)
+                return PlayLogicAPI(name, obj, self._events, self._world, self.runtime_world, self._behavior_runners, self._project_root)
         return None
 
     def create_object(
@@ -292,19 +323,19 @@ class PlayLogicAPI:
             color=color, texture=texture, tag=tag,
         )
         self.log(f"objeto criado: {obj['name']}")
-        return PlayLogicAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
+        return PlayLogicAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world, self._behavior_runners, self._project_root)
 
     def create_object_from_pool(self, pool_key: str, **values: Any) -> "PlayLogicAPI":
         obj = self.runtime_world.create_object(pool_key=f"logic:{pool_key}", **values)
         self.log(f"objeto criado/reutilizado: {obj['name']}")
-        return PlayLogicAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
+        return PlayLogicAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world, self._behavior_runners, self._project_root)
 
     def create_prefab(
         self, path: str, x: float | None = None, y: float | None = None, **options: Any
     ) -> "PlayLogicAPI":
         obj = self.runtime_world.instantiate_prefab(path, x=x, y=y, **options)
         self.log(f"prefab criado: {obj['name']}")
-        return PlayLogicAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
+        return PlayLogicAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world, self._behavior_runners, self._project_root)
 
     def create_prefab_from_pool(
         self, path: str, x: float | None, y: float | None, pool_key: str, **options: Any
@@ -313,7 +344,7 @@ class PlayLogicAPI:
             path, x=x, y=y, pool_key=f"logic:{pool_key}", **options
         )
         self.log(f"prefab criado/reutilizado: {obj['name']}")
-        return PlayLogicAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
+        return PlayLogicAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world, self._behavior_runners, self._project_root)
 
     def prefab_parameter(self, name: str, default: Any = None) -> Any:
         """Lê uma propriedade exposta recebida na criação desta instância."""
@@ -323,12 +354,12 @@ class PlayLogicAPI:
     def clone_object(self, other: "PlayLogicAPI", name: str = "") -> "PlayLogicAPI":
         source = other.obj if isinstance(other, PlayLogicAPI) else self.obj
         obj = self.runtime_world.clone_object(source, name)
-        return PlayLogicAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
+        return PlayLogicAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world, self._behavior_runners, self._project_root)
 
     def clone_object_from_pool(self, other: "PlayLogicAPI", name: str, pool_key: str) -> "PlayLogicAPI":
         source = other.obj if isinstance(other, PlayLogicAPI) else self.obj
         obj = self.runtime_world.clone_object(source, name, pool_key)
-        return PlayLogicAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world)
+        return PlayLogicAPI(str(obj["name"]), obj, self._events, self._world, self.runtime_world, self._behavior_runners, self._project_root)
 
     def can_spawn(self, spawn_group: str, maximum: int = 0) -> bool:
         return self.runtime_world.can_spawn(spawn_group, maximum)
@@ -500,5 +531,3 @@ def _send(events: Any, payload: dict[str, Any]) -> None:
         events.put_nowait(payload)
     except Exception:
         pass
-
-

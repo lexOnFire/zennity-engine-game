@@ -3,6 +3,7 @@
 ## v1.0.0 — Architecture & Release Readiness (2026-08-01)
 
 ### Refactored & Consolidated
+* **Behavior Tree integrado à cena**: o Inspector permite selecionar pela biblioteca, criar, abrir e desvincular `.zbehavior`; o vínculo persiste no objeto e em `visual_logic_workspace`, é restaurado ao reabrir a cena e pode ser iniciado pelo nó `start_behavior_tree` usando o asset vinculado, com runner central sem duplicação e limpeza no Stop.
 * **Hit-testing visual e desvio de clique em objetos bloqueados**: Hit-testing da viewport reorganizado (`viewport_render_order.py`) para respeitar rigorosamente a ordem visual inversa de renderização (`render_layer` + `sort_order` + ordem da cena). Objetos bloqueados (`editor_locked = True`) exibem indicador visual de cadeado desenhado com primitivas no canto do contorno e não capturam mais cliques quando sobrepostos a objetos desbloqueados.
 * **Bloqueio de transformação na Hierarquia**: objetos podem ser travados/destravados pelo menu de contexto, permanecem selecionáveis e inspecionáveis, mas não podem ser movidos, girados ou escalados acidentalmente; o cadeado e o contorno da viewport indicam o estado.
 * **Atalhos Q/W/E/R sincronizados**: trocar a ferramenta preserva a seleção mantida pela viewport sem reenfileirar o objeto anterior; confirmações idênticas são filtradas para impedir ciclos de seleção e saltos do gizmo.

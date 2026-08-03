@@ -8,6 +8,7 @@ from PySide6.QtCore import Qt
 
 from editor.animation_workspace_controller import AnimationWorkspaceController
 from editor.asset_browser_controller import AssetBrowserController
+from editor.behavior_tree_inspector_controller import BehaviorTreeInspectorController
 from editor.console_controller import ConsoleController
 from editor.editor_command_controller import EditorCommandController
 from editor.editor_session_controller import EditorSessionController
@@ -74,6 +75,7 @@ class EditorBootstrapController:
         h._inspector_controller = IsolatedInspectorController(h)
         h._inspector_components = InspectorComponentController(h)
         h._inspector_view = InspectorViewRenderer(h)
+        h._behavior_tree_controller = BehaviorTreeInspectorController(h, self.project_root)
         h._animation_workspace = AnimationWorkspaceController(h)
         h._logic_workspace_controller = LogicWorkspaceController(h)
         h._prefab_workspace = PrefabWorkspaceController(h)
