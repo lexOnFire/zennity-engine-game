@@ -134,7 +134,10 @@ def execute_log_message(runtime, node: Mapping[str, Any], game: Any, dt: float) 
     node_id = str(node['id'])
     node_type = str(node.get('type'))
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
-    text = runtime._read_input(node_id, "text", properties.get("text", "Mensagem"), game, dt, set())
+    # "message" é o nome legado da property (ver NODE_DEFINITIONS["log_message"]);
+    # aceito como fallback para assets criados antes do alinhamento com o pino "text".
+    fallback = properties.get("text", properties.get("message", "Mensagem"))
+    text = runtime._read_input(node_id, "text", fallback, game, dt, set())
     game.log(str(text))
     return ["next"]
 

@@ -138,3 +138,91 @@ def test_repeat_parameter_patrol_and_animation_nodes():
     assert game.x == 10
     patrol.update(game, 0.5)
     assert game.x == 5
+
+
+def _patrol_or_chase_graph(**selector_properties):
+    """selector[ sequence[target_in_range, chase], patrol ] -- o padrão de IA
+    mais comum: persegue quando o alvo entra no raio, senão patrulha."""
+    return graph(
+        [
+            {"id": "root", "type": "bt.selector", "properties": dict(selector_properties)},
+            {"id": "seq", "type": "bt.sequence"},
+            {"id": "range", "type": "bt.target_in_range",
+             "properties": {"target": "Player", "distance": 140.0}},
+            {"id": "chase", "type": "bt.chase",
+             "properties": {"target": "Player", "stop_distance": 30.0, "speed": 100.0}},
+            {"id": "patrol", "type": "bt.patrol",
+             "properties": {"point_a": "420,168", "point_b": "600,168", "speed": 55.0}},
+        ],
+        [
+            {"source_node": "root", "source_port": "0", "target_node": "seq"},
+            {"source_node": "root", "source_port": "1", "target_node": "patrol"},
+            {"source_node": "seq", "source_port": "0", "target_node": "range"},
+            {"source_node": "seq", "source_port": "1", "target_node": "chase"},
+        ],
+    )
+
+
+def _ticks(runner, game, player, count, player_x=None):
+    if player_x is not None:
+        player.x = player_x
+    states = []
+    for _ in range(count):
+        runner.update(game, 0.1)
+        states.append(runner.current_state)
+    return states
+
+
+def test_reactive_selector_switches_between_patrol_and_chase():
+    """BUG FIX: o composite sempre tinha memória, então ao entrar em bt.patrol
+    (que retorna "running" para sempre) o selector ficava preso nele e nunca
+    voltava a testar a perseguição -- o padrão patrulha/persegue era impossível."""
+    player = Game(2000.0, 168.0)
+    game = Game(420.0, 168.0, targets={"Player": player})
+    runner = BehaviorGraphRunner(_patrol_or_chase_graph())
+
+    # Alvo distante: patrulha.
+    assert set(_ticks(runner, game, player, 4)) == {"patrol"}
+
+    # Alvo entra no raio: o ramo prioritário interrompe a patrulha.
+    assert "chase" in set(_ticks(runner, game, player, 4, player_x=game.x + 60.0))
+
+    # Alvo foge: volta a patrulhar em vez de perseguir para sempre.
+    assert set(_ticks(runner, game, player, 4, player_x=9000.0)) == {"patrol"}
+
+
+def test_selector_with_memory_stays_locked_on_running_child():
+    """`reactive: False` preserva o comportamento antigo (opt-out explícito)."""
+    player = Game(2000.0, 168.0)
+    game = Game(420.0, 168.0, targets={"Player": player})
+    runner = BehaviorGraphRunner(_patrol_or_chase_graph(reactive=False))
+
+    assert set(_ticks(runner, game, player, 4)) == {"patrol"}
+    # Mesmo com o alvo ao lado, o selector memorizado nunca reavalia o ramo 0.
+    assert set(_ticks(runner, game, player, 4, player_x=game.x + 10.0)) == {"patrol"}
+
+
+def test_sequence_keeps_memory_so_completed_actions_do_not_repeat():
+    """bt.sequence continua memorizada por padrão: reavaliar do início
+    re-executaria ações já concluídas e com efeito colateral (bt.attack)."""
+    player = Game(0.0, 0.0)
+    game = Game(0.0, 0.0, targets={"Player": player})
+    data = graph(
+        [
+            {"id": "root", "type": "bt.sequence"},
+            {"id": "attack", "type": "bt.attack",
+             "properties": {"target": "Player", "damage": 25.0, "range": 100.0}},
+            {"id": "wait", "type": "bt.wait", "properties": {"duration": 1.0}},
+        ],
+        [
+            {"source_node": "root", "source_port": "0", "target_node": "attack"},
+            {"source_node": "root", "source_port": "1", "target_node": "wait"},
+        ],
+    )
+    runner = BehaviorGraphRunner(data)
+
+    runner.update(game, 0.1)
+    assert player.health == 75.0
+    for _ in range(5):
+        runner.update(game, 0.1)
+    assert player.health == 75.0, "attack não pode repetir enquanto o wait roda"

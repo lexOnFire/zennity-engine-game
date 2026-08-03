@@ -331,8 +331,14 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
         "title": "Log Message",
         "category": "Action",
         "inputs": [('in', 'flow'), ('text', 'text')],
+        # BUG FIX: a property se chamava "message", mas o pino de entrada, o
+        # executor (runtime/nodes/actions_nodes.py), o code_preview e todos os
+        # .zlogic reais do projeto usam "text" -- um nó criado pelo editor
+        # nascia com "message" e o texto digitado no Inspector era ignorado em
+        # tempo de execução. O executor aceita "message" como fallback para
+        # não quebrar assets antigos.
         "outputs": [('next', 'flow')],
-        "properties": {"message": "Log message"},
+        "properties": {"text": "Log message"},
     },
     "motion_state_query": {
         "title": "Motion State Query",

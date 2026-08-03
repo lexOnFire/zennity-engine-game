@@ -21,6 +21,29 @@ except ImportError:  # Self-contained exported runtime.
     )
 
 
+# Properties renomeadas ao longo da evolução da engine: a chave da esquerda é
+# o nome legado gravado em assets antigos; a da direita é o nome atual (sempre
+# alinhado ao pino de entrada correspondente, que é o que o executor lê).
+# Sem esta migração o valor antigo virava lixo silencioso: normalize_logic_graph
+# injeta o default da property nova, e o executor lê a nova -- então o texto que
+# o usuário digitou no Inspector era simplesmente ignorado em tempo de execução.
+_RENAMED_NODE_PROPERTIES: dict[str, dict[str, str]] = {
+    "log_message": {"message": "text"},
+}
+
+
+def _migrate_renamed_properties(node_type: str, properties: Mapping[str, Any]) -> dict[str, Any]:
+    """Renomeia properties legadas de *node_type*, preservando as atuais."""
+    renames = _RENAMED_NODE_PROPERTIES.get(node_type)
+    migrated = dict(properties)
+    if not renames:
+        return migrated
+    for legacy_key, current_key in renames.items():
+        if legacy_key in migrated and current_key not in migrated:
+            migrated[current_key] = migrated.pop(legacy_key)
+    return migrated
+
+
 def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
     source = dict(data or {})
     result = default_logic_graph(str(source.get("name", "NewLogic")))
@@ -111,7 +134,7 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
             properties = deepcopy(definition.get("properties", {}))
             raw_properties = raw_node.get("properties", {})
             if isinstance(raw_properties, Mapping):
-                properties.update(deepcopy(raw_properties))
+                properties.update(deepcopy(_migrate_renamed_properties(node_type, raw_properties)))
             raw_editor = raw_node.get("editor", {})
             if not isinstance(raw_editor, Mapping):
                 raw_editor = {}

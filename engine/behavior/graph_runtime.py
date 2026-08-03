@@ -221,14 +221,43 @@ class BehaviorGraphRunner:
         except (TypeError, ValueError):
             return False
 
+    def _is_reactive(self, node: Mapping[str, Any], kind: str) -> bool:
+        """
+        Um composite reativo reavalia os filhos desde o primeiro a cada tick;
+        um com memória retoma no filho que ficou "running".
+
+        BUG FIX: o composite SEMPRE tinha memória, então um filho que retorna
+        "running" para sempre (bt.patrol, bt.chase) prendia o pai nele
+        permanentemente -- uma árvore como
+        ``selector[sequence[target_in_range, chase], patrol]`` nunca voltava a
+        testar a perseguição depois de entrar em patrulha, tornando o padrão
+        mais comum de IA impossível de montar.
+
+        Defaults: ``bt.selector`` é reativo (é o nó de prioridade -- um ramo
+        mais prioritário precisa poder interromper um irmão preso em
+        "running"); ``bt.sequence`` mantém memória (reavaliar do início
+        re-executaria ações já concluídas e com efeito colateral, como
+        ``bt.attack``). A property ``reactive`` sobrescreve os dois casos.
+        """
+        raw = self._input(node, "reactive", kind == "bt.selector")
+        if isinstance(raw, str):
+            return raw.strip().casefold() in {"1", "true", "verdadeiro", "sim", "yes", "on"}
+        return bool(raw)
+
     def _tick_composite(self, node_id: str, kind: str, game: Any, dt: float) -> str:
         children = self.children.get(node_id, [])
         if not children:
             return "success" if kind == "bt.sequence" else "failure"
-        index = int(self._memory.get(node_id, 0))
+        reactive = self._is_reactive(self.nodes[node_id], kind)
+        previous_running = self._memory.get(node_id)
+        index = 0 if reactive else int(previous_running or 0)
         while index < len(children):
             result = self._tick(children[index], game, dt)
             if result == "running":
+                if reactive and previous_running is not None and int(previous_running) != index:
+                    # Trocou de ramo: aborta o que estava rodando para que ele
+                    # recomece do zero quando/se voltar a ser escolhido.
+                    self._clear_subtree_memory(children[int(previous_running)])
                 self._memory[node_id] = index
                 return result
             if kind == "bt.sequence" and result == "failure":

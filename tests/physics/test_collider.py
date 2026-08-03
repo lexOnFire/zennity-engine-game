@@ -551,6 +551,46 @@ class TestLegacyTilemapCollision:
 
         assert player.game_object.transform.position[1] == orig_y
 
+    def test_grounded_stays_true_while_resting_without_penetration(self):
+        """BUG FIX: grounded só era ligado no frame da penetração AABB. Um
+        objeto apenas APOIADO (bottom == topo do tile, overlap zero) ficava
+        com grounded=False, e como RigidBody.update() zera a flag todo frame
+        ela oscilava em repouso -- o nó "Is Grounded" recusava a maioria dos
+        pulos. Agora uma sondagem logo abaixo do collider decide."""
+        scene = MagicMock()
+        tilemap_go, _ = self._legacy_tilemap_go(scene, tiles=((0, 1),))
+        scene.game_objects = [tilemap_go]
+
+        rb = _make_rb(vy=0.0)
+        # rect.bottom == 32 == topo do tile (0,1): encostado, sem overlap.
+        player = _box(x=16, y=24, w=16, h=16, rb=rb, scene=scene)
+        player.game_object.transform = _XYTransform(16, 24)
+        player.game_object.components = [player]
+        BoxCollider._registry.append(player)
+
+        assert player.rect.bottom == 32
+        for _ in range(5):
+            rb.grounded = False          # RigidBody.update() faz isso todo frame
+            BoxCollider.check_all()
+            assert rb.grounded is True
+        # E o objeto em repouso não é empurrado.
+        assert player.game_object.transform.position[1] == 24
+
+    def test_not_grounded_while_airborne(self):
+        scene = MagicMock()
+        tilemap_go, _ = self._legacy_tilemap_go(scene, tiles=((0, 1),))
+        scene.game_objects = [tilemap_go]
+
+        rb = _make_rb(vy=0.0)
+        player = _box(x=16, y=0, w=16, h=16, rb=rb, scene=scene)
+        player.game_object.transform = _XYTransform(16, 0)
+        player.game_object.components = [player]
+        BoxCollider._registry.append(player)
+
+        rb.grounded = False
+        BoxCollider.check_all()
+        assert rb.grounded is False
+
     def test_empty_tile_id_zero_is_not_solid(self):
         scene = MagicMock()
         # Nenhum tile setado (todos id=0) -- não deve gerar colisão nenhuma.

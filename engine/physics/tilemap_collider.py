@@ -101,6 +101,8 @@ class TilemapCollider:
     layer_name    : str     – Nome da camada de colisão (padrão: "collision").
     max_iter      : int     – Máximo de iterações de resolução por frame
                               (evita loop infinito em cantos apertados).
+    ground_probe  : float   – Altura (px) da faixa testada logo abaixo do
+                              collider para decidir ``RigidBody.grounded``.
     """
 
     def __init__(
@@ -108,10 +110,12 @@ class TilemapCollider:
         tilemap,
         layer_name: str = "collision",
         max_iter:   int = 4,
+        ground_probe: float = 2.0,
     ) -> None:
         self.tilemap    = tilemap
         self.layer_name = layer_name
         self.max_iter   = max_iter
+        self.ground_probe = float(ground_probe)
 
     # ------------------------------------------------------------------
     # API pública
@@ -200,6 +204,34 @@ class TilemapCollider:
 
             if not resolved_any:
                 break
+
+        if rb is not None:
+            rb.grounded = rb.grounded or self.is_on_ground(col)
+
+    def is_on_ground(self, box_collider) -> bool:
+        """
+        Testa uma faixa fina logo ABAIXO do collider e diz se há chão sólido.
+
+        BUG FIX: ``grounded`` era ligado apenas no frame em que a resolução
+        vertical empurrava o objeto para fora de um tile. Um objeto apenas
+        APOIADO no chão não penetra nada (a resolução do frame anterior já o
+        alinhou à borda) e, como ``RigidBody.update()`` zera ``grounded`` todo
+        frame, a flag oscilava entre True/False em repouso -- medido em ~43%
+        dos frames com o objeto parado no chão. Isso fazia o nó "Is Grounded"
+        do Logic Graph recusar a maioria dos comandos de pulo, deixando o
+        controle do jogador visivelmente truncado.
+
+        A sondagem não depende de penetração, então é estável em repouso.
+        """
+        rect = box_collider.rect
+        probe = self.tilemap.get_solid_rects_in_region(
+            rect.x, rect.bottom, rect.width, self.ground_probe,
+            layer_name=self.layer_name,
+        )
+        # get_solid_rects_in_region trabalha em células inteiras, então pode
+        # devolver o próprio tile em que o objeto está encostado lateralmente;
+        # só conta como chão o tile cujo topo está abaixo da base do collider.
+        return any(tile.top >= rect.bottom for tile in probe)
 
     # ------------------------------------------------------------------
     # One-way platform helper
