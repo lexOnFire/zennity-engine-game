@@ -1114,8 +1114,10 @@ class RuntimeVisualizationPanelWidget(RuntimePanelControllerMixin, QFrame):
     # ── Tick ──────────────────────────────────────────────────────────────
 
     def _on_tick(self) -> None:
-        if not self.isVisible():
-            return
+        # BUG FIX: o early-return por isVisible() pulava a gravação do
+        # replay_buffer inteiro, não só o repaint do canvas — um painel
+        # oculto (ex.: aba trocada) perdia os últimos segundos do replay.
+        # A visibilidade agora só afeta o self._canvas.update() no final.
         try:
             now = time.time()
 

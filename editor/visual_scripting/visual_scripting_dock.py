@@ -24,6 +24,7 @@ from editor.visual_scripting.mini_live_viewport import (
     MiniLiveViewportWidget,
     ViewportMode,
 )
+from editor.visual_scripting.runtime_timeline import RuntimeTimelineWidget
 from editor.visual_scripting.modern_theme import apply_visual_scripting_theme
 from editor.visual_scripting.dock_workspace_sync import (
     GraphToolAdapter as _GraphToolAdapter,
@@ -112,6 +113,20 @@ class VisualScriptingEditorDock(QMainWindow):
         self.runtime_logs_text = getattr(self.graph_editor, "trace_console", None)
         if self.runtime_logs_text is None:
             self.runtime_logs_text = QTextEdit()
+
+        # Painel inferior: Watch Variables, Visual Profiler e Runtime Timeline.
+        self.watches_tabs = QTabWidget(self.main_container)
+        self.watches_tabs.setObjectName("WatchesTabs")
+        self.watch_variables_text = QTextEdit()
+        self.watch_variables_text.setReadOnly(True)
+        self.watch_variables_text.setPlaceholderText("Nenhuma variável observada.")
+        self.watches_tabs.addTab(self.watch_variables_text, "Watch Variables")
+        self.profiler_text = QTextEdit()
+        self.profiler_text.setReadOnly(True)
+        self.watches_tabs.addTab(self.profiler_text, "Visual Profiler")
+        self.runtime_timeline = RuntimeTimelineWidget()
+        self.watches_tabs.addTab(self.runtime_timeline, "Runtime Timeline")
+        root_layout.addWidget(self.watches_tabs)
 
         self._apply_modern_theme()
         self._connect_signals()

@@ -133,12 +133,15 @@ def test_old_prefab_format_still_loads() -> None:
 
 
 def test_prefab_serializes_component_items() -> None:
+    # RigidBody tem chave dedicada (components.rigidbody) desde a consolidação
+    # do scene_serializer -- ver _serialize_component_items em
+    # engine/scene/scene_serializer.py, usado internamente por serialize_prefab.
     obj = GameObject("PrefabSource")
     obj.add_component(RigidBody(mass=4.0))
 
     data = serialize_prefab(obj, "prefab-2")
 
-    assert data["components"]["items"][0]["type"] == "RigidBody"
+    assert data["components"]["rigidbody"]["mass"] == 4.0
 
 
 def test_inspector_lists_components_and_edits_with_undo_redo(qapp) -> None:

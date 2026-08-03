@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtWidgets import QTreeWidgetItem, QWidget
 
 from editor.interface_smoke_test import InterfaceSmokeTest
+from editor.inspector_component_delegates_mixin import InspectorComponentDelegatesMixin
 from editor.controllers.logic_assets import LogicAssetRepository
 from editor.isolated_viewport import run_viewport
 from editor.runtime.viewport_process_controller import ViewportProcessController
@@ -78,7 +79,7 @@ def _install_crash_logging(project_root: Path) -> None:
     logging.info("Crash logging instalado em %s", log_path)
 
 
-class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
+class IsolatedEditorWindow(InspectorComponentDelegatesMixin, AnimationWorkspaceOperations, InterfaceSmokeTest):
     def __init__(
         self,
         viewport_process: mp.Process | None,
@@ -110,6 +111,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
             "sprite": True,
             "audio": False,
             "logic": False,
+            "behavior": False,
             "rigidbody": False,
             "collider": False,
             "camera": False,
@@ -329,66 +331,6 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
         if hasattr(self, "_notify_scene_changed"):
             self._notify_scene_changed()
 
-    def _toggle_renderer_component(self, checked: bool) -> None:
-        self._inspector_components.toggle_renderer(checked)
-
-    def _choose_sprite_texture(self) -> None:
-        self._inspector_components.choose_sprite_texture()
-
-    def _choose_sprite_color(self) -> None:
-        self._inspector_components.choose_sprite_color()
-
-    def _send_inspector_renderer(self, record_history: bool = True) -> None:
-        self._inspector_components.send_renderer(record_history)
-
-    def _toggle_audio_component(self, checked: bool) -> None:
-        self._inspector_components.toggle_audio(checked)
-
-    def _get_available_audio_files(self) -> list[str]:
-        return self._inspector_components.available_audio_files()
-
-    def _get_available_audio_outputs(self) -> list[str]:
-        return self._inspector_components.available_audio_outputs()
-
-    def _send_inspector_audio(self) -> None:
-        self._inspector_components.send_audio()
-
-    def _test_selected_audio(self) -> None:
-        self._inspector_components.preview_audio()
-
-    def _toggle_rigidbody_component(self, checked: bool) -> None:
-        self._inspector_components.toggle_rigidbody(checked)
-
-    def _toggle_collider_component(self, checked: bool) -> None:
-        self._inspector_components.toggle_collider(checked)
-
-    def _toggle_camera_component(self, checked: bool) -> None:
-        self._inspector_components.toggle_camera(checked)
-
-    def _send_inspector_camera(self) -> None:
-        self._inspector_components.send_camera()
-
-    def _choose_camera_color(self) -> None:
-        self._inspector_components.choose_camera_color()
-
-    def _toggle_ui_visibility(self, checked: bool) -> None:
-        self._inspector_components.toggle_ui_visibility(checked)
-
-    def _delete_ui_component(self) -> None:
-        self._inspector_components.delete_ui()
-
-    def _choose_ui_color(self) -> None:
-        self._inspector_components.choose_ui_color()
-
-    def _choose_ui_image(self) -> None:
-        self._inspector_components.choose_ui_image()
-
-    def _send_inspector_ui(self) -> None:
-        self._inspector_components.send_ui()
-
-    def _ensure_canvas(self) -> None:
-        self._inspector_components.ensure_canvas()
-
     def _open_add_component_menu(self) -> None:
         if self._play_session.is_running:
             return
@@ -400,10 +342,6 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
 
     def _add_component(self, component: str) -> None:
         self._inspector_components.add_component(component)
-
-
-    def _send_inspector_physics(self) -> None:
-        self._inspector_components.send_physics()
 
     def _send_inspector_transform(self) -> None:
         if self._updating_inspector or self._selected_name not in self._objects_by_name:
@@ -435,6 +373,7 @@ class IsolatedEditorWindow(AnimationWorkspaceOperations, InterfaceSmokeTest):
             self._inspector_view.render_camera(name, obj)
             self._inspector_view.render_ui(name, obj)
             self._inspector_view.render_logic(name)
+            self._inspector_view.render_behavior(name, obj)
             self._inspector_view.render_runtime(obj)
         finally:
             self._updating_inspector = False

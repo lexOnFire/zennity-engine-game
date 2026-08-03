@@ -122,7 +122,7 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
         "category": "Action",
         "inputs": [('in', 'flow'), ('target', 'object'), ('path', 'text')],
         "outputs": [('next', 'flow')],
-        "properties": {"path": "Assets/Behaviors/patrol_comida.zbehavior"},
+        "properties": {"path": ""},
     },
     "divide_number": {
         "title": "Divide Number",
@@ -346,7 +346,7 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
         "category": "Movement",
         "inputs": [('in', 'flow'), ('value', 'number')],
         "outputs": [('next', 'flow')],
-        "properties": {"speed": 100.0},
+        "properties": {"speed": 200.0},
     },
     "move_by": {
         "title": "Move By",

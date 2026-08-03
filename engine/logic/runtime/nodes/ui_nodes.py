@@ -13,7 +13,23 @@ from ..registry import registry
 # node's "object" property was left empty) — the exception then propagates
 # out of _execute() and aborts the whole Logic Graph. Import the real classes
 # instead.
-from engine.ui.runtime_components import LabelComponent, ProgressBarComponent, RuntimeUIElement
+try:
+    from engine.ui.runtime_components import LabelComponent, ProgressBarComponent, RuntimeUIElement
+except ModuleNotFoundError:
+    # Runtime autocontido criado pelo exportador (engine/build/project_exporter.py)
+    # não empacota engine.ui.runtime_components (ela subclassa o Component
+    # completo da engine, que o build exportado não inclui -- o jogo exportado
+    # usa editor/runtime/native_ui.py, um sistema de UI baseado em dicts).
+    # Placeholders mantêm o import seguro; os nodes de UI viram no-op nesse
+    # runtime em vez de derrubar o jogo inteiro na inicialização.
+    class RuntimeUIElement:  # type: ignore[no-redef]
+        pass
+
+    class LabelComponent(RuntimeUIElement):  # type: ignore[no-redef]
+        pass
+
+    class ProgressBarComponent(RuntimeUIElement):  # type: ignore[no-redef]
+        pass
 
 
 def _find_widget(target: Any, component_type: type, widget_name: str) -> Any:

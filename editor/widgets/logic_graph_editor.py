@@ -79,14 +79,15 @@ from .logic_graph.definitions import (
 
 from .logic_graph.editor_mixins import (
     LogicGraphPaletteMixin, LogicGraphRuntimeViewMixin, LogicGraphCanvasMixin,
-    LogicGraphClipboardMixin, LogicGraphPropertiesMixin, LogicGraphPersistenceMixin,
+    LogicGraphClipboardMixin, LogicGraphPropertiesMixin, LogicGraphOrganizeMixin,
+    LogicGraphPersistenceMixin,
 )
 from editor.widgets.logic_graph.editor_mixins.blackboard_mixin import LogicGraphBlackboardMixin
 
 
 class LogicGraphEditor(
     LogicGraphPaletteMixin, LogicGraphRuntimeViewMixin, LogicGraphCanvasMixin, LogicGraphClipboardMixin,
-    LogicGraphPropertiesMixin, LogicGraphPersistenceMixin, LogicGraphBlackboardMixin, QWidget,
+    LogicGraphPropertiesMixin, LogicGraphOrganizeMixin, LogicGraphPersistenceMixin, LogicGraphBlackboardMixin, QWidget,
 ):
     message = Signal(str, str)
     asset_changed = Signal()

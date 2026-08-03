@@ -22,6 +22,10 @@ def _host():
         _selected_name=None,
         _scene_controller=SimpleNamespace(select=selected.append),
         _update_inspector=inspected.append,
+        # select() sempre refresca a Hierarchy após selecionar (ver BUG FIX em
+        # editor/controllers/selection_controller.py) para que o item
+        # correspondente fique realçado quando a seleção vem da viewport.
+        _refresh_hierarchy=lambda: None,
     )
     host.statusBar = lambda: status
     return host, selected, inspected, status
