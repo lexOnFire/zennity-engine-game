@@ -5,5 +5,6 @@
   "importer": "script_importer",
   "source_path": "Assets/Scripts/camera_follow.py",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "hash": "5f1e144d0ddc134334038aef25115a9f20dc0f9855abf6f32bc4257fe05d938d"
 }

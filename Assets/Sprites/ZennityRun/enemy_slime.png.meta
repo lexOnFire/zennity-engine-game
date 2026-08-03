@@ -1,0 +1,12 @@
+{
+  "guid": "902d10af-7982-48fe-8f66-4e28c8415dc3",
+  "uuid": "902d10af-7982-48fe-8f66-4e28c8415dc3",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Sprites/ZennityRun/enemy_slime.png",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "fa2374602f60db4e91cecc1e6c9d5eac5bd9e84e7e9d5ee190a7f18d42e43136"
+}

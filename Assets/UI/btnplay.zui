@@ -1,0 +1,39 @@
+{
+  "format": "zennity.ui",
+  "version": 1,
+  "canvas": {
+    "name": "MainCanvas",
+    "type": "UICanvas",
+    "x": 0.0,
+    "y": 0.0,
+    "width": 1920.0,
+    "height": 1080.0,
+    "visible": true,
+    "children": [
+      {
+        "name": "painel play",
+        "type": "UIPanel",
+        "x": 899.0,
+        "y": 712.0,
+        "width": 100.0,
+        "height": 40.0,
+        "visible": true,
+        "children": [
+          {
+            "name": "btn_play",
+            "type": "UIButton",
+            "x": 899.0,
+            "y": 712.0,
+            "width": 100.0,
+            "height": 40.0,
+            "visible": true,
+            "children": [],
+            "text": "JOGAR",
+            "hover_color": "#3B3B48"
+          }
+        ],
+        "bg_color": "#2B2B36"
+      }
+    ]
+  }
+}

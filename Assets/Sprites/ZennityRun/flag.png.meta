@@ -1,0 +1,12 @@
+{
+  "guid": "d2e84c5c-68bb-479a-af29-5b1fd9cbeff5",
+  "uuid": "d2e84c5c-68bb-479a-af29-5b1fd9cbeff5",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Sprites/ZennityRun/flag.png",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "fc04064379d7f0bb4aa0a2621a65797f9abfc797661296c3431bb050a7a07035"
+}

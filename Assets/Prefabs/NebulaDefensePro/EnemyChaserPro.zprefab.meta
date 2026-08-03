@@ -1,0 +1,10 @@
+{
+  "guid": "fa4bcfd1-61fd-4dd7-a058-f680547c89e8",
+  "uuid": "fa4bcfd1-61fd-4dd7-a058-f680547c89e8",
+  "type": "prefab",
+  "importer": "generic_importer",
+  "source_path": "Assets/Prefabs/NebulaDefensePro/EnemyChaserPro.zprefab",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "1b06834483ae10744f5da0606a3096e991ae269ee335c7d2342d63f0fefea8ba"
+}

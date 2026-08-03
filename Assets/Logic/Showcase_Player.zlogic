@@ -1,7 +1,7 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
-  "enabled": true,
+  "enabled": false,
   "name": "PlayerMovement",
   "target": {
     "type": "name",
@@ -109,6 +109,7 @@
         "height": 212.0
       },
       "properties": {
+        "x": 100.0,
         "y": 0
       }
     },

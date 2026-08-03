@@ -10,7 +10,7 @@
       "active": true,
       "transform": {
         "position": [
-          16.0,
+          272.0,
           240.0,
           0.0
         ],
@@ -21,7 +21,7 @@
         ],
         "rz": 0.0,
         "scale": [
-          32.0,
+          544.0,
           32.0,
           1.0
         ]
@@ -39,16 +39,28 @@
         "layer": "Default",
         "order": 0
       },
-      "components": {},
+      "components": {
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 32.0,
+          "height": 29.0,
+          "offset_x": 0.0,
+          "offset_y": 0.0
+        }
+      },
       "enabled": true,
       "static": true,
       "layer": "Default"
     },
     {
-      "id": "mp-Ground-1",
       "name": "Ground_1",
-      "tag": "Environment",
       "active": true,
+      "enabled": true,
+      "static": true,
+      "tag": "Environment",
+      "layer": "Default",
+      "id": "mp-Ground-1",
       "transform": {
         "position": [
           48.0,
@@ -68,6 +80,8 @@
         ]
       },
       "visual": {
+        "enabled": true,
+        "material": "Default_Material",
         "mesh_type": "Ground",
         "color": [
           120,
@@ -75,21 +89,26 @@
           120
         ],
         "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
-        "enabled": true,
-        "material": "Default_Material",
         "layer": "Default",
         "order": 0
       },
-      "components": {},
-      "enabled": true,
-      "static": true,
-      "layer": "Default"
+      "components": {
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 32.0,
+          "height": 32.0
+        }
+      }
     },
     {
-      "id": "mp-Ground-2",
       "name": "Ground_2",
-      "tag": "Environment",
       "active": true,
+      "enabled": true,
+      "static": true,
+      "tag": "Environment",
+      "layer": "Default",
+      "id": "mp-Ground-2",
       "transform": {
         "position": [
           80.0,
@@ -109,6 +128,8 @@
         ]
       },
       "visual": {
+        "enabled": true,
+        "material": "Default_Material",
         "mesh_type": "Ground",
         "color": [
           120,
@@ -116,21 +137,26 @@
           120
         ],
         "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
-        "enabled": true,
-        "material": "Default_Material",
         "layer": "Default",
         "order": 0
       },
-      "components": {},
-      "enabled": true,
-      "static": true,
-      "layer": "Default"
+      "components": {
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 32.0,
+          "height": 32.0
+        }
+      }
     },
     {
-      "id": "mp-Ground-3",
       "name": "Ground_3",
-      "tag": "Environment",
       "active": true,
+      "enabled": true,
+      "static": true,
+      "tag": "Environment",
+      "layer": "Default",
+      "id": "mp-Ground-3",
       "transform": {
         "position": [
           112.0,
@@ -150,6 +176,8 @@
         ]
       },
       "visual": {
+        "enabled": true,
+        "material": "Default_Material",
         "mesh_type": "Ground",
         "color": [
           120,
@@ -157,21 +185,26 @@
           120
         ],
         "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
-        "enabled": true,
-        "material": "Default_Material",
         "layer": "Default",
         "order": 0
       },
-      "components": {},
-      "enabled": true,
-      "static": true,
-      "layer": "Default"
+      "components": {
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 32.0,
+          "height": 32.0
+        }
+      }
     },
     {
-      "id": "mp-Ground-4",
       "name": "Ground_4",
-      "tag": "Environment",
       "active": true,
+      "enabled": true,
+      "static": true,
+      "tag": "Environment",
+      "layer": "Default",
+      "id": "mp-Ground-4",
       "transform": {
         "position": [
           144.0,
@@ -191,6 +224,8 @@
         ]
       },
       "visual": {
+        "enabled": true,
+        "material": "Default_Material",
         "mesh_type": "Ground",
         "color": [
           120,
@@ -198,21 +233,26 @@
           120
         ],
         "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
-        "enabled": true,
-        "material": "Default_Material",
         "layer": "Default",
         "order": 0
       },
-      "components": {},
-      "enabled": true,
-      "static": true,
-      "layer": "Default"
+      "components": {
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 32.0,
+          "height": 32.0
+        }
+      }
     },
     {
-      "id": "mp-Ground-5",
       "name": "Ground_5",
-      "tag": "Environment",
       "active": true,
+      "enabled": true,
+      "static": true,
+      "tag": "Environment",
+      "layer": "Default",
+      "id": "mp-Ground-5",
       "transform": {
         "position": [
           176.0,
@@ -232,6 +272,8 @@
         ]
       },
       "visual": {
+        "enabled": true,
+        "material": "Default_Material",
         "mesh_type": "Ground",
         "color": [
           120,
@@ -239,21 +281,26 @@
           120
         ],
         "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
-        "enabled": true,
-        "material": "Default_Material",
         "layer": "Default",
         "order": 0
       },
-      "components": {},
-      "enabled": true,
-      "static": true,
-      "layer": "Default"
+      "components": {
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 32.0,
+          "height": 32.0
+        }
+      }
     },
     {
-      "id": "mp-Ground-6",
       "name": "Ground_6",
-      "tag": "Environment",
       "active": true,
+      "enabled": true,
+      "static": true,
+      "tag": "Environment",
+      "layer": "Default",
+      "id": "mp-Ground-6",
       "transform": {
         "position": [
           208.0,
@@ -273,6 +320,8 @@
         ]
       },
       "visual": {
+        "enabled": true,
+        "material": "Default_Material",
         "mesh_type": "Ground",
         "color": [
           120,
@@ -280,21 +329,26 @@
           120
         ],
         "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
-        "enabled": true,
-        "material": "Default_Material",
         "layer": "Default",
         "order": 0
       },
-      "components": {},
-      "enabled": true,
-      "static": true,
-      "layer": "Default"
+      "components": {
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 32.0,
+          "height": 32.0
+        }
+      }
     },
     {
-      "id": "mp-Ground-7",
       "name": "Ground_7",
-      "tag": "Environment",
       "active": true,
+      "enabled": true,
+      "static": true,
+      "tag": "Environment",
+      "layer": "Default",
+      "id": "mp-Ground-7",
       "transform": {
         "position": [
           240.0,
@@ -314,6 +368,8 @@
         ]
       },
       "visual": {
+        "enabled": true,
+        "material": "Default_Material",
         "mesh_type": "Ground",
         "color": [
           120,
@@ -321,21 +377,26 @@
           120
         ],
         "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
-        "enabled": true,
-        "material": "Default_Material",
         "layer": "Default",
         "order": 0
       },
-      "components": {},
-      "enabled": true,
-      "static": true,
-      "layer": "Default"
+      "components": {
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 32.0,
+          "height": 32.0
+        }
+      }
     },
     {
-      "id": "mp-Ground-8",
       "name": "Ground_8",
-      "tag": "Environment",
       "active": true,
+      "enabled": true,
+      "static": true,
+      "tag": "Environment",
+      "layer": "Default",
+      "id": "mp-Ground-8",
       "transform": {
         "position": [
           272.0,
@@ -355,6 +416,8 @@
         ]
       },
       "visual": {
+        "enabled": true,
+        "material": "Default_Material",
         "mesh_type": "Ground",
         "color": [
           120,
@@ -362,15 +425,17 @@
           120
         ],
         "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
-        "enabled": true,
-        "material": "Default_Material",
         "layer": "Default",
         "order": 0
       },
-      "components": {},
-      "enabled": true,
-      "static": true,
-      "layer": "Default"
+      "components": {
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 32.0,
+          "height": 32.0
+        }
+      }
     },
     {
       "id": "mp-Ground-9",
@@ -408,7 +473,14 @@
         "layer": "Default",
         "order": 0
       },
-      "components": {},
+      "components": {
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 32.0,
+          "height": 32.0
+        }
+      },
       "enabled": true,
       "static": true,
       "layer": "Default"
@@ -449,7 +521,14 @@
         "layer": "Default",
         "order": 0
       },
-      "components": {},
+      "components": {
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 32.0,
+          "height": 32.0
+        }
+      },
       "enabled": true,
       "static": true,
       "layer": "Default"
@@ -490,7 +569,14 @@
         "layer": "Default",
         "order": 0
       },
-      "components": {},
+      "components": {
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 32.0,
+          "height": 32.0
+        }
+      },
       "enabled": true,
       "static": true,
       "layer": "Default"
@@ -1376,8 +1462,8 @@
       "active": true,
       "transform": {
         "position": [
-          64.0,
-          204.0,
+          13.86174568003009,
+          122.13388799999998,
           0.0
         ],
         "rotation": [
@@ -1415,8 +1501,8 @@
         },
         "collider": {
           "type": "box",
-          "width": 20.0,
-          "height": 26.0,
+          "width": 33.0,
+          "height": 49.0,
           "is_trigger": false,
           "offset_x": 0.0,
           "offset_y": 0.0
@@ -1532,7 +1618,9 @@
         "collider": {
           "type": "circle",
           "radius": 7.0,
-          "is_trigger": true
+          "is_trigger": true,
+          "width": 16.0,
+          "height": 16.0
         }
       },
       "enabled": true,
@@ -1579,7 +1667,9 @@
         "collider": {
           "type": "circle",
           "radius": 7.0,
-          "is_trigger": true
+          "is_trigger": true,
+          "width": 16.0,
+          "height": 16.0
         }
       },
       "enabled": true,
@@ -1626,7 +1716,9 @@
         "collider": {
           "type": "circle",
           "radius": 7.0,
-          "is_trigger": true
+          "is_trigger": true,
+          "width": 16.0,
+          "height": 16.0
         }
       },
       "enabled": true,

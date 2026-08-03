@@ -301,32 +301,223 @@
       }
     },
     {
-      "id":"portal-pilot","name":"PortalPilot","tag":"Player","active":true,"enabled":true,"static":false,"layer":"Default",
-      "transform":{"position":[-430.0,160.0,0.0],"rotation":[0.0,0.0,0.0],"rz":0.0,"scale":[52.0,72.0,1.0]},
-      "visual":{"enabled":true,"mesh_type":"Rectangle","color":[116,255,184],"texture":"","material":"Default_Material","layer":"Default","order":4},
-      "components":{"rigidbody":{"is_kinematic":true,"use_gravity":false},"collider":{"type":"box","width":52.0,"height":72.0,"is_trigger":false}},
-      "editor_data":{"logic_assets":["Assets/Demos/PortalStation/PortalPilot.zlogic"]}
+      "id": "portal-pilot",
+      "name": "PortalPilot",
+      "tag": "Player",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "layer": "Default",
+      "transform": {
+        "position": [
+          -430.0,
+          160.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          52.0,
+          72.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "mesh_type": "Rectangle",
+        "color": [
+          116,
+          255,
+          184
+        ],
+        "texture": "",
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 4
+      },
+      "components": {
+        "rigidbody": {
+          "is_kinematic": true,
+          "use_gravity": false
+        },
+        "collider": {
+          "type": "box",
+          "width": 52.0,
+          "height": 72.0,
+          "is_trigger": false
+        }
+      },
+      "editor_data": {
+        "logic_assets": [
+          "Assets/Demos/PortalStation/PortalPilot.zlogic"
+        ]
+      }
     },
     {
-      "id":"energy-cell-a","name":"EnergyCellA","tag":"EnergyCell","active":true,"enabled":true,"static":false,"layer":"Default",
-      "transform":{"position":[-260.0,30.0,0.0],"rotation":[0.0,0.0,0.0],"rz":0.0,"scale":[34.0,34.0,1.0]},
-      "visual":{"enabled":true,"mesh_type":"Circle","color":[255,221,77],"texture":"","material":"Assets/Demos/PortalStation/PortalGlow.zmat","layer":"Default","order":4},
-      "components":{"collider":{"type":"circle","radius":17.0,"is_trigger":true}},
-      "editor_data":{"logic_assets":["Assets/Demos/PortalStation/EnergyCell.zlogic"]}
+      "id": "energy-cell-a",
+      "name": "EnergyCellA",
+      "tag": "EnergyCell",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "layer": "Default",
+      "transform": {
+        "position": [
+          -260.0,
+          30.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          34.0,
+          34.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "mesh_type": "Circle",
+        "color": [
+          255,
+          221,
+          77
+        ],
+        "texture": "",
+        "material": "Assets/Demos/PortalStation/PortalGlow.zmat",
+        "layer": "Default",
+        "order": 4
+      },
+      "components": {
+        "collider": {
+          "type": "circle",
+          "radius": 17.0,
+          "is_trigger": true,
+          "width": 34.0,
+          "height": 34.0
+        }
+      },
+      "editor_data": {
+        "logic_assets": [
+          "Assets/Demos/PortalStation/EnergyCell.zlogic"
+        ]
+      }
     },
     {
-      "id":"energy-cell-b","name":"EnergyCellB","tag":"EnergyCell","active":true,"enabled":true,"static":false,"layer":"Default",
-      "transform":{"position":[20.0,180.0,0.0],"rotation":[0.0,0.0,0.0],"rz":0.0,"scale":[34.0,34.0,1.0]},
-      "visual":{"enabled":true,"mesh_type":"Circle","color":[255,221,77],"texture":"","material":"Assets/Demos/PortalStation/PortalGlow.zmat","layer":"Default","order":4},
-      "components":{"collider":{"type":"circle","radius":17.0,"is_trigger":true}},
-      "editor_data":{"logic_assets":["Assets/Demos/PortalStation/EnergyCell.zlogic"]}
+      "id": "energy-cell-b",
+      "name": "EnergyCellB",
+      "tag": "EnergyCell",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "layer": "Default",
+      "transform": {
+        "position": [
+          20.0,
+          180.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          34.0,
+          34.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "mesh_type": "Circle",
+        "color": [
+          255,
+          221,
+          77
+        ],
+        "texture": "",
+        "material": "Assets/Demos/PortalStation/PortalGlow.zmat",
+        "layer": "Default",
+        "order": 4
+      },
+      "components": {
+        "collider": {
+          "type": "circle",
+          "radius": 17.0,
+          "is_trigger": true,
+          "width": 34.0,
+          "height": 34.0
+        }
+      },
+      "editor_data": {
+        "logic_assets": [
+          "Assets/Demos/PortalStation/EnergyCell.zlogic"
+        ]
+      }
     },
     {
-      "id":"energy-cell-c","name":"EnergyCellC","tag":"EnergyCell","active":true,"enabled":true,"static":false,"layer":"Default",
-      "transform":{"position":[190.0,-20.0,0.0],"rotation":[0.0,0.0,0.0],"rz":0.0,"scale":[34.0,34.0,1.0]},
-      "visual":{"enabled":true,"mesh_type":"Circle","color":[255,221,77],"texture":"","material":"Assets/Demos/PortalStation/PortalGlow.zmat","layer":"Default","order":4},
-      "components":{"collider":{"type":"circle","radius":17.0,"is_trigger":true}},
-      "editor_data":{"logic_assets":["Assets/Demos/PortalStation/EnergyCell.zlogic"]}
+      "id": "energy-cell-c",
+      "name": "EnergyCellC",
+      "tag": "EnergyCell",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "layer": "Default",
+      "transform": {
+        "position": [
+          -113.56480000000005,
+          -2.438399999999998,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          34.0,
+          34.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "mesh_type": "Circle",
+        "color": [
+          255,
+          221,
+          77
+        ],
+        "texture": "",
+        "material": "Assets/Demos/PortalStation/PortalGlow.zmat",
+        "layer": "Default",
+        "order": 4
+      },
+      "components": {
+        "collider": {
+          "type": "circle",
+          "radius": 17.0,
+          "is_trigger": true,
+          "width": 34.0,
+          "height": 34.0
+        }
+      },
+      "editor_data": {
+        "logic_assets": [
+          "Assets/Demos/PortalStation/EnergyCell.zlogic"
+        ]
+      }
     },
     {
       "id": "portal-ui-canvas",
@@ -390,6 +581,21 @@
               "interactable": true,
               "event": "click",
               "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
               "sprite_path": ""
             }
           }
@@ -444,20 +650,35 @@
               "visible": true,
               "x": 36.0,
               "y": 34.0,
-              "width": 440.0,
-              "height": 42.0,
-              "z_order": 2,
+              "width": 439.0,
+              "height": 41.0,
+              "z_order": 2.0,
               "text": "PORTAL STATION",
-              "font_size": 30,
+              "font_size": 30.0,
               "color": [
                 98,
                 217,
                 255
               ],
-              "alpha": 255,
+              "alpha": 255.0,
               "interactable": true,
               "event": "click",
               "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
               "sprite_path": ""
             }
           }
@@ -514,18 +735,33 @@
               "y": 84.0,
               "width": 540.0,
               "height": 36.0,
-              "z_order": 3,
+              "z_order": 0.0,
               "text": "Objetivo: ative o terminal do portal",
-              "font_size": 20,
+              "font_size": 17.0,
               "color": [
                 255,
                 255,
                 255
               ],
-              "alpha": 255,
+              "alpha": 255.0,
               "interactable": true,
               "event": "click",
               "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
               "sprite_path": ""
             }
           }
@@ -533,10 +769,87 @@
       }
     },
     {
-      "id":"portal-ui-energy","name":"PortalUIEnergy","tag":"UI","active":true,"enabled":true,"static":true,"layer":"UI",
-      "transform":{"position":[0.0,0.0,0.0],"rotation":[0.0,0.0,0.0],"rz":0.0,"scale":[1.0,1.0,1.0]},
-      "visual":{"enabled":false,"mesh_type":"Empty","color":[255,221,77],"texture":"","material":"Default_Material","layer":"UI","order":0},
-      "components":{"items":[{"type":"ProgressBar","enabled":true,"properties":{"visible":true,"anchor":"bottom_left","margin_x":38.0,"margin_y":38.0,"x":38.0,"y":620.0,"width":260.0,"height":22.0,"z_order":4,"value":0.0,"max_value":3.0,"fill_color":[255,221,77],"bg_color":[28,35,48]}}]}
+      "id": "portal-ui-energy",
+      "name": "PortalUIEnergy",
+      "tag": "UI",
+      "active": true,
+      "enabled": true,
+      "static": true,
+      "layer": "UI",
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": false,
+        "mesh_type": "Empty",
+        "color": [
+          255,
+          221,
+          77
+        ],
+        "texture": "",
+        "material": "Default_Material",
+        "layer": "UI",
+        "order": 0
+      },
+      "components": {
+        "items": [
+          {
+            "type": "ProgressBar",
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "x": 38.0,
+              "y": 620.0,
+              "width": 257.0,
+              "height": 22.0,
+              "z_order": 3.0,
+              "text": "",
+              "font_size": 24.0,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "alpha": 255.0,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "anchor": "bottom_left",
+              "margin_x": 38.0,
+              "margin_y": 38.0,
+              "value": 0.0,
+              "max_value": 3.0,
+              "fill_color": [
+                255,
+                221,
+                77
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
+              "sprite_path": ""
+            }
+          }
+        ]
+      }
     },
     {
       "id": "portal-ui-button",
@@ -584,22 +897,37 @@
             "enabled": true,
             "properties": {
               "visible": true,
-              "x": 38.0,
-              "y": 132.0,
+              "x": 39.0,
+              "y": 133.0,
               "width": 220.0,
               "height": 44.0,
-              "z_order": 4,
+              "z_order": 4.0,
               "text": "ATIVAR PORTAL",
-              "font_size": 18,
+              "font_size": 18.0,
               "color": [
                 255,
                 255,
                 255
               ],
-              "alpha": 255,
+              "alpha": 255.0,
               "interactable": true,
               "event": "activate_portal",
               "target": "PortalTerminal",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
               "sprite_path": ""
             }
           }

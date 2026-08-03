@@ -5,7 +5,7 @@
   "name": "PlayerMovement",
   "target": {
     "type": "name",
-    "value": "GameObject"
+    "value": "Player"
   },
   "debug": {
     "breakpoints": [],
@@ -296,8 +296,8 @@
         "height": 184.0
       },
       "properties": {
-        "speed": -90.0,
-        "degrees": -90
+        "degrees": -90,
+        "speed": -90.0
       }
     },
     {

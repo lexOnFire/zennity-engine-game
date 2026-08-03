@@ -5,7 +5,7 @@
   "name": "Nebula Player Controls",
   "target": {
     "type": "name",
-    "value": "Player"
+    "value": "NebulaPilot"
   },
   "debug": {
     "breakpoints": [],
@@ -35,8 +35,8 @@
       "title": "On Update",
       "category": "Events",
       "position": [
-        120.0,
-        100.0
+        80.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
@@ -51,8 +51,8 @@
       "title": "Tecla está segurada?",
       "category": "Condition",
       "position": [
-        440.0,
-        100.0
+        370.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
@@ -69,8 +69,8 @@
       "title": "Mover continuamente",
       "category": "Position",
       "position": [
-        760.0,
-        100.0
+        660.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
@@ -88,8 +88,8 @@
       "title": "Tecla está segurada?",
       "category": "Condition",
       "position": [
-        440.0,
-        300.0
+        370.0,
+        250.0
       ],
       "editor": {
         "collapsed": false,
@@ -106,8 +106,8 @@
       "title": "Mover continuamente",
       "category": "Position",
       "position": [
-        760.0,
-        300.0
+        660.0,
+        250.0
       ],
       "editor": {
         "collapsed": false,
@@ -125,8 +125,8 @@
       "title": "Tecla está segurada?",
       "category": "Condition",
       "position": [
-        440.0,
-        500.0
+        370.0,
+        420.0
       ],
       "editor": {
         "collapsed": false,
@@ -143,8 +143,8 @@
       "title": "Mover continuamente",
       "category": "Position",
       "position": [
-        760.0,
-        500.0
+        660.0,
+        420.0
       ],
       "editor": {
         "collapsed": false,
@@ -162,11 +162,11 @@
       "title": "Tecla está segurada?",
       "category": "Condition",
       "position": [
-        440.0,
-        700.0
+        370.0,
+        590.0
       ],
       "editor": {
-        "collapsed": false,
+        "collapsed": true,
         "width": 220.0,
         "height": 184.0
       },
@@ -180,8 +180,8 @@
       "title": "Mover continuamente",
       "category": "Position",
       "position": [
-        760.0,
-        700.0
+        660.0,
+        590.0
       ],
       "editor": {
         "collapsed": false,
@@ -199,8 +199,8 @@
       "title": "On Key Pressed (once)",
       "category": "Events",
       "position": [
-        120.0,
-        300.0
+        80.0,
+        250.0
       ],
       "editor": {
         "collapsed": false,
@@ -217,8 +217,8 @@
       "title": "Criar Prefab",
       "category": "Objects",
       "position": [
-        440.0,
-        900.0
+        370.0,
+        760.0
       ],
       "editor": {
         "collapsed": false,
@@ -389,8 +389,8 @@
       "title": "On Key Pressed (once)",
       "category": "Events",
       "position": [
-        120.0,
-        500.0
+        80.0,
+        420.0
       ],
       "editor": {
         "collapsed": false,
@@ -407,8 +407,8 @@
       "title": "Criar Prefab",
       "category": "Objects",
       "position": [
-        440.0,
-        1100.0
+        370.0,
+        930.0
       ],
       "editor": {
         "collapsed": false,
@@ -579,8 +579,8 @@
       "title": "Ao entrar na área",
       "category": "Events",
       "position": [
-        120.0,
-        700.0
+        80.0,
+        590.0
       ],
       "editor": {
         "collapsed": false,
@@ -597,15 +597,17 @@
       "title": "Ler Tag do objeto",
       "category": "Objects",
       "position": [
-        440.0,
-        1500.0
+        370.0,
+        1100.0
       ],
       "editor": {
         "collapsed": false,
         "width": 220.0,
         "height": 150.0
       },
-      "properties": {}
+      "properties": {
+        "tag": "Player"
+      }
     },
     {
       "id": "is_enemy",
@@ -613,8 +615,8 @@
       "title": "Comparar texto",
       "category": "Condition",
       "position": [
-        440.0,
-        1300.0
+        660.0,
+        760.0
       ],
       "editor": {
         "collapsed": false,
@@ -632,8 +634,8 @@
       "title": "Sequência",
       "category": "Logic",
       "position": [
-        760.0,
-        900.0
+        950.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
@@ -650,8 +652,8 @@
       "title": "Ler variável",
       "category": "Variables",
       "position": [
-        120.0,
-        900.0
+        80.0,
+        760.0
       ],
       "editor": {
         "collapsed": false,
@@ -669,8 +671,8 @@
       "title": "Subtrair",
       "category": "Math",
       "position": [
-        440.0,
-        1700.0
+        370.0,
+        1270.0
       ],
       "editor": {
         "collapsed": false,
@@ -688,8 +690,8 @@
       "title": "Definir variável",
       "category": "Variables",
       "position": [
-        760.0,
-        1100.0
+        1240.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
@@ -698,8 +700,8 @@
       },
       "properties": {
         "name": "lives",
-        "scope": "project",
-        "value": 2.0
+        "value": 2.0,
+        "scope": "project"
       }
     },
     {
@@ -708,8 +710,8 @@
       "title": "Comparar número",
       "category": "Condition",
       "position": [
-        760.0,
-        1300.0
+        1530.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
@@ -727,8 +729,8 @@
       "title": "Ativar / Desativar",
       "category": "Action",
       "position": [
-        1080.0,
-        500.0
+        1820.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
@@ -745,8 +747,8 @@
       "title": "Atualizar HUD",
       "category": "Action",
       "position": [
-        1080.0,
-        700.0
+        1820.0,
+        250.0
       ],
       "editor": {
         "collapsed": false,
@@ -763,8 +765,8 @@
       "title": "Definir posição",
       "category": "Action",
       "position": [
-        1080.0,
-        100.0
+        1240.0,
+        250.0
       ],
       "editor": {
         "collapsed": false,
@@ -782,8 +784,8 @@
       "title": "Tocar som",
       "category": "Action",
       "position": [
-        1080.0,
-        300.0
+        1240.0,
+        420.0
       ],
       "editor": {
         "collapsed": false,

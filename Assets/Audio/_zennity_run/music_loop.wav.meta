@@ -1,0 +1,12 @@
+{
+  "guid": "5ab2de34-cd75-48ce-8f35-acfc3159c81e",
+  "uuid": "5ab2de34-cd75-48ce-8f35-acfc3159c81e",
+  "type": "audio",
+  "importer": "audio_importer",
+  "source_path": "Assets/Audio/_zennity_run/music_loop.wav",
+  "import_settings": {
+    "load_type": "decompress_on_load"
+  },
+  "dependencies": [],
+  "hash": "08609e159d88b9d8db4bbd9f74221604a5976508dccddf53584ee7098a7beae5"
+}

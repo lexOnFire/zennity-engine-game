@@ -1,11 +1,11 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
-  "enabled": true,
+  "enabled": false,
   "name": "PlayerLogic",
   "target": {
     "type": "name",
-    "value": "Player"
+    "value": "toca"
   },
   "debug": {
     "breakpoints": [],

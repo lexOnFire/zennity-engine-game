@@ -4,8 +4,8 @@
   "enabled": true,
   "name": "Nebula Drone Behavior",
   "target": {
-    "type": "tag",
-    "value": "EnemyNebula"
+    "type": "name",
+    "value": "NebulaSpawner"
   },
   "debug": {
     "breakpoints": [],
@@ -87,7 +87,9 @@
         "width": 210.0,
         "height": 0.0
       },
-      "properties": {}
+      "properties": {
+        "tag": "Player"
+      }
     },
     {
       "id": "is_bolt",
@@ -157,8 +159,8 @@
         "height": 0.0
       },
       "properties": {
-        "scope": "project",
-        "name": "score"
+        "name": "score",
+        "scope": "project"
       }
     },
     {
@@ -215,9 +217,9 @@
         "height": 0.0
       },
       "properties": {
-        "scope": "project",
         "name": "score",
-        "value": 1.0
+        "value": 1.0,
+        "scope": "project"
       }
     },
     {

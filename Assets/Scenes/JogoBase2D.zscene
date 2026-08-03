@@ -988,6 +988,21 @@
               "interactable": true,
               "event": "click",
               "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
               "sprite_path": ""
             }
           }
@@ -1059,6 +1074,21 @@
               "interactable": true,
               "event": "click",
               "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
               "sprite_path": ""
             }
           }
@@ -1130,6 +1160,21 @@
               "interactable": true,
               "event": "click",
               "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
               "sprite_path": ""
             }
           }
@@ -1201,6 +1246,21 @@
               "interactable": true,
               "event": "click",
               "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
               "sprite_path": ""
             }
           }
@@ -1272,6 +1332,21 @@
               "interactable": true,
               "event": "click",
               "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
               "sprite_path": ""
             }
           }
@@ -1343,6 +1418,21 @@
               "interactable": true,
               "event": "click",
               "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
               "sprite_path": ""
             }
           }
@@ -1414,6 +1504,21 @@
               "interactable": true,
               "event": "restart_game",
               "target": "Player",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
               "sprite_path": ""
             }
           }

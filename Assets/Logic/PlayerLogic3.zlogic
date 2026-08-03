@@ -2,10 +2,10 @@
   "format": "zennity.logic_graph",
   "version": 1,
   "enabled": false,
-  "name": "GameObjectLogic3",
+  "name": "PlayerLogic3",
   "target": {
     "type": "name",
-    "value": "GameObject"
+    "value": "toca"
   },
   "debug": {
     "breakpoints": [],

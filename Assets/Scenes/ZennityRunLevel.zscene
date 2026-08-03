@@ -1066,7 +1066,7 @@
       "active": true,
       "transform": {
         "position": [
-          208.0,
+          209.2544,
           174.1056,
           0.0
         ],
@@ -1797,7 +1797,7 @@
       "transform": {
         "position": [
           448.0,
-          96.0,
+          75.9296,
           0.0
         ],
         "rotation": [
@@ -1836,8 +1836,10 @@
         "collider": {
           "type": "box",
           "width": 26.0,
-          "height": 26.0,
-          "is_trigger": true
+          "height": 34.0,
+          "is_trigger": true,
+          "offset_x": 0.0,
+          "offset_y": 0.0
         }
       },
       "editor_data": {
