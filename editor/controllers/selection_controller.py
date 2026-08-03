@@ -18,6 +18,16 @@ class EditorSelectionController:
             return False
         h._scene_controller.select(name)
         h._selected_name = name
+        # BUG FIX: quando a seleção vem da viewport (source="Viewport", via
+        # ViewportEventController.selected()), este método atualizava
+        # h._selected_name e o Inspector, mas nunca disparava um refresh da
+        # Hierarchy — a árvore só chama tree.setCurrentItem(...) dentro de
+        # HierarchyViewRenderer._rebuild(), que só roda via _refresh_hierarchy().
+        # Sem isso, clicar num objeto na viewport nunca realçava o item
+        # correspondente na Hierarchy (a seleção "hierarchy -> hierarchy"
+        # mascarava o bug porque o QTreeWidget já realça sozinho o item em
+        # que o usuário clicou diretamente, sem precisar de refresh nenhum).
+        h._refresh_hierarchy()
         if inspect:
             h._update_inspector(name)
         logic_workspace = getattr(h, "_logic_workspace_controller", None)
