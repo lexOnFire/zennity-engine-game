@@ -1,0 +1,10 @@
+{
+  "guid": "30ca443c-b76d-420b-8cc3-90ebc58490c5",
+  "uuid": "30ca443c-b76d-420b-8cc3-90ebc58490c5",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Logic/ZennityRun/EnemyDamage.zlogic",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "ca5251c4e1f8952f6d7234dc7120cd6dc90264431d26e8a618fbe80ff7d84732"
+}

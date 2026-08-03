@@ -51,6 +51,18 @@ class UIManager:
         if canvas in self._canvases:
             self._canvases.remove(canvas)
 
+    def clear(self) -> None:
+        """
+        Remove todos os canvases registrados nesta instância.
+
+        BUG FIX: vários demos oficiais (demo_ui.py, demo_scene_manager.py)
+        chamam `UIManager.instance().clear()` ao (re)construir o HUD de uma
+        cena, mas esse método de instância nunca existiu — só havia
+        `UIManager.reset()` (classmethod, que descarta o singleton inteiro).
+        Chamar `.clear()` sem esse método levanta AttributeError.
+        """
+        self._canvases.clear()
+
     def get_canvas(self, name: str) -> Optional[UICanvas]:
         for c in self._canvases:
             if c.name == name:

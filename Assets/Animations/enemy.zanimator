@@ -1,0 +1,18 @@
+{
+  "format": "zennity.animator_controller",
+  "version": 1,
+  "name": "enemy",
+  "initial_state": "enemy",
+  "parameters": {},
+  "states": {
+    "enemy": {
+      "animation": "",
+      "speed": 1.0,
+      "position": [
+        40.0,
+        40.0
+      ]
+    }
+  },
+  "transitions": []
+}

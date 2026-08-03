@@ -1,0 +1,189 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "tocaLogic",
+  "target": {
+    "type": "name",
+    "value": "toca"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "b1c78cdd44bd43ecb2acb3e4ba4002f0",
+      "type": "event_update",
+      "title": "Event Update",
+      "category": "Events",
+      "position": [
+        -383.12,
+        -24.42
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "f3f7a33e673041eaa20a9062df7fd827",
+      "type": "cooldown",
+      "title": "Cooldown",
+      "category": "Logic",
+      "position": [
+        -131.06,
+        44.58
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "seconds": 15
+      }
+    },
+    {
+      "id": "dc754c6419ad40938a7a894a1bb28290",
+      "type": "create_object",
+      "title": "Create Object",
+      "category": "Spawning",
+      "position": [
+        -138.19,
+        92.48
+      ],
+      "editor": {
+        "collapsed": true,
+        "width": 220.0,
+        "height": 240.0
+      },
+      "properties": {
+        "name": "formiga",
+        "x": 0.0,
+        "y": 0.0,
+        "width": 32.0,
+        "height": 32.0,
+        "color": "#4c9aff",
+        "texture": "Assets/Textures/formiga_2.PNG",
+        "tag": "",
+        "relative": true,
+        "inherit_source": true,
+        "inherit_logic": false,
+        "lifetime": 0.0,
+        "max_instances": 0,
+        "max_distance": 0.0,
+        "use_pool": false
+      }
+    },
+    {
+      "id": "4f21c05a8c044686b971fa52e6ddadaa",
+      "type": "add_sprite_renderer",
+      "title": "Sprite Renderer",
+      "category": "Components",
+      "position": [
+        -142.23,
+        146.16
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "texture": "Assets/Textures/formiga_2.PNG",
+        "color": "#ffffff",
+        "sort_order": 0
+      }
+    },
+    {
+      "id": "81f42300941345f7a28a75f3c91e46f1",
+      "type": "start_behavior_tree",
+      "title": "Start Behavior Tree",
+      "category": "Action",
+      "position": [
+        147.42,
+        478.16
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "path": "Assets/Behaviors/patrulha_comida.zbehavior"
+      }
+    },
+    {
+      "id": "9c7cc7aa505d4071be4e8e77152ded8d",
+      "type": "add_component",
+      "title": "Add Component",
+      "category": "Math",
+      "position": [
+        -136.68,
+        370.39
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "1e5d9475b7bd413bbb0090326f349f1c",
+      "from_node": "b1c78cdd44bd43ecb2acb3e4ba4002f0",
+      "from_port": "next",
+      "to_node": "f3f7a33e673041eaa20a9062df7fd827",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    },
+    {
+      "id": "8da7bf3037f549f5928b9ea566f0231a",
+      "from_node": "f3f7a33e673041eaa20a9062df7fd827",
+      "from_port": "next",
+      "to_node": "dc754c6419ad40938a7a894a1bb28290",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    },
+    {
+      "id": "c5ebf0d4ec4b493db4f5e618f1391c68",
+      "from_node": "dc754c6419ad40938a7a894a1bb28290",
+      "from_port": "next",
+      "to_node": "4f21c05a8c044686b971fa52e6ddadaa",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 2
+    },
+    {
+      "id": "2b67c40a4f864cee8e5e156959d350d1",
+      "from_node": "4f21c05a8c044686b971fa52e6ddadaa",
+      "from_port": "next",
+      "to_node": "9c7cc7aa505d4071be4e8e77152ded8d",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 4
+    },
+    {
+      "id": "33b5df66425342f098e1e5f567c0247f",
+      "from_node": "9c7cc7aa505d4071be4e8e77152ded8d",
+      "from_port": "next",
+      "to_node": "81f42300941345f7a28a75f3c91e46f1",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 4
+    }
+  ]
+}

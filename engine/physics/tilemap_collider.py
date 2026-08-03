@@ -35,11 +35,56 @@ Arquitetura
 from typing import List, Optional, TYPE_CHECKING
 import pygame
 
-from engine.component import Component
+from engine.core import Component
 
 if TYPE_CHECKING:
     from engine.tilemap.tilemap import TileMap
     from engine.game_object import GameObject
+
+
+class LegacyTilemapCollisionAdapter:
+    """
+    Adapta engine.graphics.tilemap.Tilemap (o componente que o editor de
+    fato cria/serializa via .zscene -- dict esparso de camadas, sem nenhum
+    metadado de solidez por tile) pra interface que TilemapCollider espera
+    (get_solid_rects_in_region), permitindo reusar a mesma resolução de
+    colisão do sistema real.
+
+    BUG FIX: BoxCollider.check_all() só reconhecia colisão de tilemap via
+    isinstance(comp, engine.tilemap.tilemap.TilemapRenderer) -- a classe do
+    sistema "real". Só que component_registry.py registra exclusivamente o
+    par legado (Tilemap/TilemapRenderer de engine/graphics/tilemap.py) como
+    componente serializável, então TODO tilemap criado no editor nunca batia
+    nesse isinstance -- nunca tinha colisão sólida em Play Mode nem no jogo
+    exportado. Como o formato legado não tem flag "solid" por tile, qualquer
+    tile não-vazio (id != 0) em qualquer camada é tratado como sólido --
+    cobre o caso comum de chão/parede de plataforma sem exigir migração de
+    formato de dados nem mudança no editor.
+    """
+
+    def __init__(self, legacy_tilemap) -> None:
+        self._tilemap = legacy_tilemap
+        self.tile_width = int(legacy_tilemap.tile_size)
+        self.tile_height = int(legacy_tilemap.tile_size)
+
+    def get_solid_rects_in_region(
+        self, x: float, y: float, w: float, h: float, layer_name: str = "collision",
+    ) -> List[pygame.Rect]:
+        tw, th = self.tile_width, self.tile_height
+        if tw <= 0 or th <= 0:
+            return []
+        col_start = int(x // tw)
+        col_end = int((x + w) // tw)
+        row_start = int(y // th)
+        row_end = int((y + h) // th)
+        rects: List[pygame.Rect] = []
+        for layer in self._tilemap.layers:
+            for (tx, ty), tile_id in layer.items():
+                if tile_id == 0:
+                    continue
+                if col_start <= tx <= col_end and row_start <= ty <= row_end:
+                    rects.append(pygame.Rect(tx * tw, ty * th, tw, th))
+        return rects
 
 
 class TilemapCollider:
@@ -56,6 +101,8 @@ class TilemapCollider:
     layer_name    : str     – Nome da camada de colisão (padrão: "collision").
     max_iter      : int     – Máximo de iterações de resolução por frame
                               (evita loop infinito em cantos apertados).
+    ground_probe  : float   – Altura (px) da faixa testada logo abaixo do
+                              collider para decidir ``RigidBody.grounded``.
     """
 
     def __init__(
@@ -63,10 +110,12 @@ class TilemapCollider:
         tilemap,
         layer_name: str = "collision",
         max_iter:   int = 4,
+        ground_probe: float = 2.0,
     ) -> None:
         self.tilemap    = tilemap
         self.layer_name = layer_name
         self.max_iter   = max_iter
+        self.ground_probe = float(ground_probe)
 
     # ------------------------------------------------------------------
     # API pública
@@ -155,6 +204,34 @@ class TilemapCollider:
 
             if not resolved_any:
                 break
+
+        if rb is not None:
+            rb.grounded = rb.grounded or self.is_on_ground(col)
+
+    def is_on_ground(self, box_collider) -> bool:
+        """
+        Testa uma faixa fina logo ABAIXO do collider e diz se há chão sólido.
+
+        BUG FIX: ``grounded`` era ligado apenas no frame em que a resolução
+        vertical empurrava o objeto para fora de um tile. Um objeto apenas
+        APOIADO no chão não penetra nada (a resolução do frame anterior já o
+        alinhou à borda) e, como ``RigidBody.update()`` zera ``grounded`` todo
+        frame, a flag oscilava entre True/False em repouso -- medido em ~43%
+        dos frames com o objeto parado no chão. Isso fazia o nó "Is Grounded"
+        do Logic Graph recusar a maioria dos comandos de pulo, deixando o
+        controle do jogador visivelmente truncado.
+
+        A sondagem não depende de penetração, então é estável em repouso.
+        """
+        rect = box_collider.rect
+        probe = self.tilemap.get_solid_rects_in_region(
+            rect.x, rect.bottom, rect.width, self.ground_probe,
+            layer_name=self.layer_name,
+        )
+        # get_solid_rects_in_region trabalha em células inteiras, então pode
+        # devolver o próprio tile em que o objeto está encostado lateralmente;
+        # só conta como chão o tile cujo topo está abaixo da base do collider.
+        return any(tile.top >= rect.bottom for tile in probe)
 
     # ------------------------------------------------------------------
     # One-way platform helper

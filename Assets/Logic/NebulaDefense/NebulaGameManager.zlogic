@@ -24,8 +24,8 @@
       "title": "On Start",
       "category": "Events",
       "position": [
-        20.0,
-        80.0
+        120.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
@@ -40,8 +40,8 @@
       "title": "Sequência",
       "category": "Logic",
       "position": [
-        260.0,
-        80.0
+        440.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
@@ -58,8 +58,8 @@
       "title": "Definir variável",
       "category": "Variables",
       "position": [
-        520.0,
-        0.0
+        760.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
@@ -78,8 +78,8 @@
       "title": "Definir variável",
       "category": "Variables",
       "position": [
-        520.0,
-        120.0
+        760.0,
+        300.0
       ],
       "editor": {
         "collapsed": false,
@@ -98,8 +98,8 @@
       "title": "Atualizar HUD",
       "category": "Action",
       "position": [
-        520.0,
-        240.0
+        760.0,
+        500.0
       ],
       "editor": {
         "collapsed": false,
@@ -116,8 +116,8 @@
       "title": "Tocar som",
       "category": "Action",
       "position": [
-        520.0,
-        360.0
+        760.0,
+        700.0
       ],
       "editor": {
         "collapsed": false,
@@ -134,8 +134,8 @@
       "title": "On Update",
       "category": "Events",
       "position": [
-        20.0,
-        620.0
+        120.0,
+        300.0
       ],
       "editor": {
         "collapsed": false,
@@ -150,8 +150,8 @@
       "title": "Ler variável",
       "category": "Variables",
       "position": [
-        280.0,
-        520.0
+        120.0,
+        500.0
       ],
       "editor": {
         "collapsed": false,
@@ -169,8 +169,8 @@
       "title": "Juntar textos",
       "category": "Text",
       "position": [
-        520.0,
-        520.0
+        440.0,
+        1100.0
       ],
       "editor": {
         "collapsed": false,
@@ -188,8 +188,8 @@
       "title": "Atualizar HUD",
       "category": "Action",
       "position": [
-        780.0,
-        520.0
+        440.0,
+        300.0
       ],
       "editor": {
         "collapsed": false,
@@ -206,8 +206,8 @@
       "title": "Ler variável",
       "category": "Variables",
       "position": [
-        280.0,
-        680.0
+        120.0,
+        700.0
       ],
       "editor": {
         "collapsed": false,
@@ -225,8 +225,8 @@
       "title": "Juntar textos",
       "category": "Text",
       "position": [
-        520.0,
-        680.0
+        440.0,
+        1300.0
       ],
       "editor": {
         "collapsed": false,
@@ -244,8 +244,8 @@
       "title": "Atualizar HUD",
       "category": "Action",
       "position": [
-        780.0,
-        680.0
+        440.0,
+        500.0
       ],
       "editor": {
         "collapsed": false,
@@ -262,8 +262,8 @@
       "title": "Comparar número",
       "category": "Condition",
       "position": [
-        520.0,
-        840.0
+        440.0,
+        700.0
       ],
       "editor": {
         "collapsed": false,
@@ -281,8 +281,8 @@
       "title": "Atualizar HUD",
       "category": "Action",
       "position": [
-        780.0,
-        840.0
+        760.0,
+        900.0
       ],
       "editor": {
         "collapsed": false,
@@ -299,8 +299,8 @@
       "title": "Comparar número",
       "category": "Condition",
       "position": [
-        520.0,
-        1000.0
+        440.0,
+        900.0
       ],
       "editor": {
         "collapsed": false,
@@ -318,8 +318,8 @@
       "title": "Atualizar HUD",
       "category": "Action",
       "position": [
-        780.0,
-        1000.0
+        760.0,
+        1100.0
       ],
       "editor": {
         "collapsed": false,
@@ -336,8 +336,8 @@
       "title": "On Key Pressed (once)",
       "category": "Events",
       "position": [
-        20.0,
-        1200.0
+        120.0,
+        900.0
       ],
       "editor": {
         "collapsed": false,
@@ -354,8 +354,8 @@
       "title": "Reiniciar cena",
       "category": "Action",
       "position": [
-        300.0,
-        1200.0
+        440.0,
+        1500.0
       ],
       "editor": {
         "collapsed": false,

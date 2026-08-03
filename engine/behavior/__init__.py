@@ -11,11 +11,13 @@ from .controller_asset import (
     save_behavior_controller,
     validate_behavior_controller,
 )
+from .graph_runtime import BehaviorGraphRunner
 
 __all__ = [
     "BEHAVIOR_CONTROLLER_FORMAT",
     "BEHAVIOR_CONTROLLER_VERSION",
     "BehaviorControllerRunner",
+    "BehaviorGraphRunner",
     "BehaviorControllerRuntime",
     "default_behavior_controller",
     "load_behavior_controller",

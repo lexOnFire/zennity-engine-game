@@ -11,6 +11,8 @@ from PySide6.QtWidgets import (
 from editor.ui.icons import TOOLBAR_ICONS, component_title, editor_icon
 from editor.ui.empty_state import EmptyStateWidget
 from editor.widgets.logic_graph_editor import LogicGraphEditor
+from editor.widgets.animation_frame_editor import AnimationFrameEditor
+from editor.animation_studio.animation_studio_dock import AnimationStudioDock
 from editor.ui.detached_workspace import DetachedWorkspaceWindow
 
 
@@ -36,8 +38,12 @@ def _build_animation_header(window):
     window._animation_layout = animation_layout
     animation_layout.setContentsMargins(8, 8, 8, 8)
     animation_layout.setSpacing(8)
-    animation_title_row = QHBoxLayout()
-    animation_title = QLabel("Editor de Animação 2D")
+    animation_header = QWidget()
+    animation_header.setObjectName("AnimationHeader")
+    animation_title_row = QHBoxLayout(animation_header)
+    animation_title_row.setContentsMargins(14, 8, 14, 8)
+    animation_title_row.setSpacing(12)
+    animation_title = QLabel("ZENNITY  /  ANIMATION STUDIO")
     animation_title.setObjectName("WorkspaceTitle")
     window.animation_asset_label = QLabel("Novo clip — ainda não salvo")
     window.animation_asset_label.setObjectName("WorkspaceStatus")
@@ -47,7 +53,7 @@ def _build_animation_header(window):
     animation_title_row.addWidget(window.animation_asset_label)
     animation_title_row.addStretch(1)
     animation_title_row.addWidget(window.animation_object_label)
-    animation_layout.addLayout(animation_title_row)
+    animation_layout.addWidget(animation_header)
 
     animation_toolbar_widget = QWidget()
     animation_toolbar_widget.setObjectName("AnimationToolbar")
@@ -75,7 +81,9 @@ def _build_animation_header(window):
         button.setIconSize(QSize(16, 16))
         button.setProperty("uiRole", "icon")
     window.animation_apply_button = QPushButton("Aplicar ao selecionado")
+    window.animation_apply_button.setObjectName("AnimationApplyButton")
     window.animation_demo_button = QPushButton("Testar no Player")
+    window.animation_demo_button.setObjectName("AnimationDemoButton")
     window.animation_open_demo_button = QPushButton("Abrir Demo Animator")
     for button, icon_name in (
         (window.animation_new_button, "new"),
@@ -131,7 +139,7 @@ def _build_animation_library(window):
     library_hint = QLabel("Assets/Animations\nClips .zanim e controllers .zanimator")
     library_hint.setObjectName("PanelHint")
     library_layout.addWidget(library_hint)
-    library_panel.setMinimumWidth(150)
+    library_panel.setMinimumWidth(220)
     window.animation_content_splitter.addWidget(library_panel)
 
     preview_panel = QWidget()
@@ -150,6 +158,8 @@ def _build_animation_preview(window):
     window.animator_preview.setMinimumHeight(160)
     window.animator_preview.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
     preview_column.addWidget(window.animator_preview, 1)
+    window.animation_frame_editor = AnimationFrameEditor()
+    preview_column.addWidget(window.animation_frame_editor)
 
     timeline_panel = QFrame()
     timeline_panel.setObjectName("AnimationTimelinePanel")
@@ -241,6 +251,7 @@ def _build_animation_properties(window):
     window.show_animator_chk = QCheckBox("Animator 2D ativo")
     animator_lay.addRow(window.show_animator_chk)
     window.btn_del_anim = QPushButton("Excluir Animator")
+    window.btn_del_anim.setObjectName("AnimationDangerButton")
     window.btn_del_anim.setProperty("uiRole", "dangerAction")
     animator_lay.addRow(window.btn_del_anim)
     controller_section_title = QLabel("ANIMATOR CONTROLLER")
@@ -313,19 +324,34 @@ def _build_animation_properties(window):
     window.animation_properties_scroll.setWidgetResizable(True)
     window.animation_properties_scroll.setFrameShape(QFrame.NoFrame)
     window.animation_properties_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-    window.animation_properties_scroll.setMinimumWidth(220)
+    window.animation_properties_scroll.setMinimumWidth(290)
     window.animation_properties_scroll.setWidget(window.animator_body)
     window.animation_content_splitter.addWidget(window.animation_properties_scroll)
     window.animation_content_splitter.setStretchFactor(0, 0)
     window.animation_content_splitter.setStretchFactor(1, 1)
     window.animation_content_splitter.setStretchFactor(2, 0)
-    window.animation_content_splitter.setSizes([170, 430, 250])
-    window._animation_layout.addWidget(window.animation_content_splitter, 1)
+    window.animation_content_splitter.setSizes([230, 700, 310])
+    _build_animation_track_tabs(window)
+
+def _build_animation_track_tabs(window):
+    window.animation_mode_tabs = QTabWidget()
+    window.animation_mode_tabs.setObjectName("AnimationModeTabs")
+    window.animation_mode_tabs.addTab(window.animation_content_splitter, "Sprite Animation")
+    window.animation_track_studio = AnimationStudioDock()
+    track_workspace = window.animation_track_studio.widget()
+    window.animation_track_studio.setWidget(QWidget())
+    window.animation_track_studio.hide()
+    window.animation_track_studio.setParent(None)
+    track_workspace.setParent(window.animation_mode_tabs)
+    track_workspace.setObjectName("AnimationTracksWorkspace")
+    window.animation_mode_tabs.addTab(track_workspace, "Tracks & Keyframes")
+    window._animation_layout.addWidget(window.animation_mode_tabs, 1)
 
 def _build_detached_workspaces(window):
     window.logic_workspace = LogicGraphEditor()
     window.animation_window = DetachedWorkspaceWindow("Zennity — Editor de Animação", window.animation_workspace, window)
-    window.logic_window = DetachedWorkspaceWindow("Zennity — Editor de Lógica Visual", window.logic_workspace, window)
+    window.animation_window.resize(1320, 820)
+    window.animation_window.setMinimumSize(980, 640)
 
     window.center_container = QWidget()
     layout = QVBoxLayout(window.center_container)

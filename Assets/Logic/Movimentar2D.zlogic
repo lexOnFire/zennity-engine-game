@@ -1,6 +1,7 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
+  "enabled": true,
   "name": "Movimentar 2D",
   "target": {
     "type": "name",
@@ -12,6 +13,10 @@
     "watches": []
   },
   "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
   "nodes": [
     {
       "id": "subgraph_start",
@@ -19,9 +24,14 @@
       "title": "Subgraph Start",
       "category": "Subgraphs",
       "position": [
-        80.0,
+        120.0,
         100.0
       ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
       "properties": {}
     },
     {
@@ -30,9 +40,14 @@
       "title": "Subgraph Input",
       "category": "Subgraphs",
       "position": [
-        80.0,
-        280.0
+        120.0,
+        300.0
       ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
       "properties": {
         "name": "direcao",
         "type": "number",
@@ -45,9 +60,14 @@
       "title": "Move",
       "category": "Movement",
       "position": [
-        360.0,
+        440.0,
         100.0
       ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
       "properties": {
         "speed": 200.0
       }
@@ -58,9 +78,14 @@
       "title": "Subgraph Return",
       "category": "Subgraphs",
       "position": [
-        650.0,
-        100.0
+        440.0,
+        300.0
       ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
       "properties": {
         "name": "direcao_aplicada",
         "type": "number"
@@ -74,7 +99,8 @@
       "from_port": "next",
       "to_node": "move_action",
       "to_port": "in",
-      "kind": "flow"
+      "kind": "flow",
+      "order": 0
     },
     {
       "id": "data_direction_move",
@@ -82,7 +108,8 @@
       "from_port": "value",
       "to_node": "move_action",
       "to_port": "value",
-      "kind": "number"
+      "kind": "number",
+      "order": 1
     },
     {
       "id": "flow_move_return",
@@ -90,7 +117,8 @@
       "from_port": "next",
       "to_node": "direction_output",
       "to_port": "in",
-      "kind": "flow"
+      "kind": "flow",
+      "order": 2
     },
     {
       "id": "data_direction_return",
@@ -98,7 +126,8 @@
       "from_port": "value",
       "to_node": "direction_output",
       "to_port": "value",
-      "kind": "number"
+      "kind": "number",
+      "order": 3
     }
   ]
 }

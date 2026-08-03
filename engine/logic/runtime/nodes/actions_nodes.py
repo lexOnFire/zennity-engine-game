@@ -134,7 +134,23 @@ def execute_log_message(runtime, node: Mapping[str, Any], game: Any, dt: float) 
     node_id = str(node['id'])
     node_type = str(node.get('type'))
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
-    text = runtime._read_input(node_id, "text", properties.get("text", "Mensagem"), game, dt, set())
+    # "message" é o nome legado da property (ver NODE_DEFINITIONS["log_message"]);
+    # aceito como fallback para assets criados antes do alinhamento com o pino "text".
+    fallback = properties.get("text", properties.get("message", "Mensagem"))
+    text = runtime._read_input(node_id, "text", fallback, game, dt, set())
     game.log(str(text))
+    return ["next"]
+
+@registry.register_executor('start_behavior_tree')
+def execute_start_behavior_tree(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
+    node_id = str(node['id'])
+    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
+    target = runtime._read_target(node_id, game, dt, set())
+    raw_path = runtime._read_input(node_id, "path", properties.get("path", ""), game, dt, set())
+    path = "" if raw_path is None else str(raw_path).strip()
+    if hasattr(target, "start_behavior_tree"):
+        target.start_behavior_tree(path)
+    elif hasattr(game, "start_behavior_tree"):
+        game.start_behavior_tree(path)
     return ["next"]
 

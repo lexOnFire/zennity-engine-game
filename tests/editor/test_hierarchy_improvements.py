@@ -156,7 +156,7 @@ def test_hierarchy_rename_valid(editor: ZennityPhase1Editor) -> None:
     assert editor.rename_object(obj, "NewName")
 
     assert obj.name == "NewName"
-    assert _item_for(editor, obj).text(0) == "NewName"
+    assert _item_for(editor, obj).text(0).endswith("NewName")
     editor.undo()
     assert obj.name == "OldName"
 

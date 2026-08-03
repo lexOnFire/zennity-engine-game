@@ -1,0 +1,12 @@
+{
+  "guid": "58dc8b49-b6ce-4a8a-8f6a-5bf7933d562d",
+  "uuid": "58dc8b49-b6ce-4a8a-8f6a-5bf7933d562d",
+  "type": "audio",
+  "importer": "audio_importer",
+  "source_path": "Assets/Audio/_zennity_run/hit.wav",
+  "import_settings": {
+    "load_type": "decompress_on_load"
+  },
+  "dependencies": [],
+  "hash": "989028cb035b76bf4b06a665a56e8701fed8ddb1f9df89b43e0082788ce18e2c"
+}

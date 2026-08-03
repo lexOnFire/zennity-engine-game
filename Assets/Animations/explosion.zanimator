@@ -1,0 +1,18 @@
+{
+  "format": "zennity.animator_controller",
+  "version": 1,
+  "name": "explosion",
+  "initial_state": "Idle",
+  "parameters": {},
+  "states": {
+    "Idle": {
+      "animation": "",
+      "speed": 1.0,
+      "position": [
+        40.0,
+        40.0
+      ]
+    }
+  },
+  "transitions": []
+}

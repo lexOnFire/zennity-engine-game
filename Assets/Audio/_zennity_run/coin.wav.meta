@@ -1,0 +1,12 @@
+{
+  "guid": "fe879c77-8f34-4fa0-af1f-e34c6ac07f2a",
+  "uuid": "fe879c77-8f34-4fa0-af1f-e34c6ac07f2a",
+  "type": "audio",
+  "importer": "audio_importer",
+  "source_path": "Assets/Audio/_zennity_run/coin.wav",
+  "import_settings": {
+    "load_type": "decompress_on_load"
+  },
+  "dependencies": [],
+  "hash": "c695bfd8475cccbe97382c131ec24a5a76399003696f19a4502336e1f0fdcbf0"
+}

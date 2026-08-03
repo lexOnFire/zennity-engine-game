@@ -1,0 +1,10 @@
+{
+  "guid": "0c573396-5fce-4e34-b27a-0d0edaf46360",
+  "uuid": "0c573396-5fce-4e34-b27a-0d0edaf46360",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Logic/NebulaDefensePro/NebulaBoss.zlogic",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "9ce5610b274b02346dbbb28d4b4bdca08614d7ab3fb9f1561348ce2fed1ca35d"
+}

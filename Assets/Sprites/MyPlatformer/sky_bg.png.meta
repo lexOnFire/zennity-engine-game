@@ -1,0 +1,12 @@
+{
+  "guid": "07d4019c-d148-4c15-8b1c-96f186529317",
+  "uuid": "07d4019c-d148-4c15-8b1c-96f186529317",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Sprites/MyPlatformer/sky_bg.png",
+  "import_settings": {
+    "filter_mode": "nearest"
+  },
+  "dependencies": [],
+  "hash": "ab7747f2eaf35f20f5358ce1fb90d156fc7bd46be05142d2719d0d0b3ae44528"
+}

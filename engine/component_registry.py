@@ -37,7 +37,7 @@ class _ComponentRegistryMeta(type):
     pass
 
 
-class ComponentRegistry(metaclass=_ComponentRegistryMeta):
+class StaticComponentRegistry(metaclass=_ComponentRegistryMeta):
     """
     Registro singleton de componentes.
     Todos os métodos são @classmethod — não instancie esta classe.
@@ -163,3 +163,6 @@ class ComponentRegistry(metaclass=_ComponentRegistryMeta):
 
     def __repr__(cls) -> str:  # type: ignore[override]
         return f"<ComponentRegistry [{len(cls._registry)} entries]>"
+
+
+ComponentRegistry = StaticComponentRegistry

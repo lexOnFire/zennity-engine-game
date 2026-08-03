@@ -21,7 +21,7 @@ def _source(relative: str) -> str:
         source += (ROOT / "editor/runtime/viewport_session_orchestrator.py").read_text(encoding="utf-8")
         source += (ROOT / "editor/runtime/viewport_runtime_initializer.py").read_text(encoding="utf-8")
         source += (ROOT / "editor/runtime/viewport_asset_hydration.py").read_text(encoding="utf-8")
-        source += (ROOT / "editor/runtime/viewport_script_api.py").read_text(encoding="utf-8")
+        source += (ROOT / "editor/runtime/viewport_logic_api.py").read_text(encoding="utf-8")
     if relative == "editor/interface_smoke_test.py":
         source += "\n" + (ROOT / "editor/ui/workspace_builder.py").read_text(encoding="utf-8")
         source += "\n" + (ROOT / "editor/ui/docks_builder.py").read_text(encoding="utf-8")
@@ -35,7 +35,7 @@ def _source(relative: str) -> str:
     return "\n" + source + "\n"
 
 
-def test_logic_and_animation_use_independent_windows_not_viewport_tabs():
+def test_logic_uses_modern_integrated_dock_and_animation_stays_independent():
     interface = (
         _source("editor/interface_smoke_test.py")
         + _source("editor/ui/detached_workspace.py")
@@ -50,15 +50,41 @@ def test_logic_and_animation_use_independent_windows_not_viewport_tabs():
     assert 'self.viewport_tabs.addTab(QWidget(), "Logic")' not in interface
     assert "class DetachedWorkspaceWindow(QMainWindow)" in interface
     assert "window.animation_window = DetachedWorkspaceWindow" in interface or "self.animation_window = DetachedWorkspaceWindow" in interface
-    assert "window.logic_window = DetachedWorkspaceWindow" in interface or "self.logic_window = DetachedWorkspaceWindow" in interface
+    assert "window.logic_window = DetachedWorkspaceWindow" not in interface
     assert "window.logic_workspace = LogicGraphEditor()" in interface or "self.logic_workspace = LogicGraphEditor()" in interface
+    assert '"editor.visual_scripting.visual_scripting_dock"' in editor
+    assert '"VisualScriptingEditorDock"' in editor
     assert "def show(self" in editor
     assert "def _show_animation_window" in animation
-    assert 'editor_icon("play")' in editor
-    assert 'editor_icon("snap")' in editor
+    assert 'QAction("Animator", self)' in interface
+    assert 'QAction("Editor de Lógica Visual", self)' in interface
+    assert 'h.editor_menus["Ferramentas"]' not in editor
+    assert 'h.editor_menus["Janela"].addAction' not in editor
     assert 'editor_icon("animation")' not in editor
     assert 'editor_icon("script")' not in editor
     assert 'component == "logic"' in editor
+
+
+def test_visual_scripting_menu_reuses_official_logic_workspace() -> None:
+    interface = _source("editor/interface_smoke_test.py")
+    dock = _source("editor/visual_scripting/visual_scripting_dock.py")
+
+    assert "window.logic_workspace = LogicGraphEditor()" in interface
+    assert 'getattr(parent, "logic_workspace", None)' in dock
+    assert "MiniLiveViewportWidget" in dock
+    assert "set_embedded_mode(True)" in dock
+    assert "sync_from_host" in dock
+
+
+def test_logic_workspace_populates_palette_and_opens_existing_graph_fallback() -> None:
+    editor = _source("editor/widgets/logic_graph_editor.py")
+    controller = _source("editor/logic_workspace_controller.py")
+
+    assert 'self._category_changed(str(self.category_combo.currentData() or "All"))' in editor
+    assert "assets = self.assets()" in controller
+    assert "fallback_path, _graph = max(" in controller
+    assert "in self._scene_object_names()" in controller
+    assert "h.logic_workspace.open_asset(fallback_path)" in controller
 
 
 def test_python_script_component_is_not_offered_or_executed() -> None:
@@ -369,7 +395,8 @@ def test_logic_editor_opens_in_selected_hierarchy_object_context():
     assert 'create_logic_node("event_start"' in editor
     assert "bindings = self.graphs_for_object(selected)" in main
     assert "h.logic_workspace.open_for_object(selected, context_path)" in main
-    assert 'setWindowTitle(f"Zennity — Lógica Visual — {selected}")' in main
+    assert 'dock.setWindowTitle(' in main
+    assert "Visual Scripting Editor 2.0" in main
     assert 'Lógica Visual: {selected}' in main
     assert "preferred_path=path" in main
 

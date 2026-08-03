@@ -14,8 +14,19 @@ class CameraMeta(type):
 
 class Camera(Component, metaclass=CameraMeta):
     """
-    Componente Camera oficial da Zennity Engine.
-    Controla a visualização da cena e preenchimento de tela durante o Play Mode.
+    Componente Camera oficial da Zennity Engine — fonte de verdade para câmeras
+    de gameplay: é a única registrada em engine/core/component_registry.py
+    (serializável em .zscene), a única usada pelo pipeline de build/runtime
+    (engine/runtime/runtime_scene.py) e a única presente nas cenas reais do
+    projeto. Suporta múltiplas câmeras via CameraManager (priority/active) e
+    viewport parcial (split-screen).
+
+    Ver também engine/graphics/camera2d.py (Camera2D) — classe legada mantida
+    para follow-target/bounds embutidos (usados por demos/) e para a câmera de
+    viewport do editor (editor/viewport/viewport_camera.py), que não é um
+    GameObject de cena. Código de renderização deve resolver a câmera ativa via
+    engine.graphics.active_camera.get_active_camera(), não reimplementar o
+    fallback Camera.main/Camera2D.main manualmente.
     """
     component_type = "Camera"
     unique = True

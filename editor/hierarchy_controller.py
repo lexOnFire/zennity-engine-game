@@ -44,6 +44,17 @@ class HierarchyController:
         )
         h.hierarchy_tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self._bind(h.hierarchy_tree.customContextMenuRequested, h._open_hierarchy_menu)
+        
+        # Conectar atalho da tecla Delete/Backspace na árvore de hierarquia
+        orig_key_press = h.hierarchy_tree.keyPressEvent
+        def hierarchy_key_press(event) -> None:
+            if event.key() in (Qt.Key_Delete, Qt.Key_Backspace):
+                if h._selected_name is not None and not h._play_session.is_running:
+                    h._scene_objects.delete(h._selected_name)
+                    return
+            orig_key_press(event)
+        h.hierarchy_tree.keyPressEvent = hierarchy_key_press
+
         self._connected = True
         return True
 
@@ -56,25 +67,30 @@ class HierarchyController:
         menu = QMenu(h)
         rename_action = menu.addAction("Renomear")
         duplicate_action = menu.addAction("Duplicar")
+        locked = bool(h._objects_by_name[item_name].get("editor_locked", False))
+        lock_action = menu.addAction("Destravar transformação" if locked else "Travar transformação")
         prefab_action = menu.addAction("Criar Prefab")
         delete_action = menu.addAction("Excluir")
         rename_action.triggered.connect(lambda _checked=False: h._rename_object(item_name))
         duplicate_action.triggered.connect(
             lambda _checked=False: self.select_and_duplicate(item_name)
         )
+        lock_action.triggered.connect(
+            lambda _checked=False: h._scene_objects.set_transform_locked(item_name, not locked)
+        )
         prefab_action.triggered.connect(
             lambda _checked=False: self.select_and_save_prefab(item_name)
         )
-        delete_action.triggered.connect(lambda _checked=False: h._delete_object(item_name))
+        delete_action.triggered.connect(lambda _checked=False: h._scene_objects.delete(item_name))
         menu.exec(h.hierarchy_tree.viewport().mapToGlobal(position))
 
     def select_and_duplicate(self, name: str) -> None:
-        self.host._selected_name = name
-        self.host._scene_objects.duplicate_selected()
+        if self.host._selection.select_for_action(name):
+            self.host._scene_objects.duplicate_selected()
 
     def select_and_save_prefab(self, name: str) -> None:
-        self.host._selected_name = name
-        self.host._prefab_workspace.save_selected()
+        if self.host._selection.select_for_action(name):
+            self.host._prefab_workspace.save_selected()
 
     def select_item(self, item: QTreeWidgetItem) -> None:
         h = self.host
@@ -83,11 +99,8 @@ class HierarchyController:
         in_runtime = h._runtime_playing and name in h._runtime_objects_by_name
         if not (in_scene or in_runtime):
             return
-        h._scene_controller.select(name)
-        h._selected_name = name
-        h._update_inspector(name)
         source = "Runtime" if in_runtime and not in_scene else "Interface"
-        h.statusBar().showMessage(f"{source}: {name} selecionado")
+        h._selection.select(name, source=source)
 
     def refresh(self, *, force: bool = False) -> bool:
         return self.renderer.refresh(force=force)

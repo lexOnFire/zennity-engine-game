@@ -1,0 +1,12 @@
+{
+  "guid": "90203e1c-e683-4c10-a7cc-54c947a4c428",
+  "uuid": "90203e1c-e683-4c10-a7cc-54c947a4c428",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/UP.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "ff346408935d226eb1e880b0f2a64cb998c2d8aeab1be21677fa714259a499be"
+}

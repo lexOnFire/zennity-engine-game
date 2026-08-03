@@ -1,0 +1,12 @@
+{
+  "guid": "d9e609fa-815e-4725-8b7f-005291b3fbb9",
+  "uuid": "d9e609fa-815e-4725-8b7f-005291b3fbb9",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/nave_player.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "615ba2e3002cf40ba339e379605bfd81284f820bb3ee90df1d2a2827dc35f0e3"
+}

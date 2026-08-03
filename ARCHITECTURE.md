@@ -178,6 +178,39 @@ Ver `docs/adr/` para os Architecture Decision Records completos.
 | [ADR-003](docs/adr/ADR-003.md) | NumPy para matemática do Transform |
 | [ADR-004](docs/adr/ADR-004.md) | Pygame/SDL2 como backend de janela |
 
+### Por que existem dois motores de Graph
+
+**Decisão:** manter permanentemente dois motores de canvas separados por domínio.
+Isso não representa dois editores concorrentes de lógica visual. O produto expõe
+um único hub de Visual Scripting, que hospeda ferramentas com contratos de
+execução diferentes:
+
+| Motor | Responsabilidade oficial | Consumidores |
+|---|---|---|
+| `editor/widgets/logic_graph/` + `engine/logic/` | Lógica de gameplay em assets `.zlogic`, com Play Mode, blackboard, breakpoints, trace, receitas, validação e execução por `LogicGraphRuntime` | `LogicGraphEditor`, workspace principal de Visual Scripting e runtime da viewport |
+| `editor/widgets/graph_editor/` + `engine/graphs/` | Framework genérico de autoria e metadados para grafos que não executam como Logic Graph | Behavior Tree, Dialogue, Material Graph e Dependency Viewer |
+
+O `VisualScriptingEditorDock` é o ponto de entrada unificado da interface: seu
+editor principal é o `LogicGraphEditor`; editores genéricos aparecem somente nas
+abas de domínio correspondentes. Eles não devem carregar, salvar, compilar ou
+executar `.zlogic`.
+
+As fronteiras obrigatórias são:
+
+- `editor/widgets/logic_graph/` pode depender de `engine.logic`, mas não de
+  `engine.graphs` nem de `editor.widgets.graph_editor`;
+- `editor/widgets/graph_editor/` pode depender de `engine.graphs`, mas não de
+  `engine.logic` nem de `editor.widgets.logic_graph`;
+- recursos visuais compartilháveis devem migrar para componentes neutros, sem
+  fazer um motor importar o outro;
+- uma eventual unificação exige ADR próprio, migração de formatos e paridade de
+  Play Mode/debugger. Ela não faz parte do ciclo pré-v1.
+
+Essa separação é intencional porque o Logic Graph possui semântica de runtime e
+debugger que não existe no framework genérico. Unificar apenas o canvas agora
+criaria adaptadores bidirecionais e risco de regressão sem eliminar os dois
+modelos de documento e execução.
+
 ---
 
 ## Inspector & Command System (Fase 8)
@@ -927,3 +960,65 @@ Reparent valida ciclos com `can_reparent(...)`. Delete reversível remove o obje
 ### Limites
 
 Esta fase não implementa Project Browser avançado, nova Scene View, nova UX do Inspector, Build Pipeline ou sistemas de Runtime.
+
+---
+
+## Plataforma Unificada de Animação & Track Framework
+
+A **Plataforma de Animação da Zennity Engine** é um sistema desacoplado, extensível por plugins e guiado por metadados (*Data-Driven*).
+
+### 1. Diagrama de Dependências de Serviços
+
+```mermaid
+graph TD
+    EB["EngineBootstrap"] --> AP["AnimationProvider"]
+    AP --> ES["EngineServices"]
+    AP --> MM["MetadataManager"]
+    
+    ES --> APS["AnimationPlayerService (IService)"]
+    MM --> ClipDef["AnimationClipDefinition (.zanim)"]
+    MM --> AnimDef["AnimatorDefinition (.zanimator)"]
+    MM --> TrackDef["TrackDefinition (Transform/Sprite/Audio/Event/Property)"]
+    MM --> PrevDef["PreviewDefinition (AnimationPreviewProvider)"]
+```
+
+### 2. Fluxo do Asset Pipeline
+
+```mermaid
+graph LR
+    Disk[".zanim / .zanimator no Disco"] --> Importer["AssetImporter"]
+    Importer --> Meta[".meta + SHA-256 Hash"]
+    Importer --> ADB["AssetDatabase (IService)"]
+    ADB --> GUID["AssetHandle (GUID Imutável)"]
+    GUID --> RAM["RuntimeAssetManager (RefCounting)"]
+```
+
+### 3. Ciclo de Vida do Runtime de Animação
+
+```mermaid
+graph TD
+    Update["Engine Tick / Play Mode"] --> APS["AnimationPlayerService.update(dt)"]
+    APS --> Playback["TrackPlaybackState (PLAYING)"]
+    Playback --> Tracks["AnimationTrack.sample(t, target)"]
+    
+    Tracks --> T1["TransformTrack"]
+    Tracks --> T2["SpriteTrack"]
+    Tracks --> T3["AudioTrack"]
+    Tracks --> T4["EventTrack (EventBus)"]
+    Tracks --> T5["PropertyTrack"]
+    
+    ReimportEvent["AssetReimportedEvent"] -.->|Hot Reload| APS
+```
+
+### 4. Relação entre Metadata, Plugins e Graph Framework
+
+```mermaid
+graph TD
+    Plugin["Plugin de Animação de Terceiros"] --> MM["MetadataManager"]
+    MM --> GraphNode["NodeDefinition (Animator States & Blend Trees)"]
+    MM --> TrackDef["TrackDefinition (Custom Track)"]
+    MM --> PrevDef["PreviewDefinition (Custom Preview)"]
+    
+    GraphNode --> GraphFramework["Graph Framework Oficial"]
+    GraphFramework --> Animator["Animator Controller (.zanimator)"]
+```

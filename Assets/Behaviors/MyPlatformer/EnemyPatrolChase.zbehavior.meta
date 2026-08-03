@@ -1,0 +1,10 @@
+{
+  "guid": "7d14a409-c892-417e-a56b-a925370b0401",
+  "uuid": "7d14a409-c892-417e-a56b-a925370b0401",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Behaviors/MyPlatformer/EnemyPatrolChase.zbehavior",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "c99edfdb3272032c58c9a82568c8bffc95c1b8112febe1a3170b07ae955c4c13"
+}

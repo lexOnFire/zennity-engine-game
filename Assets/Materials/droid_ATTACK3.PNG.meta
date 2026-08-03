@@ -1,0 +1,12 @@
+{
+  "guid": "f7da1162-a27e-4b11-8117-2b5e0458d0d6",
+  "uuid": "f7da1162-a27e-4b11-8117-2b5e0458d0d6",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/droid_ATTACK3.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "99e529232964bf708854f1eca3d9807dacec45ee40939679ce5aa632623b188b"
+}

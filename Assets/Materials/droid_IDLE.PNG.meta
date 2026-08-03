@@ -1,0 +1,12 @@
+{
+  "guid": "9d7f9500-7839-4ecd-9f18-b9e919a2a343",
+  "uuid": "9d7f9500-7839-4ecd-9f18-b9e919a2a343",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/droid_IDLE.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "b6ff2389a3aa1b680dbf334bdbda81cef0d5ff6d46386923fc09b58036ff694e"
+}

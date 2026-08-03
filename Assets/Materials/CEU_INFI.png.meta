@@ -1,0 +1,12 @@
+{
+  "guid": "45364461-0a8a-4ce5-8d04-e992753cf7fa",
+  "uuid": "45364461-0a8a-4ce5-8d04-e992753cf7fa",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/CEU_INFI.png",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "a95b56e9f8f39851705f90010d508aebc2726030b0ceebbea45eefa70557b3e9"
+}

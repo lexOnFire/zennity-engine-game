@@ -4,31 +4,164 @@
   "engine_version": "Zennity 0.1.0",
   "objects": [
     {
-      "id": "behavior-camera", "name": "MainCamera", "tag": "MainCamera", "active": true,
-      "transform": {"position": [0.0, 0.0, 0.0], "rotation": [0.0, 0.0, 0.0], "scale": [48.0, 30.0, 1.0]},
-      "visual": {"mesh_type": "Camera", "color": [120, 180, 255], "texture": ""},
-      "components": {"camera": {"active": true, "zoom": 1.0, "background_color": [18, 22, 32]}}
-    },
-    {
-      "id": "behavior-player", "name": "Player", "tag": "Player", "active": true,
-      "transform": {"position": [180.0, 80.0, 0.0], "rotation": [0.0, 0.0, 0.0], "scale": [58.0, 76.0, 1.0]},
-      "visual": {"mesh_type": "Player", "color": [80, 118, 255], "texture": "", "enabled": true},
-      "components": {"collider": {"type": "box", "width": 58.0, "height": 76.0, "is_trigger": false}}
-    },
-    {
-      "id": "behavior-enemy", "name": "BehaviorEnemy", "tag": "Enemy", "active": true,
-      "transform": {"position": [-420.0, 80.0, 0.0], "rotation": [0.0, 0.0, 0.0], "scale": [58.0, 76.0, 1.0]},
-      "visual": {"mesh_type": "Inimigo", "color": [225, 73, 86], "texture": "", "enabled": true},
+      "id": "behavior-camera",
+      "name": "MainCamera",
+      "tag": "MainCamera",
+      "active": true,
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          48.0,
+          30.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Camera",
+        "color": [
+          120,
+          180,
+          255
+        ],
+        "texture": "",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
       "components": {
-        "scripts": ["Assets/Scripts/behavior_demo/behavior_debug.py"],
-        "collider": {"type": "box", "width": 58.0, "height": 76.0, "is_trigger": false}
+        "camera": {
+          "active": true,
+          "zoom": 1.0,
+          "background_color": [
+            18,
+            22,
+            32
+          ]
+        }
+      },
+      "enabled": true,
+      "static": false,
+      "layer": "Default"
+    },
+    {
+      "id": "behavior-player",
+      "name": "Player",
+      "tag": "Player",
+      "active": true,
+      "transform": {
+        "position": [
+          180.0,
+          80.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          58.0,
+          76.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Player",
+        "color": [
+          80,
+          118,
+          255
+        ],
+        "texture": "",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {
+        "collider": {
+          "type": "box",
+          "width": 58.0,
+          "height": 76.0,
+          "is_trigger": false
+        }
+      },
+      "enabled": true,
+      "static": false,
+      "layer": "Default"
+    },
+    {
+      "id": "behavior-enemy",
+      "name": "BehaviorEnemy",
+      "tag": "Enemy",
+      "active": true,
+      "transform": {
+        "position": [
+          -420.0,
+          80.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          58.0,
+          76.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Inimigo",
+        "color": [
+          225,
+          73,
+          86
+        ],
+        "texture": "",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {
+        "collider": {
+          "type": "box",
+          "width": 58.0,
+          "height": 76.0,
+          "is_trigger": false
+        }
       },
       "editor_data": {
         "behavior": {
           "controller_path": "Assets/Behaviors/EnemyDemo.zbehavior",
-          "parameters": {"player_distance": 999.0, "attack": false, "attack_finished": false}
+          "parameters": {
+            "player_distance": 999.0,
+            "attack": false,
+            "attack_finished": false
+          }
         }
-      }
+      },
+      "enabled": true,
+      "static": false,
+      "layer": "Default"
     }
-  ]
+  ],
+  "blackboard": {
+    "variables": {}
+  }
 }

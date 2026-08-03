@@ -78,16 +78,15 @@ class MainWindowMenusMixin:
         menu_edit.addAction(self.act_preferences)
 
         menu_window = menubar.addMenu("Janela")
-        self.act_reset_layout = QAction("Restaurar Layout Padrão", self)
-        self.act_reset_layout.triggered.connect(self.apply_default_layout)
-        menu_window.addAction(self.act_reset_layout)
-        menu_window.addSeparator()
-        menu_window.addAction(self.dock_hierarchy.toggleViewAction())
-        menu_window.addAction(self.dock_inspector.toggleViewAction())
-        menu_window.addAction(self.dock_assets.toggleViewAction())
-        menu_window.addAction(self.dock_console.toggleViewAction())
-        menu_window.addAction(self.dock_profiler.toggleViewAction())
-        menu_window.addAction(self.dock_code_editor.toggleViewAction())
+        self.act_animator = QAction("Animator", self)
+        self.act_animator.setShortcut(QKeySequence("Ctrl+Shift+A"))
+        self.act_animator.triggered.connect(self._show_animator_editor)
+        menu_window.addAction(self.act_animator)
+
+        self.act_visual_logic = QAction("Editor de Lógica Visual", self)
+        self.act_visual_logic.setShortcut(QKeySequence("Ctrl+Shift+L"))
+        self.act_visual_logic.triggered.connect(self._show_visual_logic_editor)
+        menu_window.addAction(self.act_visual_logic)
 
         menu_create = menubar.addMenu("Criar")
         shapes = ["Quadrado", "Círculo", "Plataforma", "Player", "Inimigo", "Trigger", "Mola"]
@@ -103,9 +102,12 @@ class MainWindowMenusMixin:
         menu_help.addAction(self.act_about)
 
     def create_tool_bar(self) -> None:
-        toolbar = self.addToolBar("Ferramentas")
+        toolbar = self.addToolBar("Comandos")
         toolbar.setObjectName("MainToolBar")
         toolbar.setMovable(False)
+        toolbar.setFloatable(False)
+        toolbar.setAllowedAreas(Qt.TopToolBarArea)
+        toolbar.setStyleSheet("QToolBar::handle { width: 0px; image: none; }")
         toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
         self.btn_play = QPushButton(" ▶  PLAY ")
@@ -172,6 +174,20 @@ class MainWindowMenusMixin:
         )
         self.cb_camera_mode.currentTextChanged.connect(self.on_camera_mode_changed)
         toolbar.addWidget(self.cb_camera_mode)
+
+    def _show_animator_editor(self) -> None:
+        dock = getattr(self, "dock_animation_studio", None)
+        if dock is None:
+            return
+        dock.show()
+        dock.raise_()
+        dock.activateWindow()
+
+    def _show_visual_logic_editor(self) -> None:
+        dock = getattr(self, "dock_visual_scripting", None)
+        if dock is None:
+            return
+        dock.open_graph_tool("visual_scripting")
 
     def create_status_bar(self) -> None:
         statusbar = self.statusBar()

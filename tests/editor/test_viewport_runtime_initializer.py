@@ -16,7 +16,12 @@ def test_viewport_delegates_runtime_initialization_and_spawn_discovery() -> None
     assert "class ViewportRuntimeInitializer" in initializer
     assert "self.runtime_world.reset_session()" in initializer
     assert "self.initialized_ids" in initializer
-    assert "self._initialize_animation(name, obj)" in initializer
+    # _initialize_animation é chamado via a tupla (label, fn) + try/except de
+    # isolamento por etapa (ver BUG FIX em viewport_runtime_initializer.py:
+    # uma exceção em um objeto não pode mais abortar a inicialização dos
+    # demais), não mais como chamada direta "self._initialize_animation(...)".
+    assert '("animação", self._initialize_animation)' in initializer
+    assert "fn(name, obj)" in initializer
     assert "self._initialize_logic(name, obj)" in initializer
 
 

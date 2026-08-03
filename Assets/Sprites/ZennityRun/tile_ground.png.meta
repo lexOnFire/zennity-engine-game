@@ -1,0 +1,12 @@
+{
+  "guid": "738ddac5-188f-49ca-af7d-6aa6eb22445c",
+  "uuid": "738ddac5-188f-49ca-af7d-6aa6eb22445c",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Sprites/ZennityRun/tile_ground.png",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "4ef47e1f3eb061cf334bbb193b3aecff45388fe2ec78eb85676040e2b4c7d347"
+}

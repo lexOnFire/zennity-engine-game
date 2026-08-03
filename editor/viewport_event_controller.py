@@ -2,25 +2,47 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from pathlib import Path
 from typing import Any
 
 
 class ViewportEventController:
     """Owns viewport event state transitions and presentation updates."""
 
+    MAX_EVENTS_PER_POLL = 64
+    COALESCED_EVENT_TYPES = frozenset({"runtime_objects", "stats", "runtime_metrics"})
+
     def __init__(self, host: Any) -> None:
         self.host = host
 
     def selected(self, message: dict) -> None:
+        if hasattr(self.host, "_play_session") and getattr(self.host._play_session, "is_running", False):
+            return
+        self.host._selection.select(str(message["name"]), source="Viewport")
+
+    def tool_changed(self, message: dict) -> None:
+        """Mirror a shortcut handled by the focused Pygame viewport."""
+        self.host._tool_controller.activate_tool(str(message["tool"]))
+
+    def delete_selected_requested(self, _message: dict) -> None:
+        """Delete the editor selection when Delete was pressed in native viewport."""
         h = self.host
-        h._selected_name = message["name"]
-        h._update_inspector(h._selected_name)
-        h.statusBar().showMessage(f"Viewport: {h._selected_name} selecionado")
+        if h._play_session.is_running:
+            return
+        selected = h._selected_name
+        if selected in h._objects_by_name:
+            h._scene_objects.delete(selected)
 
     def transform(self, message: dict) -> None:
         h = self.host
         event_type = message.get("type")
+        obj = h._objects_by_name.get(message.get("name"))
+        if obj is not None and obj.get("editor_locked", False):
+            h._drag_history_snapshot = None
+            h._scene_controller.publish_snapshot(h._scene_snapshot)
+            if h._selected_name == message.get("name"):
+                h._scene_controller.select(h._selected_name)
+            h.statusBar().showMessage(f"{message['name']} está com a transformação travada")
+            return
         if event_type == "transform_begin":
             h._drag_history_snapshot = deepcopy(h._scene_snapshot)
             return
@@ -68,6 +90,9 @@ class ViewportEventController:
         h.toolbar_actions["Pause"].setEnabled(running)
         h.toolbar_actions["Stop"].setEnabled(running)
         h.logic_workspace.set_play_state(running)
+        dock = getattr(h, "_dock_visual_scripting", None)
+        if dock is not None and hasattr(dock, "set_play_state"):
+            dock.set_play_state(state)
         h.statusBar().showMessage({
             "play": "Viewport: PLAY", "pause": "Viewport: PAUSE",
             "edit": "Viewport: EDIT — cena restaurada",
@@ -88,10 +113,14 @@ class ViewportEventController:
         h._refresh_hierarchy()
         if h._selected_name in h._objects_by_name:
             h._update_inspector(h._selected_name)
+        dock = getattr(h, "_dock_visual_scripting", None)
+        if dock is not None:
+            dock.sync_from_host()
 
     def runtime_objects(self, message: dict) -> None:
         h = self.host
         previous_names = set(h._runtime_objects_by_name)
+        previous_selected = h._runtime_objects_by_name.get(h._selected_name)
         h._runtime_objects_by_name = {
             str(item.get("name")): deepcopy(item)
             for item in message.get("objects", [])
@@ -99,17 +128,21 @@ class ViewportEventController:
         }
         if set(h._runtime_objects_by_name) != previous_names:
             h._refresh_hierarchy()
-        if h._selected_name in h._runtime_objects_by_name:
+        current_selected = h._runtime_objects_by_name.get(h._selected_name)
+        if current_selected is not None and current_selected != previous_selected:
             h._update_inspector(str(h._selected_name))
         elif h._selected_name in previous_names and h._selected_name not in h._objects_by_name:
             h._selected_name = None
             h._clear_inspector_view()
+        dock = getattr(h, "_dock_visual_scripting", None)
+        if dock is not None and (not hasattr(dock, "isVisible") or dock.isVisible()):
+            dock.sync_from_host()
 
     def viewport_mode(self, message: dict) -> None:
         state = "embutida" if message.get("embedded") else "em janela separada (fallback)"
         self.host.statusBar().showMessage(f"Viewport {state}")
 
-    def script_log(self, message: dict) -> None:
+    def runtime_log(self, message: dict) -> None:
         self.host._log(
             str(message.get("level", "INFO")), str(message.get("message", ""))
         )
@@ -119,14 +152,23 @@ class ViewportEventController:
             self.host.logic_workspace.apply_runtime_trace(dict(message))
         else:
             self.host.logic_workspace.clear_runtime_trace()
-
-    def attach_script(self, message: dict) -> None:
-        self.host._attach_script(
-            str(message.get("name", "")), Path(str(message.get("path", "")))
-        )
+        dock = getattr(self.host, "_dock_visual_scripting", None)
+        if dock is not None and hasattr(dock, "apply_runtime_trace"):
+            dock.apply_runtime_trace(message)
 
     def stats(self, message: dict) -> None:
         h = self.host
+        dock = getattr(h, "_dock_visual_scripting", None)
+        if dock is not None:
+            dock.mini_viewport.update_stats(
+                fps=float(message.get("fps", 0.0)),
+                object_count=int(message.get("objects", 0)),
+            )
+            dock.update_runtime_stats(
+                fps=float(message.get("fps", 0.0)),
+                object_count=int(message.get("objects", 0)),
+                frame_ms=message.get("frame_ms"),
+            )
         command_stats = h._commands.stats()
         h.profiler_label.setText(
             f"FPS: {message.get('fps', 0):.0f}\n"
@@ -140,11 +182,32 @@ class ViewportEventController:
             f"IPC: {command_stats['sent']} enviados • {command_stats['coalesced']} unidos"
         )
 
+    def runtime_metrics(self, message: dict) -> None:
+        from editor.core.event_bus import EventBus
+        EventBus.emit("runtime_metrics", **message)
+
     def poll(self) -> None:
         h = self.host
-        while True:
+        pending: dict[str, dict] = {}
+        processed = 0
+
+        def dispatch_pending() -> None:
+            for queued_message in pending.values():
+                h._viewport_events.dispatch(queued_message)
+            pending.clear()
+
+        while processed < self.MAX_EVENTS_PER_POLL:
             try:
                 message = h._events.get_nowait()
             except Exception:
-                return
-            h._viewport_events.dispatch(message)
+                break
+            processed += 1
+            event_type = str(message.get("type", ""))
+            if event_type in self.COALESCED_EVENT_TYPES:
+                pending[event_type] = message
+            else:
+                # Preserve event boundaries such as play/stop: snapshots queued
+                # before a state transition must be observed before it.
+                dispatch_pending()
+                h._viewport_events.dispatch(message)
+        dispatch_pending()

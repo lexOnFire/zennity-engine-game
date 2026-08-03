@@ -16,21 +16,44 @@ class RealHierarchyPanel(HierarchyPanel):
     delete_requested = Signal(object)
     rename_requested = Signal(object, str)
     reparent_requested = Signal(object, object, object)
+    # Novos sinais de Ponto 5
+    group_requested = Signal(list)          # lista de GameObjects → criar grupo
+    ungroup_requested = Signal(object)      # objeto grupo → desagrupar filhos
+    visibility_toggled = Signal(object, bool)  # objeto, novo estado visible
+    lock_toggled = Signal(object, bool)        # objeto, novo estado locked
+
+    # Estado local de visibilidade/lock (indexados por id do objeto)
+    _visibility: dict[str, bool]
+    _locked: dict[str, bool]
 
     def __init__(self) -> None:
         super().__init__()
+        self._visibility = {}
+        self._locked = {}
         self._editing_item: QTreeWidgetItem | None = None
         self.search = self.findChild(QLineEdit)
         if self.search is not None:
             self.search.textChanged.connect(self.filter_tree)
+
+        # Suporte a D&D para reorganização da hierarquia
         self.tree.setDragEnabled(True)
         self.tree.setAcceptDrops(True)
         self.tree.setDropIndicatorShown(True)
         self.tree.setDragDropMode(QAbstractItemView.DragDrop)
+
+        # Colunas extras para visibilidade e lock
+        self.tree.setColumnCount(3)
+        self.tree.setHeaderHidden(True)
+        self.tree.setColumnWidth(0, 180)
+        self.tree.setColumnWidth(1, 22)
+        self.tree.setColumnWidth(2, 22)
+
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self.open_context_menu)
         self.tree.itemDoubleClicked.connect(self.begin_rename)
         self.tree.itemChanged.connect(self.on_item_changed)
+        # Clique no ícone de olho/cadeado (colunas 1 e 2)
+        self.tree.itemClicked.connect(self._on_item_clicked_columns)
 
         original_key_press = self.tree.keyPressEvent
 
@@ -40,8 +63,9 @@ class RealHierarchyPanel(HierarchyPanel):
                 event.accept()
                 return
             if event.key() == Qt.Key_Delete:
-                obj = self.current_object()
-                if obj is not None:
+                selected_items = self.tree.selectedItems()
+                objs = [it.data(0, Qt.UserRole) for it in selected_items if it.data(0, Qt.UserRole)]
+                for obj in objs:
                     self.delete_requested.emit(obj)
                 event.accept()
                 return
@@ -49,6 +73,13 @@ class RealHierarchyPanel(HierarchyPanel):
                 obj = self.current_object()
                 if obj is not None:
                     self.duplicate_requested.emit(obj)
+                event.accept()
+                return
+            if event.key() == Qt.Key_G and event.modifiers() & Qt.ControlModifier:
+                selected_items = self.tree.selectedItems()
+                objs = [it.data(0, Qt.UserRole) for it in selected_items if it.data(0, Qt.UserRole)]
+                if objs:
+                    self.group_requested.emit(objs)
                 event.accept()
                 return
             original_key_press(event)
@@ -81,10 +112,12 @@ class RealHierarchyPanel(HierarchyPanel):
 
         self.tree.dropEvent = drop_event
 
+    # ── Construção da árvore ───────────────────────────────────────────────
+
     def refresh_objects(self, objects: list[Any]) -> None:
         self.tree.blockSignals(True)
         self.tree.clear()
-        root = QTreeWidgetItem(self.tree, ["MainScene"])
+        root = QTreeWidgetItem(self.tree, ["MainScene", "", ""])
         root.setData(0, Qt.UserRole, None)
         for obj in objects:
             if getattr(obj, "parent", None) is None:
@@ -94,13 +127,71 @@ class RealHierarchyPanel(HierarchyPanel):
         self.filter_tree(self.search.text() if self.search is not None else "")
 
     def _add_object_item(self, parent_item: QTreeWidgetItem, obj: Any) -> QTreeWidgetItem:
-        item = QTreeWidgetItem(parent_item, [getattr(obj, "name", str(obj))])
+        obj_id = str(getattr(obj, "id", id(obj)))
+        is_visible = self._visibility.get(obj_id, True)
+        is_locked  = self._locked.get(obj_id, False)
+        is_prefab  = bool(getattr(obj, "prefab_source", None))
+        is_group   = getattr(obj, "is_group", False)
+
+        # Ícone prefix por tipo
+        name = getattr(obj, "name", str(obj))
+        name_lower = name.lower()
+        if is_group:
+            prefix = "📂 "
+        elif is_prefab:
+            prefix = "🔷 "
+        elif "camera" in name_lower:
+            prefix = "📷 "
+        elif "light" in name_lower:
+            prefix = "💡 "
+        else:
+            prefix = "📦 "
+
+        label = f"{prefix}{name}"
+        vis_icon  = "👁" if is_visible else "🚫"
+        lock_icon = "🔒" if is_locked  else "  "
+
+        item = QTreeWidgetItem(parent_item, [label, vis_icon, lock_icon])
         item.setData(0, Qt.UserRole, obj)
         item.setFlags(item.flags() | Qt.ItemIsEditable | Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled)
+        item.setTextAlignment(1, Qt.AlignCenter)
+        item.setTextAlignment(2, Qt.AlignCenter)
+
+        # Cor diferenciada para prefabs e objetos locked
+        if is_prefab:
+            from PySide6.QtGui import QColor
+            item.setForeground(0, QColor("#5ab5ff"))
+        if not is_visible:
+            from PySide6.QtGui import QColor
+            item.setForeground(0, QColor("#666666"))
+
         for child in getattr(obj, "children", []):
             self._add_object_item(item, child)
         item.setExpanded(True)
         return item
+
+    def _on_item_clicked_columns(self, item: QTreeWidgetItem, column: int) -> None:
+        """Trata clique nas colunas de visibilidade (1) e lock (2)."""
+        obj = item.data(0, Qt.UserRole)
+        if obj is None:
+            return
+        obj_id = str(getattr(obj, "id", id(obj)))
+
+        if column == 1:
+            new_vis = not self._visibility.get(obj_id, True)
+            self._visibility[obj_id] = new_vis
+            item.setText(1, "👁" if new_vis else "🚫")
+            from PySide6.QtGui import QColor
+            item.setForeground(0, QColor("#e0e0e0") if new_vis else QColor("#666666"))
+            self.visibility_toggled.emit(obj, new_vis)
+
+        elif column == 2:
+            new_lock = not self._locked.get(obj_id, False)
+            self._locked[obj_id] = new_lock
+            item.setText(2, "🔒" if new_lock else "  ")
+            self.lock_toggled.emit(obj, new_lock)
+
+    # ── Seleção ────────────────────────────────────────────────────────────
 
     def select_object(self, obj: Any) -> None:
         root = self.tree.topLevelItem(0)
@@ -143,6 +234,8 @@ class RealHierarchyPanel(HierarchyPanel):
                 return found
         return None
 
+    # ── Renomeação ─────────────────────────────────────────────────────────
+
     def begin_rename(self, item: QTreeWidgetItem | None, column: int = 0) -> None:
         if item is None or item.data(0, Qt.UserRole) is None:
             return
@@ -162,28 +255,47 @@ class RealHierarchyPanel(HierarchyPanel):
         if new_name != getattr(obj, "name", ""):
             self.rename_requested.emit(obj, new_name)
 
+    # ── Menu de Contexto ───────────────────────────────────────────────────
+
     def open_context_menu(self, pos) -> None:
         menu = QMenu(self)
-        create_action = menu.addAction("Create Empty")
-        duplicate_action = menu.addAction("Duplicate")
-        delete_action = menu.addAction("Delete")
-        rename_action = menu.addAction("Rename")
+        create_action  = menu.addAction("Create Empty")
         menu.addSeparator()
-        expand_action = menu.addAction("Expand All")
-        collapse_action = menu.addAction("Collapse All")
+        duplicate_action = menu.addAction("Duplicate  (Ctrl+D)")
+        delete_action    = menu.addAction("Delete  (Del)")
+        rename_action    = menu.addAction("Rename  (F2)")
+        menu.addSeparator()
+
+        selected_items = self.tree.selectedItems()
+        multi_objs = [it.data(0, Qt.UserRole) for it in selected_items if it.data(0, Qt.UserRole)]
+        group_action   = menu.addAction(f"Group Selection ({len(multi_objs)})  (Ctrl+G)")
+        group_action.setEnabled(len(multi_objs) > 1)
         obj = self.current_object()
+        ungroup_action = menu.addAction("Ungroup")
+        ungroup_action.setEnabled(obj is not None and getattr(obj, "is_group", False))
+
+        menu.addSeparator()
+        expand_action   = menu.addAction("Expand All")
+        collapse_action = menu.addAction("Collapse All")
+
         duplicate_action.setEnabled(obj is not None)
-        delete_action.setEnabled(obj is not None)
+        delete_action.setEnabled(len(multi_objs) > 0)
         rename_action.setEnabled(obj is not None)
+
         action = menu.exec(self.tree.viewport().mapToGlobal(pos))
         if action is create_action:
             self.create_empty_requested.emit()
         elif action is duplicate_action and obj is not None:
             self.duplicate_requested.emit(obj)
-        elif action is delete_action and obj is not None:
-            self.delete_requested.emit(obj)
+        elif action is delete_action:
+            for o in multi_objs:
+                self.delete_requested.emit(o)
         elif action is rename_action:
             self.begin_rename(self.tree.currentItem(), 0)
+        elif action is group_action:
+            self.group_requested.emit(multi_objs)
+        elif action is ungroup_action and obj is not None:
+            self.ungroup_requested.emit(obj)
         elif action is expand_action:
             self.tree.expandAll()
         elif action is collapse_action:
@@ -191,6 +303,8 @@ class RealHierarchyPanel(HierarchyPanel):
             self.tree.collapseAll()
             if root is not None:
                 root.setExpanded(True)
+
+    # ── Filtro de Pesquisa ─────────────────────────────────────────────────
 
     def filter_tree(self, text: str) -> None:
         root = self.tree.topLevelItem(0)
@@ -221,3 +335,4 @@ class RealHierarchyPanel(HierarchyPanel):
         if child_match:
             item.setExpanded(True)
         return visible
+

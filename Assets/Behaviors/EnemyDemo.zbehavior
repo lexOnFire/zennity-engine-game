@@ -4,47 +4,92 @@
   "name": "EnemyDemo",
   "initial_state": "Patrol",
   "parameters": {
-    "player_distance": {"type": "float", "default": 999.0},
-    "attack": {"type": "trigger", "default": false},
-    "attack_finished": {"type": "trigger", "default": false}
+    "player_distance": {
+      "type": "float",
+      "default": 999.0
+    },
+    "attack": {
+      "type": "trigger",
+      "default": false
+    },
+    "attack_finished": {
+      "type": "trigger",
+      "default": false
+    }
   },
   "states": {
     "Patrol": {
-      "script": "Assets/Scripts/behavior_demo/patrol.py",
-      "position": [40.0, 150.0]
+      "script": "",
+      "logic_graph": "Assets/Logic/NebulaDefense/NebulaEnemy.zlogic",
+      "position": [
+        40.0,
+        150.0
+      ]
     },
     "Chase": {
-      "script": "Assets/Scripts/behavior_demo/chase.py",
-      "position": [270.0, 150.0]
+      "script": "",
+      "logic_graph": "Assets/Logic/NebulaDefense/NebulaEnemy.zlogic",
+      "position": [
+        270.0,
+        150.0
+      ]
     },
     "Attack": {
-      "script": "Assets/Scripts/behavior_demo/attack.py",
-      "position": [500.0, 150.0]
+      "script": "",
+      "logic_graph": "Assets/Logic/NebulaDefense/NebulaEnemy.zlogic",
+      "position": [
+        500.0,
+        150.0
+      ]
     }
   },
   "transitions": [
     {
       "from": "Patrol",
       "to": "Chase",
-      "conditions": [{"parameter": "player_distance", "operator": "<", "value": 300.0}],
+      "conditions": [
+        {
+          "parameter": "player_distance",
+          "operator": "<",
+          "value": 300.0
+        }
+      ],
       "priority": 1
     },
     {
       "from": "Chase",
       "to": "Patrol",
-      "conditions": [{"parameter": "player_distance", "operator": ">=", "value": 300.0}],
+      "conditions": [
+        {
+          "parameter": "player_distance",
+          "operator": ">=",
+          "value": 300.0
+        }
+      ],
       "priority": 1
     },
     {
       "from": "*",
       "to": "Attack",
-      "conditions": [{"parameter": "attack", "operator": "trigger", "value": true}],
+      "conditions": [
+        {
+          "parameter": "attack",
+          "operator": "trigger",
+          "value": true
+        }
+      ],
       "priority": 10
     },
     {
       "from": "Attack",
       "to": "Chase",
-      "conditions": [{"parameter": "attack_finished", "operator": "trigger", "value": true}],
+      "conditions": [
+        {
+          "parameter": "attack_finished",
+          "operator": "trigger",
+          "value": true
+        }
+      ],
       "priority": 5
     }
   ]

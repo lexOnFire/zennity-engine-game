@@ -1,0 +1,12 @@
+{
+  "guid": "fcb77641-abf8-45e8-b061-0b641c68a41c",
+  "uuid": "fcb77641-abf8-45e8-b061-0b641c68a41c",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/nave_50%VIDA.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "02965d45b417436299948bc8d807c2a6435da3b8e61566c590deda941b38831c"
+}

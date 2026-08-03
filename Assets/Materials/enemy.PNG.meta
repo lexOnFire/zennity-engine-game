@@ -1,0 +1,12 @@
+{
+  "guid": "3df32ebe-56a7-4871-8f54-2dcb8dc2e2c1",
+  "uuid": "3df32ebe-56a7-4871-8f54-2dcb8dc2e2c1",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/enemy.PNG",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "4a37baff708e938d2c147b16fadae9d2973e69303500974fd8ee4e06a2ac8f54"
+}

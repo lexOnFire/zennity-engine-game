@@ -1,0 +1,24 @@
+{
+  "format":"zennity.logic_graph","version":1,"enabled":true,"name":"Station Energy Cell",
+  "target":{"type":"tag","value":"EnergyCell"},
+  "variables":{"energy":{"type":"number","scope":"project","default":0.0}},
+  "nodes":[
+    {"id":"collect","type":"event_trigger_enter","title":"Piloto coletou","category":"Events","position":[20,100],"properties":{"tag":"Player"}},
+    {"id":"get","type":"get_variable","title":"Ler energia","category":"Variables","position":[260,100],"properties":{"name":"energy","scope":"project"}},
+    {"id":"add","type":"add_number","title":"Somar célula","category":"Math","position":[500,100],"properties":{"b":1}},
+    {"id":"save","type":"set_variable","title":"Salvar energia","category":"Variables","position":[740,100],"properties":{"name":"energy","scope":"project"}},
+    {"id":"bar","type":"set_ui_progress_bar","title":"Atualizar energia","category":"UI","position":[980,100],"properties":{"object":"PortalUIEnergy","value":0,"max_value":3}},
+    {"id":"sound","type":"play_sound","title":"Som de coleta","category":"Audio","position":[1220,100],"properties":{"path":"Assets/Audio/collect-points-190037.mp3"}},
+    {"id":"hide","type":"set_active","title":"Consumir célula","category":"Objects","position":[1460,100],"properties":{"active":false}}
+  ],
+  "edges":[
+    {"id":"c-get","from_node":"collect","from_port":"next","to_node":"get","to_port":"in","kind":"flow","order":0},
+    {"id":"get-save","from_node":"get","from_port":"next","to_node":"save","to_port":"in","kind":"flow","order":0},
+    {"id":"get-add","from_node":"get","from_port":"value","to_node":"add","to_port":"a","kind":"number","order":0},
+    {"id":"add-save","from_node":"add","from_port":"value","to_node":"save","to_port":"value","kind":"number","order":0},
+    {"id":"save-bar","from_node":"save","from_port":"next","to_node":"bar","to_port":"in","kind":"flow","order":0},
+    {"id":"add-bar","from_node":"add","from_port":"value","to_node":"bar","to_port":"value","kind":"number","order":0},
+    {"id":"bar-sound","from_node":"bar","from_port":"next","to_node":"sound","to_port":"in","kind":"flow","order":0},
+    {"id":"sound-hide","from_node":"sound","from_port":"next","to_node":"hide","to_port":"in","kind":"flow","order":0}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "guid": "248b6b05-edd4-41c0-a2d1-493f90b02570",
+  "uuid": "248b6b05-edd4-41c0-a2d1-493f90b02570",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Animations/enemy.zanimator",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "5bdb18f59d7d8bdf9f4a27a9f409279947674d4e2d3c0aa2ec5d5202b197294b"
+}

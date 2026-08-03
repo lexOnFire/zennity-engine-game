@@ -29,21 +29,28 @@ class SceneObjectController:
 
     def new_scene(self) -> None:
         h = self.host
-        h._record_history()
+        h._scene_history.clear()
         h._scene_snapshot = []
         h._objects_by_name = {}
+        h._runtime_objects_by_name.clear()
+        h._runtime_animator_states.clear()
         h._scene_document = {
-            "format_version": 1,
+            "format_version": 2,
             "scene_name": "Untitled",
-            "engine_version": "Zennity 0.1.0",
+            "engine_version": "Zennity 1.0.1",
+            "blackboard": {"variables": {}},
             "objects": [],
         }
         h._current_scene_path = None
         h._selected_name = None
+        h._drag_history_snapshot = None
+        h._clear_inspector_view()
+        h.logic_workspace.clear_runtime_trace()
         h._refresh_hierarchy()
         h._scene_controller.publish_snapshot([])
+        h._autosave.schedule()
         h.statusBar().showMessage("Nova cena criada")
-        h._log("INFO", "Nova cena criada")
+        h._log("INFO", "Nova cena limpa criada, sem objetos ou vínculos anteriores")
 
     def unique_name(self, base: str) -> str:
         if base not in self.host._objects_by_name:
@@ -57,27 +64,8 @@ class SceneObjectController:
         h = self.host
         if h._play_session.is_running or kind not in self.PRESETS:
             return
-        h._record_history()
-        base, width, height, color, rigidbody = self.PRESETS[kind]
-        name = self.unique_name(base)
-        obj = {
-            "id": str(uuid.uuid4()), "name": name, "x": 450.0, "y": 250.0,
-            "w": width, "h": height, "rotation": 0.0, "color": color,
-            "mesh_type": kind,
-        }
-        if rigidbody is not None:
-            obj["rigidbody"] = deepcopy(rigidbody)
-            obj["collider"] = {"type": "box"}
-        if kind == "Trigger":
-            obj["collider"]["is_trigger"] = True
-        if kind == "Camera":
-            obj["component_names"] = ["Camera2D"]
-            obj["camera"] = {"active": True, "zoom": 1.0}
-        h._scene_snapshot.append(obj)
-        h._objects_by_name[name] = obj
-        h._selected_name = name
-        self._publish_selected(name)
-        h._log("INFO", f"Objeto criado: {name}")
+        width, height = h.native_viewport_size()
+        self.create_at(kind, width / 2.0, height / 2.0)
 
     def create_at(self, kind: str, screen_x: float, screen_y: float) -> None:
         h = self.host
@@ -104,6 +92,16 @@ class SceneObjectController:
             "width": max(1.0, width), "height": max(1.0, height),
         })
 
+    def reset_to_initial(self) -> None:
+        h = self.host
+        h._record_history()
+        h._scene_snapshot = deepcopy(h._initial_scene_snapshot)
+        h._objects_by_name = {item["name"]: item for item in h._scene_snapshot}
+        h._refresh_hierarchy()
+        h._scene_controller.publish_snapshot(h._scene_snapshot)
+        if h._selected_name in h._objects_by_name:
+            h._update_inspector(h._selected_name)
+
     def rename(self, old_name: str) -> None:
         h = self.host
         if h._play_session.is_running or old_name not in h._objects_by_name:
@@ -116,6 +114,16 @@ class SceneObjectController:
             new_name != old_name and new_name in h._objects_by_name
         ):
             return
+        if new_name == old_name:
+            return
+        try:
+            changed_graphs = h._logic_workspace_controller.rename_object_references(
+                old_name, new_name
+            )
+        except (OSError, ValueError) as exc:
+            h.statusBar().showMessage(f"Renomeação cancelada: {exc}")
+            h._log("ERROR", f"Falha ao atualizar Logic Graphs: {exc}")
+            return
         h._record_history()
         obj = h._objects_by_name.pop(old_name)
         obj["name"] = new_name
@@ -123,6 +131,11 @@ class SceneObjectController:
         if h._selected_name == old_name:
             h._selected_name = new_name
         self._publish_selected(new_name)
+        h._log(
+            "INFO",
+            f"Objeto renomeado: {old_name} → {new_name}; "
+            f"{len(changed_graphs)} Logic Graph(s) atualizado(s)",
+        )
 
     def delete(self, name: str) -> None:
         h = self.host
@@ -133,15 +146,28 @@ class SceneObjectController:
         h._objects_by_name.pop(name, None)
         if h._selected_name == name:
             h._selected_name = None
-            for header, body in h.script_containers:
-                h.inspector_layout.removeWidget(header)
-                h.inspector_layout.removeWidget(body)
-                header.deleteLater()
-                body.deleteLater()
-            h.script_containers.clear()
             h._clear_inspector_view()
         h._refresh_hierarchy()
         h._scene_controller.publish_snapshot(h._scene_snapshot)
+
+    def set_transform_locked(self, name: str, locked: bool) -> None:
+        """Prevent accidental viewport transforms while keeping the object selectable."""
+        h = self.host
+        obj = h._objects_by_name.get(name)
+        if h._play_session.is_running or obj is None:
+            return
+        next_value = bool(locked)
+        if bool(obj.get("editor_locked", False)) == next_value:
+            return
+        h._record_history()
+        obj["editor_locked"] = next_value
+        h._refresh_hierarchy(force=True)
+        h._scene_controller.publish_snapshot(h._scene_snapshot)
+        if h._selected_name == name:
+            h._scene_controller.select(name)
+            h._update_inspector(name)
+        state = "travada" if next_value else "destravada"
+        h.statusBar().showMessage(f"Transformação de {name} {state}")
 
     def duplicate_selected(self) -> None:
         h = self.host

@@ -58,5 +58,9 @@
       ],
       "properties": {}
     }
+  ],
+  "edges": [
+    {"id":"update_chase","from_node":"update","from_port":"next","to_node":"chase_player","to_port":"in","kind":"flow","order":0},
+    {"id":"hit_destroy","from_node":"on_hit","from_port":"next","to_node":"destroy_self","to_port":"in","kind":"flow","order":0}
   ]
 }

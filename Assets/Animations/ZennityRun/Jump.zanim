@@ -1,0 +1,14 @@
+{
+  "format": "zennity.animation_clip",
+  "version": 1,
+  "name": "Jump",
+  "texture": "Assets/Sprites/ZennityRun/player_sheet.png",
+  "frame_width": 32,
+  "frame_height": 32,
+  "frames": [
+    6
+  ],
+  "fps": 1.0,
+  "loop": false,
+  "events": []
+}

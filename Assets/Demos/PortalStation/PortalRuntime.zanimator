@@ -1,0 +1,18 @@
+{
+  "format": "zennity.animator_controller",
+  "version": 1,
+  "name": "PortalRuntime",
+  "initial_state": "Closed",
+  "parameters": {
+    "portal_active": {"type": "bool", "default": false}
+  },
+  "states": {
+    "Closed": {"animation": "", "speed": 1.0, "position": [60.0, 140.0]},
+    "Active": {"animation": "", "speed": 1.0, "position": [340.0, 140.0]}
+  },
+  "transitions": [
+    {"from": "Closed", "to": "Active", "conditions": [{"parameter": "portal_active", "operator": "==", "value": true}], "priority": 10, "has_exit_time": false, "exit_time": 1.0, "duration": 0.25, "interruptible": true},
+    {"from": "Active", "to": "Closed", "conditions": [{"parameter": "portal_active", "operator": "==", "value": false}], "priority": 5, "has_exit_time": false, "exit_time": 1.0, "duration": 0.25, "interruptible": true}
+  ]
+}
+

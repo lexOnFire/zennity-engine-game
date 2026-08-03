@@ -1,0 +1,12 @@
+{
+  "guid": "b28dade1-2ec5-476e-8c71-1e469ad4b3be",
+  "uuid": "b28dade1-2ec5-476e-8c71-1e469ad4b3be",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Materials/ChatGPT Image 25 de jul. de 2026, 23_10_49.png",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "7ce4f7001022fbee1da13546be81cf1db4f034e369ee193f00ba7a0f8c59e933"
+}

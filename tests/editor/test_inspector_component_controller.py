@@ -1,6 +1,7 @@
 from pathlib import Path
 from types import SimpleNamespace
 
+from editor.controllers.selection_controller import EditorSelectionController
 from editor.inspector_controller import InspectorComponentController
 
 
@@ -24,7 +25,7 @@ class Queue:
 
 
 def _host(obj: dict) -> SimpleNamespace:
-    return SimpleNamespace(
+    host = SimpleNamespace(
         _selected_name="Player",
         _updating_inspector=False,
         _objects_by_name={"Player": obj},
@@ -40,6 +41,8 @@ def _host(obj: dict) -> SimpleNamespace:
         },
         collider_trigger_field=ValueField(True),
     )
+    host._selection = EditorSelectionController(host)
+    return host
 
 
 def test_physics_controller_mutates_model_and_sends_runtime_command() -> None:

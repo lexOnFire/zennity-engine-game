@@ -65,3 +65,16 @@ def test_official_editor_delegates_hierarchy_rendering() -> None:
 
     assert "self.renderer.refresh(force=force)" in source
     assert "self.hierarchy_tree.clear()" not in source
+
+
+def test_hierarchy_displays_and_tracks_transform_lock(qapp: QApplication) -> None:
+    editor = make_editor()
+    renderer = HierarchyViewRenderer(editor)
+    renderer.refresh()
+
+    editor._scene_snapshot[0]["editor_locked"] = True
+
+    assert renderer.refresh() is True
+    item = editor.hierarchy_tree.topLevelItem(0).child(0)
+    assert item.text(0).startswith("🔒 ")
+    assert "bloqueada" in item.toolTip(0)

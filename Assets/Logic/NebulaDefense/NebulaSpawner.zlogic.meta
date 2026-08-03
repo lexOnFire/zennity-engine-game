@@ -5,5 +5,6 @@
   "importer": "generic_importer",
   "source_path": "Assets/Logic/NebulaDefense/NebulaSpawner.zlogic",
   "import_settings": {},
-  "dependencies": []
+  "dependencies": [],
+  "hash": "140defd66edd7744b5e5a532f1924412f7e9fe2a484cc7bf99b6f25cae88013c"
 }

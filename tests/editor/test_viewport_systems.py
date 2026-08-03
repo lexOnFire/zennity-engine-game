@@ -45,9 +45,21 @@ class _FakeMixer:
         self.music = _FakeMusic()
         self.stopped = 0
         self.quit_calls = 0
+        self.init_calls = []
+        self.num_channels = 8
 
     def get_init(self):
         return self.initialized
+
+    def init(self, **kwargs) -> None:
+        self.init_calls.append(kwargs)
+        self.initialized = True
+
+    def get_num_channels(self) -> int:
+        return self.num_channels
+
+    def set_num_channels(self, value: int) -> None:
+        self.num_channels = value
 
     def stop(self) -> None:
         self.stopped += 1
@@ -78,3 +90,32 @@ def test_audio_shutdown_releases_channels_sounds_and_mixer(tmp_path) -> None:
     assert system.channels == {}
     assert system.sounds == {}
     assert pygame.mixer.quit_calls == 1
+
+
+def test_audio_prefers_physical_headphones_over_virtual_mix(tmp_path) -> None:
+    pygame = _FakePygame()
+    logs = []
+    devices = [
+        "NGENUITY - 8 Channel Spatial (Virtual Audio Device)",
+        "NGENUITY - Stream Mix (Virtual Audio Device)",
+        "Headphones (HyperX Cloud III Wireless)",
+    ]
+    system = AudioPlaybackSystem(pygame, tmp_path, lambda *args: logs.append(args), lambda: devices)
+
+    assert system.ensure_mixer()
+    assert system.output_device == "Headphones (HyperX Cloud III Wireless)"
+    assert pygame.mixer.init_calls[-1]["devicename"] == system.output_device
+    assert ("INFO", f"Saída de áudio: {system.output_device}") in logs
+
+
+def test_audio_device_change_does_not_query_a_stopped_subsystem(tmp_path) -> None:
+    pygame = _FakePygame()
+    system = AudioPlaybackSystem(
+        pygame, tmp_path, lambda *_args: None,
+        lambda: (_ for _ in ()).throw(RuntimeError("audio system not initialised")),
+    )
+
+    system.set_output_device("Headphones")
+
+    assert system.ensure_mixer()
+    assert pygame.mixer.init_calls[-1]["devicename"] == "Headphones"

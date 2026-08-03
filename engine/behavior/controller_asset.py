@@ -18,6 +18,7 @@ BEHAVIOR_CONTROLLER_FORMAT = "zennity.behavior_controller"
 BEHAVIOR_CONTROLLER_VERSION = 1
 PARAMETER_TYPES = {"bool", "float", "trigger"}
 OPERATORS = {"==", "!=", ">", ">=", "<", "<=", "trigger"}
+STATE_LOGIC_KEYS = ("logic_graph", "graph")
 
 
 def default_behavior_controller(name: str = "NewBehavior") -> dict[str, Any]:
@@ -47,11 +48,16 @@ def normalize_behavior_controller(data: Mapping[str, Any] | None) -> dict[str, A
             position = raw_state.get("position", fallback)
             if not isinstance(position, (list, tuple)) or len(position) < 2:
                 position = fallback
-            states[name] = {
+            normalized_state = {
                 "script": str(raw_state.get("script", "")).replace("\\", "/"),
                 "enabled": bool(raw_state.get("enabled", True)),
                 "position": [_safe_float(position[0], fallback[0]), _safe_float(position[1], fallback[1])],
             }
+            for logic_key in STATE_LOGIC_KEYS:
+                logic_value = str(raw_state.get(logic_key, "")).replace("\\", "/").strip()
+                if logic_value:
+                    normalized_state[logic_key] = logic_value
+            states[name] = normalized_state
     result["states"] = states or {"Idle": {"script": "", "enabled": True, "position": [40.0, 40.0]}}
 
     initial = str(source.get("initial_state", "")).strip()
@@ -125,13 +131,19 @@ def validate_behavior_controller(
     issues: list[dict[str, str]] = []
     for name, state in controller["states"].items():
         script = str(state.get("script", ""))
-        if not script:
-            issues.append({"level": "warning", "state": name, "message": f"{name}: nenhum script escolhido"})
-        elif root is not None:
+        logic_graph = _state_logic_graph(state)
+        if script and root is not None:
             path = Path(script)
             path = path if path.is_absolute() else root / path
             if not path.is_file():
                 issues.append({"level": "error", "state": name, "message": f"{name}: script não encontrado"})
+        elif logic_graph and root is not None:
+            path = Path(logic_graph)
+            path = path if path.is_absolute() else root / path
+            if not path.is_file():
+                issues.append({"level": "error", "state": name, "message": f"{name}: logic graph não encontrado"})
+        elif not script and not logic_graph:
+            issues.append({"level": "warning", "state": name, "message": f"{name}: nenhum script ou logic graph escolhido"})
     seen: set[tuple[str, str, str]] = set()
     for transition in controller["transitions"]:
         key = (transition["from"], transition["to"], repr(transition.get("conditions", [])))
@@ -381,3 +393,11 @@ def _safe_int(value: Any, default: int) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def _state_logic_graph(state: Mapping[str, Any]) -> str:
+    for key in STATE_LOGIC_KEYS:
+        value = str(state.get(key, "")).replace("\\", "/").strip()
+        if value:
+            return value
+    return ""

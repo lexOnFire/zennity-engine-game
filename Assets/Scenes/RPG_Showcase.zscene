@@ -1,0 +1,282 @@
+{
+  "format_version": 2,
+  "scene_name": "RPG Fantasy Quest 2D",
+  "engine_version": "0.1.0",
+  "objects": [
+    {
+      "id": "rpg-camera-001",
+      "uuid": "rpg-camera-001",
+      "name": "MainCamera",
+      "tag": "MainCamera",
+      "layer": "0",
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          640.0,
+          360.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          48.0,
+          30.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Camera",
+        "color": [
+          24,
+          32,
+          48
+        ],
+        "enabled": true,
+        "texture": "",
+        "layer": "Default",
+        "order": 0,
+        "material": "Default_Material"
+      },
+      "components": {
+        "items": [
+          {
+            "type": "Camera",
+            "enabled": true,
+            "properties": {
+              "zoom": 1.0,
+              "clear_color": [
+                24,
+                32,
+                48
+              ]
+            }
+          }
+        ]
+      },
+      "static": false
+    },
+    {
+      "id": "rpg-hero-001",
+      "uuid": "rpg-hero-001",
+      "name": "HeroRPG",
+      "tag": "Player",
+      "layer": "0",
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          300.0,
+          300.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          36.0,
+          48.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Sprite",
+        "color": [
+          70,
+          160,
+          245
+        ],
+        "enabled": true,
+        "texture": "Assets/Textures/personagem 1.PNG",
+        "layer": "Default",
+        "order": 10,
+        "material": "Default_Material"
+      },
+      "rigidbody": {
+        "is_kinematic": false,
+        "use_gravity": false,
+        "gravity_scale": 0.0
+      },
+      "collider": {
+        "type": "box",
+        "width": 36.0,
+        "height": 48.0
+      },
+      "animator": {
+        "controller_path": "Assets/Animations/NewController.zanimator"
+      },
+      "components": {},
+      "static": false
+    },
+    {
+      "id": "rpg-npc-001",
+      "uuid": "rpg-npc-001",
+      "name": "MagoQuestNPC",
+      "tag": "NPC",
+      "layer": "0",
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          500.0,
+          300.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          40.0,
+          48.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Sprite",
+        "color": [
+          180,
+          100,
+          240
+        ],
+        "enabled": true,
+        "texture": "",
+        "layer": "Default",
+        "order": 5,
+        "material": "Default_Material"
+      },
+      "collider": {
+        "type": "circle",
+        "radius": 40.0,
+        "is_trigger": true
+      },
+      "behavior": {
+        "controller_path": "Assets/Behaviors/Showcase_Enemy.zbehavior",
+        "active": true
+      },
+      "dialogue": {
+        "asset_path": "Assets/Dialogues/Showcase_NPC.zdialogue",
+        "auto_start": false
+      },
+      "components": {},
+      "static": true
+    },
+    {
+      "id": "rpg-chest-001",
+      "uuid": "rpg-chest-001",
+      "name": "BauLoot",
+      "tag": "Interactable",
+      "layer": "0",
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          700.0,
+          200.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "Sprite",
+        "color": [
+          245,
+          180,
+          50
+        ],
+        "enabled": true,
+        "texture": "",
+        "layer": "Default",
+        "order": 4,
+        "material": "Default_Material"
+      },
+      "collider": {
+        "type": "box",
+        "width": 32.0,
+        "height": 32.0,
+        "is_trigger": true
+      },
+      "audio": {
+        "path": "Assets/Audio/collect-points-190037.mp3",
+        "volume": 0.8,
+        "autoplay": false
+      },
+      "components": {},
+      "static": true
+    },
+    {
+      "id": "rpg-ui-canvas-001",
+      "uuid": "rpg-ui-canvas-001",
+      "name": "RPG_HUD_Canvas",
+      "tag": "UI",
+      "layer": "0",
+      "active": true,
+      "enabled": true,
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": "UI",
+        "color": [
+          255,
+          255,
+          255
+        ],
+        "enabled": false,
+        "texture": "",
+        "layer": "Default",
+        "order": 0,
+        "material": "Default_Material"
+      },
+      "components": {
+        "items": [
+          {
+            "type": "UICanvas",
+            "enabled": true,
+            "properties": {
+              "layout_path": "Assets/UI/MainUI.zui"
+            }
+          }
+        ]
+      },
+      "static": false
+    }
+  ],
+  "blackboard": {
+    "variables": {}
+  }
+}

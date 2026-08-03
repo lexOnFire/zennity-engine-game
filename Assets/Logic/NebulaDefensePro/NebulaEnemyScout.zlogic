@@ -4,20 +4,34 @@
   "enabled": true,
   "name": "Nebula Enemy Scout AI",
   "target": {
-    "type": "tag",
-    "value": "Enemy"
+    "type": "name",
+    "value": "Inimigo"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
   },
   "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
   "nodes": [
     {
       "id": "update",
       "type": "event_update",
       "title": "A Cada Frame",
-      "category": "Eventos",
+      "category": "Events",
       "position": [
-        20.0,
+        -26.49,
         80.0
       ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
       "properties": {}
     },
     {
@@ -29,20 +43,30 @@
         260.0,
         80.0
       ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 212.0
+      },
       "properties": {
-        "x": 0.0,
-        "y": 220.0
+        "x": -153,
+        "y": 0
       }
     },
     {
       "id": "on_hit",
       "type": "event_collision_enter",
       "title": "Ao Colidir",
-      "category": "Eventos",
+      "category": "Events",
       "position": [
-        20.0,
-        260.0
+        -22.85,
+        329.28
       ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
       "properties": {
         "tag": "PlayerLaser"
       }
@@ -53,11 +77,16 @@
       "title": "SFX Explosao",
       "category": "Áudio",
       "position": [
-        280.0,
-        260.0
+        246.4,
+        322.61
       ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
       "properties": {
-        "sound": "Assets/Audio/jump-sound-531048.mp3",
+        "path": "Assets/Audio/jump-sound-531048.mp3",
         "volume": 1.0
       }
     },
@@ -67,10 +96,44 @@
       "title": "Destruir Inimigo",
       "category": "Ações",
       "position": [
-        540.0,
-        260.0
+        496.92,
+        332.06
       ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
       "properties": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "update_move",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "move_down",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "hit_sound",
+      "from_node": "on_hit",
+      "from_port": "next",
+      "to_node": "play_exp_sfx",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "sound_destroy",
+      "from_node": "play_exp_sfx",
+      "from_port": "next",
+      "to_node": "destroy_self",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
     }
   ]
 }

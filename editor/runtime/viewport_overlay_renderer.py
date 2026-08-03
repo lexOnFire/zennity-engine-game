@@ -29,20 +29,26 @@ class ViewportOverlayRenderer:
         if 0 <= origin_y <= height:
             pg.draw.line(screen, (112, 120, 142), (0, int(origin_y)), (width, int(origin_y)), 2)
         for obj in objects.values():
-            if not self._is_camera(obj):
-                continue
-            camera = obj.get("camera") or {}
-            camera_zoom = max(0.1, float(camera.get("zoom", 1.0)))
-            camera_width = float(camera.get("width", 800.0)) / camera_zoom
-            camera_height = float(camera.get("height", 600.0)) / camera_zoom
-            center_x, center_y = world_to_screen(float(obj["x"]), float(obj["y"]))
-            rect = pg.Rect(
-                int(center_x - camera_width * zoom / 2), int(center_y - camera_height * zoom / 2),
-                int(camera_width * zoom), int(camera_height * zoom),
-            )
-            pg.draw.rect(screen, (240, 240, 240), rect, 1)
-            color = (255, 100, 100) if camera.get("active", True) else (150, 150, 150)
-            pg.draw.rect(screen, color, (int(center_x - 4), int(center_y - 4), 8, 8))
+            if self._is_camera(obj):
+                camera = obj.get("camera") or {}
+                camera_zoom = max(0.1, float(camera.get("zoom", 1.0)))
+                camera_width = float(camera.get("width", 800.0)) / camera_zoom
+                camera_height = float(camera.get("height", 600.0)) / camera_zoom
+                center_x, center_y = world_to_screen(float(obj["x"]), float(obj["y"]))
+                rect = pg.Rect(
+                    int(center_x - camera_width * zoom / 2), int(center_y - camera_height * zoom / 2),
+                    int(camera_width * zoom), int(camera_height * zoom),
+                )
+                pg.draw.rect(screen, (240, 240, 240), rect, 1)
+                color = (255, 100, 100) if camera.get("active", True) else (150, 150, 150)
+                pg.draw.rect(screen, color, (int(center_x - 4), int(center_y - 4), 8, 8))
+            elif bool(obj.get("editor_locked", False)):
+                center_x, center_y = world_to_screen(float(obj["x"]), float(obj["y"]))
+                width = float(obj["w"]) * zoom
+                height = float(obj["h"]) * zoom
+                corner_x = int(center_x - width / 2.0)
+                corner_y = int(center_y - height / 2.0)
+                self._draw_lock_icon(screen, corner_x, corner_y)
 
     def draw_selection(
         self, screen: Any, obj: dict[str, Any], active_tool: str,
@@ -60,15 +66,25 @@ class ViewportOverlayRenderer:
         rotated_x = offset_x * math.cos(radians) - offset_y * math.sin(radians)
         rotated_y = offset_x * math.sin(radians) + offset_y * math.cos(radians)
         collider_x, collider_y = world_to_screen(obj["x"] + rotated_x, obj["y"] + rotated_y)
-        color = (255, 187, 72) if (collider or {}).get("is_trigger") else (125, 212, 255)
+        locked = bool(obj.get("editor_locked", False))
+        color = (255, 196, 92) if locked else (
+            (255, 187, 72) if (collider or {}).get("is_trigger") else (125, 212, 255)
+        )
         if (collider or {}).get("type") == "circle":
             radius = max(1, int(float(collider.get("radius", min(obj["w"], obj["h"]) / 2.0)) * render_zoom))
             pg.draw.circle(screen, color, (int(collider_x), int(collider_y)), radius, 2)
+            corner_x = int(collider_x - radius)
+            corner_y = int(collider_y - radius)
         else:
             surface = pg.Surface((max(1, int(outline_width * render_zoom) + 8), max(1, int(outline_height * render_zoom) + 8)), pg.SRCALPHA)
             pg.draw.rect(surface, color, surface.get_rect().inflate(-6, -6), width=2, border_radius=4)
             rotated = pg.transform.rotate(surface, -angle)
             screen.blit(rotated, rotated.get_rect(center=(int(collider_x), int(collider_y))))
+            corner_x = int(collider_x - (outline_width * render_zoom) / 2.0)
+            corner_y = int(collider_y - (outline_height * render_zoom) / 2.0)
+        if locked:
+            self._draw_lock_icon(screen, corner_x, corner_y)
+            return
         if active_tool == "move":
             self._draw_move(screen, object_x, object_y, radians)
         elif active_tool == "rotate":
@@ -78,6 +94,21 @@ class ViewportOverlayRenderer:
             pg.draw.line(screen, (255, 235, 150), (int(object_x), int(object_y)), end, 1)
         elif active_tool == "scale":
             self._draw_scale(screen, obj, object_x, object_y, radians, render_zoom)
+
+    def _draw_lock_icon(self, screen: Any, x: int, y: int) -> None:
+        """Draw a vector padlock icon at screen coordinates (x, y)."""
+        pg = self.pygame
+        bg_rect = pg.Rect(x - 4, y - 18, 22, 22)
+        pg.draw.rect(screen, (15, 18, 26), bg_rect, border_radius=4)
+        pg.draw.rect(screen, (255, 196, 92), bg_rect, width=1, border_radius=4)
+
+        shackle_rect = pg.Rect(x + 2, y - 14, 10, 9)
+        pg.draw.rect(screen, (255, 196, 92), shackle_rect, width=2, border_top_left_radius=4, border_top_right_radius=4)
+
+        body_rect = pg.Rect(x, y - 7, 14, 10)
+        pg.draw.rect(screen, (255, 196, 92), body_rect, border_radius=2)
+
+        pg.draw.circle(screen, (20, 24, 35), (x + 7, y - 2), 2)
 
     def _draw_move(self, screen: Any, x: float, y: float, radians: float) -> None:
         pg = self.pygame

@@ -39,6 +39,7 @@ from editor.ui.icons import TOOLBAR_ICONS, component_title, editor_icon
 from editor.ui.empty_state import EmptyStateWidget
 from editor.widgets.logic_graph_editor import LogicGraphEditor
 from editor.ui.detached_workspace import DetachedWorkspaceWindow
+from editor.services.workspace_registry import WorkspaceRegistry
 
 
 class InterfaceSmokeTest(QMainWindow):
@@ -55,19 +56,41 @@ class InterfaceSmokeTest(QMainWindow):
         self._build_center()
         self._build_docks()
         from editor.ui import polish_editor_widgets
+        from editor.ui.animation_theme import apply_animation_workspace_theme
         polish_editor_widgets(self)
+        apply_animation_workspace_theme(self.animation_workspace)
         self.statusBar().showMessage("Teste isolado: não há Pygame nem renderização de cena.")
 
     def _build_menu(self) -> None:
+        self._workspace_registry = WorkspaceRegistry(self)
         self.editor_menus = {}
-        for name in ("Arquivo", "Editar", "Janela", "Criar", "Ferramentas", "Build", "Executar", "Ajuda"):
+        for name in ("Arquivo", "Editar", "Janela", "Criar", "Build", "Executar", "Ajuda"):
             menu = self.menuBar().addMenu(name)
             self.editor_menus[name] = menu
 
+        window_menu = self.editor_menus["Janela"]
+        animator_action = QAction("Animator", self)
+        animator_action.triggered.connect(lambda checked=False: self._workspace_registry.open("animation"))
+        window_menu.addAction(animator_action)
+
+        logic_action = QAction("Editor de Lógica Visual", self)
+        logic_action.triggered.connect(lambda checked=False: self._workspace_registry.open("logic"))
+        window_menu.addAction(logic_action)
+
+    def _show_animation_workspace(self) -> None:
+        self._workspace_registry.open("animation")
+
+    def _show_visual_tool_dock(self, module_path: str, class_name: str, attr_name: str) -> None:
+        """Instancia e exibe a dock do editor visual dinamicamente ao ser clicada no menu."""
+        self._workspace_registry.open_dynamic(module_path, class_name, attr_name)
+
     def _build_toolbar(self) -> None:
-        toolbar = QToolBar("Ferramentas")
+        toolbar = QToolBar("Comandos")
         toolbar.setObjectName("CommandBar")
         toolbar.setMovable(False)
+        toolbar.setFloatable(False)
+        toolbar.setAllowedAreas(Qt.TopToolBarArea)
+        toolbar.setStyleSheet("QToolBar::handle { width: 0px; image: none; }")
         toolbar.setIconSize(QSize(17, 17))
         self.addToolBar(toolbar)
         self.toolbar_actions = {}

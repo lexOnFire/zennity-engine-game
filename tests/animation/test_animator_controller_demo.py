@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib.util
 import json
 from pathlib import Path
 
@@ -12,15 +11,6 @@ from engine.build.runtime_scene_loader import load_objects
 ROOT = Path(__file__).resolve().parents[2]
 DEMO_ROOT = ROOT / "Assets" / "Animations" / "AnimatorDemo"
 SCENE_PATH = ROOT / "Assets" / "Scenes" / "AnimatorControllerDemo.zscene"
-
-
-def _load_script(name: str):
-    path = ROOT / "Assets" / "Scripts" / "animator_demo" / name
-    spec = importlib.util.spec_from_file_location(f"animator_demo_{path.stem}", path)
-    module = importlib.util.module_from_spec(spec)
-    assert spec and spec.loader
-    spec.loader.exec_module(module)
-    return module
 
 
 def test_demo_scene_references_complete_reusable_assets() -> None:
@@ -58,14 +48,13 @@ def test_demo_clips_define_audio_and_hitbox_events() -> None:
     assert attack["loop"] is False
 
 
-def test_demo_scripts_expose_gameplay_and_state_hooks() -> None:
-    player = _load_script("player_animator_demo.py")
-    hitbox = _load_script("attack_hitbox.py")
-    enemy = _load_script("demo_enemy.py")
-    for hook in ("on_update", "on_animation_event", "on_animation_state_enter", "on_animation_state_exit"):
-        assert callable(getattr(player, hook))
-    assert callable(hitbox.on_trigger)
-    assert callable(enemy.on_instruction)
+def test_demo_scene_uses_animator_assets_without_python_scripts() -> None:
+    objects = load_objects(SCENE_PATH)
+    assert all("scripts" not in obj for obj in objects)
+    assert all("scripts" not in obj.get("components", {}) for obj in objects)
+    player = next(obj for obj in objects if obj["name"] == "Player")
+    assert player["animator"]["controller_path"].endswith("PlayerDemo.zanimator")
+    assert player["animator"]["parameters"] == {"speed": 0.0, "grounded": True, "attack": False}
 
 
 def test_demo_scene_json_survives_save_reload_shape() -> None:

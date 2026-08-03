@@ -6,9 +6,10 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction, QActionGroup
+from PySide6.QtGui import QAction, QActionGroup, QKeySequence
 from PySide6.QtWidgets import (
     QComboBox,
+    QDockWidget,
     QFileDialog,
     QMessageBox,
     QSplitter,
@@ -35,6 +36,7 @@ from editor.runtime.hierarchy_commands import (
     can_reparent,
 )
 from editor.runtime.tool_manager import EditorTool
+from editor.services.workspace_registry import WorkspaceRegistry
 from editor.widgets.game_viewport import GameViewportWidget
 from editor.widgets.phase1_viewport import Phase1ViewportWidget
 from editor.widgets.render_pipeline_profiler import RenderPipelineProfilerPanel
@@ -49,11 +51,11 @@ class Phase1EditorUIBuilderMixin:
 
     def _build_menu(self) -> None:
         bar = self.menuBar()
+        self._workspace_registry = WorkspaceRegistry(self)
         file_menu = bar.addMenu("Arquivo")
         edit_menu = bar.addMenu("Editar")
         window_menu = bar.addMenu("Janela")
         create_menu = bar.addMenu("Criar")
-        tools_menu = bar.addMenu("Ferramentas")
         build_menu = bar.addMenu("Build + Executar")
         help_menu = bar.addMenu("Ajuda")
 
@@ -96,12 +98,30 @@ class Phase1EditorUIBuilderMixin:
         self.act_instantiate_prefab.triggered.connect(self.instantiate_prefab_ui)
         prefab_menu.addAction(self.act_instantiate_prefab)
 
-        self._unused_menu_refs = (edit_menu, window_menu, tools_menu, help_menu)
+        animator_action = QAction("Animator", self)
+        animator_action.triggered.connect(lambda checked=False: self._workspace_registry.open("animation"))
+        window_menu.addAction(animator_action)
+
+        logic_action = QAction("Editor de Lógica Visual", self)
+        logic_action.triggered.connect(lambda checked=False: self._workspace_registry.open("logic"))
+        window_menu.addAction(logic_action)
+
+        self._unused_menu_refs = (edit_menu, window_menu, help_menu)
+
+    def _show_animation_workspace(self) -> None:
+        self._workspace_registry.open("animation")
+
+    def _show_visual_tool_dock(self, module_path: str, class_name: str, attr_name: str) -> None:
+        """Instancia e exibe a dock do editor visual dinamicamente ao ser clicada no menu."""
+        self._workspace_registry.open_dynamic(module_path, class_name, attr_name)
 
     def _build_toolbar(self) -> None:
         toolbar = QToolBar("MainToolBar")
         toolbar.setObjectName("CommandBar")
         toolbar.setMovable(False)
+        toolbar.setFloatable(False)
+        toolbar.setAllowedAreas(Qt.TopToolBarArea)
+        toolbar.setStyleSheet("QToolBar::handle { width: 0px; image: none; }")
         self.addToolBar(toolbar)
 
         open_button = QToolButton()
@@ -162,13 +182,15 @@ class Phase1EditorUIBuilderMixin:
         group = QActionGroup(self)
         group.setExclusive(True)
 
-        for label, tool in (
-            ("Select", EditorTool.SELECT),
-            ("Move", EditorTool.MOVE),
-            ("Rotate", EditorTool.ROTATE),
-            ("Scale", EditorTool.SCALE),
+        for label, tool, shortcut in (
+            ("Select", EditorTool.SELECT, "Q"),
+            ("Move", EditorTool.MOVE, "W"),
+            ("Rotate", EditorTool.ROTATE, "E"),
+            ("Scale", EditorTool.SCALE, "R"),
         ):
             action = QAction(label, self, checkable=True)
+            action.setShortcut(QKeySequence(shortcut))
+            action.setShortcutContext(Qt.ApplicationShortcut)
             action.setChecked(tool == self.editor_context.tools.active_tool)
             action.triggered.connect(
                 lambda checked=False, next_tool=tool: self.editor_context.tools.set_active_tool(next_tool)
@@ -204,9 +226,9 @@ class Phase1EditorUIBuilderMixin:
 
     def _build_layout(self) -> None:
         self.hierarchy = RealHierarchyPanel()
-        self.resources = ResourcesPanel()
+        self.resources = ResourcesPanel(initial_refresh=False)
         self.create_panel = CreatePanel()
-        self.prefabs = PrefabsPanel()
+        self.prefabs = PrefabsPanel(initial_refresh=False)
         self.inspector = RealInspectorPanel()
         self.inspector.set_command_manager(self.editor_context.commands)
         if hasattr(self.inspector, "name"):
@@ -316,6 +338,13 @@ class Phase1EditorUIBuilderMixin:
         self._left_panel_focus = "assets"
         if hasattr(self, "left_splitter"):
             self.left_splitter.setSizes([96, 644])
+        if not hasattr(self, "asset_tabs"):
+            return
+        current = self.asset_tabs.currentWidget()
+        if current is getattr(self, "resources", None) and hasattr(self.resources, "ensure_assets_loaded"):
+            self.resources.ensure_assets_loaded()
+        elif current is getattr(self, "prefabs", None) and hasattr(self.prefabs, "ensure_prefabs_loaded"):
+            self.prefabs.ensure_prefabs_loaded()
 
 
 from editor.phase1_editor_scene_ops import Phase1SceneOperationsMixin

@@ -1,0 +1,12 @@
+{
+  "guid": "a928ccc9-60c0-43d9-8d01-f87483191d49",
+  "uuid": "a928ccc9-60c0-43d9-8d01-f87483191d49",
+  "type": "image",
+  "importer": "texture_importer",
+  "source_path": "Assets/Sprites/ZennityRun/tile_platform.png",
+  "import_settings": {
+    "filter_mode": "bilinear"
+  },
+  "dependencies": [],
+  "hash": "75e6d008bdb94e19bf681f74cd8e930663abc2f2e5125e6101c3cac98e630792"
+}

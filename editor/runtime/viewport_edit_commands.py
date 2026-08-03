@@ -1,7 +1,6 @@
 """Edit-mode command handlers for the isolated viewport."""
 from __future__ import annotations
 
-import math
 import uuid
 from pathlib import Path
 from typing import Any, Callable
@@ -12,7 +11,7 @@ class ViewportEditCommandHandler:
 
     COMMAND_TYPES = frozenset({
         "select_object", "move_selected", "set_transform", "set_physics",
-        "set_collider", "script_instruction", "script_drop_at",
+        "set_collider",
         "create_object_at", "create_sprite_at", "reset_scene",
     })
 
@@ -62,13 +61,6 @@ class ViewportEditCommandHandler:
             self._set_dictionary_component(command, "rigidbody", playing)
         elif command_type == "set_collider":
             self._set_dictionary_component(command, "collider", playing)
-        elif command_type == "script_instruction":
-            name = str(command.get("name", ""))
-            instruction = command.get("instruction")
-            if name in self.objects and isinstance(instruction, dict):
-                self.objects[name].setdefault("script_instructions", []).append(dict(instruction))
-        elif command_type == "script_drop_at" and not playing:
-            self._attach_script_at(command, selected_name)
         elif command_type == "create_object_at" and not playing:
             selected_name = self._create_object_at(command)
         elif command_type == "create_sprite_at" and not playing:
@@ -82,24 +74,6 @@ class ViewportEditCommandHandler:
         value = command.get(key)
         if name in self.objects and not playing and isinstance(value, dict):
             self.objects[name][key] = dict(value)
-
-    def _attach_script_at(self, command: dict[str, Any], selected_name: str | None) -> None:
-        mouse_x = float(command.get("screen_x", 0.0))
-        mouse_y = float(command.get("screen_y", 0.0))
-        target_name = None
-        for name, obj in reversed(list(self.objects.items())):
-            object_x, object_y = self.world_to_screen(float(obj["x"]), float(obj["y"]))
-            angle = math.radians(-float(obj.get("rotation", 0.0)))
-            dx, dy = mouse_x - object_x, mouse_y - object_y
-            local_x = dx * math.cos(angle) - dy * math.sin(angle)
-            local_y = dx * math.sin(angle) + dy * math.cos(angle)
-            zoom = self.view_zoom()
-            if abs(local_x) <= float(obj["w"]) * zoom / 2.0 and abs(local_y) <= float(obj["h"]) * zoom / 2.0:
-                target_name = name
-                break
-        target_name = target_name or selected_name
-        if target_name in self.objects:
-            self.emit({"type": "attach_script", "name": target_name, "path": str(command.get("path", ""))})
 
     def _unique_name(self, base: str) -> str:
         name = base
@@ -124,13 +98,14 @@ class ViewportEditCommandHandler:
         base, width, height, color, rigidbody = presets.get(kind, presets["Sprite"])
         name = self._unique_name(base)
         obj = {"id": str(uuid.uuid4()), "name": name, "x": world_x, "y": world_y, "w": width, "h": height, "rotation": 0.0, "color": color, "mesh_type": kind}
+        if kind == "Empty":
+            obj["mesh_type"] = None
+            obj["renderer_enabled"] = False
         if rigidbody is not None:
             obj["rigidbody"] = rigidbody
             obj["collider"] = {"type": "box"}
         if kind == "Trigger":
             obj["collider"]["is_trigger"] = True
-        if kind == "Player":
-            obj["scripts"] = ["Assets/Scripts/player_controller_2d.py"]
         if kind == "Camera":
             obj["component_names"] = ["Camera2D"]
             obj["camera"] = {"active": True, "zoom": 1.0}

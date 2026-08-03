@@ -63,7 +63,9 @@ def _build_inspector_shell(window):
     tag_layer_layout.setContentsMargins(0, 0, 0, 0)
     tag_layer_layout.addWidget(QLabel("Tag"))
     window.tag_combo = QComboBox()
-    window.tag_combo.addItems(["Player", "Untagged", "MainCamera", "Enemy"])
+    window.tag_combo.setEditable(True)
+    window.tag_combo.setInsertPolicy(QComboBox.InsertAtBottom)
+    window.tag_combo.addItems(["Untagged", "Player", "Enemy", "Food", "Item", "Collectible", "MainCamera", "+ Criar Nova Tag..."])
     tag_layer_layout.addWidget(window.tag_combo)
     tag_layer_layout.addWidget(QLabel("Layer"))
     window.layer_combo = QComboBox()
@@ -300,6 +302,10 @@ def _build_audio_component(window, main_layout):
     window.audio_path_combo.setStyleSheet("background-color: #242424; color: #e0e0e0; font-size: 11px;")
     window.audio_path_combo.setFixedHeight(22)
     audio_form.addRow("Áudio", window.audio_path_combo)
+    window.audio_output_combo = QComboBox()
+    window.audio_output_combo.setStyleSheet("background-color: #242424; color: #e0e0e0; font-size: 11px;")
+    window.audio_output_combo.setFixedHeight(22)
+    audio_form.addRow("Saída", window.audio_output_combo)
     window.audio_volume_field = QDoubleSpinBox()
     window.audio_volume_field.setRange(0.0, 1.0)
     window.audio_volume_field.setSingleStep(0.05)
@@ -373,14 +379,17 @@ def _build_logic_component(window, main_layout):
     build_logic_component(window, main_layout)
 
 
+def _build_behavior_tree_component(window, main_layout):
+    from editor.ui.inspector_builder_extra import build_behavior_tree_component
+    build_behavior_tree_component(window, main_layout)
+
+
 def _build_runtime_debug_component(window, main_layout):
     from editor.ui.inspector_builder_extra import build_runtime_debug_component
     build_runtime_debug_component(window, main_layout)
 
 
 def _finalize_inspector(window, scroll, inspector, main_layout):
-    # O cabeçalho e corpo de scripts/custom agora são inseridos de forma modular dinâmica para cada script ativo
-    window.script_containers = []
 
     window.add_component_button = QPushButton("＋ Adicionar Componente")
     window.add_component_button.setObjectName("InspectorAddComponentButton")
@@ -406,5 +415,6 @@ def build_inspector_dock(window):
     _build_camera_component(window, main_layout)
     _build_native_ui_component(window, main_layout)
     _build_logic_component(window, main_layout)
+    _build_behavior_tree_component(window, main_layout)
     _build_runtime_debug_component(window, main_layout)
     _finalize_inspector(window, scroll, inspector, main_layout)

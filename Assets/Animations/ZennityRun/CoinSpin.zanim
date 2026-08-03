@@ -1,0 +1,17 @@
+{
+  "format": "zennity.animation_clip",
+  "version": 1,
+  "name": "Spin",
+  "texture": "Assets/Sprites/ZennityRun/coin_spin.png",
+  "frame_width": 16,
+  "frame_height": 16,
+  "frames": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "fps": 8.0,
+  "loop": true,
+  "events": []
+}

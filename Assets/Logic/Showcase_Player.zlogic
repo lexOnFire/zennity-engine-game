@@ -1,0 +1,210 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": false,
+  "name": "PlayerMovement",
+  "target": {
+    "type": "name",
+    "value": "Player"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {
+    "speed": {
+      "type": "number",
+      "scope": "object",
+      "default": 300.0
+    }
+  },
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "update",
+      "type": "event_update",
+      "title": "A Cada Frame",
+      "category": "Events",
+      "position": [
+        120.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "axis",
+      "type": "input_axis",
+      "title": "input_axis",
+      "category": "Custom",
+      "position": [
+        440.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "negative": "A",
+        "positive": "D"
+      }
+    },
+    {
+      "id": "mult_speed",
+      "type": "multiply_number",
+      "title": "Multiplicar",
+      "category": "Math",
+      "position": [
+        440.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "get_speed",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
+      "position": [
+        120.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "name": "speed",
+        "scope": "object"
+      }
+    },
+    {
+      "id": "move_horiz",
+      "type": "move_by",
+      "title": "move_by",
+      "category": "Custom",
+      "position": [
+        760.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 212.0
+      },
+      "properties": {
+        "x": 100.0,
+        "y": 0
+      }
+    },
+    {
+      "id": "space_pressed",
+      "type": "event_key_pressed",
+      "title": "Ao pressionar Espaço",
+      "category": "Events",
+      "position": [
+        120.0,
+        500.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "key": "SPACE"
+      }
+    },
+    {
+      "id": "do_jump",
+      "type": "move_by",
+      "title": "move_by",
+      "category": "Custom",
+      "position": [
+        760.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 212.0
+      },
+      "properties": {
+        "x": 0,
+        "y": -600
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_flow_1",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "axis",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_flow_2",
+      "from_node": "axis",
+      "from_port": "next",
+      "to_node": "move_horiz",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_flow_jump",
+      "from_node": "space_pressed",
+      "from_port": "next",
+      "to_node": "do_jump",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_data_1",
+      "from_node": "axis",
+      "from_port": "value",
+      "to_node": "mult_speed",
+      "to_port": "a",
+      "kind": "data",
+      "order": 0
+    },
+    {
+      "id": "e_data_2",
+      "from_node": "get_speed",
+      "from_port": "value",
+      "to_node": "mult_speed",
+      "to_port": "b",
+      "kind": "data",
+      "order": 0
+    },
+    {
+      "id": "e_data_3",
+      "from_node": "mult_speed",
+      "from_port": "value",
+      "to_node": "move_horiz",
+      "to_port": "x",
+      "kind": "data",
+      "order": 0
+    }
+  ]
+}

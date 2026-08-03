@@ -4,9 +4,10 @@ import uuid
 from typing import Any, Dict, List, Optional, Type, TypeVar, TYPE_CHECKING
 
 import pygame
+from .core.component import Transform
 
 if TYPE_CHECKING:
-    from .component import Component, Transform
+    from .core.component import Component, Transform
     from .core import Scene
 
 T = TypeVar('T', bound='Component')
@@ -17,13 +18,13 @@ class GameObject:
     Container de Components. Representa qualquer entidade no mundo do jogo.
 
     Identidade:
-        go.id    — UUID4 único e imutável, atribuído na criação
-        go.name  — nome legível para editor e debug (mutável)
-        go.tag   — agrupamento semântico ("Player", "Enemy", "Wall")
+        go.id    Ã¢â‚¬â€ UUID4 ÃƒÂºnico e imutÃƒÂ¡vel, atribuÃƒÂ­do na criaÃƒÂ§ÃƒÂ£o
+        go.name  Ã¢â‚¬â€ nome legÃƒÂ­vel para editor e debug (mutÃƒÂ¡vel)
+        go.tag   Ã¢â‚¬â€ agrupamento semÃƒÂ¢ntico ("Player", "Enemy", "Wall")
 
     Exemplo:
         player = GameObject("Player", tag="Player")
-        player.id    # '3f2a1c...' — UUID4 completo
+        player.id    # '3f2a1c...' Ã¢â‚¬â€ UUID4 completo
         player.name  # 'Player'
         player.tag   # 'Player'
     """
@@ -39,8 +40,6 @@ class GameObject:
         self.children: List['GameObject'] = []
         self.components: List['Component'] = []
         self._scene: Optional['Scene'] = None
-
-        from .component import Transform
         self.transform = Transform()
         self.add_component(self.transform)
         self.mesh_type: Optional[str] = None
@@ -51,12 +50,12 @@ class GameObject:
 
     @property
     def id(self) -> str:
-        """UUID4 único e imutável atribuído na criação."""
+        """UUID4 ÃƒÂºnico e imutÃƒÂ¡vel atribuÃƒÂ­do na criaÃƒÂ§ÃƒÂ£o."""
         return self._id
 
     @property
     def short_id(self) -> str:
-        """Primeiros 8 caracteres do UUID — útil para logs e debug."""
+        """Primeiros 8 caracteres do UUID Ã¢â‚¬â€ ÃƒÂºtil para logs e debug."""
         return self._id[:8]
 
     # ------------------------------------------------------------------ #
@@ -85,16 +84,16 @@ class GameObject:
         """
         Adiciona *component* ao GameObject.
 
-        Se a classe do componente tiver UNIQUE=True e já existir uma instância
+        Se a classe do componente tiver UNIQUE=True e jÃƒÂ¡ existir uma instÃƒÂ¢ncia
         do mesmo tipo neste GO, levanta TypeError.
         """
-        # Verificação UNIQUE
+        # VerificaÃƒÂ§ÃƒÂ£o UNIQUE
         if getattr(type(component), 'UNIQUE', False):
             existing = self.get_component(type(component))
             if existing is not None and existing is not component:
                 raise ValueError(
-                    f"Componente {type(component).__name__} é UNIQUE — "
-                    f"já existe um no GameObject '{self.name}'."
+                    f"Componente {type(component).__name__} ÃƒÂ© UNIQUE Ã¢â‚¬â€ "
+                    f"jÃƒÂ¡ existe um no GameObject '{self.name}'."
                 )
         component.game_object = self
         self.components.append(component)
@@ -105,15 +104,15 @@ class GameObject:
 
     def insert_component(self, component: 'Component', index: int) -> 'Component':
         """
-        Insere o *component* numa posição específica. Usado primariamente pelo Undo/Redo
+        Insere o *component* numa posiÃƒÂ§ÃƒÂ£o especÃƒÂ­fica. Usado primariamente pelo Undo/Redo
         para restaurar a ordem original.
         """
         if getattr(type(component), 'UNIQUE', False):
             existing = self.get_component(type(component))
             if existing is not None and existing is not component:
                 raise ValueError(
-                    f"Componente {type(component).__name__} é UNIQUE — "
-                    f"já existe um no GameObject '{self.name}'."
+                    f"Componente {type(component).__name__} ÃƒÂ© UNIQUE Ã¢â‚¬â€ "
+                    f"jÃƒÂ¡ existe um no GameObject '{self.name}'."
                 )
         component.game_object = self
         self.components.insert(index, component)
@@ -133,14 +132,14 @@ class GameObject:
 
     def remove_component(self, component: 'Component') -> None:
         if component is self.transform:
-            raise ValueError("Não é possível remover o componente Transform de um GameObject.")
+            raise ValueError("NÃƒÂ£o ÃƒÂ© possÃƒÂ­vel remover o componente Transform de um GameObject.")
         if component in self.components:
             component.destroy()
             component.game_object = None
             self.components.remove(component)
 
     # ------------------------------------------------------------------ #
-    # Serialização (Fase 9)                                               #
+    # SerializaÃƒÂ§ÃƒÂ£o (Fase 9)                                               #
     # ------------------------------------------------------------------ #
 
     def serialize(self) -> Dict[str, Any]:
@@ -160,10 +159,10 @@ class GameObject:
     @classmethod
     def deserialize(cls, data: Dict[str, Any]) -> "GameObject":
         """
-        Reconstrói um GameObject a partir de um dict produzido por serialize().
+        ReconstrÃƒÂ³i um GameObject a partir de um dict produzido por serialize().
 
         Usa ComponentRegistry para instanciar os componentes pelo nome.
-        O Transform já é criado pelo __init__ e atualizado via deserialize().
+        O Transform jÃƒÂ¡ ÃƒÂ© criado pelo __init__ e atualizado via deserialize().
         """
         from engine.core.component_registry import component_registry
         from engine.core.component import Transform
@@ -177,12 +176,12 @@ class GameObject:
         for comp_data in data.get("components", []):
             type_name = comp_data.get("type", "")
             if type_name == "Transform":
-                # Transform já existe — apenas deserializa
+                # Transform jÃƒÂ¡ existe Ã¢â‚¬â€ apenas deserializa
                 go.transform.deserialize(comp_data)
             else:
                 klass = component_registry.resolve(type_name)
                 if klass is None:
-                    continue  # componente desconhecido — ignora graciosamente
+                    continue  # componente desconhecido Ã¢â‚¬â€ ignora graciosamente
                 instance = component_registry.create(comp_data)
                 go.add_component(instance)
 
@@ -267,3 +266,4 @@ class GameObject:
     def __repr__(self) -> str:
         tag_str = f" tag={self.tag}" if self.tag != "Untagged" else ""
         return f"<GameObject '{self.name}' id={self.short_id}{tag_str}>"
+

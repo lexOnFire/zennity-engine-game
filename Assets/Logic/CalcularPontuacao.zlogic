@@ -1,6 +1,7 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
+  "enabled": true,
   "name": "Calcular Pontuação",
   "target": {
     "type": "name",
@@ -12,6 +13,10 @@
     "watches": []
   },
   "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
   "nodes": [
     {
       "id": "score_start",
@@ -19,9 +24,14 @@
       "title": "Subgraph Start",
       "category": "Subgraphs",
       "position": [
-        70.0,
-        80.0
+        120.0,
+        100.0
       ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
       "properties": {}
     },
     {
@@ -30,9 +40,14 @@
       "title": "Subgraph Input",
       "category": "Subgraphs",
       "position": [
-        70.0,
-        260.0
+        120.0,
+        300.0
       ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
       "properties": {
         "name": "pontos_base",
         "type": "number",
@@ -45,9 +60,14 @@
       "title": "Number",
       "category": "Variables",
       "position": [
-        320.0,
-        300.0
+        120.0,
+        500.0
       ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
       "properties": {
         "value": 2.0
       }
@@ -58,9 +78,14 @@
       "title": "Multiply",
       "category": "Math",
       "position": [
-        570.0,
-        240.0
+        440.0,
+        300.0
       ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
       "properties": {
         "a": 1.0,
         "b": 1.0
@@ -72,9 +97,14 @@
       "title": "Clamp Number",
       "category": "Math",
       "position": [
-        820.0,
-        220.0
+        760.0,
+        100.0
       ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
       "properties": {
         "value": 0.0,
         "minimum": 0.0,
@@ -87,9 +117,14 @@
       "title": "Subgraph Return",
       "category": "Subgraphs",
       "position": [
-        1080.0,
-        80.0
+        440.0,
+        100.0
       ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
       "properties": {
         "name": "pontuacao_final",
         "type": "number"
@@ -103,7 +138,8 @@
       "from_port": "next",
       "to_node": "score_result",
       "to_port": "in",
-      "kind": "flow"
+      "kind": "flow",
+      "order": 0
     },
     {
       "id": "score_base_multiply",
@@ -111,7 +147,8 @@
       "from_port": "value",
       "to_node": "multiply_score",
       "to_port": "a",
-      "kind": "number"
+      "kind": "number",
+      "order": 1
     },
     {
       "id": "score_bonus_multiply",
@@ -119,7 +156,8 @@
       "from_port": "value",
       "to_node": "multiply_score",
       "to_port": "b",
-      "kind": "number"
+      "kind": "number",
+      "order": 2
     },
     {
       "id": "score_multiply_limit",
@@ -127,7 +165,8 @@
       "from_port": "value",
       "to_node": "limit_score",
       "to_port": "value",
-      "kind": "number"
+      "kind": "number",
+      "order": 3
     },
     {
       "id": "score_limit_result",
@@ -135,7 +174,8 @@
       "from_port": "value",
       "to_node": "score_result",
       "to_port": "value",
-      "kind": "number"
+      "kind": "number",
+      "order": 4
     }
   ]
 }

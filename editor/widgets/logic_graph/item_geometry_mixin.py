@@ -18,7 +18,8 @@ class LogicNodeItemGeometryMixin:
     def _apply_geometry(self, notify: bool = True) -> None:
         self.height = self.COLLAPSED_HEIGHT if self.collapsed else self.expanded_height
         self.setRect(0.0, 0.0, self.width, self.height)
-        self.header.setRect(0.0, 0.0, self.width, 28.0)
+        self.header.setRect(0.0, 0.0, self.width, self.HEADER_HEIGHT)
+        self.accent.setRect(0.0, 0.0, 4.0, self.height)
         self.breakpoint_item.setRect(self.width - 20.0, 8.0, 10.0, 10.0)
         self.flip_control.setPos(self.width - 52.0, 2.0)
         self.collapse_control.refresh()
@@ -28,20 +29,21 @@ class LogicNodeItemGeometryMixin:
         self.target_item.setPos(10.0, self.expanded_height - 45.0)
         self.debug_item.setTextWidth(self.width - 22.0)
         self.debug_item.setPos(10.0, self.expanded_height - 25.0)
-        self.code_item.setTextWidth(self.width - 18.0)
+        self.code_item.setTextWidth(self.width - 24.0)
+        self.code_item.setPos(12.0, self.HEADER_HEIGHT + 6.0)
         self.resize_handle.setPos(
             self.width - self.resize_handle.SIZE - 3.0,
             self.expanded_height - self.resize_handle.SIZE - 3.0,
         )
         for index, (name, _data_type) in enumerate(self.input_definitions):
-            y = 43.0 + index * 22.0
+            y = self.PORT_START_Y + index * self.PORT_SPACING
             port = self.input_ports[name]
             port.setRect(-port.SIZE / 2, y - port.SIZE / 2, port.SIZE, port.SIZE)
             port.setTransformOriginPoint(port.boundingRect().center())
-            self.port_labels[index].setPos(9.0, y - 12.0)
+            self.port_labels[index].setPos(13.0, y - 12.0)
         output_label_offset = len(self.input_definitions)
         for index, (name, _data_type) in enumerate(self.output_definitions):
-            y = 43.0 + index * 22.0
+            y = self.PORT_START_Y + index * self.PORT_SPACING
             port = self.output_ports[name]
             port.setRect(self.width - port.SIZE / 2, y - port.SIZE / 2, port.SIZE, port.SIZE)
             port.setTransformOriginPoint(port.boundingRect().center())

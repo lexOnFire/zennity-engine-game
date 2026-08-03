@@ -3,11 +3,20 @@
 ## v1.0.0 — Architecture & Release Readiness (2026-08-01)
 
 ### Refactored & Consolidated
+* **Behavior Tree integrado à cena**: o Inspector permite selecionar pela biblioteca, criar, abrir e desvincular `.zbehavior`; o vínculo persiste no objeto e em `visual_logic_workspace`, é restaurado ao reabrir a cena e pode ser iniciado pelo nó `start_behavior_tree` usando o asset vinculado, com runner central sem duplicação e limpeza no Stop.
+* **Hit-testing visual e desvio de clique em objetos bloqueados**: Hit-testing da viewport reorganizado (`viewport_render_order.py`) para respeitar rigorosamente a ordem visual inversa de renderização (`render_layer` + `sort_order` + ordem da cena). Objetos bloqueados (`editor_locked = True`) exibem indicador visual de cadeado desenhado com primitivas no canto do contorno e não capturam mais cliques quando sobrepostos a objetos desbloqueados.
+* **Bloqueio de transformação na Hierarquia**: objetos podem ser travados/destravados pelo menu de contexto, permanecem selecionáveis e inspecionáveis, mas não podem ser movidos, girados ou escalados acidentalmente; o cadeado e o contorno da viewport indicam o estado.
+* **Atalhos Q/W/E/R sincronizados**: trocar a ferramenta preserva a seleção mantida pela viewport sem reenfileirar o objeto anterior; confirmações idênticas são filtradas para impedir ciclos de seleção e saltos do gizmo.
+* **Fronteiras de Graph documentadas**: o Logic Graph especializado (`engine.logic`) e o framework genérico (`engine.graphs`) permanecem separados por domínio dentro de um único hub visual; novos gates impedem dependências cruzadas entre os canvases.
+* **Métricas AST auditáveis**: a auditoria pré-v1 registra data, commit, contagens reais e margem das cinco classes monitoradas; um novo gate impede classes acima de 500 linhas e divergência futura da tabela.
+* **Suítes core consolidadas**: removidas as cópias divergentes de `EventBus`, `Time`, `Input` e `GameObject` da raiz de `tests/`; a cobertura complementar foi migrada para `tests/core/`. Testes de runtime e Tilemap com nomes conflitantes foram reposicionados conforme sua responsabilidade.
+* **Profiler oficial consolidado**: `editor.profiler.ProfilerDock` passa a ser a única implementação; o caminho `editor.widgets.profiler_dock` permanece somente como shim com `DeprecationWarning` até v2.0.
 * **Decomposição Estrutural**: Decomposição das 5 maiores classes do projeto (`ZennityPhase1Editor`, `LogicGraphRuntime`, `Phase1ViewportWidget`, `MainWindow`, `ViewportWidget`) para estarem todas estritamente abaixo do limite de 500 linhas da Definition of Done.
 * **Decomposição de Métodos**: Decompostos construtores e gerenciadores extensos (`ViewportSession.__init__`, `RuntimeWorld.instantiate_prefab`).
 * **Clean Architecture & Unificação de Renderizadores**: Alias e importações unificadas para `engine.graphics.renderer` e `engine.tilemap.tilemap`.
 * **Deprecation Strategy para v2.0**: Adicionados `DeprecationWarning`s explícitos para módulos legados embutidos (`phase1_editor`, `main_window`, `inspector_dock`, `premium_panels`, `editor/inspector/*`).
 * **Estabilidade de Suíte Sequencial**: Implementado reset global de historico de Mocks (`_reset_all_mocks`) garantindo 100% de aprovação sequencial dos 2.207 testes.
+* **Observabilidade de falhas toleradas**: listeners de undo/redo, sincronização reativa de Hierarchy/Inspector e encerramento do timer de autosave agora registram logs `DEBUG` com traceback sem alterar o fallback do editor.
 * **Fix UnboundLocalError**: Corrigida inicialização de `is_runtime_scene` em `Phase1ViewportWidget._tick` quando `active_scene` é nulo, com teste de regressão dedicado.
 
 ---
@@ -16,6 +25,7 @@
 
 
 ### Fixed & Stabilized
+* `tools/generate_ai_context.py` não utiliza mais `shell=True`; comandos Git e pytest são executados com argumentos explícitos e o interpretador Python ativo.
 * Corrigido consumo excessivo de memoria nos testes de Input usando estados de tecla esparsos em vez de listas gigantes.
 * `engine.input.Input` agora aceita estados de teclado do tipo dict, lista ou ScancodeWrapper.
 * Ambiente de testes padronizado para Qt/Pygame headless via `tests/conftest.py`.

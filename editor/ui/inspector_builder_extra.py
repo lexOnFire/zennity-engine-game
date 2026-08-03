@@ -183,6 +183,77 @@ def build_runtime_debug_component(window, main_layout) -> None:
         window.camera_body,
         window.ui_component_body,
         window.logic_component_body,
+        window.behavior_component_body,
         window.runtime_debug_body,
     ):
         component_body.setObjectName("InspectorComponentBody")
+
+
+def build_behavior_tree_component(window, main_layout) -> None:
+    """Card Behavior Tree — mostra o .zbehavior vinculado e botões de edição."""
+    window.behavior_component_header = QWidget()
+    window.behavior_component_header.setObjectName("InspectorComponentHeader")
+    window.behavior_component_header.setStyleSheet(
+        "background-color: #24272d; border-radius: 4px; border: 1px solid #30343c;"
+    )
+    bt_header_layout = QHBoxLayout(window.behavior_component_header)
+    bt_header_layout.setContentsMargins(6, 4, 6, 4)
+    bt_title = QLabel(component_title("behavior", "🌳  Behavior Tree"))
+    bt_title.setObjectName("InspectorComponentTitle")
+    bt_header_layout.addWidget(bt_title)
+    bt_header_layout.addStretch(1)
+    window.btn_collapse_behavior = QToolButton()
+    window.btn_collapse_behavior.setText("▶")
+    window.btn_collapse_behavior.setFixedSize(18, 18)
+    window.btn_collapse_behavior.setObjectName("InspectorFoldoutButton")
+    window.btn_delete_behavior = QToolButton()
+    window.btn_delete_behavior.setText("✕")
+    window.btn_delete_behavior.setFixedSize(18, 18)
+    window.btn_delete_behavior.setObjectName("InspectorDangerButton")
+    window.btn_delete_behavior.setToolTip("Remover Behavior Tree deste objeto")
+    bt_header_layout.addWidget(window.btn_collapse_behavior)
+    bt_header_layout.addWidget(window.btn_delete_behavior)
+    main_layout.addWidget(window.behavior_component_header)
+
+    window.behavior_component_body = QWidget()
+    bt_body_layout = QVBoxLayout(window.behavior_component_body)
+    bt_body_layout.setContentsMargins(8, 6, 8, 8)
+    bt_body_layout.setSpacing(6)
+
+    # Status: nome do arquivo vinculado
+    window.behavior_status_label = QLabel("Nenhum Behavior Tree vinculado")
+    window.behavior_status_label.setObjectName("WorkspaceContext")
+    window.behavior_status_label.setWordWrap(True)
+    bt_body_layout.addWidget(window.behavior_status_label)
+
+    # Linha: path compacto + botão picker
+    bt_path_row = QWidget()
+    bt_path_layout = QHBoxLayout(bt_path_row)
+    bt_path_layout.setContentsMargins(0, 0, 0, 0)
+    bt_path_layout.setSpacing(4)
+    window.behavior_path_field = QLineEdit()
+    window.behavior_path_field.setReadOnly(True)
+    window.behavior_path_field.setPlaceholderText("Assets/Behaviors/minha_arvore.zbehavior")
+    window.behavior_path_field.setObjectName("InspectorPathField")
+    bt_path_layout.addWidget(window.behavior_path_field)
+    window.behavior_pick_button = QPushButton("📂")
+    window.behavior_pick_button.setToolTip("Procurar .zbehavior na biblioteca do projeto")
+    window.behavior_pick_button.setFixedWidth(32)
+    bt_path_layout.addWidget(window.behavior_pick_button)
+    bt_body_layout.addWidget(bt_path_row)
+
+    # Botões de ação
+    bt_actions = QHBoxLayout()
+    window.behavior_new_button = QPushButton("Criar novo")
+    window.behavior_new_button.setToolTip("Cria um Behavior Tree vazio em Assets/Behaviors")
+    window.behavior_open_button = QPushButton("Editar Árvore")
+    window.behavior_open_button.setToolTip("Abre o Behavior Tree Editor na aba Behavior Tree")
+    window.behavior_open_button.setProperty("uiRole", "primary")
+    window.behavior_unlink_button = QPushButton("Desvincular")
+    window.behavior_unlink_button.setProperty("uiRole", "danger")
+    bt_actions.addWidget(window.behavior_new_button)
+    bt_actions.addWidget(window.behavior_open_button)
+    bt_actions.addWidget(window.behavior_unlink_button)
+    bt_body_layout.addLayout(bt_actions)
+
+    main_layout.addWidget(window.behavior_component_body)

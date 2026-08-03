@@ -1,0 +1,282 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "Player Movement (Zennity Run)",
+  "target": {
+    "type": "name",
+    "value": "Player"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "update",
+      "type": "event_update",
+      "title": "On Update",
+      "category": "Events",
+      "position": [
+        36.63,
+        49.53
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "axis",
+      "type": "input_axis",
+      "title": "Input Axis",
+      "category": "Input",
+      "position": [
+        -108.3,
+        228.43
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "negative": "A",
+        "positive": "D"
+      }
+    },
+    {
+      "id": "move",
+      "type": "move",
+      "title": "Move",
+      "category": "Movement",
+      "position": [
+        380.0,
+        80.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "speed": 160.0
+      }
+    },
+    {
+      "id": "space",
+      "type": "key_pressed",
+      "title": "Key Pressed",
+      "category": "Input",
+      "position": [
+        0.73,
+        495.39
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "key": "SPACE"
+      }
+    },
+    {
+      "id": "grounded_check",
+      "type": "is_grounded",
+      "title": "Is Grounded",
+      "category": "Physics",
+      "position": [
+        354.21,
+        443.52
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "jump_node",
+      "type": "jump",
+      "title": "Jump",
+      "category": "Movement",
+      "position": [
+        642.49,
+        456.41
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "force": 520.0
+      }
+    },
+    {
+      "id": "moving_check",
+      "type": "if_else",
+      "title": "If Else",
+      "category": "Flow",
+      "position": [
+        680.0,
+        80.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "condition": "axis != 0"
+      }
+    },
+    {
+      "id": "play_run",
+      "type": "play_animation",
+      "title": "Play Animation",
+      "category": "Actions",
+      "position": [
+        960.07,
+        59.93
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "state": "Run"
+      }
+    },
+    {
+      "id": "play_idle",
+      "type": "play_animation",
+      "title": "Play Animation",
+      "category": "Actions",
+      "position": [
+        955.39,
+        237.28
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "state": "Idle"
+      }
+    },
+    {
+      "id": "play_jump",
+      "type": "play_animation",
+      "title": "Play Animation",
+      "category": "Actions",
+      "position": [
+        981.05,
+        440.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "state": "Jump"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_update_move",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "move",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_axis_move",
+      "from_node": "axis",
+      "from_port": "value",
+      "to_node": "move",
+      "to_port": "value",
+      "kind": "number",
+      "order": 1
+    },
+    {
+      "id": "e_space_grounded",
+      "from_node": "space",
+      "from_port": "true",
+      "to_node": "grounded_check",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 2
+    },
+    {
+      "id": "e_grounded_jump",
+      "from_node": "grounded_check",
+      "from_port": "true",
+      "to_node": "jump_node",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 3
+    },
+    {
+      "id": "e_move_movingcheck",
+      "from_node": "move",
+      "from_port": "next",
+      "to_node": "moving_check",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 4
+    },
+    {
+      "id": "e_movingcheck_run",
+      "from_node": "moving_check",
+      "from_port": "true",
+      "to_node": "play_run",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 5
+    },
+    {
+      "id": "e_movingcheck_idle",
+      "from_node": "moving_check",
+      "from_port": "false",
+      "to_node": "play_idle",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 6
+    },
+    {
+      "id": "e_jump_playjump",
+      "from_node": "jump_node",
+      "from_port": "next",
+      "to_node": "play_jump",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 7
+    },
+    {
+      "id": "8f849a4a64984ba4979c48429a9d49e8",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "space",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 8
+    }
+  ]
+}

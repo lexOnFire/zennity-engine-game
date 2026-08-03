@@ -25,12 +25,13 @@ from editor.premium_panel_base import Panel
 class ResourcesPanel(Panel):
     asset_selected = Signal(object)
 
-    def __init__(self) -> None:
+    def __init__(self, *, initial_refresh: bool = True) -> None:
         super().__init__("Recursos")
         self.asset_model = AssetBrowserModel()
         self.asset_viewmodel = AssetBrowserViewModel(self.asset_model)
         self.browser = ProjectBrowserService(self.asset_model.database)
         self._items_by_path: dict[str, QTreeWidgetItem] = {}
+        self._assets_loaded = False
 
         toolbar = QWidget()
         toolbar_layout = QHBoxLayout(toolbar)
@@ -75,12 +76,29 @@ class ResourcesPanel(Panel):
         self.assets_controller = AssetsPanelController(self)
         self.assets_controller.install()
         self.set_view_mode(self.browser.session.view_mode)
-        self.refresh_assets()
+        if initial_refresh:
+            self.refresh_assets()
+        else:
+            self._show_empty_assets_root()
         self.tree.itemSelectionChanged.connect(self._selected)
         self.grid_view.itemSelectionChanged.connect(self._grid_selected)
 
     def refresh_assets(self) -> None:
         self.assets_controller.refresh(self._refresh_assets_content)
+        self._assets_loaded = True
+
+    def ensure_assets_loaded(self) -> None:
+        if not self._assets_loaded:
+            self.refresh_assets()
+
+    def _show_empty_assets_root(self) -> None:
+        self.tree.clear()
+        self.grid_view.clear()
+        self._items_by_path.clear()
+        root = QTreeWidgetItem(self.tree, ["Assets", "folder"])
+        root.setIcon(0, self._icon_for("thumbnail:folder"))
+        root.setExpanded(True)
+        self.refresh_favorites()
 
     def closeEvent(self, event) -> None:
         self.assets_controller.uninstall()

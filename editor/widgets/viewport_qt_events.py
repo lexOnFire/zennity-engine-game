@@ -26,29 +26,54 @@ class ViewportQtEventsMixin:
             return 3
         return 0
 
+    _held_qt_keys: set[int] = set()
+
+    def _purge_stuck_keys(self) -> None:
+        if not self.active_scene:
+            return
+        key_map = {
+            Qt.Key_A: pygame.K_a,
+            Qt.Key_D: pygame.K_d,
+            Qt.Key_W: pygame.K_w,
+            Qt.Key_S: pygame.K_s,
+            Qt.Key_Left: pygame.K_LEFT,
+            Qt.Key_Right: pygame.K_RIGHT,
+            Qt.Key_Up: pygame.K_UP,
+            Qt.Key_Down: pygame.K_DOWN,
+            Qt.Key_Space: pygame.K_SPACE,
+        }
+        for qt_k, pg_k in key_map.items():
+            if qt_k not in self._held_qt_keys:
+                ev = pygame.event.Event(pygame.KEYUP, key=pg_k, mod=pygame.KMOD_NONE, unicode="")
+                self.active_scene.handle_event(ev)
+
     def mousePressEvent(self, event: QMouseEvent) -> None:
         self._qt_mouse_pos = (event.x(), event.y())
         if self.active_scene:
+            self._purge_stuck_keys()
             pg_ev = pygame.event.Event(
                 pygame.MOUSEBUTTONDOWN,
                 pos=self._qt_mouse_pos,
                 button=self._qt_btn_to_pg(event.button()),
             )
             self.active_scene.handle_event(pg_ev)
-            self._sync_selection_to_model()
+            if not getattr(self.active_scene, "playing", False):
+                self._sync_selection_to_model()
         self.request_render("mouse-press")
         event.accept()
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         self._qt_mouse_pos = (event.x(), event.y())
         if self.active_scene:
+            self._purge_stuck_keys()
             pg_ev = pygame.event.Event(
                 pygame.MOUSEBUTTONUP,
                 pos=self._qt_mouse_pos,
                 button=self._qt_btn_to_pg(event.button()),
             )
             self.active_scene.handle_event(pg_ev)
-            self._sync_selection_to_model()
+            if not getattr(self.active_scene, "playing", False):
+                self._sync_selection_to_model()
         self.request_render("mouse-release")
         event.accept()
 
@@ -108,10 +133,15 @@ class ViewportQtEventsMixin:
         return _map.get(qt_key)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
-        if event.key() == Qt.Key_F:
-            self.focus_camera_on_selected()
-            event.accept()
-            return
+        self._held_qt_keys.add(event.key())
+        if not getattr(getattr(self, "active_scene", None), "playing", False):
+            if event.key() in (Qt.Key_Q, Qt.Key_W, Qt.Key_E, Qt.Key_R, Qt.Key_T, Qt.Key_F):
+                if event.key() == Qt.Key_F:
+                    self.focus_camera_on_selected()
+                    event.accept()
+                    return
+                super().keyPressEvent(event)
+                return
 
         if not self.active_scene:
             return
@@ -141,13 +171,19 @@ class ViewportQtEventsMixin:
                 unicode=event.text(),
             )
             self.active_scene.handle_event(pg_ev)
-            self._sync_selection_to_model()
+            if not getattr(self.active_scene, "playing", False):
+                self._sync_selection_to_model()
             event.accept()
         else:
             super().keyPressEvent(event)
 
     def keyReleaseEvent(self, event: QKeyEvent) -> None:
+        if not event.isAutoRepeat():
+            self._held_qt_keys.discard(event.key())
         if not self.active_scene:
+            return
+        if event.isAutoRepeat():
+            event.accept()
             return
         pg_key = self._qt_key_to_pg(event.key())
         if pg_key is not None:
@@ -171,17 +207,15 @@ class ViewportQtEventsMixin:
         if not self.active_scene:
             super().focusOutEvent(event)
             return
-        if hasattr(self, "_held_qt_keys"):
-            for qt_key in list(self._held_qt_keys):
-                pg_key = self._qt_key_to_pg(qt_key)
-                if pg_key is not None:
-                    pg_ev = pygame.event.Event(
-                        pygame.KEYUP,
-                        key=pg_key,
-                        mod=pygame.KMOD_NONE,
-                        unicode="",
-                    )
-                    self.active_scene.handle_event(pg_ev)
-            self._held_qt_keys.clear()
+        for qt_key in list(self._held_qt_keys):
+            pg_key = self._qt_key_to_pg(qt_key)
+            if pg_key is not None:
+                pg_ev = pygame.event.Event(
+                    pygame.KEYUP,
+                    key=pg_key,
+                    mod=pygame.KMOD_NONE,
+                    unicode="",
+                )
+                self.active_scene.handle_event(pg_ev)
+        self._held_qt_keys.clear()
         super().focusOutEvent(event)
-

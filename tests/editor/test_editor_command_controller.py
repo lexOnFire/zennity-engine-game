@@ -34,6 +34,19 @@ def test_editor_command_controller_forwards_regular_command() -> None:
     assert host._commands.get_nowait() == message
 
 
+def test_editor_command_controller_delegates_new_scene_to_scene_objects() -> None:
+    host, _ = _host()
+    host.new_scene_calls = 0
+    host._scene_objects = SimpleNamespace(
+        new_scene=lambda: setattr(host, "new_scene_calls", host.new_scene_calls + 1)
+    )
+
+    EditorCommandController(host).dispatch({"type": "new_scene"})
+
+    assert host.new_scene_calls == 1
+    assert host._commands.empty()
+
+
 def test_editor_command_controller_records_move_before_forwarding() -> None:
     host, _ = _host()
     host._selected_name = "Player"
@@ -47,9 +60,24 @@ def test_editor_command_controller_records_move_before_forwarding() -> None:
 def test_editor_command_controller_blocks_scene_command_during_play() -> None:
     host, status = _host()
     host._play_controller = SimpleNamespace(blocks=lambda command: command == "new_scene")
-    host._new_scene = lambda: (_ for _ in ()).throw(AssertionError("must not execute"))
+    host._scene_objects = SimpleNamespace(
+        new_scene=lambda: (_ for _ in ()).throw(AssertionError("must not execute"))
+    )
 
     EditorCommandController(host).dispatch({"type": "new_scene"})
 
     assert host._commands.empty()
     assert status.messages == ["Pare o Play Mode antes de alterar a cena"]
+
+
+def test_editor_command_controller_delegates_reset_to_scene_objects() -> None:
+    host, _ = _host()
+    host.reset_calls = 0
+    host._scene_objects = SimpleNamespace(
+        reset_to_initial=lambda: setattr(host, "reset_calls", host.reset_calls + 1)
+    )
+
+    EditorCommandController(host).dispatch({"type": "reset_from_interface"})
+
+    assert host.reset_calls == 1
+    assert host._commands.empty()

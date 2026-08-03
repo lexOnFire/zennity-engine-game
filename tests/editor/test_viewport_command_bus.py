@@ -18,3 +18,15 @@ def test_command_bus_coalesces_identical_state_but_never_scene_mutations():
 
     assert [item["_seq"] for item in queue.items] == [1, 2, 3]
     assert bus.stats() == {"sent": 3, "coalesced": 1, "sequence": 3}
+
+
+def test_selection_feedback_is_filtered_but_a_new_object_is_delivered():
+    queue = QueueStub()
+    bus = ViewportCommandBus(queue)
+
+    assert bus.put({"type": "select_object", "name": "Player"}) is True
+    assert bus.put({"type": "select_object", "name": "Player"}) is False
+    assert bus.put({"type": "select_object", "name": "Floor"}) is True
+    assert bus.put({"type": "select_object", "name": "Floor"}) is False
+
+    assert [item["name"] for item in queue.items] == ["Player", "Floor"]

@@ -13,10 +13,10 @@ try:
         hydrate_logic_graphs,
         load_project_subgraph,
     )
-    from editor.runtime.viewport_script_api import (
+    from editor.runtime.viewport_logic_api import (
         PlayAnimatorAPI,
         PlayBehaviorAPI,
-        PlayScriptAPI,
+        PlayLogicAPI,
         _send,
     )
     from editor.runtime.viewport_session import ViewportSession, _attach_native_window
@@ -28,14 +28,14 @@ except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
         hydrate_logic_graphs,
         load_project_subgraph,
     )
-    from .viewport_script_api import PlayAnimatorAPI, PlayBehaviorAPI, PlayScriptAPI, _send
+    from .viewport_logic_api import PlayAnimatorAPI, PlayBehaviorAPI, PlayLogicAPI, _send
     from .viewport_session import ViewportSession, _attach_native_window
 
 
 __all__ = [
     "PlayAnimatorAPI",
     "PlayBehaviorAPI",
-    "PlayScriptAPI",
+    "PlayLogicAPI",
     "hydrate_animation_asset_clips",
     "hydrate_animator_controllers",
     "hydrate_behavior_controllers",

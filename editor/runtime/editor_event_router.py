@@ -18,6 +18,7 @@ class EditorEventRouter:
         ".zanim", ".zanimator", ".zlogic", ".png", ".jpg", ".jpeg", ".bmp", ".webp",
     }
     IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".webp"}
+    INPUT_RESET_EVENTS = {QEvent.FocusOut, QEvent.WindowDeactivate, QEvent.ApplicationDeactivate}
 
     def __init__(self, editor: Any) -> None:
         self.editor = editor
@@ -53,6 +54,9 @@ class EditorEventRouter:
 
     def _runtime_input(self, event: Any) -> bool | None:
         editor = self.editor
+        if editor._runtime_playing and event.type() in self.INPUT_RESET_EVENTS:
+            self.reset_runtime_input("foco alterado")
+            return None
         key = self.KEY_MAP.get(event.key()) if event.type() in {
             QEvent.ShortcutOverride, QEvent.KeyPress, QEvent.KeyRelease,
         } else None
@@ -68,26 +72,23 @@ class EditorEventRouter:
             editor.statusBar().showMessage(f"Play Input: {key} {'ON' if pressed else 'OFF'}")
         return True
 
+    def reset_runtime_input(self, reason: str = "") -> None:
+        editor = self.editor
+        if not getattr(editor, "_runtime_playing", False):
+            return
+        changed = any(editor._runtime_keys.values())
+        editor._runtime_keys = {key: False for key in editor._runtime_keys}
+        editor._commands.put({"type": "runtime_input", "keys": dict(editor._runtime_keys)})
+        if changed and reason:
+            editor.statusBar().showMessage(f"Play Input liberado: {reason}")
+
     def _drop(self, watched: Any, event: Any) -> bool | None:
         editor = self.editor
         path = editor._asset_browser.dragged_path()
         if path is None:
             return None
         extension = path.suffix.lower()
-        if extension == ".py":
-            if watched is editor.viewport_host:
-                pos = event.position()
-                scale = max(1.0, float(editor.viewport_host.devicePixelRatioF()))
-                editor._commands.put({
-                    "type": "script_drop_at", "path": str(path.resolve()),
-                    "screen_x": float(pos.x()) * scale, "screen_y": float(pos.y()) * scale,
-                })
-                return self._accept(event)
-            target = self._target_name(watched, event)
-            if target in editor._objects_by_name:
-                editor._script_workspace.attach(target, path)
-                return self._accept(event)
-        elif extension == ".zanim":
+        if extension == ".zanim":
             target = self._target_name(watched, event)
             if target in editor._objects_by_name:
                 editor._apply_animation_asset_path_to_object(path, target)

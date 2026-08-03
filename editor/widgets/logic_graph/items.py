@@ -10,7 +10,10 @@ from pathlib import Path
 from typing import Any, TYPE_CHECKING
 
 from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QPainterPath, QPainterPathStroker, QPen, QBrush
+from PySide6.QtGui import (
+    QColor, QFont, QLinearGradient, QPainter, QPainterPath, QPainterPathStroker,
+    QPen, QBrush,
+)
 from PySide6.QtWidgets import (
     QGraphicsEllipseItem,
     QGraphicsItem,
@@ -18,6 +21,7 @@ from PySide6.QtWidgets import (
     QGraphicsRectItem,
     QGraphicsTextItem,
     QInputDialog,
+    QGraphicsDropShadowEffect,
 )
 
 from engine.logic.graph_asset import node_port_definitions
@@ -27,34 +31,49 @@ if TYPE_CHECKING:
     from editor.widgets.logic_graph_editor import LogicGraphEditor
 
 CATEGORY_COLORS = {
-    "Eventos": QColor("#d66ba0"),
-    "Movimento": QColor("#4c9aff"),
-    "Posição": QColor("#3fb6a8"),
-    "Ação": QColor("#ae7df0"),
-    "Lógica": QColor("#f0a64b"),
-    "Condição": QColor("#50c878"),
-    "Objetos": QColor("#47b8c8"),
-    "Variáveis": QColor("#d5b84b"),
-    "Subgrafos": QColor("#b48ead"),
-    "Matemática": QColor("#e07a5f"),
-    "Texto": QColor("#81b29a"),
-    "Personalizado": QColor("#7f8b9c"),
+    "Eventos": QColor("#a62b2b"),
+    "Events": QColor("#a62b2b"),
+    "Movimento": QColor("#463ca6"),
+    "Movement": QColor("#463ca6"),
+    "Posição": QColor("#1e7874"),
+    "Position": QColor("#1e7874"),
+    "Ação": QColor("#663399"),
+    "Action": QColor("#663399"),
+    "Lógica": QColor("#8c6812"),
+    "Logic": QColor("#8c6812"),
+    "Fluxo": QColor("#8c6812"),
+    "Flow": QColor("#8c6812"),
+    "Condição": QColor("#1b7a63"),
+    "Condition": QColor("#1b7a63"),
+    "Objetos": QColor("#2b6ba6"),
+    "Objects": QColor("#2b6ba6"),
+    "Components": QColor("#a6582b"),
+    "Variáveis": QColor("#1b7a63"),
+    "Variables": QColor("#1b7a63"),
+    "Subgrafos": QColor("#7a2b91"),
+    "Subgraphs": QColor("#7a2b91"),
+    "Matemática": QColor("#a63c2b"),
+    "Math": QColor("#a63c2b"),
+    "Texto": QColor("#1e7874"),
+    "Text": QColor("#1e7874"),
+    "Personalizado": QColor("#3f495a"),
+    "Custom": QColor("#3f495a"),
 }
 
 PORT_COLORS = {
-    "flow": QColor("#d9dde7"),
-    "number": QColor("#58a6ff"),
-    "bool": QColor("#50c878"),
-    "text": QColor("#e6b85c"),
-    "object": QColor("#47b8c8"),
-    "movement": QColor("#ff8c69"),
-    "any": QColor("#ae7df0"),
+    "flow": QColor("#e2e8f0"),
+    "number": QColor("#38bdf8"),
+    "bool": QColor("#34d399"),
+    "text": QColor("#facc15"),
+    "object": QColor("#a855f7"),
+    "movement": QColor("#fb923c"),
+    "any": QColor("#c084fc"),
 }
 
 class LogicPortItem(QGraphicsEllipseItem):
     """Porta interativa que inicia e conclui uma conexão por arraste."""
 
-    SIZE = 12.0
+    SIZE = 10.0
 
     def __init__(self, node: "LogicNodeItem", name: str, direction: str, data_type: str, y: float) -> None:
         x = -self.SIZE / 2 if direction == "input" else node.width - self.SIZE / 2
@@ -64,8 +83,8 @@ class LogicPortItem(QGraphicsEllipseItem):
         self.direction = str(direction)
         self.data_type = str(data_type)
         self.base_color = PORT_COLORS.get(self.data_type, PORT_COLORS["any"])
-        self.setPen(QPen(QColor("#f3f5f9"), 1.0))
-        self.setBrush(QBrush(self.base_color))
+        self.setPen(QPen(self.base_color, 2.0))
+        self.setBrush(QBrush(QColor("#12151d")))
         self.setTransformOriginPoint(self.boundingRect().center())
         self.setAcceptHoverEvents(True)
         self.setAcceptedMouseButtons(Qt.LeftButton)
@@ -77,21 +96,48 @@ class LogicPortItem(QGraphicsEllipseItem):
 
     def set_connection_state(self, state: str = "normal") -> None:
         if state == "candidate":
-            self.setBrush(QBrush(QColor("#7ee787")))
-            self.setPen(QPen(QColor("#ffffff"), 1.8))
-            self.setScale(1.5)
+            self.setBrush(QBrush(QColor("#34d399")))
+            self.setPen(QPen(QColor("#ffffff"), 2.0))
+            self.setScale(1.4)
         elif state == "compatible":
-            self.setBrush(QBrush(self.base_color.lighter(130)))
-            self.setPen(QPen(QColor("#f3f5f9"), 1.2))
-            self.setScale(1.16)
-        elif state == "invalid":
-            self.setBrush(QBrush(QColor("#5b606c")))
-            self.setPen(QPen(QColor("#777d89"), 1.0))
-            self.setScale(0.9)
-        else:
             self.setBrush(QBrush(self.base_color))
-            self.setPen(QPen(QColor("#f3f5f9"), 1.0))
+            self.setPen(QPen(QColor("#ffffff"), 1.4))
+            self.setScale(1.2)
+        elif state == "invalid":
+            self.setBrush(QBrush(QColor("#374151")))
+            self.setPen(QPen(QColor("#4b5563"), 1.0))
+            self.setScale(0.85)
+        else:
+            self.setBrush(QBrush(QColor("#12151d")))
+            self.setPen(QPen(self.base_color, 2.0))
             self.setScale(1.0)
+
+    def paint(self, painter: QPainter, option, widget=None) -> None:
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        rect = self.rect()
+        painter.setPen(self.pen())
+        painter.setBrush(self.brush())
+        painter.drawEllipse(rect)
+
+        # Para portas de fluxo ("flow"), desenhar uma seta/triângulo pequeno ao lado
+        if self.data_type == "flow":
+            arrow_path = QPainterPath()
+            cy = rect.center().y()
+            if self.direction == "input":
+                # Triângulo apontando para a direita logo antes do círculo
+                arrow_x = rect.left() - 6.0
+                arrow_path.moveTo(arrow_x, cy - 4.0)
+                arrow_path.lineTo(arrow_x + 5.0, cy)
+                arrow_path.lineTo(arrow_x, cy + 4.0)
+            else:
+                # Triângulo apontando para a direita logo após o círculo
+                arrow_x = rect.right() + 1.0
+                arrow_path.moveTo(arrow_x, cy - 4.0)
+                arrow_path.lineTo(arrow_x + 5.0, cy)
+                arrow_path.lineTo(arrow_x, cy + 4.0)
+            arrow_path.closeSubpath()
+            painter.fillPath(arrow_path, QBrush(self.base_color))
+            painter.strokePath(arrow_path, QPen(self.base_color, 1.0))
 
     def hoverEnterEvent(self, event) -> None:
         if self.node.editor._connection_origin is None:
@@ -125,7 +171,7 @@ class LogicEdgeItem(QGraphicsPathItem):
         self.base_color = PORT_COLORS.get(data_type, PORT_COLORS["any"])
         self._runtime_active = False
         self._validation_level = ""
-        self.setPen(QPen(self.base_color, 2.2))
+        self.setPen(QPen(self.base_color, 2.0, Qt.SolidLine, Qt.RoundCap))
         self.setZValue(0)
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         self.setData(0, edge_id)
@@ -135,11 +181,14 @@ class LogicEdgeItem(QGraphicsPathItem):
             else "Fluxo de execução" if self.data_type == "flow" else f"Valor: {self.data_type}"
         )
 
-    def itemChange(self, change, value):
-        result = super().itemChange(change, value)
-        if change == QGraphicsItem.ItemSelectedHasChanged:
-            self._refresh_pen(bool(value))
-        return result
+    def paint(self, painter: QPainter, option, widget=None) -> None:
+        super().paint(painter, option, widget)
+        if self._runtime_active and not self.path().isEmpty():
+            painter.setRenderHint(QPainter.Antialiasing, True)
+            pt = self.path().pointAtPercent(0.5)
+            painter.setBrush(QBrush(QColor("#00e5ff")))
+            painter.setPen(QPen(QColor("#ffffff"), 1.5))
+            painter.drawEllipse(pt, 4.0, 4.0)
 
     def set_runtime_active(self, active: bool) -> None:
         self._runtime_active = bool(active)
@@ -152,17 +201,18 @@ class LogicEdgeItem(QGraphicsPathItem):
 
     def _refresh_pen(self, selected: bool) -> None:
         if self._runtime_active:
-            self.setPen(QPen(QColor("#7ee787"), 4.2))
+            self.setPen(QPen(QColor("#55f29a"), 3.2, Qt.SolidLine, Qt.RoundCap))
         elif self._validation_level == "error":
-            self.setPen(QPen(QColor("#ff5d62"), 3.4, Qt.DashLine))
+            self.setPen(QPen(QColor("#ff5d62"), 2.8, Qt.DashLine))
         elif self._validation_level == "warning":
-            self.setPen(QPen(QColor("#e6b85c"), 3.0, Qt.DashLine))
+            self.setPen(QPen(QColor("#e6b85c"), 2.5, Qt.DashLine))
         else:
             style = Qt.DashLine if self.data_type == "object" else Qt.SolidLine
             self.setPen(QPen(
                 QColor("#ffffff") if selected else self.base_color,
-                3.4 if selected else (2.8 if self.data_type == "object" else 2.2),
+                2.8 if selected else 2.0,
                 style,
+                Qt.RoundCap,
             ))
 
     def shape(self) -> QPainterPath:
@@ -224,7 +274,7 @@ class LogicFlipControl(QGraphicsTextItem):
         font.setPointSizeF(8.0)
         self.setFont(font)
         self.setPos(node.width - 52.0, 2.0)
-        self.setToolTip("Virar bloco e mostrar o código equivalente")
+        self.setToolTip("Show editable code preview")
         self.setCursor(Qt.PointingHandCursor)
 
     def mousePressEvent(self, event) -> None:
@@ -290,18 +340,25 @@ from editor.widgets.logic_graph.item_geometry_mixin import LogicNodeItemGeometry
 
 
 class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGraphicsRectItem):
-    WIDTH = 210.0
-    MINIMUM_WIDTH = 170.0
+    WIDTH = 242.0
+    MINIMUM_WIDTH = 220.0
     MAXIMUM_WIDTH = 520.0
-    MINIMUM_HEIGHT = 116.0
+    MINIMUM_HEIGHT = 132.0
     MAXIMUM_HEIGHT = 720.0
-    COLLAPSED_HEIGHT = 32.0
+    COLLAPSED_HEIGHT = 42.0
+    HEADER_HEIGHT = 42.0
+    PORT_START_Y = 60.0
+    PORT_SPACING = 28.0
 
     def __init__(self, editor: "LogicGraphEditor", node: dict[str, Any]) -> None:
         ports = node_port_definitions(node)
         self.input_definitions = ports["inputs"]
         self.output_definitions = ports["outputs"]
-        self.natural_height = max(self.MINIMUM_HEIGHT + 18.0, 80.0 + max(len(self.input_definitions), len(self.output_definitions), 1) * 22.0)
+        port_rows = max(len(self.input_definitions), len(self.output_definitions), 1)
+        self.natural_height = max(
+            self.MINIMUM_HEIGHT + 18.0,
+            100.0 + port_rows * self.PORT_SPACING,
+        )
         editor_state = node.setdefault("editor", {})
         self.width = max(self.MINIMUM_WIDTH, min(self.MAXIMUM_WIDTH, float(editor_state.get("width", self.WIDTH))))
         stored_height = float(editor_state.get("height", 0.0))
@@ -313,6 +370,7 @@ class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGrap
         self.editor = editor
         self.node = node
         self._show_code = False
+        self._hovered = False
         self._fanout_count = 0
         self._target_hint = ""
         self._target_is_implicit = False
@@ -322,15 +380,27 @@ class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGrap
             | QGraphicsItem.ItemIsSelectable
             | QGraphicsItem.ItemSendsGeometryChanges
         )
+        self.setAcceptHoverEvents(True)
         self.setPos(float(node["position"][0]), float(node["position"][1]))
         self.setZValue(2)
-        self.setPen(QPen(QColor("#515662"), 1.2))
-        self.setBrush(QBrush(QColor("#22242a")))
-
+        self.setPen(QPen(QColor("#30394a"), 1.2))
+        self.setBrush(QBrush(QColor("#151922")))
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(18.0)
+        shadow.setOffset(0.0, 5.0)
         color = CATEGORY_COLORS.get(str(node.get("category")), CATEGORY_COLORS["Personalizado"])
+        self.category_color = color
+        shadow_color = QColor(color)
+        shadow_color.setAlpha(75)
+        shadow.setColor(shadow_color)
+        self.setGraphicsEffect(shadow)
         self.header = QGraphicsRectItem(0.0, 0.0, self.width, 28.0, self)
         self.header.setPen(Qt.NoPen)
-        self.header.setBrush(QBrush(color.darker(155)))
+        self.header.setBrush(Qt.NoBrush)
+        self.header.hide()
+        self.accent = QGraphicsRectItem(0.0, 0.0, 4.0, self.height, self)
+        self.accent.setPen(Qt.NoPen)
+        self.accent.setBrush(QBrush(color))
         self.breakpoint_item = QGraphicsEllipseItem(self.width - 20.0, 8.0, 10.0, 10.0, self)
         self.breakpoint_item.setPen(QPen(QColor("#ffd7d9"), 1.0))
         self.breakpoint_item.setBrush(QBrush(QColor("#ff4d55")))
@@ -338,17 +408,29 @@ class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGrap
         self.breakpoint_item.setVisible(False)
 
         self.title_item = QGraphicsTextItem(str(node.get("title", "Nó")), self)
-        self.title_item.setDefaultTextColor(QColor("#f2f4f8"))
-        self.title_item.setPos(10.0, 3.0)
+        self.title_item.setDefaultTextColor(QColor("#f5f7fb"))
+        self.title_item.setPos(13.0, 3.0)
         font = self.title_item.font()
         font.setBold(True)
-        font.setPointSizeF(9.5)
+        font.setFamily("Segoe UI")
+        font.setPointSizeF(10.0)
         self.title_item.setFont(font)
+        self.category_item = QGraphicsTextItem(
+            str(node.get("category", "Custom")).upper(), self
+        )
+        self.category_item.setDefaultTextColor(color.lighter(170))
+        self.category_item.setPos(13.0, 21.0)
+        category_font = self.category_item.font()
+        category_font.setFamily("Segoe UI")
+        category_font.setBold(True)
+        category_font.setPointSizeF(6.8)
+        category_font.setLetterSpacing(QFont.AbsoluteSpacing, 1.1)
+        self.category_item.setFont(category_font)
         self.flip_control = LogicFlipControl(self)
         self.collapse_control = LogicCollapseControl(self)
 
         self.summary_item = QGraphicsTextItem("", self)
-        self.summary_item.setDefaultTextColor(QColor("#b8beca"))
+        self.summary_item.setDefaultTextColor(QColor("#7f8a9d"))
         self.summary_item.setTextWidth(self.width - 22.0)
         self.summary_item.setPos(10.0, self.height - 25.0)
         summary_font = self.summary_item.font()
@@ -376,31 +458,81 @@ class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGrap
         code_font.setFamily("Consolas")
         code_font.setPointSizeF(7.8)
         self.code_item.setFont(code_font)
+        self.code_item.setToolTip("Double-click this node to edit the code values.")
         self.code_item.setVisible(False)
 
         self.input_ports: dict[str, LogicPortItem] = {}
         self.output_ports: dict[str, LogicPortItem] = {}
         self.port_labels: list[QGraphicsTextItem] = []
         for index, (name, data_type) in enumerate(self.input_definitions):
-            y = 43.0 + index * 22.0
+            y = self.PORT_START_Y + index * self.PORT_SPACING
             port = LogicPortItem(self, name, "input", data_type, y)
             self.input_ports[name] = port
             label = QGraphicsTextItem(name, self)
             label.setDefaultTextColor(QColor("#aeb6c5"))
-            label.setPos(9.0, y - 12.0)
+            label.setPos(13.0, y - 12.0)
+            label_font = label.font()
+            label_font.setFamily("Segoe UI")
+            label_font.setPointSizeF(8.0)
+            label.setFont(label_font)
             self.port_labels.append(label)
         for index, (name, data_type) in enumerate(self.output_definitions):
-            y = 43.0 + index * 22.0
+            y = self.PORT_START_Y + index * self.PORT_SPACING
             port = LogicPortItem(self, name, "output", data_type, y)
             self.output_ports[name] = port
             label = QGraphicsTextItem(name, self)
             label.setDefaultTextColor(QColor("#aeb6c5"))
             label.setTextWidth(76.0)
             label.setPos(self.width - 84.0, y - 12.0)
+            label_font = label.font()
+            label_font.setFamily("Segoe UI")
+            label_font.setPointSizeF(8.0)
+            label.setFont(label_font)
             self.port_labels.append(label)
         self.resize_handle = LogicResizeHandle(self)
         self.refresh_text()
         self._apply_geometry(notify=False)
+
+    def paint(self, painter: QPainter, option, widget=None) -> None:
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        outer = QPainterPath()
+        outer.addRoundedRect(self.rect(), 11.0, 11.0)
+        
+        # Fundo do card em tom flat limpo
+        painter.fillPath(outer, QBrush(QColor("#171a22")))
+
+        # Header com a cor sólida da categoria
+        header_height = min(self.HEADER_HEIGHT, self.height)
+        header_rect = QRectF(0.0, 0.0, self.width, header_height)
+        header = QPainterPath()
+        header.addRoundedRect(header_rect, 10.0, 10.0)
+        
+        # Preenchimento sólido da cor da categoria
+        painter.fillPath(header, QBrush(self.category_color))
+        if self.height > self.HEADER_HEIGHT:
+            painter.fillRect(
+                QRectF(0.0, self.HEADER_HEIGHT - 6.0, self.width, 6.0),
+                QBrush(self.category_color),
+            )
+
+        # Borda e seleção
+        if self.isSelected():
+            painter.setPen(QPen(QColor("#3b82f6"), 2.2))
+        elif self._hovered:
+            painter.setPen(QPen(QColor("#6b7280"), 1.6))
+        else:
+            painter.setPen(QPen(QColor("#272c3a"), 1.2))
+        painter.drawPath(outer)
+
+    def hoverEnterEvent(self, event) -> None:
+        self._hovered = True
+        self.update()
+        super().hoverEnterEvent(event)
+
+    def hoverLeaveEvent(self, event) -> None:
+        self._hovered = False
+        self.update()
+        super().hoverLeaveEvent(event)
 
     @property
     def node_id(self) -> str:
@@ -410,13 +542,17 @@ class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGrap
         if self.collapsed:
             return self.mapToScene(QPointF(0.0, self.COLLAPSED_HEIGHT / 2.0))
         port = self.input_ports.get(port_name) or next(iter(self.input_ports.values()), None)
-        return port.scene_position() if port is not None else self.mapToScene(QPointF(0.0, 43.0))
+        return port.scene_position() if port is not None else self.mapToScene(
+            QPointF(0.0, self.PORT_START_Y)
+        )
 
     def output_position(self, port_name: str = "next") -> QPointF:
         if self.collapsed:
             return self.mapToScene(QPointF(self.width, self.COLLAPSED_HEIGHT / 2.0))
         port = self.output_ports.get(port_name) or next(iter(self.output_ports.values()), None)
-        return port.scene_position() if port is not None else self.mapToScene(QPointF(self.width, 43.0))
+        return port.scene_position() if port is not None else self.mapToScene(
+            QPointF(self.width, self.PORT_START_Y)
+        )
 
     def resize_to(self, width: float, height: float) -> None:
         self.width = max(self.MINIMUM_WIDTH, min(self.MAXIMUM_WIDTH, float(width)))
@@ -442,7 +578,13 @@ class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGrap
         else:
             summary = str(self.node.get("category", ""))
         self.summary_item.setPlainText(summary)
-        self.code_item.setPlainText(node_code_preview(self.node))
+        code_str = node_code_preview(self.node)
+        self.code_item.setHtml(
+            f"<div style='font-family: Consolas, monospace; font-size: 11px; color: #00e5ff; "
+            f"line-height: 1.35; padding: 4px; border-radius: 4px; background: rgba(0, 0, 0, 0.4);'>"
+            f"{code_str.replace('<', '&lt;').replace('>', '&gt;').replace(chr(10), '<br>')}"
+            f"</div>"
+        )
 
     def set_fanout_count(self, count: int) -> None:
         self._fanout_count = max(0, int(count))
@@ -461,6 +603,9 @@ class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGrap
         self.setToolTip(self.target_item.toolTip() if text else "")
 
     def mouseDoubleClickEvent(self, event) -> None:
+        if self._show_code and self.editor.edit_node_code_value(self):
+            event.accept()
+            return
         self.editor.toggle_breakpoint(self.node_id)
         event.accept()
 

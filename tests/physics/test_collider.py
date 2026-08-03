@@ -443,3 +443,167 @@ class TestCircleCollider:
         CircleCollider._resolve(a, b, 0, 0, 0, 0, 0, 20)
         assert a.game_object.transform.position[0] < 0
         assert rb.velocity[0] == 0
+
+
+# ===========================================================================
+# 6. Colisão contra tilemap do editor (engine.graphics.tilemap, legado)
+# ===========================================================================
+class _XYTransform:
+    """Stub mínimo com .position (list, usado por BoxCollider.rect/resolução
+    objeto-objeto) e .x/.y (propriedades, usadas por TilemapCollider.resolve)
+    lendo/escrevendo o MESMO estado -- ao contrário de um MagicMock puro,
+    onde .position e .x/.y seriam auto-atributos independentes."""
+
+    def __init__(self, x: float = 0.0, y: float = 0.0) -> None:
+        self.position = [x, y]
+
+    @property
+    def x(self) -> float:
+        return self.position[0]
+
+    @x.setter
+    def x(self, value: float) -> None:
+        self.position[0] = value
+
+    @property
+    def y(self) -> float:
+        return self.position[1]
+
+    @y.setter
+    def y(self, value: float) -> None:
+        self.position[1] = value
+
+    def get_world_position(self):
+        return list(self.position)
+
+
+class TestLegacyTilemapCollision:
+    """
+    BUG FIX: BoxCollider.check_all() só reconhecia o TilemapRenderer do
+    sistema "real" (engine.tilemap) via isinstance. O editor só cria/
+    serializa o par legado (engine.graphics.tilemap.Tilemap/TilemapRenderer,
+    registrado em component_registry.py), então nenhum tilemap montado no
+    editor jamais colidia em Play Mode. Ver LegacyTilemapCollisionAdapter em
+    engine/physics/tilemap_collider.py.
+    """
+
+    @staticmethod
+    def _legacy_tilemap_go(scene, tile_size=32, tiles=((0, 0),)):
+        from engine.graphics.tilemap import Tilemap as LegacyTilemap
+        from engine.graphics.tilemap import TilemapRenderer as LegacyTilemapRenderer
+
+        tilemap = LegacyTilemap(width=10, height=10, tile_size=tile_size)
+        for (tx, ty) in tiles:
+            tilemap.set_tile(0, tx, ty, 1)
+        renderer = LegacyTilemapRenderer()
+
+        go = MagicMock()
+        go.scene = scene
+
+        def _get_component(cls):
+            if cls is LegacyTilemap:
+                return tilemap
+            if cls is LegacyTilemapRenderer:
+                return renderer
+            from engine.tilemap.tilemap import TilemapRenderer as RealTilemapRenderer
+            if cls is RealTilemapRenderer:
+                return None
+            return None
+
+        go.get_component.side_effect = _get_component
+        return go, tilemap
+
+    def test_player_lands_on_legacy_tile(self):
+        scene = MagicMock()
+        # Tile (0,1) = world rect (0,32,32,32) -- "chão" logo abaixo do jogador.
+        tilemap_go, _ = self._legacy_tilemap_go(scene, tiles=((0, 1),))
+        scene.game_objects = [tilemap_go]
+
+        rb = _make_rb(vy=50.0)
+        # Caindo, encostando de leve no topo do tile: rect=[8,24]x[20,36],
+        # sobrepõe o tile (y 32-64) por 4px -- overlap vertical menor que o
+        # horizontal, então a resolução empurra pra cima (pousa no chão).
+        player = _box(x=16, y=28, w=16, h=16, rb=rb, scene=scene)
+        player.game_object.transform = _XYTransform(16, 28)
+        player.game_object.components = [player]
+        BoxCollider._registry.append(player)
+
+        BoxCollider.check_all()
+
+        assert player.game_object.transform.position[1] < 28
+        assert rb.velocity[1] <= 0.0
+        assert rb.grounded is True
+
+    def test_no_collision_when_no_tiles_overlap(self):
+        scene = MagicMock()
+        tilemap_go, _ = self._legacy_tilemap_go(scene, tiles=((0, 0),))
+        scene.game_objects = [tilemap_go]
+
+        rb = _make_rb(vy=50.0)
+        # Bem longe do único tile sólido em (0,0).
+        player = _box(x=500, y=500, w=16, h=16, rb=rb, scene=scene)
+        player.game_object.transform = _XYTransform(500, 500)
+        player.game_object.components = [player]
+        BoxCollider._registry.append(player)
+
+        orig_y = player.game_object.transform.position[1]
+        BoxCollider.check_all()
+
+        assert player.game_object.transform.position[1] == orig_y
+
+    def test_grounded_stays_true_while_resting_without_penetration(self):
+        """BUG FIX: grounded só era ligado no frame da penetração AABB. Um
+        objeto apenas APOIADO (bottom == topo do tile, overlap zero) ficava
+        com grounded=False, e como RigidBody.update() zera a flag todo frame
+        ela oscilava em repouso -- o nó "Is Grounded" recusava a maioria dos
+        pulos. Agora uma sondagem logo abaixo do collider decide."""
+        scene = MagicMock()
+        tilemap_go, _ = self._legacy_tilemap_go(scene, tiles=((0, 1),))
+        scene.game_objects = [tilemap_go]
+
+        rb = _make_rb(vy=0.0)
+        # rect.bottom == 32 == topo do tile (0,1): encostado, sem overlap.
+        player = _box(x=16, y=24, w=16, h=16, rb=rb, scene=scene)
+        player.game_object.transform = _XYTransform(16, 24)
+        player.game_object.components = [player]
+        BoxCollider._registry.append(player)
+
+        assert player.rect.bottom == 32
+        for _ in range(5):
+            rb.grounded = False          # RigidBody.update() faz isso todo frame
+            BoxCollider.check_all()
+            assert rb.grounded is True
+        # E o objeto em repouso não é empurrado.
+        assert player.game_object.transform.position[1] == 24
+
+    def test_not_grounded_while_airborne(self):
+        scene = MagicMock()
+        tilemap_go, _ = self._legacy_tilemap_go(scene, tiles=((0, 1),))
+        scene.game_objects = [tilemap_go]
+
+        rb = _make_rb(vy=0.0)
+        player = _box(x=16, y=0, w=16, h=16, rb=rb, scene=scene)
+        player.game_object.transform = _XYTransform(16, 0)
+        player.game_object.components = [player]
+        BoxCollider._registry.append(player)
+
+        rb.grounded = False
+        BoxCollider.check_all()
+        assert rb.grounded is False
+
+    def test_empty_tile_id_zero_is_not_solid(self):
+        scene = MagicMock()
+        # Nenhum tile setado (todos id=0) -- não deve gerar colisão nenhuma.
+        tilemap_go, tilemap = self._legacy_tilemap_go(scene, tiles=())
+        scene.game_objects = [tilemap_go]
+
+        rb = _make_rb(vy=50.0)
+        player = _box(x=8, y=24, w=16, h=16, rb=rb, scene=scene)
+        player.game_object.transform = _XYTransform(8, 24)
+        player.game_object.components = [player]
+        BoxCollider._registry.append(player)
+
+        orig_y = player.game_object.transform.position[1]
+        BoxCollider.check_all()
+
+        assert player.game_object.transform.position[1] == orig_y

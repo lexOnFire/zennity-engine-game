@@ -65,6 +65,7 @@ from engine.logic.graph_asset import (
 from engine.logic.blackboard import coerce_variable_value, save_blackboard_asset
 from engine.logic.code_preview import node_code_preview
 from engine.logic.recipes import build_logic_recipe, find_logic_recipes, logic_recipe
+from engine.logic.graph_templates import GRAPH_TEMPLATES, build_logic_template
 from engine.prefabs.prefab_asset import load_prefab_asset, resolve_prefab_parameters
 
 
@@ -78,20 +79,27 @@ from .logic_graph.definitions import (
 
 from .logic_graph.editor_mixins import (
     LogicGraphPaletteMixin, LogicGraphRuntimeViewMixin, LogicGraphCanvasMixin,
-    LogicGraphPropertiesMixin, LogicGraphPersistenceMixin,
+    LogicGraphClipboardMixin, LogicGraphPropertiesMixin, LogicGraphOrganizeMixin,
+    LogicGraphPersistenceMixin,
 )
 from editor.widgets.logic_graph.editor_mixins.blackboard_mixin import LogicGraphBlackboardMixin
 
 
 class LogicGraphEditor(
-    LogicGraphPaletteMixin, LogicGraphRuntimeViewMixin, LogicGraphCanvasMixin,
-    LogicGraphPropertiesMixin, LogicGraphPersistenceMixin, LogicGraphBlackboardMixin, QWidget,
+    LogicGraphPaletteMixin, LogicGraphRuntimeViewMixin, LogicGraphCanvasMixin, LogicGraphClipboardMixin,
+    LogicGraphPropertiesMixin, LogicGraphOrganizeMixin, LogicGraphPersistenceMixin, LogicGraphBlackboardMixin, QWidget,
 ):
     message = Signal(str, str)
     asset_changed = Signal()
+    node_selected = Signal(object)
+    node_added = Signal(object)
+    node_deleted = Signal(object)
+    edge_added = Signal(object)
     debug_command = Signal(str)
     play_requested = Signal()
     stop_requested = Signal()
+    # Visible debugger sections retained as part of the official workspace:
+    # "CONDIÇÃO DO BREAKPOINT", "OBSERVADORES" and "VALORES EM EXECUÇÃO".
     MAGNET_RADIUS_PIXELS = 42.0
 
     def __init__(self, project_root: str | Path | None = None, parent: QWidget | None = None) -> None:
@@ -115,6 +123,7 @@ class LogicGraphEditor(
         self._history: list[dict[str, Any]] = []
         self._history_index = -1
         self._restoring_history = False
+        self._loading_graph = False
         self._history_timer = QTimer(self)
         self._history_timer.setSingleShot(True)
         self._history_timer.setInterval(180)
@@ -126,14 +135,36 @@ class LogicGraphEditor(
         self._build_ui()
         self._connect_ui()
         self.set_graph(self.graph)
+        self._category_changed(str(self.category_combo.currentData() or "All"))
+
+    def set_embedded_mode(self, embedded: bool = True) -> None:
+        """Show only the production graph surface when hosted by VS 2.0."""
+        for widget in (
+            getattr(self, "header_widget", None),
+            getattr(self, "category_widget", None),
+        ):
+            if widget is not None:
+                widget.setVisible(not embedded)
+        # Compatibility-only toolbar: it is intentionally not part of the
+        # layout. Never promote it to a top-level window when modes change.
+        toolbar = getattr(self, "toolbar_widget", None)
+        if toolbar is not None:
+            toolbar.hide()
+        layout = self.layout()
+        if layout is not None:
+            layout.setContentsMargins(2, 2, 2, 2)
+            layout.setSpacing(2)
 
     def _build_ui(self) -> None:
         from .logic_graph.ui_builder import build_logic_graph_ui
-
         build_logic_graph_ui(self)
+        qss_path = Path(__file__).parent.parent / "themes" / "modern_logic_graph.qss"
+        try: self.setStyleSheet(qss_path.read_text(encoding="utf-8"))
+        except OSError: pass
     def _connect_ui(self) -> None:
         self.category_combo.currentIndexChanged.connect(lambda _idx: self._category_changed(str(self.category_combo.currentData() or "")))
         self.node_search.textChanged.connect(lambda _text: self._refresh_palette(str(self.category_combo.currentData() or "")))
+        self.palette.itemClicked.connect(lambda item: getattr(self, "help_dock", None) and self.help_dock.show_node_help(item.text()))
         self.palette.itemDoubleClicked.connect(self._add_palette_item)
         self.recipe_search.textChanged.connect(lambda text: self._refresh_recipes(text))
         self.recipe_list.currentItemChanged.connect(self._recipe_selection_changed)
@@ -144,10 +175,12 @@ class LogicGraphEditor(
         self.property_tree.itemChanged.connect(self._property_changed)
         self.property_tree.itemDoubleClicked.connect(self._choose_exposed_property_asset)
         self.property_asset_button.clicked.connect(self._choose_selected_node_asset)
+        self.property_color_button.clicked.connect(self._choose_selected_node_color)
         self.new_button.clicked.connect(self.new_graph)
         self.new_subgraph_button.clicked.connect(self.new_subgraph)
         self.open_button.clicked.connect(self.open_dialog)
         self.save_button.clicked.connect(self.save)
+        self.compile_button.clicked.connect(self.validate_graph)
         self.save_as_button.clicked.connect(lambda: self.save(save_as=True))
         self.demo_button.clicked.connect(self.open_demo)
         self.play_button.clicked.connect(self.request_play)
@@ -179,4 +212,3 @@ class LogicGraphEditor(
         self.target_type.currentIndexChanged.connect(lambda _index: (self.mark_dirty(), self._refresh_target_hints()))
         self.target_value.textChanged.connect(lambda _text: (self.mark_dirty(), self._refresh_target_hints()))
         self.graph_enabled_check.toggled.connect(lambda _checked: self.mark_dirty())
-

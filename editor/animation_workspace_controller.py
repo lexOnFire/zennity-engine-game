@@ -48,13 +48,21 @@ class AnimationWorkspaceController:
         h.animation_timeline.valueChanged.connect(h._set_animation_preview_frame)
         h.animation_add_event_button.clicked.connect(h._add_animation_event)
         h.animation_remove_event_button.clicked.connect(h._remove_animation_event)
+        h.animation_frame_editor.framesChanged.connect(h._set_animation_frames)
+        h.animation_track_studio.canvas.keyframe_changed.connect(h._mark_animation_asset_dirty)
         for signal in (
-            h.animator_clip_combo.currentTextChanged,
             h.animator_sheet_combo.currentIndexChanged,
             h.animator_frame_width.valueChanged,
             h.animator_frame_height.valueChanged,
+        ):
+            signal.connect(h._refresh_animation_frame_editor_from_fields)
+        for signal in (
             h.animator_start_frame.valueChanged,
             h.animator_frame_count.valueChanged,
+        ):
+            signal.connect(h._reset_animation_frames_from_range)
+        for signal in (
+            h.animator_clip_combo.currentTextChanged,
             h.animator_fps_field.valueChanged,
             h.animator_loop_field.toggled,
         ):

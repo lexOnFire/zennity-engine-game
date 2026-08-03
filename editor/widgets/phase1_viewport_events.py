@@ -45,10 +45,12 @@ class Phase1ViewportEventsMixin:
             selected = self._selected_transform_object()
             axis = move_axis_at(self, x, y, selected)
             target = selected if axis is not None else self._object_at_viewport_point(x, y)
-            if target is not None and self._begin_move_drag(target, x, y):
-                self._move_axis_lock = axis
-                event.accept()
-                return
+            if target is not None:
+                self.select_object(target)
+                if self._begin_move_drag(target, x, y):
+                    self._move_axis_lock = axis
+                    event.accept()
+                    return
             event.accept()
             return
 
@@ -58,18 +60,23 @@ class Phase1ViewportEventsMixin:
             target = clicked
             if target is None and self._rotate_gizmo_hit_at_viewport_point(x, y, selected):
                 target = selected
-            if target is not None and self._begin_rotate_drag(target, x, y):
-                event.accept()
-                return
+            if target is not None:
+                self.select_object(target)
+                if self._begin_rotate_drag(target, x, y):
+                    event.accept()
+                    return
             event.accept()
             return
 
         if tool == EditorTool.SCALE:
             selected = self._selected_transform_object()
             handle_idx = self._scale_handle_at_viewport_point(x, y, selected)
-            if selected is not None and handle_idx is not None and self._begin_scale_drag(selected, x, y, handle_idx):
-                event.accept()
-                return
+            target = selected if handle_idx is not None else self._object_at_viewport_point(x, y)
+            if target is not None:
+                self.select_object(target)
+                if handle_idx is not None and self._begin_scale_drag(target, x, y, handle_idx):
+                    event.accept()
+                    return
             event.accept()
             return
 

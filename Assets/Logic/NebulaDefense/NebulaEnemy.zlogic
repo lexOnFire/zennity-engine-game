@@ -4,8 +4,8 @@
   "enabled": true,
   "name": "Nebula Drone Behavior",
   "target": {
-    "type": "tag",
-    "value": "EnemyNebula"
+    "type": "name",
+    "value": "NebulaSpawner"
   },
   "debug": {
     "breakpoints": [],
@@ -24,7 +24,7 @@
       "title": "On Start",
       "category": "Events",
       "position": [
-        20.0,
+        120.0,
         100.0
       ],
       "editor": {
@@ -40,7 +40,7 @@
       "title": "Iniciar movimento permanente",
       "category": "Position",
       "position": [
-        280.0,
+        440.0,
         100.0
       ],
       "editor": {
@@ -63,8 +63,8 @@
       "title": "Ao entrar na área",
       "category": "Events",
       "position": [
-        20.0,
-        360.0
+        120.0,
+        300.0
       ],
       "editor": {
         "collapsed": false,
@@ -79,15 +79,17 @@
       "title": "Ler Tag do objeto",
       "category": "Objects",
       "position": [
-        260.0,
-        280.0
+        440.0,
+        500.0
       ],
       "editor": {
         "collapsed": false,
         "width": 210.0,
         "height": 0.0
       },
-      "properties": {}
+      "properties": {
+        "tag": "Player"
+      }
     },
     {
       "id": "is_bolt",
@@ -95,8 +97,8 @@
       "title": "Comparar texto",
       "category": "Condition",
       "position": [
-        500.0,
-        360.0
+        440.0,
+        300.0
       ],
       "editor": {
         "collapsed": false,
@@ -115,7 +117,7 @@
       "category": "Logic",
       "position": [
         760.0,
-        300.0
+        100.0
       ],
       "editor": {
         "collapsed": false,
@@ -132,8 +134,8 @@
       "title": "Destruir objeto",
       "category": "Action",
       "position": [
-        1020.0,
-        220.0
+        1080.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
@@ -148,8 +150,8 @@
       "title": "Ler variável",
       "category": "Variables",
       "position": [
-        1020.0,
-        380.0
+        120.0,
+        500.0
       ],
       "editor": {
         "collapsed": false,
@@ -157,8 +159,8 @@
         "height": 0.0
       },
       "properties": {
-        "scope": "project",
-        "name": "score"
+        "name": "score",
+        "scope": "project"
       }
     },
     {
@@ -167,8 +169,8 @@
       "title": "Somar",
       "category": "Math",
       "position": [
-        1260.0,
-        380.0
+        440.0,
+        900.0
       ],
       "editor": {
         "collapsed": false,
@@ -186,8 +188,8 @@
       "title": "Ler parâmetro do Prefab",
       "category": "Objects",
       "position": [
-        1020.0,
-        470.0
+        440.0,
+        700.0
       ],
       "editor": {
         "collapsed": false,
@@ -206,8 +208,8 @@
       "title": "Definir variável",
       "category": "Variables",
       "position": [
-        1500.0,
-        380.0
+        760.0,
+        500.0
       ],
       "editor": {
         "collapsed": false,
@@ -215,9 +217,9 @@
         "height": 0.0
       },
       "properties": {
-        "scope": "project",
         "name": "score",
-        "value": 1.0
+        "value": 1.0,
+        "scope": "project"
       }
     },
     {
@@ -226,8 +228,8 @@
       "title": "Tocar som",
       "category": "Action",
       "position": [
-        1020.0,
-        540.0
+        1080.0,
+        300.0
       ],
       "editor": {
         "collapsed": false,
@@ -245,7 +247,7 @@
       "category": "Condition",
       "position": [
         760.0,
-        660.0
+        300.0
       ],
       "editor": {
         "collapsed": false,
@@ -263,8 +265,8 @@
       "title": "Destruir objeto",
       "category": "Action",
       "position": [
-        1020.0,
-        660.0
+        1080.0,
+        500.0
       ],
       "editor": {
         "collapsed": false,

@@ -1,7 +1,7 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
-  "enabled": true,
+  "enabled": false,
   "name": "PlayerMovement",
   "target": {
     "type": "name",
@@ -30,13 +30,13 @@
       "title": "On Update",
       "category": "Events",
       "position": [
-        40.0,
-        180.0
+        27.09,
+        89.41
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 134.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {}
     },
@@ -46,13 +46,13 @@
       "title": "Read Input Axis",
       "category": "Movement",
       "position": [
-        280.0,
-        100.0
+        317.09,
+        51.78
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 134.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "negative": "A",
@@ -65,13 +65,13 @@
       "title": "If / Else",
       "category": "Logic",
       "position": [
-        520.0,
-        100.0
+        590.64,
+        54.14
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 134.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "condition": "axis != 0"
@@ -83,13 +83,13 @@
       "title": "Move",
       "category": "Movement",
       "position": [
-        780.0,
-        40.0
+        886.51,
+        41.2
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 134.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "speed": 220.0
@@ -101,13 +101,13 @@
       "title": "Play Animation",
       "category": "Action",
       "position": [
-        780.0,
-        191.67
+        900.62,
+        226.49
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 134.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "state": "Idle"
@@ -119,13 +119,13 @@
       "title": "Key Pressed Now?",
       "category": "Condition",
       "position": [
-        280.0,
-        330.0
+        328.85,
+        246.47
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 146.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
         "key": "SPACE"
@@ -137,13 +137,13 @@
       "title": "Is Grounded?",
       "category": "Condition",
       "position": [
-        520.0,
-        330.0
+        602.39,
+        269.99
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 146.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {}
     },
@@ -153,13 +153,13 @@
       "title": "Jump",
       "category": "Movement",
       "position": [
-        780.0,
-        330.0
+        899.45,
+        425.88
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 134.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "force": 440.0

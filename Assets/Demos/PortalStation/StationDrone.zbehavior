@@ -1,0 +1,13 @@
+{
+  "format": "zennity.generic_graph", "version": 1, "category": "Behavior Tree",
+  "nodes": [
+    {"id": "sequence", "type": "bt.sequence", "position": [80, 160]},
+    {"id": "wait", "type": "bt.wait", "position": [390, 80], "inputs": {"duration": 1.5}},
+    {"id": "move", "type": "bt.move_to", "position": [390, 280], "inputs": {"target_pos": "PortalTerminal", "speed": 90}}
+  ],
+  "edges": [
+    {"id": "bt-1", "source_node": "sequence", "source_port": "out_1", "target_node": "wait", "target_port": "in", "type": "exec"},
+    {"id": "bt-2", "source_node": "sequence", "source_port": "out_2", "target_node": "move", "target_port": "in", "type": "exec"}
+  ]
+}
+

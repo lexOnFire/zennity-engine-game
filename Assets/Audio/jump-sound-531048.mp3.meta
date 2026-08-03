@@ -7,5 +7,6 @@
   "import_settings": {
     "load_type": "decompress_on_load"
   },
-  "dependencies": []
+  "dependencies": [],
+  "hash": "d8a468de26c4a85ab78ccde1ad3a16b3ac98378ffcdbb4959f0ba01b5bfa92eb"
 }

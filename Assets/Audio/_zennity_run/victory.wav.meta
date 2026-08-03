@@ -1,0 +1,12 @@
+{
+  "guid": "c8e476c4-7127-419d-8979-b1bf0811ebbe",
+  "uuid": "c8e476c4-7127-419d-8979-b1bf0811ebbe",
+  "type": "audio",
+  "importer": "audio_importer",
+  "source_path": "Assets/Audio/_zennity_run/victory.wav",
+  "import_settings": {
+    "load_type": "decompress_on_load"
+  },
+  "dependencies": [],
+  "hash": "80c50240b6d614816b91a7d6ca7c145bc8921d0e26a3f529e2d9f8b9ebfd98f1"
+}

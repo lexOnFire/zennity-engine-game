@@ -1,0 +1,28 @@
+{
+  "format": "zennity.generic_graph",
+  "version": 1,
+  "category": "Material",
+  "name": "Enemy_Shader",
+  "nodes": [
+    {
+      "id": "mat_out",
+      "type": "mat.output",
+      "position": [600, 0]
+    },
+    {
+      "id": "mat_color",
+      "type": "mat.color",
+      "position": [300, 0],
+      "properties": { "color": "#ff0000" }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source_node": "mat_color",
+      "source_port": "out",
+      "target_node": "mat_out",
+      "target_port": "albedo"
+    }
+  ]
+}

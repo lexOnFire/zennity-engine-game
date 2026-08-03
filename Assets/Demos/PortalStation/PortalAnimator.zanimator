@@ -1,0 +1,13 @@
+{
+  "format": "zennity.generic_graph", "version": 1, "category": "Animation",
+  "nodes": [
+    {"id": "active", "type": "animation.parameter", "position": [80, 80], "inputs": {"name": "portal_active", "type": "bool"}},
+    {"id": "closed", "type": "animation.state", "position": [420, 80], "inputs": {"clip": "PortalClosed", "speed": 1.0}},
+    {"id": "open", "type": "animation.state", "position": [420, 300], "inputs": {"clip": "PortalOpen", "speed": 1.0}},
+    {"id": "blend", "type": "animation.blend_tree_1d", "position": [800, 180], "inputs": {"parameter": "portal_active", "clip_a": "PortalClosed", "clip_b": "PortalOpen"}}
+  ],
+  "edges": [
+    {"id": "anim-1", "source_node": "active", "source_port": "value", "target_node": "blend", "target_port": "parameter", "type": "any"}
+  ]
+}
+

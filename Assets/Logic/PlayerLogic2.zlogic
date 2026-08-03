@@ -1,0 +1,39 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": false,
+  "name": "PlayerLogic2",
+  "target": {
+    "type": "name",
+    "value": "toca"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "bb39b01b2db643b6b67ce1044646d881",
+      "type": "event_start",
+      "title": "Ao Iniciar",
+      "category": "Events",
+      "position": [
+        120.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 134.0
+      },
+      "properties": {}
+    }
+  ],
+  "edges": []
+}

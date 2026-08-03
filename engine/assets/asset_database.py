@@ -5,14 +5,17 @@ import uuid
 from pathlib import Path
 from typing import Iterable
 
+from engine.core.services import IService
+from engine.core.lifecycle import ServiceScope, ServiceState
+from engine.assets.asset_handle import AssetHandle
 from engine.assets.asset_importer import ImporterRegistry
 from engine.assets.asset_metadata import AssetInfo, AssetMeta
 from engine.assets.asset_path import AssetPathResolver
 from engine.assets.asset_types import AssetType
 
 
-class AssetDatabase:
-    """Scans the project Assets directory and maintains .meta files."""
+class AssetDatabase(IService):
+    """Scans the project Assets directory and maintains .meta files as a Core Service."""
 
     DEFAULT_FOLDERS = (
         "Scenes",
@@ -26,6 +29,8 @@ class AssetDatabase:
     )
 
     def __init__(self, project_root: str | Path | None = None, assets_dir: str = "Assets") -> None:
+        super().__init__()
+        self.scope = ServiceScope.ENGINE
         self.project_root = Path(project_root or Path.cwd()).resolve()
         self.path_resolver = AssetPathResolver(self.project_root)
         self.assets_root = (self.project_root / assets_dir).resolve()
@@ -34,6 +39,17 @@ class AssetDatabase:
         self._assets_by_path: dict[str, AssetInfo] = {}
         self.path_conflicts: list[tuple[str, Path, Path]] = []
         self.guid_conflicts: list[tuple[str, Path, Path]] = []
+
+    def initialize(self) -> None:
+        """Chamado quando o serviço é inicializado no contexto do Engine Core."""
+        self.scan()
+
+    def shutdown(self) -> None:
+        """Chamado no desativamento do serviço."""
+        self._assets_by_uuid.clear()
+        self._assets_by_path.clear()
+        self.path_conflicts.clear()
+        self.guid_conflicts.clear()
 
     def scan(self) -> list[AssetInfo]:
         self.ensure_project_folders()
@@ -61,6 +77,27 @@ class AssetDatabase:
 
     def get_asset_by_guid(self, asset_guid: str) -> AssetInfo | None:
         return self._assets_by_uuid.get(str(asset_guid))
+
+    def get_asset_by_handle(self, handle: AssetHandle | str) -> AssetInfo | None:
+        if isinstance(handle, AssetHandle):
+            return self.get_asset_by_guid(handle.guid)
+        if not handle:
+            return None
+        # Try GUID lookup first, fallback to path lookup
+        asset = self.get_asset_by_guid(str(handle))
+        if asset is not None:
+            return asset
+        return self.get_asset_by_path(str(handle))
+
+    def resolve_handle(self, path: str | Path) -> AssetHandle | None:
+        asset = self.get_asset_by_path(path)
+        if asset is not None:
+            return AssetHandle(asset.uuid)
+        return None
+
+    def resolve_path(self, handle: AssetHandle | str) -> Path | None:
+        asset = self.get_asset_by_handle(handle)
+        return asset.absolute_path if asset is not None else None
 
     def get_asset_by_path(self, path: str | Path) -> AssetInfo | None:
         return self._assets_by_path.get(self.path_resolver.lookup_key(path))

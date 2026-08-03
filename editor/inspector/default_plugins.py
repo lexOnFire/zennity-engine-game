@@ -3,7 +3,6 @@ from __future__ import annotations
 from editor.inspector.plugins.transform_inspector_plugin import TransformInspectorPlugin
 from editor.inspector.plugins.rigid_body_inspector_plugin import RigidBodyInspectorPlugin
 from editor.inspector.plugins.collider_inspector_plugin import ColliderInspectorPlugin
-from editor.inspector.plugins.script_inspector_plugin import ScriptInspectorPlugin
 from editor.inspector.plugins.camera_inspector_plugin import CameraInspectorPlugin
 from editor.inspector.plugins.audio_source_inspector_plugin import AudioSourceInspectorPlugin
 from editor.inspector.plugins.audio_listener_inspector_plugin import AudioListenerInspectorPlugin
@@ -21,7 +20,6 @@ __all__ = [
     "TransformInspectorPlugin",
     "RigidBodyInspectorPlugin",
     "ColliderInspectorPlugin",
-    "ScriptInspectorPlugin",
     "CameraInspectorPlugin",
     "AudioSourceInspectorPlugin",
     "AudioListenerInspectorPlugin",
@@ -43,7 +41,6 @@ def register_default_inspector_plugins() -> None:
     inspector_plugin_registry.register(TransformInspectorPlugin)
     inspector_plugin_registry.register(RigidBodyInspectorPlugin)
     inspector_plugin_registry.register(ColliderInspectorPlugin)
-    inspector_plugin_registry.register(ScriptInspectorPlugin)
     inspector_plugin_registry.register(CameraInspectorPlugin)
     inspector_plugin_registry.register(AudioSourceInspectorPlugin)
     inspector_plugin_registry.register(AudioListenerInspectorPlugin)

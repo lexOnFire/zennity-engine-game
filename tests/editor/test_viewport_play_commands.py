@@ -17,8 +17,9 @@ def _handler(objects, events, calls):
         lambda width, height: (width, height), lambda: 2.0,
         lambda paused: calls.append(("audio_pause", paused)),
         lambda: calls.append("audio_stop"), lambda: calls.append("physics_reset"),
-        lambda: calls.append("hud_clear"), lambda config: calls.append(("scripts_start", config)),
-        lambda: calls.append("scripts_stop"),
+        lambda: calls.append("hud_clear"), lambda config: calls.append(("logic_start", config)),
+        lambda: calls.append("audio_start"),
+        lambda: calls.append("logic_stop"),
     )
 
 
@@ -29,7 +30,9 @@ def test_play_commands_own_session_transition_and_restore_edit_snapshot() -> Non
 
     state = handler.handle({"type": "play", "scene_blackboard": {"score": 0}}, _state())
     assert state.playing and not state.paused
-    assert ("scripts_start", {"score": 0}) in calls
+    assert ("logic_start", {"score": 0}) in calls
+    assert "audio_start" in calls
+    assert calls.index(("logic_start", {"score": 0})) < calls.index("audio_start")
 
     objects["Player"]["x"] = 99
     state = handler.handle({"type": "stop"}, state)

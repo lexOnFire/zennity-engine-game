@@ -71,7 +71,7 @@ class CameraFollow(Component):
         if scene is None:
             return
         for go in getattr(scene, "game_objects", []):
-            if go.tag == self.target_tag:
+            if getattr(go, "tag", "") == self.target_tag:
                 self.target = go
                 return
 

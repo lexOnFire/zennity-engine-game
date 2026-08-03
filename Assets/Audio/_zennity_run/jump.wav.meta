@@ -1,0 +1,12 @@
+{
+  "guid": "7196eba3-91eb-499b-be7a-83b318832bac",
+  "uuid": "7196eba3-91eb-499b-be7a-83b318832bac",
+  "type": "audio",
+  "importer": "audio_importer",
+  "source_path": "Assets/Audio/_zennity_run/jump.wav",
+  "import_settings": {
+    "load_type": "decompress_on_load"
+  },
+  "dependencies": [],
+  "hash": "387b271f2868075db1dbbced654f2d8bcf7a86ce91f7881092656a4e9a17d3fa"
+}

@@ -25,14 +25,14 @@ class ViewportProcessState:
 class ViewportPlayCommandHandler:
     COMMAND_TYPES = frozenset({
         "shutdown", "viewport_size", "scene_snapshot", "logic_debug_command",
-        "play", "pause", "stop",
+        "play", "pause", "stop", "logic_hot_reload",
     })
 
     def __init__(
         self,
         objects: dict[str, dict[str, Any]],
         logic_runtimes: dict[str, list[tuple[str, Any]]],
-        script_apis: dict[str, Any],
+        logic_apis: dict[str, Any],
         emit: Callable[[dict[str, Any]], None],
         resize: Callable[[int, int], Any],
         zoom: Callable[[], float],
@@ -40,12 +40,13 @@ class ViewportPlayCommandHandler:
         stop_audio: Callable[[], None],
         reset_physics: Callable[[], None],
         clear_hud: Callable[[], None],
-        start_scripts: Callable[[dict[str, Any]], None],
-        stop_scripts: Callable[[], None],
+        start_logic: Callable[[dict[str, Any]], None],
+        start_audio: Callable[[], None],
+        stop_logic: Callable[[], None],
     ) -> None:
         self.objects = objects
         self.logic_runtimes = logic_runtimes
-        self.script_apis = script_apis
+        self.logic_apis = logic_apis
         self.emit = emit
         self.resize = resize
         self.zoom = zoom
@@ -53,8 +54,9 @@ class ViewportPlayCommandHandler:
         self.stop_audio = stop_audio
         self.reset_physics = reset_physics
         self.clear_hud = clear_hud
-        self.start_scripts = start_scripts
-        self.stop_scripts = stop_scripts
+        self.start_logic = start_logic
+        self.start_audio = start_audio
+        self.stop_logic = stop_logic
 
     def handle(self, command: dict[str, Any], state: ViewportProcessState) -> ViewportProcessState | None:
         command_type = str(command.get("type", ""))
@@ -91,7 +93,7 @@ class ViewportPlayCommandHandler:
         elif command_type == "stop":
             self.stop_audio()
             if state.playing:
-                self.stop_scripts()
+                self.stop_logic()
                 self.objects.clear()
                 self.objects.update(deepcopy(state.edit_snapshot))
                 state.playing = False
@@ -102,6 +104,8 @@ class ViewportPlayCommandHandler:
                 self.clear_hud()
                 self.emit({"type": "play_state", "state": "edit"})
                 self.emit({"type": "scene_snapshot", "objects": list(self.objects.values())})
+        elif command_type == "logic_hot_reload":
+            self._handle_logic_hot_reload(command, state)
         return state
 
     def _play(self, command: dict[str, Any], state: ViewportProcessState) -> None:
@@ -121,7 +125,8 @@ class ViewportPlayCommandHandler:
             state.grounded = {}
             self.reset_physics()
             self.clear_hud()
-            self.start_scripts(state.scene_blackboard_config)
+            self.start_logic(state.scene_blackboard_config)
+            self.start_audio()
             self.emit({"type": "play_state", "state": "play"})
         elif state.paused:
             state.paused = False
@@ -162,13 +167,13 @@ class ViewportPlayCommandHandler:
                     self._emit_trace(object_name, graph_path, runtime)
                 except Exception as exc:
                     self._emit_trace(object_name, graph_path, runtime, exc)
-                    self.emit({"type": "script_log", "level": "ERROR", "message": f"{object_name}:{graph_path}: {exc}"})
+                    self.emit({"type": "runtime_log", "level": "ERROR", "message": f"{object_name}:{graph_path}: {exc}"})
             state.paused = True
             self.pause_audio(True)
         elif action == "restart" and matched:
             any_paused = False
             for object_name, graph_path, runtime in matched:
-                api = self.script_apis.get(object_name)
+                api = self.logic_apis.get(object_name)
                 if api is None:
                     continue
                 try:
@@ -181,9 +186,27 @@ class ViewportPlayCommandHandler:
             self.pause_audio(state.paused)
             self.emit({"type": "play_state", "state": "pause" if state.paused else "play"})
 
+    def _handle_logic_hot_reload(self, command: dict[str, Any], state: ViewportProcessState) -> None:
+        import json
+        if not state.playing:
+            return
+        path = command.get("path", "")
+        content = command.get("content", "")
+        if not path or not content:
+            return
+        try:
+            graph_data = json.loads(content)
+            requested_graph = Path(str(path)).as_posix().casefold()
+            for object_name, runtimes in self.logic_runtimes.items():
+                for graph_path, runtime in runtimes:
+                    current = Path(str(graph_path)).as_posix().casefold()
+                    if current == requested_graph:
+                        runtime.hot_reload(graph_data)
+        except Exception as e:
+            print(f"Logic Hot Reload failed: {e}")
+
     def _emit_trace(self, object_name: str, graph_path: str, runtime: Any, error: Exception | None = None) -> None:
         event = {"type": "logic_trace", "object": object_name, "graph": graph_path, **runtime.debug_snapshot()}
         if error is not None:
             event["error"] = str(error)
         self.emit(event)
-

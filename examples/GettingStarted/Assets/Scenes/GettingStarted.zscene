@@ -1,5 +1,5 @@
 {
-  "format_version": 1,
+  "format_version": 2,
   "scene_name": "GettingStarted",
   "engine_version": "0.3.0-alpha",
   "objects": [
@@ -9,7 +9,7 @@
       "prefab_uuid": null,
       "name": "Player",
       "tag": "Player",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -107,7 +107,7 @@
       "prefab_uuid": null,
       "name": "MainCamera",
       "tag": "MainCamera",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -177,7 +177,7 @@
       "prefab_uuid": null,
       "name": "GroundTilemap",
       "tag": "Environment",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -242,7 +242,7 @@
       "prefab_uuid": null,
       "name": "RuntimeHUD",
       "tag": "UI",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -329,7 +329,7 @@
       "prefab_uuid": null,
       "name": "AnimatedMarker",
       "tag": "Environment",
-      "layer": 0,
+      "layer": "0",
       "active": true,
       "enabled": true,
       "transform": {
@@ -410,5 +410,8 @@
         ]
       }
     }
-  ]
+  ],
+  "blackboard": {
+    "variables": {}
+  }
 }

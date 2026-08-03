@@ -17,7 +17,7 @@ SCRIPT_HOOKS = {
     "on_animation_state_enter", "on_animation_state_exit",
     "on_enter", "on_exit",
 }
-UI_TYPES = {"canvas", "label", "uilabel", "image", "uiimage", "button", "uibutton"}
+UI_TYPES = {"canvas", "uicanvas", "label", "uilabel", "image", "uiimage", "button", "uibutton"}
 RUNTIME_SOURCES = (
     "editor/isolated_viewport.py",
     "editor/runtime/native_ui.py",
@@ -173,7 +173,7 @@ def _validate_scene(root: Path, payload: dict[str, Any], report: ProjectValidati
                 has_camera = True
             if kind in UI_TYPES:
                 has_ui = has_ui or kind != "canvas"
-                has_canvas = has_canvas or kind == "canvas"
+                has_canvas = has_canvas or (kind in ("canvas", "uicanvas"))
                 _check_asset(root, properties.get("sprite_path") or properties.get("path"), "UI", name, report, checked_paths)
 
         audio = components.get("audio", item.get("audio"))

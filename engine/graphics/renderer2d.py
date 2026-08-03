@@ -1,7 +1,6 @@
 import warnings
 import pygame
-from ..component import Component
-from .camera2d import Camera2D
+from ..core.component import Component
 from ..assets import Assets
 from typing import Tuple, List, Optional
 import numpy as np
@@ -57,14 +56,10 @@ class TextRenderer(Component):
             screen_x, screen_y = world_pos[0], world_pos[1]
         else:
             # Draw using camera coordinates
-            from engine.graphics.camera import Camera
-            main_cam = Camera.main
+            from engine.graphics.active_camera import get_active_camera
+            main_cam = get_active_camera()
             if main_cam:
                 screen_x, screen_y = main_cam.world_to_screen(
-                    world_pos, screen.get_width(), screen.get_height()
-                )
-            elif Camera2D.main:
-                screen_x, screen_y = Camera2D.main.world_to_screen(
                     world_pos, screen.get_width(), screen.get_height()
                 )
             else:
@@ -75,7 +70,7 @@ class TextRenderer(Component):
         screen.blit(self._rendered_surface, rect)
 
 
-class Particle:
+class LegacyParticle:
     def __init__(self, x: float, y: float, vx: float, vy: float, 
                  color: Tuple[int, int, int], lifetime: float, size: float) -> None:
         self.x = x
@@ -88,7 +83,7 @@ class Particle:
         self.size = size
 
 
-class ParticleSystem(Component):
+class LegacyParticleSystem(Component):
     """Emits simple colored circle particles with velocity and gravity."""
     def __init__(self, color: Tuple[int, int, int] = (255, 100, 0),
                  emission_rate: float = 20, particle_lifetime: float = 1.0,
@@ -100,7 +95,7 @@ class ParticleSystem(Component):
         self.particle_speed = particle_speed
         self.gravity = gravity
         
-        self.particles: List[Particle] = []
+        self.particles: List[LegacyParticle] = []
         self._spawn_timer = 0.0
 
     def update(self, dt: float) -> None:
@@ -131,7 +126,7 @@ class ParticleSystem(Component):
                 lifetime = random.uniform(0.7, 1.3) * self.particle_lifetime
                 size = random.uniform(2, 6)
                 
-                p = Particle(world_pos[0], world_pos[1], vx, vy, self.color, lifetime, size)
+                p = LegacyParticle(world_pos[0], world_pos[1], vx, vy, self.color, lifetime, size)
                 self.particles.append(p)
                 
                 self._spawn_timer -= spawn_interval
@@ -139,19 +134,14 @@ class ParticleSystem(Component):
             self._spawn_timer = 0.0
 
     def draw(self, screen: pygame.Surface) -> None:
-        from engine.graphics.camera import Camera
-        main_cam = Camera.main
+        from engine.graphics.active_camera import get_active_camera
+        main_cam = get_active_camera()
         for p in self.particles:
             if main_cam:
                 screen_x, screen_y = main_cam.world_to_screen(
                     np.array([p.x, p.y, 0]), screen.get_width(), screen.get_height()
                 )
                 zoom = main_cam.zoom
-            elif Camera2D.main:
-                screen_x, screen_y = Camera2D.main.world_to_screen(
-                    np.array([p.x, p.y, 0]), screen.get_width(), screen.get_height()
-                )
-                zoom = Camera2D.main.zoom
             else:
                 screen_x, screen_y = p.x, p.y
                 zoom = 1.0
@@ -168,3 +158,7 @@ class ParticleSystem(Component):
             pygame.draw.circle(
                 screen, faded_color, (int(screen_x), int(screen_y)), size
             )
+
+
+Particle = LegacyParticle
+ParticleSystem = LegacyParticleSystem

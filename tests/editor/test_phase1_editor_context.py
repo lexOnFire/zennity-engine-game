@@ -12,6 +12,7 @@ import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import pytest
 from PySide6.QtCore import Qt
+from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
 from editor.phase1_editor import ZennityPhase1Editor
@@ -114,6 +115,26 @@ def test_phase1_toolbar_tools_update_tool_manager(phase1_editor: ZennityPhase1Ed
 
     assert phase1_editor._tool_actions[EditorTool.ROTATE].isChecked()
     assert not phase1_editor._tool_actions[EditorTool.MOVE].isChecked()
+
+
+def test_phase1_transform_shortcuts_update_tool_manager(
+    phase1_editor: ZennityPhase1Editor,
+    qapp: QApplication,
+) -> None:
+    phase1_editor.show()
+    phase1_editor.viewport.setFocus()
+    qapp.processEvents()
+
+    for key, expected_tool in (
+        (Qt.Key_W, EditorTool.MOVE),
+        (Qt.Key_E, EditorTool.ROTATE),
+        (Qt.Key_R, EditorTool.SCALE),
+        (Qt.Key_Q, EditorTool.SELECT),
+    ):
+        QTest.keyClick(phase1_editor.viewport, key)
+        qapp.processEvents()
+        assert phase1_editor.editor_context.tools.active_tool == expected_tool
+        assert phase1_editor._tool_actions[expected_tool].isChecked()
 
 
 def test_phase1_file_menu_has_scene_actions(
