@@ -1,0 +1,10 @@
+{
+  "guid": "7c1e9f3a-52b1-4e2d-9a11-5f0c9a2d6b41",
+  "uuid": "7c1e9f3a-52b1-4e2d-9a11-5f0c9a2d6b41",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Logic/ZennityRun/PlayerMovement.zlogic",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "5f7fc56c85eb8aea51ebe3f67f12e3cecb7076a0914b5eac327bc5547a835279"
+}

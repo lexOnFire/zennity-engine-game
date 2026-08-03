@@ -1,0 +1,165 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "Player Movement (Zennity Run)",
+  "target": {
+    "type": "tag",
+    "value": "__explicit_only__"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "update",
+      "type": "event_update",
+      "title": "On Update",
+      "category": "Events",
+      "position": [
+        80,
+        80
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "axis",
+      "type": "input_axis",
+      "title": "Input Axis",
+      "category": "Input",
+      "position": [
+        80,
+        260
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "negative": "A",
+        "positive": "D"
+      }
+    },
+    {
+      "id": "move",
+      "type": "move",
+      "title": "Move",
+      "category": "Movement",
+      "position": [
+        380,
+        80
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "speed": 160.0
+      }
+    },
+    {
+      "id": "space",
+      "type": "key_pressed",
+      "title": "Key Pressed",
+      "category": "Input",
+      "position": [
+        80,
+        440
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "key": "SPACE"
+      }
+    },
+    {
+      "id": "grounded_check",
+      "type": "is_grounded",
+      "title": "Is Grounded",
+      "category": "Physics",
+      "position": [
+        380,
+        440
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "jump_node",
+      "type": "jump",
+      "title": "Jump",
+      "category": "Movement",
+      "position": [
+        680,
+        440
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "force": 320.0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_update_move",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "move",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_axis_move",
+      "from_node": "axis",
+      "from_port": "value",
+      "to_node": "move",
+      "to_port": "value",
+      "kind": "number",
+      "order": 1
+    },
+    {
+      "id": "e_space_grounded",
+      "from_node": "space",
+      "from_port": "true",
+      "to_node": "grounded_check",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 2
+    },
+    {
+      "id": "e_grounded_jump",
+      "from_node": "grounded_check",
+      "from_port": "true",
+      "to_node": "jump_node",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 3
+    }
+  ]
+}

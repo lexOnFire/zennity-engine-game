@@ -1406,7 +1406,12 @@
       },
       "enabled": true,
       "static": false,
-      "layer": "Default"
+      "layer": "Default",
+      "editor_data": {
+        "logic_assets": [
+          "Assets/Logic/ZennityRun/PlayerMovement.zlogic"
+        ]
+      }
     },
     {
       "id": "zr-camera",
@@ -1509,7 +1514,7 @@
       "static": false,
       "layer": "Default",
       "editor_data": {
-        "logic_graphs": [
+        "logic_assets": [
           "Assets/Logic/ZennityRun/CoinPickup.zlogic"
         ]
       }
@@ -1563,7 +1568,7 @@
       "static": false,
       "layer": "Default",
       "editor_data": {
-        "logic_graphs": [
+        "logic_assets": [
           "Assets/Logic/ZennityRun/CoinPickup.zlogic"
         ]
       }
@@ -1617,7 +1622,7 @@
       "static": false,
       "layer": "Default",
       "editor_data": {
-        "logic_graphs": [
+        "logic_assets": [
           "Assets/Logic/ZennityRun/CoinPickup.zlogic"
         ]
       }
@@ -1671,7 +1676,7 @@
       "static": false,
       "layer": "Default",
       "editor_data": {
-        "logic_graphs": [
+        "logic_assets": [
           "Assets/Logic/ZennityRun/CoinPickup.zlogic"
         ]
       }
@@ -1683,8 +1688,8 @@
       "active": true,
       "transform": {
         "position": [
-          256.0,
-          211.0,
+          192.0,
+          128.0,
           0.0
         ],
         "rotation": [
@@ -1718,14 +1723,21 @@
           "width": 26.0,
           "height": 26.0,
           "is_trigger": true
+        },
+        "rigidbody": {
+          "mass": 1.0,
+          "gravity_scale": 0.0,
+          "drag": 0.0,
+          "use_gravity": false,
+          "is_kinematic": true
         }
       },
       "editor_data": {
         "behavior": {
-          "controller_path": "Assets/Behaviors/ZennityRunPatrol.zbehavior",
+          "controller_path": "Assets/Behaviors/ZennityRunPatrol_Platform0.zbehavior",
           "parameters": {}
         },
-        "logic_graphs": [
+        "logic_assets": [
           "Assets/Logic/ZennityRun/EnemyDamage.zlogic"
         ]
       },
@@ -1740,8 +1752,8 @@
       "active": true,
       "transform": {
         "position": [
-          544.0,
-          211.0,
+          448.0,
+          96.0,
           0.0
         ],
         "rotation": [
@@ -1775,14 +1787,21 @@
           "width": 26.0,
           "height": 26.0,
           "is_trigger": true
+        },
+        "rigidbody": {
+          "mass": 1.0,
+          "gravity_scale": 0.0,
+          "drag": 0.0,
+          "use_gravity": false,
+          "is_kinematic": true
         }
       },
       "editor_data": {
         "behavior": {
-          "controller_path": "Assets/Behaviors/ZennityRunPatrol.zbehavior",
+          "controller_path": "Assets/Behaviors/ZennityRunPatrol_Platform1.zbehavior",
           "parameters": {}
         },
-        "logic_graphs": [
+        "logic_assets": [
           "Assets/Logic/ZennityRun/EnemyDamage.zlogic"
         ]
       },
@@ -1839,8 +1858,65 @@
       "layer": "Default"
     },
     {
-      "id": "zr-hud",
-      "name": "HUD",
+      "id": "zr-hud-canvas",
+      "name": "HUDCanvas",
+      "tag": "UI",
+      "active": true,
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {
+        "items": [
+          {
+            "type": "Canvas",
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "x": 0.0,
+              "y": 0.0,
+              "width": 0.0,
+              "height": 0.0,
+              "z_order": 0,
+              "widget_name": "hud_canvas"
+            }
+          }
+        ]
+      },
+      "enabled": true,
+      "static": false,
+      "layer": "Default"
+    },
+    {
+      "id": "zr-hud-title",
+      "name": "TitleLabel",
       "tag": "UI",
       "active": true,
       "transform": {
@@ -1885,7 +1961,7 @@
               "y": 16.0,
               "width": 0.0,
               "height": 0.0,
-              "z_order": 0,
+              "z_order": 1,
               "widget_name": "title_label",
               "text": "Zennity Run",
               "font_size": 22,
@@ -1895,7 +1971,51 @@
                 255
               ]
             }
-          },
+          }
+        ]
+      },
+      "enabled": true,
+      "static": false,
+      "layer": "Default"
+    },
+    {
+      "id": "zr-hud-coins",
+      "name": "CoinsLabel",
+      "tag": "UI",
+      "active": true,
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {
+        "items": [
           {
             "type": "Label",
             "enabled": true,
@@ -1905,7 +2025,7 @@
               "y": 44.0,
               "width": 0.0,
               "height": 0.0,
-              "z_order": 0,
+              "z_order": 1,
               "widget_name": "coins_label",
               "text": "Moedas: 0",
               "font_size": 20,
@@ -1915,7 +2035,51 @@
                 90
               ]
             }
-          },
+          }
+        ]
+      },
+      "enabled": true,
+      "static": false,
+      "layer": "Default"
+    },
+    {
+      "id": "zr-hud-hp",
+      "name": "HPBar",
+      "tag": "UI",
+      "active": true,
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {
+        "items": [
           {
             "type": "ProgressBar",
             "enabled": true,
@@ -1925,21 +2089,8 @@
               "y": 76.0,
               "width": 180.0,
               "height": 18.0,
-              "z_order": 0,
-              "text": "",
-              "font_size": 24,
-              "color": [
-                255,
-                255,
-                255
-              ],
-              "alpha": 255,
-              "interactable": true,
-              "event": "click",
-              "target": "",
-              "anchor": "",
-              "margin_x": 16.0,
-              "margin_y": 16.0,
+              "z_order": 1,
+              "widget_name": "hp_bar",
               "value": 100.0,
               "max_value": 100.0,
               "fill_color": [
@@ -1951,9 +2102,7 @@
                 45,
                 18,
                 18
-              ],
-              "sprite_path": "",
-              "widget_name": "hp_bar"
+              ]
             }
           }
         ]

@@ -4,8 +4,8 @@
   "enabled": true,
   "name": "Enemy Damage",
   "target": {
-    "type": "self",
-    "value": ""
+    "type": "tag",
+    "value": "__explicit_only__"
   },
   "debug": {
     "breakpoints": [],
@@ -151,7 +151,7 @@
         "height": 0.0
       },
       "properties": {
-        "object": "HUD",
+        "object": "HPBar",
         "widget": "hp_bar",
         "value": 0.0,
         "max_value": 100.0

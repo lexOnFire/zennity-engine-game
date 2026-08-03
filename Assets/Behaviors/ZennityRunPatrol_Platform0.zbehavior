@@ -1,0 +1,49 @@
+{
+  "format": "zennity.generic_graph",
+  "version": 1,
+  "category": "Behavior Tree",
+  "nodes": [
+    {
+      "id": "d8d235dd-0d3b-4858-9897-17936bbfab8a",
+      "type": "bt.patrol",
+      "position": [
+        -320.0,
+        -260.0
+      ],
+      "properties": {
+        "point_a": "160,144",
+        "point_b": "256,144",
+        "speed": 55.0
+      }
+    },
+    {
+      "id": "d3e121c4-c926-4f6a-94e3-8eea9c7880ed",
+      "type": "bt.wait",
+      "position": [
+        -100.0,
+        -260.0
+      ],
+      "properties": {
+        "duration": 0.4
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "10d4c72d-7fd9-442f-9875-1f54a9dfa198",
+      "source_node": "d8d235dd-0d3b-4858-9897-17936bbfab8a",
+      "source_port": "out",
+      "target_node": "d3e121c4-c926-4f6a-94e3-8eea9c7880ed",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "3e181000-69b7-4920-b2ac-681e66133ca7",
+      "source_node": "d3e121c4-c926-4f6a-94e3-8eea9c7880ed",
+      "source_port": "out",
+      "target_node": "d8d235dd-0d3b-4858-9897-17936bbfab8a",
+      "target_port": "in",
+      "type": "exec"
+    }
+  ]
+}
