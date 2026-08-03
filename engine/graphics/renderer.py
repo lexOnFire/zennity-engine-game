@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import Optional, Tuple
 import pygame
 from engine.core import Component
-from engine.graphics.camera import Camera
 
 
 class SpriteRenderer(Component):
@@ -87,13 +86,10 @@ class SpriteRenderer(Component):
         # BUG FIX: `Camera._active` never existed on the Camera class — this
         # raised AttributeError on every SpriteRenderer.draw() call, which
         # silently aborted the frame (Engine.run() only logs the traceback).
-        # Resolve the active camera the same way TilemapRenderer/ParticleSystem
-        # do: prefer the modern Camera (via CameraManager), fall back to the
-        # legacy Camera2D, and finally to "no camera" (raw world coordinates).
-        cam = Camera.main
-        if cam is None:
-            from engine.graphics.camera2d import Camera2D
-            cam = Camera2D.main
+        # Resolve the active camera via the shared helper (Camera as source of
+        # truth, Camera2D as legacy fallback, "no camera" as raw world coords).
+        from engine.graphics.active_camera import get_active_camera
+        cam = get_active_camera()
         zoom = cam.zoom if cam is not None else 1.0
         color = getattr(self, "color", (255, 255, 255))
         alpha = getattr(self, "alpha", 255)

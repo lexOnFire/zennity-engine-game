@@ -1,7 +1,6 @@
 import warnings
 import pygame
 from ..core.component import Component
-from .camera2d import Camera2D
 from ..assets import Assets
 from typing import Tuple, List, Optional
 import numpy as np
@@ -57,14 +56,10 @@ class TextRenderer(Component):
             screen_x, screen_y = world_pos[0], world_pos[1]
         else:
             # Draw using camera coordinates
-            from engine.graphics.camera import Camera
-            main_cam = Camera.main
+            from engine.graphics.active_camera import get_active_camera
+            main_cam = get_active_camera()
             if main_cam:
                 screen_x, screen_y = main_cam.world_to_screen(
-                    world_pos, screen.get_width(), screen.get_height()
-                )
-            elif Camera2D.main:
-                screen_x, screen_y = Camera2D.main.world_to_screen(
                     world_pos, screen.get_width(), screen.get_height()
                 )
             else:
@@ -139,19 +134,14 @@ class LegacyParticleSystem(Component):
             self._spawn_timer = 0.0
 
     def draw(self, screen: pygame.Surface) -> None:
-        from engine.graphics.camera import Camera
-        main_cam = Camera.main
+        from engine.graphics.active_camera import get_active_camera
+        main_cam = get_active_camera()
         for p in self.particles:
             if main_cam:
                 screen_x, screen_y = main_cam.world_to_screen(
                     np.array([p.x, p.y, 0]), screen.get_width(), screen.get_height()
                 )
                 zoom = main_cam.zoom
-            elif Camera2D.main:
-                screen_x, screen_y = Camera2D.main.world_to_screen(
-                    np.array([p.x, p.y, 0]), screen.get_width(), screen.get_height()
-                )
-                zoom = Camera2D.main.zoom
             else:
                 screen_x, screen_y = p.x, p.y
                 zoom = 1.0

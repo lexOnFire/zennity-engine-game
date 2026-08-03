@@ -11,7 +11,6 @@ import pygame
 import numpy as np
 from typing import List, Tuple, Optional, Any
 from engine.core import Component
-from engine.graphics.camera2d import Camera2D
 
 
 class Particle:
@@ -126,13 +125,9 @@ class ParticleSystem(Component):
             self.particles.remove(p)
 
     def draw(self, screen: pygame.Surface) -> None:
-        from engine.graphics.camera import Camera
-        main_cam = Camera.main
-        if main_cam and main_cam.game_object:
-            cx, cy = main_cam.game_object.transform.position[0], main_cam.game_object.transform.position[1]
-        else:
-            cam = Camera2D.main
-            cx, cy = (cam.game_object.transform.position[0], cam.game_object.transform.position[1]) if cam and cam.game_object else (0.0, 0.0)
+        from engine.graphics.active_camera import get_active_camera
+        main_cam = get_active_camera()
+        cx, cy = (main_cam.game_object.transform.position[0], main_cam.game_object.transform.position[1]) if main_cam and main_cam.game_object else (0.0, 0.0)
         sw, sh = screen.get_size()
 
         for p in self.particles:

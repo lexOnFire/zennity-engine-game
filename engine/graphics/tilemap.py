@@ -158,10 +158,8 @@ class LegacyTilemapRenderer(Component):
             return
             
         # Get camera
-        from engine.graphics.camera import Camera
-        from engine.graphics.camera2d import Camera2D
-        
-        camera = Camera.main or Camera2D.main
+        from engine.graphics.active_camera import get_active_camera
+        camera = get_active_camera()
         
         world_pos = self.transform.get_world_position()
         zoom = 1.0

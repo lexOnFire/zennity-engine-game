@@ -212,15 +212,11 @@ class ImageComponent(RuntimeUIElement):
         zoom = 1.0
         world_pos = transform.get_world_position()
         try:
-            from engine.graphics.camera import Camera
-            from engine.graphics.camera2d import Camera2D
-            main_cam = Camera.main
+            from engine.graphics.active_camera import get_active_camera
+            main_cam = get_active_camera()
             if main_cam:
                 x, y = main_cam.world_to_screen(world_pos, screen.get_width(), screen.get_height())
                 zoom = float(getattr(main_cam, "zoom", 1.0))
-            elif Camera2D.main:
-                x, y = Camera2D.main.world_to_screen(world_pos, screen.get_width(), screen.get_height())
-                zoom = float(getattr(Camera2D.main, "zoom", 1.0))
             else:
                 x, y = float(world_pos[0]), float(world_pos[1])
         except Exception:
@@ -474,9 +470,8 @@ class InfiniteBackground(Component):
         cam_x = cam_y = 0.0
         if self.parallax:
             try:
-                from engine.graphics.camera import Camera
-                from engine.graphics.camera2d import Camera2D
-                cam = Camera.main or Camera2D.main
+                from engine.graphics.active_camera import get_active_camera
+                cam = get_active_camera()
                 if cam is not None and getattr(cam, "transform", None) is not None:
                     cam_x = float(cam.transform.position[0]) * self.parallax
                     cam_y = float(cam.transform.position[1]) * self.parallax

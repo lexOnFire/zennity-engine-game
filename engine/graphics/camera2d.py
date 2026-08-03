@@ -4,7 +4,20 @@ import numpy as np
 
 
 class Camera2D(Component):
-    """Camera component for 2D scenes. Handles panning, zoom, target follow, bounds, and coordinate conversion."""
+    """
+    Camera component for 2D scenes. Handles panning, zoom, target follow, bounds, and coordinate conversion.
+
+    LEGADO: não é registrada em component_registry (não pode ser salva/carregada
+    via .zscene pelo editor) e não participa do pipeline de build/export — a
+    fonte de verdade para câmeras de gameplay é engine.graphics.camera.Camera
+    (ver docstring lá). Camera2D é mantida por dois motivos concretos: (1) tem
+    follow-target/smoothness/bounds embutidos no update(), usados diretamente
+    por demos/*.py e zennity_run.py; (2) seu `transform` override é usado pela
+    câmera de viewport do editor (editor/viewport/viewport_camera.py,
+    editor/widgets/transform_interaction.py), que não é um GameObject de cena
+    real. Código de renderização não deve referenciar Camera2D.main diretamente
+    — use engine.graphics.active_camera.get_active_camera().
+    """
     main: 'Camera2D' = None
 
     def __init__(
