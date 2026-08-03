@@ -4,8 +4,8 @@
   "enabled": true,
   "name": "Player Movement (Zennity Run)",
   "target": {
-    "type": "tag",
-    "value": "__explicit_only__"
+    "type": "name",
+    "value": "Player"
   },
   "debug": {
     "breakpoints": [],
@@ -24,13 +24,13 @@
       "title": "On Update",
       "category": "Events",
       "position": [
-        80,
-        80
+        80.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {}
     },
@@ -40,13 +40,13 @@
       "title": "Input Axis",
       "category": "Input",
       "position": [
-        80,
-        260
+        80.0,
+        260.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "negative": "A",
@@ -59,13 +59,13 @@
       "title": "Move",
       "category": "Movement",
       "position": [
-        380,
-        80
+        380.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "speed": 160.0
@@ -77,13 +77,13 @@
       "title": "Key Pressed",
       "category": "Input",
       "position": [
-        80,
-        440
+        80.0,
+        440.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
         "key": "SPACE"
@@ -95,13 +95,13 @@
       "title": "Is Grounded",
       "category": "Physics",
       "position": [
-        380,
-        440
+        380.0,
+        440.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {}
     },
@@ -111,13 +111,13 @@
       "title": "Jump",
       "category": "Movement",
       "position": [
-        680,
-        440
+        680.0,
+        440.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "force": 520.0
@@ -129,13 +129,13 @@
       "title": "If Else",
       "category": "Flow",
       "position": [
-        680,
-        80
+        680.0,
+        80.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "condition": "axis != 0"
@@ -147,13 +147,13 @@
       "title": "Play Animation",
       "category": "Actions",
       "position": [
-        980,
-        40
+        980.0,
+        40.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "state": "Run"
@@ -165,13 +165,13 @@
       "title": "Play Animation",
       "category": "Actions",
       "position": [
-        980,
-        140
+        980.0,
+        140.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "state": "Idle"
@@ -183,13 +183,13 @@
       "title": "Play Animation",
       "category": "Actions",
       "position": [
-        980,
-        440
+        981.05,
+        440.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "state": "Jump"

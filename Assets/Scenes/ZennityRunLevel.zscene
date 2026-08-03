@@ -1395,7 +1395,9 @@
           "type": "box",
           "width": 20.0,
           "height": 26.0,
-          "is_trigger": false
+          "is_trigger": false,
+          "offset_x": 0.0,
+          "offset_y": 0.0
         },
         "audio": {
           "path": "Assets/Audio/_zennity_run/jump.wav",
@@ -2202,10 +2204,10 @@
             "properties": {
               "visible": true,
               "x": 14.0,
-              "y": 76.0,
-              "width": 180.0,
-              "height": 16.0,
-              "z_order": 1.0,
+              "y": 75.0,
+              "width": 179.0,
+              "height": 17.0,
+              "z_order": 0.0,
               "text": "",
               "font_size": 24.0,
               "color": [

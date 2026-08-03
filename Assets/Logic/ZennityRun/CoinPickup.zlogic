@@ -206,13 +206,48 @@
       "properties": {
         "text": "CoinPickup: HUD atualizado"
       }
+    },
+    {
+      "id": "other_tag",
+      "type": "get_tag",
+      "title": "Get Tag",
+      "category": "Scene",
+      "position": [
+        80,
+        440
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "is_player",
+      "type": "compare_text",
+      "title": "Compare Text",
+      "category": "Logic",
+      "position": [
+        380,
+        440
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "operator": "==",
+        "value": "Player"
+      }
     }
   ],
   "edges": [
     {
       "id": "e_trig_setscore",
-      "from_node": "trig",
-      "from_port": "next",
+      "from_node": "is_player",
+      "from_port": "true",
       "to_node": "set_score",
       "to_port": "in",
       "kind": "flow",
@@ -307,6 +342,33 @@
       "to_port": "in",
       "kind": "flow",
       "order": 11
+    },
+    {
+      "id": "e_trig_othertag",
+      "from_node": "trig",
+      "from_port": "other",
+      "to_node": "other_tag",
+      "to_port": "target",
+      "kind": "object",
+      "order": 12
+    },
+    {
+      "id": "e_othertag_isplayer",
+      "from_node": "other_tag",
+      "from_port": "value",
+      "to_node": "is_player",
+      "to_port": "value",
+      "kind": "text",
+      "order": 13
+    },
+    {
+      "id": "e_trig_isplayer",
+      "from_node": "trig",
+      "from_port": "next",
+      "to_node": "is_player",
+      "to_port": "in",
+      "kind": "flow",
+      "order": -1
     }
   ]
 }
