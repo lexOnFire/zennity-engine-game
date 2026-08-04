@@ -80,3 +80,10 @@ resultado.txt
 
 # Test artifacts
 teste.zscene
+# Pytest temp files
+.pytest_tmp/
+audit_pytest*.txt
+resultado.txt
+
+# Test artifacts
+teste.zscene
