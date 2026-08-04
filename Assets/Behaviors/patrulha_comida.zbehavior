@@ -4,73 +4,108 @@
   "category": "Behavior Tree",
   "nodes": [
     {
-      "id": "42c12a13-66a7-4e77-89cd-49647206df5f",
+      "id": "c77cde2b-0c41-4ee1-a643-8df6936b5912",
+      "type": "bt.patrol",
+      "position": [
+        -438.0,
+        -55.0
+      ],
+      "properties": {
+        "point_a": "-100,100",
+        "point_b": "0,100"
+      }
+    },
+    {
+      "id": "303ff960-d85d-4c85-b952-73ca81a1b788",
       "type": "bt.target_in_range",
       "position": [
-        131.49,
-        -0.59
+        -140.0,
+        -224.0
       ],
       "properties": {
         "target": "comida"
       }
     },
     {
-      "id": "14e56436-5635-4f2d-883e-af761288dd17",
-      "type": "bt.chase",
-      "position": [
-        -48.13,
-        -183.59
-      ],
-      "properties": {
-        "target": "comida",
-        "stop_distance": 50.0
-      }
-    },
-    {
-      "id": "f9341b5d-72db-4f9c-bb77-b47824bff1fa",
-      "type": "bt.attack",
-      "position": [
-        339.75,
-        -55.66
-      ],
-      "properties": {
-        "target": "comida"
-      }
-    },
-    {
-      "id": "252b2b60-9555-4c86-a894-b5508710e916",
+      "id": "4df81ba6-c593-4727-b7d6-81e3c6df6588",
       "type": "bt.move_to",
       "position": [
-        -317.67,
-        -181.4
+        109.0,
+        -123.0
       ],
       "properties": {
-        "target_pos": "comida"
+        "target_pos": "-12,39"
+      }
+    },
+    {
+      "id": "65cfca62-258e-4fc0-a603-a2343f1efe35",
+      "type": "bt.cooldown",
+      "position": [
+        206.0,
+        41.0
+      ],
+      "properties": {
+        "seconds": 5.0
+      }
+    },
+    {
+      "id": "55e1e130-acf1-4dbd-99bf-3e0b5076431b",
+      "type": "bt.move_to",
+      "position": [
+        221.0,
+        210.0
+      ],
+      "properties": {
+        "target_pos": "384,190"
       }
     }
   ],
   "edges": [
     {
-      "id": "7cc05b52-c832-40e2-9a3a-8477d0dff6ea",
-      "source_node": "42c12a13-66a7-4e77-89cd-49647206df5f",
+      "id": "9ac3f3c4-d26f-4ebc-be2a-aaa686e431b1",
+      "source_node": "c77cde2b-0c41-4ee1-a643-8df6936b5912",
       "source_port": "out",
-      "target_node": "f9341b5d-72db-4f9c-bb77-b47824bff1fa",
+      "target_node": "303ff960-d85d-4c85-b952-73ca81a1b788",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "564ddf77-d42d-44a1-a5a0-2d6bd9a5577d",
-      "source_node": "14e56436-5635-4f2d-883e-af761288dd17",
-      "source_port": "out",
-      "target_node": "42c12a13-66a7-4e77-89cd-49647206df5f",
+      "id": "9bcbaf46-b0d4-4ec1-9368-c15bd5a77b56",
+      "source_node": "303ff960-d85d-4c85-b952-73ca81a1b788",
+      "source_port": "success",
+      "target_node": "4df81ba6-c593-4727-b7d6-81e3c6df6588",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "727fb72f-2f28-4967-a592-62bfdadca0af",
-      "source_node": "252b2b60-9555-4c86-a894-b5508710e916",
+      "id": "1669b977-60b2-4fdc-b25d-5802ae60de5b",
+      "source_node": "4df81ba6-c593-4727-b7d6-81e3c6df6588",
       "source_port": "out",
-      "target_node": "14e56436-5635-4f2d-883e-af761288dd17",
+      "target_node": "65cfca62-258e-4fc0-a603-a2343f1efe35",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "94c630c5-5be3-41be-a8fe-92069cd21e64",
+      "source_node": "65cfca62-258e-4fc0-a603-a2343f1efe35",
+      "source_port": "child",
+      "target_node": "55e1e130-acf1-4dbd-99bf-3e0b5076431b",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "af6acd3a-2e18-4b64-847c-b8e90caefe2d",
+      "source_node": "55e1e130-acf1-4dbd-99bf-3e0b5076431b",
+      "source_port": "out",
+      "target_node": "c77cde2b-0c41-4ee1-a643-8df6936b5912",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "b2f8e9d3-4a5c-4d6e-9f1a-c3b5e8d9f2c1",
+      "source_node": "303ff960-d85d-4c85-b952-73ca81a1b788",
+      "source_port": "failure",
+      "target_node": "c77cde2b-0c41-4ee1-a643-8df6936b5912",
       "target_port": "in",
       "type": "exec"
     }
