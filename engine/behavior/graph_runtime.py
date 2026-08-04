@@ -37,14 +37,6 @@ class BehaviorGraphRunner:
         self._memory: dict[str, Any] = {}
         self._persistent: dict[str, Any] = {}
         self._started = False
-        self._node_colors = {
-            "bt.patrol": (255, 200, 0),       # 🟡 Amarelo - Patrulhando
-            "bt.chase": (255, 50, 50),        # 🔴 Vermelho - Perseguindo
-            "bt.target_in_range": (255, 150, 0),  # 🟠 Laranja - Verificando
-            "bt.cooldown": (50, 200, 50),    # 🟢 Verde - Esperando/Cooldown
-            "bt.move_to": (50, 100, 255),    # 🔵 Azul - Movendo
-            "bt.wait": (50, 200, 50),        # 🟢 Verde - Aguardando
-        }
 
     def start(self, game: Any) -> None:
         self._started = True
@@ -64,10 +56,6 @@ class BehaviorGraphRunner:
         status = self._tick(self.root, game, max(0.0, float(dt)))
         if status != "running":
             self._memory.clear()
-        try:
-            self._apply_node_color(game, self.current_state)
-        except Exception:
-            pass
         return previous != self.current_state
 
     def play(self, state: str, game: Any) -> bool:
@@ -358,13 +346,3 @@ class BehaviorGraphRunner:
             return float(self._input(node, name, default))
         except (TypeError, ValueError):
             return default
-
-    def _apply_node_color(self, game: Any, node_id: str) -> None:
-        """Aplica cor ao objeto baseado no nó sendo executado."""
-        if node_id not in self.nodes:
-            return
-        node = self.nodes[node_id]
-        node_type = str(node.get("type", ""))
-        color = self._node_colors.get(node_type, (200, 200, 200))
-        if hasattr(game, "visual") and isinstance(game.visual, dict):
-            game.visual["color"] = list(color)
