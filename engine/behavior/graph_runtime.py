@@ -45,6 +45,9 @@ class BehaviorGraphRunner:
             "bt.move_to": (50, 100, 255),    # 🔵 Azul - Movendo
             "bt.wait": (50, 200, 50),        # 🟢 Verde - Aguardando
         }
+        self._execution_log: list[dict[str, Any]] = []
+        self._max_log_entries = 50
+        self._last_logged_node: str | None = None
 
     def start(self, game: Any) -> None:
         self._started = True
@@ -66,6 +69,7 @@ class BehaviorGraphRunner:
             self._memory.clear()
         try:
             self._apply_node_color(game, self.current_state)
+            self._log_execution(game, self.current_state, status)
         except Exception:
             pass
         return previous != self.current_state
@@ -368,3 +372,47 @@ class BehaviorGraphRunner:
         color = self._node_colors.get(node_type, (200, 200, 200))
         if hasattr(game, "visual") and isinstance(game.visual, dict):
             game.visual["color"] = list(color)
+
+    def _log_execution(self, game: Any, node_id: str, status: str) -> None:
+        """Registra a execução do nó com logging visual."""
+        if node_id not in self.nodes:
+            return
+        node = self.nodes[node_id]
+        node_type = str(node.get("type", "")).replace("bt.", "").upper()
+
+        status_emoji = {"running": "⏳", "success": "✓", "failure": "✗"}.get(status, "?")
+
+        props = node.get("properties", {})
+        target_info = ""
+        if "target" in props:
+            target_info = f" → {props['target']}"
+        elif "target_pos" in props:
+            target_info = f" @ {props['target_pos']}"
+
+        message = f"{status_emoji} {node_type}{target_info}"
+
+        if self._last_logged_node != node_id or status != "running":
+            log_entry = {
+                "node_id": node_id,
+                "node_type": node_type,
+                "status": status,
+                "message": message,
+            }
+            self._execution_log.append(log_entry)
+
+            if len(self._execution_log) > self._max_log_entries:
+                self._execution_log.pop(0)
+
+            if hasattr(game, "_log"):
+                game._log("INFO", message)
+
+            self._last_logged_node = node_id
+
+    def get_execution_log(self) -> list[dict[str, Any]]:
+        """Retorna o histórico de execuções."""
+        return list(self._execution_log)
+
+    def clear_execution_log(self) -> None:
+        """Limpa o histórico de execuções."""
+        self._execution_log.clear()
+        self._last_logged_node = None
