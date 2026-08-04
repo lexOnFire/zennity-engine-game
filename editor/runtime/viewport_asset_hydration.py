@@ -189,6 +189,8 @@ def hydrate_logic_graphs(
     if not directory.is_dir():
         return results
     for path in sorted(directory.rglob("*.zlogic"), key=lambda item: str(item).lower()):
+        if path.name.endswith(".autosave.zlogic"):
+            continue
         if path.resolve() in loaded_paths:
             continue
         try:

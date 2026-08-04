@@ -35,6 +35,8 @@ class LogicAssetRepository:
             return []
         assets: list[tuple[Path, dict]] = []
         for path in sorted(directory.rglob("*.zlogic"), key=lambda entry: str(entry).casefold()):
+            if path.name.endswith(".autosave.zlogic"):
+                continue
             try:
                 resolved = path.resolve()
                 stamp = resolved.stat().st_mtime_ns

@@ -238,6 +238,8 @@ class LogicGraphPaletteMixin:
         if not directory.is_dir():
             return
         for path in sorted(directory.rglob("*.zlogic"), key=lambda entry: str(entry).casefold()):
+            if path.name.endswith(".autosave.zlogic"):
+                continue
             try:
                 if self.current_path is not None and path.resolve() == self.current_path.resolve():
                     continue

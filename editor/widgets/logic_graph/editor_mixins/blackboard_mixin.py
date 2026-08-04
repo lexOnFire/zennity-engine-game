@@ -141,6 +141,8 @@ class LogicGraphBlackboardMixin:
         directory = self.project_root / "Assets" / "Logic"
         if directory.is_dir():
             for graph_path in sorted(directory.rglob("*.zlogic"), key=lambda item: str(item).casefold()):
+                if graph_path.name.endswith(".autosave.zlogic"):
+                    continue
                 try:
                     graph = load_logic_graph(graph_path)
                 except (OSError, ValueError, json.JSONDecodeError):

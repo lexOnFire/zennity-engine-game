@@ -127,7 +127,13 @@ class EditorCommandController:
                 h._log("INFO", "Retomando Play pausado")
             else:
                 logic_directory = self.project_root / "Assets" / "Logic"
-                logic_assets = list(logic_directory.rglob("*.zlogic")) if logic_directory.exists() else []
+                if logic_directory.exists():
+                    logic_assets = [
+                        p for p in logic_directory.rglob("*.zlogic")
+                        if not p.name.endswith(".autosave.zlogic")
+                    ]
+                else:
+                    logic_assets = []
                 h._log(
                     "INFO",
                     f"Play solicitado com {len(logic_assets)} Logic Graph(s); scripts Python desativados",
@@ -206,12 +212,18 @@ class EditorCommandController:
             delete_action.setShortcutVisibleInContextMenu(True)
             
             def _try_delete_selected(_checked: bool = False) -> None:
+                from PySide6.QtWidgets import QApplication, QLineEdit, QTextEdit
                 focus = QApplication.focusWidget()
-                from PySide6.QtWidgets import QLineEdit, QTextEdit
                 if isinstance(focus, (QLineEdit, QTextEdit)):
                     return
-                if h._selected_name is not None and not h._play_session.is_running:
-                    h._scene_objects.delete(h._selected_name)
+                if h._selected_name is None:
+                    h.statusBar().showMessage("Nenhum objeto selecionado para deletar.")
+                    return
+                if h._play_session.is_running:
+                    h.statusBar().showMessage("Não é possível deletar durante o Play Mode.")
+                    return
+                h._scene_objects.delete(h._selected_name)
+                h.statusBar().showMessage(f"Objeto '{h._selected_name}' deletado com sucesso.")
 
             delete_action.triggered.connect(_try_delete_selected)
             h.addAction(delete_action)

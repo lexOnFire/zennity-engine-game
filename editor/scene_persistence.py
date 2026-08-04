@@ -83,6 +83,8 @@ class EditorScenePersistence:
         if not directory.is_dir():
             return variables
         for path in sorted(directory.rglob("*.zlogic"), key=lambda item: str(item).casefold()):
+            if path.name.endswith(".autosave.zlogic"):
+                continue
             try:
                 graph = load_logic_graph(path)
             except (OSError, ValueError, json.JSONDecodeError):
