@@ -4,13 +4,28 @@ from engine.core.context import EngineContext
 from engine.metadata.manager import MetadataManager
 from engine.core.metadata.asset import AssetTypeDefinition
 from engine.ai.behavior_tree_nodes import (
-    BTSelectorNode,
+    # Composite
     BTSequenceNode,
+    BTSelectorNode,
+    # Decorator
+    BTRepeatNode,
+    BTCooldownNode,
+    BTLimiterNode,
     BTInverterNode,
-    BTWaitNode,
+    # Condition
+    BTTargetInRangeNode,
+    BTHealthCheckNode,
+    BTParameterCheckNode,
+    BTRandomChanceNode,
+    # Action
+    BTIdleNode,
+    BTPatrolNode,
+    BTChaseNode,
     BTMoveToNode,
-    BTRepeatNode, BTCooldownNode, BTTargetInRangeNode, BTParameterConditionNode,
-    BTChaseNode, BTPatrolNode, BTAttackNode, BTPlayAnimationNode,
+    BTAttackNode,
+    BTPlayAnimationNode,
+    BTSetParameterNode,
+    BTLogNode,
 )
 
 
@@ -33,16 +48,25 @@ class AIProvider(EngineProvider):
         ))
 
         # 2. Registro dos Nós de Behavior Tree no Graph Framework
-        manager.register(BTSelectorNode.__node_definition__)
+        # Composite
         manager.register(BTSequenceNode.__node_definition__)
-        manager.register(BTInverterNode.__node_definition__)
-        manager.register(BTWaitNode.__node_definition__)
-        manager.register(BTMoveToNode.__node_definition__)
+        manager.register(BTSelectorNode.__node_definition__)
+        # Decorator
         manager.register(BTRepeatNode.__node_definition__)
         manager.register(BTCooldownNode.__node_definition__)
+        manager.register(BTLimiterNode.__node_definition__)
+        manager.register(BTInverterNode.__node_definition__)
+        # Condition
         manager.register(BTTargetInRangeNode.__node_definition__)
-        manager.register(BTParameterConditionNode.__node_definition__)
-        manager.register(BTChaseNode.__node_definition__)
+        manager.register(BTHealthCheckNode.__node_definition__)
+        manager.register(BTParameterCheckNode.__node_definition__)
+        manager.register(BTRandomChanceNode.__node_definition__)
+        # Action
+        manager.register(BTIdleNode.__node_definition__)
         manager.register(BTPatrolNode.__node_definition__)
+        manager.register(BTChaseNode.__node_definition__)
+        manager.register(BTMoveToNode.__node_definition__)
         manager.register(BTAttackNode.__node_definition__)
         manager.register(BTPlayAnimationNode.__node_definition__)
+        manager.register(BTSetParameterNode.__node_definition__)
+        manager.register(BTLogNode.__node_definition__)
