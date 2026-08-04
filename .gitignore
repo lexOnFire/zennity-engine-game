@@ -73,3 +73,10 @@ search.txt
 
 # Sprites/tiles procedurais gerados em runtime por zennity_run.py
 Assets/_zennity_run_tmp/
+# Pytest temp files
+.pytest_tmp/
+audit_pytest*.txt
+resultado.txt
+
+# Test artifacts
+teste.zscene
