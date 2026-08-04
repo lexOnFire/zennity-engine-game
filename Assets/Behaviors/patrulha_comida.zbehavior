@@ -7,8 +7,8 @@
       "id": "42c12a13-66a7-4e77-89cd-49647206df5f",
       "type": "bt.target_in_range",
       "position": [
-        405.0,
-        -352.0
+        131.49,
+        -0.59
       ],
       "properties": {
         "target": "comida"
@@ -18,8 +18,8 @@
       "id": "14e56436-5635-4f2d-883e-af761288dd17",
       "type": "bt.chase",
       "position": [
-        108.0,
-        -222.0
+        -48.13,
+        -183.59
       ],
       "properties": {
         "target": "comida",
@@ -27,35 +27,26 @@
       }
     },
     {
-      "id": "986a9639-a50b-4375-9169-90babf233c53",
-      "type": "bt.patrol",
-      "position": [
-        -345.0,
-        -279.0
-      ],
-      "properties": {
-        "point_a": "100,0",
-        "point_b": "0,0"
-      }
-    },
-    {
       "id": "f9341b5d-72db-4f9c-bb77-b47824bff1fa",
       "type": "bt.attack",
       "position": [
-        324.0,
-        -9.0
+        339.75,
+        -55.66
       ],
       "properties": {
         "target": "comida"
       }
     },
     {
-      "id": "dbfd835f-2210-4ef7-9edb-7ef5d4e87373",
-      "type": "bt.wait",
+      "id": "252b2b60-9555-4c86-a894-b5508710e916",
+      "type": "bt.move_to",
       "position": [
-        -171.0,
-        -3.0
-      ]
+        -317.67,
+        -181.4
+      ],
+      "properties": {
+        "target_pos": "comida"
+      }
     }
   ],
   "edges": [
@@ -68,16 +59,16 @@
       "type": "exec"
     },
     {
-      "id": "f08b0d01-1818-4fd9-9229-5fd21d0b906b",
-      "source_node": "986a9639-a50b-4375-9169-90babf233c53",
+      "id": "564ddf77-d42d-44a1-a5a0-2d6bd9a5577d",
+      "source_node": "14e56436-5635-4f2d-883e-af761288dd17",
       "source_port": "out",
-      "target_node": "dbfd835f-2210-4ef7-9edb-7ef5d4e87373",
+      "target_node": "42c12a13-66a7-4e77-89cd-49647206df5f",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "9f224b80-b613-479e-9b6c-3e670146f6c8",
-      "source_node": "dbfd835f-2210-4ef7-9edb-7ef5d4e87373",
+      "id": "727fb72f-2f28-4967-a592-62bfdadca0af",
+      "source_node": "252b2b60-9555-4c86-a894-b5508710e916",
       "source_port": "out",
       "target_node": "14e56436-5635-4f2d-883e-af761288dd17",
       "target_port": "in",

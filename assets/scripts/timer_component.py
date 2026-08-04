@@ -76,6 +76,11 @@ class TimerComponent(Component):
     def update(self, dt: float) -> None:
         if not self._running:
             return
+        if self.duration <= 0:
+            self._running = False
+            if self.on_complete:
+                self.on_complete()
+            return
         self._elapsed += dt
         if self._elapsed >= self.duration:
             self._running = False

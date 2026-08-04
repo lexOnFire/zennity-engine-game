@@ -256,7 +256,7 @@ class IsolatedEditorWindow(InspectorComponentDelegatesMixin, AnimationWorkspaceO
     def _duplicate_selected(self) -> None:
         self._scene_objects.duplicate_selected()
 
-    def _refresh_hierarchy(self) -> None:
+    def _refresh_hierarchy(self, force: bool = False) -> None:
         self._hierarchy_controller.refresh()
 
     def _hierarchy_item_name(self, item: QTreeWidgetItem | None) -> str:

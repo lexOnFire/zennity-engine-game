@@ -1,0 +1,164 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "tocaLogic2",
+  "target": {
+    "type": "name",
+    "value": "toca"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "c867e12e27444521bf1c032bb0583234",
+      "type": "event_update",
+      "title": "Event Update",
+      "category": "Events",
+      "position": [
+        -704.91,
+        -24.7
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "4653ee591db44414ac891861fbb09971",
+      "type": "create_object",
+      "title": "Create Object",
+      "category": "Spawning",
+      "position": [
+        -201.04,
+        56.57
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 240.0
+      },
+      "properties": {
+        "name": "fomiga",
+        "x": 0,
+        "y": 0,
+        "width": 32.0,
+        "height": 32.0,
+        "color": "#ffffff",
+        "texture": "Assets/Textures/formiga_2.PNG",
+        "tag": "work",
+        "relative": true,
+        "inherit_source": true,
+        "inherit_logic": false,
+        "lifetime": 31,
+        "max_instances": 1,
+        "max_distance": 0.0,
+        "use_pool": false
+      }
+    },
+    {
+      "id": "d5a9bbfbee3b48b6825d5e426a778ba6",
+      "type": "cooldown",
+      "title": "Cooldown",
+      "category": "Logic",
+      "position": [
+        -471.73,
+        99.98
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "seconds": 30
+      }
+    },
+    {
+      "id": "3f9c04884a564a4f84462dbb303c2f36",
+      "type": "start_behavior_tree",
+      "title": "Start Behavior Tree",
+      "category": "Action",
+      "position": [
+        371.56,
+        53.1
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "path": "Assets/Behaviors/patrulha_comida.zbehavior"
+      }
+    },
+    {
+      "id": "cbf9bf8573634124bf7fab9495b33f57",
+      "type": "add_sprite_renderer",
+      "title": "Sprite Renderer",
+      "category": "Components",
+      "position": [
+        70.68,
+        70.68
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "texture": "Assets/Textures/formiga_2.PNG",
+        "color": "#ffffff",
+        "sort_order": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "585e15d89aa74205864f6d6b07bdb6e2",
+      "from_node": "c867e12e27444521bf1c032bb0583234",
+      "from_port": "next",
+      "to_node": "d5a9bbfbee3b48b6825d5e426a778ba6",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "db93ff66f0b24291963bbc12217eca88",
+      "from_node": "d5a9bbfbee3b48b6825d5e426a778ba6",
+      "from_port": "next",
+      "to_node": "4653ee591db44414ac891861fbb09971",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    },
+    {
+      "id": "ebbdecdb97614398933e5e039f6c094c",
+      "from_node": "4653ee591db44414ac891861fbb09971",
+      "from_port": "next",
+      "to_node": "cbf9bf8573634124bf7fab9495b33f57",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 2
+    },
+    {
+      "id": "c621d190c1584bf8b38b29be371165ec",
+      "from_node": "cbf9bf8573634124bf7fab9495b33f57",
+      "from_port": "next",
+      "to_node": "3f9c04884a564a4f84462dbb303c2f36",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 3
+    }
+  ]
+}

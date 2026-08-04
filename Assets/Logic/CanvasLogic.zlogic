@@ -17,6 +17,80 @@
     "groups": [],
     "comments": []
   },
-  "nodes": [],
-  "edges": []
+  "nodes": [
+    {
+      "id": "f5aa9cef4d8c4dd7b28c081d694b6ef0",
+      "type": "set_hud",
+      "title": "Set Hud",
+      "category": "UI",
+      "position": [
+        36.25,
+        94.79
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "text": "teste"
+      }
+    },
+    {
+      "id": "493e7976093a41dab158dd1c5ab1fa82",
+      "type": "event_update",
+      "title": "Event Update",
+      "category": "Events",
+      "position": [
+        -666.63,
+        143.45
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "e2fc45a0ef6e4589958cd991569c2985",
+      "type": "set_ui_progress_bar",
+      "title": "Atualizar barra da UI",
+      "category": "UI",
+      "position": [
+        -309.4,
+        133.04
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "object": "comida",
+        "value": 100.0,
+        "max_value": 100.0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "6debf49ab86c4e4a8242ef7668beb2f9",
+      "from_node": "e2fc45a0ef6e4589958cd991569c2985",
+      "from_port": "next",
+      "to_node": "f5aa9cef4d8c4dd7b28c081d694b6ef0",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    },
+    {
+      "id": "1ee6edb5d0824018954015e146cfd6b6",
+      "from_node": "493e7976093a41dab158dd1c5ab1fa82",
+      "from_port": "next",
+      "to_node": "e2fc45a0ef6e4589958cd991569c2985",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    }
+  ]
 }

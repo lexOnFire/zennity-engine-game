@@ -1,18 +1,9 @@
 """Inspector signal wiring and card presentation for the isolated editor."""
 from __future__ import annotations
 
-import shutil
-import uuid
-from typing import Any
 from copy import deepcopy
 from pathlib import Path
-
-from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QColorDialog, QFileDialog
-
-from editor.runtime.native_ui import normalize_ui
-from editor.runtime.sprite_rendering import assign_sprite_texture
-
+from typing import Any
 
 from editor.inspector_controller_ui_media import InspectorControllerUIMediaMixin
 

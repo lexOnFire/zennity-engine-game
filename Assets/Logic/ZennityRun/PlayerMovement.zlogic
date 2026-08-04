@@ -1,7 +1,7 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
-  "enabled": true,
+  "enabled": false,
   "name": "Player Movement (Zennity Run)",
   "target": {
     "type": "name",

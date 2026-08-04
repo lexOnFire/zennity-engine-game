@@ -1,7 +1,7 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
-  "enabled": true,
+  "enabled": false,
   "name": "Player Movement + Coins + Enemy + Flag (MyPlatformer)",
   "target": {
     "type": "name",
@@ -169,7 +169,9 @@
         "width": 180.0,
         "height": 100.0
       },
-      "properties": {}
+      "properties": {
+        "tag": "Player"
+      }
     },
     {
       "id": "is_coin",
@@ -220,7 +222,7 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 160.0,
+        "width": 170.0,
         "height": 100.0
       },
       "properties": {
@@ -238,7 +240,7 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 160.0,
+        "width": 170.0,
         "height": 100.0
       },
       "properties": {}
@@ -259,8 +261,8 @@
       },
       "properties": {
         "name": "score",
-        "scope": "scene",
-        "value": 0.0
+        "value": 0.0,
+        "scope": "scene"
       }
     },
     {
@@ -378,7 +380,9 @@
         "width": 180.0,
         "height": 100.0
       },
-      "properties": {}
+      "properties": {
+        "tag": "Player"
+      }
     },
     {
       "id": "is_enemy",
@@ -429,7 +433,7 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 160.0,
+        "width": 170.0,
         "height": 100.0
       },
       "properties": {
@@ -447,7 +451,7 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 160.0,
+        "width": 170.0,
         "height": 100.0
       },
       "properties": {}
@@ -468,8 +472,8 @@
       },
       "properties": {
         "name": "hp",
-        "scope": "scene",
-        "value": 0.0
+        "value": 0.0,
+        "scope": "scene"
       }
     },
     {

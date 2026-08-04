@@ -1,0 +1,141 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "comidaLogic",
+  "target": {
+    "type": "name",
+    "value": "comida"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "721967bf4da4488eb1975064401f98a2",
+      "type": "event_start",
+      "title": "Event Start",
+      "category": "Events",
+      "position": [
+        -657.49,
+        -241.59
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "c669d7ac2cf3479f81c54872713c11b4",
+      "type": "add_sprite_renderer",
+      "title": "Sprite Renderer",
+      "category": "Components",
+      "position": [
+        -303.06,
+        -247.83
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "texture": "",
+        "color": "#ff8ad0",
+        "sort_order": 0
+      }
+    },
+    {
+      "id": "97af63e3ef644de2bc412b9b4626a1a0",
+      "type": "set_hud",
+      "title": "Set Hud",
+      "category": "UI",
+      "position": [
+        -234.45,
+        4.97
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "text": 100
+      }
+    },
+    {
+      "id": "6d045268fe044aab9f6d2d4d7df44248",
+      "type": "set_ui_progress_bar",
+      "title": "Atualizar barra da UI",
+      "category": "UI",
+      "position": [
+        12.86,
+        11.23
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "object": "canva",
+        "value": 100.0,
+        "max_value": 100.0
+      }
+    },
+    {
+      "id": "ff6b9d5c547942a899d98096e354bcc1",
+      "type": "event_update",
+      "title": "Event Update",
+      "category": "Events",
+      "position": [
+        -655.74,
+        -66.85
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "7ef8f65ac4784defb5f69c46653b4a01",
+      "from_node": "721967bf4da4488eb1975064401f98a2",
+      "from_port": "next",
+      "to_node": "c669d7ac2cf3479f81c54872713c11b4",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "9d49b09175524258a574339d41002e30",
+      "from_node": "97af63e3ef644de2bc412b9b4626a1a0",
+      "from_port": "next",
+      "to_node": "6d045268fe044aab9f6d2d4d7df44248",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    },
+    {
+      "id": "2a8ddeff0d614226b27b65f4834f9450",
+      "from_node": "ff6b9d5c547942a899d98096e354bcc1",
+      "from_port": "next",
+      "to_node": "97af63e3ef644de2bc412b9b4626a1a0",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 2
+    }
+  ]
+}
