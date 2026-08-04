@@ -212,3 +212,12 @@ class LogicGraphEditor(
         self.target_type.currentIndexChanged.connect(lambda _index: (self.mark_dirty(), self._refresh_target_hints()))
         self.target_value.textChanged.connect(lambda _text: (self.mark_dirty(), self._refresh_target_hints()))
         self.graph_enabled_check.toggled.connect(lambda _checked: self.mark_dirty())
+
+    def closeEvent(self, event) -> None:
+        self._release_scene_interaction()
+        self._clear_logic_scene()
+        super().closeEvent(event)
+
+    def hideEvent(self, event) -> None:
+        self._release_scene_interaction()
+        super().hideEvent(event)
