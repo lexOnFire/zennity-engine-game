@@ -56,7 +56,6 @@ class BehaviorGraphRunner:
         status = self._tick(self.root, game, max(0.0, float(dt)))
         if status != "running":
             self._memory.clear()
-        self._log_execution(game, self.current_state, status)
         return previous != self.current_state
 
     def play(self, state: str, game: Any) -> bool:
@@ -347,22 +346,3 @@ class BehaviorGraphRunner:
             return float(self._input(node, name, default))
         except (TypeError, ValueError):
             return default
-
-    def _log_execution(self, game: Any, node_id: str, status: str) -> None:
-        """Registra qual nó está sendo executado e seu status."""
-        if node_id not in self.nodes:
-            return
-        node = self.nodes[node_id]
-        node_type = str(node.get("type", "")).replace("bt.", "").upper()
-        props = node.get("properties", {})
-        target_info = ""
-        if "target" in props:
-            target_info = f" → {props['target']}"
-        elif "target_pos" in props:
-            target_info = f" @ {props['target_pos']}"
-        status_emoji = {"running": "⏳", "success": "✓", "failure": "✗"}.get(status, "?")
-        message = f"{status_emoji} {node_type}{target_info}"
-        if hasattr(game, "log"):
-            game.log("INFO", message)
-        elif hasattr(game, "_log"):
-            game._log("INFO", message)
