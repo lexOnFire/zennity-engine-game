@@ -202,3 +202,16 @@ class GraphNodeItem(QGraphicsRectItem):
             category_key = getattr(self.node_def, "category_key", "logic.category.logic")
             color = CATEGORY_COLORS.get(category_key, QColor("#7f8b9c"))
             self.header.setBrush(QBrush(color.darker(155)))
+
+    def set_active_execution(self, active: bool = True) -> None:
+        """Destaca o nó quando em execução (em tempo real durante Play Mode)."""
+        if active:
+            self.setPen(QPen(QColor("#ffff00"), 4.0))  # 🟡 Amarelo brilhante
+            self.header.setBrush(QBrush(QColor("#ffaa00")))
+            self.setZValue(100)  # Trazer para frente
+        else:
+            self.setZValue(2)  # Voltar ao normal
+            self.setPen(QPen(QColor("#515662"), 1.2))
+            category_key = getattr(self.node_def, "category_key", "logic.category.logic")
+            color = CATEGORY_COLORS.get(category_key, QColor("#7f8b9c"))
+            self.header.setBrush(QBrush(color.darker(155)))
