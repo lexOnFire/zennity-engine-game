@@ -48,6 +48,9 @@ class SceneObjectController:
         h.logic_workspace.clear_runtime_trace()
         h._refresh_hierarchy()
         h._scene_controller.publish_snapshot([])
+        dock = getattr(h, "_dock_visual_scripting", None)
+        if dock is not None and hasattr(dock, "sync_from_host"):
+            dock.sync_from_host()
         h._autosave.schedule()
         h.statusBar().showMessage("Nova cena criada")
         h._log("INFO", "Nova cena limpa criada, sem objetos ou vínculos anteriores")
@@ -139,7 +142,11 @@ class SceneObjectController:
 
     def delete(self, name: str) -> None:
         h = self.host
-        if h._play_session.is_running or name not in h._objects_by_name:
+        if h._play_session.is_running:
+            h.statusBar().showMessage("Não é possível deletar durante o Play Mode.")
+            return
+        if name not in h._objects_by_name:
+            h.statusBar().showMessage(f"Objeto '{name}' não encontrado para deletar.")
             return
         h._record_history()
         h._scene_snapshot = [obj for obj in h._scene_snapshot if obj["name"] != name]

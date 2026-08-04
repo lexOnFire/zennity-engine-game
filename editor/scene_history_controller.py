@@ -26,6 +26,9 @@ class SceneHistoryController:
             h._selected_name = None
         h._refresh_hierarchy()
         h._scene_controller.publish_snapshot(h._scene_snapshot)
+        dock = getattr(h, "_dock_visual_scripting", None)
+        if dock is not None and hasattr(dock, "sync_from_host"):
+            dock.sync_from_host()
         if h._selected_name is not None:
             h._scene_controller.select(h._selected_name)
             h._update_inspector(h._selected_name)

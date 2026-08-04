@@ -77,6 +77,9 @@ class ProjectWorkflowController:
         h._selected_name = None
         h._refresh_hierarchy()
         h._scene_controller.publish_snapshot(h._scene_snapshot)
+        dock = getattr(h, "_dock_visual_scripting", None)
+        if dock is not None and hasattr(dock, "sync_from_host"):
+            dock.sync_from_host()
         h.statusBar().showMessage(f"Cena aberta: {filename}")
         h._log("INFO", f"Cena aberta: {filename}")
         return True
