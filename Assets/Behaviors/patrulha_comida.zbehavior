@@ -7,8 +7,8 @@
       "id": "c77cde2b-0c41-4ee1-a643-8df6936b5912",
       "type": "bt.patrol",
       "position": [
-        -290.0,
-        -84.0
+        -327.0,
+        -98.0
       ],
       "properties": {
         "point_a": "-100,100",
@@ -19,8 +19,8 @@
       "id": "303ff960-d85d-4c85-b952-73ca81a1b788",
       "type": "bt.target_in_range",
       "position": [
-        -87.0,
-        -222.0
+        -85.0,
+        -166.0
       ],
       "properties": {
         "target": "comida",
@@ -55,8 +55,8 @@
       "id": "55e1e130-acf1-4dbd-99bf-3e0b5076431b",
       "type": "bt.move_to",
       "position": [
-        -91.0,
-        225.0
+        87.0,
+        171.0
       ],
       "properties": {
         "target_pos": "384,190"
@@ -65,7 +65,7 @@
   ],
   "edges": [
     {
-      "id": "9ac3f3c4-d26f-4ebc-be2a-aaa686e431b1",
+      "id": "1194493b-3352-4b7f-9cee-2da578168890",
       "source_node": "c77cde2b-0c41-4ee1-a643-8df6936b5912",
       "source_port": "out",
       "target_node": "303ff960-d85d-4c85-b952-73ca81a1b788",
@@ -77,6 +77,14 @@
       "source_node": "303ff960-d85d-4c85-b952-73ca81a1b788",
       "source_port": "success",
       "target_node": "4df81ba6-c593-4727-b7d6-81e3c6df6588",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "b2f8e9d3-4a5c-4d6e-9f1a-c3b5e8d9f2c1",
+      "source_node": "303ff960-d85d-4c85-b952-73ca81a1b788",
+      "source_port": "failure",
+      "target_node": "c77cde2b-0c41-4ee1-a643-8df6936b5912",
       "target_port": "in",
       "type": "exec"
     },
@@ -97,17 +105,9 @@
       "type": "exec"
     },
     {
-      "id": "af6acd3a-2e18-4b64-847c-b8e90caefe2d",
+      "id": "0a5d4222-3828-40e0-93bf-66869d733707",
       "source_node": "55e1e130-acf1-4dbd-99bf-3e0b5076431b",
       "source_port": "out",
-      "target_node": "c77cde2b-0c41-4ee1-a643-8df6936b5912",
-      "target_port": "in",
-      "type": "exec"
-    },
-    {
-      "id": "b2f8e9d3-4a5c-4d6e-9f1a-c3b5e8d9f2c1",
-      "source_node": "303ff960-d85d-4c85-b952-73ca81a1b788",
-      "source_port": "failure",
       "target_node": "c77cde2b-0c41-4ee1-a643-8df6936b5912",
       "target_port": "in",
       "type": "exec"
