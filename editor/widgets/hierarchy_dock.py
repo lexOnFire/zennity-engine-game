@@ -6,6 +6,7 @@ from typing import Optional
 from PySide6.QtCore import Qt, Slot
 from engine.game_object import GameObject
 from editor.viewmodels.scene_viewmodel import SceneViewModel
+from PySide6.QtGui import QKeyEvent
 
 
 class HierarchyDock(QDockWidget):
@@ -43,9 +44,19 @@ class HierarchyDock(QDockWidget):
         self.tree.itemSelectionChanged.connect(self.on_item_selection_changed)
         self.tree.itemDoubleClicked.connect(self.on_item_double_clicked)
         self.tree.itemChanged.connect(self.on_item_changed)
+        self.tree.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         
         layout.addWidget(self.tree)
         self.setWidget(content)
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        """Captura Delete para remover objetos selecionados."""
+        if event.key() == Qt.Key.Key_Delete:
+            selected_items = self.tree.selectedItems()
+            if selected_items and self.viewmodel:
+                self.viewmodel.delete_selected()
+            event.accept()
+        else:
+            super().keyPressEvent(event)
 
     def set_viewmodel(self, viewmodel: SceneViewModel) -> None:
         """Conecta a View ao ViewModel da cena."""
