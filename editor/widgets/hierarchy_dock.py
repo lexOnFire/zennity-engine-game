@@ -1,12 +1,12 @@
 from PySide6.QtWidgets import (
     QDockWidget, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit,
-    QTreeWidget, QTreeWidgetItem, QLabel, QHeaderView
+    QTreeWidget, QTreeWidgetItem, QLabel, QHeaderView, QShortcut
 )
 from typing import Optional
 from PySide6.QtCore import Qt, Slot
+from PySide6.QtGui import QKeyEvent, QKeySequence
 from engine.game_object import GameObject
 from editor.viewmodels.scene_viewmodel import SceneViewModel
-from PySide6.QtGui import QKeyEvent
 
 
 class HierarchyDock(QDockWidget):
@@ -48,6 +48,20 @@ class HierarchyDock(QDockWidget):
         
         layout.addWidget(self.tree)
         self.setWidget(content)
+
+        # Atalhos de teclado para Delete e Backspace
+        delete_sc = QShortcut(QKeySequence(Qt.Key_Delete), self)
+        delete_sc.setContext(Qt.WidgetWithChildrenShortcut)
+        delete_sc.activated.connect(self._on_delete_pressed)
+        backspace_sc = QShortcut(QKeySequence(Qt.Key_Backspace), self)
+        backspace_sc.setContext(Qt.WidgetWithChildrenShortcut)
+        backspace_sc.activated.connect(self._on_delete_pressed)
+
+    def _on_delete_pressed(self) -> None:
+        """Callback para Delete/Backspace."""
+        if self.viewmodel:
+            self.viewmodel.delete_selected()
+
     def keyPressEvent(self, event: QKeyEvent) -> None:
         """Captura Delete para remover objetos selecionados."""
         if event.key() == Qt.Key.Key_Delete:
