@@ -81,7 +81,16 @@ class ViewportSessionOrchestrator:
                 if isinstance(behavior, dict):
                     behavior["parameters"] = dict(runner.parameters)
                 if changed:
-                    self.emit({"type": "runtime_log", "level": "INFO", "message": f"{name}: Behavior {previous} → {runner.current_state}"})
+                    def _get_node_label(node_id: str) -> str:
+                        if hasattr(runner, "nodes") and node_id in runner.nodes:
+                            n = runner.nodes[node_id]
+                            label = n.get("title") or n.get("name") or n.get("label") or n.get("type", "")
+                            if label:
+                                return str(label).replace("bt.", "").capitalize()
+                        return str(node_id)
+                    prev_label = _get_node_label(previous)
+                    curr_label = _get_node_label(runner.current_state)
+                    self.emit({"type": "runtime_log", "level": "INFO", "message": f"🧠 {name}: Behavior {prev_label} → {curr_label}"})
                 if trace_due:
                     graph_path = getattr(runner, "_active_path", getattr(runner, "graph_path", "Behavior Tree"))
                     self._emit_trace(name, str(graph_path), runner)
