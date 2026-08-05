@@ -126,8 +126,14 @@ class BehaviorGraphRunner:
             target = game.find(str(self._input(node, "target", "Player")))
             distance = self._number(node, "distance", 150.0)
             if target is None or distance <= 0:
+                if hasattr(game, "_log"):
+                    game._log("DEBUG", f"target_in_range: target={target}, distance={distance} → FAILURE")
                 return "failure"
-            return "success" if game.distance_to(target) <= distance else "failure"
+            dist_to_target = game.distance_to(target)
+            result = "success" if dist_to_target <= distance else "failure"
+            if hasattr(game, "_log"):
+                game._log("DEBUG", f"target_in_range: dist_to_target={dist_to_target:.1f}, distance={distance} → {result.upper()}")
+            return result
         if kind == "bt.parameter_condition":
             return "success" if self._parameter_matches(node) else "failure"
         if kind == "bt.chase":
