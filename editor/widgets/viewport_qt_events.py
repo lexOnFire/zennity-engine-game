@@ -134,6 +134,19 @@ class ViewportQtEventsMixin:
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
         self._held_qt_keys.add(event.key())
+
+        # Delete funciona sempre, tanto em edit como em play mode
+        if event.key() == Qt.Key_Delete:
+            self.delete_selected_object()
+            event.accept()
+            return
+
+        # Backspace também funciona para deletar
+        if event.key() == Qt.Key_Backspace:
+            self.delete_selected_object()
+            event.accept()
+            return
+
         if not getattr(getattr(self, "active_scene", None), "playing", False):
             if event.key() in (Qt.Key_Q, Qt.Key_W, Qt.Key_E, Qt.Key_R, Qt.Key_T, Qt.Key_F):
                 if event.key() == Qt.Key_F:
@@ -144,11 +157,6 @@ class ViewportQtEventsMixin:
                 return
 
         if not self.active_scene:
-            return
-
-        if event.key() == Qt.Key_Delete:
-            self.delete_selected_object()
-            event.accept()
             return
 
         if event.key() == Qt.Key_D and event.modifiers() & Qt.ControlModifier:
