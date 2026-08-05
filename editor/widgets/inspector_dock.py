@@ -24,6 +24,29 @@ class InspectorDock(RealInspectorPanel):
     def load_object(self, obj):
         super().load_object(obj)
 
+    def update_transform_fields(self, obj: Any) -> None:
+        """Otimização: atualiza apenas os campos de Transform sem recarregar toda a UI."""
+        if obj is None or not hasattr(obj, 'transform'):
+            return
+
+        # Tenta encontrar o componente Transform já renderizado
+        if not hasattr(self, 'component_items') or not hasattr(obj, 'transform'):
+            return
+
+        try:
+            # Procura pelo componente Transform já renderizado
+            for component_item in getattr(self, 'component_items', []):
+                if hasattr(component_item, 'component') and component_item.component.get('type') == 'Transform':
+                    # Encontrou, atualiza apenas os campos sem recarregar
+                    if hasattr(component_item, 'update_property_values'):
+                        component_item.update_property_values()
+                    return
+        except:
+            pass
+
+        # Fallback: recarrega tudo se não conseguir atualizar parcialmente
+        self.load_object(obj)
+
     def set_command_manager(self, cm):
         super().set_command_manager(cm)
         if self.viewmodel:

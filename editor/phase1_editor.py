@@ -320,7 +320,11 @@ class ZennityPhase1Editor(
 
     def on_viewport_object_changed(self, obj: Any) -> None:
         if obj is self.editor_context.selection.selected:
-            self.inspector.load_object(obj)
+            # Otimização: atualiza apenas o transform em vez de recarregar tudo
+            if hasattr(self.inspector, 'update_transform_fields'):
+                self.inspector.update_transform_fields(obj)
+            else:
+                self.inspector.load_object(obj)
 
     def on_viewmodel_property_changed(self, component_name: str, property_name: str, value: object) -> None:
         if component_name == "Transform":
