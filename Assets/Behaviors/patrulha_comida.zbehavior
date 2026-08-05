@@ -6,44 +6,85 @@
     {
       "id": "root-selector",
       "type": "bt.selector",
-      "position": [-900.0, -202.0],
-      "properties": {"reactive": true}
+      "position": [
+        -748.0,
+        -408.0
+      ],
+      "properties": {
+        "reactive": true
+      }
     },
     {
       "id": "seq-comida",
       "type": "bt.sequence",
-      "position": [-522.0, -254.0],
-      "properties": {"reactive": false}
+      "position": [
+        -475.0,
+        -380.0
+      ],
+      "properties": {
+        "reactive": false
+      }
     },
     {
       "id": "check-range",
       "type": "bt.target_in_range",
-      "position": [-247.0, -337.0],
-      "properties": {"target": "comida", "distance": 400.0}
+      "position": [
+        -204.0,
+        -336.0
+      ],
+      "properties": {
+        "target": "comida",
+        "distance": 400.0
+      }
     },
     {
       "id": "chase-node",
       "type": "bt.chase",
-      "position": [-245.0, -213.0],
-      "properties": {"target": "comida", "stop_distance": 50.0, "speed": 150.0}
+      "position": [
+        -245.0,
+        -213.0
+      ],
+      "properties": {
+        "target": "comida",
+        "stop_distance": 50.0,
+        "speed": 150.0
+      }
     },
     {
       "id": "cooldown-node",
       "type": "bt.cooldown",
-      "position": [-249.0, -74.0],
-      "properties": {"seconds": 5.0}
+      "position": [
+        -249.0,
+        -74.0
+      ],
+      "properties": {
+        "seconds": 5.0
+      }
     },
     {
       "id": "move-node",
       "type": "bt.move_to",
-      "position": [-244.0, 27.0],
-      "properties": {"target_pos": "388,190", "speed": 400.0}
+      "position": [
+        -244.0,
+        27.0
+      ],
+      "properties": {
+        "target_pos": "388,190",
+        "speed": 400.0
+      }
     },
     {
       "id": "patrol-node",
       "type": "bt.patrol",
-      "position": [-508.0, -75.0],
-      "properties": {"point_a": "-100,100", "point_b": "200,0", "speed": 80.0}
+      "position": [
+        -591.0,
+        -193.0
+      ],
+      "properties": {
+        "point_a": "-100,100",
+        "point_b": "200,0",
+        "speed": 80.0
+      }
     }
   ],
   "edges": [
@@ -52,14 +93,6 @@
       "source_node": "root-selector",
       "source_port": "out_0",
       "target_node": "seq-comida",
-      "target_port": "in",
-      "type": "exec"
-    },
-    {
-      "id": "selector-to-patrol",
-      "source_node": "root-selector",
-      "source_port": "out_1",
-      "target_node": "patrol-node",
       "target_port": "in",
       "type": "exec"
     },
@@ -100,6 +133,14 @@
       "source_node": "move-node",
       "source_port": "out",
       "target_node": "root-selector",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "selector-to-patrol",
+      "source_node": "root-selector",
+      "source_port": "out_1",
+      "target_node": "patrol-node",
       "target_port": "in",
       "type": "exec"
     }
