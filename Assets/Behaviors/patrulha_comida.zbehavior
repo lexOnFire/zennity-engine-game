@@ -7,8 +7,8 @@
       "id": "root-selector",
       "type": "bt.selector",
       "position": [
-        -1013.0,
-        -511.0
+        -1129.0,
+        -592.0
       ],
       "properties": {
         "reactive": true
@@ -18,8 +18,8 @@
       "id": "seq-comida",
       "type": "bt.sequence",
       "position": [
-        -757.0,
-        -474.0
+        -869.0,
+        -591.0
       ],
       "properties": {
         "reactive": false
@@ -29,8 +29,8 @@
       "id": "check-range",
       "type": "bt.target_in_range",
       "position": [
-        -483.0,
-        -473.0
+        -583.0,
+        -611.0
       ],
       "properties": {
         "target": "Food",
@@ -41,8 +41,8 @@
       "id": "chase-node",
       "type": "bt.chase",
       "position": [
-        -769.0,
-        -348.0
+        -860.0,
+        -454.0
       ],
       "properties": {
         "target": "Food",
@@ -51,23 +51,11 @@
       }
     },
     {
-      "id": "move-node",
-      "type": "bt.move_to",
-      "position": [
-        -678.0,
-        -178.0
-      ],
-      "properties": {
-        "target_pos": "-388,190",
-        "speed": 150.0
-      }
-    },
-    {
       "id": "patrol-node",
       "type": "bt.patrol",
       "position": [
-        -1058.0,
-        -184.0
+        -1181.0,
+        -321.0
       ],
       "properties": {
         "point_a": "-100,100",
@@ -76,14 +64,25 @@
       }
     },
     {
-      "id": "a4bde98f-554b-42e5-b3bc-ec7302795abf",
-      "type": "bt.idle",
+      "id": "0372340c-f214-49e0-9968-5d1b6304b708",
+      "type": "bt.chase",
       "position": [
-        -483.0,
-        -351.0
+        -864.0,
+        -161.0
       ],
       "properties": {
-        "duration": 5.0
+        "target": "colonia"
+      }
+    },
+    {
+      "id": "7eeed7b0-62c4-411d-92cd-7b08fd97a6ca",
+      "type": "bt.cooldown",
+      "position": [
+        -846.0,
+        -295.0
+      ],
+      "properties": {
+        "seconds": 5.0
       }
     }
   ],
@@ -137,34 +136,34 @@
       "type": "exec"
     },
     {
-      "id": "271eb929-5b9a-400b-8d73-5d1e6ae5cd27",
+      "id": "f4de9ab6-3137-4973-b1a0-74d101de238b",
       "source_node": "seq-comida",
-      "source_port": "out_4",
-      "target_node": "a4bde98f-554b-42e5-b3bc-ec7302795abf",
+      "source_port": "out_2",
+      "target_node": "7eeed7b0-62c4-411d-92cd-7b08fd97a6ca",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "bb520c01-6918-4b84-88bb-a89793f66819",
+      "id": "b2b5e699-fd4c-4305-983f-d9d920d17bfe",
       "source_node": "chase-node",
       "source_port": "out",
-      "target_node": "a4bde98f-554b-42e5-b3bc-ec7302795abf",
+      "target_node": "7eeed7b0-62c4-411d-92cd-7b08fd97a6ca",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "d0f5a46c-1466-401b-abc6-738558f55f34",
-      "source_node": "a4bde98f-554b-42e5-b3bc-ec7302795abf",
-      "source_port": "out",
-      "target_node": "move-node",
+      "id": "fd079aaf-111b-41ae-a37c-0093efa39c44",
+      "source_node": "seq-comida",
+      "source_port": "out_2",
+      "target_node": "0372340c-f214-49e0-9968-5d1b6304b708",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "16bf4cf7-0856-469a-8439-f29e96500f64",
-      "source_node": "move-node",
-      "source_port": "out",
-      "target_node": "root-selector",
+      "id": "23ec412d-b0be-4850-9fe1-706595b66500",
+      "source_node": "7eeed7b0-62c4-411d-92cd-7b08fd97a6ca",
+      "source_port": "child",
+      "target_node": "0372340c-f214-49e0-9968-5d1b6304b708",
       "target_port": "in",
       "type": "exec"
     }

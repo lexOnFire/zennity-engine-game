@@ -19,13 +19,120 @@
   },
   "nodes": [
     {
-      "id": "721967bf4da4488eb1975064401f98a2",
-      "type": "event_start",
-      "title": "Event Start",
+      "id": "604ad147708d451e9996a6f0f08e1180",
+      "type": "set_position",
+      "title": "Set Position",
+      "category": "Position",
+      "position": [
+        438.76,
+        202.35
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 212.0
+      },
+      "properties": {
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "id": "4dc310d5224c42299000f1b14ddd0d4d",
+      "type": "random_number",
+      "title": "Random Number",
+      "category": "Logic",
+      "position": [
+        51.92,
+        377.17
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "minimum": -329,
+        "maximum": 361
+      }
+    },
+    {
+      "id": "b527e082eb2944d093a31dc4afafd978",
+      "type": "random_number",
+      "title": "Random Number",
+      "category": "Logic",
+      "position": [
+        62.62,
+        550.07
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "minimum": 202,
+        "maximum": 192
+      }
+    },
+    {
+      "id": "641ea7c5941f47649ae741ef235bd5b0",
+      "type": "spawn_object",
+      "title": "Spawn Object",
+      "category": "Spawning",
+      "position": [
+        53.03,
+        170.44
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "26fab327bc3e43a0b8689b3d523d053a",
+      "type": "event_timer",
+      "title": "Event Timer",
       "category": "Events",
       "position": [
-        -641.05,
-        -144.22
+        -1138.45,
+        450.82
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {
+        "seconds": 10
+      }
+    },
+    {
+      "id": "7e4b4102b2d94f2d8f5b0ae7f33ad196",
+      "type": "clone_object",
+      "title": "Clone Object",
+      "category": "Spawning",
+      "position": [
+        -512.41,
+        317.58
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "6c30e5908d4741f59101d706c0f6ab2d",
+      "type": "event_update",
+      "title": "Event Update",
+      "category": "Events",
+      "position": [
+        -1100.07,
+        -102.7
       ],
       "editor": {
         "collapsed": false,
@@ -35,35 +142,105 @@
       "properties": {}
     },
     {
-      "id": "c669d7ac2cf3479f81c54872713c11b4",
-      "type": "add_sprite_renderer",
-      "title": "Sprite Renderer",
-      "category": "Components",
+      "id": "5187322d7a8140679b6a4402d37ae263",
+      "type": "destroy_after_time",
+      "title": "Destroy After Time",
+      "category": "Action",
       "position": [
-        -377.67,
-        -150.46
+        -750.87,
+        19.63
       ],
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 156.0
+        "height": 184.0
       },
       "properties": {
-        "texture": "",
-        "color": "#ff8ad0",
-        "sort_order": 0
+        "seconds": 1.0
+      }
+    },
+    {
+      "id": "20f923da56a5434ca70562ffe89f8d2d",
+      "type": "get_tag",
+      "title": "Get Tag",
+      "category": "Objects",
+      "position": [
+        -856.68,
+        537.61
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {
+        "tag": "Food"
       }
     }
   ],
   "edges": [
     {
-      "id": "7ef8f65ac4784defb5f69c46653b4a01",
-      "from_node": "721967bf4da4488eb1975064401f98a2",
+      "id": "aa2da4b1e8f049dda550729a3a31d2bd",
+      "from_node": "4dc310d5224c42299000f1b14ddd0d4d",
+      "from_port": "value",
+      "to_node": "604ad147708d451e9996a6f0f08e1180",
+      "to_port": "x",
+      "kind": "number",
+      "order": 2
+    },
+    {
+      "id": "9bdec0d73dfa415bb2a8f3ac5fa976e8",
+      "from_node": "b527e082eb2944d093a31dc4afafd978",
+      "from_port": "value",
+      "to_node": "604ad147708d451e9996a6f0f08e1180",
+      "to_port": "y",
+      "kind": "number",
+      "order": 3
+    },
+    {
+      "id": "e66675842209447a83495e03bedf930f",
+      "from_node": "641ea7c5941f47649ae741ef235bd5b0",
       "from_port": "next",
-      "to_node": "c669d7ac2cf3479f81c54872713c11b4",
+      "to_node": "604ad147708d451e9996a6f0f08e1180",
       "to_port": "in",
       "kind": "flow",
-      "order": 0
+      "order": 2
+    },
+    {
+      "id": "b68368a4d9cd44f69713a17b8c9f89cf",
+      "from_node": "26fab327bc3e43a0b8689b3d523d053a",
+      "from_port": "next",
+      "to_node": "7e4b4102b2d94f2d8f5b0ae7f33ad196",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 3
+    },
+    {
+      "id": "7ec1edbded674505be158dc5ce781c61",
+      "from_node": "7e4b4102b2d94f2d8f5b0ae7f33ad196",
+      "from_port": "next",
+      "to_node": "641ea7c5941f47649ae741ef235bd5b0",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 4
+    },
+    {
+      "id": "954d418dbc824355a9c371adee2bf136",
+      "from_node": "6c30e5908d4741f59101d706c0f6ab2d",
+      "from_port": "next",
+      "to_node": "5187322d7a8140679b6a4402d37ae263",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 5
+    },
+    {
+      "id": "d536b60ab37e4bb0bf791c9383cd95e1",
+      "from_node": "20f923da56a5434ca70562ffe89f8d2d",
+      "from_port": "value",
+      "to_node": "7e4b4102b2d94f2d8f5b0ae7f33ad196",
+      "to_port": "name",
+      "kind": "text",
+      "order": 6
     }
   ]
 }

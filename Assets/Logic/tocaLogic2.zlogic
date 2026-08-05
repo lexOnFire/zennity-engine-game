@@ -60,7 +60,7 @@
         "relative": true,
         "inherit_source": true,
         "inherit_logic": false,
-        "lifetime": 31,
+        "lifetime": 0,
         "max_instances": 1,
         "max_distance": 0.0,
         "use_pool": false
