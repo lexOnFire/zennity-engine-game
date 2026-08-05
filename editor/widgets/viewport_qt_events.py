@@ -137,13 +137,15 @@ class ViewportQtEventsMixin:
 
         # Delete funciona sempre, tanto em edit como em play mode
         if event.key() == Qt.Key_Delete:
-            self.delete_selected_object()
+            if hasattr(self, 'delete_selected_object'):
+                self.delete_selected_object()
             event.accept()
             return
 
         # Backspace também funciona para deletar
         if event.key() == Qt.Key_Backspace:
-            self.delete_selected_object()
+            if hasattr(self, 'delete_selected_object'):
+                self.delete_selected_object()
             event.accept()
             return
 

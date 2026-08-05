@@ -15,9 +15,9 @@ import pygame
 import numpy as np
 from typing import Optional, List
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QWidget, QShortcut
 from PySide6.QtCore import Qt, QTimer, Slot
-from PySide6.QtGui import QPainter, QImage, QMouseEvent, QKeyEvent, QWheelEvent
+from PySide6.QtGui import QPainter, QImage, QMouseEvent, QKeyEvent, QWheelEvent, QKeySequence
 
 from editor.core.event_bus import (
     EventBus,
@@ -84,6 +84,14 @@ class ViewportWidget(ViewportQtEventsMixin, QOpenGLWidget):
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._tick)
         self._timer.start(16)
+
+        # Atalhos de teclado para Delete e Backspace
+        delete_sc = QShortcut(QKeySequence(Qt.Key_Delete), self)
+        delete_sc.setContext(Qt.WidgetWithChildrenShortcut)
+        delete_sc.activated.connect(self.delete_selected_object)
+        backspace_sc = QShortcut(QKeySequence(Qt.Key_Backspace), self)
+        backspace_sc.setContext(Qt.WidgetWithChildrenShortcut)
+        backspace_sc.activated.connect(self.delete_selected_object)
 
     def request_render(self, reason: str = "unspecified") -> bool:
         """Schedule one Qt repaint, coalescing duplicate invalidations."""
