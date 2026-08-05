@@ -366,6 +366,8 @@ class ViewportSession(ViewportSessionLifecycleMixin):
             snapshot.append({
                 "id": str(obj.get("id", name)),
                 "name": str(name),
+                "tag": str(obj.get("tag", "Untagged")),
+                "layer": str(obj.get("layer", "Default")),
                 "x": float(obj.get("x", 0.0)), "y": float(obj.get("y", 0.0)),
                 "w": float(obj.get("w", 1.0)), "h": float(obj.get("h", 1.0)),
                 "rotation": float(obj.get("rotation", 0.0)),
