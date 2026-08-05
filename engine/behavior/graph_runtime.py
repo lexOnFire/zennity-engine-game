@@ -63,6 +63,10 @@ class BehaviorGraphRunner:
     def update(self, game: Any, dt: float) -> bool:
         if not self._started:
             self.start(game)
+            # DEBUG: Listar todos os objetos disponíveis
+            if hasattr(game, 'objects'):
+                obj_names = list(game.objects.keys())
+                print(f"[BT-DEBUG] Objetos no jogo: {obj_names}")
         previous = self.current_state
         if not self.root:
             return False
