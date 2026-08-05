@@ -4,36 +4,34 @@
   "category": "Behavior Tree",
   "nodes": [
     {
-      "id": "c77cde2b-0c41-4ee1-a643-8df6936b5912",
-      "type": "bt.patrol",
-      "position": [
-        -327.0,
-        -98.0
-      ],
+      "id": "root_selector",
+      "type": "bt.selector",
+      "position": [-300.0, -150.0],
       "properties": {
-        "point_a": "-100,100",
-        "point_b": "0,100"
+        "reactive": true
       }
     },
     {
-      "id": "303ff960-d85d-4c85-b952-73ca81a1b788",
+      "id": "seq_comida",
+      "type": "bt.sequence",
+      "position": [-50.0, -250.0],
+      "properties": {
+        "reactive": false
+      }
+    },
+    {
+      "id": "check_in_range",
       "type": "bt.target_in_range",
-      "position": [
-        -85.0,
-        -166.0
-      ],
+      "position": [250.0, -350.0],
       "properties": {
         "target": "comida",
-        "distance": 400.2
+        "distance": 400.0
       }
     },
     {
-      "id": "4df81ba6-c593-4727-b7d6-81e3c6df6588",
+      "id": "chase_comida",
       "type": "bt.chase",
-      "position": [
-        189.0,
-        -179.0
-      ],
+      "position": [250.0, -220.0],
       "properties": {
         "target": "comida",
         "stop_distance": 50.0,
@@ -41,74 +39,94 @@
       }
     },
     {
-      "id": "65cfca62-258e-4fc0-a603-a2343f1efe35",
+      "id": "esperar_5s",
       "type": "bt.cooldown",
-      "position": [
-        178.0,
-        -18.0
-      ],
+      "position": [250.0, -90.0],
       "properties": {
         "seconds": 5.0
       }
     },
     {
-      "id": "55e1e130-acf1-4dbd-99bf-3e0b5076431b",
+      "id": "voltar_ponto",
       "type": "bt.move_to",
-      "position": [
-        87.0,
-        171.0
-      ],
+      "position": [250.0, 40.0],
       "properties": {
         "target_pos": "384,190"
+      }
+    },
+    {
+      "id": "patrulhar",
+      "type": "bt.patrol",
+      "position": [-50.0, -50.0],
+      "properties": {
+        "point_a": "-100,100",
+        "point_b": "0,100",
+        "speed": 80.0
       }
     }
   ],
   "edges": [
     {
-      "id": "1194493b-3352-4b7f-9cee-2da578168890",
-      "source_node": "c77cde2b-0c41-4ee1-a643-8df6936b5912",
+      "id": "e_root_seq",
+      "source_node": "root_selector",
       "source_port": "out",
-      "target_node": "303ff960-d85d-4c85-b952-73ca81a1b788",
+      "target_node": "seq_comida",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "9bcbaf46-b0d4-4ec1-9368-c15bd5a77b56",
-      "source_node": "303ff960-d85d-4c85-b952-73ca81a1b788",
+      "id": "e_root_patrol",
+      "source_node": "root_selector",
+      "source_port": "out",
+      "target_node": "patrulhar",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "e_seq_check",
+      "source_node": "seq_comida",
+      "source_port": "out",
+      "target_node": "check_in_range",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "e_check_success",
+      "source_node": "check_in_range",
       "source_port": "success",
-      "target_node": "4df81ba6-c593-4727-b7d6-81e3c6df6588",
+      "target_node": "chase_comida",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "b2f8e9d3-4a5c-4d6e-9f1a-c3b5e8d9f2c1",
-      "source_node": "303ff960-d85d-4c85-b952-73ca81a1b788",
-      "source_port": "failure",
-      "target_node": "c77cde2b-0c41-4ee1-a643-8df6936b5912",
-      "target_port": "in",
-      "type": "exec"
-    },
-    {
-      "id": "1669b977-60b2-4fdc-b25d-5802ae60de5b",
-      "source_node": "4df81ba6-c593-4727-b7d6-81e3c6df6588",
+      "id": "e_chase_cooldown",
+      "source_node": "chase_comida",
       "source_port": "out",
-      "target_node": "65cfca62-258e-4fc0-a603-a2343f1efe35",
+      "target_node": "esperar_5s",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "94c630c5-5be3-41be-a8fe-92069cd21e64",
-      "source_node": "65cfca62-258e-4fc0-a603-a2343f1efe35",
+      "id": "e_cooldown_move",
+      "source_node": "esperar_5s",
       "source_port": "child",
-      "target_node": "55e1e130-acf1-4dbd-99bf-3e0b5076431b",
+      "target_node": "voltar_ponto",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "0a5d4222-3828-40e0-93bf-66869d733707",
-      "source_node": "55e1e130-acf1-4dbd-99bf-3e0b5076431b",
+      "id": "e_move_complete",
+      "source_node": "voltar_ponto",
       "source_port": "out",
-      "target_node": "c77cde2b-0c41-4ee1-a643-8df6936b5912",
+      "target_node": "root_selector",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "e_check_failure",
+      "source_node": "check_in_range",
+      "source_port": "failure",
+      "target_node": "patrulhar",
       "target_port": "in",
       "type": "exec"
     }
