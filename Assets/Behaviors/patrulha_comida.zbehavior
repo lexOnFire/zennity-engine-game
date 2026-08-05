@@ -71,7 +71,9 @@
         -161.0
       ],
       "properties": {
-        "target": "colonia"
+        "target": "colonia",
+        "stop_distance": 20.0,
+        "speed": 150.0
       }
     },
     {
@@ -88,7 +90,7 @@
   ],
   "edges": [
     {
-      "id": "selector-to-sequence",
+      "id": "edge-selector-to-seq",
       "source_node": "root-selector",
       "source_port": "out_0",
       "target_node": "seq-comida",
@@ -96,47 +98,31 @@
       "type": "exec"
     },
     {
-      "id": "sequence-to-check",
-      "source_node": "seq-comida",
-      "source_port": "out",
-      "target_node": "check-range",
-      "target_port": "in",
-      "type": "exec"
-    },
-    {
-      "id": "39c4d959-7dd5-4dcd-b7f0-ac23ad7f1ed2",
+      "id": "edge-selector-to-patrol",
       "source_node": "root-selector",
-      "source_port": "out_2",
+      "source_port": "out_1",
       "target_node": "patrol-node",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "feb2d174-5d5e-4ed1-9386-b0bf5dd6d2ce",
-      "source_node": "root-selector",
-      "source_port": "out_1",
-      "target_node": "seq-comida",
-      "target_port": "in",
-      "type": "exec"
-    },
-    {
-      "id": "07a81e5c-0fe4-4e13-ac46-5a587211dead",
+      "id": "edge-seq-to-check",
       "source_node": "seq-comida",
-      "source_port": "out_1",
+      "source_port": "out_0",
       "target_node": "check-range",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "0c7cca93-58a7-4714-96a3-a585143512db",
+      "id": "edge-seq-to-chase-food",
       "source_node": "seq-comida",
-      "source_port": "out_2",
+      "source_port": "out_1",
       "target_node": "chase-node",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "f4de9ab6-3137-4973-b1a0-74d101de238b",
+      "id": "edge-seq-to-cooldown",
       "source_node": "seq-comida",
       "source_port": "out_2",
       "target_node": "7eeed7b0-62c4-411d-92cd-7b08fd97a6ca",
@@ -144,23 +130,7 @@
       "type": "exec"
     },
     {
-      "id": "b2b5e699-fd4c-4305-983f-d9d920d17bfe",
-      "source_node": "chase-node",
-      "source_port": "out",
-      "target_node": "7eeed7b0-62c4-411d-92cd-7b08fd97a6ca",
-      "target_port": "in",
-      "type": "exec"
-    },
-    {
-      "id": "fd079aaf-111b-41ae-a37c-0093efa39c44",
-      "source_node": "seq-comida",
-      "source_port": "out_2",
-      "target_node": "0372340c-f214-49e0-9968-5d1b6304b708",
-      "target_port": "in",
-      "type": "exec"
-    },
-    {
-      "id": "23ec412d-b0be-4850-9fe1-706595b66500",
+      "id": "edge-cooldown-to-colonia",
       "source_node": "7eeed7b0-62c4-411d-92cd-7b08fd97a6ca",
       "source_port": "child",
       "target_node": "0372340c-f214-49e0-9968-5d1b6304b708",
