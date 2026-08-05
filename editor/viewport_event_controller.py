@@ -9,7 +9,7 @@ class ViewportEventController:
     """Owns viewport event state transitions and presentation updates."""
 
     MAX_EVENTS_PER_POLL = 64
-    COALESCED_EVENT_TYPES = frozenset({"runtime_objects", "stats", "runtime_metrics"})
+    COALESCED_EVENT_TYPES = frozenset({"runtime_objects", "stats", "runtime_metrics", "transform"})
 
     def __init__(self, host: Any) -> None:
         self.host = host
@@ -50,6 +50,8 @@ class ViewportEventController:
             if h._drag_history_snapshot is not None and h._drag_history_snapshot != h._scene_snapshot:
                 h._record_history(h._drag_history_snapshot)
             h._drag_history_snapshot = None
+            if message.get("name") == h._selected_name:
+                h._update_inspector(h._selected_name)
             return
         obj = h._objects_by_name.get(message["name"])
         if obj is not None and not h._runtime_playing:
@@ -59,7 +61,7 @@ class ViewportEventController:
                 if field in message:
                     obj[field] = float(message[field])
             if message["name"] == h._selected_name:
-                h._update_inspector(h._selected_name)
+                h._update_transform_fields_only(message["name"], obj)
         h.statusBar().showMessage(
             f"Viewport: {message['name']} em X={message['x']:.1f}, Y={message['y']:.1f}"
         )

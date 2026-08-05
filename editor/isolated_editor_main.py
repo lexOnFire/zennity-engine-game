@@ -358,6 +358,20 @@ class IsolatedEditorWindow(InspectorComponentDelegatesMixin, AnimationWorkspaceO
     def _select_hierarchy_item(self, item: QTreeWidgetItem) -> None:
         self._hierarchy_controller.select_item(item)
 
+    def _update_transform_fields_only(self, name: str, obj: dict[str, Any]) -> None:
+        if name != self._selected_name:
+            return
+        self._updating_inspector = True
+        try:
+            for key in ("x", "y", "w", "h", "rotation"):
+                if key in obj and key in self.inspector_fields:
+                    widget = self.inspector_fields[key]
+                    widget.blockSignals(True)
+                    widget.setValue(float(obj[key]))
+                    widget.blockSignals(False)
+        finally:
+            self._updating_inspector = False
+
     def _update_inspector(self, name: str) -> None:
         obj = self._runtime_objects_by_name.get(name) if self._runtime_playing else None
         obj = obj or self._objects_by_name.get(name)

@@ -23,11 +23,12 @@ def _host():
         _selected_name="Player", _runtime_playing=False,
         _drag_history_snapshot=None, inspected=[], history=[],
         _runtime_objects_by_name={}, cleared=0, refreshed=0,
-        selected=[],
+        selected=[], fast_updated=[],
     )
     host._scene_controller = SimpleNamespace(select=host.selected.append)
     host._selection = EditorSelectionController(host)
     host._update_inspector = lambda name: host.inspected.append(name)
+    host._update_transform_fields_only = lambda name, obj: host.fast_updated.append(name)
     host._record_history = lambda snapshot: host.history.append(snapshot)
     host._refresh_hierarchy = lambda: setattr(host, "refreshed", host.refreshed + 1)
     host._clear_inspector_view = lambda: setattr(host, "cleared", host.cleared + 1)
