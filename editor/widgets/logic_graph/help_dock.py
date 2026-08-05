@@ -107,12 +107,34 @@ NODE_HELP_DATABASE: dict[str, dict[str, str]] = {
         "title": "Comparar (Compare)",
         "category": "Lógica",
         "icon": "🔗",
-        "desc": "Compara dois valores e retorna booleano (verdadeiro/falso).",
+        "desc": "Compara dois valores numéricos e retorna booleano (verdadeiro/falso).",
         "detailed": "Suporta operadores: ==, !=, >, >=, <, <=",
         "usage": "Use em ramos condicionais para verificar estado (vida <= 0, score >= 100).",
         "example": "<b>Exemplo:</b> Compare (vida <= 0) → Branch → True: Game Over",
         "ports": "<b>[In] A</b>: Primeiro valor.<br><b>[In] B</b>: Segundo valor.<br>[In] Operador: ==, !=, >, >=, <, <=<br><b>[Out]</b>: Resultado booleano.",
         "tips": "• Tipos devem ser compatíveis<br>• Use com Branch para lógica<br>• Aceita números e variáveis"
+    },
+    "compare_text": {
+        "title": "Comparar Texto (Compare Text)",
+        "category": "Lógica",
+        "icon": "📝",
+        "desc": "Compara dois textos e retorna booleano (verdadeiro/falso).",
+        "detailed": "Compara strings de forma exata. Suporta operadores: ==, !=, contains (contém).",
+        "usage": "Use para verificar nomes, tags de texto, diálogos ou identificadores de string.",
+        "example": "<b>Exemplo:</b> Get Tag → Compare Text (== 'enemy') → Branch → True: Attack",
+        "ports": "<b>[In] A</b>: Primeiro texto.<br><b>[In] B</b>: Segundo texto.<br>[In] Operador: ==, !=, contains<br><b>[Out]</b>: Resultado booleano.",
+        "tips": "• Comparação é case-sensitive<br>• Use 'contains' para busca parcial<br>• Ideal com Get Tag ou variáveis de texto"
+    },
+    "compare_text_ignore_case": {
+        "title": "Comparar Texto (Sem Maiúsculas) (Compare Text Ignore Case)",
+        "category": "Lógica",
+        "icon": "📝",
+        "desc": "Compara dois textos ignorando maiúsculas/minúsculas (case-insensitive).",
+        "detailed": "Mesma funcionalidade do Compare Text, mas ignora diferenças de capitalização.",
+        "usage": "Use quando a diferença entre maiúsculas não importa (ex: 'PLAYER', 'player', 'Player' são iguais).",
+        "example": "<b>Exemplo:</b> Player Name → Compare Text Ignore Case (== 'hero') → Branch",
+        "ports": "<b>[In] A</b>: Primeiro texto.<br><b>[In] B</b>: Segundo texto.<br>[In] Operador: ==, !=, contains<br><b>[Out]</b>: Resultado booleano.",
+        "tips": "• Ignora diferença entre maiúsculas/minúsculas<br>• Melhor para nomes de jogadores<br>• Mais flexível que Compare Text"
     },
 }
 
@@ -189,50 +211,97 @@ class LogicHelpDock(QWidget):
             tips = data.get("tips", "")
 
             html.append(f"""
-            <div style='background:#141824; border-left: 3px solid #38bdf8; padding: 10px; margin: 8px 0; border-radius: 4px;'>
-                <h3 style='color:#38bdf8; margin: 0 0 4px 0; font-size: 12px;'>{icon} {data['title']}</h3>
-                <p style='color:#94a3b8; font-size: 9px; margin: 2px 0; font-weight: bold;'>
-                    <span style='background:#1a202c; padding: 2px 6px; border-radius: 3px;'>{category}</span>
-                </p>
-                <p style='margin: 6px 0; font-size: 10px; line-height: 1.4;'><b>📝 Descrição:</b><br>{data['desc']}</p>
+            <div style='background:#141824; border-left: 4px solid #38bdf8; padding: 12px; margin: 10px 0; border-radius: 6px;'>
+                <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>
+                    <h3 style='color:#38bdf8; margin: 0; font-size: 13px; font-weight: bold;'>{icon} {data['title']}</h3>
+                    <span style='background:#38bdf8; color:#0f1419; padding: 3px 8px; border-radius: 12px; font-size: 9px; font-weight: bold;'>{category}</span>
+                </div>
+                <p style='margin: 8px 0; font-size: 10px; line-height: 1.6; color:#cbd5e1;'>{data['desc']}</p>
             """)
 
             if detailed:
-                html.append(f"<p style='margin: 4px 0; font-size: 10px;'><b>ℹ️ Detalhes:</b> {detailed}</p>")
+                html.append(f"<p style='margin: 8px 0; font-size: 10px; color:#a3e635; font-style: italic;'>ℹ️ {detailed}</p>")
 
-            html.append(f"<p style='margin: 4px 0; font-size: 10px;'><b>💡 Como Usar:</b><br>{data['usage']}</p>")
+            html.append(f"<div style='background:#0f1419; padding: 8px; border-radius: 4px; margin: 8px 0;'>"
+                       f"<p style='margin: 0 0 6px 0; font-size: 10px; color:#38bdf8; font-weight: bold;'>💡 Como Usar:</p>"
+                       f"<p style='margin: 0; font-size: 10px; color:#cbd5e1; line-height: 1.5;'>{data['usage']}</p>"
+                       f"</div>")
 
             if example:
-                html.append(f"<div style='background:#0f1419; padding: 5px; border-radius: 3px; margin: 4px 0; font-size: 9px;'>{example}</div>")
+                html.append(f"<div style='background:#181c28; padding: 8px; border-left: 2px solid #60a5fa; border-radius: 4px; margin: 8px 0;'>"
+                           f"<p style='margin: 0; font-size: 9px; color:#60a5fa; font-weight: bold;'>{example}</p>"
+                           f"</div>")
 
-            html.append(f"<p style='margin: 4px 0; font-size: 10px;'><b>🔌 Portas (Pinos):</b><br><code style='background:#0f1419; padding: 2px 4px; border-radius: 2px;'>{data['ports']}</code></p>")
+            html.append(f"<div style='background:#0f1419; padding: 8px; border-radius: 4px; margin: 8px 0;'>"
+                       f"<p style='margin: 0 0 6px 0; font-size: 10px; color:#38bdf8; font-weight: bold;'>🔌 Portas (Pinos):</p>"
+                       f"<p style='margin: 0; font-size: 10px; color:#cbd5e1; line-height: 1.5;'>{data['ports']}</p>"
+                       f"</div>")
 
             if tips:
-                html.append(f"<p style='margin: 4px 0; font-size: 10px; color: #a3e635;'><b>⚡ Dicas Úteis:</b><br>{tips}</p>")
+                html.append(f"<div style='background:#1a2428; padding: 8px; border-left: 2px solid #a3e635; border-radius: 4px; margin: 8px 0;'>"
+                           f"<p style='margin: 0 0 6px 0; font-size: 10px; color:#a3e635; font-weight: bold;'>⚡ Dicas Úteis:</p>"
+                           f"<p style='margin: 0; font-size: 10px; color:#cbd5e1; line-height: 1.5;'>{tips}</p>"
+                           f"</div>")
 
             html.append("</div>")
 
         self.help_text.setHtml("".join(html))
 
     def _show_fallback(self, query: str):
-        pretty_title = query.strip().capitalize() if query else "Ajuda"
-        self.help_text.setHtml(f"""
-        <div style='background:#141824; border-left: 3px solid #94a3b8; padding: 10px; margin: 8px 0; border-radius: 4px;'>
-            <h3 style='color:#cbd5e1; margin: 0 0 4px 0;'>🤔 {pretty_title}</h3>
-            <p style='color:#94a3b8; font-size:10px; margin: 6px 0;'>
-                <b>Nó não encontrado na base de dados.</b>
-            </p>
-            <p style='margin: 6px 0; font-size: 10px;'>
-                Nó executor/avaliador do Visual Scripting. Processa a lógica do grafo quando acionado.
-            </p>
-            <p style='margin: 6px 0; font-size: 10px;'>
-                <b>💡 Dica:</b> Conecte os pinos de entrada e saída no fluxo de execução do seu grafo.
-            </p>
-            <p style='color:#64748b; font-size: 9px; margin-top: 12px;'>
-                Selecione um nó na paleta ou no editor para ver documentação detalhada.
-            </p>
-        </div>
-        """)
+        """Mostra mensagem quando nó não está na base de dados."""
+        if not query or query.strip() == "":
+            # Tela inicial vazia
+            self.help_text.setHtml(f"""
+            <div style='padding: 20px; text-align: center;'>
+                <p style='color:#94a3b8; font-size: 12px; font-weight: bold;'>📚 Bem-vindo à Ajuda do Logic Graph</p>
+                <p style='color:#64748b; font-size: 10px; margin-top: 10px;'>
+                    Selecione um nó na <b>paleta</b> ou clique em um nó no <b>editor</b><br>
+                    para ver documentação detalhada e exemplos práticos.
+                </p>
+                <div style='background:#141824; border-left: 3px solid #38bdf8; padding: 12px; margin-top: 16px; border-radius: 4px; text-align: left;'>
+                    <p style='color:#38bdf8; font-size: 10px; font-weight: bold; margin: 0 0 8px 0;'>⚡ Comece aqui:</p>
+                    <ul style='color:#cbd5e1; font-size: 10px; margin: 0; padding-left: 20px;'>
+                        <li>Use <b>On Tick</b> para lógica contínua</li>
+                        <li>Use <b>On Start</b> para inicialização</li>
+                        <li>Use <b>Branch</b> para decisões</li>
+                        <li>Use <b>Move</b> para movimento</li>
+                    </ul>
+                </div>
+            </div>
+            """)
+        else:
+            # Nó não encontrado
+            pretty_title = query.strip()
+            self.help_text.setHtml(f"""
+            <div style='padding: 10px;'>
+                <div style='background:#141824; border-left: 4px solid #f87171; padding: 12px; margin: 8px 0; border-radius: 4px;'>
+                    <h3 style='color:#f87171; margin: 0 0 6px 0; font-size: 12px;'>❓ "{pretty_title}"</h3>
+                    <p style='color:#cbd5e1; font-size: 10px; margin: 6px 0; line-height: 1.5;'>
+                        Este nó não está documentado na base de dados ainda.
+                    </p>
+                    <p style='color:#cbd5e1; font-size: 10px; margin: 6px 0; line-height: 1.5;'>
+                        <b>Informações disponíveis:</b><br>
+                        • Tipo: Nó do Logic Graph<br>
+                        • Categoria: Visual Scripting<br>
+                        • Processa a lógica quando acionado no fluxo
+                    </p>
+                </div>
+
+                <div style='background:#141824; border-left: 4px solid #fbbf24; padding: 12px; margin: 12px 0; border-radius: 4px;'>
+                    <p style='color:#fbbf24; font-size: 10px; font-weight: bold; margin: 0 0 6px 0;'>💡 Dicas:</p>
+                    <ul style='color:#cbd5e1; font-size: 10px; margin: 0; padding-left: 20px;'>
+                        <li>Procure documentação do nó no editor</li>
+                        <li>Verifique os pinos de entrada e saída</li>
+                        <li>Teste conectando em um ramo simples</li>
+                        <li>Consulte exemplos no projeto</li>
+                    </ul>
+                </div>
+
+                <p style='color:#64748b; font-size: 9px; margin-top: 14px; text-align: center;'>
+                    🔍 Tente buscar outros nós documentados na paleta
+                </p>
+            </div>
+            """)
 
     def show_node_help(self, node_id_or_name: str):
         """Mostra ajuda para um nó específico."""
