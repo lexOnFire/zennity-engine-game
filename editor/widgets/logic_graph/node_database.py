@@ -458,6 +458,87 @@ NODE_DATABASE = {
         "ports": "<b>[Out] Value</b>: Parâmetro recebido.",
         "tips": "• Configure no editor<br>• Type-safe<br>• Usado em Call Subgraph"
     },
+
+    # ============ BEHAVIOR TREE (EXTRAS) ============
+    "cooldown": {
+        "title": "Cooldown",
+        "category": "Behavior Tree",
+        "icon": "⏱️",
+        "desc": "Bloqueia execução por um tempo após sucesso.",
+        "detailed": "Implementa tempo de espera entre execuções.",
+        "usage": "Limitar frequência de ataques, habilidades, decisões.",
+        "example": "<b>Exemplo:</b> Attack → Cooldown (5s) → Pode atacar novamente",
+        "ports": "<b>[In] Exec</b>: Gatilho.<br><b>[In] Duration</b>: Tempo em segundos.<br><b>[Out] Exec</b>: Saída.",
+        "tips": "• Evita spam de ações<br>• Tempo em segundos<br>• Ideal para cadência de ataque"
+    },
+    "inverter": {
+        "title": "Inversor",
+        "category": "Behavior Tree",
+        "icon": "🔄",
+        "desc": "Inverte resultado do filho (success→failure, failure→success).",
+        "detailed": "Implementa lógica NOT para condições.",
+        "usage": "Negar uma condição ou resultado.",
+        "example": "<b>Exemplo:</b> NOT (is_grounded) → Free Fall",
+        "ports": "<b>[In] Exec</b>: Gatilho.<br><b>[Out] Exec</b>: Resultado invertido.",
+        "tips": "• Inverte apenas sucesso/falha<br>• Running continua Running<br>• Use com Sequence"
+    },
+    "wait": {
+        "title": "Esperar (Wait)",
+        "category": "Behavior Tree",
+        "icon": "⏳",
+        "desc": "Aguarda um tempo configurado.",
+        "detailed": "Pausa a execução por duração especificada.",
+        "usage": "Pausas entre ações, delays, animações.",
+        "example": "<b>Exemplo:</b> Attack → Wait (0.5s) → Next Attack",
+        "ports": "<b>[In] Duration</b>: Tempo em segundos.<br><b>[Out] Exec</b>: Após tempo decorrido.",
+        "tips": "• Use tempo curto para responsividade<br>• Ideal entre ações<br>• Configurable"
+    },
+    "repeat": {
+        "title": "Repetir (Repeat)",
+        "category": "Behavior Tree",
+        "icon": "🔁",
+        "desc": "Repete o filho um número de vezes ou continuamente.",
+        "detailed": "Loop controlado de execução.",
+        "usage": "Rotinas, rondas, comportamentos persistentes.",
+        "example": "<b>Exemplo:</b> Repeat (0 = infinito) → Patrol",
+        "ports": "<b>[In] Count</b>: Número de repetições (0=infinito).<br><b>[Out] Exec</b>: Saída.",
+        "tips": "• 0 = repetição infinita<br>• Compatível com Sequence<br>• Use com cuidado"
+    },
+    "attack": {
+        "title": "Atacar (Attack)",
+        "category": "Behavior Tree",
+        "icon": "⚔️",
+        "desc": "Aplica dano ao alvo se em alcance.",
+        "detailed": "Ação de combate corpo a corpo.",
+        "usage": "Inimigos, combate, dano.",
+        "example": "<b>Exemplo:</b> (Em Alcance) → Attack → Cooldown",
+        "ports": "<b>[In] Target</b>: Alvo.<br><b>[In] Damage</b>: Valor dano.<br><b>[Out] Exec</b>: Saída.",
+        "tips": "• Use com Cooldown<br>• Combine com condições<br>• Respeita alcance"
+    },
+    "parameter_condition": {
+        "title": "Condição de Parâmetro",
+        "category": "Behavior Tree",
+        "icon": "🔍",
+        "desc": "Compara um parâmetro do Behavior Tree.",
+        "detailed": "Comparação de variáveis de estado.",
+        "usage": "Alerta, vida baixa, estados personalizados.",
+        "example": "<b>Exemplo:</b> if (health <= 20) → Flee",
+        "ports": "<b>[In] Parameter</b>: Nome.<br><b>[In] Value</b>: Comparar com.<br><b>[Out] Exec</b>: Saída.",
+        "tips": "• Operadores: ==, !=, >, >=, <, <=<br>• Use com variáveis BT<br>• Type-safe"
+    },
+
+    # ============ EVENTO CUSTOMIZADO ============
+    "event_custom": {
+        "title": "Evento Customizado",
+        "category": "Eventos",
+        "icon": "🎯",
+        "desc": "Evento disparado por script ou editor.",
+        "detailed": "Ponto de entrada customizável.",
+        "usage": "Gatilhos personalizados, eventos do jogo.",
+        "example": "<b>Exemplo:</b> Custom Event (on_damage) → Play Animation",
+        "ports": "<b>[Out] Exec</b>: Fluxo de execução.",
+        "tips": "• Configurável<br>• Use para eventos<br>• Compatível com fluxo"
+    },
 }
 
 # Aliases para nós com múltiplos nomes
@@ -468,5 +549,11 @@ NODE_ALIASES = {
     "event_collision_enter": "event_collision_enter",
     "event_trigger_enter": "event_collision_enter",
     "event_trigger_exit": "event_collision_exit",
-    "event_custom": "on_start",
+    "event_custom": "event_custom",
+    "cooldown": "cooldown",
+    "inverter": "inverter",
+    "wait": "wait",
+    "repeat": "repeat",
+    "attack": "attack",
+    "parameter_condition": "parameter_condition",
 }
