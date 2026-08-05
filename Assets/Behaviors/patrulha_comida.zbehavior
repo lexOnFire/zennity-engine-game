@@ -4,116 +4,102 @@
   "category": "Behavior Tree",
   "nodes": [
     {
-      "id": "97f288ef-b2ab-4abf-be8d-e3bdeaf393e7",
+      "id": "root-selector",
       "type": "bt.selector",
-      "position": [-832.0, -311.0],
+      "position": [-900.0, -202.0],
       "properties": {"reactive": true}
     },
     {
-      "id": "14042a52-149b-4f81-b064-44ff3248a17f",
+      "id": "seq-comida",
       "type": "bt.sequence",
-      "position": [-582.0, -302.0],
+      "position": [-522.0, -254.0],
       "properties": {"reactive": false}
     },
     {
-      "id": "d1242c0e-2532-45a1-b319-fddbb22bd4d9",
+      "id": "check-range",
       "type": "bt.target_in_range",
-      "position": [-319.0, -309.0],
-      "properties": {
-        "target": "comida",
-        "distance": 400.0
-      }
+      "position": [-247.0, -337.0],
+      "properties": {"target": "comida", "distance": 400.0}
     },
     {
-      "id": "54cf4daf-a0f4-4f7a-b4f0-9e4afba6cbfd",
+      "id": "chase-node",
       "type": "bt.chase",
-      "position": [-278.0, -144.0],
-      "properties": {
-        "target": "comida",
-        "stop_distance": 50.0,
-        "speed": 150.0
-      }
+      "position": [-245.0, -213.0],
+      "properties": {"target": "comida", "stop_distance": 50.0, "speed": 150.0}
     },
     {
-      "id": "dfdd162c-5422-44e4-96df-7a2d6bc4d610",
+      "id": "cooldown-node",
       "type": "bt.cooldown",
-      "position": [-267.0, -13.0],
+      "position": [-249.0, -74.0],
       "properties": {"seconds": 5.0}
     },
     {
-      "id": "3692ce8e-82c6-41e1-966d-2d6c74054b9c",
+      "id": "move-node",
       "type": "bt.move_to",
-      "position": [-266.0, 116.0],
-      "properties": {
-        "target_pos": "388,190",
-        "speed": 400.0
-      }
+      "position": [-244.0, 27.0],
+      "properties": {"target_pos": "388,190", "speed": 400.0}
     },
     {
-      "id": "67409df5-603a-4593-8685-90e34ae6505f",
+      "id": "patrol-node",
       "type": "bt.patrol",
-      "position": [-706.0, -44.0],
-      "properties": {
-        "point_a": "-100,100",
-        "point_b": "200,0",
-        "speed": 80.0
-      }
+      "position": [-508.0, -75.0],
+      "properties": {"point_a": "-100,100", "point_b": "200,0", "speed": 80.0}
     }
   ],
   "edges": [
     {
       "id": "selector-to-sequence",
-      "source_node": "97f288ef-b2ab-4abf-be8d-e3bdeaf393e7",
-      "source_port": "out",
-      "target_node": "14042a52-149b-4f81-b064-44ff3248a17f",
+      "source_node": "root-selector",
+      "source_port": "out_0",
+      "target_node": "seq-comida",
       "target_port": "in",
       "type": "exec"
     },
     {
       "id": "selector-to-patrol",
-      "source_node": "97f288ef-b2ab-4abf-be8d-e3bdeaf393e7",
-      "source_port": "out",
-      "target_node": "67409df5-603a-4593-8685-90e34ae6505f",
+      "source_node": "root-selector",
+      "source_port": "out_1",
+      "target_node": "patrol-node",
       "target_port": "in",
       "type": "exec"
     },
     {
       "id": "sequence-to-check",
-      "source_node": "14042a52-149b-4f81-b064-44ff3248a17f",
+      "source_node": "seq-comida",
       "source_port": "out",
-      "target_node": "d1242c0e-2532-45a1-b319-fddbb22bd4d9",
+      "target_node": "check-range",
       "target_port": "in",
       "type": "exec"
     },
     {
       "id": "check-success-to-chase",
-      "source_node": "d1242c0e-2532-45a1-b319-fddbb22bd4d9",
+      "source_node": "check-range",
       "source_port": "success",
-      "target_node": "54cf4daf-a0f4-4f7a-b4f0-9e4afba6cbfd",
+      "target_node": "chase-node",
       "target_port": "in",
       "type": "exec"
     },
     {
       "id": "chase-to-cooldown",
-      "source_node": "54cf4daf-a0f4-4f7a-b4f0-9e4afba6cbfd",
+      "source_node": "chase-node",
       "source_port": "out",
-      "target_node": "dfdd162c-5422-44e4-96df-7a2d6bc4d610",
+      "target_node": "cooldown-node",
       "target_port": "in",
       "type": "exec"
     },
     {
       "id": "cooldown-to-move",
-      "source_node": "dfdd162c-5422-44e4-96df-7a2d6bc4d610",
+      "source_node": "cooldown-node",
       "source_port": "child",
-      "target_node": "3692ce8e-82c6-41e1-966d-2d6c74054b9c",
+      "target_node": "move-node",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "move-back-to-selector",
-      "source_node": "3692ce8e-82c6-41e1-966d-2d6c74054b9c",
+      "id": "move-to-selector",
+      "source_node": "move-node",
       "source_port": "out",
-      "target_node": "97f288ef-b2ab-4abf-be8d-e3bdeaf393e7",
+      "target_node": "root-selector",
       "target_port": "in",
       "type": "exec"
     }
