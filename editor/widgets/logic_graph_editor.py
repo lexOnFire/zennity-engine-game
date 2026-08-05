@@ -209,6 +209,16 @@ class LogicGraphEditor(
         self.blackboard_set_button.clicked.connect(lambda: self._add_blackboard_node("set_variable"))
         self.connect_button.clicked.connect(self.connect_selected)
         self.delete_button.clicked.connect(self.delete_selected)
+
+        # Atalhos de teclado para Delete e Backspace
+        from PySide6.QtGui import QKeySequence
+        delete_shortcut = QShortcut(QKeySequence(Qt.Key_Delete), self)
+        delete_shortcut.setContext(Qt.WidgetWithChildrenShortcut)
+        delete_shortcut.activated.connect(self.delete_selected)
+        backspace_shortcut = QShortcut(QKeySequence(Qt.Key_Backspace), self)
+        backspace_shortcut.setContext(Qt.WidgetWithChildrenShortcut)
+        backspace_shortcut.activated.connect(self.delete_selected)
+
         self.target_type.currentIndexChanged.connect(lambda _index: (self.mark_dirty(), self._refresh_target_hints()))
         self.target_value.textChanged.connect(lambda _text: (self.mark_dirty(), self._refresh_target_hints()))
         self.graph_enabled_check.toggled.connect(lambda _checked: self.mark_dirty())
