@@ -386,7 +386,13 @@ class GraphCanvas(QGraphicsView):
         pass
 
     def apply_runtime_trace(self, trace_data) -> None:
-        pass
+        """Destaca nós em execução baseado no trace do runtime."""
+        active_nodes = set(str(node_id) for node_id in trace_data.get("nodes", []))
+        for node_id, node_item in self.scene.nodes.items():
+            if node_id in active_nodes:
+                node_item.set_active_execution(True)
+            else:
+                node_item.set_active_execution(False)
 
     def _on_scene_selection_changed(self) -> None:
         self.selection_changed.emit(self.scene.selectedItems())

@@ -15,3 +15,8 @@ class BehaviorTreeEditorDock(QDockWidget):
         # Instancia o Editor de Grafos Genérico filtrado para "Behavior Tree"
         self.graph_editor = GenericGraphEditorWidget(graph_category_filter="Behavior Tree", parent=self)
         self.setWidget(self.graph_editor)
+
+    def apply_runtime_trace(self, message: dict) -> None:
+        """Destaca nós do BT em execução em tempo real."""
+        if hasattr(self.graph_editor, 'apply_runtime_trace'):
+            self.graph_editor.apply_runtime_trace(message)

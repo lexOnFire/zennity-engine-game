@@ -561,3 +561,8 @@ class GenericGraphEditorWidget(QWidget):
         self.is_dirty = True
         name = self.current_path.name if self.current_path else "novo documento"
         self.document_status.setText(f"Editando • {name}")
+
+    def apply_runtime_trace(self, message: dict) -> None:
+        """Destaca nós em execução com base no trace do runtime."""
+        if hasattr(self, 'canvas') and hasattr(self.canvas, 'apply_runtime_trace'):
+            self.canvas.apply_runtime_trace(message)
