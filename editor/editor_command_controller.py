@@ -206,9 +206,9 @@ class EditorCommandController:
             duplicate_action.triggered.connect(h._scene_objects.duplicate_selected)
             delete_action = menu.addAction("Excluir")
             delete_action.setShortcut(Qt.Key_Delete)
-            # Delete belongs to the main editor window. ApplicationShortcut
-            # conflicts with graph/UI/Animator editors opened as tool windows.
-            delete_action.setShortcutContext(Qt.WindowShortcut)
+            # Delete belongs to the main editor window, but we restrict it to specific widgets
+            # to avoid swallowing Delete keys meant for the logic graph editor.
+            delete_action.setShortcutContext(Qt.WidgetWithChildrenShortcut)
             delete_action.setShortcutVisibleInContextMenu(True)
             
             def _try_delete_selected(_checked: bool = False) -> None:
@@ -226,5 +226,8 @@ class EditorCommandController:
                 h.statusBar().showMessage(f"Objeto '{h._selected_name}' deletado com sucesso.")
 
             delete_action.triggered.connect(_try_delete_selected)
-            h.addAction(delete_action)
+            if hasattr(h, 'hierarchy_dock') and h.hierarchy_dock:
+                h.hierarchy_dock.tree.addAction(delete_action)
+            if hasattr(h, 'viewport') and h.viewport:
+                h.viewport.addAction(delete_action)
             break

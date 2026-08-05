@@ -112,7 +112,7 @@ class BehaviorGraphRunner:
             return self._repeat(node_id, node, game, dt)
         if kind == "bt.cooldown":
             return self._cooldown(node_id, node, game, dt)
-        if kind == "bt.wait":
+        if kind in {"bt.wait", "bt.idle"}:
             duration = max(0.0, self._number(node, "duration", 1.0))
             elapsed = float(self._memory.get(node_id, 0.0)) + dt
             self._memory[node_id] = elapsed

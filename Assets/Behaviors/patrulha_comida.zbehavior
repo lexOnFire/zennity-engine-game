@@ -7,8 +7,8 @@
       "id": "root-selector",
       "type": "bt.selector",
       "position": [
-        -1033.0,
-        -489.0
+        -1013.0,
+        -511.0
       ],
       "properties": {
         "reactive": true
@@ -18,8 +18,8 @@
       "id": "seq-comida",
       "type": "bt.sequence",
       "position": [
-        -726.0,
-        -461.0
+        -757.0,
+        -474.0
       ],
       "properties": {
         "reactive": false
@@ -29,8 +29,8 @@
       "id": "check-range",
       "type": "bt.target_in_range",
       "position": [
-        -404.0,
-        -447.0
+        -483.0,
+        -473.0
       ],
       "properties": {
         "target": "Food",
@@ -41,8 +41,8 @@
       "id": "chase-node",
       "type": "bt.chase",
       "position": [
-        -396.0,
-        -329.0
+        -769.0,
+        -348.0
       ],
       "properties": {
         "target": "Food",
@@ -54,8 +54,8 @@
       "id": "move-node",
       "type": "bt.move_to",
       "position": [
-        -538.0,
-        -168.0
+        -678.0,
+        -178.0
       ],
       "properties": {
         "target_pos": "-388,190",
@@ -79,8 +79,8 @@
       "id": "a4bde98f-554b-42e5-b3bc-ec7302795abf",
       "type": "bt.idle",
       "position": [
-        -567.0,
-        -16.0
+        -483.0,
+        -351.0
       ],
       "properties": {
         "duration": 5.0
@@ -137,24 +137,32 @@
       "type": "exec"
     },
     {
-      "id": "f4244045-29e0-4415-aaef-73d2d81b73e2",
+      "id": "271eb929-5b9a-400b-8d73-5d1e6ae5cd27",
       "source_node": "seq-comida",
-      "source_port": "out_3",
-      "target_node": "move-node",
+      "source_port": "out_4",
+      "target_node": "a4bde98f-554b-42e5-b3bc-ec7302795abf",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "271eb929-5b9a-400b-8d73-5d1e6ae5cd27",
-      "source_node": "move-node",
+      "id": "bb520c01-6918-4b84-88bb-a89793f66819",
+      "source_node": "chase-node",
       "source_port": "out",
       "target_node": "a4bde98f-554b-42e5-b3bc-ec7302795abf",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "933da5bb-4ee3-4acd-a4c6-5caf0781725c",
+      "id": "d0f5a46c-1466-401b-abc6-738558f55f34",
       "source_node": "a4bde98f-554b-42e5-b3bc-ec7302795abf",
+      "source_port": "out",
+      "target_node": "move-node",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "16bf4cf7-0856-469a-8439-f29e96500f64",
+      "source_node": "move-node",
       "source_port": "out",
       "target_node": "root-selector",
       "target_port": "in",
