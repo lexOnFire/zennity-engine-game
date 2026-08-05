@@ -190,6 +190,7 @@ class ViewportSession(ViewportSessionLifecycleMixin):
         self.initialized_runtime_ids = set()
         self.scene_blackboard_config = {}
         self.logic_trace_last_sent = 0.0
+        self.behavior_trace_last_sent = 0.0
         self.animator_event_signatures = {}
         self.active_contacts = {}
         

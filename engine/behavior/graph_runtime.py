@@ -416,3 +416,20 @@ class BehaviorGraphRunner:
         """Limpa o histórico de execuções."""
         self._execution_log.clear()
         self._last_logged_node = None
+
+    def debug_snapshot(self) -> dict[str, Any]:
+        """Retorna snapshot de execução para o editor destacar nós em tempo real."""
+        return {
+            "nodes": [self.current_state] if self.current_state and self.current_state in self.nodes else [],
+            "edges": [],
+            "values": {},
+            "variables": {},
+            "blackboard": {},
+            "paused": False,
+            "pause_node": "",
+            "breakpoints": [],
+            "breakpoint_conditions": {},
+            "condition_error": "",
+            "watches": {},
+            "events": [],
+        }

@@ -62,7 +62,11 @@ class ViewportSessionOrchestrator:
             self.emit({"type": "play_state", "state": "pause"})
         return last_trace, pause_requested, restart_requested
 
-    def update_behaviors(self, input_state: dict[str, bool], delta_time: float) -> None:
+    def update_behaviors(self, input_state: dict[str, bool], delta_time: float, last_trace: float = 0.0) -> tuple[float, bool]:
+        import time
+        now = time.monotonic()
+        trace_due = now - last_trace >= 0.10
+        pause_requested = False
         for name, runner in list(self.behavior_runners.items()):
             obj, api = self.objects.get(name), self.logic_apis.get(name)
             if obj is None or api is None or not obj.get("active", True):
@@ -78,9 +82,14 @@ class ViewportSessionOrchestrator:
                     behavior["parameters"] = dict(runner.parameters)
                 if changed:
                     self.emit({"type": "runtime_log", "level": "INFO", "message": f"{name}: Behavior {previous} → {runner.current_state}"})
+                if trace_due:
+                    self._emit_trace(name, "Behavior Tree", runner)
             except Exception as exc:
                 self.behavior_runners.pop(name, None)
                 self.emit({"type": "runtime_log", "level": "ERROR", "message": f"{name}: Behavior Controller: {exc}"})
+        if trace_due:
+            last_trace = now
+        return last_trace, pause_requested
 
     def finish_frame(self, delta_time: float, velocities_y: dict[str, float], grounded: dict[str, bool]) -> None:
         for api in self.logic_apis.values():

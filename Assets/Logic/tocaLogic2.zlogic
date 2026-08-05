@@ -24,8 +24,8 @@
       "title": "Event Update",
       "category": "Events",
       "position": [
-        -704.91,
-        -24.7
+        -821.12,
+        -8.16
       ],
       "editor": {
         "collapsed": false,
@@ -40,11 +40,11 @@
       "title": "Create Object",
       "category": "Spawning",
       "position": [
-        -201.04,
-        56.57
+        -439.65,
+        38.11
       ],
       "editor": {
-        "collapsed": false,
+        "collapsed": true,
         "width": 220.0,
         "height": 240.0
       },
@@ -72,11 +72,11 @@
       "title": "Cooldown",
       "category": "Logic",
       "position": [
-        -471.73,
-        99.98
+        -479.67,
+        -54.52
       ],
       "editor": {
-        "collapsed": false,
+        "collapsed": true,
         "width": 220.0,
         "height": 156.0
       },
@@ -85,31 +85,13 @@
       }
     },
     {
-      "id": "3f9c04884a564a4f84462dbb303c2f36",
-      "type": "start_behavior_tree",
-      "title": "Start Behavior Tree",
-      "category": "Action",
-      "position": [
-        371.56,
-        53.1
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 184.0
-      },
-      "properties": {
-        "path": "Assets/Behaviors/patrulha_comida.zbehavior"
-      }
-    },
-    {
       "id": "cbf9bf8573634124bf7fab9495b33f57",
       "type": "add_sprite_renderer",
       "title": "Sprite Renderer",
       "category": "Components",
       "position": [
-        70.68,
-        70.68
+        -395.12,
+        92.74
       ],
       "editor": {
         "collapsed": false,
@@ -120,6 +102,64 @@
         "texture": "Assets/Textures/formiga_2.PNG",
         "color": "#ffffff",
         "sort_order": 0
+      }
+    },
+    {
+      "id": "fe9269ead6e74d24bd743a69138535d0",
+      "type": "add_box_collider",
+      "title": "Box Collider",
+      "category": "Components",
+      "position": [
+        -392.56,
+        264.71
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "width": 32.0,
+        "height": 32.0,
+        "is_trigger": false
+      }
+    },
+    {
+      "id": "b90358cd51064c51b1de54e28a65f2ee",
+      "type": "add_rigidbody",
+      "title": "Rigidbody",
+      "category": "Components",
+      "position": [
+        -129.09,
+        271.23
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "body_type": "dynamic",
+        "mass": 1.0,
+        "gravity_scale": 0.0
+      }
+    },
+    {
+      "id": "951022491a2743ef8a57a933a64e4c00",
+      "type": "start_behavior_tree",
+      "title": "Start Behavior Tree",
+      "category": "Action",
+      "position": [
+        129.79,
+        249.09
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "path": "Assets/Behaviors/patrulha_comida.zbehavior"
       }
     }
   ],
@@ -152,13 +192,31 @@
       "order": 2
     },
     {
-      "id": "c621d190c1584bf8b38b29be371165ec",
+      "id": "046035db305d45feb6c6a61068294ba5",
       "from_node": "cbf9bf8573634124bf7fab9495b33f57",
       "from_port": "next",
-      "to_node": "3f9c04884a564a4f84462dbb303c2f36",
+      "to_node": "fe9269ead6e74d24bd743a69138535d0",
       "to_port": "in",
       "kind": "flow",
       "order": 3
+    },
+    {
+      "id": "9b73481f7db34984b1231ef166e8c4be",
+      "from_node": "fe9269ead6e74d24bd743a69138535d0",
+      "from_port": "next",
+      "to_node": "b90358cd51064c51b1de54e28a65f2ee",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 4
+    },
+    {
+      "id": "e44a6d5b1dba4d70bb52f5c2e40f7a73",
+      "from_node": "b90358cd51064c51b1de54e28a65f2ee",
+      "from_port": "next",
+      "to_node": "951022491a2743ef8a57a933a64e4c00",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 5
     }
   ]
 }

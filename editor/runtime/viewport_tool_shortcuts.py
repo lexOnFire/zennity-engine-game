@@ -22,7 +22,7 @@ class ViewportToolShortcutHandler:
             return None
         if bool(getattr(event, "repeat", False)):
             return None
-        delete_keys = {self.pygame.K_DELETE}
+        delete_keys = {self.pygame.K_DELETE, self.pygame.K_BACKSPACE}
         keypad_delete = getattr(self.pygame, "K_KP_PERIOD", None)
         if keypad_delete is not None:
             delete_keys.add(keypad_delete)

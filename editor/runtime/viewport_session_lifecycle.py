@@ -53,7 +53,7 @@ class ViewportSessionLifecycleMixin:
                 )
                 or self.restart_requested
             )
-            self.session_orchestrator.update_behaviors(input_state, dt)
+            self.behavior_trace_last_sent, _ = self.session_orchestrator.update_behaviors(input_state, dt, self.behavior_trace_last_sent)
             self.session_orchestrator.finish_frame(dt, self.velocities_y, self.grounded)
             if self.restart_requested:
                 self.session_orchestrator.restart(
