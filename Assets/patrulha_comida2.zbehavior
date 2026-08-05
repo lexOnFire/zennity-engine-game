@@ -1,0 +1,129 @@
+{
+  "format": "zennity.generic_graph",
+  "version": 1,
+  "category": "Behavior Tree",
+  "nodes": [
+    {
+      "id": "2077074d-c658-434e-9642-9773ef6e108f",
+      "type": "bt.selector",
+      "position": [
+        -141.0,
+        -291.0
+      ]
+    },
+    {
+      "id": "a614b577-4af4-46a7-a6e0-6e47dbb99262",
+      "type": "bt.sequence",
+      "position": [
+        -215.0,
+        -6.0
+      ]
+    },
+    {
+      "id": "d3f6b9d3-2ecf-4601-8219-67a776da6861",
+      "type": "bt.patrol",
+      "position": [
+        -29.0,
+        177.0
+      ],
+      "properties": {
+        "point_a": "100,-100"
+      }
+    },
+    {
+      "id": "256286a5-4715-4900-83a4-7a82a39ce644",
+      "type": "bt.target_in_range",
+      "position": [
+        -148.0,
+        -162.0
+      ],
+      "properties": {
+        "target": "comida",
+        "distance": 1.0
+      }
+    },
+    {
+      "id": "5371e0d1-3617-4b04-8867-d72c4971f683",
+      "type": "bt.chase",
+      "position": [
+        73.0,
+        84.0
+      ],
+      "properties": {
+        "target": "comida"
+      }
+    },
+    {
+      "id": "4e7ec6fb-85f3-4e1b-a547-841921396f8f",
+      "type": "bt.cooldown",
+      "position": [
+        129.0,
+        -47.0
+      ],
+      "properties": {
+        "seconds": 5.0
+      }
+    },
+    {
+      "id": "1b15c751-4608-41b4-9380-a3578094f33e",
+      "type": "bt.move_to",
+      "position": [
+        380.0,
+        -9.0
+      ],
+      "properties": {
+        "target_pos": "384,190"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "0d7e7a61-b8e0-4dbf-ac79-111c04cd2991",
+      "source_node": "2077074d-c658-434e-9642-9773ef6e108f",
+      "source_port": "out_1",
+      "target_node": "a614b577-4af4-46a7-a6e0-6e47dbb99262",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "8787524f-49b8-4962-8938-47705b13f947",
+      "source_node": "4e7ec6fb-85f3-4e1b-a547-841921396f8f",
+      "source_port": "child",
+      "target_node": "1b15c751-4608-41b4-9380-a3578094f33e",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "581be62d-33cc-4aaf-b30d-7d7fe8e96cca",
+      "source_node": "a614b577-4af4-46a7-a6e0-6e47dbb99262",
+      "source_port": "out_1",
+      "target_node": "5371e0d1-3617-4b04-8867-d72c4971f683",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "e8673385-9bcf-41f7-ae40-63af148d08f0",
+      "source_node": "256286a5-4715-4900-83a4-7a82a39ce644",
+      "source_port": "success",
+      "target_node": "4e7ec6fb-85f3-4e1b-a547-841921396f8f",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "65e89676-a7f0-4850-b23a-3ee3207ffe44",
+      "source_node": "2077074d-c658-434e-9642-9773ef6e108f",
+      "source_port": "out_2",
+      "target_node": "256286a5-4715-4900-83a4-7a82a39ce644",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "ed5af65b-1149-4ce3-96b6-b4f72bc6835e",
+      "source_node": "a614b577-4af4-46a7-a6e0-6e47dbb99262",
+      "source_port": "out_2",
+      "target_node": "d3f6b9d3-2ecf-4601-8219-67a776da6861",
+      "target_port": "in",
+      "type": "exec"
+    }
+  ]
+}

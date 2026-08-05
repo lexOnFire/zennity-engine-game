@@ -136,8 +136,8 @@ class GenericGraphEditorWidget(QWidget):
         self._palette_category_filter = "Todas"
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(4, 4, 4, 4)
-        layout.setSpacing(4)
+        layout.setContentsMargins(2, 2, 2, 2)
+        layout.setSpacing(2)
 
         # ── Toolbar Superior ───────────────────────────────────────────────
         toolbar = QHBoxLayout()
@@ -196,8 +196,8 @@ class GenericGraphEditorWidget(QWidget):
         # Paleta de Nós
         palette_panel = QWidget(inner_splitter)
         palette_layout = QVBoxLayout(palette_panel)
-        palette_layout.setContentsMargins(4, 4, 4, 4)
-        palette_layout.setSpacing(6)
+        palette_layout.setContentsMargins(2, 2, 2, 2)
+        palette_layout.setSpacing(2)
         self.palette_category = QComboBox(palette_panel)
         category_options = {
             "behavior tree": ("Todas", "Composição", "Decoradores", "Condições", "Ações"),
@@ -229,7 +229,7 @@ class GenericGraphEditorWidget(QWidget):
         # here so mouse users have the same reliable deletion path as Delete.
         self.btn_delete.clicked.connect(self.canvas.delete_selection)
         inner_splitter.addWidget(self.canvas)
-        inner_splitter.setSizes([150, 500])
+        inner_splitter.setSizes([130, 470])
 
         outer_splitter.addWidget(inner_splitter)
 
@@ -238,16 +238,21 @@ class GenericGraphEditorWidget(QWidget):
         self.graph_inspector = GraphNodeInspector(self.inspector_tabs)
         self.graph_inspector.setMinimumWidth(220)
         self.graph_inspector.setMaximumWidth(420)
+        self.graph_inspector.setContentsMargins(2, 2, 2, 2)
         self.help_browser = QTextBrowser(self.inspector_tabs)
         self.help_browser.setOpenExternalLinks(True)
+        self.help_browser.setContentsMargins(2, 2, 2, 2)
         self.inspector_tabs.addTab(self.graph_inspector, "Propriedades")
         self.inspector_tabs.addTab(self.help_browser, "Ajuda")
         self.inspector_tabs.setMinimumWidth(260)
         self.inspector_tabs.setMaximumWidth(450)
+        self.inspector_tabs.setContentsMargins(0, 0, 0, 0)
         outer_splitter.addWidget(self.inspector_tabs)
-        outer_splitter.setSizes([600, 350])
 
         layout.addWidget(outer_splitter, 1)
+
+        # Ajusta splitter para dar ainda mais espaço ao inspector
+        outer_splitter.setSizes([520, 400])
 
         # ── Signals ────────────────────────────────────────────────────────
         # Canvas → Inspector: seleção de nó

@@ -155,6 +155,15 @@ class ViewportEventController:
         dock = getattr(self.host, "_dock_visual_scripting", None)
         if dock is not None and hasattr(dock, "apply_runtime_trace"):
             dock.apply_runtime_trace(message)
+        bt_ctrl = getattr(self.host, "_behavior_tree_controller", None)
+        if bt_ctrl is not None and hasattr(bt_ctrl, "apply_runtime_trace"):
+            bt_ctrl.apply_runtime_trace(message)
+        orchestrator = getattr(self.host, "bridge_orchestrator", None)
+        if orchestrator is not None:
+            bt_mode = getattr(orchestrator, "behavior_tree", None)
+            bt_dock = getattr(bt_mode, "dock", None) if bt_mode else None
+            if bt_dock is not None and hasattr(bt_dock, "apply_runtime_trace"):
+                bt_dock.apply_runtime_trace(message)
 
     def stats(self, message: dict) -> None:
         h = self.host

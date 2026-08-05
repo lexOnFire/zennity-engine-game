@@ -14,8 +14,8 @@ from .views import LogicGraphView, LogicMiniMapView
 
 def build_logic_graph_ui(self) -> None:
     root = QVBoxLayout(self)
-    root.setContentsMargins(8, 8, 8, 8)
-    root.setSpacing(8)
+    root.setContentsMargins(4, 4, 4, 4)
+    root.setSpacing(4)
 
     self.header_widget = QWidget()
     self.header_widget.setObjectName("LogicHeader")
@@ -371,7 +371,13 @@ def build_logic_graph_ui(self) -> None:
     minimap_row.addWidget(self.minimap)
     canvas_layout.addLayout(minimap_row)
     canvas_splitter.addWidget(canvas_panel)
-    self.content_splitter.addWidget(canvas_splitter)
+    
+    self.center_vertical_splitter = QSplitter(Qt.Vertical)
+    self.center_vertical_splitter.setObjectName("LogicCenterVerticalSplitter")
+    self.center_vertical_splitter.setChildrenCollapsible(False)
+    self.center_vertical_splitter.addWidget(canvas_splitter)
+    
+    self.content_splitter.addWidget(self.center_vertical_splitter)
 
     right_panel = QSplitter(Qt.Vertical)
     right_panel.setObjectName("LogicRightSplitter")
@@ -380,8 +386,8 @@ def build_logic_graph_ui(self) -> None:
     mini_viewport_frame = QFrame()
     mini_viewport_frame.setStyleSheet("QFrame { background-color: #0f121a; border-left: 1px solid #1e2430; }")
     mv_layout = QVBoxLayout(mini_viewport_frame)
-    mv_layout.setContentsMargins(6, 6, 6, 6)
-    mv_layout.setSpacing(4)
+    mv_layout.setContentsMargins(3, 3, 3, 3)
+    mv_layout.setSpacing(2)
 
     mv_header = QHBoxLayout()
     self.mini_viewport_title = QLabel("● Mini Viewport — Editor")
@@ -435,8 +441,8 @@ def build_logic_graph_ui(self) -> None:
     properties_panel = QFrame()
     properties_panel.setObjectName("LogicPropertiesPanel")
     properties_layout = QVBoxLayout(properties_panel)
-    properties_layout.setContentsMargins(10, 10, 10, 10)
-    properties_layout.setSpacing(8)
+    properties_layout.setContentsMargins(6, 6, 6, 6)
+    properties_layout.setSpacing(4)
 
     prop_header = QHBoxLayout()
     properties_title = QLabel("PROPRIEDADES DO NÓ")
@@ -456,11 +462,11 @@ def build_logic_graph_ui(self) -> None:
     self.property_tree = QTreeWidget()
     self.property_tree.setObjectName("LogicPropertyTree")
     self.property_tree.setHeaderLabels(["Propriedade", "Valor"])
-    self.property_tree.setColumnWidth(0, 120)
+    self.property_tree.setColumnWidth(0, 160)
     self.property_tree.setStyleSheet(
-        "QTreeWidget { background: #141720; border: 1px solid #1e2430; border-radius: 6px; color: #cbd5e1; font-size: 11px; }"
-        "QHeaderView::section { background: #181c28; color: #94a3b8; font-weight: bold; font-size: 10px; border: none; padding: 4px; }"
-        "QTreeWidget::item { min-height: 24px; padding: 2px 4px; }"
+        "QTreeWidget { background: #141720; border: 1px solid #1e2430; border-radius: 6px; color: #cbd5e1; font-size: 12px; }"
+        "QHeaderView::section { background: #181c28; color: #94a3b8; font-weight: bold; font-size: 11px; border: none; padding: 6px 8px; }"
+        "QTreeWidget::item { min-height: 28px; padding: 4px 8px; margin: 2px 0px; border-bottom: 1px solid #1e2430; }"
     )
     properties_layout.addWidget(self.property_tree, 1)
 
@@ -498,13 +504,14 @@ def build_logic_graph_ui(self) -> None:
     debug_watch_actions.addWidget(self.add_watch_button)
     debug_watch_actions.addWidget(self.remove_watch_button)
     debug_layout.addLayout(debug_watch_actions)
+    debug_layout.setContentsMargins(6, 6, 6, 6)
     right_tabs.addTab(debug_panel, "Depuração")
     from .help_dock import LogicHelpDock
     self.help_dock = LogicHelpDock()
     right_tabs.addTab(self.help_dock, tr("editor.tabs.help", "Ajuda"))
 
     right_panel.addWidget(right_tabs)
-    right_panel.setSizes([340, 360])
+    right_panel.setSizes([240, 460])
 
     self._mini_viewport_expanded = False
     def _toggle_mini_viewport() -> None:
@@ -521,12 +528,11 @@ def build_logic_graph_ui(self) -> None:
     self.content_splitter.setStretchFactor(0, 0)
     self.content_splitter.setStretchFactor(1, 1)
     self.content_splitter.setStretchFactor(2, 0)
-    self.content_splitter.setSizes([290, 780, 330])
+    self.content_splitter.setSizes([260, 670, 440])
     root.addWidget(self.content_splitter, 1)
 
     # Rodapé da casca do editor
     footer_panel = QFrame()
-    footer_panel.setFixedHeight(150)
     footer_panel.setStyleSheet(
         "QFrame { background-color: #0f121a; border-top: 1px solid #1e2430; }"
         "QTabWidget::pane { border: none; background: transparent; }"
@@ -534,7 +540,7 @@ def build_logic_graph_ui(self) -> None:
         "QTabBar::tab:selected { background: #1e2536; color: #f8fafc; border-bottom: 2px solid #38bdf8; }"
     )
     footer_layout = QVBoxLayout(footer_panel)
-    footer_layout.setContentsMargins(4, 2, 4, 4)
+    footer_layout.setContentsMargins(2, 2, 2, 2)
 
     self.footer_tabs = QTabWidget()
 
@@ -582,7 +588,10 @@ def build_logic_graph_ui(self) -> None:
     self.footer_tabs.addTab(self.output_console, "Console")
 
     footer_layout.addWidget(self.footer_tabs)
-    root.addWidget(footer_panel)
+    self.center_vertical_splitter.addWidget(footer_panel)
+    self.center_vertical_splitter.setStretchFactor(0, 1)
+    self.center_vertical_splitter.setStretchFactor(1, 0)
+    self.center_vertical_splitter.setSizes([800, 100])
 
     self._refresh_palette("Movimento")
     self._refresh_recipes("")

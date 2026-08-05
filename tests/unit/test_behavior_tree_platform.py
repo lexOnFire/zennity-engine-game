@@ -32,11 +32,11 @@ def test_ai_provider_boots_metadata(qapp):
     assert "bt.selector" in node_ids
     assert "bt.sequence" in node_ids
     assert "bt.inverter" in node_ids
-    assert "bt.wait" in node_ids
+    assert "bt.idle" in node_ids
     assert "bt.move_to" in node_ids
     assert {
         "bt.repeat", "bt.cooldown", "bt.target_in_range",
-        "bt.parameter_condition", "bt.chase", "bt.patrol",
+        "bt.parameter_check", "bt.chase", "bt.patrol",
         "bt.attack", "bt.play_animation",
     } <= node_ids
 
@@ -62,13 +62,13 @@ def test_behavior_tree_library_is_localized_searchable_and_filterable(qapp):
     }
     assert {"Composição", "Decoradores", "Condições", "Ações"} <= categories
 
-    editor.search_edit.setText("perseguição")
+    editor.search_edit.setText("Perseguir")
     visible_nodes = [
         editor.node_palette.topLevelItem(index).child(child).text(0)
         for index in range(editor.node_palette.topLevelItemCount())
         for child in range(editor.node_palette.topLevelItem(index).childCount())
     ]
-    assert visible_nodes == ["Mover até"]
+    assert "Perseguir alvo" in visible_nodes
 
     editor.search_edit.clear()
     editor.palette_category.setCurrentText("Decoradores")
@@ -116,3 +116,29 @@ def test_behavior_tree_editor_dock_specialization(qapp):
     context = EngineBootstrap.boot()
     dock = BehaviorTreeEditorDock()
     assert dock.graph_editor.category_filter == "Behavior Tree"
+
+
+def test_behavior_graph_runner_debug_snapshot():
+    """Valida que o BehaviorGraphRunner rastreia a pilha de nós ativos para o runtime trace."""
+    from engine.behavior.graph_runtime import BehaviorGraphRunner
+
+    graph_data = {
+        "format": "zennity.generic_graph",
+        "category": "Behavior Tree",
+        "nodes": [
+            {"id": "node_seq", "type": "bt.sequence"},
+            {"id": "node_wait", "type": "bt.wait", "inputs": {"duration": 1.0}},
+        ],
+        "edges": [
+            {"source_node": "node_seq", "target_node": "node_wait"}
+        ]
+    }
+    runner = BehaviorGraphRunner(graph_data)
+    class DummyGame:
+        pass
+    runner.update(DummyGame(), 0.05)
+
+    snapshot = runner.debug_snapshot()
+    assert "node_seq" in snapshot["nodes"]
+    assert "node_wait" in snapshot["nodes"]
+

@@ -7,8 +7,8 @@
       "id": "root-selector",
       "type": "bt.selector",
       "position": [
-        -748.0,
-        -408.0
+        -1033.0,
+        -489.0
       ],
       "properties": {
         "reactive": true
@@ -18,8 +18,8 @@
       "id": "seq-comida",
       "type": "bt.sequence",
       "position": [
-        -475.0,
-        -380.0
+        -726.0,
+        -461.0
       ],
       "properties": {
         "reactive": false
@@ -29,11 +29,11 @@
       "id": "check-range",
       "type": "bt.target_in_range",
       "position": [
-        -204.0,
-        -336.0
+        -404.0,
+        -447.0
       ],
       "properties": {
-        "target": "comida",
+        "target": "Food",
         "distance": 400.0
       }
     },
@@ -41,49 +41,49 @@
       "id": "chase-node",
       "type": "bt.chase",
       "position": [
-        -245.0,
-        -213.0
+        -396.0,
+        -329.0
       ],
       "properties": {
-        "target": "comida",
+        "target": "Food",
         "stop_distance": 50.0,
         "speed": 150.0
-      }
-    },
-    {
-      "id": "cooldown-node",
-      "type": "bt.cooldown",
-      "position": [
-        -249.0,
-        -74.0
-      ],
-      "properties": {
-        "seconds": 5.0
       }
     },
     {
       "id": "move-node",
       "type": "bt.move_to",
       "position": [
-        -244.0,
-        27.0
+        -538.0,
+        -168.0
       ],
       "properties": {
-        "target_pos": "388,190",
-        "speed": 400.0
+        "target_pos": "-388,190",
+        "speed": 150.0
       }
     },
     {
       "id": "patrol-node",
       "type": "bt.patrol",
       "position": [
-        -591.0,
-        -193.0
+        -1058.0,
+        -184.0
       ],
       "properties": {
         "point_a": "-100,100",
         "point_b": "200,0",
         "speed": 80.0
+      }
+    },
+    {
+      "id": "a4bde98f-554b-42e5-b3bc-ec7302795abf",
+      "type": "bt.idle",
+      "position": [
+        -567.0,
+        -16.0
+      ],
+      "properties": {
+        "duration": 5.0
       }
     }
   ],
@@ -105,42 +105,58 @@
       "type": "exec"
     },
     {
-      "id": "check-success-to-chase",
-      "source_node": "check-range",
-      "source_port": "success",
+      "id": "39c4d959-7dd5-4dcd-b7f0-ac23ad7f1ed2",
+      "source_node": "root-selector",
+      "source_port": "out_2",
+      "target_node": "patrol-node",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "feb2d174-5d5e-4ed1-9386-b0bf5dd6d2ce",
+      "source_node": "root-selector",
+      "source_port": "out_1",
+      "target_node": "seq-comida",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "07a81e5c-0fe4-4e13-ac46-5a587211dead",
+      "source_node": "seq-comida",
+      "source_port": "out_1",
+      "target_node": "check-range",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "0c7cca93-58a7-4714-96a3-a585143512db",
+      "source_node": "seq-comida",
+      "source_port": "out_2",
       "target_node": "chase-node",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "chase-to-cooldown",
-      "source_node": "chase-node",
-      "source_port": "out",
-      "target_node": "cooldown-node",
-      "target_port": "in",
-      "type": "exec"
-    },
-    {
-      "id": "cooldown-to-move",
-      "source_node": "cooldown-node",
-      "source_port": "child",
+      "id": "f4244045-29e0-4415-aaef-73d2d81b73e2",
+      "source_node": "seq-comida",
+      "source_port": "out_3",
       "target_node": "move-node",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "move-to-selector",
+      "id": "271eb929-5b9a-400b-8d73-5d1e6ae5cd27",
       "source_node": "move-node",
       "source_port": "out",
-      "target_node": "root-selector",
+      "target_node": "a4bde98f-554b-42e5-b3bc-ec7302795abf",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "selector-to-patrol",
-      "source_node": "root-selector",
-      "source_port": "out_1",
-      "target_node": "patrol-node",
+      "id": "933da5bb-4ee3-4acd-a4c6-5caf0781725c",
+      "source_node": "a4bde98f-554b-42e5-b3bc-ec7302795abf",
+      "source_port": "out",
+      "target_node": "root-selector",
       "target_port": "in",
       "type": "exec"
     }

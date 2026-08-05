@@ -24,8 +24,8 @@
       "title": "Event Start",
       "category": "Events",
       "position": [
-        -657.49,
-        -241.59
+        -641.05,
+        -144.22
       ],
       "editor": {
         "collapsed": false,
@@ -40,8 +40,8 @@
       "title": "Sprite Renderer",
       "category": "Components",
       "position": [
-        -303.06,
-        -247.83
+        -377.67,
+        -150.46
       ],
       "editor": {
         "collapsed": false,

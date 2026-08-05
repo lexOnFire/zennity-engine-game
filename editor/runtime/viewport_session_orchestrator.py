@@ -83,7 +83,8 @@ class ViewportSessionOrchestrator:
                 if changed:
                     self.emit({"type": "runtime_log", "level": "INFO", "message": f"{name}: Behavior {previous} → {runner.current_state}"})
                 if trace_due:
-                    self._emit_trace(name, "Behavior Tree", runner)
+                    graph_path = getattr(runner, "_active_path", getattr(runner, "graph_path", "Behavior Tree"))
+                    self._emit_trace(name, str(graph_path), runner)
             except Exception as exc:
                 self.behavior_runners.pop(name, None)
                 self.emit({"type": "runtime_log", "level": "ERROR", "message": f"{name}: Behavior Controller: {exc}"})

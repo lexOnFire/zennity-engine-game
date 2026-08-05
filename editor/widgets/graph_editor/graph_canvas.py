@@ -383,7 +383,8 @@ class GraphCanvas(QGraphicsView):
         pass
 
     def clear_runtime_trace(self) -> None:
-        pass
+        for node_item in self.scene.nodes.values():
+            node_item.set_active_execution(False)
 
     def apply_runtime_trace(self, trace_data) -> None:
         """Destaca nós em execução baseado no trace do runtime."""

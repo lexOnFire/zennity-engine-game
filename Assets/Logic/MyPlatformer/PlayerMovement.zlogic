@@ -29,8 +29,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 100.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {}
     },
@@ -45,8 +45,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "negative": "A",
@@ -64,8 +64,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "speed": 180.0
@@ -82,8 +82,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 100.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {
         "key": "SPACE"
@@ -95,13 +95,13 @@
       "title": "Is Grounded",
       "category": "Action",
       "position": [
-        260.0,
-        320.0
+        270.69,
+        334.25
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {}
     },
@@ -116,8 +116,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 180.0,
-        "height": 100.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {
         "value": 420.0
@@ -129,13 +129,13 @@
       "title": "Jump",
       "category": "Movement",
       "position": [
-        520.0,
+        523.56,
         320.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 180.0,
-        "height": 100.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {}
     },
@@ -151,7 +151,7 @@
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 100.0
+        "height": 156.0
       },
       "properties": {}
     },
@@ -166,8 +166,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 180.0,
-        "height": 100.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {
         "tag": "Player"
@@ -184,8 +184,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
         "operator": "==",
@@ -203,8 +203,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 100.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "name": "score",
@@ -221,9 +221,9 @@
         680.0
       ],
       "editor": {
-        "collapsed": false,
-        "width": 170.0,
-        "height": 100.0
+        "collapsed": true,
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {
         "value": 1.0
@@ -240,8 +240,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 170.0,
-        "height": 100.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {}
     },
@@ -256,8 +256,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 100.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "name": "score",
@@ -276,8 +276,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 100.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {
         "value": "Moedas: "
@@ -294,8 +294,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 180.0,
-        "height": 100.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {}
     },
@@ -310,8 +310,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 180.0,
-        "height": 100.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {}
     },
@@ -326,8 +326,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 100.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {}
     },
@@ -343,7 +343,7 @@
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 120.0
+        "height": 156.0
       },
       "properties": {
         "object": "CoinsLabel",
@@ -362,7 +362,7 @@
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 100.0
+        "height": 156.0
       },
       "properties": {}
     },
@@ -372,13 +372,13 @@
       "title": "Get Tag",
       "category": "Objects",
       "position": [
-        260.0,
+        263.56,
         940.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 180.0,
-        "height": 100.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {
         "tag": "Player"
@@ -395,8 +395,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
         "operator": "==",
@@ -414,8 +414,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 100.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "name": "hp",
@@ -433,8 +433,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 170.0,
-        "height": 100.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {
         "value": -20.0
@@ -451,8 +451,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 170.0,
-        "height": 100.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {}
     },
@@ -463,12 +463,12 @@
       "category": "Variables",
       "position": [
         1260.0,
-        840.0
+        843.56
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 100.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "name": "hp",
@@ -488,7 +488,7 @@
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 120.0
+        "height": 156.0
       },
       "properties": {
         "object": "HPBar",
@@ -507,8 +507,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
         "operator": "<=",
@@ -526,8 +526,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 100.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {}
     },
@@ -542,8 +542,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
         "operator": "==",
@@ -562,7 +562,7 @@
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 120.0
+        "height": 156.0
       },
       "properties": {
         "object": "TitleLabel",
@@ -581,7 +581,7 @@
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 100.0
+        "height": 156.0
       },
       "properties": {
         "text": "Player alcançou a bandeira -- vitória!"

@@ -178,6 +178,21 @@ class BehaviorTreeInspectorController:
                 pass
         h._log("WARNING", f"Não foi possível abrir o Behavior Tree Editor: {path}")
 
+    def apply_runtime_trace(self, message: dict) -> None:
+        """Repassa snapshot de execução para os editores de Behavior Tree visíveis."""
+        h = self.host
+        dock_vs = getattr(h, "_dock_visual_scripting", None)
+        if dock_vs is not None:
+            bt_editor = getattr(dock_vs, "behavior_tree_editor", None)
+            if bt_editor is not None and hasattr(bt_editor, "apply_runtime_trace"):
+                bt_editor.apply_runtime_trace(message)
+        orchestrator = getattr(h, "bridge_orchestrator", None)
+        if orchestrator is not None:
+            bt_mode = getattr(orchestrator, "behavior_tree", None)
+            bt_dock = getattr(bt_mode, "dock", None) if bt_mode else None
+            if bt_dock is not None and hasattr(bt_dock, "apply_runtime_trace"):
+                bt_dock.apply_runtime_trace(message)
+
     def unlink(self) -> None:
         """Remove the behavior dict from the selected object."""
         selected = self._selected()
