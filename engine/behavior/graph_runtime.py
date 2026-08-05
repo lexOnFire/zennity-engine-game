@@ -61,20 +61,6 @@ class BehaviorGraphRunner:
         self._active_nodes.clear()
 
     def update(self, game: Any, dt: float) -> bool:
-        # DEBUG: Listar todos os objetos disponíveis (PRIMEIRA VEZ APENAS)
-        if not hasattr(self, '_printed_objects'):
-            try:
-                if hasattr(game, 'objects'):
-                    obj_names = list(game.objects.keys())
-                    print(f"[BT-DEBUG] Objetos no jogo: {obj_names}")
-                else:
-                    print(f"[BT-DEBUG] game.objects NÃO EXISTE")
-                    print(f"[BT-DEBUG] Tipo de game: {type(game)}")
-                    print(f"[BT-DEBUG] game.find('comida') = {game.find('comida') if hasattr(game, 'find') else 'SEM MÉTODO find'}")
-            except Exception as e:
-                print(f"[BT-DEBUG] Erro ao listar objetos: {e}")
-            self._printed_objects = True
-
         if not self._started:
             self.start(game)
         previous = self.current_state
