@@ -123,16 +123,16 @@ class BehaviorGraphRunner:
         if kind == "bt.move_to":
             return self._move_to(node, game, dt)
         if kind == "bt.target_in_range":
-            target = game.find(str(self._input(node, "target", "Player")))
+            target_name = str(self._input(node, "target", "Player"))
+            target = game.find(target_name)
             distance = self._number(node, "distance", 150.0)
+            print(f"[BT-DEBUG] target_in_range: procurando '{target_name}' → encontrado={target is not None}, distance={distance}")
             if target is None or distance <= 0:
-                if hasattr(game, "_log"):
-                    game._log("DEBUG", f"target_in_range: target={target}, distance={distance} → FAILURE")
+                print(f"[BT-DEBUG] target_in_range: FAILURE (target={target}, distance={distance})")
                 return "failure"
             dist_to_target = game.distance_to(target)
             result = "success" if dist_to_target <= distance else "failure"
-            if hasattr(game, "_log"):
-                game._log("DEBUG", f"target_in_range: dist_to_target={dist_to_target:.1f}, distance={distance} → {result.upper()}")
+            print(f"[BT-DEBUG] target_in_range: dist_to_target={dist_to_target:.1f}, distance={distance} → {result.upper()}")
             return result
         if kind == "bt.parameter_condition":
             return "success" if self._parameter_matches(node) else "failure"
