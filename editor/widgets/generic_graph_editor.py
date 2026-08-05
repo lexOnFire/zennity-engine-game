@@ -229,23 +229,23 @@ class GenericGraphEditorWidget(QWidget):
         # here so mouse users have the same reliable deletion path as Delete.
         self.btn_delete.clicked.connect(self.canvas.delete_selection)
         inner_splitter.addWidget(self.canvas)
-        inner_splitter.setSizes([180, 600])
+        inner_splitter.setSizes([150, 500])
 
         outer_splitter.addWidget(inner_splitter)
 
         # Inspector lateral + ajuda contextual
         self.inspector_tabs = QTabWidget(outer_splitter)
         self.graph_inspector = GraphNodeInspector(self.inspector_tabs)
-        self.graph_inspector.setMinimumWidth(200)
-        self.graph_inspector.setMaximumWidth(280)
+        self.graph_inspector.setMinimumWidth(220)
+        self.graph_inspector.setMaximumWidth(420)
         self.help_browser = QTextBrowser(self.inspector_tabs)
         self.help_browser.setOpenExternalLinks(True)
         self.inspector_tabs.addTab(self.graph_inspector, "Propriedades")
         self.inspector_tabs.addTab(self.help_browser, "Ajuda")
-        self.inspector_tabs.setMinimumWidth(240)
-        self.inspector_tabs.setMaximumWidth(340)
+        self.inspector_tabs.setMinimumWidth(260)
+        self.inspector_tabs.setMaximumWidth(450)
         outer_splitter.addWidget(self.inspector_tabs)
-        outer_splitter.setSizes([780, 240])
+        outer_splitter.setSizes([600, 350])
 
         layout.addWidget(outer_splitter, 1)
 
