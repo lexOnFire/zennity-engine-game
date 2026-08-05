@@ -281,6 +281,8 @@ class BehaviorGraphRunner:
         reactive = self._is_reactive(self.nodes[node_id], kind)
         previous_running = self._memory.get(node_id)
         index = 0 if reactive else int(previous_running or 0)
+        if hasattr(game, "_log"):
+            game._log("DEBUG", f"{kind} {node_id}: children={len(children)}, reactive={reactive}, index={index}")
         while index < len(children):
             result = self._tick(children[index], game, dt)
             if result == "running":
