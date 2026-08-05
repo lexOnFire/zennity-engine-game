@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 from typing import Any
 import numpy as np
+from PySide6.QtCore import QTimer
 
 from editor.runtime.tool_manager import EditorTool
 from editor.runtime.command_manager import FunctionCommand
@@ -52,9 +53,32 @@ class ViewportGizmoDragMixin:
             delta[0] = 0.0
         next_position = self._move_start_position + delta
         next_position = self._apply_snap(next_position)
-        obj.transform.position[0] = next_position[0]
-        obj.transform.position[1] = next_position[1]
-        emit_transform_changed(self, obj)
+
+        # Otimização: só emite sinal se posição realmente mudou
+        current_pos = obj.transform.position
+        pos_changed = not np.allclose(
+            [current_pos[0], current_pos[1]],
+            [next_position[0], next_position[1]],
+            atol=0.01
+        )
+
+        if pos_changed:
+            obj.transform.position[0] = next_position[0]
+            obj.transform.position[1] = next_position[1]
+
+            # Debounce: emite sinal com delay para evitar gargalo
+            if not hasattr(self, '_move_drag_timer'):
+                self._move_drag_timer = None
+
+            # Cancela timer anterior
+            if self._move_drag_timer is not None:
+                self._move_drag_timer.stop()
+
+            # Cria novo timer para emitir após 16ms (~60 FPS)
+            self._move_drag_timer = QTimer()
+            self._move_drag_timer.setSingleShot(True)
+            self._move_drag_timer.timeout.connect(lambda: emit_transform_changed(self, obj))
+            self._move_drag_timer.start(16)
 
     def _end_move_drag(self) -> None:
         obj = self._move_drag_object
@@ -115,9 +139,24 @@ class ViewportGizmoDragMixin:
         current_angle = math.degrees(math.atan2(y - cy, x - cx))
         delta = current_angle - self._rotate_start_angle
         new_rz = self._apply_snap_angle(self._rotate_start_rz + delta)
-        obj.transform.rz = new_rz
+
+        # Otimização: só emite sinal se rotação realmente mudou
+        if not math.isclose(new_rz, obj.transform.rz, abs_tol=0.1):
+            obj.transform.rz = new_rz
+
+            # Debounce: emite sinal com delay
+            if not hasattr(self, '_rotate_drag_timer'):
+                self._rotate_drag_timer = None
+
+            if self._rotate_drag_timer is not None:
+                self._rotate_drag_timer.stop()
+
+            self._rotate_drag_timer = QTimer()
+            self._rotate_drag_timer.setSingleShot(True)
+            self._rotate_drag_timer.timeout.connect(lambda: emit_transform_changed(self, obj))
+            self._rotate_drag_timer.start(16)
+
         self._rotate_current_mouse = (x, y)
-        emit_transform_changed(self, obj)
 
     def _end_rotate_drag(self) -> None:
         obj = self._rotate_drag_object
@@ -225,11 +264,32 @@ class ViewportGizmoDragMixin:
         next_scale[0] = max(1.0, float(next_scale[0]))
         next_scale[1] = max(1.0, float(next_scale[1]))
 
-        obj.transform.position[0] = next_position[0]
-        obj.transform.position[1] = next_position[1]
-        obj.transform.scale[0] = next_scale[0]
-        obj.transform.scale[1] = next_scale[1]
-        emit_transform_changed(self, obj)
+        # Otimização: só emite sinal se scale/position realmente mudou
+        current_pos = obj.transform.position
+        current_scale = obj.transform.scale
+
+        changed = (
+            not np.allclose([current_pos[0], current_pos[1]], [next_position[0], next_position[1]], atol=0.01)
+            or not np.allclose([current_scale[0], current_scale[1]], [next_scale[0], next_scale[1]], atol=0.01)
+        )
+
+        if changed:
+            obj.transform.position[0] = next_position[0]
+            obj.transform.position[1] = next_position[1]
+            obj.transform.scale[0] = next_scale[0]
+            obj.transform.scale[1] = next_scale[1]
+
+            # Debounce: emite sinal com delay
+            if not hasattr(self, '_scale_drag_timer'):
+                self._scale_drag_timer = None
+
+            if self._scale_drag_timer is not None:
+                self._scale_drag_timer.stop()
+
+            self._scale_drag_timer = QTimer()
+            self._scale_drag_timer.setSingleShot(True)
+            self._scale_drag_timer.timeout.connect(lambda: emit_transform_changed(self, obj))
+            self._scale_drag_timer.start(16)
 
     def _end_scale_drag(self) -> None:
         obj = self._scale_drag_object
