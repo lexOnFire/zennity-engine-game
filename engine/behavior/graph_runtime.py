@@ -64,9 +64,14 @@ class BehaviorGraphRunner:
         if not self._started:
             self.start(game)
             # DEBUG: Listar todos os objetos disponíveis
-            if hasattr(game, 'objects'):
-                obj_names = list(game.objects.keys())
-                print(f"[BT-DEBUG] Objetos no jogo: {obj_names}")
+            try:
+                if hasattr(game, 'objects'):
+                    obj_names = list(game.objects.keys())
+                    print(f"[BT-DEBUG] Objetos no jogo: {obj_names}")
+                else:
+                    print(f"[BT-DEBUG] game.objects NÃO EXISTE. Atributos de game: {dir(game)}")
+            except Exception as e:
+                print(f"[BT-DEBUG] Erro ao listar objetos: {e}")
         previous = self.current_state
         if not self.root:
             return False
