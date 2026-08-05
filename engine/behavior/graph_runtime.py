@@ -48,6 +48,7 @@ class BehaviorGraphRunner:
         self._execution_log: list[dict[str, Any]] = []
         self._max_log_entries = 50
         self._last_logged_node: str | None = None
+        self._active_nodes: list[str] = []
 
     def start(self, game: Any) -> None:
         self._started = True
@@ -57,6 +58,7 @@ class BehaviorGraphRunner:
         self._started = False
         self._memory.clear()
         self._persistent.clear()
+        self._active_nodes.clear()
 
     def update(self, game: Any, dt: float) -> bool:
         if not self._started:
@@ -64,6 +66,7 @@ class BehaviorGraphRunner:
         previous = self.current_state
         if not self.root:
             return False
+        self._active_nodes = []
         status = self._tick(self.root, game, max(0.0, float(dt)))
         if status != "running":
             self._memory.clear()
@@ -95,6 +98,8 @@ class BehaviorGraphRunner:
         node = self.nodes[node_id]
         kind = str(node.get("type", ""))
         self.current_state = node_id
+        if node_id not in self._active_nodes:
+            self._active_nodes.append(node_id)
         if kind in {"bt.sequence", "bt.selector"}:
             return self._tick_composite(node_id, kind, game, dt)
         if kind == "bt.inverter":
@@ -119,7 +124,10 @@ class BehaviorGraphRunner:
             return self._move_to(node, game, dt)
         if kind == "bt.target_in_range":
             target = game.find(str(self._input(node, "target", "Player")))
-            return "success" if target is not None and game.distance_to(target) <= max(0.0, self._number(node, "distance", 150.0)) else "failure"
+            distance = self._number(node, "distance", 150.0)
+            if target is None or distance <= 0:
+                return "failure"
+            return "success" if game.distance_to(target) <= distance else "failure"
         if kind == "bt.parameter_condition":
             return "success" if self._parameter_matches(node) else "failure"
         if kind == "bt.chase":
@@ -419,8 +427,9 @@ class BehaviorGraphRunner:
 
     def debug_snapshot(self) -> dict[str, Any]:
         """Retorna snapshot de execução para o editor destacar nós em tempo real."""
+        nodes = list(self._active_nodes) if self._active_nodes else ([self.current_state] if self.current_state and self.current_state in self.nodes else [])
         return {
-            "nodes": [self.current_state] if self.current_state and self.current_state in self.nodes else [],
+            "nodes": nodes,
             "edges": [],
             "values": {},
             "variables": {},
