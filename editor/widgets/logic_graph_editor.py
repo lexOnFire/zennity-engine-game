@@ -37,6 +37,7 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QMessageBox,
     QPushButton,
+    QShortcut,
     QSplitter,
     QTabWidget,
     QToolButton,
@@ -212,12 +213,12 @@ class LogicGraphEditor(
 
         # Atalhos de teclado para Delete e Backspace
         from PySide6.QtGui import QKeySequence
-        delete_shortcut = QShortcut(QKeySequence(Qt.Key_Delete), self)
-        delete_shortcut.setContext(Qt.WidgetWithChildrenShortcut)
-        delete_shortcut.activated.connect(self.delete_selected)
-        backspace_shortcut = QShortcut(QKeySequence(Qt.Key_Backspace), self)
-        backspace_shortcut.setContext(Qt.WidgetWithChildrenShortcut)
-        backspace_shortcut.activated.connect(self.delete_selected)
+        delete_sc = QShortcut(QKeySequence(Qt.Key_Delete), self)
+        delete_sc.setContext(Qt.WidgetWithChildrenShortcut)
+        delete_sc.activated.connect(self.delete_selected)
+        backspace_sc = QShortcut(QKeySequence(Qt.Key_Backspace), self)
+        backspace_sc.setContext(Qt.WidgetWithChildrenShortcut)
+        backspace_sc.activated.connect(self.delete_selected)
 
         self.target_type.currentIndexChanged.connect(lambda _index: (self.mark_dirty(), self._refresh_target_hints()))
         self.target_value.textChanged.connect(lambda _text: (self.mark_dirty(), self._refresh_target_hints()))
