@@ -81,8 +81,8 @@
       "title": "Cooldown",
       "category": "Logic",
       "position": [
-        -987.18,
-        407.97
+        -654.1,
+        543.79
       ],
       "editor": {
         "collapsed": false,
@@ -99,8 +99,8 @@
       "title": "Event Start",
       "category": "Events",
       "position": [
-        -1292.66,
-        234.32
+        -1208.58,
+        250.49
       ],
       "editor": {
         "collapsed": false,

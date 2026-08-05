@@ -392,27 +392,61 @@ class BehaviorGraphRunner:
             game.visual["color"] = list(color)
 
     def _log_execution(self, game: Any, node_id: str, status: str) -> None:
-        """Registra a execução do nó com logging visual."""
+        """Registra a execução do nó com logging visual e informativo."""
         if node_id not in self.nodes:
             return
         node = self.nodes[node_id]
-        node_type = str(node.get("type", "")).replace("bt.", "").upper()
+        node_type_raw = str(node.get("type", "")).replace("bt.", "")
+
+        # Converte tipo de nó para nome legível
+        node_type_names = {
+            "selector": "Seletor",
+            "sequence": "Sequência",
+            "patrol": "Patrulha",
+            "chase": "Perseguir",
+            "target_in_range": "Alvo no Alcance",
+            "move_to": "Mover Para",
+            "idle": "Esperar",
+            "cooldown": "Cooldown",
+            "inverter": "Inversor",
+            "wait": "Aguardar",
+            "attack": "Atacar",
+            "play_animation": "Reproduzir Animação",
+        }
+        node_type_display = node_type_names.get(node_type_raw, node_type_raw.upper())
 
         status_emoji = {"running": "⏳", "success": "✓", "failure": "✗"}.get(status, "?")
+        status_names = {"running": "executando", "success": "sucesso", "failure": "falha"}
+        status_display = status_names.get(status, status)
 
         props = node.get("properties", {})
         target_info = ""
-        if "target" in props:
-            target_info = f" → {props['target']}"
-        elif "target_pos" in props:
-            target_info = f" @ {props['target_pos']}"
 
-        message = f"{status_emoji} {node_type}{target_info}"
+        # Resolve target UUID para nome do objeto se possível
+        if "target" in props:
+            target_value = props['target']
+            target_name = target_value
+
+            # Tenta resolver UUID para nome de objeto
+            if hasattr(game, 'find') and len(str(target_value)) == 36:  # UUID format
+                try:
+                    obj = game.find(target_value)
+                    if obj and hasattr(obj, 'name'):
+                        target_name = obj.name
+                except:
+                    pass
+
+            target_info = f" → alvo: {target_name}"
+
+        elif "target_pos" in props:
+            target_info = f" → posição: {props['target_pos']}"
+
+        message = f"{status_emoji} {node_type_display} [{status_display}]{target_info}"
 
         if self._last_logged_node != node_id or status != "running":
             log_entry = {
                 "node_id": node_id,
-                "node_type": node_type,
+                "node_type": node_type_display,
                 "status": status,
                 "message": message,
             }
