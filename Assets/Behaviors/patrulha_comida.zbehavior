@@ -4,33 +4,39 @@
   "category": "Behavior Tree",
   "nodes": [
     {
-      "id": "root_selector",
+      "id": "97f288ef-b2ab-4abf-be8d-e3bdeaf393e7",
       "type": "bt.selector",
       "position": [
-        -324.0,
-        -251.0
+        -781.0,
+        -331.0
+      ]
+    },
+    {
+      "id": "67409df5-603a-4593-8685-90e34ae6505f",
+      "type": "bt.patrol",
+      "position": [
+        -780.0,
+        -148.0
       ],
       "properties": {
-        "reactive": true
+        "point_a": "-100,100",
+        "point_b": "200,0"
       }
     },
     {
-      "id": "seq_comida",
+      "id": "14042a52-149b-4f81-b064-44ff3248a17f",
       "type": "bt.sequence",
       "position": [
-        -213.0,
-        -384.0
-      ],
-      "properties": {
-        "reactive": false
-      }
+        -544.0,
+        -316.0
+      ]
     },
     {
-      "id": "check_in_range",
+      "id": "d1242c0e-2532-45a1-b319-fddbb22bd4d9",
       "type": "bt.target_in_range",
       "position": [
-        77.0,
-        -310.0
+        -286.0,
+        -263.0
       ],
       "properties": {
         "target": "comida",
@@ -38,108 +44,94 @@
       }
     },
     {
-      "id": "chase_comida",
+      "id": "54cf4daf-a0f4-4f7a-b4f0-9e4afba6cbfd",
       "type": "bt.chase",
       "position": [
-        135.0,
-        -177.0
+        -279.0,
+        -144.0
       ],
       "properties": {
-        "target": "comida",
-        "stop_distance": 50.0,
-        "speed": 150.0
+        "target": "comida"
       }
     },
     {
-      "id": "esperar_5s",
+      "id": "3692ce8e-82c6-41e1-966d-2d6c74054b9c",
+      "type": "bt.move_to",
+      "position": [
+        -272.0,
+        103.0
+      ],
+      "properties": {
+        "target_pos": "388,190",
+        "speed": 400.0
+      }
+    },
+    {
+      "id": "dfdd162c-5422-44e4-96df-7a2d6bc4d610",
       "type": "bt.cooldown",
       "position": [
-        130.0,
-        -27.0
+        -282.0,
+        1.0
       ],
       "properties": {
         "seconds": 5.0
-      }
-    },
-    {
-      "id": "voltar_ponto",
-      "type": "bt.move_to",
-      "position": [
-        96.0,
-        111.0
-      ],
-      "properties": {
-        "target_pos": "384,190"
-      }
-    },
-    {
-      "id": "patrulhar",
-      "type": "bt.patrol",
-      "position": [
-        -378.0,
-        -6.0
-      ],
-      "properties": {
-        "point_a": "-100,100",
-        "point_b": "0,100",
-        "speed": 80.0
       }
     }
   ],
   "edges": [
     {
-      "id": "e_root_seq",
-      "source_node": "root_selector",
-      "source_port": "out",
-      "target_node": "seq_comida",
+      "id": "594153f7-5337-4eb1-ab53-230bb62f424f",
+      "source_node": "97f288ef-b2ab-4abf-be8d-e3bdeaf393e7",
+      "source_port": "out_0",
+      "target_node": "14042a52-149b-4f81-b064-44ff3248a17f",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "e_root_patrol",
-      "source_node": "root_selector",
-      "source_port": "out",
-      "target_node": "patrulhar",
+      "id": "c096b544-2fca-4ab6-ae40-c43b75c03b63",
+      "source_node": "97f288ef-b2ab-4abf-be8d-e3bdeaf393e7",
+      "source_port": "out_1",
+      "target_node": "67409df5-603a-4593-8685-90e34ae6505f",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "e_seq_check",
-      "source_node": "seq_comida",
+      "id": "4b55dad4-9661-4e67-8071-b3e4c0035a5d",
+      "source_node": "14042a52-149b-4f81-b064-44ff3248a17f",
       "source_port": "out",
-      "target_node": "check_in_range",
+      "target_node": "d1242c0e-2532-45a1-b319-fddbb22bd4d9",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "e_check_success",
-      "source_node": "check_in_range",
+      "id": "3ab10648-9235-41c7-a9d2-53cb2273730e",
+      "source_node": "d1242c0e-2532-45a1-b319-fddbb22bd4d9",
       "source_port": "success",
-      "target_node": "chase_comida",
+      "target_node": "54cf4daf-a0f4-4f7a-b4f0-9e4afba6cbfd",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "e_chase_cooldown",
-      "source_node": "chase_comida",
+      "id": "caaecc4d-cb0a-439c-a584-b0ec08f0c731",
+      "source_node": "54cf4daf-a0f4-4f7a-b4f0-9e4afba6cbfd",
       "source_port": "out",
-      "target_node": "esperar_5s",
+      "target_node": "dfdd162c-5422-44e4-96df-7a2d6bc4d610",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "e_cooldown_move",
-      "source_node": "esperar_5s",
+      "id": "09d30f65-3c30-4ce7-8f69-b88a84036d31",
+      "source_node": "dfdd162c-5422-44e4-96df-7a2d6bc4d610",
       "source_port": "child",
-      "target_node": "voltar_ponto",
+      "target_node": "3692ce8e-82c6-41e1-966d-2d6c74054b9c",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "e_move_complete",
-      "source_node": "voltar_ponto",
+      "id": "58b8c645-9743-4c79-8c01-3f7750da5656",
+      "source_node": "3692ce8e-82c6-41e1-966d-2d6c74054b9c",
       "source_port": "out",
-      "target_node": "root_selector",
+      "target_node": "97f288ef-b2ab-4abf-be8d-e3bdeaf393e7",
       "target_port": "in",
       "type": "exec"
     }
