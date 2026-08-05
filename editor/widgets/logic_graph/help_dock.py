@@ -1,142 +1,9 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QTextBrowser, QLabel, QHBoxLayout, QListWidget, QListWidgetItem
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QTextBrowser, QLabel, QHBoxLayout
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QFont
 from engine.localization import tr
+from editor.widgets.logic_graph.node_database import NODE_DATABASE, NODE_ALIASES
 
-NODE_HELP_DATABASE: dict[str, dict[str, str]] = {
-    "jump": {
-        "title": "Pular (Jump)",
-        "category": "Movimento",
-        "icon": "🦘",
-        "desc": "Aplica um impulso vertical instantâneo para fazer o personagem saltar.",
-        "detailed": "Adiciona força vertical ao objeto, causando uma animação de salto. Ideal para plataformers e jogos de ação.",
-        "usage": "Combine com a verificação <code>Está no Chão?</code> para evitar pulos no ar. Você pode ajustar a força do pulo no painel de propriedades.",
-        "example": "<b>Exemplo:</b> On Tick → Ler Entrada → Branch (está no chão?) → Jump → Play Animation (Jump)",
-        "ports": "<b>[In] Exec</b>: Gatilho do pulo.<br><b>[In] Força</b>: Impulso vertical (ex.: 12.0 N).<br><b>[Out] Exec</b>: Saída de execução.",
-        "tips": "• Ajuste a força entre 8-15 para pulos naturais<br>• Combine com is_grounded para evitar pulos duplos<br>• Use cooldown para limitar frequência de pulos"
-    },
-    "on_start": {
-        "title": "Ao Iniciar (On Start)",
-        "category": "Eventos",
-        "icon": "🎬",
-        "desc": "Nó de evento inicializador disparado <b>uma única vez</b> ao criar o objeto ou carregar a cena.",
-        "detailed": "Este é o ponto de entrada ideal para configuração inicial. É executado antes do primeiro On Tick.",
-        "usage": "Utilize para definir valores iniciais de variáveis (vida, pontuação), tocar sons de entrada ou configurar o estado inicial.",
-        "example": "<b>Exemplo:</b> On Start → Set Variable (vida = 100) → Play Animation (Idle)",
-        "ports": "<b>[Out] Exec</b>: Fluxo de execução de saída.",
-        "tips": "• Sempre use para inicializar estado<br>• Executa antes de On Tick no primeiro frame<br>• Ideal para setup de componentes"
-    },
-    "on_tick": {
-        "title": "A Cada Quadro (On Tick / Update)",
-        "category": "Eventos",
-        "icon": "⏱️",
-        "desc": "Nó de evento de atualização contínua executado a <b>cada frame do jogo</b> (60 FPS / delta_time).",
-        "detailed": "O coração da lógica contínua. Executa repetidamente enquanto o objeto está ativo na cena.",
-        "usage": "Essencial para ler entradas do teclado/gamepad, aplicar movimento contínuo, atualizar temporizadores e checar colisões.",
-        "example": "<b>Exemplo:</b> On Tick → Read Input → Move Character → Update Animation State",
-        "ports": "<b>[Out] Exec</b>: Fluxo contínuo.<br><b>[Out] Delta Time</b>: Tempo em segundos desde o último frame (ex.: 0.016s).",
-        "tips": "• Use delta_time para movement frame-rate independent<br>• Não use para inicialização (use On Start)<br>• Ideal para loops e verificações contínuas"
-    },
-    "input_axis": {
-        "title": "Ler Entrada (Input Axis)",
-        "category": "Entrada",
-        "icon": "⌨️",
-        "desc": "Lê o estado atual dos controles do jogador (direcionais, WASD ou analógico).",
-        "detailed": "Retorna valores de -1.0 a 1.0 para cada eixo, permitindo movimento suave e proporcional.",
-        "usage": "Fornece um vetor <code>Vector2</code> (X, Y) do direcional para movimentar personagens horizontalmente e verticalmente.",
-        "example": "<b>Exemplo:</b> On Tick → Input Axis → Move (velocidade * input) → Play Animation",
-        "ports": "<b>[Out] Direção</b>: Vetor (X, Y) do direcional.<br><b>[Out] Pular</b>: Booleano.",
-        "tips": "• Retorna -1 a 1 (não 0 ou 1)<br>• WASD funciona automaticamente<br>• Suporta gamepad analógico"
-    },
-    "move": {
-        "title": "Mover Personagem (Move)",
-        "category": "Movimento",
-        "icon": "➡️",
-        "desc": "Aplica deslocamento físico contínuo ao personagem na direção e velocidade especificadas.",
-        "detailed": "Integra com o sistema de física do jogo para movimento suave e colisão-aware.",
-        "usage": "Conecte a saída de <code>Ler Entrada</code> na entrada de Direção para controlar em tempo real.",
-        "example": "<b>Exemplo:</b> On Tick → Input Axis → Move (direction, 200 pixels/s)",
-        "ports": "<b>[In] Exec</b>: Gatilho.<br><b>[In] Direção</b>: Vetor2 normalizando (-1 to 1).<br><b>[In] Velocidade</b>: Pixels/segundo (ex.: 220.0).<br><b>[Out] Exec</b>: Saída.",
-        "tips": "• Velocidade típica: 150-250 pixels/s<br>• Normalize a entrada antes de usar<br>• Respeita colisores e obstáculos"
-    },
-    "is_grounded": {
-        "title": "Está no Chão? (Is Grounded)",
-        "category": "Física",
-        "icon": "🔽",
-        "desc": "Verifica se o colisor está em contato direto com uma superfície de chão.",
-        "detailed": "Essencial para implementar mecânicas de pulo e movimentação vertical realista.",
-        "usage": "Conecte na entrada de uma condição <code>Ramo</code> antes de permitir pulos para evitar pulos infinitos no ar.",
-        "example": "<b>Exemplo:</b> On Tick → Is Grounded → Branch → (True) Jump",
-        "ports": "<b>[In] Exec</b>: Gatilho.<br><b>[Out] Result</b>: <code>true</code> se no chão, <code>false</code> se no ar.",
-        "tips": "• Sempre verifique antes de permitir pulo<br>• Use com Branch para lógica condicional<br>• Detecta plataformas e terreno"
-    },
-    "branch": {
-        "title": "Ramo (If / Else)",
-        "category": "Fluxo",
-        "icon": "🔀",
-        "desc": "Divisor de fluxo condicional que redireciona execução baseado em condição booleana.",
-        "detailed": "Implementa lógica if-then-else permitindo decisões no grafo.",
-        "usage": "Conecte uma comparação ou estado booleano (ex.: <code>Está no Chão?</code> ou <code>vida <= 0</code>).",
-        "example": "<b>Exemplo:</b> Input → Branch (is_grounded) → True: Jump | False: Fall",
-        "ports": "<b>[In] Exec</b>: Fluxo entrada.<br><b>[In] Condição</b>: Booleano.<br><b>[Out] True</b>: Se verdadeiro.<br><b>[Out] False</b>: Se falso.",
-        "tips": "• Sempre conecte True e False<br>• Suporta aninhamento<br>• Mantém lógica clara e legível"
-    },
-    "play_animation": {
-        "title": "Reproduzir Animação (Play Animation)",
-        "category": "Animação",
-        "icon": "🎥",
-        "desc": "Solicita ao componente Animator para reproduzir uma animação específica.",
-        "detailed": "Sincroniza o visual com a lógica de jogo alterando estado do animator.",
-        "usage": "Alterne entre clipes como <code>Idle</code>, <code>Run</code>, <code>Jump</code> baseado na velocidade.",
-        "example": "<b>Exemplo:</b> Motion Query → (Em movimento?) → Play Animation (Run) : Play Animation (Idle)",
-        "ports": "<b>[In] Exec</b>: Gatilho.<br><b>[In] Animação</b>: Nome do clipe (ex.: Run).<br><b>[In] Loop</b>: Repetir contínuo.",
-        "tips": "• Nomes devem corresponder aos clipes do Animator<br>• Use para feedback visual<br>• Combine com transições suaves"
-    },
-    "set_position": {
-        "title": "Definir Posição (Set Position)",
-        "category": "Transform",
-        "icon": "📍",
-        "desc": "Teleporta ou define a posição exata (X, Y) do objeto na cena.",
-        "detailed": "Movimento instantâneo sem passar pelos pontos intermediários.",
-        "usage": "Utilize para respawnar personagem, teleporte ou cutscenes.",
-        "example": "<b>Exemplo:</b> Player Dies → Set Position (spawn_point) → Play Animation (Respawn)",
-        "ports": "<b>[In] Exec</b>: Gatilho.<br><b>[In] X</b>: Posição X.<br><b>[In] Y</b>: Posição Y.",
-        "tips": "• Use com cuidado em áreas com colisores<br>• Ideal para respawn e checkpoints<br>• Instantâneo (sem interpolação)"
-    },
-    "compare": {
-        "title": "Comparar (Compare)",
-        "category": "Lógica",
-        "icon": "🔗",
-        "desc": "Compara dois valores numéricos e retorna booleano (verdadeiro/falso).",
-        "detailed": "Suporta operadores: ==, !=, >, >=, <, <=",
-        "usage": "Use em ramos condicionais para verificar estado (vida <= 0, score >= 100).",
-        "example": "<b>Exemplo:</b> Compare (vida <= 0) → Branch → True: Game Over",
-        "ports": "<b>[In] A</b>: Primeiro valor.<br><b>[In] B</b>: Segundo valor.<br>[In] Operador: ==, !=, >, >=, <, <=<br><b>[Out]</b>: Resultado booleano.",
-        "tips": "• Tipos devem ser compatíveis<br>• Use com Branch para lógica<br>• Aceita números e variáveis"
-    },
-    "compare_text": {
-        "title": "Comparar Texto (Compare Text)",
-        "category": "Lógica",
-        "icon": "📝",
-        "desc": "Compara dois textos e retorna booleano (verdadeiro/falso).",
-        "detailed": "Compara strings de forma exata. Suporta operadores: ==, !=, contains (contém).",
-        "usage": "Use para verificar nomes, tags de texto, diálogos ou identificadores de string.",
-        "example": "<b>Exemplo:</b> Get Tag → Compare Text (== 'enemy') → Branch → True: Attack",
-        "ports": "<b>[In] A</b>: Primeiro texto.<br><b>[In] B</b>: Segundo texto.<br>[In] Operador: ==, !=, contains<br><b>[Out]</b>: Resultado booleano.",
-        "tips": "• Comparação é case-sensitive<br>• Use 'contains' para busca parcial<br>• Ideal com Get Tag ou variáveis de texto"
-    },
-    "compare_text_ignore_case": {
-        "title": "Comparar Texto (Sem Maiúsculas) (Compare Text Ignore Case)",
-        "category": "Lógica",
-        "icon": "📝",
-        "desc": "Compara dois textos ignorando maiúsculas/minúsculas (case-insensitive).",
-        "detailed": "Mesma funcionalidade do Compare Text, mas ignora diferenças de capitalização.",
-        "usage": "Use quando a diferença entre maiúsculas não importa (ex: 'PLAYER', 'player', 'Player' são iguais).",
-        "example": "<b>Exemplo:</b> Player Name → Compare Text Ignore Case (== 'hero') → Branch",
-        "ports": "<b>[In] A</b>: Primeiro texto.<br><b>[In] B</b>: Segundo texto.<br>[In] Operador: ==, !=, contains<br><b>[Out]</b>: Resultado booleano.",
-        "tips": "• Ignora diferença entre maiúsculas/minúsculas<br>• Melhor para nomes de jogadores<br>• Mais flexível que Compare Text"
-    },
-}
 
 class LogicHelpDock(QWidget):
     def __init__(self, parent=None):
@@ -179,13 +46,32 @@ class LogicHelpDock(QWidget):
 
         self._filter_help("")
 
+    def _resolve_node_id(self, query: str) -> str:
+        """Resolve node ID usando aliases e normalizando."""
+        query_clean = query.lower().strip().replace(" ", "_")
+
+        # Tenta match direto
+        if query_clean in NODE_DATABASE:
+            return query_clean
+
+        # Tenta alias
+        if query_clean in NODE_ALIASES:
+            return NODE_ALIASES[query_clean]
+
+        # Tenta partial match no banco
+        for key in NODE_DATABASE.keys():
+            if query_clean in key or key in query_clean:
+                return key
+
+        return None
+
     def _filter_help(self, query: str):
         query_clean = query.lower().strip().replace(" ", "_")
         raw_query = query.lower().strip()
 
         # Match inteligente no dicionário
         matched_keys = []
-        for k, data in NODE_HELP_DATABASE.items():
+        for k, data in NODE_DATABASE.items():
             if not raw_query:
                 matched_keys.append(k)
             elif (
@@ -203,7 +89,7 @@ class LogicHelpDock(QWidget):
 
         html = []
         for k in matched_keys[:5]:
-            data = NODE_HELP_DATABASE[k]
+            data = NODE_DATABASE[k]
             icon = data.get("icon", "🔹")
             category = data.get("category", "Genérico")
             detailed = data.get("detailed", "")
@@ -270,30 +156,32 @@ class LogicHelpDock(QWidget):
             </div>
             """)
         else:
-            # Nó não encontrado
+            # Nó não encontrado - mostra com informação útil
             pretty_title = query.strip()
             self.help_text.setHtml(f"""
             <div style='padding: 10px;'>
                 <div style='background:#141824; border-left: 4px solid #f87171; padding: 12px; margin: 8px 0; border-radius: 4px;'>
                     <h3 style='color:#f87171; margin: 0 0 6px 0; font-size: 12px;'>❓ "{pretty_title}"</h3>
                     <p style='color:#cbd5e1; font-size: 10px; margin: 6px 0; line-height: 1.5;'>
-                        Este nó não está documentado na base de dados ainda.
+                        <b>✓ Este nó EXISTE no Logic Graph!</b>
                     </p>
                     <p style='color:#cbd5e1; font-size: 10px; margin: 6px 0; line-height: 1.5;'>
-                        <b>Informações disponíveis:</b><br>
-                        • Tipo: Nó do Logic Graph<br>
-                        • Categoria: Visual Scripting<br>
-                        • Processa a lógica quando acionado no fluxo
+                        Documentação ainda não disponível. Para mais informações:
+                    </p>
+                    <p style='color:#cbd5e1; font-size: 10px; margin: 6px 0; line-height: 1.5;'>
+                        <b>Tipo:</b> Nó do Logic Graph<br>
+                        <b>Categoria:</b> Visual Scripting<br>
+                        <b>Propósito:</b> Processa lógica quando acionado no fluxo
                     </p>
                 </div>
 
                 <div style='background:#141824; border-left: 4px solid #fbbf24; padding: 12px; margin: 12px 0; border-radius: 4px;'>
-                    <p style='color:#fbbf24; font-size: 10px; font-weight: bold; margin: 0 0 6px 0;'>💡 Dicas:</p>
+                    <p style='color:#fbbf24; font-size: 10px; font-weight: bold; margin: 0 0 6px 0;'>💡 Próximos Passos:</p>
                     <ul style='color:#cbd5e1; font-size: 10px; margin: 0; padding-left: 20px;'>
-                        <li>Procure documentação do nó no editor</li>
-                        <li>Verifique os pinos de entrada e saída</li>
-                        <li>Teste conectando em um ramo simples</li>
-                        <li>Consulte exemplos no projeto</li>
+                        <li>Verifique os pinos de entrada/saída no editor</li>
+                        <li>Procure exemplos de uso em outros grafos</li>
+                        <li>Consulte tutoriais do Logic Graph</li>
+                        <li>Experimente conectar em um ramo simples</li>
                     </ul>
                 </div>
 
@@ -304,10 +192,21 @@ class LogicHelpDock(QWidget):
             """)
 
     def show_node_help(self, node_id_or_name: str):
-        """Mostra ajuda para um nó específico."""
+        """Mostra ajuda para um nó específico. Recebe ID ou nome do nó."""
         if not node_id_or_name:
             return
+
+        # Resolve node ID
+        resolved_id = self._resolve_node_id(node_id_or_name)
+
+        # Se não resolver, tenta o termo original
+        if not resolved_id:
+            search_term = node_id_or_name
+        else:
+            # Se resolver, usa o título do nó para melhor UX
+            search_term = NODE_DATABASE[resolved_id].get("title", node_id_or_name)
+
         self.search_bar.blockSignals(True)
-        self.search_bar.setText(node_id_or_name)
+        self.search_bar.setText(search_term)
         self.search_bar.blockSignals(False)
-        self._filter_help(node_id_or_name)
+        self._filter_help(search_term)

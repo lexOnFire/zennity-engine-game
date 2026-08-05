@@ -24,8 +24,8 @@
       "title": "Set Position",
       "category": "Position",
       "position": [
-        438.76,
-        202.35
+        345.06,
+        270.13
       ],
       "editor": {
         "collapsed": false,
@@ -43,7 +43,7 @@
       "title": "Random Number",
       "category": "Logic",
       "position": [
-        -29.87,
+        -33.86,
         395.34
       ],
       "editor": {
@@ -76,81 +76,13 @@
       }
     },
     {
-      "id": "26fab327bc3e43a0b8689b3d523d053a",
-      "type": "event_timer",
-      "title": "Event Timer",
-      "category": "Events",
-      "position": [
-        -1138.45,
-        450.82
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
-      },
-      "properties": {
-        "seconds": 10
-      }
-    },
-    {
-      "id": "7e4b4102b2d94f2d8f5b0ae7f33ad196",
-      "type": "clone_object",
-      "title": "Clone Object",
-      "category": "Spawning",
-      "position": [
-        -462.43,
-        314.55
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 184.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "20f923da56a5434ca70562ffe89f8d2d",
-      "type": "get_tag",
-      "title": "Get Tag",
-      "category": "Objects",
-      "position": [
-        -495.62,
-        539.54
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
-      },
-      "properties": {
-        "tag": "Food"
-      }
-    },
-    {
-      "id": "a5b6aa3a6bdd4736b1ee3cdcf51961a7",
-      "type": "destroy_object",
-      "title": "Destroy Object",
-      "category": "Action",
-      "position": [
-        -2.92,
-        -74.52
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {}
-    },
-    {
       "id": "537c86bca518422faa6e5b1a5257c6f6",
       "type": "cooldown",
       "title": "Cooldown",
       "category": "Logic",
       "position": [
-        -556.55,
-        -182.16
+        -987.18,
+        407.97
       ],
       "editor": {
         "collapsed": false,
@@ -167,8 +99,8 @@
       "title": "Event Start",
       "category": "Events",
       "position": [
-        -864.02,
-        -198.31
+        -1292.66,
+        234.32
       ],
       "editor": {
         "collapsed": false,
@@ -198,42 +130,6 @@
       "order": 3
     },
     {
-      "id": "b68368a4d9cd44f69713a17b8c9f89cf",
-      "from_node": "26fab327bc3e43a0b8689b3d523d053a",
-      "from_port": "next",
-      "to_node": "7e4b4102b2d94f2d8f5b0ae7f33ad196",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 3
-    },
-    {
-      "id": "d536b60ab37e4bb0bf791c9383cd95e1",
-      "from_node": "20f923da56a5434ca70562ffe89f8d2d",
-      "from_port": "value",
-      "to_node": "7e4b4102b2d94f2d8f5b0ae7f33ad196",
-      "to_port": "name",
-      "kind": "text",
-      "order": 6
-    },
-    {
-      "id": "95a3e2777ad94701bbe889a5ac06fc8d",
-      "from_node": "7e4b4102b2d94f2d8f5b0ae7f33ad196",
-      "from_port": "next",
-      "to_node": "604ad147708d451e9996a6f0f08e1180",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 5
-    },
-    {
-      "id": "3fa174d27fc74522a62ef8f083b39595",
-      "from_node": "7e4b4102b2d94f2d8f5b0ae7f33ad196",
-      "from_port": "object",
-      "to_node": "20f923da56a5434ca70562ffe89f8d2d",
-      "to_port": "target",
-      "kind": "object",
-      "order": 6
-    },
-    {
       "id": "c9b76eb4d02643ea873283f587fbd976",
       "from_node": "8888d16b07744e4fa89f3ad4947257ed",
       "from_port": "next",
@@ -243,13 +139,13 @@
       "order": 6
     },
     {
-      "id": "f9b3943a3adb4b4991ddfbe2d062b899",
+      "id": "62e9f13cd196431b906c7b91ed4ba958",
       "from_node": "537c86bca518422faa6e5b1a5257c6f6",
       "from_port": "next",
-      "to_node": "a5b6aa3a6bdd4736b1ee3cdcf51961a7",
+      "to_node": "604ad147708d451e9996a6f0f08e1180",
       "to_port": "in",
       "kind": "flow",
-      "order": 7
+      "order": 3
     }
   ]
 }
