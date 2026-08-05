@@ -16,7 +16,7 @@ from .logic_graph.items import (
     LogicNodeItem
 )
 from .logic_graph.views import LogicGraphView, LogicMiniMapView
-from PySide6.QtGui import QColor, QPainter, QPainterPath, QPainterPathStroker, QPen, QBrush
+from PySide6.QtGui import QColor, QPainter, QPainterPath, QPainterPathStroker, QPen, QBrush, QShortcut
 from PySide6.QtWidgets import (
     QCheckBox,
     QFileDialog,
@@ -37,7 +37,6 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QMessageBox,
     QPushButton,
-    QShortcut,
     QSplitter,
     QTabWidget,
     QToolButton,
