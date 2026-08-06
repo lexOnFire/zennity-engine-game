@@ -35,7 +35,8 @@ class RealHierarchyPanel(HierarchyPanel):
         if self.search is not None:
             self.search.textChanged.connect(self.filter_tree)
 
-        # Suporte a D&D para reorganização da hierarquia
+        # Suporte a D&D e Multi-Seleção na hierarquia
+        self.tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.tree.setDragEnabled(True)
         self.tree.setAcceptDrops(True)
         self.tree.setDropIndicatorShown(True)
@@ -88,10 +89,15 @@ class RealHierarchyPanel(HierarchyPanel):
         original_drop = self.tree.dropEvent
 
         def drop_event(event):
-            dragged = self.current_object()
-            if dragged is None:
+            selected_items = self.tree.selectedItems()
+            dragged_objs = [it.data(0, Qt.UserRole) for it in selected_items if it.data(0, Qt.UserRole)]
+            if not dragged_objs:
+                dragged_objs = [self.current_object()] if self.current_object() is not None else []
+            
+            if not dragged_objs:
                 original_drop(event)
                 return
+
             target_item = self.tree.itemAt(event.position().toPoint()) if hasattr(event, "position") else self.tree.itemAt(event.pos())
             parent_obj = None
             insert_index = None
@@ -107,7 +113,9 @@ class RealHierarchyPanel(HierarchyPanel):
                     insert_index = sibling_parent.indexOfChild(target_item)
                     if indicator == QAbstractItemView.DropIndicatorPosition.BelowItem:
                         insert_index += 1
-            self.reparent_requested.emit(dragged, parent_obj, insert_index)
+
+            for dragged in dragged_objs:
+                self.reparent_requested.emit(dragged, parent_obj, insert_index)
             event.acceptProposedAction()
 
         self.tree.dropEvent = drop_event
