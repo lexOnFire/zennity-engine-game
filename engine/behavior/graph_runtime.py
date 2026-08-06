@@ -154,6 +154,12 @@ class BehaviorGraphRunner:
             else:
                 return "failure"
             return "success"
+        if kind == "bt.set_ui_value":
+            return self._set_ui_value(node, game)
+        if kind == "bt.increment_ui_value":
+            return self._increment_ui_value(node, game)
+        if kind == "bt.animate_ui_value":
+            return self._animate_ui_value(node_id, node, game, dt)
         return "failure"
 
     def _repeat(self, node_id: str, node: Mapping[str, Any], game: Any, dt: float) -> str:
@@ -380,6 +386,109 @@ class BehaviorGraphRunner:
             return float(self._input(node, name, default))
         except (TypeError, ValueError):
             return default
+
+    def _set_ui_value(self, node: Mapping[str, Any], game: Any) -> str:
+        """BT action: Define um valor em um elemento UI."""
+        element_name = str(self._input(node, "element", ""))
+        value = self._number(node, "value", 0.0)
+
+        # Procura o elemento na cena (pode ser um componente UILabel, UIProgressBar, etc)
+        element = game.find(element_name) if hasattr(game, "find") else None
+        if element is None:
+            return "failure"
+
+        # Tenta definir o valor no elemento
+        if hasattr(element, "set_value"):
+            element.set_value(value)
+        elif hasattr(element, "value"):
+            element.value = value
+        else:
+            return "failure"
+
+        return "success"
+
+    def _increment_ui_value(self, node: Mapping[str, Any], game: Any) -> str:
+        """BT action: Incrementa um valor em um elemento UI."""
+        element_name = str(self._input(node, "element", ""))
+        amount = self._number(node, "amount", 1.0)
+
+        element = game.find(element_name) if hasattr(game, "find") else None
+        if element is None:
+            return "failure"
+
+        # Incrementa o valor
+        current = 0.0
+        if hasattr(element, "get_value"):
+            current = element.get_value()
+        elif hasattr(element, "value"):
+            current = float(element.value) if element.value is not None else 0.0
+
+        new_value = current + amount
+
+        if hasattr(element, "set_value"):
+            element.set_value(new_value)
+        elif hasattr(element, "value"):
+            element.value = new_value
+        else:
+            return "failure"
+
+        return "success"
+
+    def _animate_ui_value(self, node_id: str, node: Mapping[str, Any], game: Any, dt: float) -> str:
+        """BT action: Anima um valor em um elemento UI com transição suave."""
+        element_name = str(self._input(node, "element", ""))
+        target_value = self._number(node, "target_value", 0.0)
+        duration = max(0.01, self._number(node, "duration", 0.5))
+        easing = str(self._input(node, "easing", "linear"))
+
+        element = game.find(element_name) if hasattr(game, "find") else None
+        if element is None:
+            return "failure"
+
+        # Inicializa animação se não existir
+        elapsed = float(self._memory.get(node_id, 0.0))
+        elapsed += dt
+
+        if elapsed >= duration:
+            # Animação terminada
+            if hasattr(element, "set_value"):
+                element.set_value(target_value)
+            elif hasattr(element, "value"):
+                element.value = target_value
+            self._memory.pop(node_id, None)
+            return "success"
+
+        # Interpola valor com easing
+        progress = elapsed / duration
+
+        # Aplica easing simples
+        if easing == "ease_in":
+            progress = progress ** 2
+        elif easing == "ease_out":
+            progress = 1 - (1 - progress) ** 2
+        elif easing == "ease_in_out":
+            progress = 3 * progress ** 2 - 2 * progress ** 3
+
+        current = 0.0
+        if hasattr(element, "get_value"):
+            current = element.get_value()
+        elif hasattr(element, "value"):
+            current = float(element.value) if element.value is not None else 0.0
+
+        # Valor inicial é salvo na memória
+        if (node_id, "start_value") not in self._memory:
+            self._memory[(node_id, "start_value")] = current
+
+        start = float(self._memory.get((node_id, "start_value"), current))
+        interpolated = start + (target_value - start) * progress
+
+        if hasattr(element, "set_value"):
+            element.set_value(interpolated)
+        elif hasattr(element, "value"):
+            element.value = interpolated
+
+        self._memory[node_id] = elapsed
+        return "running"
 
     def _apply_node_color(self, game: Any, node_id: str) -> None:
         """Aplica cor ao objeto baseado no nó sendo executado."""
