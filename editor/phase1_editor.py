@@ -226,7 +226,15 @@ class ZennityPhase1Editor(
         # FIX: Retorna apenas objetos root (sem parent) dinamicamente
         # Não confia na lista editable_objects que pode ficar inconsistente
         all_objects = getattr(scene, "game_objects", [])
-        return [obj for obj in all_objects if getattr(obj, "parent", None) is None]
+        root_objects = [obj for obj in all_objects if getattr(obj, "parent", None) is None]
+        # DEBUG
+        if len(all_objects) > len(root_objects):
+            print(f"[DEBUG scene_objects] Total: {len(all_objects)}, Roots: {len(root_objects)}")
+            for obj in root_objects:
+                children = getattr(obj, "children", [])
+                if children:
+                    print(f"  └─ {getattr(obj, 'name', '?')} ({len(children)} children)")
+        return root_objects
 
     def _ensure_scene_collider_registry(self, scene: Any) -> None:
         try:
