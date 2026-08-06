@@ -67,6 +67,7 @@ from engine.ui.runtime_components import (
     Canvas, LabelComponent, ImageComponent, InfiniteBackground, ButtonComponent,
     ProgressBarComponent,
 )
+from engine.ui.ui_binder import UIBinder
 from engine.graphics.tilemap import Tilemap, TilemapRenderer
 from engine.components.script_component import ScriptComponent
 from engine.physics.rigidbody import RigidBody
@@ -93,6 +94,7 @@ component_registry.register(ButtonComponent)
 # no matching class anywhere in engine.ui.runtime_components and was never
 # registered — see ProgressBarComponent in runtime_components.py.
 component_registry.register(ProgressBarComponent)
+component_registry.register(UIBinder)
 component_registry.register(Tilemap)
 component_registry.register(TilemapRenderer)
 component_registry.register(ScriptComponent, "Script")
