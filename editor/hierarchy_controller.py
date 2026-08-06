@@ -35,22 +35,29 @@ class HierarchyController:
         if self._connected:
             return False
         h = self.host
+        h.hierarchy_tree.setSelectionMode(QTreeWidget.ExtendedSelection)
         h.hierarchy_tree.setDragEnabled(True)
         h.hierarchy_tree.setAcceptDrops(True)
         h.hierarchy_tree.setDragDropMode(QTreeWidget.InternalMove)
-        self._bind(h.hierarchy_tree.itemClicked, h._select_hierarchy_item)
+        self._bind(h.hierarchy_tree.itemSelectionChanged, self._on_selection_changed)
         self._bind(h.hierarchy_tree.itemDoubleClicked, 
             lambda item: h._rename_object(self.item_name(item))
         )
         h.hierarchy_tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self._bind(h.hierarchy_tree.customContextMenuRequested, h._open_hierarchy_menu)
         
-        # Conectar atalho da tecla Delete/Backspace na árvore de hierarquia
+        # Conectar atalho da tecla Delete/Backspace e Ctrl+G na árvore de hierarquia
         orig_key_press = h.hierarchy_tree.keyPressEvent
         def hierarchy_key_press(event) -> None:
             if event.key() in (Qt.Key_Delete, Qt.Key_Backspace):
                 if h._selected_name is not None and not h._play_session.is_running:
                     h._scene_objects.delete(h._selected_name)
+                    return
+            if event.key() == Qt.Key_G and (event.modifiers() & Qt.ControlModifier):
+                selected_items = h.hierarchy_tree.selectedItems()
+                selected_names = [self.item_name(it) for it in selected_items if self.item_name(it)]
+                if len(selected_names) > 1 and hasattr(h, "_group_objects"):
+                    h._group_objects(selected_names)
                     return
             orig_key_press(event)
         h.hierarchy_tree.keyPressEvent = hierarchy_key_press
@@ -71,6 +78,12 @@ class HierarchyController:
         lock_action = menu.addAction("Destravar transformação" if locked else "Travar transformação")
         prefab_action = menu.addAction("Criar Prefab")
         delete_action = menu.addAction("Excluir")
+        selected_items = h.hierarchy_tree.selectedItems()
+        selected_names = [self.item_name(it) for it in selected_items if self.item_name(it)]
+        group_action = menu.addAction(f"Group Selection ({len(selected_names)})")
+        group_action.setEnabled(len(selected_names) > 1)
+        group_action.triggered.connect(lambda _checked=False: hasattr(h, "_group_objects") and h._group_objects(selected_names))
+
         rename_action.triggered.connect(lambda _checked=False: h._rename_object(item_name))
         duplicate_action.triggered.connect(
             lambda _checked=False: self.select_and_duplicate(item_name)
@@ -91,6 +104,22 @@ class HierarchyController:
     def select_and_save_prefab(self, name: str) -> None:
         if self.host._selection.select_for_action(name):
             self.host._prefab_workspace.save_selected()
+
+    def _on_selection_changed(self) -> None:
+        h = self.host
+        selected_items = h.hierarchy_tree.selectedItems()
+        if not selected_items:
+            h._selection.select(None)
+            return
+        selected_names = [self.item_name(it) for it in selected_items if self.item_name(it)]
+        h._selected_names = selected_names
+        # Seleciona o principal no Inspector
+        name = selected_names[0]
+        in_scene = name in h._objects_by_name
+        in_runtime = h._runtime_playing and name in h._runtime_objects_by_name
+        if in_scene or in_runtime:
+            source = "Runtime" if in_runtime and not in_scene else "Interface"
+            h._selection.select(name, source=source)
 
     def select_item(self, item: QTreeWidgetItem) -> None:
         h = self.host

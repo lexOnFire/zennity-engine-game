@@ -21,7 +21,7 @@ class InspectorViewRenderer:
         h.add_component_button.setEnabled(not h._runtime_playing)
         h._set_inspector_card_present("transform", True)
         for key in ("x", "y", "w", "h", "rotation"):
-            h.inspector_fields[key].setValue(float(obj[key]))
+            h.inspector_fields[key].setValue(float(obj.get(key, 0.0)))
 
         if hasattr(h, "tag_combo"):
             h.tag_combo.blockSignals(True)

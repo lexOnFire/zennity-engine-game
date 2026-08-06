@@ -4,6 +4,7 @@ from typing import Any
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QAbstractItemView, QLineEdit, QMenu, QTreeWidgetItem
+from PySide6.QtGui import QDrag
 
 from editor.premium_editor import HierarchyPanel
 from editor.premium_panel_base import Panel
@@ -25,12 +26,15 @@ class RealHierarchyPanel(HierarchyPanel):
     # Estado local de visibilidade/lock (indexados por id do objeto)
     _visibility: dict[str, bool]
     _locked: dict[str, bool]
+    # CORREÇÃO: Rastreia qual item está sendo arrastado
+    _dragged_items: list[QTreeWidgetItem]
 
     def __init__(self) -> None:
         super().__init__()
         self._visibility = {}
         self._locked = {}
         self._editing_item: QTreeWidgetItem | None = None
+        self._dragged_items = []  # Rastreia items em drag
         self.search = self.findChild(QLineEdit)
         if self.search is not None:
             self.search.textChanged.connect(self.filter_tree)
@@ -55,6 +59,7 @@ class RealHierarchyPanel(HierarchyPanel):
         self.tree.itemChanged.connect(self.on_item_changed)
         # Clique no ícone de olho/cadeado (colunas 1 e 2)
         self.tree.itemClicked.connect(self._on_item_clicked_columns)
+        self.tree.itemSelectionChanged.connect(self._selected)
 
         original_key_press = self.tree.keyPressEvent
 
@@ -86,14 +91,26 @@ class RealHierarchyPanel(HierarchyPanel):
             original_key_press(event)
 
         self.tree.keyPressEvent = key_press
+
+        # CORREÇÃO CRÍTICA: Rastrear qual item está sendo arrastado
+        original_start_drag = self.tree.startDrag
+        def start_drag(supported_actions):
+            """Armazena quais items estão sendo arrastados ANTES do drag começar."""
+            self._dragged_items = list(self.tree.selectedItems())
+            original_start_drag(supported_actions)
+        self.tree.startDrag = start_drag
+
         original_drop = self.tree.dropEvent
 
         def drop_event(event):
-            selected_items = self.tree.selectedItems()
-            dragged_objs = [it.data(0, Qt.UserRole) for it in selected_items if it.data(0, Qt.UserRole)]
-            if not dragged_objs:
-                dragged_objs = [self.current_object()] if self.current_object() is not None else []
-            
+            # CORREÇÃO: Usar _dragged_items ao invés de selectedItems()
+            # porque currentItem() pode ter mudado durante o drag
+            dragged_items = self._dragged_items if self._dragged_items else []
+            dragged_objs = [it.data(0, Qt.UserRole) for it in dragged_items if it.data(0, Qt.UserRole)]
+
+            # Limpar após usar
+            self._dragged_items = []
+
             if not dragged_objs:
                 original_drop(event)
                 return
@@ -114,8 +131,11 @@ class RealHierarchyPanel(HierarchyPanel):
                     if indicator == QAbstractItemView.DropIndicatorPosition.BelowItem:
                         insert_index += 1
 
-            for dragged in dragged_objs:
-                self.reparent_requested.emit(dragged, parent_obj, insert_index)
+            # CORREÇÃO: Quando há múltiplos objetos sendo arrastados,
+            # ajustar insert_index para cada um manter a ordem relativa
+            for i, dragged in enumerate(dragged_objs):
+                adjusted_index = insert_index + i if insert_index is not None else None
+                self.reparent_requested.emit(dragged, parent_obj, adjusted_index)
             event.acceptProposedAction()
 
         self.tree.dropEvent = drop_event
@@ -205,6 +225,12 @@ class RealHierarchyPanel(HierarchyPanel):
         root = self.tree.topLevelItem(0)
         if root is None:
             return
+        # Se o objeto já estiver entre os selecionados, preserva a multi-seleção atual
+        selected_items = self.tree.selectedItems()
+        selected_objs = [it.data(0, Qt.UserRole) for it in selected_items if it.data(0, Qt.UserRole)]
+        if obj in selected_objs and len(selected_objs) > 1:
+            return
+
         self.tree.blockSignals(True)
         try:
             self.tree.clearSelection()
@@ -213,6 +239,7 @@ class RealHierarchyPanel(HierarchyPanel):
                 return
             item = self.find_item(obj)
             if item is not None:
+                item.setSelected(True)
                 self.tree.setCurrentItem(item)
                 parent = item.parent()
                 while parent is not None:

@@ -253,6 +253,28 @@ class IsolatedEditorWindow(InspectorComponentDelegatesMixin, AnimationWorkspaceO
     def _delete_object(self, name: str) -> None:
         self._scene_objects.delete(name)
 
+    def _group_objects(self, names: list[str]) -> None:
+        if not names or len(names) < 2:
+            return
+        group_name = self._scene_objects.unique_name("Novo Grupo")
+        # Cria objeto Grupo na cena com atributos de Transform padrão
+        group_obj = {
+            "name": group_name,
+            "is_group": True,
+            "x": 0.0, "y": 0.0, "w": 0.0, "h": 0.0, "rotation": 0.0,
+            "parent": None,
+            "children": []
+        }
+        for n in names:
+            if n in self._objects_by_name:
+                obj = self._objects_by_name[n]
+                obj["parent"] = group_name
+                group_obj["children"].append(obj)
+        self._scene_snapshot.append(group_obj)
+        self._objects_by_name[group_name] = group_obj
+        self._refresh_hierarchy(force=True)
+        self._record_history()
+
     def _duplicate_selected(self) -> None:
         self._scene_objects.duplicate_selected()
 

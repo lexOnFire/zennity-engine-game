@@ -55,7 +55,9 @@ class ViewportSpriteRenderer:
                 continue
             if view_mode == "game" and self._is_camera(obj):
                 continue
-            object_x, object_y = world_to_screen(float(obj["x"]), float(obj["y"]))
+            if obj.get("is_group", False) and ("x" not in obj or "y" not in obj):
+                continue
+            object_x, object_y = world_to_screen(float(obj.get("x", 0.0)), float(obj.get("y", 0.0)))
             width = max(1, int(float(obj["w"]) * render_zoom))
             height = max(1, int(float(obj["h"]) * render_zoom))
             surface = self._surface_for(obj, width, height)

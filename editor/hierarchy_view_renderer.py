@@ -52,17 +52,29 @@ class HierarchyViewRenderer:
             scene_name = editor._scene_document.get("scene_name", "MainScene") if editor._scene_document else "MainScene"
             root = QTreeWidgetItem(["🟢 " + str(scene_name)])
             root.setExpanded(True)
-            selected_item = None
-            for obj in editor._scene_snapshot:
-                name = str(obj["name"])
-                lock_icon = "🔒 " if obj.get("editor_locked", False) else ""
-                item = QTreeWidgetItem([lock_icon + self._icon(name) + name])
-                item.setData(0, Qt.UserRole, name)
-                if obj.get("editor_locked", False):
-                    item.setToolTip(0, "Transformação bloqueada: o objeto pode ser selecionado, mas não movido, girado ou escalado")
-                root.addChild(item)
-                if name == editor._selected_name:
-                    selected_item = item
+            selected_items = []
+            selected_names = set(getattr(editor, "_selected_names", [editor._selected_name] if editor._selected_name else []))
+
+            def _add_object_nodes(parent_item: QTreeWidgetItem, objects: list[dict[str, Any]]) -> None:
+                for obj in objects:
+                    name = str(obj["name"])
+                    lock_icon = "🔒 " if obj.get("editor_locked", False) else ""
+                    is_group = bool(obj.get("is_group", False))
+                    prefix = "📂 " if is_group else self._icon(name)
+                    item = QTreeWidgetItem([lock_icon + prefix + name])
+                    item.setData(0, Qt.UserRole, name)
+                    if obj.get("editor_locked", False):
+                        item.setToolTip(0, "Transformação bloqueada")
+                    parent_item.addChild(item)
+                    if name in selected_names:
+                        selected_items.append(item)
+                    children = obj.get("children", [])
+                    if children:
+                        _add_object_nodes(item, children)
+                        item.setExpanded(True)
+
+            root_objects = [obj for obj in editor._scene_snapshot if not obj.get("parent")]
+            _add_object_nodes(root, root_objects if root_objects else editor._scene_snapshot)
             spawned = [
                 obj for name, obj in editor._runtime_objects_by_name.items()
                 if obj.get("spawned_by_logic", False) and name not in editor._objects_by_name
@@ -82,8 +94,10 @@ class HierarchyViewRenderer:
                         selected_item = item
                 root.addChild(runtime_root)
             tree.addTopLevelItem(root)
-            if selected_item is not None:
-                tree.setCurrentItem(selected_item)
+            if selected_items:
+                for item in selected_items:
+                    item.setSelected(True)
+                tree.setCurrentItem(selected_items[-1])
         finally:
             tree.setUpdatesEnabled(True)
 
