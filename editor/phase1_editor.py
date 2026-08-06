@@ -117,6 +117,10 @@ class ZennityPhase1Editor(
         self.hierarchy.delete_requested.connect(self.delete_object)
         self.hierarchy.rename_requested.connect(self.rename_object)
         self.hierarchy.reparent_requested.connect(self.reparent_object)
+        if hasattr(self.hierarchy, "group_requested"):
+            self.hierarchy.group_requested.connect(self.group_objects)
+        if hasattr(self.hierarchy, "ungroup_requested"):
+            self.hierarchy.ungroup_requested.connect(self.ungroup_object)
 
         self.create_panel.create_requested.connect(self.create_object)
 

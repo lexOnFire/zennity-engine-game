@@ -438,3 +438,71 @@ class Phase1HierarchyOperationsMixin:
 
         self.editor_context.commands.execute(FunctionCommand(command.description, do, undo_fn))
         return True
+
+    def group_objects(self, objs: list[Any]) -> Any:
+        scene = self._editor_scene()
+        if scene is None or not objs:
+            return None
+
+        # Cria objeto Grupo Vazio
+        from engine.game_object import GameObject
+        group = GameObject("New Group")
+        group.is_group = True
+
+        # Calcula centro para o Transform do Grupo
+        positions = [getattr(o, "transform", None) for o in objs if getattr(o, "transform", None)]
+        if positions:
+            avg_x = sum(float(t.x) for t in positions) / len(positions)
+            avg_y = sum(float(t.y) for t in positions) / len(positions)
+            group.transform.x = avg_x
+            group.transform.y = avg_y
+
+        def do() -> None:
+            if hasattr(scene, "add_game_object"):
+                scene.add_game_object(group)
+            elif hasattr(scene, "game_objects"):
+                scene.game_objects.append(group)
+            for o in objs:
+                o.parent = group
+            self._after_hierarchy_command(group)
+
+        def undo_fn() -> None:
+            for o in objs:
+                o.parent = None
+            if hasattr(scene, "remove_game_object"):
+                scene.remove_game_object(group)
+            elif hasattr(scene, "game_objects") and group in scene.game_objects:
+                scene.game_objects.remove(group)
+            self._after_hierarchy_command(objs[0] if objs else None)
+
+        self.editor_context.commands.execute(FunctionCommand("Group Selection", do, undo_fn))
+        return group
+
+    def ungroup_object(self, group: Any) -> bool:
+        scene = self._editor_scene()
+        if scene is None or group is None or not getattr(group, "is_group", False):
+            return False
+
+        children = list(getattr(group, "children", []))
+
+        def do() -> None:
+            for child in children:
+                child.parent = None
+            if hasattr(scene, "remove_game_object"):
+                scene.remove_game_object(group)
+            elif hasattr(scene, "game_objects") and group in scene.game_objects:
+                scene.game_objects.remove(group)
+            self._after_hierarchy_command(children[0] if children else None)
+
+        def undo_fn() -> None:
+            if hasattr(scene, "add_game_object"):
+                scene.add_game_object(group)
+            elif hasattr(scene, "game_objects"):
+                scene.game_objects.append(group)
+            for child in children:
+                child.parent = group
+            self._after_hierarchy_command(group)
+
+        self.editor_context.commands.execute(FunctionCommand("Ungroup", do, undo_fn))
+        return True
+
