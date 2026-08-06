@@ -223,7 +223,10 @@ class ZennityPhase1Editor(
         if scene is None:
             return []
         self._ensure_scene_collider_registry(scene)
-        return list(getattr(scene, "editable_objects", []))
+        # FIX: Retorna apenas objetos root (sem parent) dinamicamente
+        # Não confia na lista editable_objects que pode ficar inconsistente
+        all_objects = getattr(scene, "game_objects", [])
+        return [obj for obj in all_objects if getattr(obj, "parent", None) is None]
 
     def _ensure_scene_collider_registry(self, scene: Any) -> None:
         try:
