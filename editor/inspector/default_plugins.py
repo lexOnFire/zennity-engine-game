@@ -15,6 +15,8 @@ from editor.inspector.plugins.tilemap_inspector_plugin import TilemapInspectorPl
 from editor.inspector.plugins.tilemap_renderer_inspector_plugin import TilemapRendererInspectorPlugin
 from editor.inspector.plugins.asset_inspector_plugin import AssetInspectorPlugin
 from editor.inspector.plugins.package_inspector_plugin import PackageInspectorPlugin
+from editor.inspector.ui_binder_plugin import UIBinderPlugin
+from editor.inspector.animation_controller_plugin import AnimationControllerPlugin
 
 __all__ = [
     "TransformInspectorPlugin",
@@ -32,6 +34,8 @@ __all__ = [
     "TilemapRendererInspectorPlugin",
     "AssetInspectorPlugin",
     "PackageInspectorPlugin",
+    "UIBinderPlugin",
+    "AnimationControllerPlugin",
 ]
 
 from editor.inspector.plugin_registry import inspector_plugin_registry
@@ -53,5 +57,7 @@ def register_default_inspector_plugins() -> None:
     inspector_plugin_registry.register(TilemapRendererInspectorPlugin)
     inspector_plugin_registry.register(AssetInspectorPlugin)
     inspector_plugin_registry.register(PackageInspectorPlugin)
+    inspector_plugin_registry.register(UIBinderPlugin)
+    inspector_plugin_registry.register(AnimationControllerPlugin)
 
 __all__.extend(["register_default_inspector_plugins", "_section", "_property_row", "_float_field", "_axis_row"])
