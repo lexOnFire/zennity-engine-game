@@ -18,6 +18,7 @@ from engine.ai.behavior_tree_nodes import (
     BTParameterCheckNode,
     BTRandomChanceNode,
     # Action
+    BTWaitNode,
     BTIdleNode,
     BTPatrolNode,
     BTChaseNode,
@@ -62,6 +63,7 @@ class AIProvider(EngineProvider):
         manager.register(BTParameterCheckNode.__node_definition__)
         manager.register(BTRandomChanceNode.__node_definition__)
         # Action
+        manager.register(BTWaitNode.__node_definition__)
         manager.register(BTIdleNode.__node_definition__)
         manager.register(BTPatrolNode.__node_definition__)
         manager.register(BTChaseNode.__node_definition__)

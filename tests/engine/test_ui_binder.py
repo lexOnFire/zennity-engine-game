@@ -3,7 +3,7 @@
 import pytest
 from engine.ui.ui_binder import UIBinder
 from engine.game_object import GameObject
-from engine.scene import Scene
+from engine.core.scene import Scene
 
 
 class MockUIElement:

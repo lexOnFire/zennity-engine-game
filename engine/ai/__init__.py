@@ -14,6 +14,7 @@ from engine.ai.behavior_tree_nodes import (
     BTParameterCheckNode,
     BTRandomChanceNode,
     # Action
+    BTWaitNode,
     BTIdleNode,
     BTPatrolNode,
     BTChaseNode,

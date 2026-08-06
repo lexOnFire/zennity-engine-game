@@ -232,6 +232,26 @@ class BTRandomChanceNode:
 # ACTION NODES — Fazem coisas reais no jogo
 # ══════════════════════════════════════════════════════════════════════════════
 
+class BTWaitNode:
+    """Aguarda N segundos.
+
+    Use para: pausas entre ações no Behavior Tree.
+    """
+
+    __node_definition__ = NodeDefinition(
+        id="bt.wait",
+        title_key="Esperar (Wait)",
+        category_key="Behavior Tree/Action",
+        description_key="Aguarda N segundos antes de continuar.",
+        inputs=[
+            PinDefinition(id="in", label_key="In", pin_type=PinType.EXEC),
+            PinDefinition(id="duration", label_key="Duração (s)", pin_type=PinType.FLOAT, default_value=1.0)
+        ],
+        outputs=[PinDefinition(id="out", label_key="Pronto", pin_type=PinType.EXEC)],
+        tags=["espera", "pausa", "tempo"],
+    )
+
+
 class BTIdleNode:
     """Fica parado por N segundos. Útil para pausas naturais.
 

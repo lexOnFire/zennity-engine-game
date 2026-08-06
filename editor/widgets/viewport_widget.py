@@ -15,9 +15,9 @@ import pygame
 import numpy as np
 from typing import Optional, List
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
-from PySide6.QtWidgets import QWidget, QShortcut
+from PySide6.QtWidgets import QWidget
 from PySide6.QtCore import Qt, QTimer, Slot
-from PySide6.QtGui import QPainter, QImage, QMouseEvent, QKeyEvent, QWheelEvent, QKeySequence
+from PySide6.QtGui import QPainter, QImage, QMouseEvent, QKeyEvent, QWheelEvent, QKeySequence, QShortcut
 
 from editor.core.event_bus import (
     EventBus,

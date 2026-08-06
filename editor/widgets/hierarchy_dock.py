@@ -1,10 +1,10 @@
 from PySide6.QtWidgets import (
     QDockWidget, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit,
-    QTreeWidget, QTreeWidgetItem, QLabel, QHeaderView, QShortcut
+    QTreeWidget, QTreeWidgetItem, QLabel, QHeaderView
 )
 from typing import Optional
 from PySide6.QtCore import Qt, Slot
-from PySide6.QtGui import QKeyEvent, QKeySequence
+from PySide6.QtGui import QKeyEvent, QKeySequence, QShortcut
 from engine.game_object import GameObject
 from editor.viewmodels.scene_viewmodel import SceneViewModel
 
