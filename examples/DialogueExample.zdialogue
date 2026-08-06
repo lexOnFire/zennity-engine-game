@@ -1,0 +1,98 @@
+{
+  "format": "zennity.generic_graph",
+  "category": "Dialogue",
+  "metadata": {
+    "name": "DialogueExample",
+    "description": "Exemplo simples de diálogo com ramificações"
+  },
+  "nodes": [
+    {
+      "id": "greeting",
+      "type": "dialogue.speech",
+      "inputs": {
+        "speaker": "Merchant",
+        "text": "Olá, bem-vindo à minha loja! O que posso fazer por você?"
+      }
+    },
+    {
+      "id": "choices_node",
+      "type": "dialogue.choice",
+      "inputs": {
+        "prompt": "O que você gostaria de fazer?"
+      }
+    },
+    {
+      "id": "option_buy",
+      "type": "dialogue.speech",
+      "inputs": {
+        "speaker": "Merchant",
+        "text": "Excelente! Temos várias poções e itens disponíveis."
+      }
+    },
+    {
+      "id": "option_sell",
+      "type": "dialogue.speech",
+      "inputs": {
+        "speaker": "Merchant",
+        "text": "Ah, você tem algo para vender? Mostre-me!"
+      }
+    },
+    {
+      "id": "option_leave",
+      "type": "dialogue.speech",
+      "inputs": {
+        "speaker": "Merchant",
+        "text": "Tudo bem, volte sempre que precisar!"
+      }
+    },
+    {
+      "id": "end_node",
+      "type": "dialogue.end",
+      "inputs": {}
+    }
+  ],
+  "edges": [
+    {
+      "source_node": "greeting",
+      "source_port": "out",
+      "target_node": "choices_node",
+      "target_port": "in"
+    },
+    {
+      "source_node": "choices_node",
+      "source_port": "option_0",
+      "target_node": "option_buy",
+      "target_port": "in"
+    },
+    {
+      "source_node": "choices_node",
+      "source_port": "option_1",
+      "target_node": "option_sell",
+      "target_port": "in"
+    },
+    {
+      "source_node": "choices_node",
+      "source_port": "option_2",
+      "target_node": "option_leave",
+      "target_port": "in"
+    },
+    {
+      "source_node": "option_buy",
+      "source_port": "out",
+      "target_node": "end_node",
+      "target_port": "in"
+    },
+    {
+      "source_node": "option_sell",
+      "source_port": "out",
+      "target_node": "end_node",
+      "target_port": "in"
+    },
+    {
+      "source_node": "option_leave",
+      "source_port": "out",
+      "target_node": "end_node",
+      "target_port": "in"
+    }
+  ]
+}

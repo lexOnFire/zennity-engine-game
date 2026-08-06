@@ -34,6 +34,7 @@ from engine.ui.preview_provider import UIPreviewProvider
 from engine.ui.data_binding import UIDataBindingManager, UIBinding
 from engine.ui.runtime_components import Canvas, LabelComponent, ButtonComponent
 from engine.ui.ui_binder import UIBinder
+from engine.ui.dialogue_manager import DialogueManager
 
 # ── Sistema de UI de runtime (o que Scene/GameScene realmente usam) ────────
 from engine.ui.base import Anchor, Pivot, UIElement
@@ -56,6 +57,7 @@ __all__ = [
     "LabelComponent",
     "ButtonComponent",
     "UIBinder",
+    "DialogueManager",
     "Anchor",
     "Pivot",
     "UIElement",

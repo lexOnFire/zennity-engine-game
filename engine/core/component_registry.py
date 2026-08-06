@@ -68,6 +68,7 @@ from engine.ui.runtime_components import (
     ProgressBarComponent,
 )
 from engine.ui.ui_binder import UIBinder
+from engine.ui.dialogue_manager import DialogueManager
 from engine.graphics.tilemap import Tilemap, TilemapRenderer
 from engine.components.script_component import ScriptComponent
 from engine.physics.rigidbody import RigidBody
@@ -95,6 +96,7 @@ component_registry.register(ButtonComponent)
 # registered — see ProgressBarComponent in runtime_components.py.
 component_registry.register(ProgressBarComponent)
 component_registry.register(UIBinder)
+component_registry.register(DialogueManager)
 component_registry.register(Tilemap)
 component_registry.register(TilemapRenderer)
 component_registry.register(ScriptComponent, "Script")
