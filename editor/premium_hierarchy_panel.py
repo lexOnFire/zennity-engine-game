@@ -4,7 +4,6 @@ from typing import Any
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QAbstractItemView, QLineEdit, QMenu, QTreeWidgetItem
-from PySide6.QtGui import QDrag
 
 from editor.premium_editor import HierarchyPanel
 from editor.premium_panel_base import Panel
@@ -26,15 +25,15 @@ class RealHierarchyPanel(HierarchyPanel):
     # Estado local de visibilidade/lock (indexados por id do objeto)
     _visibility: dict[str, bool]
     _locked: dict[str, bool]
-    # CORREÇÃO: Rastreia qual item está sendo arrastado
-    _dragged_items: list[QTreeWidgetItem]
+    # CORREÇÃO: Rastreia qual OBJETO está sendo arrastado (não QTreeWidgetItem!)
+    _dragged_objs: list[Any]
 
     def __init__(self) -> None:
         super().__init__()
         self._visibility = {}
         self._locked = {}
         self._editing_item: QTreeWidgetItem | None = None
-        self._dragged_items = []  # Rastreia items em drag
+        self._dragged_objs = []  # Rastreia GameObjects em drag
         self.search = self.findChild(QLineEdit)
         if self.search is not None:
             self.search.textChanged.connect(self.filter_tree)
@@ -92,24 +91,27 @@ class RealHierarchyPanel(HierarchyPanel):
 
         self.tree.keyPressEvent = key_press
 
-        # CORREÇÃO CRÍTICA: Rastrear qual item está sendo arrastado
+        # CORREÇÃO CRÍTICA: Rastrear qual objeto está sendo arrastado
         original_start_drag = self.tree.startDrag
         def start_drag(supported_actions):
-            """Armazena quais items estão sendo arrastados ANTES do drag começar."""
-            self._dragged_items = list(self.tree.selectedItems())
+            """Armazena quais OBJETOS estão sendo arrastados ANTES do drag começar."""
+            # IMPORTANTE: Armazenar os GameObjects, não os QTreeWidgetItem!
+            # Se armazenar QTreeWidgetItem, podem virar inválidos se a árvore for reconstruída
+            selected_items = self.tree.selectedItems()
+            self._dragged_objs = [it.data(0, Qt.UserRole) for it in selected_items if it.data(0, Qt.UserRole)]
             original_start_drag(supported_actions)
         self.tree.startDrag = start_drag
 
         original_drop = self.tree.dropEvent
 
         def drop_event(event):
-            # CORREÇÃO: Usar _dragged_items ao invés de selectedItems()
+            # CORREÇÃO: Usar _dragged_objs ao invés de selectedItems()
             # porque currentItem() pode ter mudado durante o drag
-            dragged_items = self._dragged_items if self._dragged_items else []
-            dragged_objs = [it.data(0, Qt.UserRole) for it in dragged_items if it.data(0, Qt.UserRole)]
+            # Usar GameObjects diretos, não QTreeWidgetItem (que podem ser inválidos)
+            dragged_objs = self._dragged_objs if self._dragged_objs else []
 
             # Limpar após usar
-            self._dragged_items = []
+            self._dragged_objs = []
 
             if not dragged_objs:
                 original_drop(event)
