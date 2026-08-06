@@ -463,7 +463,7 @@ class Phase1HierarchyOperationsMixin:
             elif hasattr(scene, "game_objects"):
                 scene.game_objects.append(group)
             for o in objs:
-                o.parent = group
+                ReparentGameObjectCommand(scene, o, group).execute()
             self._after_hierarchy_command(group)
 
         def undo_fn() -> None:

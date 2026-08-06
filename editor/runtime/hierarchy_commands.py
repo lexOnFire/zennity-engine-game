@@ -94,6 +94,16 @@ def _attach_to_parent(obj: GameObject, parent: GameObject | None, index: int | N
         obj.parent = None
         return
     obj.parent = parent
+    # Se virou filho de outro objeto, não pode continuar na raiz de editable_objects
+    if obj.scene is not None:
+        editable = getattr(obj.scene, "editable_objects", [])
+        if obj in editable:
+            editable.remove(obj)
+    elif parent.scene is not None:
+        editable = getattr(parent.scene, "editable_objects", [])
+        if obj in editable:
+            editable.remove(obj)
+
     if obj in parent.children:
         parent.children.remove(obj)
     if index is None:
