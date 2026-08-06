@@ -79,9 +79,16 @@ class ViewportProcessController:
             return
         self._queues_closed = True
         for queue in (self.command_queue, self.events):
-            close = getattr(queue, "close", None)
-            if callable(close):
-                close()
-            join_thread = getattr(queue, "join_thread", None)
-            if callable(join_thread):
-                join_thread()
+            try:
+                close = getattr(queue, "close", None)
+                if callable(close):
+                    close()
+                cancel_join = getattr(queue, "cancel_join_thread", None)
+                if callable(cancel_join):
+                    cancel_join()
+                else:
+                    join_thread = getattr(queue, "join_thread", None)
+                    if callable(join_thread):
+                        join_thread()
+            except Exception:
+                pass
