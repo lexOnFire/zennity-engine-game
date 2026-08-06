@@ -48,6 +48,8 @@ from PySide6.QtWidgets import (
 
 from editor.ui.icons import editor_icon
 from editor.widgets.logic_asset_picker import LogicAssetPickerDialog
+from editor.widgets.logic_graph.palette_tree_widget import PaletteTreeWidget
+from editor.widgets.logic_graph.node_groups import NODE_GROUPS
 from engine.logic.graph_asset import (
     NODE_DEFINITIONS,
     UNIQUE_EVENT_TYPES,
@@ -134,9 +136,53 @@ class LogicGraphPaletteMixin:
         if category is not None:
             self._palette_category = category
         query = self._search_key(self.node_search.text()).strip()
+
+        # Decidir entre ListWidget (simples) e TreeWidget (agrupado)
+        use_tree = not query and NODE_GROUPS and self._palette_category != "All"
+
+        if use_tree:
+            self._refresh_palette_tree(category)
+        else:
+            self._refresh_palette_list(category, query)
+
+    def _refresh_palette_tree(self, category: str | None = None) -> None:
+        """Exibe nós em TreeWidget agrupado por NODE_GROUPS."""
+        # Filtra NODE_GROUPS pela categoria selecionada
+        filtered_groups = {}
+        if category and category in NODE_GROUPS:
+            filtered_groups = {category: NODE_GROUPS[category]}
+        else:
+            filtered_groups = NODE_GROUPS
+
+        # Se já existe um TreeWidget, reutiliza-o
+        if not isinstance(self.palette, PaletteTreeWidget):
+            # Substitui o ListWidget pelo TreeWidget
+            parent = self.palette.parent()
+            index = parent.layout().indexOf(self.palette)
+            self.palette.setParent(None)
+            self.palette = PaletteTreeWidget()
+            parent.layout().insertWidget(index, self.palette)
+            self.palette.item_double_clicked.connect(self._add_palette_item_tree)
+
+        # Popula o TreeWidget
+        count = self.palette.populate_with_groups(filtered_groups, "")
+        self.palette_count.setText(f"{count} bloco(s) nesta categoria")
+
+    def _refresh_palette_list(self, category: str | None = None, query: str = "") -> None:
+        """Exibe nós em ListWidget simples (modo anterior)."""
+        # Se existe um TreeWidget, volta para ListWidget
+        if isinstance(self.palette, PaletteTreeWidget):
+            parent = self.palette.parent()
+            index = parent.layout().indexOf(self.palette)
+            self.palette.setParent(None)
+            self.palette = QListWidget()
+            parent.layout().insertWidget(index, self.palette)
+            self.palette.itemDoubleClicked.connect(self._add_palette_item)
+
         self.palette.clear()
         if self.palette.itemDelegate().__class__ != CategoryNodeDelegate:
             self.palette.setItemDelegate(CategoryNodeDelegate(self.palette))
+
         for node_type, definition in NODE_DEFINITIONS.items():
             node_category = str(definition.get("category", "Custom"))
             searchable = self._search_key(
@@ -159,6 +205,34 @@ class LogicGraphPaletteMixin:
             item.setToolTip(f"{node_category} • {description}")
             self.palette.addItem(item)
         self.palette_count.setText(f"{self.palette.count()} bloco(s)" + (" encontrados" if query else " nesta categoria"))
+
+    def _add_palette_item_tree(self, item: QTreeWidgetItem) -> None:
+        """Adiciona nó clicado no TreeWidget."""
+        node_type = item.data(0, Qt.UserRole)
+        if not node_type:
+            return
+        if node_type in UNIQUE_EVENT_TYPES:
+            existing = next(
+                (node_item for node_item in self.node_items.values() if node_item.node.get("type") == node_type),
+                None,
+            )
+            if existing is not None:
+                self.scene.clearSelection()
+                existing.setSelected(True)
+                self.view.centerOn(existing)
+                self.message.emit(
+                    "INFO",
+                    "Esse evento já existe; conecte outra ação usando a mesma saída",
+                )
+                return
+        center = self.view.mapToScene(self.view.viewport().rect().center())
+        offset = len(self.node_items) * 18.0
+        node = create_logic_node(node_type, (center.x() + offset, center.y() + offset))
+        self.graph["nodes"].append(node)
+        self._create_node_item(node)
+        self.node_added.emit(node)
+        self.mark_dirty()
+        self._update_validation()
 
     def _add_palette_item(self, item: QListWidgetItem) -> None:
         node_type = str(item.data(Qt.UserRole))
