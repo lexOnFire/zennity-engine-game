@@ -362,6 +362,8 @@ class Phase1HierarchyOperationsMixin:
         self.viewport.update()
         self.game_viewport.update()
         self._update_undo_redo_states()
+        if hasattr(self, "_scene_autosave"):
+            self._scene_autosave.schedule()
 
     def reparent_object(self, obj: Any, parent: Any = None, index: Any = None) -> bool:
         scene = self._editor_scene()

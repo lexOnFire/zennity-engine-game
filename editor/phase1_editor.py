@@ -355,6 +355,8 @@ class ZennityPhase1Editor(
             if hasattr(self, "status_msg"):
                 self.status_msg.setText("Simulacao ja ativa.")
             return
+        if hasattr(self, "save_scene"):
+            self.save_scene()
         editor_scene = self._editor_scene()
         if editor_scene is None:
             return
