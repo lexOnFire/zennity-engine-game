@@ -112,6 +112,26 @@ def _move_in_list(items: list[GameObject], obj: GameObject, index: int | None) -
         items.insert(max(0, min(int(index), len(items))), obj)
 
 
+def _sync_game_objects_order(scene: Any) -> None:
+    """Sincroniza a ordem de game_objects com editable_objects e suas hierarchies."""
+    all_objects = getattr(scene, "game_objects", [])
+    editable = getattr(scene, "editable_objects", [])
+
+    # Reconstrói game_objects mantendo root objects primeiro, depois todos os children recursivamente
+    def collect_all(obj: GameObject) -> list[GameObject]:
+        result = [obj]
+        for child in getattr(obj, "children", []):
+            result.extend(collect_all(child))
+        return result
+
+    new_order = []
+    for root in editable:
+        new_order.extend(collect_all(root))
+
+    # Atualiza game_objects na nova ordem
+    all_objects[:] = new_order
+
+
 def clone_game_object(obj: GameObject, suffix: str = "_copia") -> GameObject:
     clone = GameObject(f"{obj.name}{suffix}", tag=getattr(obj, "tag", "Untagged"))
     clone.active = bool(getattr(obj, "active", True))
@@ -160,11 +180,13 @@ class ReparentGameObjectCommand:
         _attach_to_parent(self.obj, self.new_parent, self.new_index)
         if self.new_parent is None:
             _move_in_list(_editable(self.scene), self.obj, self.new_index)
+        _sync_game_objects_order(self.scene)
 
     def undo(self) -> None:
         _attach_to_parent(self.obj, self.old_parent, self.old_parent_index)
         if self.old_parent is None:
             _move_in_list(_editable(self.scene), self.obj, self.old_root_index)
+        _sync_game_objects_order(self.scene)
 
 
 @dataclass
@@ -190,12 +212,14 @@ class DuplicateGameObjectCommand:
         _attach_to_parent(self.clone, self.parent, self.child_index)
         if self.parent is None:
             _move_in_list(_editable(self.scene), self.clone, self.root_index)
+        _sync_game_objects_order(self.scene)
 
     def undo(self) -> None:
         if self.clone is None:
             return
         _detach_from_parent(self.clone)
         _scene_remove(self.scene, self.clone)
+        _sync_game_objects_order(self.scene)
 
 
 @dataclass
@@ -217,12 +241,14 @@ class DeleteGameObjectCommand:
     def execute(self) -> None:
         _detach_from_parent(self.obj)
         _scene_remove(self.scene, self.obj)
+        _sync_game_objects_order(self.scene)
 
     def undo(self) -> None:
         _scene_add(self.scene, self.obj)
         _attach_to_parent(self.obj, self.parent, self.child_index)
         if self.parent is None:
             _move_in_list(_editable(self.scene), self.obj, self.root_index)
+        _sync_game_objects_order(self.scene)
 
 
 @dataclass

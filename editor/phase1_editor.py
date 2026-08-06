@@ -223,17 +223,20 @@ class ZennityPhase1Editor(
         if scene is None:
             return []
         self._ensure_scene_collider_registry(scene)
-        # FIX: Retorna apenas objetos root (sem parent) dinamicamente
-        # Não confia na lista editable_objects que pode ficar inconsistente
+        # FIX: Retorna root objects na ordem de editable_objects
+        # Isso preserva a reordenação feita por drag & drop
         all_objects = getattr(scene, "game_objects", [])
+        editable = getattr(scene, "editable_objects", [])
+
+        # Se editable_objects existe e está sincronizado, use-a
+        if editable and all(obj in all_objects for obj in editable):
+            return list(editable)
+
+        # Caso contrário, retorna root objects (parent is None)
+        # e sincroniza editable_objects com a nova ordem
         root_objects = [obj for obj in all_objects if getattr(obj, "parent", None) is None]
-        # DEBUG
-        if len(all_objects) > len(root_objects):
-            print(f"[DEBUG scene_objects] Total: {len(all_objects)}, Roots: {len(root_objects)}")
-            for obj in root_objects:
-                children = getattr(obj, "children", [])
-                if children:
-                    print(f"  └─ {getattr(obj, 'name', '?')} ({len(children)} children)")
+        if hasattr(scene, "editable_objects"):
+            scene.editable_objects[:] = root_objects
         return root_objects
 
     def _ensure_scene_collider_registry(self, scene: Any) -> None:
