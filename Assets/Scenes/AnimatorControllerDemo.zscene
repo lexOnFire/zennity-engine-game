@@ -19,6 +19,7 @@
           0.0,
           0.0
         ],
+        "rz": 0.0,
         "scale": [
           48.0,
           30.0,
@@ -32,7 +33,11 @@
           180,
           255
         ],
-        "texture": ""
+        "texture": "",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
         "camera": {
@@ -44,7 +49,10 @@
             32
           ]
         }
-      }
+      },
+      "enabled": true,
+      "static": false,
+      "layer": "Default"
     },
     {
       "id": "anim-demo-floor",
@@ -62,6 +70,7 @@
           0.0,
           0.0
         ],
+        "rz": 0.0,
         "scale": [
           900.0,
           60.0,
@@ -75,20 +84,27 @@
           145,
           91
         ],
-        "texture": ""
+        "texture": "",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
+        "rigidbody": {
+          "use_gravity": false,
+          "is_kinematic": true
+        },
         "collider": {
           "type": "box",
           "width": 900.0,
           "height": 60.0,
           "is_trigger": false
-        },
-        "rigidbody": {
-          "use_gravity": false,
-          "is_kinematic": true
         }
-      }
+      },
+      "enabled": true,
+      "static": false,
+      "layer": "Default"
     },
     {
       "id": "anim-demo-player",
@@ -106,6 +122,7 @@
           0.0,
           0.0
         ],
+        "rz": 0.0,
         "scale": [
           64.0,
           64.0,
@@ -120,19 +137,22 @@
           255
         ],
         "texture": "Assets/Textures/formiga_2.PNG",
-        "enabled": true
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
+        "rigidbody": {
+          "use_gravity": true,
+          "is_kinematic": false,
+          "gravity_scale": 1.0
+        },
         "collider": {
           "type": "box",
           "width": 54.0,
           "height": 60.0,
           "is_trigger": false
-        },
-        "rigidbody": {
-          "use_gravity": true,
-          "is_kinematic": false,
-          "gravity_scale": 1.0
         }
       },
       "editor_data": {
@@ -147,7 +167,10 @@
             "attack": false
           }
         }
-      }
+      },
+      "enabled": true,
+      "static": false,
+      "layer": "Default"
     },
     {
       "id": "anim-demo-hitbox",
@@ -165,6 +188,7 @@
           0.0,
           0.0
         ],
+        "rz": 0.0,
         "scale": [
           52.0,
           54.0,
@@ -179,7 +203,10 @@
           66
         ],
         "texture": "",
-        "enabled": false
+        "enabled": false,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
         "collider": {
@@ -188,7 +215,10 @@
           "height": 54.0,
           "is_trigger": true
         }
-      }
+      },
+      "enabled": false,
+      "static": false,
+      "layer": "Default"
     },
     {
       "id": "anim-demo-enemy",
@@ -206,6 +236,7 @@
           0.0,
           0.0
         ],
+        "rz": 0.0,
         "scale": [
           52.0,
           70.0,
@@ -220,7 +251,10 @@
           86
         ],
         "texture": "",
-        "enabled": true
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
       },
       "components": {
         "collider": {
@@ -229,7 +263,13 @@
           "height": 70.0,
           "is_trigger": true
         }
-      }
+      },
+      "enabled": true,
+      "static": false,
+      "layer": "Default"
     }
-  ]
+  ],
+  "blackboard": {
+    "variables": {}
+  }
 }

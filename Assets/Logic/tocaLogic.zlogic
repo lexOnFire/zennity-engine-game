@@ -1,7 +1,7 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
-  "enabled": false,
+  "enabled": true,
   "name": "tocaLogic",
   "target": {
     "type": "name",
@@ -40,7 +40,7 @@
       "title": "Cooldown",
       "category": "Logic",
       "position": [
-        -131.06,
+        -141.6,
         44.58
       ],
       "editor": {
@@ -58,8 +58,8 @@
       "title": "Create Object",
       "category": "Spawning",
       "position": [
-        -138.19,
-        92.48
+        -142.02,
+        98.23
       ],
       "editor": {
         "collapsed": true,
@@ -74,12 +74,12 @@
         "height": 32.0,
         "color": "#4c9aff",
         "texture": "Assets/Textures/formiga_2.PNG",
-        "tag": "",
+        "tag": "walker",
         "relative": true,
         "inherit_source": true,
         "inherit_logic": false,
         "lifetime": 0.0,
-        "max_instances": 0,
+        "max_instances": 1,
         "max_distance": 0.0,
         "use_pool": false
       }
@@ -90,8 +90,8 @@
       "title": "Sprite Renderer",
       "category": "Components",
       "position": [
-        -142.23,
-        146.16
+        -791.66,
+        384.82
       ],
       "editor": {
         "collapsed": false,
@@ -110,8 +110,8 @@
       "title": "Start Behavior Tree",
       "category": "Action",
       "position": [
-        147.42,
-        478.16
+        -229.01,
+        432.82
       ],
       "editor": {
         "collapsed": false,
@@ -128,8 +128,8 @@
       "title": "Add Component",
       "category": "Math",
       "position": [
-        -136.68,
-        370.39
+        -545.97,
+        458.42
       ],
       "editor": {
         "collapsed": false,
@@ -168,19 +168,19 @@
       "order": 2
     },
     {
-      "id": "2b67c40a4f864cee8e5e156959d350d1",
-      "from_node": "4f21c05a8c044686b971fa52e6ddadaa",
+      "id": "33b5df66425342f098e1e5f567c0247f",
+      "from_node": "9c7cc7aa505d4071be4e8e77152ded8d",
       "from_port": "next",
-      "to_node": "9c7cc7aa505d4071be4e8e77152ded8d",
+      "to_node": "81f42300941345f7a28a75f3c91e46f1",
       "to_port": "in",
       "kind": "flow",
       "order": 4
     },
     {
-      "id": "33b5df66425342f098e1e5f567c0247f",
-      "from_node": "9c7cc7aa505d4071be4e8e77152ded8d",
+      "id": "bae7b880147449dab25fffd723a64f49",
+      "from_node": "4f21c05a8c044686b971fa52e6ddadaa",
       "from_port": "next",
-      "to_node": "81f42300941345f7a28a75f3c91e46f1",
+      "to_node": "9c7cc7aa505d4071be4e8e77152ded8d",
       "to_port": "in",
       "kind": "flow",
       "order": 4

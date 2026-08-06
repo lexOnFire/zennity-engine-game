@@ -29,23 +29,17 @@ class InspectorDock(RealInspectorPanel):
         if obj is None or not hasattr(obj, 'transform'):
             return
 
-        # Tenta encontrar o componente Transform já renderizado
-        if not hasattr(self, 'component_items') or not hasattr(obj, 'transform'):
-            return
-
         try:
-            # Procura pelo componente Transform já renderizado
-            for component_item in getattr(self, 'component_items', []):
-                if hasattr(component_item, 'component') and component_item.component.get('type') == 'Transform':
-                    # Encontrou, atualiza apenas os campos sem recarregar
-                    if hasattr(component_item, 'update_property_values'):
-                        component_item.update_property_values()
-                    return
+            # Atualiza apenas os labels de Transform e Components
+            # sem recriar todos os widgets do inspector
+            if hasattr(self, '_update_legacy_labels'):
+                components = getattr(obj, 'components', [])
+                self._update_legacy_labels(obj, components)
+            else:
+                self.load_object(obj)
         except:
-            pass
-
-        # Fallback: recarrega tudo se não conseguir atualizar parcialmente
-        self.load_object(obj)
+            # Fallback: recarrega tudo se algo der errado
+            self.load_object(obj)
 
     def set_command_manager(self, cm):
         super().set_command_manager(cm)

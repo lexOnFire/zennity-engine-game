@@ -7,8 +7,8 @@
       "id": "root-selector",
       "type": "bt.selector",
       "position": [
-        -1129.0,
-        -592.0
+        -1447.0,
+        -765.0
       ],
       "properties": {
         "reactive": true
@@ -18,8 +18,8 @@
       "id": "seq-comida",
       "type": "bt.sequence",
       "position": [
-        -869.0,
-        -591.0
+        -1126.0,
+        -752.0
       ],
       "properties": {
         "reactive": false
@@ -29,8 +29,8 @@
       "id": "check-range",
       "type": "bt.target_in_range",
       "position": [
-        -583.0,
-        -611.0
+        -809.0,
+        -773.0
       ],
       "properties": {
         "target": "Food",
@@ -41,8 +41,8 @@
       "id": "chase-node",
       "type": "bt.chase",
       "position": [
-        -860.0,
-        -454.0
+        -807.0,
+        -654.0
       ],
       "properties": {
         "target": "Food",
@@ -54,8 +54,8 @@
       "id": "patrol-node",
       "type": "bt.patrol",
       "position": [
-        -1181.0,
-        -321.0
+        -1441.0,
+        -562.0
       ],
       "properties": {
         "point_a": "-100,100",
@@ -64,27 +64,26 @@
       }
     },
     {
-      "id": "0372340c-f214-49e0-9968-5d1b6304b708",
-      "type": "bt.chase",
+      "id": "9903f492-289f-4a3d-91ee-156a582f15f0",
+      "type": "bt.move_to",
       "position": [
-        -864.0,
-        -161.0
+        -812.0,
+        -410.0
       ],
       "properties": {
-        "target": "colonia",
-        "stop_distance": 20.0,
+        "target_pos": "-388,190",
         "speed": 150.0
       }
     },
     {
-      "id": "7eeed7b0-62c4-411d-92cd-7b08fd97a6ca",
-      "type": "bt.cooldown",
+      "id": "3fb6afed-274a-4d5e-b130-341fa801a7da",
+      "type": "bt.idle",
       "position": [
-        -846.0,
-        -295.0
+        -814.0,
+        -513.0
       ],
       "properties": {
-        "seconds": 5.0
+        "duration": 5.0
       }
     }
   ],
@@ -98,14 +97,6 @@
       "type": "exec"
     },
     {
-      "id": "edge-selector-to-patrol",
-      "source_node": "root-selector",
-      "source_port": "out_1",
-      "target_node": "patrol-node",
-      "target_port": "in",
-      "type": "exec"
-    },
-    {
       "id": "edge-seq-to-check",
       "source_node": "seq-comida",
       "source_port": "out_0",
@@ -114,26 +105,50 @@
       "type": "exec"
     },
     {
-      "id": "edge-seq-to-chase-food",
+      "id": "30d58844-c611-435e-bc04-fbe03c476a0c",
+      "source_node": "root-selector",
+      "source_port": "out_2",
+      "target_node": "patrol-node",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "9708204a-3e64-44d5-861f-7cd5070a8664",
+      "source_node": "root-selector",
+      "source_port": "out_1",
+      "target_node": "seq-comida",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "7e47b6d4-c009-4ac4-8041-c86d24968fd2",
       "source_node": "seq-comida",
       "source_port": "out_1",
+      "target_node": "check-range",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "e83319f2-4347-401e-951b-516b9c2b4d7d",
+      "source_node": "seq-comida",
+      "source_port": "out_2",
       "target_node": "chase-node",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "edge-seq-to-cooldown",
+      "id": "cbe63221-e5d8-4e10-8175-ab4af7ba8f40",
       "source_node": "seq-comida",
-      "source_port": "out_2",
-      "target_node": "7eeed7b0-62c4-411d-92cd-7b08fd97a6ca",
+      "source_port": "out_3",
+      "target_node": "3fb6afed-274a-4d5e-b130-341fa801a7da",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "edge-cooldown-to-colonia",
-      "source_node": "7eeed7b0-62c4-411d-92cd-7b08fd97a6ca",
-      "source_port": "child",
-      "target_node": "0372340c-f214-49e0-9968-5d1b6304b708",
+      "id": "d7e4f28e-160e-4c7b-bedc-df41e3cd0429",
+      "source_node": "seq-comida",
+      "source_port": "out_3",
+      "target_node": "9903f492-289f-4a3d-91ee-156a582f15f0",
       "target_port": "in",
       "type": "exec"
     }

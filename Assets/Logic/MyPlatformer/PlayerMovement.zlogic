@@ -1,7 +1,7 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
-  "enabled": false,
+  "enabled": true,
   "name": "Player Movement + Coins + Enemy + Flag (MyPlatformer)",
   "target": {
     "type": "name",
@@ -24,8 +24,8 @@
       "title": "Event Update",
       "category": "Events",
       "position": [
-        0.0,
-        0.0
+        -182.14,
+        -106.6
       ],
       "editor": {
         "collapsed": false,
@@ -40,8 +40,8 @@
       "title": "Read Key Axis",
       "category": "Input",
       "position": [
-        0.0,
-        160.0
+        25.87,
+        -29.39
       ],
       "editor": {
         "collapsed": false,
@@ -77,8 +77,8 @@
       "title": "Event Key Pressed",
       "category": "Events",
       "position": [
-        0.0,
-        320.0
+        -123.15,
+        251.7
       ],
       "editor": {
         "collapsed": false,
@@ -95,8 +95,8 @@
       "title": "Is Grounded",
       "category": "Action",
       "position": [
-        270.69,
-        334.25
+        197.21,
+        189.36
       ],
       "editor": {
         "collapsed": false,
@@ -111,8 +111,8 @@
       "title": "Number Value",
       "category": "Math",
       "position": [
-        260.0,
-        460.0
+        224.81,
+        389.63
       ],
       "editor": {
         "collapsed": false,
@@ -145,8 +145,8 @@
       "title": "Event Trigger Enter",
       "category": "Events",
       "position": [
-        0.0,
-        620.0
+        -205.95,
+        561.01
       ],
       "editor": {
         "collapsed": false,
@@ -161,8 +161,8 @@
       "title": "Get Tag",
       "category": "Objects",
       "position": [
-        260.0,
-        660.0
+        104.76,
+        685.87
       ],
       "editor": {
         "collapsed": false,
@@ -179,8 +179,8 @@
       "title": "Compare Text",
       "category": "Logic",
       "position": [
-        520.0,
-        620.0
+        298.53,
+        576.53
       ],
       "editor": {
         "collapsed": false,
@@ -198,8 +198,8 @@
       "title": "Get Variable",
       "category": "Variables",
       "position": [
-        780.0,
-        560.0
+        577.16,
+        545.51
       ],
       "editor": {
         "collapsed": false,
@@ -217,8 +217,8 @@
       "title": "Number Value",
       "category": "Math",
       "position": [
-        780.0,
-        680.0
+        722.04,
+        669.65
       ],
       "editor": {
         "collapsed": true,
@@ -235,8 +235,8 @@
       "title": "Add Number",
       "category": "Math",
       "position": [
-        1020.0,
-        600.0
+        845.1,
+        516.17
       ],
       "editor": {
         "collapsed": false,
@@ -251,8 +251,8 @@
       "title": "Set Variable",
       "category": "Variables",
       "position": [
-        1260.0,
-        560.0
+        1266.21,
+        511.36
       ],
       "editor": {
         "collapsed": false,
@@ -271,8 +271,8 @@
       "title": "Text Value",
       "category": "Text",
       "position": [
-        1520.0,
-        460.0
+        1586.23,
+        424.81
       ],
       "editor": {
         "collapsed": false,
@@ -289,8 +289,8 @@
       "title": "To Text",
       "category": "Text",
       "position": [
-        1520.0,
-        700.0
+        1483.78,
+        668.95
       ],
       "editor": {
         "collapsed": false,
@@ -305,8 +305,8 @@
       "title": "Join Text",
       "category": "Text",
       "position": [
-        1780.0,
-        580.0
+        1762.41,
+        595.52
       ],
       "editor": {
         "collapsed": false,
@@ -321,8 +321,8 @@
       "title": "Destroy Object",
       "category": "Action",
       "position": [
-        1260.0,
-        700.0
+        1013.69,
+        692.76
       ],
       "editor": {
         "collapsed": false,
@@ -337,8 +337,8 @@
       "title": "Atualizar texto da UI",
       "category": "UI",
       "position": [
-        1520.0,
-        560.0
+        1408.23,
+        477.21
       ],
       "editor": {
         "collapsed": false,
