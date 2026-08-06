@@ -61,6 +61,7 @@ def register_component(component_type: Type[Component], name: str | None = None)
 
 from engine.core.component import Transform
 from engine.graphics.camera import Camera
+from engine.graphics.material_property_animator import MaterialPropertyAnimator
 from engine.audio import AudioSource, AudioListener
 from engine.animation.animator import Animator
 from engine.animation.animation_controller import AnimationController
@@ -78,6 +79,7 @@ from engine.physics.collider import BoxCollider, CircleCollider
 component_registry.register(Component)
 component_registry.register(Transform)
 component_registry.register(Camera)
+component_registry.register(MaterialPropertyAnimator)
 component_registry.register(AudioSource)
 component_registry.register(AudioListener)
 component_registry.register(Animator)
