@@ -79,7 +79,10 @@ class Phase1SceneOperationsMixin:
             else:
                 scene.game_objects.append(obj)
                 obj.scene = scene
-            scene.editable_objects.append(obj)
+            # FIX: Adiciona a editable_objects APENAS se for root (parent is None)
+            # Objetos com parent (children) não devem estar em editable_objects
+            if getattr(obj, "parent", None) is None:
+                scene.editable_objects.append(obj)
         selected = objects[0] if objects else None
         if hasattr(scene, "selected_index"):
             scene.selected_index = 0 if selected is not None else -1
