@@ -44,7 +44,9 @@ def _scene_add(scene: Any, obj: GameObject) -> None:
         else:
             scene.game_objects.append(obj)
             obj.scene = scene
-    if obj not in _editable(scene):
+    # FIX: Adiciona a editable_objects APENAS se for root (parent is None)
+    # Isso previne que objetos child saiam do grupo ao fazer ações
+    if obj not in _editable(scene) and getattr(obj, "parent", None) is None:
         _editable(scene).append(obj)
     obj.scene = scene
     for child in getattr(obj, "children", []):
