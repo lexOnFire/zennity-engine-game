@@ -92,11 +92,6 @@ def _attach_to_parent(obj: GameObject, parent: GameObject | None, index: int | N
     _detach_from_parent(obj)
     if parent is None:
         obj.parent = None
-        # Se está ficando root, certifique-se que está em editable_objects
-        if obj.scene is not None:
-            editable = getattr(obj.scene, "editable_objects", [])
-            if obj not in editable:
-                editable.append(obj)
         return
 
     obj.parent = parent
