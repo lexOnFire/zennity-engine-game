@@ -1,0 +1,146 @@
+{
+  "format": "zennity.scene",
+  "name": "ComponentDemoScene",
+  "description": "Cena demonstrativa com todos os 4 componentes de alto nível funcionando juntos",
+  "version": "1.0.0",
+  "objects": [
+    {
+      "name": "Player",
+      "active": true,
+      "transform": {
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0],
+        "scale": [1, 1, 1]
+      },
+      "components": [
+        {
+          "type": "SpriteRenderer",
+          "sprite": "Assets/Sprites/player.png",
+          "color": [1, 1, 1, 1]
+        },
+        {
+          "type": "Animator",
+          "default_clip": "idle",
+          "speed": 1.0
+        },
+        {
+          "type": "AnimationController",
+          "default_state": "idle",
+          "blend_duration": 0.2
+        },
+        {
+          "type": "RigidBody",
+          "mass": 1,
+          "use_gravity": true,
+          "velocity": [0, 0, 0]
+        }
+      ]
+    },
+    {
+      "name": "HealthBar",
+      "active": true,
+      "tag": "UI",
+      "transform": {
+        "position": [100, 50, 0],
+        "rotation": [0, 0, 0],
+        "scale": [1, 1, 1]
+      },
+      "components": [
+        {
+          "type": "LabelComponent",
+          "text": "Health: 100/100",
+          "font_size": 24,
+          "color": [0, 1, 0, 1]
+        },
+        {
+          "type": "UIBinder",
+          "source_path": "player.health",
+          "ui_element_name": "HealthLabel",
+          "bind_mode": "auto",
+          "format_string": "Health: {value}/100"
+        }
+      ]
+    },
+    {
+      "name": "ScoreCounter",
+      "active": true,
+      "tag": "UI",
+      "transform": {
+        "position": [100, 100, 0],
+        "rotation": [0, 0, 0],
+        "scale": [1, 1, 1]
+      },
+      "components": [
+        {
+          "type": "LabelComponent",
+          "text": "Score: 0",
+          "font_size": 24,
+          "color": [1, 1, 0, 1]
+        },
+        {
+          "type": "UIBinder",
+          "source_path": "game.score",
+          "ui_element_name": "ScoreLabel",
+          "bind_mode": "auto",
+          "format_string": "Score: {value}"
+        }
+      ]
+    },
+    {
+      "name": "NPC_Merchant",
+      "active": true,
+      "transform": {
+        "position": [5, 0, 0],
+        "rotation": [0, 0, 0],
+        "scale": [1, 1, 1]
+      },
+      "components": [
+        {
+          "type": "SpriteRenderer",
+          "sprite": "Assets/Sprites/npc.png",
+          "color": [1, 1, 1, 1]
+        },
+        {
+          "type": "DialogueManager",
+          "dialogue_file": "examples/DialogueExample.zdialogue",
+          "speaker_name": "Merchant",
+          "auto_start": false,
+          "ui_text_element": "DialogueText"
+        },
+        {
+          "type": "MaterialPropertyAnimator"
+        }
+      ]
+    },
+    {
+      "name": "DialogueDisplay",
+      "active": true,
+      "tag": "UI",
+      "transform": {
+        "position": [640, 500, 0],
+        "rotation": [0, 0, 0],
+        "scale": [1, 1, 1]
+      },
+      "components": [
+        {
+          "type": "LabelComponent",
+          "text": "Click NPC to start dialogue...",
+          "font_size": 18,
+          "color": [1, 1, 1, 1]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "created": "2026-08-06",
+    "author": "Zennity Engine",
+    "tags": ["demo", "tutorial", "components"],
+    "notes": [
+      "Esta scene demonstra como usar os 4 componentes de alto nível",
+      "1. UIBinder: Health e Score atualizam automaticamente",
+      "2. AnimationController: Player muda de animação com estado",
+      "3. DialogueManager: NPC tem diálogo interativo",
+      "4. MaterialPropertyAnimator: Efeitos visuais na UI"
+    ]
+  }
+}

@@ -539,6 +539,84 @@ NODE_DATABASE = {
         "ports": "<b>[Out] Exec</b>: Fluxo de execução.",
         "tips": "• Configurável<br>• Use para eventos<br>• Compatível com fluxo"
     },
+    # ============ COMPONENTES DE ALTO NÍVEL ============
+    "animate_ui_value": {
+        "title": "Animar Valor de UI",
+        "category": "UI",
+        "icon": "🎯",
+        "desc": "Anima um valor de UI com easing (UIBinder).",
+        "detailed": "Usa MaterialPropertyAnimator para fazer transições suaves.",
+        "usage": "Animar contador, barra de vida, opacidade, cores.",
+        "example": "<b>Exemplo:</b> On Damage → Animate Color (Branco, 0.1s) → Restore",
+        "ports": "<b>[In] Target Element</b>: Nome do elemento UI<br><b>[In] Duration</b>: Duração em segundos",
+        "tips": "• Use easing para suavidade<br>• Combina com UIBinder<br>• Suporta cores e números"
+    },
+    "start_dialogue": {
+        "title": "Iniciar Diálogo",
+        "category": "UI",
+        "icon": "💬",
+        "desc": "Inicia diálogo com um NPC (DialogueManager).",
+        "detailed": "Carrega arquivo .zdialogue e mostra primeira fala.",
+        "usage": "Clique em NPC → Diálogo começa.",
+        "example": "<b>Exemplo:</b> On Interact (NPC) → Start Dialogue → Player escolhe opção",
+        "ports": "<b>[In] NPC</b>: GameObject com DialogueManager<br><b>[Out]</b>: Continua após iniciar",
+        "tips": "• NPC deve ter DialogueManager<br>• Arquivo .zdialogue obrigatório<br>• Use Choose Option depois"
+    },
+    "dialogue_choose": {
+        "title": "Escolher Opção de Diálogo",
+        "category": "UI",
+        "icon": "👆",
+        "desc": "Escolhe uma opção em diálogo interativo.",
+        "detailed": "Avança diálogo baseado na opção selecionada (0, 1, 2...).",
+        "usage": "Botões de diálogo disparam este nó com índice diferente.",
+        "example": "<b>Exemplo:</b> Button Clicked → Dialogue Choose (Option 0) → Continue",
+        "ports": "<b>[In] NPC</b>: GameObject com DialogueManager<br><b>[In] Option Index</b>: 0, 1, 2...",
+        "tips": "• Índice começa em 0<br>• Dispara callbacks do NPC<br>• Pode salvar flags"
+    },
+    "animate_color": {
+        "title": "Animar Cor",
+        "category": "Gráficos",
+        "icon": "🌈",
+        "desc": "Anima cor de um sprite com easing (MaterialPropertyAnimator).",
+        "detailed": "Transição suave entre cores com easing curves.",
+        "usage": "Flash ao tomar dano, mudança de cor sobre evento.",
+        "example": "<b>Exemplo:</b> On Damage → Animate Color (Branco, 0.1s, ease_out)",
+        "ports": "<b>[In] Target</b>: GameObject com sprite<br><b>[In] Duration</b>: Tempo em segundos<br><b>[In] Color</b>: Cor alvo (RGBA)",
+        "tips": "• Easing ease_out para naturalidade<br>• Duração < 0.5s para flash<br>• Combina com opacidade"
+    },
+    "animate_opacity": {
+        "title": "Animar Opacidade",
+        "category": "Gráficos",
+        "icon": "👻",
+        "desc": "Anima opacidade/alpha de sprite (MaterialPropertyAnimator).",
+        "detailed": "Fade in/out com transição suave.",
+        "usage": "Desaparecer, reaparecer, efeitos de fantasma.",
+        "example": "<b>Exemplo:</b> On Death → Animate Opacity (0, 1s, ease_in) → Destroy",
+        "ports": "<b>[In] Target</b>: GameObject<br><b>[In] Opacity</b>: 0.0-1.0<br><b>[In] Duration</b>: Segundos",
+        "tips": "• 0.0 = invisível, 1.0 = opaco<br>• ease_in para desaparecer<br>• ease_out para aparecer"
+    },
+    "set_animation_state": {
+        "title": "Definir Estado de Animação",
+        "category": "Animação",
+        "icon": "🎬",
+        "desc": "Muda manualmente para um estado do AnimationController.",
+        "detailed": "Força transição para estado específico, ignorando condições.",
+        "usage": "Mudar animação em resposta a eventos (Hit, Death, etc).",
+        "example": "<b>Exemplo:</b> On Hit → Set Animation State (Hit) → Wait → Set State (Idle)",
+        "ports": "<b>[In] Target</b>: GameObject com AnimationController<br><b>[In] State Name</b>: Nome do estado",
+        "tips": "• Use quando LogGic não é suficiente<br>• Force = reiniciar mesmo estado<br>• Suporta transições"
+    },
+    "set_animation_parameter": {
+        "title": "Definir Parâmetro de Animação",
+        "category": "Animação",
+        "icon": "📊",
+        "desc": "Define parâmetro no AnimationController.",
+        "detailed": "Controla transições automáticas via parâmetros (float, int, bool).",
+        "usage": "Speed, IsJumping, AttackType → AnimationController reage.",
+        "example": "<b>Exemplo:</b> On Move Start → Set Parameter (Speed, 1.5) → Animação muda automaticamente",
+        "ports": "<b>[In] Target</b>: GameObject<br><b>[In] Param Name</b>: Nome do parâmetro<br><b>[In] Value</b>: Novo valor",
+        "tips": "• Tipo detectado automaticamente<br>• Float para movimento<br>• Bool para eventos"
+    },
 }
 
 # Aliases para nós com múltiplos nomes
