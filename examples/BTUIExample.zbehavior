@@ -1,0 +1,177 @@
+{
+  "format": "zennity.generic_graph",
+  "category": "Behavior Tree",
+  "metadata": {
+    "name": "BT UI Example",
+    "description": "Exemplo de Behavior Tree usando novas ações de UI (bt.set_ui_value, bt.increment_ui_value, bt.animate_ui_value)",
+    "version": "1.0"
+  },
+  "nodes": [
+    {
+      "id": "root",
+      "type": "bt.sequence",
+      "title": "Main AI Sequence",
+      "position": [100, 100],
+      "properties": {}
+    },
+    {
+      "id": "patrol_node",
+      "type": "bt.patrol",
+      "title": "Patrol",
+      "position": [200, 200],
+      "properties": {
+        "speed": 5.0,
+        "waypoints": []
+      }
+    },
+    {
+      "id": "check_player",
+      "type": "bt.target_in_range",
+      "title": "Player in Range?",
+      "position": [300, 200],
+      "properties": {
+        "target": "Player",
+        "distance": 150.0
+      }
+    },
+    {
+      "id": "set_alert",
+      "type": "bt.set_ui_value",
+      "title": "Set Alert Level",
+      "position": [400, 200],
+      "properties": {
+        "element": "AlertBar",
+        "value": 50.0
+      }
+    },
+    {
+      "id": "chase_player",
+      "type": "bt.chase",
+      "title": "Chase Target",
+      "position": [500, 200],
+      "properties": {
+        "target": "Player",
+        "speed": 8.0
+      }
+    },
+    {
+      "id": "increment_damage",
+      "type": "bt.increment_ui_value",
+      "title": "Increment Damage Counter",
+      "position": [600, 200],
+      "properties": {
+        "element": "DamageCounter",
+        "amount": 1.0
+      }
+    },
+    {
+      "id": "attack_player",
+      "type": "bt.attack",
+      "title": "Attack",
+      "position": [700, 200],
+      "properties": {
+        "target": "Player",
+        "damage": 10.0,
+        "range": 50.0
+      }
+    },
+    {
+      "id": "animate_health",
+      "type": "bt.animate_ui_value",
+      "title": "Animate Health Bar",
+      "position": [800, 200],
+      "properties": {
+        "element": "HealthBar",
+        "target_value": 75.0,
+        "duration": 0.5,
+        "easing": "ease_in_out"
+      }
+    },
+    {
+      "id": "cooldown_node",
+      "type": "bt.cooldown",
+      "title": "Attack Cooldown",
+      "position": [900, 200],
+      "properties": {
+        "seconds": 2.0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source_node": "root",
+      "source_port": "child",
+      "target_node": "patrol_node",
+      "target_port": "in"
+    },
+    {
+      "source_node": "root",
+      "source_port": "child",
+      "target_node": "check_player",
+      "target_port": "in"
+    },
+    {
+      "source_node": "check_player",
+      "source_port": "true",
+      "target_node": "set_alert",
+      "target_port": "in"
+    },
+    {
+      "source_node": "set_alert",
+      "source_port": "next",
+      "target_node": "chase_player",
+      "target_port": "in"
+    },
+    {
+      "source_node": "chase_player",
+      "source_port": "next",
+      "target_node": "increment_damage",
+      "target_port": "in"
+    },
+    {
+      "source_node": "increment_damage",
+      "source_port": "next",
+      "target_node": "attack_player",
+      "target_port": "in"
+    },
+    {
+      "source_node": "attack_player",
+      "source_port": "next",
+      "target_node": "animate_health",
+      "target_port": "in"
+    },
+    {
+      "source_node": "animate_health",
+      "source_port": "next",
+      "target_node": "cooldown_node",
+      "target_port": "in"
+    }
+  ],
+  "notes": {
+    "description": "Exemplo de AI com interação de UI",
+    "learning_goals": [
+      "✓ Usar bt.set_ui_value para definir estado",
+      "✓ Usar bt.increment_ui_value em contador",
+      "✓ Usar bt.animate_ui_value para transição",
+      "✓ Encadear ações em sequência",
+      "✓ Integrar BT com UI feedback"
+    ],
+    "execution_flow": [
+      "1. Inicia em Patrulha",
+      "2. Verifica se Player está no alcance",
+      "3. Se sim: define AlertBar = 50%",
+      "4. Persegue o player",
+      "5. Incrementa contador de dano",
+      "6. Ataca (inflige dano no player)",
+      "7. Anima barra de vida (suave)",
+      "8. Aguarda cooldown antes de próximo ataque",
+      "9. Volta a patrulhar se player sair do alcance"
+    ],
+    "variations": [
+      "- Aumentar duration em animate_ui_value para 1.0s",
+      "- Mudar easing para 'ease_out' para efeito mais rápido",
+      "- Adicionar mais bt.increment_ui_value para diferentes contadores",
+      "- Usar bt.animate_ui_value no AlertBar também"
+    ]
+  }
+}

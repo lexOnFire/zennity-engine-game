@@ -1,0 +1,227 @@
+{
+  "format_version": 2,
+  "scene_name": "UI Counter Example",
+  "description": "Exemplo de contador usando os novos nós de UI (set_ui_value, increment_ui_value, decrement_ui_value)",
+  "engine_version": "Zennity 0.1.0",
+  "objects": [
+    {
+      "id": "counter-camera",
+      "name": "MainCamera",
+      "tag": "MainCamera",
+      "active": true,
+      "transform": {
+        "position": [0.0, 0.0, 0.0],
+        "rotation": [0.0, 0.0, 0.0],
+        "rz": 0.0,
+        "scale": [48.0, 30.0, 1.0]
+      },
+      "visual": {
+        "mesh_type": "Camera",
+        "color": [120, 180, 255],
+        "texture": "",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {
+        "camera": {
+          "active": true,
+          "zoom": 1.0,
+          "background_color": [18, 22, 32]
+        }
+      }
+    },
+    {
+      "id": "counter-canvas",
+      "name": "CounterUI",
+      "tag": "",
+      "active": true,
+      "transform": {
+        "position": [0.0, 0.0, 0.0],
+        "rotation": [0.0, 0.0, 0.0],
+        "rz": 0.0,
+        "scale": [1.0, 1.0, 1.0]
+      },
+      "visual": {
+        "mesh_type": "Quad",
+        "color": [30, 30, 40],
+        "texture": "",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "UI",
+        "order": 0
+      },
+      "components": {
+        "canvas": {
+          "active": true,
+          "render_mode": "screen_space_overlay",
+          "background_color": [30, 30, 40]
+        }
+      }
+    },
+    {
+      "id": "counter-label",
+      "name": "CounterLabel",
+      "tag": "",
+      "active": true,
+      "transform": {
+        "position": [0.0, 5.0, 0.0],
+        "rotation": [0.0, 0.0, 0.0],
+        "rz": 0.0,
+        "scale": [1.0, 1.0, 1.0]
+      },
+      "visual": {
+        "mesh_type": "Label",
+        "color": [255, 255, 255],
+        "texture": "",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "UI",
+        "order": 1
+      },
+      "components": {
+        "label": {
+          "active": true,
+          "text": "0",
+          "font": "Arial",
+          "font_size": 40,
+          "color": [255, 255, 255],
+          "alignment": "center"
+        }
+      }
+    },
+    {
+      "id": "counter-increment-btn",
+      "name": "IncrementButton",
+      "tag": "",
+      "active": true,
+      "transform": {
+        "position": [-8.0, -8.0, 0.0],
+        "rotation": [0.0, 0.0, 0.0],
+        "rz": 0.0,
+        "scale": [1.0, 1.0, 1.0]
+      },
+      "visual": {
+        "mesh_type": "Button",
+        "color": [50, 100, 200],
+        "texture": "",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "UI",
+        "order": 1
+      },
+      "components": {
+        "button": {
+          "active": true,
+          "text": "+",
+          "font_size": 28,
+          "color": [255, 255, 255],
+          "background_color": [50, 100, 200],
+          "on_hover_color": [70, 130, 230]
+        },
+        "rect_transform": {
+          "width": 80.0,
+          "height": 40.0
+        }
+      }
+    },
+    {
+      "id": "counter-decrement-btn",
+      "name": "DecrementButton",
+      "tag": "",
+      "active": true,
+      "transform": {
+        "position": [8.0, -8.0, 0.0],
+        "rotation": [0.0, 0.0, 0.0],
+        "rz": 0.0,
+        "scale": [1.0, 1.0, 1.0]
+      },
+      "visual": {
+        "mesh_type": "Button",
+        "color": [200, 50, 50],
+        "texture": "",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "UI",
+        "order": 1
+      },
+      "components": {
+        "button": {
+          "active": true,
+          "text": "-",
+          "font_size": 28,
+          "color": [255, 255, 255],
+          "background_color": [200, 50, 50],
+          "on_hover_color": [230, 70, 70]
+        },
+        "rect_transform": {
+          "width": 80.0,
+          "height": 40.0
+        }
+      }
+    },
+    {
+      "id": "counter-reset-btn",
+      "name": "ResetButton",
+      "tag": "",
+      "active": true,
+      "transform": {
+        "position": [0.0, -12.0, 0.0],
+        "rotation": [0.0, 0.0, 0.0],
+        "rz": 0.0,
+        "scale": [1.0, 1.0, 1.0]
+      },
+      "visual": {
+        "mesh_type": "Button",
+        "color": [100, 100, 100],
+        "texture": "",
+        "enabled": true,
+        "material": "Default_Material",
+        "layer": "UI",
+        "order": 1
+      },
+      "components": {
+        "button": {
+          "active": true,
+          "text": "Reset",
+          "font_size": 18,
+          "color": [255, 255, 255],
+          "background_color": [100, 100, 100],
+          "on_hover_color": [130, 130, 130]
+        },
+        "rect_transform": {
+          "width": 100.0,
+          "height": 35.0
+        }
+      }
+    }
+  ],
+  "notes": {
+    "description": "Exemplo de Counter usando nós de UI novos",
+    "usage": [
+      "1. Selecione IncrementButton na Hierarchy",
+      "2. Na Inspector, add component: LogicGraph",
+      "3. Clique 'Open in Editor'",
+      "4. Arraste 'Increment UI Value' para o grafo",
+      "5. Configure: element='CounterLabel', amount=1, max_value=999",
+      "6. Conecte: button.on_click → Increment UI Value.in",
+      "7. Repita para DecrementButton (use 'Decrement UI Value')",
+      "8. Para Reset: use 'Set UI Value' com value=0",
+      "9. Play (F5) e teste!"
+    ],
+    "learning_goals": [
+      "✓ Usar Increment UI Value para mudar valores",
+      "✓ Usar Decrement UI Value com limite mínimo",
+      "✓ Usar Set UI Value para reset",
+      "✓ Integrar buttons com Logic Graph",
+      "✓ Testar em Play Mode"
+    ],
+    "variations": [
+      "- Adicionar Animate Material para feedback visual",
+      "- Adicionar límites (max_value/min_value)",
+      "- Adicionar Format UI Text para 'Pontos: X'",
+      "- Combinar com UIBinder para auto-sync"
+    ]
+  }
+}
