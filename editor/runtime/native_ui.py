@@ -169,8 +169,23 @@ class NativeUIRenderer:
             self._fonts[key] = pygame.font.SysFont("sans", key[0], bold=key[1])
         return self._fonts[key]
 
+    def _parse_color(self, value: Any, fallback: tuple[int, int, int] = (255, 255, 255)) -> tuple[int, int, int]:
+        try:
+            if isinstance(value, str):
+                v = value.strip().lstrip("#")
+                if len(v) == 6:
+                    return (int(v[0:2], 16), int(v[2:4], 16), int(v[4:6], 16))
+            if isinstance(value, (list, tuple)):
+                nums = [max(0, min(255, int(x))) for x in value[:3]]
+                while len(nums) < 3:
+                    nums.append(255)
+                return (nums[0], nums[1], nums[2])
+        except Exception:
+            pass
+        return fallback
+
     def _draw_text(self, ui: dict[str, Any], screen: pygame.Surface) -> None:
-        color = tuple(ui.get("color", (255, 255, 255)))[:3]
+        color = self._parse_color(ui.get("color"), (255, 255, 255))
         surface = self._font(int(ui.get("font_size", 24))).render(str(ui.get("text", "")), True, color)
         screen.blit(surface, self._rect(ui, screen).topleft)
 
@@ -180,7 +195,7 @@ class NativeUIRenderer:
         surface = self._load_image(path_text) if path_text else None
         if surface is None:
             surface = pygame.Surface(rect.size, pygame.SRCALPHA)
-            color = tuple(ui.get("color", (255, 255, 255)))[:3]
+            color = self._parse_color(ui.get("color"), (255, 255, 255))
             surface.fill((*color, max(0, min(255, int(ui.get("alpha", 255))))))
             pygame.draw.rect(surface, (255, 255, 255, 90), surface.get_rect(), 1)
         else:
@@ -195,8 +210,9 @@ class NativeUIRenderer:
         enabled = bool(ui.get("interactable", True))
         pygame.draw.rect(screen, (56, 91, 155) if enabled else (60, 60, 65), rect, border_radius=6)
         pygame.draw.rect(screen, (115, 151, 216) if enabled else (90, 90, 95), rect, 1, border_radius=6)
+        text_color = self._parse_color(ui.get("color"), (255, 255, 255))
         text = self._font(int(ui.get("font_size", 18)), True).render(
-            str(ui.get("text", "Botao")), True, tuple(ui.get("color", (255, 255, 255)))[:3]
+            str(ui.get("text", "Botao")), True, text_color
         )
         screen.blit(text, (rect.centerx - text.get_width() // 2, rect.centery - text.get_height() // 2))
 
@@ -204,11 +220,13 @@ class NativeUIRenderer:
         rect = self._rect(ui, screen)
         maximum = max(0.0001, float(ui.get("max_value", 100.0)))
         ratio = max(0.0, min(1.0, float(ui.get("value", maximum)) / maximum))
-        pygame.draw.rect(screen, tuple(ui.get("bg_color", (28, 35, 48)))[:3], rect, border_radius=4)
+        bg_color = self._parse_color(ui.get("bg_color"), (28, 35, 48))
+        pygame.draw.rect(screen, bg_color, rect, border_radius=4)
         fill = rect.copy()
         fill.width = max(0, round(rect.width * ratio))
         if fill.width:
-            pygame.draw.rect(screen, tuple(ui.get("fill_color", (46, 204, 113)))[:3], fill, border_radius=4)
+            fill_color = self._parse_color(ui.get("fill_color"), (46, 204, 113))
+            pygame.draw.rect(screen, fill_color, fill, border_radius=4)
         pygame.draw.rect(screen, (150, 170, 200), rect, 1, border_radius=4)
 
     def _load_image(self, path_text: str) -> pygame.Surface | None:
