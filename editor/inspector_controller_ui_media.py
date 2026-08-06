@@ -110,6 +110,16 @@ class InspectorControllerUIMediaMixin:
         h.ui_color_button.setStyleSheet(f"background: rgb({color.red()}, {color.green()}, {color.blue()});")
         h._selection.publish_scene()
 
+    def choose_ui_layout(self) -> None:
+        if self._selected() is None:
+            return
+        h = self.host
+        picker = LogicAssetPickerDialog(Path.cwd(), "ui", h)
+        if not picker.exec() or not picker.selected_path:
+            return
+        h.ui_layout_path_field.setText(picker.selected_path)
+        self.send_ui()
+
     def choose_ui_image(self) -> None:
         if self._selected() is None:
             return
@@ -134,6 +144,7 @@ class InspectorControllerUIMediaMixin:
         ui.update({
             "visible": h.show_ui_chk.isChecked(),
             "text": h.ui_text_field.text(),
+            "layout_path": h.ui_layout_path_field.text() if hasattr(h, "ui_layout_path_field") else "",
             "path": h.ui_image_path_field.text(),
             "interactable": h.ui_interactable_field.isChecked(),
             "event": h.ui_event_field.text().strip() or "click",

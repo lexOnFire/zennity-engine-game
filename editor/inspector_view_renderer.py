@@ -235,6 +235,10 @@ class InspectorViewRenderer:
         h.ui_color_button.setStyleSheet(
             f"background: rgb({int(color[0])}, {int(color[1])}, {int(color[2])});"
         )
+        if hasattr(h, "ui_layout_path_field"):
+            h.ui_layout_path_field.setText(str(ui.get("layout_path", "")))
+            h.ui_layout_path_field.setEnabled(kind == "canvas")
+            h.ui_layout_button.setEnabled(kind == "canvas")
         h.ui_image_path_field.setText(str(ui.get("path", "")))
         h.ui_image_path_field.setEnabled(kind == "image")
         h.ui_image_button.setEnabled(kind == "image")

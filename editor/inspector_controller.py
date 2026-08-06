@@ -112,6 +112,8 @@ class IsolatedInspectorController(InspectorControllerUIMediaMixin):
         for field in h.ui_position_fields.values():
             self._bind(field.valueChanged, lambda _value: h._send_inspector_ui())
         self._bind(h.ui_color_button.clicked, h._choose_ui_color)
+        if hasattr(h, "ui_layout_button"):
+            self._bind(h.ui_layout_button.clicked, h._choose_ui_layout)
         self._bind(h.ui_image_button.clicked, h._choose_ui_image)
         self._bind(h.ui_interactable_field.toggled, lambda _value: h._send_inspector_ui())
         self._bind(h.ui_event_field.editingFinished, h._send_inspector_ui)

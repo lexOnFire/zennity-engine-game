@@ -58,6 +58,9 @@ class InspectorComponentDelegatesMixin:
     def _choose_ui_color(self) -> None:
         self._inspector_components.choose_ui_color()
 
+    def _choose_ui_layout(self) -> None:
+        self._inspector_components.choose_ui_layout()
+
     def _choose_ui_image(self) -> None:
         self._inspector_components.choose_ui_image()
 
