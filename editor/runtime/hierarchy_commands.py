@@ -16,6 +16,20 @@ def root_objects(scene: Any) -> list[GameObject]:
     ]
 
 
+def cleanup_editable_objects(scene: Any) -> int:
+    """Remove objetos com parent de editable_objects (migração de bug anterior).
+
+    Retorna número de objetos removidos.
+    """
+    editable = getattr(scene, "editable_objects", [])
+    removed = 0
+    for obj in list(editable):
+        if getattr(obj, "parent", None) is not None:
+            editable.remove(obj)
+            removed += 1
+    return removed
+
+
 def is_descendant(candidate: GameObject, parent: GameObject) -> bool:
     current = getattr(candidate, "parent", None)
     while current is not None:

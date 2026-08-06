@@ -763,4 +763,25 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
         "outputs": [('next', 'flow')],
         "properties": {"format": "{value}"},
     },
+    "get_parent": {
+        "title": "Get Parent",
+        "category": "Objects",
+        "inputs": [('object', 'object')],
+        "outputs": [('parent', 'object')],
+        "properties": {},
+    },
+    "get_child_by_index": {
+        "title": "Get Child by Index",
+        "category": "Objects",
+        "inputs": [('object', 'object'), ('index', 'number')],
+        "outputs": [('child', 'object')],
+        "properties": {"index": 0},
+    },
+    "get_children_count": {
+        "title": "Get Children Count",
+        "category": "Objects",
+        "inputs": [('object', 'object')],
+        "outputs": [('count', 'number')],
+        "properties": {},
+    },
 }
