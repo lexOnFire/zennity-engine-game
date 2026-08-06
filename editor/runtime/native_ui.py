@@ -113,11 +113,72 @@ class NativeUIRenderer:
         values: Iterable[Any] = objects.values() if isinstance(objects, dict) else objects
         return [obj for obj in values if isinstance(obj, dict) and bool(obj.get("active", True))]
 
+    def _flatten_zui_widget(self, widget: dict[str, Any], z_order: int = 0) -> list[dict[str, Any]]:
+        result = []
+        w_type = str(widget.get("type", "")).lower()
+        kind_map = {
+            "uilabel": "text", "label": "text", "text": "text",
+            "uiimage": "image", "image": "image",
+            "uibutton": "button", "button": "button",
+            "uiprogressbar": "progress_bar", "progress_bar": "progress_bar", "progress": "progress_bar",
+        }
+        kind = kind_map.get(w_type)
+        if kind is not None and bool(widget.get("visible", True)):
+            color = widget.get("text_color") or widget.get("color") or [255, 255, 255]
+            ui_dict = {
+                "type": kind,
+                "visible": bool(widget.get("visible", True)),
+                "x": float(widget.get("x", 0.0)),
+                "y": float(widget.get("y", 0.0)),
+                "width": float(widget.get("width", 100.0)),
+                "height": float(widget.get("height", 40.0)),
+                "text": str(widget.get("text", "")),
+                "font_size": int(widget.get("font_size", 24)),
+                "color": color,
+                "path": str(widget.get("texture_path", widget.get("path", ""))),
+                "alpha": int(widget.get("alpha", 255)),
+                "interactable": bool(widget.get("interactable", True)),
+                "z_order": z_order,
+            }
+            norm = normalize_ui(ui_dict)
+            if norm is not None:
+                result.append(norm)
+        for child in widget.get("children", []):
+            if isinstance(child, dict):
+                result.extend(self._flatten_zui_widget(child, z_order))
+        return result
+
+    def _load_zui_layout(self, layout_path: str) -> list[dict[str, Any]]:
+        import json
+        path = Path(layout_path)
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        if not path.is_file():
+            return []
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            canvas_data = data.get("canvas", data)
+            if isinstance(canvas_data, dict):
+                return self._flatten_zui_widget(canvas_data)
+        except Exception:
+            pass
+        return []
+
     def components(self, objects: Any) -> list[tuple[dict[str, Any], dict[str, Any]]]:
         values = self._values(objects)
-        if not any((normalize_ui(obj.get("ui")) or {}).get("type") == "canvas" for obj in values):
+        canvas_objs = [obj for obj in values if (normalize_ui(obj.get("ui")) or {}).get("type") == "canvas"]
+        if not canvas_objs:
             return []
         result = []
+        # Carrega elementos vindos de arquivos .zui vinculados ao Canvas
+        for canvas_obj in canvas_objs:
+            c_ui = normalize_ui(canvas_obj.get("ui")) or {}
+            layout_path = str(c_ui.get("layout_path", "")).strip()
+            if layout_path:
+                for item_ui in self._load_zui_layout(layout_path):
+                    result.append((canvas_obj, item_ui))
+
+        # Adiciona demais componentes isolados da cena
         for obj in values:
             ui = normalize_ui(obj.get("ui"))
             if ui is not None and ui["type"] != "canvas" and bool(ui.get("visible", True)):
