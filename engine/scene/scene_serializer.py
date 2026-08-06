@@ -442,6 +442,14 @@ def deserialize_game_object(data: dict[str, Any]) -> GameObject:
     if isinstance(editor_data, dict):
         obj.editor_data = dict(editor_data)
 
+    # FIX: Reconstrói hierarquia parent-child
+    children_data = data.get("children", [])
+    if isinstance(children_data, list):
+        for child_data in children_data:
+            if isinstance(child_data, dict):
+                child = deserialize_game_object(child_data)
+                obj.add_child(child)
+
     return obj
 
 
