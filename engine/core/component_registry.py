@@ -63,6 +63,7 @@ from engine.core.component import Transform
 from engine.graphics.camera import Camera
 from engine.audio import AudioSource, AudioListener
 from engine.animation.animator import Animator
+from engine.animation.animation_controller import AnimationController
 from engine.ui.runtime_components import (
     Canvas, LabelComponent, ImageComponent, InfiniteBackground, ButtonComponent,
     ProgressBarComponent,
@@ -80,6 +81,7 @@ component_registry.register(Camera)
 component_registry.register(AudioSource)
 component_registry.register(AudioListener)
 component_registry.register(Animator)
+component_registry.register(AnimationController)
 component_registry.register(Canvas)
 # BUG FIX: real project scenes (RPG_Showcase.zscene, TestGame_Showcase.zscene)
 # serialize the HUD root component as type "UICanvas", but only "Canvas" was

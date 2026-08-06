@@ -1,6 +1,7 @@
 from .spritesheet import SpriteSheet
 from .clip       import AnimationClip, AnimationEvent, Keyframe
 from .animator   import Animator
+from .animation_controller import AnimationController
 from .clip_asset import (
     animation_asset_from_clip,
     animation_asset_to_clip,
@@ -29,6 +30,7 @@ __all__ = [
     "AnimationEvent",
     "Keyframe",
     "Animator",
+    "AnimationController",
     "animation_asset_from_clip",
     "animation_asset_to_clip",
     "default_animation_asset",
