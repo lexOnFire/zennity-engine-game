@@ -272,6 +272,7 @@ class GenericGraphEditorWidget(QWidget):
         self.clipboard_nodes: List[dict] = []
         self._show_context_help(None)
         self.populate_node_palette()
+        self._auto_load_last_file()
 
     # ── Node Palette ───────────────────────────────────────────────────────
     def populate_node_palette(self, search_text: str = "") -> None:
@@ -526,7 +527,32 @@ class GenericGraphEditorWidget(QWidget):
         self.is_dirty = False
         self.document_status.setText(f"Aberto • {self.current_path.name}")
         self.document_changed.emit(self.current_path)
+        self._cache_last_opened_file(self.current_path)
         return True
+
+    def _graph_cache_file_path(self) -> Path:
+        cache_dir = Path.cwd() / ".zennity"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        slug = self.category_filter.casefold().replace(" ", "_")
+        return cache_dir / f"last_graph_{slug}.json"
+
+    def _cache_last_opened_file(self, path: Path) -> None:
+        try:
+            cache_file = self._graph_cache_file_path()
+            cache_file.write_text(json.dumps({"last_path": str(path)}), encoding="utf-8")
+        except Exception:
+            pass
+
+    def _auto_load_last_file(self) -> None:
+        cache_file = self._graph_cache_file_path()
+        if cache_file.exists():
+            try:
+                info = json.loads(cache_file.read_text(encoding="utf-8"))
+                last_path = Path(info.get("last_path", ""))
+                if last_path.exists():
+                    self.load_document(last_path)
+            except Exception:
+                pass
 
     def open_dialog(self) -> None:
         filename, _ = QFileDialog.getOpenFileName(
@@ -565,6 +591,7 @@ class GenericGraphEditorWidget(QWidget):
         self.is_dirty = False
         self.document_status.setText(f"Salvo • {self.current_path.name}")
         self.document_changed.emit(self.current_path)
+        self._cache_last_opened_file(self.current_path)
         return True
 
     def _mark_dirty(self) -> None:

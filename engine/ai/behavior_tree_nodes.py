@@ -447,7 +447,7 @@ class BTSetUIVisibleNode:
         inputs=[
             PinDefinition(id="in", label_key="In", pin_type=PinType.EXEC),
             PinDefinition(id="widget", label_key="Widget", pin_type=PinType.STRING, default_value="Ui_comida"),
-            PinDefinition(id="visible", label_key="Visível", pin_type=PinType.BOOLEAN, default_value=True)
+            PinDefinition(id="visible", label_key="Visível", pin_type=PinType.BOOL, default_value=True)
         ],
         outputs=[PinDefinition(id="out", label_key="Próximo", pin_type=PinType.EXEC)],
         tags=["ui", "canvas", "visibilidade", "hud"],
