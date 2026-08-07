@@ -26,7 +26,7 @@ class BehaviorGraphRunner:
         def _port_sort_key(item: Mapping) -> tuple[int, str, str]:
             port = str(item.get("source_port", ""))
             import re
-            match = re.search(r"(\d+)", port)
+            match = re.search(r"out_(\d+)", port) or re.search(r"(\d+)", port)
             num = int(match.group(1)) if match else 0
             return (num, port, str(item.get("id", "")))
 

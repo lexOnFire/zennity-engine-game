@@ -191,7 +191,7 @@ class ViewportRuntimeInitializer:
         controller = behavior.get("controller")
         controller_path = str(behavior.get("controller_path", "")).strip()
 
-        if not isinstance(graph, dict) and not isinstance(controller, dict) and controller_path:
+        if controller_path:
             p = Path(controller_path)
             if not p.is_absolute():
                 p = self.project_root / p
