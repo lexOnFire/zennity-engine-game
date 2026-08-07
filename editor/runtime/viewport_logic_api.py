@@ -300,9 +300,9 @@ class PlayLogicAPI:
     def find(self, tag: str) -> "PlayLogicAPI | None":
         wanted = str(tag).lower()
         for name, obj in self._world.items():
-            if obj is self.obj:
+            if obj is self.obj or not bool(obj.get("active", True)):
                 continue
-            if str(obj.get("tag", obj.get("name", ""))).lower() == wanted:
+            if str(obj.get("tag", obj.get("name", ""))).lower() == wanted or str(name).lower() == wanted:
                 return PlayLogicAPI(name, obj, self._events, self._world, self.runtime_world, self._behavior_runners, self._project_root)
         return None
 
