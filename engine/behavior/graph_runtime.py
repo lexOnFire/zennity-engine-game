@@ -520,14 +520,14 @@ class BehaviorGraphRunner:
         target_name = str(self._input(node, "target", "")).strip()
 
         if target_name:
+            if hasattr(game, "destroy_object"):
+                game.destroy_object(target_name)
+                return "success"
             if hasattr(game, "find"):
                 target = game.find(target_name)
                 if target is not None and hasattr(target, "destroy"):
                     target.destroy()
                     return "success"
-            if hasattr(game, "destroy_object"):
-                game.destroy_object(target_name)
-                return "success"
         else:
             if hasattr(game, "destroy"):
                 game.destroy()

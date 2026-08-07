@@ -7,8 +7,8 @@
       "id": "root-selector",
       "type": "bt.selector",
       "position": [
-        16.0,
-        -176.0
+        -140.0,
+        -172.0
       ],
       "properties": {
         "reactive": true
@@ -18,8 +18,8 @@
       "id": "check-range",
       "type": "bt.target_in_range",
       "position": [
-        651.0,
-        -197.0
+        459.0,
+        -217.0
       ],
       "properties": {
         "target": "Food",
@@ -30,8 +30,8 @@
       "id": "chase-node",
       "type": "bt.chase",
       "position": [
-        649.0,
-        -70.0
+        465.0,
+        -98.0
       ],
       "properties": {
         "target": "Food",
@@ -43,8 +43,8 @@
       "id": "patrol-node",
       "type": "bt.patrol",
       "position": [
-        11.0,
-        -50.0
+        -86.0,
+        36.0
       ],
       "properties": {
         "point_a": "-100,100",
@@ -56,8 +56,8 @@
       "id": "9903f492-289f-4a3d-91ee-156a582f15f0",
       "type": "bt.move_to",
       "position": [
-        651.0,
-        161.0
+        461.0,
+        129.0
       ],
       "properties": {
         "target_pos": "-388,190",
@@ -68,8 +68,8 @@
       "id": "3fb6afed-274a-4d5e-b130-341fa801a7da",
       "type": "bt.idle",
       "position": [
-        650.0,
-        71.0
+        461.0,
+        35.0
       ],
       "properties": {
         "duration": 2.0
@@ -79,8 +79,8 @@
       "id": "ce78cd36-4eb7-42c2-8054-5f48ce44b7f7",
       "type": "bt.decrement_ui_value",
       "position": [
-        649.0,
-        283.0
+        470.0,
+        235.0
       ],
       "properties": {
         "widget": "comida",
@@ -91,8 +91,8 @@
       "id": "node-check-zero",
       "type": "bt.check_ui_value",
       "position": [
-        649.0,
-        390.0
+        116.0,
+        191.0
       ],
       "properties": {
         "widget": "comida",
@@ -104,8 +104,8 @@
       "id": "node-destroy-food",
       "type": "bt.destroy_object",
       "position": [
-        649.0,
-        500.0
+        197.0,
+        313.0
       ],
       "properties": {
         "target": "Food"
@@ -115,8 +115,8 @@
       "id": "seq-comida",
       "type": "bt.sequence",
       "position": [
-        272.0,
-        -164.0
+        115.0,
+        -192.0
       ],
       "properties": {
         "reactive": false
@@ -174,14 +174,6 @@
       "type": "exec"
     },
     {
-      "id": "785b6514-e826-400d-ac46-17d26b477c44",
-      "source_node": "seq-comida",
-      "source_port": "out_5",
-      "target_node": "ce78cd36-4eb7-42c2-8054-5f48ce44b7f7",
-      "target_port": "in",
-      "type": "exec"
-    },
-    {
       "id": "edge-seq-to-check-zero",
       "source_node": "seq-comida",
       "source_port": "out_6",
@@ -194,6 +186,14 @@
       "source_node": "seq-comida",
       "source_port": "out_7",
       "target_node": "node-destroy-food",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "43649270-0e94-4c83-857b-25e3aab285cd",
+      "source_node": "seq-comida",
+      "source_port": "out_5",
+      "target_node": "ce78cd36-4eb7-42c2-8054-5f48ce44b7f7",
       "target_port": "in",
       "type": "exec"
     }

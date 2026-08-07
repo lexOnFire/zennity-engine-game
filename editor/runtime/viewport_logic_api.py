@@ -520,6 +520,16 @@ class PlayLogicAPI:
         """Desativa o objeto no Play Mode atual."""
         self.runtime_world.destroy_object(self.obj)
 
+    def destroy_object(self, target_name: str) -> None:
+        """Desativa um objeto pelo nome ou pela tag no Play Mode atual."""
+        target = self.find(target_name)
+        if target is not None:
+            self.runtime_world.destroy_object(target.obj)
+        else:
+            obj = self._world.get(str(target_name))
+            if obj is not None:
+                self.runtime_world.destroy_object(obj)
+
     def log(self, message: str) -> None:
         _send(self._events, {"type": "runtime_log", "level": "INFO", "message": f"{self.name}: {message}"})
 

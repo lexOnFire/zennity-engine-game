@@ -170,24 +170,33 @@ class NativeUIRenderer:
 
     def components(self, objects: Any) -> list[tuple[dict[str, Any], dict[str, Any]]]:
         values = self._values(objects)
-        canvas_objs = [obj for obj in values if (normalize_ui(obj.get("ui")) or {}).get("type") == "canvas"]
-        if not canvas_objs:
-            return []
+        canvas_objs = [
+            obj for obj in values 
+            if bool(obj.get("active", True)) and (normalize_ui(obj.get("ui")) or {}).get("type") == "canvas"
+        ]
         result = []
-        # Carrega elementos vindos de arquivos .zui vinculados ao Canvas
+        # Carrega elementos vindos de arquivos .zui vinculados ao Canvas ativo
         for canvas_obj in canvas_objs:
             c_ui = canvas_obj.get("ui") or {}
+            if not bool(c_ui.get("visible", True)):
+                continue
             layout_path = str(c_ui.get("layout_path", "")).strip()
             overrides = c_ui.get("_widget_overrides", {})
             if layout_path:
                 for item_ui in self._load_zui_layout(layout_path):
+                    if not bool(item_ui.get("visible", True)):
+                        continue
                     w_name = item_ui.get("name") or item_ui.get("widget_name")
                     if w_name in overrides:
                         item_ui.update(overrides[w_name])
+                    if not bool(item_ui.get("visible", True)):
+                        continue
                     result.append((canvas_obj, item_ui))
 
         # Adiciona demais componentes isolados da cena
         for obj in values:
+            if not bool(obj.get("active", True)):
+                continue
             ui = normalize_ui(obj.get("ui"))
             if ui is not None and ui["type"] != "canvas" and bool(ui.get("visible", True)):
                 result.append((obj, ui))
