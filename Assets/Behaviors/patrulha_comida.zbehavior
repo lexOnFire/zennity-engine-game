@@ -88,6 +88,30 @@
       }
     },
     {
+      "id": "node-check-zero",
+      "type": "bt.check_ui_value",
+      "position": [
+        649.0,
+        390.0
+      ],
+      "properties": {
+        "widget": "comida",
+        "operator": "<=",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "node-destroy-food",
+      "type": "bt.destroy_object",
+      "position": [
+        649.0,
+        500.0
+      ],
+      "properties": {
+        "target": "Food"
+      }
+    },
+    {
       "id": "seq-comida",
       "type": "bt.sequence",
       "position": [
@@ -97,7 +121,7 @@
       "properties": {
         "reactive": false
       },
-      "step_count": 5
+      "step_count": 7
     }
   ],
   "edges": [
@@ -154,6 +178,22 @@
       "source_node": "seq-comida",
       "source_port": "out_5",
       "target_node": "ce78cd36-4eb7-42c2-8054-5f48ce44b7f7",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "edge-seq-to-check-zero",
+      "source_node": "seq-comida",
+      "source_port": "out_6",
+      "target_node": "node-check-zero",
+      "target_port": "in",
+      "type": "exec"
+    },
+    {
+      "id": "edge-seq-to-destroy",
+      "source_node": "seq-comida",
+      "source_port": "out_7",
+      "target_node": "node-destroy-food",
       "target_port": "in",
       "type": "exec"
     }
