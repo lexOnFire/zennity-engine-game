@@ -57,6 +57,32 @@ class GraphScene(QGraphicsScene):
             self.remove_edge(eid)
         self.removeItem(node)
 
+    def rebuild_node_ports(self, node_item: GraphNodeItem) -> None:
+        """Recria um nó no mesmo lugar para refletir a nova quantidade de passos."""
+        node_id = node_item.node_id
+        pos = node_item.pos()
+        node_def = node_item.node_def
+        instance_data = node_item.instance_data
+        
+        # Salva conexões existentes
+        saved_edges = [
+            (e.source_node, e.source_port, e.target_node, e.target_port, e.edge_type)
+            for e in list(self.edges.values())
+            if e.source_node == node_id or e.target_node == node_id
+        ]
+        
+        # Remove nó antigo
+        self.remove_node(node_id)
+        
+        # Cria novo nó atualizado
+        new_node = GraphNodeItem(node_def, instance_data)
+        new_node.setPos(pos)
+        self.add_node(new_node)
+        
+        # Restaura conexões compatíveis
+        for s_node, s_port, t_node, t_port, e_type in saved_edges:
+            self.create_edge(s_node, s_port, t_node, t_port, e_type)
+
     # ── Edge Management ───────────────────────────────────────────────────────
     def add_edge(self, edge_item: GraphEdgeItem) -> None:
         self.edges[edge_item.edge_id] = edge_item

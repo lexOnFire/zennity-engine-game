@@ -144,7 +144,30 @@ class GraphNodeItem(QGraphicsRectItem):
                 label.setPos(9.0, y - 12.0)
                 self.port_labels.append(label)
                 
-        for index, pin in enumerate(self.node_def.outputs):
+        outputs_to_render = list(self.node_def.outputs)
+        custom_outputs = self.instance_data.get("dynamic_outputs")
+        if custom_outputs and isinstance(custom_outputs, list):
+            from engine.core.metadata import PinDefinition, PinType
+            outputs_to_render = [
+                PinDefinition(id=pid, label_key=f"Passo {idx+1}", pin_type=PinType.EXEC)
+                for idx, pid in enumerate(custom_outputs)
+            ]
+        elif getattr(self.node_def, "id", "") in {"bt.sequence", "bt.selector"}:
+            from engine.core.metadata import PinDefinition, PinType
+            dynamic_count = int(self.instance_data.get("step_count", 3))
+            outputs_to_render = [
+                PinDefinition(id=f"out_{idx}", label_key=f"Passo {idx}", pin_type=PinType.EXEC)
+                for idx in range(1, dynamic_count + 1)
+            ]
+
+        # Recalcular altura considerando portas dinâmicas
+        in_count = len(self.node_def.inputs)
+        out_count = len(outputs_to_render)
+        extra_btn_space = 24.0 if getattr(self.node_def, "id", "") in {"bt.sequence", "bt.selector"} else 0.0
+        self.height = max(self.MINIMUM_HEIGHT, 48.0 + max(in_count, out_count) * 22.0 + extra_btn_space)
+        self.setRect(0.0, 0.0, self.width, self.height)
+
+        for index, pin in enumerate(outputs_to_render):
             y = 43.0 + index * 22.0
             port = GraphPortItem(self, pin, "output", y)
             self.output_ports[pin.id] = port
@@ -157,6 +180,28 @@ class GraphNodeItem(QGraphicsRectItem):
                 text_w = label.boundingRect().width()
                 label.setPos(self.width - text_w - 14.0, y - 12.0) 
                 self.port_labels.append(label)
+
+        # Adiciona o botão '+' se for um nó dinâmico (bt.sequence / bt.selector)
+        if getattr(self.node_def, "id", "") in {"bt.sequence", "bt.selector"}:
+            btn_y = 43.0 + len(outputs_to_render) * 22.0
+            self.add_step_btn = QGraphicsTextItem("  + Adicionar Passo  ", self)
+            self.add_step_btn.setDefaultTextColor(QColor("#4c9aff"))
+            self.add_step_btn.setPos(self.width - 125.0, btn_y - 8.0)
+            font_btn = self.add_step_btn.font()
+            font_btn.setBold(True)
+            font_btn.setPointSizeF(8.5)
+            self.add_step_btn.setFont(font_btn)
+            self.add_step_btn.setCursor(Qt.PointingHandCursor)
+            
+            def _on_add_click(event):
+                current_steps = int(self.instance_data.get("step_count", len(outputs_to_render)))
+                self.instance_data["step_count"] = current_steps + 1
+                if self.scene() and hasattr(self.scene(), "rebuild_node_ports"):
+                    self.scene().rebuild_node_ports(self)
+                elif self.scene() and hasattr(self.scene(), "asset_changed"):
+                    self.scene().asset_changed.emit()
+            
+            self.add_step_btn.mousePressEvent = _on_add_click
                 
     @property
     def node_id(self) -> str:
