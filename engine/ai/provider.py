@@ -27,12 +27,13 @@ from engine.ai.behavior_tree_nodes import (
     BTPlayAnimationNode,
     BTSetParameterNode,
     BTLogNode,
-    # UI Actions
     BTSetUITextNode,
     BTSetUIProgressNode,
     BTSetUIVisibleNode,
     BTIncrementUIValueNode,
     BTDecrementUIValueNode,
+    BTCheckUIValueNode,
+    BTDestroyObjectNode,
 )
 
 
@@ -68,6 +69,7 @@ class AIProvider(EngineProvider):
         manager.register(BTHealthCheckNode.__node_definition__)
         manager.register(BTParameterCheckNode.__node_definition__)
         manager.register(BTRandomChanceNode.__node_definition__)
+        manager.register(BTCheckUIValueNode.__node_definition__)
         # Action
         manager.register(BTWaitNode.__node_definition__)
         manager.register(BTIdleNode.__node_definition__)
@@ -78,6 +80,7 @@ class AIProvider(EngineProvider):
         manager.register(BTPlayAnimationNode.__node_definition__)
         manager.register(BTSetParameterNode.__node_definition__)
         manager.register(BTLogNode.__node_definition__)
+        manager.register(BTDestroyObjectNode.__node_definition__)
         # UI Actions
         manager.register(BTSetUITextNode.__node_definition__)
         manager.register(BTSetUIProgressNode.__node_definition__)
