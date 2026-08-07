@@ -32,6 +32,11 @@ class BTSequenceNode:
             PinDefinition(id="out_1", label_key="Passo 1", pin_type=PinType.EXEC),
             PinDefinition(id="out_2", label_key="Passo 2", pin_type=PinType.EXEC),
             PinDefinition(id="out_3", label_key="Passo 3", pin_type=PinType.EXEC),
+            PinDefinition(id="out_4", label_key="Passo 4", pin_type=PinType.EXEC),
+            PinDefinition(id="out_5", label_key="Passo 5", pin_type=PinType.EXEC),
+            PinDefinition(id="out_6", label_key="Passo 6", pin_type=PinType.EXEC),
+            PinDefinition(id="out_7", label_key="Passo 7", pin_type=PinType.EXEC),
+            PinDefinition(id="out_8", label_key="Passo 8", pin_type=PinType.EXEC),
         ],
         tags=["ordem", "sequência", "passos"],
     )

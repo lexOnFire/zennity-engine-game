@@ -83,29 +83,19 @@
         104.0
       ],
       "properties": {
-        "duration": 5.0
-      }
-    },
-    {
-      "id": "a849611b-c0df-484c-a9a4-cf13286ae02a",
-      "type": "bt.set_ui_progress",
-      "position": [
-        610.0,
-        328.0
-      ],
-      "properties": {
-        "widget": "comida"
+        "duration": 2.0
       }
     },
     {
       "id": "ce78cd36-4eb7-42c2-8054-5f48ce44b7f7",
-      "type": "bt.increment_ui_value",
+      "type": "bt.decrement_ui_value",
       "position": [
-        610.0,
-        448.0
+        608.0,
+        328.0
       ],
       "properties": {
-        "widget": "comida"
+        "widget": "comida",
+        "amount": 25.0
       }
     }
   ],
@@ -113,21 +103,13 @@
     {
       "id": "edge-selector-to-seq",
       "source_node": "root-selector",
-      "source_port": "out_0",
+      "source_port": "out_1",
       "target_node": "seq-comida",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "edge-seq-to-check",
-      "source_node": "seq-comida",
-      "source_port": "out_0",
-      "target_node": "check-range",
-      "target_port": "in",
-      "type": "exec"
-    },
-    {
-      "id": "30d58844-c611-435e-bc04-fbe03c476a0c",
+      "id": "edge-selector-to-patrol",
       "source_node": "root-selector",
       "source_port": "out_2",
       "target_node": "patrol-node",
@@ -135,15 +117,7 @@
       "type": "exec"
     },
     {
-      "id": "9708204a-3e64-44d5-861f-7cd5070a8664",
-      "source_node": "root-selector",
-      "source_port": "out_1",
-      "target_node": "seq-comida",
-      "target_port": "in",
-      "type": "exec"
-    },
-    {
-      "id": "7e47b6d4-c009-4ac4-8041-c86d24968fd2",
+      "id": "edge-seq-to-check",
       "source_node": "seq-comida",
       "source_port": "out_1",
       "target_node": "check-range",
@@ -151,7 +125,7 @@
       "type": "exec"
     },
     {
-      "id": "e83319f2-4347-401e-951b-516b9c2b4d7d",
+      "id": "edge-seq-to-chase",
       "source_node": "seq-comida",
       "source_port": "out_2",
       "target_node": "chase-node",
@@ -159,7 +133,7 @@
       "type": "exec"
     },
     {
-      "id": "cbe63221-e5d8-4e10-8175-ab4af7ba8f40",
+      "id": "edge-seq-to-idle",
       "source_node": "seq-comida",
       "source_port": "out_3",
       "target_node": "3fb6afed-274a-4d5e-b130-341fa801a7da",
@@ -167,25 +141,17 @@
       "type": "exec"
     },
     {
-      "id": "d7e4f28e-160e-4c7b-bedc-df41e3cd0429",
+      "id": "edge-seq-to-moveto",
       "source_node": "seq-comida",
-      "source_port": "out_3",
+      "source_port": "out_4",
       "target_node": "9903f492-289f-4a3d-91ee-156a582f15f0",
       "target_port": "in",
       "type": "exec"
     },
     {
-      "id": "85b74641-c5a7-4e80-8f4b-ff81ba157a5f",
+      "id": "edge-seq-to-decrement",
       "source_node": "seq-comida",
-      "source_port": "out_3",
-      "target_node": "a849611b-c0df-484c-a9a4-cf13286ae02a",
-      "target_port": "in",
-      "type": "exec"
-    },
-    {
-      "id": "fd5f8530-f380-4407-8d89-40f56a736a66",
-      "source_node": "seq-comida",
-      "source_port": "out_3",
+      "source_port": "out_5",
       "target_node": "ce78cd36-4eb7-42c2-8054-5f48ce44b7f7",
       "target_port": "in",
       "type": "exec"
