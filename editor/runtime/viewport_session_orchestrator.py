@@ -178,6 +178,23 @@ class ViewportSessionOrchestrator:
                         w_override = overrides.setdefault(obj_name, {})
                         w_override["value"] = val_num
                         w_override["max_value"] = max_num
+                        if val_num <= 0:
+                            w_override["visible"] = False
+            elif command == "set_ui_visible" and isinstance(value, dict):
+                obj_name = str(value.get("object", "")).strip()
+                visible_bool = bool(value.get("visible", True))
+                target = self.objects.get(obj_name)
+                ui = target.get("ui") if isinstance(target, dict) else None
+                if isinstance(ui, dict):
+                    ui["visible"] = visible_bool
+                for scene_obj in self.objects.values():
+                    if not isinstance(scene_obj, dict):
+                        continue
+                    c_ui = scene_obj.get("ui")
+                    if isinstance(c_ui, dict) and c_ui.get("type") == "canvas":
+                        overrides = c_ui.setdefault("_widget_overrides", {})
+                        w_override = overrides.setdefault(obj_name, {})
+                        w_override["visible"] = visible_bool
             elif command == "restart_scene":
                 restart = True
             elif command:

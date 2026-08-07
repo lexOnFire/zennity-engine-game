@@ -142,9 +142,25 @@ class ViewportLogicEventUpdater:
                     c_ui = scene_obj.get("ui")
                     if isinstance(c_ui, dict) and c_ui.get("type") == "canvas":
                         overrides = c_ui.setdefault("_widget_overrides", {})
-                        w_ov = overrides.setdefault(obj_name, {})
-                        w_ov["value"] = val_num
-                        w_ov["max_value"] = max_num
+                        w_override = overrides.setdefault(obj_name, {})
+                        w_override["value"] = val_num
+                        w_override["max_value"] = max_num
+                        if val_num <= 0:
+                            w_override["visible"] = False
+        elif command == "set_ui_visible" and isinstance(value, dict):
+            obj_name = str(value.get("object", "")).strip()
+            visible_bool = bool(value.get("visible", True))
+            target = self.objects.get(obj_name)
+            ui = self.normalize_ui(target.get("ui")) if target is not None else None
+            if target is not None and ui is not None:
+                ui["visible"] = visible_bool
+                target["ui"] = ui
+            for scene_obj in self.objects.values():
+                if isinstance(scene_obj, dict):
+                    c_ui = scene_obj.get("ui")
+                    if isinstance(c_ui, dict) and c_ui.get("type") == "canvas":
+                        overrides = c_ui.setdefault("_widget_overrides", {})
+                        overrides.setdefault(obj_name, {})["visible"] = visible_bool
         return command == "restart_scene"
 
     @staticmethod
