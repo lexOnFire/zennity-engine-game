@@ -494,30 +494,22 @@ class GenericGraphEditorWidget(QWidget):
             self._show_context_help(node_def)
 
     def _on_play_clicked(self) -> None:
-        """Salva as alterações pendentes e aciona o Play Mode na janela principal."""
+        """Salva as alterações pendentes e aciona o Play Mode globalmente."""
         if self.is_dirty or not self.current_path:
             self.save()
-        parent = self.parent()
-        while parent is not None:
-            if hasattr(parent, "start_play_mode"):
-                parent.start_play_mode()
-                break
-            elif hasattr(parent, "host") and hasattr(parent.host, "start_play_mode"):
-                parent.host.start_play_mode()
-                break
-            parent = parent.parent()
+        try:
+            from editor.core.event_bus import EventBus, EVENT_PLAY_STATE_CHANGED
+            EventBus.emit(EVENT_PLAY_STATE_CHANGED, state="play")
+        except Exception:
+            pass
 
     def _on_stop_clicked(self) -> None:
-        """Para a simulação do Play Mode."""
-        parent = self.parent()
-        while parent is not None:
-            if hasattr(parent, "stop_play_mode"):
-                parent.stop_play_mode()
-                break
-            elif hasattr(parent, "host") and hasattr(parent.host, "stop_play_mode"):
-                parent.host.stop_play_mode()
-                break
-            parent = parent.parent()
+        """Para a simulação do Play Mode globalmente."""
+        try:
+            from editor.core.event_bus import EventBus, EVENT_PLAY_STATE_CHANGED
+            EventBus.emit(EVENT_PLAY_STATE_CHANGED, state="stop")
+        except Exception:
+            pass
 
     def _on_zoom_fit(self) -> None:
         if self.canvas.scene.nodes:
