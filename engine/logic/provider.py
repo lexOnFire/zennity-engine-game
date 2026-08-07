@@ -21,6 +21,8 @@ class LogicProvider(EngineProvider):
         import engine.logic.runtime.nodes.scene_nodes
         import engine.logic.runtime.nodes.string_nodes
         import engine.logic.runtime.nodes.dynamic_ui_nodes
+        import engine.logic.runtime.nodes.animation_nodes
+        import engine.logic.runtime.nodes.physics_nodes
 
         from engine.logic.runtime.registry import sync_logic_registry_to_metadata
         from engine.metadata.manager import MetadataManager
@@ -29,10 +31,17 @@ class LogicProvider(EngineProvider):
             CreateUIImageNode, DestroyUIWidgetNode, UpdateUIWidgetPropertyNode,
             GetUIWidgetPropertyNode
         )
+        from engine.logic.node_definitions.animation_nodes import (
+            AnimateValueNode, WaitUntilConditionNode
+        )
+        from engine.logic.node_definitions.physics_nodes import (
+            ModifyRigidbodyNode, ModifyColliderNode, ApplyForceNode
+        )
 
-        # Registra as definições dos nós dinâmicos
+        # Registra as definições dos nós
         manager = context.services.get_optional(MetadataManager)
         if manager:
+            # UI Dinâmica
             manager.register(CreateUILabelNode.__node_definition__)
             manager.register(CreateUIProgressBarNode.__node_definition__)
             manager.register(CreateUIButtonNode.__node_definition__)
@@ -40,5 +49,14 @@ class LogicProvider(EngineProvider):
             manager.register(DestroyUIWidgetNode.__node_definition__)
             manager.register(UpdateUIWidgetPropertyNode.__node_definition__)
             manager.register(GetUIWidgetPropertyNode.__node_definition__)
+
+            # Animação
+            manager.register(AnimateValueNode.__node_definition__)
+            manager.register(WaitUntilConditionNode.__node_definition__)
+
+            # Física
+            manager.register(ModifyRigidbodyNode.__node_definition__)
+            manager.register(ModifyColliderNode.__node_definition__)
+            manager.register(ApplyForceNode.__node_definition__)
 
         sync_logic_registry_to_metadata(context)
