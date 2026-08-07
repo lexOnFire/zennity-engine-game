@@ -168,8 +168,21 @@ class GenericGraphEditorWidget(QWidget):
         self.btn_open.clicked.connect(self.open_dialog)
         self.btn_save.clicked.connect(self.save)
 
+        self.btn_play = QPushButton("▶ Play Teste", self)
+        self.btn_play.setStyleSheet("background-color: #2ea043; color: white; font-weight: bold;")
+        self.btn_play.setToolTip("Inicia o Play Mode no Viewport para testar o comportamento")
+        
+        self.btn_stop = QPushButton("⏹ Stop", self)
+        self.btn_stop.setStyleSheet("background-color: #da3633; color: white; font-weight: bold;")
+        self.btn_stop.setToolTip("Interrompe a simulação")
+
+        self.btn_play.clicked.connect(self._on_play_clicked)
+        self.btn_stop.clicked.connect(self._on_stop_clicked)
+
         toolbar.addWidget(self.label_title)
         toolbar.addStretch(1)
+        toolbar.addWidget(self.btn_play)
+        toolbar.addWidget(self.btn_stop)
         toolbar.addWidget(self.btn_auto_layout)
         toolbar.addWidget(self.btn_validate)
         toolbar.addWidget(self.btn_starter)
@@ -477,6 +490,32 @@ class GenericGraphEditorWidget(QWidget):
         node_def = item.data(0, Qt.UserRole)
         if isinstance(node_def, NodeDefinition):
             self._show_context_help(node_def)
+
+    def _on_play_clicked(self) -> None:
+        """Salva as alterações pendentes e aciona o Play Mode na janela principal."""
+        if self.is_dirty or not self.current_path:
+            self.save()
+        parent = self.parent()
+        while parent is not None:
+            if hasattr(parent, "start_play_mode"):
+                parent.start_play_mode()
+                break
+            elif hasattr(parent, "host") and hasattr(parent.host, "start_play_mode"):
+                parent.host.start_play_mode()
+                break
+            parent = parent.parent()
+
+    def _on_stop_clicked(self) -> None:
+        """Para a simulação do Play Mode."""
+        parent = self.parent()
+        while parent is not None:
+            if hasattr(parent, "stop_play_mode"):
+                parent.stop_play_mode()
+                break
+            elif hasattr(parent, "host") and hasattr(parent.host, "stop_play_mode"):
+                parent.host.stop_play_mode()
+                break
+            parent = parent.parent()
 
     def _on_zoom_fit(self) -> None:
         if self.canvas.scene.nodes:
