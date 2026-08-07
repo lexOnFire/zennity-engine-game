@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 
 from engine.ui.runtime import (
     UIButton, UICanvas, UIContainer, UIImage, UIInput, UILabel, UIPanel,
-    UIScrollView, UIWidget, widget_from_dict,
+    UIProgressBar, UIScrollView, UIWidget, widget_from_dict,
 )
 from editor.widgets.logic_asset_picker import LogicAssetPickerDialog
 
@@ -90,6 +90,17 @@ class UICanvasPreviewWidget(QWidget):
                 painter.fillRect(rect, QColor("#332d48"))
                 painter.setPen(QColor("#b79cff"))
                 painter.drawText(rect, Qt.AlignCenter, Path(widget.texture_path).name or "Image")
+            elif isinstance(widget, UIProgressBar):
+                bg_color = QColor(getattr(widget, "bg_color", "#1C2330"))
+                fill_color = QColor(getattr(widget, "fill_color", "#2ECC71"))
+                border_color = QColor(getattr(widget, "border_color", "#96AAC8"))
+                painter.fillRect(rect, bg_color)
+                ratio = max(0.0, min(1.0, widget.value / widget.max_value if widget.max_value > 0 else 0.0))
+                fill_rect = rect.adjusted(0, 0, int(rect.width() * ratio - rect.width()), 0)
+                if fill_rect.width() > 0:
+                    painter.fillRect(fill_rect, fill_color)
+                painter.setPen(QPen(border_color, 1))
+                painter.drawRect(rect)
             if widget is self.selected_widget:
                 painter.setPen(QPen(QColor("#61d7ff"), 2, Qt.DashLine))
                 painter.drawRect(rect.adjusted(-2, -2, 2, 2))
@@ -146,6 +157,7 @@ class UIBuilderDock(QDockWidget):
             ("Label", lambda: self.add_widget(UILabel(self._next_name("Label")))),
             ("Image", lambda: self.add_widget(UIImage(self._next_name("Image")))),
             ("Input", lambda: self.add_widget(UIInput(self._next_name("Input")))),
+            ("ProgressBar", lambda: self.add_widget(UIProgressBar(self._next_name("ProgressBar")))),
             ("Container", lambda: self.add_widget(UIContainer(self._next_name("Container")))),
         ):
             button = QPushButton(label, self)
@@ -172,6 +184,10 @@ class UIBuilderDock(QDockWidget):
         self.spin_width, self.spin_height = QSpinBox(self), QSpinBox(self)
         for spin in (self.spin_x, self.spin_y, self.spin_width, self.spin_height):
             spin.setRange(0, 8192)
+        self.spin_value = QSpinBox(self)
+        self.spin_max_value = QSpinBox(self)
+        for spin in (self.spin_value, self.spin_max_value):
+            spin.setRange(0, 10000)
         self.txt_text = QLineEdit(self)
         self.txt_asset = QLineEdit(self)
         self.txt_asset.setReadOnly(True)
@@ -197,6 +213,8 @@ class UIBuilderDock(QDockWidget):
         form.addRow("Altura", self.spin_height)
         form.addRow("Render Mode", self.combo_render_mode)
         form.addRow("Texto", self.txt_text)
+        form.addRow("Valor", self.spin_value)
+        form.addRow("Valor Max", self.spin_max_value)
         form.addRow("Imagem", asset_row)
         form.addRow("Layout", self.combo_layout)
         form.addRow(self.check_visible)
@@ -222,7 +240,7 @@ class UIBuilderDock(QDockWidget):
         self.txt_asset.editingFinished.connect(self.apply_inspector)
         self.combo_layout.currentTextChanged.connect(lambda _value: self.apply_inspector())
         self.check_visible.toggled.connect(lambda _value: self.apply_inspector())
-        for spin in (self.spin_x, self.spin_y, self.spin_width, self.spin_height):
+        for spin in (self.spin_x, self.spin_y, self.spin_width, self.spin_height, self.spin_value, self.spin_max_value):
             spin.valueChanged.connect(lambda _value: self.apply_inspector())
         self.rebuild_hierarchy_tree()
         self.select_widget(None)
@@ -301,6 +319,7 @@ class UIBuilderDock(QDockWidget):
         for control in (
             self.txt_name, self.spin_x, self.spin_y, self.spin_width, self.spin_height,
             self.txt_text, self.txt_asset, self.combo_layout, self.check_visible,
+            self.spin_value, self.spin_max_value,
             self.btn_asset, self.btn_duplicate, self.btn_delete,
         ):
             control.setEnabled(enabled)
@@ -316,6 +335,8 @@ class UIBuilderDock(QDockWidget):
             self.spin_width.setValue(int(widget.width))
             self.spin_height.setValue(int(widget.height))
             self.txt_text.setText(str(getattr(widget, "text", getattr(widget, "placeholder", ""))))
+            self.spin_value.setValue(int(getattr(widget, "value", 50)))
+            self.spin_max_value.setValue(int(getattr(widget, "max_value", 100)))
             self.txt_asset.setText(str(getattr(widget, "texture_path", "")))
             self.check_visible.setChecked(widget.visible)
             self.combo_layout.setCurrentText(str(getattr(widget, "layout_mode", "Free")))
@@ -333,6 +354,7 @@ class UIBuilderDock(QDockWidget):
             UIPanel: ("Panel", "Área visual que agrupa e destaca outros elementos."),
             UIScrollView: ("Scroll View", "Contêiner rolável para listas maiores que a tela."),
             UIContainer: ("Container", "Agrupa elementos e controla sua organização."),
+            UIProgressBar: ("Progress Bar", "Barra de progresso para saúde, stamina, XP e outros valores numéricos. Use Valor e Valor Max."),
             UICanvas: ("Canvas", "Raiz da interface e referência para posicionamento em tela."),
         }
         title, description = guides.get(type(widget), ("UI & HUD", "Selecione um elemento na hierarquia ou na prévia."))
@@ -374,6 +396,10 @@ class UIBuilderDock(QDockWidget):
             widget.text = self.txt_text.text()
         if hasattr(widget, "placeholder"):
             widget.placeholder = self.txt_text.text()
+        if hasattr(widget, "value"):
+            widget.value = float(self.spin_value.value())
+        if hasattr(widget, "max_value"):
+            widget.max_value = float(self.spin_max_value.value())
         if hasattr(widget, "texture_path"):
             widget.texture_path = self.txt_asset.text().strip()
         if hasattr(widget, "layout_mode"):

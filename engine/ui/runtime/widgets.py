@@ -118,9 +118,21 @@ class UIContainer(UIWidget):
         self.layout_mode: str = layout_mode
 
 
+class UIProgressBar(UIWidget):
+    """Barra de Progresso (HP, MP, XP, etc.)."""
+
+    def __init__(self, name: str = "ProgressBar") -> None:
+        super().__init__(name)
+        self.value: float = 50.0
+        self.max_value: float = 100.0
+        self.fill_color: str = "#2ECC71"
+        self.bg_color: str = "#1C2330"
+        self.border_color: str = "#96AAC8"
+
+
 WIDGET_TYPES = {
     cls.__name__: cls
-    for cls in (RuntimeUICanvas, UIPanel, UIButton, UILabel, RuntimeUIImage, UIScrollView, UIInput, UIContainer)
+    for cls in (RuntimeUICanvas, UIPanel, UIButton, UILabel, RuntimeUIImage, UIScrollView, UIInput, UIContainer, UIProgressBar)
 }
 WIDGET_TYPES.update({"UICanvas": RuntimeUICanvas, "UIImage": RuntimeUIImage})
 

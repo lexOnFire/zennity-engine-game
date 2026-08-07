@@ -8,6 +8,7 @@ from engine.ui.runtime.widgets import (
     UIScrollView,
     UIInput,
     UIContainer,
+    UIProgressBar,
     widget_from_dict,
 )
 
@@ -21,5 +22,6 @@ __all__ = [
     "UIScrollView",
     "UIInput",
     "UIContainer",
+    "UIProgressBar",
     "widget_from_dict",
 ]
