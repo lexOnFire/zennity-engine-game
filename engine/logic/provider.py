@@ -23,6 +23,11 @@ class LogicProvider(EngineProvider):
         import engine.logic.runtime.nodes.dynamic_ui_nodes
         import engine.logic.runtime.nodes.animation_nodes
         import engine.logic.runtime.nodes.physics_nodes
+        import engine.logic.runtime.nodes.dialog_nodes
+        import engine.logic.runtime.nodes.audio_advanced_nodes
+        import engine.logic.runtime.nodes.particle_nodes
+        import engine.logic.runtime.nodes.camera_nodes
+        import engine.logic.runtime.nodes.state_machine_nodes
 
         from engine.logic.runtime.registry import sync_logic_registry_to_metadata
         from engine.metadata.manager import MetadataManager
@@ -36,6 +41,23 @@ class LogicProvider(EngineProvider):
         )
         from engine.logic.node_definitions.physics_nodes import (
             ModifyRigidbodyNode, ModifyColliderNode, ApplyForceNode
+        )
+        from engine.logic.node_definitions.dialog_nodes import (
+            ShowDialogNode, WaitDialogChoiceNode, SetDialogChoiceNode, CloseDialogNode
+        )
+        from engine.logic.node_definitions.audio_advanced_nodes import (
+            PlaySoundFadeNode, SetVolumeNode, SetPitchNode, StopAllSoundsNode
+        )
+        from engine.logic.node_definitions.particle_nodes import (
+            CreateParticleSystemNode, EmitParticlesNode, StopParticlesNode
+        )
+        from engine.logic.node_definitions.camera_nodes import (
+            CameraShakeNode, CameraFollowNode, CameraStopFollowNode,
+            CameraLookAtNode, CameraSetZoomNode
+        )
+        from engine.logic.node_definitions.state_machine_nodes import (
+            CreateStateMachineNode, AddTransitionNode, ChangeStateNode,
+            GetStateNode, IsInStateNode
         )
 
         # Registra as definições dos nós
@@ -58,5 +80,36 @@ class LogicProvider(EngineProvider):
             manager.register(ModifyRigidbodyNode.__node_definition__)
             manager.register(ModifyColliderNode.__node_definition__)
             manager.register(ApplyForceNode.__node_definition__)
+
+            # Diálogo
+            manager.register(ShowDialogNode.__node_definition__)
+            manager.register(WaitDialogChoiceNode.__node_definition__)
+            manager.register(SetDialogChoiceNode.__node_definition__)
+            manager.register(CloseDialogNode.__node_definition__)
+
+            # Audio Avançado
+            manager.register(PlaySoundFadeNode.__node_definition__)
+            manager.register(SetVolumeNode.__node_definition__)
+            manager.register(SetPitchNode.__node_definition__)
+            manager.register(StopAllSoundsNode.__node_definition__)
+
+            # Partículas
+            manager.register(CreateParticleSystemNode.__node_definition__)
+            manager.register(EmitParticlesNode.__node_definition__)
+            manager.register(StopParticlesNode.__node_definition__)
+
+            # Câmera Avançada
+            manager.register(CameraShakeNode.__node_definition__)
+            manager.register(CameraFollowNode.__node_definition__)
+            manager.register(CameraStopFollowNode.__node_definition__)
+            manager.register(CameraLookAtNode.__node_definition__)
+            manager.register(CameraSetZoomNode.__node_definition__)
+
+            # State Machine
+            manager.register(CreateStateMachineNode.__node_definition__)
+            manager.register(AddTransitionNode.__node_definition__)
+            manager.register(ChangeStateNode.__node_definition__)
+            manager.register(GetStateNode.__node_definition__)
+            manager.register(IsInStateNode.__node_definition__)
 
         sync_logic_registry_to_metadata(context)
