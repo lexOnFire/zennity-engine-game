@@ -166,7 +166,7 @@ class BehaviorGraphRunner:
         if kind == "bt.increment_ui_value":
             return self._increment_ui_value(node, game)
         if kind == "bt.decrement_ui_value":
-            return self._decrement_ui_value(node, game)
+            return self._decrement_ui_value(node_id, node, game)
         if kind == "bt.set_ui_progress":
             return self._set_ui_progress(node, game)
         if kind == "bt.set_ui_visible":
@@ -420,57 +420,31 @@ class BehaviorGraphRunner:
 
         return "success"
 
-    def _decrement_ui_value(self, node: Mapping[str, Any], game: Any) -> str:
+    def _decrement_ui_value(self, node_id: str, node: Mapping[str, Any], game: Any) -> str:
         """BT action: Decrementa um valor em um elemento UI."""
         element_name = str(self._input(node, "widget", self._input(node, "element", "")))
         amount = self._number(node, "amount", 1.0)
 
-        # Se game suportar viewport logic API (via _send_logic_command ou set_ui_progress)
-        if hasattr(game, "set_ui_progress") or hasattr(game, "_send_logic_command"):
-            # Obter valor atual do elemento na cena se disponível
+        # Chave de memória persistente para acompanhar o valor atual acumulado
+        mem_key = (element_name, "ui_value")
+        if mem_key not in self._persistent:
             current = 100.0
             element = game.find(element_name) if hasattr(game, "find") else None
             if element is not None:
-                if hasattr(element, "get_value"):
-                    current = float(element.get_value())
-                elif hasattr(element, "value"):
+                if hasattr(element, "value"):
                     current = float(element.value) if element.value is not None else 100.0
                 elif isinstance(element, dict) and "ui" in element:
                     current = float((element.get("ui") or {}).get("value", 100.0))
+            self._persistent[mem_key] = current
 
-            new_val = max(0.0, current - amount)
+        new_val = max(0.0, float(self._persistent[mem_key]) - amount)
+        self._persistent[mem_key] = new_val
 
-            if hasattr(game, "_send_logic_command"):
-                game._send_logic_command("set_ui_progress", {"object": element_name, "value": new_val})
-            elif hasattr(game, "set_ui_progress"):
-                game.set_ui_progress(element_name, new_val)
+        if hasattr(game, "set_ui_progress"):
+            game.set_ui_progress(element_name, new_val)
+        elif hasattr(game, "send"):
+            game.send("set_ui_progress", {"object": element_name, "value": new_val})
 
-            if element is not None:
-                if hasattr(element, "set_value"):
-                    element.set_value(new_val)
-                elif hasattr(element, "value"):
-                    element.value = new_val
-                elif isinstance(element, dict) and "ui" in element:
-                    element["ui"]["value"] = new_val
-            return "success"
-
-        element = game.find(element_name) if hasattr(game, "find") else None
-        if element is None:
-            return "failure"
-
-        current = 0.0
-        if hasattr(element, "get_value"):
-            current = float(element.get_value())
-        elif hasattr(element, "value"):
-            current = float(element.value) if element.value is not None else 0.0
-
-        new_value = max(0.0, current - amount)
-        if hasattr(element, "set_value"):
-            element.set_value(new_value)
-        elif hasattr(element, "value"):
-            element.value = new_value
-        else:
-            return "failure"
         return "success"
 
     def _set_ui_progress(self, node: Mapping[str, Any], game: Any) -> str:

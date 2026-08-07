@@ -20,7 +20,7 @@
         "visible": true,
         "children": [],
         "bg_color": "#1C2330",
-        "render_mode": "World Space"
+        "render_mode": "Screen Space"
       }
     ],
     "render_mode": "World Space"
