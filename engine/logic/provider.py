@@ -28,6 +28,9 @@ class LogicProvider(EngineProvider):
         import engine.logic.runtime.nodes.particle_nodes
         import engine.logic.runtime.nodes.camera_nodes
         import engine.logic.runtime.nodes.state_machine_nodes
+        import engine.logic.runtime.nodes.save_load_nodes
+        import engine.logic.runtime.nodes.pathfinding_nodes
+        import engine.logic.runtime.nodes.input_advanced_nodes
 
         from engine.logic.runtime.registry import sync_logic_registry_to_metadata
         from engine.metadata.manager import MetadataManager
@@ -58,6 +61,16 @@ class LogicProvider(EngineProvider):
         from engine.logic.node_definitions.state_machine_nodes import (
             CreateStateMachineNode, AddTransitionNode, ChangeStateNode,
             GetStateNode, IsInStateNode
+        )
+        from engine.logic.node_definitions.save_load_nodes import (
+            SaveGameNode, LoadGameNode, DeleteSaveNode, HasSaveNode
+        )
+        from engine.logic.node_definitions.pathfinding_nodes import (
+            FindPathNode, FollowPathNode, StopPathNode, DistanceToPointNode
+        )
+        from engine.logic.node_definitions.input_advanced_nodes import (
+            DetectTouchNode, DetectSwipeNode, DetectPinchNode,
+            IsKeyPressedNode, WaitKeyReleaseNode
         )
 
         # Registra as definições dos nós
@@ -111,5 +124,24 @@ class LogicProvider(EngineProvider):
             manager.register(ChangeStateNode.__node_definition__)
             manager.register(GetStateNode.__node_definition__)
             manager.register(IsInStateNode.__node_definition__)
+
+            # Save/Load
+            manager.register(SaveGameNode.__node_definition__)
+            manager.register(LoadGameNode.__node_definition__)
+            manager.register(DeleteSaveNode.__node_definition__)
+            manager.register(HasSaveNode.__node_definition__)
+
+            # Pathfinding
+            manager.register(FindPathNode.__node_definition__)
+            manager.register(FollowPathNode.__node_definition__)
+            manager.register(StopPathNode.__node_definition__)
+            manager.register(DistanceToPointNode.__node_definition__)
+
+            # Input Avançado
+            manager.register(DetectTouchNode.__node_definition__)
+            manager.register(DetectSwipeNode.__node_definition__)
+            manager.register(DetectPinchNode.__node_definition__)
+            manager.register(IsKeyPressedNode.__node_definition__)
+            manager.register(WaitKeyReleaseNode.__node_definition__)
 
         sync_logic_registry_to_metadata(context)
