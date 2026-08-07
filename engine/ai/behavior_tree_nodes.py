@@ -400,6 +400,25 @@ class BTSetParameterNode:
     )
 
 
+class BTCheckUIValueNode:
+    """Verifica se o valor numérico de um elemento da UI atende a uma condição (<=, ==, etc)."""
+
+    __node_definition__ = NodeDefinition(
+        id="bt.check_ui_value",
+        title_key="Verificar Valor UI",
+        category_key="Behavior Tree/Condition",
+        description_key="Retorna sucesso se o valor da UI satisfizer a comparação.",
+        inputs=[
+            PinDefinition(id="in", label_key="In", pin_type=PinType.EXEC),
+            PinDefinition(id="widget", label_key="Widget", pin_type=PinType.STRING, default_value="comida"),
+            PinDefinition(id="operator", label_key="Operador", pin_type=PinType.STRING, default_value="<="),
+            PinDefinition(id="value", label_key="Valor Comparação", pin_type=PinType.FLOAT, default_value=0.0)
+        ],
+        outputs=[PinDefinition(id="out", label_key="Próximo", pin_type=PinType.EXEC)],
+        tags=["ui", "canvas", "condição", "comparar", "comida", "zero"],
+    )
+
+
 class BTSetUITextNode:
     """Define o texto de um elemento de UI (UILabel / Canvas)."""
 

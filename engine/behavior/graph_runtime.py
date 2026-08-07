@@ -145,6 +145,8 @@ class BehaviorGraphRunner:
             return "success" if dist_to_target <= distance else "failure"
         if kind == "bt.parameter_condition":
             return "success" if self._parameter_matches(node) else "failure"
+        if kind == "bt.check_ui_value":
+            return "success" if self._check_ui_value_matches(node, game) else "failure"
         if kind == "bt.chase":
             return self._chase(node, game, dt)
         if kind == "bt.patrol":
@@ -273,6 +275,32 @@ class BehaviorGraphRunner:
             return {">": left > right, ">=": left >= right, "<": left < right, "<=": left <= right}.get(operator, False)
         except (TypeError, ValueError):
             return False
+
+    def _check_ui_value_matches(self, node: Mapping[str, Any], game: Any) -> bool:
+        """Verifica se o valor de um widget da UI atende a uma condição (ex: <= 0)."""
+        element_name = str(self._input(node, "widget", self._input(node, "element", "")))
+        expected = self._number(node, "value", 0.0)
+        operator = str(self._input(node, "operator", "<=")).strip()
+
+        mem_key = (element_name, "ui_value")
+        if mem_key in self._persistent:
+            current = float(self._persistent[mem_key])
+        else:
+            current = 100.0
+            element = game.find(element_name) if hasattr(game, "find") else None
+            if element is not None:
+                if hasattr(element, "value"):
+                    current = float(element.value) if element.value is not None else 100.0
+                elif isinstance(element, dict) and "ui" in element:
+                    current = float((element.get("ui") or {}).get("value", 100.0))
+
+        if operator == "==": return current == expected
+        if operator == "!=": return current != expected
+        if operator == "<=": return current <= expected
+        if operator == "<": return current < expected
+        if operator == ">=": return current >= expected
+        if operator == ">": return current > expected
+        return False
 
     def _is_reactive(self, node: Mapping[str, Any], kind: str) -> bool:
         """

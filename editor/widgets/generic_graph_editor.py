@@ -89,6 +89,7 @@ BT_NODE_GUIDE = {
     "bt.set_ui_visible": {"name": "Definir Visibilidade UI", "summary": "Mostra ou oculta um widget ou Canvas de UI.", "use": "Menus, avisos de interação e elementos condicionais.", "tip": "Marque True para exibir ou False para ocultar."},
     "bt.decrement_ui_value": {"name": "Decrementar Valor UI", "summary": "Subtrai um valor numérico de um texto ou barra da UI.", "use": "Reduzir quantidade de comida, remover moedas, gastar energia e levar dano.", "tip": "Subtrai a quantidade informada do número atual da widget."},
     "bt.increment_ui_value": {"name": "Incrementar Valor UI", "summary": "Soma um valor numérico a um texto ou barra da UI.", "use": "Adicionar comida, coletar moedas, curar HP e somar pontuação.", "tip": "Adiciona a quantidade informada ao número atual da widget."},
+    "bt.check_ui_value": {"name": "Verificar Valor UI", "summary": "Compara o valor numérico atual de uma UI com um limite.", "use": "Verificar se a comida chegou a 0, se o HP acabou ou se atingiu o máximo.", "tip": "Retorna Sucesso se a condição for satisfeita (ex: <= 0)."},
     "bt.destroy_object": {"name": "Destruir Objeto", "summary": "Elimina um objeto da cena em tempo de execução.", "use": "Excluir a comida consumida, remover inimigos derrotados ou coletáveis.", "tip": "Deixe o nome do alvo vazio para destruir este próprio objeto."},
 }
 
