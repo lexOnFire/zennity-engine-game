@@ -235,7 +235,13 @@ class LogicGraphPaletteMixin:
         self._update_validation()
 
     def _add_palette_item(self, item: Any) -> None:
-        raw_data = item.data(0, Qt.UserRole) if hasattr(item, "text") and callable(getattr(item, "text")) and item.text.__code__.co_argcount > 1 else item.data(Qt.UserRole)
+        if isinstance(item, QTreeWidgetItem):
+            raw_data = item.data(0, Qt.UserRole)
+        else:
+            try:
+                raw_data = item.data(Qt.UserRole)
+            except TypeError:
+                raw_data = item.data(0, Qt.UserRole) if hasattr(item, "data") else None
         node_type = str(raw_data) if raw_data else ""
         if not node_type or node_type == "None":
             return

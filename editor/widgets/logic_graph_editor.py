@@ -166,7 +166,7 @@ class LogicGraphEditor(
         self.node_search.textChanged.connect(lambda _text: self._refresh_palette(str(self.category_combo.currentData() or "")))
         self.palette.itemClicked.connect(
             lambda item: getattr(self, "help_dock", None)
-            and self.help_dock.show_node_help(item.text(0) if hasattr(item, "text") and callable(getattr(item, "text")) and item.text.__code__.co_argcount > 1 else (item.text() if hasattr(item, "text") else str(item)))
+            and self.help_dock.show_node_help(item.text(0) if isinstance(item, QTreeWidgetItem) else item.text())
         )
         self.palette.itemDoubleClicked.connect(self._add_palette_item)
         self.recipe_search.textChanged.connect(lambda text: self._refresh_recipes(text))

@@ -119,22 +119,6 @@
         "height": 156.0
       },
       "properties": {}
-    },
-    {
-      "id": "2c99e03e07f44690a3c5a3b54a143749",
-      "type": "event_object_created",
-      "title": "Event Object Created",
-      "category": "Events",
-      "position": [
-        -367.85,
-        -447.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {}
     }
   ],
   "edges": [
