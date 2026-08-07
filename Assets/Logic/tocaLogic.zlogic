@@ -90,7 +90,7 @@
       "title": "Sprite Renderer",
       "category": "Components",
       "position": [
-        -791.66,
+        -789.78,
         384.82
       ],
       "editor": {
@@ -128,7 +128,7 @@
       "title": "Add Component",
       "category": "Math",
       "position": [
-        -545.97,
+        -540.32,
         458.42
       ],
       "editor": {
