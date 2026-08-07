@@ -331,5 +331,166 @@ def test_set_parameter_action():
     assert runtime.get_parameter("alert") == "true"
 
 
+def test_set_ui_text_action():
+    """Set UI Text atualiza texto de widget."""
+    class MockUIWidget:
+        def __init__(self):
+            self.text = "original"
+            self.widget_name = "label"
+
+    class MockGameObject:
+        def __init__(self):
+            self.children = [MockUIWidget()]
+
+    tree = {
+        "format": "zennity.behavior_tree",
+        "version": 1,
+        "start_node": "root",
+        "nodes": {
+            "root": {
+                "type": "bt.set_ui_text",
+                "widget": "label",
+                "text": "updated"
+            }
+        }
+    }
+
+    obj = MockGameObject()
+    runtime = BehaviorTreeRuntime(tree, game_object=obj)
+    status = runtime.update(dt=0.016)
+
+    assert status == BehaviorStatus.SUCCESS
+    assert obj.children[0].text == "updated"
+    assert any(e["type"] == "ui_action_done" for e in runtime.events)
+
+
+def test_set_ui_progress_action():
+    """Set UI Progress atualiza valor de barra."""
+    class MockProgressBar:
+        def __init__(self):
+            self.value = 50.0
+            self.widget_name = "hp_bar"
+
+    class MockGameObject:
+        def __init__(self):
+            self.children = [MockProgressBar()]
+
+    tree = {
+        "format": "zennity.behavior_tree",
+        "version": 1,
+        "start_node": "root",
+        "nodes": {
+            "root": {
+                "type": "bt.set_ui_progress",
+                "widget": "hp_bar",
+                "value": 75.0
+            }
+        }
+    }
+
+    obj = MockGameObject()
+    runtime = BehaviorTreeRuntime(tree, game_object=obj)
+    status = runtime.update(dt=0.016)
+
+    assert status == BehaviorStatus.SUCCESS
+    assert obj.children[0].value == 75.0
+
+
+def test_increment_ui_value():
+    """Increment UI Value soma ao valor numérico."""
+    class MockUILabel:
+        def __init__(self):
+            self.text = "10"
+            self.widget_name = "coins"
+
+    class MockGameObject:
+        def __init__(self):
+            self.children = [MockUILabel()]
+
+    tree = {
+        "format": "zennity.behavior_tree",
+        "version": 1,
+        "start_node": "root",
+        "nodes": {
+            "root": {
+                "type": "bt.increment_ui_value",
+                "widget": "coins",
+                "amount": 5.0
+            }
+        }
+    }
+
+    obj = MockGameObject()
+    runtime = BehaviorTreeRuntime(tree, game_object=obj)
+    status = runtime.update(dt=0.016)
+
+    assert status == BehaviorStatus.SUCCESS
+    assert obj.children[0].text == "15"
+
+
+def test_decrement_ui_value():
+    """Decrement UI Value subtrai do valor numérico."""
+    class MockUILabel:
+        def __init__(self):
+            self.text = "100"
+            self.widget_name = "stamina"
+
+    class MockGameObject:
+        def __init__(self):
+            self.children = [MockUILabel()]
+
+    tree = {
+        "format": "zennity.behavior_tree",
+        "version": 1,
+        "start_node": "root",
+        "nodes": {
+            "root": {
+                "type": "bt.decrement_ui_value",
+                "widget": "stamina",
+                "amount": 25.0
+            }
+        }
+    }
+
+    obj = MockGameObject()
+    runtime = BehaviorTreeRuntime(tree, game_object=obj)
+    status = runtime.update(dt=0.016)
+
+    assert status == BehaviorStatus.SUCCESS
+    assert obj.children[0].text == "75"
+
+
+def test_set_ui_visible():
+    """Set UI Visible controla visibilidade."""
+    class MockUIWidget:
+        def __init__(self):
+            self.visible = True
+            self.widget_name = "menu"
+
+    class MockGameObject:
+        def __init__(self):
+            self.children = [MockUIWidget()]
+
+    tree = {
+        "format": "zennity.behavior_tree",
+        "version": 1,
+        "start_node": "root",
+        "nodes": {
+            "root": {
+                "type": "bt.set_ui_visible",
+                "widget": "menu",
+                "visible": False
+            }
+        }
+    }
+
+    obj = MockGameObject()
+    runtime = BehaviorTreeRuntime(tree, game_object=obj)
+    status = runtime.update(dt=0.016)
+
+    assert status == BehaviorStatus.SUCCESS
+    assert obj.children[0].visible is False
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

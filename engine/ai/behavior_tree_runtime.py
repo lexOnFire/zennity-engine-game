@@ -574,7 +574,6 @@ class BehaviorTreeRuntime:
         """Procura um widget de UI por nome na cena. Tenta múltiplas estratégias:
         1. Se game_object tem método get_ui_widget, usa-o
         2. Procura em objetos filhos por widget_name ou name
-        3. Busca global se game_object tem acesso a cena
         """
         if not widget_name:
             return None
@@ -585,17 +584,13 @@ class BehaviorTreeRuntime:
             if widget is not None:
                 return widget
 
-        # Estratégia 2: procura em componentes filhos
-        if self.game_object and hasattr(self.game_object, "get_child"):
-            children = getattr(self.game_object, "children", [])
-            for child in children:
-                if (getattr(child, "widget_name", None) == widget_name or
-                    getattr(child, "name", None) == widget_name):
-                    return child
-
-        # Estratégia 3: procura em objetos filhos por atributo 'name'
+        # Estratégia 2: procura em objetos filhos por widget_name ou name
         if self.game_object and hasattr(self.game_object, "children"):
             for child in self.game_object.children:
+                # Verifica widget_name (padrão para UI Builder)
+                if getattr(child, "widget_name", None) == widget_name:
+                    return child
+                # Fallback: verifica atributo 'name'
                 if getattr(child, "name", None) == widget_name:
                     return child
 
