@@ -165,6 +165,12 @@ class BehaviorGraphRunner:
             return self._set_ui_value(node, game)
         if kind == "bt.increment_ui_value":
             return self._increment_ui_value(node, game)
+        if kind == "bt.decrement_ui_value":
+            return self._decrement_ui_value(node, game)
+        if kind == "bt.set_ui_progress":
+            return self._set_ui_progress(node, game)
+        if kind == "bt.set_ui_visible":
+            return self._set_ui_visible(node, game)
         if kind == "bt.animate_ui_value":
             return self._animate_ui_value(node_id, node, game, dt)
         return "failure"
@@ -414,31 +420,95 @@ class BehaviorGraphRunner:
 
         return "success"
 
-    def _increment_ui_value(self, node: Mapping[str, Any], game: Any) -> str:
-        """BT action: Incrementa um valor em um elemento UI."""
-        element_name = str(self._input(node, "element", ""))
+    def _decrement_ui_value(self, node: Mapping[str, Any], game: Any) -> str:
+        """BT action: Decrementa um valor em um elemento UI."""
+        element_name = str(self._input(node, "widget", self._input(node, "element", "")))
         amount = self._number(node, "amount", 1.0)
+
+        # Se game suportar viewport logic API (via _send_logic_command ou set_ui_progress)
+        if hasattr(game, "set_ui_progress") or hasattr(game, "_send_logic_command"):
+            # Obter valor atual do elemento na cena se disponível
+            current = 100.0
+            element = game.find(element_name) if hasattr(game, "find") else None
+            if element is not None:
+                if hasattr(element, "get_value"):
+                    current = float(element.get_value())
+                elif hasattr(element, "value"):
+                    current = float(element.value) if element.value is not None else 100.0
+                elif isinstance(element, dict) and "ui" in element:
+                    current = float((element.get("ui") or {}).get("value", 100.0))
+
+            new_val = max(0.0, current - amount)
+
+            if hasattr(game, "_send_logic_command"):
+                game._send_logic_command("set_ui_progress", {"object": element_name, "value": new_val})
+            elif hasattr(game, "set_ui_progress"):
+                game.set_ui_progress(element_name, new_val)
+
+            if element is not None:
+                if hasattr(element, "set_value"):
+                    element.set_value(new_val)
+                elif hasattr(element, "value"):
+                    element.value = new_val
+                elif isinstance(element, dict) and "ui" in element:
+                    element["ui"]["value"] = new_val
+            return "success"
 
         element = game.find(element_name) if hasattr(game, "find") else None
         if element is None:
             return "failure"
 
-        # Incrementa o valor
         current = 0.0
         if hasattr(element, "get_value"):
-            current = element.get_value()
+            current = float(element.get_value())
         elif hasattr(element, "value"):
             current = float(element.value) if element.value is not None else 0.0
 
-        new_value = current + amount
-
+        new_value = max(0.0, current - amount)
         if hasattr(element, "set_value"):
             element.set_value(new_value)
         elif hasattr(element, "value"):
             element.value = new_value
         else:
             return "failure"
+        return "success"
 
+    def _set_ui_progress(self, node: Mapping[str, Any], game: Any) -> str:
+        """BT action: Define valor absoluto de progresso de UI."""
+        element_name = str(self._input(node, "widget", self._input(node, "element", "")))
+        value = self._number(node, "value", 100.0)
+
+        if hasattr(game, "_send_logic_command"):
+            game._send_logic_command("set_ui_progress", {"object": element_name, "value": value})
+        elif hasattr(game, "set_ui_progress"):
+            game.set_ui_progress(element_name, value)
+
+        element = game.find(element_name) if hasattr(game, "find") else None
+        if element is not None:
+            if hasattr(element, "set_value"):
+                element.set_value(value)
+            elif hasattr(element, "value"):
+                element.value = value
+            elif isinstance(element, dict) and "ui" in element:
+                element["ui"]["value"] = value
+        return "success"
+
+    def _set_ui_visible(self, node: Mapping[str, Any], game: Any) -> str:
+        """BT action: Alterna visibilidade da UI."""
+        element_name = str(self._input(node, "widget", self._input(node, "element", "")))
+        visible = bool(self._input(node, "visible", True))
+
+        if hasattr(game, "_send_logic_command"):
+            game._send_logic_command("set_ui_visible", {"object": element_name, "visible": visible})
+
+        element = game.find(element_name) if hasattr(game, "find") else None
+        if element is not None:
+            if hasattr(element, "set_visible"):
+                element.set_visible(visible)
+            elif hasattr(element, "visible"):
+                element.visible = visible
+            elif isinstance(element, dict) and "ui" in element:
+                element["ui"]["visible"] = visible
         return "success"
 
     def _animate_ui_value(self, node_id: str, node: Mapping[str, Any], game: Any, dt: float) -> str:
