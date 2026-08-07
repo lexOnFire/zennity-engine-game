@@ -143,24 +143,6 @@
         "mass": 1.0,
         "gravity_scale": 0.0
       }
-    },
-    {
-      "id": "951022491a2743ef8a57a933a64e4c00",
-      "type": "start_behavior_tree",
-      "title": "Start Behavior Tree",
-      "category": "Action",
-      "position": [
-        166.35,
-        256.71
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 184.0
-      },
-      "properties": {
-        "path": "Assets/Behaviors/patrulha_comida.zbehavior"
-      }
     }
   ],
   "edges": [
@@ -208,15 +190,6 @@
       "to_port": "in",
       "kind": "flow",
       "order": 4
-    },
-    {
-      "id": "e44a6d5b1dba4d70bb52f5c2e40f7a73",
-      "from_node": "b90358cd51064c51b1de54e28a65f2ee",
-      "from_port": "next",
-      "to_node": "951022491a2743ef8a57a933a64e4c00",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 5
     }
   ]
 }

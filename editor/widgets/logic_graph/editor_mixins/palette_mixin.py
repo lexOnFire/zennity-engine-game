@@ -234,8 +234,11 @@ class LogicGraphPaletteMixin:
         self.mark_dirty()
         self._update_validation()
 
-    def _add_palette_item(self, item: QListWidgetItem) -> None:
-        node_type = str(item.data(Qt.UserRole))
+    def _add_palette_item(self, item: Any) -> None:
+        raw_data = item.data(0, Qt.UserRole) if hasattr(item, "text") and callable(getattr(item, "text")) and item.text.__code__.co_argcount > 1 else item.data(Qt.UserRole)
+        node_type = str(raw_data) if raw_data else ""
+        if not node_type or node_type == "None":
+            return
         if node_type in UNIQUE_EVENT_TYPES:
             existing = next(
                 (node_item for node_item in self.node_items.values() if node_item.node.get("type") == node_type),

@@ -24,8 +24,8 @@
       "title": "Event Update",
       "category": "Events",
       "position": [
-        -825.58,
-        -74.47
+        -884.18,
+        -182.52
       ],
       "editor": {
         "collapsed": true,
@@ -40,8 +40,8 @@
       "title": "Cooldown",
       "category": "Logic",
       "position": [
-        -463.93,
-        -153.62
+        -623.26,
+        -182.92
       ],
       "editor": {
         "collapsed": true,
@@ -58,8 +58,8 @@
       "title": "Create Object",
       "category": "Spawning",
       "position": [
-        -228.11,
-        -166.04
+        -343.49,
+        -188.02
       ],
       "editor": {
         "collapsed": true,
@@ -90,11 +90,11 @@
       "title": "Sprite Renderer",
       "category": "Components",
       "position": [
-        -455.44,
-        -69.65
+        -371.2,
+        -87.96
       ],
       "editor": {
-        "collapsed": false,
+        "collapsed": true,
         "width": 220.0,
         "height": 156.0
       },
@@ -115,6 +115,22 @@
       ],
       "editor": {
         "collapsed": true,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "2c99e03e07f44690a3c5a3b54a143749",
+      "type": "event_object_created",
+      "title": "Event Object Created",
+      "category": "Events",
+      "position": [
+        -367.85,
+        -447.0
+      ],
+      "editor": {
+        "collapsed": false,
         "width": 220.0,
         "height": 156.0
       },
