@@ -60,7 +60,14 @@ class HierarchyController:
                     h._group_objects(selected_names)
                     return
             orig_key_press(event)
-        h.hierarchy_tree.keyPressEvent = hierarchy_key_press
+        # Sobrescrever dropEvent da árvore de hierarquia para atualizar a fonte da verdade (_scene_snapshot)
+        orig_drop_event = h.hierarchy_tree.dropEvent
+
+        def hierarchy_drop_event(event) -> None:
+            orig_drop_event(event)
+            self.sync_tree_to_scene()
+
+        h.hierarchy_tree.dropEvent = hierarchy_drop_event
 
         self._connected = True
         return True
@@ -133,6 +140,48 @@ class HierarchyController:
 
     def refresh(self, *, force: bool = False) -> bool:
         return self.renderer.refresh(force=force)
+
+    def sync_tree_to_scene(self) -> None:
+        """Lê a hierarquia e ordem atual do QTreeWidget e atualiza _scene_snapshot."""
+        h = self.host
+        root = h.hierarchy_tree.topLevelItem(0)
+        if root is None:
+            return
+
+        new_snapshot: list[dict[str, Any]] = []
+
+        def _traverse(parent_item: QTreeWidgetItem, parent_name: str | None) -> None:
+            for i in range(parent_item.childCount()):
+                child_item = parent_item.child(i)
+                child_name = self.item_name(child_item)
+                if not child_name or child_name not in h._objects_by_name:
+                    # Se for o item de grupo do runtime, ignora
+                    if child_item.data(0, Qt.UserRole + 1) in ("runtime-group", "runtime-object"):
+                        continue
+                    continue
+                obj = h._objects_by_name[child_name]
+                obj["parent"] = parent_name
+                # Se o objeto tiver filhos no QTreeWidget, limpa e re-preenche a lista children
+                obj["children"] = []
+                new_snapshot.append(obj)
+                _traverse(child_item, child_name)
+
+        _traverse(root, None)
+
+        # Atualizar a lista de filhos (children) dos pais
+        for obj in new_snapshot:
+            p_name = obj.get("parent")
+            if p_name and p_name in h._objects_by_name:
+                parent_obj = h._objects_by_name[p_name]
+                if "children" not in parent_obj:
+                    parent_obj["children"] = []
+                if obj not in parent_obj["children"]:
+                    parent_obj["children"].append(obj)
+
+        h._scene_snapshot = new_snapshot
+        self.renderer.invalidate()
+        if hasattr(h, "_record_history"):
+            h._record_history()
 
     def item_name(self, item: QTreeWidgetItem | None) -> str:
         return self.renderer.item_name(item)
