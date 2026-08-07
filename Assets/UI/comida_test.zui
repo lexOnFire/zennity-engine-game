@@ -11,44 +11,15 @@
     "visible": true,
     "children": [
       {
-        "name": "Container_1",
-        "type": "UIContainer",
-        "x": 90.0,
-        "y": 43.0,
-        "width": 149.0,
-        "height": 83.0,
+        "name": "comida",
+        "type": "UIProgressBar",
+        "x": 105.0,
+        "y": 13.0,
+        "width": 40.0,
+        "height": 10.0,
         "visible": true,
-        "children": [
-          {
-            "name": "nome",
-            "type": "UILabel",
-            "x": 103.0,
-            "y": 3.0,
-            "width": 100.0,
-            "height": 40.0,
-            "visible": true,
-            "children": [],
-            "text": "comida",
-            "font_size": 14,
-            "text_color": "#FFFFFF",
-            "render_mode": "World Space"
-          },
-          {
-            "name": "quantidade",
-            "type": "UILabel",
-            "x": 103.0,
-            "y": 65.0,
-            "width": 87.0,
-            "height": 40.0,
-            "visible": true,
-            "children": [],
-            "text": "999,00",
-            "font_size": 14,
-            "text_color": "#FFFFFF",
-            "render_mode": "World Space"
-          }
-        ],
-        "layout_mode": "Vertical",
+        "children": [],
+        "bg_color": "#1C2330",
         "render_mode": "World Space"
       }
     ],

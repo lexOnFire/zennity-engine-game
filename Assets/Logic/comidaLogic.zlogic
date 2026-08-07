@@ -65,36 +65,9 @@
         "height": 150.0
       },
       "properties": {}
-    },
-    {
-      "id": "7dc9c0db0e5246d9916bcde1e383ac3c",
-      "type": "set_hud",
-      "title": "Set Hud",
-      "category": "UI",
-      "position": [
-        5.73,
-        -49.92
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {
-        "text": ""
-      }
     }
   ],
   "edges": [
-    {
-      "id": "856a577d04474464ba0f8e7b2feeb71e",
-      "from_node": "8da655aaec5949e6b759d1be3accd5f6",
-      "from_port": "next",
-      "to_node": "7dc9c0db0e5246d9916bcde1e383ac3c",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 0
-    },
     {
       "id": "9d5a623a9d724851867503e9b5e30710",
       "from_node": "264637f4686f4daba58251c120355ccb",
@@ -103,15 +76,6 @@
       "to_port": "value",
       "kind": "number",
       "order": 1
-    },
-    {
-      "id": "c11befb4940a48f28578678e3b8f14ef",
-      "from_node": "dab1c322cb96429da64172a230f6f5d0",
-      "from_port": "value",
-      "to_node": "7dc9c0db0e5246d9916bcde1e383ac3c",
-      "to_port": "text",
-      "kind": "text",
-      "order": 2
     }
   ]
 }

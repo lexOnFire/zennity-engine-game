@@ -1,0 +1,69 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "Ui_comidaLogic",
+  "target": {
+    "type": "name",
+    "value": "Ui_comida"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "b012ed7758454b6b9afd28669b9cc083",
+      "type": "event_start",
+      "title": "Event Start",
+      "category": "Events",
+      "position": [
+        -348.19,
+        94.65
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "5f719b74081f4539b0cc78c81c68c0af",
+      "type": "add_box_collider",
+      "title": "Box Collider",
+      "category": "Components",
+      "position": [
+        -50.05,
+        148.75
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "width": 32.0,
+        "height": 32.0,
+        "is_trigger": true
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e59b91fae91541c2b9e4e827b2ae4d8b",
+      "from_node": "b012ed7758454b6b9afd28669b9cc083",
+      "from_port": "next",
+      "to_node": "5f719b74081f4539b0cc78c81c68c0af",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    }
+  ]
+}

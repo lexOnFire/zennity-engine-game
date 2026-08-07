@@ -126,6 +126,8 @@ class NativeUIRenderer:
         if kind is not None and bool(widget.get("visible", True)):
             color = widget.get("text_color") or widget.get("color") or [255, 255, 255]
             ui_dict = {
+                "name": str(widget.get("name", "")),
+                "widget_name": str(widget.get("name", widget.get("widget_name", ""))),
                 "type": kind,
                 "visible": bool(widget.get("visible", True)),
                 "x": float(widget.get("x", 0.0)),
@@ -133,6 +135,8 @@ class NativeUIRenderer:
                 "width": float(widget.get("width", 100.0)),
                 "height": float(widget.get("height", 40.0)),
                 "text": str(widget.get("text", "")),
+                "value": float(widget.get("value", 100.0)),
+                "max_value": float(widget.get("max_value", 100.0)),
                 "font_size": int(widget.get("font_size", 24)),
                 "color": color,
                 "path": str(widget.get("texture_path", widget.get("path", ""))),
@@ -172,10 +176,14 @@ class NativeUIRenderer:
         result = []
         # Carrega elementos vindos de arquivos .zui vinculados ao Canvas
         for canvas_obj in canvas_objs:
-            c_ui = normalize_ui(canvas_obj.get("ui")) or {}
+            c_ui = canvas_obj.get("ui") or {}
             layout_path = str(c_ui.get("layout_path", "")).strip()
+            overrides = c_ui.get("_widget_overrides", {})
             if layout_path:
                 for item_ui in self._load_zui_layout(layout_path):
+                    w_name = item_ui.get("name") or item_ui.get("widget_name")
+                    if w_name in overrides:
+                        item_ui.update(overrides[w_name])
                     result.append((canvas_obj, item_ui))
 
         # Adiciona demais componentes isolados da cena

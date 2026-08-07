@@ -139,16 +139,44 @@ class ViewportSessionOrchestrator:
             elif command == "remove_hud":
                 self.hud_entries.remove_entry(str(value))
             elif command == "set_ui_text" and isinstance(value, dict):
-                target = self.objects.get(str(value.get("object", "")))
+                obj_name = str(value.get("object", "")).strip()
+                text_val = str(value.get("text", ""))
+                # Tenta primeiro como nome direto de objeto na cena
+                target = self.objects.get(obj_name)
                 ui = target.get("ui") if isinstance(target, dict) else None
                 if isinstance(ui, dict) and ui.get("type") in {"text", "button"}:
-                    ui["text"] = str(value.get("text", ""))
+                    ui["text"] = text_val
+                # Suporta encontrar o widget por nome dentro de layouts .zui
+                for scene_obj in self.objects.values():
+                    if not isinstance(scene_obj, dict):
+                        continue
+                    c_ui = scene_obj.get("ui")
+                    if isinstance(c_ui, dict) and c_ui.get("type") == "canvas":
+                        # Armazena overrides dinâmicos do canvas
+                        overrides = c_ui.setdefault("_widget_overrides", {})
+                        w_override = overrides.setdefault(obj_name, {})
+                        w_override["text"] = text_val
             elif command == "set_ui_progress" and isinstance(value, dict):
-                target = self.objects.get(str(value.get("object", "")))
+                obj_name = str(value.get("object", "")).strip()
+                val_num = float(value.get("value", 0.0))
+                max_num = max(0.0001, float(value.get("max_value", 100.0)))
+                # Tenta primeiro como nome direto de objeto na cena
+                target = self.objects.get(obj_name)
                 ui = target.get("ui") if isinstance(target, dict) else None
                 if isinstance(ui, dict) and ui.get("type") == "progress_bar":
-                    ui["value"] = float(value.get("value", 0.0))
-                    ui["max_value"] = max(0.0001, float(value.get("max_value", 100.0)))
+                    ui["value"] = val_num
+                    ui["max_value"] = max_num
+                # Suporta encontrar o widget por nome dentro de layouts .zui
+                for scene_obj in self.objects.values():
+                    if not isinstance(scene_obj, dict):
+                        continue
+                    c_ui = scene_obj.get("ui")
+                    if isinstance(c_ui, dict) and c_ui.get("type") == "canvas":
+                        # Armazena overrides dinâmicos do canvas
+                        overrides = c_ui.setdefault("_widget_overrides", {})
+                        w_override = overrides.setdefault(obj_name, {})
+                        w_override["value"] = val_num
+                        w_override["max_value"] = max_num
             elif command == "restart_scene":
                 restart = True
             elif command:
