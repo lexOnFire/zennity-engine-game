@@ -571,9 +571,11 @@ class BehaviorTreeRuntime:
         return BehaviorStatus.SUCCESS
 
     def _find_ui_widget(self, widget_name: str) -> Any:
-        """Procura um widget de UI por nome na cena. Tenta múltiplas estratégias:
+        """Procura um widget de UI por nome. Tenta múltiplas estratégias:
         1. Se game_object tem método get_ui_widget, usa-o
-        2. Procura em objetos filhos por widget_name ou name
+        2. Procura em objetos filhos do game_object
+        3. Procura recursivamente em objetos da cena (fallback global)
+        4. Usa scene_widgets se disponível (para acesso global)
         """
         if not widget_name:
             return None
@@ -593,6 +595,42 @@ class BehaviorTreeRuntime:
                 # Fallback: verifica atributo 'name'
                 if getattr(child, "name", None) == widget_name:
                     return child
+
+        # Estratégia 3: acesso global a widgets da cena (se disponível)
+        if self.game_object and hasattr(self.game_object, "scene"):
+            scene = self.game_object.scene
+            if hasattr(scene, "find_widget"):
+                widget = scene.find_widget(widget_name)
+                if widget is not None:
+                    return widget
+            # Procura recursivamente em todos os objetos da cena
+            if hasattr(scene, "objects"):
+                widget = self._search_widget_in_objects(scene.objects, widget_name)
+                if widget is not None:
+                    return widget
+
+        return None
+
+    def _search_widget_in_objects(self, objects: Any, widget_name: str) -> Any:
+        """Procura recursivamente um widget em uma coleção de objetos."""
+        if isinstance(objects, dict):
+            objects = objects.values()
+        elif not isinstance(objects, (list, tuple)):
+            return None
+
+        for obj in objects:
+            if not isinstance(obj, dict):
+                continue
+
+            # Verifica no objeto
+            if obj.get("name") == widget_name:
+                return obj
+
+            # Procura em children recursivamente
+            for child in obj.get("children", []):
+                result = self._search_widget_in_objects([child], widget_name)
+                if result is not None:
+                    return result
 
         return None
 
