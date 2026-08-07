@@ -80,6 +80,7 @@ class ViewportSessionOrchestrator:
                 behavior = obj.get("behavior")
                 if isinstance(behavior, dict):
                     behavior["parameters"] = dict(runner.parameters)
+                self._apply_logic_instructions(name, obj)
                 if changed:
                     def _get_node_label(node_id: str) -> str:
                         if hasattr(runner, "nodes") and node_id in runner.nodes:
