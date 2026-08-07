@@ -66,7 +66,7 @@ class GraphScene(QGraphicsScene):
         
         # Salva conexões existentes
         saved_edges = [
-            (e.source_node, e.source_port, e.target_node, e.target_port, e.edge_type)
+            (e.source_node, e.source_port, e.target_node, e.target_port, e.data_type, getattr(e, "target_data_type", "any"))
             for e in list(self.edges.values())
             if e.source_node == node_id or e.target_node == node_id
         ]
@@ -80,8 +80,21 @@ class GraphScene(QGraphicsScene):
         self.add_node(new_node)
         
         # Restaura conexões compatíveis
-        for s_node, s_port, t_node, t_port, e_type in saved_edges:
-            self.create_edge(s_node, s_port, t_node, t_port, e_type)
+        for s_node, s_port, t_node, t_port, d_type, td_type in saved_edges:
+            s_n = self.nodes.get(s_node)
+            t_n = self.nodes.get(t_node)
+            if s_n and t_n and s_port in s_n.output_ports and t_port in t_n.input_ports:
+                edge_id = str(uuid.uuid4())
+                edge = GraphEdgeItem(
+                    edge_id=edge_id,
+                    source_port=s_port,
+                    target_port=t_port,
+                    source_node=s_node,
+                    target_node=t_node,
+                    data_type=d_type,
+                    target_data_type=td_type,
+                )
+                self.add_edge(edge)
 
     # ── Edge Management ───────────────────────────────────────────────────────
     def add_edge(self, edge_item: GraphEdgeItem) -> None:
