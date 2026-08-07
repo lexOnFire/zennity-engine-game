@@ -46,6 +46,7 @@ def format_readable_title(raw: str, node_id: str) -> str:
         "bt.set_ui_visible": "Definir Visibilidade UI",
         "bt.decrement_ui_value": "Decrementar Valor UI",
         "bt.increment_ui_value": "Incrementar Valor UI",
+        "bt.destroy_object": "Destruir Objeto",
     }
     return titles.get(node_id, titles.get(raw, node_id.replace("bt.", "").replace("_", " ").title()))
 

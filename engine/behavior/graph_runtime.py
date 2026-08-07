@@ -171,6 +171,8 @@ class BehaviorGraphRunner:
             return self._set_ui_progress(node, game)
         if kind == "bt.set_ui_visible":
             return self._set_ui_visible(node, game)
+        if kind == "bt.destroy_object":
+            return self._destroy_object(node, game)
         if kind == "bt.animate_ui_value":
             return self._animate_ui_value(node_id, node, game, dt)
         return "failure"
@@ -484,6 +486,26 @@ class BehaviorGraphRunner:
             elif isinstance(element, dict) and "ui" in element:
                 element["ui"]["visible"] = visible
         return "success"
+
+    def _destroy_object(self, node: Mapping[str, Any], game: Any) -> str:
+        """BT action: Destrói um objeto alvo pelo nome ou o próprio objeto executor."""
+        target_name = str(self._input(node, "target", "")).strip()
+
+        if target_name:
+            if hasattr(game, "find"):
+                target = game.find(target_name)
+                if target is not None and hasattr(target, "destroy"):
+                    target.destroy()
+                    return "success"
+            if hasattr(game, "destroy_object"):
+                game.destroy_object(target_name)
+                return "success"
+        else:
+            if hasattr(game, "destroy"):
+                game.destroy()
+                return "success"
+
+        return "failure"
 
     def _animate_ui_value(self, node_id: str, node: Mapping[str, Any], game: Any, dt: float) -> str:
         """BT action: Anima um valor em um elemento UI com transição suave."""

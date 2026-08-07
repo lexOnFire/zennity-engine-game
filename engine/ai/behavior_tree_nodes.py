@@ -490,6 +490,23 @@ class BTIncrementUIValueNode:
     )
 
 
+class BTDestroyObjectNode:
+    """Destrói um objeto do jogo ou o próprio objeto executor."""
+
+    __node_definition__ = NodeDefinition(
+        id="bt.destroy_object",
+        title_key="Destruir Objeto",
+        category_key="Behavior Tree/Action",
+        description_key="Destrói um objeto pelo nome ou o próprio objeto se deixado em branco.",
+        inputs=[
+            PinDefinition(id="in", label_key="In", pin_type=PinType.EXEC),
+            PinDefinition(id="target", label_key="Alvo (Nome)", pin_type=PinType.STRING, default_value="Food")
+        ],
+        outputs=[PinDefinition(id="out", label_key="Próximo", pin_type=PinType.EXEC)],
+        tags=["destruir", "remover", "excluir", "objeto", "eliminar"],
+    )
+
+
 class BTLogNode:
     """Imprime mensagem no console (para debug).
 
