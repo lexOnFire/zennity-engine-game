@@ -185,43 +185,84 @@ class NativeUIRenderer:
                 result.append((obj, ui))
         return sorted(result, key=lambda pair: int(pair[1].get("z_order", 0)))
 
-    def draw(self, objects: Any, screen: pygame.Surface) -> None:
-        for _obj, ui in self.components(objects):
+    def draw(self, objects: Any, screen: pygame.Surface, world_to_screen: Callable[[float, float], tuple[float, float]] | None = None) -> None:
+        objs_dict = self._values_dict(objects)
+        for obj, ui in self.components(objects):
             kind = ui["type"]
             if kind == "text":
-                self._draw_text(ui, screen)
+                self._draw_text(ui, screen, obj, world_to_screen, objs_dict)
             elif kind == "image":
-                self._draw_image(ui, screen)
+                self._draw_image(ui, screen, obj, world_to_screen, objs_dict)
             elif kind == "button":
-                self._draw_button(ui, screen)
+                self._draw_button(ui, screen, obj, world_to_screen, objs_dict)
             elif kind == "progress_bar":
-                self._draw_progress_bar(ui, screen)
+                self._draw_progress_bar(ui, screen, obj, world_to_screen, objs_dict)
 
-    def button_at(self, objects: Any, position: tuple[int, int]) -> tuple[dict[str, Any], dict[str, Any]] | None:
+    def _values_dict(self, objects: Any) -> dict[str, dict[str, Any]]:
+        if isinstance(objects, dict):
+            return objects
+        if isinstance(objects, list):
+            return {str(obj.get("name", "")): obj for obj in objects if isinstance(obj, dict)}
+        return {}
+
+    def button_at(self, objects: Any, position: tuple[int, int], world_to_screen: Callable[[float, float], tuple[float, float]] | None = None) -> tuple[dict[str, Any], dict[str, Any]] | None:
+        objs_dict = self._values_dict(objects)
         for obj, ui in reversed(self.components(objects)):
             if ui["type"] != "button" or not bool(ui.get("interactable", True)):
                 continue
-            if self._rect(ui).collidepoint(position):
+            if self._rect(ui, screen=None, obj=obj, world_to_screen=world_to_screen, objects=objs_dict).collidepoint(position):
                 return obj, ui
         return None
 
     @staticmethod
-    def _rect(ui: dict[str, Any], screen: pygame.Surface | None = None) -> pygame.Rect:
+    def _rect(
+        ui: dict[str, Any],
+        screen: pygame.Surface | None = None,
+        obj: dict[str, Any] | None = None,
+        world_to_screen: Callable[[float, float], tuple[float, float]] | None = None,
+        objects: dict[str, dict[str, Any]] | None = None,
+    ) -> pygame.Rect:
         width = max(1, int(ui.get("width", 1)))
         height = max(1, int(ui.get("height", 1)))
-        x, y = int(ui.get("x", 0)), int(ui.get("y", 0))
-        if screen is not None:
-            screen_width, screen_height = screen.get_size()
-            anchor = str(ui.get("anchor", "")).strip().lower().replace("-", "_")
-            margin_x, margin_y = int(ui.get("margin_x", 16)), int(ui.get("margin_y", 16))
-            if anchor in {"top_right", "bottom_right"}:
-                x = screen_width - width - margin_x
-            elif anchor in {"top_left", "bottom_left"}:
-                x = margin_x
-            if anchor in {"bottom_left", "bottom_right"}:
-                y = screen_height - height - margin_y
-            elif anchor in {"top_left", "top_right"}:
-                y = margin_y
+        offset_x, offset_y = float(ui.get("x", 0)), float(ui.get("y", 0))
+
+        # Verificar se o Canvas pai ou a própria UI especifica World Space
+        canvas_ui = normalize_ui(obj.get("ui")) if obj else None
+        render_mode = str((canvas_ui or {}).get("render_mode", ui.get("render_mode", "Screen Space")))
+        is_world_space = render_mode.lower() == "world space" or (obj is not None and "x" in obj and "y" in obj and render_mode.lower() != "screen space")
+
+        if is_world_space and obj is not None and world_to_screen is not None:
+            # Calcular a posição acumulada no mundo de toda a cadeia de pais
+            parent_x, parent_y = float(obj.get("x", 0.0)), float(obj.get("y", 0.0))
+            current = obj
+            visited = set()
+            while current and current.get("parent"):
+                p_name = current["parent"]
+                if p_name in visited or p_name not in objects:
+                    break
+                visited.add(p_name)
+                current = objects[p_name]
+                parent_x += float(current.get("x", 0.0))
+                parent_y += float(current.get("y", 0.0))
+
+            world_x = parent_x + offset_x
+            world_y = parent_y + offset_y
+            screen_x, screen_y = world_to_screen(world_x, world_y)
+            x, y = int(screen_x), int(screen_y)
+        else:
+            x, y = int(offset_x), int(offset_y)
+            if screen is not None:
+                screen_width, screen_height = screen.get_size()
+                anchor = str(ui.get("anchor", "")).strip().lower().replace("-", "_")
+                margin_x, margin_y = int(ui.get("margin_x", 16)), int(ui.get("margin_y", 16))
+                if anchor in {"top_right", "bottom_right"}:
+                    x = screen_width - width - margin_x
+                elif anchor in {"top_left", "bottom_left"}:
+                    x = margin_x
+                if anchor in {"bottom_left", "bottom_right"}:
+                    y = screen_height - height - margin_y
+                elif anchor in {"top_left", "top_right"}:
+                    y = margin_y
         return pygame.Rect(x, y, width, height)
 
     def _font(self, size: int, bold: bool = False) -> pygame.font.Font:
@@ -245,13 +286,13 @@ class NativeUIRenderer:
             pass
         return fallback
 
-    def _draw_text(self, ui: dict[str, Any], screen: pygame.Surface) -> None:
+    def _draw_text(self, ui: dict[str, Any], screen: pygame.Surface, obj: dict[str, Any] | None = None, world_to_screen: Callable[[float, float], tuple[float, float]] | None = None, objects: dict[str, dict[str, Any]] | None = None) -> None:
         color = self._parse_color(ui.get("color"), (255, 255, 255))
         surface = self._font(int(ui.get("font_size", 24))).render(str(ui.get("text", "")), True, color)
-        screen.blit(surface, self._rect(ui, screen).topleft)
+        screen.blit(surface, self._rect(ui, screen, obj=obj, world_to_screen=world_to_screen, objects=objects).topleft)
 
-    def _draw_image(self, ui: dict[str, Any], screen: pygame.Surface) -> None:
-        rect = self._rect(ui, screen)
+    def _draw_image(self, ui: dict[str, Any], screen: pygame.Surface, obj: dict[str, Any] | None = None, world_to_screen: Callable[[float, float], tuple[float, float]] | None = None, objects: dict[str, dict[str, Any]] | None = None) -> None:
+        rect = self._rect(ui, screen, obj=obj, world_to_screen=world_to_screen, objects=objects)
         path_text = str(ui.get("path", ""))
         surface = self._load_image(path_text) if path_text else None
         if surface is None:
@@ -266,8 +307,8 @@ class NativeUIRenderer:
                 surface.set_alpha(max(0, min(255, int(ui["alpha"]))))
         screen.blit(surface, rect.topleft)
 
-    def _draw_button(self, ui: dict[str, Any], screen: pygame.Surface) -> None:
-        rect = self._rect(ui, screen)
+    def _draw_button(self, ui: dict[str, Any], screen: pygame.Surface, obj: dict[str, Any] | None = None, world_to_screen: Callable[[float, float], tuple[float, float]] | None = None, objects: dict[str, dict[str, Any]] | None = None) -> None:
+        rect = self._rect(ui, screen, obj=obj, world_to_screen=world_to_screen, objects=objects)
         enabled = bool(ui.get("interactable", True))
         pygame.draw.rect(screen, (56, 91, 155) if enabled else (60, 60, 65), rect, border_radius=6)
         pygame.draw.rect(screen, (115, 151, 216) if enabled else (90, 90, 95), rect, 1, border_radius=6)
@@ -277,8 +318,8 @@ class NativeUIRenderer:
         )
         screen.blit(text, (rect.centerx - text.get_width() // 2, rect.centery - text.get_height() // 2))
 
-    def _draw_progress_bar(self, ui: dict[str, Any], screen: pygame.Surface) -> None:
-        rect = self._rect(ui, screen)
+    def _draw_progress_bar(self, ui: dict[str, Any], screen: pygame.Surface, obj: dict[str, Any] | None = None, world_to_screen: Callable[[float, float], tuple[float, float]] | None = None, objects: dict[str, dict[str, Any]] | None = None) -> None:
+        rect = self._rect(ui, screen, obj=obj, world_to_screen=world_to_screen, objects=objects)
         maximum = max(0.0001, float(ui.get("max_value", 100.0)))
         ratio = max(0.0, min(1.0, float(ui.get("value", maximum)) / maximum))
         bg_color = self._parse_color(ui.get("bg_color"), (28, 35, 48))

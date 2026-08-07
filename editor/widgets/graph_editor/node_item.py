@@ -41,6 +41,11 @@ def format_readable_title(raw: str, node_id: str) -> str:
         "bt.patrol": "Patrulhar",
         "bt.attack": "Atacar Alvo",
         "bt.play_animation": "Reproduzir Animação",
+        "bt.set_ui_text": "Definir Texto UI",
+        "bt.set_ui_progress": "Definir Progresso UI",
+        "bt.set_ui_visible": "Definir Visibilidade UI",
+        "bt.decrement_ui_value": "Decrementar Valor UI",
+        "bt.increment_ui_value": "Incrementar Valor UI",
     }
     return titles.get(node_id, titles.get(raw, node_id.replace("bt.", "").replace("_", " ").title()))
 

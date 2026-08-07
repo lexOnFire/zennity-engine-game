@@ -117,7 +117,8 @@ class IsolatedInspectorController(InspectorControllerUIMediaMixin):
         self._bind(h.ui_image_button.clicked, h._choose_ui_image)
         self._bind(h.ui_interactable_field.toggled, lambda _value: h._send_inspector_ui())
         self._bind(h.ui_event_field.editingFinished, h._send_inspector_ui)
-        self._bind(h.ui_target_combo.currentTextChanged, lambda _value: h._send_inspector_ui())
+        if hasattr(h, "ui_render_mode_combo"):
+            self._bind(h.ui_render_mode_combo.currentTextChanged, lambda _value: h._send_inspector_ui())
         self._bind(h.btn_collapse_logic.clicked, lambda: h._toggle_inspector_card("logic"))
         self._bind(h.btn_collapse_runtime.clicked, lambda: h._toggle_inspector_card("runtime"))
         self._bind(h.btn_delete_logic.clicked, h._logic_workspace_controller.remove_all)

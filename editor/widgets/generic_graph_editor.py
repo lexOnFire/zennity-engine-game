@@ -84,6 +84,11 @@ BT_NODE_GUIDE = {
     "bt.patrol": {"name": "Patrulhar", "summary": "Alterna continuamente entre dois pontos.", "use": "Guardas, plataformas móveis e NPCs em ronda.", "tip": "Informe os pontos como x,y no Inspector."},
     "bt.attack": {"name": "Atacar alvo", "summary": "Aplica dano ao alvo quando ele está no alcance.", "use": "Combate corpo a corpo e perigos por contato.", "tip": "Combine com Cooldown para evitar dano a cada frame."},
     "bt.play_animation": {"name": "Reproduzir animação", "summary": "Ativa um estado ou clip no Animator.", "use": "Sincronizar Idle, Walk, Attack e outras respostas visuais.", "tip": "O nome deve corresponder ao estado configurado no Animator."},
+    "bt.set_ui_text": {"name": "Definir Texto UI", "summary": "Altera o texto de um widget da UI ou Canvas.", "use": "Placares, quantidade de comida, barras de vida e diálogos.", "tip": "Informe o nome da widget configurada no UI Builder."},
+    "bt.set_ui_progress": {"name": "Definir Progresso UI", "summary": "Altera o valor de uma barra de progresso da UI.", "use": "Barras de HP, mana, energia e carregamento.", "tip": "Conecte um valor entre 0 e o valor máximo."},
+    "bt.set_ui_visible": {"name": "Definir Visibilidade UI", "summary": "Mostra ou oculta um widget ou Canvas de UI.", "use": "Menus, avisos de interação e elementos condicionais.", "tip": "Marque True para exibir ou False para ocultar."},
+    "bt.decrement_ui_value": {"name": "Decrementar Valor UI", "summary": "Subtrai um valor numérico de um texto ou barra da UI.", "use": "Reduzir quantidade de comida, remover moedas, gastar energia e levar dano.", "tip": "Subtrai a quantidade informada do número atual da widget."},
+    "bt.increment_ui_value": {"name": "Incrementar Valor UI", "summary": "Soma um valor numérico a um texto ou barra da UI.", "use": "Adicionar comida, coletar moedas, curar HP e somar pontuação.", "tip": "Adiciona a quantidade informada ao número atual da widget."},
 }
 
 BT_CATEGORY_LABELS = {

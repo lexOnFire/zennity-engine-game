@@ -239,6 +239,11 @@ class InspectorViewRenderer:
             h.ui_layout_path_field.setText(str(ui.get("layout_path", "")))
             h.ui_layout_path_field.setEnabled(kind == "canvas")
             h.ui_layout_button.setEnabled(kind == "canvas")
+        if hasattr(h, "ui_render_mode_combo"):
+            h.ui_render_mode_combo.blockSignals(True)
+            h.ui_render_mode_combo.setCurrentText(str(ui.get("render_mode", "Screen Space")))
+            h.ui_render_mode_combo.setEnabled(kind == "canvas")
+            h.ui_render_mode_combo.blockSignals(False)
         h.ui_image_path_field.setText(str(ui.get("path", "")))
         h.ui_image_path_field.setEnabled(kind == "image")
         h.ui_image_button.setEnabled(kind == "image")

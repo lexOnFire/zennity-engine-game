@@ -87,6 +87,10 @@ def build_native_ui_component(window, main_layout) -> None:
     ui_layout_box.addWidget(window.ui_layout_button)
     window.ui_component_form.addRow("Layout (.zui)", ui_layout_row)
 
+    window.ui_render_mode_combo = QComboBox()
+    window.ui_render_mode_combo.addItems(["Screen Space", "World Space"])
+    window.ui_component_form.addRow("Render Mode", window.ui_render_mode_combo)
+
     ui_image_row = QWidget()
     ui_image_layout = QHBoxLayout(ui_image_row)
     ui_image_layout.setContentsMargins(0, 0, 0, 0)

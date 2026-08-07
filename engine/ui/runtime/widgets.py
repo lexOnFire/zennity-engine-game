@@ -38,7 +38,7 @@ class UIWidget:
         }
         for key in (
             "bg_color", "text", "hover_color", "font_size", "text_color",
-            "texture_path", "scroll_y", "placeholder", "layout_mode",
+            "texture_path", "scroll_y", "placeholder", "layout_mode", "render_mode",
         ):
             if hasattr(self, key):
                 data[key] = getattr(self, key)
@@ -52,6 +52,7 @@ class RuntimeUICanvas(UIWidget):
         super().__init__(name)
         self.width = 1920.0
         self.height = 1080.0
+        self.render_mode = "Screen Space"
 
     widget_type = "UICanvas"
 
@@ -134,7 +135,7 @@ def widget_from_dict(data: dict[str, Any]) -> UIWidget:
     for key in (
         "x", "y", "width", "height", "visible", "bg_color", "text",
         "hover_color", "font_size", "text_color", "texture_path",
-        "scroll_y", "placeholder", "layout_mode",
+        "scroll_y", "placeholder", "layout_mode", "render_mode",
     ):
         if key in data and hasattr(widget, key):
             setattr(widget, key, data[key])

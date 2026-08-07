@@ -148,7 +148,7 @@ class ViewportSessionLifecycleMixin:
             overlay_renderer=self.overlay_renderer,
         )
         if self.view_mode == "game":
-            self.native_ui.draw(self.objects, self.screen)
+            self.native_ui.draw(self.objects, self.screen, world_to_screen=self.world_to_screen)
         if self.playing and self.hud_entries:
             self.overlay_renderer.draw_hud(self.screen, self.hud_entries, width, height)
         self.pygame.display.flip()

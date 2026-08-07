@@ -484,6 +484,31 @@ class BehaviorTreeRuntime:
             value = node.get("value", "")
             return self._tick_set_parameter(node_id, parameter, value, dt)
 
+        if node_type == "bt.set_ui_text":
+            widget = str(node.get("widget", "quantidade"))
+            text = str(node.get("text", "100"))
+            return self._tick_set_ui_text(node_id, widget, text, dt)
+
+        if node_type == "bt.set_ui_progress":
+            widget = str(node.get("widget", "hp_bar"))
+            value = float(node.get("value", 100.0))
+            return self._tick_set_ui_progress(node_id, widget, value, dt)
+
+        if node_type == "bt.set_ui_visible":
+            widget = str(node.get("widget", "Ui_comida"))
+            visible = bool(node.get("visible", True))
+            return self._tick_set_ui_visible(node_id, widget, visible, dt)
+
+        if node_type == "bt.decrement_ui_value":
+            widget = str(node.get("widget", "quantidade"))
+            amount = float(node.get("amount", 1.0))
+            return self._tick_decrement_ui_value(node_id, widget, amount, dt)
+
+        if node_type == "bt.increment_ui_value":
+            widget = str(node.get("widget", "quantidade"))
+            amount = float(node.get("amount", 1.0))
+            return self._tick_increment_ui_value(node_id, widget, amount, dt)
+
         if node_type == "bt.log":
             message = node.get("message", "Debug")
             return self._tick_log(node_id, message, dt)
@@ -523,6 +548,46 @@ class BehaviorTreeRuntime:
 
     def _apply_damage(self, obj: Any, damage: float) -> None:
         """Aplica dano a um objeto. SOBRESCREVA ISSO."""
+        pass
+
+    def _tick_set_ui_text(self, node_id: str, widget: str, text: str, dt: float) -> BehaviorStatus:
+        self._set_ui_text(widget, text)
+        return BehaviorStatus.SUCCESS
+
+    def _tick_set_ui_progress(self, node_id: str, widget: str, value: float, dt: float) -> BehaviorStatus:
+        self._set_ui_progress(widget, value)
+        return BehaviorStatus.SUCCESS
+
+    def _tick_set_ui_visible(self, node_id: str, widget: str, visible: bool, dt: float) -> BehaviorStatus:
+        self._set_ui_visible(widget, visible)
+        return BehaviorStatus.SUCCESS
+
+    def _tick_decrement_ui_value(self, node_id: str, widget: str, amount: float, dt: float) -> BehaviorStatus:
+        self._decrement_ui_value(widget, amount)
+        return BehaviorStatus.SUCCESS
+
+    def _tick_increment_ui_value(self, node_id: str, widget: str, amount: float, dt: float) -> BehaviorStatus:
+        self._increment_ui_value(widget, amount)
+        return BehaviorStatus.SUCCESS
+
+    def _set_ui_text(self, widget: str, text: str) -> None:
+        """Seta texto de UI. SOBRESCREVA ISSO OU USE NATIVE_UI."""
+        pass
+
+    def _set_ui_progress(self, widget: str, value: float) -> None:
+        """Seta valor de barra de progresso. SOBRESCREVA ISSO OU USE NATIVE_UI."""
+        pass
+
+    def _set_ui_visible(self, widget: str, visible: bool) -> None:
+        """Seta visibilidade da UI. SOBRESCREVA ISSO OU USE NATIVE_UI."""
+        pass
+
+    def _decrement_ui_value(self, widget: str, amount: float) -> None:
+        """Decrementa valor numerico de UI. SOBRESCREVA ISSO OU USE NATIVE_UI."""
+        pass
+
+    def _increment_ui_value(self, widget: str, amount: float) -> None:
+        """Incrementa valor numerico de UI. SOBRESCREVA ISSO OU USE NATIVE_UI."""
         pass
 
     def _play_animation(self, obj: Any, animation: str) -> None:

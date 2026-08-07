@@ -57,7 +57,8 @@ class ViewportSpriteRenderer:
                 continue
             if obj.get("is_group", False) and ("x" not in obj or "y" not in obj):
                 continue
-            object_x, object_y = world_to_screen(float(obj.get("x", 0.0)), float(obj.get("y", 0.0)))
+            world_x, world_y = self.get_world_position(obj, objects)
+            object_x, object_y = world_to_screen(world_x, world_y)
             width = max(1, int(float(obj["w"]) * render_zoom))
             height = max(1, int(float(obj["h"]) * render_zoom))
             surface = self._surface_for(obj, width, height)
@@ -168,6 +169,23 @@ class ViewportSpriteRenderer:
         if x + frame_width <= source.get_width() and y + frame_height <= source.get_height():
             return source.subsurface((x, y, frame_width, frame_height)).copy()
         return source
+
+    @staticmethod
+    def get_world_position(obj: dict[str, Any], objects: dict[str, dict[str, Any]]) -> tuple[float, float]:
+        """Calcula a posição final no mundo somando recursivamente as coordenadas de todos os objetos pais."""
+        x = float(obj.get("x", 0.0))
+        y = float(obj.get("y", 0.0))
+        current = obj
+        visited = set()
+        while current and current.get("parent"):
+            parent_name = current["parent"]
+            if parent_name in visited or parent_name not in objects:
+                break
+            visited.add(parent_name)
+            current = objects[parent_name]
+            x += float(current.get("x", 0.0))
+            y += float(current.get("y", 0.0))
+        return x, y
 
     @staticmethod
     def _is_camera(obj: dict[str, Any]) -> bool:

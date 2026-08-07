@@ -145,6 +145,7 @@ class InspectorControllerUIMediaMixin:
             "visible": h.show_ui_chk.isChecked(),
             "text": h.ui_text_field.text(),
             "layout_path": h.ui_layout_path_field.text() if hasattr(h, "ui_layout_path_field") else "",
+            "render_mode": h.ui_render_mode_combo.currentText() if hasattr(h, "ui_render_mode_combo") else "Screen Space",
             "path": h.ui_image_path_field.text(),
             "interactable": h.ui_interactable_field.isChecked(),
             "event": h.ui_event_field.text().strip() or "click",

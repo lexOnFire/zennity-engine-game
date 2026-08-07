@@ -400,6 +400,96 @@ class BTSetParameterNode:
     )
 
 
+class BTSetUITextNode:
+    """Define o texto de um elemento de UI (UILabel / Canvas)."""
+
+    __node_definition__ = NodeDefinition(
+        id="bt.set_ui_text",
+        title_key="Definir Texto UI",
+        category_key="Behavior Tree/Action",
+        description_key="Altera o texto de um widget da UI ou Canvas.",
+        inputs=[
+            PinDefinition(id="in", label_key="In", pin_type=PinType.EXEC),
+            PinDefinition(id="widget", label_key="Widget", pin_type=PinType.STRING, default_value="quantidade"),
+            PinDefinition(id="text", label_key="Texto", pin_type=PinType.STRING, default_value="100")
+        ],
+        outputs=[PinDefinition(id="out", label_key="Próximo", pin_type=PinType.EXEC)],
+        tags=["ui", "canvas", "texto", "hud"],
+    )
+
+
+class BTSetUIProgressNode:
+    """Define o valor de uma barra de progresso de UI."""
+
+    __node_definition__ = NodeDefinition(
+        id="bt.set_ui_progress",
+        title_key="Definir Progresso UI",
+        category_key="Behavior Tree/Action",
+        description_key="Altera o valor de uma barra de progresso da UI.",
+        inputs=[
+            PinDefinition(id="in", label_key="In", pin_type=PinType.EXEC),
+            PinDefinition(id="widget", label_key="Widget", pin_type=PinType.STRING, default_value="hp_bar"),
+            PinDefinition(id="value", label_key="Valor", pin_type=PinType.FLOAT, default_value=100.0)
+        ],
+        outputs=[PinDefinition(id="out", label_key="Próximo", pin_type=PinType.EXEC)],
+        tags=["ui", "canvas", "progresso", "hp"],
+    )
+
+
+class BTSetUIVisibleNode:
+    """Alterna a visibilidade de um elemento da UI."""
+
+    __node_definition__ = NodeDefinition(
+        id="bt.set_ui_visible",
+        title_key="Definir Visibilidade UI",
+        category_key="Behavior Tree/Action",
+        description_key="Mostra ou oculta um widget ou Canvas de UI.",
+        inputs=[
+            PinDefinition(id="in", label_key="In", pin_type=PinType.EXEC),
+            PinDefinition(id="widget", label_key="Widget", pin_type=PinType.STRING, default_value="Ui_comida"),
+            PinDefinition(id="visible", label_key="Visível", pin_type=PinType.BOOLEAN, default_value=True)
+        ],
+        outputs=[PinDefinition(id="out", label_key="Próximo", pin_type=PinType.EXEC)],
+        tags=["ui", "canvas", "visibilidade", "hud"],
+    )
+
+
+class BTDecrementUIValueNode:
+    """Subtrai um valor numérico de um texto ou barra da UI."""
+
+    __node_definition__ = NodeDefinition(
+        id="bt.decrement_ui_value",
+        title_key="Decrementar Valor UI",
+        category_key="Behavior Tree/Action",
+        description_key="Decrementa um número em um texto ou barra da UI.",
+        inputs=[
+            PinDefinition(id="in", label_key="In", pin_type=PinType.EXEC),
+            PinDefinition(id="widget", label_key="Widget", pin_type=PinType.STRING, default_value="quantidade"),
+            PinDefinition(id="amount", label_key="Quantidade", pin_type=PinType.FLOAT, default_value=1.0)
+        ],
+        outputs=[PinDefinition(id="out", label_key="Próximo", pin_type=PinType.EXEC)],
+        tags=["ui", "canvas", "decrementar", "subtrair", "comida", "hp"],
+    )
+
+
+class BTIncrementUIValueNode:
+    """Soma um valor numérico a um texto ou barra da UI."""
+
+    __node_definition__ = NodeDefinition(
+        id="bt.increment_ui_value",
+        title_key="Incrementar Valor UI",
+        category_key="Behavior Tree/Action",
+        description_key="Incrementa um número em um texto ou barra da UI.",
+        inputs=[
+            PinDefinition(id="in", label_key="In", pin_type=PinType.EXEC),
+            PinDefinition(id="widget", label_key="Widget", pin_type=PinType.STRING, default_value="quantidade"),
+            PinDefinition(id="amount", label_key="Quantidade", pin_type=PinType.FLOAT, default_value=1.0)
+        ],
+        outputs=[PinDefinition(id="out", label_key="Próximo", pin_type=PinType.EXEC)],
+        tags=["ui", "canvas", "incrementar", "somar", "comida", "moedas"],
+    )
+
+
 class BTLogNode:
     """Imprime mensagem no console (para debug).
 

@@ -187,11 +187,15 @@ class UIBuilderDock(QDockWidget):
         self.check_visible.setChecked(True)
         self.combo_layout = QComboBox(self)
         self.combo_layout.addItems(["Vertical", "Horizontal", "Free"])
+        self.combo_render_mode = QComboBox(self)
+        self.combo_render_mode.addItems(["Screen Space", "World Space"])
+        self.combo_render_mode.currentTextChanged.connect(lambda _val: self.apply_inspector())
         form.addRow("Nome", self.txt_name)
         form.addRow("X", self.spin_x)
         form.addRow("Y", self.spin_y)
         form.addRow("Largura", self.spin_width)
         form.addRow("Altura", self.spin_height)
+        form.addRow("Render Mode", self.combo_render_mode)
         form.addRow("Texto", self.txt_text)
         form.addRow("Imagem", asset_row)
         form.addRow("Layout", self.combo_layout)
@@ -222,6 +226,23 @@ class UIBuilderDock(QDockWidget):
             spin.valueChanged.connect(lambda _value: self.apply_inspector())
         self.rebuild_hierarchy_tree()
         self.select_widget(None)
+        self._auto_load_last_file()
+
+    def _last_ui_cache_path(self) -> Path:
+        cache_dir = self.project_root / ".zennity"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        return cache_dir / "last_ui.json"
+
+    def _auto_load_last_file(self) -> None:
+        cache_file = self._last_ui_cache_path()
+        if cache_file.exists():
+            try:
+                info = json.loads(cache_file.read_text(encoding="utf-8"))
+                last_path = Path(info.get("last_path", ""))
+                if last_path.exists():
+                    self.load_document(last_path)
+            except Exception:
+                pass
 
     def _next_name(self, prefix: str) -> str:
         self._name_counter[prefix] = self._name_counter.get(prefix, 0) + 1
@@ -234,12 +255,28 @@ class UIBuilderDock(QDockWidget):
             self._tree_items(item, child)
 
     def rebuild_hierarchy_tree(self) -> None:
+        selected_widget = self.preview_canvas.selected_widget
+        self.tree_hierarchy.blockSignals(True)
         self.tree_hierarchy.clear()
         canvas = self.preview_canvas.canvas_runtime
         root_item = QTreeWidgetItem(self.tree_hierarchy, [canvas.name])
         root_item.setData(0, Qt.UserRole, canvas)
         self._tree_items(root_item, canvas)
         self.tree_hierarchy.expandAll()
+        
+        # Restaurar a seleção do item sem disparar eventos em loop
+        if selected_widget is not None:
+            self._select_tree_item_for_widget(root_item, selected_widget)
+        self.tree_hierarchy.blockSignals(False)
+
+    def _select_tree_item_for_widget(self, parent_item: QTreeWidgetItem, widget: UIWidget) -> bool:
+        if parent_item.data(0, Qt.UserRole) is widget:
+            self.tree_hierarchy.setCurrentItem(parent_item)
+            return True
+        for i in range(parent_item.childCount()):
+            if self._select_tree_item_for_widget(parent_item.child(i), widget):
+                return True
+        return False
 
     def add_widget(self, widget: UIWidget) -> None:
         parent = self.preview_canvas.selected_widget
@@ -270,6 +307,8 @@ class UIBuilderDock(QDockWidget):
         image_enabled = isinstance(widget, UIImage)
         self.txt_asset.setEnabled(image_enabled)
         self.btn_asset.setEnabled(image_enabled)
+        is_canvas = isinstance(widget, UICanvas)
+        self.combo_render_mode.setEnabled(is_canvas or enabled)
         if widget is not None:
             self.txt_name.setText(widget.name)
             self.spin_x.setValue(int(widget.x))
@@ -280,6 +319,7 @@ class UIBuilderDock(QDockWidget):
             self.txt_asset.setText(str(getattr(widget, "texture_path", "")))
             self.check_visible.setChecked(widget.visible)
             self.combo_layout.setCurrentText(str(getattr(widget, "layout_mode", "Free")))
+            self.combo_render_mode.setCurrentText(str(getattr(widget, "render_mode", "Screen Space")))
         self._updating_inspector = False
         self._update_help(widget)
         self.preview_canvas.update()
@@ -338,8 +378,12 @@ class UIBuilderDock(QDockWidget):
             widget.texture_path = self.txt_asset.text().strip()
         if hasattr(widget, "layout_mode"):
             widget.layout_mode = self.combo_layout.currentText()
+        widget.render_mode = self.combo_render_mode.currentText()
         self._changed()
-        self.rebuild_hierarchy_tree()
+        # Atualizar o rótulo do item na árvore sem rebuild/limpeza completa
+        items = self.tree_hierarchy.selectedItems()
+        if items and items[0].data(0, Qt.UserRole) is widget:
+            items[0].setText(0, widget.name)
 
     def delete_selected(self) -> None:
         widget = self.preview_canvas.selected_widget
@@ -398,6 +442,10 @@ class UIBuilderDock(QDockWidget):
         self.rebuild_hierarchy_tree()
         self.select_widget(None)
         self.document_changed.emit(source)
+        try:
+            self._last_ui_cache_path().write_text(json.dumps({"last_path": str(source)}), encoding="utf-8")
+        except Exception:
+            pass
         return True
 
     def document_data(self) -> dict:
@@ -423,6 +471,10 @@ class UIBuilderDock(QDockWidget):
         self.current_path = path.resolve()
         self.is_dirty = False
         self.document_changed.emit(self.current_path)
+        try:
+            self._last_ui_cache_path().write_text(json.dumps({"last_path": str(self.current_path)}), encoding="utf-8")
+        except Exception:
+            pass
         return True
 
     def _changed(self) -> None:
