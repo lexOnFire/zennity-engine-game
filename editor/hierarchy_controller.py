@@ -65,6 +65,7 @@ class HierarchyController:
 
         def hierarchy_drop_event(event) -> None:
             orig_drop_event(event)
+            self._normalize_hierarchy_root()
             self.sync_tree_to_scene()
 
         h.hierarchy_tree.dropEvent = hierarchy_drop_event
@@ -140,6 +141,21 @@ class HierarchyController:
 
     def refresh(self, *, force: bool = False) -> bool:
         return self.renderer.refresh(force=force)
+
+    def _normalize_hierarchy_root(self) -> None:
+        """Garante que qualquer objeto solto na área vazia (virando topLevelItem extra) retorne à raiz da cena."""
+        tree = self.host.hierarchy_tree
+        if tree.topLevelItemCount() <= 1:
+            return
+
+        scene_root = tree.topLevelItem(0)
+        # Qualquer topLevelItem além do índice 0 é um objeto solto na área vazia da árvore
+        while tree.topLevelItemCount() > 1:
+            item = tree.takeTopLevelItem(1)
+            if item is not None:
+                scene_root.addChild(item)
+
+        scene_root.setExpanded(True)
 
     def sync_tree_to_scene(self) -> None:
         """Lê a hierarquia e ordem atual do QTreeWidget e atualiza _scene_snapshot."""
