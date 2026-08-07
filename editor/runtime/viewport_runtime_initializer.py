@@ -189,6 +189,22 @@ class ViewportRuntimeInitializer:
         api = self.logic_apis.setdefault(name, self.api_factory(name, obj))
         graph = behavior.get("graph")
         controller = behavior.get("controller")
+        controller_path = str(behavior.get("controller_path", "")).strip()
+
+        if not isinstance(graph, dict) and not isinstance(controller, dict) and controller_path:
+            p = Path(controller_path)
+            if not p.is_absolute():
+                p = self.project_root / p
+            if p.is_file():
+                try:
+                    import json
+                    raw = json.loads(p.read_text(encoding="utf-8"))
+                    if isinstance(raw, dict) and raw.get("format") == "zennity.generic_graph":
+                        graph = raw
+                        behavior["graph"] = raw
+                except Exception:
+                    pass
+
         if isinstance(graph, dict):
             runner = BehaviorGraphRunner(graph, self.project_root)
         elif isinstance(controller, dict):

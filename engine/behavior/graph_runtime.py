@@ -23,12 +23,12 @@ class BehaviorGraphRunner:
         }
         self.children: dict[str, list[str]] = {}
         incoming: set[str] = set()
-        def _port_sort_key(item: Mapping) -> tuple[str, int, str]:
+        def _port_sort_key(item: Mapping) -> tuple[int, str, str]:
             port = str(item.get("source_port", ""))
             import re
             match = re.search(r"(\d+)", port)
             num = int(match.group(1)) if match else 0
-            return (port, num, str(item.get("id", "")))
+            return (num, port, str(item.get("id", "")))
 
         edges = [edge for edge in graph.get("edges", []) if isinstance(edge, Mapping)]
         for edge in sorted(edges, key=_port_sort_key):

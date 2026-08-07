@@ -24,8 +24,8 @@
       "title": "Event Update",
       "category": "Events",
       "position": [
-        -383.12,
-        -24.42
+        -825.58,
+        -74.47
       ],
       "editor": {
         "collapsed": true,
@@ -40,8 +40,8 @@
       "title": "Cooldown",
       "category": "Logic",
       "position": [
-        -141.6,
-        44.58
+        -463.93,
+        -153.62
       ],
       "editor": {
         "collapsed": true,
@@ -58,8 +58,8 @@
       "title": "Create Object",
       "category": "Spawning",
       "position": [
-        -142.02,
-        98.23
+        -228.11,
+        -166.04
       ],
       "editor": {
         "collapsed": true,
@@ -90,8 +90,8 @@
       "title": "Sprite Renderer",
       "category": "Components",
       "position": [
-        -789.78,
-        384.82
+        -455.44,
+        -69.65
       ],
       "editor": {
         "collapsed": false,
@@ -105,34 +105,16 @@
       }
     },
     {
-      "id": "81f42300941345f7a28a75f3c91e46f1",
-      "type": "start_behavior_tree",
-      "title": "Start Behavior Tree",
-      "category": "Action",
-      "position": [
-        -229.01,
-        432.82
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 184.0
-      },
-      "properties": {
-        "path": "Assets/Behaviors/patrulha_comida.zbehavior"
-      }
-    },
-    {
       "id": "9c7cc7aa505d4071be4e8e77152ded8d",
       "type": "add_component",
       "title": "Add Component",
       "category": "Math",
       "position": [
-        -540.32,
-        458.42
+        -400.18,
+        110.06
       ],
       "editor": {
-        "collapsed": false,
+        "collapsed": true,
         "width": 220.0,
         "height": 156.0
       },
@@ -166,15 +148,6 @@
       "to_port": "in",
       "kind": "flow",
       "order": 2
-    },
-    {
-      "id": "33b5df66425342f098e1e5f567c0247f",
-      "from_node": "9c7cc7aa505d4071be4e8e77152ded8d",
-      "from_port": "next",
-      "to_node": "81f42300941345f7a28a75f3c91e46f1",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 4
     },
     {
       "id": "bae7b880147449dab25fffd723a64f49",
