@@ -95,9 +95,14 @@ class HierarchyViewRenderer:
                 root.addChild(runtime_root)
             tree.addTopLevelItem(root)
             if selected_items:
-                for item in selected_items:
-                    item.setSelected(True)
-                tree.setCurrentItem(selected_items[-1])
+                tree.blockSignals(True)
+                try:
+                    for item in selected_items:
+                        item.setSelected(True)
+                    if selected_items:
+                        tree.setCurrentItem(selected_items[-1])
+                finally:
+                    tree.blockSignals(False)
         finally:
             tree.setUpdatesEnabled(True)
 
