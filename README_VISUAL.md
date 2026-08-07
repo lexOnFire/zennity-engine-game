@@ -32,8 +32,9 @@ Comece aqui: **[VISUAL_EDITOR_GUIDE.md](./VISUAL_EDITOR_GUIDE.md)**
 - Exemplos passo a passo
 
 ### Guias Específicos
-- **[BEHAVIOR_TREE_GUIDE.md](./BEHAVIOR_TREE_GUIDE.md)** - Controlar NPCs e comportamentos
+- **[STATIC_UI_WORKFLOW.md](./STATIC_UI_WORKFLOW.md)** - Criar UIs estáticas 100% visual (novo!)
 - **[UI_BUILDER_GUIDE.md](./UI_BUILDER_GUIDE.md)** - Criar interfaces de usuário
+- **[BEHAVIOR_TREE_GUIDE.md](./BEHAVIOR_TREE_GUIDE.md)** - Controlar NPCs e comportamentos
 - **[DEPRECATION_NOTICE.md](./DEPRECATION_NOTICE.md)** - Migrar de projetos antigos em código
 
 ---

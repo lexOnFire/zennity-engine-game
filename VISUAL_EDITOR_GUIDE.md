@@ -14,6 +14,18 @@ Bem-vindo! **Zennity é um motor de jogo 100% visual**. Nenhum código Python é
 
 ---
 
+## ⚡ Importante: Escopo Visual
+
+**Zennity é 100% visual para:**
+- ✅ Criar cenas
+- ✅ Definir comportamentos (NPCs, inimigos)
+- ✅ Conectar eventos e lógica
+- ✅ **Criar e editar UIs estáticas** (não mudam estrutura em runtime)
+
+**Nota:** UIs são criadas **no editor** (UI Builder), não em código. Uma vez criada, você pode mudar propriedades (texto, cores, visibilidade) via Logic Graph/BT, mas não pode criar/remover widgets dinamicamente.
+
+---
+
 ## 🚀 Primeiros Passos
 
 ### Abrir o Editor
