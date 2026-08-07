@@ -570,25 +570,169 @@ class BehaviorTreeRuntime:
         self._increment_ui_value(widget, amount)
         return BehaviorStatus.SUCCESS
 
+    def _find_ui_widget(self, widget_name: str) -> Any:
+        """Procura um widget de UI por nome na cena. Tenta múltiplas estratégias:
+        1. Se game_object tem método get_ui_widget, usa-o
+        2. Procura em objetos filhos por widget_name ou name
+        3. Busca global se game_object tem acesso a cena
+        """
+        if not widget_name:
+            return None
+
+        # Estratégia 1: método customizado no game_object
+        if self.game_object and hasattr(self.game_object, "get_ui_widget"):
+            widget = self.game_object.get_ui_widget(widget_name)
+            if widget is not None:
+                return widget
+
+        # Estratégia 2: procura em componentes filhos
+        if self.game_object and hasattr(self.game_object, "get_child"):
+            children = getattr(self.game_object, "children", [])
+            for child in children:
+                if (getattr(child, "widget_name", None) == widget_name or
+                    getattr(child, "name", None) == widget_name):
+                    return child
+
+        # Estratégia 3: procura em objetos filhos por atributo 'name'
+        if self.game_object and hasattr(self.game_object, "children"):
+            for child in self.game_object.children:
+                if getattr(child, "name", None) == widget_name:
+                    return child
+
+        return None
+
     def _set_ui_text(self, widget: str, text: str) -> None:
-        """Seta texto de UI. SOBRESCREVA ISSO OU USE NATIVE_UI."""
-        pass
+        """Seta texto de UI. Procura widget por nome e atualiza seu texto."""
+        widget_obj = self._find_ui_widget(widget)
+        if widget_obj is None:
+            self._emit_event("ui_action_failed", action="set_text", widget=widget, reason="widget_not_found")
+            return
+
+        try:
+            if hasattr(widget_obj, "text"):
+                widget_obj.text = str(text)
+            elif hasattr(widget_obj, "set_text") and callable(widget_obj.set_text):
+                widget_obj.set_text(str(text))
+            else:
+                self._emit_event("ui_action_failed", action="set_text", widget=widget, reason="no_text_property")
+                return
+
+            self._emit_event("ui_action_done", action="set_text", widget=widget, value=text)
+        except Exception as e:
+            self._emit_event("ui_action_failed", action="set_text", widget=widget, error=str(e))
 
     def _set_ui_progress(self, widget: str, value: float) -> None:
-        """Seta valor de barra de progresso. SOBRESCREVA ISSO OU USE NATIVE_UI."""
-        pass
+        """Seta valor de barra de progresso de UI."""
+        widget_obj = self._find_ui_widget(widget)
+        if widget_obj is None:
+            self._emit_event("ui_action_failed", action="set_progress", widget=widget, reason="widget_not_found")
+            return
+
+        try:
+            value = max(0.0, float(value))
+            if hasattr(widget_obj, "value"):
+                widget_obj.value = value
+            elif hasattr(widget_obj, "set_value") and callable(widget_obj.set_value):
+                widget_obj.set_value(value)
+            else:
+                self._emit_event("ui_action_failed", action="set_progress", widget=widget, reason="no_value_property")
+                return
+
+            self._emit_event("ui_action_done", action="set_progress", widget=widget, value=value)
+        except Exception as e:
+            self._emit_event("ui_action_failed", action="set_progress", widget=widget, error=str(e))
 
     def _set_ui_visible(self, widget: str, visible: bool) -> None:
-        """Seta visibilidade da UI. SOBRESCREVA ISSO OU USE NATIVE_UI."""
-        pass
+        """Seta visibilidade de um widget de UI."""
+        widget_obj = self._find_ui_widget(widget)
+        if widget_obj is None:
+            self._emit_event("ui_action_failed", action="set_visible", widget=widget, reason="widget_not_found")
+            return
+
+        try:
+            if hasattr(widget_obj, "visible"):
+                widget_obj.visible = bool(visible)
+            elif hasattr(widget_obj, "set_visible") and callable(widget_obj.set_visible):
+                widget_obj.set_visible(bool(visible))
+            elif hasattr(widget_obj, "enabled"):
+                widget_obj.enabled = bool(visible)
+            else:
+                self._emit_event("ui_action_failed", action="set_visible", widget=widget, reason="no_visibility_property")
+                return
+
+            self._emit_event("ui_action_done", action="set_visible", widget=widget, visible=visible)
+        except Exception as e:
+            self._emit_event("ui_action_failed", action="set_visible", widget=widget, error=str(e))
 
     def _decrement_ui_value(self, widget: str, amount: float) -> None:
-        """Decrementa valor numerico de UI. SOBRESCREVA ISSO OU USE NATIVE_UI."""
-        pass
+        """Decrementa valor numérico de um widget de UI."""
+        widget_obj = self._find_ui_widget(widget)
+        if widget_obj is None:
+            self._emit_event("ui_action_failed", action="decrement", widget=widget, reason="widget_not_found")
+            return
+
+        try:
+            amount = float(amount)
+
+            # Tenta atualizar texto (para UILabel com números)
+            if hasattr(widget_obj, "text"):
+                try:
+                    current = float(str(widget_obj.text))
+                    new_value = current - amount
+                    widget_obj.text = str(int(new_value) if new_value == int(new_value) else new_value)
+                except (ValueError, TypeError):
+                    self._emit_event("ui_action_failed", action="decrement", widget=widget, reason="text_not_numeric")
+                    return
+            # Tenta atualizar value (para ProgressBar)
+            elif hasattr(widget_obj, "value"):
+                current = float(widget_obj.value)
+                new_value = current - amount
+                if hasattr(widget_obj, "set_value") and callable(widget_obj.set_value):
+                    widget_obj.set_value(new_value)
+                else:
+                    widget_obj.value = new_value
+            else:
+                self._emit_event("ui_action_failed", action="decrement", widget=widget, reason="no_numeric_property")
+                return
+
+            self._emit_event("ui_action_done", action="decrement", widget=widget, amount=amount)
+        except Exception as e:
+            self._emit_event("ui_action_failed", action="decrement", widget=widget, error=str(e))
 
     def _increment_ui_value(self, widget: str, amount: float) -> None:
-        """Incrementa valor numerico de UI. SOBRESCREVA ISSO OU USE NATIVE_UI."""
-        pass
+        """Incrementa valor numérico de um widget de UI."""
+        widget_obj = self._find_ui_widget(widget)
+        if widget_obj is None:
+            self._emit_event("ui_action_failed", action="increment", widget=widget, reason="widget_not_found")
+            return
+
+        try:
+            amount = float(amount)
+
+            # Tenta atualizar texto (para UILabel com números)
+            if hasattr(widget_obj, "text"):
+                try:
+                    current = float(str(widget_obj.text))
+                    new_value = current + amount
+                    widget_obj.text = str(int(new_value) if new_value == int(new_value) else new_value)
+                except (ValueError, TypeError):
+                    self._emit_event("ui_action_failed", action="increment", widget=widget, reason="text_not_numeric")
+                    return
+            # Tenta atualizar value (para ProgressBar)
+            elif hasattr(widget_obj, "value"):
+                current = float(widget_obj.value)
+                new_value = current + amount
+                if hasattr(widget_obj, "set_value") and callable(widget_obj.set_value):
+                    widget_obj.set_value(new_value)
+                else:
+                    widget_obj.value = new_value
+            else:
+                self._emit_event("ui_action_failed", action="increment", widget=widget, reason="no_numeric_property")
+                return
+
+            self._emit_event("ui_action_done", action="increment", widget=widget, amount=amount)
+        except Exception as e:
+            self._emit_event("ui_action_failed", action="increment", widget=widget, error=str(e))
 
     def _play_animation(self, obj: Any, animation: str) -> None:
         """Toca uma animação. SOBRESCREVA ISSO."""
