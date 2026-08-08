@@ -9,14 +9,20 @@
 
 8 refinements needed for Production Ready:
 
-1. ✅ **Owner Routing Same-ID** - COMPLETE
-2. ⏳ **Asset Choice Workflow** - TODO
+1. ✅ **Owner Routing Same-ID** - COMPLETE ✅
+2. ✅ **Asset Choice Workflow** - COMPLETE ✅
 3. ⏳ **Scene Cleanup** - TODO
 4. ⏳ **Play/Stop/Play Reset** - TODO
 5. ⏳ **Dialogue Event → LogicEventBus** - TODO
 6. ⏳ **Old Test Migration** - TODO
 7. ⏳ **Full Regression** - TODO
 8. ⏳ **Success Criteria Validation** - TODO
+
+---
+
+## NEXT (Refinement 3)
+
+**Scene Cleanup** — Hook scene.unload to clear dialogue state
 
 ---
 
@@ -56,21 +62,40 @@ Merchant:
 
 ---
 
-## NEXT STEPS (Refinements 2-7)
+## COMPLETED (CONTINUED)
 
-### 2. Asset Choice Workflow Validation
-Validate complete E2E flow through .zdialogue asset:
-```
-.zdialogue loads
-→ speech node initializes
-→ choice node available
-→ manager.choose(owner_id, session_id, index)
-→ DialogueSession.choose(index) executes
-→ branches correctly to next node
-→ event fires (if present)
-→ end node reached
-```
-Ensure DialogueSession properly handles choice transitions in loaded assets
+### 2. Asset Choice Workflow - ✅ COMPLETE
+
+**Test Suite**: tests/integration/test_phase7b7_3_asset_choices.py
+
+**15 Test Cases - All Passing**:
+- ✅ Asset loading and DialogueSession creation
+- ✅ Initial speech state validation
+- ✅ Choice node advancement
+- ✅ Yes branch selection (index 0)
+- ✅ No branch selection (index 1)
+- ✅ Invalid choice handling (safe failure)
+- ✅ Choose outside choice node (safe failure)
+- ✅ Event sink callback infrastructure
+- ✅ End node state validation
+- ✅ Close after end safety
+- ✅ Inline dialogue regression (no breaks)
+- ✅ Same session_id different owners (assets)
+- ✅ Same asset multiple owners/session_ids
+- ✅ Yes branch sequence validation
+- ✅ No branch sequence validation
+
+**Fixture Used**: tests/fixtures/GuardDialogue.zdialogue (real asset)
+
+**Results**: 15/15 PASS ✅
+**Regression**: 0 (Refinement 1 still 19/19 PASS)
+**Total**: 34/34 Dialogue Tests PASS ✅
+
+**Architecture Verified**:
+- Asset dialogue flow complete
+- DialogueSession handles choice branching
+- Owner isolation maintained with assets
+- Event infrastructure ready for LogicEventBus integration
 
 ### 3. Asset Choice Workflow
 Validate complete flow:
