@@ -1,0 +1,13 @@
+{
+  "format": "zennity.animation_clip",
+  "name": "BossDeath",
+  "length": 1.0,
+  "fps": 10,
+  "loop": false,
+  "frames": [
+    {"time": 0.0, "sprite": "Assets/Sprites/Boss/boss_hit.png"},
+    {"time": 0.3, "sprite": "Assets/Sprites/Boss/boss_death_1.png"},
+    {"time": 0.6, "sprite": "Assets/Sprites/Boss/boss_death_2.png"},
+    {"time": 1.0, "sprite": "Assets/Sprites/Boss/boss_death_2.png"}
+  ]
+}

@@ -1,0 +1,141 @@
+{
+  "format": "zennity.animation_controller",
+  "name": "BossController",
+  "layers": [
+    {
+      "name": "Base Layer",
+      "states": [
+        {
+          "name": "Idle",
+          "clip": "Assets/Animations/Clips/BossIdle.zanim",
+          "speed": 1.0,
+          "position": [100, 100]
+        },
+        {
+          "name": "Run",
+          "clip": "Assets/Animations/Clips/BossRun.zanim",
+          "speed": 1.5,
+          "position": [300, 100]
+        },
+        {
+          "name": "Attack",
+          "clip": "Assets/Animations/Clips/BossAttack.zanim",
+          "speed": 1.0,
+          "position": [200, 250]
+        },
+        {
+          "name": "HeavyAttack",
+          "clip": "Assets/Animations/Clips/BossHeavyAttack.zanim",
+          "speed": 1.0,
+          "position": [400, 250]
+        },
+        {
+          "name": "Hit",
+          "clip": "Assets/Animations/Clips/BossHit.zanim",
+          "speed": 1.0,
+          "position": [500, 100]
+        },
+        {
+          "name": "Death",
+          "clip": "Assets/Animations/Clips/BossDeath.zanim",
+          "speed": 1.0,
+          "position": [600, 150]
+        }
+      ],
+      "transitions": [
+        {
+          "from": "Idle",
+          "to": "Run",
+          "condition": {"parameter": "speed", "operator": "greater", "value": 0.1},
+          "duration": 0.1
+        },
+        {
+          "from": "Run",
+          "to": "Idle",
+          "condition": {"parameter": "speed", "operator": "less_equal", "value": 0.01},
+          "duration": 0.1
+        },
+        {
+          "from": "Idle",
+          "to": "Attack",
+          "condition": {"parameter": "attack", "operator": "trigger"},
+          "duration": 0.0
+        },
+        {
+          "from": "Run",
+          "to": "Attack",
+          "condition": {"parameter": "attack", "operator": "trigger"},
+          "duration": 0.0
+        },
+        {
+          "from": "Idle",
+          "to": "HeavyAttack",
+          "condition": {"parameter": "heavy_attack", "operator": "trigger"},
+          "duration": 0.0
+        },
+        {
+          "from": "Run",
+          "to": "HeavyAttack",
+          "condition": {"parameter": "heavy_attack", "operator": "trigger"},
+          "duration": 0.0
+        },
+        {
+          "from": "Attack",
+          "to": "Idle",
+          "condition": {"parameter": "speed", "operator": "less_equal", "value": 0.01},
+          "duration": 0.1
+        },
+        {
+          "from": "HeavyAttack",
+          "to": "Idle",
+          "condition": {"parameter": "speed", "operator": "less_equal", "value": 0.01},
+          "duration": 0.1
+        },
+        {
+          "from": "Idle",
+          "to": "Hit",
+          "condition": {"parameter": "hit", "operator": "trigger"},
+          "duration": 0.0
+        },
+        {
+          "from": "Run",
+          "to": "Hit",
+          "condition": {"parameter": "hit", "operator": "trigger"},
+          "duration": 0.0
+        },
+        {
+          "from": "Hit",
+          "to": "Idle",
+          "condition": {"parameter": "speed", "operator": "less_equal", "value": 0.01},
+          "duration": 0.1
+        },
+        {
+          "from": "Idle",
+          "to": "Death",
+          "condition": {"parameter": "dead", "operator": "trigger"},
+          "duration": 0.0
+        },
+        {
+          "from": "Run",
+          "to": "Death",
+          "condition": {"parameter": "dead", "operator": "trigger"},
+          "duration": 0.0
+        },
+        {
+          "from": "Attack",
+          "to": "Death",
+          "condition": {"parameter": "dead", "operator": "trigger"},
+          "duration": 0.0
+        }
+      ]
+    }
+  ],
+  "parameters": [
+    {"name": "speed", "type": "float", "default_value": 0},
+    {"name": "attack", "type": "trigger", "default_value": false},
+    {"name": "heavy_attack", "type": "trigger", "default_value": false},
+    {"name": "hit", "type": "trigger", "default_value": false},
+    {"name": "dead", "type": "trigger", "default_value": false},
+    {"name": "phase", "type": "int", "default_value": 1}
+  ]
+}

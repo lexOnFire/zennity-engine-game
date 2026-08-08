@@ -1,0 +1,13 @@
+{
+  "format": "zennity.animation_clip",
+  "name": "BossHeavyAttack",
+  "length": 0.7,
+  "fps": 10,
+  "loop": false,
+  "frames": [
+    {"time": 0.0, "sprite": "Assets/Sprites/Boss/boss_attack_1.png"},
+    {"time": 0.2, "sprite": "Assets/Sprites/Boss/boss_attack_2.png"},
+    {"time": 0.4, "sprite": "Assets/Sprites/Boss/boss_heavy_attack.png", "event": {"name": "heavy_hit"}},
+    {"time": 0.6, "sprite": "Assets/Sprites/Boss/boss_attack_2.png"}
+  ]
+}

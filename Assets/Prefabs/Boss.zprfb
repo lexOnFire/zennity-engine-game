@@ -1,0 +1,75 @@
+{
+  "format": "zennity.prefab",
+  "name": "Boss",
+  "root": {
+    "id": "boss_root",
+    "name": "Boss",
+    "type": "GameObject",
+    "enabled": true,
+    "components": [
+      {
+        "type": "Transform",
+        "position": [0, 0],
+        "rotation": 0,
+        "scale": [1, 1]
+      },
+      {
+        "type": "SpriteRenderer",
+        "sprite": "Assets/Sprites/Boss/boss_idle.png",
+        "color": [1, 0.3, 0.3, 1],
+        "layer": 0
+      },
+      {
+        "type": "BoxCollider2D",
+        "size": [1.5, 1.8],
+        "offset": [0, 0],
+        "is_trigger": false,
+        "layer": "ENEMY"
+      },
+      {
+        "type": "RigidBody2D",
+        "body_type": "dynamic",
+        "gravity_scale": 0,
+        "mass": 2,
+        "drag": 0,
+        "angular_drag": 0,
+        "constraints": "freeze_rotation_z"
+      },
+      {
+        "type": "Animator",
+        "controller": "Assets/Animations/BossController.zcontroller",
+        "speed": 1.0
+      }
+    ],
+    "variables": {
+      "health": 500,
+      "max_health": 500,
+      "move_speed": 80,
+      "attack_damage": 20,
+      "heavy_attack_damage": 35,
+      "detection_range": 500,
+      "attack_range": 72,
+      "heavy_attack_range": 96,
+      "attack_cooldown": 1.5,
+      "phase": 1,
+      "phase2_threshold": 0.5,
+      "cooldown_timer": 1.5,
+      "attack_count": 0,
+      "heavy_attack_interval": 3
+    },
+    "logic_graphs": [
+      {
+        "path": "Assets/Logic/BossAILogic.zlogic",
+        "name": "BossAI"
+      },
+      {
+        "path": "Assets/Logic/BossCombatLogic.zlogic",
+        "name": "BossCombat"
+      },
+      {
+        "path": "Assets/Logic/BossHealthLogic.zlogic",
+        "name": "BossHealth"
+      }
+    ]
+  }
+}

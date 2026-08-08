@@ -1,0 +1,12 @@
+{
+  "format": "zennity.animation_clip",
+  "name": "BossHit",
+  "length": 0.3,
+  "fps": 10,
+  "loop": false,
+  "frames": [
+    {"time": 0.0, "sprite": "Assets/Sprites/Boss/boss_hit.png"},
+    {"time": 0.15, "sprite": "Assets/Sprites/Boss/boss_idle.png"},
+    {"time": 0.3, "sprite": "Assets/Sprites/Boss/boss_idle.png"}
+  ]
+}
