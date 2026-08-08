@@ -67,15 +67,23 @@ class ViewportNavigationEventHandler:
         if clicked is None:
             return
         owner, ui = clicked
+        widget_name = str(ui.get("name") or ui.get("widget_name") or owner.get("name", "")).strip()
         target_name = str(ui.get("target", "")) or str(owner.get("name", ""))
         target = self.objects.get(target_name)
         event_name = str(ui.get("event", "click")) or "click"
-        if target is not None:
-            target.setdefault("logic_events", []).append({
-                "command": event_name,
-                "value": {"source": owner.get("name"), "type": "ui_button"},
-            })
+
+        for obj in (target, owner):
+            if isinstance(obj, dict):
+                obj.setdefault("logic_events", []).append({
+                    "command": "ui.button_clicked",
+                    "value": {"widget_name": widget_name, "button": widget_name, "source": owner.get("name"), "type": "ui_button"},
+                })
+                obj.setdefault("logic_events", []).append({
+                    "command": event_name,
+                    "value": {"widget_name": widget_name, "button": widget_name, "source": owner.get("name"), "type": "ui_button"},
+                })
+
         self.emit({
             "type": "runtime_log", "level": "INFO",
-            "message": f"UI Button: {owner.get('name')} → {target_name}.{event_name}",
+            "message": f"UI Button: {widget_name} (owner: {owner.get('name')}) → {target_name}.{event_name}",
         })

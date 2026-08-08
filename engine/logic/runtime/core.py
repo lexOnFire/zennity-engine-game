@@ -97,16 +97,14 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin):
                 event_name = str(node.get("properties", {}).get("name", "event")).strip()
                 node_id = str(node["id"])
                 self.event_bus.subscribe(event_name, lambda event, wanted=node_id: self._receive_custom_event(wanted, event))
-            # Phase 6B.3: Subscribe to animation event nodes
-            elif node.get("type") == "on_animation_event":
+            elif node.get("type") in {"ui.button_clicked", "button_clicked", "on_ui_click"}:
                 node_id = str(node["id"])
-                event_name_filter = str(node.get("properties", {}).get("event_name", "")).strip()
-                animation_name_filter = str(node.get("properties", {}).get("animation_name", "")).strip()
-                self.event_bus.subscribe(
-                    "animation:event",
-                    lambda event, wanted=node_id, ev_filter=event_name_filter, anim_filter=animation_name_filter:
-                        self._handle_animation_event(wanted, event, ev_filter, anim_filter)
-                )
+                inputs = node.get("inputs", {}) if isinstance(node.get("inputs"), dict) else {}
+                props = node.get("properties", {}) if isinstance(node.get("properties"), dict) else {}
+                target_widget = str(inputs.get("widget_name", props.get("widget_name", props.get("button", "")))).strip()
+
+                self.event_bus.subscribe("ui.button_clicked", lambda event, wanted=node_id, tw=target_widget: self._handle_ui_button_clicked(wanted, event, tw))
+                self.event_bus.subscribe("click", lambda event, wanted=node_id, tw=target_widget: self._handle_ui_button_clicked(wanted, event, tw))
             # Phase 6B.3: Subscribe to animation finished nodes
             elif node.get("type") == "on_animation_finished":
                 node_id = str(node["id"])
@@ -395,6 +393,26 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin):
             for edge in self.outgoing.get(node_id, []):
                 if edge.get("from_port") == "exec":
                     self._run_edge(edge, self._last_game, self._last_dt)
+
+    def _handle_ui_button_clicked(self, node_id: str, event: LogicEvent, target_widget_filter: str) -> None:
+        """Process UI button click event for ui.button_clicked nodes."""
+        if event.payload is None or not isinstance(event.payload, dict):
+            return
+        widget_name = str(event.payload.get("widget_name") or event.payload.get("button") or "").strip()
+        if target_widget_filter and widget_name.lower() != target_widget_filter.lower():
+            return
+
+        self._store(node_id, "other", deepcopy(event.payload))
+        self._store(node_id, "payload", deepcopy(event.payload))
+        self._store(node_id, "widget_name", widget_name)
+
+        if self._last_game is not None:
+            if node_id not in self.executed_nodes:
+                self.executed_nodes.append(node_id)
+            budget = [self.MAX_STEPS]
+            self._follow(node_id, "clicked", self._last_game, self._last_dt, budget, set())
+            self._follow(node_id, "next", self._last_game, self._last_dt, budget, set())
+            self._follow(node_id, "exec", self._last_game, self._last_dt, budget, set())
 
 
     def _receive_custom_event(self, node_id: str, event: LogicEvent) -> None:
