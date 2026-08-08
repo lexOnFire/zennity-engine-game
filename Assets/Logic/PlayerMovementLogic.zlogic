@@ -1,0 +1,150 @@
+{
+  "format": "zennity.generic_graph",
+  "category": "Logic",
+  "name": "Player Movement Logic",
+  "nodes": [
+    {
+      "id": "input_horizontal",
+      "type": "input.axis",
+      "inputs": {
+        "axis_name": "horizontal"
+      },
+      "outputs": ["value"]
+    },
+    {
+      "id": "input_vertical",
+      "type": "input.axis",
+      "inputs": {
+        "axis_name": "vertical"
+      },
+      "outputs": ["value"]
+    },
+    {
+      "id": "create_movement_vector",
+      "type": "math.vector2_create",
+      "inputs": {
+        "x": 0,
+        "y": 0
+      },
+      "outputs": ["vector"]
+    },
+    {
+      "id": "normalize_vector",
+      "type": "math.vector2_normalize",
+      "inputs": {
+        "vector": {"type": "vector2"}
+      },
+      "outputs": ["normalized"]
+    },
+    {
+      "id": "get_move_speed",
+      "type": "variables.get",
+      "inputs": {
+        "name": "move_speed"
+      },
+      "outputs": ["value"]
+    },
+    {
+      "id": "multiply_speed",
+      "type": "math.multiply",
+      "inputs": {
+        "a": {"type": "vector2"},
+        "b": 200
+      },
+      "outputs": ["result"]
+    },
+    {
+      "id": "set_rigidbody_velocity",
+      "type": "physics.set_velocity",
+      "inputs": {
+        "velocity": {"type": "vector2"}
+      },
+      "outputs": ["done"]
+    },
+    {
+      "id": "get_velocity_magnitude",
+      "type": "math.vector2_magnitude",
+      "inputs": {
+        "vector": {"type": "vector2"}
+      },
+      "outputs": ["magnitude"]
+    },
+    {
+      "id": "set_animator_speed",
+      "type": "animator.set_parameter",
+      "inputs": {
+        "parameter": "speed",
+        "value": 0
+      },
+      "outputs": ["done"]
+    },
+    {
+      "id": "frame_loop",
+      "type": "event.every_frame",
+      "inputs": {},
+      "outputs": ["frame"]
+    }
+  ],
+  "edges": [
+    {
+      "source_node": "frame_loop",
+      "source_port": "frame",
+      "target_node": "input_horizontal",
+      "target_port": "in"
+    },
+    {
+      "source_node": "frame_loop",
+      "source_port": "frame",
+      "target_node": "input_vertical",
+      "target_port": "in"
+    },
+    {
+      "source_node": "input_horizontal",
+      "source_port": "value",
+      "target_node": "create_movement_vector",
+      "target_port": "x"
+    },
+    {
+      "source_node": "input_vertical",
+      "source_port": "value",
+      "target_node": "create_movement_vector",
+      "target_port": "y"
+    },
+    {
+      "source_node": "create_movement_vector",
+      "source_port": "vector",
+      "target_node": "normalize_vector",
+      "target_port": "vector"
+    },
+    {
+      "source_node": "normalize_vector",
+      "source_port": "normalized",
+      "target_node": "multiply_speed",
+      "target_port": "a"
+    },
+    {
+      "source_node": "get_move_speed",
+      "source_port": "value",
+      "target_node": "multiply_speed",
+      "target_port": "b"
+    },
+    {
+      "source_node": "multiply_speed",
+      "source_port": "result",
+      "target_node": "set_rigidbody_velocity",
+      "target_port": "velocity"
+    },
+    {
+      "source_node": "multiply_speed",
+      "source_port": "result",
+      "target_node": "get_velocity_magnitude",
+      "target_port": "vector"
+    },
+    {
+      "source_node": "get_velocity_magnitude",
+      "source_port": "magnitude",
+      "target_node": "set_animator_speed",
+      "target_port": "value"
+    }
+  ]
+}

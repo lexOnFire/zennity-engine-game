@@ -1,0 +1,53 @@
+{
+  "format": "zennity.prefab",
+  "name": "Player",
+  "root": {
+    "id": "player_root",
+    "name": "Player",
+    "type": "GameObject",
+    "x": 0,
+    "y": 0,
+    "width": 1,
+    "height": 1,
+    "enabled": true,
+    "components": [
+      {
+        "type": "Transform",
+        "position": [0, 0],
+        "rotation": 0,
+        "scale": [1, 1]
+      },
+      {
+        "type": "SpriteRenderer",
+        "sprite": "Assets/Sprites/Player/idle_1.png",
+        "color": [1, 1, 1, 1],
+        "layer": 0
+      },
+      {
+        "type": "BoxCollider2D",
+        "size": [0.8, 1.0],
+        "offset": [0, 0],
+        "is_trigger": false
+      },
+      {
+        "type": "RigidBody2D",
+        "body_type": "dynamic",
+        "gravity_scale": 0,
+        "mass": 1,
+        "drag": 0,
+        "angular_drag": 0,
+        "constraints": "freeze_rotation_z"
+      },
+      {
+        "type": "Animator",
+        "controller": "Assets/Animations/PlayerController.zcontroller",
+        "speed": 1.0
+      }
+    ],
+    "variables": {
+      "move_speed": 200,
+      "health": 100,
+      "max_health": 100
+    }
+  }
+}

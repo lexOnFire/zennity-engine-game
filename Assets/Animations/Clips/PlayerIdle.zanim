@@ -1,0 +1,21 @@
+{
+  "format": "zennity.animation_clip",
+  "name": "PlayerIdle",
+  "length": 0.6,
+  "loop": true,
+  "fps": 10,
+  "frames": [
+    {
+      "sprite": "Assets/Sprites/Player/idle_1.png",
+      "time": 0.0
+    },
+    {
+      "sprite": "Assets/Sprites/Player/idle_2.png",
+      "time": 0.3
+    },
+    {
+      "sprite": "Assets/Sprites/Player/idle_1.png",
+      "time": 0.6
+    }
+  ]
+}

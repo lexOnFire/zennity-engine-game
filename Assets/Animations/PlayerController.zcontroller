@@ -1,0 +1,52 @@
+{
+  "format": "zennity.animation_controller",
+  "name": "PlayerController",
+  "layers": [
+    {
+      "name": "Base Layer",
+      "states": [
+        {
+          "name": "Idle",
+          "clip": "Assets/Animations/Clips/PlayerIdle.zanim",
+          "speed": 1.0,
+          "position": [100, 100]
+        },
+        {
+          "name": "Run",
+          "clip": "Assets/Animations/Clips/PlayerRun.zanim",
+          "speed": 1.5,
+          "position": [300, 100]
+        }
+      ],
+      "transitions": [
+        {
+          "from": "Idle",
+          "to": "Run",
+          "condition": {
+            "parameter": "speed",
+            "operator": "greater",
+            "value": 0.1
+          },
+          "duration": 0.1
+        },
+        {
+          "from": "Run",
+          "to": "Idle",
+          "condition": {
+            "parameter": "speed",
+            "operator": "less_equal",
+            "value": 0.01
+          },
+          "duration": 0.1
+        }
+      ]
+    }
+  ],
+  "parameters": [
+    {
+      "name": "speed",
+      "type": "float",
+      "default_value": 0
+    }
+  ]
+}
