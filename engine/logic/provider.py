@@ -291,7 +291,15 @@ class LogicProvider(EngineProvider):
             manager.register(SetUIVisibleNode.__node_definition__)
 
             # UI Binding
-            manager.register(BindUIToVariableNode_def)
-            manager.register(UpdateUIBindingNode_def)
+            try:
+                manager.register(BindUIToVariableNode_def)
+                print("OK: bind_ui_to_variable registered")
+            except Exception as e:
+                print(f"ERROR registering bind_ui_to_variable: {e}")
+            try:
+                manager.register(UpdateUIBindingNode_def)
+                print("OK: update_ui_binding registered")
+            except Exception as e:
+                print(f"ERROR registering update_ui_binding: {e}")
 
         sync_logic_registry_to_metadata(context)
