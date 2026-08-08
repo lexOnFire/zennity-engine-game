@@ -16,33 +16,64 @@ class UIRenderer:
         self._image_cache: dict[str, pygame.Surface] = {}
 
     def render(self, runtime_scene: Any, screen: pygame.Surface) -> None:
+        import logging
+        logger = logging.getLogger(__name__)
+
         elements = self._collect_elements(runtime_scene)
+        logger.debug(f"[UI] Collected elements: {len(elements)}")
+
+        if len(elements) == 0:
+            logger.warning("[UI] No UI elements to render! Check Canvas or widget visibility.")
+
         for element in sorted(elements, key=lambda item: int(getattr(item, "z_order", 0))):
-            if not bool(getattr(element, "visible", True)):
+            visible = bool(getattr(element, "visible", True))
+            logger.debug(f"[UI] Element: {getattr(element, 'widget_name', '?')} visible={visible}")
+
+            if not visible:
+                logger.debug(f"[UI]   Skipped (not visible)")
                 continue
+
             if isinstance(element, LabelComponent):
+                logger.debug(f"[UI]   Drawing label: {element.text}")
                 self._draw_label(element, screen)
             elif isinstance(element, ImageComponent):
+                logger.debug(f"[UI]   Drawing image")
                 self._draw_image(element, screen)
             elif isinstance(element, ButtonComponent):
+                logger.debug(f"[UI]   Drawing button: {element.text}")
                 self._draw_button(element, screen)
 
     def _collect_elements(self, runtime_scene: Any) -> list[UIElement]:
+        import logging
+        logger = logging.getLogger(__name__)
+
         components: list[UIElement] = []
         has_canvas = False
 
         # RuntimeScene wraps the actual scene in .scene attribute
         actual_scene = getattr(runtime_scene, "scene", runtime_scene)
+        logger.debug(f"[UI] actual_scene type: {type(actual_scene).__name__}")
 
         # Get objects from the appropriate location
         objs = getattr(actual_scene, "editable_objects", getattr(actual_scene, "game_objects", []))
+        logger.debug(f"[UI] Scene objects: {len(list(objs))}")
 
         for obj in list(objs):
-            for component in getattr(obj, "components", []):
+            obj_components = getattr(obj, "components", [])
+            logger.debug(f"[UI] Object {obj.name}: {len(list(obj_components))} components")
+
+            for component in obj_components:
                 if isinstance(component, Canvas):
                     has_canvas = True
+                    logger.debug(f"[UI]   Found Canvas!")
                 elif isinstance(component, UIElement):
                     components.append(component)
+                    logger.debug(f"[UI]   Found UIElement: {getattr(component, 'widget_name', '?')}")
+
+        logger.debug(f"[UI] Collection result: has_canvas={has_canvas}, elements={len(components)}")
+
+        if not has_canvas:
+            logger.warning("[UI] No Canvas component found! UI won't render.")
 
         return components if has_canvas else []
 
