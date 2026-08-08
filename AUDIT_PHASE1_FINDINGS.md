@@ -50,44 +50,46 @@ outputs=[
 ]
 ```
 
-#### EXECUTOR (dynamic_ui_nodes.py L345-353 - COMPLETAMENTE DIVERGENTE)
+#### EXECUTOR (dynamic_ui_nodes.py L345-353)
 ```python
 def execute_get_progress_bar_value(runtime, node, game, dt):
     # ... código ...
     runtime._store(node_id, "value", val)
-    return ["next", "exec_success"]  # ❌ RETORNA AMBAS!
+    return ["next", "exec_success"]  # ⚠️ RETORNA AMBAS - NECESSÁRIO RASTREAR!
 ```
 
-### ⚠️ QUÁDRUPLO PROBLEMA
+### ⚠️ TRIPLO PROBLEMA (CONFIRMADO)
 
-1. **Input Port Mismatch:**
+1. **Input Port Mismatch (CONFIRMADO):**
    - Definição A: porta `in` 
    - Definição B: porta `exec`
-   - Editor serializa `in`, Runtime espera `exec` → **Input não encontrado**
+   - Editor serializa `in`, Runtime tenta conectar `exec` → **INCOMPATIBILIDADE**
 
-2. **Output Port Mismatch:**
+2. **Output Port Mismatch (REQUER INVESTIGAÇÃO):**
    - Definição A: outputs `[next, value]`
    - Definição B: outputs `[exec_success, exec_not_found, exec_failure, value]`
-   - Executor retorna: `["next", "exec_success"]` → **Ambas inválidas!**
+   - Executor retorna: `["next", "exec_success"]`
+   - **NÃO CONFIRMADO COMO ERRO:** Pode ser:
+     - ✓ Compatibilidade deliberada com graphs legados
+     - ✓ Múltiplas saídas simultâneas suportadas
+     - ✗ Saídas inexistentes ignoradas silenciosamente
+     - ✗ Bug de dupla execução
 
-3. **Type Mismatch:**
+3. **Type Mismatch (COSMÉTICO):**
    - Definição A: `('value', 'number')` 
    - Definição B: `pin_type=PinType.FLOAT`
-   - String vs Enum desalinhado
+   - String vs Enum - sem impacto funcional
 
-4. **Executor Logic Error:**
-   ```python
-   return ["next", "exec_success"]  # Line 353
-   ```
-   Isso retorna DUAS saídas flow juntas, violando o modelo de fluxo!
-   Deveria retornar APENAS UM: `["exec_success"]` ou `["exec_not_found"]`
-
-### 🔥 Impacto Cascata
+### 🔥 Impacto Potencial (REQUER VERIFICAÇÃO EM PHASE 2)
 - **Editor:** Serializa com porta `in`
-- **Runtime Loader:** Tenta conectar `in` → não encontra  
-- **Executor:** Espera `exec` → nunca é executado corretamente
-- **Output:** Armazena `value` mas não consegue retornar via flow correto
-- **Resultado:** Node executa parcialmente, valor silenciosamente perdido
+- **Runtime Loader:** Tenta conectar → **AQUI PRECISA INVESTIGAR**
+  - `in` é ignorado/mapeado para `exec`?
+  - Ou gera erro/warning?
+- **Executor:** Retorna `["next", "exec_success"]` → **NECESSÁRIO RASTREAR**
+  - Ambos disparam branches?
+  - Somente um dispara?
+  - Inexistentes são ignorados?
+- **Resultado:** Comportamento atual desconhecido - PHASE 2 vai provar
 
 ---
 

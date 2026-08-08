@@ -29,7 +29,10 @@
       "type": "event_update",
       "title": "On Update",
       "category": "Events",
-      "position": [-800.0, 0.0],
+      "position": [
+        -735.18,
+        0.0
+      ],
       "editor": {
         "collapsed": false,
         "width": 220.0,
@@ -38,56 +41,58 @@
       "properties": {}
     },
     {
-      "id": "update_binding",
-      "type": "update_ui_binding",
-      "title": "Atualizar Binding UI",
-      "category": "UI",
-      "position": [-500.0, 0.0],
-      "editor": {
-        "collapsed": false,
-        "width": 280.0,
-        "height": 200.0
-      },
-      "properties": {
-        "widget_name": "comida",
-        "variable_name": "comida_value",
-        "property": "value"
-      }
-    },
-    {
       "id": "set_hud",
       "type": "set_hud",
       "title": "Set HUD",
       "category": "UI",
-      "position": [-150.0, 0.0],
+      "position": [
+        -170.45,
+        10.08
+      ],
       "editor": {
         "collapsed": false,
         "width": 220.0,
         "height": 156.0
       },
       "properties": {
-        "text": "Comida"
+        "text": ""
       }
+    },
+    {
+      "id": "4da607c34a614d90abf4f954bab8f385",
+      "type": "get_progress_bar_value",
+      "title": "get_progress_bar_value",
+      "category": "Custom",
+      "position": [
+        -464.86,
+        1.82
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {}
     }
   ],
   "edges": [
     {
-      "id": "e1",
+      "id": "dda315f0177f4f03a88c7e138872a547",
       "from_node": "event_update",
       "from_port": "next",
-      "to_node": "update_binding",
-      "to_port": "exec",
+      "to_node": "4da607c34a614d90abf4f954bab8f385",
+      "to_port": "in",
       "kind": "flow",
       "order": 0
     },
     {
-      "id": "e2",
-      "from_node": "update_binding",
-      "from_port": "exec_success",
+      "id": "d9099fe9cf9946be8147f11eaba280bf",
+      "from_node": "4da607c34a614d90abf4f954bab8f385",
+      "from_port": "next",
       "to_node": "set_hud",
       "to_port": "in",
       "kind": "flow",
-      "order": 0
+      "order": 1
     }
   ]
 }
