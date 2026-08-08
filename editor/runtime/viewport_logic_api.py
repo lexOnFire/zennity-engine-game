@@ -767,8 +767,8 @@ class PlayLogicAPI:
             )
 
             if success:
-                # Get state for UI display
-                state = manager.get_state(dialog_id)
+                # Get state for UI display (with owner_id for composite key)
+                state = manager.get_state(dialog_id, owner_id=owner_id)
 
                 # Queue UI update
                 self.obj.setdefault("logic_events", []).append({
@@ -810,16 +810,17 @@ class PlayLogicAPI:
         Set dialogue choice programmatically.
 
         For testing, AI, keyboard shortcuts.
-        Stores in _pending_choices for compatibility.
+        Routes through DialogueManager with owner isolation.
         """
         try:
+            owner_id = self.name  # Use object name as owner for routing
             # Store pending choice for wait_dialogue_choice to find
             self.obj.setdefault("_pending_choices", {})[dialog_id] = int(choice_index)
 
-            # Also delegate to DialogueManager for state tracking
+            # Delegate to DialogueManager with composite key (owner_id, dialog_id)
             from engine.dialogue.manager import get_dialogue_manager
             manager = get_dialogue_manager()
-            return manager.choose(dialog_id, choice_index)
+            return manager.choose(dialog_id, choice_index, owner_id=owner_id)
         except Exception as e:
             print(f"[PlayLogicAPI.set_dialogue_choice] Error: {e}")
             return False
@@ -865,13 +866,15 @@ class PlayLogicAPI:
         """
         Close dialogue session and clean up UI.
 
-        Routes through DialogueManager (canonical).
+        Routes through DialogueManager with owner isolation.
         """
         try:
+            owner_id = self.name  # Use object name as owner for routing
             from engine.dialogue.manager import get_dialogue_manager
 
             manager = get_dialogue_manager()
-            success = manager.close(dialog_id)
+            # Use composite key (owner_id, dialog_id)
+            success = manager.close(dialog_id, owner_id=owner_id)
 
             if success:
                 # Queue UI cleanup

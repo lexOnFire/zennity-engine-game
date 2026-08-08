@@ -60,6 +60,7 @@ def execute_wait_dialog_choice(runtime, node: Mapping[str, Any], game: Any, dt: 
     Aguarda o player escolher uma opção de diálogo.
 
     Checks DialogueSession state directly (canonical).
+    Uses composite key (owner_id, dialog_id).
 
     Returns:
     - ["waiting"] if dialogue still active (no choice yet)
@@ -71,9 +72,10 @@ def execute_wait_dialog_choice(runtime, node: Mapping[str, Any], game: Any, dt: 
 
     try:
         dialog_id = str(properties.get("dialog_id", "dialog_1"))
+        owner_id = "dialogue_node"  # Owner context for composite key
 
         manager = get_dialogue_manager()
-        state = manager.get_state(dialog_id)
+        state = manager.get_state(dialog_id, owner_id=owner_id)
 
         if not state:
             return ["failure"]  # Dialogue not found
@@ -100,6 +102,7 @@ def execute_set_dialog_choice(runtime, node: Mapping[str, Any], game: Any, dt: f
     Define a escolha do player no diálogo.
 
     Routes through DialogueManager → DialogueSession.choose()
+    Uses composite key (owner_id, dialog_id).
     Can be used for testing, AI, keyboard shortcuts.
     """
     node_id = str(node["id"])
@@ -108,9 +111,10 @@ def execute_set_dialog_choice(runtime, node: Mapping[str, Any], game: Any, dt: f
     try:
         dialog_id = str(properties.get("dialog_id", "dialog_1"))
         choice_index = int(properties.get("choice_index", 0))
+        owner_id = "dialogue_node"  # Owner context for composite key
 
         manager = get_dialogue_manager()
-        success = manager.choose(dialog_id, choice_index)
+        success = manager.choose(dialog_id, choice_index, owner_id=owner_id)
         return ["success" if success else "failure"]
 
     except Exception as e:
@@ -124,6 +128,7 @@ def execute_close_dialog(runtime, node: Mapping[str, Any], game: Any, dt: float)
     Fecha o diálogo ativo.
 
     Routes through DialogueManager (canonical).
+    Uses composite key (owner_id, dialog_id).
     Cleans up session and UI.
     """
     node_id = str(node["id"])
@@ -131,9 +136,10 @@ def execute_close_dialog(runtime, node: Mapping[str, Any], game: Any, dt: float)
 
     try:
         dialog_id = str(properties.get("dialog_id", "dialog_1"))
+        owner_id = "dialogue_node"  # Owner context for composite key
 
         manager = get_dialogue_manager()
-        success = manager.close(dialog_id)
+        success = manager.close(dialog_id, owner_id=owner_id)
 
         return ["success" if success else "failure"]
     except Exception as e:

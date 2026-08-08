@@ -169,10 +169,14 @@ class DialogueManager:
         Start dialogue from .zdialogue asset file.
 
         Loads dialogue graph JSON and creates DialogueSession.
+        Uses composite key (owner_id, session_id) for owner isolation.
         """
         try:
-            if session_id in self._sessions:
-                return False  # Already active
+            # Composite key allows same dialog_id with different owners
+            composite_key = (owner_id, session_id)
+
+            if composite_key in self._sessions:
+                return False  # Already active for this owner
 
             # Resolve asset path
             asset_file = Path(asset_path)
@@ -186,29 +190,34 @@ class DialogueManager:
             session = DialogueSession(
                 graph_data,
                 variables=variables or {},
-                event_sink=self._handle_dialogue_event
+                event_sink=lambda event, payload: self._handle_dialogue_event(
+                    composite_key, event, payload
+                )
             )
 
             # IMPORTANT: Start the session to initialize state
             session.start()
 
-            self._sessions[session_id] = session
-            self._active_session_id = session_id
-            self._owner_sessions[owner_id] = session_id
+            self._sessions[composite_key] = session
+            self._active_session_id = composite_key
+            self._owner_sessions[owner_id] = composite_key
 
             return True
         except Exception as e:
             print(f"[DialogueManager.start_asset] Error: {e}")
             return False
 
-    def get_state(self, session_id: str) -> Dict[str, Any]:
+    def get_state(self, session_id: str, owner_id: str = "default") -> Dict[str, Any]:
         """
         Get current dialogue state (pure getter).
 
         Returns DialogueSession snapshot.
+        Uses composite key (owner_id, session_id).
         """
         try:
-            session = self._sessions.get(session_id)
+            # Composite key lookup
+            composite_key = (owner_id, session_id)
+            session = self._sessions.get(composite_key)
             if session:
                 return session.snapshot()
             return {}
@@ -216,14 +225,17 @@ class DialogueManager:
             print(f"[DialogueManager.get_state] Error: {e}")
             return {}
 
-    def choose(self, session_id: str, choice_index: int) -> bool:
+    def choose(self, session_id: str, choice_index: int, owner_id: str = "default") -> bool:
         """
         Player chooses an option.
 
         Advances DialogueSession through choice.
+        Uses composite key (owner_id, session_id).
         """
         try:
-            session = self._sessions.get(session_id)
+            # Composite key lookup
+            composite_key = (owner_id, session_id)
+            session = self._sessions.get(composite_key)
             if not session or not session.active:
                 return False
 
@@ -231,8 +243,8 @@ class DialogueManager:
             session.choose(choice_index)
 
             # Call choice callback if registered
-            if session_id in self._choice_callbacks:
-                callback = self._choice_callbacks[session_id]
+            if composite_key in self._choice_callbacks:
+                callback = self._choice_callbacks[composite_key]
                 callback(choice_index)
 
             return True
@@ -240,64 +252,100 @@ class DialogueManager:
             print(f"[DialogueManager.choose] Error: {e}")
             return False
 
-    def close(self, session_id: str) -> bool:
+    def close(self, session_id: str, owner_id: str = "default") -> bool:
         """
         Close dialogue session.
 
         Removes session and clears owner routing.
+        Uses composite key (owner_id, session_id).
         """
         try:
-            if session_id not in self._sessions:
+            # Composite key lookup
+            composite_key = (owner_id, session_id)
+
+            if composite_key not in self._sessions:
                 return False
 
-            del self._sessions[session_id]
+            del self._sessions[composite_key]
 
-            if self._active_session_id == session_id:
+            if self._active_session_id == composite_key:
                 self._active_session_id = None
 
             # Clear owner routing
-            owner_id = next(
-                (owner for owner, sid in self._owner_sessions.items() if sid == session_id),
-                None
-            )
-            if owner_id:
+            if self._owner_sessions.get(owner_id) == composite_key:
                 del self._owner_sessions[owner_id]
 
             # Clear choice callback
-            if session_id in self._choice_callbacks:
-                del self._choice_callbacks[session_id]
+            if composite_key in self._choice_callbacks:
+                del self._choice_callbacks[composite_key]
 
             return True
         except Exception as e:
             print(f"[DialogueManager.close] Error: {e}")
             return False
 
-    def get_active_session_id(self) -> Optional[str]:
-        """Get currently active session ID (pure getter)."""
+    def get_active_session_key(self) -> Optional[tuple[str, str]]:
+        """Get currently active session composite key (owner_id, session_id)."""
         return self._active_session_id
 
-    def get_session_for_owner(self, owner_id: str) -> Optional[str]:
-        """Get session ID for a specific owner (pure getter)."""
+    def get_session_for_owner(self, owner_id: str) -> Optional[tuple[str, str]]:
+        """Get composite session key (owner_id, session_id) for owner."""
         return self._owner_sessions.get(owner_id)
 
     def register_choice_callback(
         self,
         session_id: str,
-        callback: Callable[[int], None]
+        callback: Callable[[int], None],
+        owner_id: str = "default"
     ) -> None:
-        """Register callback for when choice is made."""
-        self._choice_callbacks[session_id] = callback
+        """Register callback for when choice is made (composite key)."""
+        composite_key = (owner_id, session_id)
+        self._choice_callbacks[composite_key] = callback
 
-    def _handle_dialogue_event(self, event_name: str, payload: Any) -> None:
-        """Handle dialogue events (dialogue.event nodes)."""
-        # Dispatch via LogicEventBus if available
-        # For now, just log
-        print(f"[DialogueManager] Event: {event_name}, payload: {payload}")
+    def _handle_dialogue_event(
+        self,
+        composite_key: tuple[str, str],
+        event_name: str,
+        payload: Any
+    ) -> None:
+        """
+        Handle dialogue events from DialogueSession.
 
-    def set_variable(self, session_id: str, name: str, value: Any) -> bool:
-        """Set dialogue variable."""
+        Routes to LogicEventBus with owner isolation.
+        Composite key: (owner_id, session_id)
+        """
+        owner_id, session_id = composite_key
         try:
-            session = self._sessions.get(session_id)
+            # Try to dispatch via LogicEventBus
+            from engine.logic.event_bus import LogicEventBus
+            bus = LogicEventBus.get_instance()
+
+            # Emit event with owner context
+            event_data = {
+                "owner_id": owner_id,
+                "session_id": session_id,
+                "event_name": event_name,
+                "payload": payload,
+            }
+            bus.emit(f"dialogue:{event_name}", event_data)
+
+        except ImportError:
+            # LogicEventBus not available, just log
+            print(f"[DialogueManager] Event: {event_name} (owner={owner_id}, session={session_id})")
+        except Exception as e:
+            print(f"[DialogueManager._handle_dialogue_event] Error: {e}")
+
+    def set_variable(
+        self,
+        session_id: str,
+        name: str,
+        value: Any,
+        owner_id: str = "default"
+    ) -> bool:
+        """Set dialogue variable (composite key)."""
+        try:
+            composite_key = (owner_id, session_id)
+            session = self._sessions.get(composite_key)
             if session:
                 session.set_variable(name, value)
                 return True
@@ -305,15 +353,67 @@ class DialogueManager:
         except Exception:
             return False
 
-    def get_variable(self, session_id: str, name: str, default: Any = None) -> Any:
-        """Get dialogue variable."""
+    def get_variable(
+        self,
+        session_id: str,
+        name: str,
+        default: Any = None,
+        owner_id: str = "default"
+    ) -> Any:
+        """Get dialogue variable (composite key)."""
         try:
-            session = self._sessions.get(session_id)
+            composite_key = (owner_id, session_id)
+            session = self._sessions.get(composite_key)
             if session:
                 return session.variables.get(name, default)
             return default
         except Exception:
             return default
+
+    def close_owner(self, owner_id: str) -> None:
+        """
+        Close all dialogue sessions for a specific owner.
+
+        Used when scene changes or owner is destroyed.
+        """
+        try:
+            # Find all sessions belonging to this owner
+            keys_to_close = [
+                key for key in self._sessions.keys()
+                if key[0] == owner_id
+            ]
+
+            # Close each session
+            for composite_key in keys_to_close:
+                del self._sessions[composite_key]
+
+                if self._active_session_id == composite_key:
+                    self._active_session_id = None
+
+                if composite_key in self._choice_callbacks:
+                    del self._choice_callbacks[composite_key]
+
+            # Clear owner mapping
+            if owner_id in self._owner_sessions:
+                del self._owner_sessions[owner_id]
+
+        except Exception as e:
+            print(f"[DialogueManager.close_owner] Error: {e}")
+
+    def reset(self) -> None:
+        """
+        Reset all dialogue state.
+
+        Used on Play/Stop/Play transitions or system shutdown.
+        """
+        try:
+            self._sessions.clear()
+            self._active_session_id = None
+            self._owner_sessions.clear()
+            self._choice_callbacks.clear()
+            self._session_counter = 0
+        except Exception as e:
+            print(f"[DialogueManager.reset] Error: {e}")
 
 
 # Singleton instance
