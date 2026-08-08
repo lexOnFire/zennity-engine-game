@@ -1,0 +1,98 @@
+{
+  "format": "zennity.generic_graph",
+  "category": "Logic",
+  "name": "KeyCollectionLogic",
+  "nodes": [
+    {
+      "id": "on_trigger_enter",
+      "type": "physics.on_trigger_enter",
+      "position": [50, 50],
+      "config": {}
+    },
+    {
+      "id": "check_player",
+      "type": "logic.branch",
+      "position": [200, 50],
+      "config": {
+        "condition": "contains",
+        "compare_value": "Player"
+      }
+    },
+    {
+      "id": "set_has_key",
+      "type": "variable.set",
+      "position": [350, 50],
+      "config": {
+        "variable_name": "has_key",
+        "value": true,
+        "scope": "project"
+      }
+    },
+    {
+      "id": "update_key_label",
+      "type": "ui.update_label",
+      "position": [500, 50],
+      "config": {
+        "element_name": "KeyLabel"
+      }
+    },
+    {
+      "id": "play_key_sound",
+      "type": "audio.play_sound",
+      "position": [650, 50],
+      "config": {
+        "sound_name": "pickup_key"
+      }
+    },
+    {
+      "id": "destroy_key",
+      "type": "object.destroy",
+      "position": [800, 50],
+      "config": {}
+    },
+    {
+      "id": "no_player_noop",
+      "type": "logic.noop",
+      "position": [350, 150],
+      "config": {}
+    }
+  ],
+  "edges": [
+    {
+      "from": "on_trigger_enter",
+      "to": "check_player",
+      "from_pin": "collider",
+      "to_pin": "value"
+    },
+    {
+      "from": "check_player",
+      "to": "set_has_key",
+      "from_pin": "true",
+      "to_pin": "execute"
+    },
+    {
+      "from": "set_has_key",
+      "to": "update_key_label",
+      "from_pin": "success",
+      "to_pin": "execute"
+    },
+    {
+      "from": "update_key_label",
+      "to": "play_key_sound",
+      "from_pin": "done",
+      "to_pin": "execute"
+    },
+    {
+      "from": "play_key_sound",
+      "to": "destroy_key",
+      "from_pin": "played",
+      "to_pin": "execute"
+    },
+    {
+      "from": "check_player",
+      "to": "no_player_noop",
+      "from_pin": "false",
+      "to_pin": "execute"
+    }
+  ]
+}

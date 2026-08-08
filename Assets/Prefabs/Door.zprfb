@@ -1,0 +1,40 @@
+{
+  "format": "zennity.prefab",
+  "name": "Door",
+  "root": {
+    "id": "door_root",
+    "name": "Door",
+    "type": "GameObject",
+    "enabled": true,
+    "components": [
+      {
+        "type": "Transform",
+        "position": [0, 0],
+        "rotation": 0,
+        "scale": [1, 1]
+      },
+      {
+        "type": "SpriteRenderer",
+        "sprite": "Assets/Sprites/Environment/door_locked.png",
+        "color": [0.6, 0.3, 0.1, 1],
+        "layer": 0
+      },
+      {
+        "type": "BoxCollider2D",
+        "size": [1.0, 2.0],
+        "offset": [0, 0],
+        "is_trigger": false
+      }
+    ],
+    "variables": {
+      "locked": true,
+      "owner_id": "Door"
+    },
+    "logic_graphs": [
+      {
+        "path": "Assets/Logic/DoorLogic.zlogic",
+        "name": "DoorLogic"
+      }
+    ]
+  }
+}

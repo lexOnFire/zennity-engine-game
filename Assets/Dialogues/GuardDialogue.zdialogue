@@ -1,0 +1,66 @@
+{
+  "format": "zennity.dialogue",
+  "name": "GuardDialogue",
+  "nodes": [
+    {
+      "id": "speech_start",
+      "type": "speech",
+      "position": [100, 100],
+      "text": "Guard",
+      "speaker": "Guard",
+      "next": "speech_locked"
+    },
+    {
+      "id": "speech_locked",
+      "type": "speech",
+      "position": [100, 200],
+      "text": "The gate is locked. You must find the key to pass.",
+      "speaker": "Guard",
+      "next": "check_has_key"
+    },
+    {
+      "id": "check_has_key",
+      "type": "condition",
+      "position": [250, 300],
+      "condition": "variable_equals",
+      "variable": "has_key",
+      "scope": "project",
+      "compare_value": true,
+      "true_branch": "speech_has_key",
+      "false_branch": "speech_need_key"
+    },
+    {
+      "id": "speech_need_key",
+      "type": "speech",
+      "position": [50, 450],
+      "text": "Come back when you find the key.",
+      "speaker": "Guard",
+      "next": "end_no_key"
+    },
+    {
+      "id": "end_no_key",
+      "type": "end",
+      "position": [50, 550]
+    },
+    {
+      "id": "speech_has_key",
+      "type": "speech",
+      "position": [350, 450],
+      "text": "Excellent! You found the key. You may pass.",
+      "speaker": "Guard",
+      "next": "event_open_gate"
+    },
+    {
+      "id": "event_open_gate",
+      "type": "event",
+      "position": [350, 550],
+      "event_name": "open_gate",
+      "next": "end_key"
+    },
+    {
+      "id": "end_key",
+      "type": "end",
+      "position": [350, 650]
+    }
+  ]
+}

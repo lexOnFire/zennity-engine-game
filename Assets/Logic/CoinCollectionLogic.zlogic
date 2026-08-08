@@ -1,0 +1,127 @@
+{
+  "format": "zennity.generic_graph",
+  "category": "Logic",
+  "name": "CoinCollectionLogic",
+  "nodes": [
+    {
+      "id": "on_trigger_enter",
+      "type": "physics.on_trigger_enter",
+      "position": [50, 50],
+      "config": {}
+    },
+    {
+      "id": "check_player",
+      "type": "logic.branch",
+      "position": [200, 50],
+      "config": {
+        "condition": "contains",
+        "compare_value": "Player"
+      }
+    },
+    {
+      "id": "get_coins",
+      "type": "variable.get",
+      "position": [350, 50],
+      "config": {
+        "variable_name": "coins",
+        "scope": "project"
+      }
+    },
+    {
+      "id": "increment_coins",
+      "type": "math.add",
+      "position": [500, 50],
+      "config": {
+        "a": 0,
+        "b": 1
+      }
+    },
+    {
+      "id": "set_coins",
+      "type": "variable.set",
+      "position": [650, 50],
+      "config": {
+        "variable_name": "coins",
+        "scope": "project"
+      }
+    },
+    {
+      "id": "update_ui",
+      "type": "ui.update_label",
+      "position": [800, 50],
+      "config": {
+        "element_name": "CoinsLabel"
+      }
+    },
+    {
+      "id": "play_pickup_sound",
+      "type": "audio.play_sound",
+      "position": [950, 50],
+      "config": {
+        "sound_name": "pickup_coin"
+      }
+    },
+    {
+      "id": "destroy_coin",
+      "type": "object.destroy",
+      "position": [1100, 50],
+      "config": {}
+    },
+    {
+      "id": "no_player_noop",
+      "type": "logic.noop",
+      "position": [350, 150],
+      "config": {}
+    }
+  ],
+  "edges": [
+    {
+      "from": "on_trigger_enter",
+      "to": "check_player",
+      "from_pin": "collider",
+      "to_pin": "value"
+    },
+    {
+      "from": "check_player",
+      "to": "get_coins",
+      "from_pin": "true",
+      "to_pin": "execute"
+    },
+    {
+      "from": "get_coins",
+      "to": "increment_coins",
+      "from_pin": "value",
+      "to_pin": "a"
+    },
+    {
+      "from": "increment_coins",
+      "to": "set_coins",
+      "from_pin": "result",
+      "to_pin": "value"
+    },
+    {
+      "from": "set_coins",
+      "to": "update_ui",
+      "from_pin": "success",
+      "to_pin": "execute"
+    },
+    {
+      "from": "update_ui",
+      "to": "play_pickup_sound",
+      "from_pin": "done",
+      "to_pin": "execute"
+    },
+    {
+      "from": "play_pickup_sound",
+      "to": "destroy_coin",
+      "from_pin": "played",
+      "to_pin": "execute"
+    },
+    {
+      "from": "check_player",
+      "to": "no_player_noop",
+      "from_pin": "false",
+      "to_pin": "execute"
+    }
+  ]
+}

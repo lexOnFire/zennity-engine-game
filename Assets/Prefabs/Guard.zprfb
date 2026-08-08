@@ -1,0 +1,48 @@
+{
+  "format": "zennity.prefab",
+  "name": "Guard",
+  "root": {
+    "id": "guard_root",
+    "name": "Guard",
+    "type": "GameObject",
+    "enabled": true,
+    "components": [
+      {
+        "type": "Transform",
+        "position": [0, 0],
+        "rotation": 0,
+        "scale": [1, 1]
+      },
+      {
+        "type": "SpriteRenderer",
+        "sprite": "Assets/Sprites/NPCs/guard_idle.png",
+        "color": [1, 1, 1, 1],
+        "layer": 0
+      },
+      {
+        "type": "BoxCollider2D",
+        "size": [0.8, 1.0],
+        "offset": [0, 0],
+        "is_trigger": false
+      },
+      {
+        "type": "BoxCollider2D",
+        "size": [3, 3],
+        "offset": [0, 0],
+        "is_trigger": true,
+        "layer": "INTERACTION"
+      }
+    ],
+    "variables": {
+      "dialogue_owner_id": "Guard",
+      "interaction_range": 3.0,
+      "can_interact": false
+    },
+    "logic_graphs": [
+      {
+        "path": "Assets/Logic/GuardInteractionLogic.zlogic",
+        "name": "GuardInteraction"
+      }
+    ]
+  }
+}

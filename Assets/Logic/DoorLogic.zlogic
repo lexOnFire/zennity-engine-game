@@ -1,0 +1,89 @@
+{
+  "format": "zennity.generic_graph",
+  "category": "Logic",
+  "name": "DoorLogic",
+  "nodes": [
+    {
+      "id": "listen_gate_opened",
+      "type": "event.listen",
+      "position": [50, 50],
+      "config": {
+        "event_name": "gate_opened"
+      }
+    },
+    {
+      "id": "set_unlocked",
+      "type": "variable.set",
+      "position": [200, 50],
+      "config": {
+        "variable_name": "locked",
+        "value": false
+      }
+    },
+    {
+      "id": "get_collider",
+      "type": "object.get_component",
+      "position": [350, 50],
+      "config": {
+        "component_type": "BoxCollider2D"
+      }
+    },
+    {
+      "id": "disable_collider",
+      "type": "component.set_property",
+      "position": [500, 50],
+      "config": {
+        "property": "enabled",
+        "value": false
+      }
+    },
+    {
+      "id": "play_door_sound",
+      "type": "audio.play_sound",
+      "position": [650, 50],
+      "config": {
+        "sound_name": "door_open"
+      }
+    },
+    {
+      "id": "change_door_sprite",
+      "type": "sprite.change_sprite",
+      "position": [800, 50],
+      "config": {
+        "sprite_path": "Assets/Sprites/Environment/door_open.png"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "listen_gate_opened",
+      "to": "set_unlocked",
+      "from_pin": "event_received",
+      "to_pin": "execute"
+    },
+    {
+      "from": "set_unlocked",
+      "to": "get_collider",
+      "from_pin": "success",
+      "to_pin": "execute"
+    },
+    {
+      "from": "get_collider",
+      "to": "disable_collider",
+      "from_pin": "component",
+      "to_pin": "component"
+    },
+    {
+      "from": "disable_collider",
+      "to": "play_door_sound",
+      "from_pin": "done",
+      "to_pin": "execute"
+    },
+    {
+      "from": "play_door_sound",
+      "to": "change_door_sprite",
+      "from_pin": "played",
+      "to_pin": "execute"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "format": "zennity.prefab",
+  "name": "Coin",
+  "root": {
+    "id": "coin_root",
+    "name": "Coin",
+    "type": "GameObject",
+    "enabled": true,
+    "components": [
+      {
+        "type": "Transform",
+        "position": [0, 0],
+        "rotation": 0,
+        "scale": [1, 1]
+      },
+      {
+        "type": "SpriteRenderer",
+        "sprite": "Assets/Sprites/Collectibles/coin.png",
+        "color": [1, 1, 0, 1],
+        "layer": 0
+      },
+      {
+        "type": "BoxCollider2D",
+        "size": [0.4, 0.4],
+        "offset": [0, 0],
+        "is_trigger": true
+      }
+    ],
+    "logic_graphs": [
+      {
+        "path": "Assets/Logic/CoinCollectionLogic.zlogic",
+        "name": "CoinCollection"
+      }
+    ]
+  }
+}
