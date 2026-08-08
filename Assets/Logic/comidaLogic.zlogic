@@ -25,49 +25,13 @@
   },
   "nodes": [
     {
-      "id": "event_start_setup",
-      "type": "event_start",
-      "title": "On Start",
-      "category": "Events",
-      "position": [
-        -900.0,
-        -180.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "bind_ui_setup",
-      "type": "bind_ui_to_variable",
-      "title": "Vincular UI → Variável",
-      "category": "UI",
-      "position": [
-        -650.0,
-        -180.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 280.0,
-        "height": 200.0
-      },
-      "properties": {
-        "widget_name": "comida",
-        "variable_name": "comida_value",
-        "property": "value"
-      }
-    },
-    {
-      "id": "event_update_sync",
+      "id": "event_update_main",
       "type": "event_update",
       "title": "On Update",
       "category": "Events",
       "position": [
         -900.0,
-        50.0
+        0.0
       ],
       "editor": {
         "collapsed": false,
@@ -77,13 +41,13 @@
       "properties": {}
     },
     {
-      "id": "update_ui_binding",
+      "id": "update_binding",
       "type": "update_ui_binding",
       "title": "Atualizar Binding UI",
       "category": "UI",
       "position": [
         -650.0,
-        50.0
+        0.0
       ],
       "editor": {
         "collapsed": false,
@@ -97,13 +61,13 @@
       }
     },
     {
-      "id": "get_comida_value",
+      "id": "get_value",
       "type": "get_variable",
       "title": "Obter Variável",
       "category": "Variables",
       "position": [
         -350.0,
-        50.0
+        0.0
       ],
       "editor": {
         "collapsed": false,
@@ -115,13 +79,13 @@
       }
     },
     {
-      "id": "node_to_text_1",
+      "id": "to_text_node",
       "type": "to_text",
       "title": "To Text",
       "category": "Text",
       "position": [
-        -50.0,
-        50.0
+        0.0,
+        0.0
       ],
       "editor": {
         "collapsed": false,
@@ -131,13 +95,13 @@
       "properties": {}
     },
     {
-      "id": "node_set_hud_1",
+      "id": "set_hud_node",
       "type": "set_hud",
       "title": "Set HUD",
       "category": "UI",
       "position": [
-        200.0,
-        50.0
+        250.0,
+        0.0
       ],
       "editor": {
         "collapsed": false,
@@ -145,118 +109,45 @@
         "height": 156.0
       },
       "properties": {
-        "text": "Comida"
-      }
-    },
-    {
-      "id": "compare_number_destroy",
-      "type": "compare_number",
-      "title": "Compare Number",
-      "category": "Logic",
-      "position": [
-        -50.0,
-        250.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 184.0
-      },
-      "properties": {
-        "operator": "<=",
-        "value": 0.0
-      }
-    },
-    {
-      "id": "node_destroy_1",
-      "type": "destroy_object",
-      "title": "Destroy Object",
-      "category": "Objects",
-      "position": [
-        200.0,
-        250.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {
-        "target": ""
+        "text": "Comida: "
       }
     }
   ],
   "edges": [
     {
-      "id": "edge_setup_flow",
-      "from_node": "event_start_setup",
+      "id": "e1",
+      "from_node": "event_update_main",
       "from_port": "next",
-      "to_node": "bind_ui_setup",
+      "to_node": "update_binding",
       "to_port": "exec",
       "kind": "flow",
       "order": 0
     },
     {
-      "id": "edge_update_sync_flow",
-      "from_node": "event_update_sync",
-      "from_port": "next",
-      "to_node": "update_ui_binding",
-      "to_port": "exec",
-      "kind": "flow",
-      "order": 0
-    },
-    {
-      "id": "edge_sync_to_get_flow",
-      "from_node": "update_ui_binding",
+      "id": "e2",
+      "from_node": "update_binding",
       "from_port": "exec_success",
-      "to_node": "get_comida_value",
+      "to_node": "get_value",
       "to_port": "exec",
       "kind": "flow",
       "order": 0
     },
     {
-      "id": "edge_get_to_text_data",
-      "from_node": "get_comida_value",
+      "id": "e3",
+      "from_node": "get_value",
       "from_port": "value",
-      "to_node": "node_to_text_1",
+      "to_node": "to_text_node",
       "to_port": "value",
       "kind": "number",
       "order": 0
     },
     {
-      "id": "edge_text_to_hud_data",
-      "from_node": "node_to_text_1",
+      "id": "e4",
+      "from_node": "to_text_node",
       "from_port": "value",
-      "to_node": "node_set_hud_1",
+      "to_node": "set_hud_node",
       "to_port": "text",
       "kind": "text",
-      "order": 0
-    },
-    {
-      "id": "edge_hud_flow",
-      "from_node": "node_set_hud_1",
-      "from_port": "next",
-      "to_node": "compare_number_destroy",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 0
-    },
-    {
-      "id": "edge_get_to_compare_data",
-      "from_node": "get_comida_value",
-      "from_port": "value",
-      "to_node": "compare_number_destroy",
-      "to_port": "value",
-      "kind": "number",
-      "order": 0
-    },
-    {
-      "id": "edge_compare_to_destroy_flow",
-      "from_node": "compare_number_destroy",
-      "from_port": "true",
-      "to_node": "node_destroy_1",
-      "to_port": "in",
-      "kind": "flow",
       "order": 0
     }
   ]
