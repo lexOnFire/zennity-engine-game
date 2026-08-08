@@ -133,7 +133,7 @@ def _convert_legacy_object(legacy_obj: dict) -> dict[str, Any]:
             camera_data = legacy_obj.get("camera", {})
             components["camera"] = {
                 "zoom": camera_data.get("zoom", 1.0),
-                "background_color": camera_data.get("clear_color", [30, 30, 30]),
+                "clear_color": camera_data.get("clear_color", [30, 30, 30]),  # Use clear_color, not background_color
                 "viewport_rect": [0.0, 0.0, 1.0, 1.0],
                 "priority": 0,
                 "active": True

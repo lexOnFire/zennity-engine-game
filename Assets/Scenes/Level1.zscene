@@ -62,7 +62,7 @@
       "components": {
         "camera": {
           "zoom": 1.0,
-          "background_color": [
+          "clear_color": [
             0.05,
             0.05,
             0.1,
