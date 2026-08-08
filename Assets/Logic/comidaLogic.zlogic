@@ -25,21 +25,47 @@
   },
   "nodes": [
     {
-      "id": "be4efcdc55a047c4b8ae691c7d0cbf94",
-      "type": "bind_ui_to_variable",
-      "title": "bind_ui_to_variable",
-      "category": "Custom",
+      "id": "2a3476db82e94acb9f62d2cd6bcf167b",
+      "type": "event_update",
+      "title": "On Update",
+      "category": "Events",
       "position": [
-        314.0,
-        -21.0
+        -349.17,
+        -150.5
       ],
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 212.0
+        "height": 150.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "d8fc8a6e9fcd446eaa15ee964aca16e0",
+      "type": "get_progress_bar_value",
+      "title": "get_progress_bar_value",
+      "category": "Custom",
+      "position": [
+        4.74,
+        -157.59
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {}
     }
   ],
-  "edges": []
+  "edges": [
+    {
+      "id": "b887c32b9582467bb8161050799d41b4",
+      "from_node": "2a3476db82e94acb9f62d2cd6bcf167b",
+      "from_port": "next",
+      "to_node": "d8fc8a6e9fcd446eaa15ee964aca16e0",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    }
+  ]
 }

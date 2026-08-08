@@ -202,6 +202,25 @@ for _node_type, _definition in NODE_DEFINITIONS.items():
             "outputs": list(_definition.get("outputs", [])),
         },
     )
+    _props = _definition.setdefault("properties", {})
+    for _pin in _definition.get("inputs", []):
+        if isinstance(_pin, (list, tuple)) and len(_pin) >= 2:
+            _pin_id, _pin_type = str(_pin[0]), str(_pin[1])
+            if _pin_type not in ("flow", "exec") and _pin_id not in _props:
+                if _pin_id == "widget_name":
+                    _props[_pin_id] = "comida"
+                elif _pin_id == "variable_name":
+                    _props[_pin_id] = "comida"
+                elif _pin_id == "property":
+                    _props[_pin_id] = "value"
+                elif _pin_id == "target":
+                    _props[_pin_id] = ""
+                elif _pin_type == "number":
+                    _props[_pin_id] = 0.0
+                elif _pin_type == "bool":
+                    _props[_pin_id] = True
+                else:
+                    _props[_pin_id] = ""
 
 NODE_DEFINITIONS["key_pressed"].update(
     title="Key Pressed Now?", category="Condition", properties={"key": "SPACE"}

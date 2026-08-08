@@ -264,11 +264,32 @@ class LogicGraphPropertiesMixin:
         self.breakpoint_condition_edit.setEnabled(has_breakpoint)
         self.breakpoint_condition_edit.setText(str(condition))
         node_type = str(node.get("type", ""))
-        default_props = NODE_DEFINITIONS.get(node_type, {}).get("properties", {})
+        definition = NODE_DEFINITIONS.get(node_type, {})
+        default_props = definition.get("properties", {})
         properties = node.setdefault("properties", {})
         for prop_key, prop_val in default_props.items():
             if prop_key not in properties:
                 properties[prop_key] = deepcopy(prop_val)
+
+        inputs = definition.get("inputs", [])
+        for pin in inputs:
+            if isinstance(pin, (list, tuple)) and len(pin) >= 2:
+                pin_id, pin_type = str(pin[0]), str(pin[1])
+                if pin_type not in {"flow", "exec"} and pin_id not in properties:
+                    if pin_id == "widget_name":
+                        properties[pin_id] = "comida"
+                    elif pin_id == "variable_name":
+                        properties[pin_id] = "comida"
+                    elif pin_id == "property":
+                        properties[pin_id] = "value"
+                    elif pin_id == "target":
+                        properties[pin_id] = ""
+                    elif pin_type == "number":
+                        properties[pin_id] = 0.0
+                    elif pin_type == "bool":
+                        properties[pin_id] = True
+                    else:
+                        properties[pin_id] = ""
 
         title_item = QTreeWidgetItem(["title", str(node["title"])])
         title_item.setData(0, Qt.UserRole, "title")
