@@ -525,10 +525,10 @@ class TestAnimatorParameterNode:
 
         class RuntimeMock:
             def __init__(self):
-                self.params = {}
+                self.values = {}
 
-            def _store(self, key, value):
-                self.params[key] = value
+            def _store(self, key, subkey, value):
+                self.values[(key, subkey)] = value
 
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_animator_parameter
@@ -551,10 +551,10 @@ class TestAnimatorParameterNode:
 
         class RuntimeMock:
             def __init__(self):
-                self.params = {}
+                self.values = {}
 
-            def _store(self, key, value):
-                self.params[key] = value
+            def _store(self, key, subkey, value):
+                self.values[(key, subkey)] = value
 
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_animator_parameter
@@ -577,10 +577,10 @@ class TestAnimatorParameterNode:
 
         class RuntimeMock:
             def __init__(self):
-                self.params = {}
+                self.values = {}
 
-            def _store(self, key, value):
-                self.params[key] = value
+            def _store(self, key, subkey, value):
+                self.values[(key, subkey)] = value
 
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_animator_parameter

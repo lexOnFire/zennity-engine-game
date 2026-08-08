@@ -191,6 +191,65 @@ class AnimateValueNode:
     )
 
 
+# Phase 6B.4: Animator Controller Nodes
+class AnimatorSetTriggerNode:
+    """Define um trigger do Animator Controller."""
+
+    __node_definition__ = NodeDefinition(
+        id="animator_set_trigger",
+        title_key="Set Animator Trigger",
+        category_key="Animation",
+        description_key="Define um trigger nomeado no Animator Controller",
+
+        inputs=[
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="target", label_key="Target", pin_type=PinType.STRING, default_value="player"),
+            PinDefinition(id="trigger_name", label_key="Trigger", pin_type=PinType.STRING, default_value="attack"),
+        ],
+        outputs=[
+            PinDefinition(id="exec_success", label_key="Success", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Failure", pin_type=PinType.EXEC),
+        ]
+    )
+
+
+class AnimatorGetParameterNode:
+    """Obtém um parâmetro do Animator Controller."""
+
+    __node_definition__ = NodeDefinition(
+        id="animator_get_parameter",
+        title_key="Get Animator Parameter",
+        category_key="Animation/Getters",
+        description_key="Obtém valor de um parâmetro do Animator Controller",
+
+        inputs=[
+            PinDefinition(id="target", label_key="Target", pin_type=PinType.STRING, default_value="player"),
+            PinDefinition(id="parameter_name", label_key="Parameter", pin_type=PinType.STRING, default_value="speed"),
+        ],
+        outputs=[
+            PinDefinition(id="value", label_key="Value", pin_type=PinType.STRING),  # ANY would be better if available
+        ]
+    )
+
+
+class GetAnimatorStateNode:
+    """Obtém o estado atual do Animator Controller."""
+
+    __node_definition__ = NodeDefinition(
+        id="get_animator_state",
+        title_key="Get Animator State",
+        category_key="Animation/Getters",
+        description_key="Retorna o estado atual (idle, run, attack, etc)",
+
+        inputs=[
+            PinDefinition(id="target", label_key="Target", pin_type=PinType.STRING, default_value="player"),
+        ],
+        outputs=[
+            PinDefinition(id="value", label_key="State", pin_type=PinType.STRING),
+        ]
+    )
+
+
 # Phase 6B.3: Animation Event Nodes
 class OnAnimationEventNode:
     """Dispara quando um evento específico ocorre em uma animação."""
