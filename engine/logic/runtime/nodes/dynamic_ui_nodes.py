@@ -349,22 +349,15 @@ def evaluate_get_progress_bar_value(runtime, node_id: str, port: str, node: Mapp
 
     # PHASE 3G: Usar UIRuntimeService como fonte principal
     try:
-        from engine.ui.runtime_service import UIRuntimeService
+        from engine.ui.runtime_service import UIRuntimeService, UIWidgetNotFoundError
         ui_service = UIRuntimeService.instance()
         val = ui_service.get_property(widget_name, "value", expected_type="ProgressBar")
         return runtime._store(node_id, "value", val)
-    except Exception:
-        # Fallback legado observável
+    except UIWidgetNotFoundError:
+        # Widget não está registrado — tenta fallback legado
         val = _fetch_progress_bar_value(runtime, widget_name, game)
-        if val is not None:
-            try:
-                from engine.ui.runtime_service import UIRuntimeService
-                if UIRuntimeService.instance().exists(widget_name):
-                    # Service tinha widget, mas erro ao acessar — não log
-                    pass
-                else:
-                    # Service não tinha widget — fallback legado necessário
-                    pass
-            except Exception:
-                pass
+        return runtime._store(node_id, "value", val)
+    except (ImportError, AttributeError):
+        # Service não disponível — fallback direto
+        val = _fetch_progress_bar_value(runtime, widget_name, game)
         return runtime._store(node_id, "value", val)

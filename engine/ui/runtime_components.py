@@ -90,9 +90,19 @@ class RuntimeUIElement(Component):
             from engine.ui.runtime_service import UIRuntimeService
             ui_service = UIRuntimeService.instance()
             ui_service.register_widget(self)
-        except Exception:
-            pass  # Service não disponível — fallback silencioso
+        except (ImportError, AttributeError):
+            # Service indisponível — fallback silencioso
+            pass
         return None
+
+    def destroy(self) -> None:
+        """PHASE 3H: Auto-unregister do UIRuntimeService ao destruir."""
+        try:
+            from engine.ui.runtime_service import UIRuntimeService
+            ui_service = UIRuntimeService.instance()
+            ui_service.unregister_widget(self)
+        except (ImportError, AttributeError):
+            pass  # Service indisponível
 
     def _owner_is_pure_ui(self) -> bool:
         if self.game_object is None:
