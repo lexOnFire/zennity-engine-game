@@ -221,6 +221,24 @@ class PlayLogicAPI:
     def grounded(self) -> bool:
         return bool(self.obj.get("_grounded", False))
 
+    @property
+    def value(self) -> float:
+        ui = self.obj.get("ui")
+        if isinstance(ui, dict) and "value" in ui:
+            return float(ui["value"])
+        if "value" in self.obj:
+            return float(self.obj["value"])
+        return float(self.obj.get("_logic_state", {}).get("value", 100.0))
+
+    @value.setter
+    def value(self, val: float) -> None:
+        num = float(val)
+        ui = self.obj.get("ui")
+        if isinstance(ui, dict):
+            ui["value"] = num
+        self.obj["value"] = num
+        self.obj.setdefault("_logic_state", {})["value"] = num
+
     def begin_frame(self, input_state: dict[str, bool]) -> None:
         self._input = dict(input_state)
 

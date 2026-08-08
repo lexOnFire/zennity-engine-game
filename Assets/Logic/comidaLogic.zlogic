@@ -30,8 +30,8 @@
       "title": "On Update",
       "category": "Events",
       "position": [
-        -349.17,
-        -150.5
+        -694.98,
+        -179.83
       ],
       "editor": {
         "collapsed": false,
@@ -46,8 +46,8 @@
       "title": "Ler Valor ProgressBar",
       "category": "UI",
       "position": [
-        -75.45,
-        -136.96
+        -330.11,
+        -199.2
       ],
       "editor": {
         "collapsed": false,
@@ -57,7 +57,53 @@
       "properties": {
         "widget_name": "comida"
       }
+    },
+    {
+      "id": "978bb86776f745308a29d92bce605f33",
+      "type": "compare_number",
+      "title": "compare_number",
+      "category": "Custom",
+      "position": [
+        71.39,
+        -235.7
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "value": 10
+      }
     }
   ],
-  "edges": []
+  "edges": [
+    {
+      "id": "cde3304dcb274e7c9208a49c40d89b6f",
+      "from_node": "2a3476db82e94acb9f62d2cd6bcf167b",
+      "from_port": "next",
+      "to_node": "074773c991c6445f9c210545157f75a7",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "9d562deeec2748e38da111ac997ab08b",
+      "from_node": "074773c991c6445f9c210545157f75a7",
+      "from_port": "value",
+      "to_node": "978bb86776f745308a29d92bce605f33",
+      "to_port": "value",
+      "kind": "number",
+      "order": 1
+    },
+    {
+      "id": "aefa9c96987f4998aa62a464bc10b456",
+      "from_node": "074773c991c6445f9c210545157f75a7",
+      "from_port": "next",
+      "to_node": "978bb86776f745308a29d92bce605f33",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 2
+    }
+  ]
 }

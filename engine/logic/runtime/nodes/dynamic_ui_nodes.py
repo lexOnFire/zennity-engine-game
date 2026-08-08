@@ -247,77 +247,76 @@ def execute_get_ui_widget_property(runtime, node: Mapping[str, Any], game: Any, 
         return ["failure"]
 
 
+def _fetch_progress_bar_value(runtime: Any, widget_name: str, game: Any) -> float:
+    name = str(widget_name).strip() or "comida"
+
+    # 1. Objeto direto pela API
+    if hasattr(game, "find"):
+        try:
+            target = game.find(name)
+            if target:
+                if hasattr(target, "value"):
+                    return float(target.value)
+                if hasattr(target, "obj") and isinstance(target.obj, dict):
+                    ui = target.obj.get("ui")
+                    if isinstance(ui, dict) and "value" in ui:
+                        return float(ui["value"])
+                    if "value" in target.obj:
+                        return float(target.obj["value"])
+        except Exception:
+            pass
+
+    # 2. Busca no dicionário de objetos da cena por nome ou tag
+    if hasattr(game, "_world") and isinstance(game._world, dict):
+        for obj_name, obj in game._world.items():
+            if not isinstance(obj, dict):
+                continue
+            if str(obj_name).lower() == name.lower() or str(obj.get("tag", "")).lower() == name.lower():
+                ui = obj.get("ui")
+                if isinstance(ui, dict) and "value" in ui:
+                    return float(ui["value"])
+                if "value" in obj:
+                    return float(obj["value"])
+
+        # Busca em qualquer Canvas (.zui)
+        for scene_obj in game._world.values():
+            if not isinstance(scene_obj, dict):
+                continue
+            c_ui = scene_obj.get("ui")
+            if isinstance(c_ui, dict) and c_ui.get("type") == "canvas":
+                overrides = c_ui.get("_widget_overrides", {})
+                if name in overrides and "value" in overrides[name]:
+                    return float(overrides[name]["value"])
+
+    # 3. Busca nas variáveis do Blackboard/Runtime
+    if hasattr(runtime, "variables") and isinstance(runtime.variables, dict):
+        for key in (name, f"{name}.value", "value", "comida.value", "comida"):
+            if key in runtime.variables and runtime.variables[key] is not None:
+                try:
+                    return float(runtime.variables[key])
+                except (ValueError, TypeError):
+                    pass
+
+    return 100.0
+
+
 @registry.register_executor('get_progress_bar_value')
 def execute_get_progress_bar_value(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
-    """Lê o valor de uma ProgressBar."""
+    """Lê o valor de uma ProgressBar durante a execução de fluxo."""
     node_id = str(node['id'])
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
+    widget_name = str(runtime._read_input(node_id, "widget_name", properties.get("widget_name", "comida"), game, dt, set()))
 
-    print(f"\n=== GET_PROGRESS_BAR_VALUE EXECUTADO ===")
+    val = _fetch_progress_bar_value(runtime, widget_name, game)
+    runtime._store(node_id, "value", val)
+    return ["next", "exec_success"]
 
-    try:
-        widget_name = str(properties.get("widget_name", ""))
-        print(f"Widget buscado: '{widget_name}'")
 
-        if not widget_name:
-            print(f"ERRO: widget_name está vazio!")
-            runtime._store(node_id, "value", 0.0)
-            return ["exec_failure"]
+@registry.register_evaluator('get_progress_bar_value')
+def evaluate_get_progress_bar_value(runtime, node_id: str, port: str, node: Mapping[str, Any], game: Any, dt: float, resolving: set[tuple[str, str]]) -> Any:
+    """Avalia a saída de dados 'value' de um nó get_progress_bar_value."""
+    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
+    widget_name = str(runtime._read_input(node_id, "widget_name", properties.get("widget_name", "comida"), game, dt, resolving))
 
-        # Procurar o widget
-        value = None
-
-        # Tenta 1: game.find()
-        if hasattr(game, "find"):
-            try:
-                target = game.find(widget_name)
-                print(f"game.find('{widget_name}') = {target}")
-                if target and hasattr(target, "value"):
-                    value = float(target.value)
-                    print(f"✓ Encontrado value direto: {value}")
-            except Exception as e:
-                print(f"game.find() falhou: {e}")
-
-        # Tenta 2: Procurar em atributos
-        if value is None and hasattr(game, widget_name):
-            try:
-                obj = getattr(game, widget_name)
-                print(f"game.{widget_name} = {obj}")
-                if hasattr(obj, "value"):
-                    value = float(obj.value)
-                    print(f"✓ Encontrado em game.{widget_name}: {value}")
-            except Exception as e:
-                print(f"Atributo direto falhou: {e}")
-
-        # Tenta 3: get_variable (variável global)
-        if value is None:
-            try:
-                if hasattr(runtime, "get_variable"):
-                    value = runtime.get_variable(widget_name)
-                    if value is not None:
-                        value = float(value)
-                        print(f"✓ Encontrado em variável: {value}")
-            except Exception as e:
-                print(f"Variável falhou: {e}")
-
-        # Resultado final
-        if value is not None:
-            print(f"SUCESSO! Valor = {value}")
-            runtime._store(node_id, "value", value)
-            return ["exec_success"]
-        else:
-            print(f"Widget '{widget_name}' não encontrado")
-            runtime._store(node_id, "value", 0.0)
-            return ["exec_not_found"]
-
-    except Exception as e:
-        print(f"ERRO GERAL: {e}")
-        import traceback
-        traceback.print_exc()
-        runtime._store(node_id, "value", 0.0)
-        return ["exec_failure"]
-
-        return ["not_found"]
-    except Exception as e:
-        print(f"Erro ao ler ProgressBar: {e}")
-        return ["failure"]
+    val = _fetch_progress_bar_value(runtime, widget_name, game)
+    return runtime._store(node_id, "value", val)
