@@ -1,5 +1,5 @@
 """Definições de nós visuais para UI dinâmica no Logic Graph."""
-from engine.core.metadata import NodeDefinition, PinDefinition, PinType
+from engine.logic.metadata import NodeDefinition, PinDefinition
 
 
 # ════════════════════════════════════════════════════════════════════════════

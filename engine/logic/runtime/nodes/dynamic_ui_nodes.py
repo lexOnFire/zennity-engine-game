@@ -255,24 +255,28 @@ def execute_get_progress_bar_value(runtime, node: Mapping[str, Any], game: Any, 
 
     try:
         widget_name = str(properties.get("widget_name", ""))
-
-        # Procura o widget em toda a cena
-        if hasattr(game, "find_object"):
-            widget = game.find_object(widget_name)
-            if widget:
-                # Tentar ler o valor
-                if hasattr(widget, "value"):
-                    value = float(widget.value)
-                elif hasattr(widget, "text"):
-                    try:
-                        value = float(widget.text)
-                    except:
-                        value = 0.0
-                else:
-                    return ["failure"]
-
+        
+        # Tenta primeiro o objeto direto pela tag/nome (ex: "comida" que tem um Progress Bar nativo)
+        target = game.find(widget_name) if hasattr(game, "find") else None
+        if target and hasattr(target, "obj"):
+            ui = target.obj.get("ui")
+            if isinstance(ui, dict) and ui.get("type") == "progress_bar":
+                value = float(ui.get("value", 0.0))
                 runtime._store(node_id, "value", value)
                 return ["success"]
+
+        # Suporte a Progress Bars que estão dentro de um Canvas (.zui)
+        if hasattr(game, "_world"):
+            for scene_obj in game._world.values():
+                if not isinstance(scene_obj, dict):
+                    continue
+                c_ui = scene_obj.get("ui")
+                if isinstance(c_ui, dict) and c_ui.get("type") == "canvas":
+                    overrides = c_ui.get("_widget_overrides", {})
+                    if widget_name in overrides and "value" in overrides[widget_name]:
+                        value = float(overrides[widget_name]["value"])
+                        runtime._store(node_id, "value", value)
+                        return ["success"]
 
         return ["not_found"]
     except Exception as e:
