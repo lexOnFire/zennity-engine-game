@@ -29,6 +29,7 @@ class RuntimeScene:
         self.editor_to_runtime: dict[str, Any] = {}
         self.runtime_to_editor: dict[str, Any] = {}
         self._clear_started_scene()
+        self._compile_and_attach_ui()  # Phase 4C: Auto-compile Scene.ui if present
         self._clone_editor_objects()
         self._copy_scene_state()
 
@@ -50,6 +51,104 @@ class RuntimeScene:
             self.scene.editable_objects.clear()
         if hasattr(self.scene, "selected_index"):
             self.scene.selected_index = -1
+
+    def _compile_and_attach_ui(self) -> None:
+        """Phase 4C: Load and compile Scene.ui if present.
+
+        If editor_scene has a 'ui' field referencing a .zui asset:
+        1. Load the .zui file with validation
+        2. Compile authoring widgets to runtime components
+        3. Create GameObjects for each compiled widget
+        4. Attach to scene (will be cloned to runtime in _clone_editor_objects)
+        """
+        from pathlib import Path
+        from engine.ui.asset_loader import UIAssetLoader, UIAssetLoaderError
+        from engine.ui.runtime_compiler import UIRuntimeCompiler, UICompilerError
+        from engine.ui.runtime_components import (
+            ProgressBarComponent,
+            LabelComponent,
+        )
+        from engine.game_object import GameObject
+
+        # Check if scene has UI asset reference
+        ui_asset_path = getattr(self.editor_scene, "ui", None)
+        if not ui_asset_path:
+            return  # No UI asset - proceed normally
+
+        ui_asset_path = str(ui_asset_path).strip()
+        if not ui_asset_path:
+            return  # Empty UI path - proceed normally
+
+        try:
+            # 1. Load .zui asset with validation
+            loader = UIAssetLoader(project_root=Path.cwd())
+            ui_document = loader.load(ui_asset_path)
+
+            # 2. Compile to runtime widgets
+            compiler = UIRuntimeCompiler()
+            compiled_widgets = compiler.compile(ui_document)
+
+            # 3. Create UICanvas container GameObject
+            ui_canvas = GameObject("__UICanvas__")
+            ui_canvas.runtime_hidden = True
+            if hasattr(self.scene, "_add_go"):
+                self.scene._add_go(ui_canvas)
+            else:
+                self.scene.game_objects.append(ui_canvas)
+                ui_canvas.scene = self.scene
+            if hasattr(self.scene, "editable_objects"):
+                self.scene.editable_objects.append(ui_canvas)
+
+            # 4. Create runtime components for each compiled widget
+            for widget_def in compiled_widgets:
+                if not widget_def:  # Panels return None
+                    continue
+
+                widget_type = widget_def.get("type")
+                widget_name = widget_def.get("widget_name")
+                properties = widget_def.get("properties", {})
+
+                # Create GameObject to hold the UI component
+                widget_go = GameObject(widget_name)
+                if widget_type == "ProgressBarComponent":
+                    component = ProgressBarComponent(
+                        value=properties.get("value", 50.0),
+                        max_value=properties.get("max_value", 100.0),
+                    )
+                elif widget_type == "LabelComponent":
+                    component = LabelComponent(text=properties.get("text", ""))
+                else:
+                    # Other widget types - skip for now (extensible)
+                    continue
+
+                component.widget_name = widget_name
+                widget_go.add_component(component)
+
+                # Attach to UICanvas
+                widget_go.parent = ui_canvas
+                if hasattr(self.scene, "_add_go"):
+                    self.scene._add_go(widget_go)
+                else:
+                    self.scene.game_objects.append(widget_go)
+                    widget_go.scene = self.scene
+                if hasattr(self.scene, "editable_objects"):
+                    self.scene.editable_objects.append(widget_go)
+
+        except (UIAssetLoaderError, UICompilerError) as e:
+            # Diagnostic: Include scene context in error
+            scene_name = getattr(self.editor_scene, "name", "Unknown")
+            raise RuntimeError(
+                f"Failed to compile UI for scene '{scene_name}':\n"
+                f"Asset path: {ui_asset_path}\n"
+                f"Error: {e}"
+            )
+        except Exception as e:
+            scene_name = getattr(self.editor_scene, "name", "Unknown")
+            raise RuntimeError(
+                f"Unexpected error compiling UI for scene '{scene_name}':\n"
+                f"Asset path: {ui_asset_path}\n"
+                f"Error: {e}"
+            )
 
     def _clone_editor_objects(self) -> None:
         objs = getattr(self.editor_scene, "editable_objects", None)
