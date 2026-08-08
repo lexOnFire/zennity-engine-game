@@ -740,6 +740,136 @@ class PlayLogicAPI:
         state = self.obj.get("_camera_state", {})
         return float(state.get("zoom", 1.0))
 
+    # ==================== DIALOGUE SYSTEM (Phase 7B.7) ====================
+
+    def show_dialogue(self, dialog_id: str, speaker: str, text: str, choices: list[str] = None) -> bool:
+        """
+        Show a dialogue with speaker and text.
+
+        Delegado a DialogueManager para gerenciar estado.
+        """
+        try:
+            if choices is None:
+                choices = []
+
+            # Initialize dialogue state if not exists
+            self.obj.setdefault("_dialogue_sessions", {})
+
+            session_state = {
+                "dialog_id": str(dialog_id),
+                "speaker": str(speaker),
+                "text": str(text),
+                "choices": [str(c) for c in choices],
+                "pending_choice": None,
+                "is_active": True,
+            }
+
+            self.obj["_dialogue_sessions"][dialog_id] = session_state
+
+            # Queue UI update
+            self.obj.setdefault("logic_events", []).append({
+                "command": "show_dialogue_panel",
+                "value": {
+                    "dialog_id": dialog_id,
+                    "speaker": speaker,
+                    "text": text,
+                    "choices": choices,
+                }
+            })
+
+            return True
+        except Exception as e:
+            print(f"[PlayLogicAPI.show_dialogue] Error: {e}")
+            return False
+
+    def wait_dialogue_choice(self, dialog_id: str) -> int | None:
+        """
+        Check if a dialogue choice is pending (pure getter).
+
+        Returns choice index if pending, None otherwise.
+        """
+        try:
+            session = self.obj.get("_dialogue_sessions", {}).get(dialog_id)
+            if session:
+                return session.get("pending_choice")
+            return None
+        except Exception as e:
+            print(f"[PlayLogicAPI.wait_dialogue_choice] Error: {e}")
+            return None
+
+    def set_dialogue_choice(self, dialog_id: str, choice_index: int) -> bool:
+        """
+        Set dialogue choice (for testing, AI, keyboard shortcuts).
+
+        Stores choice to be picked up by wait_dialog_choice node.
+        """
+        try:
+            session = self.obj.get("_dialogue_sessions", {}).get(dialog_id)
+            if session and session.get("is_active"):
+                session["pending_choice"] = int(choice_index)
+                return True
+            return False
+        except Exception as e:
+            print(f"[PlayLogicAPI.set_dialogue_choice] Error: {e}")
+            return False
+
+    def get_choice_text(self, dialog_id: str, choice_index: int) -> str:
+        """
+        Get text of a specific choice (pure getter).
+        """
+        try:
+            session = self.obj.get("_dialogue_sessions", {}).get(dialog_id)
+            if session:
+                choices = session.get("choices", [])
+                if 0 <= choice_index < len(choices):
+                    return str(choices[choice_index])
+            return ""
+        except Exception as e:
+            print(f"[PlayLogicAPI.get_choice_text] Error: {e}")
+            return ""
+
+    def get_pending_choice(self, dialog_id: str) -> int | None:
+        """
+        Get pending choice index (internal helper for nodes).
+
+        Used by wait_dialog_choice node to check if choice was made.
+        """
+        return self.wait_dialogue_choice(dialog_id)
+
+    def clear_pending_choice(self, dialog_id: str) -> None:
+        """
+        Clear pending choice after it's been processed.
+
+        Used internally by wait_dialog_choice node.
+        """
+        try:
+            session = self.obj.get("_dialogue_sessions", {}).get(dialog_id)
+            if session:
+                session["pending_choice"] = None
+        except Exception:
+            pass
+
+    def close_dialogue(self, dialog_id: str) -> bool:
+        """
+        Close a dialogue and clean up UI.
+        """
+        try:
+            session = self.obj.get("_dialogue_sessions", {}).get(dialog_id)
+            if session:
+                session["is_active"] = False
+
+                # Queue UI cleanup
+                self.obj.setdefault("logic_events", []).append({
+                    "command": "hide_dialogue_panel",
+                    "value": dialog_id
+                })
+
+                return True
+            return False
+        except Exception as e:
+            print(f"[PlayLogicAPI.close_dialogue] Error: {e}")
+            return False
+
     def log(self, message: str) -> None:
         _send(self._events, {"type": "runtime_log", "level": "INFO", "message": f"{self.name}: {message}"})
 
