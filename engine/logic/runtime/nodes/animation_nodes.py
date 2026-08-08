@@ -1,152 +1,205 @@
-"""Nós de animação para Logic Graph - Animate Value, Tweens, Lerp 100% visual."""
+"""Nós de animação para Logic Graph - Play/Pause/Stop 100% visual."""
 from __future__ import annotations
 
-import math
-import time
 from typing import Any, Mapping
 from ..registry import registry
 
 
-@registry.register_executor('animate_value')
-def execute_animate_value(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
-    """Anima um valor de A para B com duração e easing."""
+def _resolve_animator(target: Any, game: Any) -> tuple[Any, str | None]:
+    """Resolve an Animator component from a target name.
+
+    Returns:
+        (animator, error_message) where error_message is None on success
+    """
+    if not target:
+        return None, "Target name is empty"
+
+    if not hasattr(game, "find_object"):
+        return None, "Game object doesn't support find_object"
+
+    game_obj = game.find_object(str(target))
+    if not game_obj:
+        return None, f"GameObject '{target}' not found"
+
+    if not hasattr(game_obj, "get_component"):
+        return None, f"GameObject '{target}' doesn't support get_component"
+
+    from engine.animation.animator import Animator
+    animator = game_obj.get_component(Animator)
+
+    if not animator:
+        return None, f"GameObject '{target}' has no Animator component"
+
+    return animator, None
+
+
+# Phase 6B.2: Play Animation Executor
+@registry.register_executor('play_animation')
+def execute_play_animation(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
+    """Play an animation on target Animator."""
     node_id = str(node['id'])
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
 
+    target_name = str(properties.get("target", "")).strip()
+    animation_name = str(properties.get("animation_name", "")).strip()
+    force = bool(properties.get("force", False))
+
+    if not animation_name:
+        return ["failure"]
+
+    animator, error = _resolve_animator(target_name, game)
+    if error or not animator:
+        return ["failure"]
+
     try:
-        from_value = float(properties.get("from_value", 0.0))
-        to_value = float(properties.get("to_value", 100.0))
-        duration = float(properties.get("duration", 1.0))
-        easing = str(properties.get("easing", "linear")).lower()
-        target_name = str(properties.get("target", ""))
-        property_name = str(properties.get("property", "x"))
+        # Validate animation exists before playing
+        if animation_name not in animator._clips:
+            return ["failure"]
 
-        # Inicializar animação
-        start_time = time.time()
-        if not hasattr(runtime, "_animations"):
-            runtime._animations = {}
+        # Call actual Animator API
+        animator.play(animation_name, force=force)
+        runtime._store(node_id, "animation", animation_name)
+        return ["success"]
 
-        anim_key = f"{node_id}_animate"
-        runtime._animations[anim_key] = {
-            "start_time": start_time,
-            "from": from_value,
-            "to": to_value,
-            "duration": duration,
-            "easing": easing,
-            "target": target_name,
-            "property": property_name,
-            "finished": False
-        }
-
-        # Encontrar target
-        if target_name and hasattr(game, "find_object"):
-            target = game.find_object(target_name)
-            if target:
-                elapsed = time.time() - start_time
-                progress = min(1.0, elapsed / duration) if duration > 0 else 1.0
-
-                # Aplicar easing
-                if easing == "ease_in_quad":
-                    progress = progress * progress
-                elif easing == "ease_out_quad":
-                    progress = 1 - (1 - progress) ** 2
-                elif easing == "ease_in_out_quad":
-                    progress = 2 * progress ** 2 if progress < 0.5 else -1 + (4 - 2 * progress) * progress
-                elif easing == "ease_in_cubic":
-                    progress = progress ** 3
-                elif easing == "ease_out_cubic":
-                    progress = 1 - (1 - progress) ** 3
-                elif easing == "ease_in_out_cubic":
-                    progress = 4 * progress ** 3 if progress < 0.5 else 1 - (-2 * progress + 2) ** 3 / 2
-                # linear é o padrão
-
-                # Interpolar valor
-                current_value = from_value + (to_value - from_value) * progress
-
-                # Aplicar ao target
-                if hasattr(target, property_name):
-                    setattr(target, property_name, current_value)
-
-                # Guardar valor interpolado
-                runtime._store(node_id, "value", current_value)
-                runtime._store(node_id, "progress", progress)
-
-                if progress >= 1.0:
-                    runtime._animations[anim_key]["finished"] = True
-                    return ["finished"]
-                else:
-                    return ["animating"]
-
-        return ["failure"]
-    except Exception as e:
-        print(f"Erro em animate_value: {e}")
+    except (ValueError, TypeError, AttributeError):
         return ["failure"]
 
 
-@registry.register_executor('wait_until_condition')
-def execute_wait_until_condition(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
-    """Aguarda até uma condição ser verdadeira com timeout."""
+# Phase 6B.2: Pause Animation Executor
+@registry.register_executor('pause_animation')
+def execute_pause_animation(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
+    """Pause animation on target Animator."""
     node_id = str(node['id'])
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
 
+    target_name = str(properties.get("target", "")).strip()
+
+    animator, error = _resolve_animator(target_name, game)
+    if error or not animator:
+        return ["failure"]
+
     try:
-        condition_type = str(properties.get("condition_type", "variable_equals")).lower()
-        timeout = float(properties.get("timeout", 30.0))
-        target_name = str(properties.get("target", ""))
-        property_name = str(properties.get("property", ""))
-        expected_value = properties.get("expected_value", "")
-        operator = str(properties.get("operator", "==")).lower()
+        animator.pause()
+        runtime._store(node_id, "paused", True)
+        return ["success"]
 
-        # Inicializar timer se não existe
-        start_time_key = f"{node_id}_wait_start"
-        if not hasattr(runtime, "_wait_timers"):
-            runtime._wait_timers = {}
+    except (ValueError, TypeError, AttributeError):
+        return ["failure"]
 
-        if start_time_key not in runtime._wait_timers:
-            runtime._wait_timers[start_time_key] = time.time()
 
-        start_time = runtime._wait_timers[start_time_key]
-        elapsed = time.time() - start_time
+# Phase 6B.2: Stop Animation Executor
+@registry.register_executor('stop_animation')
+def execute_stop_animation(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
+    """Stop animation on target Animator."""
+    node_id = str(node['id'])
+    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
 
-        # Verificar timeout
-        if elapsed > timeout:
-            del runtime._wait_timers[start_time_key]
-            return ["timeout"]
+    target_name = str(properties.get("target", "")).strip()
 
-        # Verificar condição
-        condition_met = False
+    animator, error = _resolve_animator(target_name, game)
+    if error or not animator:
+        return ["failure"]
 
-        if condition_type == "variable_equals":
-            var_name = str(properties.get("variable_name", ""))
-            current = runtime.blackboard.get("object", var_name, runtime.object_key)
-            if current == expected_value:
-                condition_met = True
+    try:
+        animator.stop()
+        runtime._store(node_id, "stopped", True)
+        return ["success"]
 
-        elif condition_type == "property_greater":
-            if target_name and hasattr(game, "find_object"):
-                target = game.find_object(target_name)
-                if target and hasattr(target, property_name):
-                    current = float(getattr(target, property_name, 0))
-                    threshold = float(expected_value)
-                    if current > threshold:
-                        condition_met = True
+    except (ValueError, TypeError, AttributeError):
+        return ["failure"]
 
-        elif condition_type == "property_less":
-            if target_name and hasattr(game, "find_object"):
-                target = game.find_object(target_name)
-                if target and hasattr(target, property_name):
-                    current = float(getattr(target, property_name, 0))
-                    threshold = float(expected_value)
-                    if current < threshold:
-                        condition_met = True
 
-        if condition_met:
-            del runtime._wait_timers[start_time_key]
-            runtime._store(node_id, "elapsed_time", elapsed)
-            return ["success"]
+# Phase 6B.2: Animator Parameter Executor
+@registry.register_executor('animator_parameter')
+def execute_animator_parameter(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
+    """Set an animator parameter (bool, float, int, trigger)."""
+    node_id = str(node['id'])
+    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
+
+    target_name = str(properties.get("target", "")).strip()
+    parameter_name = str(properties.get("parameter_name", "")).strip()
+    parameter_type = str(properties.get("parameter_type", "float")).strip().lower()
+    value_str = str(properties.get("value", "")).strip()
+
+    if not parameter_name or not value_str:
+        return ["failure"]
+
+    animator, error = _resolve_animator(target_name, game)
+    if error or not animator:
+        return ["failure"]
+
+    try:
+        # Store parameter (no built-in animator parameters yet, extensible for future)
+        if parameter_type == "bool":
+            value = value_str.lower() in ("true", "1", "yes")
+        elif parameter_type == "int":
+            value = int(value_str)
+        elif parameter_type == "float":
+            value = float(value_str)
+        elif parameter_type == "trigger":
+            # Trigger is a pulse, no value stored
+            value = True
         else:
-            return ["waiting"]
+            return ["failure"]
 
-    except Exception as e:
-        print(f"Erro em wait_until_condition: {e}")
+        # Store in runtime state (parameters are per-animator stored locally)
+        runtime._store((node_id, "parameter", parameter_name), value)
+        return ["success"]
+
+    except (ValueError, TypeError):
         return ["failure"]
+
+
+# Phase 6B.2: Getter Evaluators (Pure Data Nodes)
+@registry.register_evaluator('get_current_animation')
+def evaluate_get_current_animation(runtime, node_id: str, port_id: str, node: Mapping[str, Any], game: Any, dt: float, visited: set) -> Any:
+    """Get current animation name."""
+    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
+    target_name = str(properties.get("target", "")).strip()
+
+    animator, error = _resolve_animator(target_name, game)
+    if error or not animator:
+        return ""
+
+    # Return animation name or empty string if none
+    return animator.current_clip or ""
+
+
+@registry.register_evaluator('get_current_frame')
+def evaluate_get_current_frame(runtime, node_id: str, port_id: str, node: Mapping[str, Any], game: Any, dt: float, visited: set) -> Any:
+    """Get current frame index."""
+    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
+    target_name = str(properties.get("target", "")).strip()
+
+    animator, error = _resolve_animator(target_name, game)
+    if error or not animator:
+        return 0
+
+    return int(animator.current_frame)
+
+
+@registry.register_evaluator('get_animation_time')
+def evaluate_get_animation_time(runtime, node_id: str, port_id: str, node: Mapping[str, Any], game: Any, dt: float, visited: set) -> Any:
+    """Get animation time (clip time in seconds)."""
+    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
+    target_name = str(properties.get("target", "")).strip()
+
+    animator, error = _resolve_animator(target_name, game)
+    if error or not animator:
+        return 0.0
+
+    return float(animator.current_time)
+
+
+@registry.register_evaluator('get_is_playing')
+def evaluate_get_is_playing(runtime, node_id: str, port_id: str, node: Mapping[str, Any], game: Any, dt: float, visited: set) -> Any:
+    """Check if animator is playing (not paused, not stopped, not finished)."""
+    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
+    target_name = str(properties.get("target", "")).strip()
+
+    animator, error = _resolve_animator(target_name, game)
+    if error or not animator:
+        return False
+
+    # Playing: current clip exists, _playing is True, not paused, not finished
+    return bool(animator.is_any_playing)

@@ -1,0 +1,10 @@
+{
+  "guid": "32fa32ab-098d-430f-a855-72f4d7f2ec86",
+  "uuid": "32fa32ab-098d-430f-a855-72f4d7f2ec86",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Behaviors/spawn_comida.zbehavior",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "bfaf5b9d267b5c05377749b43dd83ca47487102d22e66a23cff906dbfa8069bf"
+}

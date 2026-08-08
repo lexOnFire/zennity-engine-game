@@ -2,6 +2,167 @@
 from engine.core.metadata import NodeDefinition, PinDefinition, PinType
 
 
+# Phase 6B.2: Animator Action Nodes
+class PlayAnimationNode:
+    """Toca uma animação no Animator."""
+
+    __node_definition__ = NodeDefinition(
+        id="play_animation",
+        title_key="Play Animation",
+        category_key="Animation",
+        description_key="Toca uma animação específica no Animator do target",
+
+        inputs=[
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="target", label_key="Target", pin_type=PinType.STRING, default_value="player"),
+            PinDefinition(id="animation_name", label_key="Animation", pin_type=PinType.STRING, default_value="idle"),
+            PinDefinition(id="force", label_key="Force", pin_type=PinType.BOOL, default_value=False),
+        ],
+        outputs=[
+            PinDefinition(id="exec_success", label_key="Success", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Failure", pin_type=PinType.EXEC),
+        ]
+    )
+
+
+class PauseAnimationNode:
+    """Pausa a animação em execução."""
+
+    __node_definition__ = NodeDefinition(
+        id="pause_animation",
+        title_key="Pause Animation",
+        category_key="Animation",
+        description_key="Pausa a animação do Animator do target",
+
+        inputs=[
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="target", label_key="Target", pin_type=PinType.STRING, default_value="player"),
+        ],
+        outputs=[
+            PinDefinition(id="exec_success", label_key="Success", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Failure", pin_type=PinType.EXEC),
+        ]
+    )
+
+
+class StopAnimationNode:
+    """Para a animação em execução."""
+
+    __node_definition__ = NodeDefinition(
+        id="stop_animation",
+        title_key="Stop Animation",
+        category_key="Animation",
+        description_key="Para a animação do Animator do target",
+
+        inputs=[
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="target", label_key="Target", pin_type=PinType.STRING, default_value="player"),
+        ],
+        outputs=[
+            PinDefinition(id="exec_success", label_key="Success", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Failure", pin_type=PinType.EXEC),
+        ]
+    )
+
+
+# Phase 6B.2: Animator Getter Nodes (Pure Data)
+class GetCurrentAnimationNode:
+    """Obtém o nome da animação em execução."""
+
+    __node_definition__ = NodeDefinition(
+        id="get_current_animation",
+        title_key="Get Current Animation",
+        category_key="Animation/Getters",
+        description_key="Retorna o nome da animação em execução",
+
+        inputs=[
+            PinDefinition(id="target", label_key="Target", pin_type=PinType.STRING, default_value="player"),
+        ],
+        outputs=[
+            PinDefinition(id="value", label_key="Animation", pin_type=PinType.STRING),
+        ]
+    )
+
+
+class GetCurrentFrameNode:
+    """Obtém o índice do frame atual."""
+
+    __node_definition__ = NodeDefinition(
+        id="get_current_frame",
+        title_key="Get Current Frame",
+        category_key="Animation/Getters",
+        description_key="Retorna o índice do frame atual (0-based)",
+
+        inputs=[
+            PinDefinition(id="target", label_key="Target", pin_type=PinType.STRING, default_value="player"),
+        ],
+        outputs=[
+            PinDefinition(id="value", label_key="Frame Index", pin_type=PinType.INT),
+        ]
+    )
+
+
+class GetAnimationTimeNode:
+    """Obtém o tempo decorrido da animação."""
+
+    __node_definition__ = NodeDefinition(
+        id="get_animation_time",
+        title_key="Get Animation Time",
+        category_key="Animation/Getters",
+        description_key="Retorna o tempo decorrido da animação em segundos",
+
+        inputs=[
+            PinDefinition(id="target", label_key="Target", pin_type=PinType.STRING, default_value="player"),
+        ],
+        outputs=[
+            PinDefinition(id="value", label_key="Time (seconds)", pin_type=PinType.FLOAT),
+        ]
+    )
+
+
+class GetIsPlayingNode:
+    """Verifica se a animação está tocando."""
+
+    __node_definition__ = NodeDefinition(
+        id="get_is_playing",
+        title_key="Get Is Playing",
+        category_key="Animation/Getters",
+        description_key="Retorna se uma animação está tocando",
+
+        inputs=[
+            PinDefinition(id="target", label_key="Target", pin_type=PinType.STRING, default_value="player"),
+        ],
+        outputs=[
+            PinDefinition(id="value", label_key="Is Playing", pin_type=PinType.BOOL),
+        ]
+    )
+
+
+# Phase 6B.2: Animator Parameter Node
+class AnimatorParameterNode:
+    """Modifica um parâmetro do Animator (bool, float, int, trigger)."""
+
+    __node_definition__ = NodeDefinition(
+        id="animator_parameter",
+        title_key="Animator Parameter",
+        category_key="Animation",
+        description_key="Define um parâmetro booleano, float, inteiro ou trigger no Animator",
+
+        inputs=[
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="target", label_key="Target", pin_type=PinType.STRING, default_value="player"),
+            PinDefinition(id="parameter_name", label_key="Parameter", pin_type=PinType.STRING, default_value="speed"),
+            PinDefinition(id="parameter_type", label_key="Type", pin_type=PinType.STRING, default_value="float"),
+            PinDefinition(id="value", label_key="Value", pin_type=PinType.STRING, default_value="1.0"),
+        ],
+        outputs=[
+            PinDefinition(id="exec_success", label_key="Success", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Failure", pin_type=PinType.EXEC),
+        ]
+    )
+
+
+# Phase 6B.2: Utility Nodes
 class AnimateValueNode:
     """Anima um valor de A para B com easing."""
 
