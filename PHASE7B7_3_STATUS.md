@@ -11,7 +11,7 @@
 
 1. ✅ **Owner Routing Same-ID** - COMPLETE ✅
 2. ✅ **Asset Choice Workflow** - COMPLETE ✅
-3. ⏳ **Scene Cleanup** - TODO
+3. ✅ **Scene Cleanup** - COMPLETE ✅
 4. ⏳ **Play/Stop/Play Reset** - TODO
 5. ⏳ **Dialogue Event → LogicEventBus** - TODO
 6. ⏳ **Old Test Migration** - TODO
@@ -96,6 +96,45 @@ Merchant:
 - DialogueSession handles choice branching
 - Owner isolation maintained with assets
 - Event infrastructure ready for LogicEventBus integration
+
+### 3. Scene Cleanup - ✅ COMPLETE
+
+**Test Suite**: tests/integration/test_phase7b7_3_scene_cleanup.py
+
+**17 Test Cases - All Passing**:
+- ✅ Scene unload clears dialogue sessions
+- ✅ Scene unload clears owner mappings
+- ✅ Scene unload clears pending choices
+- ✅ Scene unload clears active session key
+- ✅ Scene change cancels waiting dialogue
+- ✅ Old choice after scene change fails safely
+- ✅ Restart scene clears dialogue
+- ✅ Multi-NPC cleanup (Guard, Merchant, Boss, Innkeeper)
+- ✅ Same ID multi-owner cleanup
+- ✅ Asset dialogue scene cleanup
+- ✅ Inline dialogue scene cleanup
+- ✅ Mixed asset + inline cleanup
+- ✅ Cleanup idempotent (safe to call twice)
+- ✅ Cleanup empty manager safe
+- ✅ Cleanup after manual close safe
+- ✅ close_owner() alternative for selective cleanup
+- ✅ Full scene lifecycle dialogue flow
+
+**Integration**: engine/core/engine.py
+- _perform_scene_change() calls DialogueManager.reset()
+- Automatic cleanup on scene switch
+- Safe exception handling
+
+**Results**: 17/17 PASS ✅
+**Total Dialogue Tests**: 51/51 PASS ✅
+**Regressions**: 0 ✅
+
+**Cleanup Guarantees**:
+- No dangling UI panels
+- No pending choices from old scene
+- No waiting execution from old graph
+- Clean state for new scene
+- Idempotent and safe
 
 ### 3. Asset Choice Workflow
 Validate complete flow:
