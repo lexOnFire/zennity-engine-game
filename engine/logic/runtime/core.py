@@ -26,6 +26,9 @@ except ImportError:  # Runtime autocontido exportado.
 # Phase 5B.2: Import physics event dispatch
 from ..physics_event_dispatch import register_physics_event_handler
 
+# Phase 6B.3: Import animation event dispatch
+from ..animation_event_dispatch import register_animation_event_handler
+
 
 class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin):
     """Executa fluxo e resolve valores conectados sem depender de Qt/Pygame."""
@@ -87,26 +90,60 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin):
         self._created_event_depth = 0
         self.started = False
         self._registered_physics_handler = False  # Phase 5B.2: Track handler registration
+        self._registered_animation_handler = False  # Phase 6B.3: Track handler registration
 
         for node in self.nodes.values() if not self.call_stack else ():
-            if node.get("type") != "event_custom":
-                continue
-            event_name = str(node.get("properties", {}).get("name", "event")).strip()
-            node_id = str(node["id"])
-            self.event_bus.subscribe(event_name, lambda event, wanted=node_id: self._receive_custom_event(wanted, event))
+            if node.get("type") == "event_custom":
+                event_name = str(node.get("properties", {}).get("name", "event")).strip()
+                node_id = str(node["id"])
+                self.event_bus.subscribe(event_name, lambda event, wanted=node_id: self._receive_custom_event(wanted, event))
+            # Phase 6B.3: Subscribe to animation event nodes
+            elif node.get("type") == "on_animation_event":
+                node_id = str(node["id"])
+                event_name_filter = str(node.get("properties", {}).get("event_name", "")).strip()
+                animation_name_filter = str(node.get("properties", {}).get("animation_name", "")).strip()
+                self.event_bus.subscribe(
+                    "animation:event",
+                    lambda event, wanted=node_id, ev_filter=event_name_filter, anim_filter=animation_name_filter:
+                        self._handle_animation_event(wanted, event, ev_filter, anim_filter)
+                )
+            # Phase 6B.3: Subscribe to animation finished nodes
+            elif node.get("type") == "on_animation_finished":
+                node_id = str(node["id"])
+                animation_name_filter = str(node.get("properties", {}).get("animation_name", "")).strip()
+                self.event_bus.subscribe(
+                    "animation:finished",
+                    lambda event, wanted=node_id, anim_filter=animation_name_filter:
+                        self._handle_animation_finished(wanted, event, anim_filter)
+                )
 
         # Phase 5B.2: Register physics event handler if not a subgraph
         if not self.call_stack:
             register_physics_event_handler(self._handle_physics_event)
             self._registered_physics_handler = True
 
+        # Phase 6B.3: Register animation event handler if not a subgraph
+        if not self.call_stack:
+            register_animation_event_handler(self._dispatch_animation_event)
+            self._registered_animation_handler = True
+
     def stop(self) -> None:
-        """Phase 5B.2: Explicit cleanup of physics event handlers."""
+        """Phase 5B.2: Explicit cleanup of physics event handlers.
+        Phase 6B.3: Also cleanup animation event handlers."""
         if self._registered_physics_handler:
             try:
                 from ..physics_event_dispatch import unregister_physics_event_handler
                 unregister_physics_event_handler(self._handle_physics_event)
                 self._registered_physics_handler = False
+            except Exception:
+                pass
+
+        # Phase 6B.3: Cleanup animation event handler
+        if self._registered_animation_handler:
+            try:
+                from ..animation_event_dispatch import unregister_animation_event_handler
+                unregister_animation_event_handler(self._dispatch_animation_event)
+                self._registered_animation_handler = False
             except Exception:
                 pass
 
@@ -268,6 +305,96 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin):
         # We also need to re-register variables in case they changed, but preserve existing values
         self.blackboard.register(self.graph.get("variables", {}), self.object_key)
         self.variables = self.blackboard.values_for_object(self.object_key)
+
+    # Phase 6B.3: Animation Event Handling
+    def _dispatch_animation_event(
+        self,
+        owner_object: Any,
+        animation_name: str,
+        event_name: str,
+        frame_index: int,
+        elapsed_time: float,
+    ) -> None:
+        """Phase 6B.3: Dispatch animation event to LogicEventBus."""
+        if owner_object is None:
+            return
+
+        # Get the object name to match against owner
+        owner_name = getattr(owner_object, "name", None)
+        if owner_name != self.object_key:
+            return
+
+        # Emit to LogicEventBus for animation event nodes
+        payload = {
+            "owner_object": owner_object,
+            "animation_name": animation_name,
+            "event_name": event_name,
+            "frame_index": frame_index,
+            "elapsed_time": elapsed_time,
+        }
+        self.event_bus.emit("animation:event", payload=payload, source=owner_name)
+
+    def _handle_animation_event(
+        self,
+        node_id: str,
+        event: LogicEvent,
+        event_name_filter: str,
+        animation_name_filter: str,
+    ) -> None:
+        """Handle animation event received from bus."""
+        if event.payload is None or not isinstance(event.payload, dict):
+            return
+
+        # Apply event name filter
+        event_name = str(event.payload.get("event_name", "")).strip()
+        if event_name_filter and event_name != event_name_filter:
+            return
+
+        # Apply animation name filter
+        animation_name = str(event.payload.get("animation_name", "")).strip()
+        if animation_name_filter and animation_name != animation_name_filter:
+            return
+
+        # Store event data for node outputs
+        self.values[(node_id, "owner_object")] = event.payload.get("owner_object")
+        self.values[(node_id, "animation_name")] = event_name
+        self.values[(node_id, "event_name")] = event_name
+        self.values[(node_id, "frame_index")] = int(event.payload.get("frame_index", 0))
+        self.values[(node_id, "elapsed_time")] = float(event.payload.get("elapsed_time", 0.0))
+
+        # Mark node for execution
+        if node_id not in self.executed_nodes:
+            self.executed_nodes.append(node_id)
+            for edge in self.outgoing.get(node_id, []):
+                if edge.get("from_port") == "exec":
+                    self._run_edge(edge, self._last_game, self._last_dt)
+
+    def _handle_animation_finished(
+        self,
+        node_id: str,
+        event: LogicEvent,
+        animation_name_filter: str,
+    ) -> None:
+        """Handle animation finished event received from bus."""
+        if event.payload is None or not isinstance(event.payload, dict):
+            return
+
+        # Apply animation name filter
+        animation_name = str(event.payload.get("animation_name", "")).strip()
+        if animation_name_filter and animation_name != animation_name_filter:
+            return
+
+        # Store event data for node outputs
+        self.values[(node_id, "owner_object")] = event.payload.get("owner_object")
+        self.values[(node_id, "animation_name")] = animation_name
+        self.values[(node_id, "elapsed_time")] = float(event.payload.get("elapsed_time", 0.0))
+
+        # Mark node for execution
+        if node_id not in self.executed_nodes:
+            self.executed_nodes.append(node_id)
+            for edge in self.outgoing.get(node_id, []):
+                if edge.get("from_port") == "exec":
+                    self._run_edge(edge, self._last_game, self._last_dt)
 
 
     def _receive_custom_event(self, node_id: str, event: LogicEvent) -> None:

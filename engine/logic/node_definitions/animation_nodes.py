@@ -191,6 +191,47 @@ class AnimateValueNode:
     )
 
 
+# Phase 6B.3: Animation Event Nodes
+class OnAnimationEventNode:
+    """Dispara quando um evento específico ocorre em uma animação."""
+
+    __node_definition__ = NodeDefinition(
+        id="on_animation_event",
+        title_key="On Animation Event",
+        category_key="Animation/Events",
+        description_key="Dispara quando uma animação atinge um evento nomeado",
+
+        inputs=[],  # No exec input
+        outputs=[
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="owner_object", label_key="Owner", pin_type=PinType.STRING),
+            PinDefinition(id="animation_name", label_key="Animation", pin_type=PinType.STRING),
+            PinDefinition(id="event_name", label_key="Event Name", pin_type=PinType.STRING),
+            PinDefinition(id="frame_index", label_key="Frame", pin_type=PinType.INT),
+            PinDefinition(id="elapsed_time", label_key="Time", pin_type=PinType.FLOAT),
+        ]
+    )
+
+
+class OnAnimationFinishedNode:
+    """Dispara quando uma animação não-loop termina."""
+
+    __node_definition__ = NodeDefinition(
+        id="on_animation_finished",
+        title_key="On Animation Finished",
+        category_key="Animation/Events",
+        description_key="Dispara quando uma animação não-loop chega ao fim",
+
+        inputs=[],  # No exec input
+        outputs=[
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="owner_object", label_key="Owner", pin_type=PinType.STRING),
+            PinDefinition(id="animation_name", label_key="Animation", pin_type=PinType.STRING),
+            PinDefinition(id="elapsed_time", label_key="Time", pin_type=PinType.FLOAT),
+        ]
+    )
+
+
 class WaitUntilConditionNode:
     """Aguarda até uma condição ser verdadeira."""
 

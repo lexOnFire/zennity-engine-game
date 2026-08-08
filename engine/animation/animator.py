@@ -204,6 +204,19 @@ class Animator(Component):
                 self._clip_time = duration
                 self._finished = True
                 self._playing = False
+
+                # Phase 6B.3: Dispatch animation finished event
+                if self.game_object:
+                    try:
+                        from engine.logic.animation_event_dispatch import dispatch_animation_finished
+                        dispatch_animation_finished(
+                            owner_object=self.game_object,
+                            animation_name=clip.name,
+                            elapsed_time=self._clip_time,
+                        )
+                    except ImportError:
+                        pass
+
                 if self.on_finish:
                     self.on_finish(clip.name)
         self._apply_keyframe_sample()
@@ -227,6 +240,19 @@ class Animator(Component):
                     ev.fired = False
             else:
                 self._finished = True
+
+                # Phase 6B.3: Dispatch animation finished event (frame-based animation)
+                if self.game_object:
+                    try:
+                        from engine.logic.animation_event_dispatch import dispatch_animation_finished
+                        dispatch_animation_finished(
+                            owner_object=self.game_object,
+                            animation_name=clip.name,
+                            elapsed_time=self._clip_time,
+                        )
+                    except ImportError:
+                        pass
+
                 if self.on_finish:
                     self.on_finish(clip.name)
             return
@@ -257,7 +283,27 @@ class Animator(Component):
             return
         for ev in self._current.events:
             if not ev.fired and ev.frame_index == self._frame_index:
-                ev.callback()
+                # Legacy callback support
+                if ev.callback:
+                    ev.callback()
+
+                # Phase 6B.3: Dispatch to Logic Graph via animation_event_dispatch
+                # Only if this Animator is attached to a GameObject
+                if self.game_object:
+                    try:
+                        from engine.logic.animation_event_dispatch import dispatch_animation_event
+                        # Event name is derived from callback name or use generic "event"
+                        event_name = getattr(ev.callback, '__name__', 'event') if ev.callback else 'event'
+                        dispatch_animation_event(
+                            owner_object=self.game_object,
+                            animation_name=self._current.name,
+                            event_name=event_name,
+                            frame_index=self._frame_index,
+                            elapsed_time=self._clip_time,
+                        )
+                    except ImportError:
+                        pass  # Logic Graph not available in all builds
+
                 ev.fired = True
 
     def _apply_keyframe_sample(self) -> None:

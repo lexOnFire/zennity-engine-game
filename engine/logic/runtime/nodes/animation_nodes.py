@@ -203,3 +203,23 @@ def evaluate_get_is_playing(runtime, node_id: str, port_id: str, node: Mapping[s
 
     # Playing: current clip exists, _playing is True, not paused, not finished
     return bool(animator.is_any_playing)
+
+
+# Phase 6B.3: Animation Event Node Evaluators (Event Source Nodes)
+@registry.register_evaluator(('on_animation_event', 'on_animation_finished'))
+def evaluate_animation_event_nodes(runtime, node_id: str, port_id: str, node: Mapping[str, Any], game: Any, dt: float, visited: set) -> Any:
+    """Evaluate data outputs from animation event nodes."""
+    port_id = str(port_id)
+
+    if port_id == "owner_object":
+        return runtime.values.get((node_id, "owner_object"))
+    elif port_id == "animation_name":
+        return runtime.values.get((node_id, "animation_name"), "")
+    elif port_id == "event_name":
+        return runtime.values.get((node_id, "event_name"), "")
+    elif port_id == "frame_index":
+        return int(runtime.values.get((node_id, "frame_index"), 0))
+    elif port_id == "elapsed_time":
+        return float(runtime.values.get((node_id, "elapsed_time"), 0.0))
+    else:
+        return None
