@@ -24,8 +24,62 @@
       "title": "Event Update",
       "category": "Events",
       "position": [
-        -599.04,
-        -76.32
+        -835.36,
+        -140.25
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "ecba73714be04420802eaefb2affb760",
+      "type": "get_progress_bar_value",
+      "title": "Ler Valor ProgressBar",
+      "category": "UI",
+      "position": [
+        -465.71,
+        -139.07
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "widget_name": "comida"
+      }
+    },
+    {
+      "id": "4bd092befb164edca53c45c706a04c20",
+      "type": "get_ui_widget_property",
+      "title": "Obter Propriedade Widget",
+      "category": "UI",
+      "position": [
+        -460.98,
+        22.26
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "parent": "",
+        "widget_name": "comida",
+        "property": "value"
+      }
+    },
+    {
+      "id": "e763251dc8cc4776a8db277c3aec68a1",
+      "type": "to_text",
+      "title": "To Text",
+      "category": "Text",
+      "position": [
+        -151.73,
+        60.23
       ],
       "editor": {
         "collapsed": false,
@@ -35,5 +89,33 @@
       "properties": {}
     }
   ],
-  "edges": []
+  "edges": [
+    {
+      "id": "92e0cee290b349ce942e360c9b7e7465",
+      "from_node": "c2bb87e281c6481e9c3a4fc71faff1ba",
+      "from_port": "next",
+      "to_node": "ecba73714be04420802eaefb2affb760",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "635111c24fa245daa9608a9fe3908eed",
+      "from_node": "ecba73714be04420802eaefb2affb760",
+      "from_port": "next",
+      "to_node": "4bd092befb164edca53c45c706a04c20",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
+    },
+    {
+      "id": "dd1656165f0f4545809602a4d672962a",
+      "from_node": "4bd092befb164edca53c45c706a04c20",
+      "from_port": "value",
+      "to_node": "e763251dc8cc4776a8db277c3aec68a1",
+      "to_port": "value",
+      "kind": "text",
+      "order": 2
+    }
+  ]
 }

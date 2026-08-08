@@ -103,11 +103,17 @@ class ViewportSessionOrchestrator:
         return last_trace, pause_requested
 
     def finish_frame(self, delta_time: float, velocities_y: dict[str, float], grounded: dict[str, bool]) -> None:
-        for api in self.logic_apis.values():
-            api.end_frame()
-        for destroyed_name in self.runtime_world.update_lifecycle(delta_time):
-            velocities_y.pop(destroyed_name, None)
-            grounded.pop(destroyed_name, None)
+        for api in list(self.logic_apis.values()):
+            try:
+                api.end_frame()
+            except Exception:
+                pass
+        try:
+            for destroyed_name in self.runtime_world.update_lifecycle(delta_time):
+                velocities_y.pop(destroyed_name, None)
+                grounded.pop(destroyed_name, None)
+        except Exception:
+            pass
 
     def restart(
         self, edit_snapshot: dict[str, dict[str, Any]], velocities_y: dict[str, float],
