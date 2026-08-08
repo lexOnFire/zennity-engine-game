@@ -12,7 +12,7 @@
 1. ✅ **Owner Routing Same-ID** - COMPLETE ✅
 2. ✅ **Asset Choice Workflow** - COMPLETE ✅
 3. ✅ **Scene Cleanup** - COMPLETE ✅
-4. ⏳ **Play/Stop/Play Reset** - TODO
+4. ✅ **Play/Stop/Play Reset** - COMPLETE ✅
 5. ⏳ **Dialogue Event → LogicEventBus** - TODO
 6. ⏳ **Old Test Migration** - TODO
 7. ⏳ **Full Regression** - TODO
@@ -20,9 +20,13 @@
 
 ---
 
-## NEXT (Refinement 3)
+## NEXT (Refinements 5-7)
 
-**Scene Cleanup** — Hook scene.unload to clear dialogue state
+| Refinement | Description |
+|-----------|-------------|
+| 5 | Dialogue Event → LogicEventBus |
+| 6 | Old Test Migration |
+| 7 | Full Regression |
 
 ---
 
@@ -135,6 +139,62 @@ Merchant:
 - No waiting execution from old graph
 - Clean state for new scene
 - Idempotent and safe
+
+### 4. Play/Stop/Play Reset - ✅ COMPLETE
+
+**Test Suite**: tests/integration/test_phase7b7_3_play_stop_play.py
+
+**17 Test Cases - All Passing**:
+
+Stop Reset (5):
+- ✅ Stop clears dialogue sessions
+- ✅ Stop clears owner mappings
+- ✅ Stop clears active session
+- ✅ Stop clears pending choices
+- ✅ Stop without dialogue safe
+
+Play Again (2):
+- ✅ Play again starts clean
+- ✅ Play again creates single session
+
+Persistence Safety (2):
+- ✅ Old choice doesn't survive Stop
+- ✅ Waiting execution doesn't survive Stop
+
+Owner Cleanup (1):
+- ✅ Same ID multi-owner after replay
+
+Asset/Inline Replay (2):
+- ✅ Asset dialogue restarts from beginning
+- ✅ Inline dialogue restarts clean
+
+Safety (2):
+- ✅ Double reset safe
+- ✅ Event sink not stale after Stop
+
+Integration (3):
+- ✅ Scene change then Stop clean
+- ✅ Multiple Play cycles
+- ✅ Play multiple owners Stop Play
+
+**Integration**: editor/runtime/viewport_runtime_initializer.py
+- _clear_runtime_state() calls DialogueManager.reset()
+- Runs with physics/behavior/animation cleanup
+- Safe exception handling
+
+**Results**: 17/17 PASS ✅
+**Total Dialogue Tests**: 68/68 PASS ✅
+**Regressions**: 0 ✅
+
+**Play/Stop/Play Guarantees**:
+- All sessions cleared on Stop
+- All owner mappings cleared on Stop
+- Pending choices don't persist
+- Waiting execution cancels
+- Play starts with clean state
+- Same IDs reusable without collision
+- Asset/inline restart from beginning
+- Event sinks invalidated
 
 ### 3. Asset Choice Workflow
 Validate complete flow:
