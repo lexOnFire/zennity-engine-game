@@ -35,53 +35,7 @@
       "properties": {
         "widget_name": "comida"
       }
-    },
-    {
-      "id": "9647b9efcd544153bef7afd19f3a9999",
-      "type": "get_ui_widget_property",
-      "title": "Obter Propriedade Widget",
-      "category": "UI",
-      "position": [
-        -367.52,
-        -293.62
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 184.0
-      },
-      "properties": {
-        "parent": "",
-        "widget_name": "comida",
-        "property": "value"
-      }
-    },
-    {
-      "id": "38f573d439494ddd897a2aa424c3b690",
-      "type": "event_start",
-      "title": "Event Start",
-      "category": "Events",
-      "position": [
-        -640.53,
-        -302.4
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
-      },
-      "properties": {}
     }
   ],
-  "edges": [
-    {
-      "id": "8a670694e7654918ba6510bf23d1e101",
-      "from_node": "38f573d439494ddd897a2aa424c3b690",
-      "from_port": "next",
-      "to_node": "9647b9efcd544153bef7afd19f3a9999",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 0
-    }
-  ]
+  "edges": []
 }

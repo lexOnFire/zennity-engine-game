@@ -39,6 +39,7 @@ class RuntimeWorld:
     """Fonte única para criação e mutação estrutural do mundo em execução."""
 
     MAX_POOLED_PER_PREFAB = 128
+    MAX_ACTIVE_OBJECTS = 4096
 
     def __init__(self, objects: MutableMapping[str, dict[str, Any]]) -> None:
         self.objects = objects
@@ -56,6 +57,9 @@ class RuntimeWorld:
         return name
 
     def create_object(self, **values: Any) -> dict[str, Any]:
+        if len(self.objects) >= self.MAX_ACTIVE_OBJECTS:
+            return {"name": "LOCKED", "active": False, "spawned_by_logic": True}
+            
         name = self.unique_name(str(values.get("name", "NovoObjeto")))
         obj: dict[str, Any] = {
             "id": str(uuid.uuid4()), "name": name,
@@ -97,6 +101,9 @@ class RuntimeWorld:
 
     def clone_object(self, source: Mapping[str, Any], name: str = "", pool_key: str = "") -> dict[str, Any]:
         """Cria uma cópia profunda e independente, preservando componentes e visual."""
+        if len(self.objects) >= self.MAX_ACTIVE_OBJECTS:
+            return {"name": "LOCKED", "active": False, "spawned_by_logic": True}
+            
         clone = deepcopy(dict(source))
         for key in tuple(clone):
             if str(key).startswith("_"):
