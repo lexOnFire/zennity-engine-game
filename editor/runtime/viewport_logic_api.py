@@ -556,6 +556,34 @@ class PlayLogicAPI:
         """Restaura o snapshot capturado quando o Play Mode começou."""
         self.send("restart_scene")
 
+    def load_scene(self, scene_path: str) -> bool:
+        """Load a new scene by path (e.g., 'Assets/Scenes/Level1.zscene')."""
+        if not scene_path:
+            return False
+        self.send("load_scene", {"path": str(scene_path)})
+        return True
+
+    def change_scene(self, scene_path: str) -> bool:
+        """Unload current scene and load new scene."""
+        return self.load_scene(scene_path)
+
+    def get_scene_name(self) -> str:
+        """Get current scene name."""
+        scene_data = self.obj.get("_scene", {})
+        return str(scene_data.get("name", "Unknown"))
+
+    def push_scene(self, scene_path: str) -> bool:
+        """Push a new scene onto the stack (keep current scene paused)."""
+        if not scene_path:
+            return False
+        self.send("push_scene", {"path": str(scene_path)})
+        return True
+
+    def pop_scene(self) -> bool:
+        """Pop current scene and return to previous scene."""
+        self.send("pop_scene")
+        return True
+
     def destroy(self) -> None:
         """Desativa o objeto no Play Mode atual."""
         self.runtime_world.destroy_object(self.obj)
