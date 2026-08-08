@@ -249,34 +249,75 @@ def execute_get_ui_widget_property(runtime, node: Mapping[str, Any], game: Any, 
 
 @registry.register_executor('get_progress_bar_value')
 def execute_get_progress_bar_value(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
-    """Lê o valor de uma ProgressBar."""
+    """Lê o valor de uma ProgressBar com múltiplas estratégias de busca."""
     node_id = str(node['id'])
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
 
     try:
         widget_name = str(properties.get("widget_name", ""))
-        
-        # Tenta primeiro o objeto direto pela tag/nome (ex: "comida" que tem um Progress Bar nativo)
-        target = game.find(widget_name) if hasattr(game, "find") else None
-        if target and hasattr(target, "obj"):
-            ui = target.obj.get("ui")
-            if isinstance(ui, dict) and ui.get("type") == "progress_bar":
-                value = float(ui.get("value", 0.0))
-                runtime._store(node_id, "value", value)
-                return ["success"]
 
-        # Suporte a Progress Bars que estão dentro de um Canvas (.zui)
-        if hasattr(game, "_world"):
+        if not widget_name:
+            return ["failure"]
+
+        # Estratégia 1: Procurar em canvas ou widget direto
+        if hasattr(game, "find"):
+            target = game.find(widget_name)
+            if target:
+                # Tentar ler value diretamente
+                if hasattr(target, "value"):
+                    value = float(target.value)
+                    runtime._store(node_id, "value", value)
+                    return ["success"]
+                # Tentar em obj.ui
+                if hasattr(target, "obj") and isinstance(target.obj, dict):
+                    ui = target.obj.get("ui", {})
+                    if isinstance(ui, dict) and "value" in ui:
+                        value = float(ui.get("value", 0.0))
+                        runtime._store(node_id, "value", value)
+                        return ["success"]
+
+        # Estratégia 2: Procurar em _world (estrutura interna do game)
+        if hasattr(game, "_world") and isinstance(game._world, dict):
             for scene_obj in game._world.values():
                 if not isinstance(scene_obj, dict):
                     continue
-                c_ui = scene_obj.get("ui")
-                if isinstance(c_ui, dict) and c_ui.get("type") == "canvas":
+
+                # Verificar se é um canvas com widgets
+                c_ui = scene_obj.get("ui", {})
+                if isinstance(c_ui, dict):
+                    # Procurar em overrides
                     overrides = c_ui.get("_widget_overrides", {})
-                    if widget_name in overrides and "value" in overrides[widget_name]:
-                        value = float(overrides[widget_name]["value"])
-                        runtime._store(node_id, "value", value)
-                        return ["success"]
+                    if widget_name in overrides:
+                        widget_data = overrides[widget_name]
+                        if isinstance(widget_data, dict) and "value" in widget_data:
+                            value = float(widget_data["value"])
+                            runtime._store(node_id, "value", value)
+                            return ["success"]
+
+                    # Procurar em children
+                    children = c_ui.get("children", [])
+                    for child in children:
+                        if isinstance(child, dict):
+                            if child.get("name") == widget_name or child.get("widget_name") == widget_name:
+                                if "value" in child:
+                                    value = float(child["value"])
+                                    runtime._store(node_id, "value", value)
+                                    return ["success"]
+
+        # Estratégia 3: Procurar em atributos diretos do game
+        if hasattr(game, widget_name):
+            widget_obj = getattr(game, widget_name)
+            if hasattr(widget_obj, "value"):
+                value = float(widget_obj.value)
+                runtime._store(node_id, "value", value)
+                return ["success"]
+
+        # Nenhuma estratégia funcionou
+        return ["not_found"]
+
+    except Exception as e:
+        print(f"Erro ao ler ProgressBar '{widget_name}': {e}")
+        return ["failure"]
 
         return ["not_found"]
     except Exception as e:
