@@ -1,0 +1,37 @@
+{
+  "format": "zennity.ui",
+  "canvas": {
+    "type": "canvas",
+    "children": [
+      {
+        "type": "UILabel",
+        "name": "TestLabel",
+        "x": 100,
+        "y": 100,
+        "width": 300,
+        "height": 50,
+        "text": "HELLO WORLD",
+        "font_size": 32,
+        "color": [0, 255, 0],
+        "visible": true,
+        "z_order": 0,
+        "children": []
+      },
+      {
+        "type": "UIButton",
+        "name": "TestButton",
+        "x": 100,
+        "y": 200,
+        "width": 150,
+        "height": 50,
+        "text": "CLICK ME",
+        "font_size": 16,
+        "color": [255, 255, 255],
+        "visible": true,
+        "interactable": true,
+        "z_order": 1,
+        "children": []
+      }
+    ]
+  }
+}

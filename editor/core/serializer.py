@@ -125,8 +125,30 @@ def load_scene_from_file(filepath: str) -> List[GameObject]:
     """Carrega e reconstrói a árvore de objetos a partir de um arquivo JSON."""
     with open(filepath, "r", encoding="utf-8") as f:
         scene_data = json.load(f)
-        
+
     objs = []
     for obj_data in scene_data.get("objects", []):
         objs.append(deserialize_game_object(obj_data))
     return objs
+
+
+def load_scene_file_with_metadata(filepath: str) -> tuple[List[GameObject], Dict[str, Any]]:
+    """Carrega objects E metadados (ui, name, etc) do arquivo JSON da scene."""
+    with open(filepath, "r", encoding="utf-8") as f:
+        scene_data = json.load(f)
+
+    # Carrega GameObjects
+    objs = []
+    for obj_data in scene_data.get("objects", []):
+        objs.append(deserialize_game_object(obj_data))
+
+    # Extrai metadados da scene (ui, scene_name, etc)
+    metadata = {}
+    if "ui" in scene_data:
+        metadata["ui"] = scene_data["ui"]
+    if "scene_name" in scene_data:
+        metadata["scene_name"] = scene_data["scene_name"]
+    if "blackboard" in scene_data:
+        metadata["blackboard"] = scene_data["blackboard"]
+
+    return objs, metadata

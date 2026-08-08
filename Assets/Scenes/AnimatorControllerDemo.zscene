@@ -40,15 +40,18 @@
         "order": 0
       },
       "components": {
-        "camera": {
-          "active": true,
-          "zoom": 1.0,
-          "background_color": [
-            18,
-            22,
-            32
-          ]
-        }
+        "items": [
+          {
+            "active": true,
+            "zoom": 1.0,
+            "background_color": [
+              18,
+              22,
+              32
+            ],
+            "type": "Camera"
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -91,16 +94,19 @@
         "order": 0
       },
       "components": {
-        "rigidbody": {
-          "use_gravity": false,
-          "is_kinematic": true
-        },
-        "collider": {
-          "type": "box",
-          "width": 900.0,
-          "height": 60.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "use_gravity": false,
+            "is_kinematic": true,
+            "type": "Rigidbody"
+          },
+          {
+            "type": "box",
+            "width": 900.0,
+            "height": 60.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -143,17 +149,20 @@
         "order": 0
       },
       "components": {
-        "rigidbody": {
-          "use_gravity": true,
-          "is_kinematic": false,
-          "gravity_scale": 1.0
-        },
-        "collider": {
-          "type": "box",
-          "width": 54.0,
-          "height": 60.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "use_gravity": true,
+            "is_kinematic": false,
+            "gravity_scale": 1.0,
+            "type": "Rigidbody"
+          },
+          {
+            "type": "box",
+            "width": 54.0,
+            "height": 60.0,
+            "is_trigger": false
+          }
+        ]
       },
       "editor_data": {
         "animator": {
@@ -209,12 +218,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 52.0,
-          "height": 54.0,
-          "is_trigger": true
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 52.0,
+            "height": 54.0,
+            "is_trigger": true
+          }
+        ]
       },
       "enabled": false,
       "static": false,
@@ -257,12 +268,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 52.0,
-          "height": 70.0,
-          "is_trigger": true
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 52.0,
+            "height": 70.0,
+            "is_trigger": true
+          }
+        ]
       },
       "enabled": true,
       "static": false,

@@ -156,31 +156,34 @@
         "order": 0
       },
       "components": {
-        "rigidbody": {
-          "mass": 1.0,
-          "gravity_scale": 0.0,
-          "drag": 0.0,
-          "use_gravity": false,
-          "is_kinematic": true,
-          "velocity": [
-            0.0,
-            0.0
-          ],
-          "acceleration": [
-            0.0,
-            0.0
-          ]
-        },
-        "collider": {
-          "type": "box",
-          "width": 1280.0,
-          "height": 80.0,
-          "offset": [
-            0.0,
-            0.0
-          ],
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "mass": 1.0,
+            "gravity_scale": 0.0,
+            "drag": 0.0,
+            "use_gravity": false,
+            "is_kinematic": true,
+            "velocity": [
+              0.0,
+              0.0
+            ],
+            "acceleration": [
+              0.0,
+              0.0
+            ],
+            "type": "Rigidbody"
+          },
+          {
+            "type": "box",
+            "width": 1280.0,
+            "height": 80.0,
+            "offset": [
+              0.0,
+              0.0
+            ],
+            "is_trigger": false
+          }
+        ]
       },
       "static": false
     },
@@ -226,31 +229,34 @@
         "order": 0
       },
       "components": {
-        "rigidbody": {
-          "mass": 1.0,
-          "gravity_scale": 1.0,
-          "drag": 0.0,
-          "use_gravity": true,
-          "is_kinematic": false,
-          "velocity": [
-            0.0,
-            0.0
-          ],
-          "acceleration": [
-            0.0,
-            0.0
-          ]
-        },
-        "collider": {
-          "type": "box",
-          "width": 42.0,
-          "height": 58.0,
-          "offset": [
-            0.0,
-            0.0
-          ],
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "mass": 1.0,
+            "gravity_scale": 1.0,
+            "drag": 0.0,
+            "use_gravity": true,
+            "is_kinematic": false,
+            "velocity": [
+              0.0,
+              0.0
+            ],
+            "acceleration": [
+              0.0,
+              0.0
+            ],
+            "type": "Rigidbody"
+          },
+          {
+            "type": "box",
+            "width": 42.0,
+            "height": 58.0,
+            "offset": [
+              0.0,
+              0.0
+            ],
+            "is_trigger": false
+          }
+        ]
       },
       "static": false
     },
@@ -296,31 +302,34 @@
         "order": 0
       },
       "components": {
-        "rigidbody": {
-          "mass": 1.0,
-          "gravity_scale": 0.0,
-          "drag": 0.0,
-          "use_gravity": false,
-          "is_kinematic": true,
-          "velocity": [
-            0.0,
-            0.0
-          ],
-          "acceleration": [
-            0.0,
-            0.0
-          ]
-        },
-        "collider": {
-          "type": "box",
-          "width": 180.0,
-          "height": 24.0,
-          "offset": [
-            0.0,
-            0.0
-          ],
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "mass": 1.0,
+            "gravity_scale": 0.0,
+            "drag": 0.0,
+            "use_gravity": false,
+            "is_kinematic": true,
+            "velocity": [
+              0.0,
+              0.0
+            ],
+            "acceleration": [
+              0.0,
+              0.0
+            ],
+            "type": "Rigidbody"
+          },
+          {
+            "type": "box",
+            "width": 180.0,
+            "height": 24.0,
+            "offset": [
+              0.0,
+              0.0
+            ],
+            "is_trigger": false
+          }
+        ]
       },
       "static": false
     },
@@ -366,31 +375,34 @@
         "order": 0
       },
       "components": {
-        "rigidbody": {
-          "mass": 1.0,
-          "gravity_scale": 0.0,
-          "drag": 0.0,
-          "use_gravity": false,
-          "is_kinematic": true,
-          "velocity": [
-            0.0,
-            0.0
-          ],
-          "acceleration": [
-            0.0,
-            0.0
-          ]
-        },
-        "collider": {
-          "type": "box",
-          "width": 170.0,
-          "height": 24.0,
-          "offset": [
-            0.0,
-            0.0
-          ],
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "mass": 1.0,
+            "gravity_scale": 0.0,
+            "drag": 0.0,
+            "use_gravity": false,
+            "is_kinematic": true,
+            "velocity": [
+              0.0,
+              0.0
+            ],
+            "acceleration": [
+              0.0,
+              0.0
+            ],
+            "type": "Rigidbody"
+          },
+          {
+            "type": "box",
+            "width": 170.0,
+            "height": 24.0,
+            "offset": [
+              0.0,
+              0.0
+            ],
+            "is_trigger": false
+          }
+        ]
       },
       "static": false
     },
@@ -436,31 +448,34 @@
         "order": 0
       },
       "components": {
-        "rigidbody": {
-          "mass": 1.0,
-          "gravity_scale": 0.0,
-          "drag": 0.0,
-          "use_gravity": false,
-          "is_kinematic": true,
-          "velocity": [
-            0.0,
-            0.0
-          ],
-          "acceleration": [
-            0.0,
-            0.0
-          ]
-        },
-        "collider": {
-          "type": "box",
-          "width": 160.0,
-          "height": 24.0,
-          "offset": [
-            0.0,
-            0.0
-          ],
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "mass": 1.0,
+            "gravity_scale": 0.0,
+            "drag": 0.0,
+            "use_gravity": false,
+            "is_kinematic": true,
+            "velocity": [
+              0.0,
+              0.0
+            ],
+            "acceleration": [
+              0.0,
+              0.0
+            ],
+            "type": "Rigidbody"
+          },
+          {
+            "type": "box",
+            "width": 160.0,
+            "height": 24.0,
+            "offset": [
+              0.0,
+              0.0
+            ],
+            "is_trigger": false
+          }
+        ]
       },
       "static": false
     },
@@ -506,31 +521,34 @@
         "order": 0
       },
       "components": {
-        "rigidbody": {
-          "mass": 1.0,
-          "gravity_scale": 0.0,
-          "drag": 0.0,
-          "use_gravity": false,
-          "is_kinematic": true,
-          "velocity": [
-            0.0,
-            0.0
-          ],
-          "acceleration": [
-            0.0,
-            0.0
-          ]
-        },
-        "collider": {
-          "type": "box",
-          "width": 180.0,
-          "height": 24.0,
-          "offset": [
-            0.0,
-            0.0
-          ],
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "mass": 1.0,
+            "gravity_scale": 0.0,
+            "drag": 0.0,
+            "use_gravity": false,
+            "is_kinematic": true,
+            "velocity": [
+              0.0,
+              0.0
+            ],
+            "acceleration": [
+              0.0,
+              0.0
+            ],
+            "type": "Rigidbody"
+          },
+          {
+            "type": "box",
+            "width": 180.0,
+            "height": 24.0,
+            "offset": [
+              0.0,
+              0.0
+            ],
+            "is_trigger": false
+          }
+        ]
       },
       "static": false
     },
@@ -576,16 +594,18 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 46.0,
-          "height": 46.0,
-          "offset": [
-            0.0,
-            0.0
-          ],
-          "is_trigger": true
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 46.0,
+            "height": 46.0,
+            "offset": [
+              0.0,
+              0.0
+            ],
+            "is_trigger": true
+          }
+        ]
       },
       "static": false
     },
@@ -631,17 +651,19 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "circle",
-          "radius": 12.0,
-          "offset": [
-            0.0,
-            0.0
-          ],
-          "is_trigger": true,
-          "width": 24.0,
-          "height": 24.0
-        }
+        "items": [
+          {
+            "type": "circle",
+            "radius": 12.0,
+            "offset": [
+              0.0,
+              0.0
+            ],
+            "is_trigger": true,
+            "width": 24.0,
+            "height": 24.0
+          }
+        ]
       },
       "static": false
     },
@@ -687,17 +709,19 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "circle",
-          "radius": 12.0,
-          "offset": [
-            0.0,
-            0.0
-          ],
-          "is_trigger": true,
-          "width": 24.0,
-          "height": 24.0
-        }
+        "items": [
+          {
+            "type": "circle",
+            "radius": 12.0,
+            "offset": [
+              0.0,
+              0.0
+            ],
+            "is_trigger": true,
+            "width": 24.0,
+            "height": 24.0
+          }
+        ]
       },
       "static": false
     },
@@ -743,17 +767,19 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "circle",
-          "radius": 12.0,
-          "offset": [
-            0.0,
-            0.0
-          ],
-          "is_trigger": true,
-          "width": 24.0,
-          "height": 24.0
-        }
+        "items": [
+          {
+            "type": "circle",
+            "radius": 12.0,
+            "offset": [
+              0.0,
+              0.0
+            ],
+            "is_trigger": true,
+            "width": 24.0,
+            "height": 24.0
+          }
+        ]
       },
       "static": false
     },
@@ -799,17 +825,19 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "circle",
-          "radius": 12.0,
-          "offset": [
-            0.0,
-            0.0
-          ],
-          "is_trigger": true,
-          "width": 24.0,
-          "height": 24.0
-        }
+        "items": [
+          {
+            "type": "circle",
+            "radius": 12.0,
+            "offset": [
+              0.0,
+              0.0
+            ],
+            "is_trigger": true,
+            "width": 24.0,
+            "height": 24.0
+          }
+        ]
       },
       "static": false
     },
@@ -855,17 +883,19 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "circle",
-          "radius": 12.0,
-          "offset": [
-            0.0,
-            0.0
-          ],
-          "is_trigger": true,
-          "width": 24.0,
-          "height": 24.0
-        }
+        "items": [
+          {
+            "type": "circle",
+            "radius": 12.0,
+            "offset": [
+              0.0,
+              0.0
+            ],
+            "is_trigger": true,
+            "width": 24.0,
+            "height": 24.0
+          }
+        ]
       },
       "static": false
     },
@@ -911,16 +941,18 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 56.0,
-          "height": 100.0,
-          "offset": [
-            0.0,
-            0.0
-          ],
-          "is_trigger": true
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 56.0,
+            "height": 100.0,
+            "offset": [
+              0.0,
+              0.0
+            ],
+            "is_trigger": true
+          }
+        ]
       },
       "static": false
     },
@@ -1568,16 +1600,18 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 1400.0,
-          "height": 80.0,
-          "offset": [
-            0.0,
-            0.0
-          ],
-          "is_trigger": true
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 1400.0,
+            "height": 80.0,
+            "offset": [
+              0.0,
+              0.0
+            ],
+            "is_trigger": true
+          }
+        ]
       },
       "static": false
     }

@@ -69,16 +69,19 @@
         "material": "Default_Material"
       },
       "components": {
-        "camera": {
-          "active": true,
-          "zoom": 1.0,
-          "background_color": [
-            6,
-            10,
-            28
-          ],
-          "priority": 10
-        }
+        "items": [
+          {
+            "active": true,
+            "zoom": 1.0,
+            "background_color": [
+              6,
+              10,
+              28
+            ],
+            "priority": 10,
+            "type": "Camera"
+          }
+        ]
       },
       "static": false
     },
@@ -164,20 +167,25 @@
         "material": "Default_Material"
       },
       "components": {
-        "logic_graph": {
-          "graph_path": "Assets/Logic/NebulaDefensePro/NebulaPlayerPro.zlogic"
-        },
-        "rigidbody": {
-          "mass": 1.0,
-          "use_gravity": false,
-          "is_kinematic": true,
-          "gravity_scale": 0.0
-        },
-        "collider": {
-          "width": 50.0,
-          "height": 50.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "graph_path": "Assets/Logic/NebulaDefensePro/NebulaPlayerPro.zlogic",
+            "type": "LogicGraph"
+          },
+          {
+            "mass": 1.0,
+            "use_gravity": false,
+            "is_kinematic": true,
+            "gravity_scale": 0.0,
+            "type": "Rigidbody"
+          },
+          {
+            "width": 50.0,
+            "height": 50.0,
+            "is_trigger": false,
+            "type": "Collider"
+          }
+        ]
       },
       "editor_data": {
         "logic_assets": [
@@ -226,20 +234,25 @@
         "material": "Default_Material"
       },
       "components": {
-        "logic_graph": {
-          "graph_path": "Assets/Logic/NebulaDefensePro/NebulaBoss.zlogic"
-        },
-        "rigidbody": {
-          "mass": 10.0,
-          "use_gravity": false,
-          "is_kinematic": true,
-          "gravity_scale": 0.0
-        },
-        "collider": {
-          "width": 160.0,
-          "height": 90.0,
-          "is_trigger": true
-        }
+        "items": [
+          {
+            "graph_path": "Assets/Logic/NebulaDefensePro/NebulaBoss.zlogic",
+            "type": "LogicGraph"
+          },
+          {
+            "mass": 10.0,
+            "use_gravity": false,
+            "is_kinematic": true,
+            "gravity_scale": 0.0,
+            "type": "Rigidbody"
+          },
+          {
+            "width": 160.0,
+            "height": 90.0,
+            "is_trigger": true,
+            "type": "Collider"
+          }
+        ]
       },
       "editor_data": {
         "logic_assets": [
@@ -288,9 +301,12 @@
         "order": 0
       },
       "components": {
-        "logic_graph": {
-          "graph_path": "Assets/Logic/NebulaDefensePro/NebulaGameManagerPro.zlogic"
-        }
+        "items": [
+          {
+            "graph_path": "Assets/Logic/NebulaDefensePro/NebulaGameManagerPro.zlogic",
+            "type": "LogicGraph"
+          }
+        ]
       },
       "editor_data": {
         "logic_assets": [

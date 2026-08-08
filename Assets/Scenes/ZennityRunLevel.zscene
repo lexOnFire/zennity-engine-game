@@ -40,12 +40,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -88,12 +90,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -136,12 +140,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -184,12 +190,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -232,12 +240,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -280,12 +290,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -328,12 +340,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -376,12 +390,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -424,12 +440,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -472,12 +490,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -520,12 +540,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -568,12 +590,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -616,12 +640,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -664,12 +690,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -712,12 +740,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -760,12 +790,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -808,12 +840,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -856,12 +890,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -904,12 +940,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -952,12 +990,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -1000,12 +1040,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -1048,12 +1090,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -1096,12 +1140,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -1144,12 +1190,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -1192,12 +1240,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -1240,12 +1290,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -1288,12 +1340,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -1336,12 +1390,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 32.0,
-          "height": 32.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 32.0,
+            "height": 32.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -1384,27 +1440,31 @@
         "order": 0
       },
       "components": {
-        "rigidbody": {
-          "mass": 1.0,
-          "gravity_scale": 1.0,
-          "drag": 0.0,
-          "use_gravity": true,
-          "is_kinematic": false
-        },
-        "collider": {
-          "type": "box",
-          "width": 20.0,
-          "height": 26.0,
-          "is_trigger": false,
-          "offset_x": 0.0,
-          "offset_y": 0.0
-        },
-        "audio": {
-          "path": "Assets/Audio/_zennity_run/jump.wav",
-          "volume": 0.6,
-          "loop": false,
-          "autoplay": false
-        }
+        "items": [
+          {
+            "mass": 1.0,
+            "gravity_scale": 1.0,
+            "drag": 0.0,
+            "use_gravity": true,
+            "is_kinematic": false,
+            "type": "Rigidbody"
+          },
+          {
+            "type": "box",
+            "width": 20.0,
+            "height": 26.0,
+            "is_trigger": false,
+            "offset_x": 0.0,
+            "offset_y": 0.0
+          },
+          {
+            "path": "Assets/Audio/_zennity_run/jump.wav",
+            "volume": 0.6,
+            "loop": false,
+            "autoplay": false,
+            "type": "Audio"
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -1459,16 +1519,19 @@
         "order": 0
       },
       "components": {
-        "camera": {
-          "active": true,
-          "zoom": 1.0,
-          "background_color": [
-            120,
-            178,
-            230
-          ],
-          "priority": 10
-        }
+        "items": [
+          {
+            "active": true,
+            "zoom": 1.0,
+            "background_color": [
+              120,
+              178,
+              230
+            ],
+            "priority": 10,
+            "type": "Camera"
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -1511,13 +1574,15 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "circle",
-          "radius": 7.0,
-          "is_trigger": true,
-          "width": 12.0,
-          "height": 12.0
-        }
+        "items": [
+          {
+            "type": "circle",
+            "radius": 7.0,
+            "is_trigger": true,
+            "width": 12.0,
+            "height": 12.0
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -1572,13 +1637,15 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "circle",
-          "radius": 7.0,
-          "is_trigger": true,
-          "width": 12.0,
-          "height": 12.0
-        }
+        "items": [
+          {
+            "type": "circle",
+            "radius": 7.0,
+            "is_trigger": true,
+            "width": 12.0,
+            "height": 12.0
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -1633,13 +1700,15 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "circle",
-          "radius": 7.0,
-          "is_trigger": true,
-          "width": 12.0,
-          "height": 12.0
-        }
+        "items": [
+          {
+            "type": "circle",
+            "radius": 7.0,
+            "is_trigger": true,
+            "width": 12.0,
+            "height": 12.0
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -1694,13 +1763,15 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "circle",
-          "radius": 7.0,
-          "is_trigger": true,
-          "width": 12.0,
-          "height": 12.0
-        }
+        "items": [
+          {
+            "type": "circle",
+            "radius": 7.0,
+            "is_trigger": true,
+            "width": 12.0,
+            "height": 12.0
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -1755,19 +1826,22 @@
         "order": 0
       },
       "components": {
-        "rigidbody": {
-          "mass": 1.0,
-          "gravity_scale": 0.0,
-          "drag": 0.0,
-          "use_gravity": false,
-          "is_kinematic": true
-        },
-        "collider": {
-          "type": "box",
-          "width": 26.0,
-          "height": 26.0,
-          "is_trigger": true
-        }
+        "items": [
+          {
+            "mass": 1.0,
+            "gravity_scale": 0.0,
+            "drag": 0.0,
+            "use_gravity": false,
+            "is_kinematic": true,
+            "type": "Rigidbody"
+          },
+          {
+            "type": "box",
+            "width": 26.0,
+            "height": 26.0,
+            "is_trigger": true
+          }
+        ]
       },
       "editor_data": {
         "behavior": {
@@ -1826,21 +1900,24 @@
         "order": 0
       },
       "components": {
-        "rigidbody": {
-          "mass": 1.0,
-          "gravity_scale": 0.0,
-          "drag": 0.0,
-          "use_gravity": false,
-          "is_kinematic": true
-        },
-        "collider": {
-          "type": "box",
-          "width": 26.0,
-          "height": 34.0,
-          "is_trigger": true,
-          "offset_x": 0.0,
-          "offset_y": 0.0
-        }
+        "items": [
+          {
+            "mass": 1.0,
+            "gravity_scale": 0.0,
+            "drag": 0.0,
+            "use_gravity": false,
+            "is_kinematic": true,
+            "type": "Rigidbody"
+          },
+          {
+            "type": "box",
+            "width": 26.0,
+            "height": 34.0,
+            "is_trigger": true,
+            "offset_x": 0.0,
+            "offset_y": 0.0
+          }
+        ]
       },
       "editor_data": {
         "behavior": {
@@ -1899,12 +1976,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 24.0,
-          "height": 64.0,
-          "is_trigger": true
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 24.0,
+            "height": 64.0,
+            "is_trigger": true
+          }
+        ]
       },
       "enabled": true,
       "static": false,

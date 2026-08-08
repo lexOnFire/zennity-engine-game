@@ -77,6 +77,16 @@ class ProjectWorkflowController:
         h._selected_name = None
         h._refresh_hierarchy()
         h._scene_controller.publish_snapshot(h._scene_snapshot)
+        # CRITICAL: Apply scene metadata (ui, blackboard) for RuntimeScene._compile_and_attach_ui()
+        # The payload from _scene_persistence.load() contains all scene metadata, not just objects
+        viewport = getattr(h, "viewport", None)
+        if viewport and hasattr(viewport, "active_scene") and viewport.active_scene:
+            if "ui" in payload:
+                viewport.active_scene.ui = payload["ui"]
+            if "blackboard" in payload:
+                viewport.active_scene.blackboard = payload["blackboard"]
+            if "scene_name" in payload:
+                viewport.active_scene.name = payload["scene_name"]
         dock = getattr(h, "_dock_visual_scripting", None)
         if dock is not None and hasattr(dock, "sync_from_host"):
             dock.sync_from_host()

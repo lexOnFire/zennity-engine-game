@@ -20,13 +20,24 @@ def normalize_ui(data: Any) -> dict[str, Any] | None:
     if not isinstance(data, dict):
         return None
     
-    # Se data for um GameObject com components["canvas"], compila a partir dele
-    if "components" in data and isinstance(data["components"], dict) and "canvas" in data["components"]:
-        canvas_comp = dict(data["components"]["canvas"])
-        canvas_comp.setdefault("type", "canvas")
-        if "ui_asset" in canvas_comp and "layout_path" not in canvas_comp:
-            canvas_comp["layout_path"] = canvas_comp["ui_asset"]
-        data = canvas_comp
+    # Se data for um GameObject com components
+    if "components" in data and isinstance(data["components"], dict):
+        comps = data["components"]
+        if "canvas" in comps and isinstance(comps["canvas"], dict):
+            canvas_comp = dict(comps["canvas"])
+            canvas_comp.setdefault("type", "canvas")
+            if "ui_asset" in canvas_comp and "layout_path" not in canvas_comp:
+                canvas_comp["layout_path"] = canvas_comp["ui_asset"]
+            data = canvas_comp
+        elif "items" in comps and isinstance(comps["items"], list):
+            for item in comps["items"]:
+                if isinstance(item, dict) and str(item.get("type", "")).lower() in {"canvas", "uicanvas"}:
+                    props = dict(item.get("properties") or {})
+                    props["type"] = "canvas"
+                    if "layout_path" not in props:
+                        props["layout_path"] = props.get("layout_path", props.get("ui_asset", props.get("asset", "")))
+                    data = props
+                    break
 
     kind = str(data.get("type", "")).strip().lower()
     if "ui_asset" in data and "layout_path" not in data:
@@ -183,15 +194,15 @@ class NativeUIRenderer:
         values = self._values(objects)
         canvas_objs = [
             obj for obj in values 
-            if bool(obj.get("active", True)) and (normalize_ui(obj.get("ui")) or {}).get("type") == "canvas"
+            if bool(obj.get("active", True)) and ((normalize_ui(obj) or normalize_ui(obj.get("ui")) or {}).get("type") == "canvas")
         ]
         result = []
         # Carrega elementos vindos de arquivos .zui vinculados ao Canvas ativo ou filhos diretos
         for canvas_obj in canvas_objs:
-            c_ui = canvas_obj.get("ui") or {}
+            c_ui = normalize_ui(canvas_obj) or canvas_obj.get("ui") or {}
             if not bool(c_ui.get("visible", True)):
                 continue
-            layout_path = str(c_ui.get("layout_path", "")).strip()
+            layout_path = str(c_ui.get("layout_path", c_ui.get("ui_asset", c_ui.get("asset", "")))).strip()
             overrides = c_ui.get("_widget_overrides", {})
             if layout_path:
                 for item_ui in self._load_zui_layout(layout_path):

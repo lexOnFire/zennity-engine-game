@@ -3,9 +3,7 @@
   "scene_name": "Victory",
   "engine_version": "0.1.0",
   "blackboard": {
-    "variables": {
-      "scene_name": "Victory"
-    }
+    "variables": {}
   },
   "objects": [
     {
@@ -32,23 +30,26 @@
         ]
       },
       "components": {
-        "camera": {
-          "zoom": 1.0,
-          "clear_color": [
-            0.1,
-            0.05,
-            0.2,
-            1.0
-          ],
-          "viewport_rect": [
-            0.0,
-            0.0,
-            1.0,
-            1.0
-          ],
-          "priority": 0,
-          "active": true
-        }
+        "items": [
+          {
+            "zoom": 1.0,
+            "clear_color": [
+              0.1,
+              0.05,
+              0.2,
+              1.0
+            ],
+            "viewport_rect": [
+              0.0,
+              0.0,
+              1.0,
+              1.0
+            ],
+            "priority": 0,
+            "active": true,
+            "type": "Camera"
+          }
+        ]
       },
       "enabled": true
     },
@@ -76,24 +77,19 @@
         ]
       },
       "components": {
-        "canvas": {
-          "type": "Canvas",
-          "layout_path": "Assets/UI/Victory.zui",
-          "ui_asset": "Assets/UI/Victory.zui",
-          "visible": true,
-          "z_order": 0,
-          "render_mode": "Screen Space",
-          "layer_mask": 4294967295
-        },
-        "logic_graphs": [
+        "items": [
           {
-            "path": "Assets/Logic/VictoryLogic.zlogic",
-            "name": "VictoryLogic"
+            "type": "Canvas",
+            "layout_path": "Assets/UI/Victory.zui",
+            "ui_asset": "Assets/UI/Victory.zui",
+            "visible": true,
+            "z_order": 0,
+            "render_mode": "Screen Space",
+            "layer_mask": 4294967295
           }
         ]
       },
       "enabled": true
     }
-  ],
-  "ui": "Assets/UI/Victory.zui"
+  ]
 }

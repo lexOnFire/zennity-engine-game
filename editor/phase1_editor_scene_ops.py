@@ -72,6 +72,11 @@ class Phase1SceneOperationsMixin:
             return
         self._clear_scene_objects()
         scene.name = str(scene_data.get("scene_name", "Untitled"))
+        # CRITICAL: Apply scene metadata (ui, blackboard) for RuntimeScene._compile_and_attach_ui()
+        if "ui" in scene_data:
+            scene.ui = scene_data["ui"]
+        if "blackboard" in scene_data:
+            scene.blackboard = scene_data["blackboard"]
         objects = list(scene_data.get("objects", []))
         for obj in objects:
             if hasattr(scene, "_add_go"):

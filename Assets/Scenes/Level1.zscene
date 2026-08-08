@@ -3,11 +3,7 @@
   "scene_name": "Level 1 - Arena",
   "engine_version": "0.1.0",
   "blackboard": {
-    "variables": {
-      "level_number": 1,
-      "coins": 0,
-      "has_key": false
-    }
+    "variables": {}
   },
   "objects": [
     {
@@ -60,23 +56,26 @@
         ]
       },
       "components": {
-        "camera": {
-          "zoom": 1.0,
-          "clear_color": [
-            0.05,
-            0.05,
-            0.1,
-            1.0
-          ],
-          "viewport_rect": [
-            0.0,
-            0.0,
-            1.0,
-            1.0
-          ],
-          "priority": 0,
-          "active": true
-        }
+        "items": [
+          {
+            "zoom": 1.0,
+            "clear_color": [
+              0.05,
+              0.05,
+              0.1,
+              1.0
+            ],
+            "viewport_rect": [
+              0.0,
+              0.0,
+              1.0,
+              1.0
+            ],
+            "priority": 0,
+            "active": true,
+            "type": "Camera"
+          }
+        ]
       },
       "enabled": true
     },
@@ -182,15 +181,17 @@
         ]
       },
       "components": {
-        "canvas": {
-          "type": "Canvas",
-          "layout_path": "Assets/UI/HUD.zui",
-          "ui_asset": "Assets/UI/HUD.zui",
-          "visible": true,
-          "z_order": 0,
-          "render_mode": "Screen Space",
-          "layer_mask": 4294967295
-        }
+        "items": [
+          {
+            "type": "Canvas",
+            "layout_path": "Assets/UI/HUD.zui",
+            "ui_asset": "Assets/UI/HUD.zui",
+            "visible": true,
+            "z_order": 0,
+            "render_mode": "Screen Space",
+            "layer_mask": 4294967295
+          }
+        ]
       },
       "enabled": true
     },
@@ -218,14 +219,16 @@
         ]
       },
       "components": {
-        "boxcollider2d": {
-          "type": "BoxCollider2D",
-          "size": [
-            2,
-            30
-          ],
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "BoxCollider2D",
+            "size": [
+              2,
+              30
+            ],
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true
     },
@@ -253,14 +256,16 @@
         ]
       },
       "components": {
-        "boxcollider2d": {
-          "type": "BoxCollider2D",
-          "size": [
-            2,
-            30
-          ],
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "BoxCollider2D",
+            "size": [
+              2,
+              30
+            ],
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true
     },
@@ -288,14 +293,16 @@
         ]
       },
       "components": {
-        "boxcollider2d": {
-          "type": "BoxCollider2D",
-          "size": [
-            44,
-            2
-          ],
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "BoxCollider2D",
+            "size": [
+              44,
+              2
+            ],
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true
     },
@@ -323,14 +330,16 @@
         ]
       },
       "components": {
-        "boxcollider2d": {
-          "type": "BoxCollider2D",
-          "size": [
-            44,
-            2
-          ],
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "BoxCollider2D",
+            "size": [
+              44,
+              2
+            ],
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true
     },
@@ -566,17 +575,18 @@
         ]
       },
       "components": {
-        "boxcollider2d": {
-          "type": "BoxCollider2D",
-          "size": [
-            2,
-            3
-          ],
-          "is_trigger": true
-        }
+        "items": [
+          {
+            "type": "BoxCollider2D",
+            "size": [
+              2,
+              3
+            ],
+            "is_trigger": true
+          }
+        ]
       },
       "enabled": true
     }
-  ],
-  "ui": "Assets/UI/HUD.zui"
+  ]
 }

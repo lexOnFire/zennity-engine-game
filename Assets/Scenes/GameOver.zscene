@@ -30,23 +30,26 @@
         ]
       },
       "components": {
-        "camera": {
-          "zoom": 1.0,
-          "clear_color": [
-            0.1,
-            0.05,
-            0.05,
-            1.0
-          ],
-          "viewport_rect": [
-            0.0,
-            0.0,
-            1.0,
-            1.0
-          ],
-          "priority": 0,
-          "active": true
-        }
+        "items": [
+          {
+            "zoom": 1.0,
+            "clear_color": [
+              0.1,
+              0.05,
+              0.05,
+              1.0
+            ],
+            "viewport_rect": [
+              0.0,
+              0.0,
+              1.0,
+              1.0
+            ],
+            "priority": 0,
+            "active": true,
+            "type": "Camera"
+          }
+        ]
       },
       "enabled": true
     },
@@ -74,24 +77,19 @@
         ]
       },
       "components": {
-        "canvas": {
-          "type": "Canvas",
-          "layout_path": "Assets/UI/GameOver.zui",
-          "ui_asset": "Assets/UI/GameOver.zui",
-          "visible": true,
-          "z_order": 0,
-          "render_mode": "Screen Space",
-          "layer_mask": 4294967295
-        },
-        "logic_graphs": [
+        "items": [
           {
-            "path": "Assets/Logic/GameOverLogic.zlogic",
-            "name": "GameOverLogic"
+            "type": "Canvas",
+            "layout_path": "Assets/UI/GameOver.zui",
+            "ui_asset": "Assets/UI/GameOver.zui",
+            "visible": true,
+            "z_order": 0,
+            "render_mode": "Screen Space",
+            "layer_mask": 4294967295
           }
         ]
       },
       "enabled": true
     }
-  ],
-  "ui": "Assets/UI/GameOver.zui"
+  ]
 }

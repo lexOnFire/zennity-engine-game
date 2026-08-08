@@ -459,7 +459,7 @@ def deserialize_scene(data: dict[str, Any]) -> dict[str, Any]:
     # Graphs) era completamente descartado aqui. Preservado no resultado
     # para quem passar por este caminho em vez de load_scene_document.
     blackboard = data.get("blackboard")
-    return {
+    result = {
         "format_version": int(data.get("format_version", SCENE_FORMAT_VERSION)),
         "scene_name": str(data.get("scene_name", DEFAULT_SCENE_NAME)),
         "engine_version": str(data.get("engine_version", ENGINE_VERSION)),
@@ -470,6 +470,10 @@ def deserialize_scene(data: dict[str, Any]) -> dict[str, Any]:
             if isinstance(item, dict)
         ],
     }
+    # CRITICAL: Preserve UI asset reference for RuntimeScene._compile_and_attach_ui()
+    if "ui" in data:
+        result["ui"] = data["ui"]
+    return result
 
 
 def save_scene(scene: Any, path: str | Path) -> Path:

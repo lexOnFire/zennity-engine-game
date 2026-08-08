@@ -40,15 +40,18 @@
         "order": 0
       },
       "components": {
-        "camera": {
-          "active": true,
-          "zoom": 1.0,
-          "background_color": [
-            18,
-            22,
-            32
-          ]
-        }
+        "items": [
+          {
+            "active": true,
+            "zoom": 1.0,
+            "background_color": [
+              18,
+              22,
+              32
+            ],
+            "type": "Camera"
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -91,12 +94,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 58.0,
-          "height": 76.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 58.0,
+            "height": 76.0,
+            "is_trigger": false
+          }
+        ]
       },
       "enabled": true,
       "static": false,
@@ -139,12 +144,14 @@
         "order": 0
       },
       "components": {
-        "collider": {
-          "type": "box",
-          "width": 58.0,
-          "height": 76.0,
-          "is_trigger": false
-        }
+        "items": [
+          {
+            "type": "box",
+            "width": 58.0,
+            "height": 76.0,
+            "is_trigger": false
+          }
+        ]
       },
       "editor_data": {
         "behavior": {

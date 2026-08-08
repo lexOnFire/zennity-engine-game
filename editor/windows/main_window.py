@@ -29,7 +29,7 @@ from editor.models.asset_model import AssetModel
 from editor.viewmodels.asset_viewmodel import AssetViewModel
 
 # Serialização
-from editor.core.serializer import save_scene_to_file, load_scene_from_file
+from editor.core.serializer import save_scene_to_file, load_scene_from_file, load_scene_file_with_metadata
 
 # Widgets e Docks do Editor
 from editor.widgets.hierarchy_dock import HierarchyDock
@@ -353,7 +353,7 @@ class MainWindow(MainWindowMenusMixin, QMainWindow):
         if not filepath:
             return
         try:
-            loaded_objs = load_scene_from_file(filepath)
+            loaded_objs, metadata = load_scene_file_with_metadata(filepath)
             self.scene_model.clear()
             self.scene_view_model.selected_object = None
 
@@ -366,6 +366,9 @@ class MainWindow(MainWindowMenusMixin, QMainWindow):
                         self.viewport.active_scene.editable_objects.append(obj)
                     self.scene_model.add_object(obj)
                 self.viewport.active_scene.selected_index = -1
+                # Apply scene metadata (ui, scene_name, blackboard) - CRITICAL for Runtime UI compilation
+                for key, value in metadata.items():
+                    setattr(self.viewport.active_scene, key, value)
                 self.scene_view_model.on_model_hierarchy_changed()
 
             self.setWindowTitle(f"Zennity Engine Editor - {os.path.basename(filepath)}")
