@@ -767,6 +767,10 @@ class PlayLogicAPI:
             )
 
             if success:
+                # Cache choices for get_choice_text() lookup
+                # (DialogueSession options only visible at choice node)
+                self.obj.setdefault("_dialogue_choices", {})[dialog_id] = choices
+
                 # Get state for UI display (with owner_id for composite key)
                 state = manager.get_state(dialog_id, owner_id=owner_id)
 
@@ -829,17 +833,15 @@ class PlayLogicAPI:
         """
         Get text of specific choice (pure getter).
 
-        Reads from cached dialogue state.
+        Reads from cached dialogue choices.
         """
         try:
-            # Check if we have cached dialogue state
-            dialogues = self.obj.get("_dialogue_state", {})
-            dialogue = dialogues.get(dialog_id)
+            # Check if we have cached choices (set by show_dialogue)
+            choices_cache = self.obj.get("_dialogue_choices", {})
+            choices = choices_cache.get(dialog_id, [])
 
-            if dialogue:
-                choices = dialogue.get("choices", [])
-                if 0 <= choice_index < len(choices):
-                    return str(choices[choice_index])
+            if 0 <= choice_index < len(choices):
+                return str(choices[choice_index])
 
             return ""
         except Exception as e:
