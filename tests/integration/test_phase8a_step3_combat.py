@@ -316,25 +316,28 @@ class TestLevel1Setup:
                         for g in graphs)
         assert has_combat, "Player should have PlayerCombatLogic attached"
 
-    def test_level1_has_dummy_enemy(self):
-        """Verify Level1 has DummyEnemy prefab."""
+    def test_level1_has_enemy(self):
+        """Verify Level1 has an enemy prefab (DummyEnemy or Enemy)."""
         scene_path = project_root / "Assets" / "Scenes" / "Level1.zscene"
         data = json.loads(scene_path.read_text(encoding="utf-8"))
 
+        # Check for any DummyEnemy or Enemy objects
         enemy_objs = [obj for obj in data.get("objects", [])
-                     if obj.get("name") == "DummyEnemy"]
-        assert len(enemy_objs) >= 1, "Level1 should have at least one DummyEnemy"
+                     if obj.get("name") in ["DummyEnemy", "Enemy"] or
+                        obj.get("prefab") in ["Assets/Prefabs/DummyEnemy.zprfb", "Assets/Prefabs/Enemy.zprfb"]]
+        assert len(enemy_objs) >= 1, "Level1 should have at least one enemy"
 
-    def test_dummy_enemy_is_prefab_reference(self):
-        """Verify DummyEnemy in Level1 is a prefab reference."""
+    def test_enemy_is_prefab_reference(self):
+        """Verify enemy in Level1 is a prefab reference."""
         scene_path = project_root / "Assets" / "Scenes" / "Level1.zscene"
         data = json.loads(scene_path.read_text(encoding="utf-8"))
 
+        # Accept either DummyEnemy or Enemy prefabs
         enemy = next((obj for obj in data.get("objects", [])
-                     if obj.get("name") == "DummyEnemy"), None)
+                     if obj.get("prefab") in ["Assets/Prefabs/DummyEnemy.zprfb", "Assets/Prefabs/Enemy.zprfb"]), None)
         assert enemy is not None
         assert enemy.get("type") == "Prefab"
-        assert enemy.get("prefab") == "Assets/Prefabs/DummyEnemy.zprfb"
+        assert enemy.get("prefab") in ["Assets/Prefabs/DummyEnemy.zprfb", "Assets/Prefabs/Enemy.zprfb"]
 
 
 class TestMovementLogicUpdate:

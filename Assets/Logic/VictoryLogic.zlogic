@@ -1,0 +1,272 @@
+{
+  "format": "zennity.generic_graph",
+  "name": "VictoryLogic",
+  "nodes": [
+    {
+      "id": "frame_loop",
+      "type": "every_frame",
+      "label": "Every Frame"
+    },
+    {
+      "id": "get_score",
+      "type": "project_get",
+      "label": "Get Score",
+      "project_variable": "score"
+    },
+    {
+      "id": "get_coins",
+      "type": "project_get",
+      "label": "Get Coins",
+      "project_variable": "coins"
+    },
+    {
+      "id": "format_score",
+      "type": "string_format",
+      "label": "Format Score",
+      "template": "Score: {0}"
+    },
+    {
+      "id": "format_coins",
+      "type": "string_format",
+      "label": "Format Coins",
+      "template": "Coins: {0}"
+    },
+    {
+      "id": "get_score_label",
+      "type": "ui_get_widget",
+      "label": "Get Score Label",
+      "widget_id": "score_display"
+    },
+    {
+      "id": "get_coins_label",
+      "type": "ui_get_widget",
+      "label": "Get Coins Label",
+      "widget_id": "coins_display"
+    },
+    {
+      "id": "set_score_text",
+      "type": "ui_set_text",
+      "label": "Set Score Text"
+    },
+    {
+      "id": "set_coins_text",
+      "type": "ui_set_text",
+      "label": "Set Coins Text"
+    },
+    {
+      "id": "main_menu_btn",
+      "type": "ui_get_widget",
+      "label": "Get Main Menu Button",
+      "widget_id": "main_menu_button"
+    },
+    {
+      "id": "new_game_btn",
+      "type": "ui_get_widget",
+      "label": "Get New Game Button",
+      "widget_id": "new_game_button"
+    },
+    {
+      "id": "main_menu_listener",
+      "type": "ui_on_click",
+      "label": "Main Menu Clicked"
+    },
+    {
+      "id": "new_game_listener",
+      "type": "ui_on_click",
+      "label": "New Game Clicked"
+    },
+    {
+      "id": "reset_coins",
+      "type": "project_set",
+      "label": "Reset Coins",
+      "project_variable": "coins",
+      "value": 0
+    },
+    {
+      "id": "reset_score",
+      "type": "project_set",
+      "label": "Reset Score",
+      "project_variable": "score",
+      "value": 0
+    },
+    {
+      "id": "reset_key",
+      "type": "project_set",
+      "label": "Reset Key",
+      "project_variable": "has_key",
+      "value": false
+    },
+    {
+      "id": "reset_boss_defeated",
+      "type": "project_set",
+      "label": "Reset Boss Defeated",
+      "project_variable": "boss_defeated",
+      "value": false
+    },
+    {
+      "id": "reset_health",
+      "type": "project_set",
+      "label": "Reset Health",
+      "project_variable": "health",
+      "value": 100
+    },
+    {
+      "id": "load_main_menu",
+      "type": "scene_load",
+      "label": "Load Main Menu",
+      "scene": "Assets/Scenes/MainMenu.zscene"
+    },
+    {
+      "id": "load_level1",
+      "type": "scene_load",
+      "label": "Load Level1",
+      "scene": "Assets/Scenes/Level1.zscene"
+    }
+  ],
+  "connections": [
+    {
+      "from_node": "frame_loop",
+      "to_node": "get_score",
+      "from_port": "exec",
+      "to_port": "exec"
+    },
+    {
+      "from_node": "get_score",
+      "to_node": "get_coins",
+      "from_port": "exec",
+      "to_port": "exec"
+    },
+    {
+      "from_node": "get_coins",
+      "to_node": "format_score",
+      "from_port": "exec",
+      "to_port": "exec"
+    },
+    {
+      "from_node": "get_score",
+      "to_node": "format_score",
+      "from_port": "value",
+      "to_port": "args"
+    },
+    {
+      "from_node": "get_coins",
+      "to_node": "format_coins",
+      "from_port": "value",
+      "to_port": "args"
+    },
+    {
+      "from_node": "format_score",
+      "to_node": "get_score_label",
+      "from_port": "exec",
+      "to_port": "exec"
+    },
+    {
+      "from_node": "format_coins",
+      "to_node": "get_coins_label",
+      "from_port": "exec",
+      "to_port": "exec"
+    },
+    {
+      "from_node": "get_score_label",
+      "to_node": "set_score_text",
+      "from_port": "exec",
+      "to_port": "exec"
+    },
+    {
+      "from_node": "get_coins_label",
+      "to_node": "set_coins_text",
+      "from_port": "exec",
+      "to_port": "exec"
+    },
+    {
+      "from_node": "format_score",
+      "to_node": "set_score_text",
+      "from_port": "result",
+      "to_port": "text"
+    },
+    {
+      "from_node": "format_coins",
+      "to_node": "set_coins_text",
+      "from_port": "result",
+      "to_port": "text"
+    },
+    {
+      "from_node": "get_score_label",
+      "to_node": "set_score_text",
+      "from_port": "value",
+      "to_port": "target"
+    },
+    {
+      "from_node": "get_coins_label",
+      "to_node": "set_coins_text",
+      "from_port": "value",
+      "to_port": "target"
+    },
+    {
+      "from_node": "set_score_text",
+      "to_node": "main_menu_btn",
+      "from_port": "exec",
+      "to_port": "exec"
+    },
+    {
+      "from_node": "main_menu_btn",
+      "to_node": "main_menu_listener",
+      "from_port": "exec",
+      "to_port": "exec"
+    },
+    {
+      "from_node": "main_menu_btn",
+      "to_node": "new_game_btn",
+      "from_port": "exec",
+      "to_port": "exec"
+    },
+    {
+      "from_node": "new_game_btn",
+      "to_node": "new_game_listener",
+      "from_port": "exec",
+      "to_port": "exec"
+    },
+    {
+      "from_node": "main_menu_listener",
+      "to_node": "load_main_menu",
+      "from_port": "exec",
+      "to_port": "exec"
+    },
+    {
+      "from_node": "new_game_listener",
+      "to_node": "reset_coins",
+      "from_port": "exec",
+      "to_port": "exec"
+    },
+    {
+      "from_node": "reset_coins",
+      "to_node": "reset_score",
+      "from_port": "exec",
+      "to_port": "exec"
+    },
+    {
+      "from_node": "reset_score",
+      "to_node": "reset_key",
+      "from_port": "exec",
+      "to_port": "exec"
+    },
+    {
+      "from_node": "reset_key",
+      "to_node": "reset_boss_defeated",
+      "from_port": "exec",
+      "to_port": "exec"
+    },
+    {
+      "from_node": "reset_boss_defeated",
+      "to_node": "reset_health",
+      "from_port": "exec",
+      "to_port": "exec"
+    },
+    {
+      "from_node": "reset_health",
+      "to_node": "load_level1",
+      "from_port": "exec",
+      "to_port": "exec"
+    }
+  ]
+}

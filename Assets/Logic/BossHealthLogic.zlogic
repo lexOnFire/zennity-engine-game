@@ -13,7 +13,8 @@
     {"id": "wait_death_animation", "type": "logic.noop", "position": [650, 180]},
     {"id": "set_boss_defeated", "type": "variable.set", "position": [800, 180], "config": {"variable_name": "boss_defeated", "value": true, "scope": "project"}},
     {"id": "disable_collider", "type": "component.set_property", "position": [800, 240], "config": {"component_type": "BoxCollider2D", "property": "enabled", "value": false}},
-    {"id": "stop_velocity", "type": "physics.set_velocity", "position": [800, 300], "config": {"velocity": [0, 0]}}
+    {"id": "stop_velocity", "type": "physics.set_velocity", "position": [800, 300], "config": {"velocity": [0, 0]}},
+    {"id": "load_victory", "type": "scene.load", "position": [950, 240], "config": {"scene_path": "Assets/Scenes/Victory.zscene"}}
   ],
   "edges": [
     {"from": "frame_loop", "to": "get_boss_health", "from_pin": "frame", "to_pin": "execute"},
@@ -26,6 +27,7 @@
     {"from": "set_dead_trigger", "to": "wait_death_animation", "from_pin": "done", "to_pin": "execute"},
     {"from": "wait_death_animation", "to": "set_boss_defeated", "from_pin": "done", "to_pin": "execute"},
     {"from": "set_boss_defeated", "to": "disable_collider", "from_pin": "success", "to_pin": "execute"},
-    {"from": "disable_collider", "to": "stop_velocity", "from_pin": "done", "to_pin": "execute"}
+    {"from": "disable_collider", "to": "stop_velocity", "from_pin": "done", "to_pin": "execute"},
+    {"from": "stop_velocity", "to": "load_victory", "from_pin": "done", "to_pin": "execute"}
   ]
 }

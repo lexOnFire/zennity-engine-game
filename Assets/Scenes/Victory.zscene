@@ -1,0 +1,41 @@
+{
+  "format": "zennity.scene",
+  "name": "Victory",
+  "objects": [
+    {
+      "id": "victory_camera",
+      "name": "Camera",
+      "type": "Camera2D",
+      "x": 0,
+      "y": 0,
+      "enabled": true,
+      "camera": {
+        "zoom": 1.0,
+        "viewport_width": 1280,
+        "viewport_height": 720,
+        "clear_color": [0.1, 0.05, 0.2, 1.0]
+      }
+    },
+    {
+      "id": "victory_canvas",
+      "name": "Canvas",
+      "type": "Canvas",
+      "x": 0,
+      "y": 0,
+      "enabled": true,
+      "ui": {
+        "asset": "Assets/UI/Victory.zui",
+        "auto_load": true
+      },
+      "logic_graphs": [
+        {
+          "path": "Assets/Logic/VictoryLogic.zlogic",
+          "name": "VictoryLogic"
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "scene_name": "Victory"
+  }
+}

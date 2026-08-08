@@ -1,0 +1,85 @@
+{
+  "format": "zennity.ui",
+  "name": "VictoryUI",
+  "widgets": [
+    {
+      "id": "victory_title",
+      "name": "VictoryTitle",
+      "type": "Label",
+      "x": 640,
+      "y": 100,
+      "width": 400,
+      "height": 80,
+      "text": "VICTORY",
+      "font_size": 72,
+      "color": [0.2, 1.0, 0.2, 1.0],
+      "horizontal_alignment": "center",
+      "vertical_alignment": "middle"
+    },
+    {
+      "id": "boss_defeated_label",
+      "name": "BossDefeatedLabel",
+      "type": "Label",
+      "x": 640,
+      "y": 200,
+      "width": 400,
+      "height": 50,
+      "text": "Boss Defeated!",
+      "font_size": 40,
+      "color": [1.0, 1.0, 1.0, 1.0],
+      "horizontal_alignment": "center"
+    },
+    {
+      "id": "score_display",
+      "name": "ScoreLabel",
+      "type": "Label",
+      "x": 640,
+      "y": 300,
+      "width": 400,
+      "height": 40,
+      "text": "Score: 0",
+      "font_size": 32,
+      "color": [1.0, 1.0, 0.0, 1.0],
+      "horizontal_alignment": "center"
+    },
+    {
+      "id": "coins_display",
+      "name": "CoinsLabel",
+      "type": "Label",
+      "x": 640,
+      "y": 360,
+      "width": 400,
+      "height": 40,
+      "text": "Coins: 0",
+      "font_size": 32,
+      "color": [1.0, 1.0, 0.0, 1.0],
+      "horizontal_alignment": "center"
+    },
+    {
+      "id": "main_menu_button",
+      "name": "MainMenuButton",
+      "type": "Button",
+      "x": 440,
+      "y": 480,
+      "width": 200,
+      "height": 60,
+      "text": "MAIN MENU",
+      "button_color": [0.4, 0.4, 0.8, 1.0],
+      "text_color": [1.0, 1.0, 1.0, 1.0],
+      "font_size": 28
+    },
+    {
+      "id": "new_game_button",
+      "name": "NewGameButton",
+      "type": "Button",
+      "x": 840,
+      "y": 480,
+      "width": 200,
+      "height": 60,
+      "text": "NEW GAME",
+      "button_color": [0.2, 0.8, 0.2, 1.0],
+      "text_color": [1.0, 1.0, 1.0, 1.0],
+      "font_size": 28
+    }
+  ]
+}
