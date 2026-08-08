@@ -144,7 +144,13 @@ class DialogueManager:
             }
 
             # Create DialogueSession (canonical runtime)
-            session = DialogueSession(graph, variables=variables or {})
+            session = DialogueSession(
+                graph,
+                variables=variables or {},
+                event_sink=lambda event, payload: self._handle_dialogue_event(
+                    composite_key, event, payload
+                )
+            )
 
             # IMPORTANT: Start the session to initialize state
             session.start()
