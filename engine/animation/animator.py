@@ -58,7 +58,6 @@ class Animator(Component):
         self._clip_time:    float = 0.0
         self._playing:      bool  = False
         self._paused:       bool  = False
-        self._runtime_animation_managed: bool = False
         self.speed:         float = float(speed)
 
         # Callback: chamado quando um clip não-loop termina
@@ -73,7 +72,6 @@ class Animator(Component):
             self.play(self._default)
 
     def on_runtime_start(self) -> None:
-        self._runtime_animation_managed = True
         if self._current is None and self._default and self._default in self._clips:
             self.play(self._default)
 
@@ -155,8 +153,6 @@ class Animator(Component):
     # ------------------------------------------------------------------
 
     def update(self, dt: float) -> None:
-        if self._runtime_animation_managed:
-            return
         self._advance(dt)
 
     def _advance(self, dt: float) -> None:
