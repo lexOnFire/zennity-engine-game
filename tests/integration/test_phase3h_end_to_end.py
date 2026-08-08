@@ -95,67 +95,95 @@ class TestPhase3HEndToEnd:
         result = value > 50.0
         assert result is True
 
-    @pytest.mark.skip(reason="KNOWN_LIMITATION: Migration v1→v2 bypass flow logic needs refinement in Phase 4")
     def test_03_migration_v1_to_v2(self):
         """
-        TEST 3: Migration v1 → v2.
-
-        KNOWN_LIMITATION: This test validates the ideal behavior of flow bypass,
-        but the current migrator doesn't fully implement it. The getter still has
-        flow connections after migration. This is acceptable for Phase 3H as the
-        critical path (pure data evaluation) works correctly. Flow bypass should
-        be refined in Phase 4.
+        TEST 3: Migration v1 → v2 with complete flow bypass validation.
 
         Cria graph v1 com Get Progress Bar Value como impuro.
-        Esperado após migração (ideal):
+        Esperado após migração:
         - Flow bypass: Event → Compare (sem passar pelo getter)
         - Data edge: Get.value → Compare.a
         - Nenhuma flow edge no getter
+
+        Este teste valida a transformação completa:
+        Legacy:
+          Event → get_progress_bar_value → Compare
+
+        Canonical:
+          Event → Compare (flow bypass)
+          get_progress_bar_value.value → Compare.a (data edge)
         """
         from engine.logic.runtime.graph_migration import GraphMigration
 
-        # Graph v1 com getter como impuro
+        # Graph v1 com estrutura correta: edges explícitas com kind
         graph_v1 = {
-            "format": "zennity.logic",
-            "version": 1,
+            "format_version": 1,
             "nodes": [
+                {"id": "event", "type": "scene_start"},
+                {"id": "getter", "type": "get_progress_bar_value", "properties": {"widget_name": "HealthBar"}},
+                {"id": "compare", "type": "compare_number", "properties": {"operation": ">", "b": 50.0}},
+            ],
+            "edges": [
+                # Flow edges (devem ser removidos e bypassados)
                 {
-                    "id": "event",
-                    "type": "scene_start",
-                    "ports": {"out_next": []},
+                    "id": "flow_event_to_getter",
+                    "from_node": "event",
+                    "from_port": "next",
+                    "to_node": "getter",
+                    "to_port": "in",
+                    "kind": "flow",
                 },
                 {
-                    "id": "getter",
-                    "type": "get_progress_bar_value",
-                    "ports": {
-                        "in_next": [("event", "out_next")],
-                        "out_next": [("compare", "in_next")],
-                        "out_value": [],
-                    },
-                    "properties": {"widget_name": "HealthBar"},
+                    "id": "flow_getter_to_compare",
+                    "from_node": "getter",
+                    "from_port": "next",
+                    "to_node": "compare",
+                    "to_port": "in",
+                    "kind": "flow",
                 },
+                # Data edge (deve ser preservado)
                 {
-                    "id": "compare",
-                    "type": "compare_number",
-                    "ports": {
-                        "in_next": [],
-                        "out_true": [],
-                    },
-                    "properties": {"operation": ">", "b": 50.0},
+                    "id": "data_getter_to_compare",
+                    "from_node": "getter",
+                    "from_port": "value",
+                    "to_node": "compare",
+                    "to_port": "a",
+                    "kind": "data",
                 },
             ],
         }
 
         # Migrar
         migrator = GraphMigration(graph_v1)
-        graph_v2, changes = migrator.migrate()  # GraphMigration retorna tuple
+        graph_v2, changes = migrator.migrate()
 
-        # Validações - migração adiciona format_version
-        assert graph_v2.get("format_version") is not None  # Versão do formato atualizado
+        # 1. Validar format_version atualizado
+        assert graph_v2.get("format_version") == 2, "Should update format_version to 2"
 
-        # Finder migrated nodes
-        getter_v2 = next((n for n in graph_v2["nodes"] if n["type"] == "get_progress_bar_value"), None)
-        assert getter_v2 is not None
+        # 2. Separar flow e data edges após migração
+        flow_edges = [e for e in graph_v2.get("edges", []) if e.get("kind") == "flow"]
+        data_edges = [e for e in graph_v2.get("edges", []) if e.get("kind") == "data"]
+
+        # 3. Validar que NÃO há flow edges conectadas ao getter
+        edges_to_getter = [e for e in flow_edges if e.get("to_node") == "getter"]
+        edges_from_getter = [e for e in flow_edges if e.get("from_node") == "getter"]
+
+        assert len(edges_to_getter) == 0, f"Should NOT have flow edges TO getter after migration, found {len(edges_to_getter)}"
+        assert len(edges_from_getter) == 0, f"Should NOT have flow edges FROM getter after migration, found {len(edges_from_getter)}"
+
+        # 4. Validar que há bypass: Event → Compare
+        bypass_edges = [
+            e for e in flow_edges
+            if e.get("from_node") == "event" and e.get("to_node") == "compare" and e.get("kind") == "flow"
+        ]
+        assert len(bypass_edges) > 0, "Should have bypass edge Event → Compare"
+
+        # 5. Validar que data edge foi preservado
+        data_getter_edges = [
+            e for e in data_edges
+            if e.get("from_node") == "getter" and e.get("from_port") == "value" and e.get("to_node") == "compare" and e.get("to_port") == "a"
+        ]
+        assert len(data_getter_edges) > 0, "Should preserve data edge getter.value → compare.a"
 
     def test_04_save_after_migration_canonical(self):
         """
