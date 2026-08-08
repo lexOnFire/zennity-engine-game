@@ -1,0 +1,29 @@
+{
+  "format": "zennity.animation_clip",
+  "name": "EnemyAttack",
+  "length": 0.4,
+  "fps": 10,
+  "loop": false,
+  "frames": [
+    {
+      "time": 0.0,
+      "sprite": "Assets/Sprites/Enemy/attack_1.png"
+    },
+    {
+      "time": 0.1,
+      "sprite": "Assets/Sprites/Enemy/attack_2.png"
+    },
+    {
+      "time": 0.2,
+      "sprite": "Assets/Sprites/Enemy/attack_3.png",
+      "event": {
+        "name": "hit",
+        "description": "Enemy damage to player"
+      }
+    },
+    {
+      "time": 0.3,
+      "sprite": "Assets/Sprites/Enemy/attack_2.png"
+    }
+  ]
+}

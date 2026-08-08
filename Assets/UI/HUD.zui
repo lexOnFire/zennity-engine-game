@@ -33,6 +33,20 @@
       "text": "Key: No",
       "font_size": 16,
       "color": [0.8, 0.8, 0.8, 1.0]
+    },
+    {
+      "name": "HealthBar",
+      "type": "ProgressBar",
+      "x": 20,
+      "y": 140,
+      "width": 300,
+      "height": 30,
+      "min_value": 0,
+      "max_value": 100,
+      "current_value": 100,
+      "fill_color": [0.2, 0.8, 0.2, 1.0],
+      "background_color": [0.3, 0.3, 0.3, 1.0],
+      "enabled": true
     }
   ]
 }

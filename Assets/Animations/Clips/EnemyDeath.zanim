@@ -1,0 +1,25 @@
+{
+  "format": "zennity.animation_clip",
+  "name": "EnemyDeath",
+  "length": 0.6,
+  "fps": 10,
+  "loop": false,
+  "frames": [
+    {
+      "time": 0.0,
+      "sprite": "Assets/Sprites/Enemy/death_1.png"
+    },
+    {
+      "time": 0.2,
+      "sprite": "Assets/Sprites/Enemy/death_2.png"
+    },
+    {
+      "time": 0.4,
+      "sprite": "Assets/Sprites/Enemy/death_3.png"
+    },
+    {
+      "time": 0.6,
+      "sprite": "Assets/Sprites/Enemy/death_3.png"
+    }
+  ]
+}

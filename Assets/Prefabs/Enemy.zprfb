@@ -1,14 +1,10 @@
 {
   "format": "zennity.prefab",
-  "name": "Player",
+  "name": "Enemy",
   "root": {
-    "id": "player_root",
-    "name": "Player",
+    "id": "enemy_root",
+    "name": "Enemy",
     "type": "GameObject",
-    "x": 0,
-    "y": 0,
-    "width": 1,
-    "height": 1,
     "enabled": true,
     "components": [
       {
@@ -19,7 +15,7 @@
       },
       {
         "type": "SpriteRenderer",
-        "sprite": "Assets/Sprites/Player/idle_1.png",
+        "sprite": "Assets/Sprites/Enemy/idle_1.png",
         "color": [1, 1, 1, 1],
         "layer": 0
       },
@@ -27,7 +23,8 @@
         "type": "BoxCollider2D",
         "size": [0.8, 1.0],
         "offset": [0, 0],
-        "is_trigger": false
+        "is_trigger": false,
+        "layer": "ENEMY"
       },
       {
         "type": "RigidBody2D",
@@ -40,30 +37,28 @@
       },
       {
         "type": "Animator",
-        "controller": "Assets/Animations/PlayerController.zcontroller",
+        "controller": "Assets/Animations/EnemyAnimationController.zcontroller",
         "speed": 1.0
       }
     ],
     "variables": {
-      "move_speed": 200,
       "health": 100,
       "max_health": 100,
-      "attack_damage": 25,
-      "attack_range": 64,
-      "facing_x": 1
+      "move_speed": 100,
+      "attack_damage": 10,
+      "attack_range": 48,
+      "detection_range": 300,
+      "attack_cooldown": 1.0,
+      "cooldown_timer": 1.0
     },
     "logic_graphs": [
       {
-        "path": "Assets/Logic/PlayerMovementLogic.zlogic",
-        "name": "PlayerMovement"
+        "path": "Assets/Logic/EnemyAILogic.zlogic",
+        "name": "EnemyAI"
       },
       {
-        "path": "Assets/Logic/PlayerCombatLogic.zlogic",
-        "name": "PlayerCombat"
-      },
-      {
-        "path": "Assets/Logic/PlayerHealthLogic.zlogic",
-        "name": "PlayerHealth"
+        "path": "Assets/Logic/EnemyAttackLogic.zlogic",
+        "name": "EnemyAttack"
       }
     ]
   }

@@ -1,0 +1,199 @@
+{
+  "format": "zennity.generic_graph",
+  "category": "Logic",
+  "name": "EnemyAttackLogic",
+  "nodes": [
+    {
+      "id": "animation_hit_event",
+      "type": "animation.on_event",
+      "position": [50, 50],
+      "config": {
+        "event_name": "hit"
+      }
+    },
+    {
+      "id": "find_player",
+      "type": "object.find_by_name",
+      "position": [200, 50],
+      "config": {
+        "object_name": "Player"
+      }
+    },
+    {
+      "id": "get_enemy_position",
+      "type": "transform.get_position",
+      "position": [200, 120],
+      "config": {}
+    },
+    {
+      "id": "get_player_position",
+      "type": "object.get_position",
+      "position": [350, 50],
+      "config": {}
+    },
+    {
+      "id": "get_attack_range",
+      "type": "variable.get",
+      "position": [200, 190],
+      "config": {
+        "variable_name": "attack_range"
+      }
+    },
+    {
+      "id": "raycast_for_player",
+      "type": "physics.raycast_2d",
+      "position": [500, 100],
+      "config": {
+        "layer_mask": "PLAYER",
+        "ignore_self": true
+      }
+    },
+    {
+      "id": "check_hit_player",
+      "type": "logic.branch",
+      "position": [650, 100],
+      "config": {
+        "condition": "is_not_null"
+      }
+    },
+    {
+      "id": "get_hit_object",
+      "type": "physics.get_raycast_hit",
+      "position": [650, 50],
+      "config": {
+        "field": "collider"
+      }
+    },
+    {
+      "id": "get_enemy_attack_damage",
+      "type": "variable.get",
+      "position": [200, 260],
+      "config": {
+        "variable_name": "attack_damage"
+      }
+    },
+    {
+      "id": "get_player_health",
+      "type": "object.get_variable",
+      "position": [800, 50],
+      "config": {
+        "variable_name": "health"
+      }
+    },
+    {
+      "id": "subtract_damage",
+      "type": "math.subtract",
+      "position": [950, 50],
+      "config": {}
+    },
+    {
+      "id": "clamp_health",
+      "type": "math.clamp",
+      "position": [950, 100],
+      "config": {
+        "min": 0,
+        "max": 999
+      }
+    },
+    {
+      "id": "set_player_health",
+      "type": "object.set_variable",
+      "position": [1100, 50],
+      "config": {
+        "variable_name": "health"
+      }
+    },
+    {
+      "id": "no_hit_fallback",
+      "type": "logic.noop",
+      "position": [800, 200],
+      "config": {}
+    }
+  ],
+  "edges": [
+    {
+      "from": "animation_hit_event",
+      "to": "find_player",
+      "from_pin": "event",
+      "to_pin": "execute"
+    },
+    {
+      "from": "animation_hit_event",
+      "to": "get_enemy_position",
+      "from_pin": "event",
+      "to_pin": "execute"
+    },
+    {
+      "from": "find_player",
+      "to": "get_player_position",
+      "from_pin": "object",
+      "to_pin": "object"
+    },
+    {
+      "from": "get_enemy_position",
+      "to": "raycast_for_player",
+      "from_pin": "position",
+      "to_pin": "origin"
+    },
+    {
+      "from": "get_player_position",
+      "to": "raycast_for_player",
+      "from_pin": "position",
+      "to_pin": "direction"
+    },
+    {
+      "from": "get_attack_range",
+      "to": "raycast_for_player",
+      "from_pin": "value",
+      "to_pin": "max_distance"
+    },
+    {
+      "from": "raycast_for_player",
+      "to": "check_hit_player",
+      "from_pin": "hit",
+      "to_pin": "value"
+    },
+    {
+      "from": "check_hit_player",
+      "to": "get_hit_object",
+      "from_pin": "true",
+      "to_pin": "raycast"
+    },
+    {
+      "from": "get_hit_object",
+      "to": "get_player_health",
+      "from_pin": "collider",
+      "to_pin": "object"
+    },
+    {
+      "from": "get_enemy_attack_damage",
+      "to": "subtract_damage",
+      "from_pin": "value",
+      "to_pin": "b"
+    },
+    {
+      "from": "get_player_health",
+      "to": "subtract_damage",
+      "from_pin": "value",
+      "to_pin": "a"
+    },
+    {
+      "from": "subtract_damage",
+      "to": "clamp_health",
+      "from_pin": "result",
+      "to_pin": "value"
+    },
+    {
+      "from": "clamp_health",
+      "to": "set_player_health",
+      "from_pin": "result",
+      "to_pin": "value"
+    },
+    {
+      "from": "check_hit_player",
+      "to": "no_hit_fallback",
+      "from_pin": "false",
+      "to_pin": "execute"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "format": "zennity.ui",
+  "name": "GameOverUI",
+  "widgets": [
+    {
+      "id": "game_over_label",
+      "name": "GameOverLabel",
+      "type": "Label",
+      "x": 640,
+      "y": 200,
+      "width": 400,
+      "height": 100,
+      "enabled": true,
+      "text": "GAME OVER",
+      "font_size": 72,
+      "color": [1, 0.2, 0.2, 1],
+      "horizontal_alignment": "center",
+      "vertical_alignment": "middle"
+    },
+    {
+      "id": "retry_button",
+      "name": "RetryButton",
+      "type": "Button",
+      "x": 540,
+      "y": 400,
+      "width": 200,
+      "height": 60,
+      "enabled": true,
+      "text": "RETRY",
+      "button_color": [0.2, 0.6, 1, 1],
+      "text_color": [1, 1, 1, 1],
+      "font_size": 32,
+      "on_click": "retry_clicked"
+    },
+    {
+      "id": "main_menu_button",
+      "name": "MainMenuButton",
+      "type": "Button",
+      "x": 740,
+      "y": 400,
+      "width": 200,
+      "height": 60,
+      "enabled": true,
+      "text": "MAIN MENU",
+      "button_color": [0.6, 0.4, 0.2, 1],
+      "text_color": [1, 1, 1, 1],
+      "font_size": 32,
+      "on_click": "main_menu_clicked"
+    }
+  ]
+}

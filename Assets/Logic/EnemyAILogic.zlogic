@@ -1,0 +1,340 @@
+{
+  "format": "zennity.generic_graph",
+  "category": "Logic",
+  "name": "EnemyAILogic",
+  "nodes": [
+    {
+      "id": "frame_loop",
+      "type": "event.every_frame",
+      "position": [50, 50],
+      "config": {}
+    },
+    {
+      "id": "find_player",
+      "type": "object.find_by_name",
+      "position": [200, 50],
+      "config": {
+        "object_name": "Player"
+      }
+    },
+    {
+      "id": "get_player_position",
+      "type": "object.get_position",
+      "position": [350, 50],
+      "config": {}
+    },
+    {
+      "id": "get_enemy_position",
+      "type": "transform.get_position",
+      "position": [350, 120],
+      "config": {}
+    },
+    {
+      "id": "calculate_distance",
+      "type": "math.distance",
+      "position": [500, 85],
+      "config": {}
+    },
+    {
+      "id": "get_detection_range",
+      "type": "variable.get",
+      "position": [200, 200],
+      "config": {
+        "variable_name": "detection_range"
+      }
+    },
+    {
+      "id": "check_detected",
+      "type": "logic.branch",
+      "position": [650, 85],
+      "config": {
+        "condition": "less_equal"
+      }
+    },
+    {
+      "id": "get_attack_range",
+      "type": "variable.get",
+      "position": [200, 280],
+      "config": {
+        "variable_name": "attack_range"
+      }
+    },
+    {
+      "id": "check_in_attack_range",
+      "type": "logic.branch",
+      "position": [650, 280],
+      "config": {
+        "condition": "less_equal"
+      }
+    },
+    {
+      "id": "calculate_direction",
+      "type": "math.vector2_create",
+      "position": [800, 85],
+      "config": {}
+    },
+    {
+      "id": "normalize_direction",
+      "type": "math.vector2_normalize",
+      "position": [800, 140],
+      "config": {}
+    },
+    {
+      "id": "get_move_speed",
+      "type": "variable.get",
+      "position": [200, 350],
+      "config": {
+        "variable_name": "move_speed"
+      }
+    },
+    {
+      "id": "apply_speed",
+      "type": "math.multiply",
+      "position": [950, 140],
+      "config": {}
+    },
+    {
+      "id": "set_enemy_velocity",
+      "type": "physics.set_velocity",
+      "position": [1100, 140],
+      "config": {}
+    },
+    {
+      "id": "stop_enemy",
+      "type": "physics.set_velocity",
+      "position": [1100, 280],
+      "config": {
+        "velocity": [0, 0]
+      }
+    },
+    {
+      "id": "set_speed_parameter",
+      "type": "animator.set_parameter",
+      "position": [1100, 200],
+      "config": {
+        "parameter": "speed",
+        "value": 0
+      }
+    },
+    {
+      "id": "get_attack_cooldown",
+      "type": "variable.get",
+      "position": [200, 430],
+      "config": {
+        "variable_name": "attack_cooldown"
+      }
+    },
+    {
+      "id": "get_cooldown_timer",
+      "type": "variable.get",
+      "position": [200, 490],
+      "config": {
+        "variable_name": "cooldown_timer"
+      }
+    },
+    {
+      "id": "check_can_attack",
+      "type": "logic.branch",
+      "position": [350, 460],
+      "config": {
+        "condition": "greater_equal"
+      }
+    },
+    {
+      "id": "set_attack_trigger",
+      "type": "animator.set_trigger",
+      "position": [500, 460],
+      "config": {
+        "trigger_name": "attack"
+      }
+    },
+    {
+      "id": "reset_cooldown_timer",
+      "type": "variable.set",
+      "position": [650, 460],
+      "config": {
+        "variable_name": "cooldown_timer",
+        "value": 0
+      }
+    },
+    {
+      "id": "decrease_cooldown_timer",
+      "type": "variable.increment",
+      "position": [650, 520],
+      "config": {
+        "variable_name": "cooldown_timer",
+        "increment": 0.016
+      }
+    },
+    {
+      "id": "idle_state",
+      "type": "animator.set_parameter",
+      "position": [800, 350],
+      "config": {
+        "parameter": "speed",
+        "value": 0
+      }
+    },
+    {
+      "id": "run_state",
+      "type": "animator.set_parameter",
+      "position": [1100, 100],
+      "config": {
+        "parameter": "speed",
+        "value": 1
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "frame_loop",
+      "to": "find_player",
+      "from_pin": "frame",
+      "to_pin": "execute"
+    },
+    {
+      "from": "find_player",
+      "to": "get_player_position",
+      "from_pin": "object",
+      "to_pin": "object"
+    },
+    {
+      "from": "frame_loop",
+      "to": "get_enemy_position",
+      "from_pin": "frame",
+      "to_pin": "execute"
+    },
+    {
+      "from": "get_player_position",
+      "to": "calculate_distance",
+      "from_pin": "position",
+      "to_pin": "point_b"
+    },
+    {
+      "from": "get_enemy_position",
+      "to": "calculate_distance",
+      "from_pin": "position",
+      "to_pin": "point_a"
+    },
+    {
+      "from": "calculate_distance",
+      "to": "check_detected",
+      "from_pin": "distance",
+      "to_pin": "value"
+    },
+    {
+      "from": "get_detection_range",
+      "to": "check_detected",
+      "from_pin": "value",
+      "to_pin": "compare_value"
+    },
+    {
+      "from": "calculate_distance",
+      "to": "check_in_attack_range",
+      "from_pin": "distance",
+      "to_pin": "value"
+    },
+    {
+      "from": "get_attack_range",
+      "to": "check_in_attack_range",
+      "from_pin": "value",
+      "to_pin": "compare_value"
+    },
+    {
+      "from": "check_detected",
+      "to": "calculate_direction",
+      "from_pin": "true",
+      "to_pin": "execute"
+    },
+    {
+      "from": "get_player_position",
+      "to": "calculate_direction",
+      "from_pin": "position",
+      "to_pin": "x"
+    },
+    {
+      "from": "get_enemy_position",
+      "to": "calculate_direction",
+      "from_pin": "position",
+      "to_pin": "y"
+    },
+    {
+      "from": "calculate_direction",
+      "to": "normalize_direction",
+      "from_pin": "vector",
+      "to_pin": "vector"
+    },
+    {
+      "from": "normalize_direction",
+      "to": "apply_speed",
+      "from_pin": "normalized",
+      "to_pin": "a"
+    },
+    {
+      "from": "get_move_speed",
+      "to": "apply_speed",
+      "from_pin": "value",
+      "to_pin": "b"
+    },
+    {
+      "from": "check_in_attack_range",
+      "to": "stop_enemy",
+      "from_pin": "true",
+      "to_pin": "execute"
+    },
+    {
+      "from": "check_detected",
+      "to": "set_speed_parameter",
+      "from_pin": "true",
+      "to_pin": "execute"
+    },
+    {
+      "from": "apply_speed",
+      "to": "set_enemy_velocity",
+      "from_pin": "result",
+      "to_pin": "velocity"
+    },
+    {
+      "from": "check_in_attack_range",
+      "to": "get_attack_cooldown",
+      "from_pin": "true",
+      "to_pin": "execute"
+    },
+    {
+      "from": "get_attack_cooldown",
+      "to": "check_can_attack",
+      "from_pin": "value",
+      "to_pin": "compare_value"
+    },
+    {
+      "from": "get_cooldown_timer",
+      "to": "check_can_attack",
+      "from_pin": "value",
+      "to_pin": "value"
+    },
+    {
+      "from": "check_can_attack",
+      "to": "set_attack_trigger",
+      "from_pin": "true",
+      "to_pin": "execute"
+    },
+    {
+      "from": "set_attack_trigger",
+      "to": "reset_cooldown_timer",
+      "from_pin": "done",
+      "to_pin": "execute"
+    },
+    {
+      "from": "check_in_attack_range",
+      "to": "decrease_cooldown_timer",
+      "from_pin": "true",
+      "to_pin": "execute"
+    },
+    {
+      "from": "check_detected",
+      "to": "idle_state",
+      "from_pin": "false",
+      "to_pin": "execute"
+    }
+  ]
+}

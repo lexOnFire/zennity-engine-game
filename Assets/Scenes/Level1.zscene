@@ -18,6 +18,10 @@
         {
           "path": "Assets/Logic/PlayerCombatLogic.zlogic",
           "name": "PlayerCombat"
+        },
+        {
+          "path": "Assets/Logic/PlayerHealthLogic.zlogic",
+          "name": "PlayerHealth"
         }
       ]
     },
@@ -40,12 +44,30 @@
       }
     },
     {
-      "id": "dummy_enemy_1",
-      "name": "DummyEnemy",
+      "id": "enemy_1",
+      "name": "Enemy",
       "type": "Prefab",
-      "prefab": "Assets/Prefabs/DummyEnemy.zprfb",
+      "prefab": "Assets/Prefabs/Enemy.zprfb",
       "x": 300,
       "y": 0,
+      "enabled": true
+    },
+    {
+      "id": "enemy_2",
+      "name": "Enemy",
+      "type": "Prefab",
+      "prefab": "Assets/Prefabs/Enemy.zprfb",
+      "x": 200,
+      "y": 150,
+      "enabled": true
+    },
+    {
+      "id": "enemy_3",
+      "name": "Enemy",
+      "type": "Prefab",
+      "prefab": "Assets/Prefabs/Enemy.zprfb",
+      "x": 400,
+      "y": -150,
       "enabled": true
     },
     {

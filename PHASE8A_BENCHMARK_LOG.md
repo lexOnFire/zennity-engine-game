@@ -64,8 +64,21 @@
 - ✅ Created 20 automated tests (ALL PASS)
 
 ### Step 2: Player Movement, Camera & Animation ✅ COMPLETE
+- ✅ Created Player prefab (all components)
+- ✅ Created PlayerMovementLogic.zlogic (10 nodes)
+- ✅ Created Animation Controller with Idle/Run states
+- ✅ Created Level1.zscene with Player, Camera, Walls, HUD
+- ✅ 32/32 automated tests PASS
 
-### Steps 3-17: Combat & Advanced Systems (PENDING)
+### Step 3: Player Combat System ✅ COMPLETE
+- ✅ Created PlayerAttack.zanim (non-looping, hit event)
+- ✅ Updated Animation Controller (Attack state + trigger)
+- ✅ Created PlayerCombatLogic.zlogic (18 nodes)
+- ✅ Created DummyEnemy.zprfb (health variables)
+- ✅ Added DummyEnemy to Level1
+- ✅ 36/36 automated tests PASS
+
+### Steps 4-17: Advanced Systems (PENDING)
 - [ ] Build Combat Logic Graph
 - [ ] Create Enemy prefab
 - [ ] Build Enemy AI
@@ -329,4 +342,229 @@ Execute manual Play Mode validation:
 8. Stop Play
 9. Play again: verify clean state
 
-Then Step 3: Combat System (subject to user approval)
+## STEP 3 RESULTS — PLAYER COMBAT SYSTEM
+
+### ✅ Status: COMPLETE (36/36 tests PASS)
+
+**Assets Created**:
+- ✅ Assets/Animations/Clips/PlayerAttack.zanim
+- ✅ Updated Assets/Animations/PlayerController.zcontroller
+- ✅ Assets/Logic/PlayerCombatLogic.zlogic
+- ✅ Assets/Prefabs/DummyEnemy.zprfb
+- ✅ Updated Assets/Scenes/Level1.zscene
+- ✅ Updated Assets/Logic/PlayerMovementLogic.zlogic (facing direction)
+- ✅ Updated Assets/Prefabs/Player.zprfb (combat variables)
+
+### 🎮 COMBAT SYSTEM ARCHITECTURE
+
+**Attack Animation Flow**:
+```
+PlayerAttack.zanim (0.4s, 4 frames, non-looping)
+├─ Frame 0 (0.0s): attack_1.png
+├─ Frame 1 (0.1s): attack_2.png
+├─ Frame 2 (0.2s): attack_3.png ← EVENT "hit" fires here
+└─ Frame 3 (0.3s): attack_2.png (recovery)
+```
+
+**State Machine (Updated)**:
+```
+PlayerController States (3):
+├─ Idle
+├─ Run
+└─ Attack
+    ├─ Idle → Attack (trigger: attack)
+    ├─ Run → Attack (trigger: attack)
+    ├─ Attack → Idle (speed ≤ 0.01)
+    └─ Attack → Run (speed > 0.1)
+
+Parameters (2):
+├─ speed (float)
+└─ attack (trigger)
+```
+
+**Combat Logic Graph (18 nodes)**:
+```
+Player Input:
+1. space_key_down
+2. get_attack_in_progress (animator state)
+3. check_not_attacking (branch: allow if not Attack)
+4. set_attack_trigger
+
+Animation Event Handling:
+5. animation_hit_event (listener for "hit" event)
+
+Raycast Setup:
+6. get_attack_damage (25)
+7. get_attack_range (64)
+8. get_facing_direction (facing_x)
+9. raycast_for_enemy (Physics2D, layer: ENEMY)
+
+Hit Processing:
+10. check_hit (branch: did hit?)
+11. get_hit_object (extract collider)
+12. get_enemy_health
+
+Damage Application:
+13. subtract_damage (health - 25)
+14. clamp_health (max(0, result))
+15. set_enemy_health
+
+Death Check:
+16. check_dead (branch: health ≤ 0?)
+17. destroy_enemy (if dead)
+
+Fallback:
+18. no_hit_exec (noop for miss)
+```
+
+**DummyEnemy Prefab**:
+```
+DummyEnemy.zprfb
+├─ Transform
+├─ SpriteRenderer (dummy_idle.png)
+├─ BoxCollider2D (0.8×1.0, layer: ENEMY)
+└─ Variables:
+   ├─ health = 100
+   └─ max_health = 100
+```
+
+**Player Combat Variables**:
+```
+Added to Player.zprfb:
+├─ attack_damage = 25 (damage per hit)
+├─ attack_range = 64 (raycast max distance)
+└─ facing_x = 1 (direction: -1 or 1)
+
+Updated in PlayerMovementLogic:
+└─ facing_x updated when moving horizontally
+```
+
+### 🔄 COMPLETE COMBAT FLOW
+
+```
+Input Layer:
+  User presses SPACE
+    ↓
+AnimationState Check:
+  Is animator in Attack state? (prevent multi-trigger)
+    ↓ [No]
+Animation Trigger:
+  Set animator parameter "attack" = true
+    ↓
+Animation Playback (0.4s):
+  Attack animation plays frame 0→1→2→3
+    ↓ [At Frame 2, 0.2s]
+Animation Event:
+  "hit" event fires
+    ↓
+Raycast Setup:
+  origin = Player position
+  direction = facing_x (-1 or 1)
+  distance = attack_range (64)
+  layer = ENEMY
+  ignore_self = true
+    ↓
+Physics Query:
+  Physics2D.Raycast()
+    ↓
+Hit Branch:
+  ┌──────────────────┬─────────────────┐
+  ↓ [Yes]            ↓ [No]
+Get Hit Object:     No-Op:
+  Extract collider   (safe failure)
+    ↓
+Get Enemy Health:
+  Read health variable
+    ↓
+Apply Damage:
+  new_health = max(0, health - 25)
+    ↓
+Write Health:
+  Set enemy health = new_health
+    ↓
+Death Check:
+  health ≤ 0?
+    ↓ [Yes]
+Destroy Enemy:
+  Remove GameObject
+    ↓
+End Flow
+```
+
+### 📊 METRICS
+
+| Component | Value |
+|-----------|-------|
+| Attack Animation Length | 0.4s (4 frames at 10 fps) |
+| Attack Damage | 25 HP |
+| Attack Range | 64 units |
+| Enemy Health | 100 HP |
+| Hits to Kill | 4 attacks |
+| Animation Cooldown | 0.4s (until animation ends) |
+| Logic Graph Nodes | 18 |
+| Logic Graph Edges | 17 |
+| Player Variables | 6 (move_speed, health, max_health, attack_damage, attack_range, facing_x) |
+| Enemy Variables | 2 (health, max_health) |
+
+### ✅ TEST BREAKDOWN (36/36 PASS)
+
+| Category | Count | Status |
+|----------|-------|--------|
+| Attack Animation | 5 | ✅ PASS |
+| Animation Controller | 7 | ✅ PASS |
+| Combat Logic | 9 | ✅ PASS |
+| Player Variables | 3 | ✅ PASS |
+| DummyEnemy Prefab | 5 | ✅ PASS |
+| Level1 Setup | 3 | ✅ PASS |
+| Movement Logic | 1 | ✅ PASS |
+| Zero Python | 3 | ✅ PASS |
+| **TOTAL** | **36** | **✅ PASS** |
+
+### 🎯 CROSS-SYSTEM VALIDATION
+
+✅ **Input System**: SPACE key detection  
+✅ **Animation System**: State machine + trigger + event firing  
+✅ **Physics System**: Raycast2D with layer masks  
+✅ **Variable System**: Get/set health on Player and Enemy  
+✅ **Object Management**: Destroy on health ≤ 0  
+✅ **Logic Graph**: Complex branching and data flow  
+
+### 🐛 BUGS FOUND
+
+(none in Step 3 automated tests)
+
+### ⚠️ ENGINE GAPS
+
+(none in Step 3 - all required nodes exist)
+
+### 📝 UX FINDINGS
+
+(Ready for manual Play Mode validation)
+
+### ✅ ZERO PYTHON CONSTRAINT MET
+
+✅ Level1.zscene: No combat.py references  
+✅ Player.zprfb: No attack.py or damage.py references  
+✅ DummyEnemy.zprfb: No scripts  
+✅ All gameplay via visual nodes  
+
+### 🚀 NEXT STEPS
+
+Manual validation required:
+1. Main Menu → New Game → Level1
+2. WASD: Move player toward DummyEnemy
+3. SPACE: Attack
+4. Observe: Animation plays, hit event fires, raycast fires
+5. Repeat: Attack 4 times until enemy dies
+6. Verify: DummyEnemy destroyed (no stale collider)
+7. Test: Out-of-range (move away, attack, no damage)
+8. Test: Double hits (hold SPACE during attack, only 1 damage)
+
+**NOT IMPLEMENTED YET** (per instructions):
+- Enemy AI
+- Coins/Key collection
+- Boss fights
+- Dialog system integration
+- Advanced difficulty
+
+Then Step 4: Enemy AI (subject to user approval)
