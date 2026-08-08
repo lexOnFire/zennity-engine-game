@@ -584,6 +584,35 @@ class PlayLogicAPI:
         self.send("pop_scene")
         return True
 
+    def save_game(self, slot_name: str) -> bool:
+        """Save current game state to slot."""
+        if not slot_name:
+            return False
+        self.send("save_game", {"slot_name": str(slot_name)})
+        return True
+
+    def load_game(self, slot_name: str) -> bool:
+        """Load game state from slot."""
+        if not slot_name:
+            return False
+        self.send("load_game", {"slot_name": str(slot_name)})
+        return True
+
+    def save_exists(self, slot_name: str) -> bool:
+        """Check if save slot exists (pure getter)."""
+        if not slot_name:
+            return False
+        from engine.core.save_manager import get_save_manager
+        manager = get_save_manager()
+        return manager.save_exists(str(slot_name))
+
+    def delete_save(self, slot_name: str) -> bool:
+        """Delete save slot."""
+        if not slot_name:
+            return False
+        self.send("delete_save", {"slot_name": str(slot_name)})
+        return True
+
     def destroy(self) -> None:
         """Desativa o objeto no Play Mode atual."""
         self.runtime_world.destroy_object(self.obj)
