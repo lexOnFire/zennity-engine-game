@@ -53,7 +53,20 @@
       },
       "enabled": true,
       "static": false,
-      "layer": "Default"
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      }
     },
     {
       "id": "menu_ui_container",
@@ -84,8 +97,6 @@
             "type": "Canvas",
             "enabled": true,
             "properties": {
-              "layout_path": "Assets/UI/MainMenu.zui",
-              "ui_asset": "Assets/UI/MainMenu.zui",
               "visible": true,
               "x": 0.0,
               "y": 0.0,
@@ -118,6 +129,8 @@
                 35,
                 48
               ],
+              "layout_path": "Assets/UI/MainMenu.zui",
+              "ui_asset": "Assets/UI/MainMenu.zui",
               "sprite_path": ""
             }
           }
@@ -125,7 +138,20 @@
       },
       "enabled": true,
       "static": false,
-      "layer": "Default"
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      }
     }
   ]
 }
