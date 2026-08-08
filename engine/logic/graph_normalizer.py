@@ -132,6 +132,24 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
             if not isinstance(position, (list, tuple)) or len(position) < 2:
                 position = [80.0, 80.0]
             properties = deepcopy(definition.get("properties", {}))
+            for pin in definition.get("inputs", []):
+                if isinstance(pin, (list, tuple)) and len(pin) >= 2:
+                    pin_id, pin_type = str(pin[0]), str(pin[1])
+                    if pin_type not in ("flow", "exec") and pin_id not in properties:
+                        if pin_id == "widget_name":
+                            properties[pin_id] = "comida"
+                        elif pin_id == "variable_name":
+                            properties[pin_id] = "comida"
+                        elif pin_id == "property":
+                            properties[pin_id] = "value"
+                        elif pin_id == "target":
+                            properties[pin_id] = ""
+                        elif pin_type == "number":
+                            properties[pin_id] = 0.0
+                        elif pin_type == "bool":
+                            properties[pin_id] = True
+                        else:
+                            properties[pin_id] = ""
             raw_properties = raw_node.get("properties", {})
             if isinstance(raw_properties, Mapping):
                 properties.update(deepcopy(_migrate_renamed_properties(node_type, raw_properties)))

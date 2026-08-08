@@ -41,31 +41,23 @@
       "properties": {}
     },
     {
-      "id": "d8fc8a6e9fcd446eaa15ee964aca16e0",
+      "id": "074773c991c6445f9c210545157f75a7",
       "type": "get_progress_bar_value",
-      "title": "get_progress_bar_value",
-      "category": "Custom",
+      "title": "Ler Valor ProgressBar",
+      "category": "UI",
       "position": [
-        4.74,
-        -157.59
+        -75.45,
+        -136.96
       ],
       "editor": {
         "collapsed": false,
         "width": 220.0,
         "height": 156.0
       },
-      "properties": {}
+      "properties": {
+        "widget_name": "comida"
+      }
     }
   ],
-  "edges": [
-    {
-      "id": "b887c32b9582467bb8161050799d41b4",
-      "from_node": "2a3476db82e94acb9f62d2cd6bcf167b",
-      "from_port": "next",
-      "to_node": "d8fc8a6e9fcd446eaa15ee964aca16e0",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 0
-    }
-  ]
+  "edges": []
 }
