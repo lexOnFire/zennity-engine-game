@@ -1,5 +1,5 @@
 """Definições de nós visuais para UI dinâmica no Logic Graph."""
-from engine.logic.metadata import NodeDefinition, PinDefinition
+from engine.core.metadata import NodeDefinition, PinDefinition, PinType
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -163,17 +163,17 @@ class GetUIWidgetPropertyNode:
 
     __node_definition__ = NodeDefinition(
         id="get_ui_widget_property",
-        title="Obter Propriedade Widget",
-        category="UI",
-        description="Lê propriedade de um widget (text, value, visible, etc)",
+        title_key="Obter Propriedade Widget",
+        category_key="UI",
+        description_key="Lê propriedade de um widget (text, value, visible, etc)",
 
-        pins_input=[
+        inputs=[
             PinDefinition("exec", "Exec", "EXEC"),
             PinDefinition("parent", "Parent", "STRING", default_value=""),
             PinDefinition("widget_name", "Nome Widget", "STRING", default_value=""),
             PinDefinition("property", "Propriedade", "STRING", default_value="text"),
         ],
-        pins_output=[
+        outputs=[
             PinDefinition("exec_success", "Sucesso", "EXEC"),
             PinDefinition("exec_failure", "Falha", "EXEC"),
             PinDefinition("value", "Valor", "STRING"),
@@ -186,15 +186,15 @@ class GetProgressBarValueNode:
 
     __node_definition__ = NodeDefinition(
         id="get_progress_bar_value",
-        title="Ler Valor ProgressBar",
-        category="UI",
-        description="Lê o valor atual de uma ProgressBar (0-100 ou 0.0-1.0)",
+        title_key="Ler Valor ProgressBar",
+        category_key="UI",
+        description_key="Lê o valor atual de uma ProgressBar (0-100 ou 0.0-1.0)",
 
-        pins_input=[
+        inputs=[
             PinDefinition("exec", "Exec", "EXEC"),
             PinDefinition("widget_name", "Nome da ProgressBar", "STRING", default_value="progress"),
         ],
-        pins_output=[
+        outputs=[
             PinDefinition("exec_success", "Sucesso", "EXEC"),
             PinDefinition("exec_not_found", "Não Encontrado", "EXEC"),
             PinDefinition("exec_failure", "Falha", "EXEC"),

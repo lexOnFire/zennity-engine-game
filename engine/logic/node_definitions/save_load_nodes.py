@@ -1,7 +1,7 @@
 """Definições de nós de Save/Load para Logic Graph."""
 from __future__ import annotations
 
-from engine.logic.metadata import NodeDefinition, PinDefinition
+from engine.core.metadata import NodeDefinition, PinDefinition
 
 
 class SaveGameNode(NodeDefinition):
@@ -9,16 +9,16 @@ class SaveGameNode(NodeDefinition):
 
     __node_definition__ = NodeDefinition(
         id="save_game",
-        title="Salvar Jogo",
-        category="Persistence",
-        description="Salva o estado atual do jogo em um slot de save",
+        title_key="Salvar Jogo",
+        category_key="Persistence",
+        description_key="Salva o estado atual do jogo em um slot de save",
 
-        pins_input=[
+        inputs=[
             PinDefinition("exec", "Exec", "EXEC"),
             PinDefinition("slot_name", "Nome do Slot", "STRING", default_value="save_slot_1"),
             PinDefinition("include_scene", "Incluir Cena?", "BOOL", default_value=True),
         ],
-        pins_output=[
+        outputs=[
             PinDefinition("exec_saved", "Salvo", "EXEC"),
             PinDefinition("exec_failure", "Falha", "EXEC"),
             PinDefinition("slot_name_out", "Slot", "STRING"),
@@ -32,15 +32,15 @@ class LoadGameNode(NodeDefinition):
 
     __node_definition__ = NodeDefinition(
         id="load_game",
-        title="Carregar Jogo",
-        category="Persistence",
-        description="Carrega o estado do jogo de um slot de save",
+        title_key="Carregar Jogo",
+        category_key="Persistence",
+        description_key="Carrega o estado do jogo de um slot de save",
 
-        pins_input=[
+        inputs=[
             PinDefinition("exec", "Exec", "EXEC"),
             PinDefinition("slot_name", "Nome do Slot", "STRING", default_value="save_slot_1"),
         ],
-        pins_output=[
+        outputs=[
             PinDefinition("exec_loaded", "Carregado", "EXEC"),
             PinDefinition("exec_no_save", "Sem Save", "EXEC"),
             PinDefinition("exec_failure", "Falha", "EXEC"),
@@ -55,15 +55,15 @@ class DeleteSaveNode(NodeDefinition):
 
     __node_definition__ = NodeDefinition(
         id="delete_save",
-        title="Deletar Save",
-        category="Persistence",
-        description="Deleta um save slot",
+        title_key="Deletar Save",
+        category_key="Persistence",
+        description_key="Deleta um save slot",
 
-        pins_input=[
+        inputs=[
             PinDefinition("exec", "Exec", "EXEC"),
             PinDefinition("slot_name", "Nome do Slot", "STRING", default_value="save_slot_1"),
         ],
-        pins_output=[
+        outputs=[
             PinDefinition("exec_deleted", "Deletado", "EXEC"),
             PinDefinition("exec_failure", "Falha", "EXEC"),
         ]
@@ -75,15 +75,15 @@ class HasSaveNode(NodeDefinition):
 
     __node_definition__ = NodeDefinition(
         id="has_save",
-        title="Tem Save?",
-        category="Persistence",
-        description="Verifica se um save slot existe",
+        title_key="Tem Save?",
+        category_key="Persistence",
+        description_key="Verifica se um save slot existe",
 
-        pins_input=[
+        inputs=[
             PinDefinition("exec", "Exec", "EXEC"),
             PinDefinition("slot_name", "Nome do Slot", "STRING", default_value="save_slot_1"),
         ],
-        pins_output=[
+        outputs=[
             PinDefinition("exec_exists", "Existe", "EXEC"),
             PinDefinition("exec_not_exists", "Não Existe", "EXEC"),
             PinDefinition("exec_failure", "Falha", "EXEC"),

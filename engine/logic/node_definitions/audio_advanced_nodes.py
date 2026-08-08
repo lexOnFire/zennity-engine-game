@@ -1,7 +1,7 @@
 """Definições de nós de audio avançado para Logic Graph."""
 from __future__ import annotations
 
-from engine.logic.metadata import NodeDefinition, PinDefinition
+from engine.core.metadata import NodeDefinition, PinDefinition
 
 
 class PlaySoundFadeNode(NodeDefinition):
@@ -9,18 +9,18 @@ class PlaySoundFadeNode(NodeDefinition):
 
     __node_definition__ = NodeDefinition(
         id="play_sound_fade",
-        title="Tocar Som com Fade",
-        category="Audio",
-        description="Toca um som com fade in e fade out",
+        title_key="Tocar Som com Fade",
+        category_key="Audio",
+        description_key="Toca um som com fade in e fade out",
 
-        pins_input=[
+        inputs=[
             PinDefinition("exec", "Exec", "EXEC"),
             PinDefinition("path", "Arquivo", "STRING", default_value=""),
             PinDefinition("fade_in", "Fade In (s)", "FLOAT", default_value=0.0),
             PinDefinition("fade_out", "Fade Out (s)", "FLOAT", default_value=0.0),
             PinDefinition("volume", "Volume", "FLOAT", default_value=1.0),
         ],
-        pins_output=[
+        outputs=[
             PinDefinition("exec_playing", "Tocando", "EXEC"),
             PinDefinition("exec_failure", "Falha", "EXEC"),
         ]
@@ -32,16 +32,16 @@ class SetVolumeNode(NodeDefinition):
 
     __node_definition__ = NodeDefinition(
         id="set_volume",
-        title="Definir Volume",
-        category="Audio",
-        description="Define o volume de um canal de audio (master, sfx, music)",
+        title_key="Definir Volume",
+        category_key="Audio",
+        description_key="Define o volume de um canal de audio (master, sfx, music)",
 
-        pins_input=[
+        inputs=[
             PinDefinition("exec", "Exec", "EXEC"),
             PinDefinition("volume", "Volume", "FLOAT", default_value=1.0),
             PinDefinition("channel", "Canal", "STRING", default_value="master"),  # master, sfx, music
         ],
-        pins_output=[
+        outputs=[
             PinDefinition("exec_success", "Sucesso", "EXEC"),
             PinDefinition("exec_failure", "Falha", "EXEC"),
             PinDefinition("current_volume", "Volume Atual", "FLOAT"),
@@ -54,15 +54,15 @@ class SetPitchNode(NodeDefinition):
 
     __node_definition__ = NodeDefinition(
         id="set_pitch",
-        title="Definir Pitch",
-        category="Audio",
-        description="Define a velocidade/pitch de um som (1.0 = normal, 2.0 = dobrado)",
+        title_key="Definir Pitch",
+        category_key="Audio",
+        description_key="Define a velocidade/pitch de um som (1.0 = normal, 2.0 = dobrado)",
 
-        pins_input=[
+        inputs=[
             PinDefinition("exec", "Exec", "EXEC"),
             PinDefinition("pitch", "Pitch", "FLOAT", default_value=1.0),
         ],
-        pins_output=[
+        outputs=[
             PinDefinition("exec_success", "Sucesso", "EXEC"),
             PinDefinition("exec_failure", "Falha", "EXEC"),
             PinDefinition("current_pitch", "Pitch Atual", "FLOAT"),
@@ -75,14 +75,14 @@ class StopAllSoundsNode(NodeDefinition):
 
     __node_definition__ = NodeDefinition(
         id="stop_all_sounds",
-        title="Parar Todos os Sons",
-        category="Audio",
-        description="Para todos os sons tocando",
+        title_key="Parar Todos os Sons",
+        category_key="Audio",
+        description_key="Para todos os sons tocando",
 
-        pins_input=[
+        inputs=[
             PinDefinition("exec", "Exec", "EXEC"),
         ],
-        pins_output=[
+        outputs=[
             PinDefinition("exec_success", "Sucesso", "EXEC"),
             PinDefinition("exec_failure", "Falha", "EXEC"),
         ]

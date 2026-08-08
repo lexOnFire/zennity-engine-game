@@ -1,7 +1,7 @@
 """Definições de nós de diálogo para Logic Graph."""
 from __future__ import annotations
 
-from engine.logic.metadata import NodeDefinition, PinDefinition
+from engine.core.metadata import NodeDefinition, PinDefinition
 
 
 class ShowDialogNode(NodeDefinition):
@@ -9,18 +9,18 @@ class ShowDialogNode(NodeDefinition):
 
     __node_definition__ = NodeDefinition(
         id="show_dialog",
-        title="Mostrar Diálogo",
-        category="Dialog",
-        description="Mostra um diálogo com texto e opções para o player escolher",
+        title_key="Mostrar Diálogo",
+        category_key="Dialog",
+        description_key="Mostra um diálogo com texto e opções para o player escolher",
 
-        pins_input=[
+        inputs=[
             PinDefinition("exec", "Exec", "EXEC"),
             PinDefinition("dialog_id", "ID do Diálogo", "STRING", default_value="dialog_1"),
             PinDefinition("character", "Personagem", "STRING", default_value="NPC"),
             PinDefinition("text", "Texto", "STRING", default_value="Olá!"),
             PinDefinition("options", "Opções", "ARRAY", default_value=[]),
         ],
-        pins_output=[
+        outputs=[
             PinDefinition("exec_showing", "Mostrando", "EXEC"),
             PinDefinition("exec_failure", "Falha", "EXEC"),
             PinDefinition("dialog_id_out", "ID", "STRING"),
@@ -34,15 +34,15 @@ class WaitDialogChoiceNode(NodeDefinition):
 
     __node_definition__ = NodeDefinition(
         id="wait_dialog_choice",
-        title="Aguardar Escolha",
-        category="Dialog",
-        description="Aguarda até o player escolher uma opção de diálogo",
+        title_key="Aguardar Escolha",
+        category_key="Dialog",
+        description_key="Aguarda até o player escolher uma opção de diálogo",
 
-        pins_input=[
+        inputs=[
             PinDefinition("exec", "Exec", "EXEC"),
             PinDefinition("dialog_id", "ID do Diálogo", "STRING", default_value="dialog_1"),
         ],
-        pins_output=[
+        outputs=[
             PinDefinition("exec_chosen", "Escolhido", "EXEC"),
             PinDefinition("exec_waiting", "Aguardando", "EXEC"),
             PinDefinition("exec_failure", "Falha", "EXEC"),
@@ -57,16 +57,16 @@ class SetDialogChoiceNode(NodeDefinition):
 
     __node_definition__ = NodeDefinition(
         id="set_dialog_choice",
-        title="Definir Escolha",
-        category="Dialog",
-        description="Define qual opção o player escolheu (para uso interno)",
+        title_key="Definir Escolha",
+        category_key="Dialog",
+        description_key="Define qual opção o player escolheu (para uso interno)",
 
-        pins_input=[
+        inputs=[
             PinDefinition("exec", "Exec", "EXEC"),
             PinDefinition("dialog_id", "ID do Diálogo", "STRING", default_value="dialog_1"),
             PinDefinition("choice_index", "Índice", "INT", default_value=0),
         ],
-        pins_output=[
+        outputs=[
             PinDefinition("exec_success", "Sucesso", "EXEC"),
             PinDefinition("exec_failure", "Falha", "EXEC"),
         ]
@@ -78,15 +78,15 @@ class CloseDialogNode(NodeDefinition):
 
     __node_definition__ = NodeDefinition(
         id="close_dialog",
-        title="Fechar Diálogo",
-        category="Dialog",
-        description="Fecha um diálogo ativo",
+        title_key="Fechar Diálogo",
+        category_key="Dialog",
+        description_key="Fecha um diálogo ativo",
 
-        pins_input=[
+        inputs=[
             PinDefinition("exec", "Exec", "EXEC"),
             PinDefinition("dialog_id", "ID do Diálogo", "STRING", default_value="dialog_1"),
         ],
-        pins_output=[
+        outputs=[
             PinDefinition("exec_success", "Sucesso", "EXEC"),
             PinDefinition("exec_failure", "Falha", "EXEC"),
         ]

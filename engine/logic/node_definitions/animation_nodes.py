@@ -1,5 +1,5 @@
 """Definições de nós de animação para Logic Graph."""
-from engine.logic.metadata import NodeDefinition, PinDefinition
+from engine.core.metadata import NodeDefinition, PinDefinition
 
 
 class AnimateValueNode:
@@ -7,11 +7,11 @@ class AnimateValueNode:
 
     __node_definition__ = NodeDefinition(
         id="animate_value",
-        title="Animar Valor (Lerp)",
-        category="Animation",
-        description="Anima uma propriedade de A para B com duração e easing",
+        title_key="Animar Valor (Lerp)",
+        category_key="Animation",
+        description_key="Anima uma propriedade de A para B com duração e easing",
 
-        pins_input=[
+        inputs=[
             PinDefinition("exec", "Exec", "EXEC"),
             PinDefinition("target", "Target", "STRING", default_value="player"),
             PinDefinition("property", "Propriedade", "STRING", default_value="x"),
@@ -20,7 +20,7 @@ class AnimateValueNode:
             PinDefinition("duration", "Duração (s)", "FLOAT", default_value=1.0),
             PinDefinition("easing", "Easing", "STRING", default_value="linear"),
         ],
-        pins_output=[
+        outputs=[
             PinDefinition("exec_animating", "Animando", "EXEC"),
             PinDefinition("exec_finished", "Fim", "EXEC"),
             PinDefinition("exec_failure", "Falha", "EXEC"),
@@ -35,11 +35,11 @@ class WaitUntilConditionNode:
 
     __node_definition__ = NodeDefinition(
         id="wait_until_condition",
-        title="Aguardar Até Condição",
-        category="Flow",
-        description="Pausa execução até condição ser verdadeira ou timeout",
+        title_key="Aguardar Até Condição",
+        category_key="Flow",
+        description_key="Pausa execução até condição ser verdadeira ou timeout",
 
-        pins_input=[
+        inputs=[
             PinDefinition("exec", "Exec", "EXEC"),
             PinDefinition("condition_type", "Tipo Condição", "STRING", default_value="variable_equals"),
             PinDefinition("variable_name", "Variável", "STRING", default_value="hp"),
@@ -49,7 +49,7 @@ class WaitUntilConditionNode:
             PinDefinition("operator", "Operador", "STRING", default_value="=="),
             PinDefinition("timeout", "Timeout (s)", "FLOAT", default_value=30.0),
         ],
-        pins_output=[
+        outputs=[
             PinDefinition("exec_success", "Sucesso", "EXEC"),
             PinDefinition("exec_timeout", "Timeout", "EXEC"),
             PinDefinition("exec_failure", "Falha", "EXEC"),

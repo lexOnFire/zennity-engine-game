@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "zennity-engine",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "editor.phase1_main"],
+      "port": 5000
+    }
+  ]
+}
