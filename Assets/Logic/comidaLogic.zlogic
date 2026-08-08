@@ -19,23 +19,52 @@
   },
   "nodes": [
     {
-      "id": "ecba73714be04420802eaefb2affb760",
-      "type": "get_progress_bar_value",
-      "title": "Ler Valor ProgressBar",
+      "id": "f9b7b50a0b7146ee86e5453ece797583",
+      "type": "set_ui_value",
+      "title": "Set UI Value",
       "category": "UI",
       "position": [
-        -67.82,
-        -251.69
+        58.78,
+        -226.72
       ],
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 156.0
+        "height": 184.0
       },
       "properties": {
-        "widget_name": "comida"
+        "element": "comida",
+        "value": 100.0,
+        "format": "{value}",
+        "max_value": 100.0
       }
+    },
+    {
+      "id": "b3a3cc9669ed4fb29a2015338efea927",
+      "type": "event_update",
+      "title": "Event Update",
+      "category": "Events",
+      "position": [
+        -304.69,
+        -311.89
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
     }
   ],
-  "edges": []
+  "edges": [
+    {
+      "id": "41d17c7578a741df945131594862a020",
+      "from_node": "b3a3cc9669ed4fb29a2015338efea927",
+      "from_port": "next",
+      "to_node": "f9b7b50a0b7146ee86e5453ece797583",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    }
+  ]
 }

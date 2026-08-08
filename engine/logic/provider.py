@@ -74,7 +74,7 @@ class LogicProvider(EngineProvider):
             IsKeyPressedNode, WaitKeyReleaseNode
         )
         from engine.logic.node_definitions.ui_binding_nodes import (
-            BindUIToVariableNode, UpdateUIBindingNode
+            BindUIToVariableNode_def, UpdateUIBindingNode_def
         )
 
         # Registra as definições dos nós
@@ -150,7 +150,7 @@ class LogicProvider(EngineProvider):
             manager.register(WaitKeyReleaseNode.__node_definition__)
 
             # UI Binding
-            manager.register(BindUIToVariableNode.__node_definition__)
-            manager.register(UpdateUIBindingNode.__node_definition__)
+            manager.register(BindUIToVariableNode_def)
+            manager.register(UpdateUIBindingNode_def)
 
         sync_logic_registry_to_metadata(context)
