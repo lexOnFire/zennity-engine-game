@@ -19,29 +19,13 @@
   },
   "nodes": [
     {
-      "id": "5e4b1dce4e004fdaa2fc6e751cae5dab",
-      "type": "get_progress_bar_value",
-      "title": "get_progress_bar_value",
-      "category": "Custom",
+      "id": "c2bb87e281c6481e9c3a4fc71faff1ba",
+      "type": "event_update",
+      "title": "Event Update",
+      "category": "Events",
       "position": [
-        182.0,
-        29.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "c7e8b267840c472794e7d17126bb812a",
-      "type": "get_ui_widget_property",
-      "title": "get_ui_widget_property",
-      "category": "Custom",
-      "position": [
-        -326.0,
-        -31.0
+        -599.04,
+        -76.32
       ],
       "editor": {
         "collapsed": false,
