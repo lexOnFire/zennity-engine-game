@@ -30,13 +30,20 @@ class UIRenderer:
     def _collect_elements(self, runtime_scene: Any) -> list[UIElement]:
         components: list[UIElement] = []
         has_canvas = False
-        objs = getattr(runtime_scene, "editable_objects", getattr(runtime_scene, "game_objects", []))
+
+        # RuntimeScene wraps the actual scene in .scene attribute
+        actual_scene = getattr(runtime_scene, "scene", runtime_scene)
+
+        # Get objects from the appropriate location
+        objs = getattr(actual_scene, "editable_objects", getattr(actual_scene, "game_objects", []))
+
         for obj in list(objs):
             for component in getattr(obj, "components", []):
                 if isinstance(component, Canvas):
                     has_canvas = True
                 elif isinstance(component, UIElement):
                     components.append(component)
+
         return components if has_canvas else []
 
     def _font(self, size: int, bold: bool = False) -> pygame.font.Font:
