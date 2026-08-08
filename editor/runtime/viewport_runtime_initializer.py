@@ -104,7 +104,15 @@ class ViewportRuntimeInitializer:
 
     def start_spawned_objects(self) -> None:
         active_names = set(self.objects)
+        # Phase 5B.2: Cleanup physics handlers for removed objects
         for stale_name in set(self.logic_runtimes) - active_names:
+            runtime_list = self.logic_runtimes.get(stale_name, [])
+            for path, runtime in runtime_list:
+                if hasattr(runtime, 'stop'):
+                    try:
+                        runtime.stop()
+                    except Exception:
+                        pass
             self.logic_runtimes.pop(stale_name, None)
             self.logic_apis.pop(stale_name, None)
             self.animator_controllers.pop(stale_name, None)
@@ -143,6 +151,16 @@ class ViewportRuntimeInitializer:
                     runner.stop(api)
                 except Exception as exc:
                     self.emit({"type": "runtime_log", "level": "WARNING", "message": f"{name}: falha ao encerrar Behavior Tree: {exc}"})
+
+        # Phase 5B.2: Cleanup physics event handlers on runtime stop
+        for name, runtime_list in list(self.logic_runtimes.items()):
+            for path, runtime in runtime_list:
+                if hasattr(runtime, 'stop'):
+                    try:
+                        runtime.stop()
+                    except Exception:
+                        pass
+
         self.logic_runtimes.clear()
         self.logic_modules.clear()
         self.logic_apis.clear()

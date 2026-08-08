@@ -508,8 +508,8 @@ class TestSubscriptionCleanup:
         register_physics_event_handler(handler)
         assert len(_physics_event_handlers) == 1
 
-    def test_handler_cleanup_via_destructor(self):
-        """Handlers should be unregistered when runtime is destroyed."""
+    def test_explicit_stop_cleanup(self):
+        """Handlers should be unregistered when stop() is called (explicit cleanup)."""
         from engine.logic.blackboard import BlackboardStore
         from engine.logic.event_bus import LogicEventBus
 
@@ -520,6 +520,8 @@ class TestSubscriptionCleanup:
             "variables": {},
         }
 
+        count_before = len(_physics_event_handlers)
+
         # Create runtime
         bb = BlackboardStore()
         eb = LogicEventBus()
@@ -527,15 +529,48 @@ class TestSubscriptionCleanup:
 
         # Verify handler was registered
         assert rt._registered_physics_handler == True
-        assert any(hasattr(h, '__self__') and h.__self__ is rt for h in _physics_event_handlers)
+        assert len(_physics_event_handlers) == count_before + 1
 
-        # Manually trigger cleanup (simulate __del__)
-        if rt._registered_physics_handler:
-            unregister_physics_event_handler(rt._handle_physics_event)
-            rt._registered_physics_handler = False
+        # Call stop() explicitly (deterministic cleanup)
+        rt.stop()
 
         # Verify handler was unregistered
-        assert not any(hasattr(h, '__self__') and h.__self__ is rt for h in _physics_event_handlers)
+        assert rt._registered_physics_handler == False
+        assert len(_physics_event_handlers) == count_before
+
+    def test_play_stop_play_lifecycle(self):
+        """Play/Stop/Play should properly manage physics handlers with explicit stop()."""
+        from engine.logic.blackboard import BlackboardStore
+        from engine.logic.event_bus import LogicEventBus
+
+        graph = {
+            "name": "TestGraph",
+            "nodes": [{"id": "n1", "type": "on_collision_enter", "properties": {}}],
+            "edges": [],
+            "variables": {},
+        }
+
+        count_before = len(_physics_event_handlers)
+
+        # Play 1
+        bb1 = BlackboardStore()
+        eb1 = LogicEventBus()
+        rt1 = LogicGraphRuntime(graph, bb1, "player", eb1)
+        assert len(_physics_event_handlers) == count_before + 1, "Play 1: should add handler"
+
+        # Stop 1
+        rt1.stop()
+        assert len(_physics_event_handlers) == count_before, "Stop 1: should remove handler"
+
+        # Play 2
+        bb2 = BlackboardStore()
+        eb2 = LogicEventBus()
+        rt2 = LogicGraphRuntime(graph, bb2, "player", eb2)
+        assert len(_physics_event_handlers) == count_before + 1, "Play 2: should add exactly one handler"
+
+        # Stop 2
+        rt2.stop()
+        assert len(_physics_event_handlers) == count_before, "Stop 2: should remove handler"
 
 
 if __name__ == "__main__":
