@@ -1,0 +1,38 @@
+{
+  "canvas": {
+    "type": "canvas",
+    "name": "MainCanvas",
+    "visible": true,
+    "x": 0,
+    "y": 0,
+    "width": 1024,
+    "height": 768,
+    "children": [
+      {
+        "type": "UIProgressBar",
+        "name": "HealthBar",
+        "visible": true,
+        "x": 16,
+        "y": 16,
+        "width": 200,
+        "height": 20,
+        "value": 75,
+        "max_value": 100,
+        "fill_color": "#2ecc71",
+        "bg_color": "#1c2330"
+      },
+      {
+        "type": "UILabel",
+        "name": "HealthLabel",
+        "visible": true,
+        "x": 226,
+        "y": 16,
+        "width": 100,
+        "height": 20,
+        "text": "Health: 75/100",
+        "font_size": 14,
+        "text_color": "#ffffff"
+      }
+    ]
+  }
+}
