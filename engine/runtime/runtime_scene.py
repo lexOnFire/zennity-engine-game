@@ -67,6 +67,8 @@ class RuntimeScene:
         from engine.ui.runtime_components import (
             ProgressBarComponent,
             LabelComponent,
+            ImageComponent,
+            ButtonComponent,
         )
         from engine.game_object import GameObject
 
@@ -80,16 +82,26 @@ class RuntimeScene:
             return  # Empty UI path - proceed normally
 
         try:
+            import logging
+            logger = logging.getLogger(__name__)
+
+            logger.info(f"[UI] Loading scene.ui: {ui_asset_path}")
+
             # 1. Load .zui asset with validation
             loader = UIAssetLoader(project_root=Path.cwd())
             ui_document = loader.load(ui_asset_path)
+            logger.info(f"[UI] Document loaded")
 
             # 2. Compile to runtime widgets
             compiler = UIRuntimeCompiler()
             compiled_widgets = compiler.compile(ui_document)
+            logger.info(f"[UI] Compiled widgets: {len(compiled_widgets)}")
+            for i, w in enumerate(compiled_widgets):
+                logger.info(f"[UI]   [{i}] type={w.get('type')}, name={w.get('widget_name')}")
 
             # 3. Create UICanvas container GameObject
             ui_canvas = GameObject("__UICanvas__")
+            logger.info(f"[UI] Created UICanvas")
             ui_canvas.runtime_hidden = True
             if hasattr(self.scene, "_add_go"):
                 self.scene._add_go(ui_canvas)
@@ -100,29 +112,66 @@ class RuntimeScene:
                 self.scene.editable_objects.append(ui_canvas)
 
             # 4. Create runtime components for each compiled widget
+            created_count = 0
             for widget_def in compiled_widgets:
                 if not widget_def:  # Panels return None
+                    logger.debug(f"[UI] Skipping None widget (panel)")
                     continue
 
                 widget_type = widget_def.get("type")
                 widget_name = widget_def.get("widget_name")
                 properties = widget_def.get("properties", {})
+                logger.info(f"[UI] Creating widget: {widget_name} ({widget_type})")
 
                 # Create GameObject to hold the UI component
                 widget_go = GameObject(widget_name)
+                component = None
+
+                # Extract common properties
+                x = float(properties.get("x", 0.0))
+                y = float(properties.get("y", 0.0))
+                width = float(properties.get("width", 100.0))
+                height = float(properties.get("height", 100.0))
+                visible = bool(properties.get("visible", True))
+                z_order = int(properties.get("z_order", 0))
+
                 if widget_type == "ProgressBarComponent":
                     component = ProgressBarComponent(
                         value=properties.get("value", 50.0),
                         max_value=properties.get("max_value", 100.0),
+                        x=x, y=y, width=width, height=height,
+                        visible=visible, z_order=z_order
                     )
                 elif widget_type == "LabelComponent":
-                    component = LabelComponent(text=properties.get("text", ""))
+                    component = LabelComponent(
+                        text=properties.get("text", ""),
+                        x=x, y=y, width=width, height=height,
+                        visible=visible, z_order=z_order
+                    )
+                elif widget_type == "ImageComponent":
+                    component = ImageComponent(
+                        sprite_path=properties.get("texture_path", ""),
+                        x=x, y=y, width=width, height=height,
+                        visible=visible, z_order=z_order
+                    )
+                elif widget_type == "ButtonComponent":
+                    component = ButtonComponent(
+                        text=properties.get("text", "Button"),
+                        x=x, y=y, width=width, height=height,
+                        visible=visible, z_order=z_order,
+                        interactable=bool(properties.get("interactable", True))
+                    )
                 else:
-                    # Other widget types - skip for now (extensible)
+                    # Unknown widget type - skip with warning
+                    import logging
+                    logging.warning(f"Unsupported widget type in UI: {widget_type}")
                     continue
 
-                component.widget_name = widget_name
-                widget_go.add_component(component)
+                if component:
+                    component.widget_name = widget_name
+                    widget_go.add_component(component)
+                    logger.info(f"[UI] Component attached: {widget_name}")
+                    created_count += 1
 
                 # Attach to UICanvas using canonical API
                 ui_canvas.add_child(widget_go)
@@ -132,6 +181,9 @@ class RuntimeScene:
                     self.scene.game_objects.append(widget_go)
                 if hasattr(self.scene, "editable_objects"):
                     self.scene.editable_objects.append(widget_go)
+                logger.info(f"[UI] Widget attached to scene: {widget_name}")
+
+            logger.info(f"[UI] UI RENDER PIPELINE COMPLETE: {created_count}/{len(compiled_widgets)} widgets created")
 
         except (UIAssetLoaderError, UICompilerError) as e:
             # Diagnostic: Include scene context in error
