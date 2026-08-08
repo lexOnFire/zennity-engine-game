@@ -54,7 +54,22 @@
           "active": true
         }
       },
-      "enabled": true
+      "enabled": true,
+      "static": false,
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      }
     },
     {
       "id": "menu_ui_container",
@@ -91,7 +106,22 @@
           }
         ]
       },
-      "enabled": true
+      "enabled": true,
+      "static": false,
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      }
     }
   ],
   "ui": "Assets/UI/MainMenu.zui"

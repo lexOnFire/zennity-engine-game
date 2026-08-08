@@ -1,51 +1,56 @@
 {
   "format": "zennity.ui",
-  "name": "GameOverUI",
-  "widgets": [
-    {
-      "id": "game_over_label",
-      "name": "GameOverLabel",
-      "type": "Label",
-      "x": 640,
-      "y": 200,
-      "width": 400,
-      "height": 100,
-      "enabled": true,
-      "text": "GAME OVER",
-      "font_size": 72,
-      "color": [1, 0.2, 0.2, 1],
-      "horizontal_alignment": "center",
-      "vertical_alignment": "middle"
-    },
-    {
-      "id": "retry_button",
-      "name": "RetryButton",
-      "type": "Button",
-      "x": 540,
-      "y": 400,
-      "width": 200,
-      "height": 60,
-      "enabled": true,
-      "text": "RETRY",
-      "button_color": [0.2, 0.6, 1, 1],
-      "text_color": [1, 1, 1, 1],
-      "font_size": 32,
-      "on_click": "retry_clicked"
-    },
-    {
-      "id": "main_menu_button",
-      "name": "MainMenuButton",
-      "type": "Button",
-      "x": 740,
-      "y": 400,
-      "width": 200,
-      "height": 60,
-      "enabled": true,
-      "text": "MAIN MENU",
-      "button_color": [0.6, 0.4, 0.2, 1],
-      "text_color": [1, 1, 1, 1],
-      "font_size": 32,
-      "on_click": "main_menu_clicked"
-    }
-  ]
+  "version": 1,
+  "canvas": {
+    "name": "GameOverCanvas",
+    "type": "canvas",
+    "x": 0.0,
+    "y": 0.0,
+    "width": 1280.0,
+    "height": 720.0,
+    "visible": true,
+    "children": [
+      {
+        "name": "GameOverLabel",
+        "type": "UILabel",
+        "x": 640.0,
+        "y": 200.0,
+        "width": 400.0,
+        "height": 100.0,
+        "visible": true,
+        "children": [],
+        "text": "GAME OVER",
+        "font_size": 72,
+        "text_color": "#FF3333"
+      },
+      {
+        "name": "RetryButton",
+        "type": "UIButton",
+        "x": 490.0,
+        "y": 350.0,
+        "width": 200.0,
+        "height": 60.0,
+        "visible": true,
+        "children": [],
+        "text": "RETRY",
+        "font_size": 32,
+        "color": "#0066FF",
+        "interactable": true
+      },
+      {
+        "name": "MainMenuButton",
+        "type": "UIButton",
+        "x": 790.0,
+        "y": 350.0,
+        "width": 200.0,
+        "height": 60.0,
+        "visible": true,
+        "children": [],
+        "text": "MAIN MENU",
+        "font_size": 32,
+        "color": "#CC8800",
+        "interactable": true
+      }
+    ]
+  }
 }

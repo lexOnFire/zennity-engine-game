@@ -1,85 +1,95 @@
 {
   "format": "zennity.ui",
-  "name": "VictoryUI",
-  "widgets": [
-    {
-      "id": "victory_title",
-      "name": "VictoryTitle",
-      "type": "Label",
-      "x": 640,
-      "y": 100,
-      "width": 400,
-      "height": 80,
-      "text": "VICTORY",
-      "font_size": 72,
-      "color": [0.2, 1.0, 0.2, 1.0],
-      "horizontal_alignment": "center",
-      "vertical_alignment": "middle"
-    },
-    {
-      "id": "boss_defeated_label",
-      "name": "BossDefeatedLabel",
-      "type": "Label",
-      "x": 640,
-      "y": 200,
-      "width": 400,
-      "height": 50,
-      "text": "Boss Defeated!",
-      "font_size": 40,
-      "color": [1.0, 1.0, 1.0, 1.0],
-      "horizontal_alignment": "center"
-    },
-    {
-      "id": "score_display",
-      "name": "ScoreLabel",
-      "type": "Label",
-      "x": 640,
-      "y": 300,
-      "width": 400,
-      "height": 40,
-      "text": "Score: 0",
-      "font_size": 32,
-      "color": [1.0, 1.0, 0.0, 1.0],
-      "horizontal_alignment": "center"
-    },
-    {
-      "id": "coins_display",
-      "name": "CoinsLabel",
-      "type": "Label",
-      "x": 640,
-      "y": 360,
-      "width": 400,
-      "height": 40,
-      "text": "Coins: 0",
-      "font_size": 32,
-      "color": [1.0, 1.0, 0.0, 1.0],
-      "horizontal_alignment": "center"
-    },
-    {
-      "id": "main_menu_button",
-      "name": "MainMenuButton",
-      "type": "Button",
-      "x": 440,
-      "y": 480,
-      "width": 200,
-      "height": 60,
-      "text": "MAIN MENU",
-      "button_color": [0.4, 0.4, 0.8, 1.0],
-      "text_color": [1.0, 1.0, 1.0, 1.0],
-      "font_size": 28
-    },
-    {
-      "id": "new_game_button",
-      "name": "NewGameButton",
-      "type": "Button",
-      "x": 840,
-      "y": 480,
-      "width": 200,
-      "height": 60,
-      "text": "NEW GAME",
-      "button_color": [0.2, 0.8, 0.2, 1.0],
-      "text_color": [1.0, 1.0, 1.0, 1.0],
-      "font_size": 28
-    }
-  ]
+  "version": 1,
+  "canvas": {
+    "name": "VictoryCanvas",
+    "type": "canvas",
+    "x": 0.0,
+    "y": 0.0,
+    "width": 1280.0,
+    "height": 720.0,
+    "visible": true,
+    "children": [
+      {
+        "name": "VictoryTitle",
+        "type": "UILabel",
+        "x": 640.0,
+        "y": 80.0,
+        "width": 400.0,
+        "height": 80.0,
+        "visible": true,
+        "children": [],
+        "text": "VICTORY",
+        "font_size": 72,
+        "text_color": "#00FF00"
+      },
+      {
+        "name": "BossDefeatedLabel",
+        "type": "UILabel",
+        "x": 640.0,
+        "y": 180.0,
+        "width": 400.0,
+        "height": 50.0,
+        "visible": true,
+        "children": [],
+        "text": "Boss Defeated!",
+        "font_size": 40,
+        "text_color": "#FFFFFF"
+      },
+      {
+        "name": "ScoreLabel",
+        "type": "UILabel",
+        "x": 640.0,
+        "y": 260.0,
+        "width": 400.0,
+        "height": 40.0,
+        "visible": true,
+        "children": [],
+        "text": "Score: 0",
+        "font_size": 32,
+        "text_color": "#FFFF00"
+      },
+      {
+        "name": "CoinsLabel",
+        "type": "UILabel",
+        "x": 640.0,
+        "y": 310.0,
+        "width": 400.0,
+        "height": 40.0,
+        "visible": true,
+        "children": [],
+        "text": "Coins: 0",
+        "font_size": 32,
+        "text_color": "#FFFF00"
+      },
+      {
+        "name": "MainMenuButton",
+        "type": "UIButton",
+        "x": 390.0,
+        "y": 420.0,
+        "width": 200.0,
+        "height": 60.0,
+        "visible": true,
+        "children": [],
+        "text": "MAIN MENU",
+        "font_size": 28,
+        "color": "#6666FF",
+        "interactable": true
+      },
+      {
+        "name": "NewGameButton",
+        "type": "UIButton",
+        "x": 690.0,
+        "y": 420.0,
+        "width": 200.0,
+        "height": 60.0,
+        "visible": true,
+        "children": [],
+        "text": "NEW GAME",
+        "font_size": 28,
+        "color": "#33CC33",
+        "interactable": true
+      }
+    ]
+  }
 }
