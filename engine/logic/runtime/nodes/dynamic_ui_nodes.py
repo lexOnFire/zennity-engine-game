@@ -341,18 +341,6 @@ def _fetch_progress_bar_value(runtime: Any, widget_name: str, game: Any) -> floa
     return None
 
 
-@registry.register_executor('get_progress_bar_value')
-def execute_get_progress_bar_value(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
-    """Lê o valor de uma ProgressBar durante a execução de fluxo."""
-    node_id = str(node['id'])
-    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
-    widget_name = str(runtime._read_input(node_id, "widget_name", properties.get("widget_name", "comida"), game, dt, set()))
-
-    val = _fetch_progress_bar_value(runtime, widget_name, game)
-    runtime._store(node_id, "value", val)
-    return ["next", "exec_success"] if val is not None else ["next", "exec_not_found"]
-
-
 @registry.register_evaluator('get_progress_bar_value')
 def evaluate_get_progress_bar_value(runtime, node_id: str, port: str, node: Mapping[str, Any], game: Any, dt: float, resolving: set[tuple[str, str]]) -> Any:
     """Avalia a saída de dados 'value' de um nó get_progress_bar_value."""
