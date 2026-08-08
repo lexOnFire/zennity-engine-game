@@ -570,6 +570,57 @@ class PlayLogicAPI:
             if obj is not None:
                 self.runtime_world.destroy_object(obj)
 
+    def camera_follow(self, target: str, smooth_time: float = 0.1) -> None:
+        """Start camera following a target object."""
+        self.obj.setdefault("_camera_state", {})["follow_target"] = str(target)
+        self.obj["_camera_state"]["smooth_time"] = float(smooth_time)
+
+    def camera_stop_follow(self) -> None:
+        """Stop camera follow if active."""
+        self.obj.setdefault("_camera_state", {})["follow_target"] = None
+
+    def camera_shake(self, duration: float = 0.5, intensity: float = 0.1, frequency: float = 1.0) -> None:
+        """Start camera shake animation."""
+        self.obj.setdefault("_camera_state", {})["shake"] = {
+            "duration": float(duration),
+            "intensity": float(intensity),
+            "frequency": float(frequency),
+            "elapsed": 0.0,
+        }
+
+    def camera_set_zoom(self, zoom: float, duration: float = 0.0) -> None:
+        """Set camera zoom level."""
+        zoom = max(0.1, float(zoom))
+        if duration > 0:
+            self.obj.setdefault("_camera_state", {})["zoom_tween"] = {
+                "target_zoom": zoom,
+                "duration": float(duration),
+                "elapsed": 0.0,
+            }
+        else:
+            self.obj.setdefault("_camera_state", {})["zoom"] = zoom
+
+    def camera_look_at(self, x: float, y: float, duration: float = 0.5) -> None:
+        """Pan camera to look at a world position."""
+        self.obj.setdefault("_camera_state", {})["look_at"] = {
+            "target_x": float(x),
+            "target_y": float(y),
+            "duration": float(duration),
+            "elapsed": 0.0,
+        }
+
+    def get_camera_position(self) -> tuple[float, float]:
+        """Get current camera position (pure getter)."""
+        state = self.obj.get("_camera_state", {})
+        if "position" in state:
+            return (float(state["position"][0]), float(state["position"][1]))
+        return (0.0, 0.0)
+
+    def get_camera_zoom(self) -> float:
+        """Get current camera zoom level (pure getter)."""
+        state = self.obj.get("_camera_state", {})
+        return float(state.get("zoom", 1.0))
+
     def log(self, message: str) -> None:
         _send(self._events, {"type": "runtime_log", "level": "INFO", "message": f"{self.name}: {message}"})
 
