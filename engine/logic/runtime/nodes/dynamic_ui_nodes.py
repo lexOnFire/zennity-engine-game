@@ -245,3 +245,36 @@ def execute_get_ui_widget_property(runtime, node: Mapping[str, Any], game: Any, 
     except Exception as e:
         print(f"Erro ao ler propriedade: {e}")
         return ["failure"]
+
+
+@registry.register_executor('get_progress_bar_value')
+def execute_get_progress_bar_value(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
+    """Lê o valor de uma ProgressBar."""
+    node_id = str(node['id'])
+    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
+
+    try:
+        widget_name = str(properties.get("widget_name", ""))
+
+        # Procura o widget em toda a cena
+        if hasattr(game, "find_object"):
+            widget = game.find_object(widget_name)
+            if widget:
+                # Tentar ler o valor
+                if hasattr(widget, "value"):
+                    value = float(widget.value)
+                elif hasattr(widget, "text"):
+                    try:
+                        value = float(widget.text)
+                    except:
+                        value = 0.0
+                else:
+                    return ["failure"]
+
+                runtime._store(node_id, "value", value)
+                return ["success"]
+
+        return ["not_found"]
+    except Exception as e:
+        print(f"Erro ao ler ProgressBar: {e}")
+        return ["failure"]

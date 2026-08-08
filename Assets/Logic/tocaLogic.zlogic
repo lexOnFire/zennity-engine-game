@@ -24,8 +24,8 @@
       "title": "Event Update",
       "category": "Events",
       "position": [
-        -884.18,
-        -182.52
+        -869.57,
+        -225.21
       ],
       "editor": {
         "collapsed": true,
@@ -40,8 +40,8 @@
       "title": "Cooldown",
       "category": "Logic",
       "position": [
-        -623.26,
-        -182.92
+        -862.57,
+        -173.93
       ],
       "editor": {
         "collapsed": true,
@@ -58,8 +58,8 @@
       "title": "Create Object",
       "category": "Spawning",
       "position": [
-        -343.49,
-        -188.02
+        -862.55,
+        -126.23
       ],
       "editor": {
         "collapsed": true,
@@ -90,8 +90,8 @@
       "title": "Sprite Renderer",
       "category": "Components",
       "position": [
-        -371.2,
-        -87.96
+        -864.42,
+        -83.47
       ],
       "editor": {
         "collapsed": true,
@@ -110,15 +110,33 @@
       "title": "Add Component",
       "category": "Math",
       "position": [
-        -400.18,
-        110.06
+        -876.55,
+        -20.27
       ],
       "editor": {
-        "collapsed": true,
+        "collapsed": false,
         "width": 220.0,
         "height": 156.0
       },
       "properties": {}
+    },
+    {
+      "id": "a4cbc436869a4385aac90ffdf72ee9d5",
+      "type": "start_behavior_tree",
+      "title": "Start Behavior Tree",
+      "category": "Action",
+      "position": [
+        -602.08,
+        -31.34
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "path": "Assets/Behaviors/patrulha_comida.zbehavior"
+      }
     }
   ],
   "edges": [
@@ -154,6 +172,15 @@
       "from_node": "4f21c05a8c044686b971fa52e6ddadaa",
       "from_port": "next",
       "to_node": "9c7cc7aa505d4071be4e8e77152ded8d",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 4
+    },
+    {
+      "id": "29fa3dd82a1c490cabb0729db92cc693",
+      "from_node": "9c7cc7aa505d4071be4e8e77152ded8d",
+      "from_port": "next",
+      "to_node": "a4cbc436869a4385aac90ffdf72ee9d5",
       "to_port": "in",
       "kind": "flow",
       "order": 4

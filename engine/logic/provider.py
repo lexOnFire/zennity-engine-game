@@ -37,7 +37,7 @@ class LogicProvider(EngineProvider):
         from engine.logic.node_definitions.dynamic_ui_nodes import (
             CreateUILabelNode, CreateUIProgressBarNode, CreateUIButtonNode,
             CreateUIImageNode, DestroyUIWidgetNode, UpdateUIWidgetPropertyNode,
-            GetUIWidgetPropertyNode
+            GetUIWidgetPropertyNode, GetProgressBarValueNode
         )
         from engine.logic.node_definitions.animation_nodes import (
             AnimateValueNode, WaitUntilConditionNode
@@ -84,6 +84,7 @@ class LogicProvider(EngineProvider):
             manager.register(DestroyUIWidgetNode.__node_definition__)
             manager.register(UpdateUIWidgetPropertyNode.__node_definition__)
             manager.register(GetUIWidgetPropertyNode.__node_definition__)
+            manager.register(GetProgressBarValueNode.__node_definition__)
 
             # Animação
             manager.register(AnimateValueNode.__node_definition__)

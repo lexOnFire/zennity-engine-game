@@ -178,3 +178,25 @@ class GetUIWidgetPropertyNode:
         ],
         tags=["ui", "ler", "dinâmico", "propriedade"],
     )
+
+
+class GetProgressBarValueNode:
+    """Lê o valor de uma ProgressBar."""
+
+    __node_definition__ = NodeDefinition(
+        id="get_progress_bar_value",
+        title="Ler Valor ProgressBar",
+        category="UI",
+        description="Lê o valor atual de uma ProgressBar (0-100 ou 0.0-1.0)",
+
+        pins_input=[
+            PinDefinition("exec", "Exec", "EXEC"),
+            PinDefinition("widget_name", "Nome da ProgressBar", "STRING", default_value="progress"),
+        ],
+        pins_output=[
+            PinDefinition("exec_success", "Sucesso", "EXEC"),
+            PinDefinition("exec_not_found", "Não Encontrado", "EXEC"),
+            PinDefinition("exec_failure", "Falha", "EXEC"),
+            PinDefinition("value", "Valor", "FLOAT"),
+        ]
+    )

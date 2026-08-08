@@ -43,12 +43,12 @@
       "id": "patrol-node",
       "type": "bt.patrol",
       "position": [
-        -86.0,
-        36.0
+        -184.0,
+        55.0
       ],
       "properties": {
-        "point_a": "-100,100",
-        "point_b": "200,0",
+        "point_a": "-100,10",
+        "point_b": "10,10",
         "speed": 80.0
       }
     },
@@ -91,8 +91,8 @@
       "id": "node-check-zero",
       "type": "bt.check_ui_value",
       "position": [
-        116.0,
-        191.0
+        167.0,
+        165.0
       ],
       "properties": {
         "widget": "comida",
@@ -104,8 +104,8 @@
       "id": "node-destroy-food",
       "type": "bt.destroy_object",
       "position": [
-        197.0,
-        313.0
+        185.0,
+        324.0
       ],
       "properties": {
         "target": "Food"
