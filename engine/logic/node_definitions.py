@@ -784,4 +784,18 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
         "outputs": [('count', 'number')],
         "properties": {},
     },
+    "get_ui_widget_property": {
+        "title": "Obter Propriedade Widget",
+        "category": "UI",
+        "inputs": [('in', 'flow'), ('parent', 'text'), ('widget_name', 'text'), ('property', 'text')],
+        "outputs": [('next', 'flow'), ('value', 'text')],
+        "properties": {"parent": "", "widget_name": "", "property": "value"},
+    },
+    "get_progress_bar_value": {
+        "title": "Ler Valor ProgressBar",
+        "category": "UI",
+        "inputs": [('in', 'flow'), ('widget_name', 'text')],
+        "outputs": [('next', 'flow'), ('value', 'number')],
+        "properties": {"widget_name": "comida"},
+    },
 }
