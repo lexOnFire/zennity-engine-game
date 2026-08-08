@@ -19,29 +19,13 @@
   },
   "nodes": [
     {
-      "id": "c2bb87e281c6481e9c3a4fc71faff1ba",
-      "type": "event_update",
-      "title": "Event Update",
-      "category": "Events",
-      "position": [
-        -801.71,
-        -47.84
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
-      },
-      "properties": {}
-    },
-    {
       "id": "ecba73714be04420802eaefb2affb760",
       "type": "get_progress_bar_value",
       "title": "Ler Valor ProgressBar",
       "category": "UI",
       "position": [
-        -425.86,
-        30.51
+        -67.82,
+        -251.69
       ],
       "editor": {
         "collapsed": false,
@@ -53,13 +37,13 @@
       }
     },
     {
-      "id": "37aeb193d9f84284923d48f663c0f1bf",
-      "type": "compare_number",
-      "title": "Compare Number",
-      "category": "Logic",
+      "id": "9647b9efcd544153bef7afd19f3a9999",
+      "type": "get_ui_widget_property",
+      "title": "Obter Propriedade Widget",
+      "category": "UI",
       "position": [
-        -150.34,
-        23.51
+        -367.52,
+        -293.62
       ],
       "editor": {
         "collapsed": false,
@@ -67,38 +51,37 @@
         "height": 184.0
       },
       "properties": {
-        "operator": "<=",
-        "value": 0.0
+        "parent": "",
+        "widget_name": "comida",
+        "property": "value"
       }
+    },
+    {
+      "id": "38f573d439494ddd897a2aa424c3b690",
+      "type": "event_start",
+      "title": "Event Start",
+      "category": "Events",
+      "position": [
+        -640.53,
+        -302.4
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
     }
   ],
   "edges": [
     {
-      "id": "6efb15d94242459783d5f9580ea60dc8",
-      "from_node": "ecba73714be04420802eaefb2affb760",
-      "from_port": "value",
-      "to_node": "37aeb193d9f84284923d48f663c0f1bf",
-      "to_port": "value",
-      "kind": "number",
+      "id": "8a670694e7654918ba6510bf23d1e101",
+      "from_node": "38f573d439494ddd897a2aa424c3b690",
+      "from_port": "next",
+      "to_node": "9647b9efcd544153bef7afd19f3a9999",
+      "to_port": "in",
+      "kind": "flow",
       "order": 0
-    },
-    {
-      "id": "b2f9110ca4534800a3a8a1c86b27febc",
-      "from_node": "ecba73714be04420802eaefb2affb760",
-      "from_port": "next",
-      "to_node": "37aeb193d9f84284923d48f663c0f1bf",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 1
-    },
-    {
-      "id": "7af1d452b22e4a78b658cd5528fe3c56",
-      "from_node": "c2bb87e281c6481e9c3a4fc71faff1ba",
-      "from_port": "next",
-      "to_node": "ecba73714be04420802eaefb2affb760",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 2
     }
   ]
 }

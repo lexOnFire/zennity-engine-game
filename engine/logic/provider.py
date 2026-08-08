@@ -31,6 +31,7 @@ class LogicProvider(EngineProvider):
         import engine.logic.runtime.nodes.save_load_nodes
         import engine.logic.runtime.nodes.pathfinding_nodes
         import engine.logic.runtime.nodes.input_advanced_nodes
+        import engine.logic.runtime.nodes.ui_binding_nodes
 
         from engine.logic.runtime.registry import sync_logic_registry_to_metadata
         from engine.metadata.manager import MetadataManager
@@ -71,6 +72,9 @@ class LogicProvider(EngineProvider):
         from engine.logic.node_definitions.input_advanced_nodes import (
             DetectTouchNode, DetectSwipeNode, DetectPinchNode,
             IsKeyPressedNode, WaitKeyReleaseNode
+        )
+        from engine.logic.node_definitions.ui_binding_nodes import (
+            BindUIToVariableNode, UpdateUIBindingNode
         )
 
         # Registra as definições dos nós
@@ -144,5 +148,9 @@ class LogicProvider(EngineProvider):
             manager.register(DetectPinchNode.__node_definition__)
             manager.register(IsKeyPressedNode.__node_definition__)
             manager.register(WaitKeyReleaseNode.__node_definition__)
+
+            # UI Binding
+            manager.register(BindUIToVariableNode.__node_definition__)
+            manager.register(UpdateUIBindingNode.__node_definition__)
 
         sync_logic_registry_to_metadata(context)
