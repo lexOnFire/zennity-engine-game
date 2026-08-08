@@ -178,6 +178,13 @@ class Engine:
                 BoxCollider._scene_tilemaps.clear()
             except Exception:
                 pass
+            # Phase 7B.7.3: Clear dialogue state on scene change
+            try:
+                from engine.dialogue.manager import get_dialogue_manager
+                manager = get_dialogue_manager()
+                manager.reset()
+            except Exception:
+                pass
             self._current_scene = self._next_scene
             self._current_scene.engine = self
             self._current_scene.start()
