@@ -39,6 +39,10 @@ NODE_DEFINITIONS: dict[str, dict] = {
     "number_value": {"id": "number_value", "title": "Number", "category": "Values", "inputs": [], "outputs": [], "properties": {"value": 0.0}},
     "bool_value": {"id": "bool_value", "title": "Boolean", "category": "Values", "inputs": [], "outputs": [], "properties": {"value": True}},
     "text_value": {"id": "text_value", "title": "Text", "category": "Values", "inputs": [], "outputs": [], "properties": {"value": ""}},
+
+    # UI Binding
+    "bind_ui_to_variable": {"id": "bind_ui_to_variable", "title": "Vincular UI → Variável", "category": "UI", "inputs": [("in", "flow"), ("widget_name", "text"), ("variable_name", "text"), ("property", "text")], "outputs": [("next", "flow"), ("exec_success", "flow"), ("exec_not_found", "flow"), ("exec_failure", "flow")], "properties": {"widget_name": "comida", "variable_name": "comida", "property": "value"}},
+    "update_ui_binding": {"id": "update_ui_binding", "title": "Atualizar Binding UI", "category": "UI", "inputs": [("in", "flow"), ("widget_name", "text"), ("variable_name", "text"), ("property", "text")], "outputs": [("next", "flow"), ("exec_success", "flow"), ("exec_not_found", "flow"), ("exec_failure", "flow")], "properties": {"widget_name": "comida", "variable_name": "comida", "property": "value"}},
 }
 
 def _populate_node_definitions():
@@ -57,6 +61,7 @@ def _populate_node_definitions():
                     "description": node_def.get("description", ""),
                     "inputs": node_def.get("inputs", []),
                     "outputs": node_def.get("outputs", []),
+                    "properties": node_def.get("properties", {}),
                 }
     except Exception:
         pass

@@ -23,6 +23,23 @@
     "groups": [],
     "comments": []
   },
-  "nodes": [],
+  "nodes": [
+    {
+      "id": "be4efcdc55a047c4b8ae691c7d0cbf94",
+      "type": "bind_ui_to_variable",
+      "title": "bind_ui_to_variable",
+      "category": "Custom",
+      "position": [
+        314.0,
+        -21.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 212.0
+      },
+      "properties": {}
+    }
+  ],
   "edges": []
 }
