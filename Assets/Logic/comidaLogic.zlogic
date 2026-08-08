@@ -13,7 +13,7 @@
     "watches": []
   },
   "variables": {
-    "comida.value": {
+    "comida_value": {
       "type": "number",
       "scope": "object",
       "default": 75.0
@@ -25,12 +25,12 @@
   },
   "nodes": [
     {
-      "id": "2a3476db82e94acb9f62d2cd6bcf167b",
-      "type": "event_update",
-      "title": "On Update",
+      "id": "event_start_setup",
+      "type": "event_start",
+      "title": "On Start",
       "category": "Events",
       "position": [
-        -700.0,
+        -900.0,
         -180.0
       ],
       "editor": {
@@ -41,21 +41,77 @@
       "properties": {}
     },
     {
-      "id": "074773c991c6445f9c210545157f75a7",
-      "type": "get_progress_bar_value",
-      "title": "Ler Valor ProgressBar",
+      "id": "bind_ui_setup",
+      "type": "bind_ui_to_variable",
+      "title": "Vincular UI → Variável",
       "category": "UI",
       "position": [
-        -400.0,
+        -650.0,
         -180.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
+        "width": 280.0,
+        "height": 200.0
       },
       "properties": {
-        "widget_name": "comida"
+        "widget_name": "comida",
+        "variable_name": "comida_value",
+        "property": "value"
+      }
+    },
+    {
+      "id": "event_update_sync",
+      "type": "event_update",
+      "title": "On Update",
+      "category": "Events",
+      "position": [
+        -900.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "update_ui_binding",
+      "type": "update_ui_binding",
+      "title": "Atualizar Binding UI",
+      "category": "UI",
+      "position": [
+        -650.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 280.0,
+        "height": 200.0
+      },
+      "properties": {
+        "widget_name": "comida",
+        "variable_name": "comida_value",
+        "property": "value"
+      }
+    },
+    {
+      "id": "get_comida_value",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
+      "position": [
+        -350.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {
+        "variable": "comida_value"
       }
     },
     {
@@ -64,8 +120,8 @@
       "title": "To Text",
       "category": "Text",
       "position": [
-        -100.0,
-        -48.79
+        -50.0,
+        50.0
       ],
       "editor": {
         "collapsed": false,
@@ -80,8 +136,8 @@
       "title": "Set HUD",
       "category": "UI",
       "position": [
-        -100.0,
-        -180.0
+        200.0,
+        50.0
       ],
       "editor": {
         "collapsed": false,
@@ -93,13 +149,13 @@
       }
     },
     {
-      "id": "978bb86776f745308a29d92bce605f33",
+      "id": "compare_number_destroy",
       "type": "compare_number",
       "title": "Compare Number",
       "category": "Logic",
       "position": [
-        200.0,
-        -180.0
+        -50.0,
+        250.0
       ],
       "editor": {
         "collapsed": false,
@@ -117,8 +173,8 @@
       "title": "Destroy Object",
       "category": "Objects",
       "position": [
-        500.0,
-        -180.0
+        200.0,
+        250.0
       ],
       "editor": {
         "collapsed": false,
@@ -132,17 +188,44 @@
   ],
   "edges": [
     {
-      "id": "edge_flow_1",
-      "from_node": "2a3476db82e94acb9f62d2cd6bcf167b",
+      "id": "edge_setup_flow",
+      "from_node": "event_start_setup",
       "from_port": "next",
-      "to_node": "074773c991c6445f9c210545157f75a7",
-      "to_port": "in",
+      "to_node": "bind_ui_setup",
+      "to_port": "exec",
       "kind": "flow",
       "order": 0
     },
     {
-      "id": "edge_flow_2",
-      "from_node": "074773c991c6445f9c210545157f75a7",
+      "id": "edge_update_sync_flow",
+      "from_node": "event_update_sync",
+      "from_port": "next",
+      "to_node": "update_ui_binding",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "edge_sync_to_get_flow",
+      "from_node": "update_ui_binding",
+      "from_port": "exec_success",
+      "to_node": "get_comida_value",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "edge_get_to_text_flow",
+      "from_node": "get_comida_value",
+      "from_port": "next",
+      "to_node": "node_to_text_1",
+      "to_port": "value",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "edge_text_to_hud_flow",
+      "from_node": "node_to_text_1",
       "from_port": "next",
       "to_node": "node_set_hud_1",
       "to_port": "in",
@@ -150,17 +233,17 @@
       "order": 0
     },
     {
-      "id": "edge_flow_3",
-      "from_node": "node_set_hud_1",
-      "from_port": "next",
-      "to_node": "978bb86776f745308a29d92bce605f33",
-      "to_port": "in",
-      "kind": "flow",
+      "id": "edge_get_to_compare_data",
+      "from_node": "get_comida_value",
+      "from_port": "value",
+      "to_node": "compare_number_destroy",
+      "to_port": "value",
+      "kind": "number",
       "order": 0
     },
     {
-      "id": "edge_flow_4",
-      "from_node": "978bb86776f745308a29d92bce605f33",
+      "id": "edge_compare_to_destroy_flow",
+      "from_node": "compare_number_destroy",
       "from_port": "true",
       "to_node": "node_destroy_1",
       "to_port": "in",
@@ -168,28 +251,10 @@
       "order": 0
     },
     {
-      "id": "edge_data_1",
-      "from_node": "074773c991c6445f9c210545157f75a7",
+      "id": "edge_get_to_text_data",
+      "from_node": "get_comida_value",
       "from_port": "value",
       "to_node": "node_to_text_1",
-      "to_port": "value",
-      "kind": "number",
-      "order": 0
-    },
-    {
-      "id": "edge_data_2",
-      "from_node": "node_to_text_1",
-      "from_port": "value",
-      "to_node": "node_set_hud_1",
-      "to_port": "text",
-      "kind": "text",
-      "order": 0
-    },
-    {
-      "id": "edge_data_3",
-      "from_node": "074773c991c6445f9c210545157f75a7",
-      "from_port": "value",
-      "to_node": "978bb86776f745308a29d92bce605f33",
       "to_port": "value",
       "kind": "number",
       "order": 0
