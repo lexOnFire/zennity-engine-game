@@ -25,14 +25,11 @@
   },
   "nodes": [
     {
-      "id": "event_update_main",
+      "id": "event_update",
       "type": "event_update",
       "title": "On Update",
       "category": "Events",
-      "position": [
-        -900.0,
-        0.0
-      ],
+      "position": [-800.0, 0.0],
       "editor": {
         "collapsed": false,
         "width": 220.0,
@@ -45,10 +42,7 @@
       "type": "update_ui_binding",
       "title": "Atualizar Binding UI",
       "category": "UI",
-      "position": [
-        -650.0,
-        0.0
-      ],
+      "position": [-500.0, 0.0],
       "editor": {
         "collapsed": false,
         "width": 280.0,
@@ -61,62 +55,25 @@
       }
     },
     {
-      "id": "get_value",
-      "type": "get_variable",
-      "title": "Obter Variável",
-      "category": "Variables",
-      "position": [
-        -350.0,
-        0.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
-      },
-      "properties": {
-        "variable": "comida_value"
-      }
-    },
-    {
-      "id": "to_text_node",
-      "type": "to_text",
-      "title": "To Text",
-      "category": "Text",
-      "position": [
-        0.0,
-        0.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "set_hud_node",
+      "id": "set_hud",
       "type": "set_hud",
       "title": "Set HUD",
       "category": "UI",
-      "position": [
-        250.0,
-        0.0
-      ],
+      "position": [-150.0, 0.0],
       "editor": {
         "collapsed": false,
         "width": 220.0,
         "height": 156.0
       },
       "properties": {
-        "text": "Comida: "
+        "text": "Comida"
       }
     }
   ],
   "edges": [
     {
       "id": "e1",
-      "from_node": "event_update_main",
+      "from_node": "event_update",
       "from_port": "next",
       "to_node": "update_binding",
       "to_port": "exec",
@@ -127,27 +84,9 @@
       "id": "e2",
       "from_node": "update_binding",
       "from_port": "exec_success",
-      "to_node": "get_value",
-      "to_port": "exec",
+      "to_node": "set_hud",
+      "to_port": "in",
       "kind": "flow",
-      "order": 0
-    },
-    {
-      "id": "e3",
-      "from_node": "get_value",
-      "from_port": "value",
-      "to_node": "to_text_node",
-      "to_port": "value",
-      "kind": "number",
-      "order": 0
-    },
-    {
-      "id": "e4",
-      "from_node": "to_text_node",
-      "from_port": "value",
-      "to_node": "set_hud_node",
-      "to_port": "text",
-      "kind": "text",
       "order": 0
     }
   ]
