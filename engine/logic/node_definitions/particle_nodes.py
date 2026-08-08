@@ -1,7 +1,7 @@
 """Definições de nós de partículas para Logic Graph."""
 from __future__ import annotations
 
-from engine.core.metadata import NodeDefinition, PinDefinition
+from engine.core.metadata import NodeDefinition, PinDefinition, PinType
 
 
 class CreateParticleSystemNode(NodeDefinition):
@@ -14,18 +14,18 @@ class CreateParticleSystemNode(NodeDefinition):
         description_key="Cria um novo sistema de partículas em uma posição",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("x", "X", "FLOAT", default_value=0.0),
-            PinDefinition("y", "Y", "FLOAT", default_value=0.0),
-            PinDefinition("particle_type", "Tipo", "STRING", default_value="spark"),
-            PinDefinition("quantity", "Quantidade", "INT", default_value=10),
-            PinDefinition("lifetime", "Tempo de Vida (s)", "FLOAT", default_value=1.0),
-            PinDefinition("speed", "Velocidade", "FLOAT", default_value=100.0),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="x", label_key="X", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="y", label_key="Y", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="particle_type", label_key="Tipo", pin_type=PinType.STRING, default_value="spark"),
+            PinDefinition(id="quantity", label_key="Quantidade", pin_type=PinType.INT, default_value=10),
+            PinDefinition(id="lifetime", label_key="Tempo de Vida (s)", pin_type=PinType.FLOAT, default_value=1.0),
+            PinDefinition(id="speed", label_key="Velocidade", pin_type=PinType.FLOAT, default_value=100.0),
         ],
         outputs=[
-            PinDefinition("exec_created", "Criado", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
-            PinDefinition("system_id", "ID do Sistema", "STRING"),
+            PinDefinition(id="exec_created", label_key="Criado", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
+            PinDefinition(id="system_id", label_key="ID do Sistema", pin_type=PinType.STRING),
         ]
     )
 
@@ -40,13 +40,13 @@ class EmitParticlesNode(NodeDefinition):
         description_key="Emite partículas de um sistema existente",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("system_id", "ID do Sistema", "STRING", default_value=""),
-            PinDefinition("quantity", "Quantidade", "INT", default_value=10),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="system_id", label_key="ID do Sistema", pin_type=PinType.STRING, default_value=""),
+            PinDefinition(id="quantity", label_key="Quantidade", pin_type=PinType.INT, default_value=10),
         ],
         outputs=[
-            PinDefinition("exec_emitting", "Emitindo", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
+            PinDefinition(id="exec_emitting", label_key="Emitindo", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )
 
@@ -61,12 +61,12 @@ class StopParticlesNode(NodeDefinition):
         description_key="Para a emissão de partículas (opcionalmente destruir imediatamente)",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("system_id", "ID do Sistema", "STRING", default_value=""),
-            PinDefinition("destroy", "Destruir Imediatamente?", "BOOL", default_value=False),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="system_id", label_key="ID do Sistema", pin_type=PinType.STRING, default_value=""),
+            PinDefinition(id="destroy", label_key="Destruir Imediatamente?", pin_type=PinType.BOOL, default_value=False),
         ],
         outputs=[
-            PinDefinition("exec_stopped", "Parado", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
+            PinDefinition(id="exec_stopped", label_key="Parado", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )

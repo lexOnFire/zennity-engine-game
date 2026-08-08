@@ -1,7 +1,7 @@
 """Definições de nós de prefab para Logic Graph."""
 from __future__ import annotations
 
-from engine.core.metadata import NodeDefinition, PinDefinition
+from engine.core.metadata import NodeDefinition, PinDefinition, PinType
 
 
 class CreateObjectNode(NodeDefinition):
@@ -13,14 +13,14 @@ class CreateObjectNode(NodeDefinition):
         category_key="Objects",
         description_key="Cria um novo objeto na cena",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("prefab_path", "Caminho Prefab", "STRING", default_value=""),
-            PinDefinition("x", "X", "FLOAT", default_value=0.0),
-            PinDefinition("y", "Y", "FLOAT", default_value=0.0),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="prefab_path", label_key="Caminho Prefab", pin_type=PinType.STRING, default_value=""),
+            PinDefinition(id="x", label_key="X", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="y", label_key="Y", pin_type=PinType.FLOAT, default_value=0.0),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
-            PinDefinition("object", "Objeto", "OBJECT"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="object", label_key="Objeto", pin_type=PinType.OBJECT),
         ]
     )
 
@@ -34,14 +34,14 @@ class CreatePrefabNode(NodeDefinition):
         category_key="Objects",
         description_key="Instancia um prefab na cena",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("path", "Caminho", "STRING", default_value=""),
-            PinDefinition("x", "X", "FLOAT", default_value=0.0),
-            PinDefinition("y", "Y", "FLOAT", default_value=0.0),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="path", label_key="Caminho", pin_type=PinType.STRING, default_value=""),
+            PinDefinition(id="x", label_key="X", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="y", label_key="Y", pin_type=PinType.FLOAT, default_value=0.0),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
-            PinDefinition("instance", "Instância", "OBJECT"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="instance", label_key="Instância", pin_type=PinType.OBJECT),
         ]
     )
 
@@ -55,12 +55,12 @@ class CloneObjectNode(NodeDefinition):
         category_key="Objects",
         description_key="Cria uma cópia de um objeto existente",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("x", "X", "FLOAT", default_value=0.0),
-            PinDefinition("y", "Y", "FLOAT", default_value=0.0),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="x", label_key="X", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="y", label_key="Y", pin_type=PinType.FLOAT, default_value=0.0),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
-            PinDefinition("clone", "Clone", "OBJECT"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="clone", label_key="Clone", pin_type=PinType.OBJECT),
         ]
     )

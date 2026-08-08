@@ -1,7 +1,7 @@
 """Definições de nós de audio avançado para Logic Graph."""
 from __future__ import annotations
 
-from engine.core.metadata import NodeDefinition, PinDefinition
+from engine.core.metadata import NodeDefinition, PinDefinition, PinType
 
 
 class PlaySoundFadeNode(NodeDefinition):
@@ -14,15 +14,15 @@ class PlaySoundFadeNode(NodeDefinition):
         description_key="Toca um som com fade in e fade out",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("path", "Arquivo", "STRING", default_value=""),
-            PinDefinition("fade_in", "Fade In (s)", "FLOAT", default_value=0.0),
-            PinDefinition("fade_out", "Fade Out (s)", "FLOAT", default_value=0.0),
-            PinDefinition("volume", "Volume", "FLOAT", default_value=1.0),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="path", label_key="Arquivo", pin_type=PinType.STRING, default_value=""),
+            PinDefinition(id="fade_in", label_key="Fade In (s)", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="fade_out", label_key="Fade Out (s)", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="volume", label_key="Volume", pin_type=PinType.FLOAT, default_value=1.0),
         ],
         outputs=[
-            PinDefinition("exec_playing", "Tocando", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
+            PinDefinition(id="exec_playing", label_key="Tocando", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )
 
@@ -37,14 +37,14 @@ class SetVolumeNode(NodeDefinition):
         description_key="Define o volume de um canal de audio (master, sfx, music)",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("volume", "Volume", "FLOAT", default_value=1.0),
-            PinDefinition("channel", "Canal", "STRING", default_value="master"),  # master, sfx, music
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="volume", label_key="Volume", pin_type=PinType.FLOAT, default_value=1.0),
+            PinDefinition(id="channel", label_key="Canal", pin_type=PinType.STRING, default_value="master"),  # master, sfx, music
         ],
         outputs=[
-            PinDefinition("exec_success", "Sucesso", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
-            PinDefinition("current_volume", "Volume Atual", "FLOAT"),
+            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
+            PinDefinition(id="current_volume", label_key="Volume Atual", pin_type=PinType.FLOAT),
         ]
     )
 
@@ -59,13 +59,13 @@ class SetPitchNode(NodeDefinition):
         description_key="Define a velocidade/pitch de um som (1.0 = normal, 2.0 = dobrado)",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("pitch", "Pitch", "FLOAT", default_value=1.0),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="pitch", label_key="Pitch", pin_type=PinType.FLOAT, default_value=1.0),
         ],
         outputs=[
-            PinDefinition("exec_success", "Sucesso", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
-            PinDefinition("current_pitch", "Pitch Atual", "FLOAT"),
+            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
+            PinDefinition(id="current_pitch", label_key="Pitch Atual", pin_type=PinType.FLOAT),
         ]
     )
 
@@ -80,10 +80,10 @@ class StopAllSoundsNode(NodeDefinition):
         description_key="Para todos os sons tocando",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
         ],
         outputs=[
-            PinDefinition("exec_success", "Sucesso", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
+            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )

@@ -1,5 +1,5 @@
 """Definições de nós visuais para UI dinâmica no Logic Graph."""
-from engine.core.metadata import NodeDefinition, PinDefinition, PinType
+from engine.core.metadata import NodeDefinition, PinDefinition, PinType, PinType
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -168,15 +168,15 @@ class GetUIWidgetPropertyNode:
         description_key="Lê propriedade de um widget (text, value, visible, etc)",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("parent", "Parent", "STRING", default_value=""),
-            PinDefinition("widget_name", "Nome Widget", "STRING", default_value=""),
-            PinDefinition("property", "Propriedade", "STRING", default_value="text"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="parent", label_key="Parent", pin_type=PinType.STRING, default_value=""),
+            PinDefinition(id="widget_name", label_key="Nome Widget", pin_type=PinType.STRING, default_value=""),
+            PinDefinition(id="property", label_key="Propriedade", pin_type=PinType.STRING, default_value="text"),
         ],
         outputs=[
-            PinDefinition("exec_success", "Sucesso", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
-            PinDefinition("value", "Valor", "STRING"),
+            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
+            PinDefinition(id="value", label_key="Valor", pin_type=PinType.STRING),
         ]
     )
 
@@ -191,13 +191,13 @@ class GetProgressBarValueNode:
         description_key="Lê o valor atual de uma ProgressBar (0-100 ou 0.0-1.0)",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("widget_name", "Nome da ProgressBar", "STRING", default_value="progress"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="widget_name", label_key="Nome da ProgressBar", pin_type=PinType.STRING, default_value="progress"),
         ],
         outputs=[
-            PinDefinition("exec_success", "Sucesso", "EXEC"),
-            PinDefinition("exec_not_found", "Não Encontrado", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
-            PinDefinition("value", "Valor", "FLOAT"),
+            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_not_found", label_key="Não Encontrado", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
+            PinDefinition(id="value", label_key="Valor", pin_type=PinType.FLOAT),
         ]
     )

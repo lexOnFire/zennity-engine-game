@@ -1,7 +1,7 @@
 """Definições de nós de movimento para Logic Graph."""
 from __future__ import annotations
 
-from engine.core.metadata import NodeDefinition, PinDefinition
+from engine.core.metadata import NodeDefinition, PinDefinition, PinType
 
 
 class MoveNode(NodeDefinition):
@@ -13,13 +13,13 @@ class MoveNode(NodeDefinition):
         category_key="Movement",
         description_key="Move o objeto em uma direção específica",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("direction_x", "Direção X", "FLOAT", default_value=1.0),
-            PinDefinition("direction_y", "Direção Y", "FLOAT", default_value=0.0),
-            PinDefinition("speed", "Velocidade", "FLOAT", default_value=100.0),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="direction_x", label_key="Direção X", pin_type=PinType.FLOAT, default_value=1.0),
+            PinDefinition(id="direction_y", label_key="Direção Y", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="speed", label_key="Velocidade", pin_type=PinType.FLOAT, default_value=100.0),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -33,12 +33,12 @@ class MoveByNode(NodeDefinition):
         category_key="Movement",
         description_key="Move o objeto por um deslocamento específico",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("delta_x", "Delta X", "FLOAT", default_value=0.0),
-            PinDefinition("delta_y", "Delta Y", "FLOAT", default_value=0.0),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="delta_x", label_key="Delta X", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="delta_y", label_key="Delta Y", pin_type=PinType.FLOAT, default_value=0.0),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -52,11 +52,11 @@ class JumpNode(NodeDefinition):
         category_key="Movement",
         description_key="Aplica uma força de pulo ao objeto",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("force", "Força", "FLOAT", default_value=500.0),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="force", label_key="Força", pin_type=PinType.FLOAT, default_value=500.0),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -70,14 +70,14 @@ class PatrolAxisNode(NodeDefinition):
         category_key="Movement",
         description_key="Move o objeto para frente e para trás entre limites",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("axis", "Eixo", "STRING", default_value="x"),
-            PinDefinition("min", "Mínimo", "FLOAT", default_value=0.0),
-            PinDefinition("max", "Máximo", "FLOAT", default_value=100.0),
-            PinDefinition("speed", "Velocidade", "FLOAT", default_value=50.0),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="axis", label_key="Eixo", pin_type=PinType.STRING, default_value="x"),
+            PinDefinition(id="min", label_key="Mínimo", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="max", label_key="Máximo", pin_type=PinType.FLOAT, default_value=100.0),
+            PinDefinition(id="speed", label_key="Velocidade", pin_type=PinType.FLOAT, default_value=50.0),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -91,12 +91,12 @@ class StartContinuousMotionNode(NodeDefinition):
         category_key="Movement",
         description_key="Inicia um movimento contínuo do objeto",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("velocity_x", "Velocidade X", "FLOAT", default_value=0.0),
-            PinDefinition("velocity_y", "Velocidade Y", "FLOAT", default_value=0.0),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="velocity_x", label_key="Velocidade X", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="velocity_y", label_key="Velocidade Y", pin_type=PinType.FLOAT, default_value=0.0),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -110,10 +110,10 @@ class StopContinuousMotionNode(NodeDefinition):
         category_key="Movement",
         description_key="Para o movimento contínuo do objeto",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -127,12 +127,12 @@ class UpdateContinuousMotionNode(NodeDefinition):
         category_key="Movement",
         description_key="Atualiza a velocidade do movimento contínuo",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("velocity_x", "Velocidade X", "FLOAT", default_value=0.0),
-            PinDefinition("velocity_y", "Velocidade Y", "FLOAT", default_value=0.0),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="velocity_x", label_key="Velocidade X", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="velocity_y", label_key="Velocidade Y", pin_type=PinType.FLOAT, default_value=0.0),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -146,12 +146,12 @@ class GetContinuousMotionNode(NodeDefinition):
         category_key="Movement",
         description_key="Obtém a velocidade atual do movimento contínuo",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
-            PinDefinition("velocity_x", "Velocidade X", "FLOAT"),
-            PinDefinition("velocity_y", "Velocidade Y", "FLOAT"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="velocity_x", label_key="Velocidade X", pin_type=PinType.FLOAT),
+            PinDefinition(id="velocity_y", label_key="Velocidade Y", pin_type=PinType.FLOAT),
         ]
     )
 
@@ -165,10 +165,10 @@ class PauseContinuousMotionNode(NodeDefinition):
         category_key="Movement",
         description_key="Pausa temporariamente o movimento contínuo",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -182,9 +182,9 @@ class ResumeContinuousMotionNode(NodeDefinition):
         category_key="Movement",
         description_key="Retoma o movimento contínuo pausado",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )

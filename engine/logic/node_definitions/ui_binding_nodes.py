@@ -1,5 +1,5 @@
 """Definições de nós para auto-binding de UI widgets a variáveis."""
-from engine.core.metadata import NodeDefinition, PinDefinition
+from engine.core.metadata import NodeDefinition, PinDefinition, PinType
 
 
 BindUIToVariableNode_def = NodeDefinition(
@@ -9,15 +9,15 @@ BindUIToVariableNode_def = NodeDefinition(
     description_key="Sincroniza valor de um widget para uma variável (uma vez)",
 
     inputs=[
-        PinDefinition("exec", "Exec", "EXEC"),
-        PinDefinition("widget_name", "Nome Widget", "STRING", default_value="comida"),
-        PinDefinition("variable_name", "Nome Variável", "STRING", default_value="comida"),
-        PinDefinition("property", "Propriedade", "STRING", default_value="value"),
+        PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+        PinDefinition(id="widget_name", label_key="Nome Widget", pin_type=PinType.STRING, default_value="comida"),
+        PinDefinition(id="variable_name", label_key="Nome Variável", pin_type=PinType.STRING, default_value="comida"),
+        PinDefinition(id="property", label_key="Propriedade", pin_type=PinType.STRING, default_value="value"),
     ],
     outputs=[
-        PinDefinition("exec_success", "Sucesso", "EXEC"),
-        PinDefinition("exec_not_found", "Não Encontrado", "EXEC"),
-        PinDefinition("exec_failure", "Falha", "EXEC"),
+        PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+        PinDefinition(id="exec_not_found", label_key="Não Encontrado", pin_type=PinType.EXEC),
+        PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
     ]
 )
 
@@ -29,14 +29,14 @@ UpdateUIBindingNode_def = NodeDefinition(
     description_key="Sincroniza valor de widget para variável (chame a cada frame)",
 
     inputs=[
-        PinDefinition("exec", "Exec", "EXEC"),
-        PinDefinition("widget_name", "Nome Widget", "STRING", default_value="comida"),
-        PinDefinition("variable_name", "Nome Variável", "STRING", default_value="comida"),
-        PinDefinition("property", "Propriedade", "STRING", default_value="value"),
+        PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+        PinDefinition(id="widget_name", label_key="Nome Widget", pin_type=PinType.STRING, default_value="comida"),
+        PinDefinition(id="variable_name", label_key="Nome Variável", pin_type=PinType.STRING, default_value="comida"),
+        PinDefinition(id="property", label_key="Propriedade", pin_type=PinType.STRING, default_value="value"),
     ],
     outputs=[
-        PinDefinition("exec_success", "Sucesso", "EXEC"),
-        PinDefinition("exec_not_found", "Não Encontrado", "EXEC"),
-        PinDefinition("exec_failure", "Falha", "EXEC"),
+        PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+        PinDefinition(id="exec_not_found", label_key="Não Encontrado", pin_type=PinType.EXEC),
+        PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
     ]
 )

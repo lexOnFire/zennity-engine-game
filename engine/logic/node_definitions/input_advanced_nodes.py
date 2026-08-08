@@ -1,7 +1,7 @@
 """Definições de nós de input avançado para Logic Graph."""
 from __future__ import annotations
 
-from engine.core.metadata import NodeDefinition, PinDefinition
+from engine.core.metadata import NodeDefinition, PinDefinition, PinType
 
 
 class DetectTouchNode(NodeDefinition):
@@ -14,17 +14,17 @@ class DetectTouchNode(NodeDefinition):
         description_key="Detecta toque do usuário em uma área específica",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("x", "X", "FLOAT", default_value=0.0),
-            PinDefinition("y", "Y", "FLOAT", default_value=0.0),
-            PinDefinition("width", "Largura", "FLOAT", default_value=100.0),
-            PinDefinition("height", "Altura", "FLOAT", default_value=100.0),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="x", label_key="X", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="y", label_key="Y", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="width", label_key="Largura", pin_type=PinType.FLOAT, default_value=100.0),
+            PinDefinition(id="height", label_key="Altura", pin_type=PinType.FLOAT, default_value=100.0),
         ],
         outputs=[
-            PinDefinition("exec_touched", "Tocado", "EXEC"),
-            PinDefinition("exec_no_touch", "Sem Toque", "EXEC"),
-            PinDefinition("touch_x", "Toque X", "FLOAT"),
-            PinDefinition("touch_y", "Toque Y", "FLOAT"),
+            PinDefinition(id="exec_touched", label_key="Tocado", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_no_touch", label_key="Sem Toque", pin_type=PinType.EXEC),
+            PinDefinition(id="touch_x", label_key="Toque X", pin_type=PinType.FLOAT),
+            PinDefinition(id="touch_y", label_key="Toque Y", pin_type=PinType.FLOAT),
         ]
     )
 
@@ -39,14 +39,14 @@ class DetectSwipeNode(NodeDefinition):
         description_key="Detecta gesto de deslize na tela",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("direction", "Direção", "STRING", default_value="right"),  # right, left, up, down
-            PinDefinition("min_distance", "Distância Mínima", "FLOAT", default_value=50.0),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="direction", label_key="Direção", pin_type=PinType.STRING, default_value="right"),  # right, left, up, down
+            PinDefinition(id="min_distance", label_key="Distância Mínima", pin_type=PinType.FLOAT, default_value=50.0),
         ],
         outputs=[
-            PinDefinition("exec_swiped", "Deslizou", "EXEC"),
-            PinDefinition("exec_no_swipe", "Sem Deslize", "EXEC"),
-            PinDefinition("swipe_distance", "Distância", "FLOAT"),
+            PinDefinition(id="exec_swiped", label_key="Deslizou", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_no_swipe", label_key="Sem Deslize", pin_type=PinType.EXEC),
+            PinDefinition(id="swipe_distance", label_key="Distância", pin_type=PinType.FLOAT),
         ]
     )
 
@@ -61,13 +61,13 @@ class DetectPinchNode(NodeDefinition):
         description_key="Detecta gesto de pinça (zoom) na tela",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("type", "Tipo", "STRING", default_value="out"),  # in (zoom out), out (zoom in)
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="type", label_key="Tipo", pin_type=PinType.STRING, default_value="out"),  # in (zoom out), out (zoom in)
         ],
         outputs=[
-            PinDefinition("exec_pinched", "Pinçado", "EXEC"),
-            PinDefinition("exec_no_pinch", "Sem Pinça", "EXEC"),
-            PinDefinition("pinch_scale", "Escala", "FLOAT"),
+            PinDefinition(id="exec_pinched", label_key="Pinçado", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_no_pinch", label_key="Sem Pinça", pin_type=PinType.EXEC),
+            PinDefinition(id="pinch_scale", label_key="Escala", pin_type=PinType.FLOAT),
         ]
     )
 
@@ -82,12 +82,12 @@ class IsKeyPressedNode(NodeDefinition):
         description_key="Verifica se uma tecla está sendo pressionada AGORA",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("key", "Tecla", "STRING", default_value="space"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="key", label_key="Tecla", pin_type=PinType.STRING, default_value="space"),
         ],
         outputs=[
-            PinDefinition("exec_pressed", "Pressionada", "EXEC"),
-            PinDefinition("exec_not_pressed", "Não Pressionada", "EXEC"),
+            PinDefinition(id="exec_pressed", label_key="Pressionada", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_not_pressed", label_key="Não Pressionada", pin_type=PinType.EXEC),
         ]
     )
 
@@ -102,13 +102,13 @@ class WaitKeyReleaseNode(NodeDefinition):
         description_key="Aguarda até uma tecla ser liberada ou timeout",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("key", "Tecla", "STRING", default_value="space"),
-            PinDefinition("timeout", "Timeout (s)", "FLOAT", default_value=10.0),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="key", label_key="Tecla", pin_type=PinType.STRING, default_value="space"),
+            PinDefinition(id="timeout", label_key="Timeout (s)", pin_type=PinType.FLOAT, default_value=10.0),
         ],
         outputs=[
-            PinDefinition("exec_released", "Liberada", "EXEC"),
-            PinDefinition("exec_waiting", "Aguardando", "EXEC"),
-            PinDefinition("exec_timeout", "Timeout", "EXEC"),
+            PinDefinition(id="exec_released", label_key="Liberada", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_waiting", label_key="Aguardando", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_timeout", label_key="Timeout", pin_type=PinType.EXEC),
         ]
     )

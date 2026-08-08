@@ -1,7 +1,7 @@
 """Definições de nós de câmera avançada para Logic Graph."""
 from __future__ import annotations
 
-from engine.core.metadata import NodeDefinition, PinDefinition
+from engine.core.metadata import NodeDefinition, PinDefinition, PinType
 
 
 class CameraShakeNode(NodeDefinition):
@@ -14,14 +14,14 @@ class CameraShakeNode(NodeDefinition):
         description_key="Sacode a câmera para criar efeito de impacto",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("duration", "Duração (s)", "FLOAT", default_value=0.5),
-            PinDefinition("intensity", "Intensidade", "FLOAT", default_value=5.0),
-            PinDefinition("frequency", "Frequência", "FLOAT", default_value=10.0),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="duration", label_key="Duração (s)", pin_type=PinType.FLOAT, default_value=0.5),
+            PinDefinition(id="intensity", label_key="Intensidade", pin_type=PinType.FLOAT, default_value=5.0),
+            PinDefinition(id="frequency", label_key="Frequência", pin_type=PinType.FLOAT, default_value=10.0),
         ],
         outputs=[
-            PinDefinition("exec_shaking", "Sacolejando", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
+            PinDefinition(id="exec_shaking", label_key="Sacolejando", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )
 
@@ -36,13 +36,13 @@ class CameraFollowNode(NodeDefinition):
         description_key="A câmera segue suavemente um objeto",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("target", "Alvo", "STRING", default_value=""),
-            PinDefinition("smooth_time", "Suavidade", "FLOAT", default_value=0.3),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="target", label_key="Alvo", pin_type=PinType.STRING, default_value=""),
+            PinDefinition(id="smooth_time", label_key="Suavidade", pin_type=PinType.FLOAT, default_value=0.3),
         ],
         outputs=[
-            PinDefinition("exec_following", "Seguindo", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
+            PinDefinition(id="exec_following", label_key="Seguindo", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )
 
@@ -57,11 +57,11 @@ class CameraStopFollowNode(NodeDefinition):
         description_key="Para de seguir o alvo",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
         ],
         outputs=[
-            PinDefinition("exec_success", "Sucesso", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
+            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )
 
@@ -76,14 +76,14 @@ class CameraLookAtNode(NodeDefinition):
         description_key="A câmera se move para olhar para uma posição específica",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("x", "X", "FLOAT", default_value=0.0),
-            PinDefinition("y", "Y", "FLOAT", default_value=0.0),
-            PinDefinition("duration", "Duração (s)", "FLOAT", default_value=1.0),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="x", label_key="X", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="y", label_key="Y", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="duration", label_key="Duração (s)", pin_type=PinType.FLOAT, default_value=1.0),
         ],
         outputs=[
-            PinDefinition("exec_looking", "Olhando", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
+            PinDefinition(id="exec_looking", label_key="Olhando", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )
 
@@ -98,13 +98,13 @@ class CameraSetZoomNode(NodeDefinition):
         description_key="Define o nível de zoom da câmera",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("zoom", "Zoom", "FLOAT", default_value=1.0),
-            PinDefinition("duration", "Duração (s)", "FLOAT", default_value=0.5),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="zoom", label_key="Zoom", pin_type=PinType.FLOAT, default_value=1.0),
+            PinDefinition(id="duration", label_key="Duração (s)", pin_type=PinType.FLOAT, default_value=0.5),
         ],
         outputs=[
-            PinDefinition("exec_success", "Sucesso", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
-            PinDefinition("current_zoom", "Zoom Atual", "FLOAT"),
+            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
+            PinDefinition(id="current_zoom", label_key="Zoom Atual", pin_type=PinType.FLOAT),
         ]
     )

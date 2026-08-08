@@ -1,7 +1,7 @@
 """Definições de nós de eventos para Logic Graph."""
 from __future__ import annotations
 
-from engine.core.metadata import NodeDefinition, PinDefinition
+from engine.core.metadata import NodeDefinition, PinDefinition, PinType
 
 
 class CompareNumberNode(NodeDefinition):
@@ -13,14 +13,14 @@ class CompareNumberNode(NodeDefinition):
         category_key="Logic",
         description_key="Compara dois números e executa ramo baseado no resultado",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("a", "A", "FLOAT", default_value=0.0),
-            PinDefinition("b", "B", "FLOAT", default_value=0.0),
-            PinDefinition("operation", "Operação", "STRING", default_value="=="),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="a", label_key="A", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="b", label_key="B", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="operation", label_key="Operação", pin_type=PinType.STRING, default_value="=="),
         ],
         outputs=[
-            PinDefinition("true", "Verdadeiro", "EXEC"),
-            PinDefinition("false", "Falso", "EXEC"),
+            PinDefinition(id="true", label_key="Verdadeiro", pin_type=PinType.EXEC),
+            PinDefinition(id="false", label_key="Falso", pin_type=PinType.EXEC),
         ]
     )
 
@@ -34,14 +34,14 @@ class CompareTextNode(NodeDefinition):
         category_key="Logic",
         description_key="Compara dois textos e executa ramo baseado no resultado",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("a", "A", "STRING", default_value=""),
-            PinDefinition("b", "B", "STRING", default_value=""),
-            PinDefinition("operation", "Operação", "STRING", default_value="=="),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="a", label_key="A", pin_type=PinType.STRING, default_value=""),
+            PinDefinition(id="b", label_key="B", pin_type=PinType.STRING, default_value=""),
+            PinDefinition(id="operation", label_key="Operação", pin_type=PinType.STRING, default_value="=="),
         ],
         outputs=[
-            PinDefinition("true", "Verdadeiro", "EXEC"),
-            PinDefinition("false", "Falso", "EXEC"),
+            PinDefinition(id="true", label_key="Verdadeiro", pin_type=PinType.EXEC),
+            PinDefinition(id="false", label_key="Falso", pin_type=PinType.EXEC),
         ]
     )
 
@@ -55,11 +55,11 @@ class KeyPressedNode(NodeDefinition):
         category_key="Input",
         description_key="Dispara quando uma tecla é pressionada",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("key", "Tecla", "STRING", default_value="space"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="key", label_key="Tecla", pin_type=PinType.STRING, default_value="space"),
         ],
         outputs=[
-            PinDefinition("exec_pressed", "Pressionado", "EXEC"),
+            PinDefinition(id="exec_pressed", label_key="Pressionado", pin_type=PinType.EXEC),
         ]
     )
 
@@ -73,12 +73,12 @@ class KeyHeldNode(NodeDefinition):
         category_key="Input",
         description_key="Verifica se uma tecla está continuamente pressionada",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("key", "Tecla", "STRING", default_value="space"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="key", label_key="Tecla", pin_type=PinType.STRING, default_value="space"),
         ],
         outputs=[
-            PinDefinition("held", "Pressionada", "EXEC"),
-            PinDefinition("released", "Liberada", "EXEC"),
+            PinDefinition(id="held", label_key="Pressionada", pin_type=PinType.EXEC),
+            PinDefinition(id="released", label_key="Liberada", pin_type=PinType.EXEC),
         ]
     )
 
@@ -92,11 +92,11 @@ class IsGroundedNode(NodeDefinition):
         category_key="Physics",
         description_key="Verifica se o objeto está em contato com o chão",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
         ],
         outputs=[
-            PinDefinition("grounded", "No Chão", "EXEC"),
-            PinDefinition("airborne", "No Ar", "EXEC"),
+            PinDefinition(id="grounded", label_key="No Chão", pin_type=PinType.EXEC),
+            PinDefinition(id="airborne", label_key="No Ar", pin_type=PinType.EXEC),
         ]
     )
 
@@ -110,12 +110,12 @@ class InputAxisNode(NodeDefinition):
         category_key="Input",
         description_key="Lê o valor de um eixo de entrada",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("axis", "Eixo", "STRING", default_value="horizontal"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="axis", label_key="Eixo", pin_type=PinType.STRING, default_value="horizontal"),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
-            PinDefinition("value", "Valor", "FLOAT"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="value", label_key="Valor", pin_type=PinType.FLOAT),
         ]
     )
 
@@ -129,12 +129,12 @@ class ReadKeyAxisNode(NodeDefinition):
         category_key="Input",
         description_key="Lê o valor de um eixo baseado em teclas",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("positive_key", "Tecla Positiva", "STRING", default_value="d"),
-            PinDefinition("negative_key", "Tecla Negativa", "STRING", default_value="a"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="positive_key", label_key="Tecla Positiva", pin_type=PinType.STRING, default_value="d"),
+            PinDefinition(id="negative_key", label_key="Tecla Negativa", pin_type=PinType.STRING, default_value="a"),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
-            PinDefinition("value", "Valor", "FLOAT"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="value", label_key="Valor", pin_type=PinType.FLOAT),
         ]
     )

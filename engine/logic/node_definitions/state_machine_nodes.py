@@ -1,7 +1,7 @@
 """Definições de nós de state machine para Logic Graph."""
 from __future__ import annotations
 
-from engine.core.metadata import NodeDefinition, PinDefinition
+from engine.core.metadata import NodeDefinition, PinDefinition, PinType
 
 
 class CreateStateMachineNode(NodeDefinition):
@@ -14,15 +14,15 @@ class CreateStateMachineNode(NodeDefinition):
         description_key="Cria uma nova máquina de estados com estado inicial",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("machine_id", "ID da Máquina", "STRING", default_value="sm_1"),
-            PinDefinition("initial_state", "Estado Inicial", "STRING", default_value="idle"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="machine_id", label_key="ID da Máquina", pin_type=PinType.STRING, default_value="sm_1"),
+            PinDefinition(id="initial_state", label_key="Estado Inicial", pin_type=PinType.STRING, default_value="idle"),
         ],
         outputs=[
-            PinDefinition("exec_created", "Criado", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
-            PinDefinition("machine_id_out", "ID da Máquina", "STRING"),
-            PinDefinition("initial_state_out", "Estado Inicial", "STRING"),
+            PinDefinition(id="exec_created", label_key="Criado", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
+            PinDefinition(id="machine_id_out", label_key="ID da Máquina", pin_type=PinType.STRING),
+            PinDefinition(id="initial_state_out", label_key="Estado Inicial", pin_type=PinType.STRING),
         ]
     )
 
@@ -37,15 +37,15 @@ class AddTransitionNode(NodeDefinition):
         description_key="Define uma transição entre dois estados",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("machine_id", "ID da Máquina", "STRING", default_value=""),
-            PinDefinition("from_state", "De", "STRING", default_value="idle"),
-            PinDefinition("to_state", "Para", "STRING", default_value="walking"),
-            PinDefinition("condition", "Condição", "STRING", default_value="always"),  # always, on_key, on_event
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="machine_id", label_key="ID da Máquina", pin_type=PinType.STRING, default_value=""),
+            PinDefinition(id="from_state", label_key="De", pin_type=PinType.STRING, default_value="idle"),
+            PinDefinition(id="to_state", label_key="Para", pin_type=PinType.STRING, default_value="walking"),
+            PinDefinition(id="condition", label_key="Condição", pin_type=PinType.STRING, default_value="always"),  # always, on_key, on_event
         ],
         outputs=[
-            PinDefinition("exec_success", "Sucesso", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
+            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )
 
@@ -60,17 +60,17 @@ class ChangeStateNode(NodeDefinition):
         description_key="Muda o estado atual da máquina de estados",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("machine_id", "ID da Máquina", "STRING", default_value=""),
-            PinDefinition("state", "Novo Estado", "STRING", default_value="walking"),
-            PinDefinition("force", "Forçar?", "BOOL", default_value=False),  # Ignorar verificação
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="machine_id", label_key="ID da Máquina", pin_type=PinType.STRING, default_value=""),
+            PinDefinition(id="state", label_key="Novo Estado", pin_type=PinType.STRING, default_value="walking"),
+            PinDefinition(id="force", label_key="Forçar?", pin_type=PinType.BOOL, default_value=False),  # Ignorar verificação
         ],
         outputs=[
-            PinDefinition("exec_changed", "Mudado", "EXEC"),
-            PinDefinition("exec_invalid_transition", "Transição Inválida", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
-            PinDefinition("previous_state", "Estado Anterior", "STRING"),
-            PinDefinition("new_state", "Novo Estado", "STRING"),
+            PinDefinition(id="exec_changed", label_key="Mudado", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_invalid_transition", label_key="Transição Inválida", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
+            PinDefinition(id="previous_state", label_key="Estado Anterior", pin_type=PinType.STRING),
+            PinDefinition(id="new_state", label_key="Novo Estado", pin_type=PinType.STRING),
         ]
     )
 
@@ -85,13 +85,13 @@ class GetStateNode(NodeDefinition):
         description_key="Obtém o estado atual da máquina de estados",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("machine_id", "ID da Máquina", "STRING", default_value=""),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="machine_id", label_key="ID da Máquina", pin_type=PinType.STRING, default_value=""),
         ],
         outputs=[
-            PinDefinition("exec_got_state", "Obtido", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
-            PinDefinition("state", "Estado Atual", "STRING"),
+            PinDefinition(id="exec_got_state", label_key="Obtido", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
+            PinDefinition(id="state", label_key="Estado Atual", pin_type=PinType.STRING),
         ]
     )
 
@@ -106,13 +106,13 @@ class IsInStateNode(NodeDefinition):
         description_key="Verifica se a máquina está em um estado específico",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("machine_id", "ID da Máquina", "STRING", default_value=""),
-            PinDefinition("state", "Estado a Verificar", "STRING", default_value="idle"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="machine_id", label_key="ID da Máquina", pin_type=PinType.STRING, default_value=""),
+            PinDefinition(id="state", label_key="Estado a Verificar", pin_type=PinType.STRING, default_value="idle"),
         ],
         outputs=[
-            PinDefinition("exec_in_state", "Está", "EXEC"),
-            PinDefinition("exec_not_in_state", "Não Está", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
+            PinDefinition(id="exec_in_state", label_key="Está", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_not_in_state", label_key="Não Está", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )

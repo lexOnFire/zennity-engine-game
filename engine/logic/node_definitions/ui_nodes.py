@@ -1,7 +1,7 @@
 """Definições de nós de UI para Logic Graph."""
 from __future__ import annotations
 
-from engine.core.metadata import NodeDefinition, PinDefinition
+from engine.core.metadata import NodeDefinition, PinDefinition, PinType
 
 
 class BindUIToBlackboardNode(NodeDefinition):
@@ -13,12 +13,12 @@ class BindUIToBlackboardNode(NodeDefinition):
         category_key="UI",
         description_key="Vincula um elemento de UI a um valor no blackboard",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("widget_id", "ID Widget", "STRING", default_value=""),
-            PinDefinition("variable", "Variável", "STRING", default_value=""),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="widget_id", label_key="ID Widget", pin_type=PinType.STRING, default_value=""),
+            PinDefinition(id="variable", label_key="Variável", pin_type=PinType.STRING, default_value=""),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -32,12 +32,12 @@ class SetUIProgressBarNode(NodeDefinition):
         category_key="UI",
         description_key="Define o valor de uma barra de progresso",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("widget_id", "ID Widget", "STRING", default_value=""),
-            PinDefinition("value", "Valor", "FLOAT", default_value=0.5),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="widget_id", label_key="ID Widget", pin_type=PinType.STRING, default_value=""),
+            PinDefinition(id="value", label_key="Valor", pin_type=PinType.FLOAT, default_value=0.5),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -51,12 +51,12 @@ class SetUITextNode(NodeDefinition):
         category_key="UI",
         description_key="Define o texto de um widget de texto",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("widget_id", "ID Widget", "STRING", default_value=""),
-            PinDefinition("text", "Texto", "STRING", default_value=""),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="widget_id", label_key="ID Widget", pin_type=PinType.STRING, default_value=""),
+            PinDefinition(id="text", label_key="Texto", pin_type=PinType.STRING, default_value=""),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -70,11 +70,11 @@ class SetUIVisibleNode(NodeDefinition):
         category_key="UI",
         description_key="Define se um widget é visível ou não",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("widget_id", "ID Widget", "STRING", default_value=""),
-            PinDefinition("visible", "Visível", "BOOL", default_value=True),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="widget_id", label_key="ID Widget", pin_type=PinType.STRING, default_value=""),
+            PinDefinition(id="visible", label_key="Visível", pin_type=PinType.BOOL, default_value=True),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )

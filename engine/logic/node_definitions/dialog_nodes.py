@@ -1,7 +1,7 @@
 """Definições de nós de diálogo para Logic Graph."""
 from __future__ import annotations
 
-from engine.core.metadata import NodeDefinition, PinDefinition
+from engine.core.metadata import NodeDefinition, PinDefinition, PinType
 
 
 class ShowDialogNode(NodeDefinition):
@@ -14,17 +14,17 @@ class ShowDialogNode(NodeDefinition):
         description_key="Mostra um diálogo com texto e opções para o player escolher",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("dialog_id", "ID do Diálogo", "STRING", default_value="dialog_1"),
-            PinDefinition("character", "Personagem", "STRING", default_value="NPC"),
-            PinDefinition("text", "Texto", "STRING", default_value="Olá!"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="dialog_id", label_key="ID do Diálogo", pin_type=PinType.STRING, default_value="dialog_1"),
+            PinDefinition(id="character", label_key="Personagem", pin_type=PinType.STRING, default_value="NPC"),
+            PinDefinition(id="text", label_key="Texto", pin_type=PinType.STRING, default_value="Olá!"),
             PinDefinition("options", "Opções", "ARRAY", default_value=[]),
         ],
         outputs=[
-            PinDefinition("exec_showing", "Mostrando", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
-            PinDefinition("dialog_id_out", "ID", "STRING"),
-            PinDefinition("is_showing", "Exibindo?", "BOOL"),
+            PinDefinition(id="exec_showing", label_key="Mostrando", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
+            PinDefinition(id="dialog_id_out", label_key="ID", pin_type=PinType.STRING),
+            PinDefinition(id="is_showing", label_key="Exibindo?", pin_type=PinType.BOOL),
         ]
     )
 
@@ -39,15 +39,15 @@ class WaitDialogChoiceNode(NodeDefinition):
         description_key="Aguarda até o player escolher uma opção de diálogo",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("dialog_id", "ID do Diálogo", "STRING", default_value="dialog_1"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="dialog_id", label_key="ID do Diálogo", pin_type=PinType.STRING, default_value="dialog_1"),
         ],
         outputs=[
-            PinDefinition("exec_chosen", "Escolhido", "EXEC"),
-            PinDefinition("exec_waiting", "Aguardando", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
-            PinDefinition("choice_index", "Índice", "INT"),
-            PinDefinition("chosen_text", "Texto Escolhido", "STRING"),
+            PinDefinition(id="exec_chosen", label_key="Escolhido", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_waiting", label_key="Aguardando", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
+            PinDefinition(id="choice_index", label_key="Índice", pin_type=PinType.INT),
+            PinDefinition(id="chosen_text", label_key="Texto Escolhido", pin_type=PinType.STRING),
         ]
     )
 
@@ -62,13 +62,13 @@ class SetDialogChoiceNode(NodeDefinition):
         description_key="Define qual opção o player escolheu (para uso interno)",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("dialog_id", "ID do Diálogo", "STRING", default_value="dialog_1"),
-            PinDefinition("choice_index", "Índice", "INT", default_value=0),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="dialog_id", label_key="ID do Diálogo", pin_type=PinType.STRING, default_value="dialog_1"),
+            PinDefinition(id="choice_index", label_key="Índice", pin_type=PinType.INT, default_value=0),
         ],
         outputs=[
-            PinDefinition("exec_success", "Sucesso", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
+            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )
 
@@ -83,11 +83,11 @@ class CloseDialogNode(NodeDefinition):
         description_key="Fecha um diálogo ativo",
 
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("dialog_id", "ID do Diálogo", "STRING", default_value="dialog_1"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="dialog_id", label_key="ID do Diálogo", pin_type=PinType.STRING, default_value="dialog_1"),
         ],
         outputs=[
-            PinDefinition("exec_success", "Sucesso", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
+            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )

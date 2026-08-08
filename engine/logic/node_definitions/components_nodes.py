@@ -1,7 +1,7 @@
 """Definições de nós de componentes para Logic Graph."""
 from __future__ import annotations
 
-from engine.core.metadata import NodeDefinition, PinDefinition
+from engine.core.metadata import NodeDefinition, PinDefinition, PinType
 
 
 class AddComponentNode(NodeDefinition):
@@ -13,11 +13,11 @@ class AddComponentNode(NodeDefinition):
         category_key="Components",
         description_key="Adiciona um componente ao objeto",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("component_type", "Tipo", "STRING", default_value=""),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="component_type", label_key="Tipo", pin_type=PinType.STRING, default_value=""),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -31,10 +31,10 @@ class RemoveComponentNode(NodeDefinition):
         category_key="Components",
         description_key="Remove um componente do objeto",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("component_type", "Tipo", "STRING", default_value=""),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="component_type", label_key="Tipo", pin_type=PinType.STRING, default_value=""),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )

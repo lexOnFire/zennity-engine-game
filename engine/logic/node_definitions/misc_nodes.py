@@ -1,7 +1,7 @@
 """Definições de nós diversos para Logic Graph."""
 from __future__ import annotations
 
-from engine.core.metadata import NodeDefinition, PinDefinition
+from engine.core.metadata import NodeDefinition, PinDefinition, PinType
 
 
 class SetVariableNode(NodeDefinition):
@@ -13,12 +13,12 @@ class SetVariableNode(NodeDefinition):
         category_key="Variables",
         description_key="Define o valor de uma variável",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("value", "Valor", "ANY", default_value=None),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="value", label_key="Valor", pin_type=PinType.STRING, default_value=None),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
-            PinDefinition("value", "Valor", "ANY"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="value", label_key="Valor", pin_type=PinType.STRING),
         ]
     )
 
@@ -32,11 +32,11 @@ class GetVariableNode(NodeDefinition):
         category_key="Variables",
         description_key="Obtém o valor de uma variável",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
-            PinDefinition("value", "Valor", "ANY"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="value", label_key="Valor", pin_type=PinType.STRING),
         ]
     )
 
@@ -50,11 +50,11 @@ class CallSubgraphNode(NodeDefinition):
         category_key="Graphs",
         description_key="Chama outro grafo como uma subfunção",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
-            PinDefinition("exec_failure", "Falha", "EXEC"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )
 
@@ -68,12 +68,12 @@ class SubgraphReturnNode(NodeDefinition):
         category_key="Graphs",
         description_key="Retorna um valor do subgrafo para o chamador",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("value", "Valor", "ANY", default_value=None),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="value", label_key="Valor", pin_type=PinType.STRING, default_value=None),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
-            PinDefinition("value", "Valor", "ANY"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="value", label_key="Valor", pin_type=PinType.STRING),
         ]
     )
 
@@ -87,12 +87,12 @@ class SequenceNode(NodeDefinition):
         category_key="Flow",
         description_key="Executa múltiplas ramos um após o outro",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
         ],
         outputs=[
-            PinDefinition("then_0", "Então 1", "EXEC"),
-            PinDefinition("then_1", "Então 2", "EXEC"),
-            PinDefinition("next", "Próximo", "EXEC"),
+            PinDefinition(id="then_0", label_key="Então 1", pin_type=PinType.EXEC),
+            PinDefinition(id="then_1", label_key="Então 2", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Próximo", pin_type=PinType.EXEC),
         ]
     )
 
@@ -106,11 +106,11 @@ class SetHudNode(NodeDefinition):
         category_key="UI",
         description_key="Define um texto no HUD (Head Up Display)",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("text", "Texto", "STRING", default_value="Texto"),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="text", label_key="Texto", pin_type=PinType.STRING, default_value="Texto"),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -124,10 +124,10 @@ class EmitEventNode(NodeDefinition):
         category_key="Events",
         description_key="Emite um evento customizado que outros objetos podem escutar",
         inputs=[
-            PinDefinition("exec", "Exec", "EXEC"),
-            PinDefinition("payload", "Dados", "ANY", default_value=None),
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="payload", label_key="Dados", pin_type=PinType.STRING, default_value=None),
         ],
         outputs=[
-            PinDefinition("exec_done", "Pronto", "EXEC"),
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
