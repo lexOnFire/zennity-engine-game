@@ -1,7 +1,8 @@
 # PHASE 6B.4 — ANIMATOR CONTROLLER + STATE MACHINE VISUAL INTEGRATION
 
-**Status**: PLANNING  
+**Status**: COMPLETE  
 **Date**: 2026-08-08  
+**Commit**: b9d7746 Phase 6B.4: Backward Compatibility for animator_parameter  
 
 ---
 
@@ -373,14 +374,81 @@ class AnimatorController:
 
 Phase 6B.4 is complete when:
 
-✅ Parameters can be set via Logic Graph (set_animator_parameter)  
-✅ Parameters can be read via Logic Graph (get_animator_parameter)  
-✅ Triggers can be set and auto-reset correctly  
+✅ Parameters can be set via Logic Graph (animator_parameter)  
+✅ Parameters can be read via Logic Graph (animator_get_parameter)  
+✅ Triggers can be set and auto-reset correctly (animator_set_trigger)  
 ✅ Transitions respect parameter conditions  
 ✅ State switching via parameters works E2E  
 ✅ Multiple animators independent (no cross-talk)  
 ✅ All tests pass (unit, integration, E2E)  
 ✅ No new parallel systems created  
+
+---
+
+## 7A. Actual Implementation Results
+
+### Audit Finding
+
+**AnimationController** exists as full state machine:
+- `engine/animation/animation_controller.py` (production code)
+- Parameters: bool, float, int, trigger types
+- States: arbitrary name → clip name mapping
+- Transitions: list of condition lambdas
+- Runtime: `AnimatorControllerRuntime` (existing, working)
+
+### Architecture Implemented
+
+```python
+# Canonical resolver
+_resolve_animator_controller(target, game) 
+  → (AnimationController | None, error_msg)
+
+# Core integration
+execute_animator_parameter():
+  1. Try AnimationController (preferred)
+  2. Fall back to runtime._store() (backward compat)
+  3. Fail if target doesn't exist
+
+# New nodes
+animator_set_trigger: executor → controller.set_parameter(name, True)
+animator_get_parameter: pure evaluator → controller.get_parameter(name)
+get_animator_state: pure evaluator → controller.get_current_state()
+```
+
+### Node Definitions
+
+**engine/logic/node_definitions/animation_nodes.py**:
+- AnimatorSetTriggerNode (id="animator_set_trigger")
+- AnimatorGetParameterNode (id="animator_get_parameter")
+- GetAnimatorStateNode (id="get_animator_state")
+
+**engine/logic/runtime/nodes/animation_nodes.py**:
+- execute_animator_set_trigger()
+- evaluate_animator_get_parameter()
+- evaluate_get_animator_state()
+- Updated execute_animator_parameter() for dual-mode
+
+### Tests: 11/11 PASS
+
+```
+test_set_float_parameter ✅
+test_set_bool_parameter ✅
+test_parameter_triggers_transition ✅
+test_set_trigger ✅
+test_trigger_fires_transition ✅
+test_get_parameter_pure ✅
+test_get_animator_state_pure ✅
+test_missing_controller_failure ✅
+test_multiple_controllers_independent ✅
+test_play_stop_play_resets_controller ✅
+test_animator_clip_matches_controller_state ✅
+```
+
+### No Regressions
+
+- Phase 6B.2: 24/24 tests PASS (backward compat via runtime._store fallback)
+- Phase 6B.3: 10/10 tests PASS (unaffected)
+- Total: 47/47 PASS
 
 ---
 
