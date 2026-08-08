@@ -17,6 +17,16 @@ class PhysicsContact:
     is_trigger: bool = False
 
 
+@dataclass(frozen=True)
+class RaycastHit:
+    """Result of a raycast query."""
+    hit_object: Any  # GameObject that was hit
+    hit_point: tuple[float, float]  # (x, y) world position of hit
+    hit_distance: float  # Distance from ray origin to hit point
+    hit_normal: tuple[float, float]  # Surface normal at hit point
+    collider: Any  # Collider component that was hit
+
+
 class PhysicsWorld:
     """Runtime-only physics registry and collision detection world."""
 
@@ -123,6 +133,218 @@ class PhysicsWorld:
         self.trigger_contacts = next_triggers
         self.contacts = next_contacts
         return list(self.detected_contacts)
+
+    def raycast(
+        self,
+        origin: tuple[float, float],
+        direction: tuple[float, float],
+        max_distance: float = float('inf'),
+        ignore_self: str | None = None,
+        include_triggers: bool = False,
+    ) -> RaycastHit | None:
+        """
+        Cast a ray and return the nearest hit.
+
+        Args:
+            origin: Ray start position (x, y)
+            direction: Ray direction vector (normalized or not)
+            max_distance: Maximum distance to test (default: infinity)
+            ignore_self: Object name to ignore (usually ray origin object)
+            include_triggers: Whether to hit trigger colliders
+
+        Returns:
+            RaycastHit if hit, None otherwise
+        """
+        ox, oy = float(origin[0]), float(origin[1])
+        dx, dy = float(direction[0]), float(direction[1])
+
+        # Normalize direction or handle zero direction
+        dir_len = math.hypot(dx, dy)
+        if dir_len < 1e-6:
+            return None
+        dx, dy = dx / dir_len, dy / dir_len
+
+        closest_hit: RaycastHit | None = None
+        closest_distance = float(max_distance)
+
+        for collider in self.colliders:
+            if not self._component_active(collider):
+                continue
+            if not include_triggers and bool(getattr(collider, "is_trigger", False)):
+                continue
+
+            obj = getattr(collider, "game_object", None)
+            if obj is not None and ignore_self is not None:
+                if str(getattr(obj, "name", "")) == ignore_self:
+                    continue
+
+            hit = self._ray_collider_intersection(
+                ox, oy, dx, dy, closest_distance, collider
+            )
+            if hit is not None and hit.hit_distance < closest_distance:
+                closest_hit = hit
+                closest_distance = hit.hit_distance
+
+        return closest_hit
+
+    def _ray_collider_intersection(
+        self,
+        ox: float, oy: float,
+        dx: float, dy: float,
+        max_dist: float,
+        collider: Any,
+    ) -> RaycastHit | None:
+        """Test ray vs collider intersection."""
+        collider_type = self._collider_type(collider)
+
+        if collider_type == "BoxCollider":
+            return self._ray_box_intersection(ox, oy, dx, dy, max_dist, collider)
+        elif collider_type == "CircleCollider":
+            return self._ray_circle_intersection(ox, oy, dx, dy, max_dist, collider)
+
+        return None
+
+    def _ray_box_intersection(
+        self,
+        ox: float, oy: float,
+        dx: float, dy: float,
+        max_dist: float,
+        box: Any,
+    ) -> RaycastHit | None:
+        """Ray vs AABB intersection using slab method."""
+        rect = box.rect
+        left, top, right, bottom = rect.left, rect.top, rect.right, rect.bottom
+
+        t_min, t_max = 0.0, max_dist
+
+        # X slab
+        if abs(dx) > 1e-6:
+            t1 = (left - ox) / dx
+            t2 = (right - ox) / dx
+            if t1 > t2:
+                t1, t2 = t2, t1
+            t_min = max(t_min, t1)
+            t_max = min(t_max, t2)
+        else:
+            if not (left <= ox <= right):
+                return None
+
+        # Y slab
+        if abs(dy) > 1e-6:
+            t1 = (top - oy) / dy
+            t2 = (bottom - oy) / dy
+            if t1 > t2:
+                t1, t2 = t2, t1
+            t_min = max(t_min, t1)
+            t_max = min(t_max, t2)
+        else:
+            if not (top <= oy <= bottom):
+                return None
+
+        if t_min < 0 or t_min > t_max or t_min > max_dist:
+            return None
+
+        # Hit point and normal
+        hit_dist = max(0.0, t_min)
+        hit_x = ox + dx * hit_dist
+        hit_y = oy + dy * hit_dist
+
+        # Determine normal
+        normal = self._box_hit_normal(hit_x, hit_y, left, top, right, bottom)
+
+        obj = getattr(box, "game_object", None)
+        return RaycastHit(
+            hit_object=obj,
+            hit_point=(hit_x, hit_y),
+            hit_distance=hit_dist,
+            hit_normal=normal,
+            collider=box,
+        )
+
+    def _ray_circle_intersection(
+        self,
+        ox: float, oy: float,
+        dx: float, dy: float,
+        max_dist: float,
+        circle: Any,
+    ) -> RaycastHit | None:
+        """Ray vs circle intersection using quadratic formula."""
+        cx, cy = circle.center
+        r = float(circle.radius)
+
+        # Ray: P(t) = O + t*D
+        # Circle: |P - C|² = r²
+        # Substitute: |O + t*D - C|² = r²
+        # Expand: t²|D|² + 2t(O-C)·D + |O-C|² - r² = 0
+
+        oc_x = ox - cx
+        oc_y = oy - cy
+
+        a = dx * dx + dy * dy
+        b = 2 * (oc_x * dx + oc_y * dy)
+        c = oc_x * oc_x + oc_y * oc_y - r * r
+
+        discriminant = b * b - 4 * a * c
+
+        if discriminant < 0:
+            return None
+
+        sqrt_disc = math.sqrt(discriminant)
+        t1 = (-b - sqrt_disc) / (2 * a)
+        t2 = (-b + sqrt_disc) / (2 * a)
+
+        t = None
+        if t1 >= 0 and t1 <= max_dist:
+            t = t1
+        elif t2 >= 0 and t2 <= max_dist:
+            t = t2
+
+        if t is None:
+            return None
+
+        hit_x = ox + dx * t
+        hit_y = oy + dy * t
+
+        # Normal at hit point
+        norm_x = hit_x - cx
+        norm_y = hit_y - cy
+        norm_len = math.hypot(norm_x, norm_y)
+        if norm_len > 1e-6:
+            norm_x /= norm_len
+            norm_y /= norm_len
+
+        obj = getattr(circle, "game_object", None)
+        return RaycastHit(
+            hit_object=obj,
+            hit_point=(hit_x, hit_y),
+            hit_distance=t,
+            hit_normal=(norm_x, norm_y),
+            collider=circle,
+        )
+
+    @staticmethod
+    def _box_hit_normal(
+        hit_x: float, hit_y: float,
+        left: float, top: float,
+        right: float, bottom: float,
+    ) -> tuple[float, float]:
+        """Determine surface normal at box hit point."""
+        # Distance to each edge
+        d_left = abs(hit_x - left)
+        d_right = abs(hit_x - right)
+        d_top = abs(hit_y - top)
+        d_bottom = abs(hit_y - bottom)
+
+        min_dist = min(d_left, d_right, d_top, d_bottom)
+
+        if min_dist == d_left:
+            return (-1.0, 0.0)
+        elif min_dist == d_right:
+            return (1.0, 0.0)
+        elif min_dist == d_top:
+            return (0.0, -1.0)
+        else:
+            return (0.0, 1.0)
 
     def clear(self) -> None:
         for body in list(self.rigidbodies):

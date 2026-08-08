@@ -9,3 +9,4 @@ from . import math_nodes
 from . import scene_nodes
 from . import string_nodes
 from . import ui_nodes
+from . import physics_nodes

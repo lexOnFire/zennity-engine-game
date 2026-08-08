@@ -261,3 +261,37 @@ class OnTriggerExitNode:
             PinDefinition(id="other_collider", label_key="Other Collider", pin_type=PinType.OBJECT),
         ]
     )
+
+
+# Phase 5B.3: Raycast Query
+class RaycastNode:
+    """Cast a ray and check for collisions."""
+
+    __node_definition__ = NodeDefinition(
+        id="raycast",
+        title_key="Raycast",
+        category_key="Physics/Queries",
+        description_key="Cast a ray and get nearest hit",
+
+        inputs=[
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="origin_x", label_key="Origin X", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="origin_y", label_key="Origin Y", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="direction_x", label_key="Direction X", pin_type=PinType.FLOAT, default_value=1.0),
+            PinDefinition(id="direction_y", label_key="Direction Y", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="max_distance", label_key="Max Distance", pin_type=PinType.FLOAT, default_value=999.0),
+            PinDefinition(id="ignore_self", label_key="Ignore Self", pin_type=PinType.BOOL, default_value=True),
+            PinDefinition(id="include_triggers", label_key="Include Triggers", pin_type=PinType.BOOL, default_value=False),
+        ],
+
+        outputs=[
+            PinDefinition(id="exec_hit", label_key="Hit", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_no_hit", label_key="No Hit", pin_type=PinType.EXEC),
+            PinDefinition(id="hit_object", label_key="Hit Object", pin_type=PinType.OBJECT),
+            PinDefinition(id="hit_point_x", label_key="Hit Point X", pin_type=PinType.FLOAT),
+            PinDefinition(id="hit_point_y", label_key="Hit Point Y", pin_type=PinType.FLOAT),
+            PinDefinition(id="hit_distance", label_key="Hit Distance", pin_type=PinType.FLOAT),
+            PinDefinition(id="hit_normal_x", label_key="Hit Normal X", pin_type=PinType.FLOAT),
+            PinDefinition(id="hit_normal_y", label_key="Hit Normal Y", pin_type=PinType.FLOAT),
+        ]
+    )

@@ -278,3 +278,87 @@ def evaluate_physics_event_nodes(runtime, node_id: str, port_id: str, node: Mapp
     else:
         # Fallback for "other" (backward compatibility)
         return runtime.values.get((node_id, "other"))
+
+
+# Phase 5B.3: Raycast Query
+@registry.register_executor('raycast')
+def execute_raycast(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
+    """Phase 5B.3: Cast a ray and return nearest hit."""
+    node_id = str(node['id'])
+    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
+
+    origin_x = float(properties.get("origin_x", 0.0))
+    origin_y = float(properties.get("origin_y", 0.0))
+    direction_x = float(properties.get("direction_x", 1.0))
+    direction_y = float(properties.get("direction_y", 0.0))
+    max_distance = float(properties.get("max_distance", 999.0))
+    ignore_self = bool(properties.get("ignore_self", True))
+    include_triggers = bool(properties.get("include_triggers", False))
+
+    # Get physics world
+    physics_world = getattr(game, "physics_world", None)
+    if not physics_world:
+        runtime._store(node_id, "hit", None)
+        return ["no_hit"]
+
+    # Prepare ignore_self parameter
+    ignore_self_name = None
+    if ignore_self and hasattr(game, "name"):
+        ignore_self_name = str(getattr(game, "name", ""))
+
+    # Perform raycast
+    try:
+        hit = physics_world.raycast(
+            origin=(origin_x, origin_y),
+            direction=(direction_x, direction_y),
+            max_distance=max_distance,
+            ignore_self=ignore_self_name,
+            include_triggers=include_triggers,
+        )
+
+        if hit is None:
+            # Clear previous hit data
+            runtime._store(node_id, "hit", None)
+            runtime._store(node_id, "hit_object", None)
+            runtime._store(node_id, "hit_point", (0.0, 0.0))
+            runtime._store(node_id, "hit_distance", 0.0)
+            runtime._store(node_id, "hit_normal", (0.0, 0.0))
+            return ["no_hit"]
+
+        # Store hit data
+        runtime._store(node_id, "hit", hit)
+        runtime._store(node_id, "hit_object", hit.hit_object)
+        runtime._store(node_id, "hit_point", hit.hit_point)
+        runtime._store(node_id, "hit_distance", hit.hit_distance)
+        runtime._store(node_id, "hit_normal", hit.hit_normal)
+
+        return ["hit"]
+
+    except Exception:
+        runtime._store(node_id, "hit", None)
+        return ["no_hit"]
+
+
+@registry.register_evaluator('raycast')
+def evaluate_raycast(runtime, node_id: str, port_id: str, node: Mapping[str, Any], game: Any, dt: float, visited: set) -> Any:
+    """Evaluate raycast output data pins."""
+    port_id = str(port_id)
+
+    if port_id == "hit_object":
+        return runtime.values.get((node_id, "hit_object"))
+    elif port_id == "hit_point_x":
+        hit_point = runtime.values.get((node_id, "hit_point"), (0.0, 0.0))
+        return float(hit_point[0]) if hit_point else 0.0
+    elif port_id == "hit_point_y":
+        hit_point = runtime.values.get((node_id, "hit_point"), (0.0, 0.0))
+        return float(hit_point[1]) if hit_point else 0.0
+    elif port_id == "hit_distance":
+        return float(runtime.values.get((node_id, "hit_distance"), 0.0))
+    elif port_id == "hit_normal_x":
+        hit_normal = runtime.values.get((node_id, "hit_normal"), (0.0, 0.0))
+        return float(hit_normal[0]) if hit_normal else 0.0
+    elif port_id == "hit_normal_y":
+        hit_normal = runtime.values.get((node_id, "hit_normal"), (0.0, 0.0))
+        return float(hit_normal[1]) if hit_normal else 0.0
+    else:
+        return None
