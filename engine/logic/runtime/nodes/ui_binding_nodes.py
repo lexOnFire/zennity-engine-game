@@ -55,15 +55,15 @@ def execute_bind_ui_to_variable(runtime, node: Mapping[str, Any], game: Any, dt:
 
         found, val = _fetch_widget_property(game, widget_name, property_name)
         if not found:
-            return ["exec_not_found", "next"]
+            return ["exec_not_found"]
 
         _write_runtime_variable(runtime, variable_name, val)
         runtime._store(node_id, "value", val)
-        return ["exec_success", "next"]
+        return ["exec_success"]
 
     except Exception as e:
         print(f"Erro em bind_ui_to_variable: {e}")
-        return ["exec_failure", "next"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('update_ui_binding')
@@ -79,13 +79,13 @@ def execute_update_ui_binding(runtime, node: Mapping[str, Any], game: Any, dt: f
 
         found, val = _fetch_widget_property(game, widget_name, property_name)
         if not found:
-            return ["exec_not_found", "next"]
+            return ["exec_not_found"]
 
         _write_runtime_variable(runtime, variable_name, val)
         runtime._store(node_id, "value", val)
-        return ["exec_success", "next"]
+        return ["exec_success"]
 
     except Exception as e:
         print(f"Erro em update_ui_binding: {e}")
-        return ["exec_failure", "next"]
+        return ["exec_failure"]
 
