@@ -249,93 +249,73 @@ def execute_get_ui_widget_property(runtime, node: Mapping[str, Any], game: Any, 
 
 @registry.register_executor('get_progress_bar_value')
 def execute_get_progress_bar_value(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
-    """Lê o valor de uma ProgressBar com múltiplas estratégias de busca."""
+    """Lê o valor de uma ProgressBar."""
     node_id = str(node['id'])
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
 
+    print(f"\n=== GET_PROGRESS_BAR_VALUE EXECUTADO ===")
+
     try:
         widget_name = str(properties.get("widget_name", ""))
+        print(f"Widget buscado: '{widget_name}'")
 
         if not widget_name:
-            print(f"[get_progress_bar_value] widget_name vazio")
-            runtime._store(node_id, "value", None)
-            return ["failure"]
+            print(f"ERRO: widget_name está vazio!")
+            runtime._store(node_id, "value", 0.0)
+            return ["exec_failure"]
 
-        print(f"[get_progress_bar_value] Buscando widget: {widget_name}")
+        # Procurar o widget
+        value = None
 
-        # Estratégia 1: Procurar via game.find()
+        # Tenta 1: game.find()
         if hasattr(game, "find"):
-            target = game.find(widget_name)
-            print(f"[get_progress_bar_value] game.find('{widget_name}') retornou: {target}")
-
-            if target:
-                # Tentar ler value diretamente
-                if hasattr(target, "value"):
+            try:
+                target = game.find(widget_name)
+                print(f"game.find('{widget_name}') = {target}")
+                if target and hasattr(target, "value"):
                     value = float(target.value)
-                    print(f"[get_progress_bar_value] Encontrado value direto: {value}")
-                    runtime._store(node_id, "value", value)
-                    return ["success"]
+                    print(f"✓ Encontrado value direto: {value}")
+            except Exception as e:
+                print(f"game.find() falhou: {e}")
 
-                # Tentar em obj.ui
-                if hasattr(target, "obj") and isinstance(target.obj, dict):
-                    ui = target.obj.get("ui", {})
-                    print(f"[get_progress_bar_value] obj.ui: {ui}")
-                    if isinstance(ui, dict) and "value" in ui:
-                        value = float(ui.get("value", 0.0))
-                        print(f"[get_progress_bar_value] Encontrado em obj.ui: {value}")
-                        runtime._store(node_id, "value", value)
-                        return ["success"]
+        # Tenta 2: Procurar em atributos
+        if value is None and hasattr(game, widget_name):
+            try:
+                obj = getattr(game, widget_name)
+                print(f"game.{widget_name} = {obj}")
+                if hasattr(obj, "value"):
+                    value = float(obj.value)
+                    print(f"✓ Encontrado em game.{widget_name}: {value}")
+            except Exception as e:
+                print(f"Atributo direto falhou: {e}")
 
-        # Estratégia 2: Procurar em _world
-        if hasattr(game, "_world") and isinstance(game._world, dict):
-            print(f"[get_progress_bar_value] Procurando em game._world")
-            for scene_name, scene_obj in game._world.items():
-                if not isinstance(scene_obj, dict):
-                    continue
+        # Tenta 3: get_variable (variável global)
+        if value is None:
+            try:
+                if hasattr(runtime, "get_variable"):
+                    value = runtime.get_variable(widget_name)
+                    if value is not None:
+                        value = float(value)
+                        print(f"✓ Encontrado em variável: {value}")
+            except Exception as e:
+                print(f"Variável falhou: {e}")
 
-                c_ui = scene_obj.get("ui", {})
-                if isinstance(c_ui, dict):
-                    # Procurar em overrides
-                    overrides = c_ui.get("_widget_overrides", {})
-                    if widget_name in overrides:
-                        widget_data = overrides[widget_name]
-                        print(f"[get_progress_bar_value] Encontrado em overrides: {widget_data}")
-                        if isinstance(widget_data, dict) and "value" in widget_data:
-                            value = float(widget_data["value"])
-                            runtime._store(node_id, "value", value)
-                            return ["success"]
-
-                    # Procurar em children
-                    children = c_ui.get("children", [])
-                    for child in children:
-                        if isinstance(child, dict):
-                            if child.get("name") == widget_name or child.get("widget_name") == widget_name:
-                                print(f"[get_progress_bar_value] Encontrado em children: {child}")
-                                if "value" in child:
-                                    value = float(child["value"])
-                                    runtime._store(node_id, "value", value)
-                                    return ["success"]
-
-        # Estratégia 3: Atributo direto do game
-        if hasattr(game, widget_name):
-            widget_obj = getattr(game, widget_name)
-            print(f"[get_progress_bar_value] Encontrado como atributo: {widget_obj}")
-            if hasattr(widget_obj, "value"):
-                value = float(widget_obj.value)
-                print(f"[get_progress_bar_value] Valor obtido: {value}")
-                runtime._store(node_id, "value", value)
-                return ["success"]
-
-        print(f"[get_progress_bar_value] ⚠️ Widget '{widget_name}' não encontrado em nenhuma estratégia")
-        runtime._store(node_id, "value", None)
-        return ["not_found"]
+        # Resultado final
+        if value is not None:
+            print(f"SUCESSO! Valor = {value}")
+            runtime._store(node_id, "value", value)
+            return ["exec_success"]
+        else:
+            print(f"Widget '{widget_name}' não encontrado")
+            runtime._store(node_id, "value", 0.0)
+            return ["exec_not_found"]
 
     except Exception as e:
-        print(f"[get_progress_bar_value] ❌ Erro: {e}")
+        print(f"ERRO GERAL: {e}")
         import traceback
         traceback.print_exc()
-        runtime._store(node_id, "value", None)
-        return ["failure"]
+        runtime._store(node_id, "value", 0.0)
+        return ["exec_failure"]
 
         return ["not_found"]
     except Exception as e:
