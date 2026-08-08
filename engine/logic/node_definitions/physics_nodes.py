@@ -282,6 +282,8 @@ class RaycastNode:
             PinDefinition(id="max_distance", label_key="Max Distance", pin_type=PinType.FLOAT, default_value=999.0),
             PinDefinition(id="ignore_self", label_key="Ignore Self", pin_type=PinType.BOOL, default_value=True),
             PinDefinition(id="include_triggers", label_key="Include Triggers", pin_type=PinType.BOOL, default_value=False),
+            # Phase 5B.4: Layer mask filtering
+            PinDefinition(id="layer_mask", label_key="Layer Mask", pin_type=PinType.INT, default_value=4294967295),
         ],
 
         outputs=[
@@ -293,5 +295,88 @@ class RaycastNode:
             PinDefinition(id="hit_distance", label_key="Hit Distance", pin_type=PinType.FLOAT),
             PinDefinition(id="hit_normal_x", label_key="Hit Normal X", pin_type=PinType.FLOAT),
             PinDefinition(id="hit_normal_y", label_key="Hit Normal Y", pin_type=PinType.FLOAT),
+        ]
+    )
+
+
+# Phase 5B.4: Collision Layer/Mask Getters
+class GetCollisionLayerNode:
+    """Get collider's collision layer."""
+
+    __node_definition__ = NodeDefinition(
+        id="get_collision_layer",
+        title_key="Get Collision Layer",
+        category_key="Physics/Layers",
+        description_key="Returns collider's collision layer",
+
+        inputs=[
+            PinDefinition(id="target", label_key="Target", pin_type=PinType.STRING, default_value=""),
+        ],
+
+        outputs=[
+            PinDefinition(id="value", label_key="Layer", pin_type=PinType.INT),
+        ]
+    )
+
+
+class GetCollisionMaskNode:
+    """Get collider's collision mask."""
+
+    __node_definition__ = NodeDefinition(
+        id="get_collision_mask",
+        title_key="Get Collision Mask",
+        category_key="Physics/Layers",
+        description_key="Returns collider's collision mask",
+
+        inputs=[
+            PinDefinition(id="target", label_key="Target", pin_type=PinType.STRING, default_value=""),
+        ],
+
+        outputs=[
+            PinDefinition(id="value", label_key="Mask", pin_type=PinType.INT),
+        ]
+    )
+
+
+class SetCollisionLayerNode:
+    """Set collider's collision layer."""
+
+    __node_definition__ = NodeDefinition(
+        id="set_collision_layer",
+        title_key="Set Collision Layer",
+        category_key="Physics/Layers",
+        description_key="Set collider's collision layer",
+
+        inputs=[
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="target", label_key="Target", pin_type=PinType.STRING, default_value=""),
+            PinDefinition(id="value", label_key="Layer", pin_type=PinType.INT, default_value=1),
+        ],
+
+        outputs=[
+            PinDefinition(id="exec_success", label_key="Success", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Failure", pin_type=PinType.EXEC),
+        ]
+    )
+
+
+class SetCollisionMaskNode:
+    """Set collider's collision mask."""
+
+    __node_definition__ = NodeDefinition(
+        id="set_collision_mask",
+        title_key="Set Collision Mask",
+        category_key="Physics/Layers",
+        description_key="Set collider's collision mask",
+
+        inputs=[
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="target", label_key="Target", pin_type=PinType.STRING, default_value=""),
+            PinDefinition(id="value", label_key="Mask", pin_type=PinType.INT, default_value=4294967295),
+        ],
+
+        outputs=[
+            PinDefinition(id="exec_success", label_key="Success", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Failure", pin_type=PinType.EXEC),
         ]
     )

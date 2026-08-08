@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 import math
 import pygame
 from engine.core.component import Component
+from engine.physics.collision_layers import DEFAULT_LAYER, ALL_LAYERS
 
 if TYPE_CHECKING:
     from engine.game_object import GameObject
@@ -44,6 +45,8 @@ class BoxCollider(Component):
         offset_y: float = 0.0,
         is_trigger: bool = False,
         debug_draw: bool = False,
+        collision_layer: int = DEFAULT_LAYER,
+        collision_mask: int = ALL_LAYERS,
     ) -> None:
         super().__init__()
         self.width = width
@@ -52,6 +55,9 @@ class BoxCollider(Component):
         self.offset_y = offset_y
         self.is_trigger = is_trigger   # trigger = detecta mas não resolve colisão
         self.debug_draw = debug_draw
+        # Phase 5B.4: Collision layer/mask bitmask filtering
+        self.collision_layer = int(collision_layer) if collision_layer > 0 else DEFAULT_LAYER
+        self.collision_mask = int(collision_mask) if collision_mask >= 0 else ALL_LAYERS
 
         self._colliding_with: set["BoxCollider"] = set()
 
@@ -69,6 +75,9 @@ class BoxCollider(Component):
             "offset_y": float(self.offset_y),
             "is_trigger": bool(self.is_trigger),
             "debug_draw": bool(self.debug_draw),
+            # Phase 5B.4: Collision layer/mask
+            "collision_layer": int(self.collision_layer),
+            "collision_mask": int(self.collision_mask),
         }
 
     def deserialize_properties(self, data: dict[str, Any]) -> None:
@@ -83,6 +92,9 @@ class BoxCollider(Component):
             self.offset_y = float(data.get("offset_y", 0.0))
         self.is_trigger = bool(data.get("is_trigger", False))
         self.debug_draw = bool(data.get("debug_draw", False))
+        # Phase 5B.4: Collision layer/mask (backward compat: default to all)
+        self.collision_layer = int(data.get("collision_layer", DEFAULT_LAYER)) or DEFAULT_LAYER
+        self.collision_mask = int(data.get("collision_mask", ALL_LAYERS)) or ALL_LAYERS
 
     # ------------------------------------------------------------------
     # Ciclo de vida
@@ -340,6 +352,8 @@ class CircleCollider(Component):
         offset_y: float = 0.0,
         is_trigger: bool = False,
         debug_draw: bool = False,
+        collision_layer: int = DEFAULT_LAYER,
+        collision_mask: int = ALL_LAYERS,
     ) -> None:
         super().__init__()
         self.radius = radius
@@ -347,6 +361,9 @@ class CircleCollider(Component):
         self.offset_y = offset_y
         self.is_trigger = is_trigger
         self.debug_draw = debug_draw
+        # Phase 5B.4: Collision layer/mask bitmask filtering
+        self.collision_layer = int(collision_layer) if collision_layer > 0 else DEFAULT_LAYER
+        self.collision_mask = int(collision_mask) if collision_mask >= 0 else ALL_LAYERS
 
         self._colliding_with: set["CircleCollider"] = set()
 
@@ -362,6 +379,9 @@ class CircleCollider(Component):
             "offset_y": float(self.offset_y),
             "is_trigger": bool(self.is_trigger),
             "debug_draw": bool(self.debug_draw),
+            # Phase 5B.4: Collision layer/mask
+            "collision_layer": int(self.collision_layer),
+            "collision_mask": int(self.collision_mask),
         }
 
     def deserialize_properties(self, data: dict[str, Any]) -> None:
@@ -375,6 +395,9 @@ class CircleCollider(Component):
             self.offset_y = float(data.get("offset_y", 0.0))
         self.is_trigger = bool(data.get("is_trigger", False))
         self.debug_draw = bool(data.get("debug_draw", False))
+        # Phase 5B.4: Collision layer/mask (backward compat: default to all)
+        self.collision_layer = int(data.get("collision_layer", DEFAULT_LAYER)) or DEFAULT_LAYER
+        self.collision_mask = int(data.get("collision_mask", ALL_LAYERS)) or ALL_LAYERS
 
     # ------------------------------------------------------------------
     # Ciclo de vida

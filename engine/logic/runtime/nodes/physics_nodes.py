@@ -283,7 +283,7 @@ def evaluate_physics_event_nodes(runtime, node_id: str, port_id: str, node: Mapp
 # Phase 5B.3: Raycast Query
 @registry.register_executor('raycast')
 def execute_raycast(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
-    """Phase 5B.3: Cast a ray and return nearest hit."""
+    """Phase 5B.3: Cast a ray and return nearest hit. Phase 5B.4: Add layer mask support."""
     node_id = str(node['id'])
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
 
@@ -294,6 +294,8 @@ def execute_raycast(runtime, node: Mapping[str, Any], game: Any, dt: float) -> l
     max_distance = float(properties.get("max_distance", 999.0))
     ignore_self = bool(properties.get("ignore_self", True))
     include_triggers = bool(properties.get("include_triggers", False))
+    # Phase 5B.4: Layer mask for raycast filtering
+    layer_mask = int(properties.get("layer_mask", 0xFFFFFFFF))
 
     # Get physics world
     physics_world = getattr(game, "physics_world", None)
@@ -314,6 +316,7 @@ def execute_raycast(runtime, node: Mapping[str, Any], game: Any, dt: float) -> l
             max_distance=max_distance,
             ignore_self=ignore_self_name,
             include_triggers=include_triggers,
+            layer_mask=layer_mask,
         )
 
         if hit is None:
@@ -362,3 +365,107 @@ def evaluate_raycast(runtime, node_id: str, port_id: str, node: Mapping[str, Any
         return float(hit_normal[1]) if hit_normal else 0.0
     else:
         return None
+
+
+# Phase 5B.4: Collision Layer/Mask Getters
+@registry.register_evaluator('get_collision_layer')
+def evaluate_get_collision_layer(runtime, node_id: str, port_id: str, node: Mapping[str, Any], game: Any, dt: float, visited: set) -> Any:
+    """Get collision layer from target collider."""
+    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
+    target_name = str(properties.get("target", "")).strip()
+
+    if not target_name or not hasattr(game, "find_object"):
+        return 1
+
+    target_obj = game.find_object(target_name)
+    if not target_obj or not hasattr(target_obj, "get_component"):
+        return 1
+
+    from engine.physics.collider import BoxCollider, CircleCollider
+    collider = target_obj.get_component(BoxCollider) or target_obj.get_component(CircleCollider)
+
+    if collider:
+        return int(getattr(collider, "collision_layer", 1))
+    return 1
+
+
+@registry.register_evaluator('get_collision_mask')
+def evaluate_get_collision_mask(runtime, node_id: str, port_id: str, node: Mapping[str, Any], game: Any, dt: float, visited: set) -> Any:
+    """Get collision mask from target collider."""
+    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
+    target_name = str(properties.get("target", "")).strip()
+
+    if not target_name or not hasattr(game, "find_object"):
+        return 0xFFFFFFFF
+
+    target_obj = game.find_object(target_name)
+    if not target_obj or not hasattr(target_obj, "get_component"):
+        return 0xFFFFFFFF
+
+    from engine.physics.collider import BoxCollider, CircleCollider
+    collider = target_obj.get_component(BoxCollider) or target_obj.get_component(CircleCollider)
+
+    if collider:
+        return int(getattr(collider, "collision_mask", 0xFFFFFFFF))
+    return 0xFFFFFFFF
+
+
+# Phase 5B.4: Collision Layer/Mask Setters
+@registry.register_executor('set_collision_layer')
+def execute_set_collision_layer(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
+    """Set collision layer on target collider."""
+    node_id = str(node['id'])
+    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
+
+    target_name = str(properties.get("target", "")).strip()
+    value = int(properties.get("value", 1))
+
+    if value <= 0:
+        return ["failure"]
+
+    if not target_name or not hasattr(game, "find_object"):
+        return ["failure"]
+
+    target_obj = game.find_object(target_name)
+    if not target_obj or not hasattr(target_obj, "get_component"):
+        return ["failure"]
+
+    from engine.physics.collider import BoxCollider, CircleCollider
+    collider = target_obj.get_component(BoxCollider) or target_obj.get_component(CircleCollider)
+
+    if collider:
+        collider.collision_layer = value
+        runtime._store(node_id, "layer", value)
+        return ["success"]
+
+    return ["failure"]
+
+
+@registry.register_executor('set_collision_mask')
+def execute_set_collision_mask(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
+    """Set collision mask on target collider."""
+    node_id = str(node['id'])
+    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
+
+    target_name = str(properties.get("target", "")).strip()
+    value = int(properties.get("value", 0xFFFFFFFF))
+
+    if value < 0:
+        return ["failure"]
+
+    if not target_name or not hasattr(game, "find_object"):
+        return ["failure"]
+
+    target_obj = game.find_object(target_name)
+    if not target_obj or not hasattr(target_obj, "get_component"):
+        return ["failure"]
+
+    from engine.physics.collider import BoxCollider, CircleCollider
+    collider = target_obj.get_component(BoxCollider) or target_obj.get_component(CircleCollider)
+
+    if collider:
+        collider.collision_mask = value
+        runtime._store(node_id, "mask", value)
+        return ["success"]
+
+    return ["failure"]

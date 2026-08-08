@@ -7,6 +7,7 @@ from typing import Any
 from engine.physics.collider import BoxCollider, CircleCollider
 from engine.physics.rigidbody import RigidBody
 from engine.physics.spatial_hash import BroadPhaseStats, SpatialHashBroadPhase
+from engine.physics.collision_layers import can_collide
 from engine.time import Time
 
 
@@ -107,6 +108,13 @@ class PhysicsWorld:
         for a, b in candidates:
             if not self._same_scene(a, b):
                 continue
+            # Phase 5B.4: Layer/mask collision filtering
+            a_layer = getattr(a, "collision_layer", 1)
+            a_mask = getattr(a, "collision_mask", 0xFFFFFFFF)
+            b_layer = getattr(b, "collision_layer", 1)
+            b_mask = getattr(b, "collision_mask", 0xFFFFFFFF)
+            if not can_collide(a_layer, a_mask, b_layer, b_mask):
+                continue
             if not self._intersects(a, b):
                 continue
             pair = self._pair_key(a, b)
@@ -141,6 +149,7 @@ class PhysicsWorld:
         max_distance: float = float('inf'),
         ignore_self: str | None = None,
         include_triggers: bool = False,
+        layer_mask: int = 0xFFFFFFFF,
     ) -> RaycastHit | None:
         """
         Cast a ray and return the nearest hit.
@@ -151,6 +160,7 @@ class PhysicsWorld:
             max_distance: Maximum distance to test (default: infinity)
             ignore_self: Object name to ignore (usually ray origin object)
             include_triggers: Whether to hit trigger colliders
+            layer_mask: Bitmask of layers to accept (Phase 5B.4)
 
         Returns:
             RaycastHit if hit, None otherwise
@@ -171,6 +181,11 @@ class PhysicsWorld:
             if not self._component_active(collider):
                 continue
             if not include_triggers and bool(getattr(collider, "is_trigger", False)):
+                continue
+
+            # Phase 5B.4: Layer mask filtering for raycast queries
+            collider_layer = getattr(collider, "collision_layer", 1)
+            if (layer_mask & collider_layer) == 0:
                 continue
 
             obj = getattr(collider, "game_object", None)
