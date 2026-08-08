@@ -124,13 +124,12 @@ class RuntimeScene:
                 component.widget_name = widget_name
                 widget_go.add_component(component)
 
-                # Attach to UICanvas
-                widget_go.parent = ui_canvas
+                # Attach to UICanvas using canonical API
+                ui_canvas.add_child(widget_go)
                 if hasattr(self.scene, "_add_go"):
                     self.scene._add_go(widget_go)
                 else:
                     self.scene.game_objects.append(widget_go)
-                    widget_go.scene = self.scene
                 if hasattr(self.scene, "editable_objects"):
                     self.scene.editable_objects.append(widget_go)
 
