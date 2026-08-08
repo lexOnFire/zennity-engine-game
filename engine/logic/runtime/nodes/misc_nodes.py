@@ -11,8 +11,12 @@ def execute_set_hud(runtime, node: Mapping[str, Any], game: Any, dt: float) -> l
     node_id = str(node['id'])
     node_type = str(node.get('type'))
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
-    text = runtime._read_input(node_id, "text", properties.get("text", "Texto"), game, dt, set())
-    game.set_hud(f"logic:{node_id}", str(text))
+    text_val = runtime._read_input(node_id, "text", properties.get("text", "100"), game, dt, set())
+    if text_val is None or str(text_val).strip() in {"None", "none", ""}:
+        text_val = properties.get("text", "100")
+    if text_val is None or str(text_val).strip() in {"None", "none", ""}:
+        text_val = "100"
+    game.set_hud(f"logic:{node_id}", str(text_val))
     return ["next"]
 
 @registry.register_executor('emit_event')

@@ -248,34 +248,44 @@ def execute_get_ui_widget_property(runtime, node: Mapping[str, Any], game: Any, 
 
 
 def _fetch_progress_bar_value(runtime: Any, widget_name: str, game: Any) -> float:
-    name = str(widget_name).strip() or "comida"
+    name = str(widget_name).strip()
+    if not name or name.lower() == "none":
+        name = "comida"
 
     # 1. Objeto direto pela API
     if hasattr(game, "find"):
         try:
             target = game.find(name)
+            if target is None:
+                for alt_name in ("comida", "bar", "progress", "hp"):
+                    target = game.find(alt_name)
+                    if target:
+                        break
             if target:
-                if hasattr(target, "value"):
+                if hasattr(target, "value") and target.value is not None:
                     return float(target.value)
                 if hasattr(target, "obj") and isinstance(target.obj, dict):
                     ui = target.obj.get("ui")
-                    if isinstance(ui, dict) and "value" in ui:
+                    if isinstance(ui, dict) and "value" in ui and ui["value"] is not None:
                         return float(ui["value"])
-                    if "value" in target.obj:
+                    if "value" in target.obj and target.obj["value"] is not None:
                         return float(target.obj["value"])
         except Exception:
             pass
 
-    # 2. Busca no dicionário de objetos da cena por nome ou tag
+    # 2. Busca no dicionário de objetos da cena por nome, tag ou componente UI
     if hasattr(game, "_world") and isinstance(game._world, dict):
         for obj_name, obj in game._world.items():
             if not isinstance(obj, dict):
                 continue
-            if str(obj_name).lower() == name.lower() or str(obj.get("tag", "")).lower() == name.lower():
-                ui = obj.get("ui")
-                if isinstance(ui, dict) and "value" in ui:
+            ui = obj.get("ui")
+            if isinstance(ui, dict) and str(ui.get("type", "")).lower() in {"progress_bar", "progressbar"}:
+                if "value" in ui and ui["value"] is not None:
                     return float(ui["value"])
-                if "value" in obj:
+            if str(obj_name).lower() == name.lower() or str(obj.get("tag", "")).lower() == name.lower():
+                if isinstance(ui, dict) and "value" in ui and ui["value"] is not None:
+                    return float(ui["value"])
+                if "value" in obj and obj["value"] is not None:
                     return float(obj["value"])
 
         # Busca em qualquer Canvas (.zui)
@@ -285,13 +295,14 @@ def _fetch_progress_bar_value(runtime: Any, widget_name: str, game: Any) -> floa
             c_ui = scene_obj.get("ui")
             if isinstance(c_ui, dict) and c_ui.get("type") == "canvas":
                 overrides = c_ui.get("_widget_overrides", {})
-                if name in overrides and "value" in overrides[name]:
-                    return float(overrides[name]["value"])
+                for k, v in overrides.items():
+                    if isinstance(v, dict) and "value" in v and v["value"] is not None:
+                        return float(v["value"])
 
     # 3. Busca nas variáveis do Blackboard/Runtime
     if hasattr(runtime, "variables") and isinstance(runtime.variables, dict):
         for key in (name, f"{name}.value", "value", "comida.value", "comida"):
-            if key in runtime.variables and runtime.variables[key] is not None:
+            if key in runtime.variables and runtime.variables[key] is not None and str(runtime.variables[key]).lower() != "none":
                 try:
                     return float(runtime.variables[key])
                 except (ValueError, TypeError):
