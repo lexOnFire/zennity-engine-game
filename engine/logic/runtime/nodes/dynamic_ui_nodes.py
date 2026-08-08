@@ -351,6 +351,9 @@ def execute_get_progress_bar_value(runtime, node: Mapping[str, Any], game: Any, 
     widget_name = str(runtime._read_input(node_id, "widget_name", properties.get("widget_name", "comida"), game, dt, set()))
 
     val = _fetch_progress_bar_value(runtime, widget_name, game)
+    if val is None or str(val).strip().lower() in {"none", ""}:
+        val = 100.0
+    val = float(val)
     runtime._store(node_id, "value", val)
     return ["next", "exec_success"]
 
@@ -362,4 +365,7 @@ def evaluate_get_progress_bar_value(runtime, node_id: str, port: str, node: Mapp
     widget_name = str(runtime._read_input(node_id, "widget_name", properties.get("widget_name", "comida"), game, dt, resolving))
 
     val = _fetch_progress_bar_value(runtime, widget_name, game)
+    if val is None or str(val).strip().lower() in {"none", ""}:
+        val = 100.0
+    val = float(val)
     return runtime._store(node_id, "value", val)

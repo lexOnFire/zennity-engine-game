@@ -223,12 +223,18 @@ class PlayLogicAPI:
 
     @property
     def value(self) -> float:
-        ui = self.obj.get("ui")
-        if isinstance(ui, dict) and "value" in ui:
-            return float(ui["value"])
-        if "value" in self.obj:
-            return float(self.obj["value"])
-        return float(self.obj.get("_logic_state", {}).get("value", 100.0))
+        try:
+            ui = self.obj.get("ui")
+            if isinstance(ui, dict) and "value" in ui and ui["value"] is not None:
+                return float(ui["value"])
+            if "value" in self.obj and self.obj["value"] is not None:
+                return float(self.obj["value"])
+            state_val = self.obj.get("_logic_state", {}).get("value")
+            if state_val is not None:
+                return float(state_val)
+        except (TypeError, ValueError):
+            pass
+        return 100.0
 
     @value.setter
     def value(self, val: float) -> None:
