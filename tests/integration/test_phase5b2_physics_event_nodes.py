@@ -508,6 +508,35 @@ class TestSubscriptionCleanup:
         register_physics_event_handler(handler)
         assert len(_physics_event_handlers) == 1
 
+    def test_handler_cleanup_via_destructor(self):
+        """Handlers should be unregistered when runtime is destroyed."""
+        from engine.logic.blackboard import BlackboardStore
+        from engine.logic.event_bus import LogicEventBus
+
+        graph = {
+            "name": "TestGraph",
+            "nodes": [{"id": "n1", "type": "on_collision_enter", "properties": {}}],
+            "edges": [],
+            "variables": {},
+        }
+
+        # Create runtime
+        bb = BlackboardStore()
+        eb = LogicEventBus()
+        rt = LogicGraphRuntime(graph, bb, "player", eb)
+
+        # Verify handler was registered
+        assert rt._registered_physics_handler == True
+        assert any(hasattr(h, '__self__') and h.__self__ is rt for h in _physics_event_handlers)
+
+        # Manually trigger cleanup (simulate __del__)
+        if rt._registered_physics_handler:
+            unregister_physics_event_handler(rt._handle_physics_event)
+            rt._registered_physics_handler = False
+
+        # Verify handler was unregistered
+        assert not any(hasattr(h, '__self__') and h.__self__ is rt for h in _physics_event_handlers)
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

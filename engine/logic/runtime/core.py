@@ -86,6 +86,8 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin):
         self._implicit_target: Any = None
         self._created_event_depth = 0
         self.started = False
+        self._registered_physics_handler = False  # Phase 5B.2: Track handler registration
+
         for node in self.nodes.values() if not self.call_stack else ():
             if node.get("type") != "event_custom":
                 continue
@@ -96,6 +98,16 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin):
         # Phase 5B.2: Register physics event handler if not a subgraph
         if not self.call_stack:
             register_physics_event_handler(self._handle_physics_event)
+            self._registered_physics_handler = True
+
+    def __del__(self) -> None:
+        """Phase 5B.2: Cleanup physics event handler on destruction."""
+        if self._registered_physics_handler:
+            try:
+                from ..physics_event_dispatch import unregister_physics_event_handler
+                unregister_physics_event_handler(self._handle_physics_event)
+            except Exception:
+                pass
 
     def run_subgraph(self, game: Any, dt: float, inputs: Mapping[str, Any]) -> dict[str, Any]:
         """Executa uma chamada reutilizável sem iniciar eventos de frame."""
