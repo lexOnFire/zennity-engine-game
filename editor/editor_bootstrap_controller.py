@@ -84,10 +84,14 @@ class EditorBootstrapController:
         h._selection = EditorSelectionController(h)
         h._viewport_commands = ViewportController(h)
         h._tool_controller = ToolController(h)
-        h._project_workflow = ProjectWorkflowController(h)
+        h._project_workflow = ProjectWorkflowController(h, self.project_root)
         h._play_controller = IsolatedPlayModeController()
         h._play_session = h._play_controller.session
         self._composed = True
+
+        # Conecta Asset Browser ao workflow controller para abrir assets
+        if hasattr(h, 'dock_assets'):
+            h.dock_assets.workflow_controller = h._project_workflow
 
     def configure(self) -> None:
         if self._configured:

@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Optional
 from PySide6.QtWidgets import (
     QDockWidget, QWidget, QVBoxLayout, QHBoxLayout, QSplitter,
@@ -15,14 +16,15 @@ class AssetBrowserDock(QDockWidget):
     Painel acoplável do navegador de recursos (Asset Browser).
     Componente 'View' na arquitetura MVVM do editor.
     """
-    
-    def __init__(self, parent: QWidget = None) -> None:
+
+    def __init__(self, parent: QWidget = None, workflow_controller: Optional[object] = None) -> None:
         super().__init__("Recursos", parent)
         self.setObjectName("AssetBrowserDock")
         self.setAllowedAreas(Qt.BottomDockWidgetArea | Qt.LeftDockWidgetArea)
-        
+
         self.model: Optional[AssetModel] = None
         self.viewmodel: Optional[AssetViewModel] = None
+        self.workflow_controller = workflow_controller
         
         # Conteúdo interno
         content = QWidget()
@@ -149,10 +151,131 @@ class AssetBrowserDock(QDockWidget):
 
     @Slot(QModelIndex)
     def on_file_list_double_clicked(self, index: QModelIndex) -> None:
-        """Chamado ao dar duplo clique em um item da grade (navega se for pasta)."""
+        """Chamado ao dar duplo clique em um item da grade."""
         path = self.model.filePath(index)
+
+        # Se for pasta, navega
         if os.path.isdir(path) and self.viewmodel:
             self.viewmodel.go_to_folder(path)
+            return
+
+        # Se for arquivo, abre conforme tipo
+        self._open_asset_by_path(path)
+
+    def _open_asset_by_path(self, path: str) -> None:
+        """Abre um asset conforme sua extensão."""
+        filepath = Path(path)
+        if not filepath.exists():
+            return
+
+        suffix = filepath.suffix.lower()
+
+        # Scene (.zscene)
+        if suffix == ".zscene":
+            self._open_scene(filepath)
+            return
+
+        # Logic Graph (.zlogic)
+        if suffix == ".zlogic":
+            self._open_logic_graph(filepath)
+            return
+
+        # UI (.zui)
+        if suffix == ".zui":
+            self._open_ui_asset(filepath)
+            return
+
+        # Animation Controller (.zcontroller)
+        if suffix == ".zcontroller":
+            self._open_animation_controller(filepath)
+            return
+
+        # Image (.png, .jpg, etc) - pode abrir em visualizador
+        if suffix in {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"}:
+            self._open_image(filepath)
+            return
+
+    def _open_scene(self, filepath: Path) -> None:
+        """Abre uma cena (.zscene) no editor."""
+        try:
+            # Se workflow_controller foi passado ao construtor, usa ele
+            if self.workflow_controller:
+                self.workflow_controller.load_scene(filepath)
+                return
+
+            # Fallback: procura pela janela principal
+            main_window = self._find_main_window()
+            if hasattr(main_window, 'workflow_controller'):
+                main_window.workflow_controller.load_scene(filepath)
+            elif hasattr(main_window, '_scene_persistence'):
+                # Editor isolado pode ter _scene_persistence diretamente
+                payload, snapshots, typed = main_window._scene_persistence.load(filepath)
+                main_window._scene_snapshot = snapshots
+                main_window._objects_by_name = {item["name"]: item for item in snapshots}
+                main_window._scene_document = payload if typed else None
+                main_window._current_scene_path = filepath
+                main_window._selected_name = None
+                main_window._refresh_hierarchy()
+        except Exception as e:
+            import logging
+            logging.error(f"Falha ao abrir cena {filepath}: {e}")
+
+    def _open_logic_graph(self, filepath: Path) -> None:
+        """Abre um grafo de lógica (.zlogic) no editor."""
+        try:
+            main_window = self._find_main_window()
+            if hasattr(main_window, 'open_logic_graph'):
+                main_window.open_logic_graph(filepath)
+            else:
+                import logging
+                logging.warning(f"Logic graph editor não disponível para {filepath}")
+        except Exception as e:
+            import logging
+            logging.error(f"Falha ao abrir logic graph {filepath}: {e}")
+
+    def _open_ui_asset(self, filepath: Path) -> None:
+        """Abre um asset UI (.zui) no editor."""
+        try:
+            main_window = self._find_main_window()
+            if hasattr(main_window, 'open_ui_asset'):
+                main_window.open_ui_asset(filepath)
+            else:
+                import logging
+                logging.warning(f"UI editor não disponível para {filepath}")
+        except Exception as e:
+            import logging
+            logging.error(f"Falha ao abrir UI {filepath}: {e}")
+
+    def _open_animation_controller(self, filepath: Path) -> None:
+        """Abre um controlador de animação (.zcontroller) no editor."""
+        try:
+            main_window = self._find_main_window()
+            if hasattr(main_window, 'open_animation_controller'):
+                main_window.open_animation_controller(filepath)
+            else:
+                import logging
+                logging.warning(f"Animation controller editor não disponível para {filepath}")
+        except Exception as e:
+            import logging
+            logging.error(f"Falha ao abrir animation controller {filepath}: {e}")
+
+    def _open_image(self, filepath: Path) -> None:
+        """Visualiza uma imagem."""
+        try:
+            import logging
+            logging.info(f"Abrindo imagem: {filepath}")
+        except Exception as e:
+            import logging
+            logging.error(f"Falha ao abrir imagem {filepath}: {e}")
+
+    def _find_main_window(self):
+        """Procura pela janela principal (QMainWindow)."""
+        widget = self
+        while widget:
+            if widget.__class__.__name__ == "QMainWindow":
+                return widget
+            widget = getattr(widget, 'parent', lambda: None)()
+        return None
 
     @Slot(str)
     def on_current_folder_changed(self, path: str) -> None:
