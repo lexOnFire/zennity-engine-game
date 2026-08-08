@@ -84,6 +84,14 @@ class RuntimeUIElement(Component):
             self.game_object.runtime_hidden = True
         elif hasattr(self.game_object, "runtime_hidden"):
             delattr(self.game_object, "runtime_hidden")
+
+        # PHASE 3G: Auto-register no UIRuntimeService
+        try:
+            from engine.ui.runtime_service import UIRuntimeService
+            ui_service = UIRuntimeService.instance()
+            ui_service.register_widget(self)
+        except Exception:
+            pass  # Service não disponível — fallback silencioso
         return None
 
     def _owner_is_pure_ui(self) -> bool:
