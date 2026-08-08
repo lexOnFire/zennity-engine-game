@@ -16,6 +16,12 @@
           "clip": "Assets/Animations/Clips/PlayerRun.zanim",
           "speed": 1.5,
           "position": [300, 100]
+        },
+        {
+          "name": "Attack",
+          "clip": "Assets/Animations/Clips/PlayerAttack.zanim",
+          "speed": 1.0,
+          "position": [200, 250]
         }
       ],
       "transitions": [
@@ -38,6 +44,44 @@
             "value": 0.01
           },
           "duration": 0.1
+        },
+        {
+          "from": "Idle",
+          "to": "Attack",
+          "condition": {
+            "parameter": "attack",
+            "operator": "trigger"
+          },
+          "duration": 0.0
+        },
+        {
+          "from": "Run",
+          "to": "Attack",
+          "condition": {
+            "parameter": "attack",
+            "operator": "trigger"
+          },
+          "duration": 0.0
+        },
+        {
+          "from": "Attack",
+          "to": "Idle",
+          "condition": {
+            "parameter": "speed",
+            "operator": "less_equal",
+            "value": 0.01
+          },
+          "duration": 0.1
+        },
+        {
+          "from": "Attack",
+          "to": "Run",
+          "condition": {
+            "parameter": "speed",
+            "operator": "greater",
+            "value": 0.1
+          },
+          "duration": 0.1
         }
       ]
     }
@@ -47,6 +91,11 @@
       "name": "speed",
       "type": "float",
       "default_value": 0
+    },
+    {
+      "name": "attack",
+      "type": "trigger",
+      "default_value": false
     }
   ]
 }

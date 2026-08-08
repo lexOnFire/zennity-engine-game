@@ -83,6 +83,32 @@
       "type": "event.every_frame",
       "inputs": {},
       "outputs": ["frame"]
+    },
+    {
+      "id": "check_horizontal_movement",
+      "type": "logic.branch",
+      "inputs": {
+        "condition": "not_equal",
+        "compare_value": 0
+      },
+      "outputs": ["true", "false"]
+    },
+    {
+      "id": "get_sign_of_horizontal",
+      "type": "math.sign",
+      "inputs": {
+        "value": 0
+      },
+      "outputs": ["result"]
+    },
+    {
+      "id": "set_facing_direction",
+      "type": "variables.set",
+      "inputs": {
+        "name": "facing_x",
+        "value": 1
+      },
+      "outputs": ["done"]
     }
   ],
   "edges": [
@@ -144,6 +170,24 @@
       "source_node": "get_velocity_magnitude",
       "source_port": "magnitude",
       "target_node": "set_animator_speed",
+      "target_port": "value"
+    },
+    {
+      "source_node": "input_horizontal",
+      "source_port": "value",
+      "target_node": "check_horizontal_movement",
+      "target_port": "value"
+    },
+    {
+      "source_node": "check_horizontal_movement",
+      "source_port": "true",
+      "target_node": "get_sign_of_horizontal",
+      "target_port": "value"
+    },
+    {
+      "source_node": "get_sign_of_horizontal",
+      "source_port": "result",
+      "target_node": "set_facing_direction",
       "target_port": "value"
     }
   ]

@@ -47,7 +47,10 @@
     "variables": {
       "move_speed": 200,
       "health": 100,
-      "max_health": 100
+      "max_health": 100,
+      "attack_damage": 25,
+      "attack_range": 64,
+      "facing_x": 1
     }
   }
 }

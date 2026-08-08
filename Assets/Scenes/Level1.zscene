@@ -14,6 +14,10 @@
         {
           "path": "Assets/Logic/PlayerMovementLogic.zlogic",
           "name": "PlayerMovement"
+        },
+        {
+          "path": "Assets/Logic/PlayerCombatLogic.zlogic",
+          "name": "PlayerCombat"
         }
       ]
     },
@@ -34,6 +38,15 @@
         "smooth_follow": true,
         "follow_speed": 5.0
       }
+    },
+    {
+      "id": "dummy_enemy_1",
+      "name": "DummyEnemy",
+      "type": "Prefab",
+      "prefab": "Assets/Prefabs/DummyEnemy.zprfb",
+      "x": 300,
+      "y": 0,
+      "enabled": true
     },
     {
       "id": "level1_hud",
