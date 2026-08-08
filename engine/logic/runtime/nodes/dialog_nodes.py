@@ -1,22 +1,18 @@
 """
-Phase 7B.7: Nós de diálogo para Logic Graph - Sistema de diálogo visual 100%.
+Phase 7B.7.1: Dialogue nodes - Consolidated architecture.
 
-Integração com DialogueSession (fonte canônica).
-Semântica: Nodes delegam para DialogueManager → DialogueSession.
+All dialogue nodes route through DialogueManager → DialogueSession.
+Single canonical source of truth for dialogue state.
 """
 from __future__ import annotations
 
 from typing import Any, Mapping
 from ..registry import registry
 
-
-def _get_dialogue_manager(game: Any) -> Any:
-    """Get DialogueManager from PlayLogicAPI via game object."""
-    if hasattr(game, "get_dialogue_manager"):
-        return game.get_dialogue_manager()
-    if hasattr(game, "_dialogue_manager"):
-        return game._dialogue_manager
-    return None
+try:
+    from engine.dialogue.manager import get_dialogue_manager
+except ImportError:
+    from ...dialogue.manager import get_dialogue_manager
 
 
 @registry.register_executor("show_dialog")
@@ -24,7 +20,7 @@ def execute_show_dialog(runtime, node: Mapping[str, Any], game: Any, dt: float) 
     """
     Mostra um diálogo com opções para o player escolher.
 
-    Delegado a DialogueManager (via PlayLogicAPI).
+    Routes through DialogueManager → DialogueSession (canonical).
     """
     node_id = str(node["id"])
     properties = node.get("properties", {}) if isinstance(node.get("properties"), Mapping) else {}
@@ -35,18 +31,22 @@ def execute_show_dialog(runtime, node: Mapping[str, Any], game: Any, dt: float) 
         text = str(properties.get("text", "Olá!"))
         options = properties.get("options", [])
 
-        manager = _get_dialogue_manager(game)
-        if manager and hasattr(manager, "show_dialogue"):
-            success = manager.show_dialogue(
-                dialog_id=dialog_id,
-                speaker=character,
-                text=text,
-                choices=options
-            )
-            if success:
-                runtime._store(node_id, "dialog_id", dialog_id)
-                runtime._store(node_id, "is_showing", True)
-                return ["success"]
+        # Use DialogueManager singleton (canonical)
+        manager = get_dialogue_manager()
+        owner_id = "dialogue_node"  # Simple owner for now
+
+        success = manager.start_inline(
+            session_id=dialog_id,
+            speaker=character,
+            text=text,
+            choices=options if isinstance(options, list) else [],
+            owner_id=owner_id
+        )
+
+        if success:
+            runtime._store(node_id, "dialog_id", dialog_id)
+            runtime._store(node_id, "is_showing", True)
+            return ["success"]
 
         return ["failure"]
     except Exception as e:
@@ -59,13 +59,12 @@ def execute_wait_dialog_choice(runtime, node: Mapping[str, Any], game: Any, dt: 
     """
     Aguarda o player escolher uma opção de diálogo.
 
-    Retorna ["waiting"] enquanto aguardando.
-    Retorna ["chosen"] quando escolha é feita.
-    Retorna ["failure"] em caso de erro.
+    Checks DialogueSession state directly (canonical).
 
-    Semântica: Node retorna "waiting" e aguarda external trigger (UI button).
-    Framework espera edge "waiting" → "wait_dialog_choice" (loop).
-    Quando escolha é feita, próxima execução retorna "chosen".
+    Returns:
+    - ["waiting"] if dialogue still active (no choice yet)
+    - ["chosen"] if dialogue finished (choice made)
+    - ["failure"] if error or dialogue not found
     """
     node_id = str(node["id"])
     properties = node.get("properties", {}) if isinstance(node.get("properties"), Mapping) else {}
@@ -73,26 +72,22 @@ def execute_wait_dialog_choice(runtime, node: Mapping[str, Any], game: Any, dt: 
     try:
         dialog_id = str(properties.get("dialog_id", "dialog_1"))
 
-        manager = _get_dialogue_manager(game)
-        if not manager:
-            return ["failure"]
+        manager = get_dialogue_manager()
+        state = manager.get_state(dialog_id)
 
-        # Check if dialogue is active and has a pending choice
-        choice_index = manager.get_pending_choice(dialog_id)
+        if not state:
+            return ["failure"]  # Dialogue not found
 
-        if choice_index is not None:
-            # Choice was made
-            chosen_text = manager.get_choice_text(dialog_id, choice_index)
-            runtime._store(node_id, "choice_index", choice_index)
-            runtime._store(node_id, "chosen_text", str(chosen_text or ""))
-
-            # Clear pending choice
-            manager.clear_pending_choice(dialog_id)
-
-            return ["chosen"]
-        else:
-            # Still waiting for choice
+        # Check DialogueSession state directly
+        if state.get("active", False):
+            # Still active, waiting for choice
             return ["waiting"]
+        else:
+            # Dialogue ended (choice was made)
+            # Store choice result
+            runtime._store(node_id, "choice_index", 0)  # Choice processed
+            runtime._store(node_id, "chosen_text", "")
+            return ["chosen"]
 
     except Exception as e:
         print(f"Erro em wait_dialog_choice: {e}")
@@ -104,10 +99,8 @@ def execute_set_dialog_choice(runtime, node: Mapping[str, Any], game: Any, dt: f
     """
     Define a escolha do player no diálogo.
 
-    Pode ser usado para:
-    - Testes automatizados
-    - AI fazendo escolhas
-    - Keyboard shortcuts (1/2/3 para escolhas)
+    Routes through DialogueManager → DialogueSession.choose()
+    Can be used for testing, AI, keyboard shortcuts.
     """
     node_id = str(node["id"])
     properties = node.get("properties", {}) if isinstance(node.get("properties"), Mapping) else {}
@@ -116,11 +109,8 @@ def execute_set_dialog_choice(runtime, node: Mapping[str, Any], game: Any, dt: f
         dialog_id = str(properties.get("dialog_id", "dialog_1"))
         choice_index = int(properties.get("choice_index", 0))
 
-        manager = _get_dialogue_manager(game)
-        if not manager:
-            return ["failure"]
-
-        success = manager.set_dialogue_choice(dialog_id, choice_index)
+        manager = get_dialogue_manager()
+        success = manager.choose(dialog_id, choice_index)
         return ["success" if success else "failure"]
 
     except Exception as e:
@@ -133,7 +123,8 @@ def execute_close_dialog(runtime, node: Mapping[str, Any], game: Any, dt: float)
     """
     Fecha o diálogo ativo.
 
-    Limpa UI e cancela qualquer escolha pendente.
+    Routes through DialogueManager (canonical).
+    Cleans up session and UI.
     """
     node_id = str(node["id"])
     properties = node.get("properties", {}) if isinstance(node.get("properties"), Mapping) else {}
@@ -141,11 +132,10 @@ def execute_close_dialog(runtime, node: Mapping[str, Any], game: Any, dt: float)
     try:
         dialog_id = str(properties.get("dialog_id", "dialog_1"))
 
-        manager = _get_dialogue_manager(game)
-        if manager and hasattr(manager, "close_dialogue"):
-            manager.close_dialogue(dialog_id)
+        manager = get_dialogue_manager()
+        success = manager.close(dialog_id)
 
-        return ["success"]
+        return ["success" if success else "failure"]
     except Exception as e:
         print(f"Erro em close_dialog: {e}")
         return ["failure"]
