@@ -1,0 +1,90 @@
+{
+  "format": "zennity.generic_graph",
+  "category": "Dialogue",
+  "nodes": [
+    {
+      "id": "speech_0",
+      "type": "dialogue.speech",
+      "inputs": {
+        "speaker": "Guard",
+        "text": "Do you have a pass?"
+      },
+      "outputs": ["out"]
+    },
+    {
+      "id": "choice_1",
+      "type": "dialogue.choice",
+      "inputs": {
+        "prompt": "Select your answer:"
+      },
+      "outputs": ["option_0", "option_1"]
+    },
+    {
+      "id": "event_accept_2",
+      "type": "dialogue.event",
+      "inputs": {
+        "event_name": "guard_accept"
+      },
+      "outputs": ["out"]
+    },
+    {
+      "id": "event_reject_3",
+      "type": "dialogue.event",
+      "inputs": {
+        "event_name": "guard_reject"
+      },
+      "outputs": ["out"]
+    },
+    {
+      "id": "end_4",
+      "type": "dialogue.end",
+      "inputs": {
+        "in": null
+      },
+      "outputs": []
+    },
+    {
+      "id": "end_5",
+      "type": "dialogue.end",
+      "inputs": {
+        "in": null
+      },
+      "outputs": []
+    }
+  ],
+  "edges": [
+    {
+      "source_node": "speech_0",
+      "source_port": "out",
+      "target_node": "choice_1",
+      "target_port": "in"
+    },
+    {
+      "source_node": "choice_1",
+      "source_port": "option_0",
+      "target_node": "event_accept_2",
+      "target_port": "in"
+    },
+    {
+      "source_node": "choice_1",
+      "source_port": "option_1",
+      "target_node": "event_reject_3",
+      "target_port": "in"
+    },
+    {
+      "source_node": "event_accept_2",
+      "source_port": "out",
+      "target_node": "end_4",
+      "target_port": "in"
+    },
+    {
+      "source_node": "event_reject_3",
+      "source_port": "out",
+      "target_node": "end_5",
+      "target_port": "in"
+    }
+  ],
+  "variables": {
+    "has_pass": false
+  }
+}
