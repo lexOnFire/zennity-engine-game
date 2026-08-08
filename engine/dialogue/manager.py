@@ -139,6 +139,10 @@ class DialogueManager:
 
             # Create DialogueSession (canonical runtime)
             session = DialogueSession(graph, variables=variables or {})
+
+            # IMPORTANT: Start the session to initialize state
+            session.start()
+
             self._sessions[session_id] = session
             self._active_session_id = session_id
             self._owner_sessions[owner_id] = session_id
@@ -178,6 +182,10 @@ class DialogueManager:
                 variables=variables or {},
                 event_sink=self._handle_dialogue_event
             )
+
+            # IMPORTANT: Start the session to initialize state
+            session.start()
+
             self._sessions[session_id] = session
             self._active_session_id = session_id
             self._owner_sessions[owner_id] = session_id
