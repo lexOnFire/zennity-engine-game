@@ -13,7 +13,7 @@
 2. ✅ **Asset Choice Workflow** - COMPLETE ✅
 3. ✅ **Scene Cleanup** - COMPLETE ✅
 4. ✅ **Play/Stop/Play Reset** - COMPLETE ✅
-5. ⏳ **Dialogue Event → LogicEventBus** - TODO
+5. ✅ **Dialogue Event → LogicEventBus** - COMPLETE ✅
 6. ⏳ **Old Test Migration** - TODO
 7. ⏳ **Full Regression** - TODO
 8. ⏳ **Success Criteria Validation** - TODO
@@ -195,6 +195,51 @@ Integration (3):
 - Same IDs reusable without collision
 - Asset/inline restart from beginning
 - Event sinks invalidated
+
+### 5. Dialogue Event → LogicEventBus - ✅ COMPLETE
+
+**Test Suite**: tests/integration/test_phase7b7_3_dialogue_event_routing.py
+
+**8 Test Cases - All Passing**:
+- ✅ Inline dialogue now has event_sink
+- ✅ Composite key enables owner routing
+- ✅ _handle_dialogue_event receives owner_id
+- ✅ Asset dialogue has event_sink
+- ✅ Inline dialogue has event_sink
+- ✅ Event safe after session close
+- ✅ Event safe after scene reset
+- ✅ No parallel event dispatcher
+
+**Integration**:
+
+Modified: engine/dialogue/manager.py
+- start_inline() now passes event_sink to DialogueSession
+- Both start_inline() and start_asset() use same routing
+- _handle_dialogue_event() emits to LogicEventBus
+- Payload includes owner_id, session_id, event_name
+
+**Event Flow**:
+```
+DialogueSession (event node)
+    ↓
+DialogueManager._handle_dialogue_event()
+    ↓
+LogicEventBus.emit("dialogue:{event_name}", {owner_id, session_id, ...})
+    ↓
+Logic Graph Runtime (owner routing)
+```
+
+**Results**: 8/8 PASS ✅
+**Total Dialogue Tests**: 76/76 PASS ✅
+**Regressions**: 0 ✅
+
+**Event Guarantees**:
+- Owner isolation maintained
+- No cross-owner contamination
+- Safe session lifecycle handling
+- Reuses LogicEventBus (no separate dispatcher)
+- Scene cleanup invalidates sources
+- Play/Stop/Play clears sinks
 
 ### 3. Asset Choice Workflow
 Validate complete flow:
