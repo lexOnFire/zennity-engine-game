@@ -484,8 +484,6 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin):
         return evaluate_output(self, node_id, port, game, dt, resolving)
 
     def _store(self, node_id: str, port: str, value: Any) -> Any:
-        if value is None:
-            value = 100.0 if str(port).lower() in {"value", "val", "number", "amount", "progress"} else ""
         self.values[(node_id, port)] = value
         self.values[node_id] = value  # Compatibilidade com extensões antigas.
         return value

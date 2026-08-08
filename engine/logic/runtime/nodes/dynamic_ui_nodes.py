@@ -247,67 +247,73 @@ def execute_get_ui_widget_property(runtime, node: Mapping[str, Any], game: Any, 
         return ["failure"]
 
 
-def _fetch_progress_bar_value(runtime: Any, widget_name: str, game: Any) -> float:
-    name = str(widget_name).strip()
-    if not name or name.lower() in {"none", "texto", "100", "0"}:
-        name = "comida"
+def _find_ui_widget_in_tree(ui_dict: dict[str, Any], widget_name: str) -> dict[str, Any] | None:
+    if not isinstance(ui_dict, dict):
+        return None
+    name = str(ui_dict.get("name", "")).strip().lower()
+    target_name = widget_name.strip().lower()
+    if name and name == target_name:
+        return ui_dict
+    for child in ui_dict.get("children", []):
+        if isinstance(child, dict):
+            found = _find_ui_widget_in_tree(child, widget_name)
+            if found is not None:
+                return found
+    return None
 
-    # 1. Busca via API game.find()
-    if hasattr(game, "find"):
-        try:
-            targets_to_try = [name]
-            for alt in ("comida", "bar", "progress", "hp", "stamina"):
-                if alt not in targets_to_try:
-                    targets_to_try.append(alt)
 
-            for search_name in targets_to_try:
-                target = game.find(search_name)
-                if not target:
-                    continue
-                if hasattr(target, "value") and target.value is not None:
-                    return float(target.value)
+def _fetch_progress_bar_value(runtime: Any, widget_name: str, game: Any) -> float | None:
+    name = str(widget_name).strip() or "comida"
 
-                if hasattr(target, "obj") and isinstance(target.obj, dict):
-                    obj = target.obj
-                    ui = obj.get("ui")
-                    if isinstance(ui, dict) and "value" in ui and ui["value"] is not None:
-                        return float(ui["value"])
-                    if "value" in obj and obj["value"] is not None:
-                        return float(obj["value"])
-                    comps = obj.get("components", [])
-                    if isinstance(comps, list):
-                        for comp in comps:
-                            if isinstance(comp, dict) and str(comp.get("type", "")).lower() in {"progressbar", "progressbarcomponent", "progress_bar"}:
-                                props = comp.get("properties", {})
-                                if "value" in props and props["value"] is not None:
-                                    return float(props["value"])
-                                if "value" in comp and comp["value"] is not None:
-                                    return float(comp["value"])
-        except Exception:
-            pass
-
-    # 2. Busca no dicionário global de objetos do mundo/cena (_world ou objects)
     world_dicts = []
     if hasattr(game, "_world") and isinstance(game._world, dict):
         world_dicts.append(game._world)
     if hasattr(game, "objects") and isinstance(game.objects, dict):
         world_dicts.append(game.objects)
 
+    # 1. Busca primeiro em árvores de Canvas UI (.zui ou UICanvas)
     for wdict in world_dicts:
         for obj_name, obj in wdict.items():
             if not isinstance(obj, dict):
                 continue
-
             ui = obj.get("ui")
             if isinstance(ui, dict):
-                if str(ui.get("type", "")).lower() in {"progress_bar", "progressbar"}:
-                    if "value" in ui and ui["value"] is not None:
-                        return float(ui["value"])
-                if str(obj_name).lower() == name.lower() or str(obj.get("tag", "")).lower() == name.lower():
-                    if "value" in ui and ui["value"] is not None:
-                        return float(ui["value"])
+                overrides = ui.get("_widget_overrides", {})
+                if name in overrides and isinstance(overrides[name], dict) and "value" in overrides[name]:
+                    return float(overrides[name]["value"])
 
+                matched_widget = _find_ui_widget_in_tree(ui, name)
+                if matched_widget is not None:
+                    if "value" in matched_widget and matched_widget["value"] is not None:
+                        return float(matched_widget["value"])
+                    if "max_value" in matched_widget and matched_widget["max_value"] is not None:
+                        return float(matched_widget["max_value"])
+
+    # 2. Busca via API game.find()
+    if hasattr(game, "find"):
+        try:
+            target = game.find(name)
+            if target:
+                if hasattr(target, "value") and target.value is not None:
+                    return float(target.value)
+                if hasattr(target, "obj") and isinstance(target.obj, dict):
+                    ui = target.obj.get("ui")
+                    if isinstance(ui, dict) and "value" in ui and ui["value"] is not None:
+                        return float(ui["value"])
+                    if "value" in target.obj and target.obj["value"] is not None:
+                        return float(target.obj["value"])
+        except Exception:
+            pass
+
+    # 3. Busca por componentes no mundo
+    for wdict in world_dicts:
+        for obj_name, obj in wdict.items():
+            if not isinstance(obj, dict):
+                continue
             if str(obj_name).lower() == name.lower() or str(obj.get("tag", "")).lower() == name.lower():
+                ui = obj.get("ui")
+                if isinstance(ui, dict) and "value" in ui and ui["value"] is not None:
+                    return float(ui["value"])
                 if "value" in obj and obj["value"] is not None:
                     return float(obj["value"])
 
@@ -323,24 +329,16 @@ def _fetch_progress_bar_value(runtime: Any, widget_name: str, game: Any) -> floa
                             if "value" in comp and comp["value"] is not None:
                                 return float(comp["value"])
 
-            if isinstance(ui, dict) and ui.get("type") == "canvas":
-                overrides = ui.get("_widget_overrides", {})
-                for k, v in overrides.items():
-                    if isinstance(v, dict) and "value" in v and v["value"] is not None:
-                        return float(v["value"])
-
-    # 3. Busca nas variáveis do Blackboard/Runtime
+    # 4. Busca nas variáveis do Blackboard/Runtime
     if hasattr(runtime, "variables") and isinstance(runtime.variables, dict):
-        for key in (name, f"{name}.value", "value", "comida.value", "comida"):
+        for key in (name, f"{name}.value", "value", "comida.value"):
             if key in runtime.variables and runtime.variables[key] is not None:
-                val_str = str(runtime.variables[key]).lower()
-                if val_str not in {"none", ""}:
-                    try:
-                        return float(runtime.variables[key])
-                    except (ValueError, TypeError):
-                        pass
+                try:
+                    return float(runtime.variables[key])
+                except (ValueError, TypeError):
+                    pass
 
-    return 100.0
+    return None
 
 
 @registry.register_executor('get_progress_bar_value')
@@ -351,11 +349,8 @@ def execute_get_progress_bar_value(runtime, node: Mapping[str, Any], game: Any, 
     widget_name = str(runtime._read_input(node_id, "widget_name", properties.get("widget_name", "comida"), game, dt, set()))
 
     val = _fetch_progress_bar_value(runtime, widget_name, game)
-    if val is None or str(val).strip().lower() in {"none", ""}:
-        val = 100.0
-    val = float(val)
     runtime._store(node_id, "value", val)
-    return ["next", "exec_success"]
+    return ["next", "exec_success"] if val is not None else ["next", "exec_not_found"]
 
 
 @registry.register_evaluator('get_progress_bar_value')
@@ -365,7 +360,4 @@ def evaluate_get_progress_bar_value(runtime, node_id: str, port: str, node: Mapp
     widget_name = str(runtime._read_input(node_id, "widget_name", properties.get("widget_name", "comida"), game, dt, resolving))
 
     val = _fetch_progress_bar_value(runtime, widget_name, game)
-    if val is None or str(val).strip().lower() in {"none", ""}:
-        val = 100.0
-    val = float(val)
     return runtime._store(node_id, "value", val)

@@ -143,10 +143,7 @@ class LogicGraphDebugMixin:
             if not isinstance(key, tuple) or len(key) != 2:
                 continue
             node_id, port = str(key[0]), str(key[1])
-            dbg_val = self._debug_value(value)
-            if dbg_val is None or str(dbg_val).strip() in {"None", "none"}:
-                dbg_val = 100.0 if port in {"value", "val", "number"} else ""
-            values.setdefault(node_id, {})[port] = dbg_val
+            values.setdefault(node_id, {})[port] = self._debug_value(value)
         blackboard = {
             scope: {str(name): self._debug_value(value) for name, value in values.items()}
             for scope, values in self.blackboard.snapshot(self.object_key).items()

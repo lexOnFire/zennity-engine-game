@@ -64,8 +64,7 @@ class LogicNodeItemRuntimeMixin:
             else:
                 self.debug_item.setDefaultTextColor(QColor("#7ee787"))
                 pairs = list((values or {}).items())[:2]
-                sanitized_pairs = [(name, 100.0 if value is None or str(value).strip() in {"None", "none"} else value) for name, value in pairs]
-                text = " • ".join(f"{name}={value}" for name, value in sanitized_pairs) if sanitized_pairs else "EXECUTANDO"
+                text = " • ".join(f"{name}={value}" for name, value in pairs) if pairs else "EXECUTANDO"
                 self.debug_item.setPlainText(text)
         self._update_border_style()
 
