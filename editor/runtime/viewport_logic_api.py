@@ -474,8 +474,70 @@ class PlayLogicAPI:
     def current_animation(self) -> str:
         return str(self.obj.get("_current_animation_name", "Nenhum"))
 
-    def play_sound(self, sound_path: str) -> None:
-        self.obj.setdefault("logic_events", []).append({"command": "play_sound", "value": str(sound_path)})
+    def play_sound(self, sound_path: str, volume: float = 1.0, loop: bool = False) -> bool:
+        """Play a sound effect."""
+        if not sound_path:
+            return False
+        self.send("play_sound", {
+            "path": str(sound_path),
+            "volume": float(volume),
+            "loop": bool(loop)
+        })
+        return True
+
+    def play_music(self, music_path: str, volume: float = 1.0, loop: bool = True, fade_in: float = 0.0) -> bool:
+        """Play background music."""
+        if not music_path:
+            return False
+        self.send("play_music", {
+            "path": str(music_path),
+            "volume": float(volume),
+            "loop": bool(loop),
+            "fade_in": float(fade_in)
+        })
+        return True
+
+    def stop_sound(self, sound_path: str = None) -> bool:
+        """Stop a playing sound."""
+        self.send("stop_sound", {"path": str(sound_path) if sound_path else None})
+        return True
+
+    def stop_music(self, fade_out: float = 0.0) -> bool:
+        """Stop background music."""
+        self.send("stop_music", {"fade_out": float(fade_out)})
+        return True
+
+    def stop_all_sounds(self) -> bool:
+        """Stop all audio playback."""
+        self.send("stop_all_sounds")
+        return True
+
+    def set_master_volume(self, volume: float) -> bool:
+        """Set master volume level (0.0 to 1.0)."""
+        volume = max(0.0, min(1.0, float(volume)))
+        self.send("set_master_volume", {"volume": volume})
+        return True
+
+    def set_music_volume(self, volume: float) -> bool:
+        """Set music volume level (0.0 to 1.0)."""
+        volume = max(0.0, min(1.0, float(volume)))
+        self.send("set_music_volume", {"volume": volume})
+        return True
+
+    def set_sfx_volume(self, volume: float) -> bool:
+        """Set SFX volume level (0.0 to 1.0)."""
+        volume = max(0.0, min(1.0, float(volume)))
+        self.send("set_sfx_volume", {"volume": volume})
+        return True
+
+    def get_master_volume(self) -> float:
+        """Get current master volume (pure getter)."""
+        try:
+            from engine.audio import AudioManager
+            manager = AudioManager.get_instance()
+            return manager.get_master_volume() if manager else 1.0
+        except Exception:
+            return 1.0
 
     def set_sprite(self, image_path: str) -> None:
         """Troca a textura principal do objeto sem recriá-lo."""
