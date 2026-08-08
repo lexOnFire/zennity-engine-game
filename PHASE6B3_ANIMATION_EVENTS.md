@@ -520,8 +520,21 @@ On Animation Finished
 
 ## Summary
 
-Phase 6B.3 delivers **complete animation event system** with owner-based routing. Animations can now communicate state changes (hit, footstep, spell_cast) and lifecycle events (finished) to Logic Graphs, enabling full gameplay orchestration in the visual editor.
+Phase 6B.3 delivers **complete animation event system** with owner-based routing. Animations can now communicate state changes (hit, footstep, spell_cast) and lifecycle events (finished) to Logic Graphs, enabling event-driven gameplay logic in the visual editor.
 
-**Status**: Ready for Production. ✅
+**Phase 6B.3 Status**: ✅ **SCOPE COMPLETE**
+- Event nodes implemented (on_animation_event, on_animation_finished)
+- Owner-based routing verified
+- Handler lifecycle management in place
+- 9/9 tests pass, 0 regressions
 
-**Awaiting approval to proceed to Phase 6B.4** (Animation State Machine Visual Editor).
+**Animation System Status**: ⏳ **IN PROGRESS**
+- Phase 6B.1–6B.3: ✅ Playback + Logic Integration + Events
+- Phase 6B.4: ⏳ **NEXT** — Animator Controller + State Machine Visual Integration
+- Phase 6B.5: ⏳ **PLANNED** — Consolidation with E2E Gameplay
+
+**Next Step**: Phase 6B.4 (Animator Controller Integration)
+- Audit existing AnimatorControllerRuntime
+- Integrate parameter system with Logic Graph
+- Connect transitions to state machine
+- No new parallel systems — reuse and integrate existing architecture
