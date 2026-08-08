@@ -1,0 +1,96 @@
+{
+  "format": "zennity.ui",
+  "widgets": [
+    {
+      "name": "Background",
+      "type": "Image",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 720,
+      "color": [0.15, 0.15, 0.15, 1.0]
+    },
+    {
+      "name": "TitleContainer",
+      "type": "Container",
+      "x": 640,
+      "y": 150,
+      "width": 400,
+      "height": 100,
+      "anchor": "top_center"
+    },
+    {
+      "name": "Title",
+      "type": "Label",
+      "x": 640,
+      "y": 150,
+      "width": 400,
+      "height": 80,
+      "text": "ZENNITY ARENA",
+      "font_size": 48,
+      "color": [1.0, 1.0, 1.0, 1.0],
+      "alignment": "center",
+      "anchor": "top_center"
+    },
+    {
+      "name": "MenuButtonsContainer",
+      "type": "Container",
+      "x": 640,
+      "y": 350,
+      "width": 300,
+      "height": 300,
+      "anchor": "center"
+    },
+    {
+      "name": "NewGameButton",
+      "type": "Button",
+      "x": 640,
+      "y": 350,
+      "width": 250,
+      "height": 60,
+      "text": "NEW GAME",
+      "font_size": 24,
+      "color": [1.0, 1.0, 1.0, 1.0],
+      "background_color": [0.2, 0.4, 0.8, 1.0],
+      "anchor": "center"
+    },
+    {
+      "name": "ContinueButton",
+      "type": "Button",
+      "x": 640,
+      "y": 430,
+      "width": 250,
+      "height": 60,
+      "text": "CONTINUE",
+      "font_size": 24,
+      "color": [1.0, 1.0, 1.0, 1.0],
+      "background_color": [0.4, 0.4, 0.4, 1.0],
+      "anchor": "center",
+      "enabled": false
+    },
+    {
+      "name": "ExitButton",
+      "type": "Button",
+      "x": 640,
+      "y": 510,
+      "width": 250,
+      "height": 60,
+      "text": "EXIT",
+      "font_size": 24,
+      "color": [1.0, 1.0, 1.0, 1.0],
+      "background_color": [0.8, 0.2, 0.2, 1.0],
+      "anchor": "center"
+    },
+    {
+      "name": "VersionLabel",
+      "type": "Label",
+      "x": 10,
+      "y": 690,
+      "width": 200,
+      "height": 20,
+      "text": "Version 0.1 Alpha",
+      "font_size": 12,
+      "color": [0.7, 0.7, 0.7, 1.0]
+    }
+  ]
+}

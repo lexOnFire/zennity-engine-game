@@ -1,0 +1,38 @@
+{
+  "format": "zennity.ui",
+  "widgets": [
+    {
+      "name": "HealthLabel",
+      "type": "Label",
+      "x": 20,
+      "y": 20,
+      "width": 200,
+      "height": 30,
+      "text": "Health: 100",
+      "font_size": 16,
+      "color": [1.0, 1.0, 1.0, 1.0]
+    },
+    {
+      "name": "CoinsLabel",
+      "type": "Label",
+      "x": 20,
+      "y": 60,
+      "width": 200,
+      "height": 30,
+      "text": "Coins: 0",
+      "font_size": 16,
+      "color": [1.0, 1.0, 0.0, 1.0]
+    },
+    {
+      "name": "KeyLabel",
+      "type": "Label",
+      "x": 20,
+      "y": 100,
+      "width": 200,
+      "height": 30,
+      "text": "Key: No",
+      "font_size": 16,
+      "color": [0.8, 0.8, 0.8, 1.0]
+    }
+  ]
+}

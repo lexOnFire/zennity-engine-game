@@ -1,0 +1,156 @@
+{
+  "format": "zennity.generic_graph",
+  "category": "Logic",
+  "name": "Main Menu Logic",
+  "nodes": [
+    {
+      "id": "new_game_button_listener",
+      "type": "ui.button_clicked",
+      "inputs": {
+        "widget_name": "NewGameButton"
+      },
+      "outputs": ["clicked"]
+    },
+    {
+      "id": "reset_new_game_state",
+      "type": "variables.set",
+      "inputs": {
+        "name": "coins",
+        "value": 0
+      },
+      "outputs": ["done"]
+    },
+    {
+      "id": "reset_score",
+      "type": "variables.set",
+      "inputs": {
+        "name": "score",
+        "value": 0
+      },
+      "outputs": ["done"]
+    },
+    {
+      "id": "reset_key",
+      "type": "variables.set",
+      "inputs": {
+        "name": "has_key",
+        "value": false
+      },
+      "outputs": ["done"]
+    },
+    {
+      "id": "reset_health",
+      "type": "variables.set",
+      "inputs": {
+        "name": "health",
+        "value": 100
+      },
+      "outputs": ["done"]
+    },
+    {
+      "id": "load_level1",
+      "type": "scene.load_scene",
+      "inputs": {
+        "scene_path": "Assets/Scenes/Level1.zscene"
+      },
+      "outputs": ["success", "failure"]
+    },
+    {
+      "id": "continue_button_listener",
+      "type": "ui.button_clicked",
+      "inputs": {
+        "widget_name": "ContinueButton"
+      },
+      "outputs": ["clicked"]
+    },
+    {
+      "id": "load_game",
+      "type": "game.load_game",
+      "inputs": {
+        "slot": "autosave"
+      },
+      "outputs": ["success", "failure"]
+    },
+    {
+      "id": "exit_button_listener",
+      "type": "ui.button_clicked",
+      "inputs": {
+        "widget_name": "ExitButton"
+      },
+      "outputs": ["clicked"]
+    },
+    {
+      "id": "exit_game",
+      "type": "app.quit",
+      "inputs": {},
+      "outputs": []
+    },
+    {
+      "id": "check_save_exists",
+      "type": "game.has_save",
+      "inputs": {
+        "slot": "autosave"
+      },
+      "outputs": ["true", "false"]
+    },
+    {
+      "id": "enable_continue",
+      "type": "ui.set_widget_enabled",
+      "inputs": {
+        "widget_name": "ContinueButton",
+        "enabled": true
+      },
+      "outputs": ["done"]
+    }
+  ],
+  "edges": [
+    {
+      "source_node": "new_game_button_listener",
+      "source_port": "clicked",
+      "target_node": "reset_new_game_state",
+      "target_port": "in"
+    },
+    {
+      "source_node": "reset_new_game_state",
+      "source_port": "done",
+      "target_node": "reset_score",
+      "target_port": "in"
+    },
+    {
+      "source_node": "reset_score",
+      "source_port": "done",
+      "target_node": "reset_key",
+      "target_port": "in"
+    },
+    {
+      "source_node": "reset_key",
+      "source_port": "done",
+      "target_node": "reset_health",
+      "target_port": "in"
+    },
+    {
+      "source_node": "reset_health",
+      "source_port": "done",
+      "target_node": "load_level1",
+      "target_port": "in"
+    },
+    {
+      "source_node": "continue_button_listener",
+      "source_port": "clicked",
+      "target_node": "load_game",
+      "target_port": "in"
+    },
+    {
+      "source_node": "exit_button_listener",
+      "source_port": "clicked",
+      "target_node": "exit_game",
+      "target_port": "in"
+    },
+    {
+      "source_node": "check_save_exists",
+      "source_port": "true",
+      "target_node": "enable_continue",
+      "target_port": "in"
+    }
+  ]
+}
