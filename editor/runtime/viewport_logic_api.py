@@ -259,8 +259,24 @@ class PlayLogicAPI:
         key = self._KEY_ALIASES.get(name.lower(), name.lower())
         return bool(self._input.get(key, False) and not self._previous_input.get(key, False))
 
+    def is_key_pressed(self, name: str) -> bool:
+        """Check if key is currently pressed (same as key(), for compatibility)."""
+        return self.key(name)
+
     def axis(self, negative: str, positive: str) -> int:
         return int(self.key(positive)) - int(self.key(negative))
+
+    def get_touch_input(self) -> dict[str, Any]:
+        """Return current touch input state (placeholder for mobile support)."""
+        return self.obj.get("_touch_input", {})
+
+    def get_swipe_input(self) -> dict[str, Any]:
+        """Return current swipe gesture state (placeholder for mobile support)."""
+        return self.obj.get("_swipe_input", {})
+
+    def get_pinch_input(self) -> dict[str, Any]:
+        """Return current pinch/zoom gesture state (placeholder for mobile support)."""
+        return self.obj.get("_pinch_input", {})
 
     def move(self, dx: float, dy: float = 0.0) -> None:
         self.x += float(dx)
