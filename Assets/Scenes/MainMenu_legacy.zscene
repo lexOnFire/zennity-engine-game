@@ -1,0 +1,50 @@
+{
+  "format": "zennity.scene",
+  "name": "Main Menu",
+  "objects": [
+    {
+      "id": "main_camera",
+      "name": "MainCamera",
+      "type": "Camera2D",
+      "x": 0,
+      "y": 0,
+      "enabled": true,
+      "camera": {
+        "zoom": 1.0,
+        "viewport_width": 1280,
+        "viewport_height": 720,
+        "clear_color": [
+          0.1,
+          0.1,
+          0.1,
+          1.0
+        ]
+      }
+    },
+    {
+      "id": "menu_ui_container",
+      "name": "MenuUI",
+      "type": "Canvas",
+      "x": 0,
+      "y": 0,
+      "enabled": true,
+      "ui": {
+        "asset": "Assets/UI/MainMenu.zui",
+        "auto_load": true
+      },
+      "logic_graphs": [
+        {
+          "path": "Assets/Logic/MainMenuLogic.zlogic",
+          "name": "MainMenuLogic"
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "coins": 0,
+    "score": 0,
+    "has_key": false,
+    "health": 100,
+    "current_level": 1
+  }
+}

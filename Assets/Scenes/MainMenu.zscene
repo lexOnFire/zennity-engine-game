@@ -1,45 +1,91 @@
 {
-  "format": "zennity.scene",
-  "name": "Main Menu",
+  "format_version": 2,
+  "scene_name": "Main Menu",
+  "engine_version": "0.1.0",
+  "blackboard": {
+    "variables": {}
+  },
   "objects": [
     {
       "id": "main_camera",
       "name": "MainCamera",
-      "type": "Camera2D",
-      "x": 0,
-      "y": 0,
-      "enabled": true,
-      "camera": {
-        "zoom": 1.0,
-        "viewport_width": 1280,
-        "viewport_height": 720,
-        "clear_color": [0.1, 0.1, 0.1, 1.0]
-      }
+      "active": true,
+      "tag": "",
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "components": {
+        "camera": {
+          "zoom": 1.0,
+          "background_color": [
+            0.1,
+            0.1,
+            0.1,
+            1.0
+          ],
+          "viewport_rect": [
+            0.0,
+            0.0,
+            1.0,
+            1.0
+          ],
+          "priority": 0,
+          "active": true
+        }
+      },
+      "enabled": true
     },
     {
       "id": "menu_ui_container",
       "name": "MenuUI",
-      "type": "Canvas",
-      "x": 0,
-      "y": 0,
-      "enabled": true,
-      "ui": {
-        "asset": "Assets/UI/MainMenu.zui",
-        "auto_load": true
+      "active": true,
+      "tag": "",
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
       },
-      "logic_graphs": [
-        {
-          "path": "Assets/Logic/MainMenuLogic.zlogic",
-          "name": "MainMenuLogic"
-        }
-      ]
+      "components": {
+        "canvas": {
+          "ui_asset": "Assets/UI/MainMenu.zui",
+          "layer_mask": 4294967295
+        },
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/MainMenuLogic.zlogic",
+            "name": "MainMenuLogic"
+          }
+        ]
+      },
+      "enabled": true
     }
-  ],
-  "variables": {
-    "coins": 0,
-    "score": 0,
-    "has_key": false,
-    "health": 100,
-    "current_level": 1
-  }
+  ]
 }

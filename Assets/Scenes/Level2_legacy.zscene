@@ -1,0 +1,159 @@
+{
+  "format": "zennity.scene",
+  "name": "Level 2 - Arena Plus",
+  "objects": [
+    {
+      "id": "player",
+      "name": "Player",
+      "type": "Prefab",
+      "prefab": "Assets/Prefabs/Player.zprfb",
+      "x": 0,
+      "y": 0,
+      "enabled": true,
+      "logic_graphs": [
+        {
+          "path": "Assets/Logic/PlayerMovementLogic.zlogic",
+          "name": "PlayerMovement"
+        },
+        {
+          "path": "Assets/Logic/PlayerCombatLogic.zlogic",
+          "name": "PlayerCombat"
+        },
+        {
+          "path": "Assets/Logic/PlayerHealthLogic.zlogic",
+          "name": "PlayerHealth"
+        }
+      ]
+    },
+    {
+      "id": "level2_camera",
+      "name": "Camera",
+      "type": "Camera2D",
+      "x": 0,
+      "y": 0,
+      "enabled": true,
+      "camera": {
+        "zoom": 1.0,
+        "viewport_width": 1280,
+        "viewport_height": 720,
+        "clear_color": [
+          0.05,
+          0.1,
+          0.05,
+          1.0
+        ],
+        "follow_target": "Player",
+        "follow_offset": [
+          0,
+          0
+        ],
+        "smooth_follow": true,
+        "follow_speed": 5.0
+      }
+    },
+    {
+      "id": "level2_hud",
+      "name": "HUD",
+      "type": "Canvas",
+      "x": 0,
+      "y": 0,
+      "enabled": true,
+      "ui": {
+        "asset": "Assets/UI/HUD.zui",
+        "auto_load": true
+      }
+    },
+    {
+      "id": "level2_boss",
+      "name": "Boss",
+      "type": "Prefab",
+      "prefab": "Assets/Prefabs/Boss.zprfb",
+      "x": 300,
+      "y": 0,
+      "enabled": true
+    },
+    {
+      "id": "wall_left",
+      "name": "WallLeft",
+      "type": "GameObject",
+      "x": -20,
+      "y": 0,
+      "width": 2,
+      "height": 30,
+      "enabled": true,
+      "components": [
+        {
+          "type": "BoxCollider2D",
+          "size": [
+            2,
+            30
+          ],
+          "is_trigger": false
+        }
+      ]
+    },
+    {
+      "id": "wall_right",
+      "name": "WallRight",
+      "type": "GameObject",
+      "x": 20,
+      "y": 0,
+      "width": 2,
+      "height": 30,
+      "enabled": true,
+      "components": [
+        {
+          "type": "BoxCollider2D",
+          "size": [
+            2,
+            30
+          ],
+          "is_trigger": false
+        }
+      ]
+    },
+    {
+      "id": "wall_top",
+      "name": "WallTop",
+      "type": "GameObject",
+      "x": 0,
+      "y": -15,
+      "width": 44,
+      "height": 2,
+      "enabled": true,
+      "components": [
+        {
+          "type": "BoxCollider2D",
+          "size": [
+            44,
+            2
+          ],
+          "is_trigger": false
+        }
+      ]
+    },
+    {
+      "id": "wall_bottom",
+      "name": "WallBottom",
+      "type": "GameObject",
+      "x": 0,
+      "y": 15,
+      "width": 44,
+      "height": 2,
+      "enabled": true,
+      "components": [
+        {
+          "type": "BoxCollider2D",
+          "size": [
+            44,
+            2
+          ],
+          "is_trigger": false
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "level_number": 2
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "format": "zennity.scene",
+  "name": "Game Over",
+  "objects": [
+    {
+      "id": "gameover_camera",
+      "name": "Camera",
+      "type": "Camera2D",
+      "x": 0,
+      "y": 0,
+      "enabled": true,
+      "camera": {
+        "zoom": 1.0,
+        "viewport_width": 1280,
+        "viewport_height": 720,
+        "clear_color": [
+          0.1,
+          0.05,
+          0.05,
+          1.0
+        ]
+      }
+    },
+    {
+      "id": "gameover_canvas",
+      "name": "Canvas",
+      "type": "Canvas",
+      "x": 0,
+      "y": 0,
+      "enabled": true,
+      "ui": {
+        "asset": "Assets/UI/GameOver.zui",
+        "auto_load": true
+      },
+      "logic_graphs": [
+        {
+          "path": "Assets/Logic/GameOverLogic.zlogic",
+          "name": "GameOverLogic"
+        }
+      ]
+    }
+  ]
+}

@@ -1,38 +1,91 @@
 {
-  "format": "zennity.scene",
-  "name": "Game Over",
+  "format_version": 2,
+  "scene_name": "Game Over",
+  "engine_version": "0.1.0",
+  "blackboard": {
+    "variables": {}
+  },
   "objects": [
     {
       "id": "gameover_camera",
       "name": "Camera",
-      "type": "Camera2D",
-      "x": 0,
-      "y": 0,
-      "enabled": true,
-      "camera": {
-        "zoom": 1.0,
-        "viewport_width": 1280,
-        "viewport_height": 720,
-        "clear_color": [0.1, 0.05, 0.05, 1.0]
-      }
+      "active": true,
+      "tag": "",
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "components": {
+        "camera": {
+          "zoom": 1.0,
+          "background_color": [
+            0.1,
+            0.05,
+            0.05,
+            1.0
+          ],
+          "viewport_rect": [
+            0.0,
+            0.0,
+            1.0,
+            1.0
+          ],
+          "priority": 0,
+          "active": true
+        }
+      },
+      "enabled": true
     },
     {
       "id": "gameover_canvas",
       "name": "Canvas",
-      "type": "Canvas",
-      "x": 0,
-      "y": 0,
-      "enabled": true,
-      "ui": {
-        "asset": "Assets/UI/GameOver.zui",
-        "auto_load": true
+      "active": true,
+      "tag": "",
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
       },
-      "logic_graphs": [
-        {
-          "path": "Assets/Logic/GameOverLogic.zlogic",
-          "name": "GameOverLogic"
-        }
-      ]
+      "components": {
+        "canvas": {
+          "ui_asset": "Assets/UI/GameOver.zui",
+          "layer_mask": 4294967295
+        },
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/GameOverLogic.zlogic",
+            "name": "GameOverLogic"
+          }
+        ]
+      },
+      "enabled": true
     }
   ]
 }
