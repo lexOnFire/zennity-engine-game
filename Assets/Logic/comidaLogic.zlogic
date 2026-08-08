@@ -40,8 +40,8 @@
       "title": "Ler Valor ProgressBar",
       "category": "UI",
       "position": [
-        -550.07,
-        110.04
+        366.03,
+        62.13
       ],
       "editor": {
         "collapsed": false,
@@ -58,8 +58,8 @@
       "title": "Compare Number",
       "category": "Logic",
       "position": [
-        -195.96,
-        -40.7
+        -1011.71,
+        -415.34
       ],
       "editor": {
         "collapsed": false,
@@ -69,26 +69,6 @@
       "properties": {
         "operator": "<=",
         "value": 0.0
-      }
-    },
-    {
-      "id": "62686fd1d3f645c19fc8bb6f327c945b",
-      "type": "get_ui_widget_property",
-      "title": "Obter Propriedade Widget",
-      "category": "UI",
-      "position": [
-        -528.66,
-        -142.66
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 184.0
-      },
-      "properties": {
-        "parent": "",
-        "widget_name": "comida",
-        "property": "value"
       }
     }
   ],
@@ -112,22 +92,13 @@
       "order": 1
     },
     {
-      "id": "e44db4eee1d14feab6b99381a3ca6dd3",
+      "id": "7af1d452b22e4a78b658cd5528fe3c56",
       "from_node": "c2bb87e281c6481e9c3a4fc71faff1ba",
-      "from_port": "next",
-      "to_node": "62686fd1d3f645c19fc8bb6f327c945b",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 2
-    },
-    {
-      "id": "760452531b79499e97a58d711230a6c8",
-      "from_node": "62686fd1d3f645c19fc8bb6f327c945b",
       "from_port": "next",
       "to_node": "ecba73714be04420802eaefb2affb760",
       "to_port": "in",
       "kind": "flow",
-      "order": 3
+      "order": 2
     }
   ]
 }
