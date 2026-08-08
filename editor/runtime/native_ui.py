@@ -175,7 +175,7 @@ class NativeUIRenderer:
             if bool(obj.get("active", True)) and (normalize_ui(obj.get("ui")) or {}).get("type") == "canvas"
         ]
         result = []
-        # Carrega elementos vindos de arquivos .zui vinculados ao Canvas ativo
+        # Carrega elementos vindos de arquivos .zui vinculados ao Canvas ativo ou filhos diretos
         for canvas_obj in canvas_objs:
             c_ui = canvas_obj.get("ui") or {}
             if not bool(c_ui.get("visible", True)):
@@ -192,6 +192,18 @@ class NativeUIRenderer:
                     if not bool(item_ui.get("visible", True)):
                         continue
                     result.append((canvas_obj, item_ui))
+            elif isinstance(c_ui.get("children"), list):
+                for child in c_ui["children"]:
+                    if isinstance(child, dict):
+                        for item_ui in self._flatten_zui_widget(child):
+                            if not bool(item_ui.get("visible", True)):
+                                continue
+                            w_name = item_ui.get("name") or item_ui.get("widget_name")
+                            if w_name in overrides:
+                                item_ui.update(overrides[w_name])
+                            if not bool(item_ui.get("visible", True)):
+                                continue
+                            result.append((canvas_obj, item_ui))
 
         # Adiciona demais componentes isolados da cena
         for obj in values:

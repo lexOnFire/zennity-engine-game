@@ -124,7 +124,10 @@ class ViewportSessionLifecycleMixin:
                 active_cam["x"] = float(tgt["x"])
                 active_cam["y"] = float(tgt["y"])
 
+        # 1. Momento do Clear
         self.screen.fill(bg_color)
+        t_clear = time.perf_counter()
+
         if self.view_mode == "scene" and self.show_grid:
             self.overlay_renderer.draw_scene(
                 self.screen,
@@ -137,6 +140,8 @@ class ViewportSessionLifecycleMixin:
                 self.world_to_screen,
             )
 
+        # 2. Momento do Blit de Sprites
+        t_blit_start = time.perf_counter()
         self.sprite_renderer.draw(
             self.screen,
             self.objects,
@@ -147,10 +152,37 @@ class ViewportSessionLifecycleMixin:
             world_to_screen=self.world_to_screen,
             overlay_renderer=self.overlay_renderer,
         )
-        if self.view_mode == "game":
+        t_blit = time.perf_counter()
+
+        # 3. Momento do UI Render (desenha em view_mode == "game" ou quando playing é True)
+        t_ui_start = time.perf_counter()
+        if self.view_mode == "game" or self.playing:
             self.native_ui.draw(self.objects, self.screen, world_to_screen=self.world_to_screen)
         if self.playing and self.hud_entries:
             self.overlay_renderer.draw_hud(self.screen, self.hud_entries, width, height)
+        t_ui = time.perf_counter()
+
+        # Auditoria de Surface e Contagem de Pixels
+        try:
+            import pygame
+            arr = pygame.surfarray.array3d(self.screen)
+            non_black = int(((arr[:, :, 0] > 0) | (arr[:, :, 1] > 0) | (arr[:, :, 2] > 0)).sum())
+            sample = (arr[0, 0].tolist(), arr[width // 2, height // 2].tolist(), arr[width - 1, height - 1].tolist())
+            if self.playing and getattr(self, "_frame_count", 0) % 60 == 0:
+                print(
+                    f"[AUDIT VIEWPORT] frame={getattr(self, '_frame_count', 0)} "
+                    f"id(surface)={id(self.screen)} size=({width}, {height}) "
+                    f"non_black_pixels={non_black} sample={sample} "
+                    f"clear_ms={(t_blit_start - t_clear)*1000:.2f} "
+                    f"blit_ms={(t_ui_start - t_blit_start)*1000:.2f} "
+                    f"ui_render_ms={(t_ui - t_ui_start)*1000:.2f} "
+                    f"present=flip()"
+                )
+            self._frame_count = getattr(self, "_frame_count", 0) + 1
+        except Exception:
+            pass
+
+        # 4. Momento do Present / Update
         self.pygame.display.flip()
         
         if hasattr(self, "frame_categories"):

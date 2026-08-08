@@ -112,7 +112,7 @@
       "visual": {
         "enabled": true,
         "material": "Default_Material",
-        "mesh_type": null,
+        "mesh_type": "UI",
         "color": [
           88,
           117,
