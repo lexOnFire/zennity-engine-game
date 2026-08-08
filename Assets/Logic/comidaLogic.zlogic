@@ -215,19 +215,28 @@
       "order": 0
     },
     {
-      "id": "edge_get_to_text_flow",
+      "id": "edge_get_to_text_data",
       "from_node": "get_comida_value",
-      "from_port": "next",
+      "from_port": "value",
       "to_node": "node_to_text_1",
       "to_port": "value",
-      "kind": "flow",
+      "kind": "number",
       "order": 0
     },
     {
-      "id": "edge_text_to_hud_flow",
+      "id": "edge_text_to_hud_data",
       "from_node": "node_to_text_1",
-      "from_port": "next",
+      "from_port": "value",
       "to_node": "node_set_hud_1",
+      "to_port": "text",
+      "kind": "text",
+      "order": 0
+    },
+    {
+      "id": "edge_hud_flow",
+      "from_node": "node_set_hud_1",
+      "from_port": "next",
+      "to_node": "compare_number_destroy",
       "to_port": "in",
       "kind": "flow",
       "order": 0
@@ -248,15 +257,6 @@
       "to_node": "node_destroy_1",
       "to_port": "in",
       "kind": "flow",
-      "order": 0
-    },
-    {
-      "id": "edge_get_to_text_data",
-      "from_node": "get_comida_value",
-      "from_port": "value",
-      "to_node": "node_to_text_1",
-      "to_port": "value",
-      "kind": "number",
       "order": 0
     }
   ]
