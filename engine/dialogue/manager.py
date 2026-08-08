@@ -38,10 +38,12 @@ class DialogueManager:
 
     def __init__(self) -> None:
         """Initialize dialogue manager."""
-        self._sessions: Dict[str, DialogueSession] = {}
-        self._active_session_id: Optional[str] = None
-        self._owner_sessions: Dict[str, str] = {}  # owner_id → session_id
-        self._choice_callbacks: Dict[str, Callable[[int], None]] = {}
+        # Key: composite (owner_id, session_id) to allow same dialog_id with different owners
+        self._sessions: Dict[tuple[str, str], DialogueSession] = {}
+        self._active_session_id: Optional[tuple[str, str]] = None
+        self._owner_sessions: Dict[str, tuple[str, str]] = {}  # owner_id → (owner_id, session_id)
+        self._choice_callbacks: Dict[tuple[str, str], Callable[[int], None]] = {}
+        self._session_counter = 0  # For generating unique session IDs
 
     def start_inline(
         self,
@@ -56,10 +58,14 @@ class DialogueManager:
         Start inline dialogue (simple Logic Graph case).
 
         Creates minimal DialogueSession for inline conversation.
+        Supports same session_id with different owner_id (via composite key).
         """
         try:
-            if session_id in self._sessions:
-                return False  # Already active
+            # Composite key allows same dialog_id with different owners
+            composite_key = (owner_id, session_id)
+
+            if composite_key in self._sessions:
+                return False  # Already active for this owner
 
             # Build minimal dialogue graph JSON
             nodes = []
@@ -143,9 +149,9 @@ class DialogueManager:
             # IMPORTANT: Start the session to initialize state
             session.start()
 
-            self._sessions[session_id] = session
-            self._active_session_id = session_id
-            self._owner_sessions[owner_id] = session_id
+            self._sessions[composite_key] = session
+            self._active_session_id = composite_key
+            self._owner_sessions[owner_id] = composite_key
 
             return True
         except Exception as e:
