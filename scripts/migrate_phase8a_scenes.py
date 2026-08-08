@@ -55,11 +55,17 @@ def migrate_legacy_scene_to_canonical(legacy_data: dict) -> dict:
     # Extract and convert objects
     legacy_objects = legacy_data.get("objects", [])
     canonical_objects = []
+    scene_ui_asset = None  # Track UI asset for scene root
 
     for obj in legacy_objects:
         canonical_obj = _convert_legacy_object(obj)
         if canonical_obj:
             canonical_objects.append(canonical_obj)
+            # Extract UI asset from Canvas object if present
+            obj_type = obj.get("type")
+            has_ui = "ui" in obj
+            if obj_type == "Canvas" and has_ui:
+                scene_ui_asset = obj["ui"].get("asset")
 
     # Build canonical scene
     canonical_scene = {
@@ -71,6 +77,11 @@ def migrate_legacy_scene_to_canonical(legacy_data: dict) -> dict:
         },
         "objects": canonical_objects
     }
+
+    # CRITICAL: Keep UI asset at scene root for RuntimeScene.ui lookup
+    # RuntimeScene._compile_and_attach_ui() expects scene.ui (root level)
+    if scene_ui_asset:
+        canonical_scene["ui"] = scene_ui_asset
 
     return canonical_scene
 

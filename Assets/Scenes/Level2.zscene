@@ -275,5 +275,6 @@
       },
       "enabled": true
     }
-  ]
+  ],
+  "ui": "Assets/UI/HUD.zui"
 }

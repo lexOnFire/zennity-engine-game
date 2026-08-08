@@ -3,7 +3,9 @@
   "scene_name": "Victory",
   "engine_version": "0.1.0",
   "blackboard": {
-    "variables": {}
+    "variables": {
+      "scene_name": "Victory"
+    }
   },
   "objects": [
     {
@@ -87,5 +89,6 @@
       },
       "enabled": true
     }
-  ]
+  ],
+  "ui": "Assets/UI/Victory.zui"
 }

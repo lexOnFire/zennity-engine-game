@@ -87,5 +87,6 @@
       },
       "enabled": true
     }
-  ]
+  ],
+  "ui": "Assets/UI/GameOver.zui"
 }

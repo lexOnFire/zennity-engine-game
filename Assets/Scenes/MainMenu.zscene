@@ -3,7 +3,13 @@
   "scene_name": "Main Menu",
   "engine_version": "0.1.0",
   "blackboard": {
-    "variables": {}
+    "variables": {
+      "coins": 0,
+      "score": 0,
+      "has_key": false,
+      "health": 100,
+      "current_level": 1
+    }
   },
   "objects": [
     {
@@ -87,5 +93,6 @@
       },
       "enabled": true
     }
-  ]
+  ],
+  "ui": "Assets/UI/MainMenu.zui"
 }
