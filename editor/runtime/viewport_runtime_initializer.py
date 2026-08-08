@@ -169,6 +169,14 @@ class ViewportRuntimeInitializer:
         self.initialized_ids.clear()
         self.animator_event_signatures.clear()
 
+        # Phase 7B.7.3: Reset dialogue manager on Play/Stop
+        try:
+            from engine.dialogue.manager import get_dialogue_manager
+            manager = get_dialogue_manager()
+            manager.reset()
+        except Exception:
+            pass
+
     def _create_logic_services(self, scene_blackboard: dict[str, Any]) -> None:
         path = self.project_root / "Assets" / "Logic" / "ProjectBlackboard.zblackboard"
         try:
