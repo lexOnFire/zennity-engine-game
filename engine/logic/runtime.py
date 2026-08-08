@@ -18,6 +18,9 @@ except ImportError:  # Runtime autocontido exportado.
     from .logic_blackboard import BlackboardStore
     from .logic_event_bus import LogicEvent, LogicEventBus
 
+# Phase 5B.2: Import physics event dispatch
+from .physics_event_dispatch import register_physics_event_handler, dispatch_physics_event
+
 
 class LogicGraphRuntime:
     """Executa fluxo e resolve valores conectados sem depender de Qt/Pygame."""
@@ -84,6 +87,10 @@ class LogicGraphRuntime:
             event_name = str(node.get("properties", {}).get("name", "event")).strip()
             node_id = str(node["id"])
             self.event_bus.subscribe(event_name, lambda event, wanted=node_id: self._receive_custom_event(wanted, event))
+
+        # Phase 5B.2: Register physics event handler if not a subgraph
+        if not self.call_stack:
+            register_physics_event_handler(self._handle_physics_event)
 
     def run_subgraph(self, game: Any, dt: float, inputs: Mapping[str, Any]) -> dict[str, Any]:
         """Executa uma chamada reutilizável sem iniciar eventos de frame."""
@@ -460,6 +467,66 @@ class LogicGraphRuntime:
             self.executed_nodes.append(node_id)
         self._store(node_id, "payload", deepcopy(event.payload))
         self._follow(node_id, "next", self._last_game, self._last_dt, [self.MAX_STEPS], set())
+
+    def _handle_physics_event(self, game_object: Any, method_name: str, other_collider: Any) -> None:
+        """Phase 5B.2: Handle physics events from PhysicsWorld.
+
+        Called when PhysicsWorld emits collision/trigger events.
+        Routes events to appropriate event nodes based on owner.
+        """
+        if game_object is None or method_name not in ("on_collision_enter", "on_collision_exit", "on_trigger_enter", "on_trigger_exit"):
+            return
+
+        # Ensure last game is set (event might come during update)
+        if self._last_game is None:
+            return
+
+        # Get the object name to match against owner
+        owner_name = getattr(game_object, "name", None)
+        if owner_name != self.object_key:
+            return
+
+        # Map method name to event type ID and event name
+        event_type_map = {
+            "on_collision_enter": ("on_collision_enter", "collision_enter"),
+            "on_collision_exit": ("on_collision_exit", "collision_exit"),
+            "on_trigger_enter": ("on_trigger_enter", "trigger_enter"),
+            "on_trigger_exit": ("on_trigger_exit", "trigger_exit"),
+        }
+
+        event_type_id, event_name = event_type_map.get(method_name, (None, None))
+        if event_type_id is None:
+            return
+
+        # Build payload with full collision data
+        other_object = getattr(other_collider, "game_object", None)
+        payload = {
+            "self_object": game_object,
+            "other_object": other_object,
+            "self_collider": None,  # Will be set when we know which collider on self
+            "other_collider": other_collider,
+            "is_trigger": bool(getattr(other_collider, "is_trigger", False)),
+        }
+
+        # Fire event nodes
+        for node in self.nodes.values():
+            if node.get("type") != event_type_id:
+                continue
+
+            node_id = str(node["id"])
+            if node_id not in self.executed_nodes:
+                self.executed_nodes.append(node_id)
+
+            # Store payload data for evaluation
+            self._store(node_id, "other", other_object)
+            self._store(node_id, "self_object", game_object)
+            self._store(node_id, "other_object", other_object)
+            self._store(node_id, "self_collider", None)
+            self._store(node_id, "other_collider", other_collider)
+            self._store(node_id, "is_trigger", payload["is_trigger"])
+
+            # Execute the event node's flow
+            self._follow(node_id, "next", self._last_game, self._last_dt, [self.MAX_STEPS], set())
 
     def _follow_debug(
         self,

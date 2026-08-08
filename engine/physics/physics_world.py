@@ -222,6 +222,8 @@ class PhysicsWorld:
             callback_a(b)
         if callback_b:
             callback_b(a)
+        self._notify_game_object(a, "on_collision_exit", b)
+        self._notify_game_object(b, "on_collision_exit", a)
 
     def _emit_trigger_enter(self, a: Any, b: Any) -> None:
         callback_a = getattr(a, "on_trigger_enter", None)

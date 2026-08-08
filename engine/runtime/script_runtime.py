@@ -37,6 +37,7 @@ class ScriptRuntime:
         self.errors: list[str] = []
         self.scheduler = scheduler or LifecycleScheduler()
         self._owns_scheduler = scheduler is None
+        self._physics_event_handlers: list[Any] = []
 
     def start(self, components: list[Any]) -> None:
         for component in components:
@@ -76,6 +77,14 @@ class ScriptRuntime:
                 method(other)
             except Exception as exc:
                 self._handle_error(instance.component, method_name, exc)
+
+        # Phase 5B.2: Dispatch to Logic Graph runtimes
+        if method_name in ("on_collision_enter", "on_collision_exit", "on_trigger_enter", "on_trigger_exit"):
+            try:
+                from engine.logic.physics_event_dispatch import dispatch_physics_event
+                dispatch_physics_event(game_object, method_name, other)
+            except Exception as exc:
+                self._record_error(None, f"physics_event_dispatch[{method_name}]", exc)
 
     def _start_component(self, component: ScriptComponent) -> None:
         script_path = str(getattr(component, "script_path", "") or "").strip()

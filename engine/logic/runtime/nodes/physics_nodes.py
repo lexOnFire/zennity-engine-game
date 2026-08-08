@@ -257,3 +257,24 @@ def evaluate_get_rigidbody_is_kinematic(runtime, node_id: str, port_id: str, nod
         return False
 
     return bool(rigidbody.is_kinematic)
+
+
+# Phase 5B.2: Collision/Trigger Event Data Pins
+@registry.register_evaluator(('on_collision_enter', 'on_collision_exit', 'on_trigger_enter', 'on_trigger_exit'))
+def evaluate_physics_event_nodes(runtime, node_id: str, port_id: str, node: Mapping[str, Any], game: Any, dt: float, visited: set) -> Any:
+    """Evaluate data outputs from physics event nodes."""
+    port_id = str(port_id)
+
+    if port_id == "self_object":
+        return runtime.values.get((node_id, "self_object"))
+    elif port_id == "other_object":
+        return runtime.values.get((node_id, "other_object"))
+    elif port_id == "self_collider":
+        return runtime.values.get((node_id, "self_collider"))
+    elif port_id == "other_collider":
+        return runtime.values.get((node_id, "other_collider"))
+    elif port_id == "is_trigger":
+        return runtime.values.get((node_id, "is_trigger"), False)
+    else:
+        # Fallback for "other" (backward compatibility)
+        return runtime.values.get((node_id, "other"))

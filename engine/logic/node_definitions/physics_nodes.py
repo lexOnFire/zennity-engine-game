@@ -176,3 +176,88 @@ class GetRigidBodyIsKinematicNode:
             PinDefinition(id="value", label_key="Is Kinematic", pin_type=PinType.BOOL),
         ]
     )
+
+
+# Phase 5B.2: Collision/Trigger Event Nodes (EVENT SOURCE)
+class OnCollisionEnterNode:
+    """Triggered when two colliders start colliding."""
+
+    __node_definition__ = NodeDefinition(
+        id="on_collision_enter",
+        title_key="On Collision Enter",
+        category_key="Physics/Events",
+        description_key="Fires when collision starts",
+
+        inputs=[],
+
+        outputs=[
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="self_object", label_key="Self Object", pin_type=PinType.OBJECT),
+            PinDefinition(id="other_object", label_key="Other Object", pin_type=PinType.OBJECT),
+            PinDefinition(id="self_collider", label_key="Self Collider", pin_type=PinType.OBJECT),
+            PinDefinition(id="other_collider", label_key="Other Collider", pin_type=PinType.OBJECT),
+        ]
+    )
+
+
+class OnCollisionExitNode:
+    """Triggered when two colliders stop colliding."""
+
+    __node_definition__ = NodeDefinition(
+        id="on_collision_exit",
+        title_key="On Collision Exit",
+        category_key="Physics/Events",
+        description_key="Fires when collision ends",
+
+        inputs=[],
+
+        outputs=[
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="self_object", label_key="Self Object", pin_type=PinType.OBJECT),
+            PinDefinition(id="other_object", label_key="Other Object", pin_type=PinType.OBJECT),
+            PinDefinition(id="self_collider", label_key="Self Collider", pin_type=PinType.OBJECT),
+            PinDefinition(id="other_collider", label_key="Other Collider", pin_type=PinType.OBJECT),
+        ]
+    )
+
+
+class OnTriggerEnterNode:
+    """Triggered when an object enters a trigger collider."""
+
+    __node_definition__ = NodeDefinition(
+        id="on_trigger_enter",
+        title_key="On Trigger Enter",
+        category_key="Physics/Events",
+        description_key="Fires when trigger is entered",
+
+        inputs=[],
+
+        outputs=[
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="self_object", label_key="Self Object", pin_type=PinType.OBJECT),
+            PinDefinition(id="other_object", label_key="Other Object", pin_type=PinType.OBJECT),
+            PinDefinition(id="self_collider", label_key="Self Collider", pin_type=PinType.OBJECT),
+            PinDefinition(id="other_collider", label_key="Other Collider", pin_type=PinType.OBJECT),
+        ]
+    )
+
+
+class OnTriggerExitNode:
+    """Triggered when an object exits a trigger collider."""
+
+    __node_definition__ = NodeDefinition(
+        id="on_trigger_exit",
+        title_key="On Trigger Exit",
+        category_key="Physics/Events",
+        description_key="Fires when trigger is exited",
+
+        inputs=[],
+
+        outputs=[
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="self_object", label_key="Self Object", pin_type=PinType.OBJECT),
+            PinDefinition(id="other_object", label_key="Other Object", pin_type=PinType.OBJECT),
+            PinDefinition(id="self_collider", label_key="Self Collider", pin_type=PinType.OBJECT),
+            PinDefinition(id="other_collider", label_key="Other Collider", pin_type=PinType.OBJECT),
+        ]
+    )
