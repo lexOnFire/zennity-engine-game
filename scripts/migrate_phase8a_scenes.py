@@ -139,10 +139,16 @@ def _convert_legacy_object(legacy_obj: dict) -> dict[str, Any]:
                 "active": True
             }
         elif legacy_type == "Canvas":
-            # Canvas becomes canvas component
+            # Canvas becomes canvas component with type field for deserialization
             ui_data = legacy_obj.get("ui", {})
+            asset_path = ui_data.get("asset", "") or legacy_obj.get("layout_path", "")
             components["canvas"] = {
-                "ui_asset": ui_data.get("asset", ""),
+                "type": "Canvas",  # CRITICAL: Required for component_registry.create()
+                "layout_path": asset_path,
+                "ui_asset": asset_path,
+                "visible": True,
+                "z_order": 0,
+                "render_mode": "Screen Space",
                 "layer_mask": 0xFFFFFFFF
             }
 

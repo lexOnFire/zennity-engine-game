@@ -19,7 +19,18 @@ def normalize_ui(data: Any) -> dict[str, Any] | None:
     """Retorna um componente de UI valido e com defaults retrocompativeis."""
     if not isinstance(data, dict):
         return None
+    
+    # Se data for um GameObject com components["canvas"], compila a partir dele
+    if "components" in data and isinstance(data["components"], dict) and "canvas" in data["components"]:
+        canvas_comp = dict(data["components"]["canvas"])
+        canvas_comp.setdefault("type", "canvas")
+        if "ui_asset" in canvas_comp and "layout_path" not in canvas_comp:
+            canvas_comp["layout_path"] = canvas_comp["ui_asset"]
+        data = canvas_comp
+
     kind = str(data.get("type", "")).strip().lower()
+    if "ui_asset" in data and "layout_path" not in data:
+        data["layout_path"] = data["ui_asset"]
     aliases = {
         "label": "text", "uilabel": "text", "uiimage": "image", "uibutton": "button",
         "progressbar": "progress_bar", "progress": "progress_bar",

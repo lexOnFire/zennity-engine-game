@@ -183,7 +183,12 @@
       },
       "components": {
         "canvas": {
+          "type": "Canvas",
+          "layout_path": "Assets/UI/HUD.zui",
           "ui_asset": "Assets/UI/HUD.zui",
+          "visible": true,
+          "z_order": 0,
+          "render_mode": "Screen Space",
           "layer_mask": 4294967295
         }
       },
