@@ -9,7 +9,7 @@
 
 8 refinements needed for Production Ready:
 
-1. ✅ **Owner Routing Same-ID** - STARTED
+1. ✅ **Owner Routing Same-ID** - COMPLETE
 2. ⏳ **Asset Choice Workflow** - TODO
 3. ⏳ **Scene Cleanup** - TODO
 4. ⏳ **Play/Stop/Play Reset** - TODO
@@ -20,9 +20,9 @@
 
 ---
 
-## WORK IN PROGRESS
+## COMPLETED
 
-### 1. Owner Routing Same-ID - ✅ STARTED
+### 1. Owner Routing Same-ID - ✅ COMPLETE
 
 **Change**: Composite key `(owner_id, session_id)` instead of single `session_id`
 
@@ -37,30 +37,40 @@ Merchant:
 # Coexist independently
 ```
 
-**Implementation Progress**:
-- ✅ `DialogueManager.__init__()` updated
-- ✅ `start_inline()` updated for composite key
-- ⏳ `start_asset()` needs update
-- ⏳ `get_state()` needs update
-- ⏳ `choose()` needs update
-- ⏳ `close()` needs update
-- ⏳ All other methods need composite key support
+**Implementation Complete**:
+- ✅ `DialogueManager.__init__()` - Dict[tuple[str, str], DialogueSession]
+- ✅ `start_inline()` - Composite key throughout
+- ✅ `start_asset()` - Composite key with event routing
+- ✅ `get_state()` - owner_id parameter
+- ✅ `choose()` - owner_id parameter
+- ✅ `close()` - owner_id parameter
+- ✅ `close_owner()` - New: close all sessions for owner
+- ✅ `reset()` - New: full manager reset
+- ✅ `_handle_dialogue_event()` - Routes via composite key
+- ✅ `set_variable()` / `get_variable()` - owner_id parameter
+- ✅ `PlayLogicAPI` - All methods pass owner_id
+- ✅ `dialog_nodes.py` - All nodes use composite key
+- ✅ **Tests**: 19/19 PASS
 
-**Commit**: Intermediate commit for start_inline() conversion
+**Commit**: "Phase 7B.7.3: Composite Key Migration Complete"
 
 ---
 
-## TODO (Remaining Work)
+## NEXT STEPS (Refinements 2-7)
 
-### 2. Complete Composite Key Migration
-Update remaining methods in DialogueManager:
-- `start_asset()` - use composite key
-- `get_state()` - accept composite key or owner_id+session_id
-- `choose()` - use composite key
-- `close()` - use composite key
-- `_handle_dialogue_event()` - route via composite key
-- All references to `_active_session_id`
-- All references to `_owner_sessions`
+### 2. Asset Choice Workflow Validation
+Validate complete E2E flow through .zdialogue asset:
+```
+.zdialogue loads
+→ speech node initializes
+→ choice node available
+→ manager.choose(owner_id, session_id, index)
+→ DialogueSession.choose(index) executes
+→ branches correctly to next node
+→ event fires (if present)
+→ end node reached
+```
+Ensure DialogueSession properly handles choice transitions in loaded assets
 
 ### 3. Asset Choice Workflow
 Validate complete flow:
