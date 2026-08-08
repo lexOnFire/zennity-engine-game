@@ -17,8 +17,8 @@ NODE_GROUPS: Dict[str, Dict[str, List[str]]] = {
         "Sensor": ["check_collision", "overlap_check"],
     },
     "UI": {
-        "Texto": ["set_ui_text"],
-        "Valores": ["set_ui_progress_bar", "set_ui_value", "increment_ui", "decrement_ui"],
+        "Texto": ["set_ui_text", "format_ui_text"],
+        "Valores": ["set_ui_progress_bar", "get_progress_bar_value", "get_ui_widget_property", "set_ui_value", "increment_ui", "decrement_ui", "increment_ui_value", "decrement_ui_value"],
         "Diálogos": ["start_dialogue", "dialogue_choose"],
         "Animação": ["animate_ui_value", "animate_material"],
     },
