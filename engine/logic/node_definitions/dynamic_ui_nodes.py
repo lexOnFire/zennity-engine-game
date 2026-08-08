@@ -163,20 +163,21 @@ class GetUIWidgetPropertyNode:
 
     __node_definition__ = NodeDefinition(
         id="get_ui_widget_property",
-        title_key="Ler Propriedade Widget",
-        category_key="Logic/UI Dynamic",
-        description_key="Lê propriedade (text, value, visible, etc) de um widget e salva em variável.",
-        inputs=[
-            PinDefinition(id="in", label_key="In", pin_type=PinType.EXEC),
-            PinDefinition(id="parent", label_key="Parent (objeto)", pin_type=PinType.STRING, default_value="Panel_HUD"),
-            PinDefinition(id="widget_name", label_key="Nome do Widget", pin_type=PinType.STRING, default_value="label_dynamic"),
-            PinDefinition(id="property", label_key="Propriedade", pin_type=PinType.STRING, default_value="text"),
+        title="Obter Propriedade Widget",
+        category="UI",
+        description="Lê propriedade de um widget (text, value, visible, etc)",
+
+        pins_input=[
+            PinDefinition("exec", "Exec", "EXEC"),
+            PinDefinition("parent", "Parent", "STRING", default_value=""),
+            PinDefinition("widget_name", "Nome Widget", "STRING", default_value=""),
+            PinDefinition("property", "Propriedade", "STRING", default_value="text"),
         ],
-        outputs=[
-            PinDefinition(id="success", label_key="Sucesso", pin_type=PinType.EXEC),
-            PinDefinition(id="failure", label_key="Erro", pin_type=PinType.EXEC),
-        ],
-        tags=["ui", "ler", "dinâmico", "propriedade"],
+        pins_output=[
+            PinDefinition("exec_success", "Sucesso", "EXEC"),
+            PinDefinition("exec_failure", "Falha", "EXEC"),
+            PinDefinition("value", "Valor", "STRING"),
+        ]
     )
 
 

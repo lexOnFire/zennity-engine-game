@@ -1,5 +1,5 @@
 """Definições de nós de física para Logic Graph."""
-from engine.core.metadata import NodeDefinition, PinDefinition, PinType
+from engine.logic.metadata import NodeDefinition, PinDefinition
 
 
 class ModifyRigidbodyNode:
@@ -7,20 +7,20 @@ class ModifyRigidbodyNode:
 
     __node_definition__ = NodeDefinition(
         id="modify_rigidbody",
-        title_key="Modificar Rigidbody",
-        category_key="Logic/Physics",
-        description_key="Altera velocidade, gravidade, massa e outras propriedades de Rigidbody.",
-        inputs=[
-            PinDefinition(id="in", label_key="In", pin_type=PinType.EXEC),
-            PinDefinition(id="target", label_key="Target (objeto)", pin_type=PinType.STRING, default_value="player"),
-            PinDefinition(id="property", label_key="Propriedade", pin_type=PinType.STRING, default_value="velocity_x"),
-            PinDefinition(id="value", label_key="Novo Valor", pin_type=PinType.FLOAT, default_value=0.0),
+        title="Modificar Rigidbody",
+        category="Physics",
+        description="Altera velocidade, gravidade, massa de Rigidbody",
+
+        pins_input=[
+            PinDefinition("exec", "Exec", "EXEC"),
+            PinDefinition("target", "Target", "STRING", default_value="player"),
+            PinDefinition("property", "Propriedade", "STRING", default_value="velocity_x"),
+            PinDefinition("value", "Novo Valor", "FLOAT", default_value=0.0),
         ],
-        outputs=[
-            PinDefinition(id="success", label_key="Sucesso", pin_type=PinType.EXEC),
-            PinDefinition(id="failure", label_key="Erro", pin_type=PinType.EXEC),
-        ],
-        tags=["física", "rigidbody", "velocidade", "gravidade"],
+        pins_output=[
+            PinDefinition("exec_success", "Sucesso", "EXEC"),
+            PinDefinition("exec_failure", "Falha", "EXEC"),
+        ]
     )
 
 
@@ -29,20 +29,20 @@ class ModifyColliderNode:
 
     __node_definition__ = NodeDefinition(
         id="modify_collider",
-        title_key="Modificar Collider",
-        category_key="Logic/Physics",
-        description_key="Ativa/desativa, altera tamanho ou trigger de Collider.",
-        inputs=[
-            PinDefinition(id="in", label_key="In", pin_type=PinType.EXEC),
-            PinDefinition(id="target", label_key="Target (objeto)", pin_type=PinType.STRING, default_value="player"),
-            PinDefinition(id="property", label_key="Propriedade", pin_type=PinType.STRING, default_value="enabled"),
-            PinDefinition(id="value", label_key="Novo Valor", pin_type=PinType.STRING, default_value="true"),
+        title="Modificar Collider",
+        category="Physics",
+        description="Ativa/desativa ou altera tamanho de Collider",
+
+        pins_input=[
+            PinDefinition("exec", "Exec", "EXEC"),
+            PinDefinition("target", "Target", "STRING", default_value="player"),
+            PinDefinition("property", "Propriedade", "STRING", default_value="enabled"),
+            PinDefinition("value", "Novo Valor", "STRING", default_value="true"),
         ],
-        outputs=[
-            PinDefinition(id="success", label_key="Sucesso", pin_type=PipType.EXEC),
-            PinDefinition(id="failure", label_key="Erro", pin_type=PipType.EXEC),
-        ],
-        tags=["física", "collider", "trigger", "colisor"],
+        pins_output=[
+            PinDefinition("exec_success", "Sucesso", "EXEC"),
+            PinDefinition("exec_failure", "Falha", "EXEC"),
+        ]
     )
 
 
@@ -51,19 +51,19 @@ class ApplyForceNode:
 
     __node_definition__ = NodeDefinition(
         id="apply_force",
-        title_key="Aplicar Força",
-        category_key="Logic/Physics",
-        description_key="Aplica impulso ou força contínua a um Rigidbody.",
-        inputs=[
-            PinDefinition(id="in", label_key="In", pin_type=PinType.EXEC),
-            PinDefinition(id="target", label_key="Target (objeto)", pin_type=PinType.STRING, default_value="player"),
-            PinDefinition(id="force_x", label_key="Força X", pin_type=PinType.FLOAT, default_value=0.0),
-            PinDefinition(id="force_y", label_key="Força Y", pin_type=PipType.FLOAT, default_value=100.0),
-            PinDefinition(id="force_mode", label_key="Modo", pin_type=PipType.STRING, default_value="impulse"),
+        title="Aplicar Força",
+        category="Physics",
+        description="Aplica impulso ou força contínua a um Rigidbody",
+
+        pins_input=[
+            PinDefinition("exec", "Exec", "EXEC"),
+            PinDefinition("target", "Target", "STRING", default_value="player"),
+            PinDefinition("force_x", "Força X", "FLOAT", default_value=0.0),
+            PinDefinition("force_y", "Força Y", "FLOAT", default_value=100.0),
+            PinDefinition("force_mode", "Modo", "STRING", default_value="impulse"),
         ],
-        outputs=[
-            PinDefinition(id="success", label_key="Sucesso", pin_type=PipType.EXEC),
-            PinDefinition(id="failure", label_key="Erro", pin_type=PipType.EXEC),
-        ],
-        tags=["física", "força", "impulso", "movimento"],
+        pins_output=[
+            PinDefinition("exec_success", "Sucesso", "EXEC"),
+            PinDefinition("exec_failure", "Falha", "EXEC"),
+        ]
     )
