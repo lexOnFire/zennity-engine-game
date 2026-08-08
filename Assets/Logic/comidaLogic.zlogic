@@ -65,7 +65,7 @@
       "category": "Text",
       "position": [
         -100.0,
-        -180.0
+        -50.0
       ],
       "editor": {
         "collapsed": false,
@@ -80,7 +80,7 @@
       "title": "Set HUD",
       "category": "UI",
       "position": [
-        200.0,
+        -100.0,
         -180.0
       ],
       "editor": {
@@ -98,8 +98,8 @@
       "title": "Compare Number",
       "category": "Logic",
       "position": [
-        -100.0,
-        100.0
+        200.0,
+        -180.0
       ],
       "editor": {
         "collapsed": false,
@@ -117,8 +117,8 @@
       "title": "Destroy Object",
       "category": "Objects",
       "position": [
-        200.0,
-        100.0
+        500.0,
+        -180.0
       ],
       "editor": {
         "collapsed": false,
@@ -132,7 +132,7 @@
   ],
   "edges": [
     {
-      "id": "edge_1",
+      "id": "edge_flow_1",
       "from_node": "2a3476db82e94acb9f62d2cd6bcf167b",
       "from_port": "next",
       "to_node": "074773c991c6445f9c210545157f75a7",
@@ -141,26 +141,8 @@
       "order": 0
     },
     {
-      "id": "edge_2",
+      "id": "edge_flow_2",
       "from_node": "074773c991c6445f9c210545157f75a7",
-      "from_port": "next",
-      "to_node": "node_to_text_1",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 0
-    },
-    {
-      "id": "edge_3",
-      "from_node": "074773c991c6445f9c210545157f75a7",
-      "from_port": "value",
-      "to_node": "node_to_text_1",
-      "to_port": "value",
-      "kind": "number",
-      "order": 0
-    },
-    {
-      "id": "edge_4",
-      "from_node": "node_to_text_1",
       "from_port": "next",
       "to_node": "node_set_hud_1",
       "to_port": "in",
@@ -168,16 +150,7 @@
       "order": 0
     },
     {
-      "id": "edge_5",
-      "from_node": "node_to_text_1",
-      "from_port": "value",
-      "to_node": "node_set_hud_1",
-      "to_port": "text",
-      "kind": "text",
-      "order": 0
-    },
-    {
-      "id": "edge_6",
+      "id": "edge_flow_3",
       "from_node": "node_set_hud_1",
       "from_port": "next",
       "to_node": "978bb86776f745308a29d92bce605f33",
@@ -186,21 +159,39 @@
       "order": 0
     },
     {
-      "id": "edge_7",
-      "from_node": "074773c991c6445f9c210545157f75a7",
-      "from_port": "value",
-      "to_node": "978bb86776f745308a29d92bce605f33",
-      "to_port": "value",
-      "kind": "number",
-      "order": 0
-    },
-    {
-      "id": "edge_8",
+      "id": "edge_flow_4",
       "from_node": "978bb86776f745308a29d92bce605f33",
       "from_port": "true",
       "to_node": "node_destroy_1",
       "to_port": "in",
       "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "edge_data_1",
+      "from_node": "074773c991c6445f9c210545157f75a7",
+      "from_port": "value",
+      "to_node": "node_to_text_1",
+      "to_port": "value",
+      "kind": "number",
+      "order": 0
+    },
+    {
+      "id": "edge_data_2",
+      "from_node": "node_to_text_1",
+      "from_port": "value",
+      "to_node": "node_set_hud_1",
+      "to_port": "text",
+      "kind": "text",
+      "order": 0
+    },
+    {
+      "id": "edge_data_3",
+      "from_node": "074773c991c6445f9c210545157f75a7",
+      "from_port": "value",
+      "to_node": "978bb86776f745308a29d92bce605f33",
+      "to_port": "value",
+      "kind": "number",
       "order": 0
     }
   ]
