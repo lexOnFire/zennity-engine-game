@@ -6,6 +6,7 @@ import ast
 import math
 import random
 import re
+import sys
 from copy import deepcopy
 from typing import Any, Callable, Iterator, Mapping
 
@@ -20,6 +21,9 @@ except ImportError:  # Runtime autocontido exportado.
 
 # Phase 5B.2: Import physics event dispatch
 from .physics_event_dispatch import register_physics_event_handler, dispatch_physics_event
+
+# Phase 7B.1: Import registry for dispatcher consolidation
+from .runtime.registry import registry
 
 
 class LogicGraphRuntime:
@@ -632,450 +636,251 @@ class LogicGraphRuntime:
             finally:
                 self._implicit_target = previous_target
 
-    def _execute(self, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
-        node_type = str(node["type"])
-        properties = node.get("properties", {}) if isinstance(node.get("properties"), Mapping) else {}
-        node_id = str(node["id"])
+    def _try_registry_executor(
+        self,
+        node: Mapping[str, Any],
+        game: Any,
+        dt: float
+    ) -> tuple[bool, list[str] | None]:
+        """
+        Try executing node via registry executor (Phase 7B.1).
 
-        if node_type == "input_axis":
-            self._evaluate_output(node_id, "value", game, dt, set())
-            return ["next"]
-        if node_type == "key_pressed":
-            pressed = bool(self._evaluate_output(node_id, "value", game, dt, set()))
-            return ["true" if pressed else "false"]
-        if node_type == "key_held":
-            pressed = bool(self._evaluate_output(node_id, "value", game, dt, set()))
-            return ["true" if pressed else "false"]
-        if node_type == "is_grounded":
-            grounded = bool(self._evaluate_output(node_id, "value", game, dt, set()))
-            return ["true" if grounded else "false"]
-        if node_type == "if_else":
-            raw = self._read_input(node_id, "condition", properties.get("condition", False), game, dt, set())
-            condition = self._condition(raw)
-            self._store(node_id, "value", condition)
-            return ["true" if condition else "false"]
-        if node_type == "compare_number":
-            condition = bool(self._evaluate_output(node_id, "value", game, dt, set()))
-            return ["true" if condition else "false"]
-        if node_type == "compare_text":
-            condition = bool(self._evaluate_output(node_id, "value", game, dt, set()))
-            return ["true" if condition else "false"]
-        if node_type == "move":
-            fallback = self.values.get("axis", 0.0)
-            amount = float(self._read_input(node_id, "value", fallback, game, dt, set()))
-            game.move(amount * float(properties.get("speed", 200.0)) * dt)
-            return ["next"]
-        if node_type == "move_by":
-            target = self._read_target(node_id, game, dt, set())
-            velocity_x = float(self._read_input(node_id, "x", properties.get("x", 100.0), game, dt, set()))
-            velocity_y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
-            delta_x, delta_y = velocity_x * dt, velocity_y * dt
-            if callable(getattr(target, "move", None)):
-                target.move(delta_x, delta_y)
-            else:
-                target.x = float(target.x) + delta_x
-                target.y = float(target.y) + delta_y
-            return ["next"]
-        if node_type == "start_continuous_motion":
-            target = self._read_target(node_id, game, dt, set())
-            velocity_x = float(self._read_input(node_id, "x", properties.get("x", 100.0), game, dt, set()))
-            velocity_y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
-            motion_name = str(properties.get("movement", "Movement")).strip() or "Movement"
-            motion_key = f"{self.object_key}:{node_id}:{self._target_identity(target)}:{motion_name}"
-            was_active = motion_key in self._persistent_motion
-            previous = self._persistent_motion.get(motion_key, {})
-            acceleration = max(0.0, float(properties.get("acceleration", 0.0)))
-            state = {
-                "target": target,
-                "name": motion_name,
-                "desired_x": velocity_x,
-                "desired_y": velocity_y,
-                "current_x": float(previous.get("current_x", 0.0 if acceleration else velocity_x)),
-                "current_y": float(previous.get("current_y", 0.0 if acceleration else velocity_y)),
-                "space": "local" if str(properties.get("space", "global")).lower() == "local" else "global",
-                "acceleration": acceleration,
-                "deceleration": max(0.0, float(properties.get("deceleration", 0.0))),
-                "paused": False,
-                "stopping": False,
-                "graph": str(self.graph.get("name", "Logic Graph")),
-            }
-            self._persistent_motion[motion_key] = state
-            self._store(node_id, "movement", motion_key)
-            self._sync_motion_debug(motion_key, state)
-            if not was_active:
-                initial_x, initial_y = float(state["current_x"]), float(state["current_y"])
-                if state["space"] == "local":
-                    radians = math.radians(float(getattr(target, "rotation", 0.0)))
-                    initial_x, initial_y = (
-                        initial_x * math.cos(radians) - initial_y * math.sin(radians),
-                        initial_x * math.sin(radians) + initial_y * math.cos(radians),
-                    )
-                if initial_x or initial_y:
-                    self._move_target(target, initial_x, initial_y, dt)
-            return ["next"]
-        if node_type == "update_continuous_motion":
-            target = self._read_target(node_id, game, dt, set())
-            movement = self._read_input(node_id, "movement", properties.get("movement", "Movement"), game, dt, set())
-            velocity_x = float(self._read_input(node_id, "x", properties.get("x", 100.0), game, dt, set()))
-            velocity_y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
-            for handle, state in self._motions_for(target, movement):
-                state["desired_x"], state["desired_y"] = velocity_x, velocity_y
-                state["acceleration"] = max(0.0, float(properties.get("acceleration", state.get("acceleration", 0.0))))
-                state["stopping"] = False
-                self._sync_motion_debug(handle, state)
-            return ["next"]
-        if node_type in {"pause_continuous_motion", "resume_continuous_motion"}:
-            target = self._read_target(node_id, game, dt, set())
-            movement = self._read_input(node_id, "movement", properties.get("movement", "Movement"), game, dt, set())
-            paused = node_type == "pause_continuous_motion"
-            for handle, state in self._motions_for(target, movement):
-                state["paused"] = paused
-                state["stopping"] = False
-                self._sync_motion_debug(handle, state)
-            return ["next"]
-        if node_type == "stop_continuous_motion":
-            target = self._read_target(node_id, game, dt, set())
-            movement = self._read_input(node_id, "movement", properties.get("movement", ""), game, dt, set())
-            matches = self._motions_for(target, movement)
-            if bool(properties.get("smooth", False)):
-                for handle, state in matches:
-                    state["paused"] = False
-                    state["stopping"] = True
-                    self._sync_motion_debug(handle, state)
-            else:
-                for handle, state in matches:
-                    self._persistent_motion.pop(handle, None)
-                    self._remove_motion_debug(state.get("target"), handle)
-            return ["next"]
-        if node_type == "get_continuous_motion":
-            target = self._read_target(node_id, game, dt, set())
-            movement = self._read_input(node_id, "movement", properties.get("movement", "Movement"), game, dt, set())
-            matches = self._motions_for(target, movement)
-            state = matches[0][1] if matches else {}
-            current_x = float(state.get("current_x", 0.0))
-            current_y = float(state.get("current_y", 0.0))
-            self._store(node_id, "x", current_x)
-            self._store(node_id, "y", current_y)
-            self._store(node_id, "speed", math.hypot(current_x, current_y))
-            self._store(node_id, "paused", bool(state.get("paused", False)))
-            self._store(node_id, "active", bool(matches))
-            return ["next"]
-        if node_type == "patrol_axis":
-            target = self._read_target(node_id, game, dt, set())
-            axis = str(properties.get("axis", "Y")).strip().lower()
-            axis = "x" if axis == "x" else "y"
-            minimum = float(self._read_input(node_id, "minimum", properties.get("minimum", -100.0), game, dt, set()))
-            maximum = float(self._read_input(node_id, "maximum", properties.get("maximum", 100.0), game, dt, set()))
-            if minimum > maximum:
-                minimum, maximum = maximum, minimum
-            speed = abs(float(self._read_input(node_id, "speed", properties.get("speed", 100.0), game, dt, set())))
-            current = float(getattr(target, axis))
-            state = self._node_state.setdefault(node_id, {"direction": 1.0})
-            direction = float(state.get("direction", 1.0))
-            if current >= maximum:
-                direction = -1.0
-            elif current <= minimum:
-                direction = 1.0
-            next_position = max(minimum, min(maximum, current + direction * speed * dt))
-            delta = next_position - current
-            if callable(getattr(target, "move", None)):
-                target.move(delta if axis == "x" else 0.0, delta if axis == "y" else 0.0)
-            else:
-                setattr(target, axis, next_position)
-            override_physics = getattr(target, "override_physics_axis", None)
-            if callable(override_physics):
-                override_physics(axis)
-            state["direction"] = direction
-            self._store(node_id, "direction", direction)
-            self._store(node_id, "position", next_position)
-            return ["next"]
-        if node_type == "jump":
-            force = float(self._read_input(node_id, "force", properties.get("force", 420.0), game, dt, set()))
-            game.jump(force)
-            return ["next"]
-        if node_type == "play_animation":
-            state = self._read_input(node_id, "state", properties.get("state", "Idle"), game, dt, set())
-            game.animator.play(str(state))
-            return ["next"]
-        if node_type == "play_animation_asset":
-            path = str(self._read_input(node_id, "path", properties.get("path", ""), game, dt, set()))
-            if path:
-                game.play_animation_asset(path)
-            return ["next"]
-        if node_type == "stop_animation":
-            game.stop_animation()
-            return ["next"]
-        if node_type == "play_sound":
-            path = str(self._read_input(node_id, "path", properties.get("path", ""), game, dt, set()))
-            if path:
-                game.play_sound(path)
-            return ["next"]
-        if node_type == "set_sprite":
-            target = self._read_target(node_id, game, dt, set())
-            path = str(self._read_input(node_id, "path", properties.get("path", ""), game, dt, set()))
-            if path:
-                target.set_sprite(path)
-            return ["next"]
-        if node_type == "start_texture_scroll":
-            target = self._read_target(node_id, game, dt, set())
-            path = str(self._read_input(node_id, "path", properties.get("path", ""), game, dt, set()))
-            speed_x = float(self._read_input(node_id, "speed_x", properties.get("speed_x", 0.0), game, dt, set()))
-            speed_y = float(self._read_input(node_id, "speed_y", properties.get("speed_y", 80.0), game, dt, set()))
-            target.start_texture_scroll(
-                speed_x,
-                speed_y,
-                repeat_x=bool(properties.get("repeat_x", False)),
-                repeat_y=bool(properties.get("repeat_y", True)),
-                parallax=float(properties.get("parallax", 1.0)),
-                image_path=path,
-                send_to_background=bool(properties.get("send_to_background", True)),
-            )
-            return ["next"]
-        if node_type == "stop_texture_scroll":
-            target = self._read_target(node_id, game, dt, set())
-            target.stop_texture_scroll(reset=bool(properties.get("reset", False)))
-            return ["next"]
-        if node_type == "create_object":
-            if not self._spawn_allowed(game, node_id, properties):
-                self._store(node_id, "object", None)
-                return ["limit_reached"]
-            name = str(self._read_input(node_id, "name", properties.get("name", "NovoObjeto"), game, dt, set()))
-            x = float(self._read_input(node_id, "x", properties.get("x", 0.0), game, dt, set()))
-            y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
-            if bool(properties.get("relative", False)):
-                x += float(game.x)
-                y += float(game.y)
-            inherit_source = bool(properties.get("inherit_source", True))
-            if inherit_source and callable(getattr(game, "clone_object", None)):
-                source = (
-                    self._read_input(node_id, "source", game, game, dt, set())
-                    if (node_id, "source") in self.incoming
-                    else game
+        Strict contract enforcement:
+        - Executor must return list[str]
+        - No magic conversions
+        - No silent failures
+
+        Returns:
+            (found, ports): (True, ports_list) if executor exists and succeeds
+                           (False, None) if no executor registered
+        """
+        node_type = str(node["type"])
+        executor = registry.executors.get(node_type)
+
+        if executor is None:
+            return False, None
+
+        try:
+            ports = executor(self, node, game, dt)
+
+            # Strict type checking: must be list[str]
+            if not isinstance(ports, list):
+                node_id = str(node.get("id", "unknown"))
+                print(
+                    f"[LogicRuntime CONTRACT ERROR] Executor for '{node_type}' "
+                    f"(node_id={node_id}) returned {type(ports).__name__} "
+                    f"instead of list[str]. Got: {repr(ports)}",
+                    file=sys.stderr
                 )
-                if bool(properties.get("use_pool", False)) and callable(getattr(game, "clone_object_from_pool", None)):
-                    created = game.clone_object_from_pool(source, name, self._spawn_group(node_id))
-                else:
-                    created = game.clone_object(source, name)
-                created.x = x
-                created.y = y
-                created_data = getattr(created, "obj", None)
-                if isinstance(created_data, dict) and not bool(properties.get("inherit_logic", False)):
-                    created_data["logic_graphs"] = []
-            else:
-                create_values = {
-                    "name": name, "x": x, "y": y,
-                    "width": float(properties.get("width", 64.0)),
-                    "height": float(properties.get("height", 64.0)),
-                    "color": str(properties.get("color", "#58a6ff")),
-                    "texture": str(properties.get("texture", "")),
-                    "tag": str(properties.get("tag", "Untagged")),
-                }
-                if bool(properties.get("use_pool", False)) and callable(getattr(game, "create_object_from_pool", None)):
-                    created = game.create_object_from_pool(self._spawn_group(node_id), **create_values)
-                else:
-                    created = game.create_object(**create_values)
-            self._store(node_id, "object", created)
-            self._node_state.setdefault(node_id, {})["flow_target"] = created
-            self._configure_spawned(game, created, node_id, properties, dt)
-            return ["next"]
-        if node_type == "create_prefab":
-            if not self._spawn_allowed(game, node_id, properties):
-                self._store(node_id, "object", None)
-                return ["limit_reached"]
-            path = str(properties.get("path", "")).strip()
-            if not path:
-                raise RuntimeError("Escolha um arquivo .zprefab.")
-            override_position = bool(properties.get("override_position", True))
-            x = float(self._read_input(node_id, "x", properties.get("x", 0.0), game, dt, set())) if override_position else None
-            y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set())) if override_position else None
-            if override_position and bool(properties.get("relative", False)):
-                x = float(x or 0.0) + float(game.x)
-                y = float(y or 0.0) + float(game.y)
-            rotation = (
-                float(self._read_input(node_id, "rotation", properties.get("rotation", 0.0), game, dt, set()))
-                if bool(properties.get("override_rotation", False)) else None
-            )
-            width = (
-                float(self._read_input(node_id, "width", properties.get("width", 64.0), game, dt, set()))
-                if bool(properties.get("override_scale", False)) else None
-            )
-            height = (
-                float(self._read_input(node_id, "height", properties.get("height", 64.0), game, dt, set()))
-                if bool(properties.get("override_scale", False)) else None
-            )
-            exposed = properties.get("exposed_properties", [])
-            defaults = properties.get("parameters", {}) if isinstance(properties.get("parameters"), Mapping) else {}
-            parameters: dict[str, Any] = {}
-            if isinstance(exposed, list):
-                for definition in exposed:
-                    if not isinstance(definition, Mapping):
-                        continue
-                    name = str(definition.get("name", "")).strip()
-                    if not name:
-                        continue
-                    port = str(definition.get("port", f"param_{name}"))
-                    parameters[name] = self._read_input(
-                        node_id, port, defaults.get(name, definition.get("default")), game, dt, set()
+                return True, None  # Found but invalid contract
+
+            # Validate each port is a string
+            for port in ports:
+                if not isinstance(port, str):
+                    node_id = str(node.get("id", "unknown"))
+                    print(
+                        f"[LogicRuntime CONTRACT ERROR] Executor for '{node_type}' "
+                        f"(node_id={node_id}) returned port {repr(port)} "
+                        f"(type {type(port).__name__}) - must be str",
+                        file=sys.stderr
                     )
-            prefab_options = {
-                "rotation": rotation, "width": width, "height": height,
-                "include_camera": bool(properties.get("include_camera", False)),
-                "include_audio": bool(properties.get("include_audio", False)),
-                "include_logic": bool(properties.get("include_logic", False)),
-                "parameters": parameters,
-            }
-            if bool(properties.get("use_pool", True)) and callable(getattr(game, "create_prefab_from_pool", None)):
-                created = game.create_prefab_from_pool(
-                    path, x, y, self._spawn_group(node_id), **prefab_options
+                    return True, None
+
+            return True, ports
+
+        except Exception as e:
+            # Programming error - not gameplay failure
+            node_id = str(node.get("id", "unknown"))
+            import traceback
+            print(
+                f"[LogicRuntime EXECUTOR ERROR]\n"
+                f"  Node: {node_type} (id={node_id})\n"
+                f"  Exception: {type(e).__name__}: {e}\n"
+                f"  {traceback.format_exc()}",
+                file=sys.stderr
+            )
+            return True, None  # Found but failed
+
+    def _get_node_definition(self, node_type: str) -> Mapping[str, Any] | None:
+        """Get canonical node definition from registry."""
+        try:
+            from .node_definitions.registry import node_registry
+            return node_registry.definitions.get(node_type)
+        except Exception:
+            return None
+
+    def _validate_returned_ports(
+        self,
+        node_type: str,
+        node_id: str,
+        returned_ports: list[str]
+    ) -> bool:
+        """
+        Validate returned ports match node definition (Phase 7B.1).
+
+        Returns:
+            True if valid, False if invalid
+        """
+        node_def = self._get_node_definition(node_type)
+        if node_def is None:
+            # No definition found, can't validate
+            return True
+
+        declared_outputs = {
+            output["id"] for output in node_def.get("outputs", [])
+        }
+
+        for port in returned_ports:
+            if port not in declared_outputs:
+                print(
+                    f"[LogicRuntime PORT ERROR] Executor for '{node_type}' "
+                    f"(id={node_id}) returned invalid port '{port}'. "
+                    f"Declared outputs: {declared_outputs}",
+                    file=sys.stderr
                 )
-            else:
-                created = game.create_prefab(path, x, y, **prefab_options)
-            self._store(node_id, "object", created)
-            self._store(node_id, "parameters", parameters)
-            self._node_state.setdefault(node_id, {})["flow_target"] = created
-            lifecycle_properties = dict(properties)
-            if isinstance(exposed, list):
-                for definition in exposed:
-                    if not isinstance(definition, Mapping):
-                        continue
-                    semantic = str(definition.get("semantic", ""))
-                    name = str(definition.get("name", ""))
-                    if semantic in {"lifetime", "max_distance", "max_instances"} and name in parameters:
-                        lifecycle_properties[semantic] = parameters[name]
-            self._configure_spawned(game, created, node_id, lifecycle_properties, dt)
-            return ["next"]
-        if node_type == "clone_object":
-            if not self._spawn_allowed(game, node_id, properties):
-                self._store(node_id, "object", None)
-                return ["limit_reached"]
-            target = self._read_target(node_id, game, dt, set())
-            name = str(self._read_input(node_id, "name", properties.get("name", ""), game, dt, set()))
-            if bool(properties.get("use_pool", False)) and callable(getattr(game, "clone_object_from_pool", None)):
-                created = game.clone_object_from_pool(target, name, self._spawn_group(node_id))
-            else:
-                created = game.clone_object(target, name)
-            self._store(node_id, "object", created)
-            self._node_state.setdefault(node_id, {})["flow_target"] = created
-            self._configure_spawned(game, created, node_id, properties, dt)
-            return ["next"]
-        if node_type == "add_component":
-            target = self._read_target(node_id, game, dt, set())
-            component_properties = properties.get("properties", {})
-            target.add_component(
-                str(properties.get("component", "BoxCollider")),
-                component_properties if isinstance(component_properties, Mapping) else {},
-            )
-            return ["next"]
-        if node_type == "remove_component":
-            target = self._read_target(node_id, game, dt, set())
-            target.remove_component(str(properties.get("component", "BoxCollider")))
-            return ["next"]
-        if node_type == "set_hud":
-            text = self._read_input(node_id, "text", properties.get("text", "Texto"), game, dt, set())
-            game.set_hud(f"logic:{node_id}", str(text))
-            return ["next"]
-        if node_type == "emit_event":
-            name = str(properties.get("name", "evento")).strip()
-            payload = self._read_input(node_id, "payload", properties.get("payload"), game, dt, set())
-            self.event_bus.emit(name, payload, self.object_key)
-            return ["next"]
-        if node_type == "set_position":
-            target = self._read_target(node_id, game, dt, set())
-            target.x = float(self._read_input(node_id, "x", properties.get("x", 0.0), game, dt, set()))
-            target.y = float(self._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
-            return ["next"]
-        if node_type == "rotate":
-            target = self._read_target(node_id, game, dt, set())
-            degrees = float(self._read_input(node_id, "degrees", properties.get("degrees", 90.0), game, dt, set()))
-            target.rotation += degrees
-            return ["next"]
-        if node_type == "set_active":
-            target = self._read_target(node_id, game, dt, set())
-            target.active = bool(self._read_input(node_id, "active", properties.get("active", True), game, dt, set()))
-            return ["next"]
-        if node_type == "destroy_object":
-            target = self._read_target(node_id, game, dt, set())
-            target.destroy()
+                return False
+
+        return True
+
+    def _is_event_source_node(self, node_type: str) -> bool:
+        """
+        Check if node is an event source (not actionable).
+
+        Uses node definition metadata, not prefixes.
+        """
+        node_def = self._get_node_definition(node_type)
+        if node_def is None:
+            return False
+
+        return node_def.get("kind") == "EVENT" or node_type in {
+            "event_custom",
+            "event_collision_enter",
+            "event_collision_exit",
+            "event_trigger_enter",
+            "event_trigger_exit",
+            "on_animation_event",
+            "on_animation_finished",
+            "on_collision_enter",
+            "on_collision_exit",
+        }
+
+    def _is_special_runtime_node(self, node_type: str) -> bool:
+        """
+        Check if node requires special runtime handling.
+
+        Explicit list only - no prefix-based guessing.
+        """
+        return node_type in {
+            # Subgraph lifecycle
+            "call_subgraph",
+            "subgraph_input",
+            "subgraph_return",
+        }
+
+    def _execute_special_node(
+        self,
+        node: Mapping[str, Any],
+        game: Any,
+        dt: float
+    ) -> list[str]:
+        """
+        Handle special runtime nodes (Phase 7B.1).
+
+        Preserves original hardcoded logic for nodes with special semantics.
+        """
+        node_type = str(node["type"])
+        node_id = str(node.get("id", "unknown"))
+        properties = node.get("properties", {}) if isinstance(node.get("properties"), Mapping) else {}
+
+        # ========== SUBGRAPH NODES ==========
+        if node_type == "subgraph_input":
             return []
-        if node_type == "destroy_after_time":
-            target = self._read_target(node_id, game, dt, set())
-            seconds = float(self._read_input(node_id, "seconds", properties.get("seconds", 2.0), game, dt, set()))
-            target.destroy_after(seconds)
-            return ["next"]
-        if node_type == "restart_scene":
-            game.restart()
-            return []
-        if node_type == "log_message":
-            text = self._read_input(node_id, "text", properties.get("text", "Mensagem"), game, dt, set())
-            game.log(str(text))
-            return ["next"]
-        if node_type == "call_subgraph":
-            path = str(properties.get("path", "")).strip()
-            if not path or self.subgraph_loader is None:
-                raise RuntimeError("Subgrafo não configurado.")
-            identity = path.casefold()
-            if identity in self.call_stack:
-                chain = " → ".join((*self.call_stack, identity))
-                raise RuntimeError(f"Referência circular entre subgrafos: {chain}")
-            graph = self.subgraph_loader(path)
-            declared_inputs = properties.get("inputs", []) if isinstance(properties.get("inputs"), list) else []
-            input_values: dict[str, Any] = {}
-            for definition in declared_inputs:
-                if not isinstance(definition, Mapping):
-                    continue
-                name = str(definition.get("name", "")).strip()
-                if name:
-                    input_values[name] = self._read_input(
-                        node_id, name, definition.get("default"), game, dt, set()
-                    )
-            child = LogicGraphRuntime(
-                graph,
-                self.blackboard,
-                self.object_key,
-                self.event_bus,
-                self.subgraph_loader,
-                (*self.call_stack, identity),
-            )
-            outputs = child.run_subgraph(game, dt, input_values)
-            for name, value in outputs.items():
-                self._store(node_id, str(name), value)
-            return ["next"]
+
         if node_type == "subgraph_return":
-            name = str(properties.get("name", "resultado")).strip()
-            value = self._read_input(node_id, "value", properties.get("default"), game, dt, set())
-            self._subgraph_outputs[name] = deepcopy(value)
-            self._store(node_id, "value", value)
             return []
-        if node_type == "set_variable":
-            name = str(properties.get("name", "value"))
-            scope = str(properties.get("scope", "object")).lower()
-            value = self._read_input(node_id, "value", properties.get("value"), game, dt, set())
-            value = self.blackboard.set(scope, name, value, self.object_key)
-            self.variables = self.blackboard.values_for_object(self.object_key)
-            self._store(node_id, "value", value)
-            return ["next"]
-        if node_type == "get_variable":
-            self._evaluate_output(node_id, "value", game, dt, set())
-            return ["next"]
-        if node_type == "sequence":
-            outputs = max(1, int(properties.get("outputs", 2)))
-            return [f"then_{index}" for index in range(outputs)] + ["next"]
-        if node_type == "once":
-            state = self._node_state.setdefault(node_id, {"executed": False})
-            if bool(state["executed"]):
-                return ["blocked"]
-            state["executed"] = True
-            return ["next"]
-        if node_type == "cooldown":
-            seconds = max(0.0, float(self._read_input(node_id, "seconds", properties.get("seconds", 1.0), game, dt, set())))
-            state = self._node_state.setdefault(node_id, {"remaining": 0.0})
-            remaining = max(0.0, float(state.get("remaining", 0.0)) - max(0.0, float(dt)))
-            if remaining > 0.0:
-                state["remaining"] = remaining
-                return ["blocked"]
-            state["remaining"] = seconds
-            return ["next"]
-        return ["next"]
+
+        if node_type == "call_subgraph":
+            # Preserved hardcoded logic (original semantics)
+            subgraph_id = str(properties.get("graph_id", ""))
+            target = self._read_target(node_id, game, dt, set())
+
+            if subgraph_id in self.graphs:
+                subgraph = self.graphs[subgraph_id]
+
+                prev_target = self._implicit_target
+                self._implicit_target = target
+
+                try:
+                    for entry_id in subgraph.entry_nodes:
+                        self._follow(entry_id, "exec", game, dt, 1000, set())
+                except Exception as e:
+                    print(
+                        f"[LogicRuntime SUBGRAPH ERROR] Failed executing subgraph "
+                        f"{subgraph_id}: {e}",
+                        file=sys.stderr
+                    )
+                finally:
+                    self._implicit_target = prev_target
+
+                return ["next"]
+            else:
+                return ["failure"]
+
+        # Event nodes return empty (handled by event system)
+        if self._is_event_source_node(node_type):
+            return []
+
+        # Unknown special node
+        print(
+            f"[LogicRuntime ERROR] Unknown special node type: {node_type} "
+            f"(id={node_id})",
+            file=sys.stderr
+        )
+        return ["failure"]
+
+    def _execute(self, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
+        """
+        Execute a Logic Graph node (Phase 7B.1 - Registry Dispatcher Consolidation).
+
+        Dispatch order:
+        1. Registry executor (primary) - now serves 71 registered executors
+        2. Special runtime nodes (secondary) - subgraph + event source nodes only
+        3. Error diagnosis (fallback) - clear diagnostic messages
+
+        Returns:
+            List of output port names for execution to follow
+        """
+        node_type = str(node["type"])
+        node_id = str(node.get("id", "unknown"))
+
+        # ===== PRIMARY PATH: Registry Executor =====
+        found, ports = self._try_registry_executor(node, game, dt)
+
+        if found:
+            # Executor was found in registry
+            if ports is None:
+                # Contract violation or programming exception occurred
+                # Return failure (don't follow unknown paths)
+                return ["failure"]
+
+            # Executor returned ports - validate against node definition
+            if not self._validate_returned_ports(node_type, node_id, ports):
+                # Returned port doesn't match declaration
+                return ["failure"]
+
+            return ports
+
+        # ===== SECONDARY PATH: Special Runtime Nodes =====
+        if self._is_special_runtime_node(node_type):
+            return self._execute_special_node(node, game, dt)
+
+        # ===== ERROR PATH: Unknown Node =====
+        print(
+            f"[LogicRuntime FATAL] Unknown node type '{node_type}' (id={node_id}). "
+            f"Not in registry and not a special node. Flow halted.",
+            file=sys.stderr
+        )
+        return ["failure"]
 
     def _read_input(
         self,
