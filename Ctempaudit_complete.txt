@@ -1,0 +1,20 @@
+Total Executors (clean): 98
+Total Definition IDs: 108
+
+=== STATUS ===
+Missing: 0
+
+All executors have definitions!
+
+=== EXTRA DEFINITIONS (no executor) ===
+Count: 10
+  - input_axis
+  - max_value
+  - property
+  - read_key_axis
+  - text
+  - texture_path
+  - value
+  - widget_name
+  - x
+  - y

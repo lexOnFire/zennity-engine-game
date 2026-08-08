@@ -1,0 +1,140 @@
+
+actions_nodes.py (14 executors):
+  - destroy_after_time
+  - destroy_object
+  - log_message
+  - play_animation
+  - play_animation_asset
+  - play_sound
+  - rotate
+  - set_active
+  - set_position
+  - set_sprite
+  - start_behavior_tree
+  - start_texture_scroll
+  - stop_animation
+  - stop_texture_scroll
+
+animation_nodes.py (2 executors):
+  - animate_value
+  - wait_until_condition
+
+audio_advanced_nodes.py (4 executors):
+  - play_sound_fade
+  - set_pitch
+  - set_volume
+  - stop_all_sounds
+
+camera_nodes.py (5 executors):
+  - camera_follow
+  - camera_look_at
+  - camera_set_zoom
+  - camera_shake
+  - camera_stop_follow
+
+components_nodes.py (2 executors):
+  - add_component
+  - remove_component
+
+dialog_nodes.py (4 executors):
+  - close_dialog
+  - set_dialog_choice
+  - show_dialog
+  - wait_dialog_choice
+
+dynamic_ui_nodes.py (8 executors):
+  - create_ui_button
+  - create_ui_image
+  - create_ui_label
+  - create_ui_progress_bar
+  - destroy_ui_widget
+  - get_progress_bar_value
+  - get_ui_widget_property
+  - update_ui_widget_property
+
+event_nodes.py (7 executors):
+  - compare_number
+  - compare_text
+  - input_axis
+  - is_grounded
+  - key_held
+  - key_pressed
+  - read_key_axis
+
+flow_nodes.py (4 executors):
+  - cooldown
+  - if_else
+  - once
+  - restart_scene
+
+input_advanced_nodes.py (5 executors):
+  - detect_pinch
+  - detect_swipe
+  - detect_touch
+  - is_key_pressed
+  - wait_key_release
+
+misc_nodes.py (7 executors):
+  - call_subgraph
+  - emit_event
+  - get_variable
+  - sequence
+  - set_hud
+  - set_variable
+  - subgraph_return
+
+movement_nodes.py (10 executors):
+  - get_continuous_motion
+  - jump
+  - move
+  - move_by
+  - patrol_axis
+  - pause_continuous_motion
+  - resume_continuous_motion
+  - start_continuous_motion
+  - stop_continuous_motion
+  - update_continuous_motion
+
+particle_nodes.py (3 executors):
+  - create_particle_system
+  - emit_particles
+  - stop_particles
+
+pathfinding_nodes.py (4 executors):
+  - distance_to_point
+  - find_path
+  - follow_path
+  - stop_path
+
+physics_nodes.py (3 executors):
+  - apply_force
+  - modify_collider
+  - modify_rigidbody
+
+prefab_nodes.py (3 executors):
+  - clone_object
+  - create_object
+  - create_prefab
+
+save_load_nodes.py (4 executors):
+  - delete_save
+  - has_save
+  - load_game
+  - save_game
+
+state_machine_nodes.py (5 executors):
+  - add_transition
+  - change_state
+  - create_state_machine
+  - get_state
+  - is_in_state
+
+ui_binding_nodes.py (2 executors):
+  - bind_ui_to_variable
+  - update_ui_binding
+
+ui_nodes.py (4 executors):
+  - bind_ui_to_blackboard
+  - set_ui_progress_bar
+  - set_ui_text
+  - set_ui_visible

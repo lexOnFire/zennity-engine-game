@@ -792,4 +792,18 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
         "outputs": [('next', 'flow'), ('value', 'number')],
         "properties": {"widget_name": "comida"},
     },
+    "bind_ui_to_variable": {
+        "title": "Vincular UI → Variável",
+        "category": "UI",
+        "inputs": [('in', 'flow'), ('widget_name', 'text'), ('variable_name', 'text'), ('property', 'text')],
+        "outputs": [('next', 'flow'), ('exec_success', 'flow'), ('exec_not_found', 'flow'), ('exec_failure', 'flow')],
+        "properties": {"widget_name": "comida", "variable_name": "comida", "property": "value"},
+    },
+    "update_ui_binding": {
+        "title": "Atualizar Binding UI",
+        "category": "UI",
+        "inputs": [('in', 'flow'), ('widget_name', 'text'), ('variable_name', 'text'), ('property', 'text')],
+        "outputs": [('next', 'flow'), ('exec_success', 'flow'), ('exec_not_found', 'flow'), ('exec_failure', 'flow')],
+        "properties": {"widget_name": "comida", "variable_name": "comida", "property": "value"},
+    },
 }

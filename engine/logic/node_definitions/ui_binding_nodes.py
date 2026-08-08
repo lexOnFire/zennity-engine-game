@@ -1,5 +1,5 @@
 """Definições de nós para auto-binding de UI widgets a variáveis."""
-from engine.core.metadata import NodeDefinition, PinDefinition, PinType
+from engine.logic.metadata import NodeDefinition, PinDefinition
 
 
 BindUIToVariableNode_def = NodeDefinition(
