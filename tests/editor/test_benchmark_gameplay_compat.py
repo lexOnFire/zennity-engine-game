@@ -272,7 +272,7 @@ def test_player_attack_damages_enemy() -> None:
     objects = {
         "Player": {
             "name": "Player", "x": 0.0, "y": 0.0, "w": 40.0, "h": 40.0,
-            "logic_graphs": [{"path": "Assets/Logic/PlayerMovement_wasd.zlogic"}],
+            "logic_graphs": [{"path": "Assets/Logic/PlayerCombatLogic.zlogic"}],
             "variables": {"attack_damage": 30},
         },
         "Enemy 1": {
@@ -290,7 +290,7 @@ def test_player_attack_defeats_boss_and_loads_victory() -> None:
     objects = {
         "Player": {
             "name": "Player", "x": 0.0, "y": 0.0, "w": 40.0, "h": 40.0,
-            "logic_graphs": [{"path": "Assets/Logic/PlayerMovement_wasd.zlogic"}],
+            "logic_graphs": [{"path": "Assets/Logic/PlayerCombatLogic.zlogic"}],
             "variables": {"attack_damage": 500},
         },
         "Boss": {

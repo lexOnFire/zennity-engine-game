@@ -363,7 +363,11 @@ def _player_attack_enemies_and_boss(
     player: dict[str, Any],
     dt: float,
 ) -> None:
-    if not bool(player.get("logic_graphs")):
+    has_combat_logic = any(
+        "combat" in str(g.get("path", "")).casefold() or "combat" in str(g.get("name", "")).casefold()
+        for g in player.get("logic_graphs", [])
+    ) or any("combat" in str(asset).casefold() for asset in player.get("logic_assets", []))
+    if not has_combat_logic:
         return
     input_state = player.get("_input")
     runtime = player.setdefault("_benchmark_state", {})
