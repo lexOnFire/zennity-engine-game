@@ -109,7 +109,7 @@
           200,
           255
         ],
-        "texture": "Assets/Sprites/Player/idle_1.png",
+        "texture": "Assets/Sprites/MyPlatformer/player.png",
         "layer": "Default",
         "order": 0
       },
@@ -234,10 +234,7 @@
           "height": 36.0,
           "is_trigger": false
         }
-      },
-      "logic_assets": [
-        "Assets/Logic/EnemyHealth.zlogic"
-      ]
+      }
     }
   ],
   "blackboard": {

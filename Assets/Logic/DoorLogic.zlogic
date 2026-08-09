@@ -50,7 +50,7 @@
       "type": "sprite.change_sprite",
       "position": [800, 50],
       "config": {
-        "sprite_path": "Assets/Sprites/Environment/door_open.png"
+        "sprite_path": "Assets/Sprites/MyPlatformer/tile_platform.png"
       }
     }
   ],

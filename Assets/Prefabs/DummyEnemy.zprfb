@@ -14,7 +14,7 @@
       },
       {
         "type": "SpriteRenderer",
-        "sprite": "Assets/Sprites/Enemy/dummy_idle.png",
+        "sprite": "Assets/Sprites/MyPlatformer/enemy.png",
         "color": [1, 1, 1, 1],
         "sorting_order": 0
       },

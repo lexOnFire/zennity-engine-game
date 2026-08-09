@@ -24,13 +24,105 @@
         ],
         "rz": 0.0,
         "scale": [
-          1.0,
-          1.0,
+          48.0,
+          48.0,
           1.0
         ]
       },
       "enabled": true,
-      "prefab": "Assets/Prefabs/Player.zprfb"
+      "prefab": "Assets/Prefabs/Player.zprfb",
+      "static": false,
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "color": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/player.png",
+        "material": "Default_Material",
+        "mesh_type": null,
+        "layer": "Default",
+        "order": 10
+      },
+      "components": {
+        "items": [
+          {
+            "type": "BoxCollider2D",
+            "size": [
+              0.8,
+              1.0
+            ],
+            "offset": [
+              0,
+              0
+            ],
+            "is_trigger": false
+          },
+          {
+            "type": "RigidBody2D",
+            "body_type": "dynamic",
+            "gravity_scale": 0,
+            "mass": 1,
+            "drag": 0,
+            "angular_drag": 0,
+            "constraints": "freeze_rotation_z"
+          },
+          {
+            "type": "Animator",
+            "controller": "Assets/Animations/PlayerController.zcontroller",
+            "speed": 1.0
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/PlayerMovementLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/PlayerMovementLogic.zlogic"
+            }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/PlayerCombatLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/PlayerCombatLogic.zlogic"
+            }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/PlayerHealthLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/PlayerHealthLogic.zlogic"
+            }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/PlayerMovement.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/PlayerMovement.zlogic"
+            }
+          }
+        ]
+      },
+      "logic_assets": [
+        "Assets/Logic/PlayerMovementLogic.zlogic",
+        "Assets/Logic/PlayerCombatLogic.zlogic",
+        "Assets/Logic/PlayerHealthLogic.zlogic",
+        "Assets/Logic/PlayerMovement.zlogic"
+      ],
+      "variables": {
+        "move_speed": 200,
+        "health": 100,
+        "max_health": 100,
+        "attack_damage": 25,
+        "attack_range": 64,
+        "facing_x": 1
+      }
     },
     {
       "id": "level2_camera",
@@ -75,9 +167,36 @@
             "active": true,
             "type": "Camera"
           }
-        ]
+        ],
+        "camera": {
+          "active": true,
+          "zoom": 1.0,
+          "width": 1280.0,
+          "height": 720.0,
+          "background_color": [
+            18,
+            28,
+            24
+          ],
+          "follow_target": "Player"
+        }
       },
-      "enabled": true
+      "enabled": true,
+      "static": false,
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "material": "Default_Material",
+        "mesh_type": null,
+        "layer": "Default",
+        "order": 0
+      }
     },
     {
       "id": "level2_hud",
@@ -123,6 +242,21 @@
             "name": "HUDLogic"
           }
         ]
+      },
+      "static": false,
+      "layer": "UI",
+      "visual": {
+        "enabled": true,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "material": "Default_Material",
+        "mesh_type": null,
+        "layer": "Default",
+        "order": 20
       }
     },
     {
@@ -143,13 +277,105 @@
         ],
         "rz": 0.0,
         "scale": [
-          1.0,
-          1.0,
+          96.0,
+          96.0,
           1.0
         ]
       },
       "enabled": true,
-      "prefab": "Assets/Prefabs/Boss.zprfb"
+      "prefab": "Assets/Prefabs/Boss.zprfb",
+      "static": false,
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "color": [
+          1,
+          0.3,
+          0.3,
+          1
+        ],
+        "texture": "Assets/Materials/naveBoss.PNG",
+        "material": "Default_Material",
+        "mesh_type": null,
+        "layer": "Default",
+        "order": 8
+      },
+      "components": {
+        "items": [
+          {
+            "type": "BoxCollider2D",
+            "size": [
+              1.5,
+              1.8
+            ],
+            "offset": [
+              0,
+              0
+            ],
+            "is_trigger": false,
+            "layer": "ENEMY"
+          },
+          {
+            "type": "RigidBody2D",
+            "body_type": "dynamic",
+            "gravity_scale": 0,
+            "mass": 2,
+            "drag": 0,
+            "angular_drag": 0,
+            "constraints": "freeze_rotation_z"
+          },
+          {
+            "type": "Animator",
+            "controller": "Assets/Animations/BossController.zcontroller",
+            "speed": 1.0
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/BossAILogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/BossAILogic.zlogic"
+            }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/BossCombatLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/BossCombatLogic.zlogic"
+            }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/BossHealthLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/BossHealthLogic.zlogic"
+            }
+          }
+        ]
+      },
+      "logic_assets": [
+        "Assets/Logic/BossAILogic.zlogic",
+        "Assets/Logic/BossCombatLogic.zlogic",
+        "Assets/Logic/BossHealthLogic.zlogic"
+      ],
+      "variables": {
+        "health": 500,
+        "max_health": 500,
+        "move_speed": 80,
+        "attack_damage": 20,
+        "heavy_attack_damage": 35,
+        "detection_range": 500,
+        "attack_range": 72,
+        "heavy_attack_range": 96,
+        "attack_cooldown": 1.5,
+        "phase": 1,
+        "phase2_threshold": 0.5,
+        "cooldown_timer": 1.5,
+        "attack_count": 0,
+        "heavy_attack_interval": 3
+      }
     },
     {
       "id": "wall_left",
@@ -186,7 +412,22 @@
           }
         ]
       },
-      "enabled": true
+      "enabled": true,
+      "static": true,
+      "layer": "Collision",
+      "visual": {
+        "enabled": true,
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "material": "Default_Material",
+        "mesh_type": null,
+        "layer": "Default",
+        "order": 1
+      }
     },
     {
       "id": "wall_right",
@@ -223,7 +464,22 @@
           }
         ]
       },
-      "enabled": true
+      "enabled": true,
+      "static": true,
+      "layer": "Collision",
+      "visual": {
+        "enabled": true,
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "material": "Default_Material",
+        "mesh_type": null,
+        "layer": "Default",
+        "order": 1
+      }
     },
     {
       "id": "wall_top",
@@ -260,7 +516,22 @@
           }
         ]
       },
-      "enabled": true
+      "enabled": true,
+      "static": true,
+      "layer": "Collision",
+      "visual": {
+        "enabled": true,
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "material": "Default_Material",
+        "mesh_type": null,
+        "layer": "Default",
+        "order": 1
+      }
     },
     {
       "id": "wall_bottom",
@@ -297,7 +568,22 @@
           }
         ]
       },
-      "enabled": true
+      "enabled": true,
+      "static": true,
+      "layer": "Collision",
+      "visual": {
+        "enabled": true,
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "material": "Default_Material",
+        "mesh_type": null,
+        "layer": "Default",
+        "order": 1
+      }
     }
   ],
   "ui": "Assets/UI/HUD.zui"

@@ -15,7 +15,7 @@
       },
       {
         "type": "SpriteRenderer",
-        "sprite": "Assets/Sprites/Boss/boss_idle.png",
+        "sprite": "Assets/Materials/naveBoss.PNG",
         "color": [1, 0.3, 0.3, 1],
         "layer": 0
       },

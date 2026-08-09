@@ -15,7 +15,7 @@
       },
       {
         "type": "SpriteRenderer",
-        "sprite": "Assets/Sprites/Environment/door_locked.png",
+        "sprite": "Assets/Sprites/MyPlatformer/tile_platform.png",
         "color": [0.6, 0.3, 0.1, 1],
         "layer": 0
       },

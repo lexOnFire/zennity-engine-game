@@ -7,19 +7,19 @@
   "frames": [
     {
       "time": 0.0,
-      "sprite": "Assets/Sprites/Enemy/death_1.png"
+      "sprite": "Assets/Sprites/MyPlatformer/enemy.png"
     },
     {
       "time": 0.2,
-      "sprite": "Assets/Sprites/Enemy/death_2.png"
+      "sprite": "Assets/Sprites/MyPlatformer/enemy.png"
     },
     {
       "time": 0.4,
-      "sprite": "Assets/Sprites/Enemy/death_3.png"
+      "sprite": "Assets/Sprites/MyPlatformer/enemy.png"
     },
     {
       "time": 0.6,
-      "sprite": "Assets/Sprites/Enemy/death_3.png"
+      "sprite": "Assets/Sprites/MyPlatformer/enemy.png"
     }
   ]
 }

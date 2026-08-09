@@ -15,7 +15,7 @@
       },
       {
         "type": "SpriteRenderer",
-        "sprite": "Assets/Sprites/Collectibles/coin.png",
+        "sprite": "Assets/Sprites/MyPlatformer/coin.png",
         "color": [1, 1, 0, 1],
         "layer": 0
       },

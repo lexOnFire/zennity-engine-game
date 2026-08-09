@@ -19,7 +19,7 @@
       },
       {
         "type": "SpriteRenderer",
-        "sprite": "Assets/Sprites/Player/idle_1.png",
+        "sprite": "Assets/Sprites/MyPlatformer/player.png",
         "color": [1, 1, 1, 1],
         "layer": 0
       },

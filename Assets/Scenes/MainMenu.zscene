@@ -155,11 +155,49 @@
               "sprite_path": ""
             }
           }
-        ]
+        ],
+        "canvas": {
+          "visible": true,
+          "x": 0.0,
+          "y": 0.0,
+          "width": 1280.0,
+          "height": 720.0,
+          "z_order": 0.0,
+          "text": "",
+          "font_size": 24.0,
+          "color": [
+            255,
+            255,
+            255
+          ],
+          "alpha": 255.0,
+          "interactable": true,
+          "event": "click",
+          "target": "",
+          "anchor": "",
+          "margin_x": 0.0,
+          "margin_y": 0.0,
+          "value": 100.0,
+          "max_value": 100.0,
+          "fill_color": [
+            46,
+            204,
+            113
+          ],
+          "bg_color": [
+            28,
+            35,
+            48
+          ],
+          "layout_path": "Assets/UI/MainMenu.zui",
+          "ui_asset": "Assets/UI/MainMenu.zui",
+          "render_mode": "Screen Space",
+          "sprite_path": ""
+        }
       },
       "enabled": true,
       "static": false,
-      "layer": "Default",
+      "layer": "UI",
       "visual": {
         "enabled": true,
         "material": "Default_Material",

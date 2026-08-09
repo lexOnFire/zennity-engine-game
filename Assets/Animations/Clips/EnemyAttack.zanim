@@ -7,15 +7,15 @@
   "frames": [
     {
       "time": 0.0,
-      "sprite": "Assets/Sprites/Enemy/attack_1.png"
+      "sprite": "Assets/Sprites/MyPlatformer/enemy.png"
     },
     {
       "time": 0.1,
-      "sprite": "Assets/Sprites/Enemy/attack_2.png"
+      "sprite": "Assets/Sprites/MyPlatformer/enemy.png"
     },
     {
       "time": 0.2,
-      "sprite": "Assets/Sprites/Enemy/attack_3.png",
+      "sprite": "Assets/Sprites/MyPlatformer/enemy.png",
       "event": {
         "name": "hit",
         "description": "Enemy damage to player"
@@ -23,7 +23,7 @@
     },
     {
       "time": 0.3,
-      "sprite": "Assets/Sprites/Enemy/attack_2.png"
+      "sprite": "Assets/Sprites/MyPlatformer/enemy.png"
     }
   ]
 }

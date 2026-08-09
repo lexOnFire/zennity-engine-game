@@ -129,7 +129,9 @@
         "width": 210.0,
         "height": 0.0
       },
-      "properties": {}
+      "properties": {
+        "scene_path": "Assets/Scenes/Level2.zscene"
+      }
     },
     {
       "id": "blocked_noop",

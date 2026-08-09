@@ -1,0 +1,21 @@
+{
+  "format": "zennity.animation_clip",
+  "name": "PlayerRun",
+  "length": 0.4,
+  "loop": true,
+  "fps": 10,
+  "frames": [
+    {
+      "time": 0.0,
+      "sprite": "Assets/Sprites/MyPlatformer/player.png"
+    },
+    {
+      "time": 0.2,
+      "sprite": "Assets/Sprites/MyPlatformer/player.png"
+    },
+    {
+      "time": 0.4,
+      "sprite": "Assets/Sprites/MyPlatformer/player.png"
+    }
+  ]
+}

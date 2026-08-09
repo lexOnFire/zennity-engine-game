@@ -6,15 +6,15 @@
   "fps": 10,
   "frames": [
     {
-      "sprite": "Assets/Sprites/Player/idle_1.png",
+      "sprite": "Assets/Sprites/MyPlatformer/player.png",
       "time": 0.0
     },
     {
-      "sprite": "Assets/Sprites/Player/idle_2.png",
+      "sprite": "Assets/Sprites/MyPlatformer/player.png",
       "time": 0.3
     },
     {
-      "sprite": "Assets/Sprites/Player/idle_1.png",
+      "sprite": "Assets/Sprites/MyPlatformer/player.png",
       "time": 0.6
     }
   ]

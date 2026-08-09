@@ -5,9 +5,9 @@
   "fps": 10,
   "loop": true,
   "frames": [
-    {"time": 0.0, "sprite": "Assets/Sprites/Boss/boss_run_1.png"},
-    {"time": 0.2, "sprite": "Assets/Sprites/Boss/boss_run_2.png"},
-    {"time": 0.4, "sprite": "Assets/Sprites/Boss/boss_run_1.png"},
-    {"time": 0.6, "sprite": "Assets/Sprites/Boss/boss_run_2.png"}
+    {"time": 0.0, "sprite": "Assets/Materials/naveBoss.PNG"},
+    {"time": 0.2, "sprite": "Assets/Materials/naveBoss.PNG"},
+    {"time": 0.4, "sprite": "Assets/Materials/naveBoss.PNG"},
+    {"time": 0.6, "sprite": "Assets/Materials/naveBoss.PNG"}
   ]
 }
