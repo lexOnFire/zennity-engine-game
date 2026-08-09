@@ -76,15 +76,15 @@
           {
             "type": "LogicGraph",
             "enabled": true,
-            "graph_path": "Assets/Logic/PlayerMovement_wasd.zlogic",
+            "graph_path": "Assets/Logic/PlayerMovementLogic.zlogic",
             "properties": {
-              "graph_path": "Assets/Logic/PlayerMovement_wasd.zlogic"
+              "graph_path": "Assets/Logic/PlayerMovementLogic.zlogic"
             }
           }
         ]
       },
       "logic_assets": [
-        "Assets/Logic/PlayerMovement_wasd.zlogic"
+        "Assets/Logic/PlayerMovementLogic.zlogic"
       ],
       "variables": {
         "move_speed": 200,
@@ -97,8 +97,8 @@
       "editor_data": {
         "logic_graphs": [
           {
-            "path": "Assets/Logic/PlayerMovement_wasd.zlogic",
-            "name": "PlayerMovement_wasd"
+            "path": "Assets/Logic/PlayerMovementLogic.zlogic",
+            "name": "PlayerMovementLogic"
           }
         ]
       }

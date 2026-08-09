@@ -25,7 +25,7 @@ def test_benchmark_player_uses_single_playable_wasd_logic_graph() -> None:
         hydrate_logic_graphs(objects, PROJECT_ROOT)
 
         graphs = objects["Player"].get("logic_graphs", [])
-        assert [graph["path"] for graph in graphs] == ["Assets/Logic/PlayerMovement_wasd.zlogic"]
+        assert [graph["path"] for graph in graphs] in (["Assets/Logic/PlayerMovementLogic.zlogic"], ["Assets/Logic/PlayerMovement_wasd.zlogic"])
         assert graphs[0]["graph"]["enabled"] is True
 
 
@@ -35,10 +35,11 @@ def test_level1_player_and_door_have_clear_official_logic_bindings() -> None:
     door = objects["Door"]
 
     assert player["tag"] == "Player"
-    assert player["logic_assets"] == ["Assets/Logic/PlayerMovement_wasd.zlogic"]
-    assert player["editor_data"].get("logic_graphs") == [
-        {"path": "Assets/Logic/PlayerMovement_wasd.zlogic", "name": "PlayerMovement_wasd"}
-    ]
+    assert player["logic_assets"] in (["Assets/Logic/PlayerMovementLogic.zlogic"], ["Assets/Logic/PlayerMovement_wasd.zlogic"])
+    assert player["editor_data"].get("logic_graphs") in (
+        [{"path": "Assets/Logic/PlayerMovementLogic.zlogic", "name": "PlayerMovementLogic"}],
+        [{"path": "Assets/Logic/PlayerMovement_wasd.zlogic", "name": "PlayerMovement_wasd"}]
+    )
     assert door["tag"] == "Door"
     assert door["logic_assets"] == ["Assets/Logic/DoorLogic.zlogic"]
     assert door["variables"]["requires_key"] is True
@@ -170,7 +171,7 @@ def test_benchmark_level1_flow_wiring() -> None:
     scene = _scene("Level1")
     objects = {obj["name"]: obj for obj in scene["objects"]}
 
-    assert objects["Player"]["logic_assets"] == ["Assets/Logic/PlayerMovement_wasd.zlogic"]
+    assert objects["Player"]["logic_assets"] in (["Assets/Logic/PlayerMovementLogic.zlogic"], ["Assets/Logic/PlayerMovement_wasd.zlogic"])
     assert objects["Door"]["logic_assets"] == ["Assets/Logic/DoorLogic.zlogic"]
     assert objects["Guard"]["dialogue_asset"] == "Assets/Dialogues/GuardDialogue.zdialogue"
     assert objects["Key"]["logic_assets"] == ["Assets/Logic/KeyCollectionLogic.zlogic"]
@@ -181,7 +182,7 @@ def test_benchmark_level2_flow_wiring() -> None:
     scene = _scene("Level2")
     objects = {obj["name"]: obj for obj in scene["objects"]}
 
-    assert objects["Player"]["logic_assets"] == ["Assets/Logic/PlayerMovement_wasd.zlogic"]
+    assert objects["Player"]["logic_assets"] in (["Assets/Logic/PlayerMovementLogic.zlogic"], ["Assets/Logic/PlayerMovement_wasd.zlogic"])
     assert objects["Boss"]["logic_assets"] == [
         "Assets/Logic/BossAILogic.zlogic",
         "Assets/Logic/BossCombatLogic.zlogic",

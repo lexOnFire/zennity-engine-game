@@ -31,8 +31,9 @@ class LogicBindingController:
         graph = deepcopy(load_logic_graph(path))
         graph["enabled"] = True
         graph["target"] = {"type": "name", "value": object_name}
-        self.save_binding(path, graph)
+        self.host._logic_assets_repository.save(path, graph)
         self._update_object_logic_assets(object_name, path)
+        self._refresh_surfaces()
         return graph
 
     def _update_object_logic_assets(self, object_name: str, path: Path) -> None:
@@ -48,6 +49,16 @@ class LogicBindingController:
             if rel not in current_assets:
                 current_assets.append(rel)
             obj["logic_assets"] = current_assets
+
+            if isinstance(obj.get("editor_data"), dict):
+                lg = obj["editor_data"].setdefault("logic_graphs", [])
+                if isinstance(lg, list) and not any(isinstance(x, dict) and str(x.get("path")).replace("\\", "/").casefold() == rel.casefold() for x in lg):
+                    lg.append({"path": rel, "enabled": True, "name": path.stem})
+
+            if isinstance(obj.get("components"), dict):
+                items = obj["components"].setdefault("items", [])
+                if isinstance(items, list) and not any(isinstance(x, dict) and x.get("type") == "LogicGraph" and str(x.get("graph_path") or x.get("properties", {}).get("graph_path")).replace("\\", "/").casefold() == rel.casefold() for x in items):
+                    items.append({"type": "LogicGraph", "graph_path": rel, "enabled": True})
 
     def create_for_object(self, object_name: str) -> Path:
         return self._create_for_object(object_name, with_start_event=True)
@@ -72,8 +83,9 @@ class LogicBindingController:
             [create_logic_node("event_start", (80.0, 100.0))]
             if with_start_event else []
         )
-        self.save_binding(path, graph)
+        self.host._logic_assets_repository.save(path, graph)
         self._update_object_logic_assets(object_name, path)
+        self._refresh_surfaces()
         return path
 
     def detach(self, path: Path, object_name: str | None = None) -> None:
