@@ -114,38 +114,43 @@
   "edges": [
     {
       "id": "conn_1",
-      "source": "event_update",
-      "source_port": "exec",
-      "target": "input_horizontal",
-      "target_port": "exec"
+      "from_node": "event_update",
+      "from_port": "next",
+      "to_node": "input_horizontal",
+      "to_port": "exec",
+      "kind": "flow"
     },
     {
       "id": "conn_2",
-      "source": "event_update",
-      "source_port": "exec",
-      "target": "input_vertical",
-      "target_port": "exec"
+      "from_node": "event_update",
+      "from_port": "next",
+      "to_node": "input_vertical",
+      "to_port": "exec",
+      "kind": "flow"
     },
     {
       "id": "conn_3",
-      "source": "input_horizontal",
-      "source_port": "value",
-      "target": "move_node",
-      "target_port": "direction_x"
+      "from_node": "input_horizontal",
+      "from_port": "value",
+      "to_node": "move_node",
+      "to_port": "direction_x",
+      "kind": "data"
     },
     {
       "id": "conn_4",
-      "source": "input_vertical",
-      "source_port": "value",
-      "target": "move_node",
-      "target_port": "direction_y"
+      "from_node": "input_vertical",
+      "from_port": "value",
+      "to_node": "move_node",
+      "to_port": "direction_y",
+      "kind": "data"
     },
     {
       "id": "conn_5",
-      "source": "speed_value",
-      "source_port": "value",
-      "target": "move_node",
-      "target_port": "speed"
+      "from_node": "event_update",
+      "from_port": "next",
+      "to_node": "move_node",
+      "to_port": "exec",
+      "kind": "flow"
     }
   ]
 }
