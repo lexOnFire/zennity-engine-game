@@ -23,6 +23,27 @@ def test_benchmark_coin_collection_updates_score_and_hides_coin() -> None:
     assert overrides["CoinsLabel"]["text"] == "Coins: 1"
 
 
+def test_benchmark_key_collection_updates_key_counter_and_hides_key() -> None:
+    objects = {
+        "Player": {"name": "Player", "x": 0.0, "y": 0.0, "w": 40.0, "h": 40.0, "variables": {}},
+        "Key": {"name": "Key", "x": 0.0, "y": 0.0, "w": 20.0, "h": 20.0, "active": True},
+        "HUD": {
+            "name": "HUD",
+            "components": {"items": [{"type": "Canvas", "properties": {"layout_path": "Assets/UI/HUD.zui"}}]},
+        },
+    }
+
+    update_benchmark_gameplay(objects, 1 / 60)
+
+    assert objects["Key"]["active"] is False
+    assert objects["Key"]["destroyed"] is True
+    assert objects["Player"]["variables"]["has_key"] is True
+    assert objects["Player"]["variables"]["keys"] == 1
+    assert {"command": "set_ui_text", "value": {"object": "KeyLabel", "text": "Key: 1"}} in objects["Player"]["logic_events"]
+    overrides = objects["HUD"]["components"]["items"][0]["properties"]["_widget_overrides"]
+    assert overrides["KeyLabel"]["text"] == "Key: 1"
+
+
 def test_benchmark_enemy_moves_towards_player() -> None:
     objects = {
         "Player": {"name": "Player", "x": 100.0, "y": 0.0, "w": 40.0, "h": 40.0},

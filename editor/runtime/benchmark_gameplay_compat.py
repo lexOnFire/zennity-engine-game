@@ -16,6 +16,7 @@ def update_benchmark_gameplay(objects: dict[str, dict[str, Any]], dt: float) -> 
     if not isinstance(player, dict) or not player.get("active", True):
         return
     _collect_coins(objects, player)
+    _collect_key(objects, player)
     _face_player_movement(player)
     _move_enemies(objects, player, dt)
     _damage_player_on_enemy_contact(objects, player, dt)
@@ -43,6 +44,20 @@ def _collect_coins(objects: dict[str, dict[str, Any]], player: dict[str, Any]) -
         obj["destroyed"] = True
         state["coins"] = int(state.get("coins", 0)) + 1
         _set_ui_text(objects, "CoinsLabel", f"Coins: {state['coins']}")
+
+
+def _collect_key(objects: dict[str, dict[str, Any]], player: dict[str, Any]) -> None:
+    key = objects.get("Key")
+    if not isinstance(key, dict) or not key.get("active", True):
+        return
+    if not _rects_overlap(player, key):
+        return
+    key["active"] = False
+    key["destroyed"] = True
+    state = player.setdefault("variables", {})
+    state["has_key"] = True
+    state["keys"] = 1
+    _set_ui_text(objects, "KeyLabel", "Key: 1")
 
 
 def _move_enemies(objects: dict[str, dict[str, Any]], player: dict[str, Any], dt: float) -> None:
