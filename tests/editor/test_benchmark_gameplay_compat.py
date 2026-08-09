@@ -79,6 +79,31 @@ def test_benchmark_enemy_contact_damages_player_and_updates_health_ui() -> None:
     assert overrides["HealthBar"] == {"value": 90.0, "max_value": 100.0}
 
 
+def test_benchmark_game_over_loads_game_over_scene_when_health_reaches_zero() -> None:
+    objects = {
+        "Player": {
+            "name": "Player", "x": 0.0, "y": 0.0, "w": 40.0, "h": 40.0,
+            "variables": {"health": 10},
+        },
+        "Enemy 1": {"name": "Enemy 1", "x": 0.0, "y": 0.0, "w": 32.0, "h": 32.0, "active": True},
+        "HUD": {"name": "HUD"},
+    }
+
+    update_benchmark_gameplay(objects, 1 / 60)
+
+    assert objects["Player"]["variables"]["health"] == 0
+    assert {
+        "command": "load_scene",
+        "value": {"path": "Assets/Scenes/GameOver.zscene"},
+    } in objects["Player"]["logic_events"]
+    assert any(
+        event["command"] == "set_hud"
+        and event["value"]["key"] == "game_over"
+        and event["value"]["text"] == "GAME OVER"
+        for event in objects["Player"]["logic_events"]
+    )
+
+
 def test_benchmark_guard_dialogue_prompt_and_interaction() -> None:
     objects = {
         "Player": {
@@ -97,4 +122,10 @@ def test_benchmark_guard_dialogue_prompt_and_interaction() -> None:
         event["value"]["key"] == "dialogue" and "gate is locked" in event["value"]["text"]
         for event in events
         if event["command"] == "set_hud"
+    )
+    assert any(
+        event["command"] == "start_dialogue"
+        and event["value"]["speaker"] == "Guard"
+        and "gate is locked" in event["value"]["text"]
+        for event in events
     )

@@ -19,6 +19,7 @@ def update_benchmark_gameplay(objects: dict[str, dict[str, Any]], dt: float) -> 
     _face_player_movement(player)
     _move_enemies(objects, player, dt)
     _damage_player_on_enemy_contact(objects, player, dt)
+    _update_game_over(objects, player)
     _update_guard_dialogue(objects, player)
 
 
@@ -91,6 +92,22 @@ def _damage_player_on_enemy_contact(
         break
 
 
+def _update_game_over(objects: dict[str, dict[str, Any]], player: dict[str, Any]) -> None:
+    state = player.setdefault("variables", {})
+    if int(state.get("health", 100)) > 0:
+        return
+    runtime = player.setdefault("_benchmark_state", {})
+    if runtime.get("game_over_requested"):
+        return
+    runtime["game_over_requested"] = True
+    _set_hud(objects, "game_over", "GAME OVER", "center")
+    _set_hud(objects, "game_over_hint", "Voltando ao menu...", "bottom-center")
+    player.setdefault("logic_events", []).append({
+        "command": "load_scene",
+        "value": {"path": "Assets/Scenes/GameOver.zscene"},
+    })
+
+
 def _set_ui_text(objects: dict[str, dict[str, Any]], widget_name: str, text: str) -> None:
     _apply_widget_override(objects, widget_name, {"text": text})
     for obj in objects.values():
@@ -145,6 +162,11 @@ def _update_guard_dialogue(objects: dict[str, dict[str, Any]], player: dict[str,
             else "Guard: Excellent! You found the key. You may pass."
         )
         _set_hud(objects, "dialogue", text, "bottom-center")
+        _set_ui_text(objects, "DialogueLabel", text)
+        player.setdefault("logic_events", []).append({
+            "command": "start_dialogue",
+            "value": {"speaker": "Guard", "text": text},
+        })
 
 
 def _set_hud(

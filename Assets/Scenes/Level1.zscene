@@ -1147,7 +1147,7 @@
       "id": "key_1",
       "name": "Key",
       "active": true,
-      "tag": "",
+      "tag": "Key",
       "transform": {
         "position": [
           -200.0,
@@ -1173,14 +1173,13 @@
       "visual": {
         "enabled": true,
         "color": [
-          1,
-          0.8,
-          0,
-          1
+          255,
+          204,
+          0
         ],
-        "texture": "Assets/Sprites/MyPlatformer/flag.png",
+        "texture": "",
         "material": "Default_Material",
-        "mesh_type": null,
+        "mesh_type": "Sprite",
         "layer": "Default",
         "order": 12
       },
