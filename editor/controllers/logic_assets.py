@@ -59,10 +59,12 @@ class LogicAssetRepository:
 
         # Explicit paths from object definition
         explicit_paths = set()
+        has_explicit_declaration = "logic_assets" in object_data
         if isinstance(object_data.get("logic_assets"), list):
             for item in object_data["logic_assets"]:
                 explicit_paths.add(str(item).replace("\\", "/").casefold())
         if isinstance(object_data.get("editor_data"), dict) and isinstance(object_data["editor_data"].get("logic_graphs"), list):
+            has_explicit_declaration = True
             for item in object_data["editor_data"]["logic_graphs"]:
                 if isinstance(item, dict) and item.get("path"):
                     explicit_paths.add(str(item["path"]).replace("\\", "/").casefold())
@@ -70,6 +72,7 @@ class LogicAssetRepository:
             items = object_data["components"].get("items", []) if isinstance(object_data["components"], dict) else []
             for comp in items:
                 if isinstance(comp, dict) and comp.get("type") == "LogicGraph":
+                    has_explicit_declaration = True
                     g_path = comp.get("graph_path") or comp.get("properties", {}).get("graph_path", "")
                     if g_path:
                         explicit_paths.add(str(g_path).replace("\\", "/").casefold())
@@ -86,7 +89,7 @@ class LogicAssetRepository:
             target_type = str(target.get("type", "name"))
             wanted = str(target.get("value", "")).casefold()
 
-            if explicit_paths:
+            if has_explicit_declaration:
                 if rel_path in explicit_paths:
                     result.append((path, graph))
                 continue
