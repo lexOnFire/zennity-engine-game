@@ -81,3 +81,20 @@ def test_mainmenu_logic_graph_hydration_and_execution():
     assert "logic_graphs" in menu_ui_obj, "hydrate_logic_graphs failed to attach logic_graphs to MenuUI"
     assert len(menu_ui_obj["logic_graphs"]) > 0
     assert "MainMenuLogic.zlogic" in menu_ui_obj["logic_graphs"][0]["path"]
+
+
+def test_mainmenu_has_logic_graph_component_in_items():
+    """Verify MenuUI object explicitly lists LogicGraph in components.items for the Inspector."""
+    scene_file = Path("Assets/Scenes/MainMenu.zscene")
+    data = json.loads(scene_file.read_text(encoding="utf-8"))
+    objects = data.get("objects", [])
+
+    menu_ui_obj = next((obj for obj in objects if obj.get("name") == "MenuUI"), None)
+    assert menu_ui_obj is not None
+
+    components = menu_ui_obj.get("components", {})
+    items = components.get("items", [])
+    logic_comp = next((item for item in items if isinstance(item, dict) and item.get("type") == "LogicGraph"), None)
+
+    assert logic_comp is not None, "MenuUI components.items is missing LogicGraph component for Editor Inspector"
+    assert logic_comp.get("graph_path") == "Assets/Logic/MainMenuLogic.zlogic"
