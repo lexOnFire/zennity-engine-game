@@ -1,7 +1,9 @@
 """Nós de física para Logic Graph - Modify Rigidbody/Collider 100% visual."""
 from __future__ import annotations
 
+import math
 import numpy as np
+from types import SimpleNamespace
 from typing import Any, Mapping
 from ..registry import registry
 
@@ -281,6 +283,95 @@ def evaluate_physics_event_nodes(runtime, node_id: str, port_id: str, node: Mapp
 
 
 # Phase 5B.3: Raycast Query
+def _dict_collider_bounds(obj: Mapping[str, Any]) -> tuple[float, float, float, float]:
+    """AABB de um objeto do Play Mode (que e um dict, nao um GameObject)."""
+    collider = obj.get("collider") or {}
+    center_x = float(obj.get("x", 0.0)) + float(collider.get("offset_x", 0.0))
+    center_y = float(obj.get("y", 0.0)) + float(collider.get("offset_y", 0.0))
+    if str(collider.get("type", "box")).lower() == "circle":
+        width = height = float(collider.get("radius", min(obj.get("w", 1.0), obj.get("h", 1.0)) / 2.0)) * 2.0
+    else:
+        width = float(collider.get("width", obj.get("w", 1.0)))
+        height = float(collider.get("height", obj.get("h", 1.0)))
+    return (center_x - width / 2.0, center_y - height / 2.0,
+            center_x + width / 2.0, center_y + height / 2.0)
+
+
+def _ray_aabb_distance(
+    origin_x: float, origin_y: float, dir_x: float, dir_y: float,
+    bounds: tuple[float, float, float, float],
+) -> float | None:
+    """Distancia ate a AABB pelo metodo das fatias, ou None se o raio nao cruza."""
+    near, far = 0.0, float("inf")
+    for origin, direction, low, high in (
+        (origin_x, dir_x, bounds[0], bounds[2]),
+        (origin_y, dir_y, bounds[1], bounds[3]),
+    ):
+        if abs(direction) < 1e-9:
+            if origin < low or origin > high:
+                return None
+            continue
+        t1, t2 = (low - origin) / direction, (high - origin) / direction
+        if t1 > t2:
+            t1, t2 = t2, t1
+        near, far = max(near, t1), min(far, t2)
+        if near > far:
+            return None
+    return near
+
+
+def _raycast_without_physics_world(
+    runtime, node_id: str, game: Any,
+    origin_x: float, origin_y: float, direction_x: float, direction_y: float,
+    max_distance: float, ignore_self: bool,
+) -> list[str]:
+    """Varre os objetos do mundo diretamente quando nao ha PhysicsWorld."""
+    world = getattr(game, "_world", None) or getattr(getattr(game, "runtime_world", None), "objects", None)
+    length = math.hypot(direction_x, direction_y)
+    if not isinstance(world, Mapping) or length < 1e-9:
+        runtime._store(node_id, "hit", None)
+        return ["exec_no_hit"]
+    direction_x, direction_y = direction_x / length, direction_y / length
+    own_name = str(getattr(game, "name", "")) if ignore_self else None
+
+    nearest_name, nearest_obj, nearest_distance = None, None, float("inf")
+    for name, obj in list(world.items()):
+        if not isinstance(obj, Mapping) or name == own_name:
+            continue
+        if not obj.get("active", True) or not obj.get("collider"):
+            continue
+        distance = _ray_aabb_distance(
+            origin_x, origin_y, direction_x, direction_y, _dict_collider_bounds(obj)
+        )
+        if distance is not None and distance <= max_distance and distance < nearest_distance:
+            nearest_name, nearest_obj, nearest_distance = name, obj, distance
+
+    if nearest_obj is None:
+        for key, value in (("hit", None), ("hit_object", None),
+                           ("hit_point", (0.0, 0.0)), ("hit_distance", 0.0),
+                           ("hit_normal", (0.0, 0.0))):
+            runtime._store(node_id, key, value)
+        return ["exec_no_hit"]
+
+    # ``hit_object`` precisa expor ``.name`` para get_object_name/get_tag.
+    resolved = getattr(game, "find_object", None)
+    hit_object = resolved(nearest_name) if callable(resolved) else None
+    if hit_object is None:
+        hit_object = SimpleNamespace(
+            name=nearest_name,
+            tag=str(nearest_obj.get("tag", "Untagged")),
+            x=float(nearest_obj.get("x", 0.0)),
+            y=float(nearest_obj.get("y", 0.0)),
+        )
+    runtime._store(node_id, "hit", hit_object)
+    runtime._store(node_id, "hit_object", hit_object)
+    runtime._store(node_id, "hit_point", (origin_x + direction_x * nearest_distance,
+                                          origin_y + direction_y * nearest_distance))
+    runtime._store(node_id, "hit_distance", nearest_distance)
+    runtime._store(node_id, "hit_normal", (-direction_x, -direction_y))
+    return ["exec_hit"]
+
+
 @registry.register_executor('raycast')
 def execute_raycast(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
     """Phase 5B.3: Cast a ray and return nearest hit. Phase 5B.4: Add layer mask support."""
@@ -302,8 +393,13 @@ def execute_raycast(runtime, node: Mapping[str, Any], game: Any, dt: float) -> l
     # Get physics world
     physics_world = getattr(game, "physics_world", None)
     if not physics_world:
-        runtime._store(node_id, "hit", None)
-        return ["exec_no_hit"]
+        # The editor's Play Mode runs objects as plain dicts and never builds a
+        # PhysicsWorld, so without this the node could only ever miss -- which made
+        # raycast unusable in the one place the game is actually played.
+        return _raycast_without_physics_world(
+            runtime, node_id, game,
+            origin_x, origin_y, direction_x, direction_y, max_distance, ignore_self,
+        )
 
     # Prepare ignore_self parameter
     ignore_self_name = None

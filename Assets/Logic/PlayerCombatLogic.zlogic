@@ -74,31 +74,13 @@
       }
     },
     {
-      "id": "attack_cooldown",
-      "type": "cooldown",
-      "title": "Attack Cooldown",
-      "category": "Flow",
-      "position": [
-        -712.96,
-        302.6
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 184.0
-      },
-      "properties": {
-        "seconds": 0.45
-      }
-    },
-    {
       "id": "self_ref",
       "type": "self_object",
       "title": "This Object",
       "category": "Objects",
       "position": [
-        -1226.24,
-        -95.12
+        -1045.99,
+        -23.91
       ],
       "editor": {
         "collapsed": false,
@@ -113,8 +95,8 @@
       "title": "Player Position",
       "category": "Movement",
       "position": [
-        -889.1,
-        -129.52
+        -796.75,
+        -23.82
       ],
       "editor": {
         "collapsed": false,
@@ -129,8 +111,8 @@
       "title": "Get Facing X",
       "category": "Variables",
       "position": [
-        -883.49,
-        46.46
+        -795.59,
+        182.2
       ],
       "editor": {
         "collapsed": false,
@@ -148,8 +130,8 @@
       "title": "Get Attack Range",
       "category": "Variables",
       "position": [
-        -760.32,
-        551.83
+        -807.2,
+        553.25
       ],
       "editor": {
         "collapsed": false,
@@ -167,8 +149,8 @@
       "title": "Get Attack Damage",
       "category": "Variables",
       "position": [
-        -350.76,
-        -81.17
+        -423.31,
+        285.51
       ],
       "editor": {
         "collapsed": false,
@@ -186,8 +168,8 @@
       "title": "Raycast Enemy Check",
       "category": "Physics/Queries",
       "position": [
-        -349.92,
-        116.76
+        -438.94,
+        472.83
       ],
       "editor": {
         "collapsed": false,
@@ -211,8 +193,8 @@
       "title": "Emit Attack Hit",
       "category": "Events",
       "position": [
-        -33.06,
-        -89.08
+        200.18,
+        216.63
       ],
       "editor": {
         "collapsed": false,
@@ -230,8 +212,8 @@
       "title": "Log Hit",
       "category": "Action",
       "position": [
-        277.05,
-        -84.28
+        455.07,
+        230.68
       ],
       "editor": {
         "collapsed": false,
@@ -249,8 +231,8 @@
       "title": "Log Miss",
       "category": "Action",
       "position": [
-        187.95,
-        437.84
+        -129.71,
+        510.39
       ],
       "editor": {
         "collapsed": false,
@@ -268,13 +250,13 @@
       "title": "Hit Object Name",
       "category": "Objects",
       "position": [
-        340.0,
-        120.0
+        -122.17,
+        353.23
       ],
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 140.0
+        "height": 150.0
       },
       "properties": {}
     },
@@ -284,8 +266,8 @@
       "title": "Publish Damage",
       "category": "Variables",
       "position": [
-        180.0,
-        -120.0
+        -120.01,
+        160.4
       ],
       "editor": {
         "collapsed": false,
@@ -293,9 +275,9 @@
         "height": 160.0
       },
       "properties": {
+        "value": 0.0,
         "name": "last_attack_damage",
-        "scope": "scene",
-        "value": 0.0
+        "scope": "scene"
       }
     }
   ],
@@ -308,24 +290,6 @@
       "to_port": "in",
       "kind": "flow",
       "order": 0
-    },
-    {
-      "id": "f_key_to_cooldown",
-      "from_node": "space_key",
-      "from_port": "true",
-      "to_node": "attack_cooldown",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 1
-    },
-    {
-      "id": "f_cooldown_to_ray",
-      "from_node": "attack_cooldown",
-      "from_port": "next",
-      "to_node": "attack_ray",
-      "to_port": "exec",
-      "kind": "flow",
-      "order": 2
     },
     {
       "id": "d_self_to_pos",
@@ -434,6 +398,15 @@
       "to_port": "in",
       "kind": "flow",
       "order": 18
+    },
+    {
+      "id": "af563539af1749fb960d3e526e1d8735",
+      "from_node": "space_key",
+      "from_port": "true",
+      "to_node": "attack_ray",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 13
     }
   ]
 }

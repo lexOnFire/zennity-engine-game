@@ -643,7 +643,11 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin):
         if executor:
             return executor(self, node, game, dt)
 
-        self._report_unknown_node(node, node_type)
+        # A pure data node (evaluator, no executor) sitting in a flow chain is fine:
+        # it still produces its value through its pins, and walking past it is a
+        # no-op. Only a type nothing implements at all is worth reporting.
+        if node_type not in registry.evaluators:
+            self._report_unknown_node(node, node_type)
         return ["next"]
 
     def _report_unknown_node(self, node: Mapping[str, Any], node_type: str) -> None:
