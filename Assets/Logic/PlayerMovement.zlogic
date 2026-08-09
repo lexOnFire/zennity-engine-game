@@ -23,8 +23,15 @@
       "type": "event_update",
       "title": "On Update",
       "category": "Events",
-      "position": [0.0, 0.0],
-      "editor": {"collapsed": false, "width": 220.0, "height": 150.0},
+      "position": [
+        -33.0,
+        0.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
       "properties": {}
     },
     {
@@ -32,69 +39,109 @@
       "type": "input_axis",
       "title": "Input Horizontal",
       "category": "Input",
-      "position": [301.24, -111.12],
-      "editor": {"collapsed": false, "width": 220.0, "height": 156.0},
-      "properties": {"axis_name": "Horizontal"}
+      "position": [
+        301.24,
+        -111.12
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "axis": "horizontal",
+        "axis_name": "Horizontal"
+      }
     },
     {
       "id": "input_vertical",
       "type": "input_axis",
       "title": "Input Vertical",
       "category": "Input",
-      "position": [301.24, 44.88],
-      "editor": {"collapsed": false, "width": 220.0, "height": 156.0},
-      "properties": {"axis_name": "Vertical"}
+      "position": [
+        296.03,
+        53.56
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "axis": "horizontal",
+        "axis_name": "Vertical"
+      }
     },
     {
       "id": "speed_value",
       "type": "number_value",
       "title": "Speed 5.0",
       "category": "Values",
-      "position": [301.24, 200.88],
-      "editor": {"collapsed": false, "width": 220.0, "height": 150.0},
-      "properties": {"value": 5.0}
+      "position": [
+        297.77,
+        225.19
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {
+        "value": 5.0
+      }
     },
     {
       "id": "move_node",
       "type": "move",
       "title": "Move (WASD)",
       "category": "Movement",
-      "position": [700.0, 0.0],
-      "editor": {"collapsed": false, "width": 220.0, "height": 156.0},
-      "properties": {"direction_x": 0.0, "direction_y": 0.0, "speed": 5.0}
+      "position": [
+        700.0,
+        0.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "direction_x": 0.0,
+        "direction_y": 0.0,
+        "speed": 5.0
+      }
     }
   ],
   "edges": [
     {
-      "id": "edge_update_to_horizontal",
+      "id": "conn_1",
       "source": "event_update",
       "source_port": "exec",
       "target": "input_horizontal",
       "target_port": "exec"
     },
     {
-      "id": "edge_update_to_vertical",
+      "id": "conn_2",
       "source": "event_update",
       "source_port": "exec",
       "target": "input_vertical",
       "target_port": "exec"
     },
     {
-      "id": "edge_horizontal_to_move",
+      "id": "conn_3",
       "source": "input_horizontal",
       "source_port": "value",
       "target": "move_node",
       "target_port": "direction_x"
     },
     {
-      "id": "edge_vertical_to_move",
+      "id": "conn_4",
       "source": "input_vertical",
       "source_port": "value",
       "target": "move_node",
       "target_port": "direction_y"
     },
     {
-      "id": "edge_speed_to_move",
+      "id": "conn_5",
       "source": "speed_value",
       "source_port": "value",
       "target": "move_node",
