@@ -240,11 +240,21 @@ def _face_player_movement(player: dict[str, Any]) -> None:
     if input_state.get("left") and not input_state.get("right"):
         player["flip_x"] = True
         player["facing_x"] = -1
+        player["rotation"] = 180.0
         player.setdefault("variables", {})["facing_x"] = -1
     elif input_state.get("right") and not input_state.get("left"):
         player["flip_x"] = False
         player["facing_x"] = 1
+        player["rotation"] = 0.0
         player.setdefault("variables", {})["facing_x"] = 1
+    elif input_state.get("up") and not input_state.get("down"):
+        player["facing_y"] = -1
+        player["rotation"] = -90.0
+        player.setdefault("variables", {})["facing_y"] = -1
+    elif input_state.get("down") and not input_state.get("up"):
+        player["facing_y"] = 1
+        player["rotation"] = 90.0
+        player.setdefault("variables", {})["facing_y"] = 1
 
 
 def _apply_widget_override(

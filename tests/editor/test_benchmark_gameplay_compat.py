@@ -86,6 +86,21 @@ def test_benchmark_player_faces_horizontal_movement_direction() -> None:
 
     assert objects["Player"]["flip_x"] is True
     assert objects["Player"]["variables"]["facing_x"] == -1
+    assert objects["Player"]["rotation"] == 180.0
+
+
+def test_benchmark_player_faces_vertical_movement_direction() -> None:
+    objects = {
+        "Player": {
+            "name": "Player", "x": 0.0, "y": 0.0, "w": 40.0, "h": 40.0,
+            "_input": {"up": True, "down": False}, "variables": {},
+        },
+    }
+
+    update_benchmark_gameplay(objects, 1 / 60)
+
+    assert objects["Player"]["variables"]["facing_y"] == -1
+    assert objects["Player"]["rotation"] == -90.0
 
 
 def test_benchmark_enemy_contact_damages_player_and_updates_health_ui() -> None:

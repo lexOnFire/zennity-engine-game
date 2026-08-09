@@ -90,3 +90,9 @@ def test_editor_event_filter_only_delegates_and_falls_back() -> None:
     assert "self._session_controller.handle_event(watched, event)" in block
     assert "key_map =" not in block
     assert len(block.splitlines()) <= 7
+
+
+def test_isolated_editor_runtime_keys_include_interact() -> None:
+    source = open("editor/isolated_editor_main.py", encoding="utf-8").read()
+
+    assert '"interact"' in source[source.index("self._runtime_keys = {"):source.index("self._bootstrap = EditorBootstrapController")]

@@ -130,7 +130,7 @@ class IsolatedEditorWindow(InspectorComponentDelegatesMixin, AnimationWorkspaceO
         self._snap_enabled = False
         self._runtime_playing = False
         self._runtime_keys = {
-            key: False for key in ("left", "right", "up", "down", "jump", "restart")
+            key: False for key in ("left", "right", "up", "down", "jump", "restart", "interact")
         }
         self._bootstrap = EditorBootstrapController(self, Path.cwd())
         self._bootstrap.compose(viewport_process, commands, events, viewport_controller)

@@ -216,7 +216,6 @@ class ViewportSessionOrchestrator:
                         "scene_path": scene_path_val,
                         "path": scene_path_val,
                     })
-                    restart = True
             elif command:
                 # UI buttons and other runtime producers use their command name
                 # as a first-class custom event for Visual Logic graphs.
