@@ -96,7 +96,10 @@ def evaluate_compare_text(runtime, node_id: str, port: str, node: Mapping[str, A
     node_type = str(node.get('type'))
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
     left = runtime._read_input(node_id, "value", "", game, dt, branch)
-    right = str(properties.get("value", ""))
+    # ``other`` lets both sides come from the graph. Without it the right side could
+    # only be an authoring-time constant, so a graph shared by several objects had no
+    # way to compare against something that differs per object.
+    right = str(runtime._read_input(node_id, "other", properties.get("value", ""), game, dt, branch))
     operator = str(properties.get("operator", "=="))
     equal = str(left).casefold() == right.casefold()
     value = not equal if operator == "!=" else equal

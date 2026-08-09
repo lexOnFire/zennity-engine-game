@@ -15,7 +15,7 @@
       "transform": {
         "position": [
           0.0,
-          0.0,
+          1.0,
           0.0
         ],
         "rotation": [
@@ -1572,12 +1572,21 @@
             "properties": {
               "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic"
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/EnemyHealth.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/EnemyHealth.zlogic"
+            }
           }
         ]
       },
       "logic_assets": [
         "Assets/Logic/EnemyAILogic.zlogic",
-        "Assets/Logic/EnemyAttackLogic.zlogic"
+        "Assets/Logic/EnemyAttackLogic.zlogic",
+        "Assets/Logic/EnemyHealth.zlogic"
       ],
       "variables": {
         "health": 100,
@@ -1693,12 +1702,21 @@
             "properties": {
               "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic"
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/EnemyHealth.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/EnemyHealth.zlogic"
+            }
           }
         ]
       },
       "logic_assets": [
         "Assets/Logic/EnemyAILogic.zlogic",
-        "Assets/Logic/EnemyAttackLogic.zlogic"
+        "Assets/Logic/EnemyAttackLogic.zlogic",
+        "Assets/Logic/EnemyHealth.zlogic"
       ],
       "variables": {
         "health": 100,
@@ -1814,12 +1832,21 @@
             "properties": {
               "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic"
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/EnemyHealth.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/EnemyHealth.zlogic"
+            }
           }
         ]
       },
       "logic_assets": [
         "Assets/Logic/EnemyAILogic.zlogic",
-        "Assets/Logic/EnemyAttackLogic.zlogic"
+        "Assets/Logic/EnemyAttackLogic.zlogic",
+        "Assets/Logic/EnemyHealth.zlogic"
       ],
       "variables": {
         "health": 100,

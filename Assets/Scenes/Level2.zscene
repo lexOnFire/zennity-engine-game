@@ -16,7 +16,7 @@
       "transform": {
         "position": [
           0.0,
-          0.0,
+          -1.0,
           0.0
         ],
         "rotation": [
@@ -80,11 +80,32 @@
             "properties": {
               "graph_path": "Assets/Logic/PlayerMovementLogic.zlogic"
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/PlayerCombatLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/PlayerCombatLogic.zlogic"
+            }
           }
-        ]
+        ],
+        "rigidbody": {
+          "mass": 1.0,
+          "gravity_scale": 1.0,
+          "use_gravity": false,
+          "is_kinematic": false
+        },
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 48.0,
+          "height": 48.0
+        }
       },
       "logic_assets": [
-        "Assets/Logic/PlayerMovementLogic.zlogic"
+        "Assets/Logic/PlayerMovementLogic.zlogic",
+        "Assets/Logic/PlayerCombatLogic.zlogic"
       ],
       "variables": {
         "move_speed": 200,
@@ -106,6 +127,11 @@
             {
               "path": "Assets/Logic/PlayerMovementLogic.zlogic",
               "name": "PlayerMovementLogic"
+            },
+            {
+              "path": "Assets/Logic/PlayerCombatLogic.zlogic",
+              "enabled": true,
+              "name": "PlayerCombatLogic"
             }
           ]
         }
@@ -390,7 +416,13 @@
               "graph_path": "Assets/Logic/BossHealthLogic.zlogic"
             }
           }
-        ]
+        ],
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 96.0,
+          "height": 96.0
+        }
       },
       "logic_assets": [
         "Assets/Logic/BossAILogic.zlogic",
@@ -429,7 +461,23 @@
             "path": "Assets/Logic/BossHealthLogic.zlogic",
             "name": "BossHealthLogic"
           }
-        ]
+        ],
+        "editor_data": {
+          "logic_graphs": [
+            {
+              "path": "Assets/Logic/BossAILogic.zlogic",
+              "name": "BossAILogic"
+            },
+            {
+              "path": "Assets/Logic/BossCombatLogic.zlogic",
+              "name": "BossCombatLogic"
+            },
+            {
+              "path": "Assets/Logic/BossHealthLogic.zlogic",
+              "name": "BossHealthLogic"
+            }
+          ]
+        }
       }
     },
     {
@@ -507,12 +555,27 @@
             "properties": {
               "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic"
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/EnemyHealth.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/EnemyHealth.zlogic"
+            }
           }
-        ]
+        ],
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 32.0,
+          "height": 32.0
+        }
       },
       "logic_assets": [
         "Assets/Logic/EnemyAILogic.zlogic",
-        "Assets/Logic/EnemyAttackLogic.zlogic"
+        "Assets/Logic/EnemyAttackLogic.zlogic",
+        "Assets/Logic/EnemyHealth.zlogic"
       ],
       "variables": {
         "health": 60,
@@ -534,7 +597,19 @@
             "path": "Assets/Logic/EnemyAttackLogic.zlogic",
             "name": "EnemyAttackLogic"
           }
-        ]
+        ],
+        "editor_data": {
+          "logic_graphs": [
+            {
+              "path": "Assets/Logic/EnemyAILogic.zlogic",
+              "name": "EnemyAILogic"
+            },
+            {
+              "path": "Assets/Logic/EnemyAttackLogic.zlogic",
+              "name": "EnemyAttackLogic"
+            }
+          ]
+        }
       }
     },
     {
@@ -612,12 +687,27 @@
             "properties": {
               "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic"
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/EnemyHealth.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/EnemyHealth.zlogic"
+            }
           }
-        ]
+        ],
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 32.0,
+          "height": 32.0
+        }
       },
       "logic_assets": [
         "Assets/Logic/EnemyAILogic.zlogic",
-        "Assets/Logic/EnemyAttackLogic.zlogic"
+        "Assets/Logic/EnemyAttackLogic.zlogic",
+        "Assets/Logic/EnemyHealth.zlogic"
       ],
       "variables": {
         "health": 60,
@@ -639,7 +729,19 @@
             "path": "Assets/Logic/EnemyAttackLogic.zlogic",
             "name": "EnemyAttackLogic"
           }
-        ]
+        ],
+        "editor_data": {
+          "logic_graphs": [
+            {
+              "path": "Assets/Logic/EnemyAILogic.zlogic",
+              "name": "EnemyAILogic"
+            },
+            {
+              "path": "Assets/Logic/EnemyAttackLogic.zlogic",
+              "name": "EnemyAttackLogic"
+            }
+          ]
+        }
       }
     },
     {
@@ -714,7 +816,15 @@
             "path": "Assets/Logic/CoinCollectionLogic.zlogic",
             "name": "CoinCollectionLogic"
           }
-        ]
+        ],
+        "editor_data": {
+          "logic_graphs": [
+            {
+              "path": "Assets/Logic/CoinCollectionLogic.zlogic",
+              "name": "CoinCollectionLogic"
+            }
+          ]
+        }
       }
     },
     {
@@ -789,7 +899,15 @@
             "path": "Assets/Logic/CoinCollectionLogic.zlogic",
             "name": "CoinCollectionLogic"
           }
-        ]
+        ],
+        "editor_data": {
+          "logic_graphs": [
+            {
+              "path": "Assets/Logic/CoinCollectionLogic.zlogic",
+              "name": "CoinCollectionLogic"
+            }
+          ]
+        }
       }
     },
     {
@@ -864,7 +982,15 @@
             "path": "Assets/Logic/CoinCollectionLogic.zlogic",
             "name": "CoinCollectionLogic"
           }
-        ]
+        ],
+        "editor_data": {
+          "logic_graphs": [
+            {
+              "path": "Assets/Logic/CoinCollectionLogic.zlogic",
+              "name": "CoinCollectionLogic"
+            }
+          ]
+        }
       }
     },
     {
@@ -942,7 +1068,15 @@
             "path": "Assets/Logic/LevelExitLogic.zlogic",
             "name": "LevelExitLogic"
           }
-        ]
+        ],
+        "editor_data": {
+          "logic_graphs": [
+            {
+              "path": "Assets/Logic/LevelExitLogic.zlogic",
+              "name": "LevelExitLogic"
+            }
+          ]
+        }
       }
     },
     {
@@ -996,7 +1130,19 @@
               "is_trigger": false
             }
           }
-        ]
+        ],
+        "rigidbody": {
+          "mass": 1.0,
+          "gravity_scale": 1.0,
+          "use_gravity": false,
+          "is_kinematic": false
+        },
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 32.0,
+          "height": 1000.0
+        }
       },
       "static": false,
       "layer": "Default"

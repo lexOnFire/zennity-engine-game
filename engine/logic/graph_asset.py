@@ -92,6 +92,7 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "self_object": {"inputs": [], "outputs": [("object", "object")]},
     "find_tag": {"inputs": [("in", "flow")], "outputs": [("next", "flow"), ("object", "object")]},
     "get_tag": {"inputs": [("target", "object")], "outputs": [("value", "text")]},
+    "get_object_name": {"inputs": [("target", "object")], "outputs": [("value", "text")]},
     "get_prefab_parameter": {"inputs": [("target", "object")], "outputs": [("value", "any")]},
     "create_object": {
         "inputs": [("in", "flow"), ("source", "object"), ("name", "text"), ("x", "number"), ("y", "number")],
@@ -142,7 +143,7 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "key_held": {"inputs": [("in", "flow")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
     "is_grounded": {"inputs": [("in", "flow")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
     "compare_number": {"inputs": [("in", "flow"), ("value", "number")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
-    "compare_text": {"inputs": [("in", "flow"), ("value", "text")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
+    "compare_text": {"inputs": [("in", "flow"), ("value", "text"), ("other", "text")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
     "play_animation": {"inputs": [("in", "flow"), ("target", "object"), ("state", "text")], "outputs": [("next", "flow"), ("exec_failure", "flow")]},
     "play_animation_asset": {"inputs": [("in", "flow"), ("path", "text")], "outputs": [("next", "flow")]},
     "stop_animation": {"inputs": [("in", "flow"), ("target", "object")], "outputs": [("next", "flow"), ("exec_failure", "flow")]},

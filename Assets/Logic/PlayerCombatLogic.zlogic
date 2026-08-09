@@ -27,6 +27,11 @@
       "type": "number",
       "scope": "object",
       "default": 1.0
+    },
+    "last_attack_damage": {
+      "type": "number",
+      "scope": "scene",
+      "default": 0.0
     }
   },
   "editor": {
@@ -256,6 +261,42 @@
         "message": "",
         "text": "Player attack MISS"
       }
+    },
+    {
+      "id": "hit_name",
+      "type": "get_object_name",
+      "title": "Hit Object Name",
+      "category": "Objects",
+      "position": [
+        340.0,
+        120.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 140.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "publish_damage",
+      "type": "set_variable",
+      "title": "Publish Damage",
+      "category": "Variables",
+      "position": [
+        180.0,
+        -120.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 230.0,
+        "height": 160.0
+      },
+      "properties": {
+        "name": "last_attack_damage",
+        "scope": "scene",
+        "value": 0.0
+      }
     }
   ],
   "edges": [
@@ -335,18 +376,18 @@
       "id": "f_ray_hit_to_emit",
       "from_node": "attack_ray",
       "from_port": "exec_hit",
-      "to_node": "emit_hit",
+      "to_node": "publish_damage",
       "to_port": "in",
       "kind": "flow",
       "order": 9
     },
     {
       "id": "d_damage_to_payload",
-      "from_node": "damage_var",
+      "from_node": "hit_name",
       "from_port": "value",
       "to_node": "emit_hit",
       "to_port": "payload",
-      "kind": "any",
+      "kind": "text",
       "order": 10
     },
     {
@@ -366,6 +407,33 @@
       "to_port": "in",
       "kind": "flow",
       "order": 12
+    },
+    {
+      "id": "d_damage_to_publish",
+      "from_node": "damage_var",
+      "from_port": "value",
+      "to_node": "publish_damage",
+      "to_port": "value",
+      "kind": "number",
+      "order": 16
+    },
+    {
+      "id": "d_hitobj_to_name",
+      "from_node": "attack_ray",
+      "from_port": "hit_object",
+      "to_node": "hit_name",
+      "to_port": "target",
+      "kind": "object",
+      "order": 17
+    },
+    {
+      "id": "f_publish_to_emit",
+      "from_node": "publish_damage",
+      "from_port": "next",
+      "to_node": "emit_hit",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 18
     }
   ]
 }

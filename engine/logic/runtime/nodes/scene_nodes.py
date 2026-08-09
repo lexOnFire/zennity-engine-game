@@ -20,6 +20,18 @@ def evaluate_get_tag(runtime, node_id: str, port: str, node: Mapping[str, Any], 
     return value
 
 
+@registry.register_evaluator('get_object_name')
+def evaluate_get_object_name(runtime, node_id: str, port: str, node: Mapping[str, Any], game: Any, dt: float, branch: set[str]) -> Any:
+    """Nome do objeto alvo.
+
+    ``get_tag`` era a unica forma de identificar um objeto num grafo, e tags sao
+    compartilhadas entre varios objetos -- nao servem para dizer *qual* deles foi
+    atingido.
+    """
+    target = runtime._read_target(node_id, game, dt, branch)
+    return str(getattr(target, "name", ""))
+
+
 # Os nomes pontuados abaixo são aliases legados que não existem no editor. Eles não
 # podem incluir tipos reais na tupla: o registro é last-one-wins, e listar um tipo
 # real aqui apagaria silenciosamente a implementação verdadeira dele.

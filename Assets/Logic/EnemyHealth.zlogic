@@ -1,11 +1,11 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
-  "enabled": false,
-  "name": "NewLogic",
+  "enabled": true,
+  "name": "EnemyHealth",
   "target": {
-    "type": "name",
-    "value": "Player"
+    "type": "self",
+    "value": ""
   },
   "debug": {
     "breakpoints": [],
@@ -18,10 +18,10 @@
       "scope": "object",
       "default": 100.0
     },
-    "max_health": {
+    "last_attack_damage": {
       "type": "number",
-      "scope": "object",
-      "default": 100.0
+      "scope": "scene",
+      "default": 0.0
     }
   },
   "editor": {
@@ -30,45 +30,228 @@
   },
   "nodes": [
     {
-      "id": "health_state",
-      "type": "variable",
-      "title": "variable",
-      "category": "Custom",
-      "position": [
-        0.0,
-        0.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {
-        "name": "health",
-        "value_type": "int",
-        "default_value": 100
-      }
+      "id": "on_attack",
+      "type": "event_custom",
+      "title": "On Player Attack Hit",
+      "category": "Events",
+      "position": [-1100.0, 200.0],
+      "editor": {"collapsed": false, "width": 230.0, "height": 160.0},
+      "properties": {"name": "player_attack_hit"}
     },
     {
-      "id": "max_health_state",
-      "type": "variable",
-      "title": "variable",
-      "category": "Custom",
-      "position": [
-        200.0,
-        0.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {
-        "name": "max_health",
-        "value_type": "int",
-        "default_value": 100
-      }
+      "id": "self_ref",
+      "type": "self_object",
+      "title": "This Enemy",
+      "category": "Objects",
+      "position": [-1100.0, -60.0],
+      "editor": {"collapsed": false, "width": 220.0, "height": 140.0},
+      "properties": {}
+    },
+    {
+      "id": "my_name",
+      "type": "get_object_name",
+      "title": "My Name",
+      "category": "Objects",
+      "position": [-810.0, -60.0],
+      "editor": {"collapsed": false, "width": 220.0, "height": 140.0},
+      "properties": {}
+    },
+    {
+      "id": "was_i_hit",
+      "type": "compare_text",
+      "title": "Was I The One Hit?",
+      "category": "Logic",
+      "position": [-520.0, 200.0],
+      "editor": {"collapsed": false, "width": 230.0, "height": 190.0},
+      "properties": {"operator": "=="}
+    },
+    {
+      "id": "damage",
+      "type": "get_variable",
+      "title": "Incoming Damage",
+      "category": "Variables",
+      "position": [-520.0, 470.0],
+      "editor": {"collapsed": false, "width": 230.0, "height": 160.0},
+      "properties": {"name": "last_attack_damage", "scope": "scene"}
+    },
+    {
+      "id": "current_health",
+      "type": "get_variable",
+      "title": "Current Health",
+      "category": "Variables",
+      "position": [-200.0, 470.0],
+      "editor": {"collapsed": false, "width": 230.0, "height": 160.0},
+      "properties": {"name": "health", "scope": "object"}
+    },
+    {
+      "id": "subtract",
+      "type": "subtract_number",
+      "title": "Health - Damage",
+      "category": "Math",
+      "position": [120.0, 400.0],
+      "editor": {"collapsed": false, "width": 220.0, "height": 150.0},
+      "properties": {"a": 100.0, "b": 0.0}
+    },
+    {
+      "id": "clamp",
+      "type": "clamp_number",
+      "title": "Clamp To Zero",
+      "category": "Math",
+      "position": [420.0, 400.0],
+      "editor": {"collapsed": false, "width": 220.0, "height": 190.0},
+      "properties": {"minimum": 0.0, "maximum": 9999.0}
+    },
+    {
+      "id": "apply_health",
+      "type": "set_variable",
+      "title": "Apply New Health",
+      "category": "Variables",
+      "position": [-200.0, 200.0],
+      "editor": {"collapsed": false, "width": 230.0, "height": 160.0},
+      "properties": {"name": "health", "scope": "object", "value": 0.0}
+    },
+    {
+      "id": "hit_log",
+      "type": "log_message",
+      "title": "Log Damage",
+      "category": "Action",
+      "position": [120.0, 130.0],
+      "editor": {"collapsed": false, "width": 230.0, "height": 160.0},
+      "properties": {"text": "Enemy took damage"}
+    },
+    {
+      "id": "health_after",
+      "type": "get_variable",
+      "title": "Health After Hit",
+      "category": "Variables",
+      "position": [420.0, 130.0],
+      "editor": {"collapsed": false, "width": 230.0, "height": 160.0},
+      "properties": {"name": "health", "scope": "object"}
+    },
+    {
+      "id": "is_dead",
+      "type": "compare_number",
+      "title": "Health <= 0?",
+      "category": "Logic",
+      "position": [730.0, 130.0],
+      "editor": {"collapsed": false, "width": 230.0, "height": 190.0},
+      "properties": {"operator": "<=", "value": 0.0}
+    },
+    {
+      "id": "death_log",
+      "type": "log_message",
+      "title": "Log Death",
+      "category": "Action",
+      "position": [1040.0, 40.0],
+      "editor": {"collapsed": false, "width": 230.0, "height": 160.0},
+      "properties": {"text": "Enemy died"}
+    },
+    {
+      "id": "die",
+      "type": "destroy_object",
+      "title": "Destroy This Enemy",
+      "category": "Action",
+      "position": [1350.0, 40.0],
+      "editor": {"collapsed": false, "width": 230.0, "height": 160.0},
+      "properties": {}
     }
   ],
-  "edges": []
+  "edges": [
+    {
+      "id": "d_self_to_name",
+      "from_node": "self_ref", "from_port": "object",
+      "to_node": "my_name", "to_port": "target",
+      "kind": "object", "order": 0
+    },
+    {
+      "id": "d_payload_to_compare",
+      "from_node": "on_attack", "from_port": "payload",
+      "to_node": "was_i_hit", "to_port": "value",
+      "kind": "text", "order": 1
+    },
+    {
+      "id": "d_myname_to_compare",
+      "from_node": "my_name", "from_port": "value",
+      "to_node": "was_i_hit", "to_port": "other",
+      "kind": "text", "order": 2
+    },
+    {
+      "id": "f_attack_to_compare",
+      "from_node": "on_attack", "from_port": "next",
+      "to_node": "was_i_hit", "to_port": "in",
+      "kind": "flow", "order": 3
+    },
+    {
+      "id": "d_health_to_sub_a",
+      "from_node": "current_health", "from_port": "value",
+      "to_node": "subtract", "to_port": "a",
+      "kind": "number", "order": 4
+    },
+    {
+      "id": "d_damage_to_sub_b",
+      "from_node": "damage", "from_port": "value",
+      "to_node": "subtract", "to_port": "b",
+      "kind": "number", "order": 5
+    },
+    {
+      "id": "d_sub_to_clamp",
+      "from_node": "subtract", "from_port": "value",
+      "to_node": "clamp", "to_port": "value",
+      "kind": "number", "order": 6
+    },
+    {
+      "id": "d_clamp_to_apply",
+      "from_node": "clamp", "from_port": "value",
+      "to_node": "apply_health", "to_port": "value",
+      "kind": "number", "order": 7
+    },
+    {
+      "id": "f_compare_true_to_apply",
+      "from_node": "was_i_hit", "from_port": "true",
+      "to_node": "apply_health", "to_port": "in",
+      "kind": "flow", "order": 8
+    },
+    {
+      "id": "f_apply_to_log",
+      "from_node": "apply_health", "from_port": "next",
+      "to_node": "hit_log", "to_port": "in",
+      "kind": "flow", "order": 9
+    },
+    {
+      "id": "f_log_to_health_after",
+      "from_node": "hit_log", "from_port": "next",
+      "to_node": "health_after", "to_port": "in",
+      "kind": "flow", "order": 10
+    },
+    {
+      "id": "f_health_after_to_isdead",
+      "from_node": "health_after", "from_port": "next",
+      "to_node": "is_dead", "to_port": "in",
+      "kind": "flow", "order": 11
+    },
+    {
+      "id": "d_health_after_to_isdead",
+      "from_node": "health_after", "from_port": "value",
+      "to_node": "is_dead", "to_port": "value",
+      "kind": "number", "order": 12
+    },
+    {
+      "id": "f_isdead_true_to_deathlog",
+      "from_node": "is_dead", "from_port": "true",
+      "to_node": "death_log", "to_port": "in",
+      "kind": "flow", "order": 13
+    },
+    {
+      "id": "f_deathlog_to_die",
+      "from_node": "death_log", "from_port": "next",
+      "to_node": "die", "to_port": "in",
+      "kind": "flow", "order": 14
+    },
+    {
+      "id": "d_self_to_die",
+      "from_node": "self_ref", "from_port": "object",
+      "to_node": "die", "to_port": "target",
+      "kind": "object", "order": 15
+    }
+  ]
 }
