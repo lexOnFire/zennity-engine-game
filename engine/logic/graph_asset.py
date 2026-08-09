@@ -143,9 +143,9 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "is_grounded": {"inputs": [("in", "flow")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
     "compare_number": {"inputs": [("in", "flow"), ("value", "number")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
     "compare_text": {"inputs": [("in", "flow"), ("value", "text")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
-    "play_animation": {"inputs": [("in", "flow"), ("state", "text")], "outputs": [("next", "flow")]},
+    "play_animation": {"inputs": [("in", "flow"), ("target", "object"), ("state", "text")], "outputs": [("next", "flow"), ("exec_failure", "flow")]},
     "play_animation_asset": {"inputs": [("in", "flow"), ("path", "text")], "outputs": [("next", "flow")]},
-    "stop_animation": {"inputs": [("in", "flow")], "outputs": [("next", "flow")]},
+    "stop_animation": {"inputs": [("in", "flow"), ("target", "object")], "outputs": [("next", "flow"), ("exec_failure", "flow")]},
     "play_sound": {"inputs": [("in", "flow"), ("path", "text")], "outputs": [("next", "flow")]},
     "set_ui_text": {"inputs": [("in", "flow"), ("text", "text")], "outputs": [("next", "flow")]},
     "set_ui_progress_bar": {"inputs": [("in", "flow"), ("value", "number")], "outputs": [("next", "flow")]},
@@ -240,6 +240,24 @@ NODE_PORT_DEFINITIONS.setdefault(
     "key_pressed",
     {"inputs": [("in", "flow")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
 )
+
+# These four fall back to the declarative NodeDefinition classes, which name their
+# flow output ``exec_done``. Every graph and every other node here uses ``next``,
+# and the runtime matches the edge's port name literally, so the fallback left the
+# flow dead. Pin the contract to the convention that is actually in use.
+NODE_PORT_DEFINITIONS["read_key_axis"] = {
+    "inputs": [("in", "flow")], "outputs": [("next", "flow"), ("value", "number")],
+}
+NODE_PORT_DEFINITIONS["set_ui_visible"] = {
+    "inputs": [("in", "flow"), ("visible", "bool")], "outputs": [("next", "flow")],
+}
+NODE_PORT_DEFINITIONS["bind_ui_to_blackboard"] = {
+    "inputs": [("in", "flow")], "outputs": [("next", "flow")],
+}
+NODE_PORT_DEFINITIONS["start_behavior_tree"] = {
+    "inputs": [("in", "flow"), ("path", "text")],
+    "outputs": [("next", "flow"), ("exec_failure", "flow")],
+}
 
 # Explicit editor/runtime contracts for object creation and inspector components.
 # Keeping defaults here makes newly created nodes immediately editable and ensures

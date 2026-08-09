@@ -435,9 +435,9 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "play_animation": {
         "title": "Play Animation",
         "category": "Animation",
-        "inputs": [('in', 'flow'), ('state', 'text')],
-        "outputs": [('next', 'flow')],
-        "properties": {"state": "Idle"},
+        "inputs": [('in', 'flow'), ('target', 'object'), ('state', 'text')],
+        "outputs": [('next', 'flow'), ('exec_failure', 'flow')],
+        "properties": {"target": "", "state": "Idle", "force": False},
     },
     "play_animation_asset": {
         "title": "Play Animation Asset",
@@ -599,9 +599,9 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
     "stop_animation": {
         "title": "Stop Animation",
         "category": "Animation",
-        "inputs": [('in', 'flow')],
-        "outputs": [('next', 'flow')],
-        "properties": {},
+        "inputs": [('in', 'flow'), ('target', 'object')],
+        "outputs": [('next', 'flow'), ('exec_failure', 'flow')],
+        "properties": {"target": ""},
     },
     "stop_continuous_motion": {
         "title": "Stop Continuous Motion",

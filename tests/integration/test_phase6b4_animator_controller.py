@@ -106,6 +106,9 @@ class TestControllerParameterIntegration:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, port, fallback, game, dt, branch):
+                return fallback
+
         runtime = RuntimeMock()
 
         node = {
@@ -119,7 +122,7 @@ class TestControllerParameterIntegration:
 
         result = execute_animator_parameter(runtime, node, game, 0.016)
 
-        assert result == ["success"]
+        assert result == ["exec_success"]
         assert controller.get_parameter("speed") == 2.5
 
     def test_set_bool_parameter(self, scene_with_controller):
@@ -131,6 +134,9 @@ class TestControllerParameterIntegration:
 
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
+
+            def _read_input(self, node_id, port, fallback, game, dt, branch):
+                return fallback
 
         runtime = RuntimeMock()
 
@@ -145,7 +151,7 @@ class TestControllerParameterIntegration:
 
         result = execute_animator_parameter(runtime, node, game, 0.016)
 
-        assert result == ["success"]
+        assert result == ["exec_success"]
         assert controller.get_parameter("can_jump") is True
 
     def test_parameter_triggers_transition(self, scene_with_controller):
@@ -174,6 +180,9 @@ class TestControllerParameterIntegration:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, port, fallback, game, dt, branch):
+                return fallback
+
         runtime = RuntimeMock()
 
         # Start in run state
@@ -192,7 +201,7 @@ class TestControllerParameterIntegration:
 
         result = execute_animator_set_trigger(runtime, node, game, 0.016)
 
-        assert result == ["success"]
+        assert result == ["exec_success"]
         assert controller.get_parameter("attack_trigger") is True
 
     def test_trigger_fires_transition(self, scene_with_controller):
@@ -258,6 +267,9 @@ class TestControllerParameterIntegration:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, port, fallback, game, dt, branch):
+                return fallback
+
         runtime = RuntimeMock()
 
         node = {
@@ -271,7 +283,7 @@ class TestControllerParameterIntegration:
 
         result = execute_animator_parameter(runtime, node, game, 0.016)
 
-        assert result == ["failure"]
+        assert result == ["exec_failure"]
 
     def test_multiple_controllers_independent(self):
         """Test that Player and Enemy controllers don't interfere."""

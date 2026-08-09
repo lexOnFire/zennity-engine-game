@@ -71,29 +71,33 @@ def execute_play_animation(runtime, node: Mapping[str, Any], game: Any, dt: floa
     node_id = str(node['id'])
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
 
-    target_name = str(properties.get("target", "")).strip()
-    animation_name = str(properties.get("animation_name", "")).strip()
+    # ``state`` is the declared pin; ``animation_name`` stays as a fallback for
+    # graphs authored before the pin existed. An empty target means this object.
+    target_name = str(runtime._read_input(node_id, "target", properties.get("target", ""), game, dt, set())).strip()
+    animation_name = str(runtime._read_input(
+        node_id, "state", properties.get("state", properties.get("animation_name", "")), game, dt, set()
+    )).strip()
     force = bool(properties.get("force", False))
 
     if not animation_name:
-        return ["failure"]
+        return ["exec_failure"]
 
-    animator, error = _resolve_animator(target_name, game)
+    animator, error = _resolve_animator(target_name or getattr(game, "name", ""), game)
     if error or not animator:
-        return ["failure"]
+        return ["exec_failure"]
 
     try:
         # Validate animation exists before playing
         if animation_name not in animator._clips:
-            return ["failure"]
+            return ["exec_failure"]
 
         # Call actual Animator API
         animator.play(animation_name, force=force)
         runtime._store(node_id, "animation", animation_name)
-        return ["success"]
+        return ["next"]
 
     except (ValueError, TypeError, AttributeError):
-        return ["failure"]
+        return ["exec_failure"]
 
 
 # Phase 6B.2: Pause Animation Executor
@@ -107,15 +111,15 @@ def execute_pause_animation(runtime, node: Mapping[str, Any], game: Any, dt: flo
 
     animator, error = _resolve_animator(target_name, game)
     if error or not animator:
-        return ["failure"]
+        return ["exec_failure"]
 
     try:
         animator.pause()
         runtime._store(node_id, "paused", True)
-        return ["success"]
+        return ["exec_success"]
 
     except (ValueError, TypeError, AttributeError):
-        return ["failure"]
+        return ["exec_failure"]
 
 
 # Phase 6B.2: Stop Animation Executor
@@ -125,19 +129,19 @@ def execute_stop_animation(runtime, node: Mapping[str, Any], game: Any, dt: floa
     node_id = str(node['id'])
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
 
-    target_name = str(properties.get("target", "")).strip()
+    target_name = str(runtime._read_input(node_id, "target", properties.get("target", ""), game, dt, set())).strip()
 
-    animator, error = _resolve_animator(target_name, game)
+    animator, error = _resolve_animator(target_name or getattr(game, "name", ""), game)
     if error or not animator:
-        return ["failure"]
+        return ["exec_failure"]
 
     try:
         animator.stop()
         runtime._store(node_id, "stopped", True)
-        return ["success"]
+        return ["next"]
 
     except (ValueError, TypeError, AttributeError):
-        return ["failure"]
+        return ["exec_failure"]
 
 
 # Phase 6B.2: Animator Parameter Executor
@@ -152,15 +156,15 @@ def execute_animator_parameter(runtime, node: Mapping[str, Any], game: Any, dt: 
     value_str = str(properties.get("value", "")).strip()
 
     if not parameter_name or not value_str:
-        return ["failure"]
+        return ["exec_failure"]
 
     # First check if game object exists
     if not hasattr(game, "find_object"):
-        return ["failure"]
+        return ["exec_failure"]
 
     game_obj = game.find_object(target_name) if target_name else None
     if not game_obj:
-        return ["failure"]  # Target object not found
+        return ["exec_failure"]  # Target object not found
 
     # Phase 6B.4: Try to use AnimationController if available
     controller = game_obj.get_component(AnimationController) if hasattr(game_obj, "get_component") else None
@@ -194,10 +198,10 @@ def execute_animator_parameter(runtime, node: Mapping[str, Any], game: Any, dt: 
 
             controller.set_parameter(parameter_name, value)
             runtime._store(node_id, parameter_name, value)
-            return ["success"]
+            return ["exec_success"]
 
         except (ValueError, TypeError, AttributeError):
-            return ["failure"]
+            return ["exec_failure"]
     else:
         # Backward compatibility: store in runtime state if no controller (Phase 6B.2 compatibility)
         try:
@@ -213,10 +217,10 @@ def execute_animator_parameter(runtime, node: Mapping[str, Any], game: Any, dt: 
                     value = value_str.lower() in ("true", "1", "yes")
 
             runtime._store(node_id, parameter_name, value)
-            return ["success"]
+            return ["exec_success"]
 
         except (ValueError, TypeError):
-            return ["failure"]
+            return ["exec_failure"]
 
 
 # Phase 6B.4: Set Animator Trigger
@@ -230,20 +234,20 @@ def execute_animator_set_trigger(runtime, node: Mapping[str, Any], game: Any, dt
     trigger_name = str(properties.get("trigger_name", "")).strip()
 
     if not trigger_name:
-        return ["failure"]
+        return ["exec_failure"]
 
     controller, error = _resolve_animator_controller(target_name, game)
     if error or not controller:
-        return ["failure"]
+        return ["exec_failure"]
 
     try:
         # Set trigger to True (will be consumed by controller on next update)
         controller.set_parameter(trigger_name, True)
         runtime._store(node_id, trigger_name, True)
-        return ["success"]
+        return ["exec_success"]
 
     except (ValueError, TypeError, AttributeError):
-        return ["failure"]
+        return ["exec_failure"]
 
 
 # Phase 6B.2: Getter Evaluators (Pure Data Nodes)

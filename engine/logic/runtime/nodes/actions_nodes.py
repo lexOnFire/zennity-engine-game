@@ -4,14 +4,9 @@ import random
 from typing import Any, Mapping
 from ..registry import registry
 
-@registry.register_executor('play_animation')
-def execute_play_animation(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
-    node_id = str(node['id'])
-    node_type = str(node.get('type'))
-    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
-    state = runtime._read_input(node_id, "state", properties.get("state", "Idle"), game, dt, set())
-    game.animator.play(str(state))
-    return ["next"]
+# ``play_animation`` and ``stop_animation`` live in animation_nodes.py. They used
+# to be registered here too, and since registration is last-one-wins these copies
+# were dead code that only made the real behaviour harder to find.
 
 @registry.register_executor('play_animation_asset')
 def execute_play_animation_asset(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
@@ -21,14 +16,6 @@ def execute_play_animation_asset(runtime, node: Mapping[str, Any], game: Any, dt
     path = str(runtime._read_input(node_id, "path", properties.get("path", ""), game, dt, set()))
     if path:
         game.play_animation_asset(path)
-    return ["next"]
-
-@registry.register_executor('stop_animation')
-def execute_stop_animation(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
-    node_id = str(node['id'])
-    node_type = str(node.get('type'))
-    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
-    game.stop_animation()
     return ["next"]
 
 @registry.register_executor('play_sound')

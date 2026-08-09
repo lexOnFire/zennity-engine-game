@@ -24,12 +24,12 @@ def execute_detect_touch(runtime, node: Mapping[str, Any], game: Any, dt: float)
                 if x <= touch_x <= x + width and y <= touch_y <= y + height:
                     runtime._store(node_id, "touch_x", touch_x)
                     runtime._store(node_id, "touch_y", touch_y)
-                    return ["touched"]
+                    return ["exec_touched"]
 
-        return ["no_touch"]
+        return ["exec_no_touch"]
     except Exception as e:
         print(f"Erro em detect_touch: {e}")
-        return ["failure"]
+        return []  # sem subsistema de input: nao ha pino de falha declarado
 
 
 @registry.register_executor('detect_swipe')
@@ -50,12 +50,12 @@ def execute_detect_swipe(runtime, node: Mapping[str, Any], game: Any, dt: float)
 
                 if swipe_dir == direction and distance >= min_distance:
                     runtime._store(node_id, "swipe_distance", distance)
-                    return ["swiped"]
+                    return ["exec_swiped"]
 
-        return ["no_swipe"]
+        return ["exec_no_swipe"]
     except Exception as e:
         print(f"Erro em detect_swipe: {e}")
-        return ["failure"]
+        return []  # sem subsistema de input: nao ha pino de falha declarado
 
 
 @registry.register_executor('detect_pinch')
@@ -75,12 +75,12 @@ def execute_detect_pinch(runtime, node: Mapping[str, Any], game: Any, dt: float)
 
                 if pinch_type == gesture_type:
                     runtime._store(node_id, "pinch_scale", scale)
-                    return ["pinched"]
+                    return ["exec_pinched"]
 
-        return ["no_pinch"]
+        return ["exec_no_pinch"]
     except Exception as e:
         print(f"Erro em detect_pinch: {e}")
-        return ["failure"]
+        return []  # sem subsistema de input: nao ha pino de falha declarado
 
 
 @registry.register_executor('is_key_pressed')
@@ -94,12 +94,12 @@ def execute_is_key_pressed(runtime, node: Mapping[str, Any], game: Any, dt: floa
 
         if hasattr(game, "is_key_pressed"):
             if game.is_key_pressed(key):
-                return ["pressed"]
+                return ["exec_pressed"]
 
-        return ["not_pressed"]
+        return ["exec_not_pressed"]
     except Exception as e:
         print(f"Erro em is_key_pressed: {e}")
-        return ["failure"]
+        return []  # sem subsistema de input: nao ha pino de falha declarado
 
 
 @registry.register_executor('wait_key_release')
@@ -124,13 +124,13 @@ def execute_wait_key_release(runtime, node: Mapping[str, Any], game: Any, dt: fl
         if hasattr(game, "is_key_pressed"):
             if not game.is_key_pressed(key):
                 del runtime._key_release_trackers[node_id]
-                return ["released"]
+                return ["exec_released"]
 
         if elapsed > timeout:
             del runtime._key_release_trackers[node_id]
-            return ["timeout"]
+            return ["exec_timeout"]
 
-        return ["waiting"]
+        return ["exec_waiting"]
     except Exception as e:
         print(f"Erro em wait_key_release: {e}")
-        return ["failure"]
+        return []  # sem subsistema de input: nao ha pino de falha declarado

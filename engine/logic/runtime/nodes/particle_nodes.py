@@ -24,12 +24,12 @@ def execute_create_particle_system(runtime, node: Mapping[str, Any], game: Any, 
                 x, y, particle_type, quantity, lifetime, speed
             )
             runtime._store(node_id, "system_id", system_id)
-            return ["created"]
+            return ["exec_created"]
 
-        return ["failure"]
+        return ["exec_failure"]
     except Exception as e:
         print(f"Erro em create_particle_system: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('emit_particles')
@@ -44,12 +44,12 @@ def execute_emit_particles(runtime, node: Mapping[str, Any], game: Any, dt: floa
 
         if system_id and hasattr(game, "emit_particles"):
             game.emit_particles(system_id, quantity)
-            return ["emitting"]
+            return ["exec_emitting"]
 
-        return ["failure"]
+        return ["exec_failure"]
     except Exception as e:
         print(f"Erro em emit_particles: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('stop_particles')
@@ -64,9 +64,9 @@ def execute_stop_particles(runtime, node: Mapping[str, Any], game: Any, dt: floa
 
         if system_id and hasattr(game, "stop_particles"):
             game.stop_particles(system_id, destroy)
-            return ["stopped"]
+            return ["exec_stopped"]
 
-        return ["failure"]
+        return ["exec_failure"]
     except Exception as e:
         print(f"Erro em stop_particles: {e}")
-        return ["failure"]
+        return ["exec_failure"]

@@ -88,11 +88,14 @@ class TestPlayAnimationNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, port, fallback, game, dt, branch):
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_play_animation
         result = execute_play_animation(runtime, node, game, 0.016)
 
-        assert result == ["success"]
+        assert result == ["next"]
         assert animator.current_clip == "run"
 
     def test_play_animation_missing_animator_failure(self, scene_with_animator):
@@ -115,11 +118,14 @@ class TestPlayAnimationNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, port, fallback, game, dt, branch):
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_play_animation
         result = execute_play_animation(runtime, node, game, 0.016)
 
-        assert result == ["failure"]
+        assert result == ["exec_failure"]
 
     def test_play_animation_empty_target_failure(self, scene_with_animator):
         scene, player, animator, game, sr = scene_with_animator
@@ -140,11 +146,14 @@ class TestPlayAnimationNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, port, fallback, game, dt, branch):
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_play_animation
         result = execute_play_animation(runtime, node, game, 0.016)
 
-        assert result == ["failure"]
+        assert result == ["exec_failure"]
 
     def test_play_animation_with_force(self, scene_with_animator):
         scene, player, animator, game, sr = scene_with_animator
@@ -169,11 +178,14 @@ class TestPlayAnimationNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, port, fallback, game, dt, branch):
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_play_animation
         result = execute_play_animation(runtime, node, game, 0.016)
 
-        assert result == ["success"]
+        assert result == ["next"]
         assert animator.current_frame == 0  # Reset to frame 0 with force
 
 
@@ -201,11 +213,14 @@ class TestPauseAnimationNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, port, fallback, game, dt, branch):
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_pause_animation
         result = execute_pause_animation(runtime, node, game, 0.016)
 
-        assert result == ["success"]
+        assert result == ["exec_success"]
         assert animator._paused is True
 
     def test_pause_animation_missing_animator_failure(self, scene_with_animator):
@@ -225,11 +240,14 @@ class TestPauseAnimationNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, port, fallback, game, dt, branch):
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_pause_animation
         result = execute_pause_animation(runtime, node, game, 0.016)
 
-        assert result == ["failure"]
+        assert result == ["exec_failure"]
 
 
 class TestStopAnimationNode:
@@ -255,11 +273,14 @@ class TestStopAnimationNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, port, fallback, game, dt, branch):
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_stop_animation
         result = execute_stop_animation(runtime, node, game, 0.016)
 
-        assert result == ["success"]
+        assert result == ["next"]
         assert animator.current_clip is None
 
     def test_stop_animation_missing_animator_failure(self, scene_with_animator):
@@ -279,11 +300,14 @@ class TestStopAnimationNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, port, fallback, game, dt, branch):
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_stop_animation
         result = execute_stop_animation(runtime, node, game, 0.016)
 
-        assert result == ["failure"]
+        assert result == ["exec_failure"]
 
 
 class TestGetCurrentAnimationNode:
@@ -530,11 +554,14 @@ class TestAnimatorParameterNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, port, fallback, game, dt, branch):
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_animator_parameter
         result = execute_animator_parameter(runtime, node, game, 0.016)
 
-        assert result == ["success"]
+        assert result == ["exec_success"]
 
     def test_animator_parameter_bool(self, scene_with_animator):
         scene, player, animator, game, sr = scene_with_animator
@@ -556,11 +583,14 @@ class TestAnimatorParameterNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, port, fallback, game, dt, branch):
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_animator_parameter
         result = execute_animator_parameter(runtime, node, game, 0.016)
 
-        assert result == ["success"]
+        assert result == ["exec_success"]
 
     def test_animator_parameter_int(self, scene_with_animator):
         scene, player, animator, game, sr = scene_with_animator
@@ -582,11 +612,14 @@ class TestAnimatorParameterNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, port, fallback, game, dt, branch):
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_animator_parameter
         result = execute_animator_parameter(runtime, node, game, 0.016)
 
-        assert result == ["success"]
+        assert result == ["exec_success"]
 
     def test_animator_parameter_missing_animator_failure(self, scene_with_animator):
         scene, player, animator, game, sr = scene_with_animator
@@ -608,11 +641,14 @@ class TestAnimatorParameterNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, port, fallback, game, dt, branch):
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_animator_parameter
         result = execute_animator_parameter(runtime, node, game, 0.016)
 
-        assert result == ["failure"]
+        assert result == ["exec_failure"]
 
 
 class TestAnimationSpriteIntegration:
@@ -639,11 +675,14 @@ class TestAnimationSpriteIntegration:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, port, fallback, game, dt, branch):
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_play_animation
         result = execute_play_animation(runtime, node, game, 0.016)
 
-        assert result == ["success"]
+        assert result == ["next"]
 
         # Advance animation
         animator._advance(0.016)
@@ -674,6 +713,9 @@ class TestAnimationSpriteIntegration:
 
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
+
+            def _read_input(self, node_id, port, fallback, game, dt, branch):
+                return fallback
 
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_pause_animation
@@ -728,6 +770,9 @@ class TestAnimationSpriteIntegration:
 
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
+
+            def _read_input(self, node_id, port, fallback, game, dt, branch):
+                return fallback
 
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_play_animation

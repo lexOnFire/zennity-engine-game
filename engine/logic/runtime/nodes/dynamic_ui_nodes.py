@@ -239,12 +239,12 @@ def execute_get_ui_widget_property(runtime, node: Mapping[str, Any], game: Any, 
                             # Guardar valor em variável global
                             if hasattr(runtime, "set_parameter"):
                                 runtime.set_parameter(f"{widget_name}_{property_name}", value)
-                            return ["success"]
+                            return ["next"]
 
-        return ["failure"]
+        return []
     except Exception as e:
         print(f"Erro ao ler propriedade: {e}")
-        return ["failure"]
+        return []
 
 
 def _find_ui_widget_in_tree(ui_dict: dict[str, Any], widget_name: str) -> dict[str, Any] | None:

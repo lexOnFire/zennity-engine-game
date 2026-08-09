@@ -20,6 +20,10 @@ def evaluate_get_tag(runtime, node_id: str, port: str, node: Mapping[str, Any], 
     return value
 
 
+# Os nomes pontuados abaixo são aliases legados que não existem no editor. Eles não
+# podem incluir tipos reais na tupla: o registro é last-one-wins, e listar um tipo
+# real aqui apagaria silenciosamente a implementação verdadeira dele.
+
 @registry.register_executor(('scene.load_scene', 'open_scene', 'load_scene'))
 def execute_scene_load_scene(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
     node_id = str(node['id'])
@@ -33,7 +37,7 @@ def execute_scene_load_scene(runtime, node: Mapping[str, Any], game: Any, dt: fl
         game.open_scene(scene_path)
     elif scene_path and hasattr(game, "send"):
         game.send("load_scene", {"path": scene_path})
-    return ["success", "next"]
+    return ["next"]
 
 
 @registry.register_executor(('app.quit', 'quit_game', 'exit_game'))
@@ -45,7 +49,7 @@ def execute_app_quit(runtime, node: Mapping[str, Any], game: Any, dt: float) -> 
     return []
 
 
-@registry.register_executor(('variables.set', 'set_variable'))
+@registry.register_executor('variables.set')
 def execute_variables_set(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
     node_id = str(node['id'])
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
@@ -62,7 +66,7 @@ def execute_variables_set(runtime, node: Mapping[str, Any], game: Any, dt: float
             runtime.variables[name] = val
         if hasattr(game, "set_variable"):
             game.set_variable(name, val)
-    return ["done", "next"]
+    return ["next"]
 
 
 @registry.register_executor(('ui.button_clicked', 'button_clicked', 'on_ui_click'))
@@ -78,11 +82,11 @@ def execute_ui_button_clicked(runtime, node: Mapping[str, Any], game: Any, dt: f
         clicked_widget = str(payload.get("widget_name") or payload.get("button") or "").strip().lower()
 
     if not expected or not clicked_widget or expected == clicked_widget:
-        return ["clicked", "next", "exec"]
+        return ["next"]
     return []
 
 
-@registry.register_executor(('game.load_game', 'load_game'))
+@registry.register_executor('game.load_game')
 def execute_game_load_game(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
     node_id = str(node['id'])
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
@@ -91,12 +95,14 @@ def execute_game_load_game(runtime, node: Mapping[str, Any], game: Any, dt: floa
 
     if hasattr(game, "load_game"):
         game.load_game(slot)
-    return ["success", "next"]
+    return ["next"]
 
 
-@registry.register_executor(('game.has_save', 'has_save'))
+@registry.register_executor('game.has_save')
 def execute_game_has_save(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
-    return ["false"]
+    # O tipo real ``has_save`` e implementado em save_load_nodes.py; este alias
+    # legado apenas segue o fluxo adiante.
+    return ["next"]
 
 
 @registry.register_executor(('ui.set_widget_enabled', 'set_ui_enabled'))

@@ -57,12 +57,12 @@ def execute_modify_rigidbody(runtime, node: Mapping[str, Any], game: Any, dt: fl
 
     # Validate property is in schema
     if property_name not in RIGIDBODY_PROPERTIES:
-        return ["failure"]
+        return ["exec_failure"]
 
     # Resolve target
     rigidbody, error = _resolve_rigidbody(target_name, game)
     if error or not rigidbody:
-        return ["failure"]
+        return ["exec_failure"]
 
     try:
         expected_type = RIGIDBODY_PROPERTIES[property_name]
@@ -89,10 +89,10 @@ def execute_modify_rigidbody(runtime, node: Mapping[str, Any], game: Any, dt: fl
                 f"velocity corrupted: expected np.ndarray, got {type(rigidbody.velocity)}"
 
         runtime._store(node_id, property_name, value)
-        return ["success"]
+        return ["exec_success"]
 
     except (ValueError, TypeError, AssertionError):
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('modify_collider')
@@ -133,12 +133,12 @@ def execute_modify_collider(runtime, node: Mapping[str, Any], game: Any, dt: flo
                         collider.offset_y = float(value)
 
                     runtime._store(node_id, property_name, value)
-                    return ["success"]
+                    return ["exec_success"]
 
-        return ["failure"]
+        return ["exec_failure"]
     except Exception as e:
         print(f"Erro em modify_collider: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('apply_force')
@@ -154,12 +154,12 @@ def execute_apply_force(runtime, node: Mapping[str, Any], game: Any, dt: float) 
 
     # Validate force mode
     if force_mode not in ("force", "impulse"):
-        return ["failure"]
+        return ["exec_failure"]
 
     # Resolve target
     rigidbody, error = _resolve_rigidbody(target_name, game)
     if error or not rigidbody:
-        return ["failure"]
+        return ["exec_failure"]
 
     try:
         if force_mode == "force":
@@ -168,10 +168,10 @@ def execute_apply_force(runtime, node: Mapping[str, Any], game: Any, dt: float) 
             rigidbody.add_impulse(force_x, force_y)
 
         runtime._store(node_id, "force_applied", True)
-        return ["success"]
+        return ["exec_success"]
 
     except (ValueError, TypeError, AttributeError):
-        return ["failure"]
+        return ["exec_failure"]
 
 
 # Phase 5B.1: Getter evaluators (pure data nodes)
@@ -287,11 +287,13 @@ def execute_raycast(runtime, node: Mapping[str, Any], game: Any, dt: float) -> l
     node_id = str(node['id'])
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
 
-    origin_x = float(properties.get("origin_x", 0.0))
-    origin_y = float(properties.get("origin_y", 0.0))
-    direction_x = float(properties.get("direction_x", 1.0))
-    direction_y = float(properties.get("direction_y", 0.0))
-    max_distance = float(properties.get("max_distance", 999.0))
+    # Data pins take precedence over inline properties so the ray can follow the
+    # object at runtime instead of being pinned to authoring-time constants.
+    origin_x = float(runtime._read_input(node_id, "origin_x", properties.get("origin_x", 0.0), game, dt, set()))
+    origin_y = float(runtime._read_input(node_id, "origin_y", properties.get("origin_y", 0.0), game, dt, set()))
+    direction_x = float(runtime._read_input(node_id, "direction_x", properties.get("direction_x", 1.0), game, dt, set()))
+    direction_y = float(runtime._read_input(node_id, "direction_y", properties.get("direction_y", 0.0), game, dt, set()))
+    max_distance = float(runtime._read_input(node_id, "max_distance", properties.get("max_distance", 999.0), game, dt, set()))
     ignore_self = bool(properties.get("ignore_self", True))
     include_triggers = bool(properties.get("include_triggers", False))
     # Phase 5B.4: Layer mask for raycast filtering
@@ -301,7 +303,7 @@ def execute_raycast(runtime, node: Mapping[str, Any], game: Any, dt: float) -> l
     physics_world = getattr(game, "physics_world", None)
     if not physics_world:
         runtime._store(node_id, "hit", None)
-        return ["no_hit"]
+        return ["exec_no_hit"]
 
     # Prepare ignore_self parameter
     ignore_self_name = None
@@ -326,7 +328,7 @@ def execute_raycast(runtime, node: Mapping[str, Any], game: Any, dt: float) -> l
             runtime._store(node_id, "hit_point", (0.0, 0.0))
             runtime._store(node_id, "hit_distance", 0.0)
             runtime._store(node_id, "hit_normal", (0.0, 0.0))
-            return ["no_hit"]
+            return ["exec_no_hit"]
 
         # Store hit data
         runtime._store(node_id, "hit", hit)
@@ -335,11 +337,11 @@ def execute_raycast(runtime, node: Mapping[str, Any], game: Any, dt: float) -> l
         runtime._store(node_id, "hit_distance", hit.hit_distance)
         runtime._store(node_id, "hit_normal", hit.hit_normal)
 
-        return ["hit"]
+        return ["exec_hit"]
 
     except Exception:
         runtime._store(node_id, "hit", None)
-        return ["no_hit"]
+        return ["exec_no_hit"]
 
 
 @registry.register_evaluator('raycast')
@@ -421,14 +423,14 @@ def execute_set_collision_layer(runtime, node: Mapping[str, Any], game: Any, dt:
     value = int(properties.get("value", 1))
 
     if value <= 0:
-        return ["failure"]
+        return ["exec_failure"]
 
     if not target_name or not hasattr(game, "find_object"):
-        return ["failure"]
+        return ["exec_failure"]
 
     target_obj = game.find_object(target_name)
     if not target_obj or not hasattr(target_obj, "get_component"):
-        return ["failure"]
+        return ["exec_failure"]
 
     from engine.physics.collider import BoxCollider, CircleCollider
     collider = target_obj.get_component(BoxCollider) or target_obj.get_component(CircleCollider)
@@ -436,9 +438,9 @@ def execute_set_collision_layer(runtime, node: Mapping[str, Any], game: Any, dt:
     if collider:
         collider.collision_layer = value
         runtime._store(node_id, "layer", value)
-        return ["success"]
+        return ["exec_success"]
 
-    return ["failure"]
+    return ["exec_failure"]
 
 
 @registry.register_executor('set_collision_mask')
@@ -451,14 +453,14 @@ def execute_set_collision_mask(runtime, node: Mapping[str, Any], game: Any, dt: 
     value = int(properties.get("value", 0xFFFFFFFF))
 
     if value < 0:
-        return ["failure"]
+        return ["exec_failure"]
 
     if not target_name or not hasattr(game, "find_object"):
-        return ["failure"]
+        return ["exec_failure"]
 
     target_obj = game.find_object(target_name)
     if not target_obj or not hasattr(target_obj, "get_component"):
-        return ["failure"]
+        return ["exec_failure"]
 
     from engine.physics.collider import BoxCollider, CircleCollider
     collider = target_obj.get_component(BoxCollider) or target_obj.get_component(CircleCollider)
@@ -466,6 +468,6 @@ def execute_set_collision_mask(runtime, node: Mapping[str, Any], game: Any, dt: 
     if collider:
         collider.collision_mask = value
         runtime._store(node_id, "mask", value)
-        return ["success"]
+        return ["exec_success"]
 
-    return ["failure"]
+    return ["exec_failure"]

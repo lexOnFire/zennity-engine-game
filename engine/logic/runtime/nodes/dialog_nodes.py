@@ -46,12 +46,12 @@ def execute_show_dialog(runtime, node: Mapping[str, Any], game: Any, dt: float) 
         if success:
             runtime._store(node_id, "dialog_id", dialog_id)
             runtime._store(node_id, "is_showing", True)
-            return ["success"]
+            return ["exec_showing"]
 
-        return ["failure"]
+        return ["exec_failure"]
     except Exception as e:
         print(f"Erro em show_dialog: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor("wait_dialog_choice")
@@ -78,22 +78,22 @@ def execute_wait_dialog_choice(runtime, node: Mapping[str, Any], game: Any, dt: 
         state = manager.get_state(dialog_id, owner_id=owner_id)
 
         if not state:
-            return ["failure"]  # Dialogue not found
+            return ["exec_failure"]  # Dialogue not found
 
         # Check DialogueSession state directly
         if state.get("active", False):
             # Still active, waiting for choice
-            return ["waiting"]
+            return ["exec_waiting"]
         else:
             # Dialogue ended (choice was made)
             # Store choice result
             runtime._store(node_id, "choice_index", 0)  # Choice processed
             runtime._store(node_id, "chosen_text", "")
-            return ["chosen"]
+            return ["exec_chosen"]
 
     except Exception as e:
         print(f"Erro em wait_dialog_choice: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor("set_dialog_choice")
@@ -115,11 +115,11 @@ def execute_set_dialog_choice(runtime, node: Mapping[str, Any], game: Any, dt: f
 
         manager = get_dialogue_manager()
         success = manager.choose(dialog_id, choice_index, owner_id=owner_id)
-        return ["success" if success else "failure"]
+        return ["exec_success" if success else "exec_failure"]
 
     except Exception as e:
         print(f"Erro em set_dialog_choice: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor("close_dialog")
@@ -141,7 +141,7 @@ def execute_close_dialog(runtime, node: Mapping[str, Any], game: Any, dt: float)
         manager = get_dialogue_manager()
         success = manager.close(dialog_id, owner_id=owner_id)
 
-        return ["success" if success else "failure"]
+        return ["exec_success" if success else "exec_failure"]
     except Exception as e:
         print(f"Erro em close_dialog: {e}")
-        return ["failure"]
+        return ["exec_failure"]

@@ -541,7 +541,7 @@ class TestDialogueNodeExecutors:
 
         # Should fail without proper runtime, but shows node exists
         # (Full executor test requires full LogicGraphRuntime)
-        assert result in [["success"], ["failure"]], "Executor should return valid ports"
+        assert result in [["exec_success"], ["exec_failure"]], "Executor should return valid ports"
 
     def test_wait_dialog_choice_executor_exists(self):
         """Test wait_dialog_choice node executor exists."""

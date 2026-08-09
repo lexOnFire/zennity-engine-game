@@ -51,10 +51,10 @@ def execute_find_path(runtime, node: Mapping[str, Any], game: Any, dt: float) ->
         runtime._store(node_id, "path_id", path_id)
         runtime._store(node_id, "path_length", len(path_points))
 
-        return ["found"]
+        return ["exec_found"]
     except Exception as e:
         print(f"Erro em find_path: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('follow_path')
@@ -69,10 +69,10 @@ def execute_follow_path(runtime, node: Mapping[str, Any], game: Any, dt: float) 
         target_name = str(properties.get("target", ""))
 
         if not hasattr(runtime, "_paths"):
-            return ["failure"]
+            return ["exec_failure"]
 
         if path_id not in runtime._paths:
-            return ["failure"]
+            return ["exec_failure"]
 
         path_data = runtime._paths[path_id]
         points = path_data["points"]
@@ -80,7 +80,7 @@ def execute_follow_path(runtime, node: Mapping[str, Any], game: Any, dt: float) 
 
         if current_index >= len(points):
             path_data["finished"] = True
-            return ["finished"]
+            return ["exec_finished"]
 
         current_point = points[current_index]
         runtime._store(node_id, "current_waypoint", current_index)
@@ -90,10 +90,10 @@ def execute_follow_path(runtime, node: Mapping[str, Any], game: Any, dt: float) 
         # Avançar para próximo ponto
         path_data["current_index"] += 1
 
-        return ["following"]
+        return ["exec_following"]
     except Exception as e:
         print(f"Erro em follow_path: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('stop_path')
@@ -108,10 +108,10 @@ def execute_stop_path(runtime, node: Mapping[str, Any], game: Any, dt: float) ->
         if hasattr(runtime, "_paths") and path_id in runtime._paths:
             del runtime._paths[path_id]
 
-        return ["stopped"]
+        return ["exec_stopped"]
     except Exception as e:
         print(f"Erro em stop_path: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('distance_to_point')
@@ -132,7 +132,7 @@ def execute_distance_to_point(runtime, node: Mapping[str, Any], game: Any, dt: f
 
         runtime._store(node_id, "distance", distance)
 
-        return ["calculated"]
+        return ["exec_calculated"]
     except Exception as e:
         print(f"Erro em distance_to_point: {e}")
-        return ["failure"]
+        return ["exec_failure"]
