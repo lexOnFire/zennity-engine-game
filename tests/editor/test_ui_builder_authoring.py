@@ -3,7 +3,7 @@ import json
 from PySide6.QtWidgets import QApplication
 
 from editor.ui_builder.ui_builder_dock import UIBuilderDock
-from engine.ui.runtime import UIButton, UIContainer, UIImage, UILabel, widget_from_dict
+from engine.ui.runtime import UICanvas, UIButton, UIContainer, UIImage, UILabel, widget_from_dict
 
 
 def _app():
@@ -22,6 +22,18 @@ def test_runtime_ui_round_trip_preserves_properties_and_hierarchy():
     assert isinstance(rebuilt.children[0], UIButton)
     assert rebuilt.children[0].text == "Jogar"
     assert rebuilt.children[0].parent is rebuilt
+
+
+def test_runtime_ui_accepts_canonical_canvas_alias():
+    rebuilt = widget_from_dict({
+        "name": "MainCanvas",
+        "type": "canvas",
+        "children": [{"name": "PlayButton", "type": "Button", "text": "Play"}],
+    })
+
+    assert isinstance(rebuilt, UICanvas)
+    assert isinstance(rebuilt.children[0], UIButton)
+    assert rebuilt.children[0].text == "Play"
 
 
 def test_builder_add_edit_duplicate_delete_and_persist(tmp_path):

@@ -134,7 +134,25 @@ WIDGET_TYPES = {
     cls.__name__: cls
     for cls in (RuntimeUICanvas, UIPanel, UIButton, UILabel, RuntimeUIImage, UIScrollView, UIInput, UIContainer, UIProgressBar)
 }
-WIDGET_TYPES.update({"UICanvas": RuntimeUICanvas, "UIImage": RuntimeUIImage})
+WIDGET_TYPES.update({
+    "UICanvas": RuntimeUICanvas,
+    "UIImage": RuntimeUIImage,
+    # Backward/canonical asset aliases used by benchmark .zui files.
+    "canvas": RuntimeUICanvas,
+    "Canvas": RuntimeUICanvas,
+    "image": RuntimeUIImage,
+    "Image": RuntimeUIImage,
+    "button": UIButton,
+    "Button": UIButton,
+    "label": UILabel,
+    "Label": UILabel,
+    "panel": UIPanel,
+    "Panel": UIPanel,
+    "progress_bar": UIProgressBar,
+    "ProgressBar": UIProgressBar,
+    "container": UIContainer,
+    "Container": UIContainer,
+})
 
 UICanvas = RuntimeUICanvas
 UIImage = RuntimeUIImage
