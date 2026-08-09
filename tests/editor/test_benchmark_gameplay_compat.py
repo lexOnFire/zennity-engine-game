@@ -58,6 +58,19 @@ def test_benchmark_key_collection_supports_scene_transform_shape() -> None:
     assert {"command": "set_ui_text", "value": {"object": "KeyLabel", "text": "Key: Yes"}} in objects["Player"]["logic_events"]
 
 
+def test_benchmark_key_collection_accepts_tagged_or_numbered_key_objects() -> None:
+    objects = {
+        "Player": {"name": "Player", "x": 10.0, "y": 10.0, "w": 40.0, "h": 40.0, "variables": {}},
+        "key_1": {"name": "key_1", "tag": "Key", "x": 50.0, "y": 10.0, "w": 20.0, "h": 20.0, "active": True},
+        "HUD": {"name": "HUD"},
+    }
+
+    update_benchmark_gameplay(objects, 1 / 60)
+
+    assert objects["key_1"]["destroyed"] is True
+    assert objects["Player"]["variables"]["has_key"] is True
+
+
 def test_benchmark_enemy_moves_towards_player() -> None:
     objects = {
         "Player": {"name": "Player", "x": 100.0, "y": 0.0, "w": 40.0, "h": 40.0},
@@ -87,6 +100,21 @@ def test_benchmark_player_faces_horizontal_movement_direction() -> None:
     assert objects["Player"]["flip_x"] is True
     assert objects["Player"]["variables"]["facing_x"] == -1
     assert objects["Player"]["rotation"] == 180.0
+
+
+def test_benchmark_player_faces_actual_runtime_motion_delta() -> None:
+    player = {
+        "name": "Player", "x": 0.0, "y": 0.0, "w": 40.0, "h": 40.0,
+        "_input": {}, "variables": {},
+    }
+    objects = {"Player": player}
+
+    update_benchmark_gameplay(objects, 1 / 60)
+    player["x"] = 24.0
+    update_benchmark_gameplay(objects, 1 / 60)
+
+    assert player["facing_x"] == 1
+    assert player["rotation"] == 0.0
 
 
 def test_benchmark_player_faces_vertical_movement_direction() -> None:
@@ -178,4 +206,23 @@ def test_benchmark_guard_dialogue_prompt_and_interaction() -> None:
         and event["value"]["speaker"] == "Guard"
         and "gate is locked" in event["value"]["text"]
         for event in events
+    )
+
+
+def test_benchmark_guard_dialogue_accepts_tagged_npc_guard() -> None:
+    objects = {
+        "Player": {
+            "name": "Player", "x": 0.0, "y": 0.0, "w": 40.0, "h": 40.0,
+            "_input": {"interact": True}, "variables": {"has_key": True},
+        },
+        "guard_1": {"name": "guard_1", "tag": "NPC", "x": 90.0, "y": 0.0, "w": 40.0, "h": 40.0, "active": True},
+        "HUD": {"name": "HUD"},
+    }
+
+    update_benchmark_gameplay(objects, 1 / 60)
+
+    assert any(
+        event["command"] == "start_dialogue"
+        and "Excellent" in event["value"]["text"]
+        for event in objects["Player"]["logic_events"]
     )

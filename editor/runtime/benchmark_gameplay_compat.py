@@ -58,6 +58,36 @@ def _rects_overlap(a: dict[str, Any], b: dict[str, Any]) -> bool:
     )
 
 
+def _distance(a: dict[str, Any], b: dict[str, Any]) -> float:
+    return math.hypot(_coord(a, "x", 0.0) - _coord(b, "x", 0.0), _coord(a, "y", 0.0) - _coord(b, "y", 0.0))
+
+
+def _matches(obj: dict[str, Any], name: str, tag: str = "") -> bool:
+    obj_name = str(obj.get("name", "")).casefold()
+    obj_tag = str(obj.get("tag", "")).casefold()
+    prefab = str(obj.get("prefab", obj.get("prefab_path", ""))).casefold()
+    wanted_name = name.casefold()
+    wanted_tag = tag.casefold() if tag else wanted_name
+    return (
+        obj_name == wanted_name
+        or obj_name.startswith(f"{wanted_name} ")
+        or obj_name.startswith(f"{wanted_name}_")
+        or obj_tag == wanted_tag
+        or f"/{wanted_name}.zprfb" in prefab.replace("\\", "/")
+    )
+
+
+def _first_matching(objects: dict[str, dict[str, Any]], name: str, tag: str = "") -> dict[str, Any] | None:
+    for obj in objects.values():
+        if isinstance(obj, dict) and obj.get("active", True) and _matches(obj, name, tag):
+            return obj
+    return None
+
+
+def _touches(a: dict[str, Any], b: dict[str, Any], radius: float) -> bool:
+    return _rects_overlap(a, b) or _distance(a, b) <= radius
+
+
 def _collect_coins(objects: dict[str, dict[str, Any]], player: dict[str, Any]) -> None:
     state = player.setdefault("variables", {})
     for name, obj in list(objects.items()):
@@ -72,10 +102,10 @@ def _collect_coins(objects: dict[str, dict[str, Any]], player: dict[str, Any]) -
 
 
 def _collect_key(objects: dict[str, dict[str, Any]], player: dict[str, Any]) -> None:
-    key = objects.get("Key")
+    key = _first_matching(objects, "Key", "Key")
     if not isinstance(key, dict) or not key.get("active", True):
         return
-    if not _rects_overlap(player, key):
+    if not _touches(player, key, 56.0):
         return
     key["active"] = False
     key["destroyed"] = True
@@ -179,13 +209,10 @@ def _set_ui_progress(
 
 
 def _update_guard_dialogue(objects: dict[str, dict[str, Any]], player: dict[str, Any]) -> None:
-    guard = objects.get("Guard")
+    guard = _first_matching(objects, "Guard", "NPC")
     if not isinstance(guard, dict) or not guard.get("active", True):
         return
-    distance = math.hypot(
-        _coord(player, "x", 0.0) - _coord(guard, "x", 0.0),
-        _coord(player, "y", 0.0) - _coord(guard, "y", 0.0),
-    )
+    distance = _distance(player, guard)
     in_range = distance <= 120.0
     player_state = player.setdefault("_benchmark_state", {})
     pressed = bool(player.get("_input", {}).get("interact", False))
@@ -235,23 +262,36 @@ def _set_hud(
 
 def _face_player_movement(player: dict[str, Any]) -> None:
     input_state = player.get("_input")
-    if not isinstance(input_state, dict):
-        return
-    if input_state.get("left") and not input_state.get("right"):
+    runtime = player.setdefault("_benchmark_state", {})
+    current_x = _coord(player, "x", 0.0)
+    current_y = _coord(player, "y", 0.0)
+    previous_x = runtime.get("last_player_x")
+    previous_y = runtime.get("last_player_y")
+    dx = 0.0 if previous_x is None else current_x - float(previous_x)
+    dy = 0.0 if previous_y is None else current_y - float(previous_y)
+    runtime["last_player_x"] = current_x
+    runtime["last_player_y"] = current_y
+
+    left = bool(isinstance(input_state, dict) and input_state.get("left")) or dx < -0.01
+    right = bool(isinstance(input_state, dict) and input_state.get("right")) or dx > 0.01
+    up = bool(isinstance(input_state, dict) and input_state.get("up")) or dy < -0.01
+    down = bool(isinstance(input_state, dict) and input_state.get("down")) or dy > 0.01
+
+    if left and not right:
         player["flip_x"] = True
         player["facing_x"] = -1
         player["rotation"] = 180.0
         player.setdefault("variables", {})["facing_x"] = -1
-    elif input_state.get("right") and not input_state.get("left"):
+    elif right and not left:
         player["flip_x"] = False
         player["facing_x"] = 1
         player["rotation"] = 0.0
         player.setdefault("variables", {})["facing_x"] = 1
-    elif input_state.get("up") and not input_state.get("down"):
+    elif up and not down:
         player["facing_y"] = -1
         player["rotation"] = -90.0
         player.setdefault("variables", {})["facing_y"] = -1
-    elif input_state.get("down") and not input_state.get("up"):
+    elif down and not up:
         player["facing_y"] = 1
         player["rotation"] = 90.0
         player.setdefault("variables", {})["facing_y"] = 1
