@@ -17,6 +17,7 @@ def update_benchmark_gameplay(objects: dict[str, dict[str, Any]], dt: float) -> 
         return
     _collect_coins(objects, player)
     _move_enemies(objects, player, dt)
+    _damage_player_on_enemy_contact(objects, player, dt)
     _update_guard_dialogue(objects, player)
 
 
@@ -64,20 +65,56 @@ def _move_enemies(objects: dict[str, dict[str, Any]], player: dict[str, Any], dt
         obj.setdefault("_logic_motion_axes", set()).update({"x", "y"})
 
 
+def _damage_player_on_enemy_contact(
+    objects: dict[str, dict[str, Any]],
+    player: dict[str, Any],
+    dt: float,
+) -> None:
+    state = player.setdefault("variables", {})
+    state["health"] = int(state.get("health", 100))
+    runtime = player.setdefault("_benchmark_state", {})
+    cooldown = max(0.0, float(runtime.get("damage_cooldown", 0.0)) - dt)
+    runtime["damage_cooldown"] = cooldown
+    if cooldown > 0.0:
+        return
+    for name, obj in objects.items():
+        if not obj.get("active", True) or not (name.startswith("Enemy") or name == "Boss"):
+            continue
+        if not _rects_overlap(player, obj):
+            continue
+        damage = 20 if name == "Boss" else 10
+        state["health"] = max(0, int(state["health"]) - damage)
+        runtime["damage_cooldown"] = 0.65
+        _set_ui_text(objects, "HealthLabel", f"Health: {state['health']}")
+        _set_ui_progress(objects, "HealthBar", state["health"], 100)
+        break
+
+
 def _set_ui_text(objects: dict[str, dict[str, Any]], widget_name: str, text: str) -> None:
     for obj in objects.values():
         ui = obj.get("ui")
         if isinstance(ui, dict) and obj.get("name") == widget_name:
             ui["text"] = text
             return
-    # The asset UI renderer also consumes queued logic events, so attach a
-    # small event to the HUD carrier when the widget is not represented as a
-    # scene object.
-    hud = objects.get("HUD")
-    if isinstance(hud, dict):
-        hud.setdefault("logic_events", []).append({
+    carrier = _event_carrier(objects)
+    if isinstance(carrier, dict):
+        carrier.setdefault("logic_events", []).append({
             "command": "set_ui_text",
             "value": {"object": widget_name, "text": text},
+        })
+
+
+def _set_ui_progress(
+    objects: dict[str, dict[str, Any]],
+    widget_name: str,
+    value: float,
+    maximum: float,
+) -> None:
+    carrier = _event_carrier(objects)
+    if isinstance(carrier, dict):
+        carrier.setdefault("logic_events", []).append({
+            "command": "set_ui_progress",
+            "value": {"object": widget_name, "value": float(value), "max_value": float(maximum)},
         })
 
 
@@ -113,7 +150,7 @@ def _set_hud(
     text: str,
     position: str = "top-left",
 ) -> None:
-    carrier = objects.get("HUD") or objects.get("Player")
+    carrier = _event_carrier(objects)
     if not isinstance(carrier, dict):
         return
     if not text:
@@ -129,3 +166,12 @@ def _set_hud(
             "color": (255, 255, 255),
         },
     })
+
+
+def _event_carrier(objects: dict[str, dict[str, Any]]) -> dict[str, Any] | None:
+    """Return an object whose logic events are processed by Play Mode."""
+    player = objects.get("Player")
+    if isinstance(player, dict):
+        return player
+    hud = objects.get("HUD")
+    return hud if isinstance(hud, dict) else None

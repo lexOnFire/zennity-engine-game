@@ -15,7 +15,7 @@ def test_benchmark_coin_collection_updates_score_and_hides_coin() -> None:
     assert objects["Coin 1"]["active"] is False
     assert objects["Coin 1"]["destroyed"] is True
     assert objects["Player"]["variables"]["coins"] == 1
-    assert objects["HUD"]["logic_events"][0]["value"] == {"object": "CoinsLabel", "text": "Coins: 1"}
+    assert objects["Player"]["logic_events"][0]["value"] == {"object": "CoinsLabel", "text": "Coins: 1"}
 
 
 def test_benchmark_enemy_moves_towards_player() -> None:
@@ -34,6 +34,25 @@ def test_benchmark_enemy_moves_towards_player() -> None:
     assert objects["Enemy 1"]["_logic_motion_axes"] == {"x", "y"}
 
 
+def test_benchmark_enemy_contact_damages_player_and_updates_health_ui() -> None:
+    objects = {
+        "Player": {
+            "name": "Player", "x": 0.0, "y": 0.0, "w": 40.0, "h": 40.0,
+            "variables": {"health": 100},
+        },
+        "Enemy 1": {"name": "Enemy 1", "x": 0.0, "y": 0.0, "w": 32.0, "h": 32.0, "active": True},
+    }
+
+    update_benchmark_gameplay(objects, 1 / 60)
+
+    assert objects["Player"]["variables"]["health"] == 90
+    assert {"command": "set_ui_text", "value": {"object": "HealthLabel", "text": "Health: 90"}} in objects["Player"]["logic_events"]
+    assert {
+        "command": "set_ui_progress",
+        "value": {"object": "HealthBar", "value": 90.0, "max_value": 100.0},
+    } in objects["Player"]["logic_events"]
+
+
 def test_benchmark_guard_dialogue_prompt_and_interaction() -> None:
     objects = {
         "Player": {
@@ -46,7 +65,7 @@ def test_benchmark_guard_dialogue_prompt_and_interaction() -> None:
 
     update_benchmark_gameplay(objects, 1 / 60)
 
-    events = objects["HUD"]["logic_events"]
+    events = objects["Player"]["logic_events"]
     assert any(event["value"]["key"] == "dialogue_hint" for event in events if event["command"] == "set_hud")
     assert any(
         event["value"]["key"] == "dialogue" and "gate is locked" in event["value"]["text"]
