@@ -19,6 +19,12 @@ def test_runtime_world_creates_unique_objects_and_tracks_lifecycle():
     assert world.stats() == {"objects": 1, "active": 1, "created": 2, "destroyed": 1, "reused": 0, "pooled": 0}
 
 
+def test_normalize_color_accepts_unit_float_channels():
+    assert normalize_color([1, 1, 1, 1]) == (255, 255, 255)
+    assert normalize_color([1.0, 0.8, 0.0, 1.0]) == (255, 204, 0)
+    assert normalize_color([80, 220, 120]) == (80, 220, 120)
+
+
 def test_runtime_world_clones_components_without_sharing_state():
     objects = {}
     world = RuntimeWorld(objects)

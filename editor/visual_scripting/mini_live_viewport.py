@@ -486,7 +486,13 @@ class _GameViewCanvas(QWidget):
             return QColor(value)
         if isinstance(value, (list, tuple)) and len(value) in (3, 4):
             try:
-                channels = [max(0, min(255, int(channel))) for channel in value]
+                channels = [float(channel) for channel in value]
+                rgb = channels[:3]
+                if rgb and all(0.0 <= channel <= 1.0 for channel in rgb):
+                    channels[:3] = [channel * 255 for channel in rgb]
+                    if len(channels) == 4 and 0.0 <= channels[3] <= 1.0:
+                        channels[3] *= 255
+                channels = [max(0, min(255, int(channel))) for channel in channels]
                 return QColor(*channels)
             except (TypeError, ValueError):
                 pass

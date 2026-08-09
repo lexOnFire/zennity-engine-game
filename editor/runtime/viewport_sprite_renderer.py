@@ -22,7 +22,10 @@ def _safe_color(value: Any, fallback: tuple[int, int, int]) -> tuple[int, int, i
                 pass
     if isinstance(value, (list, tuple)) and len(value) >= 3:
         try:
-            return tuple(max(0, min(255, int(channel))) for channel in value[:3])
+            channels = [float(channel) for channel in value[:3]]
+            if channels and all(0.0 <= channel <= 1.0 for channel in channels):
+                channels = [channel * 255 for channel in channels]
+            return tuple(max(0, min(255, int(channel))) for channel in channels)
         except (TypeError, ValueError):
             pass
     return fallback
