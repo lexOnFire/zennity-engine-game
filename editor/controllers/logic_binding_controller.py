@@ -42,7 +42,12 @@ class LogicBindingController:
                 rel = path.relative_to(self.project_root.resolve()).as_posix()
             except ValueError:
                 rel = str(path).replace("\\", "/")
-            obj["logic_assets"] = [rel]
+            current_assets = obj.get("logic_assets")
+            if not isinstance(current_assets, list):
+                current_assets = []
+            if rel not in current_assets:
+                current_assets.append(rel)
+            obj["logic_assets"] = current_assets
 
     def create_for_object(self, object_name: str) -> Path:
         return self._create_for_object(object_name, with_start_event=True)

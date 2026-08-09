@@ -49,6 +49,29 @@ def test_player_without_logic_assets_does_not_move_with_wasd_input() -> None:
     assert player["y"] == 100.0
 
 
+def test_object_can_bind_multiple_zlogic_graphs() -> None:
+    objects = {
+        "Player": {
+            "name": "Player",
+            "x": 100.0,
+            "y": 100.0,
+            "logic_assets": [
+                "Assets/Logic/PlayerMovementLogic.zlogic",
+                "Assets/Logic/PlayerCombatLogic.zlogic",
+            ],
+            "components": {"items": []},
+        }
+    }
+    hydrate_logic_graphs(objects, PROJECT_ROOT)
+
+    player = objects["Player"]
+    graphs = player.get("logic_graphs", [])
+    assert len(graphs) == 2
+    graph_names = [g["graph"]["name"] for g in graphs]
+    assert "PlayerMovementLogic" in graph_names
+    assert "PlayerCombatLogic" in graph_names
+
+
 def test_player_with_wasd_logic_moves_with_wasd_input() -> None:
     objects = {
         "Player": {
