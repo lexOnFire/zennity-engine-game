@@ -118,10 +118,7 @@ class IsolatedEditorWindow(InspectorComponentDelegatesMixin, AnimationWorkspaceO
             "ui": True,
             "runtime": True,
         }
-        self._initial_scene_snapshot = [
-            {"id": "floor", "name": "Chao", "x": 0.0, "y": 150.0, "w": 600.0, "h": 32.0, "rotation": 0.0, "color": (91, 194, 100), "rigidbody": {"is_kinematic": True, "use_gravity": False}, "collider": {"type": "box"}},
-            {"id": "player", "name": "Player", "x": 0.0, "y": 0.0, "w": 36.0, "h": 48.0, "rotation": 0.0, "color": (88, 117, 255), "rigidbody": {"is_kinematic": False, "use_gravity": True, "gravity_scale": 1.0}, "collider": {"type": "box"}},
-        ]
+        self._initial_scene_snapshot = []
         self._scene_snapshot = deepcopy(self._initial_scene_snapshot)
         self._scene_document: dict | None = None
         self._current_scene_path: Path | None = None
