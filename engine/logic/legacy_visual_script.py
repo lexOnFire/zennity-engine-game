@@ -42,6 +42,21 @@ LEGACY_NODE_TYPES = {
     "math.vector2_magnitude": "magnitude_vector",
     "animator.set_parameter": "set_animator_parameter",
     "input.keyboard_key_down": "key_pressed",
+    # Names below were left unmapped, so the runtime skipped them and the flow ran
+    # on without them. Only 1:1 equivalents are listed: mapping a node onto one with
+    # different semantics would silently do the wrong thing, which is worse than the
+    # skip. Anything still missing is now named out loud by the runtime warning.
+    "animator.set_trigger": "animator_set_trigger",
+    "math.divide": "divide_number",
+    "math.distance": "distance_to_point",
+    "ui.set_progress_bar": "set_ui_progress_bar",
+    "sprite.change_sprite": "set_sprite",
+    "event.custom": "event_custom",
+    "event.listen": "event_custom",
+    "save.save_game": "save_game",
+    "physics.raycast_2d": "raycast",
+    "every_frame": "event_update",
+    "ui_set_text": "set_ui_text",
 }
 
 LEGACY_PORTS = {

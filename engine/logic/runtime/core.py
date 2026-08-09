@@ -89,6 +89,7 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin):
         self._implicit_target: Any = None
         self._created_event_depth = 0
         self.started = False
+        self.unknown_node_types: dict[str, list[str]] = {}  # ver _report_unknown_node
         self._registered_physics_handler = False  # Phase 5B.2: Track handler registration
         self._registered_animation_handler = False  # Phase 6B.3: Track handler registration
 
@@ -641,8 +642,28 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin):
         executor = registry.executors.get(node_type)
         if executor:
             return executor(self, node, game, dt)
-            
+
+        self._report_unknown_node(node, node_type)
         return ["next"]
+
+    def _report_unknown_node(self, node: Mapping[str, Any], node_type: str) -> None:
+        """Announce a node type nothing implements, once per type per graph.
+
+        A node with no executor is skipped rather than raised, so that a partially
+        migrated graph still runs. That silence used to be total -- a skipped node
+        was indistinguishable from one that worked, which hid whole broken chains.
+        The flow still continues; the skip is just no longer invisible.
+        """
+        if node_type in self.unknown_node_types:
+            return
+        node_id = str(node.get("id", "?"))
+        self.unknown_node_types[node_type] = [node_id]
+        graph_name = str(self.graph.get("name", "Logic Graph"))
+        title = str(node.get("title", node_id))
+        print(
+            f"[Logic Graph] '{graph_name}' ({self.object_key}): node type '{node_type}' "
+            f"has no implementation - node '{title}' was skipped and the flow continued."
+        )
 
     def _read_input(
         self,

@@ -24,7 +24,7 @@ def evaluate_get_tag(runtime, node_id: str, port: str, node: Mapping[str, Any], 
 # podem incluir tipos reais na tupla: o registro é last-one-wins, e listar um tipo
 # real aqui apagaria silenciosamente a implementação verdadeira dele.
 
-@registry.register_executor(('scene.load_scene', 'open_scene', 'load_scene'))
+@registry.register_executor(('scene.load_scene', 'scene.load', 'scene_load', 'open_scene', 'load_scene'))
 def execute_scene_load_scene(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
     node_id = str(node['id'])
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
