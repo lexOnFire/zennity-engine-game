@@ -275,7 +275,8 @@ class InspectorViewRenderer:
             if any(isinstance(c, dict) and c.get("type") == "LogicGraph" for c in items):
                 has_explicit_logic = True
 
-        h._set_inspector_card_present("logic", bool(bindings) or has_explicit_logic)
+        show_card = bool(bindings) or has_explicit_logic or ("logic_assets" in obj)
+        h._set_inspector_card_present("logic", show_card)
         h.logic_graph_combo.clear()
         total_nodes = 0
         graph_names = []
@@ -309,6 +310,11 @@ class InspectorViewRenderer:
             h.logic_summary_label.setText(
                 "Adicione Lógica Visual para controlar este objeto sem scripts."
             )
+
+        if hasattr(h, "inspector_container") and hasattr(h.inspector_container, "update"):
+            h.inspector_container.update()
+        if hasattr(h, "viewport") and hasattr(h.viewport, "update"):
+            h.viewport.update()
 
     def render_behavior(self, name: str, obj: dict[str, Any]) -> None:
         """Sync the Behavior Tree card with the object's linked .zbehavior file."""

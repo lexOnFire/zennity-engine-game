@@ -124,6 +124,16 @@ class LogicBindingController:
 
     def _refresh_surfaces(self) -> None:
         h = self.host
-        h._asset_browser.refresh()
-        if h._selected_name in h._objects_by_name:
-            h._update_inspector(h._selected_name)
+        if hasattr(h, "_asset_browser") and hasattr(h._asset_browser, "refresh"):
+            h._asset_browser.refresh()
+        selected_name = getattr(h, "_selected_name", None)
+        if not selected_name and hasattr(h, "_selected_scene_name"):
+            selected_name = h._selected_scene_name()
+        if selected_name and hasattr(h, "_update_inspector"):
+            h._update_inspector(selected_name)
+        if selected_name and hasattr(h, "_inspector_view") and hasattr(h._inspector_view, "render_logic"):
+            h._inspector_view.render_logic(selected_name)
+        if hasattr(h, "viewport") and hasattr(h.viewport, "update"):
+            h.viewport.update()
+        if hasattr(h, "game_viewport") and hasattr(h.game_viewport, "update"):
+            h.game_viewport.update()
