@@ -94,6 +94,14 @@
       "components": {
         "items": [
           {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/MainMenuLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/MainMenuLogic.zlogic"
+            }
+          },
+          {
             "type": "Canvas",
             "enabled": true,
             "properties": {
@@ -132,14 +140,6 @@
               "layout_path": "Assets/UI/MainMenu.zui",
               "ui_asset": "Assets/UI/MainMenu.zui",
               "sprite_path": ""
-            }
-          },
-          {
-            "type": "LogicGraph",
-            "enabled": true,
-            "graph_path": "Assets/Logic/MainMenuLogic.zlogic",
-            "properties": {
-              "graph_path": "Assets/Logic/MainMenuLogic.zlogic"
             }
           }
         ]

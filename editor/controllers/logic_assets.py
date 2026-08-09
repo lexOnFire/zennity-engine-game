@@ -56,13 +56,37 @@ class LogicAssetRepository:
     def for_object(self, object_name: str, object_data: dict) -> list[tuple[Path, dict]]:
         tag = str(object_data.get("tag", object_data.get("name", object_name))).casefold()
         result: list[tuple[Path, dict]] = []
+
+        # Explicit paths from object definition
+        explicit_paths = set()
+        if isinstance(object_data.get("logic_assets"), list):
+            for item in object_data["logic_assets"]:
+                explicit_paths.add(str(item).replace("\\", "/").casefold())
+        if isinstance(object_data.get("editor_data"), dict) and isinstance(object_data["editor_data"].get("logic_graphs"), list):
+            for item in object_data["editor_data"]["logic_graphs"]:
+                if isinstance(item, dict) and item.get("path"):
+                    explicit_paths.add(str(item["path"]).replace("\\", "/").casefold())
+        if isinstance(object_data.get("components"), dict):
+            items = object_data["components"].get("items", []) if isinstance(object_data["components"], dict) else []
+            for comp in items:
+                if isinstance(comp, dict) and comp.get("type") == "LogicGraph":
+                    g_path = comp.get("graph_path") or comp.get("properties", {}).get("graph_path", "")
+                    if g_path:
+                        explicit_paths.add(str(g_path).replace("\\", "/").casefold())
+
         for path, graph in self.assets():
             if not bool(graph.get("enabled", True)):
                 continue
+            try:
+                rel_path = str(path.relative_to(self.project_root.resolve()).as_posix()).casefold()
+            except ValueError:
+                rel_path = str(path).replace("\\", "/").casefold()
+
             target = graph.get("target", {})
             target_type = str(target.get("type", "name"))
             wanted = str(target.get("value", "")).casefold()
-            if (target_type == "name" and wanted == object_name.casefold()) or (target_type == "tag" and wanted == tag):
+
+            if rel_path in explicit_paths or (target_type == "name" and wanted == object_name.casefold()) or (target_type == "tag" and wanted == tag):
                 result.append((path, graph))
         return result
 

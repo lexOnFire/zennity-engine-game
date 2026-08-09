@@ -262,8 +262,20 @@ class InspectorViewRenderer:
 
     def render_logic(self, name: str) -> None:
         h = self.host
+        obj = h._objects_by_name.get(name, {}) if hasattr(h, "_objects_by_name") else {}
         bindings = h._logic_workspace_controller.graphs_for_object(name)
-        h._set_inspector_card_present("logic", bool(bindings))
+
+        has_explicit_logic = False
+        if isinstance(obj.get("logic_assets"), list) and len(obj["logic_assets"]) > 0:
+            has_explicit_logic = True
+        elif isinstance(obj.get("editor_data"), dict) and isinstance(obj["editor_data"].get("logic_graphs"), list) and len(obj["editor_data"]["logic_graphs"]) > 0:
+            has_explicit_logic = True
+        elif isinstance(obj.get("components"), dict):
+            items = obj["components"].get("items", []) if isinstance(obj["components"], dict) else []
+            if any(isinstance(c, dict) and c.get("type") == "LogicGraph" for c in items):
+                has_explicit_logic = True
+
+        h._set_inspector_card_present("logic", bool(bindings) or has_explicit_logic)
         h.logic_graph_combo.clear()
         total_nodes = 0
         for path, graph in bindings:
