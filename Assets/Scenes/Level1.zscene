@@ -1216,7 +1216,7 @@
       "id": "guard_1",
       "name": "Guard",
       "active": true,
-      "tag": "",
+      "tag": "NPC",
       "transform": {
         "position": [
           600.0,
@@ -1242,10 +1242,10 @@
       "visual": {
         "enabled": true,
         "color": [
-          1,
-          1,
-          1,
-          1
+          0.25,
+          0.85,
+          1.0,
+          1.0
         ],
         "texture": "Assets/Sprites/MyPlatformer/enemy.png",
         "material": "Default_Material",
@@ -1296,7 +1296,8 @@
       "variables": {
         "dialogue_owner_id": "Guard",
         "interaction_range": 3.0,
-        "can_interact": false
+        "can_interact": false,
+        "npc_role": "dialogue_guard"
       },
       "dialogue_asset": "Assets/Dialogues/GuardDialogue.zdialogue",
       "dialogue": {

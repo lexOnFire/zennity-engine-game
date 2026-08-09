@@ -47,4 +47,6 @@ def test_level1_contains_guard_npc_with_dialogue_asset() -> None:
 
     assert guard["dialogue_asset"] == "Assets/Dialogues/GuardDialogue.zdialogue"
     assert guard["dialogue"]["asset_path"] == "Assets/Dialogues/GuardDialogue.zdialogue"
+    assert guard["tag"] == "NPC"
+    assert guard["visual"]["color"] == [0.25, 0.85, 1.0, 1.0]
     assert (PROJECT_ROOT / guard["dialogue_asset"]).is_file()

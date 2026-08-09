@@ -131,14 +131,14 @@ def _update_guard_dialogue(objects: dict[str, dict[str, Any]], player: dict[str,
     )
     in_range = distance <= 120.0
     player_state = player.setdefault("_benchmark_state", {})
-    was_pressed = bool(player_state.get("interact_pressed", False))
     pressed = bool(player.get("_input", {}).get("interact", False))
-    player_state["interact_pressed"] = pressed
     if not in_range:
         _set_hud(objects, "dialogue_hint", "")
+        player_state["dialogue_active"] = False
         return
     _set_hud(objects, "dialogue_hint", "Pressione E para falar com o Guard", "bottom-center")
-    if pressed and not was_pressed:
+    if pressed:
+        player_state["dialogue_active"] = True
         text = (
             "Guard: The gate is locked. You must find the key to pass."
             if not bool(player.get("variables", {}).get("has_key", False))
