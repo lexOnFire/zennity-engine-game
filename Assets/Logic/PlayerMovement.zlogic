@@ -1,7 +1,7 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
-  "enabled": false,
+  "enabled": true,
   "name": "PlayerMovement",
   "target": {
     "type": "name",
@@ -30,57 +30,60 @@
       "title": "On Update",
       "category": "Events",
       "position": [
-        46.54,
-        85.3
+        100.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
+        "width": 210.0,
+        "height": 0.0
       },
       "properties": {}
     },
     {
       "id": "node_input_h",
       "type": "input_axis",
-      "title": "input_axis",
-      "category": "Custom",
+      "title": "Eixo de Entrada",
+      "category": "Input",
       "position": [
-        316.04,
-        110.69
+        300.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
+        "width": 210.0,
+        "height": 0.0
       },
       "properties": {
+        "axis": "horizontal",
         "axis_name": "horizontal"
       }
     },
     {
       "id": "node_move_by",
       "type": "move_by",
-      "title": "move_by",
-      "category": "Custom",
+      "title": "Mover Por",
+      "category": "Movement",
       "position": [
-        596.77,
-        98.66
+        550.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 212.0
+        "width": 210.0,
+        "height": 0.0
       },
       "properties": {
-        "x": 0,
-        "y": 0
+        "delta_x": 0.0,
+        "delta_y": 0.0,
+        "x": 0.0,
+        "y": 0.0
       }
     }
   ],
   "edges": [
     {
-      "id": "9bf7c4d907c94c1ca2d23c8575aac216",
+      "id": "3cf1a849b454419292871a65a3f7787c",
       "from_node": "node_update",
       "from_port": "next",
       "to_node": "node_input_h",
@@ -89,7 +92,7 @@
       "order": 0
     },
     {
-      "id": "7df2b5941caf4e8abbf78efaa0b2018f",
+      "id": "680515ad75c243fbb6cfaedec75502dc",
       "from_node": "node_input_h",
       "from_port": "next",
       "to_node": "node_move_by",
@@ -98,7 +101,7 @@
       "order": 1
     },
     {
-      "id": "43f9d4457f00478980e70637f6f3903c",
+      "id": "e1754a6a8e3d45b88fc7eb8d55af04e5",
       "from_node": "node_input_h",
       "from_port": "value",
       "to_node": "node_move_by",

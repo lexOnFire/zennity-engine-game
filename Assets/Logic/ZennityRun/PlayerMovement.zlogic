@@ -1,7 +1,7 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
-  "enabled": true,
+  "enabled": false,
   "name": "Player Movement (Zennity Run)",
   "target": {
     "type": "name",
@@ -49,6 +49,7 @@
         "height": 156.0
       },
       "properties": {
+        "axis": "horizontal",
         "negative": "A",
         "positive": "D"
       }
@@ -68,6 +69,8 @@
         "height": 156.0
       },
       "properties": {
+        "direction_x": 1.0,
+        "direction_y": 0.0,
         "speed": 160.0
       }
     },
@@ -156,6 +159,9 @@
         "height": 156.0
       },
       "properties": {
+        "target": "player",
+        "animation_name": "idle",
+        "force": false,
         "state": "Run"
       }
     },
@@ -174,6 +180,9 @@
         "height": 156.0
       },
       "properties": {
+        "target": "player",
+        "animation_name": "idle",
+        "force": false,
         "state": "Idle"
       }
     },
@@ -192,6 +201,9 @@
         "height": 156.0
       },
       "properties": {
+        "target": "player",
+        "animation_name": "idle",
+        "force": false,
         "state": "Jump"
       }
     }

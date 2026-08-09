@@ -82,11 +82,20 @@
             "properties": {
               "graph_path": "Assets/Logic/PlayerMovementLogic.zlogic"
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/PlayerCombatLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/PlayerCombatLogic.zlogic"
+            }
           }
         ]
       },
       "logic_assets": [
-        "Assets/Logic/PlayerMovementLogic.zlogic"
+        "Assets/Logic/PlayerMovementLogic.zlogic",
+        "Assets/Logic/PlayerCombatLogic.zlogic"
       ],
       "layer": "Default",
       "variables": {
@@ -98,7 +107,15 @@
         "facing_x": 1
       },
       "editor_data": {
-        "editor_data": {},
+        "editor_data": {
+          "logic_graphs": [
+            {
+              "path": "Assets/Logic/PlayerCombatLogic.zlogic",
+              "enabled": true,
+              "name": "PlayerCombatLogic"
+            }
+          ]
+        },
         "logic_graphs": [
           {
             "path": "Assets/Logic/PlayerMovementLogic.zlogic",
@@ -156,6 +173,14 @@
               1.0
             ],
             "is_trigger": true
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/GuardInteractionLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/GuardInteractionLogic.zlogic"
+            }
           }
         ]
       },
@@ -170,7 +195,23 @@
       "variables": {
         "dialogue_text": "Greetings, traveler! Obtain the Key to unlock the Dungeon Gate."
       },
-      "static": false
+      "static": false,
+      "editor_data": {
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/GuardInteractionLogic.zlogic",
+            "name": "GuardInteractionLogic"
+          }
+        ],
+        "editor_data": {
+          "logic_graphs": [
+            {
+              "path": "Assets/Logic/GuardInteractionLogic.zlogic",
+              "name": "GuardInteractionLogic"
+            }
+          ]
+        }
+      }
     },
     {
       "id": "level1_camera",
@@ -319,6 +360,14 @@
               "ui_asset": "Assets/UI/HUD.zui",
               "sprite_path": ""
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/HUDLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/HUDLogic.zlogic"
+            }
           }
         ]
       },
@@ -355,7 +404,10 @@
         ],
         "parent": null,
         "children": []
-      }
+      },
+      "logic_assets": [
+        "Assets/Logic/HUDLogic.zlogic"
+      ]
     },
     {
       "id": "wall_left",
@@ -694,7 +746,13 @@
           "children": []
         },
         "parent": null,
-        "children": []
+        "children": [],
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/KeyCollectionLogic.zlogic",
+            "name": "KeyCollectionLogic"
+          }
+        ]
       }
     },
     {
@@ -777,7 +835,13 @@
           "children": []
         },
         "parent": null,
-        "children": []
+        "children": [],
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/DoorLogic.zlogic",
+            "name": "DoorLogic"
+          }
+        ]
       }
     },
     {
@@ -851,7 +915,13 @@
           "children": []
         },
         "parent": null,
-        "children": []
+        "children": [],
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/LevelExitLogic.zlogic",
+            "name": "LevelExitLogic"
+          }
+        ]
       }
     },
     {
@@ -1525,7 +1595,17 @@
           "children": []
         },
         "parent": "INIMIGOS",
-        "children": []
+        "children": [],
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/EnemyAILogic.zlogic",
+            "name": "EnemyAILogic"
+          },
+          {
+            "path": "Assets/Logic/EnemyAttackLogic.zlogic",
+            "name": "EnemyAttackLogic"
+          }
+        ]
       }
     },
     {
@@ -1636,7 +1716,17 @@
           "children": []
         },
         "parent": "INIMIGOS",
-        "children": []
+        "children": [],
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/EnemyAILogic.zlogic",
+            "name": "EnemyAILogic"
+          },
+          {
+            "path": "Assets/Logic/EnemyAttackLogic.zlogic",
+            "name": "EnemyAttackLogic"
+          }
+        ]
       }
     },
     {
@@ -1747,7 +1837,17 @@
           "children": []
         },
         "parent": "INIMIGOS",
-        "children": []
+        "children": [],
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/EnemyAILogic.zlogic",
+            "name": "EnemyAILogic"
+          },
+          {
+            "path": "Assets/Logic/EnemyAttackLogic.zlogic",
+            "name": "EnemyAttackLogic"
+          }
+        ]
       }
     },
     {
@@ -2457,7 +2557,13 @@
           "children": []
         },
         "parent": "MOEDAS",
-        "children": []
+        "children": [],
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/CoinCollectionLogic.zlogic",
+            "name": "CoinCollectionLogic"
+          }
+        ]
       }
     },
     {
@@ -2534,7 +2640,13 @@
           "children": []
         },
         "parent": "MOEDAS",
-        "children": []
+        "children": [],
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/CoinCollectionLogic.zlogic",
+            "name": "CoinCollectionLogic"
+          }
+        ]
       }
     },
     {
@@ -2611,7 +2723,13 @@
           "children": []
         },
         "parent": "MOEDAS",
-        "children": []
+        "children": [],
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/CoinCollectionLogic.zlogic",
+            "name": "CoinCollectionLogic"
+          }
+        ]
       }
     },
     {
@@ -2688,7 +2806,13 @@
           "children": []
         },
         "parent": "MOEDAS",
-        "children": []
+        "children": [],
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/CoinCollectionLogic.zlogic",
+            "name": "CoinCollectionLogic"
+          }
+        ]
       }
     },
     {
@@ -2765,7 +2889,13 @@
           "children": []
         },
         "parent": "MOEDAS",
-        "children": []
+        "children": [],
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/CoinCollectionLogic.zlogic",
+            "name": "CoinCollectionLogic"
+          }
+        ]
       }
     },
     {

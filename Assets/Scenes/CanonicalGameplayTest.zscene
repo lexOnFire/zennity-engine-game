@@ -43,15 +43,6 @@
         "order": 0
       },
       "components": {
-        "items": [
-          {
-            "type": "CameraFollow",
-            "smoothing": 5.0,
-            "offset_x": 0.0,
-            "offset_y": 0.0,
-            "target_tag": "Player"
-          }
-        ],
         "camera": {
           "active": true,
           "zoom": 1.0,
@@ -67,10 +58,7 @@
             1.0,
             1.0
           ],
-          "priority": 0,
-          "width": 1280.0,
-          "height": 720.0,
-          "follow_target": "Player"
+          "priority": 0
         }
       }
     },
@@ -79,7 +67,7 @@
       "active": true,
       "enabled": true,
       "static": false,
-      "tag": "Player",
+      "tag": "Untagged",
       "layer": "Default",
       "id": "player",
       "transform": {
@@ -109,22 +97,17 @@
           200,
           255
         ],
-        "texture": "Assets/Sprites/MyPlatformer/player.png",
+        "texture": "Assets/Sprites/Player/idle_1.png",
         "layer": "Default",
         "order": 0
       },
       "components": {
-        "items": [
-          {
-            "type": "LogicGraph",
-            "graph_path": "Assets/Logic/PlayerMovement.zlogic"
-          }
-        ],
         "rigidbody": {
+          "enabled": true,
+          "body_type": "dynamic",
+          "gravity_scale": 0.0,
           "mass": 1.0,
-          "gravity_scale": 1.0,
-          "use_gravity": false,
-          "is_kinematic": false
+          "fixed_rotation": true
         },
         "collider": {
           "enabled": true,
@@ -132,11 +115,29 @@
           "width": 48.0,
           "height": 48.0,
           "is_trigger": false
-        }
+        },
+        "items": [
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/PlayerMovement.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/PlayerMovement.zlogic"
+            }
+          }
+        ]
       },
       "logic_assets": [
-        "Assets/Logic/ZennityRun/PlayerMovement.zlogic"
-      ]
+        "Assets/Logic/PlayerMovement.zlogic"
+      ],
+      "editor_data": {
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/PlayerMovement.zlogic",
+            "name": "PlayerMovement"
+          }
+        ]
+      }
     },
     {
       "name": "Wall",
@@ -149,7 +150,7 @@
       "transform": {
         "position": [
           200.0,
-          91.0,
+          0.0,
           0.0
         ],
         "rotation": [
@@ -183,55 +184,6 @@
           "type": "box",
           "width": 32.0,
           "height": 128.0,
-          "is_trigger": false
-        }
-      }
-    },
-    {
-      "name": "Enemy",
-      "active": true,
-      "enabled": true,
-      "static": false,
-      "tag": "Enemy",
-      "layer": "Default",
-      "id": "enemy_01",
-      "transform": {
-        "position": [
-          300.0,
-          0.0,
-          0.0
-        ],
-        "rotation": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "rz": 0.0,
-        "scale": [
-          36.0,
-          36.0,
-          1.0
-        ]
-      },
-      "visual": {
-        "enabled": true,
-        "material": "Default_Material",
-        "mesh_type": null,
-        "color": [
-          255,
-          0,
-          0
-        ],
-        "texture": "",
-        "layer": "Default",
-        "order": 0
-      },
-      "components": {
-        "collider": {
-          "enabled": true,
-          "type": "box",
-          "width": 36.0,
-          "height": 36.0,
           "is_trigger": false
         }
       }

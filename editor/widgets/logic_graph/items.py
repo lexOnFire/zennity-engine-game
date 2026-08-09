@@ -150,15 +150,27 @@ class LogicPortItem(QGraphicsEllipseItem):
         super().hoverLeaveEvent(event)
 
     def mousePressEvent(self, event) -> None:
-        self.node.editor.begin_connection(self)
+        try:
+            if hasattr(self.node, "editor") and self.node.editor is not None:
+                self.node.editor.begin_connection(self)
+        except Exception as e:
+            print(f"[LogicPortItem.mousePressEvent] Error: {e}")
         event.accept()
 
     def mouseMoveEvent(self, event) -> None:
-        self.node.editor.update_connection(event.scenePos())
+        try:
+            if hasattr(self.node, "editor") and self.node.editor is not None:
+                self.node.editor.update_connection(event.scenePos())
+        except Exception as e:
+            print(f"[LogicPortItem.mouseMoveEvent] Error: {e}")
         event.accept()
 
     def mouseReleaseEvent(self, event) -> None:
-        self.node.editor.finish_connection(event.scenePos())
+        try:
+            if hasattr(self.node, "editor") and self.node.editor is not None:
+                self.node.editor.finish_connection(event.scenePos())
+        except Exception as e:
+            print(f"[LogicPortItem.mouseReleaseEvent] Error: {e}")
         event.accept()
 
 class LogicEdgeItem(QGraphicsPathItem):
@@ -278,7 +290,10 @@ class LogicFlipControl(QGraphicsTextItem):
         self.setCursor(Qt.PointingHandCursor)
 
     def mousePressEvent(self, event) -> None:
-        self.node.toggle_code_preview()
+        try:
+            self.node.toggle_code_preview()
+        except Exception as e:
+            print(f"[LogicFlipControl.mousePressEvent] Error: {e}")
         event.accept()
 
 class LogicCollapseControl(QGraphicsTextItem):
@@ -301,7 +316,10 @@ class LogicCollapseControl(QGraphicsTextItem):
         self.setPos(self.node.width - 76.0, 1.0)
 
     def mousePressEvent(self, event) -> None:
-        self.node.toggle_collapsed()
+        try:
+            self.node.toggle_collapsed()
+        except Exception as e:
+            print(f"[LogicCollapseControl.mousePressEvent] Error: {e}")
         event.accept()
 
 class LogicResizeHandle(QGraphicsRectItem):
@@ -327,12 +345,19 @@ class LogicResizeHandle(QGraphicsRectItem):
         event.accept()
 
     def mouseMoveEvent(self, event) -> None:
-        delta = event.scenePos() - self._origin
-        self.node.resize_to(self._initial_size[0] + delta.x(), self._initial_size[1] + delta.y())
+        try:
+            delta = event.scenePos() - self._origin
+            self.node.resize_to(self._initial_size[0] + delta.x(), self._initial_size[1] + delta.y())
+        except Exception as e:
+            print(f"[LogicResizeHandle.mouseMoveEvent] Error: {e}")
         event.accept()
 
     def mouseReleaseEvent(self, event) -> None:
-        self.node.editor.mark_dirty()
+        try:
+            if hasattr(self.node, "editor") and self.node.editor is not None:
+                self.node.editor.mark_dirty()
+        except Exception as e:
+            print(f"[LogicResizeHandle.mouseReleaseEvent] Error: {e}")
         event.accept()
 
 from editor.widgets.logic_graph.item_runtime_mixin import LogicNodeItemRuntimeMixin
@@ -555,14 +580,19 @@ class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGrap
         )
 
     def resize_to(self, width: float, height: float) -> None:
-        self.width = max(self.MINIMUM_WIDTH, min(self.MAXIMUM_WIDTH, float(width)))
-        self.expanded_height = max(self.natural_height, min(self.MAXIMUM_HEIGHT, float(height)))
-        self.node.setdefault("editor", {}).update({
-            "collapsed": self.collapsed,
-            "width": round(self.width, 2),
-            "height": round(self.expanded_height, 2),
-        })
-        self._apply_geometry()
+        try:
+            self.width = max(self.MINIMUM_WIDTH, min(self.MAXIMUM_WIDTH, float(width)))
+            self.expanded_height = max(self.natural_height, min(self.MAXIMUM_HEIGHT, float(height)))
+            self.node.setdefault("editor", {}).update({
+                "collapsed": self.collapsed,
+                "width": round(self.width, 2),
+                "height": round(self.expanded_height, 2),
+            })
+            self._apply_geometry()
+        except Exception as e:
+            print(f"[resize_to] Error: {e}")
+            import traceback
+            traceback.print_exc()
 
 
 
@@ -603,21 +633,33 @@ class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGrap
         self.setToolTip(self.target_item.toolTip() if text else "")
 
     def mouseDoubleClickEvent(self, event) -> None:
-        if self._show_code and self.editor.edit_node_code_value(self):
-            event.accept()
-            return
-        self.editor.toggle_breakpoint(self.node_id)
+        try:
+            if self._show_code and hasattr(self, "editor") and self.editor is not None:
+                if self.editor.edit_node_code_value(self):
+                    event.accept()
+                    return
+            if hasattr(self, "editor") and self.editor is not None:
+                self.editor.toggle_breakpoint(self.node_id)
+        except Exception as e:
+            print(f"[LogicNodeItem.mouseDoubleClickEvent] Error: {e}")
         event.accept()
 
     def itemChange(self, change, value):
         result = super().itemChange(change, value)
         if change == QGraphicsItem.ItemPositionHasChanged and hasattr(self, "editor"):
-            from PySide6.QtCore import QPointF
-            position = value if isinstance(value, QPointF) else self.pos()
-            self.node["position"] = [round(position.x(), 2), round(position.y(), 2)]
-            self.editor.refresh_connections()
-            self.editor.mark_dirty()
+            try:
+                from PySide6.QtCore import QPointF
+                position = value if isinstance(value, QPointF) else self.pos()
+                self.node["position"] = [round(position.x(), 2), round(position.y(), 2)]
+                if self.editor is not None:
+                    self.editor.refresh_connections()
+                    self.editor.mark_dirty()
+            except Exception as e:
+                print(f"[itemChange] Error updating node position: {e}")
         elif change == QGraphicsItem.ItemSelectedHasChanged:
-            self._update_border_style()
+            try:
+                self._update_border_style()
+            except Exception as e:
+                print(f"[itemChange] Error updating border style: {e}")
         return result
 

@@ -12,7 +12,13 @@
     "breakpoint_conditions": {},
     "watches": []
   },
-  "variables": {},
+  "variables": {
+    "target.Y += 100.0 * dt": {
+      "type": "number",
+      "scope": "object",
+      "default": 0.0
+    }
+  },
   "editor": {
     "groups": [],
     "comments": [],
@@ -25,8 +31,8 @@
       "title": "On Update",
       "category": "Events",
       "position": [
-        120.0,
-        100.0
+        -917.35,
+        249.77
       ],
       "editor": {
         "collapsed": false,
@@ -41,8 +47,8 @@
       "title": "Read Input Axis",
       "category": "Movement",
       "position": [
-        440.0,
-        100.0
+        75.79,
+        13.87
       ],
       "editor": {
         "collapsed": false,
@@ -61,8 +67,8 @@
       "title": "If / Else",
       "category": "Logic",
       "position": [
-        760.0,
-        100.0
+        426.13,
+        -2.26
       ],
       "editor": {
         "collapsed": false,
@@ -79,8 +85,8 @@
       "title": "Move",
       "category": "Movement",
       "position": [
-        1080.0,
-        100.0
+        911.51,
+        52.67
       ],
       "editor": {
         "collapsed": false,
@@ -88,39 +94,237 @@
         "height": 156.0
       },
       "properties": {
-        "direction_x": 1.0,
+        "direction_x": 10.0,
         "direction_y": 0.0,
         "speed": 220.0
+      }
+    },
+    {
+      "id": "c3a295409a1e4d1e93e2ecb5897a0de6",
+      "type": "move_by",
+      "title": "Mover Por",
+      "category": "Movement",
+      "position": [
+        558.39,
+        313.9
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 268.0
+      },
+      "properties": {
+        "delta_x": 0.0,
+        "delta_y": 0.0,
+        "x": 0,
+        "y": 220
+      }
+    },
+    {
+      "id": "ef1f7e102b0b4efabbf9219b872789b2",
+      "type": "if_else",
+      "title": "Se/Senão",
+      "category": "Flow",
+      "position": [
+        -137.33,
+        380.88
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "condition": "axis != 0"
+      }
+    },
+    {
+      "id": "3c49dd02af0144eab7a9c17213ef69eb",
+      "type": "compare_number",
+      "title": "Comparar Número",
+      "category": "Logic",
+      "position": [
+        192.21,
+        333.84
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "operator": ">",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "da8c7a37f19c4cb19b17d298b06b7fab",
+      "type": "compare_number",
+      "title": "Comparar Número",
+      "category": "Logic",
+      "position": [
+        179.52,
+        591.67
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "operator": ">",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "90d25beab82f461e9e560c4a656a7c1c",
+      "type": "move_by",
+      "title": "Mover Por",
+      "category": "Movement",
+      "position": [
+        560.48,
+        611.9
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 268.0
+      },
+      "properties": {
+        "delta_x": 0.0,
+        "delta_y": 0.0,
+        "x": 0,
+        "y": -220
+      }
+    },
+    {
+      "id": "7dc353374c9e413cb05e4de70f5e78cb",
+      "type": "read_key_axis",
+      "title": "Eixo de Teclado",
+      "category": "Input",
+      "position": [
+        -480.43,
+        533.89
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "positive_key": "w",
+        "negative_key": "s"
+      }
+    },
+    {
+      "id": "46747388b0964ea385829e25c0003a3e",
+      "type": "input_axis",
+      "title": "Eixo de Entrada",
+      "category": "Input",
+      "position": [
+        -744.36,
+        525.81
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "axis": "horizontal"
       }
     }
   ],
   "edges": [
     {
-      "id": "edge_update_moving",
+      "id": "0ee41a2cf77b4e48b4ce83efa4f0a244",
       "from_node": "update",
       "from_port": "next",
-      "to_node": "moving",
+      "to_node": "axis",
       "to_port": "in",
       "kind": "flow",
       "order": 0
     },
     {
-      "id": "edge_axis_condition",
+      "id": "3e5d656f726748c18d71659bf157528f",
       "from_node": "axis",
-      "from_port": "value",
+      "from_port": "next",
       "to_node": "moving",
-      "to_port": "condition",
-      "kind": "any",
+      "to_port": "in",
+      "kind": "flow",
       "order": 1
     },
     {
-      "id": "edge_moving_true_move",
+      "id": "79c77d730bff427a8db8a850a422e972",
       "from_node": "moving",
       "from_port": "true",
       "to_node": "move",
       "to_port": "in",
       "kind": "flow",
       "order": 2
+    },
+    {
+      "id": "2257effdc31741c0ad90a319d1aaee7d",
+      "from_node": "ef1f7e102b0b4efabbf9219b872789b2",
+      "from_port": "true",
+      "to_node": "3c49dd02af0144eab7a9c17213ef69eb",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 3
+    },
+    {
+      "id": "09b454cc589e43769cd069188ce423e6",
+      "from_node": "3c49dd02af0144eab7a9c17213ef69eb",
+      "from_port": "true",
+      "to_node": "c3a295409a1e4d1e93e2ecb5897a0de6",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 4
+    },
+    {
+      "id": "779c0e2cbd1c448cb90c13cb3cc5bd08",
+      "from_node": "ef1f7e102b0b4efabbf9219b872789b2",
+      "from_port": "false",
+      "to_node": "da8c7a37f19c4cb19b17d298b06b7fab",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 5
+    },
+    {
+      "id": "b53b1ec4cc974af0ae4e12d960120861",
+      "from_node": "da8c7a37f19c4cb19b17d298b06b7fab",
+      "from_port": "true",
+      "to_node": "90d25beab82f461e9e560c4a656a7c1c",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 6
+    },
+    {
+      "id": "deca7f260e564cc4b795b56ee49cafec",
+      "from_node": "7dc353374c9e413cb05e4de70f5e78cb",
+      "from_port": "exec_done",
+      "to_node": "ef1f7e102b0b4efabbf9219b872789b2",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 8
+    },
+    {
+      "id": "69b7934cc5f64e9fb086a2d75a5edda5",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "46747388b0964ea385829e25c0003a3e",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 9
+    },
+    {
+      "id": "03dc5d61407e474894e6ac9e2747d483",
+      "from_node": "46747388b0964ea385829e25c0003a3e",
+      "from_port": "next",
+      "to_node": "7dc353374c9e413cb05e4de70f5e78cb",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 9
     }
   ]
 }

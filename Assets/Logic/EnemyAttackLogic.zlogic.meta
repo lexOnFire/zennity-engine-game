@@ -1,0 +1,10 @@
+{
+  "guid": "88894772-ca53-4d73-95e8-e32124688a78",
+  "uuid": "88894772-ca53-4d73-95e8-e32124688a78",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Logic/EnemyAttackLogic.zlogic",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "080c8f5ab1e301031f3e960a8142b96b7726ff10db0cf1d46d11cc69be13908b"
+}

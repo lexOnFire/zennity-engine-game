@@ -1,0 +1,10 @@
+{
+  "guid": "40c8b625-8f4a-434a-8b25-8ff778ec501f",
+  "uuid": "40c8b625-8f4a-434a-8b25-8ff778ec501f",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Logic/BossAILogic.zlogic",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "84d5dc95d7a1f58eea9350d45daaf8d229e70625abda917a73b727aaf3a32dca"
+}

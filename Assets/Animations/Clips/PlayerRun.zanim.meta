@@ -1,0 +1,10 @@
+{
+  "guid": "bfeb2d51-26c7-4e22-9383-c4be98161866",
+  "uuid": "bfeb2d51-26c7-4e22-9383-c4be98161866",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Animations/Clips/PlayerRun.zanim",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "e233f7689ed9c13a6444343b08722c27fee2ab8e08cfdefb1b911455401a3958"
+}

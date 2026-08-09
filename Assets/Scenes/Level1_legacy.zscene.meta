@@ -1,0 +1,10 @@
+{
+  "guid": "5ebcb20c-6239-4110-a1c3-e0bcd7cf520d",
+  "uuid": "5ebcb20c-6239-4110-a1c3-e0bcd7cf520d",
+  "type": "scene",
+  "importer": "generic_importer",
+  "source_path": "Assets/Scenes/Level1_legacy.zscene",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "2c9e1958af50861a875cdaa5cdda44c63852b213b5c52fb1e57659c2483a60f4"
+}

@@ -40,8 +40,8 @@
       "title": "Key Pressed Now?",
       "category": "Condition",
       "position": [
-        50.0,
-        50.0
+        -1155.92,
+        246.6
       ],
       "editor": {
         "collapsed": false,
@@ -58,13 +58,13 @@
       "title": "Get Attack State",
       "category": "Variables",
       "position": [
-        50.0,
-        150.0
+        -837.02,
+        -56.16
       ],
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 150.0
+        "height": 156.0
       },
       "properties": {
         "name": "is_attacking"
@@ -76,8 +76,8 @@
       "title": "Check Not Attacking",
       "category": "Flow",
       "position": [
-        200.0,
-        150.0
+        -790.48,
+        364.78
       ],
       "editor": {
         "collapsed": false,
@@ -94,15 +94,18 @@
       "title": "Play Attack Animation",
       "category": "Animation",
       "position": [
-        350.0,
-        150.0
+        -597.67,
+        -34.87
       ],
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 150.0
+        "height": 156.0
       },
       "properties": {
+        "target": "player",
+        "animation_name": "idle",
+        "force": false,
         "state": "PlayerAttack"
       }
     },
@@ -112,8 +115,8 @@
       "title": "On Update Hit Check",
       "category": "Events",
       "position": [
-        50.0,
-        300.0
+        -1308.46,
+        -48.78
       ],
       "editor": {
         "collapsed": false,
@@ -128,8 +131,8 @@
       "title": "Get Attack Damage",
       "category": "Variables",
       "position": [
-        200.0,
-        300.0
+        -822.72,
+        153.89
       ],
       "editor": {
         "collapsed": false,
@@ -146,8 +149,8 @@
       "title": "Get Attack Range",
       "category": "Variables",
       "position": [
-        200.0,
-        350.0
+        -525.96,
+        140.85
       ],
       "editor": {
         "collapsed": false,
@@ -164,8 +167,8 @@
       "title": "Get Facing Direction",
       "category": "Variables",
       "position": [
-        200.0,
-        400.0
+        -248.47,
+        126.81
       ],
       "editor": {
         "collapsed": false,
@@ -182,13 +185,13 @@
       "title": "Raycast Enemy Check",
       "category": "Physics",
       "position": [
-        350.0,
-        350.0
+        -21.95,
+        404.89
       ],
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 150.0
+        "height": 184.0
       },
       "properties": {
         "key": "SPACE"
@@ -200,8 +203,8 @@
       "title": "Check Hit Object",
       "category": "Flow",
       "position": [
-        500.0,
-        350.0
+        559.86,
+        434.39
       ],
       "editor": {
         "collapsed": false,
@@ -218,13 +221,13 @@
       "title": "Get Hit Object",
       "category": "Variables",
       "position": [
-        500.0,
-        300.0
+        533.37,
+        127.72
       ],
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 150.0
+        "height": 156.0
       },
       "properties": {
         "name": "hit_target"
@@ -236,13 +239,13 @@
       "title": "Get Enemy Health",
       "category": "Variables",
       "position": [
-        650.0,
-        300.0
+        814.5,
+        147.41
       ],
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 150.0
+        "height": 156.0
       },
       "properties": {
         "name": "health"
@@ -254,8 +257,8 @@
       "title": "Subtract Damage",
       "category": "Math",
       "position": [
-        800.0,
-        300.0
+        1084.77,
+        159.79
       ],
       "editor": {
         "collapsed": false,
@@ -273,8 +276,8 @@
       "title": "Clamp Health",
       "category": "Math",
       "position": [
-        800.0,
-        350.0
+        1079.38,
+        393.13
       ],
       "editor": {
         "collapsed": false,
@@ -292,17 +295,17 @@
       "title": "Set Enemy Health",
       "category": "Variables",
       "position": [
-        950.0,
-        300.0
+        1363.63,
+        389.49
       ],
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 150.0
+        "height": 156.0
       },
       "properties": {
-        "name": "health",
-        "value": 0.0
+        "value": 0.0,
+        "name": "health"
       }
     },
     {
@@ -311,8 +314,8 @@
       "title": "Check Enemy Dead",
       "category": "Flow",
       "position": [
-        950.0,
-        380.0
+        919.03,
+        662.46
       ],
       "editor": {
         "collapsed": false,
@@ -329,8 +332,8 @@
       "title": "Destroy Enemy",
       "category": "Action",
       "position": [
-        1100.0,
-        380.0
+        1273.15,
+        676.56
       ],
       "editor": {
         "collapsed": false,
@@ -347,8 +350,8 @@
       "title": "No Hit Sequence",
       "category": "Flow",
       "position": [
-        650.0,
-        450.0
+        277.38,
+        409.18
       ],
       "editor": {
         "collapsed": false,
@@ -367,33 +370,6 @@
       "to_port": "in",
       "kind": "flow",
       "order": 0
-    },
-    {
-      "id": "e_state_to_check",
-      "from_node": "get_attack_in_progress",
-      "from_port": "next",
-      "to_node": "check_not_attacking",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 1
-    },
-    {
-      "id": "e_check_to_anim",
-      "from_node": "check_not_attacking",
-      "from_port": "true",
-      "to_node": "set_attack_trigger",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 2
-    },
-    {
-      "id": "e_hit_to_damage",
-      "from_node": "animation_hit_event",
-      "from_port": "next",
-      "to_node": "get_attack_damage",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 3
     },
     {
       "id": "e_damage_to_range",
@@ -423,15 +399,6 @@
       "order": 6
     },
     {
-      "id": "e_raycast_to_checkhit",
-      "from_node": "raycast_for_enemy",
-      "from_port": "true",
-      "to_node": "check_hit",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 7
-    },
-    {
       "id": "e_checkhit_true_getobj",
       "from_node": "check_hit",
       "from_port": "true",
@@ -439,15 +406,6 @@
       "to_port": "in",
       "kind": "flow",
       "order": 8
-    },
-    {
-      "id": "e_checkhit_false_nohit",
-      "from_node": "check_hit",
-      "from_port": "false",
-      "to_node": "no_hit_exec",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 9
     },
     {
       "id": "e_getobj_to_hp",
@@ -459,15 +417,6 @@
       "order": 10
     },
     {
-      "id": "e_hp_to_sub",
-      "from_node": "get_enemy_health",
-      "from_port": "next",
-      "to_node": "subtract_damage",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 11
-    },
-    {
       "id": "e_sub_to_clamp",
       "from_node": "subtract_damage",
       "from_port": "value",
@@ -477,49 +426,85 @@
       "order": 12
     },
     {
-      "id": "e_clamp_to_sethp",
-      "from_node": "clamp_health",
+      "id": "33dca9188dcb49c9afc613f4ed69dd9c",
+      "from_node": "animation_hit_event",
+      "from_port": "next",
+      "to_node": "space_key_down",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 7
+    },
+    {
+      "id": "b9b3c5ecc84d4b63b5f8a83f34584223",
+      "from_node": "space_key_down",
+      "from_port": "false",
+      "to_node": "check_not_attacking",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 8
+    },
+    {
+      "id": "11b6fe3bbfb549da8b238ff58c6d5df7",
+      "from_node": "get_attack_in_progress",
+      "from_port": "next",
+      "to_node": "set_attack_trigger",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 9
+    },
+    {
+      "id": "79f5961f47ff48dfb3d50d6e6f9ff9f5",
+      "from_node": "set_attack_trigger",
+      "from_port": "next",
+      "to_node": "get_attack_damage",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 10
+    },
+    {
+      "id": "f68226c3c0bb4c0a8ed50373e6cfd731",
+      "from_node": "get_enemy_health",
       "from_port": "value",
+      "to_node": "subtract_damage",
+      "to_port": "a",
+      "kind": "any",
+      "order": 11
+    },
+    {
+      "id": "506a3e74e39d47d0a07fd5f462d690ca",
+      "from_node": "check_dead",
+      "from_port": "true",
       "to_node": "set_enemy_health",
+      "to_port": "value",
+      "kind": "flow",
+      "order": 12
+    },
+    {
+      "id": "5df7729ae89b4e03917b1352142d5a26",
+      "from_node": "check_dead",
+      "from_port": "false",
+      "to_node": "destroy_enemy",
       "to_port": "in",
       "kind": "flow",
       "order": 13
     },
     {
-      "id": "e_sethp_to_checkdead",
-      "from_node": "set_enemy_health",
-      "from_port": "next",
-      "to_node": "check_dead",
+      "id": "475fe583603b4ffe82692311de34c70a",
+      "from_node": "raycast_for_enemy",
+      "from_port": "true",
+      "to_node": "no_hit_exec",
       "to_port": "in",
       "kind": "flow",
       "order": 14
     },
     {
-      "id": "e_checkdead_true_destroy",
-      "from_node": "check_dead",
-      "from_port": "true",
-      "to_node": "destroy_enemy",
+      "id": "de568002dea34f6897b5e0e34cec206b",
+      "from_node": "no_hit_exec",
+      "from_port": "then_0",
+      "to_node": "check_hit",
       "to_port": "in",
       "kind": "flow",
       "order": 15
-    },
-    {
-      "id": "e_checkdead_false_nohit",
-      "from_node": "check_dead",
-      "from_port": "false",
-      "to_node": "no_hit_exec",
-      "to_port": "then_0",
-      "kind": "flow",
-      "order": 16
-    },
-    {
-      "id": "e_destroy_next_nohit",
-      "from_node": "destroy_enemy",
-      "from_port": "next",
-      "to_node": "no_hit_exec",
-      "to_port": "then_1",
-      "kind": "flow",
-      "order": 17
     }
   ]
 }

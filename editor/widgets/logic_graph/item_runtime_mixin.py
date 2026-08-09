@@ -11,25 +11,30 @@ class LogicNodeItemRuntimeMixin:
     """Isola estados de runtime, preview de código e estilos de borda do LogicNodeItem."""
 
     def toggle_code_preview(self) -> None:
-        self._show_code = not self._show_code
-        for port in (*self.input_ports.values(), *self.output_ports.values()):
-            port.setVisible(not self._show_code and not self.collapsed)
-        for label in self.port_labels:
-            label.setVisible(not self._show_code and not self.collapsed)
-        self.target_item.setVisible(bool(self._target_hint) and not self._show_code and not self.collapsed)
-        self.code_item.setVisible(self._show_code and not self.collapsed)
-        self.flip_control.setToolTip(
-            "Voltar para as portas do bloco" if self._show_code else "Virar bloco e mostrar o código equivalente"
-        )
-        if self._show_code:
-            self.refresh_text()
-            self.summary_item.hide()
-            self.target_item.hide()
-            self.debug_item.hide()
-            self.setBrush(QBrush(QColor("#111d18")))
-        else:
-            self.setBrush(QBrush(QColor("#151922")))
-            self.set_runtime_state(*self._runtime_display)
+        try:
+            self._show_code = not self._show_code
+            for port in (*self.input_ports.values(), *self.output_ports.values()):
+                port.setVisible(not self._show_code and not self.collapsed)
+            for label in self.port_labels:
+                label.setVisible(not self._show_code and not self.collapsed)
+            self.target_item.setVisible(bool(self._target_hint) and not self._show_code and not self.collapsed)
+            self.code_item.setVisible(self._show_code and not self.collapsed)
+            self.flip_control.setToolTip(
+                "Voltar para as portas do bloco" if self._show_code else "Virar bloco e mostrar o código equivalente"
+            )
+            if self._show_code:
+                self.refresh_text()
+                self.summary_item.hide()
+                self.target_item.hide()
+                self.debug_item.hide()
+                self.setBrush(QBrush(QColor("#111d18")))
+            else:
+                self.setBrush(QBrush(QColor("#151922")))
+                self.set_runtime_state(*self._runtime_display)
+        except Exception as e:
+            print(f"[toggle_code_preview] Error: {e}")
+            import traceback
+            traceback.print_exc()
 
     def set_runtime_state(
         self,
@@ -72,17 +77,20 @@ class LogicNodeItemRuntimeMixin:
         self.breakpoint_item.setVisible(bool(enabled))
 
     def _update_border_style(self) -> None:
-        active, values, error, paused = self._runtime_display
-        visible = bool(active or error or paused)
-        if not visible:
-            if self.isSelected():
-                self.setPen(QPen(QColor("#7c5cff"), 2.4))
+        try:
+            active, values, error, paused = self._runtime_display
+            visible = bool(active or error or paused)
+            if not visible:
+                if self.isSelected():
+                    self.setPen(QPen(QColor("#7c5cff"), 2.4))
+                else:
+                    self.setPen(QPen(QColor("#30394a"), 1.2))
             else:
-                self.setPen(QPen(QColor("#30394a"), 1.2))
-        else:
-            if error:
-                self.setPen(QPen(QColor("#ff5d62"), 3.5 if self.isSelected() else 2.5))
-            elif paused:
-                self.setPen(QPen(QColor("#e6b85c"), 4.5 if self.isSelected() else 3.5))
-            else:
-                self.setPen(QPen(QColor("#7ee787"), 3.5 if self.isSelected() else 2.5))
+                if error:
+                    self.setPen(QPen(QColor("#ff5d62"), 3.5 if self.isSelected() else 2.5))
+                elif paused:
+                    self.setPen(QPen(QColor("#e6b85c"), 4.5 if self.isSelected() else 3.5))
+                else:
+                    self.setPen(QPen(QColor("#7ee787"), 3.5 if self.isSelected() else 2.5))
+        except Exception as e:
+            print(f"[_update_border_style] Error: {e}")

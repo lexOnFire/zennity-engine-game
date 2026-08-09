@@ -1,0 +1,10 @@
+{
+  "guid": "1baf6743-5d63-477c-a7cf-f1dab24016d7",
+  "uuid": "1baf6743-5d63-477c-a7cf-f1dab24016d7",
+  "type": "scene",
+  "importer": "generic_importer",
+  "source_path": "Assets/Scenes/Victory_legacy.zscene",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "9bc5a521e507102c4eda2315940b44cd7fc32f4e58ff7d7380f0831dd8419388"
+}

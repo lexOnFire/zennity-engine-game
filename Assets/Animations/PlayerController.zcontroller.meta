@@ -1,0 +1,10 @@
+{
+  "guid": "b4c12c3f-8f50-4b09-93f7-f46d9440535b",
+  "uuid": "b4c12c3f-8f50-4b09-93f7-f46d9440535b",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Animations/PlayerController.zcontroller",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "6bce8ad866b4ab8169a2b2a424e5c38bf7ffdefd581fac6acda828e94bdf031c"
+}

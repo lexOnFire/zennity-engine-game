@@ -16,14 +16,14 @@
   "editor": {
     "groups": [],
     "comments": [],
-    "migrated_from": "zennity.generic_graph"
+    "migrated_from": "zennity.logic_graph"
   },
   "nodes": [
     {
       "id": "interaction_trigger_enter",
-      "type": "physics.on_trigger_enter",
-      "title": "physics.on_trigger_enter",
-      "category": "Custom",
+      "type": "event_trigger_enter",
+      "title": "On Trigger Enter",
+      "category": "Events",
       "position": [
         50.0,
         50.0
@@ -37,9 +37,9 @@
     },
     {
       "id": "check_player_in_range",
-      "type": "logic.branch",
-      "title": "logic.branch",
-      "category": "Custom",
+      "type": "if_else",
+      "title": "Se/Senão",
+      "category": "Flow",
       "position": [
         200.0,
         50.0
@@ -49,13 +49,15 @@
         "width": 210.0,
         "height": 0.0
       },
-      "properties": {}
+      "properties": {
+        "condition": false
+      }
     },
     {
       "id": "set_can_interact_true",
-      "type": "variable.set",
-      "title": "variable.set",
-      "category": "Custom",
+      "type": "set_variable",
+      "title": "Definir Variável",
+      "category": "Variables",
       "position": [
         350.0,
         50.0
@@ -65,13 +67,15 @@
         "width": 210.0,
         "height": 0.0
       },
-      "properties": {}
+      "properties": {
+        "value": ""
+      }
     },
     {
       "id": "interaction_trigger_exit",
-      "type": "physics.on_trigger_exit",
-      "title": "physics.on_trigger_exit",
-      "category": "Custom",
+      "type": "event_trigger_exit",
+      "title": "On Trigger Exit",
+      "category": "Events",
       "position": [
         50.0,
         120.0
@@ -85,9 +89,9 @@
     },
     {
       "id": "check_player_leaving",
-      "type": "logic.branch",
-      "title": "logic.branch",
-      "category": "Custom",
+      "type": "if_else",
+      "title": "Se/Senão",
+      "category": "Flow",
       "position": [
         200.0,
         120.0
@@ -97,13 +101,15 @@
         "width": 210.0,
         "height": 0.0
       },
-      "properties": {}
+      "properties": {
+        "condition": false
+      }
     },
     {
       "id": "set_can_interact_false",
-      "type": "variable.set",
-      "title": "variable.set",
-      "category": "Custom",
+      "type": "set_variable",
+      "title": "Definir Variável",
+      "category": "Variables",
       "position": [
         350.0,
         120.0
@@ -113,13 +119,15 @@
         "width": 210.0,
         "height": 0.0
       },
-      "properties": {}
+      "properties": {
+        "value": ""
+      }
     },
     {
       "id": "e_key_down",
-      "type": "input.keyboard_key_down",
-      "title": "input.keyboard_key_down",
-      "category": "Custom",
+      "type": "key_pressed",
+      "title": "Key Pressed Now?",
+      "category": "Condition",
       "position": [
         50.0,
         200.0
@@ -129,13 +137,15 @@
         "width": 210.0,
         "height": 0.0
       },
-      "properties": {}
+      "properties": {
+        "key": "SPACE"
+      }
     },
     {
       "id": "check_can_interact",
-      "type": "variable.get",
-      "title": "variable.get",
-      "category": "Custom",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
         200.0,
         200.0
@@ -149,9 +159,9 @@
     },
     {
       "id": "if_can_interact",
-      "type": "logic.branch",
-      "title": "logic.branch",
-      "category": "Custom",
+      "type": "if_else",
+      "title": "Se/Senão",
+      "category": "Flow",
       "position": [
         350.0,
         200.0
@@ -161,7 +171,9 @@
         "width": 210.0,
         "height": 0.0
       },
-      "properties": {}
+      "properties": {
+        "condition": false
+      }
     },
     {
       "id": "start_dialogue",

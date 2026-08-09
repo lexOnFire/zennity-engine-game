@@ -1,0 +1,10 @@
+{
+  "guid": "607f6a17-73a1-4c61-95a0-2bd993c6bb27",
+  "uuid": "607f6a17-73a1-4c61-95a0-2bd993c6bb27",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Logic/PlayerMovementLogic.zlogic",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "523e02d8235db34d05c2a051bfd6cb12daf6ce553eb6939c981121a6043647b1"
+}

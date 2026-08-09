@@ -1,49 +1,74 @@
 {
-  "format_version": 2,
-  "graph_name": "EnemyHealth",
-  "author": "CanonicalGameplayTest",
-  "description": "Minimal health state graph - proves visual state management (no Python scripts)",
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": false,
+  "name": "NewLogic",
+  "target": {
+    "type": "name",
+    "value": "Player"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {
+    "health": {
+      "type": "number",
+      "scope": "object",
+      "default": 100.0
+    },
+    "max_health": {
+      "type": "number",
+      "scope": "object",
+      "default": 100.0
+    }
+  },
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
   "nodes": [
     {
       "id": "health_state",
       "type": "variable",
-      "label": "Health State",
+      "title": "variable",
+      "category": "Custom",
+      "position": [
+        0.0,
+        0.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
       "properties": {
         "name": "health",
         "value_type": "int",
         "default_value": 100
-      },
-      "position": [0, 0]
+      }
     },
     {
       "id": "max_health_state",
       "type": "variable",
-      "label": "Max Health State",
+      "title": "variable",
+      "category": "Custom",
+      "position": [
+        200.0,
+        0.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
       "properties": {
         "name": "max_health",
         "value_type": "int",
         "default_value": 100
-      },
-      "position": [200, 0]
+      }
     }
   ],
-  "edges": [],
-  "variables": {
-    "health": {
-      "type": "int",
-      "default": 100,
-      "description": "Current health points"
-    },
-    "max_health": {
-      "type": "int",
-      "default": 100,
-      "description": "Maximum health points"
-    }
-  },
-  "metadata": {
-    "created": "2026-08-08",
-    "phase": "8B",
-    "checkpoint": "E",
-    "approach": "100% Visual - No Python scripts, state via Logic Graph variables only"
-  }
+  "edges": []
 }

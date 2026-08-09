@@ -1,0 +1,10 @@
+{
+  "guid": "2cb0f5e6-799f-4c4c-8457-05cf407bf0ee",
+  "uuid": "2cb0f5e6-799f-4c4c-8457-05cf407bf0ee",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Animations/Clips/EnemyAttack.zanim",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "726ea32cf2ad95b566713bfc653fdbb4f27a824fab7e6e502ee9125e6fbd6e5d"
+}

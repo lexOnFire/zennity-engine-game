@@ -1,0 +1,10 @@
+{
+  "guid": "a19ab32b-d389-4684-b761-1315c5c19161",
+  "uuid": "a19ab32b-d389-4684-b761-1315c5c19161",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Animations/Clips/EnemyIdle.zanim",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "0fc1ad8ca1cbaba990efb2e1ba2cbaf991d0f3e21ea9e30f9f0588a6ee2cc22f"
+}

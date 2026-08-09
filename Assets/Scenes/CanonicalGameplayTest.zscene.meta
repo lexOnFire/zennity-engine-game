@@ -1,0 +1,10 @@
+{
+  "guid": "9c75ef72-3ba9-43a3-afc0-31867469ef4d",
+  "uuid": "9c75ef72-3ba9-43a3-afc0-31867469ef4d",
+  "type": "scene",
+  "importer": "generic_importer",
+  "source_path": "Assets/Scenes/CanonicalGameplayTest.zscene",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "f1f6a2a0619edd2eb24e5e68a4f92400a45ccb087d34b290e0167b8273c968c7"
+}

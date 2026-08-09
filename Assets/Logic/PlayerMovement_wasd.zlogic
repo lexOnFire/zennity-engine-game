@@ -30,8 +30,8 @@
       "title": "On Update",
       "category": "Events",
       "position": [
-        120.0,
-        100.0
+        -552.33,
+        238.45
       ],
       "editor": {
         "collapsed": false,
@@ -46,8 +46,8 @@
       "title": "Read Input Axis",
       "category": "Movement",
       "position": [
-        440.0,
-        100.0
+        81.77,
+        54.31
       ],
       "editor": {
         "collapsed": false,
@@ -66,8 +66,8 @@
       "title": "If / Else",
       "category": "Logic",
       "position": [
-        760.0,
-        100.0
+        444.9,
+        -6.54
       ],
       "editor": {
         "collapsed": false,
@@ -84,8 +84,8 @@
       "title": "Move",
       "category": "Movement",
       "position": [
-        1080.0,
-        100.0
+        809.99,
+        19.85
       ],
       "editor": {
         "collapsed": false,
@@ -104,8 +104,8 @@
       "title": "Key Pressed Now?",
       "category": "Condition",
       "position": [
-        440.0,
-        300.0
+        85.12,
+        282.67
       ],
       "editor": {
         "collapsed": false,
@@ -122,8 +122,8 @@
       "title": "Create Object",
       "category": "Objects",
       "position": [
-        760.0,
-        300.0
+        522.88,
+        338.6
       ],
       "editor": {
         "collapsed": true,
@@ -156,11 +156,11 @@
       "title": "Read Input Axis",
       "category": "Movement",
       "position": [
-        440.0,
-        500.0
+        118.32,
+        568.84
       ],
       "editor": {
-        "collapsed": true,
+        "collapsed": false,
         "width": 220.0,
         "height": 156.0
       },
@@ -176,11 +176,11 @@
       "title": "If / Else",
       "category": "Logic",
       "position": [
-        760.0,
-        500.0
+        472.26,
+        595.63
       ],
       "editor": {
-        "collapsed": true,
+        "collapsed": false,
         "width": 220.0,
         "height": 156.0
       },
@@ -194,13 +194,13 @@
       "title": "Move By",
       "category": "Position",
       "position": [
-        1400.0,
-        500.0
+        1252.5,
+        499.48
       ],
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 212.0
+        "height": 268.0
       },
       "properties": {
         "delta_x": 0.0,
@@ -215,11 +215,11 @@
       "title": "Compare Number",
       "category": "Condition",
       "position": [
-        1080.0,
-        500.0
+        855.51,
+        519.9
       ],
       "editor": {
-        "collapsed": true,
+        "collapsed": false,
         "width": 220.0,
         "height": 184.0
       },
@@ -234,11 +234,11 @@
       "title": "Compare Number",
       "category": "Condition",
       "position": [
-        1080.0,
-        700.0
+        844.63,
+        761.41
       ],
       "editor": {
-        "collapsed": true,
+        "collapsed": false,
         "width": 220.0,
         "height": 184.0
       },
@@ -253,13 +253,13 @@
       "title": "Move By",
       "category": "Position",
       "position": [
-        1400.0,
-        700.0
+        1252.47,
+        792.97
       ],
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 212.0
+        "height": 268.0
       },
       "properties": {
         "delta_x": 0.0,
@@ -274,8 +274,8 @@
       "title": "Start Continuous Motion",
       "category": "Position",
       "position": [
-        1400.0,
-        300.0
+        1149.1,
+        319.3
       ],
       "editor": {
         "collapsed": true,
@@ -299,7 +299,7 @@
       "title": "Girar",
       "category": "Movement",
       "position": [
-        1080.0,
+        801.53,
         300.0
       ],
       "editor": {
@@ -313,31 +313,13 @@
       }
     },
     {
-      "id": "541a38b8fd554b4a9a6b27989e1d90c4",
-      "type": "play_animation_asset",
-      "title": "Tocar Animação",
-      "category": "Action",
-      "position": [
-        1400.0,
-        100.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {
-        "path": "Assets/Animations/nave_Idle.zanim"
-      }
-    },
-    {
       "id": "b704cc00376149c9989f7fbac10a528e",
       "type": "play_animation_asset",
       "title": "Tocar Animação",
       "category": "Action",
       "position": [
-        1720.0,
-        100.0
+        1647.24,
+        498.14
       ],
       "editor": {
         "collapsed": false,
@@ -354,8 +336,8 @@
       "title": "Tocar Animação",
       "category": "Action",
       "position": [
-        1720.0,
-        300.0
+        1641.18,
+        722.39
       ],
       "editor": {
         "collapsed": false,
@@ -466,33 +448,6 @@
       "to_port": "in",
       "kind": "flow",
       "order": 12
-    },
-    {
-      "id": "d077bbcf4fac47979178e6f733c15a4e",
-      "from_node": "move",
-      "from_port": "next",
-      "to_node": "541a38b8fd554b4a9a6b27989e1d90c4",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 13
-    },
-    {
-      "id": "e96c3abb1e6b44a4991b0e99d95ac0fc",
-      "from_node": "09cc189c00fb4f2088fdd99bcf0d0c36",
-      "from_port": "next",
-      "to_node": "b704cc00376149c9989f7fbac10a528e",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 14
-    },
-    {
-      "id": "1f49419ec75e417aa9042aabdaf89a83",
-      "from_node": "ee7b7d296f0e4258af8d5aabe598f96d",
-      "from_port": "next",
-      "to_node": "5936f0f2c9c34f73b5f2cc79ac0edd3a",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 15
     },
     {
       "id": "97fd35f29b4945b69bed09e257b63688",

@@ -1,0 +1,10 @@
+{
+  "guid": "54e1970e-c2f4-42af-abb4-ab71908ae845",
+  "uuid": "54e1970e-c2f4-42af-abb4-ab71908ae845",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Logic/GuardInteractionLogic.zlogic",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "2aff68093fa9251ad2ac2242344f9e85e8e801c57ef401d00110ad9dd8dd385a"
+}

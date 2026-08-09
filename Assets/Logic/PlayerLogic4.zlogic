@@ -1,0 +1,57 @@
+{
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "PlayerLogic4",
+  "target": {
+    "type": "name",
+    "value": "Player"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
+  "nodes": [
+    {
+      "id": "eafc32af325a47a39821ab1969e8da35",
+      "type": "event_update",
+      "title": "On Update",
+      "category": "Events",
+      "position": [
+        -541.99,
+        -114.31
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "b07fb1747a92444dbceb8298edbb1f81",
+      "type": "is_key_pressed",
+      "title": "Tecla Pressionada?",
+      "category": "Input",
+      "position": [
+        7.23,
+        65.86
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "key": "space"
+      }
+    }
+  ],
+  "edges": []
+}

@@ -1,0 +1,10 @@
+{
+  "guid": "e87dbe51-8ae5-48c8-a037-8e0eb7f562b4",
+  "uuid": "e87dbe51-8ae5-48c8-a037-8e0eb7f562b4",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Logic/BossHealthLogic.zlogic",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "d06d6421e905d3511b07bfc36fe965f14390a36f8a2292d42346bab5e78edb42"
+}
