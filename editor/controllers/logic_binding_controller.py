@@ -32,7 +32,17 @@ class LogicBindingController:
         graph["enabled"] = True
         graph["target"] = {"type": "name", "value": object_name}
         self.save_binding(path, graph)
+        self._update_object_logic_assets(object_name, path)
         return graph
+
+    def _update_object_logic_assets(self, object_name: str, path: Path) -> None:
+        obj = getattr(self.host, "_objects_by_name", {}).get(object_name)
+        if isinstance(obj, dict):
+            try:
+                rel = path.relative_to(self.project_root.resolve()).as_posix()
+            except ValueError:
+                rel = str(path).replace("\\", "/")
+            obj["logic_assets"] = [rel]
 
     def create_for_object(self, object_name: str) -> Path:
         return self._create_for_object(object_name, with_start_event=True)
@@ -58,12 +68,22 @@ class LogicBindingController:
             if with_start_event else []
         )
         self.save_binding(path, graph)
+        self._update_object_logic_assets(object_name, path)
         return path
 
     def detach(self, path: Path) -> None:
         graph = deepcopy(load_logic_graph(path))
         graph["enabled"] = False
         self.save_binding(path, graph)
+        target_name = graph.get("target", {}).get("value")
+        if target_name and target_name in getattr(self.host, "_objects_by_name", {}):
+            obj = self.host._objects_by_name[target_name]
+            if isinstance(obj, dict) and "logic_assets" in obj:
+                try:
+                    rel = path.relative_to(self.project_root.resolve()).as_posix()
+                except ValueError:
+                    rel = str(path).replace("\\", "/")
+                obj["logic_assets"] = [p for p in obj["logic_assets"] if p != rel]
 
     def detach_all_for_object(self, object_name: str) -> int:
         bindings = self.graphs_for_object(object_name)
@@ -71,6 +91,9 @@ class LogicBindingController:
             graph = deepcopy(source)
             graph["enabled"] = False
             self.host._logic_assets_repository.save(path, graph)
+        obj = getattr(self.host, "_objects_by_name", {}).get(object_name)
+        if isinstance(obj, dict):
+            obj["logic_assets"] = []
         self._refresh_surfaces()
         return len(bindings)
 

@@ -245,6 +245,16 @@ class LogicWorkspaceController:
     def update_summary(self) -> None:
         h = self.host
         path = self.selected_path()
+        selected = self._selected_scene_name()
+        if selected and path and path.is_file():
+            obj = getattr(h, "_objects_by_name", {}).get(selected)
+            if isinstance(obj, dict):
+                try:
+                    rel = path.relative_to(self.project_root.resolve()).as_posix()
+                except ValueError:
+                    rel = str(path).replace("\\", "/")
+                obj["logic_assets"] = [rel]
+
         if path is None or not path.is_file():
             h.logic_summary_label.setText("Nenhum Logic Graph selecionado.")
             h.logic_open_button.setEnabled(False)
