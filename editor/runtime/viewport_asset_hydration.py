@@ -221,6 +221,8 @@ def hydrate_logic_graphs(
             wanted = str(target.get("value", "Player")).casefold()
             matched = []
             for name, obj in objects.items():
+                if bool(obj.get("logic_graphs")):
+                    continue
                 candidate = name if target_type == "name" else str(obj.get("tag", ""))
                 if candidate.casefold() == wanted:
                     obj.setdefault("logic_graphs", []).append({"path": path.relative_to(project_root).as_posix(), "graph": graph})
