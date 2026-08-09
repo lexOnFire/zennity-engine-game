@@ -163,6 +163,21 @@ class EditorScenePersistence:
             components.pop("items", None)
         if isinstance(snapshot.get("logic_assets"), list):
             source["logic_assets"] = deepcopy(snapshot["logic_assets"])
+            if isinstance(source.get("editor_data"), dict):
+                source["editor_data"]["logic_graphs"] = [
+                    {"path": p, "name": Path(p).stem} for p in snapshot["logic_assets"]
+                ]
+            else:
+                source["editor_data"] = {
+                    "logic_graphs": [{"path": p, "name": Path(p).stem} for p in snapshot["logic_assets"]]
+                }
+            lg_items = [
+                {"type": "LogicGraph", "enabled": True, "graph_path": p, "properties": {"graph_path": p}}
+                for p in snapshot["logic_assets"]
+            ]
+            comp_items = source.setdefault("components", {}).setdefault("items", [])
+            non_logic_items = [i for i in comp_items if isinstance(i, dict) and i.get("type") != "LogicGraph"]
+            source["components"]["items"] = non_logic_items + lg_items
 
         known = {
             "id", "name", "x", "y", "w", "h", "rotation", "color", "mesh_type",
@@ -175,9 +190,12 @@ class EditorScenePersistence:
             if key not in known and not str(key).startswith("_")
         }
         if editor_data:
-            source["editor_data"] = editor_data
-        else:
-            source.pop("editor_data", None)
+            existing_editor_data = source.get("editor_data", {})
+            if isinstance(existing_editor_data, dict):
+                existing_editor_data.update(editor_data)
+                source["editor_data"] = existing_editor_data
+            else:
+                source["editor_data"] = editor_data
         return source
 
     @staticmethod
@@ -211,8 +229,20 @@ class EditorScenePersistence:
         if isinstance(item.get("editor_data"), dict):
             snapshot["editor_data"] = deepcopy(item["editor_data"])
             snapshot.update(deepcopy(item["editor_data"]))
-        if isinstance(item.get("logic_assets"), list):
-            snapshot["logic_assets"] = deepcopy(item["logic_assets"])
+
+        logic_assets = list(item.get("logic_assets", [])) if isinstance(item.get("logic_assets"), list) else []
+        if isinstance(item.get("editor_data"), dict) and isinstance(item["editor_data"].get("logic_graphs"), list):
+            for g in item["editor_data"]["logic_graphs"]:
+                if isinstance(g, dict) and g.get("path") and g["path"] not in logic_assets:
+                    logic_assets.append(g["path"])
+        if isinstance(components, dict) and isinstance(components.get("items"), list):
+            for c in components["items"]:
+                if isinstance(c, dict) and c.get("type") == "LogicGraph":
+                    gp = c.get("graph_path") or c.get("properties", {}).get("graph_path")
+                    if gp and gp not in logic_assets:
+                        logic_assets.append(gp)
+        if logic_assets or "logic_assets" in item:
+            snapshot["logic_assets"] = logic_assets
         if isinstance(components, dict) and components:
             snapshot["components"] = deepcopy(components)
 
