@@ -23,134 +23,121 @@
       "type": "event_update",
       "title": "On Update",
       "category": "Events",
-      "position": [
-        -33.0,
-        0.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
-      },
+      "position": [-200.0, 50.0],
+      "editor": {"collapsed": false, "width": 220.0, "height": 150.0},
       "properties": {}
     },
     {
-      "id": "input_horizontal",
+      "id": "input_h",
       "type": "input_axis",
       "title": "Input Horizontal",
       "category": "Input",
-      "position": [
-        301.24,
-        -111.12
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {
-        "axis": "horizontal",
-        "axis_name": "Horizontal"
-      }
+      "position": [100.0, -150.0],
+      "editor": {"collapsed": false, "width": 220.0, "height": 156.0},
+      "properties": {"axis_name": "Horizontal"}
     },
     {
-      "id": "input_vertical",
+      "id": "input_v",
       "type": "input_axis",
       "title": "Input Vertical",
       "category": "Input",
-      "position": [
-        296.03,
-        53.56
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {
-        "axis": "horizontal",
-        "axis_name": "Vertical"
-      }
+      "position": [100.0, 50.0],
+      "editor": {"collapsed": false, "width": 220.0, "height": 156.0},
+      "properties": {"axis_name": "Vertical"}
     },
     {
-      "id": "speed_value",
+      "id": "speed",
       "type": "number_value",
       "title": "Speed 5.0",
       "category": "Values",
-      "position": [
-        297.77,
-        225.19
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
-      },
-      "properties": {
-        "value": 5.0
-      }
+      "position": [100.0, 250.0],
+      "editor": {"collapsed": false, "width": 220.0, "height": 150.0},
+      "properties": {"value": 5.0}
     },
     {
-      "id": "move_node",
-      "type": "move",
-      "title": "Move (WASD)",
+      "id": "mult_x",
+      "type": "multiply_number",
+      "title": "Multiply X",
+      "category": "Math",
+      "position": [400.0, -150.0],
+      "editor": {"collapsed": false, "width": 220.0, "height": 150.0},
+      "properties": {"a": 0.0, "b": 5.0}
+    },
+    {
+      "id": "mult_y",
+      "type": "multiply_number",
+      "title": "Multiply Y",
+      "category": "Math",
+      "position": [400.0, 50.0],
+      "editor": {"collapsed": false, "width": 220.0, "height": 150.0},
+      "properties": {"a": 0.0, "b": 5.0}
+    },
+    {
+      "id": "move_by",
+      "type": "move_by",
+      "title": "Move By (WASD)",
       "category": "Movement",
-      "position": [
-        700.0,
-        0.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {
-        "direction_x": 0.0,
-        "direction_y": 0.0,
-        "speed": 5.0
-      }
+      "position": [700.0, 50.0],
+      "editor": {"collapsed": false, "width": 220.0, "height": 200.0},
+      "properties": {}
     }
   ],
   "edges": [
     {
-      "id": "conn_1",
+      "id": "e1",
       "from_node": "event_update",
       "from_port": "next",
-      "to_node": "input_horizontal",
-      "to_port": "exec",
+      "to_node": "move_by",
+      "to_port": "in",
       "kind": "flow"
     },
     {
-      "id": "conn_2",
-      "from_node": "event_update",
-      "from_port": "next",
-      "to_node": "input_vertical",
-      "to_port": "exec",
-      "kind": "flow"
-    },
-    {
-      "id": "conn_3",
-      "from_node": "input_horizontal",
+      "id": "e2",
+      "from_node": "input_h",
       "from_port": "value",
-      "to_node": "move_node",
-      "to_port": "direction_x",
+      "to_node": "mult_x",
+      "to_port": "a",
       "kind": "data"
     },
     {
-      "id": "conn_4",
-      "from_node": "input_vertical",
+      "id": "e3",
+      "from_node": "speed",
       "from_port": "value",
-      "to_node": "move_node",
-      "to_port": "direction_y",
+      "to_node": "mult_x",
+      "to_port": "b",
       "kind": "data"
     },
     {
-      "id": "conn_5",
-      "from_node": "event_update",
-      "from_port": "next",
-      "to_node": "move_node",
-      "to_port": "exec",
-      "kind": "flow"
+      "id": "e4",
+      "from_node": "input_v",
+      "from_port": "value",
+      "to_node": "mult_y",
+      "to_port": "a",
+      "kind": "data"
+    },
+    {
+      "id": "e5",
+      "from_node": "speed",
+      "from_port": "value",
+      "to_node": "mult_y",
+      "to_port": "b",
+      "kind": "data"
+    },
+    {
+      "id": "e6",
+      "from_node": "mult_x",
+      "from_port": "value",
+      "to_node": "move_by",
+      "to_port": "delta_x",
+      "kind": "data"
+    },
+    {
+      "id": "e7",
+      "from_node": "mult_y",
+      "from_port": "value",
+      "to_node": "move_by",
+      "to_port": "delta_y",
+      "kind": "data"
     }
   ]
 }
