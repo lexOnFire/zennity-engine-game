@@ -59,15 +59,20 @@ class LogicAssetRepository:
 
         # Explicit paths from object definition
         explicit_paths = set()
+        explicit_names = set()
         has_explicit_declaration = "logic_assets" in object_data
         if isinstance(object_data.get("logic_assets"), list):
             for item in object_data["logic_assets"]:
-                explicit_paths.add(str(item).replace("\\", "/").casefold())
+                s = str(item).replace("\\", "/").casefold()
+                explicit_paths.add(s)
+                explicit_names.add(Path(s).name.casefold())
         if isinstance(object_data.get("editor_data"), dict) and isinstance(object_data["editor_data"].get("logic_graphs"), list):
             has_explicit_declaration = True
             for item in object_data["editor_data"]["logic_graphs"]:
                 if isinstance(item, dict) and item.get("path"):
-                    explicit_paths.add(str(item["path"]).replace("\\", "/").casefold())
+                    s = str(item["path"]).replace("\\", "/").casefold()
+                    explicit_paths.add(s)
+                    explicit_names.add(Path(s).name.casefold())
         if isinstance(object_data.get("components"), dict):
             items = object_data["components"].get("items", []) if isinstance(object_data["components"], dict) else []
             for comp in items:
@@ -75,24 +80,34 @@ class LogicAssetRepository:
                     has_explicit_declaration = True
                     g_path = comp.get("graph_path") or comp.get("properties", {}).get("graph_path", "")
                     if g_path:
-                        explicit_paths.add(str(g_path).replace("\\", "/").casefold())
+                        s = str(g_path).replace("\\", "/").casefold()
+                        explicit_paths.add(s)
+                        explicit_names.add(Path(s).name.casefold())
 
         for path, graph in self.assets():
-            if not bool(graph.get("enabled", True)):
-                continue
             try:
                 rel_path = str(path.relative_to(self.project_root.resolve()).as_posix()).casefold()
             except ValueError:
                 rel_path = str(path).replace("\\", "/").casefold()
 
+            is_explicitly_matched = (
+                rel_path in explicit_paths
+                or path.name.casefold() in explicit_names
+                or str(path).replace("\\", "/").casefold() in explicit_paths
+            )
+
+            if has_explicit_declaration:
+                if is_explicitly_matched:
+                    result.append((path, graph))
+                continue
+
+            if not bool(graph.get("enabled", True)):
+                continue
+
             target = graph.get("target", {})
             target_type = str(target.get("type", "name"))
             wanted = str(target.get("value", "")).casefold()
 
-            if has_explicit_declaration:
-                if rel_path in explicit_paths:
-                    result.append((path, graph))
-                continue
             if (target_type == "name" and wanted == object_name.casefold()) or (target_type == "tag" and wanted == tag):
                 result.append((path, graph))
         return result
