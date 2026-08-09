@@ -203,6 +203,20 @@ class ViewportSessionOrchestrator:
                         w_override["visible"] = visible_bool
             elif command == "restart_scene":
                 restart = True
+            elif command in {"load_scene", "open_scene"}:
+                scene_path_val = ""
+                if isinstance(value, dict):
+                    scene_path_val = str(value.get("path") or value.get("scene_path") or value.get("scene", "")).strip()
+                elif isinstance(value, str):
+                    scene_path_val = value.strip()
+
+                if scene_path_val:
+                    self.emit({
+                        "type": "load_scene",
+                        "scene_path": scene_path_val,
+                        "path": scene_path_val,
+                    })
+                    restart = True
             elif command:
                 # UI buttons and other runtime producers use their command name
                 # as a first-class custom event for Visual Logic graphs.

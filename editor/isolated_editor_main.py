@@ -451,6 +451,15 @@ class IsolatedEditorWindow(InspectorComponentDelegatesMixin, AnimationWorkspaceO
     def _handle_runtime_metrics_event(self, message: dict) -> None:
         self._viewport_event_controller.runtime_metrics(message)
 
+    def _handle_load_scene_event(self, message: dict) -> None:
+        raw_path = message.get("scene_path") or message.get("path")
+        if raw_path:
+            p = Path(str(raw_path))
+            project_root = (getattr(self, "_project_root", None) or Path.cwd()).resolve()
+            p = p if p.is_absolute() else (project_root / p)
+            if p.exists():
+                self._load_scene_snapshot(scene_path=p)
+
     def _read_viewport_events(self) -> None:
         self._viewport_event_controller.poll()
 

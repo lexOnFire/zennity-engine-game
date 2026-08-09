@@ -150,6 +150,8 @@ class EditorBootstrapController:
         optional = {
             "delete_selected_requested": "_handle_delete_selected_requested",
             "runtime_metrics": "_handle_runtime_metrics_event",
+            "load_scene": "_handle_load_scene_event",
+            "open_scene": "_handle_load_scene_event",
         }
         for event, attribute in optional.items():
             handler = getattr(h, attribute, None)

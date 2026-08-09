@@ -125,6 +125,32 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin):
             register_animation_event_handler(self._dispatch_animation_event)
             self._registered_animation_handler = True
 
+        # CRITICAL: Subscribe to global UI event dispatcher for Play Mode
+        try:
+            from engine.runtime.ui_event_dispatcher import get_ui_event_dispatcher
+            dispatcher = get_ui_event_dispatcher()
+            dispatcher.subscribe("ui.button_clicked", lambda payload: self._handle_global_ui_button_clicked(payload))
+        except (ImportError, Exception):
+            pass  # Dispatcher may not be available in all contexts
+
+    def _handle_global_ui_button_clicked(self, payload: dict[str, Any]) -> None:
+        """Handle global UI button click event from dispatcher (Play Mode)."""
+        # Store payload for ui.button_clicked nodes to access
+        # Find nodes that are waiting for this button click
+        for node in self.nodes.values():
+            if node.get("type") not in {"ui.button_clicked", "button_clicked", "on_ui_click"}:
+                continue
+
+            node_id = str(node["id"])
+            inputs = node.get("inputs", {}) if isinstance(node.get("inputs"), dict) else {}
+            props = node.get("properties", {}) if isinstance(node.get("properties"), dict) else {}
+            expected_widget = str(inputs.get("widget_name", props.get("widget_name", props.get("button", "")))).strip().lower()
+            clicked_widget = str(payload.get("widget_name", payload.get("button", ""))).strip().lower()
+
+            # If this node is waiting for this button, store the payload
+            if not expected_widget or expected_widget == clicked_widget:
+                self.values[(node_id, "payload")] = payload
+
     def stop(self) -> None:
         """Phase 5B.2: Explicit cleanup of physics event handlers.
         Phase 6B.3: Also cleanup animation event handlers."""

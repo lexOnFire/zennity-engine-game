@@ -27,10 +27,12 @@ def execute_scene_load_scene(runtime, node: Mapping[str, Any], game: Any, dt: fl
     inputs = node.get('inputs', {}) if isinstance(node.get('inputs'), Mapping) else {}
     scene_path = str(runtime._read_input(node_id, "scene_path", inputs.get("scene_path", properties.get("scene_path", properties.get("scene", ""))), game, dt, set()))
 
-    if scene_path and hasattr(game, "open_scene"):
-        game.open_scene(scene_path)
-    elif scene_path and hasattr(game, "load_scene"):
+    if scene_path and hasattr(game, "load_scene"):
         game.load_scene(scene_path)
+    elif scene_path and hasattr(game, "open_scene"):
+        game.open_scene(scene_path)
+    elif scene_path and hasattr(game, "send"):
+        game.send("load_scene", {"path": scene_path})
     return ["success", "next"]
 
 

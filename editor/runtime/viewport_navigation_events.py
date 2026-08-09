@@ -82,8 +82,14 @@ class ViewportNavigationEventHandler:
                     "command": event_name,
                     "value": {"widget_name": widget_name, "button": widget_name, "source": owner.get("name"), "type": "ui_button"},
                 })
+            # CRITICAL: For GameObjects (Python objects in Play Mode), store events as attribute
+            elif hasattr(obj, "logic_events"):
+                obj.logic_events.append({
+                    "command": "ui.button_clicked",
+                    "value": {"widget_name": widget_name, "button": widget_name, "source": owner.get("name") if isinstance(owner, dict) else getattr(owner, "name", ""), "type": "ui_button"},
+                })
 
         self.emit({
             "type": "runtime_log", "level": "INFO",
-            "message": f"UI Button: {widget_name} (owner: {owner.get('name')}) → {target_name}.{event_name}",
+            "message": f"UI Button: {widget_name} (owner: {owner.get('name') if isinstance(owner, dict) else getattr(owner, 'name', '')}) → {target_name}.{event_name}",
         })

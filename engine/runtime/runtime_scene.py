@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from typing import Any
+from pathlib import Path
 
 from engine.physics.physics import Physics
 from engine.physics.physics_world import PhysicsWorld
 from engine.runtime.clone import clone_game_object
 from engine.runtime.lifecycle_scheduler import LifecycleEntry, LifecycleScheduler
 from engine.runtime.script_runtime import ScriptRuntime
+from engine.runtime.ui_event_dispatcher import emit_ui_event
 from engine.time import Time
 from engine.ui.ui_renderer import UIRenderer
 
@@ -403,10 +405,33 @@ class RuntimeScene:
 
     def update(self, dt: float) -> None:
         dt = float(dt)
+        # CRITICAL: Process UI events from GameObjects (added by viewport_navigation_events)
+        self._process_ui_events()
         self.update_runtime(dt)
         self.lifecycle.run_fixed_updates(dt, self.physics_world.step)
         self.lifecycle.late_update(dt)
         self.scene.update(dt)
+
+    def _process_ui_events(self) -> None:
+        """Process UI events that were added to GameObjects when buttons were clicked."""
+        objs = getattr(self.scene, "editable_objects", getattr(self.scene, "game_objects", []))
+        for obj in list(objs):
+            # Check if GameObject has logic_events (added by viewport_navigation_events)
+            logic_events = getattr(obj, "logic_events", None)
+            if not isinstance(logic_events, list) or not logic_events:
+                continue
+
+            # Process each pending event
+            for event in list(logic_events):
+                if isinstance(event, dict):
+                    command = event.get("command", "")
+                    value = event.get("value", {})
+                    # Emit event globally for LogicGraphRuntime to receive
+                    if command:
+                        emit_ui_event(command, value)
+
+            # Clear processed events
+            obj.logic_events.clear()
 
     def draw(self, screen: Any) -> None:
         self.draw_background(screen)
