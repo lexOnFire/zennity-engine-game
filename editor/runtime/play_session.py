@@ -29,6 +29,12 @@ class EditorPlaySession:
             self.state = "starting"
         return deepcopy(self._edit_objects or objects)
 
+    def update_scene(self, new_objects: list[dict[str, Any]]) -> None:
+        """Atualiza a cópia da cena de edição quando uma nova cena é carregada (e.g. via load_scene)."""
+        self._edit_objects = deepcopy(new_objects)
+        self._selected_id = None
+        self._selected_name = None
+
     def set_runtime_state(self, state: str) -> None:
         if state not in {"play", "pause"}:
             raise ValueError(f"Estado de runtime inválido: {state}")

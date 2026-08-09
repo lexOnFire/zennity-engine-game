@@ -459,6 +459,8 @@ class IsolatedEditorWindow(InspectorComponentDelegatesMixin, AnimationWorkspaceO
             p = p if p.is_absolute() else (project_root / p)
             if p.exists():
                 self._load_scene_snapshot(scene_path=p)
+                if hasattr(self, "_play_session") and self._play_session:
+                    self._play_session.update_scene(self._scene_snapshot)
                 self._commands.put({
                     "type": "scene_snapshot",
                     "objects": deepcopy(self._scene_snapshot),
