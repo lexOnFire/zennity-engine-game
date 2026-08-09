@@ -173,6 +173,27 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
         "outputs": [('next', 'flow')],
         "properties": {"key": "SPACE"},
     },
+    "ui.button_clicked": {
+        "title": "On UI Button Clicked",
+        "category": "Events",
+        "inputs": [],
+        "outputs": [('next', 'flow'), ('widget', 'text')],
+        "properties": {"widget_name": "NewGameButton"},
+    },
+    "button_clicked": {
+        "title": "On UI Button Clicked",
+        "category": "Events",
+        "inputs": [],
+        "outputs": [('next', 'flow'), ('widget', 'text')],
+        "properties": {"widget_name": "NewGameButton"},
+    },
+    "on_ui_click": {
+        "title": "On UI Button Clicked",
+        "category": "Events",
+        "inputs": [],
+        "outputs": [('next', 'flow'), ('widget', 'text')],
+        "properties": {"widget_name": "NewGameButton"},
+    },
     "event_object_created": {
         "title": "Event Object Created",
         "category": "Events",
