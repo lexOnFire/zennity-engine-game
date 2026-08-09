@@ -25,3 +25,10 @@ def test_isolated_viewport_delegates_sprite_and_physics_work() -> None:
     assert "sprite_renderer.draw(" in source
     assert "physics_stepper.step(" in source
     assert "texture_cache[str(texture_path)]" not in source
+
+
+def test_viewport_sprite_renderer_supports_runtime_flip() -> None:
+    source = Path("editor/runtime/viewport_sprite_renderer.py").read_text(encoding="utf-8")
+
+    assert 'obj.get("flip_x")' in source
+    assert "pygame.transform.flip" in source

@@ -7,7 +7,10 @@ def test_benchmark_coin_collection_updates_score_and_hides_coin() -> None:
     objects = {
         "Player": {"name": "Player", "x": 0.0, "y": 0.0, "w": 40.0, "h": 40.0, "variables": {}},
         "Coin 1": {"name": "Coin 1", "x": 0.0, "y": 0.0, "w": 20.0, "h": 20.0, "active": True},
-        "HUD": {"name": "HUD"},
+        "HUD": {
+            "name": "HUD",
+            "components": {"items": [{"type": "Canvas", "properties": {"layout_path": "Assets/UI/HUD.zui"}}]},
+        },
     }
 
     update_benchmark_gameplay(objects, 1 / 60)
@@ -16,6 +19,8 @@ def test_benchmark_coin_collection_updates_score_and_hides_coin() -> None:
     assert objects["Coin 1"]["destroyed"] is True
     assert objects["Player"]["variables"]["coins"] == 1
     assert objects["Player"]["logic_events"][0]["value"] == {"object": "CoinsLabel", "text": "Coins: 1"}
+    overrides = objects["HUD"]["components"]["items"][0]["properties"]["_widget_overrides"]
+    assert overrides["CoinsLabel"]["text"] == "Coins: 1"
 
 
 def test_benchmark_enemy_moves_towards_player() -> None:
@@ -34,6 +39,20 @@ def test_benchmark_enemy_moves_towards_player() -> None:
     assert objects["Enemy 1"]["_logic_motion_axes"] == {"x", "y"}
 
 
+def test_benchmark_player_faces_horizontal_movement_direction() -> None:
+    objects = {
+        "Player": {
+            "name": "Player", "x": 0.0, "y": 0.0, "w": 40.0, "h": 40.0,
+            "_input": {"left": True, "right": False}, "variables": {},
+        },
+    }
+
+    update_benchmark_gameplay(objects, 1 / 60)
+
+    assert objects["Player"]["flip_x"] is True
+    assert objects["Player"]["variables"]["facing_x"] == -1
+
+
 def test_benchmark_enemy_contact_damages_player_and_updates_health_ui() -> None:
     objects = {
         "Player": {
@@ -41,6 +60,10 @@ def test_benchmark_enemy_contact_damages_player_and_updates_health_ui() -> None:
             "variables": {"health": 100},
         },
         "Enemy 1": {"name": "Enemy 1", "x": 0.0, "y": 0.0, "w": 32.0, "h": 32.0, "active": True},
+        "HUD": {
+            "name": "HUD",
+            "components": {"items": [{"type": "Canvas", "properties": {"layout_path": "Assets/UI/HUD.zui"}}]},
+        },
     }
 
     update_benchmark_gameplay(objects, 1 / 60)
@@ -51,6 +74,9 @@ def test_benchmark_enemy_contact_damages_player_and_updates_health_ui() -> None:
         "command": "set_ui_progress",
         "value": {"object": "HealthBar", "value": 90.0, "max_value": 100.0},
     } in objects["Player"]["logic_events"]
+    overrides = objects["HUD"]["components"]["items"][0]["properties"]["_widget_overrides"]
+    assert overrides["HealthLabel"]["text"] == "Health: 90"
+    assert overrides["HealthBar"] == {"value": 90.0, "max_value": 100.0}
 
 
 def test_benchmark_guard_dialogue_prompt_and_interaction() -> None:

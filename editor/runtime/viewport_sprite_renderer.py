@@ -90,6 +90,8 @@ class ViewportSpriteRenderer:
                     repeat_x=bool(scroll.get("repeat_x", False)), repeat_y=bool(scroll.get("repeat_y", True)),
                 )
             surface = self.prepare_sprite(source, (width, height), color)
+            if obj.get("flip_x") or obj.get("flip_y"):
+                surface = self.pygame.transform.flip(surface, bool(obj.get("flip_x")), bool(obj.get("flip_y")))
             surface.set_alpha(max(0, min(255, int(float(material.get("alpha", 1.0)) * 255))))
             return surface
         surface = self.pygame.Surface((width, height), self.pygame.SRCALPHA)

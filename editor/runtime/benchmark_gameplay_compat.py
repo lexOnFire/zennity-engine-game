@@ -16,6 +16,7 @@ def update_benchmark_gameplay(objects: dict[str, dict[str, Any]], dt: float) -> 
     if not isinstance(player, dict) or not player.get("active", True):
         return
     _collect_coins(objects, player)
+    _face_player_movement(player)
     _move_enemies(objects, player, dt)
     _damage_player_on_enemy_contact(objects, player, dt)
     _update_guard_dialogue(objects, player)
@@ -91,6 +92,7 @@ def _damage_player_on_enemy_contact(
 
 
 def _set_ui_text(objects: dict[str, dict[str, Any]], widget_name: str, text: str) -> None:
+    _apply_widget_override(objects, widget_name, {"text": text})
     for obj in objects.values():
         ui = obj.get("ui")
         if isinstance(ui, dict) and obj.get("name") == widget_name:
@@ -110,6 +112,7 @@ def _set_ui_progress(
     value: float,
     maximum: float,
 ) -> None:
+    _apply_widget_override(objects, widget_name, {"value": float(value), "max_value": float(maximum)})
     carrier = _event_carrier(objects)
     if isinstance(carrier, dict):
         carrier.setdefault("logic_events", []).append({
@@ -166,6 +169,41 @@ def _set_hud(
             "color": (255, 255, 255),
         },
     })
+
+
+def _face_player_movement(player: dict[str, Any]) -> None:
+    input_state = player.get("_input")
+    if not isinstance(input_state, dict):
+        return
+    if input_state.get("left") and not input_state.get("right"):
+        player["flip_x"] = True
+        player["facing_x"] = -1
+        player.setdefault("variables", {})["facing_x"] = -1
+    elif input_state.get("right") and not input_state.get("left"):
+        player["flip_x"] = False
+        player["facing_x"] = 1
+        player.setdefault("variables", {})["facing_x"] = 1
+
+
+def _apply_widget_override(
+    objects: dict[str, dict[str, Any]],
+    widget_name: str,
+    values: dict[str, Any],
+) -> None:
+    for obj in objects.values():
+        ui = obj.get("ui")
+        if isinstance(ui, dict) and ui.get("type") == "canvas":
+            ui.setdefault("_widget_overrides", {}).setdefault(widget_name, {}).update(values)
+        components = obj.get("components")
+        items = components.get("items", []) if isinstance(components, dict) else []
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            if str(item.get("type", "")).lower() not in {"canvas", "uicanvas"}:
+                continue
+            props = item.setdefault("properties", {})
+            if isinstance(props, dict):
+                props.setdefault("_widget_overrides", {}).setdefault(widget_name, {}).update(values)
 
 
 def _event_carrier(objects: dict[str, dict[str, Any]]) -> dict[str, Any] | None:
