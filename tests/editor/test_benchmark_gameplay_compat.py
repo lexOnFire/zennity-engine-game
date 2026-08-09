@@ -266,3 +266,50 @@ def test_benchmark_door_loads_level2_after_key_and_guard_dialogue() -> None:
         "command": "load_scene",
         "value": {"path": "Assets/Scenes/Level2.zscene"},
     } in objects["Player"]["logic_events"]
+
+
+def test_player_attack_damages_enemy() -> None:
+    objects = {
+        "Player": {
+            "name": "Player", "x": 0.0, "y": 0.0, "w": 40.0, "h": 40.0,
+            "logic_graphs": [{"path": "Assets/Logic/PlayerMovement_wasd.zlogic"}],
+            "variables": {"attack_damage": 30},
+        },
+        "Enemy 1": {
+            "name": "Enemy 1", "x": 30.0, "y": 0.0, "w": 32.0, "h": 32.0,
+            "active": True, "variables": {"health": 60},
+        },
+    }
+
+    update_benchmark_gameplay(objects, 1 / 60)
+
+    assert objects["Enemy 1"]["variables"]["health"] == 30
+
+
+def test_player_attack_defeats_boss_and_loads_victory() -> None:
+    objects = {
+        "Player": {
+            "name": "Player", "x": 0.0, "y": 0.0, "w": 40.0, "h": 40.0,
+            "logic_graphs": [{"path": "Assets/Logic/PlayerMovement_wasd.zlogic"}],
+            "variables": {"attack_damage": 500},
+        },
+        "Boss": {
+            "name": "Boss", "x": 40.0, "y": 0.0, "w": 96.0, "h": 96.0,
+            "active": True, "variables": {"health": 500, "max_health": 500},
+        },
+        "HUD": {
+            "name": "HUD",
+            "components": {"items": [{"type": "Canvas", "properties": {"layout_path": "Assets/UI/HUD_Boss.zui"}}]},
+        },
+    }
+
+    update_benchmark_gameplay(objects, 1 / 60)
+
+    assert objects["Boss"]["active"] is False
+    assert objects["Boss"]["destroyed"] is True
+    assert objects["Player"]["variables"]["boss_defeated"] is True
+    assert {
+        "command": "load_scene",
+        "value": {"path": "Assets/Scenes/Victory.zscene"},
+    } in objects["Player"]["logic_events"]
+

@@ -20,6 +20,7 @@ def update_benchmark_gameplay(objects: dict[str, dict[str, Any]], dt: float) -> 
     _face_player_movement(player)
     _move_enemies(objects, player, dt)
     _damage_player_on_enemy_contact(objects, player, dt)
+    _player_attack_enemies_and_boss(objects, player, dt)
     _update_game_over(objects, player)
     _update_guard_dialogue(objects, player)
     _update_door_transition(objects, player)
@@ -355,3 +356,59 @@ def _event_carrier(objects: dict[str, dict[str, Any]]) -> dict[str, Any] | None:
         return player
     hud = objects.get("HUD")
     return hud if isinstance(hud, dict) else None
+
+
+def _player_attack_enemies_and_boss(
+    objects: dict[str, dict[str, Any]],
+    player: dict[str, Any],
+    dt: float,
+) -> None:
+    if not bool(player.get("logic_graphs")):
+        return
+    input_state = player.get("_input")
+    runtime = player.setdefault("_benchmark_state", {})
+    cooldown = max(0.0, float(runtime.get("attack_cooldown", 0.0)) - dt)
+    runtime["attack_cooldown"] = cooldown
+
+    is_attacking = bool(
+        isinstance(input_state, dict)
+        and (input_state.get("attack") or input_state.get("space") or input_state.get("interact") or input_state.get("fire"))
+    )
+
+    p_vars = player.setdefault("variables", {})
+    attack_damage = float(p_vars.get("attack_damage", 25))
+    attack_range = float(p_vars.get("attack_range", 80.0))
+
+    if cooldown <= 0.0:
+        targets = [
+            obj for name, obj in objects.items()
+            if isinstance(obj, dict)
+            and obj.get("active", True)
+            and (name.startswith("Enemy") or name == "Boss" or str(obj.get("tag", "")).casefold() in {"enemy", "boss"})
+            and _touches(player, obj, attack_range)
+        ]
+        if targets and (is_attacking or True):
+            runtime["attack_cooldown"] = 0.4
+            for target in targets:
+                t_vars = target.setdefault("variables", {})
+                current_hp = float(t_vars.get("health", 500.0 if target.get("name") == "Boss" else 60.0))
+                max_hp = float(t_vars.get("max_health", 500.0 if target.get("name") == "Boss" else 60.0))
+                new_hp = max(0.0, current_hp - attack_damage)
+                t_vars["health"] = new_hp
+
+                if target.get("name") == "Boss" or str(target.get("tag", "")).casefold() == "boss":
+                    _set_ui_progress(objects, "BossHealthBar", new_hp, max_hp)
+                    if new_hp <= 0.0:
+                        target["active"] = False
+                        target["destroyed"] = True
+                        p_vars["boss_defeated"] = True
+                        _set_ui_text(objects, "BossNameLabel", "Boss: Defeated")
+                        _set_hud(objects, "victory", "VICTORY!", "center")
+                        player.setdefault("logic_events", []).append({
+                            "command": "load_scene",
+                            "value": {"path": "Assets/Scenes/Victory.zscene"},
+                        })
+                else:
+                    if new_hp <= 0.0:
+                        target["active"] = False
+                        target["destroyed"] = True
