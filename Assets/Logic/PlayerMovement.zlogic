@@ -1,51 +1,67 @@
 {
-  "format_version": 2,
-  "graph_name": "PlayerMovement",
-  "author": "Zennity Engine",
-  "description": "Movimento WASD simples - Input X/Y direto no Move node",
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
+  "name": "PlayerMovement",
+  "target": {
+    "type": "name",
+    "value": "Player"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": []
+  },
   "nodes": [
     {
       "id": "event_update",
       "type": "event_update",
-      "label": "On Update",
-      "properties": {},
-      "position": [0, 0]
+      "title": "On Update",
+      "category": "Events",
+      "position": [0.0, 0.0],
+      "editor": {"collapsed": false, "width": 220.0, "height": 150.0},
+      "properties": {}
     },
     {
       "id": "input_horizontal",
       "type": "input_axis",
-      "label": "Input Horizontal",
-      "properties": {
-        "axis_name": "Horizontal"
-      },
-      "position": [300, -100]
+      "title": "Input Horizontal",
+      "category": "Input",
+      "position": [301.24, -111.12],
+      "editor": {"collapsed": false, "width": 220.0, "height": 156.0},
+      "properties": {"axis_name": "Horizontal"}
     },
     {
       "id": "input_vertical",
       "type": "input_axis",
-      "label": "Input Vertical",
-      "properties": {
-        "axis_name": "Vertical"
-      },
-      "position": [300, 50]
+      "title": "Input Vertical",
+      "category": "Input",
+      "position": [301.24, 44.88],
+      "editor": {"collapsed": false, "width": 220.0, "height": 156.0},
+      "properties": {"axis_name": "Vertical"}
     },
     {
       "id": "speed_value",
       "type": "number_value",
-      "label": "Speed (5.0)",
-      "properties": {
-        "value": 5.0
-      },
-      "position": [300, 200]
+      "title": "Speed 5.0",
+      "category": "Values",
+      "position": [301.24, 200.88],
+      "editor": {"collapsed": false, "width": 220.0, "height": 150.0},
+      "properties": {"value": 5.0}
     },
     {
       "id": "move_node",
       "type": "move",
-      "label": "Move (WASD)",
-      "properties": {
-        "speed": 5.0
-      },
-      "position": [700, 0]
+      "title": "Move (WASD)",
+      "category": "Movement",
+      "position": [700.0, 0.0],
+      "editor": {"collapsed": false, "width": 220.0, "height": 156.0},
+      "properties": {"direction_x": 0.0, "direction_y": 0.0, "speed": 5.0}
     }
   ],
   "edges": [
@@ -54,41 +70,35 @@
       "source": "event_update",
       "source_port": "exec",
       "target": "input_horizontal",
-      "target_port": "exec",
-      "data_type": "flow"
+      "target_port": "exec"
     },
     {
-      "id": "edge_horizontal_to_move_x",
+      "id": "edge_update_to_vertical",
+      "source": "event_update",
+      "source_port": "exec",
+      "target": "input_vertical",
+      "target_port": "exec"
+    },
+    {
+      "id": "edge_horizontal_to_move",
       "source": "input_horizontal",
       "source_port": "value",
       "target": "move_node",
-      "target_port": "direction_x",
-      "data_type": "number"
+      "target_port": "direction_x"
     },
     {
-      "id": "edge_vertical_to_move_y",
+      "id": "edge_vertical_to_move",
       "source": "input_vertical",
       "source_port": "value",
       "target": "move_node",
-      "target_port": "direction_y",
-      "data_type": "number"
+      "target_port": "direction_y"
     },
     {
       "id": "edge_speed_to_move",
       "source": "speed_value",
       "source_port": "value",
       "target": "move_node",
-      "target_port": "speed",
-      "data_type": "number"
+      "target_port": "speed"
     }
-  ],
-  "variables": {},
-  "metadata": {
-    "created": "2026-08-09",
-    "version": "2.0",
-    "phase": "8B",
-    "checkpoint": "B",
-    "nodes_count": 5,
-    "edges_count": 4
-  }
+  ]
 }
