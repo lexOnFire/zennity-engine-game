@@ -162,8 +162,18 @@ def hydrate_logic_graphs(
         obj.pop("logic_graphs", None)
     loaded_paths: set[Path] = set()
     for object_name, obj in objects.items():
-        configured = obj.get("logic_assets", [])
-        if not isinstance(configured, list):
+        configured = []
+        if isinstance(obj.get("logic_assets"), list):
+            configured.extend(obj["logic_assets"])
+        if isinstance(obj.get("editor_data"), dict) and isinstance(obj["editor_data"].get("logic_graphs"), list):
+            for item in obj["editor_data"]["logic_graphs"]:
+                if isinstance(item, dict) and item.get("path"):
+                    configured.append(item["path"])
+        if isinstance(obj.get("components"), dict) and isinstance(obj["components"].get("logic_graphs"), list):
+            for item in obj["components"]["logic_graphs"]:
+                if isinstance(item, dict) and item.get("path"):
+                    configured.append(item["path"])
+        if not configured:
             continue
         for asset_value in configured:
             path = Path(str(asset_value))

@@ -2,6 +2,10 @@
   "format": "zennity.generic_graph",
   "category": "Logic",
   "name": "Main Menu Logic",
+  "target": {
+    "type": "name",
+    "value": "MenuUI"
+  },
   "nodes": [
     {
       "id": "new_game_button_listener",

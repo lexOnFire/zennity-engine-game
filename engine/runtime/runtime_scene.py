@@ -99,17 +99,29 @@ class RuntimeScene:
             for i, w in enumerate(compiled_widgets):
                 logger.info(f"[UI]   [{i}] type={w.get('type')}, name={w.get('widget_name')}")
 
-            # 3. Create UICanvas container GameObject
-            ui_canvas = GameObject("__UICanvas__")
-            logger.info(f"[UI] Created UICanvas")
-            ui_canvas.runtime_hidden = True
-            if hasattr(self.scene, "_add_go"):
-                self.scene._add_go(ui_canvas)
-            else:
-                self.scene.game_objects.append(ui_canvas)
-                ui_canvas.scene = self.scene
-            if hasattr(self.scene, "editable_objects"):
-                self.scene.editable_objects.append(ui_canvas)
+            # 3. Use existing Canvas container or create new one
+            # CRITICAL: If scene already has MenuUI with Canvas, reuse it (preserves editor_data/logic_graphs)
+            ui_canvas = None
+            objs = getattr(self.scene, "editable_objects", getattr(self.scene, "game_objects", []))
+            for obj in list(objs):
+                if hasattr(obj, "name") and obj.name == "MenuUI":
+                    # Found existing MenuUI - use it as UI container
+                    ui_canvas = obj
+                    logger.info(f"[UI] Using existing MenuUI as canvas container")
+                    break
+
+            if ui_canvas is None:
+                # No existing canvas, create new one
+                ui_canvas = GameObject("__UICanvas__")
+                logger.info(f"[UI] Created new UICanvas")
+                ui_canvas.runtime_hidden = True
+                if hasattr(self.scene, "_add_go"):
+                    self.scene._add_go(ui_canvas)
+                else:
+                    self.scene.game_objects.append(ui_canvas)
+                    ui_canvas.scene = self.scene
+                if hasattr(self.scene, "editable_objects"):
+                    self.scene.editable_objects.append(ui_canvas)
 
             # 4. Create runtime components for each compiled widget
             created_count = 0

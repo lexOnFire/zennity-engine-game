@@ -62,3 +62,22 @@ def test_mainmenu_scene_runtime_compiles_ui():
     assert len(widgets) > 0, "NativeUIRenderer failed to extract UI widgets from MainMenu.zscene"
     widget_names = [w[1].get("name") for w in widgets if isinstance(w[1], dict)]
     assert "Title" in widget_names or "NewGameButton" in widget_names or "Background" in widget_names
+
+
+def test_mainmenu_logic_graph_hydration_and_execution():
+    """Verify hydrate_logic_graphs hydrates MainMenuLogic.zlogic for MenuUI."""
+    from editor.runtime.viewport_asset_hydration import hydrate_logic_graphs
+
+    project_root = Path(".").resolve()
+    scene_file = Path("Assets/Scenes/MainMenu.zscene")
+    data = json.loads(scene_file.read_text(encoding="utf-8"))
+    objects_list = data.get("objects", [])
+    objects_dict = {obj["name"]: obj for obj in objects_list if isinstance(obj, dict) and "name" in obj}
+
+    results = hydrate_logic_graphs(objects_dict, project_root)
+    menu_ui_obj = objects_dict.get("MenuUI")
+
+    assert menu_ui_obj is not None
+    assert "logic_graphs" in menu_ui_obj, "hydrate_logic_graphs failed to attach logic_graphs to MenuUI"
+    assert len(menu_ui_obj["logic_graphs"]) > 0
+    assert "MainMenuLogic.zlogic" in menu_ui_obj["logic_graphs"][0]["path"]

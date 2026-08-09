@@ -151,6 +151,17 @@
         "texture": "",
         "layer": "Default",
         "order": 0
+      },
+      "logic_assets": [
+        "Assets/Logic/MainMenuLogic.zlogic"
+      ],
+      "editor_data": {
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/MainMenuLogic.zlogic",
+            "name": "MainMenuLogic"
+          }
+        ]
       }
     }
   ]
