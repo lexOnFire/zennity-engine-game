@@ -164,6 +164,14 @@
         "Assets/Logic/MainMenuLogic.zlogic"
       ],
       "editor_data": {
+        "editor_data": {
+          "logic_graphs": [
+            {
+              "path": "Assets/Logic/MainMenuLogic.zlogic",
+              "name": "MainMenuLogic"
+            }
+          ]
+        },
         "logic_graphs": [
           {
             "path": "Assets/Logic/MainMenuLogic.zlogic",

@@ -50,11 +50,14 @@ def execute_variables_set(runtime, node: Mapping[str, Any], game: Any, dt: float
     inputs = node.get('inputs', {}) if isinstance(node.get('inputs'), Mapping) else {}
     name = str(runtime._read_input(node_id, "name", inputs.get("name", properties.get("name", "")), game, dt, set()))
     val = runtime._read_input(node_id, "value", inputs.get("value", properties.get("value", 0)), game, dt, set())
+    scope = str(properties.get("scope", inputs.get("scope", "object"))).lower()
 
     if name:
-        runtime.variables[name] = val
-        if hasattr(runtime, "blackboard"):
-            runtime.blackboard.set(name, val, runtime.object_key)
+        if hasattr(runtime, "blackboard") and hasattr(runtime.blackboard, "set"):
+            runtime.blackboard.set(scope, name, val, getattr(runtime, "object_key", "default"))
+            runtime.variables = runtime.blackboard.values_for_object(getattr(runtime, "object_key", "default"))
+        else:
+            runtime.variables[name] = val
         if hasattr(game, "set_variable"):
             game.set_variable(name, val)
     return ["done", "next"]
