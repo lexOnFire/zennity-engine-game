@@ -43,6 +43,15 @@
         "order": 0
       },
       "components": {
+        "items": [
+          {
+            "type": "CameraFollow",
+            "smoothing": 5.0,
+            "offset_x": 0.0,
+            "offset_y": 0.0,
+            "target_tag": "Player"
+          }
+        ],
         "camera": {
           "active": true,
           "zoom": 1.0,
@@ -67,7 +76,7 @@
       "active": true,
       "enabled": true,
       "static": false,
-      "tag": "Untagged",
+      "tag": "Player",
       "layer": "Default",
       "id": "player",
       "transform": {
@@ -102,12 +111,17 @@
         "order": 0
       },
       "components": {
+        "items": [
+          {
+            "type": "LogicGraph",
+            "graph_path": "Assets/Logic/PlayerMovement.zlogic"
+          }
+        ],
         "rigidbody": {
-          "enabled": true,
-          "body_type": "dynamic",
-          "gravity_scale": 0.0,
           "mass": 1.0,
-          "fixed_rotation": true
+          "gravity_scale": 1.0,
+          "use_gravity": false,
+          "is_kinematic": false
         },
         "collider": {
           "enabled": true,
@@ -115,16 +129,10 @@
           "width": 48.0,
           "height": 48.0,
           "is_trigger": false
-        },
-        "items": [
-          {
-            "type": "LogicGraph",
-            "graph_path": "Assets/Logic/PlayerMovement.zlogic"
-          }
-        ]
+        }
       },
       "logic_assets": [
-        "Assets/Logic/PlayerMovement.zlogic"
+        "Assets/Logic/ZennityRun/PlayerMovement.zlogic"
       ]
     },
     {
