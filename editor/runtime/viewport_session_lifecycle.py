@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from editor.runtime.benchmark_gameplay_compat import update_benchmark_gameplay
+
 
 def _send(queue: Any, message: dict[str, Any]) -> None:
     queue.put(message)
@@ -85,6 +87,7 @@ class ViewportSessionLifecycleMixin:
                 self.fixed_physics_dt,
             )
             self.contact_processor.process()
+            update_benchmark_gameplay(self.objects, dt)
             
             self.frame_categories["physics"] = (time.perf_counter() - t_physics) * 1000.0
             t_anim = time.perf_counter()

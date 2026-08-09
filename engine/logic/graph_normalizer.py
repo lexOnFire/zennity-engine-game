@@ -185,16 +185,16 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
         for edge_index, raw_edge in enumerate(raw_edges):
             if not isinstance(raw_edge, Mapping):
                 continue
-            source_node = str(raw_edge.get("from_node", ""))
-            target_node = str(raw_edge.get("to_node", ""))
+            source_node = str(raw_edge.get("from_node", raw_edge.get("from", "")))
+            target_node = str(raw_edge.get("to_node", raw_edge.get("to", "")))
             if source_node not in node_ids or target_node not in node_ids or source_node == target_node:
                 continue
             edges.append({
                 "id": str(raw_edge.get("id", "")).strip() or uuid.uuid4().hex,
                 "from_node": source_node,
-                "from_port": str(raw_edge.get("from_port", "next")),
+                "from_port": str(raw_edge.get("from_port", raw_edge.get("from_pin", "next"))),
                 "to_node": target_node,
-                "to_port": str(raw_edge.get("to_port", "in")),
+                "to_port": str(raw_edge.get("to_port", raw_edge.get("to_pin", "in"))),
                 "kind": str(raw_edge.get("kind", "flow")),
                 "order": _safe_int(raw_edge.get("order", edge_index), edge_index),
             })

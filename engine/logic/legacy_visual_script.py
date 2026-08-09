@@ -13,12 +13,41 @@ LEGACY_NODE_TYPES = {
     "vs.if_else": "if_else",
     "vs.set_position": "set_position",
     "vs.log_message": "log_message",
+    "event.every_frame": "event_update",
+    "physics.on_trigger_enter": "event_trigger_enter",
+    "physics.on_trigger_exit": "event_trigger_exit",
+    "physics.on_collision_enter": "event_collision_enter",
+    "physics.on_collision_exit": "event_collision_exit",
+    "logic.branch": "if_else",
+    "logic.noop": "sequence",
+    "variable.get": "get_variable",
+    "variables.get": "get_variable",
+    "variable.set": "set_variable",
+    "variables.set": "set_variable",
+    "math.add": "add_number",
+    "math.subtract": "subtract_number",
+    "math.multiply": "multiply_number",
+    "math.clamp": "clamp_number",
+    "audio.play_sound": "play_sound",
+    "ui.update_label": "set_ui_text",
+    "ui.update_progress": "set_ui_progress_bar",
+    "object.destroy": "destroy_object",
+    "object.get_position": "get_position",
+    "transform.get_position": "get_position",
+    "physics.set_velocity": "move_by",
 }
 
 LEGACY_PORTS = {
     "out": "next",
+    "frame": "next",
+    "done": "next",
+    "played": "next",
+    "success": "next",
+    "execute": "in",
     "true": "true",
     "false": "false",
+    "result": "value",
+    "collider": "other",
     "in": "in",
 }
 
@@ -96,9 +125,18 @@ def migrate_visual_script_graph(data: Mapping[str, Any]) -> dict[str, Any]:
         node["id"] = str(source.get("id") or uuid.uuid4().hex)
         known_ids.add(node["id"])
         properties = deepcopy(source.get("properties", {}))
+        config = source.get("config", {})
+        if isinstance(config, Mapping):
+            properties.update(deepcopy(config))
         inputs = source.get("inputs", {})
         if isinstance(inputs, Mapping):
             properties.update(deepcopy(inputs))
+        if "variable_name" in properties and "name" not in properties:
+            properties["name"] = properties["variable_name"]
+        if "element_name" in properties and "object_name" not in properties:
+            properties["object_name"] = properties["element_name"]
+        if "sound_name" in properties and "path" not in properties:
+            properties["path"] = properties["sound_name"]
         node["properties"].update(properties)
         node["editor"]["legacy_type"] = source_type
         migrated_nodes.append(node)
@@ -109,12 +147,12 @@ def migrate_visual_script_graph(data: Mapping[str, Any]) -> dict[str, Any]:
     for source in raw_edges:
         if not isinstance(source, Mapping):
             continue
-        from_node = str(source.get("from_node", source.get("source_node", "")))
-        to_node = str(source.get("to_node", source.get("target_node", "")))
+        from_node = str(source.get("from_node", source.get("source_node", source.get("from", ""))))
+        to_node = str(source.get("to_node", source.get("target_node", source.get("to", ""))))
         if from_node not in known_ids or to_node not in known_ids:
             continue
-        from_port = str(source.get("from_port", source.get("source_port", "out")))
-        to_port = str(source.get("to_port", source.get("target_port", "in")))
+        from_port = str(source.get("from_port", source.get("source_port", source.get("from_pin", "out"))))
+        to_port = str(source.get("to_port", source.get("target_port", source.get("to_pin", "in"))))
         edges.append({
             "id": str(source.get("id") or uuid.uuid4().hex),
             "from_node": from_node,
