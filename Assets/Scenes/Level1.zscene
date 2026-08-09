@@ -24,10 +24,15 @@
         ],
         "rz": 0.0,
         "scale": [
-          1.0,
-          1.0,
+          48.0,
+          48.0,
           1.0
         ]
+      },
+      "visual": {
+        "enabled": true,
+        "color": [0, 200, 255],
+        "texture": "Assets/Sprites/Player/idle_1.png"
       },
       "enabled": true,
       "prefab": "Assets/Prefabs/Player.zprfb"
@@ -97,10 +102,15 @@
         ],
         "rz": 0.0,
         "scale": [
-          1.0,
-          1.0,
+          48.0,
+          48.0,
           1.0
         ]
+      },
+      "visual": {
+        "enabled": true,
+        "color": [255, 60, 60],
+        "texture": "Assets/Sprites/Enemy/idle_1.png"
       },
       "enabled": true,
       "prefab": "Assets/Prefabs/Enemy.zprfb"
@@ -123,10 +133,15 @@
         ],
         "rz": 0.0,
         "scale": [
-          1.0,
-          1.0,
+          48.0,
+          48.0,
           1.0
         ]
+      },
+      "visual": {
+        "enabled": true,
+        "color": [255, 60, 60],
+        "texture": "Assets/Sprites/Enemy/idle_1.png"
       },
       "enabled": true,
       "prefab": "Assets/Prefabs/Enemy.zprfb"
@@ -149,10 +164,15 @@
         ],
         "rz": 0.0,
         "scale": [
-          1.0,
-          1.0,
+          48.0,
+          48.0,
           1.0
         ]
+      },
+      "visual": {
+        "enabled": true,
+        "color": [255, 60, 60],
+        "texture": "Assets/Sprites/Enemy/idle_1.png"
       },
       "enabled": true,
       "prefab": "Assets/Prefabs/Enemy.zprfb"
