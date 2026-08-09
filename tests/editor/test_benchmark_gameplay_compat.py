@@ -39,9 +39,9 @@ def test_benchmark_key_collection_updates_key_counter_and_hides_key() -> None:
     assert objects["Key"]["destroyed"] is True
     assert objects["Player"]["variables"]["has_key"] is True
     assert objects["Player"]["variables"]["keys"] == 1
-    assert {"command": "set_ui_text", "value": {"object": "KeyLabel", "text": "Key: 1"}} in objects["Player"]["logic_events"]
+    assert {"command": "set_ui_text", "value": {"object": "KeyLabel", "text": "Key: Yes"}} in objects["Player"]["logic_events"]
     overrides = objects["HUD"]["components"]["items"][0]["properties"]["_widget_overrides"]
-    assert overrides["KeyLabel"]["text"] == "Key: 1"
+    assert overrides["KeyLabel"]["text"] == "Key: Yes"
 
 
 def test_benchmark_enemy_moves_towards_player() -> None:

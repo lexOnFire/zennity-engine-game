@@ -57,7 +57,7 @@ def _collect_key(objects: dict[str, dict[str, Any]], player: dict[str, Any]) -> 
     state = player.setdefault("variables", {})
     state["has_key"] = True
     state["keys"] = 1
-    _set_ui_text(objects, "KeyLabel", "Key: 1")
+    _set_ui_text(objects, "KeyLabel", "Key: Yes")
 
 
 def _move_enemies(objects: dict[str, dict[str, Any]], player: dict[str, Any], dt: float) -> None:
