@@ -1,7 +1,8 @@
 {
   "format_version": 2,
-  "scene_name": "Level 2 - Arena Plus",
+  "scene_name": "Level 2 - Boss Arena",
   "engine_version": "0.1.0",
+  "ui": "Assets/UI/HUD_Boss.zui",
   "blackboard": {
     "variables": {}
   },
@@ -10,7 +11,8 @@
       "id": "player",
       "name": "Player",
       "active": true,
-      "tag": "",
+      "enabled": true,
+      "tag": "Player",
       "transform": {
         "position": [
           0.0,
@@ -29,21 +31,17 @@
           1.0
         ]
       },
-      "enabled": true,
-      "prefab": "Assets/Prefabs/Player.zprfb",
-      "static": false,
-      "layer": "Default",
       "visual": {
         "enabled": true,
-        "color": [
-          1,
-          1,
-          1,
-          1
-        ],
-        "texture": "Assets/Sprites/MyPlatformer/player.png",
         "material": "Default_Material",
         "mesh_type": null,
+        "color": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/player.png",
         "layer": "Default",
         "order": 10
       },
@@ -51,27 +49,27 @@
         "items": [
           {
             "type": "BoxCollider2D",
-            "size": [
-              0.8,
-              1.0
-            ],
-            "offset": [
-              0,
-              0
-            ],
-            "is_trigger": false
+            "enabled": true,
+            "properties": {
+              "size": [
+                48.0,
+                48.0
+              ],
+              "is_trigger": false
+            }
           },
           {
             "type": "RigidBody2D",
-            "body_type": "dynamic",
-            "gravity_scale": 0,
-            "mass": 1,
-            "drag": 0,
-            "angular_drag": 0,
-            "constraints": "freeze_rotation_z"
+            "enabled": true,
+            "properties": {
+              "mass": 1.0,
+              "use_gravity": false,
+              "is_kinematic": false
+            }
           },
           {
             "type": "Animator",
+            "enabled": true,
             "controller": "Assets/Animations/PlayerController.zcontroller",
             "speed": 1.0
           },
@@ -109,6 +107,7 @@
       "id": "level2_camera",
       "name": "Camera",
       "active": true,
+      "enabled": true,
       "tag": "",
       "transform": {
         "position": [
@@ -128,9 +127,24 @@
           1.0
         ]
       },
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      },
       "components": {
         "items": [
           {
+            "type": "Camera",
+            "active": true,
             "zoom": 1.0,
             "clear_color": [
               0.05,
@@ -144,9 +158,7 @@
               1.0,
               1.0
             ],
-            "priority": 0,
-            "active": true,
-            "type": "Camera"
+            "priority": 0
           }
         ],
         "camera": {
@@ -154,35 +166,20 @@
           "zoom": 1.0,
           "width": 1280.0,
           "height": 720.0,
+          "follow_target": "Player",
           "background_color": [
             18,
             28,
             24
-          ],
-          "follow_target": "Player"
+          ]
         }
-      },
-      "enabled": true,
-      "static": false,
-      "layer": "Default",
-      "visual": {
-        "enabled": true,
-        "color": [
-          88,
-          117,
-          255
-        ],
-        "texture": "",
-        "material": "Default_Material",
-        "mesh_type": null,
-        "layer": "Default",
-        "order": 0
       }
     },
     {
       "id": "level2_hud",
       "name": "HUD",
       "active": true,
+      "enabled": true,
       "tag": "",
       "transform": {
         "position": [
@@ -202,20 +199,34 @@
           1.0
         ]
       },
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 20
+      },
       "components": {
         "items": [
           {
             "type": "Canvas",
-            "layout_path": "Assets/UI/HUD.zui",
-            "ui_asset": "Assets/UI/HUD.zui",
-            "visible": true,
-            "z_order": 0,
-            "render_mode": "Screen Space",
-            "layer_mask": 4294967295
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "layout_path": "Assets/UI/HUD_Boss.zui",
+              "ui_asset": "Assets/UI/HUD_Boss.zui",
+              "render_mode": "Screen Space",
+              "z_order": 0
+            }
           }
         ]
       },
-      "enabled": true,
       "editor_data": {
         "logic_graphs": [
           {
@@ -223,28 +234,14 @@
             "name": "HUDLogic"
           }
         ]
-      },
-      "static": false,
-      "layer": "UI",
-      "visual": {
-        "enabled": true,
-        "color": [
-          88,
-          117,
-          255
-        ],
-        "texture": "",
-        "material": "Default_Material",
-        "mesh_type": null,
-        "layer": "Default",
-        "order": 20
       }
     },
     {
       "id": "level2_boss",
       "name": "Boss",
       "active": true,
-      "tag": "",
+      "enabled": true,
+      "tag": "Boss",
       "transform": {
         "position": [
           300.0,
@@ -263,21 +260,17 @@
           1.0
         ]
       },
-      "enabled": true,
-      "prefab": "Assets/Prefabs/Boss.zprfb",
-      "static": false,
-      "layer": "Default",
       "visual": {
         "enabled": true,
-        "color": [
-          1,
-          0.3,
-          0.3,
-          1
-        ],
-        "texture": "Assets/Materials/naveBoss.PNG",
         "material": "Default_Material",
         "mesh_type": null,
+        "color": [
+          1.0,
+          0.3,
+          0.3,
+          1.0
+        ],
+        "texture": "Assets/Materials/naveBoss.PNG",
         "layer": "Default",
         "order": 8
       },
@@ -285,28 +278,27 @@
         "items": [
           {
             "type": "BoxCollider2D",
-            "size": [
-              1.5,
-              1.8
-            ],
-            "offset": [
-              0,
-              0
-            ],
-            "is_trigger": false,
-            "layer": "ENEMY"
+            "enabled": true,
+            "properties": {
+              "size": [
+                96.0,
+                96.0
+              ],
+              "is_trigger": false
+            }
           },
           {
             "type": "RigidBody2D",
-            "body_type": "dynamic",
-            "gravity_scale": 0,
-            "mass": 2,
-            "drag": 0,
-            "angular_drag": 0,
-            "constraints": "freeze_rotation_z"
+            "enabled": true,
+            "properties": {
+              "mass": 5.0,
+              "use_gravity": false,
+              "is_kinematic": false
+            }
           },
           {
             "type": "Animator",
+            "enabled": true,
             "controller": "Assets/Animations/BossController.zcontroller",
             "speed": 1.0
           },
@@ -316,22 +308,6 @@
             "graph_path": "Assets/Logic/BossAILogic.zlogic",
             "properties": {
               "graph_path": "Assets/Logic/BossAILogic.zlogic"
-            }
-          },
-          {
-            "type": "LogicGraph",
-            "enabled": true,
-            "graph_path": "Assets/Logic/BossCombatLogic.zlogic",
-            "properties": {
-              "graph_path": "Assets/Logic/BossCombatLogic.zlogic"
-            }
-          },
-          {
-            "type": "LogicGraph",
-            "enabled": true,
-            "graph_path": "Assets/Logic/BossHealthLogic.zlogic",
-            "properties": {
-              "graph_path": "Assets/Logic/BossHealthLogic.zlogic"
             }
           }
         ]
@@ -359,13 +335,335 @@
       }
     },
     {
-      "id": "wall_left",
-      "name": "WallLeft",
+      "id": "enemy_1",
+      "name": "Enemy 1",
       "active": true,
-      "tag": "",
+      "enabled": true,
+      "tag": "Enemy",
       "transform": {
         "position": [
-          -20.0,
+          150.0,
+          100.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          1.0,
+          0.4,
+          0.4,
+          1.0
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/enemy.png",
+        "layer": "Default",
+        "order": 5
+      },
+      "components": {
+        "items": [
+          {
+            "type": "BoxCollider2D",
+            "enabled": true,
+            "properties": {
+              "size": [
+                32.0,
+                32.0
+              ],
+              "is_trigger": false
+            }
+          },
+          {
+            "type": "RigidBody2D",
+            "enabled": true,
+            "properties": {
+              "mass": 1.0,
+              "use_gravity": false,
+              "is_kinematic": false
+            }
+          }
+        ]
+      },
+      "logic_assets": [
+        "Assets/Logic/EnemyAILogic.zlogic",
+        "Assets/Logic/EnemyAttackLogic.zlogic"
+      ],
+      "variables": {
+        "health": 60,
+        "max_health": 60,
+        "move_speed": 70,
+        "attack_damage": 10,
+        "attack_range": 40,
+        "detection_range": 400
+      }
+    },
+    {
+      "id": "enemy_2",
+      "name": "Enemy 2",
+      "active": true,
+      "enabled": true,
+      "tag": "Enemy",
+      "transform": {
+        "position": [
+          150.0,
+          -100.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          1.0,
+          0.4,
+          0.4,
+          1.0
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/enemy.png",
+        "layer": "Default",
+        "order": 5
+      },
+      "components": {
+        "items": [
+          {
+            "type": "BoxCollider2D",
+            "enabled": true,
+            "properties": {
+              "size": [
+                32.0,
+                32.0
+              ],
+              "is_trigger": false
+            }
+          },
+          {
+            "type": "RigidBody2D",
+            "enabled": true,
+            "properties": {
+              "mass": 1.0,
+              "use_gravity": false,
+              "is_kinematic": false
+            }
+          }
+        ]
+      },
+      "logic_assets": [
+        "Assets/Logic/EnemyAILogic.zlogic",
+        "Assets/Logic/EnemyAttackLogic.zlogic"
+      ],
+      "variables": {
+        "health": 60,
+        "max_health": 60,
+        "move_speed": 70,
+        "attack_damage": 10,
+        "attack_range": 40,
+        "detection_range": 400
+      }
+    },
+    {
+      "id": "coin_1",
+      "name": "Coin 1",
+      "active": true,
+      "enabled": true,
+      "tag": "Coin",
+      "transform": {
+        "position": [
+          100.0,
+          -150.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          20.0,
+          20.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          1.0,
+          0.9,
+          0.2,
+          1.0
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/coin.png",
+        "layer": "Default",
+        "order": 3
+      },
+      "components": {
+        "items": [
+          {
+            "type": "BoxCollider2D",
+            "enabled": true,
+            "properties": {
+              "size": [
+                20.0,
+                20.0
+              ],
+              "is_trigger": true
+            }
+          }
+        ]
+      },
+      "logic_assets": [
+        "Assets/Logic/CoinCollectionLogic.zlogic"
+      ]
+    },
+    {
+      "id": "coin_2",
+      "name": "Coin 2",
+      "active": true,
+      "enabled": true,
+      "tag": "Coin",
+      "transform": {
+        "position": [
+          200.0,
+          150.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          20.0,
+          20.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          1.0,
+          0.9,
+          0.2,
+          1.0
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/coin.png",
+        "layer": "Default",
+        "order": 3
+      },
+      "components": {
+        "items": [
+          {
+            "type": "BoxCollider2D",
+            "enabled": true,
+            "properties": {
+              "size": [
+                20.0,
+                20.0
+              ],
+              "is_trigger": true
+            }
+          }
+        ]
+      },
+      "logic_assets": [
+        "Assets/Logic/CoinCollectionLogic.zlogic"
+      ]
+    },
+    {
+      "id": "coin_3",
+      "name": "Coin 3",
+      "active": true,
+      "enabled": true,
+      "tag": "Coin",
+      "transform": {
+        "position": [
+          350.0,
+          -200.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          20.0,
+          20.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          1.0,
+          0.9,
+          0.2,
+          1.0
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/coin.png",
+        "layer": "Default",
+        "order": 3
+      },
+      "components": {
+        "items": [
+          {
+            "type": "BoxCollider2D",
+            "enabled": true,
+            "properties": {
+              "size": [
+                20.0,
+                20.0
+              ],
+              "is_trigger": true
+            }
+          }
+        ]
+      },
+      "logic_assets": [
+        "Assets/Logic/CoinCollectionLogic.zlogic"
+      ]
+    },
+    {
+      "id": "level_exit",
+      "name": "LevelExit",
+      "active": false,
+      "enabled": false,
+      "tag": "LevelExit",
+      "transform": {
+        "position": [
+          450.0,
           0.0,
           0.0
         ],
@@ -376,48 +674,110 @@
         ],
         "rz": 0.0,
         "scale": [
-          1.0,
-          1.0,
+          32.0,
+          48.0,
           1.0
         ]
+      },
+      "visual": {
+        "enabled": false,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          0.2,
+          1.0,
+          0.4,
+          1.0
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/flag.png",
+        "layer": "Default",
+        "order": 6
       },
       "components": {
         "items": [
           {
             "type": "BoxCollider2D",
-            "size": [
-              2,
-              30
-            ],
-            "is_trigger": false
+            "enabled": true,
+            "properties": {
+              "size": [
+                32.0,
+                48.0
+              ],
+              "is_trigger": true
+            }
           }
         ]
       },
+      "logic_assets": [
+        "Assets/Logic/LevelExitLogic.zlogic"
+      ],
+      "variables": {
+        "unlock_condition": "boss_defeated_or_victory"
+      }
+    },
+    {
+      "id": "wall_left",
+      "name": "WallLeft",
+      "active": true,
       "enabled": true,
-      "static": true,
-      "layer": "Collision",
+      "tag": "Wall",
+      "transform": {
+        "position": [
+          -500.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          1000.0,
+          1.0
+        ]
+      },
       "visual": {
         "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
         "color": [
           120,
           120,
-          120
+          120,
+          255
         ],
         "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
-        "material": "Default_Material",
-        "mesh_type": null,
         "layer": "Default",
         "order": 1
+      },
+      "components": {
+        "items": [
+          {
+            "type": "BoxCollider2D",
+            "enabled": true,
+            "properties": {
+              "size": [
+                32.0,
+                1000.0
+              ],
+              "is_trigger": false
+            }
+          }
+        ]
       }
     },
     {
       "id": "wall_right",
       "name": "WallRight",
       "active": true,
-      "tag": "",
+      "enabled": true,
+      "tag": "Wall",
       "transform": {
         "position": [
-          20.0,
+          500.0,
           0.0,
           0.0
         ],
@@ -428,49 +788,51 @@
         ],
         "rz": 0.0,
         "scale": [
-          1.0,
-          1.0,
+          32.0,
+          1000.0,
           1.0
         ]
+      },
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          120,
+          120,
+          120,
+          255
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "layer": "Default",
+        "order": 1
       },
       "components": {
         "items": [
           {
             "type": "BoxCollider2D",
-            "size": [
-              2,
-              30
-            ],
-            "is_trigger": false
+            "enabled": true,
+            "properties": {
+              "size": [
+                32.0,
+                1000.0
+              ],
+              "is_trigger": false
+            }
           }
         ]
-      },
-      "enabled": true,
-      "static": true,
-      "layer": "Collision",
-      "visual": {
-        "enabled": true,
-        "color": [
-          120,
-          120,
-          120
-        ],
-        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
-        "material": "Default_Material",
-        "mesh_type": null,
-        "layer": "Default",
-        "order": 1
       }
     },
     {
       "id": "wall_top",
       "name": "WallTop",
       "active": true,
-      "tag": "",
+      "enabled": true,
+      "tag": "Wall",
       "transform": {
         "position": [
           0.0,
-          -15.0,
+          -500.0,
           0.0
         ],
         "rotation": [
@@ -480,49 +842,51 @@
         ],
         "rz": 0.0,
         "scale": [
-          1.0,
-          1.0,
+          1000.0,
+          32.0,
           1.0
         ]
+      },
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          120,
+          120,
+          120,
+          255
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "layer": "Default",
+        "order": 1
       },
       "components": {
         "items": [
           {
             "type": "BoxCollider2D",
-            "size": [
-              44,
-              2
-            ],
-            "is_trigger": false
+            "enabled": true,
+            "properties": {
+              "size": [
+                1000.0,
+                32.0
+              ],
+              "is_trigger": false
+            }
           }
         ]
-      },
-      "enabled": true,
-      "static": true,
-      "layer": "Collision",
-      "visual": {
-        "enabled": true,
-        "color": [
-          120,
-          120,
-          120
-        ],
-        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
-        "material": "Default_Material",
-        "mesh_type": null,
-        "layer": "Default",
-        "order": 1
       }
     },
     {
       "id": "wall_bottom",
       "name": "WallBottom",
       "active": true,
-      "tag": "",
+      "enabled": true,
+      "tag": "Wall",
       "transform": {
         "position": [
           0.0,
-          15.0,
+          500.0,
           0.0
         ],
         "rotation": [
@@ -532,40 +896,40 @@
         ],
         "rz": 0.0,
         "scale": [
-          1.0,
-          1.0,
+          1000.0,
+          32.0,
           1.0
         ]
+      },
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          120,
+          120,
+          120,
+          255
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+        "layer": "Default",
+        "order": 1
       },
       "components": {
         "items": [
           {
             "type": "BoxCollider2D",
-            "size": [
-              44,
-              2
-            ],
-            "is_trigger": false
+            "enabled": true,
+            "properties": {
+              "size": [
+                1000.0,
+                32.0
+              ],
+              "is_trigger": false
+            }
           }
         ]
-      },
-      "enabled": true,
-      "static": true,
-      "layer": "Collision",
-      "visual": {
-        "enabled": true,
-        "color": [
-          120,
-          120,
-          120
-        ],
-        "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
-        "material": "Default_Material",
-        "mesh_type": null,
-        "layer": "Default",
-        "order": 1
       }
     }
-  ],
-  "ui": "Assets/UI/HUD_Boss.zui"
+  ]
 }

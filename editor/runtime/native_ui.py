@@ -32,7 +32,8 @@ def normalize_ui(data: Any) -> dict[str, Any] | None:
         elif "items" in comps and isinstance(comps["items"], list):
             for item in comps["items"]:
                 if isinstance(item, dict) and str(item.get("type", "")).lower() in {"canvas", "uicanvas"}:
-                    props = dict(item.get("properties") or {})
+                    raw_props = item.get("properties")
+                    props = dict(raw_props) if isinstance(raw_props, dict) else dict(item)
                     props["type"] = "canvas"
                     if "layout_path" not in props:
                         props["layout_path"] = props.get("layout_path", props.get("ui_asset", props.get("asset", "")))

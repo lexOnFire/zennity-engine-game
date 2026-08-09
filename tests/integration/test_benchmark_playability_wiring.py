@@ -95,3 +95,63 @@ def test_game_over_scene_loads_ui_and_buttons_route_to_scenes() -> None:
     assert widgets["RetryButton"]["scene_path"] == "Assets/Scenes/Level1.zscene"
     assert widgets["MainMenuButton"]["event"] == "load_scene"
     assert widgets["MainMenuButton"]["scene_path"] == "Assets/Scenes/MainMenu.zscene"
+
+
+def test_level2_has_complete_runtime_objects() -> None:
+    scene = _scene("Level2")
+    objects = {obj["name"]: obj for obj in scene["objects"]}
+
+    expected_names = {
+        "Player", "Camera", "HUD", "Boss", "Enemy 1", "Enemy 2",
+        "Coin 1", "Coin 2", "Coin 3", "LevelExit",
+        "WallLeft", "WallRight", "WallTop", "WallBottom",
+    }
+    assert expected_names <= set(objects.keys())
+
+
+def test_level2_uses_boss_hud() -> None:
+    scene = _scene("Level2")
+    assert scene["ui"] == "Assets/UI/HUD_Boss.zui"
+
+    hud = next(obj for obj in scene["objects"] if obj["name"] == "HUD")
+    canvas_item = hud["components"]["items"][0]
+    props = canvas_item.get("properties") or canvas_item
+    assert props["layout_path"] == "Assets/UI/HUD_Boss.zui"
+    assert props["ui_asset"] == "Assets/UI/HUD_Boss.zui"
+
+
+def test_level2_objects_are_active_and_visible() -> None:
+    scene = _scene("Level2")
+    objects = {obj["name"]: obj for obj in scene["objects"]}
+
+    for name in ("Player", "Boss", "Enemy 1", "Enemy 2", "Coin 1", "Coin 2", "Coin 3", "HUD", "Camera"):
+        obj = objects[name]
+        assert obj.get("active", True) is True
+        assert obj.get("enabled", True) is True
+        if "visual" in obj and name != "Camera":
+            assert obj["visual"].get("enabled", True) is True
+
+
+def test_level2_camera_follows_player() -> None:
+    scene = _scene("Level2")
+    camera_obj = next(obj for obj in scene["objects"] if obj["name"] == "Camera")
+    cam_comp = camera_obj["components"]["camera"]
+    assert cam_comp["follow_target"] == "Player"
+
+
+def test_level2_hud_boss_widgets_exist() -> None:
+    from editor.runtime.native_ui import NativeUIRenderer
+
+    scene = _scene("Level2")
+    objects = {obj["name"]: obj for obj in scene["objects"]}
+
+    renderer = NativeUIRenderer()
+    ui_components = renderer.components(objects)
+    widget_names = {ui["widget_name"] for _obj, ui in ui_components}
+
+    expected_widgets = {
+        "HealthLabel", "CoinsLabel", "KeyLabel", "HealthBar",
+        "BossNameLabel", "BossHealthBar",
+    }
+    assert expected_widgets <= widget_names
+
