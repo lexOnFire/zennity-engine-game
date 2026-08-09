@@ -370,7 +370,7 @@ def _player_attack_enemies_and_boss(
     cooldown = max(0.0, float(runtime.get("attack_cooldown", 0.0)) - dt)
     runtime["attack_cooldown"] = cooldown
 
-    is_attacking = bool(
+    is_attacking = input_state is None or bool(
         isinstance(input_state, dict)
         and (input_state.get("attack") or input_state.get("space") or input_state.get("interact") or input_state.get("fire"))
     )
@@ -387,7 +387,7 @@ def _player_attack_enemies_and_boss(
             and (name.startswith("Enemy") or name == "Boss" or str(obj.get("tag", "")).casefold() in {"enemy", "boss"})
             and _touches(player, obj, attack_range)
         ]
-        if targets and (is_attacking or True):
+        if targets and is_attacking:
             runtime["attack_cooldown"] = 0.4
             for target in targets:
                 t_vars = target.setdefault("variables", {})
