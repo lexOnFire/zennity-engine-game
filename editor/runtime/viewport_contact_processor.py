@@ -47,6 +47,8 @@ class ViewportContactProcessor:
             pair = tuple(sorted((name_a, name_b)))
             is_trigger = bool(obj_a["collider"].get("is_trigger") or obj_b["collider"].get("is_trigger"))
             current[pair] = is_trigger
+            if not is_trigger:
+                self._separate_solid_objects(obj_a, obj_b, bounds_a, bounds_b)
             if pair not in self.active_contacts:
                 hook = "on_trigger" if is_trigger else "on_collision"
                 self.dispatch(name_a, name_b, hook)
@@ -58,6 +60,49 @@ class ViewportContactProcessor:
                 self.dispatch(pair[1], pair[0], hook)
         self.active_contacts.clear()
         self.active_contacts.update(current)
+
+    def _separate_solid_objects(
+        self, obj_a: dict[str, Any], obj_b: dict[str, Any],
+        bounds_a: tuple[float, float, float, float], bounds_b: tuple[float, float, float, float],
+    ) -> None:
+        rb_a = obj_a.get("rigidbody") if isinstance(obj_a.get("rigidbody"), dict) else None
+        rb_b = obj_b.get("rigidbody") if isinstance(obj_b.get("rigidbody"), dict) else None
+
+        a_dynamic = rb_a is not None and not bool(rb_a.get("is_kinematic", False))
+        b_dynamic = rb_b is not None and not bool(rb_b.get("is_kinematic", False))
+
+        if not a_dynamic and not b_dynamic:
+            return
+
+        overlap_x1 = bounds_a[2] - bounds_b[0]
+        overlap_x2 = bounds_b[2] - bounds_a[0]
+        overlap_x = min(overlap_x1, overlap_x2)
+
+        overlap_y1 = bounds_a[3] - bounds_b[1]
+        overlap_y2 = bounds_b[3] - bounds_a[1]
+        overlap_y = min(overlap_y1, overlap_y2)
+
+        if overlap_x <= 0 or overlap_y <= 0:
+            return
+
+        if overlap_x < overlap_y:
+            shift_x = overlap_x if overlap_x1 < overlap_x2 else -overlap_x
+            if a_dynamic and not b_dynamic:
+                obj_a["x"] = float(obj_a.get("x", 0.0)) - shift_x
+            elif b_dynamic and not a_dynamic:
+                obj_b["x"] = float(obj_b.get("x", 0.0)) + shift_x
+            elif a_dynamic and b_dynamic:
+                obj_a["x"] = float(obj_a.get("x", 0.0)) - shift_x * 0.5
+                obj_b["x"] = float(obj_b.get("x", 0.0)) + shift_x * 0.5
+        else:
+            shift_y = overlap_y if overlap_y1 < overlap_y2 else -overlap_y
+            if a_dynamic and not b_dynamic:
+                obj_a["y"] = float(obj_a.get("y", 0.0)) - shift_y
+            elif b_dynamic and not a_dynamic:
+                obj_b["y"] = float(obj_b.get("y", 0.0)) + shift_y
+            elif a_dynamic and b_dynamic:
+                obj_a["y"] = float(obj_a.get("y", 0.0)) - shift_y * 0.5
+                obj_b["y"] = float(obj_b.get("y", 0.0)) + shift_y * 0.5
 
     @staticmethod
     def collider_bounds(obj: dict[str, Any]) -> tuple[float, float, float, float]:
