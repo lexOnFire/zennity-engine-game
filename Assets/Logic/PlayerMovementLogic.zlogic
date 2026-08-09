@@ -20,381 +20,107 @@
   },
   "nodes": [
     {
-      "id": "input_horizontal",
-      "type": "input_axis",
-      "title": "Eixo de Entrada",
-      "category": "Input",
-      "position": [
-        370.0,
-        80.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {
-        "axis": "horizontal",
-        "axis_name": "horizontal"
-      }
-    },
-    {
-      "id": "input_vertical",
-      "type": "input_axis",
-      "title": "Eixo de Entrada",
-      "category": "Input",
-      "position": [
-        370.0,
-        250.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {
-        "axis": "horizontal",
-        "axis_name": "vertical"
-      }
-    },
-    {
-      "id": "create_movement_vector",
-      "type": "vector2",
-      "title": "vector2",
-      "category": "Custom",
-      "position": [
-        660.0,
-        80.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {
-        "x": 0,
-        "y": 0
-      }
-    },
-    {
-      "id": "normalize_vector",
-      "type": "normalize_vector",
-      "title": "normalize_vector",
-      "category": "Custom",
-      "position": [
-        950.0,
-        80.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {
-        "vector": {
-          "type": "vector2"
-        }
-      }
-    },
-    {
-      "id": "get_move_speed",
-      "type": "get_variable",
-      "title": "Obter Variável",
-      "category": "Variables",
-      "position": [
-        80.0,
-        80.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {
-        "name": "move_speed"
-      }
-    },
-    {
-      "id": "multiply_speed",
-      "type": "multiply_number",
-      "title": "multiply_number",
-      "category": "Custom",
-      "position": [
-        1240.0,
-        80.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {
-        "a": {
-          "type": "vector2"
-        },
-        "b": 200
-      }
-    },
-    {
-      "id": "set_rigidbody_velocity",
-      "type": "move_by",
-      "title": "Mover Por",
-      "category": "Movement",
-      "position": [
-        1530.0,
-        80.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {
-        "delta_x": 0.0,
-        "delta_y": 0.0,
-        "velocity": {
-          "type": "vector2"
-        }
-      }
-    },
-    {
-      "id": "get_velocity_magnitude",
-      "type": "magnitude_vector",
-      "title": "magnitude_vector",
-      "category": "Custom",
-      "position": [
-        1530.0,
-        250.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {
-        "vector": {
-          "type": "vector2"
-        }
-      }
-    },
-    {
-      "id": "set_animator_speed",
-      "type": "set_animator_parameter",
-      "title": "set_animator_parameter",
-      "category": "Custom",
-      "position": [
-        1820.0,
-        80.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {
-        "parameter": "speed",
-        "value": 0
-      }
-    },
-    {
-      "id": "frame_loop",
+      "id": "update",
       "type": "event_update",
       "title": "On Update",
       "category": "Events",
       "position": [
-        80.0,
-        250.0
+        120.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {}
     },
     {
-      "id": "check_horizontal_movement",
+      "id": "axis",
+      "type": "input_axis",
+      "title": "Read Input Axis",
+      "category": "Movement",
+      "position": [
+        440.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "axis": "horizontal",
+        "negative": "A",
+        "positive": "D"
+      }
+    },
+    {
+      "id": "moving",
       "type": "if_else",
-      "title": "Se/Senão",
-      "category": "Flow",
+      "title": "If / Else",
+      "category": "Logic",
       "position": [
-        660.0,
-        250.0
+        760.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
-        "condition": "not_equal",
-        "compare_value": 0
+        "condition": "axis != 0"
       }
     },
     {
-      "id": "get_sign_of_horizontal",
-      "type": "sign_number",
-      "title": "sign_number",
-      "category": "Custom",
+      "id": "move",
+      "type": "move",
+      "title": "Move",
+      "category": "Movement",
       "position": [
-        950.0,
-        250.0
+        1080.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
-        "value": 0
-      }
-    },
-    {
-      "id": "set_facing_direction",
-      "type": "set_variable",
-      "title": "Definir Variável",
-      "category": "Variables",
-      "position": [
-        1240.0,
-        250.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {
-        "value": 1,
-        "name": "facing_x"
+        "direction_x": 1.0,
+        "direction_y": 0.0,
+        "speed": 220.0
       }
     }
   ],
   "edges": [
     {
-      "id": "flow_to_move",
-      "from_node": "frame_loop",
+      "id": "edge_update_moving",
+      "from_node": "update",
       "from_port": "next",
-      "to_node": "set_rigidbody_velocity",
+      "to_node": "moving",
       "to_port": "in",
       "kind": "flow",
       "order": 0
     },
     {
-      "id": "5aa755148fef44a8b940b7944d5d7f07",
-      "from_node": "frame_loop",
-      "from_port": "next",
-      "to_node": "input_horizontal",
-      "to_port": "in",
-      "kind": "any",
-      "order": 0
-    },
-    {
-      "id": "96fcc0783ca64ec687ce0d8c388985e2",
-      "from_node": "frame_loop",
-      "from_port": "next",
-      "to_node": "input_vertical",
-      "to_port": "in",
+      "id": "edge_axis_condition",
+      "from_node": "axis",
+      "from_port": "value",
+      "to_node": "moving",
+      "to_port": "condition",
       "kind": "any",
       "order": 1
     },
     {
-      "id": "df6ece5250f74e5e83ed4c83465506a7",
-      "from_node": "input_horizontal",
-      "from_port": "value",
-      "to_node": "create_movement_vector",
-      "to_port": "x",
-      "kind": "any",
-      "order": 2
-    },
-    {
-      "id": "c816de229a7845f6aa2a3f443397ad41",
-      "from_node": "input_vertical",
-      "from_port": "value",
-      "to_node": "create_movement_vector",
-      "to_port": "y",
-      "kind": "any",
-      "order": 3
-    },
-    {
-      "id": "30b39ead2425443ba8b562766ad0335b",
-      "from_node": "create_movement_vector",
-      "from_port": "vector",
-      "to_node": "normalize_vector",
-      "to_port": "vector",
-      "kind": "any",
-      "order": 4
-    },
-    {
-      "id": "7561266216d046a6ac89c6e7822bbff4",
-      "from_node": "normalize_vector",
-      "from_port": "value",
-      "to_node": "multiply_speed",
-      "to_port": "a",
-      "kind": "any",
-      "order": 5
-    },
-    {
-      "id": "468d1191199a405c9c032df55f722ada",
-      "from_node": "get_move_speed",
-      "from_port": "value",
-      "to_node": "multiply_speed",
-      "to_port": "b",
-      "kind": "any",
-      "order": 6
-    },
-    {
-      "id": "27e4722ffff64da6b1577cef337931ca",
-      "from_node": "multiply_speed",
-      "from_port": "value",
-      "to_node": "set_rigidbody_velocity",
-      "to_port": "velocity",
-      "kind": "any",
-      "order": 7
-    },
-    {
-      "id": "0ca09f59426a4c2ca4dc6aecad53ad92",
-      "from_node": "multiply_speed",
-      "from_port": "value",
-      "to_node": "get_velocity_magnitude",
-      "to_port": "vector",
-      "kind": "any",
-      "order": 8
-    },
-    {
-      "id": "f52f9f25bb6f4b9292d9f51dd76f87e3",
-      "from_node": "get_velocity_magnitude",
-      "from_port": "value",
-      "to_node": "set_animator_speed",
-      "to_port": "value",
-      "kind": "any",
-      "order": 9
-    },
-    {
-      "id": "017f8fb0ffae4dcc9e5841b9ae4654f5",
-      "from_node": "input_horizontal",
-      "from_port": "value",
-      "to_node": "check_horizontal_movement",
-      "to_port": "value",
-      "kind": "any",
-      "order": 10
-    },
-    {
-      "id": "059b66126765458ca202839e0865c95e",
-      "from_node": "check_horizontal_movement",
+      "id": "edge_moving_true_move",
+      "from_node": "moving",
       "from_port": "true",
-      "to_node": "get_sign_of_horizontal",
-      "to_port": "value",
+      "to_node": "move",
+      "to_port": "in",
       "kind": "flow",
-      "order": 11
-    },
-    {
-      "id": "dfb0214bdd044fbc84b4337a5e4170ec",
-      "from_node": "get_sign_of_horizontal",
-      "from_port": "value",
-      "to_node": "set_facing_direction",
-      "to_port": "value",
-      "kind": "any",
-      "order": 12
+      "order": 2
     }
   ]
 }

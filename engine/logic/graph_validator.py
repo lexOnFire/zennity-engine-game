@@ -137,7 +137,8 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
         "get_variable", "get_tag", "number_value", "bool_value", "text_value",
         "add_number", "subtract_number", "multiply_number", "divide_number",
         "absolute_number", "clamp_number", "random_number", "delta_time",
-        "join_text", "to_text",
+        "join_text", "to_text", "input_axis", "vector2", "normalize_vector",
+        "magnitude_vector", "sign_number",
     }
     for node in graph["nodes"]:
         ports = node_port_definitions(node)
