@@ -76,36 +76,36 @@ class LogicBindingController:
         self._update_object_logic_assets(object_name, path)
         return path
 
-    def detach(self, path: Path) -> None:
-        graph = deepcopy(load_logic_graph(path))
-        graph["enabled"] = False
-        self.save_binding(path, graph)
-        target_name = graph.get("target", {}).get("value")
-        if target_name and target_name in getattr(self.host, "_objects_by_name", {}):
-            obj = self.host._objects_by_name[target_name]
-            if isinstance(obj, dict):
-                try:
-                    rel = path.relative_to(self.project_root.resolve()).as_posix()
-                except ValueError:
-                    rel = str(path).replace("\\", "/")
-                if "logic_assets" in obj:
-                    obj["logic_assets"] = [p for p in obj["logic_assets"] if p != rel]
-                if isinstance(obj.get("components"), dict):
-                    items = obj["components"].get("items", [])
-                    if isinstance(items, list):
-                        obj["components"]["items"] = [
-                            c for c in items
-                            if not (isinstance(c, dict) and c.get("type") == "LogicGraph" and (c.get("graph_path") == rel or c.get("properties", {}).get("graph_path") == rel))
-                        ]
-                if isinstance(obj.get("editor_data"), dict):
-                    obj["editor_data"].pop("logic_graphs", None)
+    def detach(self, path: Path, object_name: str | None = None) -> None:
+        try:
+            rel = path.relative_to(self.project_root.resolve()).as_posix()
+        except ValueError:
+            rel = str(path).replace("\\", "/")
+
+        target_names = [object_name] if object_name else list(getattr(self.host, "_objects_by_name", {}).keys())
+        for name in target_names:
+            if not name:
+                continue
+            obj = getattr(self.host, "_objects_by_name", {}).get(name)
+            if not isinstance(obj, dict):
+                continue
+            if isinstance(obj.get("logic_assets"), list):
+                obj["logic_assets"] = [p for p in obj["logic_assets"] if p != rel]
+            if isinstance(obj.get("components"), dict):
+                items = obj["components"].get("items", [])
+                if isinstance(items, list):
+                    obj["components"]["items"] = [
+                        c for c in items
+                        if not (isinstance(c, dict) and c.get("type") == "LogicGraph" and (c.get("graph_path") == rel or c.get("properties", {}).get("graph_path") == rel))
+                    ]
+            if isinstance(obj.get("editor_data"), dict):
+                l_graphs = obj["editor_data"].get("logic_graphs")
+                if isinstance(l_graphs, list):
+                    obj["editor_data"]["logic_graphs"] = [g for g in l_graphs if isinstance(g, dict) and g.get("path") != rel]
+        self._refresh_surfaces()
 
     def detach_all_for_object(self, object_name: str) -> int:
         bindings = self.graphs_for_object(object_name)
-        for path, source in bindings:
-            graph = deepcopy(source)
-            graph["enabled"] = False
-            self.host._logic_assets_repository.save(path, graph)
         obj = getattr(self.host, "_objects_by_name", {}).get(object_name)
         if isinstance(obj, dict):
             obj["logic_assets"] = []

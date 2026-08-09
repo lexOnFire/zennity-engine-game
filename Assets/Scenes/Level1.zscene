@@ -86,7 +86,7 @@
         ]
       },
       "logic_assets": [
-        "Assets/Logic/PlayerMovementLogic.zlogic"
+        "Assets/Logic/PlayerMovement_wasd.zlogic"
       ],
       "layer": "Default",
       "variables": {
@@ -107,6 +107,68 @@
         ],
         "parent": null,
         "children": []
+      }
+    },
+    {
+      "id": "guard",
+      "name": "Guard",
+      "active": true,
+      "enabled": true,
+      "tag": "NPC",
+      "transform": {
+        "position": [
+          150.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          48.0,
+          48.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "color": [
+          0.25,
+          0.85,
+          1.0,
+          1.0
+        ],
+        "texture": "Assets/Sprites/MyPlatformer/guard.png",
+        "material": "Default_Material",
+        "mesh_type": null,
+        "layer": "Default",
+        "order": 10
+      },
+      "components": {
+        "items": [
+          {
+            "type": "BoxCollider2D",
+            "size": [
+              1.0,
+              1.0
+            ],
+            "is_trigger": true
+          }
+        ]
+      },
+      "dialogue_asset": "Assets/Dialogues/GuardDialogue.zdialogue",
+      "dialogue": {
+        "asset_path": "Assets/Dialogues/GuardDialogue.zdialogue"
+      },
+      "logic_assets": [
+        "Assets/Logic/GuardInteractionLogic.zlogic"
+      ],
+      "layer": "Default",
+      "variables": {
+        "dialogue_text": "Greetings, traveler! Obtain the Key to unlock the Dungeon Gate."
       }
     },
     {
@@ -327,7 +389,13 @@
             ],
             "is_trigger": false
           }
-        ]
+        ],
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 700.0,
+          "height": 25.05
+        }
       },
       "enabled": true,
       "static": true,
@@ -361,8 +429,8 @@
       "tag": "",
       "transform": {
         "position": [
-          -7.24,
-          329.7,
+          671.470857870336,
+          -7.030000000000004,
           0.0
         ],
         "rotation": [
@@ -373,7 +441,7 @@
         "rz": 90.0,
         "scale": [
           700.0,
-          1.0,
+          60.0,
           1.0
         ]
       },
@@ -387,7 +455,13 @@
             ],
             "is_trigger": false
           }
-        ]
+        ],
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 700.0,
+          "height": 60.0
+        }
       },
       "enabled": true,
       "static": true,
@@ -422,7 +496,7 @@
       "transform": {
         "position": [
           0.0,
-          -15.0,
+          -335.0,
           0.0
         ],
         "rotation": [
@@ -432,8 +506,8 @@
         ],
         "rz": 0.0,
         "scale": [
-          1000.0,
-          1.0,
+          1276.0,
+          50.0,
           1.0
         ]
       },
@@ -447,7 +521,13 @@
             ],
             "is_trigger": false
           }
-        ]
+        ],
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 1276.0,
+          "height": 50.0
+        }
       },
       "enabled": true,
       "static": true,
@@ -482,7 +562,7 @@
       "transform": {
         "position": [
           0.0,
-          15.0,
+          343.0,
           0.0
         ],
         "rotation": [
@@ -492,8 +572,8 @@
         ],
         "rz": 0.0,
         "scale": [
-          1.0,
-          1.0,
+          1280.0,
+          50.0,
           1.0
         ]
       },
@@ -507,7 +587,13 @@
             ],
             "is_trigger": false
           }
-        ]
+        ],
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 1280.0,
+          "height": 50.0
+        }
       },
       "enabled": true,
       "static": true,
@@ -617,7 +703,7 @@
       "tag": "Door",
       "transform": {
         "position": [
-          650.0,
+          612.497368981504,
           0.0,
           0.0
         ],
