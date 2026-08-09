@@ -3,7 +3,7 @@
   "version": 1,
   "canvas": {
     "name": "MainCanvas",
-    "type": "canvas",
+    "type": "UICanvas",
     "x": 0.0,
     "y": 0.0,
     "width": 1280.0,
@@ -19,63 +19,64 @@
         "height": 720.0,
         "visible": true,
         "children": [],
-        "texture_path": "",
-        "color": [38, 38, 38, 255]
+        "texture_path": "Assets/Scenes/Cenário espacial em pixel-art detalhado.png",
+        "render_mode": "Screen Space"
       },
       {
         "name": "Title",
         "type": "UILabel",
-        "x": 640.0,
-        "y": 100.0,
-        "width": 400.0,
+        "x": 117.32917342358222,
+        "y": 17.732355637030246,
+        "width": 138.0,
         "height": 80.0,
         "visible": true,
         "children": [],
         "text": "ZENNITY ARENA",
         "font_size": 72,
-        "text_color": "#00FF00"
+        "text_color": "#00FF00",
+        "render_mode": "Screen Space"
       },
       {
         "name": "NewGameButton",
         "type": "UIButton",
-        "x": 515.0,
-        "y": 300.0,
+        "x": 244.03299725022916,
+        "y": 132.4078121694987,
         "width": 250.0,
         "height": 60.0,
         "visible": true,
         "children": [],
         "text": "NEW GAME",
-        "font_size": 24,
-        "color": "#0066FF",
-        "interactable": true
+        "hover_color": "#3B3B48",
+        "event": "load_scene",
+        "scene_path": "Assets/Scenes/Level1.zscene"
       },
       {
         "name": "ContinueButton",
         "type": "UIButton",
-        "x": 515.0,
-        "y": 380.0,
+        "x": 244.0,
+        "y": 247.0,
         "width": 250.0,
         "height": 60.0,
         "visible": true,
         "children": [],
         "text": "CONTINUE",
-        "font_size": 24,
-        "color": "#666666",
-        "interactable": false
+        "hover_color": "#3B3B48",
+        "render_mode": "Screen Space",
+        "event": "load_scene",
+        "scene_path": "Assets/Scenes/Level1.zscene"
       },
       {
         "name": "ExitButton",
         "type": "UIButton",
-        "x": 515.0,
-        "y": 460.0,
+        "x": 244.0,
+        "y": 353.0,
         "width": 250.0,
         "height": 60.0,
         "visible": true,
         "children": [],
         "text": "EXIT",
-        "font_size": 24,
-        "color": "#CC0000",
-        "interactable": true
+        "hover_color": "#3B3B48",
+        "render_mode": "Screen Space"
       },
       {
         "name": "VersionLabel",
@@ -90,6 +91,7 @@
         "font_size": 12,
         "text_color": "#AAAAAA"
       }
-    ]
+    ],
+    "render_mode": "Screen Space"
   }
 }

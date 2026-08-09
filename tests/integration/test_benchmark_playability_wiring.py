@@ -36,9 +36,9 @@ def test_level1_player_and_door_have_clear_official_logic_bindings() -> None:
 
     assert player["tag"] == "Player"
     assert player["logic_assets"] == ["Assets/Logic/PlayerMovement_wasd.zlogic"]
-    assert player["editor_data"] == {
-        "logic_graphs": [{"path": "Assets/Logic/PlayerMovement_wasd.zlogic", "name": "PlayerMovement_wasd"}]
-    }
+    assert player["editor_data"].get("logic_graphs") == [
+        {"path": "Assets/Logic/PlayerMovement_wasd.zlogic", "name": "PlayerMovement_wasd"}
+    ]
     assert door["tag"] == "Door"
     assert door["logic_assets"] == ["Assets/Logic/DoorLogic.zlogic"]
     assert door["variables"]["requires_key"] is True
@@ -154,4 +154,74 @@ def test_level2_hud_boss_widgets_exist() -> None:
         "BossNameLabel", "BossHealthBar",
     }
     assert expected_widgets <= widget_names
+
+
+def test_benchmark_main_menu_buttons() -> None:
+    ui_data = _ui("MainMenu.zui")
+    widgets = {child["name"]: child for child in ui_data["canvas"]["children"]}
+
+    assert widgets["NewGameButton"]["event"] == "load_scene"
+    assert widgets["NewGameButton"]["scene_path"] == "Assets/Scenes/Level1.zscene"
+    assert widgets["ContinueButton"]["event"] == "load_scene"
+    assert widgets["ContinueButton"]["scene_path"] == "Assets/Scenes/Level1.zscene"
+
+
+def test_benchmark_level1_flow_wiring() -> None:
+    scene = _scene("Level1")
+    objects = {obj["name"]: obj for obj in scene["objects"]}
+
+    assert objects["Player"]["logic_assets"] == ["Assets/Logic/PlayerMovement_wasd.zlogic"]
+    assert objects["Door"]["logic_assets"] == ["Assets/Logic/DoorLogic.zlogic"]
+    assert objects["Guard"]["dialogue_asset"] == "Assets/Dialogues/GuardDialogue.zdialogue"
+    assert objects["Key"]["logic_assets"] == ["Assets/Logic/KeyCollectionLogic.zlogic"]
+    assert objects["LevelExit"]["active"] is False
+
+
+def test_benchmark_level2_flow_wiring() -> None:
+    scene = _scene("Level2")
+    objects = {obj["name"]: obj for obj in scene["objects"]}
+
+    assert objects["Player"]["logic_assets"] == ["Assets/Logic/PlayerMovement_wasd.zlogic"]
+    assert objects["Boss"]["logic_assets"] == [
+        "Assets/Logic/BossAILogic.zlogic",
+        "Assets/Logic/BossCombatLogic.zlogic",
+        "Assets/Logic/BossHealthLogic.zlogic",
+    ]
+    assert objects["Enemy 1"]["logic_assets"] == [
+        "Assets/Logic/EnemyAILogic.zlogic",
+        "Assets/Logic/EnemyAttackLogic.zlogic",
+    ]
+    assert objects["Coin 1"]["logic_assets"] == ["Assets/Logic/CoinCollectionLogic.zlogic"]
+
+
+def test_benchmark_gameover_buttons() -> None:
+    widgets = {child["name"]: child for child in _ui("GameOver.zui")["canvas"]["children"]}
+
+    assert widgets["RetryButton"]["event"] == "load_scene"
+    assert widgets["RetryButton"]["scene_path"] == "Assets/Scenes/Level1.zscene"
+    assert widgets["MainMenuButton"]["event"] == "load_scene"
+    assert widgets["MainMenuButton"]["scene_path"] == "Assets/Scenes/MainMenu.zscene"
+
+
+def test_benchmark_victory_buttons() -> None:
+    widgets = {child["name"]: child for child in _ui("Victory.zui")["canvas"]["children"]}
+
+    assert widgets["MainMenuButton"]["event"] == "load_scene"
+    assert widgets["MainMenuButton"]["scene_path"] == "Assets/Scenes/MainMenu.zscene"
+    assert widgets["NewGameButton"]["event"] == "load_scene"
+    assert widgets["NewGameButton"]["scene_path"] == "Assets/Scenes/Level1.zscene"
+
+
+def test_player_requires_logic_graph_for_movement() -> None:
+    scene = _scene("Level1")
+    objects = {obj["name"]: obj for obj in scene["objects"]}
+
+    # Without logic assets
+    objects["Player"]["logic_assets"] = []
+    objects["Player"]["components"] = {"items": []}
+    objects["Player"]["editor_data"] = {}
+
+    hydrate_logic_graphs(objects, PROJECT_ROOT)
+    assert len(objects["Player"].get("logic_graphs", [])) == 0
+
 

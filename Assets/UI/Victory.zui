@@ -74,7 +74,9 @@
         "text": "MAIN MENU",
         "font_size": 28,
         "color": "#6666FF",
-        "interactable": true
+        "interactable": true,
+        "event": "load_scene",
+        "scene_path": "Assets/Scenes/MainMenu.zscene"
       },
       {
         "name": "NewGameButton",
@@ -88,7 +90,9 @@
         "text": "NEW GAME",
         "font_size": 28,
         "color": "#33CC33",
-        "interactable": true
+        "interactable": true,
+        "event": "load_scene",
+        "scene_path": "Assets/Scenes/Level1.zscene"
       }
     ]
   }
