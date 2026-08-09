@@ -2,7 +2,7 @@
   "format": "zennity.logic_graph",
   "version": 1,
   "enabled": true,
-  "name": "PlayerMovement",
+  "name": "PlayerMovement_WASD_Fixed",
   "target": {
     "type": "name",
     "value": "Player"
