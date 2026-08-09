@@ -8,6 +8,12 @@ Key changes:
 4. All evaluated through single controlled path
 """
 
+from __future__ import annotations
+
+import sys
+from typing import Any, Mapping
+
+
 def _try_registry_executor(self, node: Mapping[str, Any], game: Any, dt: float) -> tuple[bool, list[str]]:
     """
     Try to execute node via registry executor.

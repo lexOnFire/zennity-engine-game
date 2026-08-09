@@ -1,8 +1,19 @@
 """Node definition metadata for Logic Graph editor.
 
-Legacy NODE_DEFINITIONS dict for backward compatibility with graph_asset.py.
-Initialized with basic node definitions to prevent KeyError on startup.
+This package is the public source imported by ``engine.logic.graph_asset``.
+It keeps the legacy ``NODE_DEFINITIONS`` dictionary available while also
+harvesting the modern declarative ``NodeDefinition`` objects declared in the
+submodules.  This matters because Python resolves this package before the
+legacy sibling module ``engine/logic/node_definitions.py``; without the export
+step below, the editor only sees a tiny fallback catalog and many visual nodes
+disappear from the Logic Graph palette.
 """
+
+from __future__ import annotations
+
+from importlib import import_module
+from types import ModuleType
+from typing import Any
 
 # Initialize with basic node structure from NODE_PORT_DEFINITIONS
 NODE_DEFINITIONS: dict[str, dict] = {
@@ -65,3 +76,109 @@ def _populate_node_definitions():
                 }
     except Exception:
         pass
+
+
+_DECLARATIVE_MODULES = (
+    "actions_nodes",
+    "animation_nodes",
+    "audio_advanced_nodes",
+    "camera_nodes",
+    "components_nodes",
+    "dialog_nodes",
+    "dynamic_ui_nodes",
+    "event_nodes",
+    "flow_nodes",
+    "input_advanced_nodes",
+    "misc_nodes",
+    "movement_nodes",
+    "particle_nodes",
+    "pathfinding_nodes",
+    "physics_nodes",
+    "prefab_nodes",
+    "save_load_nodes",
+    "state_machine_nodes",
+    "ui_binding_nodes",
+    "ui_nodes",
+)
+
+
+def _legacy_pin_type(pin_type: Any) -> str:
+    value = str(getattr(pin_type, "value", pin_type)).lower()
+    return {
+        "exec": "flow",
+        "float": "number",
+        "int": "number",
+        "string": "text",
+        "vector2": "vector2",
+        "vector3": "vector3",
+        "color": "color",
+        "bool": "bool",
+        "object": "object",
+    }.get(value, value or "any")
+
+
+def _pin_tuple(pin: Any) -> tuple[str, str]:
+    return (str(getattr(pin, "id", "")), _legacy_pin_type(getattr(pin, "pin_type", "any")))
+
+
+def _definition_to_legacy(definition: Any) -> dict[str, Any]:
+    properties: dict[str, Any] = {}
+    for pin in list(getattr(definition, "inputs", [])):
+        pin_type = _legacy_pin_type(getattr(pin, "pin_type", "any"))
+        pin_id = str(getattr(pin, "id", ""))
+        default = getattr(pin, "default_value", None)
+        if pin_type != "flow" and pin_id and default is not None:
+            properties[pin_id] = default
+    category = str(getattr(definition, "category_key", "") or "Custom")
+    category = {"Actions": "Action"}.get(category, category)
+    return {
+        "id": str(getattr(definition, "id", "")),
+        "title": str(getattr(definition, "title_key", "") or getattr(definition, "name_key", "") or getattr(definition, "id", "")),
+        "category": category,
+        "description": str(getattr(definition, "description_key", "") or ""),
+        "inputs": [_pin_tuple(pin) for pin in list(getattr(definition, "inputs", []))],
+        "outputs": [_pin_tuple(pin) for pin in list(getattr(definition, "outputs", []))],
+        "properties": properties,
+    }
+
+
+def _collect_declarative_definitions(module: ModuleType) -> None:
+    for value in vars(module).values():
+        definition = getattr(value, "__node_definition__", None)
+        if definition is None and getattr(value, "__class__", None).__name__ == "NodeDefinition":
+            definition = value
+        if definition is None:
+            continue
+        node_id = str(getattr(definition, "id", "")).strip()
+        if not node_id:
+            continue
+        NODE_DEFINITIONS[node_id] = _definition_to_legacy(definition)
+
+
+def _populate_declarative_node_definitions() -> None:
+    for module_name in _DECLARATIVE_MODULES:
+        try:
+            module = import_module(f"{__name__}.{module_name}")
+        except Exception:
+            continue
+        _collect_declarative_definitions(module)
+
+
+_populate_declarative_node_definitions()
+_populate_node_definitions()
+
+# Public graph/runtime compatibility contracts.  Some newer declarative nodes
+# use friendlier authoring pins (for example ``a``/``b``/``operation``), but
+# existing ``.zlogic`` assets and the runtime still consume these legacy
+# properties and ports.
+NODE_DEFINITIONS.setdefault("if_else", {}).setdefault("properties", {"condition": False})
+NODE_DEFINITIONS["compare_number"].update({
+    "inputs": [("in", "flow"), ("value", "number")],
+    "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")],
+    "properties": {"operator": ">", "value": 0.0},
+})
+NODE_DEFINITIONS["compare_text"].update({
+    "inputs": [("in", "flow"), ("value", "text")],
+    "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")],
+    "properties": {"operator": "==", "value": ""},
+})

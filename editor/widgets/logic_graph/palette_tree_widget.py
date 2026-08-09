@@ -183,6 +183,30 @@ class PaletteTreeWidget(QTreeWidget):
             return selected[0].data(0, Qt.UserRole)
         return None
 
+    def count(self) -> int:
+        """Retorna a quantidade de nós reais disponíveis na paleta.
+
+        Mantém compatibilidade com o ``QListWidget`` usado pela paleta antiga,
+        onde chamadas como ``palette.count()`` contavam somente itens
+        adicionáveis. Categorias e subcategorias da árvore não entram nessa
+        contagem.
+        """
+        return len(self._node_items)
+
+    def item(self, index: int) -> QTreeWidgetItem | None:
+        """Retorna o nó adicionável no índice informado.
+
+        A paleta moderna é hierárquica, mas alguns contratos legados ainda
+        esperam a API plana do ``QListWidget``. Para esses casos, expomos uma
+        visão plana composta apenas pelos itens que possuem ``node_type``.
+        """
+        if index < 0:
+            return None
+        items = list(self._node_items.values())
+        if index >= len(items):
+            return None
+        return items[index]
+
     def set_item_count_label(self, count: int, query: str = "") -> str:
         """Retorna texto para exibir contagem."""
         if query:
