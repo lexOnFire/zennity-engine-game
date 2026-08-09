@@ -35,6 +35,13 @@ LEGACY_NODE_TYPES = {
     "object.get_position": "get_position",
     "transform.get_position": "get_position",
     "physics.set_velocity": "move_by",
+    "input.axis": "input_axis",
+    "math.vector2_create": "vector2",
+    "math.vector2_normalize": "normalize_vector",
+    "math.sign": "sign_number",
+    "math.vector2_magnitude": "magnitude_vector",
+    "animator.set_parameter": "set_animator_parameter",
+    "input.keyboard_key_down": "key_pressed",
 }
 
 LEGACY_PORTS = {
@@ -47,6 +54,8 @@ LEGACY_PORTS = {
     "true": "true",
     "false": "false",
     "result": "value",
+    "normalized": "value",
+    "magnitude": "value",
     "collider": "other",
     "in": "in",
 }
@@ -54,11 +63,15 @@ LEGACY_PORTS = {
 
 def is_legacy_visual_script(data: Mapping[str, Any]) -> bool:
     format_name = str(data.get("format", "")).casefold()
-    return (
-        format_name in {"zennity.generic_graph", "zennity.visual_script", "zscriptgraph"}
-        or str(data.get("type", "")).casefold() in {"visual_script", "visual scripting"}
-        or any(str(node.get("type", "")).startswith("vs.") for node in data.get("nodes", []))
-    )
+    if format_name in {"zennity.generic_graph", "zennity.visual_script", "zscriptgraph"}:
+        return True
+    if str(data.get("type", "")).casefold() in {"visual_script", "visual scripting"}:
+        return True
+    for node in data.get("nodes", []):
+        ntype = str(node.get("type", ""))
+        if ntype.startswith("vs.") or ntype in LEGACY_NODE_TYPES:
+            return True
+    return False
 
 
 def migrate_visual_script_graph(data: Mapping[str, Any]) -> dict[str, Any]:

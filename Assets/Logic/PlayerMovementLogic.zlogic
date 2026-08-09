@@ -2,98 +2,386 @@
   "format": "zennity.logic_graph",
   "version": 1,
   "enabled": true,
-  "name": "PlayerMovementLogic",
+  "name": "Player Movement Logic",
   "target": {
     "type": "name",
     "value": "Player"
   },
-  "variables": {
-    "speed": 200.0
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": [],
+    "migrated_from": "zennity.generic_graph"
   },
   "nodes": [
     {
-      "id": "node_update",
-      "type": "event_update",
-      "name": "On Update",
+      "id": "input_horizontal",
+      "type": "input.axis",
+      "title": "input.axis",
+      "category": "Custom",
       "position": [
-        100,
-        100
+        370.0,
+        80.0
       ],
-      "properties": {}
-    },
-    {
-      "id": "node_input_h",
-      "type": "input_axis",
-      "name": "Input Horizontal",
-      "position": [
-        300,
-        100
-      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
       "properties": {
         "axis_name": "horizontal"
       }
     },
     {
-      "id": "node_input_v",
-      "type": "input_axis",
-      "name": "Input Vertical",
+      "id": "input_vertical",
+      "type": "input.axis",
+      "title": "input.axis",
+      "category": "Custom",
       "position": [
-        300,
-        250
+        370.0,
+        250.0
       ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
       "properties": {
         "axis_name": "vertical"
       }
     },
     {
-      "id": "node_move_by",
-      "type": "move_by",
-      "name": "Move By",
+      "id": "create_movement_vector",
+      "type": "math.vector2_create",
+      "title": "math.vector2_create",
+      "category": "Custom",
       "position": [
-        600,
-        150
+        660.0,
+        80.0
       ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
       "properties": {
-        "x": 0.0,
-        "y": 0.0
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "normalize_vector",
+      "type": "math.vector2_normalize",
+      "title": "math.vector2_normalize",
+      "category": "Custom",
+      "position": [
+        950.0,
+        80.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {
+        "vector": {
+          "type": "vector2"
+        }
+      }
+    },
+    {
+      "id": "get_move_speed",
+      "type": "variables.get",
+      "title": "variables.get",
+      "category": "Custom",
+      "position": [
+        80.0,
+        80.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {
+        "name": "move_speed"
+      }
+    },
+    {
+      "id": "multiply_speed",
+      "type": "math.multiply",
+      "title": "math.multiply",
+      "category": "Custom",
+      "position": [
+        1240.0,
+        80.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {
+        "a": {
+          "type": "vector2"
+        },
+        "b": 200
+      }
+    },
+    {
+      "id": "set_rigidbody_velocity",
+      "type": "physics.set_velocity",
+      "title": "physics.set_velocity",
+      "category": "Custom",
+      "position": [
+        1530.0,
+        80.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {
+        "velocity": {
+          "type": "vector2"
+        }
+      }
+    },
+    {
+      "id": "get_velocity_magnitude",
+      "type": "math.vector2_magnitude",
+      "title": "math.vector2_magnitude",
+      "category": "Custom",
+      "position": [
+        1530.0,
+        250.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {
+        "vector": {
+          "type": "vector2"
+        }
+      }
+    },
+    {
+      "id": "set_animator_speed",
+      "type": "animator.set_parameter",
+      "title": "animator.set_parameter",
+      "category": "Custom",
+      "position": [
+        1820.0,
+        80.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {
+        "parameter": "speed",
+        "value": 0
+      }
+    },
+    {
+      "id": "frame_loop",
+      "type": "event.every_frame",
+      "title": "event.every_frame",
+      "category": "Custom",
+      "position": [
+        80.0,
+        250.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "check_horizontal_movement",
+      "type": "logic.branch",
+      "title": "logic.branch",
+      "category": "Custom",
+      "position": [
+        660.0,
+        250.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {
+        "condition": "not_equal",
+        "compare_value": 0
+      }
+    },
+    {
+      "id": "get_sign_of_horizontal",
+      "type": "math.sign",
+      "title": "math.sign",
+      "category": "Custom",
+      "position": [
+        950.0,
+        250.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {
+        "value": 0
+      }
+    },
+    {
+      "id": "set_facing_direction",
+      "type": "variables.set",
+      "title": "variables.set",
+      "category": "Custom",
+      "position": [
+        1240.0,
+        250.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 150.0
+      },
+      "properties": {
+        "name": "facing_x",
+        "value": 1
       }
     }
   ],
   "edges": [
     {
-      "id": "e1",
-      "from_node": "node_update",
-      "from_port": "next",
-      "to_node": "node_input_h",
-      "to_port": "in"
+      "id": "5aa755148fef44a8b940b7944d5d7f07",
+      "from_node": "frame_loop",
+      "from_port": "frame",
+      "to_node": "input_horizontal",
+      "to_port": "in",
+      "kind": "any",
+      "order": 0
     },
     {
-      "id": "e2",
-      "from_node": "node_input_h",
-      "from_port": "next",
-      "to_node": "node_input_v",
-      "to_port": "in"
+      "id": "96fcc0783ca64ec687ce0d8c388985e2",
+      "from_node": "frame_loop",
+      "from_port": "frame",
+      "to_node": "input_vertical",
+      "to_port": "in",
+      "kind": "any",
+      "order": 1
     },
     {
-      "id": "e3",
-      "from_node": "node_input_v",
-      "from_port": "next",
-      "to_node": "node_move_by",
-      "to_port": "in"
-    },
-    {
-      "id": "e4",
-      "from_node": "node_input_h",
+      "id": "df6ece5250f74e5e83ed4c83465506a7",
+      "from_node": "input_horizontal",
       "from_port": "value",
-      "to_node": "node_move_by",
-      "to_port": "x"
+      "to_node": "create_movement_vector",
+      "to_port": "x",
+      "kind": "any",
+      "order": 2
     },
     {
-      "id": "e5",
-      "from_node": "node_input_v",
+      "id": "c816de229a7845f6aa2a3f443397ad41",
+      "from_node": "input_vertical",
       "from_port": "value",
-      "to_node": "node_move_by",
-      "to_port": "y"
+      "to_node": "create_movement_vector",
+      "to_port": "y",
+      "kind": "any",
+      "order": 3
+    },
+    {
+      "id": "30b39ead2425443ba8b562766ad0335b",
+      "from_node": "create_movement_vector",
+      "from_port": "vector",
+      "to_node": "normalize_vector",
+      "to_port": "vector",
+      "kind": "any",
+      "order": 4
+    },
+    {
+      "id": "7561266216d046a6ac89c6e7822bbff4",
+      "from_node": "normalize_vector",
+      "from_port": "normalized",
+      "to_node": "multiply_speed",
+      "to_port": "a",
+      "kind": "any",
+      "order": 5
+    },
+    {
+      "id": "468d1191199a405c9c032df55f722ada",
+      "from_node": "get_move_speed",
+      "from_port": "value",
+      "to_node": "multiply_speed",
+      "to_port": "b",
+      "kind": "any",
+      "order": 6
+    },
+    {
+      "id": "27e4722ffff64da6b1577cef337931ca",
+      "from_node": "multiply_speed",
+      "from_port": "result",
+      "to_node": "set_rigidbody_velocity",
+      "to_port": "velocity",
+      "kind": "any",
+      "order": 7
+    },
+    {
+      "id": "0ca09f59426a4c2ca4dc6aecad53ad92",
+      "from_node": "multiply_speed",
+      "from_port": "result",
+      "to_node": "get_velocity_magnitude",
+      "to_port": "vector",
+      "kind": "any",
+      "order": 8
+    },
+    {
+      "id": "f52f9f25bb6f4b9292d9f51dd76f87e3",
+      "from_node": "get_velocity_magnitude",
+      "from_port": "magnitude",
+      "to_node": "set_animator_speed",
+      "to_port": "value",
+      "kind": "any",
+      "order": 9
+    },
+    {
+      "id": "017f8fb0ffae4dcc9e5841b9ae4654f5",
+      "from_node": "input_horizontal",
+      "from_port": "value",
+      "to_node": "check_horizontal_movement",
+      "to_port": "value",
+      "kind": "any",
+      "order": 10
+    },
+    {
+      "id": "059b66126765458ca202839e0865c95e",
+      "from_node": "check_horizontal_movement",
+      "from_port": "true",
+      "to_node": "get_sign_of_horizontal",
+      "to_port": "value",
+      "kind": "flow",
+      "order": 11
+    },
+    {
+      "id": "dfb0214bdd044fbc84b4337a5e4170ec",
+      "from_node": "get_sign_of_horizontal",
+      "from_port": "result",
+      "to_node": "set_facing_direction",
+      "to_port": "value",
+      "kind": "any",
+      "order": 12
     }
   ]
 }

@@ -68,7 +68,7 @@ def test_object_can_bind_multiple_zlogic_graphs() -> None:
     graphs = player.get("logic_graphs", [])
     assert len(graphs) == 2
     graph_names = [g["graph"]["name"] for g in graphs]
-    assert "PlayerMovementLogic" in graph_names
+    assert any("Player" in name and "Movement" in name for name in graph_names)
     assert "PlayerCombatLogic" in graph_names
 
 

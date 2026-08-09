@@ -183,6 +183,10 @@
         "order": 0
       },
       "editor_data": {
+        "editor_data": {
+          "parent": null,
+          "children": []
+        },
         "parent": null,
         "children": []
       }
@@ -297,19 +301,19 @@
       "tag": "",
       "transform": {
         "position": [
-          -20.0,
-          0.0,
+          -609.0753885819421,
+          -1.9962587494244521,
           0.0
         ],
         "rotation": [
           0.0,
           0.0,
-          0.0
+          90.15
         ],
-        "rz": 0.0,
+        "rz": 90.15,
         "scale": [
-          1.0,
-          1.0,
+          700.0,
+          25.05,
           1.0
         ]
       },
@@ -342,6 +346,10 @@
         "order": 1
       },
       "editor_data": {
+        "editor_data": {
+          "parent": "Novo Grupo",
+          "children": []
+        },
         "parent": "Novo Grupo",
         "children": []
       }
@@ -353,18 +361,18 @@
       "tag": "",
       "transform": {
         "position": [
-          20.0,
-          0.0,
+          -7.24,
+          329.7,
           0.0
         ],
         "rotation": [
           0.0,
           0.0,
-          0.0
+          90.0
         ],
-        "rz": 0.0,
+        "rz": 90.0,
         "scale": [
-          1.0,
+          700.0,
           1.0,
           1.0
         ]
@@ -398,6 +406,10 @@
         "order": 1
       },
       "editor_data": {
+        "editor_data": {
+          "parent": "Novo Grupo",
+          "children": []
+        },
         "parent": "Novo Grupo",
         "children": []
       }
@@ -420,7 +432,7 @@
         ],
         "rz": 0.0,
         "scale": [
-          1.0,
+          1000.0,
           1.0,
           1.0
         ]
@@ -454,6 +466,10 @@
         "order": 1
       },
       "editor_data": {
+        "editor_data": {
+          "parent": "Novo Grupo",
+          "children": []
+        },
         "parent": "Novo Grupo",
         "children": []
       }
@@ -510,6 +526,10 @@
         "order": 1
       },
       "editor_data": {
+        "editor_data": {
+          "parent": "Novo Grupo",
+          "children": []
+        },
         "parent": "Novo Grupo",
         "children": []
       }
@@ -582,6 +602,10 @@
         "Assets/Logic/KeyCollectionLogic.zlogic"
       ],
       "editor_data": {
+        "editor_data": {
+          "parent": null,
+          "children": []
+        },
         "parent": null,
         "children": []
       }
@@ -661,6 +685,10 @@
         "requires_guard_dialogue": true
       },
       "editor_data": {
+        "editor_data": {
+          "parent": null,
+          "children": []
+        },
         "parent": null,
         "children": []
       }
@@ -731,6 +759,10 @@
         "unlock_condition": "boss_defeated_or_victory"
       },
       "editor_data": {
+        "editor_data": {
+          "parent": null,
+          "children": []
+        },
         "parent": null,
         "children": []
       }
@@ -776,6 +808,267 @@
       },
       "components": {},
       "editor_data": {
+        "editor_data": {
+          "is_group": true,
+          "parent": null,
+          "children": [
+            {
+              "id": "enemy_3",
+              "name": "Enemy 3",
+              "x": 400.0,
+              "y": -150.0,
+              "w": 48.0,
+              "h": 48.0,
+              "rotation": 0.0,
+              "color": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "mesh_type": null,
+              "renderer_enabled": true,
+              "material": "Default_Material",
+              "texture": "Assets/Sprites/MyPlatformer/enemy.png",
+              "render_layer": "Default",
+              "sort_order": 8,
+              "active": true,
+              "static": false,
+              "tag": "",
+              "layer": "Default",
+              "logic_assets": [
+                "Assets/Logic/EnemyAILogic.zlogic",
+                "Assets/Logic/EnemyAttackLogic.zlogic"
+              ],
+              "components": {
+                "items": [
+                  {
+                    "type": "BoxCollider2D",
+                    "size": [
+                      0.8,
+                      1.0
+                    ],
+                    "offset": [
+                      0,
+                      0
+                    ],
+                    "is_trigger": false,
+                    "layer": "ENEMY"
+                  },
+                  {
+                    "type": "RigidBody2D",
+                    "body_type": "dynamic",
+                    "gravity_scale": 0,
+                    "mass": 1,
+                    "drag": 0,
+                    "angular_drag": 0,
+                    "constraints": "freeze_rotation_z"
+                  },
+                  {
+                    "type": "Animator",
+                    "controller": "Assets/Animations/EnemyAnimationController.zcontroller",
+                    "speed": 1.0
+                  },
+                  {
+                    "type": "LogicGraph",
+                    "enabled": true,
+                    "graph_path": "Assets/Logic/EnemyAILogic.zlogic",
+                    "properties": {
+                      "graph_path": "Assets/Logic/EnemyAILogic.zlogic"
+                    }
+                  },
+                  {
+                    "type": "LogicGraph",
+                    "enabled": true,
+                    "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic",
+                    "properties": {
+                      "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic"
+                    }
+                  }
+                ]
+              },
+              "component_names": [
+                "BoxCollider2D",
+                "RigidBody2D",
+                "Animator",
+                "LogicGraph",
+                "LogicGraph"
+              ],
+              "parent": "INIMIGOS",
+              "children": []
+            },
+            {
+              "id": "enemy_2",
+              "name": "Enemy 2",
+              "x": 200.0,
+              "y": 150.0,
+              "w": 48.0,
+              "h": 48.0,
+              "rotation": 0.0,
+              "color": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "mesh_type": null,
+              "renderer_enabled": true,
+              "material": "Default_Material",
+              "texture": "Assets/Sprites/MyPlatformer/enemy.png",
+              "render_layer": "Default",
+              "sort_order": 8,
+              "active": true,
+              "static": false,
+              "tag": "",
+              "layer": "Default",
+              "logic_assets": [
+                "Assets/Logic/EnemyAILogic.zlogic",
+                "Assets/Logic/EnemyAttackLogic.zlogic"
+              ],
+              "components": {
+                "items": [
+                  {
+                    "type": "BoxCollider2D",
+                    "size": [
+                      0.8,
+                      1.0
+                    ],
+                    "offset": [
+                      0,
+                      0
+                    ],
+                    "is_trigger": false,
+                    "layer": "ENEMY"
+                  },
+                  {
+                    "type": "RigidBody2D",
+                    "body_type": "dynamic",
+                    "gravity_scale": 0,
+                    "mass": 1,
+                    "drag": 0,
+                    "angular_drag": 0,
+                    "constraints": "freeze_rotation_z"
+                  },
+                  {
+                    "type": "Animator",
+                    "controller": "Assets/Animations/EnemyAnimationController.zcontroller",
+                    "speed": 1.0
+                  },
+                  {
+                    "type": "LogicGraph",
+                    "enabled": true,
+                    "graph_path": "Assets/Logic/EnemyAILogic.zlogic",
+                    "properties": {
+                      "graph_path": "Assets/Logic/EnemyAILogic.zlogic"
+                    }
+                  },
+                  {
+                    "type": "LogicGraph",
+                    "enabled": true,
+                    "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic",
+                    "properties": {
+                      "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic"
+                    }
+                  }
+                ]
+              },
+              "component_names": [
+                "BoxCollider2D",
+                "RigidBody2D",
+                "Animator",
+                "LogicGraph",
+                "LogicGraph"
+              ],
+              "parent": "INIMIGOS",
+              "children": []
+            },
+            {
+              "id": "enemy_1",
+              "name": "Enemy 1",
+              "x": 300.0,
+              "y": 0.0,
+              "w": 48.0,
+              "h": 48.0,
+              "rotation": 0.0,
+              "color": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "mesh_type": null,
+              "renderer_enabled": true,
+              "material": "Default_Material",
+              "texture": "Assets/Sprites/MyPlatformer/enemy.png",
+              "render_layer": "Default",
+              "sort_order": 8,
+              "active": true,
+              "static": false,
+              "tag": "",
+              "layer": "Default",
+              "logic_assets": [
+                "Assets/Logic/EnemyAILogic.zlogic",
+                "Assets/Logic/EnemyAttackLogic.zlogic"
+              ],
+              "components": {
+                "items": [
+                  {
+                    "type": "BoxCollider2D",
+                    "size": [
+                      0.8,
+                      1.0
+                    ],
+                    "offset": [
+                      0,
+                      0
+                    ],
+                    "is_trigger": false,
+                    "layer": "ENEMY"
+                  },
+                  {
+                    "type": "RigidBody2D",
+                    "body_type": "dynamic",
+                    "gravity_scale": 0,
+                    "mass": 1,
+                    "drag": 0,
+                    "angular_drag": 0,
+                    "constraints": "freeze_rotation_z"
+                  },
+                  {
+                    "type": "Animator",
+                    "controller": "Assets/Animations/EnemyAnimationController.zcontroller",
+                    "speed": 1.0
+                  },
+                  {
+                    "type": "LogicGraph",
+                    "enabled": true,
+                    "graph_path": "Assets/Logic/EnemyAILogic.zlogic",
+                    "properties": {
+                      "graph_path": "Assets/Logic/EnemyAILogic.zlogic"
+                    }
+                  },
+                  {
+                    "type": "LogicGraph",
+                    "enabled": true,
+                    "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic",
+                    "properties": {
+                      "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic"
+                    }
+                  }
+                ]
+              },
+              "component_names": [
+                "BoxCollider2D",
+                "RigidBody2D",
+                "Animator",
+                "LogicGraph",
+                "LogicGraph"
+              ],
+              "parent": "INIMIGOS",
+              "children": []
+            }
+          ]
+        },
         "is_group": true,
         "parent": null,
         "children": [
@@ -1140,6 +1433,10 @@
         "cooldown_timer": 1.0
       },
       "editor_data": {
+        "editor_data": {
+          "parent": "INIMIGOS",
+          "children": []
+        },
         "parent": "INIMIGOS",
         "children": []
       }
@@ -1247,6 +1544,10 @@
         "cooldown_timer": 1.0
       },
       "editor_data": {
+        "editor_data": {
+          "parent": "INIMIGOS",
+          "children": []
+        },
         "parent": "INIMIGOS",
         "children": []
       }
@@ -1354,6 +1655,10 @@
         "cooldown_timer": 1.0
       },
       "editor_data": {
+        "editor_data": {
+          "parent": "INIMIGOS",
+          "children": []
+        },
         "parent": "INIMIGOS",
         "children": []
       }
@@ -1399,6 +1704,302 @@
       },
       "components": {},
       "editor_data": {
+        "editor_data": {
+          "is_group": true,
+          "parent": null,
+          "children": [
+            {
+              "id": "coin_1",
+              "name": "Coin 1",
+              "x": -150.0,
+              "y": -50.0,
+              "w": 28.0,
+              "h": 28.0,
+              "rotation": 0.0,
+              "color": [
+                1,
+                1,
+                0,
+                1
+              ],
+              "mesh_type": null,
+              "renderer_enabled": true,
+              "material": "Default_Material",
+              "texture": "Assets/Sprites/MyPlatformer/coin.png",
+              "render_layer": "Default",
+              "sort_order": 12,
+              "active": true,
+              "static": false,
+              "tag": "",
+              "layer": "Default",
+              "logic_assets": [
+                "Assets/Logic/CoinCollectionLogic.zlogic"
+              ],
+              "components": {
+                "items": [
+                  {
+                    "type": "BoxCollider2D",
+                    "size": [
+                      0.4,
+                      0.4
+                    ],
+                    "offset": [
+                      0,
+                      0
+                    ],
+                    "is_trigger": true
+                  },
+                  {
+                    "type": "LogicGraph",
+                    "enabled": true,
+                    "graph_path": "Assets/Logic/CoinCollectionLogic.zlogic",
+                    "properties": {
+                      "graph_path": "Assets/Logic/CoinCollectionLogic.zlogic"
+                    }
+                  }
+                ]
+              },
+              "component_names": [
+                "BoxCollider2D",
+                "LogicGraph"
+              ],
+              "parent": "MOEDAS",
+              "children": []
+            },
+            {
+              "id": "coin_2",
+              "name": "Coin 2",
+              "x": -100.0,
+              "y": 50.0,
+              "w": 28.0,
+              "h": 28.0,
+              "rotation": 0.0,
+              "color": [
+                1,
+                1,
+                0,
+                1
+              ],
+              "mesh_type": null,
+              "renderer_enabled": true,
+              "material": "Default_Material",
+              "texture": "Assets/Sprites/MyPlatformer/coin.png",
+              "render_layer": "Default",
+              "sort_order": 12,
+              "active": true,
+              "static": false,
+              "tag": "",
+              "layer": "Default",
+              "logic_assets": [
+                "Assets/Logic/CoinCollectionLogic.zlogic"
+              ],
+              "components": {
+                "items": [
+                  {
+                    "type": "BoxCollider2D",
+                    "size": [
+                      0.4,
+                      0.4
+                    ],
+                    "offset": [
+                      0,
+                      0
+                    ],
+                    "is_trigger": true
+                  },
+                  {
+                    "type": "LogicGraph",
+                    "enabled": true,
+                    "graph_path": "Assets/Logic/CoinCollectionLogic.zlogic",
+                    "properties": {
+                      "graph_path": "Assets/Logic/CoinCollectionLogic.zlogic"
+                    }
+                  }
+                ]
+              },
+              "component_names": [
+                "BoxCollider2D",
+                "LogicGraph"
+              ],
+              "parent": "MOEDAS",
+              "children": []
+            },
+            {
+              "id": "coin_3",
+              "name": "Coin 3",
+              "x": 50.0,
+              "y": -100.0,
+              "w": 28.0,
+              "h": 28.0,
+              "rotation": 0.0,
+              "color": [
+                1,
+                1,
+                0,
+                1
+              ],
+              "mesh_type": null,
+              "renderer_enabled": true,
+              "material": "Default_Material",
+              "texture": "Assets/Sprites/MyPlatformer/coin.png",
+              "render_layer": "Default",
+              "sort_order": 12,
+              "active": true,
+              "static": false,
+              "tag": "",
+              "layer": "Default",
+              "logic_assets": [
+                "Assets/Logic/CoinCollectionLogic.zlogic"
+              ],
+              "components": {
+                "items": [
+                  {
+                    "type": "BoxCollider2D",
+                    "size": [
+                      0.4,
+                      0.4
+                    ],
+                    "offset": [
+                      0,
+                      0
+                    ],
+                    "is_trigger": true
+                  },
+                  {
+                    "type": "LogicGraph",
+                    "enabled": true,
+                    "graph_path": "Assets/Logic/CoinCollectionLogic.zlogic",
+                    "properties": {
+                      "graph_path": "Assets/Logic/CoinCollectionLogic.zlogic"
+                    }
+                  }
+                ]
+              },
+              "component_names": [
+                "BoxCollider2D",
+                "LogicGraph"
+              ],
+              "parent": "MOEDAS",
+              "children": []
+            },
+            {
+              "id": "coin_4",
+              "name": "Coin 4",
+              "x": 100.0,
+              "y": 50.0,
+              "w": 28.0,
+              "h": 28.0,
+              "rotation": 0.0,
+              "color": [
+                1,
+                1,
+                0,
+                1
+              ],
+              "mesh_type": null,
+              "renderer_enabled": true,
+              "material": "Default_Material",
+              "texture": "Assets/Sprites/MyPlatformer/coin.png",
+              "render_layer": "Default",
+              "sort_order": 12,
+              "active": true,
+              "static": false,
+              "tag": "",
+              "layer": "Default",
+              "logic_assets": [
+                "Assets/Logic/CoinCollectionLogic.zlogic"
+              ],
+              "components": {
+                "items": [
+                  {
+                    "type": "BoxCollider2D",
+                    "size": [
+                      0.4,
+                      0.4
+                    ],
+                    "offset": [
+                      0,
+                      0
+                    ],
+                    "is_trigger": true
+                  },
+                  {
+                    "type": "LogicGraph",
+                    "enabled": true,
+                    "graph_path": "Assets/Logic/CoinCollectionLogic.zlogic",
+                    "properties": {
+                      "graph_path": "Assets/Logic/CoinCollectionLogic.zlogic"
+                    }
+                  }
+                ]
+              },
+              "component_names": [
+                "BoxCollider2D",
+                "LogicGraph"
+              ],
+              "parent": "MOEDAS",
+              "children": []
+            },
+            {
+              "id": "coin_5",
+              "name": "Coin 5",
+              "x": 150.0,
+              "y": -80.0,
+              "w": 28.0,
+              "h": 28.0,
+              "rotation": 0.0,
+              "color": [
+                1,
+                1,
+                0,
+                1
+              ],
+              "mesh_type": null,
+              "renderer_enabled": true,
+              "material": "Default_Material",
+              "texture": "Assets/Sprites/MyPlatformer/coin.png",
+              "render_layer": "Default",
+              "sort_order": 12,
+              "active": true,
+              "static": false,
+              "tag": "",
+              "layer": "Default",
+              "logic_assets": [
+                "Assets/Logic/CoinCollectionLogic.zlogic"
+              ],
+              "components": {
+                "items": [
+                  {
+                    "type": "BoxCollider2D",
+                    "size": [
+                      0.4,
+                      0.4
+                    ],
+                    "offset": [
+                      0,
+                      0
+                    ],
+                    "is_trigger": true
+                  },
+                  {
+                    "type": "LogicGraph",
+                    "enabled": true,
+                    "graph_path": "Assets/Logic/CoinCollectionLogic.zlogic",
+                    "properties": {
+                      "graph_path": "Assets/Logic/CoinCollectionLogic.zlogic"
+                    }
+                  }
+                ]
+              },
+              "component_names": [
+                "BoxCollider2D",
+                "LogicGraph"
+              ],
+              "parent": "MOEDAS",
+              "children": []
+            }
+          ]
+        },
         "is_group": true,
         "parent": null,
         "children": [
@@ -1764,6 +2365,10 @@
         "Assets/Logic/CoinCollectionLogic.zlogic"
       ],
       "editor_data": {
+        "editor_data": {
+          "parent": "MOEDAS",
+          "children": []
+        },
         "parent": "MOEDAS",
         "children": []
       }
@@ -1837,6 +2442,10 @@
         "Assets/Logic/CoinCollectionLogic.zlogic"
       ],
       "editor_data": {
+        "editor_data": {
+          "parent": "MOEDAS",
+          "children": []
+        },
         "parent": "MOEDAS",
         "children": []
       }
@@ -1910,6 +2519,10 @@
         "Assets/Logic/CoinCollectionLogic.zlogic"
       ],
       "editor_data": {
+        "editor_data": {
+          "parent": "MOEDAS",
+          "children": []
+        },
         "parent": "MOEDAS",
         "children": []
       }
@@ -1983,6 +2596,10 @@
         "Assets/Logic/CoinCollectionLogic.zlogic"
       ],
       "editor_data": {
+        "editor_data": {
+          "parent": "MOEDAS",
+          "children": []
+        },
         "parent": "MOEDAS",
         "children": []
       }
@@ -2056,6 +2673,10 @@
         "Assets/Logic/CoinCollectionLogic.zlogic"
       ],
       "editor_data": {
+        "editor_data": {
+          "parent": "MOEDAS",
+          "children": []
+        },
         "parent": "MOEDAS",
         "children": []
       }
@@ -2101,6 +2722,176 @@
       },
       "components": {},
       "editor_data": {
+        "editor_data": {
+          "is_group": true,
+          "parent": null,
+          "children": [
+            {
+              "id": "wall_left",
+              "name": "WallLeft",
+              "x": -20.0,
+              "y": 0.0,
+              "w": 1.0,
+              "h": 1.0,
+              "rotation": 0.0,
+              "color": [
+                120,
+                120,
+                120
+              ],
+              "mesh_type": null,
+              "renderer_enabled": true,
+              "material": "Default_Material",
+              "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+              "render_layer": "Default",
+              "sort_order": 1,
+              "active": true,
+              "static": true,
+              "tag": "",
+              "layer": "Collision",
+              "components": {
+                "items": [
+                  {
+                    "type": "BoxCollider2D",
+                    "size": [
+                      2,
+                      30
+                    ],
+                    "is_trigger": false
+                  }
+                ]
+              },
+              "component_names": [
+                "BoxCollider2D"
+              ],
+              "parent": "Novo Grupo",
+              "children": []
+            },
+            {
+              "id": "wall_right",
+              "name": "WallRight",
+              "x": 20.0,
+              "y": 0.0,
+              "w": 1.0,
+              "h": 1.0,
+              "rotation": 0.0,
+              "color": [
+                120,
+                120,
+                120
+              ],
+              "mesh_type": null,
+              "renderer_enabled": true,
+              "material": "Default_Material",
+              "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+              "render_layer": "Default",
+              "sort_order": 1,
+              "active": true,
+              "static": true,
+              "tag": "",
+              "layer": "Collision",
+              "components": {
+                "items": [
+                  {
+                    "type": "BoxCollider2D",
+                    "size": [
+                      2,
+                      30
+                    ],
+                    "is_trigger": false
+                  }
+                ]
+              },
+              "component_names": [
+                "BoxCollider2D"
+              ],
+              "parent": "Novo Grupo",
+              "children": []
+            },
+            {
+              "id": "wall_top",
+              "name": "WallTop",
+              "x": 0.0,
+              "y": -15.0,
+              "w": 1.0,
+              "h": 1.0,
+              "rotation": 0.0,
+              "color": [
+                120,
+                120,
+                120
+              ],
+              "mesh_type": null,
+              "renderer_enabled": true,
+              "material": "Default_Material",
+              "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+              "render_layer": "Default",
+              "sort_order": 1,
+              "active": true,
+              "static": true,
+              "tag": "",
+              "layer": "Collision",
+              "components": {
+                "items": [
+                  {
+                    "type": "BoxCollider2D",
+                    "size": [
+                      44,
+                      2
+                    ],
+                    "is_trigger": false
+                  }
+                ]
+              },
+              "component_names": [
+                "BoxCollider2D"
+              ],
+              "parent": "Novo Grupo",
+              "children": []
+            },
+            {
+              "id": "wall_bottom",
+              "name": "WallBottom",
+              "x": 0.0,
+              "y": 15.0,
+              "w": 1.0,
+              "h": 1.0,
+              "rotation": 0.0,
+              "color": [
+                120,
+                120,
+                120
+              ],
+              "mesh_type": null,
+              "renderer_enabled": true,
+              "material": "Default_Material",
+              "texture": "Assets/Sprites/MyPlatformer/tile_ground.png",
+              "render_layer": "Default",
+              "sort_order": 1,
+              "active": true,
+              "static": true,
+              "tag": "",
+              "layer": "Collision",
+              "components": {
+                "items": [
+                  {
+                    "type": "BoxCollider2D",
+                    "size": [
+                      44,
+                      2
+                    ],
+                    "is_trigger": false
+                  }
+                ]
+              },
+              "component_names": [
+                "BoxCollider2D"
+              ],
+              "parent": "Novo Grupo",
+              "children": []
+            }
+          ]
+        },
         "is_group": true,
         "parent": null,
         "children": [

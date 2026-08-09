@@ -278,13 +278,30 @@ class InspectorViewRenderer:
         h._set_inspector_card_present("logic", bool(bindings) or has_explicit_logic)
         h.logic_graph_combo.clear()
         total_nodes = 0
+        graph_names = []
         for path, graph in bindings:
             total_nodes += len(graph.get("nodes", []))
+            gname = str(graph.get("name") or path.stem)
+            graph_names.append(gname)
             suffix = " • via Tag" if str(graph.get("target", {}).get("type", "name")) == "tag" else ""
-            h.logic_graph_combo.addItem(f"{graph.get('name', path.stem)}{suffix}", str(path))
+            h.logic_graph_combo.addItem(f"Lógica Visual — {gname} ({path.name}){suffix}", str(path))
+
+        # Dynamic component card title
+        title_label = getattr(h, "logic_title_label", None)
+        if hasattr(h, "logic_component_header"):
+            for child in h.logic_component_header.findChildren(object, "InspectorComponentTitle"):
+                if bindings:
+                    if len(bindings) == 1:
+                        child.setText(f"Lógica Visual — {graph_names[0]}")
+                    else:
+                        child.setText(f"Lógica Visual ({len(bindings)}) — {', '.join(graph_names)}")
+                else:
+                    child.setText("Lógica Visual")
+
         if bindings:
+            bullet_list = " • ".join(f"{name}" for name in graph_names)
             h.logic_status_label.setText(
-                f"{len(bindings)} grafo(s) ativo(s) • {total_nodes} blocos"
+                f"{len(bindings)} grafo(s) ativo(s): {bullet_list} ({total_nodes} blocos)"
             )
             h._logic_workspace_controller.update_summary()
         else:
