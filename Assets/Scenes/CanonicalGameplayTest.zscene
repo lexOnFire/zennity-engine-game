@@ -1,0 +1,183 @@
+{
+  "format_version": 2,
+  "scene_name": "CanonicalGameplayTest",
+  "engine_version": "Zennity 0.1.0",
+  "objects": [
+    {
+      "name": "MainCamera",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "tag": "Untagged",
+      "layer": "Default",
+      "id": "main_camera",
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          32.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {
+        "camera": {
+          "active": true,
+          "zoom": 1.0,
+          "clear_color": [
+            0.05,
+            0.05,
+            0.1,
+            1.0
+          ],
+          "viewport_rect": [
+            0.0,
+            0.0,
+            1.0,
+            1.0
+          ],
+          "priority": 0
+        }
+      }
+    },
+    {
+      "name": "Player",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "tag": "Untagged",
+      "layer": "Default",
+      "id": "player",
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          48.0,
+          48.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          0,
+          200,
+          255
+        ],
+        "texture": "Assets/Sprites/Player/idle_1.png",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {
+        "rigidbody": {
+          "enabled": true,
+          "body_type": "dynamic",
+          "gravity_scale": 0.0,
+          "mass": 1.0,
+          "fixed_rotation": true
+        },
+        "collider": {
+          "enabled": true,
+          "type": "box",
+          "width": 48.0,
+          "height": 48.0,
+          "is_trigger": false
+        },
+        "items": [
+          {
+            "type": "LogicGraph",
+            "graph_path": "Assets/Logic/PlayerMovement.zlogic"
+          }
+        ]
+      },
+      "logic_assets": [
+        "Assets/Logic/PlayerMovement.zlogic"
+      ]
+    },
+    {
+      "name": "Wall",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "tag": "Untagged",
+      "layer": "Default",
+      "id": "wall",
+      "transform": {
+        "position": [
+          200.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          32.0,
+          128.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          120,
+          120,
+          120
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {
+        "collider": {
+          "enabled": true,
+          "type": "box",
+          "width": 32.0,
+          "height": 128.0,
+          "is_trigger": false
+        }
+      }
+    }
+  ],
+  "blackboard": {
+    "variables": {}
+  }
+}
