@@ -65,6 +65,10 @@ class Phase1SceneOperationsMixin:
         self.refresh_hierarchy_from_viewport()
         self.select_object(selected)
         self._update_undo_redo_states()
+        if hasattr(self, "viewport") and hasattr(self.viewport, "update"):
+            self.viewport.update()
+        if hasattr(self, "game_viewport") and hasattr(self.game_viewport, "update"):
+            self.game_viewport.update()
 
     def _apply_scene_data(self, scene_data: dict[str, Any]) -> None:
         scene = self._editor_scene()

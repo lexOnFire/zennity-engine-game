@@ -16,49 +16,51 @@
   "editor": {
     "groups": [],
     "comments": [],
-    "migrated_from": "zennity.generic_graph"
+    "migrated_from": "zennity.logic_graph"
   },
   "nodes": [
     {
       "id": "input_horizontal",
-      "type": "input.axis",
-      "title": "input.axis",
-      "category": "Custom",
+      "type": "input_axis",
+      "title": "Eixo de Entrada",
+      "category": "Input",
       "position": [
         370.0,
         80.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
+        "width": 210.0,
+        "height": 0.0
       },
       "properties": {
+        "axis": "horizontal",
         "axis_name": "horizontal"
       }
     },
     {
       "id": "input_vertical",
-      "type": "input.axis",
-      "title": "input.axis",
-      "category": "Custom",
+      "type": "input_axis",
+      "title": "Eixo de Entrada",
+      "category": "Input",
       "position": [
         370.0,
         250.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
+        "width": 210.0,
+        "height": 0.0
       },
       "properties": {
+        "axis": "horizontal",
         "axis_name": "vertical"
       }
     },
     {
       "id": "create_movement_vector",
-      "type": "math.vector2_create",
-      "title": "math.vector2_create",
+      "type": "vector2",
+      "title": "vector2",
       "category": "Custom",
       "position": [
         660.0,
@@ -66,8 +68,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
+        "width": 210.0,
+        "height": 0.0
       },
       "properties": {
         "x": 0,
@@ -76,8 +78,8 @@
     },
     {
       "id": "normalize_vector",
-      "type": "math.vector2_normalize",
-      "title": "math.vector2_normalize",
+      "type": "normalize_vector",
+      "title": "normalize_vector",
       "category": "Custom",
       "position": [
         950.0,
@@ -85,8 +87,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
+        "width": 210.0,
+        "height": 0.0
       },
       "properties": {
         "vector": {
@@ -96,17 +98,17 @@
     },
     {
       "id": "get_move_speed",
-      "type": "variables.get",
-      "title": "variables.get",
-      "category": "Custom",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
         80.0,
         80.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
+        "width": 210.0,
+        "height": 0.0
       },
       "properties": {
         "name": "move_speed"
@@ -114,8 +116,8 @@
     },
     {
       "id": "multiply_speed",
-      "type": "math.multiply",
-      "title": "math.multiply",
+      "type": "multiply_number",
+      "title": "multiply_number",
       "category": "Custom",
       "position": [
         1240.0,
@@ -123,8 +125,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
+        "width": 210.0,
+        "height": 0.0
       },
       "properties": {
         "a": {
@@ -135,19 +137,21 @@
     },
     {
       "id": "set_rigidbody_velocity",
-      "type": "physics.set_velocity",
-      "title": "physics.set_velocity",
-      "category": "Custom",
+      "type": "move_by",
+      "title": "Mover Por",
+      "category": "Movement",
       "position": [
         1530.0,
         80.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
+        "width": 210.0,
+        "height": 0.0
       },
       "properties": {
+        "delta_x": 0.0,
+        "delta_y": 0.0,
         "velocity": {
           "type": "vector2"
         }
@@ -155,8 +159,8 @@
     },
     {
       "id": "get_velocity_magnitude",
-      "type": "math.vector2_magnitude",
-      "title": "math.vector2_magnitude",
+      "type": "magnitude_vector",
+      "title": "magnitude_vector",
       "category": "Custom",
       "position": [
         1530.0,
@@ -164,8 +168,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
+        "width": 210.0,
+        "height": 0.0
       },
       "properties": {
         "vector": {
@@ -175,8 +179,8 @@
     },
     {
       "id": "set_animator_speed",
-      "type": "animator.set_parameter",
-      "title": "animator.set_parameter",
+      "type": "set_animator_parameter",
+      "title": "set_animator_parameter",
       "category": "Custom",
       "position": [
         1820.0,
@@ -184,8 +188,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
+        "width": 210.0,
+        "height": 0.0
       },
       "properties": {
         "parameter": "speed",
@@ -194,33 +198,33 @@
     },
     {
       "id": "frame_loop",
-      "type": "event.every_frame",
-      "title": "event.every_frame",
-      "category": "Custom",
+      "type": "event_update",
+      "title": "On Update",
+      "category": "Events",
       "position": [
         80.0,
         250.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
+        "width": 210.0,
+        "height": 0.0
       },
       "properties": {}
     },
     {
       "id": "check_horizontal_movement",
-      "type": "logic.branch",
-      "title": "logic.branch",
-      "category": "Custom",
+      "type": "if_else",
+      "title": "Se/Senão",
+      "category": "Flow",
       "position": [
         660.0,
         250.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
+        "width": 210.0,
+        "height": 0.0
       },
       "properties": {
         "condition": "not_equal",
@@ -229,8 +233,8 @@
     },
     {
       "id": "get_sign_of_horizontal",
-      "type": "math.sign",
-      "title": "math.sign",
+      "type": "sign_number",
+      "title": "sign_number",
       "category": "Custom",
       "position": [
         950.0,
@@ -238,8 +242,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
+        "width": 210.0,
+        "height": 0.0
       },
       "properties": {
         "value": 0
@@ -247,29 +251,38 @@
     },
     {
       "id": "set_facing_direction",
-      "type": "variables.set",
-      "title": "variables.set",
-      "category": "Custom",
+      "type": "set_variable",
+      "title": "Definir Variável",
+      "category": "Variables",
       "position": [
         1240.0,
         250.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
+        "width": 210.0,
+        "height": 0.0
       },
       "properties": {
-        "name": "facing_x",
-        "value": 1
+        "value": 1,
+        "name": "facing_x"
       }
     }
   ],
   "edges": [
     {
+      "id": "flow_to_move",
+      "from_node": "frame_loop",
+      "from_port": "next",
+      "to_node": "set_rigidbody_velocity",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
       "id": "5aa755148fef44a8b940b7944d5d7f07",
       "from_node": "frame_loop",
-      "from_port": "frame",
+      "from_port": "next",
       "to_node": "input_horizontal",
       "to_port": "in",
       "kind": "any",
@@ -278,7 +291,7 @@
     {
       "id": "96fcc0783ca64ec687ce0d8c388985e2",
       "from_node": "frame_loop",
-      "from_port": "frame",
+      "from_port": "next",
       "to_node": "input_vertical",
       "to_port": "in",
       "kind": "any",
@@ -314,7 +327,7 @@
     {
       "id": "7561266216d046a6ac89c6e7822bbff4",
       "from_node": "normalize_vector",
-      "from_port": "normalized",
+      "from_port": "value",
       "to_node": "multiply_speed",
       "to_port": "a",
       "kind": "any",
@@ -332,7 +345,7 @@
     {
       "id": "27e4722ffff64da6b1577cef337931ca",
       "from_node": "multiply_speed",
-      "from_port": "result",
+      "from_port": "value",
       "to_node": "set_rigidbody_velocity",
       "to_port": "velocity",
       "kind": "any",
@@ -341,7 +354,7 @@
     {
       "id": "0ca09f59426a4c2ca4dc6aecad53ad92",
       "from_node": "multiply_speed",
-      "from_port": "result",
+      "from_port": "value",
       "to_node": "get_velocity_magnitude",
       "to_port": "vector",
       "kind": "any",
@@ -350,7 +363,7 @@
     {
       "id": "f52f9f25bb6f4b9292d9f51dd76f87e3",
       "from_node": "get_velocity_magnitude",
-      "from_port": "magnitude",
+      "from_port": "value",
       "to_node": "set_animator_speed",
       "to_port": "value",
       "kind": "any",
@@ -377,7 +390,7 @@
     {
       "id": "dfb0214bdd044fbc84b4337a5e4170ec",
       "from_node": "get_sign_of_horizontal",
-      "from_port": "result",
+      "from_port": "value",
       "to_node": "set_facing_direction",
       "to_port": "value",
       "kind": "any",
