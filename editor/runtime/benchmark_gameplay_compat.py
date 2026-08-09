@@ -17,6 +17,7 @@ def update_benchmark_gameplay(objects: dict[str, dict[str, Any]], dt: float) -> 
         return
     _collect_coins(objects, player)
     _move_enemies(objects, player, dt)
+    _update_guard_dialogue(objects, player)
 
 
 def _rects_overlap(a: dict[str, Any], b: dict[str, Any]) -> bool:
@@ -78,3 +79,53 @@ def _set_ui_text(objects: dict[str, dict[str, Any]], widget_name: str, text: str
             "command": "set_ui_text",
             "value": {"object": widget_name, "text": text},
         })
+
+
+def _update_guard_dialogue(objects: dict[str, dict[str, Any]], player: dict[str, Any]) -> None:
+    guard = objects.get("Guard")
+    if not isinstance(guard, dict) or not guard.get("active", True):
+        return
+    distance = math.hypot(
+        float(player.get("x", 0.0)) - float(guard.get("x", 0.0)),
+        float(player.get("y", 0.0)) - float(guard.get("y", 0.0)),
+    )
+    in_range = distance <= 120.0
+    player_state = player.setdefault("_benchmark_state", {})
+    was_pressed = bool(player_state.get("interact_pressed", False))
+    pressed = bool(player.get("_input", {}).get("interact", False))
+    player_state["interact_pressed"] = pressed
+    if not in_range:
+        _set_hud(objects, "dialogue_hint", "")
+        return
+    _set_hud(objects, "dialogue_hint", "Pressione E para falar com o Guard", "bottom-center")
+    if pressed and not was_pressed:
+        text = (
+            "Guard: The gate is locked. You must find the key to pass."
+            if not bool(player.get("variables", {}).get("has_key", False))
+            else "Guard: Excellent! You found the key. You may pass."
+        )
+        _set_hud(objects, "dialogue", text, "bottom-center")
+
+
+def _set_hud(
+    objects: dict[str, dict[str, Any]],
+    key: str,
+    text: str,
+    position: str = "top-left",
+) -> None:
+    carrier = objects.get("HUD") or objects.get("Player")
+    if not isinstance(carrier, dict):
+        return
+    if not text:
+        carrier.setdefault("logic_events", []).append({"command": "remove_hud", "value": key})
+        return
+    carrier.setdefault("logic_events", []).append({
+        "command": "set_hud",
+        "value": {
+            "key": key,
+            "text": text,
+            "position": position,
+            "font_size": 20,
+            "color": (255, 255, 255),
+        },
+    })

@@ -39,3 +39,12 @@ def test_benchmark_boss_hud_only_appears_in_level2() -> None:
     assert "BossHealthBar" not in level1_widgets
     assert "BossNameLabel" not in level1_widgets
     assert {"BossHealthBar", "BossNameLabel"} <= level2_widgets
+
+
+def test_level1_contains_guard_npc_with_dialogue_asset() -> None:
+    objects = {obj["name"]: obj for obj in _scene("Level1")["objects"]}
+    guard = objects["Guard"]
+
+    assert guard["dialogue_asset"] == "Assets/Dialogues/GuardDialogue.zdialogue"
+    assert guard["dialogue"]["asset_path"] == "Assets/Dialogues/GuardDialogue.zdialogue"
+    assert (PROJECT_ROOT / guard["dialogue_asset"]).is_file()

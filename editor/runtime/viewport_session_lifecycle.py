@@ -34,7 +34,10 @@ class ViewportSessionLifecycleMixin:
                 "down": bool(self.forwarded_input["down"] or keys[self.pygame.K_s] or keys[self.pygame.K_DOWN]),
                 "jump": bool(self.forwarded_input["jump"] or keys[self.pygame.K_SPACE]),
                 "restart": bool(self.forwarded_input["restart"] or keys[self.pygame.K_r]),
+                "interact": bool(keys[self.pygame.K_e]),
             }
+            if "Player" in self.objects:
+                self.objects["Player"]["_input"] = input_state
             self.logic_trace_last_sent, debug_pause_requested, self.restart_requested = (
                 self.session_orchestrator.update_logic(
                     input_state,

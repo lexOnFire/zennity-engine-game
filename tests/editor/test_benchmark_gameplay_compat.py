@@ -32,3 +32,24 @@ def test_benchmark_enemy_moves_towards_player() -> None:
     assert objects["Enemy 1"]["x"] == 60.0
     assert objects["Enemy 1"]["y"] == 0.0
     assert objects["Enemy 1"]["_logic_motion_axes"] == {"x", "y"}
+
+
+def test_benchmark_guard_dialogue_prompt_and_interaction() -> None:
+    objects = {
+        "Player": {
+            "name": "Player", "x": 0.0, "y": 0.0, "w": 40.0, "h": 40.0,
+            "_input": {"interact": True}, "variables": {},
+        },
+        "Guard": {"name": "Guard", "x": 60.0, "y": 0.0, "w": 40.0, "h": 40.0, "active": True},
+        "HUD": {"name": "HUD"},
+    }
+
+    update_benchmark_gameplay(objects, 1 / 60)
+
+    events = objects["HUD"]["logic_events"]
+    assert any(event["value"]["key"] == "dialogue_hint" for event in events if event["command"] == "set_hud")
+    assert any(
+        event["value"]["key"] == "dialogue" and "gate is locked" in event["value"]["text"]
+        for event in events
+        if event["command"] == "set_hud"
+    )

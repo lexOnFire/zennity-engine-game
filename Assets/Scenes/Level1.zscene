@@ -1297,6 +1297,16 @@
         "dialogue_owner_id": "Guard",
         "interaction_range": 3.0,
         "can_interact": false
+      },
+      "dialogue_asset": "Assets/Dialogues/GuardDialogue.zdialogue",
+      "dialogue": {
+        "asset_path": "Assets/Dialogues/GuardDialogue.zdialogue",
+        "auto_start": false
+      },
+      "editor_data": {
+        "dialogue": {
+          "asset_path": "Assets/Dialogues/GuardDialogue.zdialogue"
+        }
       }
     },
     {
