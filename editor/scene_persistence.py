@@ -147,17 +147,28 @@ class EditorScenePersistence:
         if isinstance(snapshot.get("audio"), dict):
             components["audio"] = deepcopy(snapshot["audio"])
         existing_items = components.get("items") if isinstance(components.get("items"), list) else []
+        snapshot_components = snapshot.get("components")
+        if isinstance(snapshot_components, dict):
+            snapshot_items = snapshot_components.get("items")
+            if isinstance(snapshot_items, list):
+                for s_item in snapshot_items:
+                    if isinstance(s_item, dict) and s_item not in existing_items:
+                        existing_items.append(deepcopy(s_item))
+
         components["items"] = [deepcopy(item) for item in existing_items if scene_item_to_ui(item) is None]
         ui_item = ui_to_scene_item(snapshot.get("ui"))
         if ui_item is not None:
             components["items"].append(ui_item)
         if not components["items"]:
             components.pop("items", None)
+        if isinstance(snapshot.get("logic_assets"), list):
+            source["logic_assets"] = deepcopy(snapshot["logic_assets"])
+
         known = {
             "id", "name", "x", "y", "w", "h", "rotation", "color", "mesh_type",
             "renderer_enabled", "material", "texture", "render_layer", "sort_order",
             "active", "static", "tag", "layer", "rigidbody", "collider", "camera",
-            "audio", "scripts", "component_names", "ui",
+            "audio", "scripts", "component_names", "ui", "logic_assets", "components",
         }
         editor_data = {
             key: deepcopy(value) for key, value in snapshot.items()
@@ -198,7 +209,13 @@ class EditorScenePersistence:
             "layer": str(item.get("layer", "Default")),
         }
         if isinstance(item.get("editor_data"), dict):
+            snapshot["editor_data"] = deepcopy(item["editor_data"])
             snapshot.update(deepcopy(item["editor_data"]))
+        if isinstance(item.get("logic_assets"), list):
+            snapshot["logic_assets"] = deepcopy(item["logic_assets"])
+        if isinstance(components, dict) and components:
+            snapshot["components"] = deepcopy(components)
+
         for key in ("rigidbody", "collider", "camera", "audio"):
             if isinstance(components.get(key), dict):
                 snapshot[key] = deepcopy(components[key])
