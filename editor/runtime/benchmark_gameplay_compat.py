@@ -22,6 +22,7 @@ def update_benchmark_gameplay(objects: dict[str, dict[str, Any]], dt: float) -> 
     _damage_player_on_enemy_contact(objects, player, dt)
     _update_game_over(objects, player)
     _update_guard_dialogue(objects, player)
+    _update_door_transition(objects, player)
 
 
 def _coord(obj: dict[str, Any], key: str, fallback: float) -> float:
@@ -223,6 +224,7 @@ def _update_guard_dialogue(objects: dict[str, dict[str, Any]], player: dict[str,
     _set_hud(objects, "dialogue_hint", "Pressione E para falar com o Guard", "bottom-center")
     if pressed:
         player_state["dialogue_active"] = True
+        player.setdefault("variables", {})["talked_to_guard"] = True
         text = (
             "Guard: The gate is locked. You must find the key to pass."
             if not bool(player.get("variables", {}).get("has_key", False))
@@ -234,6 +236,34 @@ def _update_guard_dialogue(objects: dict[str, dict[str, Any]], player: dict[str,
             "command": "start_dialogue",
             "value": {"speaker": "Guard", "text": text},
         })
+
+
+def _update_door_transition(objects: dict[str, dict[str, Any]], player: dict[str, Any]) -> None:
+    door = _first_matching(objects, "Door", "Door") or _first_matching(objects, "LevelExit", "Door")
+    if not isinstance(door, dict) or not door.get("active", True):
+        return
+    state = player.setdefault("variables", {})
+    has_key = bool(state.get("has_key", False))
+    talked = bool(state.get("talked_to_guard", False))
+    near_door = _touches(player, door, 72.0)
+    runtime = player.setdefault("_benchmark_state", {})
+    if not near_door:
+        _set_hud(objects, "door_hint", "")
+        return
+    if not has_key:
+        _set_hud(objects, "door_hint", "Porta trancada: encontre a chave.", "bottom-center")
+        return
+    if not talked:
+        _set_hud(objects, "door_hint", "Fale com o Guard antes de entrar.", "bottom-center")
+        return
+    _set_hud(objects, "door_hint", "Porta aberta! Indo para Level 2...", "bottom-center")
+    if runtime.get("level2_requested"):
+        return
+    runtime["level2_requested"] = True
+    player.setdefault("logic_events", []).append({
+        "command": "load_scene",
+        "value": {"path": "Assets/Scenes/Level2.zscene"},
+    })
 
 
 def _set_hud(
@@ -280,7 +310,7 @@ def _face_player_movement(player: dict[str, Any]) -> None:
     if left and not right:
         player["flip_x"] = True
         player["facing_x"] = -1
-        player["rotation"] = 180.0
+        player["rotation"] = 0.0
         player.setdefault("variables", {})["facing_x"] = -1
     elif right and not left:
         player["flip_x"] = False
@@ -289,11 +319,11 @@ def _face_player_movement(player: dict[str, Any]) -> None:
         player.setdefault("variables", {})["facing_x"] = 1
     elif up and not down:
         player["facing_y"] = -1
-        player["rotation"] = -90.0
+        player["rotation"] = 0.0
         player.setdefault("variables", {})["facing_y"] = -1
     elif down and not up:
         player["facing_y"] = 1
-        player["rotation"] = 90.0
+        player["rotation"] = 0.0
         player.setdefault("variables", {})["facing_y"] = 1
 
 

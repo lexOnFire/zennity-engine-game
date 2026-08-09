@@ -99,7 +99,7 @@ def test_benchmark_player_faces_horizontal_movement_direction() -> None:
 
     assert objects["Player"]["flip_x"] is True
     assert objects["Player"]["variables"]["facing_x"] == -1
-    assert objects["Player"]["rotation"] == 180.0
+    assert objects["Player"]["rotation"] == 0.0
 
 
 def test_benchmark_player_faces_actual_runtime_motion_delta() -> None:
@@ -128,7 +128,7 @@ def test_benchmark_player_faces_vertical_movement_direction() -> None:
     update_benchmark_gameplay(objects, 1 / 60)
 
     assert objects["Player"]["variables"]["facing_y"] == -1
-    assert objects["Player"]["rotation"] == -90.0
+    assert objects["Player"]["rotation"] == 0.0
 
 
 def test_benchmark_enemy_contact_damages_player_and_updates_health_ui() -> None:
@@ -207,6 +207,7 @@ def test_benchmark_guard_dialogue_prompt_and_interaction() -> None:
         and "gate is locked" in event["value"]["text"]
         for event in events
     )
+    assert objects["Player"]["variables"]["talked_to_guard"] is True
 
 
 def test_benchmark_guard_dialogue_accepts_tagged_npc_guard() -> None:
@@ -226,3 +227,42 @@ def test_benchmark_guard_dialogue_accepts_tagged_npc_guard() -> None:
         and "Excellent" in event["value"]["text"]
         for event in objects["Player"]["logic_events"]
     )
+
+
+def test_benchmark_door_requires_key_and_guard_dialogue_before_level2() -> None:
+    objects = {
+        "Player": {
+            "name": "Player", "x": 0.0, "y": 0.0, "w": 40.0, "h": 40.0,
+            "variables": {"has_key": True, "talked_to_guard": False},
+        },
+        "Door": {"name": "Door", "x": 0.0, "y": 0.0, "w": 48.0, "h": 80.0, "active": True},
+        "HUD": {"name": "HUD"},
+    }
+
+    update_benchmark_gameplay(objects, 1 / 60)
+
+    assert not any(event.get("command") == "load_scene" for event in objects["Player"]["logic_events"])
+    assert any(
+        event["command"] == "set_hud"
+        and event["value"]["key"] == "door_hint"
+        and "Guard" in event["value"]["text"]
+        for event in objects["Player"]["logic_events"]
+    )
+
+
+def test_benchmark_door_loads_level2_after_key_and_guard_dialogue() -> None:
+    objects = {
+        "Player": {
+            "name": "Player", "x": 0.0, "y": 0.0, "w": 40.0, "h": 40.0,
+            "variables": {"has_key": True, "talked_to_guard": True},
+        },
+        "Door": {"name": "Door", "x": 0.0, "y": 0.0, "w": 48.0, "h": 80.0, "active": True},
+        "HUD": {"name": "HUD"},
+    }
+
+    update_benchmark_gameplay(objects, 1 / 60)
+
+    assert {
+        "command": "load_scene",
+        "value": {"path": "Assets/Scenes/Level2.zscene"},
+    } in objects["Player"]["logic_events"]
