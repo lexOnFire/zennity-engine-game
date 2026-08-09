@@ -37,12 +37,32 @@ def migrate_visual_script_graph(data: Mapping[str, Any]) -> dict[str, Any]:
     metadata = data.get("metadata", {}) if isinstance(data.get("metadata"), Mapping) else {}
     from .node_definitions import NODE_DEFINITIONS
 
+    graph_name = str(data.get("name") or metadata.get("name") or "MigratedVisualScript")
+    target_value = "Player"
+    name_lower = graph_name.lower()
+    if "boss" in name_lower:
+        target_value = "Boss"
+    elif "hud" in name_lower:
+        target_value = "HUD"
+    elif "canvas" in name_lower:
+        target_value = "Canvas"
+    elif "menu" in name_lower:
+        target_value = "MenuUI"
+    elif "enemy" in name_lower:
+        target_value = "Enemy"
+    elif "coin" in name_lower:
+        target_value = "Coin"
+    elif "key" in name_lower:
+        target_value = "Key"
+    elif "door" in name_lower:
+        target_value = "Door"
+
     graph = {
         "format": "zennity.logic_graph",
         "version": 1,
         "enabled": True,
-        "name": str(data.get("name") or metadata.get("name") or "MigratedVisualScript"),
-        "target": {"type": "name", "value": "Player"},
+        "name": graph_name,
+        "target": {"type": "name", "value": target_value},
         "debug": {"breakpoints": [], "breakpoint_conditions": {}, "watches": []},
         "variables": {},
         "editor": {
