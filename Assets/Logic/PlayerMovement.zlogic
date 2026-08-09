@@ -16,7 +16,7 @@
     "speed": {
       "type": "number",
       "scope": "object",
-      "default": 220.0
+      "default": 5.0
     }
   },
   "editor": {
@@ -25,210 +25,86 @@
   },
   "nodes": [
     {
-      "id": "update",
+      "id": "node_update",
       "type": "event_update",
       "title": "On Update",
       "category": "Events",
       "position": [
-        27.09,
-        89.41
+        100.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
+        "width": 210.0,
+        "height": 0.0
       },
       "properties": {}
     },
     {
-      "id": "axis",
+      "id": "node_input_h",
       "type": "input_axis",
-      "title": "Read Input Axis",
-      "category": "Movement",
+      "title": "input_axis",
+      "category": "Custom",
       "position": [
-        317.09,
-        51.78
+        300.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
+        "width": 210.0,
+        "height": 0.0
       },
       "properties": {
-        "negative": "A",
-        "positive": "D"
+        "axis_name": "horizontal"
       }
     },
     {
-      "id": "moving",
-      "type": "if_else",
-      "title": "If / Else",
-      "category": "Logic",
+      "id": "node_move_by",
+      "type": "move_by",
+      "title": "move_by",
+      "category": "Custom",
       "position": [
-        590.64,
-        54.14
+        550.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
+        "width": 210.0,
+        "height": 0.0
       },
       "properties": {
-        "condition": "axis != 0"
-      }
-    },
-    {
-      "id": "move",
-      "type": "move",
-      "title": "Move",
-      "category": "Movement",
-      "position": [
-        886.51,
-        41.2
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {
-        "speed": 220.0
-      }
-    },
-    {
-      "id": "idle",
-      "type": "play_animation",
-      "title": "Play Animation",
-      "category": "Action",
-      "position": [
-        900.62,
-        226.49
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {
-        "state": "Idle"
-      }
-    },
-    {
-      "id": "space",
-      "type": "key_pressed",
-      "title": "Key Pressed Now?",
-      "category": "Condition",
-      "position": [
-        328.85,
-        246.47
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 184.0
-      },
-      "properties": {
-        "key": "SPACE"
-      }
-    },
-    {
-      "id": "grounded",
-      "type": "is_grounded",
-      "title": "Is Grounded?",
-      "category": "Condition",
-      "position": [
-        602.39,
-        269.99
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 184.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "jump",
-      "type": "jump",
-      "title": "Jump",
-      "category": "Movement",
-      "position": [
-        899.45,
-        425.88
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {
-        "force": 440.0
+        "x": 0.0,
+        "y": 0.0
       }
     }
   ],
   "edges": [
     {
-      "id": "e1",
-      "from_node": "update",
+      "id": "e6d3be31dc2e4d908c7b1d99f0d9a423",
+      "from_node": "node_update",
       "from_port": "next",
-      "to_node": "axis",
+      "to_node": "node_input_h",
       "to_port": "in",
       "kind": "flow",
       "order": 0
     },
     {
-      "id": "e2",
-      "from_node": "axis",
+      "id": "392a5bcf744a4777959a4e7246051fdd",
+      "from_node": "node_input_h",
       "from_port": "next",
-      "to_node": "moving",
+      "to_node": "node_move_by",
       "to_port": "in",
       "kind": "flow",
       "order": 1
     },
     {
-      "id": "e3",
-      "from_node": "moving",
-      "from_port": "true",
-      "to_node": "move",
-      "to_port": "in",
+      "id": "1d2e0588e2dd4826887244bdc045f701",
+      "from_node": "node_input_h",
+      "from_port": "value",
+      "to_node": "node_move_by",
+      "to_port": "x",
       "kind": "flow",
       "order": 2
-    },
-    {
-      "id": "e4",
-      "from_node": "moving",
-      "from_port": "false",
-      "to_node": "idle",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 3
-    },
-    {
-      "id": "e5",
-      "from_node": "update",
-      "from_port": "next",
-      "to_node": "space",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 4
-    },
-    {
-      "id": "e6",
-      "from_node": "space",
-      "from_port": "true",
-      "to_node": "grounded",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 5
-    },
-    {
-      "id": "e7",
-      "from_node": "grounded",
-      "from_port": "true",
-      "to_node": "jump",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 6
     }
   ]
 }
