@@ -86,7 +86,7 @@
     },
     {
       "id": "enemy_1",
-      "name": "Enemy",
+      "name": "Enemy 1",
       "active": true,
       "tag": "",
       "transform": {
@@ -117,7 +117,7 @@
     },
     {
       "id": "enemy_2",
-      "name": "Enemy",
+      "name": "Enemy 2",
       "active": true,
       "tag": "",
       "transform": {
@@ -148,7 +148,7 @@
     },
     {
       "id": "enemy_3",
-      "name": "Enemy",
+      "name": "Enemy 3",
       "active": true,
       "tag": "",
       "transform": {
@@ -365,7 +365,7 @@
     },
     {
       "id": "coin_1",
-      "name": "Coin",
+      "name": "Coin 1",
       "active": true,
       "tag": "",
       "transform": {
@@ -391,7 +391,7 @@
     },
     {
       "id": "coin_2",
-      "name": "Coin",
+      "name": "Coin 2",
       "active": true,
       "tag": "",
       "transform": {
@@ -417,7 +417,7 @@
     },
     {
       "id": "coin_3",
-      "name": "Coin",
+      "name": "Coin 3",
       "active": true,
       "tag": "",
       "transform": {
@@ -443,7 +443,7 @@
     },
     {
       "id": "coin_4",
-      "name": "Coin",
+      "name": "Coin 4",
       "active": true,
       "tag": "",
       "transform": {
@@ -469,7 +469,7 @@
     },
     {
       "id": "coin_5",
-      "name": "Coin",
+      "name": "Coin 5",
       "active": true,
       "tag": "",
       "transform": {
