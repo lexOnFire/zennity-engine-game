@@ -50,3 +50,13 @@ def test_level1_contains_guard_npc_with_dialogue_asset() -> None:
     assert guard["tag"] == "NPC"
     assert guard["visual"]["color"] == [0.25, 0.85, 1.0, 1.0]
     assert (PROJECT_ROOT / guard["dialogue_asset"]).is_file()
+
+
+def test_level1_victory_flag_is_hidden_until_unlocked() -> None:
+    objects = {obj["name"]: obj for obj in _scene("Level1")["objects"]}
+    level_exit = objects["LevelExit"]
+
+    assert level_exit["active"] is False
+    assert level_exit["enabled"] is False
+    assert level_exit["visual"]["enabled"] is False
+    assert level_exit["variables"]["unlock_condition"] == "boss_defeated_or_victory"

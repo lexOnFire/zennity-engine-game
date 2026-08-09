@@ -1386,7 +1386,7 @@
     {
       "id": "level_exit",
       "name": "LevelExit",
-      "active": true,
+      "active": false,
       "tag": "",
       "transform": {
         "position": [
@@ -1426,11 +1426,11 @@
           }
         ]
       },
-      "enabled": true,
+      "enabled": false,
       "static": false,
       "layer": "Trigger",
       "visual": {
-        "enabled": true,
+        "enabled": false,
         "color": [
           80,
           220,
@@ -1444,7 +1444,10 @@
       },
       "logic_assets": [
         "Assets/Logic/LevelExitLogic.zlogic"
-      ]
+      ],
+      "variables": {
+        "unlock_condition": "boss_defeated_or_victory"
+      }
     }
   ]
 }
