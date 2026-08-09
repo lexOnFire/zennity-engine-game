@@ -182,6 +182,7 @@ def hydrate_logic_graphs(
                         configured.append(g_path)
         if not configured:
             continue
+        configured = list(dict.fromkeys(str(item) for item in configured if str(item).strip()))
         for asset_value in configured:
             path = Path(str(asset_value))
             path = path if path.is_absolute() else project_root / path
@@ -249,4 +250,3 @@ def load_project_subgraph(asset_path: str, project_root: Path) -> dict[str, Any]
     if not any(node.get("type") == "subgraph_start" for node in graph.get("nodes", [])):
         raise ValueError(f"'{resolved.name}' não possui Início do subgrafo.")
     return graph
-

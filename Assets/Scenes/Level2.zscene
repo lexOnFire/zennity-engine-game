@@ -78,42 +78,15 @@
           {
             "type": "LogicGraph",
             "enabled": true,
-            "graph_path": "Assets/Logic/PlayerMovementLogic.zlogic",
+            "graph_path": "Assets/Logic/PlayerMovement_wasd.zlogic",
             "properties": {
-              "graph_path": "Assets/Logic/PlayerMovementLogic.zlogic"
-            }
-          },
-          {
-            "type": "LogicGraph",
-            "enabled": true,
-            "graph_path": "Assets/Logic/PlayerCombatLogic.zlogic",
-            "properties": {
-              "graph_path": "Assets/Logic/PlayerCombatLogic.zlogic"
-            }
-          },
-          {
-            "type": "LogicGraph",
-            "enabled": true,
-            "graph_path": "Assets/Logic/PlayerHealthLogic.zlogic",
-            "properties": {
-              "graph_path": "Assets/Logic/PlayerHealthLogic.zlogic"
-            }
-          },
-          {
-            "type": "LogicGraph",
-            "enabled": true,
-            "graph_path": "Assets/Logic/PlayerMovement.zlogic",
-            "properties": {
-              "graph_path": "Assets/Logic/PlayerMovement.zlogic"
+              "graph_path": "Assets/Logic/PlayerMovement_wasd.zlogic"
             }
           }
         ]
       },
       "logic_assets": [
-        "Assets/Logic/PlayerMovementLogic.zlogic",
-        "Assets/Logic/PlayerCombatLogic.zlogic",
-        "Assets/Logic/PlayerHealthLogic.zlogic",
-        "Assets/Logic/PlayerMovement.zlogic"
+        "Assets/Logic/PlayerMovement_wasd.zlogic"
       ],
       "variables": {
         "move_speed": 200,
@@ -122,6 +95,14 @@
         "attack_damage": 25,
         "attack_range": 64,
         "facing_x": 1
+      },
+      "editor_data": {
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/PlayerMovement_wasd.zlogic",
+            "name": "PlayerMovement_wasd"
+          }
+        ]
       }
     },
     {
@@ -586,5 +567,5 @@
       }
     }
   ],
-  "ui": "Assets/UI/HUD.zui"
+  "ui": "Assets/UI/HUD_Boss.zui"
 }
