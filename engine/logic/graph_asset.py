@@ -91,6 +91,10 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "event_object_created": {"inputs": [], "outputs": [("next", "flow"), ("object", "object")]},
     "self_object": {"inputs": [], "outputs": [("object", "object")]},
     "find_tag": {"inputs": [("in", "flow")], "outputs": [("next", "flow"), ("object", "object")]},
+    "find_nearest_object": {
+        "inputs": [("exec", "flow"), ("tag", "text"), ("max_distance", "number")],
+        "outputs": [("exec_found", "flow"), ("exec_none", "flow"), ("object", "object"), ("distance", "number")],
+    },
     "get_tag": {"inputs": [("target", "object")], "outputs": [("value", "text")]},
     "get_object_name": {"inputs": [("target", "object")], "outputs": [("value", "text")]},
     "get_prefab_parameter": {"inputs": [("target", "object")], "outputs": [("value", "any")]},

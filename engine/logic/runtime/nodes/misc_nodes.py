@@ -1,8 +1,8 @@
 from __future__ import annotations
 import math
 import random
+from types import SimpleNamespace
 from typing import Any, Mapping
-from copy import deepcopy
 from copy import deepcopy
 from ..registry import registry
 
@@ -190,4 +190,71 @@ def evaluate_find_tag(runtime, node_id: str, port: str, node: Mapping[str, Any],
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
     value = game.find(str(properties.get("tag", "Player")))
     return value
+
+
+def _world_objects(game: Any) -> Mapping[str, Any]:
+    world = getattr(game, "_world", None)
+    if not isinstance(world, Mapping):
+        world = getattr(getattr(game, "runtime_world", None), "objects", None)
+    return world if isinstance(world, Mapping) else {}
+
+
+@registry.register_executor('find_nearest_object')
+def execute_find_nearest_object(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
+    """Objeto mais proximo dentro de um raio, em qualquer direcao.
+
+    ``find_tag`` devolve a primeira correspondencia, nao a mais proxima, e um
+    raycast so alcanca o que estiver exatamente na linha do tiro -- nenhum dos dois
+    serve para um ataque corpo-a-corpo cercado por varios inimigos.
+    """
+    node_id = str(node['id'])
+    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
+    wanted = str(runtime._read_input(node_id, "tag", properties.get("tag", ""), game, dt, set())).strip().lower()
+    max_distance = float(runtime._read_input(node_id, "max_distance", properties.get("max_distance", 100.0), game, dt, set()))
+
+    origin_x, origin_y = float(getattr(game, "x", 0.0)), float(getattr(game, "y", 0.0))
+    own_name = str(getattr(game, "name", ""))
+
+    nearest_name, nearest_distance = None, float("inf")
+    for name, obj in list(_world_objects(game).items()):
+        if not isinstance(obj, Mapping) or name == own_name or not obj.get("active", True):
+            continue
+        if wanted and wanted not in (
+            str(obj.get("tag", "")).lower(), str(name).lower(), str(obj.get("name", "")).lower()
+        ):
+            continue
+        distance = math.hypot(float(obj.get("x", 0.0)) - origin_x, float(obj.get("y", 0.0)) - origin_y)
+        if distance <= max_distance and distance < nearest_distance:
+            nearest_name, nearest_distance = name, distance
+
+    if nearest_name is None:
+        runtime._store(node_id, "object", None)
+        runtime._store(node_id, "distance", 0.0)
+        return ["exec_none"]
+
+    # O resultado precisa expor ``.name``/``.tag`` para get_object_name e get_tag,
+    # entao nunca devolvemos a chave crua do mundo.
+    found = None
+    for accessor in ("find", "find_object"):
+        resolver = getattr(game, accessor, None)
+        if callable(resolver):
+            found = resolver(nearest_name)
+            if found is not None:
+                break
+    if found is None:
+        source = _world_objects(game).get(nearest_name, {})
+        found = SimpleNamespace(
+            name=nearest_name,
+            tag=str(source.get("tag", "Untagged")),
+            x=float(source.get("x", 0.0)),
+            y=float(source.get("y", 0.0)),
+        )
+    runtime._store(node_id, "object", found)
+    runtime._store(node_id, "distance", nearest_distance)
+    return ["exec_found"]
+
+
+@registry.register_evaluator('find_nearest_object')
+def evaluate_find_nearest_object(runtime, node_id: str, port: str, node: Mapping[str, Any], game: Any, dt: float, branch: set[str]) -> Any:
+    return runtime.values.get((node_id, str(port)))
 

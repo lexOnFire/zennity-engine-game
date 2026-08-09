@@ -21,12 +21,7 @@
     "attack_range": {
       "type": "number",
       "scope": "object",
-      "default": 80.0
-    },
-    "facing_x": {
-      "type": "number",
-      "scope": "object",
-      "default": 1.0
+      "default": 90.0
     },
     "last_attack_damage": {
       "type": "number",
@@ -44,15 +39,8 @@
       "type": "event_update",
       "title": "On Update",
       "category": "Events",
-      "position": [
-        -1360.0,
-        337.2
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
-      },
+      "position": [-1360.0, 340.0],
+      "editor": {"collapsed": false, "width": 220.0, "height": 150.0},
       "properties": {}
     },
     {
@@ -60,353 +48,158 @@
       "type": "key_pressed",
       "title": "Space Pressed?",
       "category": "Condition",
-      "position": [
-        -1060.0,
-        340.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 184.0
-      },
-      "properties": {
-        "key": "space"
-      }
+      "position": [-1060.0, 340.0],
+      "editor": {"collapsed": false, "width": 220.0, "height": 184.0},
+      "properties": {"key": "space"}
     },
     {
-      "id": "self_ref",
-      "type": "self_object",
-      "title": "This Object",
-      "category": "Objects",
-      "position": [
-        -1045.99,
-        -23.91
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "player_pos",
-      "type": "get_position",
-      "title": "Player Position",
-      "category": "Movement",
-      "position": [
-        -796.75,
-        -23.82
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "facing",
-      "type": "get_variable",
-      "title": "Get Facing X",
-      "category": "Variables",
-      "position": [
-        -795.59,
-        182.2
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {
-        "name": "facing_x",
-        "scope": "object"
-      }
+      "id": "attack_cooldown",
+      "type": "cooldown",
+      "title": "Attack Cooldown",
+      "category": "Flow",
+      "position": [-760.0, 340.0],
+      "editor": {"collapsed": false, "width": 220.0, "height": 184.0},
+      "properties": {"seconds": 0.45}
     },
     {
       "id": "range_var",
       "type": "get_variable",
       "title": "Get Attack Range",
       "category": "Variables",
-      "position": [
-        -807.2,
-        553.25
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {
-        "name": "attack_range",
-        "scope": "object"
-      }
+      "position": [-760.0, 90.0],
+      "editor": {"collapsed": false, "width": 230.0, "height": 160.0},
+      "properties": {"name": "attack_range", "scope": "object"}
+    },
+    {
+      "id": "nearest_enemy",
+      "type": "find_nearest_object",
+      "title": "Nearest Enemy In Range",
+      "category": "Objects",
+      "position": [-420.0, 320.0],
+      "editor": {"collapsed": false, "width": 250.0, "height": 220.0},
+      "properties": {"tag": "Enemy", "max_distance": 90.0}
+    },
+    {
+      "id": "hit_name",
+      "type": "get_object_name",
+      "title": "Hit Enemy Name",
+      "category": "Objects",
+      "position": [-80.0, 120.0],
+      "editor": {"collapsed": false, "width": 230.0, "height": 150.0},
+      "properties": {}
     },
     {
       "id": "damage_var",
       "type": "get_variable",
       "title": "Get Attack Damage",
       "category": "Variables",
-      "position": [
-        -423.31,
-        285.51
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {
-        "name": "attack_damage",
-        "scope": "object"
-      }
-    },
-    {
-      "id": "attack_ray",
-      "type": "raycast",
-      "title": "Raycast Enemy Check",
-      "category": "Physics/Queries",
-      "position": [
-        -438.94,
-        472.83
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 240.0,
-        "height": 352.0
-      },
-      "properties": {
-        "origin_x": 0.0,
-        "origin_y": 0.0,
-        "direction_x": 1.0,
-        "direction_y": 0.0,
-        "max_distance": 999.0,
-        "ignore_self": true,
-        "include_triggers": false,
-        "layer_mask": 4294967295
-      }
-    },
-    {
-      "id": "emit_hit",
-      "type": "emit_event",
-      "title": "Emit Attack Hit",
-      "category": "Events",
-      "position": [
-        200.18,
-        216.63
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {
-        "payload": "",
-        "name": "player_attack_hit"
-      }
-    },
-    {
-      "id": "hit_log",
-      "type": "log_message",
-      "title": "Log Hit",
-      "category": "Action",
-      "position": [
-        455.07,
-        230.68
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {
-        "message": "hitou",
-        "text": "Player attack HIT"
-      }
-    },
-    {
-      "id": "miss_log",
-      "type": "log_message",
-      "title": "Log Miss",
-      "category": "Action",
-      "position": [
-        -129.71,
-        510.39
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {
-        "message": "",
-        "text": "Player attack MISS"
-      }
-    },
-    {
-      "id": "hit_name",
-      "type": "get_object_name",
-      "title": "Hit Object Name",
-      "category": "Objects",
-      "position": [
-        -122.17,
-        353.23
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
-      },
-      "properties": {}
+      "position": [-80.0, -120.0],
+      "editor": {"collapsed": false, "width": 230.0, "height": 160.0},
+      "properties": {"name": "attack_damage", "scope": "object"}
     },
     {
       "id": "publish_damage",
       "type": "set_variable",
       "title": "Publish Damage",
       "category": "Variables",
-      "position": [
-        -120.01,
-        160.4
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 230.0,
-        "height": 160.0
-      },
-      "properties": {
-        "value": 0.0,
-        "name": "last_attack_damage",
-        "scope": "scene"
-      }
+      "position": [240.0, 260.0],
+      "editor": {"collapsed": false, "width": 230.0, "height": 160.0},
+      "properties": {"name": "last_attack_damage", "scope": "scene", "value": 0.0}
+    },
+    {
+      "id": "emit_hit",
+      "type": "emit_event",
+      "title": "Emit Attack Hit",
+      "category": "Events",
+      "position": [580.0, 260.0],
+      "editor": {"collapsed": false, "width": 230.0, "height": 160.0},
+      "properties": {"name": "player_attack_hit"}
+    },
+    {
+      "id": "hit_log",
+      "type": "log_message",
+      "title": "Log Hit",
+      "category": "Action",
+      "position": [920.0, 260.0],
+      "editor": {"collapsed": false, "width": 230.0, "height": 160.0},
+      "properties": {"text": "Player attack HIT"}
+    },
+    {
+      "id": "miss_log",
+      "type": "log_message",
+      "title": "Log Miss",
+      "category": "Action",
+      "position": [240.0, 520.0],
+      "editor": {"collapsed": false, "width": 230.0, "height": 160.0},
+      "properties": {"text": "Player attack MISS"}
     }
   ],
   "edges": [
     {
       "id": "f_update_to_key",
-      "from_node": "on_update",
-      "from_port": "next",
-      "to_node": "space_key",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 0
+      "from_node": "on_update", "from_port": "next",
+      "to_node": "space_key", "to_port": "in",
+      "kind": "flow", "order": 0
     },
     {
-      "id": "d_self_to_pos",
-      "from_node": "self_ref",
-      "from_port": "object",
-      "to_node": "player_pos",
-      "to_port": "target",
-      "kind": "object",
-      "order": 4
+      "id": "f_key_to_cooldown",
+      "from_node": "space_key", "from_port": "true",
+      "to_node": "attack_cooldown", "to_port": "in",
+      "kind": "flow", "order": 1
     },
     {
-      "id": "d_posx_to_originx",
-      "from_node": "player_pos",
-      "from_port": "x",
-      "to_node": "attack_ray",
-      "to_port": "origin_x",
-      "kind": "number",
-      "order": 5
+      "id": "f_cooldown_to_find",
+      "from_node": "attack_cooldown", "from_port": "next",
+      "to_node": "nearest_enemy", "to_port": "exec",
+      "kind": "flow", "order": 2
     },
     {
-      "id": "d_posy_to_originy",
-      "from_node": "player_pos",
-      "from_port": "y",
-      "to_node": "attack_ray",
-      "to_port": "origin_y",
-      "kind": "number",
-      "order": 6
+      "id": "d_range_to_find",
+      "from_node": "range_var", "from_port": "value",
+      "to_node": "nearest_enemy", "to_port": "max_distance",
+      "kind": "number", "order": 3
     },
     {
-      "id": "d_facing_to_dirx",
-      "from_node": "facing",
-      "from_port": "value",
-      "to_node": "attack_ray",
-      "to_port": "direction_x",
-      "kind": "number",
-      "order": 7
+      "id": "d_found_to_name",
+      "from_node": "nearest_enemy", "from_port": "object",
+      "to_node": "hit_name", "to_port": "target",
+      "kind": "object", "order": 4
     },
     {
-      "id": "d_range_to_distance",
-      "from_node": "range_var",
-      "from_port": "value",
-      "to_node": "attack_ray",
-      "to_port": "max_distance",
-      "kind": "number",
-      "order": 8
-    },
-    {
-      "id": "f_ray_hit_to_emit",
-      "from_node": "attack_ray",
-      "from_port": "exec_hit",
-      "to_node": "publish_damage",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 9
-    },
-    {
-      "id": "d_damage_to_payload",
-      "from_node": "hit_name",
-      "from_port": "value",
-      "to_node": "emit_hit",
-      "to_port": "payload",
-      "kind": "text",
-      "order": 10
-    },
-    {
-      "id": "f_emit_to_log",
-      "from_node": "emit_hit",
-      "from_port": "next",
-      "to_node": "hit_log",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 11
-    },
-    {
-      "id": "f_ray_nohit_to_log",
-      "from_node": "attack_ray",
-      "from_port": "exec_no_hit",
-      "to_node": "miss_log",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 12
+      "id": "f_found_to_publish",
+      "from_node": "nearest_enemy", "from_port": "exec_found",
+      "to_node": "publish_damage", "to_port": "in",
+      "kind": "flow", "order": 5
     },
     {
       "id": "d_damage_to_publish",
-      "from_node": "damage_var",
-      "from_port": "value",
-      "to_node": "publish_damage",
-      "to_port": "value",
-      "kind": "number",
-      "order": 16
-    },
-    {
-      "id": "d_hitobj_to_name",
-      "from_node": "attack_ray",
-      "from_port": "hit_object",
-      "to_node": "hit_name",
-      "to_port": "target",
-      "kind": "object",
-      "order": 17
+      "from_node": "damage_var", "from_port": "value",
+      "to_node": "publish_damage", "to_port": "value",
+      "kind": "number", "order": 6
     },
     {
       "id": "f_publish_to_emit",
-      "from_node": "publish_damage",
-      "from_port": "next",
-      "to_node": "emit_hit",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 18
+      "from_node": "publish_damage", "from_port": "next",
+      "to_node": "emit_hit", "to_port": "in",
+      "kind": "flow", "order": 7
     },
     {
-      "id": "af563539af1749fb960d3e526e1d8735",
-      "from_node": "space_key",
-      "from_port": "true",
-      "to_node": "attack_ray",
-      "to_port": "exec",
-      "kind": "flow",
-      "order": 13
+      "id": "d_name_to_payload",
+      "from_node": "hit_name", "from_port": "value",
+      "to_node": "emit_hit", "to_port": "payload",
+      "kind": "text", "order": 8
+    },
+    {
+      "id": "f_emit_to_log",
+      "from_node": "emit_hit", "from_port": "next",
+      "to_node": "hit_log", "to_port": "in",
+      "kind": "flow", "order": 9
+    },
+    {
+      "id": "f_none_to_miss",
+      "from_node": "nearest_enemy", "from_port": "exec_none",
+      "to_node": "miss_log", "to_port": "in",
+      "kind": "flow", "order": 10
     }
   ]
 }

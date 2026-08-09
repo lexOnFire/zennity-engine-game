@@ -91,7 +91,19 @@
               "graph_path": "Assets/Logic/PlayerCombatLogic.zlogic"
             }
           }
-        ]
+        ],
+        "rigidbody": {
+          "mass": 1.0,
+          "gravity_scale": 1.0,
+          "use_gravity": false,
+          "is_kinematic": false
+        },
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 48.0,
+          "height": 48.0
+        }
       },
       "logic_assets": [
         "Assets/Logic/PlayerMovementLogic.zlogic",
@@ -1491,7 +1503,7 @@
       "id": "enemy_3",
       "name": "Enemy 3",
       "active": true,
-      "tag": "",
+      "tag": "Enemy",
       "transform": {
         "position": [
           400.0,
@@ -1581,7 +1593,13 @@
               "graph_path": "Assets/Logic/EnemyHealth.zlogic"
             }
           }
-        ]
+        ],
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 48.0,
+          "height": 48.0
+        }
       },
       "logic_assets": [
         "Assets/Logic/EnemyAILogic.zlogic",
@@ -1621,7 +1639,7 @@
       "id": "enemy_2",
       "name": "Enemy 2",
       "active": true,
-      "tag": "",
+      "tag": "Enemy",
       "transform": {
         "position": [
           200.0,
@@ -1650,7 +1668,7 @@
         ],
         "texture": "Assets/Sprites/MyPlatformer/enemy.png",
         "material": "Default_Material",
-        "mesh_type": null,
+        "mesh_type": "UI",
         "layer": "Default",
         "order": 8
       },
@@ -1751,7 +1769,7 @@
       "id": "enemy_1",
       "name": "Enemy 1",
       "active": true,
-      "tag": "",
+      "tag": "Enemy",
       "transform": {
         "position": [
           300.0,
@@ -1841,7 +1859,13 @@
               "graph_path": "Assets/Logic/EnemyHealth.zlogic"
             }
           }
-        ]
+        ],
+        "collider": {
+          "type": "box",
+          "is_trigger": false,
+          "width": 48.0,
+          "height": 48.0
+        }
       },
       "logic_assets": [
         "Assets/Logic/EnemyAILogic.zlogic",

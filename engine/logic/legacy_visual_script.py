@@ -57,6 +57,7 @@ LEGACY_NODE_TYPES = {
     "physics.raycast_2d": "raycast",
     "every_frame": "event_update",
     "ui_set_text": "set_ui_text",
+    "object.find_by_name": "find_tag",
 }
 
 LEGACY_PORTS = {

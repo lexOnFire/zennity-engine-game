@@ -140,83 +140,101 @@ class TestAnimationController:
 
 
 class TestPlayerCombatLogic:
-    """Test PlayerCombatLogic.zlogic structure."""
+    """Contrato do PlayerCombatLogic.zlogic.
+
+    Os testes antigos fixavam os ids de nos de um desenho anterior do grafo
+    (``space_key_down``, ``raycast_for_enemy``, ``set_enemy_health``...). Aquele
+    desenho nao funcionava -- o no de raycast era na verdade um ``key_pressed``, e
+    o dano era escrito na propria variavel do jogador -- e os testes passavam
+    mesmo assim, porque so olhavam nomes. Aqui verificamos o que precisa ser
+    verdade para o combate funcionar, nao como ele foi montado.
+    """
+
+    @staticmethod
+    def _graph():
+        logic_path = project_root / "Assets" / "Logic" / "PlayerCombatLogic.zlogic"
+        return json.loads(logic_path.read_text(encoding="utf-8"))
 
     def test_combat_logic_exists(self):
         """Verify PlayerCombatLogic.zlogic exists."""
         logic_path = project_root / "Assets" / "Logic" / "PlayerCombatLogic.zlogic"
         assert logic_path.exists(), "PlayerCombatLogic.zlogic not found"
 
-    def test_combat_logic_valid_json(self):
-        """Verify combat logic is valid JSON."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerCombatLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
-        assert data.get("format") == "zennity.generic_graph"
+    def test_combat_logic_valid_format(self):
+        """O grafo usa o formato atual de logic graph."""
+        assert self._graph().get("format") == "zennity.logic_graph"
 
-    def test_combat_has_space_input_node(self):
-        """Verify logic has SPACE key input node."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerCombatLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
+    def test_combat_graph_validates_clean(self):
+        """Sem portas invalidas nem nos inalcancaveis."""
+        from engine.logic.graph_validator import validate_logic_graph
 
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "space_key_down" in node_ids
+        issues = validate_logic_graph(self._graph())
+        assert issues == [], f"grafo de combate com problemas: {issues}"
 
-    def test_combat_has_attack_trigger_node(self):
-        """Verify logic has set_attack_trigger node."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerCombatLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
+    def test_attack_is_driven_by_a_key(self):
+        """O ataque parte de uma tecla, nao dispara sozinho."""
+        types = {n.get("type") for n in self._graph().get("nodes", [])}
+        assert types & {"key_pressed", "key_held", "is_key_pressed", "event_key_pressed"}
 
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "set_attack_trigger" in node_ids
+    def test_attack_is_rate_limited(self):
+        """Sem cooldown o ataque dispararia a cada frame enquanto a tecla estiver pressionada."""
+        types = {n.get("type") for n in self._graph().get("nodes", [])}
+        assert types & {"cooldown", "once"}, "ataque precisa de limitador de cadencia"
 
-    def test_combat_has_animation_event_node(self):
-        """Verify logic has animation.on_event 'hit' node."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerCombatLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
+    def test_attack_selects_a_target(self):
+        """Algum no precisa dizer *qual* inimigo foi atingido."""
+        types = {n.get("type") for n in self._graph().get("nodes", [])}
+        assert types & {"find_nearest_object", "raycast", "find_tag"}
 
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "animation_hit_event" in node_ids
+    def test_attack_publishes_damage_and_target(self):
+        """O dano vai para uma variavel de cena e o alvo viaja no evento.
 
-    def test_combat_has_raycast_node(self):
-        """Verify logic has raycast_2d node."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerCombatLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
+        Um grafo nao consegue escrever variaveis de outro objeto, entao o dano so
+        chega ao inimigo por esse par: variavel compartilhada + evento nomeando o
+        alvo. Se qualquer um dos dois sumir, o inimigo nunca perde vida.
+        """
+        graph = self._graph()
+        nodes = {n.get("id"): n for n in graph.get("nodes", [])}
 
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "raycast_for_enemy" in node_ids
+        emitters = [n for n in nodes.values() if n.get("type") == "emit_event"]
+        assert emitters, "combate precisa emitir o evento de acerto"
+        event_name = str(emitters[0].get("properties", {}).get("name", ""))
+        assert event_name, "o evento de acerto precisa de nome"
 
-    def test_combat_has_damage_nodes(self):
-        """Verify logic has damage calculation nodes."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerCombatLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
+        publishers = [
+            n for n in nodes.values()
+            if n.get("type") == "set_variable"
+            and str(n.get("properties", {}).get("scope", "")) == "scene"
+        ]
+        assert publishers, "o dano precisa ir para uma variavel de escopo scene"
 
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "get_attack_damage" in node_ids
-        assert "subtract_damage" in node_ids
-        assert "get_enemy_health" in node_ids
-        assert "set_enemy_health" in node_ids
+        payload_edge = next(
+            (e for e in graph.get("edges", [])
+             if e.get("to_node") == emitters[0]["id"] and e.get("to_port") == "payload"),
+            None,
+        )
+        assert payload_edge is not None, "o evento precisa carregar o alvo no payload"
+        assert nodes[payload_edge["from_node"]].get("type") == "get_object_name"
 
-    def test_combat_has_death_check_node(self):
-        """Verify logic has health <= 0 check and destroy."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerCombatLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
+    def test_enemy_health_graph_answers_that_event(self):
+        """A outra ponta: o inimigo escuta o mesmo evento e so reage se for ele."""
+        health_path = project_root / "Assets" / "Logic" / "EnemyHealth.zlogic"
+        assert health_path.exists(), "EnemyHealth.zlogic not found"
+        health = json.loads(health_path.read_text(encoding="utf-8"))
 
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "check_dead" in node_ids
-        assert "destroy_enemy" in node_ids
+        emitters = [n for n in self._graph().get("nodes", []) if n.get("type") == "emit_event"]
+        event_name = str(emitters[0].get("properties", {}).get("name", ""))
 
-    def test_combat_logic_node_count(self):
-        """Record combat logic node and edge counts."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerCombatLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
+        listeners = [
+            n for n in health.get("nodes", [])
+            if n.get("type") == "event_custom"
+            and str(n.get("properties", {}).get("name", "")) == event_name
+        ]
+        assert listeners, f"EnemyHealth precisa escutar '{event_name}'"
 
-        nodes = data.get("nodes", [])
-        edges = data.get("edges", [])
-        print(f"\nPlayerCombatLogic Stats:")
-        print(f"  Nodes: {len(nodes)}")
-        print(f"  Edges: {len(edges)}")
-
-        assert len(nodes) >= 12, "Combat logic should have at least 12 nodes"
+        types = {n.get("type") for n in health.get("nodes", [])}
+        assert "compare_text" in types, "o inimigo precisa conferir se o alvo era ele"
+        assert "destroy_object" in types, "o inimigo precisa morrer ao zerar a vida"
 
 
 class TestPlayerCombatVariables:
