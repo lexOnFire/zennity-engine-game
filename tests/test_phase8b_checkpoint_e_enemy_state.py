@@ -60,18 +60,15 @@ def test_enemy_has_collider(scene_data):
     assert collider.get("height") == 36.0
 
 
-def test_enemy_has_logic_graph(scene_data):
-    """Verify Enemy has Logic Graph component (100% visual state management)."""
+def test_enemy_has_logic_assets(scene_data):
+    """Verify Enemy has logic_assets field pointing to EnemyHealth.zlogic."""
     enemy = next((obj for obj in scene_data["objects"] if obj.get("name") == "Enemy"), None)
     assert enemy is not None
-    components = enemy.get("components", {})
-    items = components.get("items", [])
-    logic_graphs = [c for c in items if c.get("type") == "LogicGraph"]
-    assert len(logic_graphs) == 1, "Logic Graph component not found"
 
-    logic_graph = logic_graphs[0]
-    assert logic_graph.get("graph_path") == "Assets/Logic/EnemyHealth.zlogic", \
-        "Logic Graph path incorrect"
+    logic_assets = enemy.get("logic_assets", [])
+    assert len(logic_assets) > 0, "logic_assets not found"
+    assert "Assets/Logic/EnemyHealth.zlogic" in logic_assets, \
+        "EnemyHealth.zlogic not in logic_assets"
 
 
 def test_enemy_health_logic_graph_exists():
@@ -127,34 +124,33 @@ def test_enemy_runtime_loading():
     assert enemy_obj is not None, "Enemy not found in deserialized scene"
 
 
-def test_enemy_logic_graph_accessible():
-    """Test that Logic Graph (visual state) is accessible on Enemy."""
+def test_enemy_logic_assets_field():
+    """Test that Enemy.logic_assets points to health logic."""
     with open("Assets/Scenes/CanonicalGameplayTest.zscene") as f:
         scene_data = json.load(f)
 
     enemy = next((obj for obj in scene_data["objects"] if obj.get("name") == "Enemy"), None)
-    components = enemy.get("components", {})
-    items = components.get("items", [])
-    logic_graph = next((c for c in items if c.get("type") == "LogicGraph"), None)
+    logic_assets = enemy.get("logic_assets", [])
 
-    assert logic_graph is not None, "LogicGraph component not found"
-    assert logic_graph.get("graph_path") == "Assets/Logic/EnemyHealth.zlogic"
+    assert len(logic_assets) > 0, "logic_assets field missing"
+    assert "EnemyHealth.zlogic" in logic_assets[0], "EnemyHealth.zlogic not referenced"
 
 
 def test_checkpoint_e_visual_approach():
     """Verify Checkpoint E uses 100% visual approach (no Python state scripts)."""
-    # 1. Scene uses LogicGraph, not Health component script
+    # 1. Scene uses logic_assets (visual), not Health component script
     with open("Assets/Scenes/CanonicalGameplayTest.zscene") as f:
         scene_data = json.load(f)
 
     enemy = next((obj for obj in scene_data["objects"] if obj.get("name") == "Enemy"), None)
     components = enemy.get("components", {})
     items = components.get("items", [])
+    logic_assets = enemy.get("logic_assets", [])
 
-    has_logic_graph = any(c.get("type") == "LogicGraph" for c in items)
     has_health_script = any(c.get("type") == "Health" for c in items)
+    has_logic_assets = len(logic_assets) > 0
 
-    assert has_logic_graph, "Enemy should use LogicGraph for state"
+    assert has_logic_assets, "Enemy should use logic_assets for state"
     assert not has_health_script, "Enemy should NOT use Health script component"
 
     # 2. EnemyHealth.zlogic defines state variables

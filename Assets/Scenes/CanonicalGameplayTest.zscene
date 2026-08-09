@@ -227,12 +227,6 @@
         "order": 0
       },
       "components": {
-        "items": [
-          {
-            "type": "LogicGraph",
-            "graph_path": "Assets/Logic/EnemyHealth.zlogic"
-          }
-        ],
         "collider": {
           "enabled": true,
           "type": "box",
