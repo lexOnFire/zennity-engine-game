@@ -23,34 +23,34 @@
       "type": "event_update",
       "title": "On Update",
       "category": "Events",
-      "position": [-200.0, 50.0],
+      "position": [-300.0, 50.0],
       "editor": {"collapsed": false, "width": 220.0, "height": 150.0},
       "properties": {}
     },
     {
       "id": "input_h",
       "type": "input_axis",
-      "title": "Input Horizontal",
+      "title": "Horizontal (A/D)",
       "category": "Input",
-      "position": [100.0, -150.0],
+      "position": [50.0, -150.0],
       "editor": {"collapsed": false, "width": 220.0, "height": 156.0},
-      "properties": {"axis_name": "Horizontal"}
+      "properties": {"negative": "a", "positive": "d"}
     },
     {
       "id": "input_v",
       "type": "input_axis",
-      "title": "Input Vertical",
+      "title": "Vertical (W/S)",
       "category": "Input",
-      "position": [100.0, 50.0],
+      "position": [50.0, 50.0],
       "editor": {"collapsed": false, "width": 220.0, "height": 156.0},
-      "properties": {"axis_name": "Vertical"}
+      "properties": {"negative": "s", "positive": "w"}
     },
     {
       "id": "speed",
       "type": "number_value",
       "title": "Speed 5.0",
       "category": "Values",
-      "position": [100.0, 250.0],
+      "position": [50.0, 260.0],
       "editor": {"collapsed": false, "width": 220.0, "height": 150.0},
       "properties": {"value": 5.0}
     },
@@ -59,7 +59,7 @@
       "type": "multiply_number",
       "title": "Multiply X",
       "category": "Math",
-      "position": [400.0, -150.0],
+      "position": [380.0, -150.0],
       "editor": {"collapsed": false, "width": 220.0, "height": 150.0},
       "properties": {"a": 0.0, "b": 5.0}
     },
@@ -68,7 +68,7 @@
       "type": "multiply_number",
       "title": "Multiply Y",
       "category": "Math",
-      "position": [400.0, 50.0],
+      "position": [380.0, 50.0],
       "editor": {"collapsed": false, "width": 220.0, "height": 150.0},
       "properties": {"a": 0.0, "b": 5.0}
     },
@@ -89,7 +89,8 @@
       "from_port": "next",
       "to_node": "move_by",
       "to_port": "in",
-      "kind": "flow"
+      "kind": "flow",
+      "order": 0
     },
     {
       "id": "e2",
@@ -97,7 +98,8 @@
       "from_port": "value",
       "to_node": "mult_x",
       "to_port": "a",
-      "kind": "data"
+      "kind": "data",
+      "order": 1
     },
     {
       "id": "e3",
@@ -105,7 +107,8 @@
       "from_port": "value",
       "to_node": "mult_x",
       "to_port": "b",
-      "kind": "data"
+      "kind": "data",
+      "order": 2
     },
     {
       "id": "e4",
@@ -113,7 +116,8 @@
       "from_port": "value",
       "to_node": "mult_y",
       "to_port": "a",
-      "kind": "data"
+      "kind": "data",
+      "order": 3
     },
     {
       "id": "e5",
@@ -121,7 +125,8 @@
       "from_port": "value",
       "to_node": "mult_y",
       "to_port": "b",
-      "kind": "data"
+      "kind": "data",
+      "order": 4
     },
     {
       "id": "e6",
@@ -129,7 +134,8 @@
       "from_port": "value",
       "to_node": "move_by",
       "to_port": "delta_x",
-      "kind": "data"
+      "kind": "data",
+      "order": 5
     },
     {
       "id": "e7",
@@ -137,7 +143,8 @@
       "from_port": "value",
       "to_node": "move_by",
       "to_port": "delta_y",
-      "kind": "data"
+      "kind": "data",
+      "order": 6
     }
   ]
 }
