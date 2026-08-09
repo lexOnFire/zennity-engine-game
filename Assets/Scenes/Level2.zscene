@@ -115,7 +115,15 @@
           }
         ]
       },
-      "enabled": true
+      "enabled": true,
+      "editor_data": {
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/HUDLogic.zlogic",
+            "name": "HUDLogic"
+          }
+        ]
+      }
     },
     {
       "id": "level2_boss",
@@ -291,5 +299,6 @@
       },
       "enabled": true
     }
-  ]
+  ],
+  "ui": "Assets/UI/HUD.zui"
 }

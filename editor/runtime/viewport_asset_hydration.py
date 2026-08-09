@@ -169,10 +169,17 @@ def hydrate_logic_graphs(
             for item in obj["editor_data"]["logic_graphs"]:
                 if isinstance(item, dict) and item.get("path"):
                     configured.append(item["path"])
-        if isinstance(obj.get("components"), dict) and isinstance(obj["components"].get("logic_graphs"), list):
-            for item in obj["components"]["logic_graphs"]:
-                if isinstance(item, dict) and item.get("path"):
-                    configured.append(item["path"])
+        if isinstance(obj.get("components"), dict):
+            if isinstance(obj["components"].get("logic_graphs"), list):
+                for item in obj["components"]["logic_graphs"]:
+                    if isinstance(item, dict) and item.get("path"):
+                        configured.append(item["path"])
+            items = obj["components"].get("items", []) if isinstance(obj["components"], dict) else []
+            for comp in items:
+                if isinstance(comp, dict) and comp.get("type") == "LogicGraph":
+                    g_path = comp.get("graph_path") or comp.get("properties", {}).get("graph_path", "")
+                    if g_path:
+                        configured.append(g_path)
         if not configured:
             continue
         for asset_value in configured:

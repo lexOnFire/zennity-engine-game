@@ -2,6 +2,7 @@
   "format_version": 2,
   "scene_name": "Level 1 - Arena",
   "engine_version": "0.1.0",
+  "ui": "Assets/UI/HUD.zui",
   "blackboard": {
     "variables": {}
   },
@@ -45,8 +46,17 @@
       "enabled": true,
       "prefab": "Assets/Prefabs/Player.zprfb",
       "static": false,
-      "layer": "Default",
-      "components": {}
+      "components": {
+        "items": [
+          {
+            "type": "LogicGraph",
+            "graph_path": "Assets/Logic/PlayerMovement.zlogic"
+          }
+        ]
+      },
+      "logic_assets": [
+        "Assets/Logic/PlayerMovement.zlogic"
+      ]
     },
     {
       "id": "level1_camera",
@@ -297,6 +307,8 @@
                 35,
                 48
               ],
+              "layout_path": "Assets/UI/HUD.zui",
+              "ui_asset": "Assets/UI/HUD.zui",
               "sprite_path": ""
             }
           }
@@ -317,6 +329,14 @@
         "texture": "",
         "layer": "Default",
         "order": 0
+      },
+      "editor_data": {
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/HUDLogic.zlogic",
+            "name": "HUDLogic"
+          }
+        ]
       }
     },
     {
