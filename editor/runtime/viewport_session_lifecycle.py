@@ -27,12 +27,15 @@ class ViewportSessionLifecycleMixin:
         if self.playing and not self.paused:
             self.runtime_initializer.start_spawned_objects()
             keys = self.pygame.key.get_pressed()
+            space_pressed = bool(self.forwarded_input["jump"] or keys[self.pygame.K_SPACE])
             input_state = {
                 "left": bool(self.forwarded_input["left"] or keys[self.pygame.K_a] or keys[self.pygame.K_LEFT]),
                 "right": bool(self.forwarded_input["right"] or keys[self.pygame.K_d] or keys[self.pygame.K_RIGHT]),
                 "up": bool(self.forwarded_input["up"] or keys[self.pygame.K_w] or keys[self.pygame.K_UP]),
                 "down": bool(self.forwarded_input["down"] or keys[self.pygame.K_s] or keys[self.pygame.K_DOWN]),
-                "jump": bool(self.forwarded_input["jump"] or keys[self.pygame.K_SPACE]),
+                "jump": space_pressed,
+                "space": space_pressed,
+                "attack": space_pressed,
                 "restart": bool(self.forwarded_input["restart"] or keys[self.pygame.K_r]),
                 "interact": bool(self.forwarded_input["interact"] or keys[self.pygame.K_e]),
             }

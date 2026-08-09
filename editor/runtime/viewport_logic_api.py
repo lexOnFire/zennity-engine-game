@@ -138,7 +138,8 @@ class PlayLogicAPI:
 
     _KEY_ALIASES = {
         "a": "left", "d": "right", "w": "up", "s": "down",
-        "space": "jump", "r": "restart",
+        "space": "space", "jump": "jump", "attack": "attack",
+        "r": "restart", "e": "interact",
     }
 
     def __init__(
