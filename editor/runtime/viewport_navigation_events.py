@@ -71,6 +71,19 @@ class ViewportNavigationEventHandler:
         target_name = str(ui.get("target", "")) or str(owner.get("name", ""))
         target = self.objects.get(target_name)
         event_name = str(ui.get("event", "click")) or "click"
+        scene_path = str(ui.get("scene_path", ui.get("scene", ""))).strip()
+
+        if event_name in {"load_scene", "open_scene"} and scene_path:
+            self.emit({
+                "type": "load_scene",
+                "scene_path": scene_path,
+                "path": scene_path,
+            })
+            self.emit({
+                "type": "runtime_log", "level": "INFO",
+                "message": f"UI Button: {widget_name} → {event_name}({scene_path})",
+            })
+            return
 
         for obj in (target, owner):
             if isinstance(obj, dict):

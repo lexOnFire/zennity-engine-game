@@ -164,6 +164,9 @@ class NativeUIRenderer:
                 "path": str(widget.get("texture_path", widget.get("path", ""))),
                 "alpha": int(widget.get("alpha", 255)),
                 "interactable": bool(widget.get("interactable", True)),
+                "event": str(widget.get("event", "click")),
+                "target": str(widget.get("target", "")),
+                "scene_path": str(widget.get("scene_path", widget.get("scene", ""))),
                 "z_order": z_order,
             }
             norm = normalize_ui(ui_dict)

@@ -38,7 +38,7 @@ def test_runtime_input_uses_static_key_map_and_sends_only_state_changes() -> Non
     messages: list[str] = []
     editor = SimpleNamespace(
         _runtime_playing=True,
-        _runtime_keys={key: False for key in ("left", "right", "up", "down", "jump", "restart")},
+        _runtime_keys={key: False for key in ("left", "right", "up", "down", "jump", "restart", "interact")},
         _commands=commands,
         statusBar=lambda: SimpleNamespace(showMessage=messages.append),
     )
@@ -49,10 +49,21 @@ def test_runtime_input_uses_static_key_map_and_sends_only_state_changes() -> Non
 
     assert commands.values == [{
         "type": "runtime_input",
-        "keys": {"left": True, "right": False, "up": False, "down": False, "jump": False, "restart": False},
+        "keys": {
+            "left": True,
+            "right": False,
+            "up": False,
+            "down": False,
+            "jump": False,
+            "restart": False,
+            "interact": False,
+        },
     }]
     assert messages == ["Play Input: left ON"]
     assert "KEY_MAP" not in router.__dict__
+
+    assert router.handle(None, Event(QEvent.KeyPress, Qt.Key_E)) is True
+    assert commands.values[-1]["keys"]["interact"] is True
 
 
 def test_runtime_input_is_released_when_editor_focus_changes() -> None:

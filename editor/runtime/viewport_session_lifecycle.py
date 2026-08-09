@@ -34,7 +34,7 @@ class ViewportSessionLifecycleMixin:
                 "down": bool(self.forwarded_input["down"] or keys[self.pygame.K_s] or keys[self.pygame.K_DOWN]),
                 "jump": bool(self.forwarded_input["jump"] or keys[self.pygame.K_SPACE]),
                 "restart": bool(self.forwarded_input["restart"] or keys[self.pygame.K_r]),
-                "interact": bool(keys[self.pygame.K_e]),
+                "interact": bool(self.forwarded_input["interact"] or keys[self.pygame.K_e]),
             }
             if "Player" in self.objects:
                 self.objects["Player"]["_input"] = input_state
@@ -91,6 +91,25 @@ class ViewportSessionLifecycleMixin:
             )
             self.contact_processor.process()
             update_benchmark_gameplay(self.objects, dt)
+            player = self.objects.get("Player")
+            if isinstance(player, dict) and player.get("logic_events"):
+                self.restart_requested = (
+                    self.session_orchestrator._apply_logic_instructions("Player", player)
+                    or self.restart_requested
+                )
+            if self.restart_requested:
+                self.session_orchestrator.restart(
+                    self.edit_snapshot,
+                    self.velocities_y,
+                    self.grounded,
+                    self.active_contacts,
+                    self.stop_audio_sources,
+                    self.stop_logic,
+                    self.physics_scheduler.reset,
+                    self.restart_logic,
+                    self.start_audio_sources,
+                )
+                self.restart_requested = False
             
             self.frame_categories["physics"] = (time.perf_counter() - t_physics) * 1000.0
             t_anim = time.perf_counter()

@@ -80,16 +80,20 @@
         "items": [
           {
             "type": "Canvas",
-            "layout_path": "Assets/UI/GameOver.zui",
-            "ui_asset": "Assets/UI/GameOver.zui",
-            "visible": true,
-            "z_order": 0,
-            "render_mode": "Screen Space",
-            "layer_mask": 4294967295
+            "enabled": true,
+            "properties": {
+              "layout_path": "Assets/UI/GameOver.zui",
+              "ui_asset": "Assets/UI/GameOver.zui",
+              "visible": true,
+              "z_order": 0,
+              "render_mode": "Screen Space",
+              "layer_mask": 4294967295
+            }
           }
         ]
       },
       "enabled": true
     }
-  ]
+  ],
+  "ui": "Assets/UI/GameOver.zui"
 }

@@ -35,7 +35,9 @@
         "text": "RETRY",
         "font_size": 32,
         "color": "#0066FF",
-        "interactable": true
+        "interactable": true,
+        "event": "load_scene",
+        "scene_path": "Assets/Scenes/Level1.zscene"
       },
       {
         "name": "MainMenuButton",
@@ -49,7 +51,9 @@
         "text": "MAIN MENU",
         "font_size": 32,
         "color": "#CC8800",
-        "interactable": true
+        "interactable": true,
+        "event": "load_scene",
+        "scene_path": "Assets/Scenes/MainMenu.zscene"
       }
     ]
   }

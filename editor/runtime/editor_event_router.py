@@ -12,7 +12,7 @@ class EditorEventRouter:
         Qt.Key_D: "right", Qt.Key_Right: "right",
         Qt.Key_W: "up", Qt.Key_Up: "up",
         Qt.Key_S: "down", Qt.Key_Down: "down",
-        Qt.Key_Space: "jump", Qt.Key_R: "restart",
+        Qt.Key_Space: "jump", Qt.Key_R: "restart", Qt.Key_E: "interact",
     }
     PREVIEW_EXTENSIONS = {
         ".zanim", ".zanimator", ".zlogic", ".png", ".jpg", ".jpeg", ".bmp", ".webp",

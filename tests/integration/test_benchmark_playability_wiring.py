@@ -63,3 +63,19 @@ def test_level1_victory_flag_is_hidden_until_unlocked() -> None:
     assert level_exit["variables"]["unlock_condition"] == "boss_defeated_or_victory"
     assert key["tag"] == "Key"
     assert key["visual"]["texture"] != "Assets/Sprites/MyPlatformer/flag.png"
+
+
+def test_game_over_scene_loads_ui_and_buttons_route_to_scenes() -> None:
+    scene = _scene("GameOver")
+    objects = {obj["name"]: obj for obj in scene["objects"]}
+    canvas_item = objects["Canvas"]["components"]["items"][0]
+    widgets = {child["name"]: child for child in _ui("GameOver.zui")["canvas"]["children"]}
+
+    assert scene["ui"] == "Assets/UI/GameOver.zui"
+    assert canvas_item["type"] == "Canvas"
+    assert canvas_item["properties"]["layout_path"] == "Assets/UI/GameOver.zui"
+    assert canvas_item["properties"]["ui_asset"] == "Assets/UI/GameOver.zui"
+    assert widgets["RetryButton"]["event"] == "load_scene"
+    assert widgets["RetryButton"]["scene_path"] == "Assets/Scenes/Level1.zscene"
+    assert widgets["MainMenuButton"]["event"] == "load_scene"
+    assert widgets["MainMenuButton"]["scene_path"] == "Assets/Scenes/MainMenu.zscene"

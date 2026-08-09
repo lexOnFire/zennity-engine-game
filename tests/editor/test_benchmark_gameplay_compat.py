@@ -44,6 +44,20 @@ def test_benchmark_key_collection_updates_key_counter_and_hides_key() -> None:
     assert overrides["KeyLabel"]["text"] == "Key: Yes"
 
 
+def test_benchmark_key_collection_supports_scene_transform_shape() -> None:
+    objects = {
+        "Player": {"name": "Player", "transform": {"position": [0.0, 0.0, 0.0], "scale": [40.0, 40.0, 1.0]}, "variables": {}},
+        "Key": {"name": "Key", "transform": {"position": [0.0, 0.0, 0.0], "scale": [20.0, 20.0, 1.0]}, "active": True},
+        "HUD": {"name": "HUD"},
+    }
+
+    update_benchmark_gameplay(objects, 1 / 60)
+
+    assert objects["Key"]["destroyed"] is True
+    assert objects["Player"]["variables"]["has_key"] is True
+    assert {"command": "set_ui_text", "value": {"object": "KeyLabel", "text": "Key: Yes"}} in objects["Player"]["logic_events"]
+
+
 def test_benchmark_enemy_moves_towards_player() -> None:
     objects = {
         "Player": {"name": "Player", "x": 100.0, "y": 0.0, "w": 40.0, "h": 40.0},

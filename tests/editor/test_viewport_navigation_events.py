@@ -36,5 +36,29 @@ def test_navigation_handler_routes_game_ui_clicks() -> None:
     event = SimpleNamespace(type=_Pygame.MOUSEBUTTONDOWN, button=1, pos=(20, 30))
 
     assert handler.handle(event, _state(), playing=True, view_mode="game")[0]
-    assert objects["Player"]["logic_events"][0]["command"] == "jump"
+    assert [event["command"] for event in objects["Player"]["logic_events"]] == ["ui.button_clicked", "jump"]
+    assert emitted[-1]["type"] == "runtime_log"
+
+
+class _SceneLoadNativeUI:
+    def button_at(self, objects, position):
+        return objects["Canvas"], {
+            "name": "RetryButton",
+            "event": "load_scene",
+            "scene_path": "Assets/Scenes/Level1.zscene",
+        }
+
+
+def test_navigation_handler_loads_scene_directly_from_ui_button() -> None:
+    objects = {"Canvas": {"name": "Canvas"}}
+    emitted = []
+    handler = ViewportNavigationEventHandler(_Pygame, objects, _SceneLoadNativeUI(), emitted.append, lambda x, y: (x, y))
+    event = SimpleNamespace(type=_Pygame.MOUSEBUTTONDOWN, button=1, pos=(20, 30))
+
+    assert handler.handle(event, _state(), playing=True, view_mode="game")[0]
+    assert emitted[0] == {
+        "type": "load_scene",
+        "scene_path": "Assets/Scenes/Level1.zscene",
+        "path": "Assets/Scenes/Level1.zscene",
+    }
     assert emitted[-1]["type"] == "runtime_log"

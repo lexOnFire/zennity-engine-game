@@ -18,12 +18,12 @@ def test_control_commands_validate_tools_modes_and_snap_values() -> None:
 
 
 def test_control_commands_update_forwarded_input_in_place() -> None:
-    keys = {"left": False, "jump": True}
+    keys = {"left": False, "jump": True, "interact": False}
     handler = ViewportControlCommandHandler(keys)
     settings = ViewportControlSettings("select", "scene", False, 16.0, 15.0)
 
-    assert handler.handle({"type": "runtime_input", "keys": {"left": True}}, settings) == settings
-    assert keys == {"left": True, "jump": False}
+    assert handler.handle({"type": "runtime_input", "keys": {"left": True, "interact": True}}, settings) == settings
+    assert keys == {"left": True, "jump": False, "interact": True}
     assert handler.handle({"type": "play"}, settings) is None
 
 

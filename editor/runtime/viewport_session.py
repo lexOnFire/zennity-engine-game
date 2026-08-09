@@ -203,7 +203,7 @@ class ViewportSession(ViewportSessionLifecycleMixin):
         self.physics_scheduler = FixedStepScheduler(1.0 / 60.0, maximum_steps=5)
         self.fixed_physics_dt = self.physics_scheduler.step
         self.forwarded_input = {
-            key: False for key in ("left", "right", "up", "down", "jump", "restart")
+            key: False for key in ("left", "right", "up", "down", "jump", "restart", "interact")
         }
         self.last_stats_ms = 0
         self.last_runtime_sync_ms = 0

@@ -24,12 +24,37 @@ def update_benchmark_gameplay(objects: dict[str, dict[str, Any]], dt: float) -> 
     _update_guard_dialogue(objects, player)
 
 
+def _coord(obj: dict[str, Any], key: str, fallback: float) -> float:
+    if key in obj:
+        try:
+            return float(obj.get(key, fallback))
+        except (TypeError, ValueError):
+            return fallback
+    transform = obj.get("transform")
+    if isinstance(transform, dict):
+        if key in {"x", "y"}:
+            position = transform.get("position")
+            if isinstance(position, (list, tuple)) and len(position) >= 2:
+                try:
+                    return float(position[0 if key == "x" else 1])
+                except (TypeError, ValueError):
+                    return fallback
+        if key in {"w", "h"}:
+            scale = transform.get("scale")
+            if isinstance(scale, (list, tuple)) and len(scale) >= 2:
+                try:
+                    return float(scale[0 if key == "w" else 1])
+                except (TypeError, ValueError):
+                    return fallback
+    return fallback
+
+
 def _rects_overlap(a: dict[str, Any], b: dict[str, Any]) -> bool:
     return (
-        abs(float(a.get("x", 0.0)) - float(b.get("x", 0.0))) * 2
-        < float(a.get("w", 1.0)) + float(b.get("w", 1.0))
-        and abs(float(a.get("y", 0.0)) - float(b.get("y", 0.0))) * 2
-        < float(a.get("h", 1.0)) + float(b.get("h", 1.0))
+        abs(_coord(a, "x", 0.0) - _coord(b, "x", 0.0)) * 2
+        < _coord(a, "w", 1.0) + _coord(b, "w", 1.0)
+        and abs(_coord(a, "y", 0.0) - _coord(b, "y", 0.0)) * 2
+        < _coord(a, "h", 1.0) + _coord(b, "h", 1.0)
     )
 
 
@@ -158,8 +183,8 @@ def _update_guard_dialogue(objects: dict[str, dict[str, Any]], player: dict[str,
     if not isinstance(guard, dict) or not guard.get("active", True):
         return
     distance = math.hypot(
-        float(player.get("x", 0.0)) - float(guard.get("x", 0.0)),
-        float(player.get("y", 0.0)) - float(guard.get("y", 0.0)),
+        _coord(player, "x", 0.0) - _coord(guard, "x", 0.0),
+        _coord(player, "y", 0.0) - _coord(guard, "y", 0.0),
     )
     in_range = distance <= 120.0
     player_state = player.setdefault("_benchmark_state", {})
