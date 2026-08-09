@@ -162,13 +162,11 @@ def hydrate_logic_graphs(
         obj.pop("logic_graphs", None)
     loaded_paths: set[Path] = set()
     for object_name, obj in objects.items():
+        if obj.get("logic_assets") == []:
+            continue
         configured = []
         if isinstance(obj.get("logic_assets"), list):
             configured.extend(obj["logic_assets"])
-        if isinstance(obj.get("editor_data"), dict) and isinstance(obj["editor_data"].get("logic_graphs"), list):
-            for item in obj["editor_data"]["logic_graphs"]:
-                if isinstance(item, dict) and item.get("path"):
-                    configured.append(item["path"])
         if isinstance(obj.get("components"), dict):
             if isinstance(obj["components"].get("logic_graphs"), list):
                 for item in obj["components"]["logic_graphs"]:
@@ -180,6 +178,11 @@ def hydrate_logic_graphs(
                     g_path = comp.get("graph_path") or comp.get("properties", {}).get("graph_path", "")
                     if g_path:
                         configured.append(g_path)
+        if not configured and "logic_assets" not in obj:
+            if isinstance(obj.get("editor_data"), dict) and isinstance(obj["editor_data"].get("logic_graphs"), list):
+                for item in obj["editor_data"]["logic_graphs"]:
+                    if isinstance(item, dict) and item.get("path"):
+                        configured.append(item["path"])
         if not configured:
             continue
         configured = list(dict.fromkeys(str(item) for item in configured if str(item).strip()))
@@ -222,7 +225,7 @@ def hydrate_logic_graphs(
             wanted = str(target.get("value", "Player")).casefold()
             matched = []
             for name, obj in objects.items():
-                if bool(obj.get("logic_graphs")):
+                if bool(obj.get("logic_graphs")) or "logic_assets" in obj:
                     continue
                 candidate = name if target_type == "name" else str(obj.get("tag", ""))
                 if candidate.casefold() == wanted:

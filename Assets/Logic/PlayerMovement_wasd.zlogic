@@ -55,6 +55,7 @@
         "height": 156.0
       },
       "properties": {
+        "axis": "horizontal",
         "negative": "A",
         "positive": "D"
       }
@@ -92,6 +93,8 @@
         "height": 156.0
       },
       "properties": {
+        "direction_x": 1.0,
+        "direction_y": 0.0,
         "speed": 220.0
       }
     },
@@ -128,10 +131,10 @@
         "height": 240.0
       },
       "properties": {
-        "source": "",
-        "name": "Projectile",
+        "prefab_path": "",
         "x": 5,
         "y": -55,
+        "name": "Projectile",
         "width": 50,
         "height": 15,
         "color": "#ffd166",
@@ -143,7 +146,8 @@
         "lifetime": 3,
         "max_instances": 100,
         "max_distance": 1200.0,
-        "use_pool": true
+        "use_pool": true,
+        "source": ""
       }
     },
     {
@@ -161,6 +165,7 @@
         "height": 156.0
       },
       "properties": {
+        "axis": "horizontal",
         "negative": "W",
         "positive": "S"
       }
@@ -198,6 +203,8 @@
         "height": 212.0
       },
       "properties": {
+        "delta_x": 0.0,
+        "delta_y": 0.0,
         "x": 0,
         "y": 220
       }
@@ -255,6 +262,8 @@
         "height": 212.0
       },
       "properties": {
+        "delta_x": 0.0,
+        "delta_y": 0.0,
         "x": 0,
         "y": -220
       }
@@ -274,6 +283,8 @@
         "height": 212.0
       },
       "properties": {
+        "velocity_x": 0.0,
+        "velocity_y": 0.0,
         "movement": "Movement",
         "x": 0.0,
         "y": -400,

@@ -78,12 +78,22 @@ class LogicBindingController:
         target_name = graph.get("target", {}).get("value")
         if target_name and target_name in getattr(self.host, "_objects_by_name", {}):
             obj = self.host._objects_by_name[target_name]
-            if isinstance(obj, dict) and "logic_assets" in obj:
+            if isinstance(obj, dict):
                 try:
                     rel = path.relative_to(self.project_root.resolve()).as_posix()
                 except ValueError:
                     rel = str(path).replace("\\", "/")
-                obj["logic_assets"] = [p for p in obj["logic_assets"] if p != rel]
+                if "logic_assets" in obj:
+                    obj["logic_assets"] = [p for p in obj["logic_assets"] if p != rel]
+                if isinstance(obj.get("components"), dict):
+                    items = obj["components"].get("items", [])
+                    if isinstance(items, list):
+                        obj["components"]["items"] = [
+                            c for c in items
+                            if not (isinstance(c, dict) and c.get("type") == "LogicGraph" and (c.get("graph_path") == rel or c.get("properties", {}).get("graph_path") == rel))
+                        ]
+                if isinstance(obj.get("editor_data"), dict):
+                    obj["editor_data"].pop("logic_graphs", None)
 
     def detach_all_for_object(self, object_name: str) -> int:
         bindings = self.graphs_for_object(object_name)
@@ -94,6 +104,16 @@ class LogicBindingController:
         obj = getattr(self.host, "_objects_by_name", {}).get(object_name)
         if isinstance(obj, dict):
             obj["logic_assets"] = []
+            if isinstance(obj.get("components"), dict):
+                items = obj["components"].get("items", [])
+                if isinstance(items, list):
+                    obj["components"]["items"] = [
+                        c for c in items if not (isinstance(c, dict) and c.get("type") == "LogicGraph")
+                    ]
+            if isinstance(obj.get("editor_data"), dict):
+                obj["editor_data"].pop("logic_graphs", None)
+                if isinstance(obj["editor_data"].get("editor_data"), dict):
+                    obj["editor_data"]["editor_data"].pop("logic_graphs", None)
         self._refresh_surfaces()
         return len(bindings)
 

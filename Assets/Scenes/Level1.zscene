@@ -1304,6 +1304,11 @@
         "auto_start": false
       },
       "editor_data": {
+        "editor_data": {
+          "dialogue": {
+            "asset_path": "Assets/Dialogues/GuardDialogue.zdialogue"
+          }
+        },
         "dialogue": {
           "asset_path": "Assets/Dialogues/GuardDialogue.zdialogue"
         }
