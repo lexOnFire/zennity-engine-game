@@ -1,0 +1,49 @@
+{
+  "format_version": 2,
+  "graph_name": "EnemyHealth",
+  "author": "CanonicalGameplayTest",
+  "description": "Minimal health state graph - proves visual state management (no Python scripts)",
+  "nodes": [
+    {
+      "id": "health_state",
+      "type": "variable",
+      "label": "Health State",
+      "properties": {
+        "name": "health",
+        "value_type": "int",
+        "default_value": 100
+      },
+      "position": [0, 0]
+    },
+    {
+      "id": "max_health_state",
+      "type": "variable",
+      "label": "Max Health State",
+      "properties": {
+        "name": "max_health",
+        "value_type": "int",
+        "default_value": 100
+      },
+      "position": [200, 0]
+    }
+  ],
+  "edges": [],
+  "variables": {
+    "health": {
+      "type": "int",
+      "default": 100,
+      "description": "Current health points"
+    },
+    "max_health": {
+      "type": "int",
+      "default": 100,
+      "description": "Maximum health points"
+    }
+  },
+  "metadata": {
+    "created": "2026-08-08",
+    "phase": "8B",
+    "checkpoint": "E",
+    "approach": "100% Visual - No Python scripts, state via Logic Graph variables only"
+  }
+}

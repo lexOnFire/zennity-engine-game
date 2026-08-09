@@ -1,7 +1,7 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
-  "enabled": true,
+  "enabled": false,
   "name": "Player Movement + Coins + Enemy + Flag (MyPlatformer)",
   "target": {
     "type": "name",
@@ -170,6 +170,7 @@
         "height": 150.0
       },
       "properties": {
+        "target": "",
         "tag": "Player"
       }
     },
@@ -381,6 +382,7 @@
         "height": 150.0
       },
       "properties": {
+        "target": "",
         "tag": "Player"
       }
     },

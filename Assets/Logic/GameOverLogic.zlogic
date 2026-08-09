@@ -1,53 +1,88 @@
 {
-  "format": "zennity.generic_graph",
-  "category": "Logic",
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": false,
   "name": "GameOverLogic",
+  "target": {
+    "type": "name",
+    "value": "Player"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": [],
+    "migrated_from": "zennity.generic_graph"
+  },
   "nodes": [
     {
       "id": "retry_button_listener",
       "type": "ui.button_clicked",
-      "position": [50, 50],
-      "config": {
-        "button_name": "RetryButton"
-      }
+      "title": "ui.button_clicked",
+      "category": "Custom",
+      "position": [
+        50.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "load_level1",
       "type": "scene.load_scene",
-      "position": [200, 50],
-      "config": {
-        "scene_path": "Assets/Scenes/Level1.zscene"
-      }
+      "title": "scene.load_scene",
+      "category": "Custom",
+      "position": [
+        200.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "main_menu_button_listener",
       "type": "ui.button_clicked",
-      "position": [50, 120],
-      "config": {
-        "button_name": "MainMenuButton"
-      }
+      "title": "ui.button_clicked",
+      "category": "Custom",
+      "position": [
+        50.0,
+        120.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "load_main_menu",
       "type": "scene.load_scene",
-      "position": [200, 120],
-      "config": {
-        "scene_path": "Assets/Scenes/MainMenu.zscene"
-      }
+      "title": "scene.load_scene",
+      "category": "Custom",
+      "position": [
+        200.0,
+        120.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     }
   ],
-  "edges": [
-    {
-      "from": "retry_button_listener",
-      "to": "load_level1",
-      "from_pin": "clicked",
-      "to_pin": "execute"
-    },
-    {
-      "from": "main_menu_button_listener",
-      "to": "load_main_menu",
-      "from_pin": "clicked",
-      "to_pin": "execute"
-    }
-  ]
+  "edges": []
 }

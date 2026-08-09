@@ -60,44 +60,45 @@ def test_enemy_has_collider(scene_data):
     assert collider.get("height") == 36.0
 
 
-def test_enemy_has_health_component(scene_data):
-    """Verify Enemy has Health component."""
+def test_enemy_has_logic_graph(scene_data):
+    """Verify Enemy has Logic Graph component (100% visual state management)."""
     enemy = next((obj for obj in scene_data["objects"] if obj.get("name") == "Enemy"), None)
     assert enemy is not None
     components = enemy.get("components", {})
     items = components.get("items", [])
-    health_components = [c for c in items if c.get("type") == "Health"]
-    assert len(health_components) == 1, "Health component not found"
+    logic_graphs = [c for c in items if c.get("type") == "LogicGraph"]
+    assert len(logic_graphs) == 1, "Logic Graph component not found"
+
+    logic_graph = logic_graphs[0]
+    assert logic_graph.get("graph_path") == "Assets/Logic/EnemyHealth.zlogic", \
+        "Logic Graph path incorrect"
 
 
-def test_enemy_health_default_100(scene_data):
-    """Verify Enemy health defaults to 100."""
-    enemy = next((obj for obj in scene_data["objects"] if obj.get("name") == "Enemy"), None)
-    components = enemy.get("components", {})
-    items = components.get("items", [])
-    health = next((c for c in items if c.get("type") == "Health"), None)
-    assert health is not None
-    assert health.get("hp") == 100, f"Enemy HP is {health.get('hp')}, expected 100"
+def test_enemy_health_logic_graph_exists():
+    """Verify EnemyHealth.zlogic exists (100% visual, no Python scripts)."""
+    logic_graph_path = Path("Assets/Logic/EnemyHealth.zlogic")
+    assert logic_graph_path.exists(), "EnemyHealth.zlogic not found"
+
+    with open(logic_graph_path) as f:
+        data = json.load(f)
+
+    assert data.get("graph_name") == "EnemyHealth"
+    assert "variables" in data
 
 
-def test_enemy_max_health_100(scene_data):
-    """Verify Enemy max_health is 100."""
-    enemy = next((obj for obj in scene_data["objects"] if obj.get("name") == "Enemy"), None)
-    components = enemy.get("components", {})
-    items = components.get("items", [])
-    health = next((c for c in items if c.get("type") == "Health"), None)
-    assert health is not None
-    assert health.get("max_hp") == 100, f"Enemy max_hp is {health.get('max_hp')}, expected 100"
+def test_enemy_health_variables_in_graph(scene_data):
+    """Verify EnemyHealth.zlogic defines health variables (100% visual state)."""
+    logic_graph_path = Path("Assets/Logic/EnemyHealth.zlogic")
+    with open(logic_graph_path) as f:
+        graph_data = json.load(f)
 
+    variables = graph_data.get("variables", {})
+    assert "health" in variables, "health variable not defined"
+    assert "max_health" in variables, "max_health variable not defined"
 
-def test_enemy_not_dead_initially(scene_data):
-    """Verify Enemy is not marked as dead initially."""
-    enemy = next((obj for obj in scene_data["objects"] if obj.get("name") == "Enemy"), None)
-    components = enemy.get("components", {})
-    items = components.get("items", [])
-    health = next((c for c in items if c.get("type") == "Health"), None)
-    assert health is not None
-    assert health.get("dead") is False, "Enemy should not be marked dead initially"
+    # Verify defaults (100% visual, no scripts)
+    assert variables["health"].get("default") == 100
+    assert variables["max_health"].get("default") == 100
 
 
 def test_all_required_objects_present(scene_data):
@@ -112,7 +113,7 @@ def test_all_required_objects_present(scene_data):
 
 @pytest.mark.runtime
 def test_enemy_runtime_loading():
-    """Test that scene loads with Enemy in runtime."""
+    """Test that scene loads with Enemy in runtime (100% visual)."""
     from engine.scene.scene_serializer import deserialize_scene
 
     with open("Assets/Scenes/CanonicalGameplayTest.zscene") as f:
@@ -126,30 +127,44 @@ def test_enemy_runtime_loading():
     assert enemy_obj is not None, "Enemy not found in deserialized scene"
 
 
-def test_enemy_health_component_accessible():
-    """Test that Health component data is correct in scene."""
+def test_enemy_logic_graph_accessible():
+    """Test that Logic Graph (visual state) is accessible on Enemy."""
     with open("Assets/Scenes/CanonicalGameplayTest.zscene") as f:
         scene_data = json.load(f)
 
     enemy = next((obj for obj in scene_data["objects"] if obj.get("name") == "Enemy"), None)
     components = enemy.get("components", {})
     items = components.get("items", [])
-    health = next((c for c in items if c.get("type") == "Health"), None)
+    logic_graph = next((c for c in items if c.get("type") == "LogicGraph"), None)
 
-    assert health is not None, "Health component not found"
-    assert health.get("hp") == 100, "Health component hp incorrect"
-    assert health.get("max_hp") == 100, "Health component max_hp incorrect"
+    assert logic_graph is not None, "LogicGraph component not found"
+    assert logic_graph.get("graph_path") == "Assets/Logic/EnemyHealth.zlogic"
 
 
-def test_health_component_canonical():
-    """Verify Health is a canonical registered component."""
-    health_path = Path("Assets/Scripts/health.py")
-    assert health_path.exists(), "Health component not found"
+def test_checkpoint_e_visual_approach():
+    """Verify Checkpoint E uses 100% visual approach (no Python state scripts)."""
+    # 1. Scene uses LogicGraph, not Health component script
+    with open("Assets/Scenes/CanonicalGameplayTest.zscene") as f:
+        scene_data = json.load(f)
 
-    with open(health_path) as f:
-        content = f.read()
-    assert "ComponentRegistry.component" in content
-    assert "class Health" in content
+    enemy = next((obj for obj in scene_data["objects"] if obj.get("name") == "Enemy"), None)
+    components = enemy.get("components", {})
+    items = components.get("items", [])
+
+    has_logic_graph = any(c.get("type") == "LogicGraph" for c in items)
+    has_health_script = any(c.get("type") == "Health" for c in items)
+
+    assert has_logic_graph, "Enemy should use LogicGraph for state"
+    assert not has_health_script, "Enemy should NOT use Health script component"
+
+    # 2. EnemyHealth.zlogic defines state variables
+    logic_graph_path = Path("Assets/Logic/EnemyHealth.zlogic")
+    with open(logic_graph_path) as f:
+        graph_data = json.load(f)
+
+    variables = graph_data.get("variables", {})
+    assert "health" in variables
+    assert "max_health" in variables
 
 
 if __name__ == "__main__":

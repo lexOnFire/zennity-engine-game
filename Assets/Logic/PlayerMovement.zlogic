@@ -1,7 +1,7 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
-  "enabled": true,
+  "enabled": false,
   "name": "PlayerMovement",
   "target": {
     "type": "name",
@@ -30,13 +30,13 @@
       "title": "On Update",
       "category": "Events",
       "position": [
-        100.0,
-        100.0
+        46.54,
+        85.3
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {}
     },
@@ -46,13 +46,13 @@
       "title": "input_axis",
       "category": "Custom",
       "position": [
-        300.0,
-        100.0
+        316.04,
+        110.69
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
         "axis_name": "horizontal"
@@ -64,23 +64,23 @@
       "title": "move_by",
       "category": "Custom",
       "position": [
-        550.0,
-        100.0
+        596.77,
+        98.66
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 212.0
       },
       "properties": {
-        "x": 0.0,
-        "y": 0.0
+        "x": 0,
+        "y": 0
       }
     }
   ],
   "edges": [
     {
-      "id": "82337c01393c45e292bb56244276b814",
+      "id": "9bf7c4d907c94c1ca2d23c8575aac216",
       "from_node": "node_update",
       "from_port": "next",
       "to_node": "node_input_h",
@@ -89,7 +89,7 @@
       "order": 0
     },
     {
-      "id": "3c25153b97fd40ae87a799937f3833f9",
+      "id": "7df2b5941caf4e8abbf78efaa0b2018f",
       "from_node": "node_input_h",
       "from_port": "next",
       "to_node": "node_move_by",
@@ -98,7 +98,7 @@
       "order": 1
     },
     {
-      "id": "b45a314c191c4c778dffe4460d2144dc",
+      "id": "43f9d4457f00478980e70637f6f3903c",
       "from_node": "node_input_h",
       "from_port": "value",
       "to_node": "node_move_by",

@@ -76,16 +76,6 @@ from engine.components.script_component import ScriptComponent
 from engine.physics.rigidbody import RigidBody
 from engine.physics.collider import BoxCollider, CircleCollider
 
-# Import Health component for canonical registration
-import sys
-from pathlib import Path
-_assets_scripts = str(Path(__file__).resolve().parent.parent.parent / "Assets" / "Scripts")
-if _assets_scripts not in sys.path:
-    sys.path.insert(0, _assets_scripts)
-try:
-    from health import Health
-except (ImportError, ModuleNotFoundError):
-    Health = None
 
 component_registry.register(Component)
 component_registry.register(Transform)
@@ -118,7 +108,3 @@ component_registry.register(ScriptComponent, "Script")
 component_registry.register(RigidBody)
 component_registry.register(BoxCollider)
 component_registry.register(CircleCollider)
-
-# Canonical Health component for gameplay state
-if Health is not None:
-    component_registry.register(Health)

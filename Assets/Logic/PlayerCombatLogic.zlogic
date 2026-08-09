@@ -1,257 +1,312 @@
 {
-  "format": "zennity.generic_graph",
-  "category": "Logic",
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": false,
   "name": "PlayerCombatLogic",
+  "target": {
+    "type": "name",
+    "value": "Player"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": [],
+    "migrated_from": "zennity.generic_graph"
+  },
   "nodes": [
     {
       "id": "space_key_down",
       "type": "input.keyboard_key_down",
-      "position": [50, 50],
-      "config": {
-        "key": "space"
-      }
+      "title": "input.keyboard_key_down",
+      "category": "Custom",
+      "position": [
+        50.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "get_attack_in_progress",
       "type": "animator.get_current_state",
-      "position": [50, 150],
-      "config": {}
+      "title": "animator.get_current_state",
+      "category": "Custom",
+      "position": [
+        50.0,
+        150.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "check_not_attacking",
       "type": "logic.branch",
-      "position": [200, 150],
-      "config": {
-        "condition": "not_equal",
-        "compare_value": "Attack"
-      }
+      "title": "logic.branch",
+      "category": "Custom",
+      "position": [
+        200.0,
+        150.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "set_attack_trigger",
       "type": "animator.set_trigger",
-      "position": [350, 150],
-      "config": {
-        "trigger_name": "attack"
-      }
+      "title": "animator.set_trigger",
+      "category": "Custom",
+      "position": [
+        350.0,
+        150.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "animation_hit_event",
       "type": "animation.on_event",
-      "position": [50, 300],
-      "config": {
-        "event_name": "hit"
-      }
+      "title": "animation.on_event",
+      "category": "Custom",
+      "position": [
+        50.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "get_attack_damage",
       "type": "variable.get",
-      "position": [200, 300],
-      "config": {
-        "variable_name": "attack_damage"
-      }
+      "title": "variable.get",
+      "category": "Custom",
+      "position": [
+        200.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "get_attack_range",
       "type": "variable.get",
-      "position": [200, 350],
-      "config": {
-        "variable_name": "attack_range"
-      }
+      "title": "variable.get",
+      "category": "Custom",
+      "position": [
+        200.0,
+        350.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "get_facing_direction",
       "type": "variable.get",
-      "position": [200, 400],
-      "config": {
-        "variable_name": "facing_x"
-      }
+      "title": "variable.get",
+      "category": "Custom",
+      "position": [
+        200.0,
+        400.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "raycast_for_enemy",
       "type": "physics.raycast_2d",
-      "position": [350, 350],
-      "config": {
-        "layer_mask": "ENEMY",
-        "ignore_self": true
-      }
+      "title": "physics.raycast_2d",
+      "category": "Custom",
+      "position": [
+        350.0,
+        350.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "check_hit",
       "type": "logic.branch",
-      "position": [500, 350],
-      "config": {
-        "condition": "is_not_null"
-      }
+      "title": "logic.branch",
+      "category": "Custom",
+      "position": [
+        500.0,
+        350.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "get_hit_object",
       "type": "physics.get_raycast_hit",
-      "position": [500, 300],
-      "config": {
-        "field": "collider"
-      }
+      "title": "physics.get_raycast_hit",
+      "category": "Custom",
+      "position": [
+        500.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "get_enemy_health",
       "type": "object.get_variable",
-      "position": [650, 300],
-      "config": {
-        "variable_name": "health"
-      }
+      "title": "object.get_variable",
+      "category": "Custom",
+      "position": [
+        650.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "subtract_damage",
       "type": "math.subtract",
-      "position": [800, 300],
-      "config": {}
+      "title": "math.subtract",
+      "category": "Custom",
+      "position": [
+        800.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "clamp_health",
       "type": "math.clamp",
-      "position": [800, 350],
-      "config": {
-        "min": 0,
-        "max": 999
-      }
+      "title": "math.clamp",
+      "category": "Custom",
+      "position": [
+        800.0,
+        350.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "set_enemy_health",
       "type": "object.set_variable",
-      "position": [950, 300],
-      "config": {
-        "variable_name": "health"
-      }
+      "title": "object.set_variable",
+      "category": "Custom",
+      "position": [
+        950.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "check_dead",
       "type": "logic.branch",
-      "position": [950, 380],
-      "config": {
-        "condition": "less_equal",
-        "compare_value": 0
-      }
+      "title": "logic.branch",
+      "category": "Custom",
+      "position": [
+        950.0,
+        380.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "destroy_enemy",
       "type": "object.destroy",
-      "position": [1100, 380],
-      "config": {}
+      "title": "object.destroy",
+      "category": "Custom",
+      "position": [
+        1100.0,
+        380.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "no_hit_exec",
       "type": "logic.noop",
-      "position": [650, 450],
-      "config": {}
+      "title": "logic.noop",
+      "category": "Custom",
+      "position": [
+        650.0,
+        450.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     }
   ],
-  "edges": [
-    {
-      "from": "space_key_down",
-      "to": "get_attack_in_progress",
-      "from_pin": "pressed",
-      "to_pin": "execute"
-    },
-    {
-      "from": "get_attack_in_progress",
-      "to": "check_not_attacking",
-      "from_pin": "state",
-      "to_pin": "value"
-    },
-    {
-      "from": "check_not_attacking",
-      "to": "set_attack_trigger",
-      "from_pin": "true",
-      "to_pin": "execute"
-    },
-    {
-      "from": "animation_hit_event",
-      "to": "get_attack_damage",
-      "from_pin": "event",
-      "to_pin": "execute"
-    },
-    {
-      "from": "get_attack_damage",
-      "to": "get_attack_range",
-      "from_pin": "value",
-      "to_pin": "execute"
-    },
-    {
-      "from": "get_attack_range",
-      "to": "get_facing_direction",
-      "from_pin": "value",
-      "to_pin": "execute"
-    },
-    {
-      "from": "get_facing_direction",
-      "to": "raycast_for_enemy",
-      "from_pin": "value",
-      "to_pin": "direction"
-    },
-    {
-      "from": "get_attack_damage",
-      "to": "subtract_damage",
-      "from_pin": "value",
-      "to_pin": "b"
-    },
-    {
-      "from": "get_attack_range",
-      "to": "raycast_for_enemy",
-      "from_pin": "value",
-      "to_pin": "max_distance"
-    },
-    {
-      "from": "raycast_for_enemy",
-      "to": "check_hit",
-      "from_pin": "hit",
-      "to_pin": "value"
-    },
-    {
-      "from": "check_hit",
-      "to": "get_hit_object",
-      "from_pin": "true",
-      "to_pin": "raycast"
-    },
-    {
-      "from": "get_hit_object",
-      "to": "get_enemy_health",
-      "from_pin": "collider",
-      "to_pin": "object"
-    },
-    {
-      "from": "get_enemy_health",
-      "to": "subtract_damage",
-      "from_pin": "value",
-      "to_pin": "a"
-    },
-    {
-      "from": "subtract_damage",
-      "to": "clamp_health",
-      "from_pin": "result",
-      "to_pin": "value"
-    },
-    {
-      "from": "clamp_health",
-      "to": "set_enemy_health",
-      "from_pin": "result",
-      "to_pin": "value"
-    },
-    {
-      "from": "set_enemy_health",
-      "to": "check_dead",
-      "from_pin": "success",
-      "to_pin": "value"
-    },
-    {
-      "from": "check_dead",
-      "to": "destroy_enemy",
-      "from_pin": "true",
-      "to_pin": "object"
-    },
-    {
-      "from": "check_hit",
-      "to": "no_hit_exec",
-      "from_pin": "false",
-      "to_pin": "execute"
-    }
-  ]
+  "edges": []
 }

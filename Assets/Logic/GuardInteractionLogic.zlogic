@@ -1,161 +1,216 @@
 {
-  "format": "zennity.generic_graph",
-  "category": "Logic",
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": false,
   "name": "GuardInteractionLogic",
+  "target": {
+    "type": "name",
+    "value": "Player"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": [],
+    "migrated_from": "zennity.generic_graph"
+  },
   "nodes": [
     {
       "id": "interaction_trigger_enter",
       "type": "physics.on_trigger_enter",
-      "position": [50, 50],
-      "config": {}
+      "title": "physics.on_trigger_enter",
+      "category": "Custom",
+      "position": [
+        50.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "check_player_in_range",
       "type": "logic.branch",
-      "position": [200, 50],
-      "config": {
-        "condition": "contains",
-        "compare_value": "Player"
-      }
+      "title": "logic.branch",
+      "category": "Custom",
+      "position": [
+        200.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "set_can_interact_true",
       "type": "variable.set",
-      "position": [350, 50],
-      "config": {
-        "variable_name": "can_interact",
-        "value": true
-      }
+      "title": "variable.set",
+      "category": "Custom",
+      "position": [
+        350.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "interaction_trigger_exit",
       "type": "physics.on_trigger_exit",
-      "position": [50, 120],
-      "config": {}
+      "title": "physics.on_trigger_exit",
+      "category": "Custom",
+      "position": [
+        50.0,
+        120.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "check_player_leaving",
       "type": "logic.branch",
-      "position": [200, 120],
-      "config": {
-        "condition": "contains",
-        "compare_value": "Player"
-      }
+      "title": "logic.branch",
+      "category": "Custom",
+      "position": [
+        200.0,
+        120.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "set_can_interact_false",
       "type": "variable.set",
-      "position": [350, 120],
-      "config": {
-        "variable_name": "can_interact",
-        "value": false
-      }
+      "title": "variable.set",
+      "category": "Custom",
+      "position": [
+        350.0,
+        120.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "e_key_down",
       "type": "input.keyboard_key_down",
-      "position": [50, 200],
-      "config": {
-        "key": "e"
-      }
+      "title": "input.keyboard_key_down",
+      "category": "Custom",
+      "position": [
+        50.0,
+        200.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "check_can_interact",
       "type": "variable.get",
-      "position": [200, 200],
-      "config": {
-        "variable_name": "can_interact"
-      }
+      "title": "variable.get",
+      "category": "Custom",
+      "position": [
+        200.0,
+        200.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "if_can_interact",
       "type": "logic.branch",
-      "position": [350, 200],
-      "config": {
-        "condition": "equal",
-        "compare_value": true
-      }
+      "title": "logic.branch",
+      "category": "Custom",
+      "position": [
+        350.0,
+        200.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "start_dialogue",
       "type": "dialogue.start_dialogue_asset",
-      "position": [500, 200],
-      "config": {
-        "dialogue_path": "Assets/Dialogues/GuardDialogue.zdialogue",
-        "owner_id": "Guard"
-      }
+      "title": "dialogue.start_dialogue_asset",
+      "category": "Custom",
+      "position": [
+        500.0,
+        200.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "listen_open_gate_event",
       "type": "event.listen",
-      "position": [650, 200],
-      "config": {
-        "event_name": "dialogue:open_gate"
-      }
+      "title": "event.listen",
+      "category": "Custom",
+      "position": [
+        650.0,
+        200.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "dispatch_gate_open",
       "type": "event.custom",
-      "position": [800, 200],
-      "config": {
-        "event_name": "gate_opened"
-      }
+      "title": "event.custom",
+      "category": "Custom",
+      "position": [
+        800.0,
+        200.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     }
   ],
-  "edges": [
-    {
-      "from": "interaction_trigger_enter",
-      "to": "check_player_in_range",
-      "from_pin": "collider",
-      "to_pin": "value"
-    },
-    {
-      "from": "check_player_in_range",
-      "to": "set_can_interact_true",
-      "from_pin": "true",
-      "to_pin": "execute"
-    },
-    {
-      "from": "interaction_trigger_exit",
-      "to": "check_player_leaving",
-      "from_pin": "collider",
-      "to_pin": "value"
-    },
-    {
-      "from": "check_player_leaving",
-      "to": "set_can_interact_false",
-      "from_pin": "true",
-      "to_pin": "execute"
-    },
-    {
-      "from": "e_key_down",
-      "to": "check_can_interact",
-      "from_pin": "pressed",
-      "to_pin": "execute"
-    },
-    {
-      "from": "check_can_interact",
-      "to": "if_can_interact",
-      "from_pin": "value",
-      "to_pin": "value"
-    },
-    {
-      "from": "if_can_interact",
-      "to": "start_dialogue",
-      "from_pin": "true",
-      "to_pin": "execute"
-    },
-    {
-      "from": "start_dialogue",
-      "to": "listen_open_gate_event",
-      "from_pin": "session_created",
-      "to_pin": "execute"
-    },
-    {
-      "from": "listen_open_gate_event",
-      "to": "dispatch_gate_open",
-      "from_pin": "event_received",
-      "to_pin": "execute"
-    }
-  ]
+  "edges": []
 }

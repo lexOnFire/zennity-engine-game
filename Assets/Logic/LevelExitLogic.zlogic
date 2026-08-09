@@ -1,113 +1,152 @@
 {
-  "format": "zennity.generic_graph",
-  "category": "Logic",
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": false,
   "name": "LevelExitLogic",
+  "target": {
+    "type": "name",
+    "value": "Player"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": [],
+    "migrated_from": "zennity.generic_graph"
+  },
   "nodes": [
     {
       "id": "on_trigger_enter",
       "type": "physics.on_trigger_enter",
-      "position": [50, 50],
-      "config": {}
+      "title": "physics.on_trigger_enter",
+      "category": "Custom",
+      "position": [
+        50.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "check_player",
       "type": "logic.branch",
-      "position": [200, 50],
-      "config": {
-        "condition": "contains",
-        "compare_value": "Player"
-      }
+      "title": "logic.branch",
+      "category": "Custom",
+      "position": [
+        200.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "check_door_unlocked",
       "type": "object.find_by_name",
-      "position": [350, 50],
-      "config": {
-        "object_name": "Door"
-      }
+      "title": "object.find_by_name",
+      "category": "Custom",
+      "position": [
+        350.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "get_door_locked_state",
       "type": "object.get_variable",
-      "position": [500, 50],
-      "config": {
-        "variable_name": "locked"
-      }
+      "title": "object.get_variable",
+      "category": "Custom",
+      "position": [
+        500.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "if_door_unlocked",
       "type": "logic.branch",
-      "position": [650, 50],
-      "config": {
-        "condition": "equal",
-        "compare_value": false
-      }
+      "title": "logic.branch",
+      "category": "Custom",
+      "position": [
+        650.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "autosave_game",
       "type": "save.save_game",
-      "position": [800, 50],
-      "config": {
-        "save_slot": "autosave"
-      }
+      "title": "save.save_game",
+      "category": "Custom",
+      "position": [
+        800.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "load_level2",
       "type": "scene.load_scene",
-      "position": [950, 50],
-      "config": {
-        "scene_path": "Assets/Scenes/Level2.zscene"
-      }
+      "title": "scene.load_scene",
+      "category": "Custom",
+      "position": [
+        950.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "blocked_noop",
       "type": "logic.noop",
-      "position": [650, 150],
-      "config": {}
+      "title": "logic.noop",
+      "category": "Custom",
+      "position": [
+        650.0,
+        150.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     }
   ],
-  "edges": [
-    {
-      "from": "on_trigger_enter",
-      "to": "check_player",
-      "from_pin": "collider",
-      "to_pin": "value"
-    },
-    {
-      "from": "check_player",
-      "to": "check_door_unlocked",
-      "from_pin": "true",
-      "to_pin": "execute"
-    },
-    {
-      "from": "check_door_unlocked",
-      "to": "get_door_locked_state",
-      "from_pin": "object",
-      "to_pin": "object"
-    },
-    {
-      "from": "get_door_locked_state",
-      "to": "if_door_unlocked",
-      "from_pin": "value",
-      "to_pin": "value"
-    },
-    {
-      "from": "if_door_unlocked",
-      "to": "autosave_game",
-      "from_pin": "true",
-      "to_pin": "execute"
-    },
-    {
-      "from": "autosave_game",
-      "to": "load_level2",
-      "from_pin": "saved",
-      "to_pin": "execute"
-    },
-    {
-      "from": "if_door_unlocked",
-      "to": "blocked_noop",
-      "from_pin": "false",
-      "to_pin": "execute"
-    }
-  ]
+  "edges": []
 }
