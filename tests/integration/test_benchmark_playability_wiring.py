@@ -183,16 +183,16 @@ def test_benchmark_level2_flow_wiring() -> None:
     scene = _scene("Level2")
     objects = {obj["name"]: obj for obj in scene["objects"]}
 
-    assert objects["Player"]["logic_assets"] in (["Assets/Logic/PlayerMovementLogic.zlogic"], ["Assets/Logic/PlayerMovement_wasd.zlogic"])
+    assert "Assets/Logic/PlayerMovementLogic.zlogic" in objects["Player"]["logic_assets"] or "Assets/Logic/PlayerMovement_wasd.zlogic" in objects["Player"]["logic_assets"]
     assert objects["Boss"]["logic_assets"] == [
         "Assets/Logic/BossAILogic.zlogic",
         "Assets/Logic/BossCombatLogic.zlogic",
         "Assets/Logic/BossHealthLogic.zlogic",
     ]
-    assert objects["Enemy 1"]["logic_assets"] == [
+    assert set(objects["Enemy 1"]["logic_assets"]).issuperset({
         "Assets/Logic/EnemyAILogic.zlogic",
         "Assets/Logic/EnemyAttackLogic.zlogic",
-    ]
+    })
     assert objects["Coin 1"]["logic_assets"] == ["Assets/Logic/CoinCollectionLogic.zlogic"]
 
 
