@@ -12,301 +12,69 @@
     "breakpoint_conditions": {},
     "watches": []
   },
-  "variables": {},
+  "variables": {
+    "attack_damage": {
+      "type": "number",
+      "scope": "object",
+      "default": 25.0
+    },
+    "attack_range": {
+      "type": "number",
+      "scope": "object",
+      "default": 80.0
+    }
+  },
   "editor": {
     "groups": [],
-    "comments": [],
-    "migrated_from": "zennity.generic_graph"
+    "comments": []
   },
   "nodes": [
     {
-      "id": "space_key_down",
-      "type": "input.keyboard_key_down",
-      "title": "input.keyboard_key_down",
-      "category": "Custom",
+      "id": "key_space",
+      "type": "key_pressed",
+      "title": "Key Pressed Now?",
+      "category": "Condition",
       "position": [
-        50.0,
-        50.0
+        100.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 150.0
       },
-      "properties": {}
+      "properties": {
+        "key": "SPACE"
+      }
     },
     {
-      "id": "get_attack_in_progress",
-      "type": "animator.get_current_state",
-      "title": "animator.get_current_state",
-      "category": "Custom",
+      "id": "play_attack_anim",
+      "type": "play_animation",
+      "title": "Play Attack Animation",
+      "category": "Animation",
       "position": [
-        50.0,
-        150.0
+        420.0,
+        100.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
+        "width": 220.0,
+        "height": 150.0
       },
-      "properties": {}
-    },
-    {
-      "id": "check_not_attacking",
-      "type": "logic.branch",
-      "title": "logic.branch",
-      "category": "Custom",
-      "position": [
-        200.0,
-        150.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "set_attack_trigger",
-      "type": "animator.set_trigger",
-      "title": "animator.set_trigger",
-      "category": "Custom",
-      "position": [
-        350.0,
-        150.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "animation_hit_event",
-      "type": "animation.on_event",
-      "title": "animation.on_event",
-      "category": "Custom",
-      "position": [
-        50.0,
-        300.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "get_attack_damage",
-      "type": "variable.get",
-      "title": "variable.get",
-      "category": "Custom",
-      "position": [
-        200.0,
-        300.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "get_attack_range",
-      "type": "variable.get",
-      "title": "variable.get",
-      "category": "Custom",
-      "position": [
-        200.0,
-        350.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "get_facing_direction",
-      "type": "variable.get",
-      "title": "variable.get",
-      "category": "Custom",
-      "position": [
-        200.0,
-        400.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "raycast_for_enemy",
-      "type": "physics.raycast_2d",
-      "title": "physics.raycast_2d",
-      "category": "Custom",
-      "position": [
-        350.0,
-        350.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "check_hit",
-      "type": "logic.branch",
-      "title": "logic.branch",
-      "category": "Custom",
-      "position": [
-        500.0,
-        350.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "get_hit_object",
-      "type": "physics.get_raycast_hit",
-      "title": "physics.get_raycast_hit",
-      "category": "Custom",
-      "position": [
-        500.0,
-        300.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "get_enemy_health",
-      "type": "object.get_variable",
-      "title": "object.get_variable",
-      "category": "Custom",
-      "position": [
-        650.0,
-        300.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "subtract_damage",
-      "type": "math.subtract",
-      "title": "math.subtract",
-      "category": "Custom",
-      "position": [
-        800.0,
-        300.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "clamp_health",
-      "type": "math.clamp",
-      "title": "math.clamp",
-      "category": "Custom",
-      "position": [
-        800.0,
-        350.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "set_enemy_health",
-      "type": "object.set_variable",
-      "title": "object.set_variable",
-      "category": "Custom",
-      "position": [
-        950.0,
-        300.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "check_dead",
-      "type": "logic.branch",
-      "title": "logic.branch",
-      "category": "Custom",
-      "position": [
-        950.0,
-        380.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "destroy_enemy",
-      "type": "object.destroy",
-      "title": "object.destroy",
-      "category": "Custom",
-      "position": [
-        1100.0,
-        380.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "no_hit_exec",
-      "type": "logic.noop",
-      "title": "logic.noop",
-      "category": "Custom",
-      "position": [
-        650.0,
-        450.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
+      "properties": {
+        "state": "PlayerAttack"
+      }
     }
   ],
-  "edges": []
+  "edges": [
+    {
+      "id": "edge_space_anim",
+      "from_node": "key_space",
+      "from_port": "true",
+      "to_node": "play_attack_anim",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    }
+  ]
 }
