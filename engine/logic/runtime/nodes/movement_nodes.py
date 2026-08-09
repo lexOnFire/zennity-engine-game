@@ -23,7 +23,16 @@ def execute_move_by(runtime, node: Mapping[str, Any], game: Any, dt: float) -> l
     velocity_x = float(runtime._read_input(node_id, "x", properties.get("x", 100.0), game, dt, set()))
     velocity_y = float(runtime._read_input(node_id, "y", properties.get("y", 0.0), game, dt, set()))
     delta_x, delta_y = velocity_x * dt, velocity_y * dt
-    if callable(getattr(target, "move", None)):
+    rb = getattr(target, "rigidbody", None)
+    if rb is None and hasattr(target, "components"):
+        for c in getattr(target, "components", []):
+            if type(c).__name__ == "RigidBody":
+                rb = c
+                break
+    if rb is not None and not bool(getattr(rb, "is_kinematic", False)):
+        rb.velocity[0] = velocity_x
+        rb.velocity[1] = velocity_y
+    elif callable(getattr(target, "move", None)):
         target.move(delta_x, delta_y)
     else:
         target.x = float(target.x) + delta_x

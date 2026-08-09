@@ -126,6 +126,7 @@ class PhysicsWorld:
                     self._emit_trigger_enter(a, b)
             else:
                 next_contacts.add(pair)
+                self._resolve_solid_collision(a, b)
                 if pair not in self.contacts:
                     self._emit_collision_enter(a, b)
 
@@ -441,6 +442,80 @@ class PhysicsWorld:
     def _pair_from_key(self, pair: tuple[int, int]) -> tuple[Any | None, Any | None]:
         by_id = {id(collider): collider for collider in self.colliders}
         return by_id.get(pair[0]), by_id.get(pair[1])
+
+    def _resolve_solid_collision(self, a: Any, b: Any) -> None:
+        obj_a = getattr(a, "game_object", None)
+        obj_b = getattr(b, "game_object", None)
+        if obj_a is None or obj_b is None:
+            return
+
+        rb_a = getattr(obj_a, "rigidbody", None) or (
+            obj_a.get_component(RigidBody) if callable(getattr(obj_a, "get_component", None)) else None
+        )
+        rb_b = getattr(obj_b, "rigidbody", None) or (
+            obj_b.get_component(RigidBody) if callable(getattr(obj_b, "get_component", None)) else None
+        )
+
+        a_dynamic = rb_a is not None and not bool(getattr(rb_a, "is_kinematic", False))
+        b_dynamic = rb_b is not None and not bool(getattr(rb_b, "is_kinematic", False))
+
+        if not a_dynamic and not b_dynamic:
+            return
+
+        rect_a = getattr(a, "rect", None)
+        rect_b = getattr(b, "rect", None)
+        if rect_a is None or rect_b is None:
+            return
+
+        overlap_x1 = float(rect_a.right - rect_b.left)
+        overlap_x2 = float(rect_b.right - rect_a.left)
+        overlap_x = min(overlap_x1, overlap_x2)
+
+        overlap_y1 = float(rect_a.bottom - rect_b.top)
+        overlap_y2 = float(rect_b.bottom - rect_a.top)
+        overlap_y = min(overlap_y1, overlap_y2)
+
+        if overlap_x <= 0 or overlap_y <= 0:
+            return
+
+        if overlap_x < overlap_y:
+            shift_x = overlap_x if overlap_x1 < overlap_x2 else -overlap_x
+            if a_dynamic and not b_dynamic:
+                obj_a.transform.x -= shift_x
+                if rb_a is not None and hasattr(rb_a, "velocity"):
+                    if shift_x > 0 and rb_a.velocity[0] > 0:
+                        rb_a.velocity[0] = 0.0
+                    elif shift_x < 0 and rb_a.velocity[0] < 0:
+                        rb_a.velocity[0] = 0.0
+            elif b_dynamic and not a_dynamic:
+                obj_b.transform.x += shift_x
+                if rb_b is not None and hasattr(rb_b, "velocity"):
+                    if shift_x < 0 and rb_b.velocity[0] > 0:
+                        rb_b.velocity[0] = 0.0
+                    elif shift_x > 0 and rb_b.velocity[0] < 0:
+                        rb_b.velocity[0] = 0.0
+            elif a_dynamic and b_dynamic:
+                obj_a.transform.x -= shift_x * 0.5
+                obj_b.transform.x += shift_x * 0.5
+        else:
+            shift_y = overlap_y if overlap_y1 < overlap_y2 else -overlap_y
+            if a_dynamic and not b_dynamic:
+                obj_a.transform.y -= shift_y
+                if rb_a is not None and hasattr(rb_a, "velocity"):
+                    if shift_y > 0 and rb_a.velocity[1] > 0:
+                        rb_a.velocity[1] = 0.0
+                    elif shift_y < 0 and rb_a.velocity[1] < 0:
+                        rb_a.velocity[1] = 0.0
+            elif b_dynamic and not a_dynamic:
+                obj_b.transform.y += shift_y
+                if rb_b is not None and hasattr(rb_b, "velocity"):
+                    if shift_y < 0 and rb_b.velocity[1] > 0:
+                        rb_b.velocity[1] = 0.0
+                    elif shift_y > 0 and rb_b.velocity[1] < 0:
+                        rb_b.velocity[1] = 0.0
+            elif a_dynamic and b_dynamic:
+                obj_a.transform.y -= shift_y * 0.5
+                obj_b.transform.y += shift_y * 0.5
 
     def _emit_collision_enter(self, a: Any, b: Any) -> None:
         callback_a = getattr(a, "on_collision_enter", None)
