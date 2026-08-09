@@ -74,21 +74,19 @@ class ViewportProcessController:
         self._close_queues()
 
     def _close_queues(self) -> None:
-        """Stop multiprocessing feeder threads after the child has exited."""
+        """Stop multiprocessing feeder threads safely before process exit."""
         if self._queues_closed:
             return
         self._queues_closed = True
         for queue in (self.command_queue, self.events):
+            if queue is None:
+                continue
             try:
-                close = getattr(queue, "close", None)
-                if callable(close):
-                    close()
                 cancel_join = getattr(queue, "cancel_join_thread", None)
                 if callable(cancel_join):
                     cancel_join()
-                else:
-                    join_thread = getattr(queue, "join_thread", None)
-                    if callable(join_thread):
-                        join_thread()
+                close = getattr(queue, "close", None)
+                if callable(close):
+                    close()
             except Exception:
                 pass
