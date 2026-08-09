@@ -534,9 +534,12 @@ def main() -> None:
     )
     window.attach_viewport_process(viewport_process)
     exit_code = app.exec()
-
-    viewport_controller.shutdown()
-    raise SystemExit(exit_code)
+    try:
+        viewport_controller.shutdown()
+    except Exception:
+        pass
+    import os
+    os._exit(exit_code)
 
 
 if __name__ == "__main__":
