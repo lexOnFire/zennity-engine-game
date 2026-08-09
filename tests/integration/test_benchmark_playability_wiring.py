@@ -29,6 +29,22 @@ def test_benchmark_player_uses_single_playable_wasd_logic_graph() -> None:
         assert graphs[0]["graph"]["enabled"] is True
 
 
+def test_level1_player_and_door_have_clear_official_logic_bindings() -> None:
+    objects = {obj["name"]: obj for obj in _scene("Level1")["objects"]}
+    player = objects["Player"]
+    door = objects["Door"]
+
+    assert player["tag"] == "Player"
+    assert player["logic_assets"] == ["Assets/Logic/PlayerMovement_wasd.zlogic"]
+    assert player["editor_data"] == {
+        "logic_graphs": [{"path": "Assets/Logic/PlayerMovement_wasd.zlogic", "name": "PlayerMovement_wasd"}]
+    }
+    assert door["tag"] == "Door"
+    assert door["logic_assets"] == ["Assets/Logic/DoorLogic.zlogic"]
+    assert door["variables"]["requires_key"] is True
+    assert door["variables"]["requires_guard_dialogue"] is True
+
+
 def test_benchmark_boss_hud_only_appears_in_level2() -> None:
     assert _scene("Level1")["ui"] == "Assets/UI/HUD.zui"
     assert _scene("Level2")["ui"] == "Assets/UI/HUD_Boss.zui"

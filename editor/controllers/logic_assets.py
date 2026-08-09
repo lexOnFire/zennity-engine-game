@@ -86,7 +86,11 @@ class LogicAssetRepository:
             target_type = str(target.get("type", "name"))
             wanted = str(target.get("value", "")).casefold()
 
-            if rel_path in explicit_paths or (target_type == "name" and wanted == object_name.casefold()) or (target_type == "tag" and wanted == tag):
+            if explicit_paths:
+                if rel_path in explicit_paths:
+                    result.append((path, graph))
+                continue
+            if (target_type == "name" and wanted == object_name.casefold()) or (target_type == "tag" and wanted == tag):
                 result.append((path, graph))
         return result
 
@@ -156,4 +160,3 @@ class LogicAssetRepository:
                     item, old_name, new_name
                 ) or changed
         return changed
-

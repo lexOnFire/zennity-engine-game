@@ -11,7 +11,7 @@
       "id": "player",
       "name": "Player",
       "active": true,
-      "tag": "",
+      "tag": "Player",
       "transform": {
         "position": [
           0.0,
@@ -1313,7 +1313,7 @@
       "id": "door_1",
       "name": "Door",
       "active": true,
-      "tag": "",
+      "tag": "Door",
       "transform": {
         "position": [
           650.0,
@@ -1379,7 +1379,9 @@
       ],
       "variables": {
         "locked": true,
-        "owner_id": "Door"
+        "owner_id": "Door",
+        "requires_key": true,
+        "requires_guard_dialogue": true
       }
     },
     {
