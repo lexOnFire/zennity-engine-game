@@ -459,6 +459,10 @@ class IsolatedEditorWindow(InspectorComponentDelegatesMixin, AnimationWorkspaceO
             p = p if p.is_absolute() else (project_root / p)
             if p.exists():
                 self._load_scene_snapshot(scene_path=p)
+                self._commands.put({
+                    "type": "scene_snapshot",
+                    "objects": deepcopy(self._scene_snapshot),
+                })
 
     def _read_viewport_events(self) -> None:
         self._viewport_event_controller.poll()

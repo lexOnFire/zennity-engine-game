@@ -72,15 +72,29 @@ class ViewportPlayCommandHandler:
             state.camera_x = -float(width) / 2.0 / zoom
             state.camera_y = -float(height) / 2.0 / zoom
         elif command_type == "scene_snapshot":
+            new_objects = command.get("objects", [])
             if not state.playing:
                 self.objects.clear()
-                self.objects.update({item["name"]: dict(item) for item in command.get("objects", [])})
+                self.objects.update({item["name"]: dict(item) for item in new_objects})
                 state.edit_snapshot = deepcopy(self.objects)
                 state.selected_name = None
                 state.playing = False
                 state.paused = False
                 state.velocities_y = {}
                 state.grounded = {}
+            else:
+                self.stop_audio()
+                self.stop_logic()
+                self.objects.clear()
+                self.objects.update({item["name"]: dict(item) for item in new_objects})
+                state.edit_snapshot = deepcopy(self.objects)
+                state.selected_name = None
+                state.velocities_y = {}
+                state.grounded = {}
+                self.reset_physics()
+                self.clear_hud()
+                self.start_logic(state.scene_blackboard_config)
+                self.start_audio()
         elif command_type == "logic_debug_command":
             self._handle_logic_debug(command, state)
         elif command_type == "play":

@@ -31,11 +31,22 @@
       },
       "visual": {
         "enabled": true,
-        "color": [0, 200, 255],
-        "texture": "Assets/Sprites/Player/idle_1.png"
+        "color": [
+          0,
+          200,
+          255
+        ],
+        "texture": "Assets/Sprites/Player/idle_1.png",
+        "material": "Default_Material",
+        "mesh_type": null,
+        "layer": "Default",
+        "order": 0
       },
       "enabled": true,
-      "prefab": "Assets/Prefabs/Player.zprfb"
+      "prefab": "Assets/Prefabs/Player.zprfb",
+      "static": false,
+      "layer": "Default",
+      "components": {}
     },
     {
       "id": "level1_camera",
@@ -82,7 +93,22 @@
           }
         ]
       },
-      "enabled": true
+      "enabled": true,
+      "static": false,
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      }
     },
     {
       "id": "enemy_1",
@@ -109,11 +135,22 @@
       },
       "visual": {
         "enabled": true,
-        "color": [255, 60, 60],
-        "texture": "Assets/Sprites/Enemy/idle_1.png"
+        "color": [
+          255,
+          60,
+          60
+        ],
+        "texture": "Assets/Sprites/Enemy/idle_1.png",
+        "material": "Default_Material",
+        "mesh_type": null,
+        "layer": "Default",
+        "order": 0
       },
       "enabled": true,
-      "prefab": "Assets/Prefabs/Enemy.zprfb"
+      "prefab": "Assets/Prefabs/Enemy.zprfb",
+      "static": false,
+      "layer": "Default",
+      "components": {}
     },
     {
       "id": "enemy_2",
@@ -140,11 +177,22 @@
       },
       "visual": {
         "enabled": true,
-        "color": [255, 60, 60],
-        "texture": "Assets/Sprites/Enemy/idle_1.png"
+        "color": [
+          255,
+          60,
+          60
+        ],
+        "texture": "Assets/Sprites/Enemy/idle_1.png",
+        "material": "Default_Material",
+        "mesh_type": null,
+        "layer": "Default",
+        "order": 0
       },
       "enabled": true,
-      "prefab": "Assets/Prefabs/Enemy.zprfb"
+      "prefab": "Assets/Prefabs/Enemy.zprfb",
+      "static": false,
+      "layer": "Default",
+      "components": {}
     },
     {
       "id": "enemy_3",
@@ -171,11 +219,22 @@
       },
       "visual": {
         "enabled": true,
-        "color": [255, 60, 60],
-        "texture": "Assets/Sprites/Enemy/idle_1.png"
+        "color": [
+          255,
+          60,
+          60
+        ],
+        "texture": "Assets/Sprites/Enemy/idle_1.png",
+        "material": "Default_Material",
+        "mesh_type": null,
+        "layer": "Default",
+        "order": 0
       },
       "enabled": true,
-      "prefab": "Assets/Prefabs/Enemy.zprfb"
+      "prefab": "Assets/Prefabs/Enemy.zprfb",
+      "static": false,
+      "layer": "Default",
+      "components": {}
     },
     {
       "id": "level1_hud",
@@ -204,16 +263,61 @@
         "items": [
           {
             "type": "Canvas",
-            "layout_path": "Assets/UI/HUD.zui",
-            "ui_asset": "Assets/UI/HUD.zui",
-            "visible": true,
-            "z_order": 0,
-            "render_mode": "Screen Space",
-            "layer_mask": 4294967295
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "x": 16.0,
+              "y": 16.0,
+              "width": 180.0,
+              "height": 42.0,
+              "z_order": 0,
+              "text": "",
+              "font_size": 24,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
+              "sprite_path": ""
+            }
           }
         ]
       },
-      "enabled": true
+      "enabled": true,
+      "static": false,
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      }
     },
     {
       "id": "wall_left",
@@ -250,7 +354,22 @@
           }
         ]
       },
-      "enabled": true
+      "enabled": true,
+      "static": false,
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      }
     },
     {
       "id": "wall_right",
@@ -287,7 +406,22 @@
           }
         ]
       },
-      "enabled": true
+      "enabled": true,
+      "static": false,
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      }
     },
     {
       "id": "wall_top",
@@ -324,7 +458,22 @@
           }
         ]
       },
-      "enabled": true
+      "enabled": true,
+      "static": false,
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      }
     },
     {
       "id": "wall_bottom",
@@ -361,7 +510,22 @@
           }
         ]
       },
-      "enabled": true
+      "enabled": true,
+      "static": false,
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      }
     },
     {
       "id": "coin_1",
@@ -387,7 +551,23 @@
         ]
       },
       "enabled": true,
-      "prefab": "Assets/Prefabs/Coin.zprfb"
+      "prefab": "Assets/Prefabs/Coin.zprfb",
+      "static": false,
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {}
     },
     {
       "id": "coin_2",
@@ -413,7 +593,23 @@
         ]
       },
       "enabled": true,
-      "prefab": "Assets/Prefabs/Coin.zprfb"
+      "prefab": "Assets/Prefabs/Coin.zprfb",
+      "static": false,
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {}
     },
     {
       "id": "coin_3",
@@ -439,7 +635,23 @@
         ]
       },
       "enabled": true,
-      "prefab": "Assets/Prefabs/Coin.zprfb"
+      "prefab": "Assets/Prefabs/Coin.zprfb",
+      "static": false,
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {}
     },
     {
       "id": "coin_4",
@@ -465,7 +677,23 @@
         ]
       },
       "enabled": true,
-      "prefab": "Assets/Prefabs/Coin.zprfb"
+      "prefab": "Assets/Prefabs/Coin.zprfb",
+      "static": false,
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {}
     },
     {
       "id": "coin_5",
@@ -491,7 +719,23 @@
         ]
       },
       "enabled": true,
-      "prefab": "Assets/Prefabs/Coin.zprfb"
+      "prefab": "Assets/Prefabs/Coin.zprfb",
+      "static": false,
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {}
     },
     {
       "id": "key_1",
@@ -517,7 +761,23 @@
         ]
       },
       "enabled": true,
-      "prefab": "Assets/Prefabs/Key.zprfb"
+      "prefab": "Assets/Prefabs/Key.zprfb",
+      "static": false,
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {}
     },
     {
       "id": "guard_1",
@@ -543,7 +803,23 @@
         ]
       },
       "enabled": true,
-      "prefab": "Assets/Prefabs/Guard.zprfb"
+      "prefab": "Assets/Prefabs/Guard.zprfb",
+      "static": false,
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {}
     },
     {
       "id": "door_1",
@@ -569,7 +845,23 @@
         ]
       },
       "enabled": true,
-      "prefab": "Assets/Prefabs/Door.zprfb"
+      "prefab": "Assets/Prefabs/Door.zprfb",
+      "static": false,
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {}
     },
     {
       "id": "level_exit",
@@ -606,7 +898,22 @@
           }
         ]
       },
-      "enabled": true
+      "enabled": true,
+      "static": false,
+      "layer": "Default",
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          88,
+          117,
+          255
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      }
     }
   ]
 }
