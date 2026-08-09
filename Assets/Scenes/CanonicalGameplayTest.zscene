@@ -67,7 +67,10 @@
             1.0,
             1.0
           ],
-          "priority": 0
+          "priority": 0,
+          "width": 1280.0,
+          "height": 720.0,
+          "follow_target": "Player"
         }
       }
     },
@@ -180,6 +183,63 @@
           "type": "box",
           "width": 32.0,
           "height": 128.0,
+          "is_trigger": false
+        }
+      }
+    },
+    {
+      "name": "Enemy",
+      "active": true,
+      "enabled": true,
+      "static": false,
+      "tag": "Enemy",
+      "layer": "Default",
+      "id": "enemy_01",
+      "transform": {
+        "position": [
+          300.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rz": 0.0,
+        "scale": [
+          36.0,
+          36.0,
+          1.0
+        ]
+      },
+      "visual": {
+        "enabled": true,
+        "material": "Default_Material",
+        "mesh_type": null,
+        "color": [
+          255,
+          0,
+          0
+        ],
+        "texture": "",
+        "layer": "Default",
+        "order": 0
+      },
+      "components": {
+        "items": [
+          {
+            "type": "Health",
+            "max_hp": 100,
+            "hp": 100,
+            "dead": false
+          }
+        ],
+        "collider": {
+          "enabled": true,
+          "type": "box",
+          "width": 36.0,
+          "height": 36.0,
           "is_trigger": false
         }
       }
