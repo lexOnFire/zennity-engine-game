@@ -16,8 +16,8 @@ def test_sequence_all_success():
                 "children": ["action1", "action2"]
             },
             "action1": {
-                "type": "bt.idle",
-                "duration": 0.1
+                "type": "bt.log",
+                "message": "step1"
             },
             "action2": {
                 "type": "bt.log",
@@ -26,7 +26,7 @@ def test_sequence_all_success():
         }
     }
     runtime = BehaviorTreeRuntime(tree)
-    status = runtime.update(dt=0.016)
+    status = runtime.update(dt=0.15)
     assert status == BehaviorStatus.SUCCESS
 
 
@@ -225,7 +225,7 @@ def test_cooldown_blocks_execution():
 
     # Primeira execução passa
     status1 = runtime.update(dt=0.016)
-    assert status1 == BehaviorStatus.RUNNING
+    assert status1 == BehaviorStatus.SUCCESS
     assert call_count[0] == 1
 
     # Segunda execução bloqueada

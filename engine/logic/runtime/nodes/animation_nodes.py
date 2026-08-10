@@ -140,6 +140,22 @@ def execute_stop_animation(runtime, node: Mapping[str, Any], game: Any, dt: floa
         return ["failure"]
 
 
+def _parse_animator_param_value(value_str: str, existing_value: Any = None) -> Any:
+    """Parse string value into typed value (bool, int, float) based on existing value or auto-detect."""
+    if isinstance(existing_value, bool):
+        return value_str.lower() in ("true", "1", "yes")
+    if isinstance(existing_value, int):
+        return int(value_str)
+    if isinstance(existing_value, float):
+        return float(value_str)
+    if value_str.lower() in ("true", "false", "yes", "no", "1", "0"):
+        return value_str.lower() in ("true", "yes", "1")
+    try:
+        return int(value_str) if "." not in value_str else float(value_str)
+    except ValueError:
+        return value_str.lower() in ("true", "1", "yes")
+
+
 # Phase 6B.2: Animator Parameter Executor
 @registry.register_executor('animator_parameter')
 def execute_animator_parameter(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
@@ -151,72 +167,25 @@ def execute_animator_parameter(runtime, node: Mapping[str, Any], game: Any, dt: 
     parameter_name = str(properties.get("parameter_name", "")).strip()
     value_str = str(properties.get("value", "")).strip()
 
-    if not parameter_name or not value_str:
-        return ["failure"]
-
-    # First check if game object exists
-    if not hasattr(game, "find_object"):
+    if not parameter_name or not value_str or not hasattr(game, "find_object"):
         return ["failure"]
 
     game_obj = game.find_object(target_name) if target_name else None
     if not game_obj:
-        return ["failure"]  # Target object not found
+        return ["failure"]
 
-    # Phase 6B.4: Try to use AnimationController if available
     controller = game_obj.get_component(AnimationController) if hasattr(game_obj, "get_component") else None
 
-    if controller:
-        # Use AnimationController (preferred)
-        try:
-            # Detect type from existing parameter
-            existing_value = controller.get_parameter(parameter_name, None)
-
-            # Parse value based on existing type or auto-detect
-            if isinstance(existing_value, bool):
-                value = value_str.lower() in ("true", "1", "yes")
-            elif isinstance(existing_value, int):
-                value = int(value_str)
-            elif isinstance(existing_value, float):
-                value = float(value_str)
-            else:
-                # Auto-detect from value_str: try bool first, then int, then float
-                if value_str.lower() in ("true", "false", "yes", "no", "1", "0"):
-                    value = value_str.lower() in ("true", "yes", "1")
-                else:
-                    try:
-                        # Try int first
-                        if "." not in value_str:
-                            value = int(value_str)
-                        else:
-                            value = float(value_str)
-                    except ValueError:
-                        value = value_str.lower() in ("true", "1", "yes")
-
+    try:
+        existing = controller.get_parameter(parameter_name, None) if controller else None
+        value = _parse_animator_param_value(value_str, existing)
+        if controller:
             controller.set_parameter(parameter_name, value)
-            runtime._store(node_id, parameter_name, value)
-            return ["success"]
+        runtime._store(node_id, parameter_name, value)
+        return ["success"]
+    except (ValueError, TypeError, AttributeError):
+        return ["failure"]
 
-        except (ValueError, TypeError, AttributeError):
-            return ["failure"]
-    else:
-        # Backward compatibility: store in runtime state if no controller (Phase 6B.2 compatibility)
-        try:
-            if value_str.lower() in ("true", "false", "yes", "no", "1", "0"):
-                value = value_str.lower() in ("true", "yes", "1")
-            else:
-                try:
-                    if "." not in value_str:
-                        value = int(value_str)
-                    else:
-                        value = float(value_str)
-                except ValueError:
-                    value = value_str.lower() in ("true", "1", "yes")
-
-            runtime._store(node_id, parameter_name, value)
-            return ["success"]
-
-        except (ValueError, TypeError):
-            return ["failure"]
 
 
 # Phase 6B.4: Set Animator Trigger

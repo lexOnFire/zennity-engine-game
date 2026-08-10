@@ -37,11 +37,11 @@ dessas fronteiras cair abaixo de 70%.
 
 | Classe | Linhas | Margem até 500 | Situação |
 |---|---:|---:|---|
-| `editor.phase1_editor.ZennityPhase1Editor` | 434 | 66 | ✅ Abaixo de 500 |
-| `engine.logic.runtime.core.LogicGraphRuntime` | 494 | 6 | ⚠️ Abaixo de 500; crescimento congelado |
+| `editor.phase1_editor.ZennityPhase1Editor` | 458 | 42 | ✅ Abaixo de 500 |
+| `engine.logic.runtime.core.LogicGraphRuntime` | 362 | 138 | ✅ Abaixo de 500 |
 | `editor.widgets.phase1_viewport.Phase1ViewportWidget` | 387 | 113 | ✅ Abaixo de 500 |
-| `editor.windows.main_window.MainWindow` | 482 | 18 | ⚠️ Legado abaixo de 500; crescimento congelado |
-| `editor.widgets.viewport_widget.ViewportWidget` | 483 | 17 | ⚠️ Abaixo de 500; extração preventiva planejada |
+| `editor.windows.main_window.MainWindow` | 485 | 15 | ⚠️ Legado abaixo de 500; crescimento congelado |
+| `editor.widgets.viewport_widget.ViewportWidget` | 491 | 9 | ⚠️ Abaixo de 500; extração preventiva planejada |
 
 Contagem calculada com `ast.ClassDef.lineno/end_lineno`, incluindo a declaração
 e a última linha de cada classe. A tabela deve sempre informar a data e o commit

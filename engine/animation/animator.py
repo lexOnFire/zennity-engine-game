@@ -72,6 +72,7 @@ class Animator(Component):
             self.play(self._default)
 
     def on_runtime_start(self) -> None:
+        self._runtime_animation_managed = True
         if self._current is None and self._default and self._default in self._clips:
             self.play(self._default)
 
@@ -153,6 +154,8 @@ class Animator(Component):
     # ------------------------------------------------------------------
 
     def update(self, dt: float) -> None:
+        if getattr(self, "_runtime_animation_managed", False):
+            return
         self._advance(dt)
 
     def _advance(self, dt: float) -> None:
