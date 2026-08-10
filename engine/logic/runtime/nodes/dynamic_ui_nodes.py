@@ -361,3 +361,11 @@ def evaluate_get_progress_bar_value(runtime, node_id: str, port: str, node: Mapp
         # Service não disponível — fallback direto
         val = _fetch_progress_bar_value(runtime, widget_name, game)
         return runtime._store(node_id, "value", val)
+
+
+@registry.register_executor('get_progress_bar_value')
+def execute_get_progress_bar_value(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
+    """Executa o nó get_progress_bar_value em fluxo sequencial e continua para 'next'."""
+    node_id = str(node['id'])
+    evaluate_get_progress_bar_value(runtime, node_id, "value", node, game, dt, set())
+    return ["next"]
