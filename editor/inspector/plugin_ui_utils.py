@@ -3,6 +3,7 @@ from __future__ import annotations
 __all__ = [
     "_section",
     "_float_field",
+    "_enum_field",
     "_axis_row",
     "_property_row",
     "_project_relative",
@@ -71,6 +72,29 @@ def _float_field(value: float, on_change: callable) -> QDoubleSpinBox:
     field.valueChanged.connect(lambda next_value: on_change(float(next_value)))
     field.original_value = float(value)
     return field
+
+
+def _enum_field(value: Any, choices: list[str] | tuple[str, ...], on_change: callable) -> QComboBox:
+    combo = QComboBox()
+    combo.setObjectName("InspectorEnumField")
+    val_str = str(value).lower().strip()
+    idx = -1
+    for i, choice in enumerate(choices):
+        display_name = str(choice).capitalize() if isinstance(choice, str) else str(choice)
+        combo.addItem(display_name, choice)
+        if str(choice).lower().strip() == val_str:
+            idx = i
+
+    if idx >= 0:
+        combo.setCurrentIndex(idx)
+    else:
+        display_invalid = f"Unknown ({value})"
+        combo.addItem(display_invalid, value)
+        combo.setCurrentIndex(combo.count() - 1)
+
+    combo.currentIndexChanged.connect(lambda index: on_change(combo.itemData(index)))
+    combo.original_value = value
+    return combo
 
 
 def _axis_row(label: str, values: Any, on_change: callable) -> QWidget:

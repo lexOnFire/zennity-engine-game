@@ -21,6 +21,25 @@ class RigidBodyInspectorPlugin(InspectorPlugin):
     ) -> QWidget:
         widget, body = _section("Rigidbody")
         fields: dict[str, QDoubleSpinBox] = {}
+
+        choices = getattr(component, "BODY_TYPES", ("dynamic", "kinematic", "static"))
+        current_body_type = getattr(component, "body_type", "dynamic")
+
+        def apply_body_type(value: str) -> None:
+            setattr(component, "body_type", value)
+            if refresh is not None:
+                refresh()
+
+        body_type_combo = _enum_field(
+            current_body_type,
+            choices,
+            lambda new_val: self._commit_enum_change(
+                component, "body_type", body_type_combo, new_val, command_manager, refresh
+            ),
+        )
+        body.addWidget(_property_row("body_type", body_type_combo))
+        widget.combo_body_type = body_type_combo
+
         for property_name in ("mass", "gravity_scale", "drag"):
             row = _property_row(
                 property_name,
@@ -31,14 +50,17 @@ class RigidBodyInspectorPlugin(InspectorPlugin):
             )
             body.addWidget(row)
             fields[property_name] = row.findChild(QDoubleSpinBox)
-        for property_name in ("use_gravity", "is_kinematic"):
-            field = QCheckBox()
-            field.setObjectName("InspectorCheckBox")
-            field.setChecked(bool(getattr(component, property_name)))
-            field.toggled.connect(lambda value, prop=property_name: setattr(component, prop, bool(value)))
-            body.addWidget(_property_row(property_name, field))
-            if property_name == "is_kinematic":
-                widget.chk_kin = field
+
+        chk_grav = QCheckBox()
+        chk_grav.setObjectName("InspectorCheckBox")
+        chk_grav.setChecked(bool(getattr(component, "use_gravity", True)))
+        chk_grav.toggled.connect(
+            lambda value: self._commit_bool_change(
+                component, "use_gravity", chk_grav, bool(value), command_manager, refresh
+            )
+        )
+        body.addWidget(_property_row("use_gravity", chk_grav))
+        widget.chk_grav = chk_grav
 
         def commit_val(field: QDoubleSpinBox, property_name: str) -> None:
             old_value = float(getattr(field, "original_value", getattr(component, property_name)))
@@ -74,36 +96,82 @@ class RigidBodyInspectorPlugin(InspectorPlugin):
             else:
                 command_manager.execute(FunctionCommand(f"Set RigidBody.{property_name}", apply, undo))
 
-        def commit_kinematic() -> None:
-            old_value = not bool(widget.chk_kin.isChecked())
-            new_value = bool(widget.chk_kin.isChecked())
-            if old_value == new_value:
-                return
-
-            def apply(value: bool = new_value) -> None:
-                component.is_kinematic = value
-                widget.chk_kin.blockSignals(True)
-                widget.chk_kin.setChecked(value)
-                widget.chk_kin.blockSignals(False)
-                if refresh is not None:
-                    refresh()
-
-            def undo(value: bool = old_value) -> None:
-                component.is_kinematic = value
-                widget.chk_kin.blockSignals(True)
-                widget.chk_kin.setChecked(value)
-                widget.chk_kin.blockSignals(False)
-                if refresh is not None:
-                    refresh()
-
-            if command_manager is None:
-                apply()
-            else:
-                command_manager.execute(FunctionCommand("Set RigidBody.is_kinematic", apply, undo))
-
         widget.sb_mass = fields["mass"]
         widget.sb_grav = fields["gravity_scale"]
         widget.commit_val = commit_val
-        widget.commit_kinematic = commit_kinematic
         widget.setProperty("component_type", self.component_type)
         return widget
+
+    def _commit_enum_change(
+        self,
+        component: Any,
+        property_name: str,
+        combo: QComboBox,
+        new_value: str,
+        command_manager: CommandManager | None,
+        refresh: callable | None,
+    ) -> None:
+        old_value = getattr(combo, "original_value", getattr(component, property_name))
+        if old_value == new_value:
+            return
+
+        def apply(val: str = new_value) -> None:
+            setattr(component, property_name, val)
+            combo.blockSignals(True)
+            for idx in range(combo.count()):
+                if combo.itemData(idx) == val:
+                    combo.setCurrentIndex(idx)
+                    break
+            combo.original_value = val
+            combo.blockSignals(False)
+            if refresh is not None:
+                refresh()
+
+        def undo(val: str = old_value) -> None:
+            setattr(component, property_name, val)
+            combo.blockSignals(True)
+            for idx in range(combo.count()):
+                if combo.itemData(idx) == val:
+                    combo.setCurrentIndex(idx)
+                    break
+            combo.original_value = val
+            combo.blockSignals(False)
+            if refresh is not None:
+                refresh()
+
+        if command_manager is None:
+            apply()
+        else:
+            command_manager.execute(FunctionCommand(f"Set RigidBody.{property_name}", apply, undo))
+
+    def _commit_bool_change(
+        self,
+        component: Any,
+        property_name: str,
+        chk: QCheckBox,
+        new_value: bool,
+        command_manager: CommandManager | None,
+        refresh: callable | None,
+    ) -> None:
+        old_value = not new_value
+
+        def apply(val: bool = new_value) -> None:
+            setattr(component, property_name, val)
+            chk.blockSignals(True)
+            chk.setChecked(val)
+            chk.blockSignals(False)
+            if refresh is not None:
+                refresh()
+
+        def undo(val: bool = old_value) -> None:
+            setattr(component, property_name, val)
+            chk.blockSignals(True)
+            chk.setChecked(val)
+            chk.blockSignals(False)
+            if refresh is not None:
+                refresh()
+
+        if command_manager is None:
+            apply()
+        else:
+            command_manager.execute(FunctionCommand(f"Set RigidBody.{property_name}", apply, undo))
