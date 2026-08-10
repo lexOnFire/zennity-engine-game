@@ -467,6 +467,8 @@ def build_logic_graph_ui(self) -> None:
         "QHeaderView::section { background: #181c28; color: #94a3b8; font-weight: bold; font-size: 11px; border: none; padding: 6px 8px; }"
         "QTreeWidget::item { min-height: 28px; padding: 4px 8px; margin: 2px 0px; border-bottom: 1px solid #1e2430; }"
     )
+    self.property_tree.itemChanged.connect(self._property_changed)
+    self.property_tree.itemClicked.connect(self._choose_exposed_property_asset)
     properties_layout.addWidget(self.property_tree, 1)
 
     self.property_asset_button = QPushButton("Selecionar asset do projeto...")
