@@ -469,7 +469,7 @@ class IsolatedEditorWindow(InspectorComponentDelegatesMixin, AnimationWorkspaceO
     def closeEvent(self, event) -> None:
         if getattr(self, "_viewport_controller", None) is not None:
             try:
-                self._viewport_controller.shutdown()
+                self._viewport_controller.shutdown(graceful_timeout=0.2, kill_timeout=0.3)
             except Exception:
                 pass
         self._session_controller.shutdown()
