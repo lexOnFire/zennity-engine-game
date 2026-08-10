@@ -19,6 +19,12 @@ class ViewportProcessController:
         self._context = context
         self.command_queue = command_queue
         self.events = event_queue
+        for queue in (command_queue, event_queue):
+            if queue is not None and hasattr(queue, "cancel_join_thread"):
+                try:
+                    queue.cancel_join_thread()
+                except Exception:
+                    pass
         self.commands = ViewportCommandBus(command_queue)
         self.process = process
         self._shutdown_requested = False
@@ -26,7 +32,11 @@ class ViewportProcessController:
 
     @classmethod
     def create(cls, context: Any) -> "ViewportProcessController":
-        return cls(context, context.Queue(), context.Queue())
+        cmd_q = context.Queue()
+        evt_q = context.Queue()
+        cmd_q.cancel_join_thread()
+        evt_q.cancel_join_thread()
+        return cls(context, cmd_q, evt_q)
 
     @classmethod
     def from_queues(
