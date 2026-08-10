@@ -181,15 +181,52 @@ class SceneObjectController:
         if h._play_session.is_running or h._selected_name not in h._objects_by_name:
             return
         h._record_history()
-        duplicate = deepcopy(h._objects_by_name[h._selected_name])
-        duplicate["id"] = str(uuid.uuid4())
-        duplicate["name"] = self.unique_name(f"{h._selected_name}_copy")
-        duplicate["x"] = float(duplicate.get("x", 0.0)) + 16.0
-        duplicate["y"] = float(duplicate.get("y", 0.0)) + 16.0
-        h._scene_snapshot.append(duplicate)
-        h._objects_by_name[duplicate["name"]] = duplicate
-        h._selected_name = duplicate["name"]
-        self._publish_selected(duplicate["name"])
+
+        target_name = h._selected_name
+        parent_obj = h._objects_by_name[target_name]
+
+        def get_all_descendants(root_name: str) -> list[dict[str, Any]]:
+            descendants: list[dict[str, Any]] = []
+            for obj in h._scene_snapshot:
+                if isinstance(obj, dict) and obj.get("parent") == root_name:
+                    descendants.append(obj)
+                    descendants.extend(get_all_descendants(str(obj.get("name", ""))))
+            return descendants
+
+        name_map: dict[str, str] = {}
+        new_objects: list[dict[str, Any]] = []
+
+        new_parent = deepcopy(parent_obj)
+        new_parent["id"] = str(uuid.uuid4())
+        new_parent_name = self.unique_name(f"{target_name}_copy")
+        new_parent["name"] = new_parent_name
+        new_parent["x"] = float(new_parent.get("x", 0.0)) + 16.0
+        new_parent["y"] = float(new_parent.get("y", 0.0)) + 16.0
+        new_parent["children"] = []
+        name_map[target_name] = new_parent_name
+        new_objects.append(new_parent)
+
+        for child_obj in get_all_descendants(target_name):
+            child_copy = deepcopy(child_obj)
+            child_copy["id"] = str(uuid.uuid4())
+            old_child_name = str(child_copy.get("name", "Child"))
+            new_child_name = self.unique_name(f"{old_child_name}_copy")
+            child_copy["name"] = new_child_name
+            child_copy["children"] = []
+            name_map[old_child_name] = new_child_name
+            new_objects.append(child_copy)
+
+        for cloned in new_objects:
+            old_parent = cloned.get("parent")
+            if old_parent and old_parent in name_map:
+                cloned["parent"] = name_map[old_parent]
+
+        for cloned in new_objects:
+            h._scene_snapshot.append(cloned)
+            h._objects_by_name[cloned["name"]] = cloned
+
+        h._selected_name = new_parent_name
+        self._publish_selected(new_parent_name)
 
     def _publish_selected(self, name: str) -> None:
         h = self.host
