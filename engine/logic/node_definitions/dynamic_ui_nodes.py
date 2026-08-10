@@ -148,7 +148,7 @@ class UpdateUIWidgetPropertyNode:
             PinDefinition(id="parent", label_key="Parent (objeto)", pin_type=PinType.STRING, default_value="Panel_HUD"),
             PinDefinition(id="widget_name", label_key="Nome do Widget", pin_type=PinType.STRING, default_value="label_dynamic"),
             PinDefinition(id="property", label_key="Propriedade", pin_type=PinType.STRING, default_value="text"),
-            PinDefinition(id="value", label_key="Novo Valor", pin_type=PinType.STRING, default_value="Novo Texto"),
+            PinDefinition(id="value", label_key="Novo Valor", pin_type=PinType.ANY, default_value="Novo Texto"),
         ],
         outputs=[
             PinDefinition(id="success", label_key="Sucesso", pin_type=PinType.EXEC),
