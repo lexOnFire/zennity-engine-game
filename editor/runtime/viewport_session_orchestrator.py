@@ -167,7 +167,6 @@ class ViewportSessionOrchestrator:
                 obj_name = str(value.get("object", "")).strip()
                 val_num = float(value.get("value", 0.0))
                 max_num = max(0.0001, float(value.get("max_value", 100.0)))
-                print(f"[UI RUNTIME] Comando set_ui_progress recebido! Widget='{obj_name}', Valor={val_num}/{max_num}")
                 # Tenta primeiro como nome direto de objeto na cena
                 target = self.objects.get(obj_name)
                 ui = target.get("ui") if isinstance(target, dict) else None

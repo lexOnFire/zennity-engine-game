@@ -469,7 +469,6 @@ class BehaviorGraphRunner:
 
         new_val = max(0.0, float(self._persistent[mem_key]) - amount)
         self._persistent[mem_key] = new_val
-        print(f"[BT] Formiga mordeu a comida! Widget='{element_name}', Novo Valor={new_val}")
 
         if hasattr(game, "_send_logic_command"):
             game._send_logic_command("set_ui_progress", {"object": element_name, "value": new_val})
