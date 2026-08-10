@@ -25,6 +25,12 @@ Retrocompatibilidade total:
 """
 from __future__ import annotations
 
+import logging
+
+from engine.diagnostics import get_logger, report_error
+
+_log = get_logger("editor")
+
 import math
 import time
 from collections import deque
@@ -752,7 +758,7 @@ class RuntimeVisualizationPanelWidget(RuntimePanelControllerMixin, QFrame):
         self.show_ai:        bool  = True
 
         # Replay buffer
-        self.replay_buffer:      deque[dict[str, Any]] = deque(maxlen=300)
+        self.replay_buffer:      deque[dict[str, Any]] = deque(maxlen=120)
         self.is_replaying:       bool  = False
         self.replay_frame_index: int   = 0
 
@@ -1162,13 +1168,14 @@ class RuntimeVisualizationPanelWidget(RuntimePanelControllerMixin, QFrame):
                     "object_count":   self._canvas.object_count,
                 }
                 self.replay_buffer.append(snapshot)
-                if len(self.replay_buffer) > 120:
-                    self.replay_buffer.pop(0)
                 self.timeline_slider.setValue(len(self.replay_buffer))
 
             self._canvas.update()
-        except Exception:
-            pass
+        except Exception as exc:
+            # Runs on a repeating QTimer, so this reports at WARNING rather than
+            # spamming ERROR, and the panel keeps updating on the next tick.
+            report_error(_log, "refresh the mini live viewport overlay", exc,
+                         level=logging.WARNING)
 
     # ── Replay ────────────────────────────────────────────────────────────
 
