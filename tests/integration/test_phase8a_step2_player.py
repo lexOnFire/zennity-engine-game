@@ -233,19 +233,31 @@ class TestPlayerMovementLogic:
         node_ids = [n.get("id") for n in data.get("nodes", [])]
         assert "set_animator_speed" in node_ids
 
-    def test_movement_logic_node_count(self):
-        """Record node count for UX evaluation."""
+    def test_movement_logic_moves_on_input(self):
+        """O grafo le entrada, escala por uma velocidade e move o objeto.
+
+        Antes isto exigia ao menos 9 nos, o que media tamanho e nao comportamento:
+        o grafo foi simplificado para 7 nos, continua valido e continua movendo,
+        e o teste quebrou mesmo sem nada ter piorado.
+        """
+        from engine.logic.graph_validator import validate_logic_graph
+
         logic_path = project_root / "Assets" / "Logic" / "PlayerMovementLogic.zlogic"
         data = json.loads(logic_path.read_text(encoding="utf-8"))
 
-        nodes = data.get("nodes", [])
-        edges = data.get("edges", [])
-        print(f"\nPlayerMovementLogic Stats:")
-        print(f"  Nodes: {len(nodes)}")
-        print(f"  Edges: {len(edges)}")
+        assert validate_logic_graph(data) == [], "grafo de movimento com problemas"
 
-        # Expected: ~10 nodes for input → normalize → speed → physics + animator
-        assert len(nodes) >= 9, "Logic graph should have at least input, vector, normalize, speed, physics, animator nodes"
+        types = [n.get("type") for n in data.get("nodes", [])]
+        assert any(t in {"input_axis", "read_key_axis"} for t in types), "sem leitura de entrada"
+        assert any(t in {"move", "move_by", "start_continuous_motion"} for t in types), "nao move nada"
+        assert any(t in {"event_update", "event_start"} for t in types), "sem evento de entrada"
+
+        # a entrada precisa chegar ao no de movimento, direta ou via multiplicacao
+        nodes = {n["id"]: n for n in data["nodes"]}
+        movers = {i for i, n in nodes.items() if n["type"] in {"move", "move_by", "start_continuous_motion"}}
+        feeds = {e["from_node"] for e in data.get("edges", [])
+                 if e["to_node"] in movers and e.get("kind") != "flow"}
+        assert feeds, "o no de movimento nao recebe nenhum valor de entrada"
 
 
 class TestAnimationController:

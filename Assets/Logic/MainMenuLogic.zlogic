@@ -5,7 +5,7 @@
   "name": "Main Menu Logic",
   "target": {
     "type": "name",
-    "value": "MenuUI"
+    "value": "Canvas"
   },
   "debug": {
     "breakpoints": [],
@@ -16,7 +16,7 @@
   "editor": {
     "groups": [],
     "comments": [],
-    "migrated_from": "zennity.generic_graph"
+    "migrated_from": "zennity.logic_graph"
   },
   "nodes": [
     {
@@ -25,13 +25,13 @@
       "title": "ui.button_clicked",
       "category": "Custom",
       "position": [
-        79.19,
-        80.0
+        85.04,
+        73.97
       ],
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 150.0
+        "height": 156.0
       },
       "properties": {
         "widget_name": "NewGameButton"
@@ -39,9 +39,9 @@
     },
     {
       "id": "reset_new_game_state",
-      "type": "variables.set",
-      "title": "variables.set",
-      "category": "Custom",
+      "type": "set_variable",
+      "title": "Definir Variável",
+      "category": "Variables",
       "position": [
         370.0,
         80.0
@@ -49,18 +49,18 @@
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 150.0
+        "height": 156.0
       },
       "properties": {
-        "name": "coins",
-        "value": 0
+        "value": 0,
+        "name": "coins"
       }
     },
     {
       "id": "reset_score",
-      "type": "variables.set",
-      "title": "variables.set",
-      "category": "Custom",
+      "type": "set_variable",
+      "title": "Definir Variável",
+      "category": "Variables",
       "position": [
         660.0,
         80.0
@@ -68,18 +68,18 @@
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 150.0
+        "height": 156.0
       },
       "properties": {
-        "name": "score",
-        "value": 0
+        "value": 0,
+        "name": "score"
       }
     },
     {
       "id": "reset_key",
-      "type": "variables.set",
-      "title": "variables.set",
-      "category": "Custom",
+      "type": "set_variable",
+      "title": "Definir Variável",
+      "category": "Variables",
       "position": [
         950.0,
         80.0
@@ -87,18 +87,18 @@
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 150.0
+        "height": 156.0
       },
       "properties": {
-        "name": "has_key",
-        "value": false
+        "value": false,
+        "name": "has_key"
       }
     },
     {
       "id": "reset_health",
-      "type": "variables.set",
-      "title": "variables.set",
-      "category": "Custom",
+      "type": "set_variable",
+      "title": "Definir Variável",
+      "category": "Variables",
       "position": [
         1240.0,
         80.0
@@ -106,11 +106,11 @@
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 150.0
+        "height": 156.0
       },
       "properties": {
-        "name": "health",
-        "value": 100
+        "value": 100,
+        "name": "health"
       }
     },
     {
@@ -143,28 +143,10 @@
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 150.0
+        "height": 156.0
       },
       "properties": {
         "widget_name": "ContinueButton"
-      }
-    },
-    {
-      "id": "load_game",
-      "type": "game.load_game",
-      "title": "game.load_game",
-      "category": "Custom",
-      "position": [
-        370.0,
-        250.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
-      },
-      "properties": {
-        "slot": "autosave"
       }
     },
     {
@@ -173,13 +155,13 @@
       "title": "ui.button_clicked",
       "category": "Custom",
       "position": [
-        80.0,
+        81.64,
         420.0
       ],
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 150.0
+        "height": 156.0
       },
       "properties": {
         "widget_name": "ExitButton"
@@ -203,8 +185,8 @@
     },
     {
       "id": "check_save_exists",
-      "type": "game.has_save",
-      "title": "game.has_save",
+      "type": "has_save",
+      "title": "Save Exists?",
       "category": "Custom",
       "position": [
         80.0,
@@ -216,7 +198,7 @@
         "height": 150.0
       },
       "properties": {
-        "slot": "autosave"
+        "slot_name": "autosave"
       }
     },
     {
@@ -237,6 +219,24 @@
         "widget_name": "ContinueButton",
         "enabled": true
       }
+    },
+    {
+      "id": "load_save",
+      "type": "load_game",
+      "title": "Load Saved Game",
+      "category": "Persistence",
+      "position": [
+        420.0,
+        700.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 240.0,
+        "height": 220.0
+      },
+      "properties": {
+        "slot_name": "autosave"
+      }
     }
   ],
   "edges": [
@@ -248,15 +248,6 @@
       "to_port": "in",
       "kind": "flow",
       "order": 0
-    },
-    {
-      "id": "176e27acf8fd4fc99135755ada59e231",
-      "from_node": "continue_button_listener",
-      "from_port": "next",
-      "to_node": "load_game",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 1
     },
     {
       "id": "d1d36cc8334d4e4db85e08a043597e26",
@@ -275,15 +266,6 @@
       "to_port": "in",
       "kind": "flow",
       "order": 3
-    },
-    {
-      "id": "3d58d0d1843844d3a8d84373e05dd930",
-      "from_node": "check_save_exists",
-      "from_port": "next",
-      "to_node": "enable_continue",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 4
     },
     {
       "id": "0eb1bddc74cb4a078851dcee84eaaf0f",
@@ -311,6 +293,24 @@
       "to_port": "in",
       "kind": "flow",
       "order": 7
+    },
+    {
+      "id": "f_continue_to_load",
+      "from_node": "continue_button_listener",
+      "from_port": "next",
+      "to_node": "load_save",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 20
+    },
+    {
+      "id": "f_hassave_to_enable",
+      "from_node": "check_save_exists",
+      "from_port": "exec_exists",
+      "to_node": "enable_continue",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 22
     }
   ]
 }

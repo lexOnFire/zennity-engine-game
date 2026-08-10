@@ -208,7 +208,8 @@ class TestEnemyAILogic:
         """Verify logic is valid JSON."""
         logic_path = project_root / "Assets" / "Logic" / "EnemyAILogic.zlogic"
         data = json.loads(logic_path.read_text(encoding="utf-8"))
-        assert data.get("format") == "zennity.generic_graph"
+        # O editor migra ``zennity.generic_graph`` para o formato atual ao salvar.
+        assert data.get("format") in {"zennity.logic_graph", "zennity.generic_graph"}
 
     def test_logic_has_find_player_node(self):
         """Verify logic has find_player node."""

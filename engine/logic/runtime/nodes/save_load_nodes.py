@@ -37,7 +37,7 @@ def execute_save_game(runtime, node: Mapping[str, Any], game: Any, dt: float) ->
             with open(f"{game.save_path}/{slot_name}.json", "w") as f:
                 json.dump(save_data, f, indent=2)
 
-        return ["saved"]
+        return ["exec_saved"]
     except Exception as e:
         print(f"Erro em save_game: {e}")
         return ["exec_failure"]
@@ -87,7 +87,7 @@ def execute_load_game(runtime, node: Mapping[str, Any], game: Any, dt: float) ->
         runtime._store(node_id, "slot_name", slot_name)
         runtime._store(node_id, "loaded", True)
 
-        return ["loaded"]
+        return ["exec_loaded"]
     except Exception as e:
         print(f"Erro em load_game: {e}")
         return ["exec_failure"]

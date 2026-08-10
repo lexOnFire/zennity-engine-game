@@ -140,12 +140,30 @@ class TestMainMenuLogicGraph:
         assert "load_level1" in node_ids
 
     def test_main_menu_logic_continue_flow(self):
-        """Verify logic graph has Continue button → Load Game flow."""
+        """O botao Continue precisa passar por load_game antes de qualquer cena.
+
+        Verificava um no com id ``load_game``. O id e arbitrario -- o que importa e
+        que exista um no do tipo load_game e que o clique do Continue chegue nele.
+        Sem isso o Continue comeca a fase do zero em vez de retomar o save, que era
+        exatamente o estado do grafo quando este teste passou a falhar.
+        """
         logic_path = project_root / "Assets" / "Logic" / "MainMenuLogic.zlogic"
         data = json.loads(logic_path.read_text(encoding="utf-8"))
+        nodes = {n["id"]: n for n in data.get("nodes", [])}
 
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "load_game" in node_ids, "Should have load_game node"
+        loaders = {i for i, n in nodes.items() if n.get("type") == "load_game"}
+        assert loaders, "menu precisa de um no load_game para o Continue"
+
+        listeners = {
+            i for i, n in nodes.items()
+            if n.get("type") in {"ui.button_clicked", "button_clicked", "on_ui_click"}
+            and "continue" in str(n.get("properties", {}).get("widget_name", "")).lower()
+        }
+        assert listeners, "nenhum listener ligado ao ContinueButton"
+
+        reached = {e["to_node"] for e in data.get("edges", [])
+                   if e["from_node"] in listeners and e.get("kind", "flow") == "flow"}
+        assert reached & loaders, "o clique do Continue nao chega ao load_game"
 
 
 class TestLevel1Placeholder:

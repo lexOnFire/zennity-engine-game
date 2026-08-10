@@ -80,23 +80,32 @@ def test_no_duplicate_executor_registrations():
 
 
 def test_executors_only_return_declared_flow_ports():
-    """Toda porta devolvida por um executor precisa existir na definicao do no."""
+    """Toda porta devolvida por um executor precisa ser uma porta de FLUXO declarada.
+
+    Existir na definicao nao basta. ``load_game`` devolvia ``loaded``, que e
+    declarado -- mas como pino de dados (bool). O runtime procura uma aresta saindo
+    de ``loaded``, o editor so oferece esse pino para ligacoes de dados, e o fluxo
+    morre igual a se o nome nao existisse.
+    """
     offenders = {}
     for node_type, regs in _collect().items():
         source_file, line, returned = regs[-1]
         if not returned:
             continue
-        declared = {port for port, _kind in node_port_definitions(node_type).get("outputs", [])}
-        if not declared:
+        outputs = node_port_definitions(node_type).get("outputs", [])
+        if not outputs:
             continue
-        unknown = returned - declared
-        if unknown:
+        flow_ports = {port for port, kind in outputs if kind == "flow"}
+        data_ports = {port for port, kind in outputs if kind != "flow"}
+        wrong = returned - flow_ports
+        if wrong:
             offenders[node_type] = {
                 "onde": f"{source_file}:{line}",
-                "retorna": sorted(unknown),
-                "declaradas": sorted(declared),
+                "retorna": sorted(wrong),
+                "sao pinos de dados": sorted(wrong & data_ports),
+                "fluxo disponivel": sorted(flow_ports),
             }
     assert not offenders, (
-        "Executores devolvendo portas que o no nao declara -- o fluxo morre nesses nos: "
-        f"{offenders}"
+        "Executores devolvendo algo que nao e porta de fluxo declarada -- "
+        f"o fluxo morre nesses nos: {offenders}"
     )
