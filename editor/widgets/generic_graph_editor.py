@@ -20,7 +20,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import List, Optional, Any
-from PySide6.QtCore import QPointF, Qt, Signal
+from PySide6.QtCore import QPointF, Qt, Signal, QTimer
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -141,6 +141,11 @@ class GenericGraphEditorWidget(QWidget):
         self.current_path: Path | None = None
         self.is_dirty = False
         self._palette_category_filter = "Todas"
+
+        self._autosave_timer = QTimer(self)
+        self._autosave_timer.setSingleShot(True)
+        self._autosave_timer.setInterval(700)
+        self._autosave_timer.timeout.connect(self._autosave)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(2, 2, 2, 2)
@@ -606,6 +611,13 @@ class GenericGraphEditorWidget(QWidget):
         except OSError as exc:
             QMessageBox.warning(self, "Erro ao salvar", str(exc))
             return False
+        self._autosave_timer.stop()
+        autosave_path = self._get_autosave_path()
+        if autosave_path.exists():
+            try:
+                autosave_path.unlink()
+            except Exception:
+                pass
         self.current_path = path.resolve()
         self.canvas.current_path = self.current_path
         self.is_dirty = False
@@ -618,6 +630,31 @@ class GenericGraphEditorWidget(QWidget):
         self.is_dirty = True
         name = self.current_path.name if self.current_path else "novo documento"
         self.document_status.setText(f"Editando • {name}")
+        self._autosave_timer.start()
+
+    def _get_autosave_path(self) -> Path:
+        extension = self._document_extension()
+        if self.current_path:
+            return self.current_path.with_name(self.current_path.name + ".autosave" + extension)
+        slug = self.category_filter.casefold().replace(" ", "_")
+        return Path.cwd() / "Assets" / "Behaviors" / f"Untitled_{slug}.autosave{extension}"
+
+    def _autosave(self) -> None:
+        path = self._get_autosave_path()
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            temporary = path.with_suffix(path.suffix + ".tmp")
+            temporary.write_text(
+                json.dumps(self.graph_data(), ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
+            temporary.replace(path)
+            if self.current_path:
+                self.document_status.setText(f"Autosalvo • {self.current_path.name}")
+            else:
+                self.document_status.setText("Autosalvo (Rascunho)")
+        except Exception:
+            pass
 
     def apply_runtime_trace(self, message: dict) -> None:
         """Destaca nós em execução com base no trace do runtime."""
