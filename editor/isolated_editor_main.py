@@ -533,6 +533,7 @@ def main() -> None:
         name="ZennityViewport",
     )
     window.attach_viewport_process(viewport_process)
+    app.aboutToQuit.connect(lambda: viewport_controller.shutdown())
     exit_code = app.exec()
     try:
         viewport_controller.shutdown()
