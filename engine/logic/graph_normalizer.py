@@ -158,11 +158,19 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
                 raw_editor = {}
             editor_width = max(170.0, min(520.0, _safe_float(raw_editor.get("width", 210.0)) or 210.0))
             editor_height = max(0.0, min(720.0, _safe_float(raw_editor.get("height", 0.0))))
+            raw_title = str(raw_node.get("title", "")).strip()
+            def_title = str(definition.get("title", node_type))
+            resolved_title = def_title if not raw_title or raw_title == node_type else raw_title
+
+            raw_category = str(raw_node.get("category", "")).strip()
+            def_category = str(definition.get("category", "Custom"))
+            resolved_category = def_category if not raw_category or raw_category.casefold() == "custom" else raw_category
+
             nodes.append({
                 "id": node_id,
                 "type": node_type,
-                "title": str(raw_node.get("title", definition.get("title", node_type))),
-                "category": _migrate_category(str(raw_node.get("category", definition.get("category", "Custom")))),
+                "title": resolved_title,
+                "category": _migrate_category(resolved_category),
                 "position": [_safe_float(position[0]), _safe_float(position[1])],
                 "editor": {
                     "collapsed": bool(raw_editor.get("collapsed", False)),

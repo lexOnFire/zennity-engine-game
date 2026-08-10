@@ -252,7 +252,15 @@ class LogicGraphPropertiesMixin:
             }
             else "path"
         )
-        self.selected_label.setText(f"{node['title']}\n{node['category']} • {node['type']}")
+        node_type = str(node.get("type", ""))
+        definition = NODE_DEFINITIONS.get(node_type, {})
+        if definition:
+            if str(node.get("category", "")).casefold() in {"custom", ""}:
+                node["category"] = definition.get("category", "Custom")
+            if str(node.get("title", "")) in {node_type, ""}:
+                node["title"] = definition.get("title", node_type)
+
+        self.selected_label.setText(f"{node.get('title', node_type)}\n{node.get('category', 'Custom')} • {node_type}")
         if hasattr(self, "help_dock") and self.help_dock is not None:
             try:
                 self.help_dock.show_node_help(node.get("type") or node["title"])
@@ -263,8 +271,6 @@ class LogicGraphPropertiesMixin:
         condition = self.graph.get("debug", {}).get("breakpoint_conditions", {}).get(str(node["id"]), "")
         self.breakpoint_condition_edit.setEnabled(has_breakpoint)
         self.breakpoint_condition_edit.setText(str(condition))
-        node_type = str(node.get("type", ""))
-        definition = NODE_DEFINITIONS.get(node_type, {})
         default_props = definition.get("properties", {})
         properties = node.setdefault("properties", {})
         for prop_key, prop_val in default_props.items():
