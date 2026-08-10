@@ -55,6 +55,7 @@ def run_viewport(
 
     if parent_window_id and sys.platform != "win32":
         os.environ["SDL_WINDOWID"] = str(parent_window_id)
+    os.environ["PYGAME_PARACHUTE"] = "0"
     pygame.init()
     try:
         pygame.mixer.init()

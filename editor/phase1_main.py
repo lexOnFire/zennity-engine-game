@@ -1,6 +1,9 @@
 """Entrypoint oficial do Zennity Phase 1."""
 from __future__ import annotations
 
+import os
+os.environ["PYGAME_PARACHUTE"] = "0"
+
 
 def main() -> None:
     from editor.editor_app.application import main as run_editor
