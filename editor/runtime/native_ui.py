@@ -75,6 +75,12 @@ def normalize_ui(data: Any) -> dict[str, Any] | None:
         "bg_color": [28, 35, 48],
     }
     defaults.update(data)
+    if isinstance(data, dict):
+        raw_ui = data.get("ui")
+        if isinstance(raw_ui, dict) and "_widget_overrides" in raw_ui:
+            defaults["_widget_overrides"] = raw_ui["_widget_overrides"]
+        elif "_widget_overrides" in data:
+            defaults["_widget_overrides"] = data["_widget_overrides"]
     defaults["type"] = kind
     return defaults
 
@@ -207,7 +213,15 @@ class NativeUIRenderer:
             if not bool(c_ui.get("visible", True)):
                 continue
             layout_path = str(c_ui.get("layout_path", c_ui.get("ui_asset", c_ui.get("asset", "")))).strip()
-            overrides = c_ui.get("_widget_overrides", {})
+            overrides = {}
+            if isinstance(canvas_obj, dict):
+                raw_ui = canvas_obj.get("ui")
+                if isinstance(raw_ui, dict) and "_widget_overrides" in raw_ui:
+                    overrides.update(raw_ui["_widget_overrides"])
+                if "_widget_overrides" in canvas_obj:
+                    overrides.update(canvas_obj["_widget_overrides"])
+            if "_widget_overrides" in c_ui and isinstance(c_ui["_widget_overrides"], dict):
+                overrides.update(c_ui["_widget_overrides"])
             if layout_path:
                 for item_ui in self._load_zui_layout(layout_path):
                     if not bool(item_ui.get("visible", True)):
