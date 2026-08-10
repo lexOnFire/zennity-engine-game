@@ -212,9 +212,11 @@ class NativeUIRenderer:
                 for item_ui in self._load_zui_layout(layout_path):
                     if not bool(item_ui.get("visible", True)):
                         continue
-                    w_name = item_ui.get("name") or item_ui.get("widget_name")
-                    if w_name in overrides:
-                        item_ui.update(overrides[w_name])
+                    w_name = str(item_ui.get("name") or item_ui.get("widget_name", "")).strip()
+                    for alias_key in (w_name, f"ui_{w_name}", w_name.removeprefix("ui_")):
+                        if alias_key in overrides:
+                            item_ui.update(overrides[alias_key])
+                            break
                     if not bool(item_ui.get("visible", True)):
                         continue
                     result.append((canvas_obj, item_ui))

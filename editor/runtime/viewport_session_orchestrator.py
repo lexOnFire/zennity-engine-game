@@ -170,7 +170,7 @@ class ViewportSessionOrchestrator:
                 # Tenta primeiro como nome direto de objeto na cena
                 target = self.objects.get(obj_name)
                 ui = target.get("ui") if isinstance(target, dict) else None
-                if isinstance(ui, dict) and ui.get("type") == "progress_bar":
+                if isinstance(ui, dict) and str(ui.get("type", "")).lower() in {"progress_bar", "uiprogressbar"}:
                     ui["value"] = val_num
                     ui["max_value"] = max_num
                 # Suporta encontrar o widget por nome dentro de layouts .zui
@@ -178,14 +178,15 @@ class ViewportSessionOrchestrator:
                     if not isinstance(scene_obj, dict):
                         continue
                     c_ui = scene_obj.get("ui")
-                    if isinstance(c_ui, dict) and c_ui.get("type") == "canvas":
+                    if isinstance(c_ui, dict) and str(c_ui.get("type", "")).lower() in {"canvas", "uicanvas"}:
                         # Armazena overrides dinâmicos do canvas
                         overrides = c_ui.setdefault("_widget_overrides", {})
-                        w_override = overrides.setdefault(obj_name, {})
-                        w_override["value"] = val_num
-                        w_override["max_value"] = max_num
-                        if val_num <= 0:
-                            w_override["visible"] = False
+                        for key_alias in {obj_name, f"ui_{obj_name}", obj_name.removeprefix("ui_")}:
+                            w_override = overrides.setdefault(key_alias, {})
+                            w_override["value"] = val_num
+                            w_override["max_value"] = max_num
+                            if val_num <= 0:
+                                w_override["visible"] = False
             elif command == "set_ui_visible" and isinstance(value, dict):
                 obj_name = str(value.get("object", "")).strip()
                 visible_bool = bool(value.get("visible", True))
