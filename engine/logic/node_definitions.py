@@ -827,4 +827,11 @@ NODE_DEFINITIONS: dict[str, dict[str, Any]] = {
         "outputs": [('next', 'flow'), ('exec_success', 'flow'), ('exec_not_found', 'flow'), ('exec_failure', 'flow')],
         "properties": {"widget_name": "comida", "variable_name": "comida", "property": "value"},
     },
+    "update_ui_widget_property": {
+        "title": "Atualizar Propriedade Widget",
+        "category": "UI",
+        "inputs": [('in', 'flow'), ('parent', 'text'), ('widget_name', 'text'), ('property', 'text'), ('value', 'any')],
+        "outputs": [('success', 'flow'), ('failure', 'flow')],
+        "properties": {"parent": "Panel_HUD", "widget_name": "label_dynamic", "property": "text", "value": "Novo Texto"},
+    },
 }

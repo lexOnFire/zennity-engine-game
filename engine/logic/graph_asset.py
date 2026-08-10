@@ -161,6 +161,7 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "get_progress_bar_value": {"inputs": [("in", "flow"), ("widget_name", "text")], "outputs": [("next", "flow"), ("value", "number")]},
     "bind_ui_to_variable": {"inputs": [("in", "flow"), ("widget_name", "text"), ("variable_name", "text"), ("property", "text")], "outputs": [("next", "flow"), ("exec_success", "flow"), ("exec_not_found", "flow"), ("exec_failure", "flow")]},
     "update_ui_binding": {"inputs": [("in", "flow"), ("widget_name", "text"), ("variable_name", "text"), ("property", "text")], "outputs": [("next", "flow"), ("exec_success", "flow"), ("exec_not_found", "flow"), ("exec_failure", "flow")]},
+    "update_ui_widget_property": {"inputs": [("in", "flow"), ("parent", "text"), ("widget_name", "text"), ("property", "text"), ("value", "any")], "outputs": [("success", "flow"), ("failure", "flow")]},
     "set_sprite": {"inputs": [("in", "flow"), ("target", "object"), ("path", "text")], "outputs": [("next", "flow")]},
     "start_texture_scroll": {
         "inputs": [
