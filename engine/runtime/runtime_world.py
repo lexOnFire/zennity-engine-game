@@ -407,11 +407,21 @@ class RuntimeWorld:
             obj["destroyed"] = True
             self.destroyed_count += 1
             name = str(obj.get("name", ""))
+            obj_id = str(obj.get("id", ""))
             if name and self.objects.get(name) is obj:
                 self.objects.pop(name, None)
-            pool_key = str(obj.get("pool_key", ""))
-            if pool_key and len(self._pool.get(pool_key, ())) < self.MAX_POOLED_PER_PREFAB:
-                self._pool.setdefault(pool_key, []).append(obj)  # type: ignore[arg-type]
+
+            # Destrói recursivamente objetos filhos anexados na hierarquia
+            children_to_destroy = []
+            for other_name, other_obj in list(self.objects.items()):
+                if not isinstance(other_obj, dict):
+                    continue
+                other_parent = str(other_obj.get("parent", other_obj.get("parent_id", ""))).strip()
+                if (name and other_parent == name) or (obj_id and other_parent == obj_id):
+                    children_to_destroy.append(other_obj)
+
+            for child in children_to_destroy:
+                self.destroy_object(child)
 
     def stats(self) -> dict[str, int]:
         active = sum(1 for obj in self.objects.values() if obj.get("active", True))

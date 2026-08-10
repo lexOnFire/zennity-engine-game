@@ -521,8 +521,10 @@ class BehaviorGraphRunner:
                 element.set_visible(visible)
             elif hasattr(element, "visible"):
                 element.visible = visible
-            elif isinstance(element, dict) and "ui" in element:
-                element["ui"]["visible"] = visible
+            elif isinstance(element, dict):
+                element["active"] = visible
+                if "ui" in element and isinstance(element["ui"], dict):
+                    element["ui"]["visible"] = visible
         return "success"
 
     def _destroy_object(self, node: Mapping[str, Any], game: Any) -> str:
