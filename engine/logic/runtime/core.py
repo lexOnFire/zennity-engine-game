@@ -14,6 +14,26 @@ from .debug import LogicGraphDebugMixin
 from .motion import LogicGraphMotionMixin
 from . import nodes
 
+# ``_execute`` runs for every node of every graph on every frame. It used to
+# re-import these three there, which cost four import lookups per node per frame
+# for values that never change. They stay optional because the exported runtime
+# ships without engine.core, so resolve them once and remember the answer.
+_METADATA_HOOKS: tuple[Any, ...] | None = None
+
+
+def _metadata_hooks() -> tuple[Any, ...]:
+    global _METADATA_HOOKS
+    if _METADATA_HOOKS is None:
+        try:
+            from engine.core.context import EngineContext
+            from engine.metadata.manager import MetadataManager
+            from engine.core.metadata.node import NodeDefinition
+        except ImportError:
+            _METADATA_HOOKS = ()
+        else:
+            _METADATA_HOOKS = (EngineContext, MetadataManager, NodeDefinition)
+    return _METADATA_HOOKS
+
 try:
     from ..graph_asset import normalize_logic_graph
     from ..blackboard import BlackboardStore
@@ -624,20 +644,18 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin):
 
     def _execute(self, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
         node_type = str(node["type"])
-        
-        from engine.core.context import EngineContext
-        from engine.metadata.manager import MetadataManager
-        from engine.core.metadata.node import NodeDefinition
-        from .registry import registry
-        
-        context = EngineContext.current()
-        if context:
-            manager = context.services.get_optional(MetadataManager)
-            if manager:
-                node_def = manager.get(NodeDefinition, node_type)
-                if node_def and node_def.executor:
-                    return node_def.executor(self, node, game, dt)
-                    
+
+        hooks = _metadata_hooks()
+        if hooks:
+            engine_context, metadata_manager, node_definition = hooks
+            context = engine_context.current()
+            if context:
+                manager = context.services.get_optional(metadata_manager)
+                if manager:
+                    node_def = manager.get(node_definition, node_type)
+                    if node_def and node_def.executor:
+                        return node_def.executor(self, node, game, dt)
+
         # Fallback for isolated tests
         executor = registry.executors.get(node_type)
         if executor:

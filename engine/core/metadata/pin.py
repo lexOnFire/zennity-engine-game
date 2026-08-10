@@ -13,6 +13,10 @@ class PinType(str, Enum):
     VECTOR3 = "vector3"
     COLOR = "color"
     OBJECT = "object"
+    # ``any`` ja era um tipo de pino de primeira classe nas port specs (condition,
+    # payload, valores de variavel). So faltava aqui, e uma NodeDefinition que o
+    # citasse derrubava o proprio import do modulo.
+    ANY = "any"
 
 from engine.metadata.core import MetadataDefinition
 
