@@ -324,9 +324,17 @@ class Animator(Component):
         transform = self.game_object.transform
         normalized = property_name.lower().replace("transform.", "")
         if normalized in {"position", "rotation", "scale"}:
-            current = np.array(getattr(transform, normalized), dtype=np.float32)
-            next_value = self._vector_value(value, current)
-            setattr(transform, normalized, next_value)
+            current = getattr(transform, normalized)
+            if isinstance(current, np.ndarray):
+                if isinstance(value, np.ndarray):
+                    count = min(len(current), len(value))
+                    current[:count] = value[:count]
+                elif isinstance(value, (list, tuple)):
+                    count = min(len(current), len(value))
+                    for i in range(count):
+                        current[i] = float(value[i])
+                else:
+                    current[0] = float(value)
             return
         if normalized in {"x", "position.x"}:
             transform.position[0] = float(value)
@@ -336,18 +344,6 @@ class Animator(Component):
             transform.position[2] = float(value)
         elif normalized in {"rz", "rotation.z", "rotation.rz"}:
             transform.rotation[2] = float(value)
-
-    def _vector_value(self, value: Any, current: np.ndarray) -> np.ndarray:
-        if isinstance(value, np.ndarray):
-            values = value.astype(np.float32)
-        elif isinstance(value, (list, tuple)):
-            values = np.array(value, dtype=np.float32)
-        else:
-            values = np.array([float(value)], dtype=np.float32)
-        result = current.copy()
-        count = min(len(result), len(values))
-        result[:count] = values[:count]
-        return result
 
     def serialize_properties(self) -> dict[str, Any]:
         return {

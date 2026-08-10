@@ -175,24 +175,27 @@ class BoxCollider(Component):
                 tm_comp = None
                 tm_comp_is_legacy = False
                 if hasattr(scene, "game_objects"):
-                    from engine.tilemap.tilemap import TilemapRenderer
-                    from engine.graphics.tilemap import TilemapRenderer as LegacyTilemapRenderer
-                    from engine.graphics.tilemap import Tilemap as LegacyTilemap
+                    from engine.tilemap.tilemap import TilemapRenderer, Tilemap
                     for go in scene.game_objects:
                         found = go.get_component(TilemapRenderer)
                         if found is not None and found.tilemap is not None:
                             tm_comp = found.tilemap
                             break
                     if tm_comp is None:
-                        for go in scene.game_objects:
-                            legacy_renderer = go.get_component(LegacyTilemapRenderer)
-                            if legacy_renderer is None:
-                                continue
-                            legacy_tilemap = go.get_component(LegacyTilemap)
-                            if legacy_tilemap is not None and any(legacy_tilemap.layers):
-                                tm_comp = legacy_tilemap
-                                tm_comp_is_legacy = True
-                                break
+                        import warnings
+                        with warnings.catch_warnings():
+                            warnings.simplefilter("ignore", DeprecationWarning)
+                            from engine.graphics.tilemap import TilemapRenderer as LegacyTilemapRenderer
+                            from engine.graphics.tilemap import Tilemap as LegacyTilemap
+                            for go in scene.game_objects:
+                                legacy_renderer = go.get_component(LegacyTilemapRenderer)
+                                if legacy_renderer is None:
+                                    continue
+                                legacy_tilemap = go.get_component(LegacyTilemap)
+                                if legacy_tilemap is not None and any(legacy_tilemap.layers):
+                                    tm_comp = legacy_tilemap
+                                    tm_comp_is_legacy = True
+                                    break
                 BoxCollider._scene_tilemap_components[scene_id] = (tm_comp, tm_comp_is_legacy)
 
             tm_comp, tm_comp_is_legacy = BoxCollider._scene_tilemap_components[scene_id]

@@ -71,7 +71,7 @@ from engine.ui.runtime_components import (
 )
 from engine.ui.ui_binder import UIBinder
 from engine.ui.dialogue_manager import DialogueManager
-from engine.graphics.tilemap import Tilemap, TilemapRenderer
+from engine.tilemap import Tilemap, TilemapRenderer
 from engine.components.script_component import ScriptComponent
 from engine.physics.rigidbody import RigidBody
 from engine.physics.collider import BoxCollider, CircleCollider

@@ -399,6 +399,11 @@ class RuntimeScene:
         CameraManager.clear()
         from engine.audio import AudioManager
         AudioManager.clear()
+        try:
+            from engine.assets import clear_cache
+            clear_cache()
+        except ImportError:
+            pass
 
     def _component_type_name(self, component: Any) -> str:
         return str(getattr(component, "type_name", getattr(component, "component_type", type(component).__name__)))
