@@ -28,7 +28,7 @@
         -225.21
       ],
       "editor": {
-        "collapsed": true,
+        "collapsed": false,
         "width": 220.0,
         "height": 150.0
       },
@@ -40,8 +40,8 @@
       "title": "Cooldown",
       "category": "Logic",
       "position": [
-        -862.57,
-        -173.93
+        -1012.53,
+        -147.71
       ],
       "editor": {
         "collapsed": true,
@@ -67,9 +67,10 @@
         "height": 240.0
       },
       "properties": {
-        "name": "formiga",
+        "prefab_path": "",
         "x": 0.0,
         "y": 0.0,
+        "name": "formiga",
         "width": 32.0,
         "height": 32.0,
         "color": "#4c9aff",
@@ -101,7 +102,8 @@
       "properties": {
         "texture": "Assets/Textures/formiga_2.PNG",
         "color": "#ffffff",
-        "sort_order": 0
+        "sort_order": 0,
+        "target": ""
       }
     },
     {
@@ -118,7 +120,9 @@
         "width": 220.0,
         "height": 156.0
       },
-      "properties": {}
+      "properties": {
+        "component_type": ""
+      }
     },
     {
       "id": "a4cbc436869a4385aac90ffdf72ee9d5",
@@ -126,8 +130,8 @@
       "title": "Start Behavior Tree",
       "category": "Action",
       "position": [
-        -602.08,
-        -31.34
+        -651.24,
+        167.45
       ],
       "editor": {
         "collapsed": false,
@@ -136,6 +140,63 @@
       },
       "properties": {
         "path": "Assets/Behaviors/patrulha_comida.zbehavior"
+      }
+    },
+    {
+      "id": "d8bdfadf92b447feafe1bcb43512d0fa",
+      "type": "get_progress_bar_value",
+      "title": "Ler Valor ProgressBar",
+      "category": "UI",
+      "position": [
+        -525.83,
+        -222.24
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "widget_name": "comida"
+      }
+    },
+    {
+      "id": "2721d4973d1c4b7b90851df386a13264",
+      "type": "set_hud",
+      "title": "Definir HUD",
+      "category": "UI",
+      "position": [
+        143.69,
+        -131.92
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "text": "Texto"
+      }
+    },
+    {
+      "id": "3d218b491efe4559a666246f9d6fb133",
+      "type": "update_ui_widget_property",
+      "title": "Atualizar Propriedade Widget",
+      "category": "Logic/UI Dynamic",
+      "position": [
+        -180.43,
+        -150.72
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 240.0
+      },
+      "properties": {
+        "parent": "Panel_HUD",
+        "widget_name": "label_dynamic",
+        "property": "text",
+        "value": "Novo Texto"
       }
     }
   ],
@@ -184,6 +245,33 @@
       "to_port": "in",
       "kind": "flow",
       "order": 4
+    },
+    {
+      "id": "ece7492acd1f4025be75b6dce9a3e3f2",
+      "from_node": "b1c78cdd44bd43ecb2acb3e4ba4002f0",
+      "from_port": "next",
+      "to_node": "d8bdfadf92b447feafe1bcb43512d0fa",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 5
+    },
+    {
+      "id": "986356a89c0c48b4bb0e2df758cd8ebc",
+      "from_node": "d8bdfadf92b447feafe1bcb43512d0fa",
+      "from_port": "next",
+      "to_node": "3d218b491efe4559a666246f9d6fb133",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 6
+    },
+    {
+      "id": "b92d9575e9a74a888582ac970f6549ae",
+      "from_node": "3d218b491efe4559a666246f9d6fb133",
+      "from_port": "success",
+      "to_node": "2721d4973d1c4b7b90851df386a13264",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 7
     }
   ]
 }

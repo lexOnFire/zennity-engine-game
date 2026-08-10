@@ -82,6 +82,9 @@ class ViewportProcessController:
             if queue is None:
                 continue
             try:
+                thread = getattr(queue, "_thread", None)
+                if thread is not None:
+                    thread.daemon = True
                 cancel_join = getattr(queue, "cancel_join_thread", None)
                 if callable(cancel_join):
                     cancel_join()
