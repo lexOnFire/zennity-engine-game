@@ -520,10 +520,10 @@ class LogicGraphPropertiesMixin:
         self._update_validation()
 
     def _choose_exposed_property_asset(self, item: QTreeWidgetItem, column: int) -> None:
-        if column not in {0, 1}:
-            return
         key = str(item.data(0, Qt.UserRole) or "")
         if not key.startswith("prefab_parameter:"):
+            if item.flags() & Qt.ItemIsEditable:
+                self.property_tree.editItem(item, 1)
             return
         selected = [entry for entry in self.scene.selectedItems() if isinstance(entry, LogicNodeItem)]
         if len(selected) != 1:
@@ -538,6 +538,8 @@ class LogicGraphPropertiesMixin:
             return
         asset_kind = str(definition.get("asset_kind", ""))
         if asset_kind not in {"image", "animation", "audio"}:
+            if item.flags() & Qt.ItemIsEditable:
+                self.property_tree.editItem(item, 1)
             return
         picker = LogicAssetPickerDialog(self.project_root, asset_kind, self)
         if not picker.exec() or not picker.selected_path:
