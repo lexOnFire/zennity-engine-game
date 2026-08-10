@@ -277,7 +277,8 @@ class LogicGraphPropertiesMixin:
             if prop_key not in properties:
                 properties[prop_key] = deepcopy(prop_val)
 
-        inputs = definition.get("inputs", [])
+        ports = node_port_definitions(node_type)
+        inputs = definition.get("inputs") or ports.get("inputs", [])
         for pin in inputs:
             if isinstance(pin, (list, tuple)) and len(pin) >= 2:
                 pin_id, pin_type = str(pin[0]), str(pin[1])
@@ -288,6 +289,10 @@ class LogicGraphPropertiesMixin:
                         properties[pin_id] = "comida"
                     elif pin_id == "property":
                         properties[pin_id] = "value"
+                    elif pin_id == "parent":
+                        properties[pin_id] = "Panel_HUD"
+                    elif pin_id == "value":
+                        properties[pin_id] = "Novo Texto"
                     elif pin_id == "target":
                         properties[pin_id] = ""
                     elif pin_type == "number":
