@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 os.environ["PYGAME_PARACHUTE"] = "0"
+os.environ["SDL_FORCE_EXIT"] = "0"
 
 
 def main() -> None:

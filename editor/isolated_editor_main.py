@@ -3,7 +3,9 @@
 Execute a partir da raiz do projeto:
     python -m editor.isolated_editor_main
 """
-from __future__ import annotations
+import os
+os.environ["PYGAME_PARACHUTE"] = "0"
+os.environ["SDL_FORCE_EXIT"] = "0"
 
 import faulthandler
 import logging
