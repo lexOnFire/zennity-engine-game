@@ -470,11 +470,21 @@ class BehaviorGraphRunner:
         new_val = max(0.0, float(self._persistent[mem_key]) - amount)
         self._persistent[mem_key] = new_val
 
-        if hasattr(game, "set_ui_progress"):
+        if hasattr(game, "_send_logic_command"):
+            game._send_logic_command("set_ui_progress", {"object": element_name, "value": new_val})
+        elif hasattr(game, "set_ui_progress"):
             game.set_ui_progress(element_name, new_val)
         elif hasattr(game, "send"):
             game.send("set_ui_progress", {"object": element_name, "value": new_val})
 
+        element = game.find(element_name) if hasattr(game, "find") else None
+        if element is not None:
+            if hasattr(element, "set_value"):
+                element.set_value(new_val)
+            elif hasattr(element, "value"):
+                element.value = new_val
+            elif isinstance(element, dict) and "ui" in element:
+                element["ui"]["value"] = new_val
         return "success"
 
     def _set_ui_progress(self, node: Mapping[str, Any], game: Any) -> str:
