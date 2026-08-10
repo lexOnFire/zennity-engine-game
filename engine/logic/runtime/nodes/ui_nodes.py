@@ -102,14 +102,20 @@ def execute_set_ui_progress_bar(runtime, node: Mapping[str, Any], game: Any, dt:
 
     value_val = float(_input(runtime, node_id, "value", properties.get("value", 0.0), game, dt))
     maximum = float(properties.get("max_value", 100.0))
-    object_name = str(properties.get("object", properties.get("object_name", ""))).strip()
+    object_name = str(
+        properties.get("object")
+        or properties.get("object_name")
+        or properties.get("widget")
+        or properties.get("widget_name")
+        or ""
+    ).strip()
 
     if object_name and callable(getattr(game, "set_ui_progress", None)):
         game.set_ui_progress(object_name, value_val, maximum)
         return ["next"]
 
     target = runtime._read_target(node_id, game, dt, set())
-    widget_name = str(properties.get("widget", properties.get("widget_name", ""))).strip()
+    widget_name = str(properties.get("widget", properties.get("widget_name", object_name))).strip()
 
     if target is not None:
         if hasattr(target, "set_value") and not widget_name:
