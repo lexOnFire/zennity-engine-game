@@ -31,7 +31,12 @@ def _source(relative: str) -> str:
         source += "\n" + (ROOT / "editor/ui/inspector_builder_physics.py").read_text(encoding="utf-8")
         source += "\n" + (ROOT / "editor/ui/bottom_panels_builder.py").read_text(encoding="utf-8")
     if relative == "engine/logic/graph_asset.py":
-        source += "\n" + (ROOT / "engine/logic/node_definitions.py").read_text(encoding="utf-8")
+        # PHASE 9.5B Stage 2 replaced the flat engine/logic/node_definitions.py
+        # with a package: the catalogue holds the node contracts and the
+        # declarative modules hold the palette metadata.  Concatenate the whole
+        # package so this source-text search still sees every node id.
+        for definition_source in sorted((ROOT / "engine/logic/node_definitions").glob("*.py")):
+            source += "\n" + definition_source.read_text(encoding="utf-8")
     return "\n" + source + "\n"
 
 

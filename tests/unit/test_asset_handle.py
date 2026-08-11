@@ -17,10 +17,15 @@ def test_asset_handle_validity():
     assert str(valid_handle) == "12345-abcde"
 
 
-def test_asset_database_service_registration():
+def test_asset_database_service_registration(tmp_path):
     services = EngineServices()
-    db = AssetDatabase()
-    
+    # project_root must be explicit: AssetDatabase falls back to Path.cwd(), and
+    # initialize_all() below runs a full scan() that rewrites every .meta it
+    # finds.  With the default that scan lands on the repository's own Assets/
+    # directory and dirties 314 tracked files -- see
+    # tests/architecture/test_repository_mutation_guard.py.
+    db = AssetDatabase(tmp_path)
+
     assert db.scope == ServiceScope.ENGINE
     assert db.state == ServiceState.CREATED
     
