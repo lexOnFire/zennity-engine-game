@@ -1,13 +1,12 @@
-from . import event_nodes
-from . import flow_nodes
-from . import movement_nodes
-from . import actions_nodes
-from . import prefab_nodes
-from . import components_nodes
-from . import misc_nodes
-from . import math_nodes
-from . import scene_nodes
-from . import string_nodes
-from . import ui_nodes
-from . import physics_nodes
-from . import animation_nodes
+"""Shipping runtime node implementations.
+
+Importing this package loads every module in
+:data:`engine.logic.runtime.node_loader.RUNTIME_NODE_MODULES`.  It used to carry
+its own hand-written list of 13 imports while ``LogicProvider.boot()`` carried a
+different list of 22, so what a process could execute depended on which one ran.
+Both now defer to the single loader; this package keeps no list of its own.
+"""
+
+from ..node_loader import load_runtime_node_modules
+
+load_runtime_node_modules()

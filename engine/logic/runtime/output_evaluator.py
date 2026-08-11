@@ -31,21 +31,32 @@ def evaluate_output(
     node_type = str(node.get("type", ""))
 
     if node_type:
-        from engine.core.context import EngineContext
-        from engine.metadata.manager import MetadataManager
-        from engine.core.metadata.node import NodeDefinition
         from .registry import registry
-        
-        context = EngineContext.current()
-        if context:
-            manager = context.services.get_optional(MetadataManager)
-            if manager:
-                node_def = manager.get(NodeDefinition, node_type)
-                if node_def and node_def.evaluator:
-                    value = node_def.evaluator(runtime, node_id, port, node, game, dt, resolving)
-                    return runtime._store(node_id, port, value)
-                    
-        # Fallback for isolated tests
+
+        # The MetadataManager is the editor's lookup: LogicProvider.boot() mirrors
+        # every evaluator onto it so the inspector can introspect nodes.  It is
+        # optional, not primary -- there is no EngineContext in a pytest process
+        # and none in the standalone runtime the exporter produces, where
+        # engine.core is not shipped at all.  Hence the guarded import.
+        try:
+            from engine.core.context import EngineContext
+            from engine.core.metadata.node import NodeDefinition
+            from engine.metadata.manager import MetadataManager
+        except ImportError:  # Self-contained exported runtime.
+            pass
+        else:
+            context = EngineContext.current()
+            if context:
+                manager = context.services.get_optional(MetadataManager)
+                if manager:
+                    node_def = manager.get(NodeDefinition, node_type)
+                    if node_def and node_def.evaluator:
+                        value = node_def.evaluator(runtime, node_id, port, node, game, dt, resolving)
+                        return runtime._store(node_id, port, value)
+
+        # The decorator registry is the canonical source, not a test-only
+        # fallback: it is what @registry.register_evaluator populates at import
+        # time, and it is the only evaluator lookup an exported game has.
         evaluator = registry.evaluators.get(node_type)
         if evaluator:
             value = evaluator(runtime, node_id, port, node, game, dt, resolving)

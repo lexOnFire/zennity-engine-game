@@ -1,10 +1,20 @@
 """
 PHASE 3D: Canonical Node Definition Registry
+PHASE 9.5B Stage 2: the registry is now the ONE mutable definition source.
 
-Single source of truth for all node definitions.
-Supports gradual migration from legacy to canonical.
+Beyond the original canonical/legacy resolution it owns:
+
+* ``_resolved``    -- the unified definition dict per node id (the source)
+* ``_port_schema`` -- the pins per node id, derived from the same build
+* owner metadata   -- which module defined a node, which module implements it
+
+``engine.logic.node_definitions.NODE_DEFINITIONS`` and
+``engine.logic.graph_asset.NODE_PORT_DEFINITIONS`` are read-only views over
+this store.  Nothing outside :mod:`engine.logic.node_definitions.catalogue`
+should mutate it.
 """
-from typing import Dict, Optional, Any
+from types import MappingProxyType
+from typing import Dict, Mapping, Optional, Any
 from dataclasses import dataclass
 import logging
 
@@ -54,6 +64,14 @@ class NodeDefinitionRegistry:
         self._canonical: Dict[str, Any] = {}
         self._legacy: Dict[str, Any] = {}
         self._adapters: Dict[str, Any] = {}
+        # Stage 2 -- unified catalogue storage.
+        self._resolved: Dict[str, dict] = {}
+        self._port_schema: Dict[str, dict] = {}
+        self._definition_owner: Dict[str, str] = {}
+        self._runtime_owner: Dict[str, str] = {}
+        self._execution_model: Dict[str, str] = {}
+        self._definitions_view: Optional[Mapping[str, dict]] = None
+        self._port_schema_view: Optional[Mapping[str, dict]] = None
 
     def register_canonical(self, definition: Any, allow_override: bool = False):
         """Register a canonical (class-based) definition."""
@@ -210,6 +228,90 @@ class NodeDefinitionRegistry:
         return f"{node_id}|{inputs}|{outputs}"
 
 
+    # ------------------------------------------------------------------
+    # Stage 2: unified catalogue storage
+    # ------------------------------------------------------------------
+
+    def reset_catalogue(self) -> None:
+        """Drop the built catalogue so it can be rebuilt from the seeds."""
+        self._resolved.clear()
+        self._port_schema.clear()
+        self._definition_owner.clear()
+        self._execution_model.clear()
+        self._canonical.clear()
+        self._adapters.clear()
+        self._definitions_view = None
+        self._port_schema_view = None
+
+    def set_resolved(self, node_id: str, definition: dict) -> None:
+        self._resolved[node_id] = definition
+        self._definitions_view = None
+
+    def set_port_schema(self, node_id: str, schema: dict) -> None:
+        self._port_schema[node_id] = schema
+        self._port_schema_view = None
+
+    def set_definition_owner(self, node_id: str, module_name: str) -> None:
+        self._definition_owner[node_id] = module_name
+
+    def set_runtime_owner(self, node_id: str, module_name: str) -> None:
+        self._runtime_owner[node_id] = module_name
+
+    def set_execution_model(self, node_id: str, model: str) -> None:
+        self._execution_model[node_id] = model
+
+    def definitions_view(self) -> Mapping[str, dict]:
+        """Read-only mapping of node id -> resolved definition."""
+        if self._definitions_view is None:
+            self._definitions_view = MappingProxyType(self._resolved)
+        return self._definitions_view
+
+    def port_schema_view(self) -> Mapping[str, dict]:
+        """Read-only mapping of node id -> {"inputs": [...], "outputs": [...]}."""
+        if self._port_schema_view is None:
+            self._port_schema_view = MappingProxyType(self._port_schema)
+        return self._port_schema_view
+
+    @property
+    def definitions(self) -> Mapping[str, dict]:
+        """Resolved definitions, building the catalogue on first access."""
+        from .catalogue import ensure_catalogue_loaded
+
+        ensure_catalogue_loaded()
+        return self.definitions_view()
+
+    def definition_owner(self, node_id: str) -> Optional[str]:
+        return self._definition_owner.get(node_id)
+
+    def runtime_owner(self, node_id: str) -> Optional[str]:
+        return self._runtime_owner.get(node_id)
+
+    def execution_model(self, node_id: str) -> Optional[str]:
+        return self._execution_model.get(node_id)
+
+    def schema_drift(self) -> list[str]:
+        """Node ids whose definition pins disagree with the port schema.
+
+        By construction this must always be empty; a non-empty result means
+        something re-introduced an independent port table.
+        """
+        drift: list[str] = []
+        for node_id, definition in self._resolved.items():
+            schema = self._port_schema.get(node_id)
+            if schema is None:
+                drift.append(node_id)
+                continue
+            same_inputs = [tuple(p) for p in definition.get("inputs", [])] == [
+                tuple(p) for p in schema.get("inputs", [])
+            ]
+            same_outputs = [tuple(p) for p in definition.get("outputs", [])] == [
+                tuple(p) for p in schema.get("outputs", [])
+            ]
+            if not (same_inputs and same_outputs):
+                drift.append(node_id)
+        return drift
+
+
 # Singleton instance
 _registry: Optional[NodeDefinitionRegistry] = None
 
@@ -222,6 +324,10 @@ def get_registry() -> NodeDefinitionRegistry:
         _registry = NodeDefinitionRegistry()
 
     return _registry
+
+
+#: Canonical singleton accessor used by the runtime port validator.
+node_registry = get_registry()
 
 
 def resolve_node_definition(node_id: str) -> Optional[Any]:

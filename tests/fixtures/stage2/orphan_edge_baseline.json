@@ -1,0 +1,101 @@
+{
+  "_comment": "Orphan graph edges present at commit 477feee, BEFORE PHASE 9.5B Stage 2. Each entry is an edge naming a port the node's contract does not declare. These are asset-authoring bugs (graphs saved against node types that no longer exist, or that never existed), not node-system bugs -- Stage 2 deliberately does not fix them, it only proves it introduces no new ones. EnemyAILogic's get_position.position is the known issue documented separately and explicitly out of scope.",
+  "orphan_edges_by_asset": {
+    "BossAILogic.zlogic": [
+      "get_position.in>in",
+      "get_position.object>in",
+      "get_position.position>out",
+      "if_else.compare_value>in",
+      "if_else.value>in",
+      "math.distance.distance>out",
+      "math.distance.point_a>in",
+      "math.distance.point_b>in",
+      "object.find_by_name.object>out",
+      "vector2.in>in"
+    ],
+    "BossCombatLogic.zlogic": [
+      "if_else.compare_value>in",
+      "if_else.value>in"
+    ],
+    "BossHealthLogic.zlogic": [
+      "if_else.value>in",
+      "math.divide.a>in",
+      "math.divide.b>in",
+      "math.divide.value>out",
+      "ui.set_progress_bar.value>in"
+    ],
+    "CoinCollectionLogic.zlogic": [
+      "if_else.value>in"
+    ],
+    "DoorLogic.zlogic": [
+      "component.set_property.component>in",
+      "event.listen.event_received>out",
+      "object.get_component.component>out"
+    ],
+    "EnemyAILogic.zlogic": [
+      "get_position.in>in",
+      "get_position.object>in",
+      "get_position.position>out",
+      "if_else.compare_value>in",
+      "if_else.value>in",
+      "math.distance.distance>out",
+      "math.distance.point_a>in",
+      "math.distance.point_b>in",
+      "object.find_by_name.object>out",
+      "vector2.in>in"
+    ],
+    "EnemyAttackLogic.zlogic": [
+      "animation.on_event.event>out",
+      "get_position.in>in",
+      "get_position.object>in",
+      "get_position.position>out",
+      "if_else.value>in",
+      "object.find_by_name.object>out",
+      "object.get_variable.object>in",
+      "object.get_variable.value>out",
+      "object.set_variable.value>in",
+      "physics.get_raycast_hit.other>out",
+      "physics.get_raycast_hit.raycast>in",
+      "physics.raycast_2d.direction>in",
+      "physics.raycast_2d.hit>out",
+      "physics.raycast_2d.max_distance>in",
+      "physics.raycast_2d.origin>in"
+    ],
+    "KeyCollectionLogic.zlogic": [
+      "if_else.value>in"
+    ],
+    "PlayerCombatLogic.zlogic": [
+      "destroy_object.next>out",
+      "sequence.then_0>in",
+      "sequence.then_1>in",
+      "subtract_number.in>in"
+    ],
+    "VictoryLogic.zlogic": [
+      "every_frame.exec>out",
+      "project_get.exec>in",
+      "project_get.exec>out",
+      "project_get.value>out",
+      "project_set.exec>in",
+      "project_set.exec>out",
+      "scene_load.exec>in",
+      "string_format.args>in",
+      "string_format.exec>in",
+      "string_format.exec>out",
+      "string_format.result>out",
+      "ui_get_widget.exec>in",
+      "ui_get_widget.exec>out",
+      "ui_get_widget.value>out",
+      "ui_on_click.exec>in",
+      "ui_on_click.exec>out",
+      "ui_set_text.exec>in",
+      "ui_set_text.exec>out",
+      "ui_set_text.target>in",
+      "ui_set_text.text>in"
+    ],
+    "tocaLogic.zlogic": [
+      "start_behavior_tree.in>in"
+    ]
+  },
+  "total_assets_with_orphans": 11,
+  "total_orphan_edges": 72
+}

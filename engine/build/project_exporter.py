@@ -188,7 +188,6 @@ def _write_development_project(project_root: Path, scene_path: Path, destination
         project_root / "engine" / "behavior" / "controller_asset.py": runtime_dir / "behavior_controller.py",
         project_root / "engine" / "behavior" / "graph_runtime.py": runtime_dir / "behavior_graph_runtime.py",
         project_root / "engine" / "logic" / "graph_asset.py": runtime_dir / "logic_graph_asset.py",
-        project_root / "engine" / "logic" / "node_definitions.py": runtime_dir / "node_definitions.py",
         project_root / "engine" / "logic" / "graph_normalizer.py": runtime_dir / "graph_normalizer.py",
         project_root / "engine" / "logic" / "graph_validator.py": runtime_dir / "graph_validator.py",
         project_root / "engine" / "logic" / "blackboard.py": runtime_dir / "logic_blackboard.py",
@@ -201,6 +200,16 @@ def _write_development_project(project_root: Path, scene_path: Path, destination
         shutil.copy2(source, target)
         
     shutil.copytree(project_root / "engine" / "logic" / "runtime", runtime_dir / "logic_runtime")
+    # PHASE 9.5B Stage 2: the node catalogue is a package, not a flat module.
+    # The exported runtime derives its port schema from the same catalogue the
+    # editor uses, so an exported game and the editor cannot disagree about a
+    # node's ports.  The legacy flat ``engine/logic/node_definitions.py`` is
+    # shadowed by this package and is no longer exported.
+    shutil.copytree(
+        project_root / "engine" / "logic" / "node_definitions",
+        runtime_dir / "node_definitions",
+        ignore=shutil.ignore_patterns("__pycache__"),
+    )
     (runtime_dir / "__init__.py").write_text("", encoding="utf-8")
     (destination / "main.py").write_text(_launcher_source(), encoding="utf-8")
     (destination / "executar.bat").write_text("@echo off\npython main.py\npause\n", encoding="utf-8")
@@ -337,7 +346,9 @@ def _validate_exported_project(destination: Path, report: BuildReport) -> None:
         "zennity_runtime/behavior_controller.py",
         "zennity_runtime/behavior_graph_runtime.py",
         "zennity_runtime/logic_graph_asset.py",
-        "zennity_runtime/node_definitions.py",
+        "zennity_runtime/node_definitions/__init__.py",
+        "zennity_runtime/node_definitions/catalogue.py",
+        "zennity_runtime/node_definitions/registry.py",
         "zennity_runtime/graph_normalizer.py",
         "zennity_runtime/graph_validator.py",
         "zennity_runtime/logic_blackboard.py",

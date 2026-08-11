@@ -14,6 +14,15 @@ class NodeRegistry:
     def __init__(self) -> None:
         self.executors: dict[str, ExecutorFunc] = {}
         self.evaluators: dict[str, EvaluatorFunc] = {}
+        # Phase 9.5B Stage 2: every module that ever claimed a node id, so that
+        # two modules fighting over the same node is a detectable CI failure
+        # instead of a silent last-write-wins.
+        self.executor_owners: dict[str, set[str]] = {}
+        self.evaluator_owners: dict[str, set[str]] = {}
+
+    @staticmethod
+    def _owner(func: Any) -> str:
+        return str(getattr(func, "__module__", "") or "<unknown>")
 
     def register_executor(self, node_types: str | tuple[str, ...]) -> Callable[[ExecutorFunc], ExecutorFunc]:
         """Registra uma função como executora de fluxo injetando no MetadataManager via EngineContext."""
@@ -21,6 +30,7 @@ class NodeRegistry:
             types = (node_types,) if isinstance(node_types, str) else node_types
             for t in types:
                 self.executors[t] = func
+                self.executor_owners.setdefault(t, set()).add(self._owner(func))
             return func
         return decorator
 
@@ -30,8 +40,20 @@ class NodeRegistry:
             types = (node_types,) if isinstance(node_types, str) else node_types
             for t in types:
                 self.evaluators[t] = func
+                self.evaluator_owners.setdefault(t, set()).add(self._owner(func))
             return func
         return decorator
+
+    def duplicate_owners(self) -> dict[str, list[str]]:
+        """Node ids claimed by more than one implementing module."""
+        duplicates: dict[str, list[str]] = {}
+        for node_id, owners in self.executor_owners.items():
+            if len(owners) > 1:
+                duplicates[f"executor:{node_id}"] = sorted(owners)
+        for node_id, owners in self.evaluator_owners.items():
+            if len(owners) > 1:
+                duplicates[f"evaluator:{node_id}"] = sorted(owners)
+        return duplicates
 
 registry = NodeRegistry()
 

@@ -1,0 +1,8193 @@
+{
+  "_comment": "Pre-Stage-2 baseline of the Logic Graph node system, captured at commit 477feee before PHASE 9.5B Stage 2 unified the definition sources. port_schema is the authoritative graph contract that .zlogic assets and runtime executors speak; Stage 2 must reproduce it exactly, derived from the definition catalogue instead of a parallel hand-maintained table.",
+  "counts": {
+    "definition_sources": 2,
+    "definitions": 154,
+    "diverged_definitions": 52,
+    "evaluators": 61,
+    "executors": 87,
+    "node_port_definitions": 178,
+    "runtime_load_paths": 2,
+    "runtime_modules_loaded_by_provider": 22,
+    "runtime_modules_loaded_without_provider": 13,
+    "runtime_modules_on_disk": 23
+  },
+  "definition_ids": [
+    "add_animator",
+    "add_audio_source",
+    "add_box_collider",
+    "add_camera",
+    "add_circle_collider",
+    "add_component",
+    "add_rigidbody",
+    "add_sprite_renderer",
+    "add_transition",
+    "add_ui_button",
+    "add_ui_canvas",
+    "add_ui_image",
+    "add_ui_text",
+    "animate_value",
+    "animator_get_parameter",
+    "animator_parameter",
+    "animator_set_trigger",
+    "apply_force",
+    "bind_ui_to_blackboard",
+    "bind_ui_to_variable",
+    "bool_value",
+    "call_subgraph",
+    "camera_follow",
+    "camera_look_at",
+    "camera_set_zoom",
+    "camera_shake",
+    "camera_stop_follow",
+    "change_state",
+    "clone_object",
+    "close_dialog",
+    "compare_number",
+    "compare_text",
+    "cooldown",
+    "create_object",
+    "create_particle_system",
+    "create_prefab",
+    "create_state_machine",
+    "create_ui_button",
+    "create_ui_image",
+    "create_ui_label",
+    "create_ui_progress_bar",
+    "delete_save",
+    "destroy_after_time",
+    "destroy_object",
+    "destroy_ui_widget",
+    "detect_pinch",
+    "detect_swipe",
+    "detect_touch",
+    "distance_to_point",
+    "emit_event",
+    "emit_particles",
+    "event_collision_enter",
+    "event_collision_exit",
+    "event_custom",
+    "event_key_pressed",
+    "event_object_created",
+    "event_start",
+    "event_timer",
+    "event_trigger_enter",
+    "event_trigger_exit",
+    "event_update",
+    "find_path",
+    "find_tag",
+    "follow_path",
+    "get_animation_time",
+    "get_animator_state",
+    "get_collision_layer",
+    "get_collision_mask",
+    "get_continuous_motion",
+    "get_current_animation",
+    "get_current_frame",
+    "get_is_playing",
+    "get_prefab_parameter",
+    "get_progress_bar_value",
+    "get_rigidbody_gravity_scale",
+    "get_rigidbody_is_kinematic",
+    "get_rigidbody_mass",
+    "get_rigidbody_use_gravity",
+    "get_rigidbody_velocity_x",
+    "get_rigidbody_velocity_y",
+    "get_state",
+    "get_tag",
+    "get_ui_widget_property",
+    "get_variable",
+    "has_save",
+    "if_else",
+    "input_axis",
+    "is_grounded",
+    "is_in_state",
+    "is_key_pressed",
+    "jump",
+    "key_held",
+    "key_pressed",
+    "load_game",
+    "log_message",
+    "modify_collider",
+    "modify_rigidbody",
+    "move",
+    "move_by",
+    "number_value",
+    "on_animation_event",
+    "on_animation_finished",
+    "on_collision_enter",
+    "on_collision_exit",
+    "on_trigger_enter",
+    "on_trigger_exit",
+    "once",
+    "patrol_axis",
+    "pause_animation",
+    "pause_continuous_motion",
+    "play_animation",
+    "play_animation_asset",
+    "play_sound",
+    "play_sound_fade",
+    "raycast",
+    "read_key_axis",
+    "remove_component",
+    "restart_scene",
+    "resume_continuous_motion",
+    "rotate",
+    "save_game",
+    "self_object",
+    "sequence",
+    "set_active",
+    "set_collision_layer",
+    "set_collision_mask",
+    "set_dialog_choice",
+    "set_hud",
+    "set_pitch",
+    "set_position",
+    "set_sprite",
+    "set_ui_progress_bar",
+    "set_ui_text",
+    "set_ui_visible",
+    "set_variable",
+    "set_volume",
+    "show_dialog",
+    "start_behavior_tree",
+    "start_continuous_motion",
+    "start_texture_scroll",
+    "stop_all_sounds",
+    "stop_animation",
+    "stop_continuous_motion",
+    "stop_particles",
+    "stop_path",
+    "stop_texture_scroll",
+    "subgraph_return",
+    "text_value",
+    "update_continuous_motion",
+    "update_ui_binding",
+    "update_ui_widget_property",
+    "wait_dialog_choice",
+    "wait_key_release",
+    "wait_until_condition"
+  ],
+  "definition_pins": {
+    "add_animator": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "add_audio_source": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "add_box_collider": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "add_camera": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "add_circle_collider": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "add_component": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "component_type",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "add_rigidbody": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "add_sprite_renderer": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "add_transition": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "machine_id",
+          "text"
+        ],
+        [
+          "from_state",
+          "text"
+        ],
+        [
+          "to_state",
+          "text"
+        ],
+        [
+          "condition",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "add_ui_button": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "add_ui_canvas": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "add_ui_image": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "add_ui_text": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "animate_value": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ],
+        [
+          "property",
+          "text"
+        ],
+        [
+          "from_value",
+          "number"
+        ],
+        [
+          "to_value",
+          "number"
+        ],
+        [
+          "duration",
+          "number"
+        ],
+        [
+          "easing",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_animating",
+          "flow"
+        ],
+        [
+          "exec_finished",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "value",
+          "number"
+        ],
+        [
+          "progress",
+          "number"
+        ]
+      ]
+    },
+    "animator_get_parameter": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ],
+        [
+          "parameter_name",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "text"
+        ]
+      ]
+    },
+    "animator_parameter": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ],
+        [
+          "parameter_name",
+          "text"
+        ],
+        [
+          "parameter_type",
+          "text"
+        ],
+        [
+          "value",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "animator_set_trigger": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ],
+        [
+          "trigger_name",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "apply_force": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ],
+        [
+          "force_x",
+          "number"
+        ],
+        [
+          "force_y",
+          "number"
+        ],
+        [
+          "force_mode",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "bind_ui_to_blackboard": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "widget_id",
+          "text"
+        ],
+        [
+          "variable",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "bind_ui_to_variable": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "widget_name",
+          "text"
+        ],
+        [
+          "variable_name",
+          "text"
+        ],
+        [
+          "property",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_not_found",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "bool_value": {
+      "inputs": [],
+      "outputs": []
+    },
+    "call_subgraph": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "camera_follow": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ],
+        [
+          "smooth_time",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_following",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "camera_look_at": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ],
+        [
+          "duration",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_looking",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "camera_set_zoom": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "zoom",
+          "number"
+        ],
+        [
+          "duration",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "current_zoom",
+          "number"
+        ]
+      ]
+    },
+    "camera_shake": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "duration",
+          "number"
+        ],
+        [
+          "intensity",
+          "number"
+        ],
+        [
+          "frequency",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_shaking",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "camera_stop_follow": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "change_state": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "machine_id",
+          "text"
+        ],
+        [
+          "state",
+          "text"
+        ],
+        [
+          "force",
+          "bool"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_changed",
+          "flow"
+        ],
+        [
+          "exec_invalid_transition",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "previous_state",
+          "text"
+        ],
+        [
+          "new_state",
+          "text"
+        ]
+      ]
+    },
+    "clone_object": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ],
+        [
+          "clone",
+          "object"
+        ]
+      ]
+    },
+    "close_dialog": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "dialog_id",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "compare_number": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "value",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "true",
+          "flow"
+        ],
+        [
+          "false",
+          "flow"
+        ],
+        [
+          "value",
+          "bool"
+        ]
+      ]
+    },
+    "compare_text": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "value",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "true",
+          "flow"
+        ],
+        [
+          "false",
+          "flow"
+        ],
+        [
+          "value",
+          "bool"
+        ]
+      ]
+    },
+    "cooldown": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "seconds",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "blocked",
+          "flow"
+        ]
+      ]
+    },
+    "create_object": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "prefab_path",
+          "text"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ],
+        [
+          "object",
+          "object"
+        ]
+      ]
+    },
+    "create_particle_system": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ],
+        [
+          "particle_type",
+          "text"
+        ],
+        [
+          "quantity",
+          "number"
+        ],
+        [
+          "lifetime",
+          "number"
+        ],
+        [
+          "speed",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_created",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "system_id",
+          "text"
+        ]
+      ]
+    },
+    "create_prefab": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "path",
+          "text"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ],
+        [
+          "instance",
+          "object"
+        ]
+      ]
+    },
+    "create_state_machine": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "machine_id",
+          "text"
+        ],
+        [
+          "initial_state",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_created",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "machine_id_out",
+          "text"
+        ],
+        [
+          "initial_state_out",
+          "text"
+        ]
+      ]
+    },
+    "create_ui_button": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "parent",
+          "text"
+        ],
+        [
+          "name",
+          "text"
+        ],
+        [
+          "text",
+          "text"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ],
+        [
+          "width",
+          "number"
+        ],
+        [
+          "height",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "success",
+          "flow"
+        ],
+        [
+          "failure",
+          "flow"
+        ]
+      ]
+    },
+    "create_ui_image": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "parent",
+          "text"
+        ],
+        [
+          "name",
+          "text"
+        ],
+        [
+          "texture_path",
+          "text"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ],
+        [
+          "width",
+          "number"
+        ],
+        [
+          "height",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "success",
+          "flow"
+        ],
+        [
+          "failure",
+          "flow"
+        ]
+      ]
+    },
+    "create_ui_label": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "parent",
+          "text"
+        ],
+        [
+          "name",
+          "text"
+        ],
+        [
+          "text",
+          "text"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ],
+        [
+          "font_size",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "success",
+          "flow"
+        ],
+        [
+          "failure",
+          "flow"
+        ]
+      ]
+    },
+    "create_ui_progress_bar": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "parent",
+          "text"
+        ],
+        [
+          "name",
+          "text"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ],
+        [
+          "width",
+          "number"
+        ],
+        [
+          "height",
+          "number"
+        ],
+        [
+          "value",
+          "number"
+        ],
+        [
+          "max_value",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "success",
+          "flow"
+        ],
+        [
+          "failure",
+          "flow"
+        ]
+      ]
+    },
+    "delete_save": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "slot_name",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_deleted",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "destroy_after_time": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "seconds",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "destroy_object": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "destroy_ui_widget": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "parent",
+          "text"
+        ],
+        [
+          "widget_name",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "success",
+          "flow"
+        ],
+        [
+          "failure",
+          "flow"
+        ]
+      ]
+    },
+    "detect_pinch": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "type",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_pinched",
+          "flow"
+        ],
+        [
+          "exec_no_pinch",
+          "flow"
+        ],
+        [
+          "pinch_scale",
+          "number"
+        ]
+      ]
+    },
+    "detect_swipe": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "direction",
+          "text"
+        ],
+        [
+          "min_distance",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_swiped",
+          "flow"
+        ],
+        [
+          "exec_no_swipe",
+          "flow"
+        ],
+        [
+          "swipe_distance",
+          "number"
+        ]
+      ]
+    },
+    "detect_touch": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ],
+        [
+          "width",
+          "number"
+        ],
+        [
+          "height",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_touched",
+          "flow"
+        ],
+        [
+          "exec_no_touch",
+          "flow"
+        ],
+        [
+          "touch_x",
+          "number"
+        ],
+        [
+          "touch_y",
+          "number"
+        ]
+      ]
+    },
+    "distance_to_point": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "x1",
+          "number"
+        ],
+        [
+          "y1",
+          "number"
+        ],
+        [
+          "x2",
+          "number"
+        ],
+        [
+          "y2",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_calculated",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "distance",
+          "number"
+        ]
+      ]
+    },
+    "emit_event": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "payload",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "emit_particles": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "system_id",
+          "text"
+        ],
+        [
+          "quantity",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_emitting",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "event_collision_enter": {
+      "inputs": [],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "other",
+          "object"
+        ]
+      ]
+    },
+    "event_collision_exit": {
+      "inputs": [],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "other",
+          "object"
+        ]
+      ]
+    },
+    "event_custom": {
+      "inputs": [],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "payload",
+          "any"
+        ]
+      ]
+    },
+    "event_key_pressed": {
+      "inputs": [],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "event_object_created": {
+      "inputs": [],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "object",
+          "object"
+        ]
+      ]
+    },
+    "event_start": {
+      "inputs": [],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "event_timer": {
+      "inputs": [],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "event_trigger_enter": {
+      "inputs": [],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "other",
+          "object"
+        ]
+      ]
+    },
+    "event_trigger_exit": {
+      "inputs": [],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "other",
+          "object"
+        ]
+      ]
+    },
+    "event_update": {
+      "inputs": [],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "find_path": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "start_x",
+          "number"
+        ],
+        [
+          "start_y",
+          "number"
+        ],
+        [
+          "end_x",
+          "number"
+        ],
+        [
+          "end_y",
+          "number"
+        ],
+        [
+          "grid_size",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_found",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "path_id",
+          "text"
+        ],
+        [
+          "path_length",
+          "number"
+        ]
+      ]
+    },
+    "find_tag": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "object",
+          "object"
+        ]
+      ]
+    },
+    "follow_path": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "path_id",
+          "text"
+        ],
+        [
+          "speed",
+          "number"
+        ],
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_following",
+          "flow"
+        ],
+        [
+          "exec_finished",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "current_waypoint",
+          "number"
+        ],
+        [
+          "next_x",
+          "number"
+        ],
+        [
+          "next_y",
+          "number"
+        ]
+      ]
+    },
+    "get_animation_time": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "get_animator_state": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "text"
+        ]
+      ]
+    },
+    "get_collision_layer": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "get_collision_mask": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "get_continuous_motion": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ],
+        [
+          "velocity_x",
+          "number"
+        ],
+        [
+          "velocity_y",
+          "number"
+        ]
+      ]
+    },
+    "get_current_animation": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "text"
+        ]
+      ]
+    },
+    "get_current_frame": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "get_is_playing": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "bool"
+        ]
+      ]
+    },
+    "get_prefab_parameter": {
+      "inputs": [
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "any"
+        ]
+      ]
+    },
+    "get_progress_bar_value": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "widget_name",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_not_found",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "get_rigidbody_gravity_scale": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "get_rigidbody_is_kinematic": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "bool"
+        ]
+      ]
+    },
+    "get_rigidbody_mass": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "get_rigidbody_use_gravity": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "bool"
+        ]
+      ]
+    },
+    "get_rigidbody_velocity_x": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "get_rigidbody_velocity_y": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "get_state": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "machine_id",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_got_state",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "state",
+          "text"
+        ]
+      ]
+    },
+    "get_tag": {
+      "inputs": [
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "text"
+        ]
+      ]
+    },
+    "get_ui_widget_property": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "parent",
+          "text"
+        ],
+        [
+          "widget_name",
+          "text"
+        ],
+        [
+          "property",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "value",
+          "text"
+        ]
+      ]
+    },
+    "get_variable": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ],
+        [
+          "value",
+          "text"
+        ]
+      ]
+    },
+    "has_save": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "slot_name",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_exists",
+          "flow"
+        ],
+        [
+          "exec_not_exists",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "if_else": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "condition",
+          "bool"
+        ]
+      ],
+      "outputs": [
+        [
+          "true",
+          "flow"
+        ],
+        [
+          "false",
+          "flow"
+        ]
+      ]
+    },
+    "input_axis": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "axis",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ],
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "is_grounded": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "grounded",
+          "flow"
+        ],
+        [
+          "airborne",
+          "flow"
+        ]
+      ]
+    },
+    "is_in_state": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "machine_id",
+          "text"
+        ],
+        [
+          "state",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_in_state",
+          "flow"
+        ],
+        [
+          "exec_not_in_state",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "is_key_pressed": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "key",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_pressed",
+          "flow"
+        ],
+        [
+          "exec_not_pressed",
+          "flow"
+        ]
+      ]
+    },
+    "jump": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "force",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "key_held": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "key",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "held",
+          "flow"
+        ],
+        [
+          "released",
+          "flow"
+        ]
+      ]
+    },
+    "key_pressed": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "key",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_pressed",
+          "flow"
+        ]
+      ]
+    },
+    "load_game": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "slot_name",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_loaded",
+          "flow"
+        ],
+        [
+          "exec_no_save",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "slot_name_out",
+          "text"
+        ],
+        [
+          "loaded",
+          "bool"
+        ]
+      ]
+    },
+    "log_message": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "message",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "modify_collider": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ],
+        [
+          "property",
+          "text"
+        ],
+        [
+          "value",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "modify_rigidbody": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ],
+        [
+          "property",
+          "text"
+        ],
+        [
+          "value",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "move": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "direction_x",
+          "number"
+        ],
+        [
+          "direction_y",
+          "number"
+        ],
+        [
+          "speed",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "move_by": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "delta_x",
+          "number"
+        ],
+        [
+          "delta_y",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "number_value": {
+      "inputs": [],
+      "outputs": []
+    },
+    "on_animation_event": {
+      "inputs": [],
+      "outputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "owner_object",
+          "text"
+        ],
+        [
+          "animation_name",
+          "text"
+        ],
+        [
+          "event_name",
+          "text"
+        ],
+        [
+          "frame_index",
+          "number"
+        ],
+        [
+          "elapsed_time",
+          "number"
+        ]
+      ]
+    },
+    "on_animation_finished": {
+      "inputs": [],
+      "outputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "owner_object",
+          "text"
+        ],
+        [
+          "animation_name",
+          "text"
+        ],
+        [
+          "elapsed_time",
+          "number"
+        ]
+      ]
+    },
+    "on_collision_enter": {
+      "inputs": [],
+      "outputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "self_object",
+          "object"
+        ],
+        [
+          "other_object",
+          "object"
+        ],
+        [
+          "self_collider",
+          "object"
+        ],
+        [
+          "other_collider",
+          "object"
+        ]
+      ]
+    },
+    "on_collision_exit": {
+      "inputs": [],
+      "outputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "self_object",
+          "object"
+        ],
+        [
+          "other_object",
+          "object"
+        ],
+        [
+          "self_collider",
+          "object"
+        ],
+        [
+          "other_collider",
+          "object"
+        ]
+      ]
+    },
+    "on_trigger_enter": {
+      "inputs": [],
+      "outputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "self_object",
+          "object"
+        ],
+        [
+          "other_object",
+          "object"
+        ],
+        [
+          "self_collider",
+          "object"
+        ],
+        [
+          "other_collider",
+          "object"
+        ]
+      ]
+    },
+    "on_trigger_exit": {
+      "inputs": [],
+      "outputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "self_object",
+          "object"
+        ],
+        [
+          "other_object",
+          "object"
+        ],
+        [
+          "self_collider",
+          "object"
+        ],
+        [
+          "other_collider",
+          "object"
+        ]
+      ]
+    },
+    "once": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "blocked",
+          "flow"
+        ]
+      ]
+    },
+    "patrol_axis": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "axis",
+          "text"
+        ],
+        [
+          "min",
+          "number"
+        ],
+        [
+          "max",
+          "number"
+        ],
+        [
+          "speed",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "pause_animation": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "pause_continuous_motion": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "play_animation": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ],
+        [
+          "animation_name",
+          "text"
+        ],
+        [
+          "force",
+          "bool"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "play_animation_asset": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "path",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "play_sound": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "path",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "play_sound_fade": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "path",
+          "text"
+        ],
+        [
+          "fade_in",
+          "number"
+        ],
+        [
+          "fade_out",
+          "number"
+        ],
+        [
+          "volume",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_playing",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "raycast": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "origin_x",
+          "number"
+        ],
+        [
+          "origin_y",
+          "number"
+        ],
+        [
+          "direction_x",
+          "number"
+        ],
+        [
+          "direction_y",
+          "number"
+        ],
+        [
+          "max_distance",
+          "number"
+        ],
+        [
+          "ignore_self",
+          "bool"
+        ],
+        [
+          "include_triggers",
+          "bool"
+        ],
+        [
+          "layer_mask",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_hit",
+          "flow"
+        ],
+        [
+          "exec_no_hit",
+          "flow"
+        ],
+        [
+          "hit_object",
+          "object"
+        ],
+        [
+          "hit_point_x",
+          "number"
+        ],
+        [
+          "hit_point_y",
+          "number"
+        ],
+        [
+          "hit_distance",
+          "number"
+        ],
+        [
+          "hit_normal_x",
+          "number"
+        ],
+        [
+          "hit_normal_y",
+          "number"
+        ]
+      ]
+    },
+    "read_key_axis": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "positive_key",
+          "text"
+        ],
+        [
+          "negative_key",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ],
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "remove_component": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "component_type",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "restart_scene": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "resume_continuous_motion": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "rotate": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "degrees",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "save_game": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "slot_name",
+          "text"
+        ],
+        [
+          "include_scene",
+          "bool"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_saved",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "slot_name_out",
+          "text"
+        ],
+        [
+          "saved",
+          "bool"
+        ]
+      ]
+    },
+    "self_object": {
+      "inputs": [],
+      "outputs": [
+        [
+          "object",
+          "object"
+        ]
+      ]
+    },
+    "sequence": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "then_0",
+          "flow"
+        ],
+        [
+          "then_1",
+          "flow"
+        ],
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "set_active": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "active",
+          "bool"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "set_collision_layer": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ],
+        [
+          "value",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "set_collision_mask": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ],
+        [
+          "value",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "set_dialog_choice": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "dialog_id",
+          "text"
+        ],
+        [
+          "choice_index",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "set_hud": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "text",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "set_pitch": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "pitch",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "current_pitch",
+          "number"
+        ]
+      ]
+    },
+    "set_position": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "set_sprite": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "path",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "set_ui_progress_bar": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "widget_id",
+          "text"
+        ],
+        [
+          "value",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "set_ui_text": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "widget_id",
+          "text"
+        ],
+        [
+          "text",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "set_ui_visible": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "widget_id",
+          "text"
+        ],
+        [
+          "visible",
+          "bool"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "set_variable": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "value",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ],
+        [
+          "value",
+          "text"
+        ]
+      ]
+    },
+    "set_volume": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "volume",
+          "number"
+        ],
+        [
+          "channel",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "current_volume",
+          "number"
+        ]
+      ]
+    },
+    "show_dialog": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "dialog_id",
+          "text"
+        ],
+        [
+          "character",
+          "text"
+        ],
+        [
+          "text",
+          "text"
+        ],
+        [
+          "options",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_showing",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "dialog_id_out",
+          "text"
+        ],
+        [
+          "is_showing",
+          "bool"
+        ]
+      ]
+    },
+    "start_behavior_tree": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "path",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "start_continuous_motion": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "velocity_x",
+          "number"
+        ],
+        [
+          "velocity_y",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "start_texture_scroll": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "path",
+          "text"
+        ],
+        [
+          "speed_x",
+          "number"
+        ],
+        [
+          "speed_y",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "stop_all_sounds": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "stop_animation": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "stop_continuous_motion": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "stop_particles": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "system_id",
+          "text"
+        ],
+        [
+          "destroy",
+          "bool"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_stopped",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "stop_path": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "path_id",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_stopped",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "stop_texture_scroll": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "subgraph_return": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "value",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ],
+        [
+          "value",
+          "text"
+        ]
+      ]
+    },
+    "text_value": {
+      "inputs": [],
+      "outputs": []
+    },
+    "update_continuous_motion": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "velocity_x",
+          "number"
+        ],
+        [
+          "velocity_y",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "update_ui_binding": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "widget_name",
+          "text"
+        ],
+        [
+          "variable_name",
+          "text"
+        ],
+        [
+          "property",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_not_found",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "update_ui_widget_property": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "parent",
+          "text"
+        ],
+        [
+          "widget_name",
+          "text"
+        ],
+        [
+          "property",
+          "text"
+        ],
+        [
+          "value",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "success",
+          "flow"
+        ],
+        [
+          "failure",
+          "flow"
+        ]
+      ]
+    },
+    "wait_dialog_choice": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "dialog_id",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_chosen",
+          "flow"
+        ],
+        [
+          "exec_waiting",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "choice_index",
+          "number"
+        ],
+        [
+          "chosen_text",
+          "text"
+        ]
+      ]
+    },
+    "wait_key_release": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "key",
+          "text"
+        ],
+        [
+          "timeout",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_released",
+          "flow"
+        ],
+        [
+          "exec_waiting",
+          "flow"
+        ],
+        [
+          "exec_timeout",
+          "flow"
+        ]
+      ]
+    },
+    "wait_until_condition": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "condition_type",
+          "text"
+        ],
+        [
+          "variable_name",
+          "text"
+        ],
+        [
+          "expected_value",
+          "text"
+        ],
+        [
+          "target",
+          "text"
+        ],
+        [
+          "property",
+          "text"
+        ],
+        [
+          "operator",
+          "text"
+        ],
+        [
+          "timeout",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_timeout",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "exec_waiting",
+          "flow"
+        ],
+        [
+          "elapsed_time",
+          "number"
+        ]
+      ]
+    }
+  },
+  "diverged_node_ids": [
+    "add_component",
+    "bind_ui_to_variable",
+    "bool_value",
+    "call_subgraph",
+    "clone_object",
+    "cooldown",
+    "create_object",
+    "create_prefab",
+    "destroy_after_time",
+    "destroy_object",
+    "emit_event",
+    "get_continuous_motion",
+    "get_progress_bar_value",
+    "get_ui_widget_property",
+    "get_variable",
+    "if_else",
+    "input_axis",
+    "is_grounded",
+    "jump",
+    "key_held",
+    "key_pressed",
+    "log_message",
+    "move",
+    "move_by",
+    "number_value",
+    "once",
+    "patrol_axis",
+    "pause_continuous_motion",
+    "play_animation",
+    "play_animation_asset",
+    "play_sound",
+    "remove_component",
+    "restart_scene",
+    "resume_continuous_motion",
+    "rotate",
+    "sequence",
+    "set_active",
+    "set_hud",
+    "set_position",
+    "set_sprite",
+    "set_ui_progress_bar",
+    "set_ui_text",
+    "set_variable",
+    "start_continuous_motion",
+    "start_texture_scroll",
+    "stop_animation",
+    "stop_continuous_motion",
+    "stop_texture_scroll",
+    "subgraph_return",
+    "text_value",
+    "update_continuous_motion",
+    "update_ui_binding"
+  ],
+  "evaluator_ids": [
+    "absolute_number",
+    "add_number",
+    "and",
+    "animator_get_parameter",
+    "bool_value",
+    "call_subgraph",
+    "clamp_number",
+    "clone_object",
+    "compare_number",
+    "compare_text",
+    "create_object",
+    "create_prefab",
+    "delta_time",
+    "divide_number",
+    "event_collision_enter",
+    "event_collision_exit",
+    "event_custom",
+    "event_trigger_enter",
+    "event_trigger_exit",
+    "find_tag",
+    "get_animation_time",
+    "get_animator_state",
+    "get_collision_layer",
+    "get_collision_mask",
+    "get_current_animation",
+    "get_current_frame",
+    "get_is_playing",
+    "get_position",
+    "get_prefab_parameter",
+    "get_rigidbody_gravity_scale",
+    "get_rigidbody_is_kinematic",
+    "get_rigidbody_mass",
+    "get_rigidbody_use_gravity",
+    "get_rigidbody_velocity_x",
+    "get_rigidbody_velocity_y",
+    "get_tag",
+    "get_variable",
+    "if_else",
+    "input_axis",
+    "is_grounded",
+    "join_text",
+    "key_held",
+    "key_pressed",
+    "multiply_number",
+    "not",
+    "number_value",
+    "on_animation_event",
+    "on_animation_finished",
+    "on_collision_enter",
+    "on_collision_exit",
+    "on_trigger_enter",
+    "on_trigger_exit",
+    "or",
+    "random_number",
+    "raycast",
+    "read_key_axis",
+    "self_object",
+    "subgraph_input",
+    "subtract_number",
+    "text_value",
+    "to_text"
+  ],
+  "executor_ids": [
+    "add_animator",
+    "add_audio_source",
+    "add_box_collider",
+    "add_camera",
+    "add_circle_collider",
+    "add_component",
+    "add_rigidbody",
+    "add_sprite_renderer",
+    "add_ui_button",
+    "add_ui_canvas",
+    "add_ui_image",
+    "add_ui_text",
+    "animator_parameter",
+    "animator_set_trigger",
+    "app.quit",
+    "apply_force",
+    "bind_ui_to_blackboard",
+    "button_clicked",
+    "call_subgraph",
+    "clone_object",
+    "compare_number",
+    "compare_text",
+    "cooldown",
+    "create_object",
+    "create_prefab",
+    "destroy_after_time",
+    "destroy_object",
+    "emit_event",
+    "exit_game",
+    "game.has_save",
+    "game.load_game",
+    "get_continuous_motion",
+    "get_variable",
+    "has_save",
+    "if_else",
+    "input_axis",
+    "is_grounded",
+    "jump",
+    "key_held",
+    "key_pressed",
+    "load_game",
+    "load_scene",
+    "log_message",
+    "modify_collider",
+    "modify_rigidbody",
+    "move",
+    "move_by",
+    "on_ui_click",
+    "once",
+    "open_scene",
+    "patrol_axis",
+    "pause_animation",
+    "pause_continuous_motion",
+    "play_animation",
+    "play_animation_asset",
+    "play_sound",
+    "quit_game",
+    "raycast",
+    "read_key_axis",
+    "remove_component",
+    "restart_scene",
+    "resume_continuous_motion",
+    "rotate",
+    "scene.load_scene",
+    "sequence",
+    "set_active",
+    "set_collision_layer",
+    "set_collision_mask",
+    "set_hud",
+    "set_position",
+    "set_sprite",
+    "set_ui_enabled",
+    "set_ui_progress_bar",
+    "set_ui_text",
+    "set_ui_visible",
+    "set_variable",
+    "start_behavior_tree",
+    "start_continuous_motion",
+    "start_texture_scroll",
+    "stop_animation",
+    "stop_continuous_motion",
+    "stop_texture_scroll",
+    "subgraph_return",
+    "ui.button_clicked",
+    "ui.set_widget_enabled",
+    "update_continuous_motion",
+    "variables.set"
+  ],
+  "import_time_seconds": 0.2158,
+  "port_schema": {
+    "absolute_number": {
+      "inputs": [
+        [
+          "value",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "add_animator": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "add_audio_source": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "add_box_collider": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "add_camera": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "add_circle_collider": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "add_component": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "add_number": {
+      "inputs": [
+        [
+          "a",
+          "number"
+        ],
+        [
+          "b",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "add_rigidbody": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "add_sprite_renderer": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "add_transition": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "machine_id",
+          "text"
+        ],
+        [
+          "from_state",
+          "text"
+        ],
+        [
+          "to_state",
+          "text"
+        ],
+        [
+          "condition",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "add_ui_button": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "add_ui_canvas": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "add_ui_image": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "add_ui_text": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "and": {
+      "inputs": [
+        [
+          "a",
+          "bool"
+        ],
+        [
+          "b",
+          "bool"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "bool"
+        ]
+      ]
+    },
+    "animate_value": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ],
+        [
+          "property",
+          "text"
+        ],
+        [
+          "from_value",
+          "number"
+        ],
+        [
+          "to_value",
+          "number"
+        ],
+        [
+          "duration",
+          "number"
+        ],
+        [
+          "easing",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_animating",
+          "flow"
+        ],
+        [
+          "exec_finished",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "value",
+          "number"
+        ],
+        [
+          "progress",
+          "number"
+        ]
+      ]
+    },
+    "animator_get_parameter": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ],
+        [
+          "parameter_name",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "text"
+        ]
+      ]
+    },
+    "animator_parameter": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ],
+        [
+          "parameter_name",
+          "text"
+        ],
+        [
+          "parameter_type",
+          "text"
+        ],
+        [
+          "value",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "animator_set_trigger": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ],
+        [
+          "trigger_name",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "apply_force": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ],
+        [
+          "force_x",
+          "number"
+        ],
+        [
+          "force_y",
+          "number"
+        ],
+        [
+          "force_mode",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "bind_ui_to_blackboard": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "widget_id",
+          "text"
+        ],
+        [
+          "variable",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "bind_ui_to_variable": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "widget_name",
+          "text"
+        ],
+        [
+          "variable_name",
+          "text"
+        ],
+        [
+          "property",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_not_found",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "bool_value": {
+      "inputs": [],
+      "outputs": [
+        [
+          "value",
+          "bool"
+        ]
+      ]
+    },
+    "call_subgraph": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "camera_follow": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ],
+        [
+          "smooth_time",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_following",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "camera_look_at": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ],
+        [
+          "duration",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_looking",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "camera_set_zoom": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "zoom",
+          "number"
+        ],
+        [
+          "duration",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "current_zoom",
+          "number"
+        ]
+      ]
+    },
+    "camera_shake": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "duration",
+          "number"
+        ],
+        [
+          "intensity",
+          "number"
+        ],
+        [
+          "frequency",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_shaking",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "camera_stop_follow": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "change_state": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "machine_id",
+          "text"
+        ],
+        [
+          "state",
+          "text"
+        ],
+        [
+          "force",
+          "bool"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_changed",
+          "flow"
+        ],
+        [
+          "exec_invalid_transition",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "previous_state",
+          "text"
+        ],
+        [
+          "new_state",
+          "text"
+        ]
+      ]
+    },
+    "clamp_number": {
+      "inputs": [
+        [
+          "value",
+          "number"
+        ],
+        [
+          "minimum",
+          "number"
+        ],
+        [
+          "maximum",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "clone_object": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ],
+        [
+          "name",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "limit_reached",
+          "flow"
+        ],
+        [
+          "object",
+          "object"
+        ]
+      ]
+    },
+    "close_dialog": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "dialog_id",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "compare_number": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "value",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "true",
+          "flow"
+        ],
+        [
+          "false",
+          "flow"
+        ],
+        [
+          "value",
+          "bool"
+        ]
+      ]
+    },
+    "compare_text": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "value",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "true",
+          "flow"
+        ],
+        [
+          "false",
+          "flow"
+        ],
+        [
+          "value",
+          "bool"
+        ]
+      ]
+    },
+    "cooldown": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "seconds",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "blocked",
+          "flow"
+        ]
+      ]
+    },
+    "create_object": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "source",
+          "object"
+        ],
+        [
+          "name",
+          "text"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "limit_reached",
+          "flow"
+        ],
+        [
+          "object",
+          "object"
+        ]
+      ]
+    },
+    "create_particle_system": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ],
+        [
+          "particle_type",
+          "text"
+        ],
+        [
+          "quantity",
+          "number"
+        ],
+        [
+          "lifetime",
+          "number"
+        ],
+        [
+          "speed",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_created",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "system_id",
+          "text"
+        ]
+      ]
+    },
+    "create_prefab": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ],
+        [
+          "rotation",
+          "number"
+        ],
+        [
+          "width",
+          "number"
+        ],
+        [
+          "height",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "limit_reached",
+          "flow"
+        ],
+        [
+          "object",
+          "object"
+        ]
+      ]
+    },
+    "create_state_machine": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "machine_id",
+          "text"
+        ],
+        [
+          "initial_state",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_created",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "machine_id_out",
+          "text"
+        ],
+        [
+          "initial_state_out",
+          "text"
+        ]
+      ]
+    },
+    "create_ui_button": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "parent",
+          "text"
+        ],
+        [
+          "name",
+          "text"
+        ],
+        [
+          "text",
+          "text"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ],
+        [
+          "width",
+          "number"
+        ],
+        [
+          "height",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "success",
+          "flow"
+        ],
+        [
+          "failure",
+          "flow"
+        ]
+      ]
+    },
+    "create_ui_image": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "parent",
+          "text"
+        ],
+        [
+          "name",
+          "text"
+        ],
+        [
+          "texture_path",
+          "text"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ],
+        [
+          "width",
+          "number"
+        ],
+        [
+          "height",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "success",
+          "flow"
+        ],
+        [
+          "failure",
+          "flow"
+        ]
+      ]
+    },
+    "create_ui_label": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "parent",
+          "text"
+        ],
+        [
+          "name",
+          "text"
+        ],
+        [
+          "text",
+          "text"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ],
+        [
+          "font_size",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "success",
+          "flow"
+        ],
+        [
+          "failure",
+          "flow"
+        ]
+      ]
+    },
+    "create_ui_progress_bar": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "parent",
+          "text"
+        ],
+        [
+          "name",
+          "text"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ],
+        [
+          "width",
+          "number"
+        ],
+        [
+          "height",
+          "number"
+        ],
+        [
+          "value",
+          "number"
+        ],
+        [
+          "max_value",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "success",
+          "flow"
+        ],
+        [
+          "failure",
+          "flow"
+        ]
+      ]
+    },
+    "delete_save": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "slot_name",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_deleted",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "delta_time": {
+      "inputs": [],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "destroy_after_time": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ],
+        [
+          "seconds",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "destroy_object": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": []
+    },
+    "destroy_ui_widget": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "parent",
+          "text"
+        ],
+        [
+          "widget_name",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "success",
+          "flow"
+        ],
+        [
+          "failure",
+          "flow"
+        ]
+      ]
+    },
+    "detect_pinch": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "type",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_pinched",
+          "flow"
+        ],
+        [
+          "exec_no_pinch",
+          "flow"
+        ],
+        [
+          "pinch_scale",
+          "number"
+        ]
+      ]
+    },
+    "detect_swipe": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "direction",
+          "text"
+        ],
+        [
+          "min_distance",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_swiped",
+          "flow"
+        ],
+        [
+          "exec_no_swipe",
+          "flow"
+        ],
+        [
+          "swipe_distance",
+          "number"
+        ]
+      ]
+    },
+    "detect_touch": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ],
+        [
+          "width",
+          "number"
+        ],
+        [
+          "height",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_touched",
+          "flow"
+        ],
+        [
+          "exec_no_touch",
+          "flow"
+        ],
+        [
+          "touch_x",
+          "number"
+        ],
+        [
+          "touch_y",
+          "number"
+        ]
+      ]
+    },
+    "distance_to_point": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "x1",
+          "number"
+        ],
+        [
+          "y1",
+          "number"
+        ],
+        [
+          "x2",
+          "number"
+        ],
+        [
+          "y2",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_calculated",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "distance",
+          "number"
+        ]
+      ]
+    },
+    "divide_number": {
+      "inputs": [
+        [
+          "a",
+          "number"
+        ],
+        [
+          "b",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "emit_event": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "payload",
+          "any"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "emit_particles": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "system_id",
+          "text"
+        ],
+        [
+          "quantity",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_emitting",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "event_collision_enter": {
+      "inputs": [],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "other",
+          "object"
+        ]
+      ]
+    },
+    "event_collision_exit": {
+      "inputs": [],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "other",
+          "object"
+        ]
+      ]
+    },
+    "event_custom": {
+      "inputs": [],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "payload",
+          "any"
+        ]
+      ]
+    },
+    "event_key_pressed": {
+      "inputs": [],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "event_object_created": {
+      "inputs": [],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "object",
+          "object"
+        ]
+      ]
+    },
+    "event_start": {
+      "inputs": [],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "event_timer": {
+      "inputs": [],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "event_trigger_enter": {
+      "inputs": [],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "other",
+          "object"
+        ]
+      ]
+    },
+    "event_trigger_exit": {
+      "inputs": [],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "other",
+          "object"
+        ]
+      ]
+    },
+    "event_update": {
+      "inputs": [],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "find_path": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "start_x",
+          "number"
+        ],
+        [
+          "start_y",
+          "number"
+        ],
+        [
+          "end_x",
+          "number"
+        ],
+        [
+          "end_y",
+          "number"
+        ],
+        [
+          "grid_size",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_found",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "path_id",
+          "text"
+        ],
+        [
+          "path_length",
+          "number"
+        ]
+      ]
+    },
+    "find_tag": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "object",
+          "object"
+        ]
+      ]
+    },
+    "follow_path": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "path_id",
+          "text"
+        ],
+        [
+          "speed",
+          "number"
+        ],
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_following",
+          "flow"
+        ],
+        [
+          "exec_finished",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "current_waypoint",
+          "number"
+        ],
+        [
+          "next_x",
+          "number"
+        ],
+        [
+          "next_y",
+          "number"
+        ]
+      ]
+    },
+    "get_animation_time": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "get_animator_state": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "text"
+        ]
+      ]
+    },
+    "get_collision_layer": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "get_collision_mask": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "get_continuous_motion": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ],
+        [
+          "movement",
+          "movement"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ],
+        [
+          "speed",
+          "number"
+        ],
+        [
+          "paused",
+          "bool"
+        ],
+        [
+          "active",
+          "bool"
+        ]
+      ]
+    },
+    "get_current_animation": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "text"
+        ]
+      ]
+    },
+    "get_current_frame": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "get_is_playing": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "bool"
+        ]
+      ]
+    },
+    "get_position": {
+      "inputs": [
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ]
+      ]
+    },
+    "get_prefab_parameter": {
+      "inputs": [
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "any"
+        ]
+      ]
+    },
+    "get_progress_bar_value": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "widget_name",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "get_rigidbody_gravity_scale": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "get_rigidbody_is_kinematic": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "bool"
+        ]
+      ]
+    },
+    "get_rigidbody_mass": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "get_rigidbody_use_gravity": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "bool"
+        ]
+      ]
+    },
+    "get_rigidbody_velocity_x": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "get_rigidbody_velocity_y": {
+      "inputs": [
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "get_state": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "machine_id",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_got_state",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "state",
+          "text"
+        ]
+      ]
+    },
+    "get_tag": {
+      "inputs": [
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "text"
+        ]
+      ]
+    },
+    "get_ui_widget_property": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "widget_name",
+          "text"
+        ],
+        [
+          "property",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "value",
+          "text"
+        ]
+      ]
+    },
+    "get_variable": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "value",
+          "any"
+        ]
+      ]
+    },
+    "has_save": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "slot_name",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_exists",
+          "flow"
+        ],
+        [
+          "exec_not_exists",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "if_else": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "condition",
+          "any"
+        ]
+      ],
+      "outputs": [
+        [
+          "true",
+          "flow"
+        ],
+        [
+          "false",
+          "flow"
+        ]
+      ]
+    },
+    "input_axis": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "is_grounded": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "true",
+          "flow"
+        ],
+        [
+          "false",
+          "flow"
+        ],
+        [
+          "value",
+          "bool"
+        ]
+      ]
+    },
+    "is_in_state": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "machine_id",
+          "text"
+        ],
+        [
+          "state",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_in_state",
+          "flow"
+        ],
+        [
+          "exec_not_in_state",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "is_key_pressed": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "key",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_pressed",
+          "flow"
+        ],
+        [
+          "exec_not_pressed",
+          "flow"
+        ]
+      ]
+    },
+    "join_text": {
+      "inputs": [
+        [
+          "a",
+          "any"
+        ],
+        [
+          "b",
+          "any"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "text"
+        ]
+      ]
+    },
+    "jump": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "force",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "key_held": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "true",
+          "flow"
+        ],
+        [
+          "false",
+          "flow"
+        ],
+        [
+          "value",
+          "bool"
+        ]
+      ]
+    },
+    "key_pressed": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "true",
+          "flow"
+        ],
+        [
+          "false",
+          "flow"
+        ],
+        [
+          "value",
+          "bool"
+        ]
+      ]
+    },
+    "load_game": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "slot_name",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_loaded",
+          "flow"
+        ],
+        [
+          "exec_no_save",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "slot_name_out",
+          "text"
+        ],
+        [
+          "loaded",
+          "bool"
+        ]
+      ]
+    },
+    "log_message": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "text",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "magnitude_vector": {
+      "inputs": [
+        [
+          "vector",
+          "vector2"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "modify_collider": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ],
+        [
+          "property",
+          "text"
+        ],
+        [
+          "value",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "modify_rigidbody": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ],
+        [
+          "property",
+          "text"
+        ],
+        [
+          "value",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "move": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "value",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "move_by": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "velocity",
+          "vector2"
+        ],
+        [
+          "delta_x",
+          "number"
+        ],
+        [
+          "delta_y",
+          "number"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "move_towards": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ],
+        [
+          "destination_x",
+          "number"
+        ],
+        [
+          "destination_y",
+          "number"
+        ],
+        [
+          "speed",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "handle",
+          "movement"
+        ]
+      ]
+    },
+    "move_x": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ],
+        [
+          "speed",
+          "number"
+        ],
+        [
+          "x",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "movement",
+          "movement"
+        ]
+      ]
+    },
+    "move_y": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ],
+        [
+          "speed",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "movement",
+          "movement"
+        ]
+      ]
+    },
+    "multiply_number": {
+      "inputs": [
+        [
+          "a",
+          "number"
+        ],
+        [
+          "b",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "normalize_vector": {
+      "inputs": [
+        [
+          "vector",
+          "vector2"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "vector2"
+        ]
+      ]
+    },
+    "not": {
+      "inputs": [
+        [
+          "value",
+          "bool"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "bool"
+        ]
+      ]
+    },
+    "number_value": {
+      "inputs": [],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "on_animation_event": {
+      "inputs": [],
+      "outputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "owner_object",
+          "text"
+        ],
+        [
+          "animation_name",
+          "text"
+        ],
+        [
+          "event_name",
+          "text"
+        ],
+        [
+          "frame_index",
+          "number"
+        ],
+        [
+          "elapsed_time",
+          "number"
+        ]
+      ]
+    },
+    "on_animation_finished": {
+      "inputs": [],
+      "outputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "owner_object",
+          "text"
+        ],
+        [
+          "animation_name",
+          "text"
+        ],
+        [
+          "elapsed_time",
+          "number"
+        ]
+      ]
+    },
+    "on_collision_enter": {
+      "inputs": [],
+      "outputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "self_object",
+          "object"
+        ],
+        [
+          "other_object",
+          "object"
+        ],
+        [
+          "self_collider",
+          "object"
+        ],
+        [
+          "other_collider",
+          "object"
+        ]
+      ]
+    },
+    "on_collision_exit": {
+      "inputs": [],
+      "outputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "self_object",
+          "object"
+        ],
+        [
+          "other_object",
+          "object"
+        ],
+        [
+          "self_collider",
+          "object"
+        ],
+        [
+          "other_collider",
+          "object"
+        ]
+      ]
+    },
+    "on_trigger_enter": {
+      "inputs": [],
+      "outputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "self_object",
+          "object"
+        ],
+        [
+          "other_object",
+          "object"
+        ],
+        [
+          "self_collider",
+          "object"
+        ],
+        [
+          "other_collider",
+          "object"
+        ]
+      ]
+    },
+    "on_trigger_exit": {
+      "inputs": [],
+      "outputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "self_object",
+          "object"
+        ],
+        [
+          "other_object",
+          "object"
+        ],
+        [
+          "self_collider",
+          "object"
+        ],
+        [
+          "other_collider",
+          "object"
+        ]
+      ]
+    },
+    "once": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "blocked",
+          "flow"
+        ]
+      ]
+    },
+    "or": {
+      "inputs": [
+        [
+          "a",
+          "bool"
+        ],
+        [
+          "b",
+          "bool"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "bool"
+        ]
+      ]
+    },
+    "patrol_axis": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ],
+        [
+          "minimum",
+          "number"
+        ],
+        [
+          "maximum",
+          "number"
+        ],
+        [
+          "speed",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "direction",
+          "number"
+        ],
+        [
+          "position",
+          "number"
+        ]
+      ]
+    },
+    "pause_animation": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "pause_continuous_motion": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ],
+        [
+          "movement",
+          "movement"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "play_animation": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "state",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "play_animation_asset": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "path",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "play_sound": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "path",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "play_sound_fade": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "path",
+          "text"
+        ],
+        [
+          "fade_in",
+          "number"
+        ],
+        [
+          "fade_out",
+          "number"
+        ],
+        [
+          "volume",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_playing",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "random_number": {
+      "inputs": [
+        [
+          "minimum",
+          "number"
+        ],
+        [
+          "maximum",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "raycast": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "origin_x",
+          "number"
+        ],
+        [
+          "origin_y",
+          "number"
+        ],
+        [
+          "direction_x",
+          "number"
+        ],
+        [
+          "direction_y",
+          "number"
+        ],
+        [
+          "max_distance",
+          "number"
+        ],
+        [
+          "ignore_self",
+          "bool"
+        ],
+        [
+          "include_triggers",
+          "bool"
+        ],
+        [
+          "layer_mask",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_hit",
+          "flow"
+        ],
+        [
+          "exec_no_hit",
+          "flow"
+        ],
+        [
+          "hit_object",
+          "object"
+        ],
+        [
+          "hit_point_x",
+          "number"
+        ],
+        [
+          "hit_point_y",
+          "number"
+        ],
+        [
+          "hit_distance",
+          "number"
+        ],
+        [
+          "hit_normal_x",
+          "number"
+        ],
+        [
+          "hit_normal_y",
+          "number"
+        ]
+      ]
+    },
+    "read_key_axis": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "positive_key",
+          "text"
+        ],
+        [
+          "negative_key",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ],
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "remove_component": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "restart_scene": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ]
+      ],
+      "outputs": []
+    },
+    "resume_continuous_motion": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ],
+        [
+          "movement",
+          "movement"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "rotate": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ],
+        [
+          "degrees",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "save_game": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "slot_name",
+          "text"
+        ],
+        [
+          "include_scene",
+          "bool"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_saved",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "slot_name_out",
+          "text"
+        ],
+        [
+          "saved",
+          "bool"
+        ]
+      ]
+    },
+    "self_object": {
+      "inputs": [],
+      "outputs": [
+        [
+          "object",
+          "object"
+        ]
+      ]
+    },
+    "sequence": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "then_0",
+          "flow"
+        ],
+        [
+          "then_1",
+          "flow"
+        ],
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "set_active": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ],
+        [
+          "active",
+          "bool"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "set_animator_parameter": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "value",
+          "any"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "set_collision_layer": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ],
+        [
+          "value",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "set_collision_mask": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "target",
+          "text"
+        ],
+        [
+          "value",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "set_dialog_choice": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "dialog_id",
+          "text"
+        ],
+        [
+          "choice_index",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "set_hud": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "text",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "set_pitch": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "pitch",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "current_pitch",
+          "number"
+        ]
+      ]
+    },
+    "set_position": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "set_sprite": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ],
+        [
+          "path",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "set_ui_progress_bar": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "value",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "set_ui_text": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "text",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "set_ui_visible": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "widget_id",
+          "text"
+        ],
+        [
+          "visible",
+          "bool"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ]
+      ]
+    },
+    "set_variable": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "value",
+          "any"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "set_volume": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "volume",
+          "number"
+        ],
+        [
+          "channel",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "current_volume",
+          "number"
+        ]
+      ]
+    },
+    "show_dialog": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "dialog_id",
+          "text"
+        ],
+        [
+          "character",
+          "text"
+        ],
+        [
+          "text",
+          "text"
+        ],
+        [
+          "options",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_showing",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "dialog_id_out",
+          "text"
+        ],
+        [
+          "is_showing",
+          "bool"
+        ]
+      ]
+    },
+    "sign_number": {
+      "inputs": [
+        [
+          "value",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "start_behavior_tree": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "path",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_done",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "start_continuous_motion": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "movement",
+          "movement"
+        ]
+      ]
+    },
+    "start_texture_scroll": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ],
+        [
+          "path",
+          "text"
+        ],
+        [
+          "speed_x",
+          "number"
+        ],
+        [
+          "speed_y",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "stop_all_sounds": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "stop_animation": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "stop_continuous_motion": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ],
+        [
+          "movement",
+          "movement"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "stop_particles": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "system_id",
+          "text"
+        ],
+        [
+          "destroy",
+          "bool"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_stopped",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "stop_path": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "path_id",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_stopped",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "stop_texture_scroll": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "subgraph_input": {
+      "inputs": [],
+      "outputs": [
+        [
+          "value",
+          "any"
+        ]
+      ]
+    },
+    "subgraph_return": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "value",
+          "any"
+        ]
+      ],
+      "outputs": []
+    },
+    "subgraph_start": {
+      "inputs": [],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "subtract_number": {
+      "inputs": [
+        [
+          "a",
+          "number"
+        ],
+        [
+          "b",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "text_value": {
+      "inputs": [],
+      "outputs": [
+        [
+          "value",
+          "text"
+        ]
+      ]
+    },
+    "to_text": {
+      "inputs": [
+        [
+          "value",
+          "any"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "text"
+        ]
+      ]
+    },
+    "update_continuous_motion": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ],
+        [
+          "movement",
+          "movement"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    },
+    "update_ui_binding": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "widget_name",
+          "text"
+        ],
+        [
+          "variable_name",
+          "text"
+        ],
+        [
+          "property",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ],
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_not_found",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ]
+      ]
+    },
+    "update_ui_widget_property": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "parent",
+          "text"
+        ],
+        [
+          "widget_name",
+          "text"
+        ],
+        [
+          "property",
+          "text"
+        ],
+        [
+          "value",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "success",
+          "flow"
+        ],
+        [
+          "failure",
+          "flow"
+        ]
+      ]
+    },
+    "vector2": {
+      "inputs": [
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "vector",
+          "vector2"
+        ],
+        [
+          "value",
+          "vector2"
+        ]
+      ]
+    },
+    "wait_dialog_choice": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "dialog_id",
+          "text"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_chosen",
+          "flow"
+        ],
+        [
+          "exec_waiting",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "choice_index",
+          "number"
+        ],
+        [
+          "chosen_text",
+          "text"
+        ]
+      ]
+    },
+    "wait_key_release": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "key",
+          "text"
+        ],
+        [
+          "timeout",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_released",
+          "flow"
+        ],
+        [
+          "exec_waiting",
+          "flow"
+        ],
+        [
+          "exec_timeout",
+          "flow"
+        ]
+      ]
+    },
+    "wait_until_condition": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "condition_type",
+          "text"
+        ],
+        [
+          "variable_name",
+          "text"
+        ],
+        [
+          "expected_value",
+          "text"
+        ],
+        [
+          "target",
+          "text"
+        ],
+        [
+          "property",
+          "text"
+        ],
+        [
+          "operator",
+          "text"
+        ],
+        [
+          "timeout",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_timeout",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "exec_waiting",
+          "flow"
+        ],
+        [
+          "elapsed_time",
+          "number"
+        ]
+      ]
+    }
+  },
+  "runtime_modules_loaded_without_provider": [
+    "actions_nodes",
+    "animation_nodes",
+    "components_nodes",
+    "event_nodes",
+    "flow_nodes",
+    "math_nodes",
+    "misc_nodes",
+    "movement_nodes",
+    "physics_nodes",
+    "prefab_nodes",
+    "scene_nodes",
+    "string_nodes",
+    "ui_nodes"
+  ],
+  "runtime_modules_on_disk": [
+    "actions_nodes",
+    "animation_nodes",
+    "audio_advanced_nodes",
+    "camera_nodes",
+    "components_nodes",
+    "dialog_nodes",
+    "dynamic_ui_nodes",
+    "event_nodes",
+    "flow_nodes",
+    "input_advanced_nodes",
+    "math_nodes",
+    "misc_nodes",
+    "movement_nodes",
+    "particle_nodes",
+    "pathfinding_nodes",
+    "physics_nodes",
+    "prefab_nodes",
+    "save_load_nodes",
+    "scene_nodes",
+    "state_machine_nodes",
+    "string_nodes",
+    "ui_binding_nodes",
+    "ui_nodes"
+  ]
+}

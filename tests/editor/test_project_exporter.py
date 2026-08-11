@@ -38,7 +38,7 @@ RUNTIME_SOURCES = (
     "engine/behavior/controller_asset.py",
     "engine/behavior/graph_runtime.py",
     "engine/logic/graph_asset.py",
-    "engine/logic/node_definitions.py",
+    "engine/logic/node_definitions",
     "engine/logic/graph_normalizer.py",
     "engine/logic/graph_validator.py",
     "engine/logic/blackboard.py",
@@ -200,10 +200,18 @@ def test_exported_runtime_contains_all_standalone_dependencies(tmp_path: Path) -
         "viewport_runtime_initializer.py",
         "tint.py", "clip_asset.py", "controller_asset.py", "behavior_controller.py",
         "behavior_graph_runtime.py",
-        "logic_graph_asset.py", "node_definitions.py", "graph_normalizer.py", "graph_validator.py",
+        "logic_graph_asset.py", "graph_normalizer.py", "graph_validator.py",
         "logic_blackboard.py", "logic_event_bus.py",
         "prefab_asset.py", "runtime_world.py", "scene_loader.py",
     }
+    # The node catalogue ships as a package so the exported game derives its
+    # port schema from the same source the editor does.
+    for relative in ("__init__.py", "catalogue.py", "registry.py"):
+        assert (runtime / "node_definitions" / relative).is_file(), relative
+    assert not (runtime / "node_definitions.py").exists(), (
+        "the shadowed flat node_definitions module must not be exported"
+    )
+
     launcher = (Path(report.destination) / "main.py").read_text(encoding="utf-8")
     assert "from zennity_runtime.scene_loader import load_objects" in launcher
 
