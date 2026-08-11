@@ -1,0 +1,266 @@
+{
+  "_comment": "PHASE 9.5B Stage 4.1 baseline. Each entry is a property whose catalogue default differs from the fallback literal in its executor. This is latent, not active: the catalogue default is written into every node on creation, so the executor fallback only applies to a legacy asset that omits the property entirely -- there the runtime and the editor disagree. Reconciling all 66 would change authoring defaults across the palette, which is a gameplay change and out of scope for Stage 4.1. Recorded so the test fails on NEW divergence.",
+  "count": 65,
+  "mismatches": {
+    "add_transition.from_state": {
+      "declared": "idle",
+      "executor": ""
+    },
+    "add_transition.to_state": {
+      "declared": "walking",
+      "executor": ""
+    },
+    "animator_get_parameter.parameter_name": {
+      "declared": "speed",
+      "executor": ""
+    },
+    "animator_get_parameter.target": {
+      "declared": "player",
+      "executor": ""
+    },
+    "animator_parameter.parameter_name": {
+      "declared": "speed",
+      "executor": ""
+    },
+    "animator_parameter.target": {
+      "declared": "player",
+      "executor": ""
+    },
+    "animator_parameter.value": {
+      "declared": "1.0",
+      "executor": ""
+    },
+    "animator_set_trigger.target": {
+      "declared": "player",
+      "executor": ""
+    },
+    "animator_set_trigger.trigger_name": {
+      "declared": "attack",
+      "executor": ""
+    },
+    "change_state.state": {
+      "declared": "walking",
+      "executor": ""
+    },
+    "create_object.height": {
+      "declared": 32.0,
+      "executor": 64.0
+    },
+    "create_object.name": {
+      "declared": "Object",
+      "executor": "NovoObjeto"
+    },
+    "create_object.relative": {
+      "declared": true,
+      "executor": false
+    },
+    "create_object.tag": {
+      "declared": "",
+      "executor": "Untagged"
+    },
+    "create_object.width": {
+      "declared": 32.0,
+      "executor": 64.0
+    },
+    "create_ui_button.parent": {
+      "declared": "Panel_HUD",
+      "executor": ""
+    },
+    "create_ui_button.text": {
+      "declared": "Clique Aqui",
+      "executor": "Click Me"
+    },
+    "create_ui_image.parent": {
+      "declared": "Panel_HUD",
+      "executor": ""
+    },
+    "create_ui_image.texture_path": {
+      "declared": "Assets/Sprites/icon.png",
+      "executor": ""
+    },
+    "create_ui_label.parent": {
+      "declared": "Panel_HUD",
+      "executor": ""
+    },
+    "create_ui_label.text": {
+      "declared": "Din\u00e2mico",
+      "executor": "Dynamic"
+    },
+    "create_ui_progress_bar.parent": {
+      "declared": "Panel_HUD",
+      "executor": ""
+    },
+    "destroy_after_time.seconds": {
+      "declared": 1.0,
+      "executor": 2.0
+    },
+    "destroy_ui_widget.parent": {
+      "declared": "Panel_HUD",
+      "executor": ""
+    },
+    "destroy_ui_widget.widget_name": {
+      "declared": "label_dynamic",
+      "executor": ""
+    },
+    "detect_pinch.type": {
+      "declared": "out",
+      "executor": "in"
+    },
+    "get_animation_time.target": {
+      "declared": "player",
+      "executor": ""
+    },
+    "get_animator_state.target": {
+      "declared": "player",
+      "executor": ""
+    },
+    "get_continuous_motion.movement": {
+      "declared": "",
+      "executor": "Movement"
+    },
+    "get_current_animation.target": {
+      "declared": "player",
+      "executor": ""
+    },
+    "get_current_frame.target": {
+      "declared": "player",
+      "executor": ""
+    },
+    "get_is_playing.target": {
+      "declared": "player",
+      "executor": ""
+    },
+    "get_progress_bar_value.widget_name": {
+      "declared": "progress",
+      "executor": "comida"
+    },
+    "get_rigidbody_gravity_scale.target": {
+      "declared": "player",
+      "executor": ""
+    },
+    "get_rigidbody_is_kinematic.target": {
+      "declared": "player",
+      "executor": ""
+    },
+    "get_rigidbody_mass.target": {
+      "declared": "player",
+      "executor": ""
+    },
+    "get_rigidbody_use_gravity.target": {
+      "declared": "player",
+      "executor": ""
+    },
+    "get_rigidbody_velocity_x.target": {
+      "declared": "player",
+      "executor": ""
+    },
+    "get_rigidbody_velocity_y.target": {
+      "declared": "player",
+      "executor": ""
+    },
+    "get_ui_widget_property.property": {
+      "declared": "text",
+      "executor": ""
+    },
+    "is_in_state.state": {
+      "declared": "idle",
+      "executor": ""
+    },
+    "jump.force": {
+      "declared": 500.0,
+      "executor": 420.0
+    },
+    "key_pressed.key": {
+      "declared": "SPACE",
+      "executor": "space"
+    },
+    "log_message.message": {
+      "declared": "",
+      "executor": "Mensagem"
+    },
+    "modify_collider.target": {
+      "declared": "player",
+      "executor": ""
+    },
+    "modify_collider.value": {
+      "declared": "true",
+      "executor": true
+    },
+    "move.speed": {
+      "declared": 100.0,
+      "executor": 200.0
+    },
+    "move_by.x": {
+      "declared": 0.0,
+      "executor": 100.0
+    },
+    "patrol_axis.axis": {
+      "declared": "x",
+      "executor": "Y"
+    },
+    "patrol_axis.maximum": {
+      "declared": 0.0,
+      "executor": 100.0
+    },
+    "patrol_axis.speed": {
+      "declared": 50.0,
+      "executor": 100.0
+    },
+    "pause_animation.target": {
+      "declared": "player",
+      "executor": ""
+    },
+    "pause_continuous_motion.movement": {
+      "declared": "",
+      "executor": "Movement"
+    },
+    "play_animation.animation_name": {
+      "declared": "idle",
+      "executor": ""
+    },
+    "play_animation.state": {
+      "declared": "",
+      "executor": "Idle"
+    },
+    "play_animation.target": {
+      "declared": "player",
+      "executor": ""
+    },
+    "resume_continuous_motion.movement": {
+      "declared": "",
+      "executor": "Movement"
+    },
+    "set_ui_progress_bar.value": {
+      "declared": 0.5,
+      "executor": 0.0
+    },
+    "stop_animation.target": {
+      "declared": "player",
+      "executor": ""
+    },
+    "update_continuous_motion.movement": {
+      "declared": "",
+      "executor": "Movement"
+    },
+    "update_continuous_motion.x": {
+      "declared": 0.0,
+      "executor": 100.0
+    },
+    "update_ui_widget_property.parent": {
+      "declared": "Panel_HUD",
+      "executor": ""
+    },
+    "update_ui_widget_property.property": {
+      "declared": "text",
+      "executor": ""
+    },
+    "update_ui_widget_property.value": {
+      "declared": "Novo Texto",
+      "executor": ""
+    },
+    "update_ui_widget_property.widget_name": {
+      "declared": "label_dynamic",
+      "executor": ""
+    }
+  }
+}

@@ -467,6 +467,51 @@ _EXPLICIT_PROPERTY_DEFAULTS: dict[str, dict[str, Any]] = {
     },
 }
 
+#: PHASE 9.5B Stage 4.1 -- properties the runtime reads but the catalogue never
+#: declared, so they never reached the Properties panel and could only be set by
+#: hand-editing the .zlogic JSON.  An audit of every executor found 26 such
+#: nodes; the defaults below are the ones the executors themselves fall back to,
+#: read out of ``properties.get(key, default)`` in their source.
+#:
+#: Deliberately NOT declared here (see Stage 4.1 doc): runtime object handles
+#: (``object``, ``widget``), nested structures (``add_component.properties``,
+#: ``call_subgraph.inputs``, ``show_dialog.options``), type-dependent defaults
+#: (``get_prefab_parameter.default``) and colour properties whose ``None``
+#: default means "inherit the theme" -- declaring those would change behaviour
+#: rather than merely expose it.
+_RUNTIME_READ_PROPERTY_DEFAULTS: dict[str, dict[str, Any]] = {
+    "add_component": {"component": "BoxCollider"},
+    "remove_component": {"component": "BoxCollider"},
+    "bind_ui_to_blackboard": {"blackboard_key": "", "widget_property": "value"},
+    "call_subgraph": {"path": ""},
+    "clone_object": {"use_pool": False},
+    "create_prefab": {
+        "include_audio": False, "include_camera": False,
+        "include_logic": False, "use_pool": True,
+    },
+    "emit_event": {"name": "evento"},
+    "find_tag": {"tag": "Player"},
+    "get_prefab_parameter": {"name": "speed"},
+    "get_variable": {"name": "value", "scope": "object"},
+    "set_variable": {"name": "value", "scope": "object"},
+    # The key bindings of the movement axis: the single most-authored property
+    # in the palette, and it was invisible.
+    "input_axis": {"negative": "A", "positive": "D"},
+    "read_key_axis": {"negative": "A", "positive": "D"},
+    "load_game": {"slot": "autosave"},
+    "sequence": {"outputs": 2},
+    "set_ui_text": {"object_name": "", "widget_name": ""},
+    "set_ui_progress_bar": {"max_value": 100.0, "object_name": "", "widget_name": ""},
+    "set_ui_visible": {"widget_name": ""},
+    "start_texture_scroll": {
+        "parallax": 1.0, "repeat_x": False,
+        "repeat_y": True, "send_to_background": True,
+    },
+    "stop_continuous_motion": {"smooth": False},
+    "stop_texture_scroll": {"reset": False},
+    "subgraph_return": {"name": "resultado"},
+}
+
 #: Titles/categories the palette must show regardless of the declarative source.
 _EXPLICIT_METADATA: dict[str, dict[str, str]] = {
     "key_pressed": {"title": "Key Pressed Now?", "category": "Condition"},
@@ -620,6 +665,12 @@ def _build_catalogue() -> None:
     for node_id, properties in _REPLACED_PROPERTY_SETS.items():
         if node_id in definitions:
             definitions[node_id]["properties"] = dict(properties)
+
+    for node_id, properties in _RUNTIME_READ_PROPERTY_DEFAULTS.items():
+        if node_id in definitions:
+            target = definitions[node_id].setdefault("properties", {})
+            for key, value in properties.items():
+                target.setdefault(key, value)
 
     for node_id, properties in _EXPLICIT_PROPERTY_DEFAULTS.items():
         if node_id in definitions:
