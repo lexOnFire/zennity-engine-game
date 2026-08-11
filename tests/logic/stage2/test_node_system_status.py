@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from ._probe import run_in_fresh_process
 from engine.logic.node_system import (
     RUNTIME_NODE_MODULES,
     describe_node,
@@ -39,14 +40,21 @@ def test_status_reports_the_full_shape():
 
 
 def test_status_is_importable_without_qt():
-    """A viewport subprocess and a CI gate both need this to be Qt-free."""
-    import sys
+    """A viewport subprocess and a CI gate both need this to be Qt-free.
 
-    import engine.logic.node_system  # noqa: F401
-
-    assert not any(name.startswith("PySide6") for name in sys.modules), (
-        "importing the node system pulled in Qt"
+    Checked in a fresh process on purpose: by the time the pytest session gets
+    here another test may already have imported Qt, which would make an
+    in-process ``sys.modules`` check pass for the wrong reason -- or fail for
+    one, as it did when this ran alongside the editor suite.
+    """
+    result = run_in_fresh_process(
+        "import json, sys\n"
+        "import engine.logic.node_system\n"
+        "from engine.logic.node_system import get_node_system_status\n"
+        "get_node_system_status()\n"
+        "print(json.dumps({'qt': sorted(n for n in sys.modules if n.startswith('PySide6'))}))\n"
     )
+    assert result["qt"] == [], f"the node system pulled in Qt: {result['qt']}"
 
 
 def test_describe_node_answers_ownership():

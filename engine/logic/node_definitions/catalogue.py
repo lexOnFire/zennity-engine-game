@@ -435,13 +435,23 @@ _COMPONENT_NODE_DEFAULTS: dict[str, dict[str, Any]] = {
     "add_ui_button": {"text": "Button", "color": "#4c9aff"},
 }
 
-#: Property defaults that the editor and exported graphs rely on.  These are
-#: authoring defaults, not pins, so they are not derivable from the schema.
-_EXPLICIT_PROPERTY_DEFAULTS: dict[str, dict[str, Any]] = {
-    "if_else": {"condition": False},
+#: Nodes whose authoring properties REPLACE anything harvested from the
+#: declarative definition, rather than merging with it.  These three used
+#: ``dict.update({"properties": ...})`` before Stage 2, which swaps the whole
+#: dict -- so the declarative pin defaults (``a``/``b``/``operation`` on the
+#: comparison nodes) were never part of the shipped contract and must not
+#: reappear.  Merging here is a regression, not a cleanup.
+_REPLACED_PROPERTY_SETS: dict[str, dict[str, Any]] = {
     "compare_number": {"operator": ">", "value": 0.0},
     "compare_text": {"operator": "==", "value": ""},
     "key_pressed": {"key": "SPACE"},
+}
+
+#: Property defaults that the editor and exported graphs rely on.  These are
+#: authoring defaults, not pins, so they are not derivable from the schema.
+#: Merged on top of whatever the node already carries.
+_EXPLICIT_PROPERTY_DEFAULTS: dict[str, dict[str, Any]] = {
+    "if_else": {"condition": False},
     "number_value": {"value": 0.0},
     "bool_value": {"value": True},
     "text_value": {"value": ""},
@@ -606,6 +616,10 @@ def _build_catalogue() -> None:
     for node_id, metadata in _EXPLICIT_METADATA.items():
         if node_id in definitions:
             definitions[node_id].update(metadata)
+
+    for node_id, properties in _REPLACED_PROPERTY_SETS.items():
+        if node_id in definitions:
+            definitions[node_id]["properties"] = dict(properties)
 
     for node_id, properties in _EXPLICIT_PROPERTY_DEFAULTS.items():
         if node_id in definitions:
