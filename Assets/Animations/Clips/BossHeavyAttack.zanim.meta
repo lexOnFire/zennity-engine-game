@@ -1,0 +1,10 @@
+{
+  "guid": "ba3fec13-6628-47c0-a285-e37b63879625",
+  "uuid": "ba3fec13-6628-47c0-a285-e37b63879625",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Animations/Clips/BossHeavyAttack.zanim",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "fcc79cd1ebd4c1bd6fb841725ddde29f904bb4445d6d555fe8688f1f6e9db53d"
+}

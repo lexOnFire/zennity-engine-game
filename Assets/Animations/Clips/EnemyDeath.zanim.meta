@@ -1,0 +1,10 @@
+{
+  "guid": "abc2fd85-383f-44c7-9167-2d63efacab75",
+  "uuid": "abc2fd85-383f-44c7-9167-2d63efacab75",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Animations/Clips/EnemyDeath.zanim",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "4188147cde93eec77fc205663d46d806bf3504d621624cae11526bc552965dd0"
+}

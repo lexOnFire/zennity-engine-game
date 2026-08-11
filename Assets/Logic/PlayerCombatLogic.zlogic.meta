@@ -1,0 +1,10 @@
+{
+  "guid": "67e9f9c8-7daf-4654-b886-65ad1bb0419b",
+  "uuid": "67e9f9c8-7daf-4654-b886-65ad1bb0419b",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Logic/PlayerCombatLogic.zlogic",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "dd460ff9559179986e6cc48585a3e53eb44b2a3d4d2b720da0f5aed0d93e46f1"
+}

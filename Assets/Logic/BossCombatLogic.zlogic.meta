@@ -1,0 +1,10 @@
+{
+  "guid": "fb81c17a-6721-4541-bcea-40c0bf8f1842",
+  "uuid": "fb81c17a-6721-4541-bcea-40c0bf8f1842",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Logic/BossCombatLogic.zlogic",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "b3a9f7ad6867d037adc2c95b176001e6a59d4c80b91be67c2317cfcd2cea606b"
+}

@@ -1,0 +1,10 @@
+{
+  "guid": "de7fae38-383b-4e99-b26e-a766ead620cb",
+  "uuid": "de7fae38-383b-4e99-b26e-a766ead620cb",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Logic/GameOverLogic.zlogic",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "9d46625633b5f84e8f4a7305746cb1fd70236fbca2f56dad53a5dcbe8964217e"
+}

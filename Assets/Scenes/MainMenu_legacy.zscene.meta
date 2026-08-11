@@ -1,0 +1,10 @@
+{
+  "guid": "b4da7b98-573f-4172-970f-c3f72935c068",
+  "uuid": "b4da7b98-573f-4172-970f-c3f72935c068",
+  "type": "scene",
+  "importer": "generic_importer",
+  "source_path": "Assets/Scenes/MainMenu_legacy.zscene",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "bb33f50b76af34798156bda8f06a8173e62bb5a7edf4b578d5580fc790a414b0"
+}

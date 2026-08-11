@@ -1,0 +1,10 @@
+{
+  "guid": "5cb46863-2a15-4e77-b1b6-b1abe5d222a4",
+  "uuid": "5cb46863-2a15-4e77-b1b6-b1abe5d222a4",
+  "type": "scene",
+  "importer": "generic_importer",
+  "source_path": "Assets/Scenes/GameOver_legacy.zscene",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "90ada5d5019662f87e8a928142bb25273fa17eb8d790a96503f71fbd3564c914"
+}

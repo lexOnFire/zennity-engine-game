@@ -1,0 +1,10 @@
+{
+  "guid": "cd9af6b5-16bb-40ce-b136-e399a041aa14",
+  "uuid": "cd9af6b5-16bb-40ce-b136-e399a041aa14",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Animations/Clips/PlayerIdle.zanim",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "bc0dbf5c6bcfc973d9651ab65aa1c762817b5ceb6a240b64e4060f9e8f2abbae"
+}

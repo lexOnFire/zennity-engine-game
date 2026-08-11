@@ -1,0 +1,10 @@
+{
+  "guid": "3072265c-9e1f-441a-9b6b-76ba8ce674c5",
+  "uuid": "3072265c-9e1f-441a-9b6b-76ba8ce674c5",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Logic/DoorLogic.zlogic",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "e0a5740071b2da46d9d440d00e89194a6fa22c81e26e9c90743d2c0ac18801ed"
+}

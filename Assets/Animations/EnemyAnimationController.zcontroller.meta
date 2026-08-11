@@ -1,0 +1,10 @@
+{
+  "guid": "fc07f548-0b06-4fd2-a7f0-2dcd0080d89b",
+  "uuid": "fc07f548-0b06-4fd2-a7f0-2dcd0080d89b",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Animations/EnemyAnimationController.zcontroller",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "1e925fe390a80d60cdc6870e5612848c80b93c46ef0d2523c386893b9a55f40e"
+}

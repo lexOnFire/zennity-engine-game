@@ -1,0 +1,10 @@
+{
+  "guid": "20f9e9ac-ecc7-4d54-887b-171e43b9af6e",
+  "uuid": "20f9e9ac-ecc7-4d54-887b-171e43b9af6e",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Logic/HUDLogic.zlogic",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "b3f37a636f29271808f39089efcfa2ecffaeb9b1b42cd111cfe12fe05287691e"
+}

@@ -1,0 +1,10 @@
+{
+  "guid": "9cba85cf-a145-42e5-a1e2-086b465a2efd",
+  "uuid": "9cba85cf-a145-42e5-a1e2-086b465a2efd",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Animations/Clips/BossHit.zanim",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "0cb4657d64c2930532507ca1e4b6824d6a5e52fa114979e447530fdf61c384a5"
+}

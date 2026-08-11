@@ -1,0 +1,10 @@
+{
+  "guid": "4e6e67cc-e54d-4796-9a4f-29de14d329e5",
+  "uuid": "4e6e67cc-e54d-4796-9a4f-29de14d329e5",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Animations/Clips/EnemyRun.zanim",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "79e620cf7fc6ef1adeb5cb99c74bb6735d0c2bd8e59cc28fefddbd716b5e307b"
+}

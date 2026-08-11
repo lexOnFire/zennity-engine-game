@@ -1,0 +1,10 @@
+{
+  "guid": "bff2eaca-4a7c-4493-9837-6ed9ce3b6977",
+  "uuid": "bff2eaca-4a7c-4493-9837-6ed9ce3b6977",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Animations/Clips/PlayerAttack.zanim",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "f8f41679323e38d9a79e6f0eae6030752b72ce913ad2363300cbe1fc722227bd"
+}

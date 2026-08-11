@@ -1,0 +1,10 @@
+{
+  "guid": "5489546c-ec83-4769-bfb2-a995556a77f7",
+  "uuid": "5489546c-ec83-4769-bfb2-a995556a77f7",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Logic/EnemyHealth.zlogic",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "cd4abd92d143d732026aa7e73070110679d95d7d81b5da69167b20c9880bee1f"
+}

@@ -1,0 +1,10 @@
+{
+  "guid": "b9930d28-ef34-4278-9a8a-1e63081090b3",
+  "uuid": "b9930d28-ef34-4278-9a8a-1e63081090b3",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Logic/PlayerHealthLogic.zlogic",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "ab7f0ee7846637304bc9c5c963582f62d6e7389660638781eac78529afb5d9a1"
+}

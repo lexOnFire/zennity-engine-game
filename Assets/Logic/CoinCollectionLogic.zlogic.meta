@@ -1,0 +1,10 @@
+{
+  "guid": "51a060ec-1af1-4d97-982e-383cbb1bab4f",
+  "uuid": "51a060ec-1af1-4d97-982e-383cbb1bab4f",
+  "type": "unknown",
+  "importer": "generic_importer",
+  "source_path": "Assets/Logic/CoinCollectionLogic.zlogic",
+  "import_settings": {},
+  "dependencies": [],
+  "hash": "ee8f6e40604bcbcd74121ed1895b32c3c0cd7d94330f886f7177501d2d206957"
+}
