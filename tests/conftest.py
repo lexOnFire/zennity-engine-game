@@ -11,6 +11,7 @@ abrir um diálogo modal do Qt. Ver tests/_headless_dialogs.py para o porquê.
 
 from tests._headless_dialogs import (  # noqa: F401
     HeadlessDialogRecorder,
+    pytest_configure,
     _headless_dialog_dir,
     _headless_dialog_guard,
     headless_dialogs,

@@ -13,10 +13,25 @@ from engine.logic.graph_validator import validate_logic_graph
 
 
 @pytest.fixture
-def canonical_scene_data():
-    project_root = Path.cwd()
+def canonical_scene_data(tmp_path):
+    # Temporary project root: this fixture saves the scene, and with Path.cwd()
+    # it overwrote the repository's Assets/Scenes/CanonicalGameplayTest.zscene
+    # on every run.  Round-tripping through a temp directory tests the same
+    # persistence contract.
+    project_root = tmp_path
     persistence = EditorScenePersistence(project_root)
     scene_path = project_root / "Assets" / "Scenes" / "CanonicalGameplayTest.zscene"
+    scene_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # The scene references Assets/Logic/PlayerMovement.zlogic and two tests below
+    # assert that the reference resolves and compiles.  Copy the repository's
+    # real graph into the temporary project so those assertions stay meaningful
+    # while nothing is written back to the repository.
+    source_logic = Path(__file__).resolve().parents[1] / "Assets" / "Logic" / "PlayerMovement.zlogic"
+    target_logic = project_root / "Assets" / "Logic" / "PlayerMovement.zlogic"
+    target_logic.parent.mkdir(parents=True, exist_ok=True)
+    if source_logic.is_file():
+        target_logic.write_bytes(source_logic.read_bytes())
 
     camera_snapshot = {
         "id": "main_camera",

@@ -1,4 +1,4 @@
-"""Headless contract for the editor test suite.
+"""Headless contract for the whole test suite.
 
 PHASE 9.5B Stage 2.1.
 
@@ -19,17 +19,30 @@ Two tests hit this through the same call chain::
             -> save_scene_as()                         phase1_editor_scene_ops.py:145
               -> QFileDialog.getSaveFileName(...)      phase1_editor_scene_ops.py:153
 
-Rather than special-case those two, this module makes the whole editor suite
+Rather than special-case those two, this module makes the whole suite
 headless-safe: every blocking entry point is replaced with a deterministic
-answer for the duration of the session.  21 editor modules call into these
-APIs, so any new test could otherwise reintroduce the hang.
+answer.  21 editor modules call into these APIs, so any new test could otherwise
+reintroduce the hang -- and the guard is installed repo-wide rather than under
+tests/editor/ because tests outside that directory build editor widgets too
+(``tests/integration/test_memory_leak.py`` drives 500 Play/Stop cycles).
 
 The seam is test-only.  No production code is changed, and nothing here builds a
 parallel editor architecture -- it patches exactly the Qt functions the editor
 already calls.
 
 A test that wants a specific answer overrides it locally with ``monkeypatch``,
-which takes precedence over the session default. See ``headless_dialogs``.
+which takes precedence over the session default -- see ``headless_dialogs``.
+
+A test whose *subject* is the dialog API itself opts out entirely::
+
+    @pytest.mark.real_dialog
+    def test_file_dialog_filters_are_built_correctly():
+        ...
+
+The guard then leaves Qt untouched, so future dialog tests are not locked out by
+this policy.  Such a test owns its own non-blocking strategy (constructing the
+dialog without ``exec()``, or driving it from a QTimer); the marker is an escape
+hatch, not a licence to block CI.
 """
 
 from __future__ import annotations
@@ -39,9 +52,15 @@ from pathlib import Path
 import pytest
 
 try:
-    from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox
+    from PySide6.QtWidgets import (
+        QApplication,
+        QDialog,
+        QFileDialog,
+        QMenu,
+        QMessageBox,
+    )
 except ImportError:  # pragma: no cover - Qt is required by the editor suite
-    QDialog = QFileDialog = QMessageBox = None
+    QApplication = QDialog = QFileDialog = QMenu = QMessageBox = None
 
 
 class HeadlessDialogRecorder:
@@ -85,10 +104,21 @@ def headless_dialogs(request) -> HeadlessDialogRecorder:
     return request.getfixturevalue("_headless_dialog_guard")
 
 
+def pytest_configure(config):  # pragma: no cover - pytest hook
+    config.addinivalue_line(
+        "markers",
+        "real_dialog: opt out of the headless dialog guard; the test exercises "
+        "the Qt dialog API itself and owns its own non-blocking strategy.",
+    )
+
+
 @pytest.fixture(autouse=True)
-def _headless_dialog_guard(monkeypatch, _headless_dialog_dir: Path):
+def _headless_dialog_guard(request, monkeypatch, _headless_dialog_dir: Path):
     """Replace every blocking modal entry point with a deterministic answer."""
     if QFileDialog is None:  # pragma: no cover
+        yield None
+        return
+    if request.node.get_closest_marker("real_dialog") is not None:
         yield None
         return
 
@@ -131,6 +161,26 @@ def _headless_dialog_guard(monkeypatch, _headless_dialog_dir: Path):
     monkeypatch.setattr(QDialog, "exec", _rejected, raising=False)
     monkeypatch.setattr(QDialog, "exec_", _rejected, raising=False)
     monkeypatch.setattr(QDialog, "open", lambda self, *a, **k: None, raising=False)
+
+    # QMenu.exec spins its own loop waiting for a click, and QApplication.exec
+    # never returns until quit() -- both hang a headless run just as hard.
+    if QMenu is not None:
+        def _no_menu(self, *args, **kwargs):
+            recorder.record("QMenu.exec", args, kwargs)
+            return None
+
+        monkeypatch.setattr(QMenu, "exec", _no_menu, raising=False)
+        monkeypatch.setattr(QMenu, "exec_", _no_menu, raising=False)
+
+    if QApplication is not None:
+        def _no_app_loop(*args, **kwargs):
+            raise AssertionError(
+                "a test called QApplication.exec(); that blocks until quit() and "
+                "will hang CI. Drive the widget directly instead."
+            )
+
+        monkeypatch.setattr(QApplication, "exec", staticmethod(_no_app_loop), raising=False)
+        monkeypatch.setattr(QApplication, "exec_", staticmethod(_no_app_loop), raising=False)
 
     if QMessageBox is not None:
         default_answers = {

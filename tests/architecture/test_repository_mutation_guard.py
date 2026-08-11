@@ -74,6 +74,72 @@ def test_no_test_constructs_an_unscoped_asset_database():
     )
 
 
+#: Modules that build a project root and persist to it.  A static scan for
+#: ``Path.cwd()`` alone is useless here -- many tests legitimately *read*
+#: reference assets from the repository and write into tmp_path -- so these are
+#: executed for real and the working tree is checked afterwards.
+ASSET_WRITING_MODULES = (
+    "tests/test_phase8b_checkpoint_a.py",
+    "tests/test_phase8b_checkpoint_b.py",
+    "tests/unit/test_asset_handle.py",
+    "tests/editor/test_project_exporter.py",
+    "tests/integration/test_phase8a_editor_scene_opening.py",
+)
+
+
+def test_running_the_asset_writing_modules_leaves_the_tree_untouched():
+    """Record the tree, run the modules that persist assets, compare.
+
+    This is the contract that matters, and it is checked by execution rather
+    than by pattern-matching source: two Phase 8B checkpoints used to rewrite
+    Assets/Logic/PlayerMovement.zlogic and
+    Assets/Scenes/CanonicalGameplayTest.zscene on every run.
+    """
+    import os
+    import sys
+
+    before = sorted(_tracked_asset_changes())
+
+    environment = dict(os.environ)
+    environment.update(
+        SDL_VIDEODRIVER="dummy",
+        SDL_AUDIODRIVER="dummy",
+        PYGAME_HIDE_SUPPORT_PROMPT="1",
+        QT_QPA_PLATFORM="offscreen",
+    )
+    existing = [name for name in ASSET_WRITING_MODULES if (REPO_ROOT / name).is_file()]
+    assert existing, "no asset-writing modules found; this guard would be vacuous"
+
+    subprocess.run(
+        [sys.executable, "-m", "pytest", "-p", "no:cacheprovider", "-q", "--tb=no", *existing],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        env=environment,
+        timeout=900,
+    )
+
+    after = sorted(_tracked_asset_changes())
+    newly_dirty = sorted(set(after) - set(before))
+    assert not newly_dirty, (
+        "running the asset-writing test modules modified tracked repository "
+        f"assets: {newly_dirty}"
+    )
+
+
+def test_no_tracked_asset_file_is_modified_outside_metadata():
+    """Only .meta may ever differ; a changed .zlogic/.zscene is a test writing home."""
+    non_metadata = [
+        path
+        for path in _tracked_asset_changes()
+        if not path.endswith(".meta")
+    ]
+    assert not non_metadata, (
+        f"tracked non-metadata assets have been modified: {non_metadata}. "
+        "Something wrote into the repository's Assets/ tree."
+    )
+
+
 def test_scanning_a_temporary_project_never_touches_the_repository(tmp_path):
     """The positive case: a scoped database writes only inside its own root."""
     from engine.assets.asset_database import AssetDatabase
