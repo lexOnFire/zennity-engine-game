@@ -6,6 +6,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
+from engine.diagnostics import get_logger, report_error
+
+log = get_logger("logic")
+
 
 @dataclass
 class ViewportProcessState:
@@ -180,6 +184,7 @@ class ViewportPlayCommandHandler:
                     runtime.step()
                     self._emit_trace(object_name, graph_path, runtime)
                 except Exception as exc:
+                    report_error(log, f"single-step Logic Graph {object_name}:{graph_path}", exc)
                     self._emit_trace(object_name, graph_path, runtime, exc)
                     self.emit({"type": "runtime_log", "level": "ERROR", "message": f"{object_name}:{graph_path}: {exc}"})
             state.paused = True
@@ -195,6 +200,7 @@ class ViewportPlayCommandHandler:
                     any_paused = any_paused or runtime.debug_paused
                     self._emit_trace(object_name, graph_path, runtime)
                 except Exception as exc:
+                    report_error(log, f"restart Logic Graph {object_name}:{graph_path}", exc)
                     self._emit_trace(object_name, graph_path, runtime, exc)
             state.paused = any_paused
             self.pause_audio(state.paused)
@@ -216,8 +222,12 @@ class ViewportPlayCommandHandler:
                     current = Path(str(graph_path)).as_posix().casefold()
                     if current == requested_graph:
                         runtime.hot_reload(graph_data)
-        except Exception as e:
-            print(f"Logic Hot Reload failed: {e}")
+        except Exception as exc:
+            report_error(log, f"hot-reload Logic Graph {path}", exc)
+            self.emit({
+                "type": "runtime_log", "level": "ERROR",
+                "message": f"Logic Hot Reload failed: {exc}",
+            })
 
     def _emit_trace(self, object_name: str, graph_path: str, runtime: Any, error: Exception | None = None) -> None:
         event = {"type": "logic_trace", "object": object_name, "graph": graph_path, **runtime.debug_snapshot()}

@@ -4,6 +4,9 @@ import pygame
 from typing import Dict, List, Tuple, Optional, Any
 from ..core.component import Component
 from engine.tilemap.tilemap import TileMap, TilemapRenderer, TileLayer
+from engine.diagnostics import get_logger, report_error
+
+_log = get_logger("assets")
 
 warnings.warn(
     "engine.graphics.tilemap está deprecado. Use engine.tilemap.",
@@ -182,7 +185,8 @@ class LegacyTilemapRenderer(Component):
                 candidate = Path.cwd() / candidate
             surface = pygame.image.load(str(candidate))
             self.tileset = LegacyTileset(surface, self.tile_size)
-        except Exception:
+        except Exception as exc:
+            report_error(_log, f"load tileset texture {path!r}", exc)
             self.tileset = None
 
     def serialize_properties(self) -> dict:

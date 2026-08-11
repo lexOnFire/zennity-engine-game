@@ -28,6 +28,7 @@ release/
 
 # Runtime logs and local scenes
 *.log
+logs/
 *.zscene.bak
 *.tmp
 

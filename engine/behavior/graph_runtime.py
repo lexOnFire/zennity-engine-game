@@ -1,6 +1,12 @@
 """Runtime direto para documentos visuais ``Behavior Tree``."""
 from __future__ import annotations
 
+import logging
+
+from engine.diagnostics import get_logger, swallow
+
+_log = get_logger("ai")
+
 import math
 from pathlib import Path
 from typing import Any, Mapping
@@ -77,11 +83,13 @@ class BehaviorGraphRunner:
         status = self._tick(self.root, game, max(0.0, float(dt)))
         if status != "running":
             self._memory.clear()
-        try:
+        # Debug visualisation only: never allowed to break a tick, but a
+        # persistent failure is now reported (throttled -- this runs per frame).
+        with swallow(_log, "apply Behavior Graph debug visualisation",
+                     level=logging.WARNING, throttle=600,
+                     throttle_key="behavior_graph:debug_visualisation"):
             self._apply_node_color(game, self.current_state)
             self._log_execution(game, self.current_state, status)
-        except Exception:
-            pass
         return previous != self.current_state
 
     def play(self, state: str, game: Any) -> bool:
@@ -651,12 +659,11 @@ class BehaviorGraphRunner:
 
             # Tenta resolver UUID para nome de objeto
             if hasattr(game, 'find') and len(str(target_value)) == 36:  # UUID format
-                try:
+                with swallow(_log, f"resolve Behavior Graph target UUID {target_value!r} to an object name",
+                             level=logging.DEBUG):
                     obj = game.find(target_value)
                     if obj and hasattr(obj, 'name'):
                         target_name = obj.name
-                except:
-                    pass
 
             target_info = f" → alvo: {target_name}"
 

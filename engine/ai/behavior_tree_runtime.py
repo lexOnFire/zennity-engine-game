@@ -14,6 +14,10 @@ from __future__ import annotations
 
 import json
 import random
+
+from engine.diagnostics import get_logger
+
+_log = get_logger("ai")
 import time
 from enum import Enum
 from pathlib import Path
@@ -652,6 +656,8 @@ class BehaviorTreeRuntime:
 
             self._emit_event("ui_action_done", action="set_text", widget=widget, value=text)
         except Exception as e:
+            _log.error("Behavior Tree UI action 'set_text' failed on widget %r: %s: %s",
+                       widget, type(e).__name__, e, exc_info=e)
             self._emit_event("ui_action_failed", action="set_text", widget=widget, error=str(e))
 
     def _set_ui_progress(self, widget: str, value: float) -> None:
@@ -673,6 +679,8 @@ class BehaviorTreeRuntime:
 
             self._emit_event("ui_action_done", action="set_progress", widget=widget, value=value)
         except Exception as e:
+            _log.error("Behavior Tree UI action 'set_progress' failed on widget %r: %s: %s",
+                       widget, type(e).__name__, e, exc_info=e)
             self._emit_event("ui_action_failed", action="set_progress", widget=widget, error=str(e))
 
     def _set_ui_visible(self, widget: str, visible: bool) -> None:
@@ -695,6 +703,8 @@ class BehaviorTreeRuntime:
 
             self._emit_event("ui_action_done", action="set_visible", widget=widget, visible=visible)
         except Exception as e:
+            _log.error("Behavior Tree UI action 'set_visible' failed on widget %r: %s: %s",
+                       widget, type(e).__name__, e, exc_info=e)
             self._emit_event("ui_action_failed", action="set_visible", widget=widget, error=str(e))
 
     def _decrement_ui_value(self, widget: str, amount: float) -> None:
@@ -730,6 +740,8 @@ class BehaviorTreeRuntime:
 
             self._emit_event("ui_action_done", action="decrement", widget=widget, amount=amount)
         except Exception as e:
+            _log.error("Behavior Tree UI action 'decrement' failed on widget %r: %s: %s",
+                       widget, type(e).__name__, e, exc_info=e)
             self._emit_event("ui_action_failed", action="decrement", widget=widget, error=str(e))
 
     def _increment_ui_value(self, widget: str, amount: float) -> None:
@@ -765,6 +777,8 @@ class BehaviorTreeRuntime:
 
             self._emit_event("ui_action_done", action="increment", widget=widget, amount=amount)
         except Exception as e:
+            _log.error("Behavior Tree UI action 'increment' failed on widget %r: %s: %s",
+                       widget, type(e).__name__, e, exc_info=e)
             self._emit_event("ui_action_failed", action="increment", widget=widget, error=str(e))
 
     def _play_animation(self, obj: Any, animation: str) -> None:

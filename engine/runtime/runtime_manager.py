@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+import logging
 from enum import Enum
 from typing import Any, Callable
+
+from engine.diagnostics import get_logger, swallow
+
+_log = get_logger("runtime")
 
 from engine.input import Input
 from engine.runtime.input_manager import InputManager
@@ -83,14 +88,10 @@ class RuntimeManager:
         if self.state == RuntimeState.STOPPED and self.runtime_scene is None:
             return
         if self.runtime_scene is not None:
-            try:
+            with swallow(_log, "stop the runtime scene on Play stop", level=logging.WARNING):
                 self.runtime_scene.stop_runtime()
-            except Exception:
-                pass
-            try:
+            with swallow(_log, "destroy the runtime scene on Play stop", level=logging.WARNING):
                 self.runtime_scene.destroy()
-            except Exception:
-                pass
         self.runtime_scene = None
         self._cleanup_input()
         Time._runtime_reset()
@@ -104,12 +105,8 @@ class RuntimeManager:
     def _cleanup_input(self) -> None:
         """Desbinda e para o input — seguro chamar mesmo se nunca foi bindado."""
         if self._input_bound:
-            try:
+            with swallow(_log, "unbind the input manager on Play stop", level=logging.WARNING):
                 Input.unbind_manager(self.input)
-            except Exception:
-                pass
             self._input_bound = False
-        try:
+        with swallow(_log, "stop the input manager on Play stop", level=logging.WARNING):
             self.input.stop()
-        except Exception:
-            pass

@@ -15,8 +15,14 @@ Uso:
 """
 from __future__ import annotations
 
+import logging
+
 import time
 from typing import Any
+
+from engine.diagnostics import get_logger, swallow
+
+_log = get_logger("editor")
 
 
 class BuildPipelineBridge:
@@ -81,7 +87,7 @@ class BuildPipelineBridge:
     # ── Action Registry ───────────────────────────────────────────────────────
 
     def _register_actions(self) -> None:
-        try:
+        with swallow(_log, "register actions", level=logging.WARNING):
             from editor.core.action_system import EditorAction, ActionRegistry
             registry = ActionRegistry.instance()
             registry.register(EditorAction(
@@ -99,8 +105,6 @@ class BuildPipelineBridge:
                 category="Build",
                 tags=["build", "clean"],
             ))
-        except Exception:
-            pass
 
     # ── Build Execution API ───────────────────────────────────────────────────
 
@@ -161,35 +165,27 @@ class BuildPipelineBridge:
 
     def _update_docks(self, task: Any, progress: int) -> None:
         if self._wizard_dock:
-            try:
+            with swallow(_log, "update docks", level=logging.WARNING):
                 if hasattr(self._wizard_dock, "progress_bar"):
                     self._wizard_dock.progress_bar.setValue(progress)
                 if hasattr(self._wizard_dock, "txt_log"):
                     log_text = "\n".join(task.logs) + f"\n\nResultado Final: {task.output_data}"
                     self._wizard_dock.txt_log.setText(log_text)
-            except Exception:
-                pass
 
         if self._report_dock:
-            try:
+            with swallow(_log, "update docks", level=logging.WARNING):
                 if hasattr(self._report_dock, "set_report_data"):
                     self._report_dock.set_report_data(task)
-            except Exception:
-                pass
 
     def _update_docks_error(self, error_msg: str) -> None:
         if self._wizard_dock:
-            try:
+            with swallow(_log, "update docks error", level=logging.WARNING):
                 if hasattr(self._wizard_dock, "txt_log"):
                     self._wizard_dock.txt_log.setText(f"❌ ERRO NA BUILD:\n{error_msg}")
-            except Exception:
-                pass
 
     # ── Helper EventBus ───────────────────────────────────────────────────────
 
     def _emit_event(self, event_name: str, **kwargs: Any) -> None:
-        try:
+        with swallow(_log, "emit event", level=logging.WARNING):
             from editor.core.event_bus import EventBus
             EventBus.emit(event_name, **kwargs)
-        except Exception:
-            pass

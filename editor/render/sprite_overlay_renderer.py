@@ -8,8 +8,11 @@ from typing import Any
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QImage, QPainter, QPixmap
 
+from engine.diagnostics import get_logger
 from engine.graphics.sorting import normalize_sorting_layer, sorting_key
 from engine.graphics.tint import combined_alpha, normalize_tint
+
+_log = get_logger("editor")
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,7 +64,10 @@ class SpriteOverlayRenderer:
             image = QImage(rgba, width, height, width * 4, QImage.Format_RGBA8888).copy()
             pixmap = QPixmap.fromImage(image)
             return None if pixmap.isNull() else pixmap
-        except Exception:
+        except Exception as exc:
+            # Runs per overlay draw; DEBUG keeps the hot path quiet while still
+            # making a persistent conversion failure discoverable.
+            _log.debug("Could not convert pygame surface to QPixmap: %s", exc)
             return None
 
     def _component_pixmap(self, component: Any) -> tuple[QPixmap | None, str]:

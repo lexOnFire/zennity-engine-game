@@ -141,6 +141,9 @@ class EditorBootstrapController:
             "runtime_objects": h._handle_runtime_objects_event,
             "viewport_mode": h._handle_viewport_mode_event,
             "runtime_log": h._handle_runtime_log_event,
+            # Phase 9.5B Stage 0: the viewport subprocess reports its own death
+            # instead of simply disappearing.
+            "viewport_crashed": h._handle_viewport_crashed_event,
             "logic_trace": h._handle_logic_trace_event,
             "logic_trace_clear": h._handle_logic_trace_event,
             "animator_state": h._handle_animator_state_event,

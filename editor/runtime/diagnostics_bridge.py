@@ -18,8 +18,13 @@ Uso:
 """
 from __future__ import annotations
 
+import logging
 import time
 from typing import Any
+
+from engine.diagnostics import get_logger, report_error, swallow
+
+_log = get_logger("editor")
 
 
 class DiagnosticsBridge:
@@ -62,13 +67,13 @@ class DiagnosticsBridge:
             ToolRegistry.instance().register(tool)
             self._tool_def = tool
         except Exception as exc:
-            print(f"[DiagnosticsBridge] _register_tool: {exc}")
+            report_error(_log, "register the Profiler tool", exc)
             self._tool_def = None
 
     # ── Action Registry ───────────────────────────────────────────────────────
 
     def _register_actions(self) -> None:
-        try:
+        with swallow(_log, "register actions", level=logging.WARNING):
             from editor.core.action_system import EditorAction, ActionRegistry
             registry = ActionRegistry.instance()
             registry.register(EditorAction(
@@ -87,8 +92,6 @@ class DiagnosticsBridge:
                 category="Debug",
                 tags=["diagnostics", "export", "report"],
             ))
-        except Exception:
-            pass
 
     # ── DiagnosticScope API (integração com pipeline) ─────────────────────────
 
@@ -118,7 +121,7 @@ class DiagnosticsBridge:
 
     def _on_scope_completed(self, scope_name: str, elapsed_ms: float) -> None:
         """Emite Runtime.log com métricas e registra no DiagnosticsService."""
-        try:
+        with swallow(_log, "on scope completed", level=logging.WARNING):
             from editor.core.event_bus import EventBus, EVENT_RUNTIME_LOG
             EventBus.emit(
                 EVENT_RUNTIME_LOG,
@@ -126,31 +129,23 @@ class DiagnosticsBridge:
                 elapsed_ms=elapsed_ms,
                 message=f"[Diagnostics] {scope_name}: {elapsed_ms:.2f}ms",
             )
-        except Exception:
-            pass
 
         if self._diag_service is not None:
-            try:
+            with swallow(_log, "on scope completed", level=logging.WARNING):
                 self._diag_service.record_scope_time(scope_name, elapsed_ms)
-            except Exception:
-                pass
 
     # ── Counter API ───────────────────────────────────────────────────────────
 
     def record(self, counter_name: str, value: float, unit: str = "") -> None:
         """Registra um valor em um contador de performance."""
         if self._diag_service is not None:
-            try:
+            with swallow(_log, "record", level=logging.WARNING):
                 counter = self._diag_service.get_or_create_counter(counter_name, unit=unit)
                 counter.record(value)
-            except Exception:
-                pass
-        try:
+        with swallow(_log, "record", level=logging.WARNING):
             from editor.core.event_bus import EventBus, EVENT_RUNTIME_LOG
             EventBus.emit(EVENT_RUNTIME_LOG, counter=counter_name,
                           value=value, unit=unit)
-        except Exception:
-            pass
 
     def snapshot(self) -> dict:
         """Tira um snapshot de todos os contadores atuais."""
@@ -172,25 +167,19 @@ class DiagnosticsBridge:
     def reset_counters(self) -> None:
         """Reseta todos os contadores — ação registrada no ActionRegistry."""
         if self._diag_service is not None:
-            try:
+            with swallow(_log, "reset counters", level=logging.WARNING):
                 for c in getattr(self._diag_service, "_counters", {}).values():
                     c.history.clear()
                     c.current_value = 0.0
-            except Exception:
-                pass
-        try:
+        with swallow(_log, "reset counters", level=logging.WARNING):
             from editor.core.event_bus import EventBus, EVENT_RUNTIME_LOG
             EventBus.emit(EVENT_RUNTIME_LOG, message="[Diagnostics] Contadores resetados")
-        except Exception:
-            pass
 
     def export_report(self) -> dict:
         """Exporta snapshot completo como dicionário."""
         report = self.snapshot()
-        try:
+        with swallow(_log, "export report", level=logging.WARNING):
             from editor.core.event_bus import EventBus, EVENT_RUNTIME_LOG
             EventBus.emit(EVENT_RUNTIME_LOG, message="[Diagnostics] Relatório exportado",
                           report=report)
-        except Exception:
-            pass
         return report

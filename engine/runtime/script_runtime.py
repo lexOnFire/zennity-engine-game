@@ -2,14 +2,16 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
-import traceback
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
 from typing import Any
 
 from engine.components.script_component import ScriptComponent
+from engine.diagnostics import get_logger, report_error
 from engine.runtime.lifecycle_scheduler import LifecycleEntry, LifecycleScheduler
+
+_log = get_logger("runtime")
 from engine.runtime.script_behaviour import ScriptBehaviour
 
 
@@ -180,5 +182,6 @@ class ScriptRuntime:
         obj_name = getattr(getattr(component, "game_object", None), "name", "<detached>")
         message = f"{obj_name}:{getattr(component, 'script_path', '')}:{phase}: {exc}"
         self.errors.append(message)
-        print(f"[ScriptRuntime] {message}")
-        traceback.print_exception(type(exc), exc, exc.__traceback__)
+        # Single funnel for every script failure: previously print()-only, which
+        # is invisible from the viewport subprocess (Phase 9.5B Stage 0).
+        report_error(_log, f"run script phase {phase!r} on {obj_name}", exc)

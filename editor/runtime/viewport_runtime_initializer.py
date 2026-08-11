@@ -1,8 +1,13 @@
 """Play Mode runtime initialization for the isolated viewport."""
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any, Callable
+
+from engine.diagnostics import get_logger, report_error, swallow
+
+log = get_logger("runtime")
 
 try:
     from engine.animation.controller_asset import AnimatorControllerRuntime
@@ -83,6 +88,7 @@ class ViewportRuntimeInitializer:
                 try:
                     fn(name, obj)
                 except Exception as exc:
+                    report_error(log, f"initialise {step} for object {name!r}", exc)
                     self.emit({
                         "type": "runtime_log", "level": "ERROR",
                         "message": f"{name}: falha ao inicializar {step}: {exc}",
@@ -109,10 +115,9 @@ class ViewportRuntimeInitializer:
             runtime_list = self.logic_runtimes.get(stale_name, [])
             for path, runtime in runtime_list:
                 if hasattr(runtime, 'stop'):
-                    try:
+                    with swallow(log, f"stop stale Logic Graph {path!r} for removed object {stale_name!r}",
+                                 level=logging.WARNING):
                         runtime.stop()
-                    except Exception:
-                        pass
             self.logic_runtimes.pop(stale_name, None)
             self.logic_apis.pop(stale_name, None)
             self.animator_controllers.pop(stale_name, None)
@@ -131,6 +136,7 @@ class ViewportRuntimeInitializer:
                 try:
                     fn(name, obj)
                 except Exception as exc:
+                    report_error(log, f"initialise {step} for spawned object {name!r}", exc)
                     self.emit({
                         "type": "runtime_log", "level": "ERROR",
                         "message": f"{name}: falha ao inicializar {step}: {exc}",
@@ -150,16 +156,19 @@ class ViewportRuntimeInitializer:
                 try:
                     runner.stop(api)
                 except Exception as exc:
+                    report_error(log, f"stop Behavior Tree for object {name!r}", exc,
+                                 level=logging.WARNING)
                     self.emit({"type": "runtime_log", "level": "WARNING", "message": f"{name}: falha ao encerrar Behavior Tree: {exc}"})
 
         # Phase 5B.2: Cleanup physics event handlers on runtime stop
         for name, runtime_list in list(self.logic_runtimes.items()):
             for path, runtime in runtime_list:
                 if hasattr(runtime, 'stop'):
-                    try:
+                    # A failure here leaks physics/animation event handlers, so it
+                    # must never be invisible (Phase 9.5A stability audit S4).
+                    with swallow(log, f"stop Logic Graph {path!r} for object {name!r} during teardown",
+                                 level=logging.WARNING):
                         runtime.stop()
-                    except Exception:
-                        pass
 
         self.logic_runtimes.clear()
         self.logic_modules.clear()
@@ -170,12 +179,10 @@ class ViewportRuntimeInitializer:
         self.animator_event_signatures.clear()
 
         # Phase 7B.7.3: Reset dialogue manager on Play/Stop
-        try:
+        with swallow(log, "reset the DialogueManager on Play/Stop", level=logging.WARNING):
             from engine.dialogue.manager import get_dialogue_manager
             manager = get_dialogue_manager()
             manager.reset()
-        except Exception:
-            pass
 
     def _create_logic_services(self, scene_blackboard: dict[str, Any]) -> None:
         path = self.project_root / "Assets" / "Logic" / "ProjectBlackboard.zblackboard"
@@ -222,14 +229,12 @@ class ViewportRuntimeInitializer:
             if not p.is_absolute():
                 p = self.project_root / p
             if p.is_file():
-                try:
+                with swallow(log, f"load behavior controller asset {p}"):
                     import json
                     raw = json.loads(p.read_text(encoding="utf-8"))
                     if isinstance(raw, dict) and raw.get("format") == "zennity.generic_graph":
                         graph = raw
                         behavior["graph"] = raw
-                except Exception:
-                    pass
 
         if isinstance(graph, dict):
             runner = BehaviorGraphRunner(graph, self.project_root)
@@ -277,6 +282,7 @@ class ViewportRuntimeInitializer:
                 path = str(entry.get("path", graph.get("name", "Logic Graph")))
                 self.logic_runtimes.setdefault(name, []).append((path, runtime))
             except Exception as exc:
+                report_error(log, f"start Logic Graph for object {name!r}", exc)
                 self.emit({
                     "type": "runtime_log", "level": "ERROR",
                     "message": f"{name}: Logic Graph: {exc}",

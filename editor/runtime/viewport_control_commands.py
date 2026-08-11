@@ -4,6 +4,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable
 
+from engine.diagnostics import get_logger, report_error
+
+log = get_logger("audio")
+
 
 @dataclass(frozen=True)
 class ViewportControlSettings:
@@ -103,6 +107,7 @@ class ViewportAudioCommandHandler:
                     float(command.get("volume", 1.0)), bool(command.get("loop", False)),
                 )
             except Exception as exc:
+                report_error(log, "preview an audio asset", exc)
                 self.emit({
                     "type": "runtime_log", "level": "ERROR",
                     "message": f"Falha na prévia de áudio (viewport preservada): {exc}",

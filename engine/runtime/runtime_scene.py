@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
 from pathlib import Path
 
@@ -8,6 +9,10 @@ from engine.physics.physics_world import PhysicsWorld
 from engine.runtime.clone import clone_game_object
 from engine.runtime.lifecycle_scheduler import LifecycleEntry, LifecycleScheduler
 from engine.runtime.script_runtime import ScriptRuntime
+
+from engine.diagnostics import get_logger, swallow
+
+_log = get_logger("scene")
 from engine.runtime.ui_event_dispatcher import emit_ui_event
 from engine.time import Time
 from engine.ui.ui_renderer import UIRenderer
@@ -40,10 +45,11 @@ class RuntimeScene:
         if objs is None:
             objs = getattr(self.scene, "game_objects", [])
         for obj in list(objs):
-            try:
+            # Teardown must continue past a failing object (behaviour unchanged),
+            # but a destroy() that throws now leaves a trace.
+            with swallow(_log, f"destroy game object {getattr(obj, 'name', obj)!r} during scene teardown",
+                         level=logging.WARNING):
                 obj.destroy()
-            except Exception:
-                pass
             if hasattr(self.scene, "_remove_go"):
                 self.scene._remove_go(obj)
             elif obj in getattr(self.scene, "game_objects", []):
@@ -475,10 +481,11 @@ class RuntimeScene:
         if objs is None:
             objs = getattr(self.scene, "game_objects", [])
         for obj in list(objs):
-            try:
+            # Teardown must continue past a failing object (behaviour unchanged),
+            # but a destroy() that throws now leaves a trace.
+            with swallow(_log, f"destroy game object {getattr(obj, 'name', obj)!r} during scene teardown",
+                         level=logging.WARNING):
                 obj.destroy()
-            except Exception:
-                pass
             if hasattr(self.scene, "_remove_go"):
                 self.scene._remove_go(obj)
             elif obj in getattr(self.scene, "game_objects", []):

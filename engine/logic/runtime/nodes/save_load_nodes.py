@@ -2,8 +2,14 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any, Mapping
+
+from engine.diagnostics import get_logger, report_error, swallow
+
 from ..registry import registry
+
+_log = get_logger("runtime")
 
 
 @registry.register_executor('save_game')
@@ -61,7 +67,9 @@ def execute_load_game(runtime, node: Mapping[str, Any], game: Any, dt: float) ->
                 try:
                     with open(f"{game.save_path}/{slot_name}.json", "r") as f:
                         save_data = json.load(f)
-                except:
+                except Exception as exc:
+                    report_error(_log, f"read save slot file {slot_name!r}", exc,
+                                 level=logging.WARNING)
                     return ["exec_no_save"]
             else:
                 return ["exec_no_save"]
@@ -88,8 +96,8 @@ def execute_load_game(runtime, node: Mapping[str, Any], game: Any, dt: float) ->
         runtime._store(node_id, "loaded", True)
 
         return ["exec_loaded"]
-    except Exception as e:
-        print(f"Erro em load_game: {e}")
+    except Exception as exc:
+        report_error(_log, f"execute load_game for node {node_id!r}", exc)
         return ["exec_failure"]
 
 
@@ -108,14 +116,13 @@ def execute_delete_save(runtime, node: Mapping[str, Any], game: Any, dt: float) 
         # Deletar arquivo também
         if hasattr(game, "save_path"):
             import os
-            try:
+            with swallow(_log, f"delete save file for slot {slot_name!r}",
+                         level=logging.WARNING):
                 os.remove(f"{game.save_path}/{slot_name}.json")
-            except:
-                pass
 
         return ["exec_deleted"]
-    except Exception as e:
-        print(f"Erro em delete_save: {e}")
+    except Exception as exc:
+        report_error(_log, f"execute delete_save for node {node_id!r}", exc)
         return ["exec_failure"]
 
 

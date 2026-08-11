@@ -2,6 +2,10 @@
 from __future__ import annotations
 from typing import Any, Callable
 
+from engine.diagnostics import get_logger, swallow
+
+log = get_logger("ui")
+
 class UIEventDispatcher:
     """Centraliza despachamento de eventos de UI para Logic Graphs em Play Mode."""
 
@@ -17,10 +21,11 @@ class UIEventDispatcher:
     def emit(self, event_type: str, payload: dict[str, Any]) -> None:
         """Despachar evento para todos os subscribers."""
         for callback in self._subscribers.get(event_type, []):
-            try:
+            # O jogo continua rodando (comportamento inalterado), mas a falha
+            # agora fica registrada em vez de desaparecer.
+            with swallow(log, f"deliver UI event {event_type!r} to a subscriber",
+                         throttle=100, throttle_key=f"ui_event:{event_type}"):
                 callback(payload)
-            except Exception:
-                pass  # Silenciar erros para não quebrar o jogo
 
 
 # Global instance

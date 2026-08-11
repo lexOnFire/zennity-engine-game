@@ -5,7 +5,12 @@ import math
 import numpy as np
 from types import SimpleNamespace
 from typing import Any, Mapping
+
+from engine.diagnostics import get_logger, report_error
+
 from ..registry import registry
+
+_log = get_logger("physics")
 
 # Phase 5B.1: Property schema for type-safe modifications
 RIGIDBODY_PROPERTIES = {
@@ -91,7 +96,7 @@ def execute_modify_rigidbody(runtime, node: Mapping[str, Any], game: Any, dt: fl
                 f"velocity corrupted: expected np.ndarray, got {type(rigidbody.velocity)}"
 
         runtime._store(node_id, property_name, value)
-        return ["exec_success"]
+        return ["next"]
 
     except (ValueError, TypeError, AssertionError):
         return ["exec_failure"]
@@ -135,7 +140,7 @@ def execute_modify_collider(runtime, node: Mapping[str, Any], game: Any, dt: flo
                         collider.offset_y = float(value)
 
                     runtime._store(node_id, property_name, value)
-                    return ["exec_success"]
+                    return ["next"]
 
         return ["exec_failure"]
     except Exception as e:
@@ -170,7 +175,7 @@ def execute_apply_force(runtime, node: Mapping[str, Any], game: Any, dt: float) 
             rigidbody.add_impulse(force_x, force_y)
 
         runtime._store(node_id, "force_applied", True)
-        return ["exec_success"]
+        return ["next"]
 
     except (ValueError, TypeError, AttributeError):
         return ["exec_failure"]
@@ -435,7 +440,10 @@ def execute_raycast(runtime, node: Mapping[str, Any], game: Any, dt: float) -> l
 
         return ["exec_hit"]
 
-    except Exception:
+    except Exception as exc:
+        # Reports "no hit" to the graph exactly as before, but a malformed
+        # raycast node no longer looks identical to an empty scene.
+        report_error(_log, f"execute raycast node {node_id!r}", exc)
         runtime._store(node_id, "hit", None)
         return ["exec_no_hit"]
 
@@ -534,7 +542,7 @@ def execute_set_collision_layer(runtime, node: Mapping[str, Any], game: Any, dt:
     if collider:
         collider.collision_layer = value
         runtime._store(node_id, "layer", value)
-        return ["exec_success"]
+        return ["next"]
 
     return ["exec_failure"]
 
@@ -564,6 +572,6 @@ def execute_set_collision_mask(runtime, node: Mapping[str, Any], game: Any, dt: 
     if collider:
         collider.collision_mask = value
         runtime._store(node_id, "mask", value)
-        return ["exec_success"]
+        return ["next"]
 
     return ["exec_failure"]

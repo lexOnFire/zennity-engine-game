@@ -11,6 +11,10 @@ from typing import Any, Iterable
 
 import pygame
 
+from engine.diagnostics import get_logger, swallow
+
+log = get_logger("ui")
+
 
 UI_TYPES = {"canvas", "text", "image", "button", "progress_bar"}
 
@@ -191,13 +195,11 @@ class NativeUIRenderer:
             path = Path.cwd() / path
         if not path.is_file():
             return []
-        try:
+        with swallow(log, f"parse .zui asset {path}"):
             data = json.loads(path.read_text(encoding="utf-8"))
             canvas_data = data.get("canvas", data)
             if isinstance(canvas_data, dict):
                 return self._flatten_zui_widget(canvas_data)
-        except Exception:
-            pass
         return []
 
     def components(self, objects: Any) -> list[tuple[dict[str, Any], dict[str, Any]]]:
@@ -353,8 +355,11 @@ class NativeUIRenderer:
                 while len(nums) < 3:
                     nums.append(255)
                 return (nums[0], nums[1], nums[2])
-        except Exception:
-            pass
+        except Exception as exc:
+            # Runs per widget per frame; DEBUG keeps the render path quiet while
+            # still making a persistent parse failure discoverable.
+            log.debug("Falling back to %s for unparsable colour %r: %s",
+                      fallback, value, exc)
         return fallback
 
     def _draw_text(self, ui: dict[str, Any], screen: pygame.Surface, obj: dict[str, Any] | None = None, world_to_screen: Callable[[float, float], tuple[float, float]] | None = None, objects: dict[str, dict[str, Any]] | None = None) -> None:

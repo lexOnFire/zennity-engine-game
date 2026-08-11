@@ -7,6 +7,10 @@ to Logic Graph runtimes via LogicEventBus with owner-based routing.
 from __future__ import annotations
 from typing import Any, Callable, Optional
 
+from engine.diagnostics import get_logger, swallow
+
+log = get_logger("animation")
+
 
 # Global registry of animation event handlers
 _animation_event_handlers: list[Callable[[Any, str, str, int, float], None]] = []
@@ -50,10 +54,9 @@ def dispatch_animation_event(
 ) -> None:
     """Dispatch animation event to all registered handlers."""
     for handler in list(_animation_event_handlers):
-        try:
+        with swallow(log, f"dispatch animation event {event_name!r} from clip {animation_name!r}",
+                     throttle=300, throttle_key=f"animation_event:{event_name}"):
             handler(owner_object, animation_name, event_name, frame_index, elapsed_time)
-        except Exception:
-            pass
 
 
 def dispatch_animation_finished(
@@ -63,8 +66,7 @@ def dispatch_animation_finished(
 ) -> None:
     """Dispatch animation finished event (special case)."""
     for handler in list(_animation_event_handlers):
-        try:
+        with swallow(log, f"dispatch animation 'finished' event for clip {animation_name!r}",
+                     throttle=300, throttle_key="animation_event:finished"):
             # Use special event name "finished"
             handler(owner_object, animation_name, "finished", -1, elapsed_time)
-        except Exception:
-            pass

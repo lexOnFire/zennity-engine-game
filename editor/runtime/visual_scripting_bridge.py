@@ -13,8 +13,13 @@ Uso:
 """
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any
+
+from engine.diagnostics import get_logger, report_error, swallow
+
+_log = get_logger("editor")
 
 
 class VisualLogicBridge:
@@ -100,17 +105,15 @@ class VisualLogicBridge:
 
             return doc
         except Exception as exc:
-            print(f"[VisualScriptingBridge] open_script_document: {exc}")
+            report_error(_log, "open a .zvs script document", exc)
             return None
 
     def close_script_document(self) -> None:
         if self._current_document is None:
             return
-        try:
+        with swallow(_log, "close script document", level=logging.WARNING):
             from editor.workspace.document_framework import DocumentManager
             DocumentManager.instance().close(self._current_document)
-        except Exception:
-            pass
         self._current_document = None
 
     # ── Dock Signal Connections ───────────────────────────────────────────────
@@ -130,18 +133,16 @@ class VisualLogicBridge:
         self._try_connect(graph_editor, "edge_added", self._on_edge_added)
 
     def _try_connect(self, obj: Any, signal_name: str, handler: Any) -> None:
-        try:
+        with swallow(_log, "try connect", level=logging.WARNING):
             signal = getattr(obj, signal_name, None)
             if signal is not None:
                 signal.connect(handler)
-        except Exception:
-            pass
 
     # ── Graph Event Handlers → EventBus ──────────────────────────────────────
 
     def _on_node_selected(self, node: Any) -> None:
         """Nó selecionado no grafo → emite Selection.changed + Graph.node_selected."""
-        try:
+        with swallow(_log, "on node selected", level=logging.WARNING):
             from editor.core.event_bus import EventBus, EVENT_GRAPH_NODE_SELECTED
             EventBus.emit(EVENT_GRAPH_NODE_SELECTED, node=node,
                           document=self._current_document)
@@ -154,48 +155,38 @@ class VisualLogicBridge:
                     context="visual_scripting",
                     id=str(getattr(node, "node_id", id(node))),
                 )
-        except Exception:
-            pass
 
     def _on_node_added(self, node: Any) -> None:
-        try:
+        with swallow(_log, "on node added", level=logging.WARNING):
             from editor.core.event_bus import EventBus, EVENT_GRAPH_NODE_ADDED
             EventBus.emit(EVENT_GRAPH_NODE_ADDED, node=node,
                           document=self._current_document)
             if self._current_document:
                 self._current_document.mark_modified()
-        except Exception:
-            pass
 
     def _on_node_deleted(self, node: Any) -> None:
-        try:
+        with swallow(_log, "on node deleted", level=logging.WARNING):
             from editor.core.event_bus import EventBus, EVENT_GRAPH_NODE_DELETED
             EventBus.emit(EVENT_GRAPH_NODE_DELETED, node=node,
                           document=self._current_document)
             if self._current_document:
                 self._current_document.mark_modified()
-        except Exception:
-            pass
 
     def _on_edge_added(self, edge: Any) -> None:
-        try:
+        with swallow(_log, "on edge added", level=logging.WARNING):
             from editor.core.event_bus import EventBus, EVENT_GRAPH_EDGE_ADDED
             EventBus.emit(EVENT_GRAPH_EDGE_ADDED, edge=edge,
                           document=self._current_document)
             if self._current_document:
                 self._current_document.mark_modified()
-        except Exception:
-            pass
 
     # ── Subscribe Graph Events ────────────────────────────────────────────────
 
     def _subscribe_graph_events(self) -> None:
         """Subscreve nos Graph Events para reações cruzadas."""
-        try:
+        with swallow(_log, "subscribe graph events", level=logging.WARNING):
             from editor.core.event_bus import EventBus, EVENT_GRAPH_NODE_SELECTED
             EventBus.subscribe(EVENT_GRAPH_NODE_SELECTED, self._on_graph_node_selected_event)
-        except Exception:
-            pass
 
     def _on_graph_node_selected_event(self, **kwargs: Any) -> None:
         """Reage a seleção de nó de outros editores de grafo (BehaviorTree, Material)."""
@@ -205,25 +196,21 @@ class VisualLogicBridge:
 
     def add_node(self, node_type: str, position: tuple = (0, 0)) -> None:
         """API pública para adicionar nó ao grafo ativo."""
-        try:
+        with swallow(_log, "add node", level=logging.WARNING):
             from editor.core.event_bus import EventBus, EVENT_GRAPH_NODE_ADDED
             EventBus.emit(EVENT_GRAPH_NODE_ADDED, node_type=node_type,
                           position=position, document=self._current_document)
             if self._current_document:
                 self._current_document.mark_modified()
-        except Exception:
-            pass
 
     def execute_graph(self) -> None:
         """Dispara execução do grafo ativo."""
         if self._dock is None:
             return
-        try:
+        with swallow(_log, "execute graph", level=logging.WARNING):
             graph_editor = getattr(self._dock, "graph_editor", None)
             if graph_editor and hasattr(graph_editor, "execute"):
                 graph_editor.execute()
-        except Exception:
-            pass
 
 
 # Public compatibility name for extensions built against the pre-consolidation API.

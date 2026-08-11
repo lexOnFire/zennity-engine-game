@@ -17,7 +17,12 @@ automaticamente via EventBus (domínio Selection.*).
 from __future__ import annotations
 
 import logging
+import logging
 from typing import Any
+
+from engine.diagnostics import get_logger, swallow
+
+_log = get_logger("editor")
 
 
 logger = logging.getLogger(__name__)
@@ -117,32 +122,26 @@ class ReactiveEditorBridge:
     def _sync_viewport(self, obj: Any) -> None:
         if self._viewport is None:
             return
-        try:
+        with swallow(_log, "sync viewport", level=logging.WARNING):
             if hasattr(self._viewport, "select_object"):
                 self._viewport.select_object(obj)
             elif hasattr(self._viewport, "set_selected"):
                 self._viewport.set_selected(obj)
-        except Exception:
-            pass
 
     def _sync_viewmodel(self, obj: Any) -> None:
         if self._viewmodel is None:
             return
-        try:
+        with swallow(_log, "sync viewmodel", level=logging.WARNING):
             if hasattr(self._viewmodel, "_apply_selection"):
                 self._viewmodel._apply_selection(obj)
-        except Exception:
-            pass
 
     def _on_scene_hierarchy_changed(self, **kwargs: Any) -> None:
         """Atualiza a hierarquia quando objetos são adicionados/removidos da cena."""
         if self._hierarchy is None:
             return
-        try:
+        with swallow(_log, "on scene hierarchy changed", level=logging.WARNING):
             if hasattr(self._hierarchy, "populate_tree"):
                 self._hierarchy.populate_tree()
-        except Exception:
-            pass
 
     def select(self, obj: Any, context: str = "scene") -> None:
         """API pública para selecionar um objeto e propagar para todos os painéis."""

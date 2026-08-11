@@ -11,6 +11,12 @@ Handles:
 
 from __future__ import annotations
 
+import logging
+
+from engine.diagnostics import get_logger, report_error
+
+_log = get_logger("runtime")
+
 import json
 import os
 from pathlib import Path
@@ -128,7 +134,11 @@ class SaveManager:
             save_path = self.save_directory / f"{slot_name}.json"
             return save_path.exists() and save_path.is_file()
 
-        except Exception:
+        except Exception as exc:
+            # Still reports "no save" to the caller, but the reason (permissions,
+            # unreadable path) is no longer invisible.
+            report_error(_log, f"check whether save slot {slot_name!r} exists", exc,
+                         level=logging.WARNING)
             return False
 
     def delete_save(self, slot_name: str) -> bool:

@@ -7,6 +7,10 @@ to Logic Graph runtimes.
 from __future__ import annotations
 from typing import Any, Callable
 
+from engine.diagnostics import get_logger, report_error
+
+log = get_logger("physics")
+
 
 # Global registry of physics event handlers
 _physics_event_handlers: list[Callable[[Any, str, Any], None]] = []
@@ -31,7 +35,12 @@ def unregister_physics_event_handler(callback: Callable[[Any, str, Any], None]) 
 def dispatch_physics_event(game_object: Any, method_name: str, other_collider: Any) -> None:
     """Dispatch physics event to all registered handlers."""
     for handler in list(_physics_event_handlers):
+        # Runs per contact per frame -- the hottest boundary in the engine.  A
+        # bare try/except keeps the success path at zero cost; the failure path
+        # is throttled so a permanently broken handler reports without flooding.
         try:
             handler(game_object, method_name, other_collider)
-        except Exception:
-            pass
+        except Exception as exc:
+            report_error(log, f"dispatch physics event {method_name!r} to a handler",
+                         exc, throttle=300,
+                         throttle_key=f"physics_event:{method_name}")

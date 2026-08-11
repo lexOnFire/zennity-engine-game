@@ -14,8 +14,13 @@ Uso:
 """
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any
+
+from engine.diagnostics import get_logger, report_error, swallow
+
+_log = get_logger("editor")
 
 
 class AnimationStudioBridge:
@@ -83,18 +88,16 @@ class AnimationStudioBridge:
 
             return doc
         except Exception as exc:
-            print(f"[AnimationStudioBridge] open_animation_document: {exc}")
+            report_error(_log, "open a .zanim animation document", exc)
             return None
 
     def close_animation_document(self) -> None:
         """Fecha o documento de animação atual."""
         if self._current_document is None:
             return
-        try:
+        with swallow(_log, "close animation document", level=logging.WARNING):
             from editor.workspace.document_framework import DocumentManager
             DocumentManager.instance().close(self._current_document)
-        except Exception:
-            pass
         self._current_document = None
 
     # ── Dock Event Connections ────────────────────────────────────────────────
@@ -116,12 +119,10 @@ class AnimationStudioBridge:
 
     def _patch_button(self, btn_attr: str, method_attr: str, handler: Any) -> None:
         """Conecta um botão do dock ao EventBus sem alterar o dock original."""
-        try:
+        with swallow(_log, "patch button", level=logging.WARNING):
             btn = getattr(self._dock, btn_attr, None)
             if btn:
                 btn.clicked.connect(handler)
-        except Exception:
-            pass
 
     def _on_play(self) -> None:
         self._emit_playback("playing")
@@ -135,19 +136,15 @@ class AnimationStudioBridge:
             self._current_document.mark_modified()
 
     def _on_hot_reload(self) -> None:
-        try:
+        with swallow(_log, "on hot reload", level=logging.WARNING):
             from editor.core.event_bus import EventBus, EVENT_ANIMATION_PLAYBACK
             EventBus.emit(EVENT_ANIMATION_PLAYBACK, state="hot_reload")
-        except Exception:
-            pass
 
     def _emit_playback(self, state: str) -> None:
-        try:
+        with swallow(_log, "emit playback", level=logging.WARNING):
             from editor.core.event_bus import EventBus, EVENT_ANIMATION_PLAYBACK
             EventBus.emit(EVENT_ANIMATION_PLAYBACK, state=state,
                           document=self._current_document)
-        except Exception:
-            pass
 
     # ── SelectionService → Auto-load tracks ───────────────────────────────────
 
@@ -155,35 +152,29 @@ class AnimationStudioBridge:
         """Quando um GameObject com Animator é selecionado, carrega as trilhas."""
         if obj is None or self._dock is None:
             return
-        try:
+        with swallow(_log, "on selection changed", level=logging.WARNING):
             animator = None
             if hasattr(obj, "get_component"):
                 from engine.components import Animator
                 animator = obj.get_component(Animator)
             if animator and hasattr(self._dock, "tracks"):
                 pass  # futuro: self._dock.load_animator_tracks(animator)
-        except Exception:
-            pass
 
     # ── Keyframe API ──────────────────────────────────────────────────────────
 
     def add_keyframe(self, track_name: str, time: float, value: Any) -> None:
         """Adiciona um keyframe via API e emite evento do domínio Animation.*"""
-        try:
+        with swallow(_log, "add keyframe", level=logging.WARNING):
             from editor.core.event_bus import EventBus, EVENT_ANIMATION_KEYFRAME
             EventBus.emit(EVENT_ANIMATION_KEYFRAME, track=track_name,
                           time=time, value=value)
             if self._current_document:
                 self._current_document.mark_modified()
-        except Exception:
-            pass
 
     def add_track(self, track_name: str) -> None:
         """Adiciona uma trilha e emite evento do domínio Animation.*"""
-        try:
+        with swallow(_log, "add track", level=logging.WARNING):
             from editor.core.event_bus import EventBus, EVENT_ANIMATION_TRACK
             EventBus.emit(EVENT_ANIMATION_TRACK, track=track_name, action="added")
             if self._current_document:
                 self._current_document.mark_modified()
-        except Exception:
-            pass

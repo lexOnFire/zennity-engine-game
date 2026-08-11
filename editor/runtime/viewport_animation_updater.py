@@ -3,6 +3,10 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
+from engine.diagnostics import get_logger, report_error
+
+log = get_logger("animation")
+
 
 class ViewportAnimationUpdater:
     def __init__(
@@ -79,6 +83,7 @@ class ViewportAnimationUpdater:
                     try:
                         hook(api, str(event.get("name", "")))
                     except Exception as exc:
+                        report_error(log, f"dispatch on_animation_event to {object_name}:{path}", exc)
                         self.emit({"type": "runtime_log", "level": "ERROR", "message": f"{object_name}:{path}:on_animation_event: {exc}"})
                 self.emit({"type": "animation_event", "name": object_name, "state": name,
                            "event": str(event.get("name", "")), "frame": frame, "payload": event.get("payload")})

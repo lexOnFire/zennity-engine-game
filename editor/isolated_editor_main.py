@@ -7,17 +7,14 @@ import os
 os.environ["PYGAME_PARACHUTE"] = "0"
 os.environ["SDL_FORCE_EXIT"] = "0"
 
-import faulthandler
 import logging
 import multiprocessing as mp
 import sys
 import json
-import traceback
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QtMsgType, qInstallMessageHandler
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
@@ -46,39 +43,33 @@ from engine.animation.clip_asset import (
     default_animation_asset,
     save_animation_asset,
 )
+from engine.diagnostics import (
+    add_crash_listener,
+    get_logger,
+    install_process_hooks,
+    latest_crash_report,
+    log_file_path,
+    register_context_provider,
+    set_context,
+    setup_logging,
+)
 
-
-_CRASH_LOG_HANDLE = None
+_log = get_logger("editor")
 
 
 def _install_crash_logging(project_root: Path) -> None:
-    """Registra rastros de falhas silenciosas em .zennity_crash.log."""
-    global _CRASH_LOG_HANDLE
-    if _CRASH_LOG_HANDLE is not None:
-        return
+    """Instala a observabilidade compartilhada do editor.
 
-    log_path = project_root / ".zennity_crash.log"
-    _CRASH_LOG_HANDLE = log_path.open("a", encoding="utf-8", buffering=1)
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-        handlers=[logging.StreamHandler(_CRASH_LOG_HANDLE)],
-        force=True,
-    )
-    faulthandler.enable(file=_CRASH_LOG_HANDLE, all_threads=True)
-
-    def excepthook(exc_type, exc, tb) -> None:
-        logging.critical("Exceção não tratada no editor", exc_info=(exc_type, exc, tb))
-        traceback.print_exception(exc_type, exc, tb, file=_CRASH_LOG_HANDLE)
-        sys.__excepthook__(exc_type, exc, tb)
-
-    def qt_message_handler(mode, context, message) -> None:
-        level = logging.ERROR if mode in {QtMsgType.QtCriticalMsg, QtMsgType.QtFatalMsg} else logging.WARNING
-        logging.log(level, "Qt: %s", message)
-
-    sys.excepthook = excepthook
-    qInstallMessageHandler(qt_message_handler)
-    logging.info("Crash logging instalado em %s", log_path)
+    Phase 9.5B Stage 0: a implementação própria deste módulo foi substituída
+    pela API comum em ``engine.diagnostics``, para que o processo do editor e o
+    subprocesso do viewport usem exatamente a mesma infraestrutura: logging
+    rotativo, ring buffer, crash reports e todos os hooks de processo
+    (ver engine/diagnostics/error_boundary.py::install_process_hooks).
+    """
+    setup_logging(project_root, process_name="Editor")
+    install_process_hooks(process_name="Editor", install_qt_handler=True)
+    set_context(process="Editor", project=str(project_root), mode="Editor")
+    _log.info("Crash logging instalado em %s", log_file_path())
 
 
 class IsolatedEditorWindow(InspectorComponentDelegatesMixin, AnimationWorkspaceOperations, InterfaceSmokeTest):
@@ -137,6 +128,10 @@ class IsolatedEditorWindow(InspectorComponentDelegatesMixin, AnimationWorkspaceO
         self._bootstrap = EditorBootstrapController(self, Path.cwd())
         self._bootstrap.compose(viewport_process, commands, events, viewport_controller)
         self._bootstrap.configure()
+        # Phase 9.5B Stage 0: crashes recorded anywhere in this process now reach
+        # the status bar and the Console panel instead of only the log file.
+        add_crash_listener(self._on_crash_reported)
+        register_context_provider(self._diagnostics_context)
 
     def _log(self, level: str, message: str) -> None:
         self._console_controller.log(level, message)
@@ -438,6 +433,43 @@ class IsolatedEditorWindow(InspectorComponentDelegatesMixin, AnimationWorkspaceO
 
     def _handle_runtime_log_event(self, message: dict) -> None:
         self._viewport_event_controller.runtime_log(message)
+
+    # ── Phase 9.5B Stage 0: user-facing failure feedback ────────────────────
+
+    def _handle_viewport_crashed_event(self, message: dict) -> None:
+        """O viewport morreu: avisa o usuário em vez de a Play Mode sumir."""
+        error = str(message.get("error", "unknown error"))
+        report = latest_crash_report(Path.cwd())
+        detail = f" Crash report: {report}" if report else ""
+        self._log("ERROR", f"Play Mode stopped because the viewport crashed: {error}.{detail}")
+        self._show_internal_error(
+            "Play Mode stopped because the viewport crashed", report
+        )
+
+    def _show_internal_error(self, summary: str, report_path: Path | None) -> None:
+        """Barra de status + Console.  Nunca abre modais em cascata."""
+        suffix = " — see Console" if report_path is None else " — see Console for the crash report"
+        try:
+            self.statusBar().showMessage(f"{summary}{suffix}", 15000)
+        except Exception:
+            # A janela pode já estar sendo destruída durante o shutdown.
+            _log.debug("Could not show the status-bar message %r", summary)
+
+    def _diagnostics_context(self) -> dict:
+        """Contexto vivo incluído em todo crash report deste processo."""
+        return {
+            "project": str(Path.cwd()),
+            "active_scene": str(self._current_scene_path or "<unsaved>"),
+            "mode": "Play" if self._runtime_playing else "Editor",
+            "selected_object": self._selected_name or "<none>",
+            "scene_objects": len(self._scene_snapshot),
+        }
+
+    def _on_crash_reported(self, summary: str, report_path: Path | None) -> None:
+        """Listener registrado em engine.diagnostics.error_boundary."""
+        detail = f" Crash report: {report_path}" if report_path else ""
+        self._log("ERROR", f"An internal error occurred: {summary}.{detail}")
+        self._show_internal_error("An internal error occurred", report_path)
 
     def _handle_logic_trace_event(self, message: dict) -> None:
         self._viewport_event_controller.logic_trace(message)

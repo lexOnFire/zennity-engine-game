@@ -5,7 +5,10 @@ from typing import Any
 
 import pygame
 
+from engine.diagnostics import get_logger, report_error
 from engine.ui.runtime_components import ButtonComponent, Canvas, ImageComponent, LabelComponent, UIElement
+
+_log = get_logger("ui")
 
 
 class UIRenderer:
@@ -126,7 +129,8 @@ class UIRenderer:
             return None
         try:
             surface = pygame.image.load(str(resolved)).convert_alpha()
-        except Exception:
+        except Exception as exc:
+            report_error(_log, f"load UI image {resolved}", exc)
             return None
         self._image_cache[key] = surface
         return surface

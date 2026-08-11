@@ -3,6 +3,10 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
+from engine.diagnostics import get_logger, report_error
+
+log = get_logger("logic")
+
 
 class ViewportLogicEventUpdater:
     """Executes logic events and update hooks outside the frame loop."""
@@ -50,6 +54,9 @@ class ViewportLogicEventUpdater:
                         name, obj, api, module, instructions, input_state, delta_time,
                     ) or restart_requested
                 except Exception as exc:
+                    # The module is detached from the running scene, so this is a
+                    # gameplay-visible failure and must never be silent.
+                    report_error(log, f"update logic module {name}:{path} (module detached)", exc)
                     instances.remove((path, module))
                     self.emit({
                         "type": "runtime_log", "level": "ERROR",
